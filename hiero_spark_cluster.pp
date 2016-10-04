@@ -29,7 +29,5 @@ file {'hadoop-env':
     }
 file { "$hdfs_folder":
       ensure => "directory",
-      owner  => "lalith",
-      group  => "lalith",
       mode   => 755,
   }

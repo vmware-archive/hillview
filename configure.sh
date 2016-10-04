@@ -2,7 +2,6 @@
 
 if [[ -v JAVA_HOME ]]
 then
-
   #
   # Infer the directory names
   #
@@ -15,6 +14,8 @@ then
    FACTER_hadoop_folder=$PWD/$LOCAL_HADOOP_FOLDER \
    FACTER_JAVA_HOME=$JAVA_HOME \
    puppet apply hiero_spark_cluster.pp
+
+  $LOCAL_HADOOP_FOLDER/bin/hdfs namenode -format
 else
   echo "JAVA_HOME environment variable is unset."
   echo "Please use 'export JAVA_HOME=<path-to-jdk>', preferably in your ~/.bashrc or ~/.zshrc file."
