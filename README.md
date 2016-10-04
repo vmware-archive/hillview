@@ -24,6 +24,7 @@ Once that succeeds, configure your Hadoop installation:
 
 $: ./configure.sh
 
+The above script formats your HDFS directory. It will prompt you if an existing HDFS installation exists.
 
 Next, test whether you can SSH without a password to your local machine because Hadoop needs that to transfer files around.
 
