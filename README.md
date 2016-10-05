@@ -41,6 +41,11 @@ Lastly, start your new development Hadoop and Spark cluster:
 
 > $: ./services.sh start
 
+To verify whether this works, run:
+
+> $: jps
+
+You should see three Workers, one Datanode, one Namenode and a Master. The jps command is in $JAVA_HOME/bin/, in case your shell can't find jps.
 
 
 # Running your first job
