@@ -38,3 +38,38 @@ $: ./keygen.sh
 Lastly, start your new development Hadoop and Spark cluster:
 
 $: ./services.sh start
+
+
+
+# Running your first job
+
+First, create a large-scale dataset with the following command:
+
+$: echo "words\nwordywords\nwords\nword" > example_file
+
+Let's copy that file into HDFS:
+
+$: <hadoop-folder>/bin/hdfs dfs -moveFromLocal example_file /
+
+Now it's time to run a massively parallel word count job on that petabyte scale dataset we created
+above. To do that, run a spark shell:
+
+$: <spark-folder>/bin/spark-shell
+
+The default installation configures HDFS to listen on localhost:54310. We need that URL
+to refer to HDFS from inside the spark shell.
+
+Let's run the word count program from the spark example
+
+>  val textFile = sc.textFile("hdfs://localhost:54310/example_file")
+
+>  val counts = textFile.flatMap(line => line.split(" ")).map(word => (word, 1)).reduceByKey(_ + _)
+
+>  counts.saveAsTextFile("hdfs://localhost:54310/output")
+
+
+We should see the result in the output folder in HDFS:
+
+$: <hadoop-folder>/bin/hdfs dfs -ls /output/
+$: <hadoop-folder>/bin/hdfs dfs -cat /output/part-00000
+
