@@ -1,4 +1,4 @@
-#!/bash
+#!/bin/bash
 
 SPARK_URL="http://d3kbcqa49mib13.cloudfront.net/spark-2.0.0-bin-hadoop2.7.tgz"
 HDFS_URL="http://apache.claz.org/hadoop/common/hadoop-2.7.3/hadoop-2.7.3.tar.gz"
@@ -18,7 +18,7 @@ MSG "Installing necessary packages. Enter password for sudo"
 # First, we install some packages. The script will prompt for a password
 # to use with sudo.
 #
-sudo apt-get install -y puppet
+sudo apt-get install -y puppet ssh
 
 if [[ $? > 0 ]]
 then
