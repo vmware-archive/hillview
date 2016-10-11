@@ -80,3 +80,23 @@ We should see the result in the output folder in HDFS:
 > $: hadoop-2.7.3/bin/hdfs dfs -ls /output/
 > $: hadoop-2.7.3/bin/hdfs dfs -cat /output/part-00000
 
+
+
+# Importing into IntelliJ IDEA
+
+First, download and install Intellij IDEA.
+
+Next, import the hiero project inside IntelliJ. On the welcome screen, select the "import project" option, point to the "pom.xml" file inside the hiero folder, click "next" a few times and you're good to go.
+
+
+To build the project from the commandline type:
+
+$: mvn package
+
+This will build the project, run the tests, and then produce a folder named "target/" with the hiero JAR inside it.
+
+To run only the tests:
+
+$: mvn test
+
+
