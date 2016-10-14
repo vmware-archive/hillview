@@ -8,15 +8,25 @@ import java.security.InvalidParameterException;
 public final class IntArrayColumn extends BaseColumn {
     private int[] data;
 
+    private void validate() {
+        if (this.description.kind != ContentsKind.Int)
+            throw new InvalidParameterException("Kind should be Int " + description.kind);
+        if (this.description.allowMissing)
+            throw new InvalidParameterException("Column cannot have nulls");
+    }
+
     public IntArrayColumn(ColumnDescription description, int size) {
         super(description);
-        if (description.kind != ContentsKind.Int)
-            throw new InvalidParameterException("Kind should be Int " + description.kind);
-        if (description.allowMissing)
-            throw new InvalidParameterException("Column cannot have nulls");
         if (size <= 0)
             throw new InvalidParameterException("Size must be positive: " + size);
+        this.validate();
         data = new int[size];
+    }
+
+    public IntArrayColumn(ColumnDescription description, int [] data) {
+        super(description);
+        this.validate();
+        this.data = data;
     }
 
     @Override

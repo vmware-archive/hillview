@@ -21,6 +21,8 @@ public class ColumnTest {
 
         assertEquals( col.sizeInRows(), size );
         assertEquals( col.getInt(0), 0 );
+        for (int i=0; i < size; i++)
+            assertEquals(i, col.getInt(i));
         assertEquals( col.asDouble(0, null), 0.0 );
     }
 }
