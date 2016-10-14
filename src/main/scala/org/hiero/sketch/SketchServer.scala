@@ -1,3 +1,5 @@
+package org.hiero.sketch
+
 import akka.actor.Actor
 
 /**

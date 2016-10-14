@@ -1,3 +1,5 @@
+package org.hiero.sketch
+
 import akka.actor.{ActorSelection, ActorSystem, Props}
 import akka.pattern.ask
 import com.typesafe.config.ConfigFactory
