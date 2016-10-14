@@ -1,36 +1,11 @@
-package org.hiero;
+package org.hiero.sketch;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import static junit.framework.TestCase.assertTrue;
 
 /**
  * Unit test for simple SketchClient.
  */
-public class SketchClientTest
-    extends TestCase
-{
-    /**
-     * Create the test case
-     *
-     * @param testName name of the test case
-     */
-    public SketchClientTest(String testName )
-    {
-        super( testName );
-    }
-
-    /**
-     * @return the suite of tests being tested
-     */
-    public static Test suite()
-    {
-        return new TestSuite( SketchClientTest.class );
-    }
-
-    /**
-     * Example Test
-     */
+public class SketchClientTest {
     public void testApp()
     {
         assertTrue( true );
