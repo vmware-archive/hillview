@@ -1,4 +1,3 @@
-import java.io.Serializable
 import scala.collection.mutable.ListBuffer
 
 /**

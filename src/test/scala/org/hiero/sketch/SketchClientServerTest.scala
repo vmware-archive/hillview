@@ -16,8 +16,21 @@ object SketchClientServerTest {
     // Initialize the server
     val serverConfig = ConfigFactory.parseString("""
     akka {
+      extensions = ["com.romix.akka.serialization.kryo.KryoSerializationExtension$"]
+
       actor {
+        serializers.java = "com.romix.akka.serialization.kryo.KryoSerializer"
+
+        kryo {
+          type = "nograph"
+          idstrategy = "default"
+          serializer-pool-size = 1024
+          kryo-reference-map = false
+        }
         provider = remote
+      }
+      serialization-bindings {
+        "java.io.Serializable" = none
       }
       remote {
         enabled-transports = ["akka.remote.netty.tcp"]
@@ -35,8 +48,20 @@ object SketchClientServerTest {
     //Initialize the client
     val clientConfig = ConfigFactory.parseString("""
     akka {
+      extensions = ["com.romix.akka.serialization.kryo.KryoSerializationExtension$"]
       actor {
+       serializers.java = "com.romix.akka.serialization.kryo.KryoSerializer"
+
+       kryo {
+         type = "nograph"
+         idstrategy = "default"
+         serializer-pool-size = 1024
+         kryo-reference-map = false
+       }
         provider = remote
+      }
+      serialization-bindings {
+        "java.io.Serializable" = none
       }
       remote {
         enabled-transports = ["akka.remote.netty.tcp"]
