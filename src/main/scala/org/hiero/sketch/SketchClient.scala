@@ -3,7 +3,8 @@ import scala.collection.mutable.ListBuffer
 
 /**
   * An example Map function that can be issued
-  * to a server
+  * to a server. It operates on a list of integers,
+  * and increments them by 1.
   */
 class IncrementingMap extends IMap[List[Int], List[Int]] with Serializable {
   override def map(value: List[Int]): List[Int] = {
@@ -15,6 +16,10 @@ class IncrementingMap extends IMap[List[Int], List[Int]] with Serializable {
   }
 }
 
+/**
+  * An example Sketch function that can be issued
+  * to a server. It sums up a list of integers.
+  */
 class SummationSketch extends ISketch[List[Int], Int] with Serializable {
   override def apply(data: List[Int]): Int = {
     var total = 0

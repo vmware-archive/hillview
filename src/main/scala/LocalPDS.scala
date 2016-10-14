@@ -1,5 +1,5 @@
 /**
-  * A LocalPDS
+  * A Local Partial Data Set.
   */
 class LocalPDS[A](value: A) extends IPDS[A] {
   var result:A = value
