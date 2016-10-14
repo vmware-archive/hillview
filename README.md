@@ -94,18 +94,25 @@ We should see the result in the output folder in HDFS:
 > $: hadoop-2.7.3/bin/hdfs dfs -ls /output/
 > $: hadoop-2.7.3/bin/hdfs dfs -cat /output/part-00000
 
-## Importing into IntelliJ IDEA
+
+## Setup IntelliJ IDEA
 
 First, download and install Intellij IDEA:
 https://www.jetbrains.com/idea/.  You can just untar the linux binary
 in a place of your choice and run the shell script
 `ideaXXX/bin/idea.sh`.
 
+Next, setup the scala plugins for IntelliJ. Go to Preferences ->
+ Plugins -> Install JetBrains Plugin and then search for Scala. 
+Wait for it to install. Next, in Preferences -> Plugins, make sure
+Scala appears in the list of plugins and is checked.
+
+## Import Hiero into IntelliJ IDEA
+
 Next, import the hiero project inside IntelliJ.  On the welcome
 screen, select the "import project" option, point to the "pom.xml"
 file inside the hiero folder, click "next" a few times and you're good
 to go.
-
 To build the project from the commandline type:
 
 > $: mvn package
