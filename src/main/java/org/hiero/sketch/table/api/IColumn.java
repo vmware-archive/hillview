@@ -1,4 +1,6 @@
-package org.hiero.sketch.table;
+package org.hiero.sketch.table.api;
+
+import org.hiero.sketch.table.ColumnDescription;
 
 import java.time.Duration;
 import java.util.Date;

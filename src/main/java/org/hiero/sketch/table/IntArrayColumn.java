@@ -1,5 +1,7 @@
 package org.hiero.sketch.table;
 
+import org.hiero.sketch.table.api.IStringConverter;
+
 import java.security.InvalidParameterException;
 
 /**

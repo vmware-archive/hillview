@@ -1,7 +1,12 @@
 package org.hiero.sketch.table;
 
+import org.hiero.sketch.table.api.IMembershipMap;
+import org.hiero.sketch.table.api.IRowIterator;
+
+import java.util.function.Function;
+
 /**
- * Represents a IMembershipMap which represents all rows.
+ * A IMembershipMap which contains all rows.
  */
 public class FullMembership implements IMembershipMap {
     private final int rowCount;
@@ -12,6 +17,26 @@ public class FullMembership implements IMembershipMap {
 
     @Override
     public boolean isMember(int rowIndex) {
-        return rowIndex > 0 && rowIndex < this.rowCount;
+        return rowIndex < this.rowCount;
+    }
+
+    @Override
+    public int getSize() {
+        return this.rowCount;
+    }
+
+    @Override
+    public IRowIterator getIterator() {
+        return null;
+    }
+
+    @Override
+    public IMembershipMap subset(Function<Integer, Boolean> isMember) {
+        return null;
+    }
+
+    @Override
+    public IMembershipMap sample(double percentage) {
+        return null;
     }
 }

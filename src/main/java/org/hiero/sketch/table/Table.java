@@ -1,5 +1,8 @@
 package org.hiero.sketch.table;
 
+import org.hiero.sketch.table.api.IMembershipMap;
+import org.hiero.sketch.table.api.ISchema;
+
 /**
  * This is a simple table held entirely in RAM.
  */

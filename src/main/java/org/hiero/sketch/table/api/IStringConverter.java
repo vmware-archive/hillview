@@ -1,4 +1,4 @@
-package org.hiero.sketch.table;
+package org.hiero.sketch.table.api;
 
 /**
  * Knows how to convert a string to a double.

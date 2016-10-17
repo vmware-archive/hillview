@@ -1,5 +1,7 @@
 package org.hiero.sketch.table;
 
+import org.hiero.sketch.table.api.ISchema;
+
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.HashMap;

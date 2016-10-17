@@ -1,5 +1,7 @@
 package org.hiero.sketch.table;
 
+import org.hiero.sketch.table.api.IColumn;
+
 import java.time.Duration;
 import java.util.Date;
 
@@ -9,7 +11,7 @@ import java.util.Date;
 public abstract class BaseColumn implements IColumn {
     final ColumnDescription description;
 
-    public BaseColumn(ColumnDescription description) {
+    protected BaseColumn(ColumnDescription description) {
         this.description = description;
     }
 
