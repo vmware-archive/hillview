@@ -8,10 +8,10 @@ import java.util.Date;
 /**
  * Base class for all columns.
  */
-public abstract class BaseColumn implements IColumn {
+abstract class BaseColumn implements IColumn {
     final ColumnDescription description;
 
-    protected BaseColumn(ColumnDescription description) {
+    BaseColumn(ColumnDescription description) {
         this.description = description;
     }
 

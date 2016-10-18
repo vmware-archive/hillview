@@ -1,13 +1,11 @@
 package org.hiero.sketch.table.api;
 
-import java.util.function.Function;
-
 /**
- * A IMembershipMap is a representation of a set of integers.
+ * A IMembershipSet is a representation of a set of integers.
  * These integers represent row indexes in a table.  If an integer
- * is in a IMembershipMap, then it is present in the table.
+ * is in a IMembershipSet, then it is present in the table.
  */
-public interface IMembershipMap {
+public interface IMembershipSet {
     /**
      * @param rowIndex A positive row index.
      * @return True if the given rowIndex is a member of the set.
@@ -22,7 +20,4 @@ public interface IMembershipMap {
      * The iterator is initialized to point at the "first" row.
      */
     IRowIterator getIterator();
-
-    IMembershipMap subset(Function<Integer, Boolean> isMember);
-    IMembershipMap sample(double percentage);
 }

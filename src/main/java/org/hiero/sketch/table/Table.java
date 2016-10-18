@@ -1,6 +1,7 @@
 package org.hiero.sketch.table;
 
-import org.hiero.sketch.table.api.IMembershipMap;
+import org.hiero.sketch.table.api.IColumn;
+import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.ISchema;
 
 /**
@@ -9,6 +10,6 @@ import org.hiero.sketch.table.api.ISchema;
 public class Table {
     private ISchema schema;
     private IColumn[] columns;
-    private IMembershipMap members;
+    private IMembershipSet members;
     // TODO
 }

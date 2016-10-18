@@ -1,5 +1,6 @@
 package org.hiero.sketch.table;
 
+import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.IStringConverter;
 
 import java.security.InvalidParameterException;
@@ -13,8 +14,6 @@ public final class IntArrayColumn extends BaseColumn {
     private void validate() {
         if (this.description.kind != ContentsKind.Int)
             throw new InvalidParameterException("Kind should be Int " + description.kind);
-        if (this.description.allowMissing)
-            throw new InvalidParameterException("Column cannot have nulls");
     }
 
     public IntArrayColumn(ColumnDescription description, int size) {
