@@ -1,5 +1,6 @@
 package org.hiero.sketch.table;
 
+import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IMembershipMap;
 import org.hiero.sketch.table.api.ISchema;
 

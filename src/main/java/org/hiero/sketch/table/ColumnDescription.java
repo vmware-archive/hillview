@@ -1,5 +1,7 @@
 package org.hiero.sketch.table;
 
+import org.hiero.sketch.table.api.ContentsKind;
+
 /**
  * Describes the contents of a column in a local table.
  */

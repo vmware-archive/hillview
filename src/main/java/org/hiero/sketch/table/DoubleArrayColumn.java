@@ -2,37 +2,36 @@ package org.hiero.sketch.table;
 
 import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.IStringConverter;
-
 import java.security.InvalidParameterException;
 import java.util.BitSet;
 
 /**
- * A column that stores data in an array.
+ * Created by parik on 10/18/16.
  */
-public final class IntArrayColumn extends BaseArrayColumn {
-    private int[] data;
+public final class DoubleArrayColumn extends BaseArrayColumn{
+    private double[] data;
 
     private void validate() {
-        if (this.description.kind != ContentsKind.Int)
-            throw new InvalidParameterException("Kind should be Int " + description.kind);
+        if (this.description.kind != ContentsKind.Double)
+            throw new InvalidParameterException("Kind should be Double " + description.kind);
     }
 
-    /* Will set data array and missing Bitset to an array of False of length equal to size */
-    public IntArrayColumn(ColumnDescription description, int size) {
+    /* Will set data array. If missing values are allowed initalize missing Bitset to an array of False */
+    public DoubleArrayColumn(ColumnDescription description, int size) {
         super(description, size);
         this.validate();
-        data = new int[size];
+        data = new double[size];
     }
 
     /* Will set description, data array, and missing Bitset to an array of False of length equal to data */
-    public IntArrayColumn(ColumnDescription description, int[] data) {
+    public DoubleArrayColumn(ColumnDescription description, double[] data) {
         super(description, data.length);
         this.validate();
         this.data = data;
     }
 
     /* Will initialize data Array and missing Bitset by input*/
-    public IntArrayColumn(ColumnDescription description, int[] data, BitSet missing) {
+    public DoubleArrayColumn(ColumnDescription description, double[] data, BitSet missing) {
         super(description, missing);
         this.validate();
         this.data = data;
@@ -42,10 +41,13 @@ public final class IntArrayColumn extends BaseArrayColumn {
     public int sizeInRows() { return data.length; }
 
     @Override
-    public int getInt(int rowIndex) { return this.data[rowIndex]; }
+    public double getDouble(int rowIndex) { return this.data[rowIndex]; }
+
 
     @Override
     public double asDouble(int rowIndex, IStringConverter unused) { return this.data[rowIndex]; }
 
-    public void set(int rowIndex, int value) { this.data[rowIndex] = value; }
+
+    public void set(int rowIndex, double value) { this.data[rowIndex] = value; }
+
 }

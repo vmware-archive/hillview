@@ -1,4 +1,4 @@
-package org.hiero.sketch.table;
+package org.hiero.sketch.table.api;
 
 /**
  * Describes the kind of data that is in the column,

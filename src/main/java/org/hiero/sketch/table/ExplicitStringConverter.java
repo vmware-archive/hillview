@@ -14,7 +14,7 @@ public final class ExplicitStringConverter implements IStringConverter {
         this.stringValue = new HashMap<String, Integer>();
     }
 
-    /* Will throw an exception when String is not known */
+    /* Will throw an exception when string is not known */
     @Override
     public double asDouble(String string) {
         int val = this.stringValue.get(string);
