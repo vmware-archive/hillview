@@ -123,3 +123,11 @@ named "target/" with the hiero JAR inside it.
 To run only the tests:
 
 > $: mvn test
+
+## Using git to contribute
+
+* Fork the repository using the "fork" button on github, by following these instructions:
+https://help.github.com/articles/fork-a-repo/
+* To merge your fork with the original use: `git fetch upstream; git merge upstream/master`
+* When you make changes you can submit them into your own fork
+* After committing changes, create a pull request (using the github web UI)
