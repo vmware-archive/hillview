@@ -8,13 +8,13 @@ import scala.collection.mutable.ListBuffer
   * and increments them by 1.
   */
 class IncrementingMap extends IMap[List[Int], List[Int]] {
-  override def map(value: List[Int]): List[Int] = {
-    val out = new ListBuffer[Int]()
-    for (i <- value) {
-      out += i + 1
+    override def map(value: List[Int]): List[Int] = {
+        val out = new ListBuffer[Int]()
+        for (i <- value) {
+            out += i + 1
+        }
+        return out.toList
     }
-    return out.toList
-  }
 }
 
 /**
@@ -22,17 +22,17 @@ class IncrementingMap extends IMap[List[Int], List[Int]] {
   * to a server. It sums up a list of integers.
   */
 class SummationSketch extends ISketch[List[Int], Int] {
-  override def apply(data: List[Int]): Int = {
-    var total = 0
-    for (i <- data) {
-      total += i
+    override def apply(data: List[Int]): Int = {
+        var total = 0
+        for (i <- data) {
+            total += i
+        }
+        return total
     }
-    return total
-  }
 
-  override def combine(data: List[Int]): Int = {
-    return apply(data)
-  }
+    override def combine(data: List[Int]): Int = {
+        return apply(data)
+    }
 }
 
 object SketchClient extends App {

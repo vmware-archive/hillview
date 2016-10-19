@@ -17,8 +17,7 @@ public final class ExplicitStringConverter implements IStringConverter {
     /* Will throw an exception when string is not known */
     @Override
     public double asDouble(String string) {
-        int val = this.stringValue.get(string);
-        return val;
+        return this.stringValue.get(string);
     }
 
     public void set(String s, int value) {

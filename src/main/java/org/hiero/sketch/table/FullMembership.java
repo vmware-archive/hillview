@@ -1,14 +1,12 @@
 package org.hiero.sketch.table;
 
-import org.hiero.sketch.table.api.IMembershipMap;
+import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
 
-import java.util.function.Function;
-
 /**
- * A IMembershipMap which contains all rows.
+ * A IMembershipSet which contains all rows.
  */
-public class FullMembership implements IMembershipMap {
+public class FullMembership implements IMembershipSet {
     private final int rowCount;
 
     public FullMembership(int rowCount) {
@@ -27,16 +25,6 @@ public class FullMembership implements IMembershipMap {
 
     @Override
     public IRowIterator getIterator() {
-        return null;
-    }
-
-    @Override
-    public IMembershipMap subset(Function<Integer, Boolean> isMember) {
-        return null;
-    }
-
-    @Override
-    public IMembershipMap sample(double percentage) {
         return null;
     }
 }
