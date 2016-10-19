@@ -4,18 +4,17 @@ import org.hiero.sketch.table.ColumnDescription;
 import org.hiero.sketch.table.DoubleArrayColumn;
 import org.hiero.sketch.table.api.ContentsKind;
 import org.junit.Test;
-
 import java.util.BitSet;
-
 import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertFalse;
+import static junit.framework.TestCase.assertTrue;
 
 /**
- * Created by parik on 10/17/16.
+ * Test for DoubleArrayColumn class
  */
-public class DoubleArrayTest {
-
-    final int size = 100;
-    ColumnDescription desc = new ColumnDescription("test", ContentsKind.Double, true);
+class DoubleArrayTest {
+    private final int size = 100;
+    private ColumnDescription desc = new ColumnDescription("test", ContentsKind.Double, true);
 
     /* Test for constructor using length and no arrays*/
     @Test
@@ -30,9 +29,9 @@ public class DoubleArrayTest {
         for (int i = 0; i < size; i++) {
             assertEquals(Math.sqrt(i+1), col.getDouble(i));
             if (i % 5 == 0)
-                assertEquals(true, col.isMissing(i));
+                assertTrue(col.isMissing(i));
             else
-                assertEquals(false, col.isMissing(i));
+                assertFalse(col.isMissing(i));
         }
     }
 
@@ -51,9 +50,9 @@ public class DoubleArrayTest {
             assertEquals(Math.sqrt(i+1), col.getDouble(i));
             //System.out.println(col.getDouble(i));
             if (i % 5 == 0)
-                assertEquals(true, col.isMissing(i));
+                assertTrue(col.isMissing(i));
             else
-                assertEquals(false, col.isMissing(i));
+                assertFalse(col.isMissing(i));
         }
     }
 
@@ -72,9 +71,9 @@ public class DoubleArrayTest {
         for (int i = 0; i < size; i++) {
             assertEquals(Math.sqrt(i+1), col.getDouble(i));
             if (i % 5 == 0)
-                assertEquals(true, col.isMissing(i));
+                assertTrue(col.isMissing(i));
             else
-                assertEquals(false, col.isMissing(i));
+                assertFalse(col.isMissing(i));
         }
     }
 }

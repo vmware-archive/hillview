@@ -8,12 +8,11 @@ import java.util.BitSet;
 import static junit.framework.TestCase.assertEquals;
 
 /**
- * Created by parik on 10/17/16.
+ * Test for IntArrayColumn class
  */
-public class IntArrayTest {
-
-    final int size = 100;
-    ColumnDescription desc = new ColumnDescription("test", ContentsKind.Int, true);
+class IntArrayTest {
+    private final int size = 100;
+    private ColumnDescription desc = new ColumnDescription("test", ContentsKind.Int, true);
 
     /* Test for constructor using length and no arrays*/
     @Test

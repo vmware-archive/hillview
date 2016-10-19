@@ -4,18 +4,18 @@ import org.hiero.sketch.table.ColumnDescription;
 import org.hiero.sketch.table.StringArrayColumn;
 import org.hiero.sketch.table.api.ContentsKind;
 import org.junit.Test;
-
 import java.util.BitSet;
-
 import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertFalse;
+import static junit.framework.TestCase.assertTrue;
 
 /*
- * Created by parik on 10/17/16.
+ * Test for StringArrayColumn class.
 */
-public class StringArrayTest {
+class StringArrayTest {
 
-    final int size = 100;
-    ColumnDescription desc = new ColumnDescription("test", ContentsKind.String, true);
+    private final int size = 100;
+    private ColumnDescription desc = new ColumnDescription("test", ContentsKind.String, true);
 
     /* Test for constructor using length and no arrays*/
     @Test
@@ -30,9 +30,9 @@ public class StringArrayTest {
         for (int i = 0; i < size; i++) {
             assertEquals(String.valueOf(i), col.getString(i));
             if (i % 5 == 0)
-                assertEquals(true, col.isMissing(i));
+                assertTrue(col.isMissing(i));
             else
-                assertEquals(false, col.isMissing(i));
+                assertFalse(col.isMissing(i));
         }
     }
 
@@ -50,9 +50,9 @@ public class StringArrayTest {
         for (int i = 0; i < size; i++) {
             assertEquals(String.valueOf(i), col.getString(i));
             if (i % 5 == 0)
-                assertEquals(true, col.isMissing(i));
+                assertTrue(col.isMissing(i));
             else
-                assertEquals(false, col.isMissing(i));
+                assertFalse(col.isMissing(i));
         }
     }
 
@@ -71,9 +71,9 @@ public class StringArrayTest {
         for (int i = 0; i < size; i++) {
             assertEquals(String.valueOf(i), col.getString(i));
             if (i % 5 == 0)
-                assertEquals(true, col.isMissing(i));
+                assertTrue(col.isMissing(i));
             else
-                assertEquals(false, col.isMissing(i));
+                assertFalse(col.isMissing(i));
         }
     }
 }

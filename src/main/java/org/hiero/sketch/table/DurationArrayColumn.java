@@ -8,10 +8,10 @@ import java.time.Duration;
 import java.util.BitSet;
 
 /*
- * Array of dates
+ * Column of durations, implemented as an array of Durations and a BitSet of missing values
  */
 
-public final class DurationArrayColumn extends BaseArrayColumn{
+public final class DurationArrayColumn extends BaseArrayColumn {
     private Duration[] data;
 
     private void validate() {
@@ -19,14 +19,16 @@ public final class DurationArrayColumn extends BaseArrayColumn{
             throw new InvalidParameterException("Kind should be Time Duration" + description.kind);
     }
 
-    /* Will set data array. If missing values are allowed initalize missing Bitset to an array of False */
+    /* Will set data array. If missing values are allowed initalize missing Bitset to an array of
+     False */
     public DurationArrayColumn(ColumnDescription description, int size) {
         super(description, size);
         this.validate();
-        data = new Duration[size];
+        this.data = new Duration[size];
     }
 
-    /* Will set description, data array, and missing Bitset to an array of False of length equal to data */
+    /* Will set description, data array, and missing Bitset to an array of False of length equal
+    to data */
     public DurationArrayColumn(ColumnDescription description, Duration[] data) {
         super(description, data.length);
         this.validate();
@@ -52,5 +54,7 @@ public final class DurationArrayColumn extends BaseArrayColumn{
         return Converters.toDouble(tmp);
     }
 
-    public void set(int rowIndex, Duration value) { this.data[rowIndex] = value; }
+    public void set(int rowIndex, Duration value) {
+        this.data[rowIndex] = value;
+    }
 }

@@ -7,7 +7,7 @@ import java.security.InvalidParameterException;
 import java.util.BitSet;
 
 /**
- * A column that stores data in an array.
+ * Column of integers, implemented as an array of integers and a BitSet of missing values.
  */
 public final class IntArrayColumn extends BaseArrayColumn {
     private int[] data;
@@ -21,10 +21,11 @@ public final class IntArrayColumn extends BaseArrayColumn {
     public IntArrayColumn(ColumnDescription description, int size) {
         super(description, size);
         this.validate();
-        data = new int[size];
+        this.data = new int[size];
     }
 
-    /* Will set description, data array, and missing Bitset to an array of False of length equal to data */
+    /* Will set description, data array, and missing Bitset to an array of False of length equal
+    to data */
     public IntArrayColumn(ColumnDescription description, int[] data) {
         super(description, data.length);
         this.validate();
@@ -39,13 +40,21 @@ public final class IntArrayColumn extends BaseArrayColumn {
     }
 
     @Override
-    public int sizeInRows() { return data.length; }
+    public int sizeInRows() {
+        return data.length;
+    }
 
     @Override
-    public int getInt(int rowIndex) { return this.data[rowIndex]; }
+    public int getInt(int rowIndex) {
+        return this.data[rowIndex];
+    }
 
     @Override
-    public double asDouble(int rowIndex, IStringConverter unused) { return this.data[rowIndex]; }
+    public double asDouble(int rowIndex, IStringConverter unused) {
+        return this.data[rowIndex];
+    }
 
-    public void set(int rowIndex, int value) { this.data[rowIndex] = value; }
+    public void set(int rowIndex, int value) {
+        this.data[rowIndex] = value;
+    }
 }
