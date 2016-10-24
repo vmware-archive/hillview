@@ -8,4 +8,5 @@ public interface IRowIterator {
     // Returns -1 when iteration is completed; else it returns
     // the index of the next row.
     int getNextRow();
+
 }
