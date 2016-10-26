@@ -5,10 +5,9 @@ import org.hiero.sketch.table.PartialMembershipDense;
 import org.hiero.sketch.table.PartialMembershipSparse;
 import org.hiero.sketch.table.api.IRowIterator;
 import org.junit.Test;
-import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
 
-/**
- * Created by uwieder on 10/24/16.
+/*
+Test for the three Membership Classes: FullMemebers, PartialMemership{Sparse,Dense}
  */
 public class MembershipTest {
     private int size = 10;

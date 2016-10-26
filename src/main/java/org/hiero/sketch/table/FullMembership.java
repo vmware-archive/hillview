@@ -10,10 +10,10 @@ public class FullMembership implements IMembershipSet {
     private final int rowCount;
 
     public FullMembership(int rowCount) throws NegativeArraySizeException {
-            if (rowCount > 0)
-                this.rowCount = rowCount;
-            else
-                throw (new NegativeArraySizeException("Can't initialize FullMembership with " +
+        if (rowCount > 0)
+            this.rowCount = rowCount;
+        else
+            throw (new NegativeArraySizeException("Can't initialize FullMembership with " +
                         "negative rowCount"));
     }
 
@@ -42,9 +42,9 @@ public class FullMembership implements IMembershipSet {
 
         @Override
         public int getNextRow() {
-            if (cursor < range) {
-                cursor++;
-                return cursor-1;
+            if (this.cursor < this.range) {
+                this.cursor++;
+                return this.cursor-1;
             }
             else return -1;
         }

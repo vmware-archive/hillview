@@ -5,10 +5,7 @@ import org.hiero.sketch.table.api.IRowIterator;
 import org.scalactic.exceptions.NullArgumentException;
 import java.util.function.Predicate;
 
-
 /**
- * Created by uwieder on 10/20/16.
- *
  * This implementation uses a full membership data structure plus a list of filter functions that
  * are used for the isMemeber and for the iterator functions. Upside is that construction is quick,
  * adding a filter function is quick. The downside is that the isMemeber can take a long time if
@@ -16,15 +13,11 @@ import java.util.function.Predicate;
  * getSize after a new filter is a linear scan.
  */
 public class PartialMembershipDense implements IMembershipSet {
-
     private IMembershipSet baseMap;
     private int rowCount;
     private boolean rowCountCorrect;
     private Predicate<Integer> filter;
 
-    /* class is instantiated by supplying a memshipSet (perhaps the full one), and a filter
-    function. If a filter is not supplied it is defaulted to be true
-    */
     public PartialMembershipDense(IMembershipSet baseMap) throws NullArgumentException {
         if (baseMap == null) throw new NullArgumentException("PartialMembershipDense cannot be " +
                 "instantiated without a base MembershipSet");
@@ -34,6 +27,8 @@ public class PartialMembershipDense implements IMembershipSet {
         this.rowCountCorrect = false;
     }
 
+    /* class is instantiated by supplying a membershipSet (perhaps the full one), and a filter
+    function. If a filter is not supplied it is defaulted to be true */
     public PartialMembershipDense(IMembershipSet baseMap, Predicate<Integer> filter) throws
             NullArgumentException {
         if (baseMap == null) throw new NullArgumentException("PartialMembershipDense cannot be " +
@@ -58,7 +53,7 @@ public class PartialMembershipDense implements IMembershipSet {
             int counter = 0;
             IRowIterator IT = this.baseMap.getIterator();
             int tmp = IT.getNextRow();
-            while (tmp >=0 ) {
+            while (tmp >= 0) {
                 if (this.filter.test(tmp))
                     counter++;
                 tmp = IT.getNextRow();
@@ -83,9 +78,9 @@ public class PartialMembershipDense implements IMembershipSet {
         }
 
         @Override
-        public int getNextRow(){
+        public int getNextRow() {
             int tmp = baseIterator.getNextRow();
-            while (tmp >= 0){
+            while (tmp >= 0) {
                 if (filter.test(tmp))
                     return tmp;
                 tmp = baseIterator.getNextRow();

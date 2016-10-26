@@ -6,10 +6,7 @@ import org.scalactic.exceptions.NullArgumentException;
 import java.util.*;
 import java.util.function.Predicate;
 
-
 /**
- * Created by uwieder on 10/20/16.
- *
  * This implementation uses a Set data structure to store the membership. It uses the Set's
  * membership and iterator methods. The upside is that it is efficient in space and that the
  * iterator is very efficient. So this implementation is best when the set is sparse.
@@ -34,7 +31,7 @@ public class PartialMembershipSparse implements IMembershipSet {
         IRowIterator baseIterator = baseMap.getIterator();
         membershipMap = new HashSet<Integer>();
         int tmp = baseIterator.getNextRow();
-        while(tmp >= 0) {
+        while (tmp >= 0) {
             if (filter.test(tmp))
                 membershipMap.add(tmp);
             tmp = baseIterator.getNextRow();
@@ -49,7 +46,7 @@ public class PartialMembershipSparse implements IMembershipSet {
         IRowIterator baseIterator = baseMap.getIterator();
         membershipMap = new HashSet<Integer>();
         int tmp = baseIterator.getNextRow();
-        while(tmp >= 0) {
+        while (tmp >= 0) {
             membershipMap.add(tmp);
             tmp = baseIterator.getNextRow();
         }
@@ -68,16 +65,15 @@ public class PartialMembershipSparse implements IMembershipSet {
 
     @Override
     public IRowIterator getIterator() {
-        return new sparseIterator(membershipMap);
+        return new SparseIterator(membershipMap);
     }
 
-
     // Implementing the Iterator
-    private static class sparseIterator implements IRowIterator {
+    private static class SparseIterator implements IRowIterator {
         private Set<Integer> mempershipMap;
         private Iterator<Integer> myIterator;
 
-        public sparseIterator(Set<Integer> membershipMap) {
+        public SparseIterator(Set<Integer> membershipMap) {
             this.mempershipMap = membershipMap;
             this.myIterator = membershipMap.iterator();
         }
