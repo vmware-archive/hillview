@@ -4,11 +4,12 @@ import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.IStringConverter;
 
 import java.security.InvalidParameterException;
+import java.util.BitSet;
 
 /**
- * A column that stores data in an array.
+ * Column of integers, implemented as an array of integers and a BitSet of missing values.
  */
-public final class IntArrayColumn extends BaseColumn {
+public final class IntArrayColumn extends BaseArrayColumn {
     private final int[] data;
 
     private void validate() {
@@ -17,30 +18,40 @@ public final class IntArrayColumn extends BaseColumn {
     }
 
     public IntArrayColumn(final ColumnDescription description, final int size) {
-        super(description);
-        if (size <= 0)
-            throw new InvalidParameterException("Size must be positive: " + size);
+        super(description, size);
         this.validate();
         this.data = new int[size];
     }
 
-    public IntArrayColumn(final ColumnDescription description, final int [] data) {
-        super(description);
+    public IntArrayColumn(final ColumnDescription description, final int[] data) {
+        super(description, data.length);
+        this.validate();
+        this.data = data;
+    }
+
+    public IntArrayColumn(final ColumnDescription description,
+                          final int[] data, final BitSet missing) {
+        super(description, missing);
         this.validate();
         this.data = data;
     }
 
     @Override
-    public boolean isMissing(final int rowIndex) { return false; }
+    public int sizeInRows() {
+        return this.data.length;
+    }
 
     @Override
-    public int sizeInRows() { return this.data.length; }
+    public int getInt(final int rowIndex) {
+        return this.data[rowIndex];
+    }
 
     @Override
-    public int getInt(final int rowIndex) { return this.data[rowIndex]; }
+    public double asDouble(final int rowIndex, final IStringConverter unused) {
+        return this.data[rowIndex];
+    }
 
-    @Override
-    public double asDouble(final int rowIndex, final IStringConverter unused) { return this.data[rowIndex]; }
-
-    public void set(final int rowIndex, final int value) { this.data[rowIndex] = value; }
+    public void set(final int rowIndex, final int value) {
+        this.data[rowIndex] = value;
+    }
 }

@@ -103,7 +103,7 @@ in a place of your choice and run the shell script
 `ideaXXX/bin/idea.sh`.
 
 Next, setup the scala plugins for IntelliJ. Go to Preferences ->
- Plugins -> Install JetBrains Plugin and then search for Scala. 
+ Plugins -> Install JetBrains Plugin and then search for Scala.
 Wait for it to install. Next, in Preferences -> Plugins, make sure
 Scala appears in the list of plugins and is checked.
 
@@ -129,5 +129,6 @@ To run only the tests:
 * Fork the repository using the "fork" button on github, by following these instructions:
 https://help.github.com/articles/fork-a-repo/
 * To merge your fork with the original use: `git fetch upstream; git merge upstream/master`
+* Run IntelliJ code inspection (Analyze/Inspect code) before commit and solve all open issues
 * When you make changes you can submit them into your own fork
 * After committing changes, create a pull request (using the github web UI)
