@@ -9,13 +9,17 @@ import org.hiero.sketch.table.api.IRowIterator;
 public class FullMembership implements IMembershipSet {
     private final int rowCount;
 
-    public FullMembership(int rowCount) {
-        this.rowCount = rowCount;
+    public FullMembership(int rowCount) throws NegativeArraySizeException {
+        if (rowCount > 0)
+            this.rowCount = rowCount;
+        else
+            throw (new NegativeArraySizeException("Can't initialize FullMembership with " +
+                        "negative rowCount"));
     }
 
     @Override
     public boolean isMember(int rowIndex) {
-        return rowIndex < this.rowCount;
+        return rowIndex < this.rowCount && rowIndex >= 0;
     }
 
     @Override
@@ -25,6 +29,24 @@ public class FullMembership implements IMembershipSet {
 
     @Override
     public IRowIterator getIterator() {
-        return null;
+        return new FullMemebershipIterator(this.rowCount);
+    }
+
+    private static class FullMemebershipIterator implements IRowIterator {
+        private int cursor = 0;
+        private final int range;
+
+        public  FullMemebershipIterator(int range) {
+            this.range = range;
+        }
+
+        @Override
+        public int getNextRow() {
+            if (this.cursor < this.range) {
+                this.cursor++;
+                return this.cursor-1;
+            }
+            else return -1;
+        }
     }
 }
