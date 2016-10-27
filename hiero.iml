@@ -8,6 +8,10 @@
       <sourceFolder url="file://$MODULE_DIR$/src/test/java" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/scala" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/test/scala" isTestSource="true" />
+      <excludeFolder url="file://$MODULE_DIR$/hadoop-2.7.3" />
+      <excludeFolder url="file://$MODULE_DIR$/hdfs-folders" />
+      <excludeFolder url="file://$MODULE_DIR$/puppet-manifests" />
+      <excludeFolder url="file://$MODULE_DIR$/spark-2.0.0-bin-hadoop2.7" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />
@@ -43,5 +47,6 @@
     <orderEntry type="library" name="Maven: org.scala-lang:scala-reflect:2.11.8" level="project" />
     <orderEntry type="library" name="Maven: org.scala-lang.modules:scala-xml_2.11:1.0.5" level="project" />
     <orderEntry type="library" name="Maven: org.scala-lang.modules:scala-parser-combinators_2.11:1.0.4" level="project" />
+    <orderEntry type="library" name="Maven: io.reactivex:rxjava:1.1.6" level="project" />
   </component>
 </module>

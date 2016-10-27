@@ -6,14 +6,10 @@ import java.io.Serializable
   * The core Sketch API,
   */
 
-trait ProgressReporter[T] {
-    def report(done: Long, outOf: Long, partialResult: T)
-}
-
 trait IPDS[T] {
-    def map[S](iMap: IMap[T, S]): IPDS[S]
+    def map[S](iMap: IMapp[T, S]): IPDS[S]
 
-    def sketch[R](iSketch: ISketch[T, R]): R
+    def sketch[R](iSketch: ISketchh[T, R]): R
 
     /* TODO
     def zip[S](other: IPDS[S]) : IPDS[(T, S)]
@@ -21,11 +17,11 @@ trait IPDS[T] {
     def print(): Unit
 }
 
-trait IMap[T, S] extends Serializable {
+trait IMapp[T, S] extends Serializable {
     def map(value: T): S
 }
 
-trait ISketch[T, R] extends Serializable {
+trait ISketchh[T, R] extends Serializable {
     def apply(data: T): R
 
     def combine(data: List[R]): R

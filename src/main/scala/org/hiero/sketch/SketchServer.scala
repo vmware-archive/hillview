@@ -9,12 +9,10 @@ import akka.actor.Actor
   */
 class SketchServerActor[T](localPDS: LocalPDS[T]) extends Actor {
     def receive = {
-        case mapper: IMap[T, _] => {
+        case mapper: IMapp[T, _] =>
             localPDS.map(mapper).print()
             sender ! 0
-        }
-        case sketcher: ISketch[T, _] => {
+        case sketcher: ISketchh[T, _] =>
             sender ! localPDS.sketch(sketcher)
-        }
     }
 }

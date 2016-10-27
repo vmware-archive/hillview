@@ -6,7 +6,7 @@ package org.hiero.sketch
 class LocalPDS[A](value: A) extends IPDS[A] {
     var result: A = value
 
-    override def map[T](mapper: IMap[A, T]): IPDS[T] = {
+    override def map[T](mapper: IMapp[A, T]): IPDS[T] = {
         val s = mapper.map(value)
         return new LocalPDS[T](s)
     }
@@ -15,7 +15,7 @@ class LocalPDS[A](value: A) extends IPDS[A] {
         println(result)
     }
 
-    override def sketch[R](sketcher: ISketch[A, R]): R = {
+    override def sketch[R](sketcher: ISketchh[A, R]): R = {
         return sketcher.apply(result)
     }
 }

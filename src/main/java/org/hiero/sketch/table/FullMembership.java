@@ -9,12 +9,12 @@ import org.hiero.sketch.table.api.IRowIterator;
 public class FullMembership implements IMembershipSet {
     private final int rowCount;
 
-    public FullMembership(int rowCount) {
+    public FullMembership(final int rowCount) {
         this.rowCount = rowCount;
     }
 
     @Override
-    public boolean isMember(int rowIndex) {
+    public boolean isMember(final int rowIndex) {
         return rowIndex < this.rowCount;
     }
 

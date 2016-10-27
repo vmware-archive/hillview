@@ -9,15 +9,15 @@ import java.util.HashMap;
 
 public final class Schema implements ISchema {
     /* Map a column name into an integer index */
-    private HashMap<String, Integer> index;
-    private ArrayList<ColumnDescription> columns;
+    private final HashMap<String, Integer> index;
+    private final ArrayList<ColumnDescription> columns;
 
     public Schema() {
         this.columns = new ArrayList<ColumnDescription>();
         this.index = new HashMap<String, Integer>();
     }
 
-    public void append(ColumnDescription desc) {
+    public void append(final ColumnDescription desc) {
         if (this.index.containsKey(desc.name))
             throw new InvalidParameterException("Column with name " + desc.name + " already exists");
         this.columns.add(desc);
@@ -25,7 +25,7 @@ public final class Schema implements ISchema {
     }
 
     @Override
-    public ColumnDescription getDescription(int index) {
+    public ColumnDescription getDescription(final int index) {
         return this.columns.get(index);
     }
 
@@ -40,7 +40,7 @@ public final class Schema implements ISchema {
      * @return The column index, or -1 if the column is not present.
      */
     @Override
-    public int getColumnIndex(String columnName) {
+    public int getColumnIndex(final String columnName) {
         return this.index.getOrDefault(columnName, -1);
     }
 
@@ -48,7 +48,7 @@ public final class Schema implements ISchema {
     public String toString() {
         String result = "";
         String separator = "";
-        for (ColumnDescription c : this.columns) {
+        for (final ColumnDescription c : this.columns) {
             result += separator + c.toString();
             separator = ", ";
         }

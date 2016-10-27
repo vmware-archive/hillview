@@ -8,33 +8,33 @@ import java.util.ArrayList;
  * A column of Strings that can grow in size.
  */
 public class StringListColumn extends BaseListColumn {
-    private ArrayList<String[]> segments;
+    private final ArrayList<String[]> segments;
 
-    public StringListColumn(ColumnDescription desc) {
+    public StringListColumn(final ColumnDescription desc) {
         super(desc);
-        if (desc.kind != ContentsKind.String && desc.kind != ContentsKind.Json)
+        if ((desc.kind != ContentsKind.String) && (desc.kind != ContentsKind.Json))
             throw new IllegalArgumentException("Unexpected column kind " + desc.kind);
         this.segments = new ArrayList<String []>();
     }
 
     @Override
-    public String getString(int rowIndex) {
-        int segmentId = rowIndex >> LogSegmentSize;
-        int localIndex = rowIndex & SegmentMask;
+    public String getString(final int rowIndex) {
+        final int segmentId = rowIndex >> this.LogSegmentSize;
+        final int localIndex = rowIndex & this.SegmentMask;
         return this.segments.get(segmentId)[localIndex];
     }
 
     @Override
-    public double asDouble(int rowIndex, IStringConverter converter) {
-        String s = this.getString(rowIndex);
+    public double asDouble(final int rowIndex, final IStringConverter converter) {
+        final String s = this.getString(rowIndex);
         return converter.asDouble(s);
     }
 
-    public void append(String value) {
-        int segmentId = this.size >> LogSegmentSize;
-        int localIndex = this.size & SegmentMask;
+    public void append(final String value) {
+        final int segmentId = this.size >> this.LogSegmentSize;
+        final int localIndex = this.size & this.SegmentMask;
         if (this.segments.size() <= segmentId) {
-            this.segments.add(new String[SegmentSize]);
+            this.segments.add(new String[this.SegmentSize]);
             this.growPresent();
         }
         this.segments.get(segmentId)[localIndex] = value;
