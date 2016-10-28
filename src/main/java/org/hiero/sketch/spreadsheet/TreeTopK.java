@@ -16,7 +16,7 @@ public class TreeTopK<T> implements ITopK<T> {
         this.maxSize = maxSize;
         this.size = 0;
         this.greater = greater;
-        this.data = new TreeMap<T, Integer>();
+        this.data = new TreeMap<T, Integer>(this.greater);
     }
 
     @Override

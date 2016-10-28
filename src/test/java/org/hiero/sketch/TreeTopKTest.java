@@ -12,6 +12,7 @@ public class TreeTopKTest {
     public final int inpSize = 1000;
     private TreeTopK<Integer> myTree = new TreeTopK<Integer>(this.maxSize, instance);
 
+    @Test
     public void testHeapTopKZero() {
         Random rn =new Random();
         for (int j =1; j <20; j++) {
