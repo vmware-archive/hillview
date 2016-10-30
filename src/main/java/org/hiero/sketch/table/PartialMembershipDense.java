@@ -1,8 +1,12 @@
 package org.hiero.sketch.table;
 
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
 import org.scalactic.exceptions.NullArgumentException;
+
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Predicate;
 
 /**
@@ -64,6 +68,56 @@ public class PartialMembershipDense implements IMembershipSet {
         }
     }
 
+    /**
+     * @return A sample of k items from the membership set. The sample is with replacement so may
+     * contain less than k distinct elements. The sample is obtained by sampling k items from the
+     * base map and filtering it. This is done 10 times, if k samples had been found the function
+     * gives up and returns whatever was found. This will happen if the membership is sparse.
+     */
+    @Override
+    public IMembershipSet sample(int k) {
+        int samples = 0;
+        IMembershipSet batchSet;
+        IntOpenHashSet sampleSet = new IntOpenHashSet();
+        for (int attempt = 0; attempt < 10; attempt++) {
+            batchSet = this.baseMap.sample(k);
+            IRowIterator it = batchSet.getIterator();
+            int tmprow = it.getNextRow();
+            while (tmprow >= 0) {
+                if (isMember(tmprow)) {
+                    sampleSet.add(tmprow);
+                    samples++;
+                    if (samples == k)
+                        return new PartialMembershipSparse(sampleSet);
+                }
+                tmprow = it.getNextRow();
+            }
+        }
+        return new PartialMembershipSparse(sampleSet);
+    }
+
+    @Override
+    public IMembershipSet sample(int k, long seed) {
+        int samples = 0;
+        IMembershipSet batchSet;
+        IntOpenHashSet sampleSet = new IntOpenHashSet();;
+        for (int attempt = 0; attempt < 10; attempt++) {
+            batchSet = this.baseMap.sample(k, seed + attempt);
+            IRowIterator it = batchSet.getIterator();
+            int tmprow = it.getNextRow();
+            while (tmprow >= 0) {
+                if (isMember(tmprow)) {
+                    sampleSet.add(tmprow);
+                    samples++;
+                    if (samples == k)
+                        return new PartialMembershipSparse(sampleSet);
+                }
+                tmprow = it.getNextRow();
+            }
+        }
+        return new PartialMembershipSparse(sampleSet);
+    }
+
     @Override
     public IRowIterator getIterator() {
         return new DenseIterator(this.baseMap, this.filter);
@@ -81,9 +135,9 @@ public class PartialMembershipDense implements IMembershipSet {
         public int getNextRow() {
             int tmp = baseIterator.getNextRow();
             while (tmp >= 0) {
-                if (filter.test(tmp))
+                if (this.filter.test(tmp))
                     return tmp;
-                tmp = baseIterator.getNextRow();
+                tmp = this.baseIterator.getNextRow();
             }
             return -1;
         }
