@@ -58,7 +58,7 @@ public class TestMonoidTopK {
         for (int j = 0; j < inpSize; j++)
             rightTree.push(rn.nextInt(inpSize));
         long startTime = System.nanoTime();
-        myTopK.Add(leftTree.getTopK(), rightTree.getTopK());
+        myTopK.add(leftTree.getTopK(), rightTree.getTopK());
         long endTime = System.nanoTime();
         //System.out.format("Time taken to merge: %d%n", (endTime - startTime) / 1000000);
     }
