@@ -15,6 +15,19 @@ public interface IMembershipSet {
      * @return Total number of elements in this membership map.
      */
     int getSize();
+
+    /**
+     * @return an ImembershipSet containing k samples from the membership map. The samples are made
+     * with replacement so may contain less than k distinct values.
+     */
+    IMembershipSet sample(int k);
+
+    /**
+     * @return an ImembershipSet containing k samples from the membership map. The samples are made
+     * with replacement so may contain less than k distinct values. The pseudo-random generated
+     * is seeded with parameter seed.
+     */
+    IMembershipSet sample(int k, long seed);
     /**
      * @return An iterator over all the rows in the membership map.
      * The iterator is initialized to point at the "first" row.

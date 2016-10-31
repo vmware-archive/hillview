@@ -3,6 +3,10 @@ package org.hiero.sketch.table;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
 
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
+
 /**
  * A IMembershipSet which contains all rows.
  */
@@ -30,6 +34,40 @@ public class FullMembership implements IMembershipSet {
     @Override
     public IRowIterator getIterator() {
         return new FullMemebershipIterator(this.rowCount);
+    }
+
+    /**
+     * Samples k items. Does not seed the random generator so generator is seeded using its default
+     * method. Sampled items are first placed in a Set. The procedure samples k times with
+     * replacement so it may be that the returned set has less than k distinct items
+     * @param k
+     * @return ImembershipSet instantiated as a Partial Sparse
+     */
+    @Override
+    public IMembershipSet sample(int k) {
+        Random randomGenerator = new Random();
+        return sampleUtil(randomGenerator, k);
+    }
+
+    /**
+     * Same as sample(k) but with the seed of the generator given as a parameter. The procedure
+     * samples k times with replacement so it return a set with less than k distinct items
+     * @param k
+     * @param seed
+     * @return ImembershipSet instantiated as a partial sparse
+     */
+    @Override
+    public IMembershipSet sample (int k, long seed) {
+        Random randomGenerator = new Random(seed);
+        return sampleUtil(randomGenerator, k);
+    }
+
+    //todo: use the best set implementation.
+    private IMembershipSet sampleUtil(Random randomGenerator, int k) {
+        Set S = new HashSet<Integer>();
+        for (int i=0; i < k; i++)
+            S.add(randomGenerator.nextInt(this.rowCount));
+        return new PartialMembershipSparse(S);
     }
 
     private static class FullMemebershipIterator implements IRowIterator {
