@@ -89,7 +89,7 @@ public class DatasetTest {
                 int sum1 = 0;
                 for (int i=left; i < right; i++)
                     sum1 += data[i];
-                return new PartialResult<Integer>((double)index / parts, sum1);
+                return new PartialResult<Integer>(1.0 / parts, sum1);
             });
         }
     }
@@ -119,6 +119,7 @@ public class DatasetTest {
         final Observable<PartialResult<Integer>> pr = ld.sketch(new Sum());
         pr.subscribe(new Subscriber<PartialResult<Integer>>() {
             private int count = 0;
+            private double done = 0.0;
 
             @Override
             public void onCompleted() {
@@ -132,11 +133,12 @@ public class DatasetTest {
 
             @Override
             public void onNext(final PartialResult<Integer> pr) {
+                done += pr.deltaDone;
+                this.count++;
                 if (this.count == 3)
                     this.unsubscribe();
                 else
-                    assertEquals(pr.deltaDone, 0.1 * this.count);
-                this.count++;
+                    assertEquals(done, 0.1 * this.count);
             }
         });
     }

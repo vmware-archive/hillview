@@ -10,7 +10,8 @@ import java.io.Serializable;
 public class PartialResult<T> implements Serializable {
     /**
      * How much more has been deltaDone from the computation has been deltaDone
-     * since the previous partial result.  A number between 0 and 1.
+     * since the previous partial result.  A number between 0 and 1.  Even if this
+     * is 1, it does not necessarily mean that the work is finished.
      */
     public final double deltaDone;
     /**
@@ -24,11 +25,12 @@ public class PartialResult<T> implements Serializable {
      * @param deltaValue Extra result produced.
      */
     public PartialResult(double deltaDone, final T deltaValue) {
-        if (deltaDone < 0)
-            deltaDone = 0.0;
-        else if (deltaDone > 1)
+        if (deltaDone < 0) {
+            throw new RuntimeException("Illegal value for deltaDone");
+        } else if (deltaDone > 1) {
             // This can happen due to double addition imprecision.
             deltaDone = 1.0;
+        }
         this.deltaDone = deltaDone;
         this.deltaValue = deltaValue;
     }

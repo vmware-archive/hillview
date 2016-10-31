@@ -25,7 +25,7 @@ public class ParallelDataSet<T> implements IDataSet<T> {
     public <S> Observable<PartialResult<IDataSet<S>>> map(final IMap<T, S> mapper) {
         final ArrayList<Observable<Pair<Integer, PartialResult<IDataSet<S>>>>> obs =
                 new ArrayList<Observable<Pair<Integer, PartialResult<IDataSet<S>>>>>(this.size());
-        for (int i=0; i < this.size(); i++) {
+        for (int i = 0; i < this.size(); i++) {
             final int finalI = i;
             final Observable<Pair<Integer, PartialResult<IDataSet<S>>>> ci =
                     this.children.get(i)
@@ -57,7 +57,7 @@ public class ParallelDataSet<T> implements IDataSet<T> {
                     mySize + " vs. " + os.size());
         final ArrayList<Observable<Pair<Integer, PartialResult<IDataSet<Pair<T, S>>>>>> obs =
                 new ArrayList<Observable<Pair<Integer, PartialResult<IDataSet<Pair<T, S>>>>>>();
-        for (int i=0; i < mySize; i++) {
+        for (int i = 0; i < mySize; i++) {
             final IDataSet<S> oChild = os.children.get(i);
             final IDataSet<T> tChild = this.children.get(i);
             final Observable<PartialResult<IDataSet<Pair<T, S>>>> zip = tChild.zip(oChild).last();
@@ -68,7 +68,7 @@ public class ParallelDataSet<T> implements IDataSet<T> {
         final Observable<Pair<Integer, PartialResult<IDataSet<Pair<T, S>>>>> merged =
                 Observable.merge(obs);
 
-        final Observable<PartialResult<IDataSet<Pair<T, S>>>> map =
+        final Observable<PartialResult<IDataSet<Pair<T, S>>>> result =
                 merged.filter(p -> p.second.deltaValue != null)
                 .toMap(p -> p.first, p -> p.second.deltaValue)
                 .single()
@@ -77,14 +77,14 @@ public class ParallelDataSet<T> implements IDataSet<T> {
         final Observable<PartialResult<IDataSet<Pair<T, S>>>> dones =
                 merged.map(p -> p.second.deltaDone / this.size())
                         .map(e -> new PartialResult<IDataSet<Pair<T, S>>>(e, null));
-        return dones.concatWith(map);
+        return dones.concatWith(result);
     }
 
     @Override
     public <R> Observable<PartialResult<R>> sketch(final ISketch<T, R> sketch) {
         final ArrayList<Observable<PartialResult<R>>> obs = new ArrayList<Observable<PartialResult<R>>>();
         final int mySize = this.size();
-        for (int i=0; i < mySize; i++) {
+        for (int i = 0; i < mySize; i++) {
             final IDataSet<T> child = this.children.get(i);
             final Observable<PartialResult<R>> sk =
                     child.sketch(sketch)
