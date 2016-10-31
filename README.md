@@ -132,3 +132,19 @@ https://help.github.com/articles/fork-a-repo/
 * Run IntelliJ code inspection (Analyze/Inspect code) before commit and solve all open issues
 * When you make changes you can submit them into your own fork
 * After committing changes, create a pull request (using the github web UI)
+
+In more detail, here is a step-by-step guide to commititng changes:
+
+1) git add <files that changed>
+
+2) git commit -m "Description of commit" (This commits to your  local repository)
+
+3) git push origin master (This commits to your own remote repository)
+
+4) git fetch upsteam (To get the upstream version)
+
+5) git merge upstream/master
+
+6) Resolve conflicts if any and if needed, repeat 1-3.
+
+7) Create a pull request.
