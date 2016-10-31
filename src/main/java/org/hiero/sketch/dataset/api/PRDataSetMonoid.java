@@ -6,6 +6,6 @@ package org.hiero.sketch.dataset.api;
  */
 public class PRDataSetMonoid<S> extends PartialResultMonoid<IDataSet<S>> {
     public PRDataSetMonoid() {
-        super(new NullMonoid<IDataSet<S>>());
+        super(new OptionMonoid<IDataSet<S>>());
     }
 }

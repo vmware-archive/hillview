@@ -15,12 +15,12 @@ public class LocalDataSet<T> implements IDataSet<T> {
     public <S> Observable<PartialResult<IDataSet<S>>> map(final IMap<T, S> mapper) {
         final PartialResult<S> initial = new PartialResult<S>(0.0, null);
         final Observable<PartialResult<S>> start = Observable.just(initial);
-        final Observable<PartialResult<S>> trsf = mapper.apply(this.data);
-        final Observable<PartialResult<S>> chain = start.concatWith(trsf);
+        final Observable<PartialResult<S>> mapResult = mapper.apply(this.data);
+        final Observable<PartialResult<S>> chain = start.concatWith(mapResult);
         final Observable<PartialResult<IDataSet<S>>> progress =
                 chain.map(e -> new PartialResult<IDataSet<S>>(e.deltaDone, null));
-        final PartialResultMonoid<S> mono = new PartialResultMonoid<S>(new NullMonoid<S>());
-        final Observable<PartialResult<S>> last = chain.reduce(mono.zero(), mono::add);
+        final PartialResultMonoid<S> monoid = new PartialResultMonoid<S>(new OptionMonoid<S>());
+        final Observable<PartialResult<S>> last = chain.reduce(monoid.zero(), monoid::add);
         return progress.concatWith(last.map(e ->
                 new PartialResult<IDataSet<S>>(0.0, new LocalDataSet<S>(e.deltaValue))));
     }
