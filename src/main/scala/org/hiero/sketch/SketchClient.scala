@@ -7,7 +7,7 @@ import scala.collection.mutable.ListBuffer
   * to a server. It operates on a list of integers,
   * and increments them by 1.
   */
-class IncrementingMap extends IMap[List[Int], List[Int]] {
+class IncrementingMap extends IMapp[List[Int], List[Int]] {
     override def map(value: List[Int]): List[Int] = {
         val out = new ListBuffer[Int]()
         for (i <- value) {
@@ -21,7 +21,7 @@ class IncrementingMap extends IMap[List[Int], List[Int]] {
   * An example Sketch function that can be issued
   * to a server. It sums up a list of integers.
   */
-class SummationSketch extends ISketch[List[Int], Int] {
+class SummationSketch extends ISketchh[List[Int], Int] {
     override def apply(data: List[Int]): Int = {
         var total = 0
         for (i <- data) {

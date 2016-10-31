@@ -14,21 +14,21 @@ import static junit.framework.TestCase.assertTrue;
  */
 class DoubleArrayTest {
     private final int size = 100;
-    private ColumnDescription desc = new ColumnDescription("test", ContentsKind.Double, true);
+    private final ColumnDescription desc = new ColumnDescription("test", ContentsKind.Double, true);
 
     /* Test for constructor using length and no arrays*/
     @Test
     public void testDoubleArrayZero() {
-        DoubleArrayColumn col = new DoubleArrayColumn(desc, size);
-        for (int i = 0; i < size; i++) {
+        final DoubleArrayColumn col = new DoubleArrayColumn(this.desc, this.size);
+        for (int i = 0; i < this.size; i++) {
             col.set(i, Math.sqrt(i+1));
-            if (i % 5 == 0)
+            if ((i % 5) == 0)
                 col.setMissing(i);
         }
-        assertEquals(col.sizeInRows(), size);
-        for (int i = 0; i < size; i++) {
+        assertEquals(col.sizeInRows(), this.size);
+        for (int i = 0; i < this.size; i++) {
             assertEquals(Math.sqrt(i+1), col.getDouble(i));
-            if (i % 5 == 0)
+            if ((i % 5) == 0)
                 assertTrue(col.isMissing(i));
             else
                 assertFalse(col.isMissing(i));
@@ -38,18 +38,18 @@ class DoubleArrayTest {
     /* Test for constructor using data array */
     @Test
     public void testDoubleArrayOne() {
-        double[] data = new double[size];
-        for (int i = 0; i < size; i++)
+        final double[] data = new double[this.size];
+        for (int i = 0; i < this.size; i++)
             data[i] = Math.sqrt(i+1);
-        DoubleArrayColumn col = new DoubleArrayColumn(desc, data);
-        for (int i = 0; i < size; i++)
-            if (i % 5 == 0)
+        final DoubleArrayColumn col = new DoubleArrayColumn(this.desc, data);
+        for (int i = 0; i < this.size; i++)
+            if ((i % 5) == 0)
                 col.setMissing(i);
-        assertEquals(col.sizeInRows(), size);
-        for (int i = 0; i < size; i++) {
+        assertEquals(col.sizeInRows(), this.size);
+        for (int i = 0; i < this.size; i++) {
             assertEquals(Math.sqrt(i+1), col.getDouble(i));
             //System.out.println(col.getDouble(i));
-            if (i % 5 == 0)
+            if ((i % 5) == 0)
                 assertTrue(col.isMissing(i));
             else
                 assertFalse(col.isMissing(i));
@@ -59,18 +59,18 @@ class DoubleArrayTest {
     /* Test for constructor using two arrays: data and missing values*/
     @Test
     public void testDoubleArrayTwo() {
-        double[] data = new double[size];
-        BitSet missing = new BitSet(size);
-        for (int i = 0; i < size; i++) {
+        final double[] data = new double[this.size];
+        final BitSet missing = new BitSet(this.size);
+        for (int i = 0; i < this.size; i++) {
             data[i] = Math.sqrt(i+1);
-            if (i % 5 == 0)
+            if ((i % 5) == 0)
                 missing.set(i);
         }
-        DoubleArrayColumn col = new DoubleArrayColumn(desc, data, missing);
-        assertEquals(col.sizeInRows(), size);
-        for (int i = 0; i < size; i++) {
+        final DoubleArrayColumn col = new DoubleArrayColumn(this.desc, data, missing);
+        assertEquals(col.sizeInRows(), this.size);
+        for (int i = 0; i < this.size; i++) {
             assertEquals(Math.sqrt(i+1), col.getDouble(i));
-            if (i % 5 == 0)
+            if ((i % 5) == 0)
                 assertTrue(col.isMissing(i));
             else
                 assertFalse(col.isMissing(i));

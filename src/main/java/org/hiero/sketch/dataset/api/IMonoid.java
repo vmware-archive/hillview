@@ -1,10 +1,18 @@
 package org.hiero.sketch.dataset.api;
 
+import rx.Observable;
+
+import java.io.Serializable;
+
 /**
- * A monoid structure
- * @param <R> Concrete representation of a monoid's elements.
+ * A monoid structure.
+ * @param <R> Type of data representing an element of the monoid.
  */
-public interface IMonoid<R> {
-    R Zero();
-    R Add(R left, R right);
+public interface IMonoid<R> extends Serializable {
+    R zero();
+    R add(R left, R right);
+
+    static <T> Observable<T> scan(final Observable<T> obs, final IMonoid<T> monoid) {
+        return obs.scan(monoid.zero(), monoid::add);
+    }
 }
