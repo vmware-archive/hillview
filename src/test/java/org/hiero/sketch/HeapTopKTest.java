@@ -2,18 +2,17 @@ package org.hiero.sketch;
 import org.hiero.sketch.spreadsheet.HeapTopK;
 import org.junit.Test;
 import java.util.Random;
-import static org.hiero.sketch.MyCompare.instance;
+
 /**
  * Tests for HashMap Implementation of TopK
  */
 public class HeapTopKTest {
-    public final int maxSize = 10;
-    public final int inpSize = 1000;
-    private HeapTopK<Integer> myHeap = new HeapTopK<Integer>(this.maxSize, instance);
+    private final int maxSize = 10;
+    private final HeapTopK<Integer> myHeap = new HeapTopK<Integer>(this.maxSize, MyCompare.instance);
 
     @Test
     public void testHeapTopKZero() {
-        Random rn =new Random();
+        final Random rn =new Random();
         for (int j =1; j <20; j++) {
             for (int i = 1; i < 1000; i++)
                 this.myHeap.push(rn.nextInt(10000));
@@ -23,11 +22,12 @@ public class HeapTopKTest {
 
     @Test
     public void testHeapTopKTimed() {
-        Random rn = new Random();
-        long startTime = System.nanoTime();
-        for (int j = 1; j < this.inpSize; j++)
-            this.myHeap.push(rn.nextInt(this.inpSize));
-        long endTime = System.nanoTime();
+        final Random rn = new Random();
+        final long startTime = System.nanoTime();
+        int inpSize = 1000;
+        for (int j = 1; j < inpSize; j++)
+            this.myHeap.push(rn.nextInt(inpSize));
+        final long endTime = System.nanoTime();
         //System.out.format("Largest: %d%n", myHeap.getTopK().lastKey());
         //System.out.format("Time taken by HashMap: %d%n", (endTime - startTime) / 1000000);
     }

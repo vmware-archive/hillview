@@ -11,15 +11,15 @@ import java.util.TreeMap;
  * @param <T> Type of items in sorted list.
  */
 public class MonoidTopK<T> implements IMonoid<SortedMap<T, Integer>> {
-    private int maxSize;
-    private Comparator<T> greater;
+    private final int maxSize;
+    private final Comparator<T> greater;
 
     /**
      * Create a TopK monoid.
      * @param maxSize: this is K, the size of the list
      * @param greater: this is the comparison operator for deciding the top K
      */
-    public MonoidTopK(int maxSize, Comparator<T> greater) {
+    public MonoidTopK(final int maxSize, final Comparator<T> greater) {
         this.maxSize = maxSize;
         this.greater = greater;
     }
@@ -36,14 +36,14 @@ public class MonoidTopK<T> implements IMonoid<SortedMap<T, Integer>> {
      * Addition is merge sort.
      */
     @Override
-    public SortedMap<T, Integer> add(SortedMap<T, Integer> left, SortedMap<T, Integer> right) {
-        Iterator<T> itLeft = left.keySet().iterator();
-        Iterator<T> itRight = right.keySet().iterator();
+    public SortedMap<T, Integer> add(final SortedMap<T, Integer> left, final SortedMap<T, Integer> right) {
+        final Iterator<T> itLeft = left.keySet().iterator();
+        final Iterator<T> itRight = right.keySet().iterator();
         T leftKey = (itLeft.hasNext())? itLeft.next(): null;
         T rightKey = (itRight.hasNext())? itRight.next(): null;
-        TreeMap<T, Integer> mergedMap = new TreeMap<T, Integer>(this.greater);
+        final TreeMap<T, Integer> mergedMap = new TreeMap<T, Integer>(this.greater);
 
-        while((mergedMap.size() < maxSize) && ((leftKey != null)||(rightKey != null))) {
+        while((mergedMap.size() < this.maxSize) && ((leftKey != null)||(rightKey != null))) {
             if (leftKey == null) {
                 mergedMap.put(rightKey, right.get(rightKey));
                 rightKey = (itRight.hasNext()) ? itRight.next() : null;
@@ -51,10 +51,10 @@ public class MonoidTopK<T> implements IMonoid<SortedMap<T, Integer>> {
                 mergedMap.put(leftKey, left.get(leftKey));
                 leftKey = (itLeft.hasNext()) ? itLeft.next() : null;
             } else {
-                if (greater.compare(leftKey, rightKey) == 1) {
+                if (this.greater.compare(leftKey, rightKey) == 1) {
                     mergedMap.put(rightKey, right.get(rightKey));
                     rightKey = (itRight.hasNext()) ? itRight.next() : null;
-                } else if (greater.compare(leftKey, rightKey) == -1) {
+                } else if (this.greater.compare(leftKey, rightKey) == -1) {
                     mergedMap.put(leftKey, left.get(leftKey));
                     leftKey = (itLeft.hasNext()) ? itLeft.next() : null;
                 } else { //Keys are equal

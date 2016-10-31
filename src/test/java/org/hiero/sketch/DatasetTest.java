@@ -133,12 +133,12 @@ public class DatasetTest {
 
             @Override
             public void onNext(final PartialResult<Integer> pr) {
-                done += pr.deltaDone;
+                this.done += pr.deltaDone;
                 this.count++;
                 if (this.count == 3)
                     this.unsubscribe();
                 else
-                    assertEquals(done, 0.1 * this.count);
+                    assertEquals(this.done, 0.1 * this.count);
             }
         });
     }
