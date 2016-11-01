@@ -2,6 +2,7 @@ package org.hiero.sketch.table;
 
 import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.IStringConverter;
+import org.hiero.sketch.table.api.RowComparator;
 
 import java.security.InvalidParameterException;
 import java.util.BitSet;
@@ -53,7 +54,6 @@ public final class StringArrayColumn extends BaseArrayColumn {
         return this.data[rowIndex];
     }
 
-    @Override
     public double asDouble(int rowIndex, IStringConverter conv) {
         String tmp = this.data[rowIndex];
         return conv.asDouble(tmp);
@@ -61,5 +61,14 @@ public final class StringArrayColumn extends BaseArrayColumn {
 
     public void set(int rowIndex, String value) {
         this.data[rowIndex] = value;
+    }
+
+    public RowComparator getComparator() {
+        return new RowComparator() {
+            @Override
+            public int compare(Integer i, Integer j) {
+                return data[i].compareTo(data[j]);
+            }
+        };
     }
 }

@@ -10,7 +10,7 @@ import static org.hiero.sketch.MyCompare.instance;
 public class TreeTopKTest {
     public final int maxSize = 10;
     public final int inpSize = 1000;
-    private TreeTopK<Integer> myTree = new TreeTopK<Integer>(this.maxSize, instance);
+    private TreeTopK<Integer> myTree = new TreeTopK<Integer>(this.maxSize, instance.reversed());
 
     @Test
     public void testHeapTopKZero() {

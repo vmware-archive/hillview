@@ -43,4 +43,5 @@ abstract class BaseColumn implements IColumn {
     }
 
     public boolean isMissing(int rowIndex) { throw new UnsupportedOperationException(); }
+
 }

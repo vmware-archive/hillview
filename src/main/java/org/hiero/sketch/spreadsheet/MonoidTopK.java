@@ -8,13 +8,15 @@ import java.util.TreeMap;
 
 /**
  * Implements the TopK monoid.
- * @param maxSize: this is K, the size of the list
- * @param Comparator: this is the comparison operator for deciding the top K
  */
 public class MonoidTopK<T> implements IMonoid<SortedMap<T, Integer>> {
     private int maxSize;
     private Comparator<T> greater;
 
+    /**
+     * @param maxSize: this is K, the size of the list
+     * @param greater: this is the comparison operator for deciding the top K
+     */
     public MonoidTopK(int maxSize, Comparator<T> greater) {
         this.maxSize = maxSize;
         this.greater = greater;

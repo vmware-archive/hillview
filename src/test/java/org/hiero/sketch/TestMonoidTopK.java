@@ -6,10 +6,10 @@ import org.junit.Test;
 import java.util.Random;
 
 public class TestMonoidTopK {
-    public int maxSize =1000;
-    public int lSize;
-    public int rSize;
-    public final int inpSize = 10000;
+    private int maxSize =1000;
+    private int lSize;
+    private int rSize;
+    private final int inpSize = 10000;
     private TreeTopK<Integer> leftTree;
     private TreeTopK<Integer> rightTree;
     MonoidTopK<Integer> myTopK = new MonoidTopK<Integer>(maxSize, MyCompare.instance);

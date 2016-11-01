@@ -2,6 +2,7 @@ package org.hiero.sketch.table;
 
 import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.IStringConverter;
+import org.hiero.sketch.table.api.RowComparator;
 
 import java.security.InvalidParameterException;
 import java.util.BitSet;
@@ -59,5 +60,14 @@ public final class DateArrayColumn extends BaseArrayColumn {
 
     public void set(int rowIndex, Date value) {
         this.data[rowIndex] = value;
+    }
+
+    public RowComparator getComparator() {
+        return new RowComparator() {
+            @Override
+            public int compare(Integer i, Integer j) {
+                return Double.compare(asDouble(i, null), asDouble(j, null));
+            }
+        };
     }
 }
