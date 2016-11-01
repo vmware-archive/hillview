@@ -2,6 +2,7 @@ package org.hiero.sketch.table;
 
 import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.IStringConverter;
+import org.hiero.sketch.table.api.RowComparator;
 
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
@@ -28,6 +29,16 @@ public final class IntListColumn extends BaseListColumn {
 
     public double asDouble(final int rowIndex, final IStringConverter unused) {
         return this.getInt(rowIndex);
+    }
+
+    @Override
+    public RowComparator getComparator() {
+        return new RowComparator() {
+            @Override
+            public int compare(final Integer i, final Integer j) {
+                return Integer.compare(IntListColumn.this.getInt(i), IntListColumn.this.getInt(j));
+            }
+        };
     }
 
     public void append(final int value) {

@@ -15,9 +15,9 @@ public class MonoidTopK<T> implements IMonoid<SortedMap<T, Integer>> {
     private final Comparator<T> greater;
 
     /**
-     * Create a TopK monoid.
-     * @param maxSize: this is K, the size of the list
-     * @param greater: this is the comparison operator for deciding the top K
+     *
+     * @param maxSize the K in TopK, the size of the list.
+     * @param greater The greaterThan comparator, we want the smallest elements in this order.
      */
     public MonoidTopK(final int maxSize, final Comparator<T> greater) {
         this.maxSize = maxSize;
