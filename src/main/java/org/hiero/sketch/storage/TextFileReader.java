@@ -13,15 +13,15 @@ import java.nio.file.Path;
  * Reads a newline-separated text file into a string column.
  */
 public class TextFileReader {
-    Path file;
-    TextFileReader(Path filename) {
+    private final Path file;
+    TextFileReader(final Path filename) {
         this.file = filename;
     }
 
-    IColumn readFile(String columnName) throws IOException {
-        ColumnDescription desc = new ColumnDescription(columnName, ContentsKind.String, false);
-        StringListColumn result = new StringListColumn(desc);
-        Files.lines(this.file).forEach(l -> result.append(l));
+    IColumn readFile(final String columnName) throws IOException {
+        final ColumnDescription desc = new ColumnDescription(columnName, ContentsKind.String, false);
+        final StringListColumn result = new StringListColumn(desc);
+        Files.lines(this.file).forEach(result::append);
         return result;
     }
 }

@@ -11,9 +11,9 @@ import java.util.Date;
  * A column of Dates that can grow in size.
  */
 public class DateListColumn extends BaseListColumn {
-    private ArrayList<Date[]> segments;
+    private final ArrayList<Date[]> segments;
 
-    public DateListColumn(ColumnDescription desc) {
+    public DateListColumn(final ColumnDescription desc) {
         super(desc);
         if (desc.kind != ContentsKind.Date)
             throw new IllegalArgumentException("Unexpected column kind " + desc.kind);
@@ -21,23 +21,23 @@ public class DateListColumn extends BaseListColumn {
     }
 
     @Override
-    public Date getDate(int rowIndex) {
-        int segmentId = rowIndex >> LogSegmentSize;
-        int localIndex = rowIndex & SegmentMask;
+    public Date getDate(final int rowIndex) {
+        final int segmentId = rowIndex >> this.LogSegmentSize;
+        final int localIndex = rowIndex & this.SegmentMask;
         return this.segments.get(segmentId)[localIndex];
     }
 
     @Override
-    public double asDouble(int rowIndex, IStringConverter unused) {
-        Date s = this.getDate(rowIndex);
+    public double asDouble(final int rowIndex, final IStringConverter unused) {
+        final Date s = this.getDate(rowIndex);
         return Converters.toDouble(s);
     }
 
-    public void append(Date value) {
-        int segmentId = this.size >> LogSegmentSize;
-        int localIndex = this.size & SegmentMask;
+    public void append(final Date value) {
+        final int segmentId = this.size >> this.LogSegmentSize;
+        final int localIndex = this.size & this.SegmentMask;
         if (this.segments.size() <= segmentId) {
-            this.segments.add(new Date[SegmentSize]);
+            this.segments.add(new Date[this.SegmentSize]);
             this.growPresent();
         }
         this.segments.get(segmentId)[localIndex] = value;

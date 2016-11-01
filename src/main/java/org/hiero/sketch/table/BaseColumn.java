@@ -11,7 +11,7 @@ import java.util.Date;
 abstract class BaseColumn implements IColumn {
     final ColumnDescription description;
 
-    BaseColumn(ColumnDescription description) {
+    BaseColumn(final ColumnDescription description) {
         this.description = description;
     }
 
@@ -19,29 +19,28 @@ abstract class BaseColumn implements IColumn {
         return this.description;
     }
 
-    public double getDouble(int rowIndex) {
+    public double getDouble(final int rowIndex) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Date getDate(int rowIndex) {
+    public Date getDate(final int rowIndex) {
         throw new UnsupportedOperationException();
     }
 
-    public int getInt(int rowIndex) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Duration getDuration(int rowIndex) {
+    public int getInt(final int rowIndex) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public String getString(int rowIndex) {
+    public Duration getDuration(final int rowIndex) {
         throw new UnsupportedOperationException();
     }
 
-    public boolean isMissing(int rowIndex) { throw new UnsupportedOperationException(); }
+    @Override
+    public String getString(final int rowIndex) {
+        throw new UnsupportedOperationException();
+    }
 
+    public boolean isMissing(final int rowIndex) { throw new UnsupportedOperationException(); }
 }

@@ -8,9 +8,9 @@ import java.util.BitSet;
  * IsMissing method in the IColumn interface.
  */
 abstract class BaseArrayColumn extends BaseColumn {
-    protected BitSet missing;
+    private BitSet missing;
 
-    BaseArrayColumn(ColumnDescription description, int size) {
+    BaseArrayColumn(final ColumnDescription description, final int size) {
         super(description);
         if (size <= 0)
             throw new InvalidParameterException("Size must be positive: " + size);
@@ -18,7 +18,7 @@ abstract class BaseArrayColumn extends BaseColumn {
             this.missing = new BitSet(size);
     }
 
-    BaseArrayColumn(ColumnDescription description, BitSet missing) {
+    BaseArrayColumn(final ColumnDescription description, final BitSet missing) {
         super(description);
         if (this.description.allowMissing)
             this.missing = missing;
@@ -27,24 +27,23 @@ abstract class BaseArrayColumn extends BaseColumn {
     }
 
     @Override
-    public boolean isMissing(int rowIndex) {
-        return missing.get(rowIndex);
+    public boolean isMissing(final int rowIndex) {
+        return this.missing.get(rowIndex);
     }
 
-    /* Set methods from Bitset class*/
-    public void setMissing(int rowIndex) {
+    public void setMissing(final int rowIndex) {
         this.missing.set(rowIndex);
     }
 
-    public void setMissing(int rowIndex, boolean val) {
+    public void setMissing(final int rowIndex, final boolean val) {
         this.missing.set(rowIndex, val);
     }
 
-    public void setMissing(int fromIndex, int toIndex) {
+    public void setMissing(final int fromIndex, final int toIndex) {
         this.missing.set(fromIndex, toIndex);
     }
 
-    public void setMissing(int fromIndex, int toIndex, boolean val) {
+    public void setMissing(final int fromIndex, final int toIndex, final boolean val) {
         this.missing.set(fromIndex, toIndex, val);
     }
 }

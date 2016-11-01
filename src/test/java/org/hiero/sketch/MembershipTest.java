@@ -6,58 +6,55 @@ import org.hiero.sketch.table.PartialMembershipSparse;
 import org.hiero.sketch.table.api.IRowIterator;
 import org.junit.Test;
 
-/*
-Test for the three Membership Classes: FullMemebers, PartialMemership{Sparse,Dense}
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertFalse;
+import static junit.framework.TestCase.assertTrue;
+
+/* Tests for the three Membership Classes:
+ * FullMembership, PartialMembershipSparse, PartialMembershipDense
  */
 public class MembershipTest {
-    private int size = 10;
+    private final int size = 10;
+
     @Test
     public void TestFullMembership() {
-        System.out.println("Testing FullMemebership");
-        FullMembership FM = new FullMembership(size);
-        IRowIterator IT = FM.getIterator();
+        final FullMembership FM = new FullMembership(this.size);
+        final IRowIterator IT = FM.getIterator();
         int tmp = IT.getNextRow();
-        while (tmp >=0 ) {
-            System.out.print(tmp+",");
+        while (tmp >= 0) {
+            //System.out.print(tmp+",");
             tmp = IT.getNextRow();
         }
-        assert(size == FM.getSize());
-        assert(FM.isMember(7));
-        assert(!FM.isMember(-2));
-        assert(!FM.isMember(-10));
+        assertEquals(this.size, FM.getSize());
+        assertTrue(FM.isMember(7));
+        assertFalse(FM.isMember(20));
     }
 
     @Test
     public void TestPartialDense() {
-        System.out.println("Testing ParialMemebershipDense");
-        FullMembership FM = new FullMembership(size);
-        PartialMembershipDense PMD = new PartialMembershipDense(FM, row -> {return row%2 == 0;});
-        assert(PMD.isMember(6));
-        assert(!PMD.isMember(7));
-        System.out.println("Size of Dense Membership is: " + PMD.getSize());
-        IRowIterator IT = PMD.getIterator();
+        final FullMembership FM = new FullMembership(this.size);
+        final PartialMembershipDense PMD = new PartialMembershipDense(FM, row -> (row % 2) == 0);
+        assertTrue(PMD.isMember(6));
+        assertFalse(PMD.isMember(7));
+        assertEquals(PMD.getSize(), 5);
+        final IRowIterator IT = PMD.getIterator();
         int tmp = IT.getNextRow();
-        while (tmp >=0 ) {
-            System.out.print(tmp+",");
+        while (tmp >= 0) {
+            //System.out.print(tmp+",");
             tmp = IT.getNextRow();
         }
-        System.out.println();
     }
 
     @Test
     public void TestPartialSparse() {
-        System.out.println("Testing ParialMemebershipSparse");
-        FullMembership FM = new FullMembership(size);
-        PartialMembershipSparse PMS = new PartialMembershipSparse(FM, row -> {return row%2 == 0;});
-        assert(PMS.isMember(6));
-        assert(!PMS.isMember(7));
-        System.out.println("Size of Sparse Membership is: " + PMS.getSize());
-        IRowIterator IT = PMS.getIterator();
+        final FullMembership FM = new FullMembership(this.size);
+        final PartialMembershipSparse PMS = new PartialMembershipSparse(FM, row -> (row % 2) == 0);
+        assertTrue(PMS.isMember(6));
+        assertFalse(PMS.isMember(7));
+        assertEquals(PMS.getSize(), 5);
+        final IRowIterator IT = PMS.getIterator();
         int tmp = IT.getNextRow();
-        while (tmp >= 0) {
-            System.out.print(tmp+",");
+        while (tmp >= 0)
             tmp = IT.getNextRow();
-        }
-        System.out.println();
     }
 }

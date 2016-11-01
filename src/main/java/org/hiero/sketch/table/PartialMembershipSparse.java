@@ -16,45 +16,45 @@ import java.util.function.Predicate;
  */
 public class PartialMembershipSparse implements IMembershipSet {
 
-    private int rowCount;
-    private Set<Integer> membershipMap;
+    private final int rowCount;
+    private final Set<Integer> membershipMap;
 
-    /* Standard way to construct this map is by supplying a memshipSet (perhaps the full one),
+    /* Standard way to construct this map is by supplying a membershipSet (perhaps the full one),
     and the filter function passed as a lambda expression*/
-    public PartialMembershipSparse(IMembershipSet baseMap, Predicate<Integer> filter)
+    public PartialMembershipSparse(final IMembershipSet baseMap, Predicate<Integer> filter)
             throws NullArgumentException {
         if (baseMap == null)
             throw new NullArgumentException("PartialMembershipDense cannot be instantiated " +
                     "without a base MembershipSet");
         if (filter == null)
-            filter = Integer -> { return true; };
-        IRowIterator baseIterator = baseMap.getIterator();
-        membershipMap = new HashSet<Integer>();
+            filter = Integer -> true;
+        final IRowIterator baseIterator = baseMap.getIterator();
+        this.membershipMap = new HashSet<Integer>();
         int tmp = baseIterator.getNextRow();
         while (tmp >= 0) {
             if (filter.test(tmp))
-                membershipMap.add(tmp);
+                this.membershipMap.add(tmp);
             tmp = baseIterator.getNextRow();
         }
-        this.rowCount = membershipMap.size();
+        this.rowCount = this.membershipMap.size();
     }
 
-    public PartialMembershipSparse(IMembershipSet baseMap) throws NullArgumentException {
+    public PartialMembershipSparse(final IMembershipSet baseMap) throws NullArgumentException {
         if (baseMap == null)
             throw new NullArgumentException("PartialMembershipDense cannot be instantiated " +
                     "without a base MembershipSet");
-        IRowIterator baseIterator = baseMap.getIterator();
-        membershipMap = new HashSet<Integer>();
+        final IRowIterator baseIterator = baseMap.getIterator();
+        this.membershipMap = new HashSet<Integer>();
         int tmp = baseIterator.getNextRow();
         while (tmp >= 0) {
-            membershipMap.add(tmp);
+            this.membershipMap.add(tmp);
             tmp = baseIterator.getNextRow();
         }
-        this.rowCount = membershipMap.size();
+        this.rowCount = this.membershipMap.size();
     }
 
     @Override
-    public boolean isMember(int rowIndex) {
+    public boolean isMember(final int rowIndex) {
         return this.membershipMap.contains(rowIndex);
     }
 
@@ -65,15 +65,15 @@ public class PartialMembershipSparse implements IMembershipSet {
 
     @Override
     public IRowIterator getIterator() {
-        return new SparseIterator(membershipMap);
+        return new SparseIterator(this.membershipMap);
     }
 
     // Implementing the Iterator
     private static class SparseIterator implements IRowIterator {
-        private Set<Integer> mempershipMap;
-        private Iterator<Integer> myIterator;
+        private final Set<Integer> mempershipMap;
+        private final Iterator<Integer> myIterator;
 
-        public SparseIterator(Set<Integer> membershipMap) {
+        private SparseIterator(final Set<Integer> membershipMap) {
             this.mempershipMap = membershipMap;
             this.myIterator = membershipMap.iterator();
         }
