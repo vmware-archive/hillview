@@ -47,8 +47,8 @@ public class DateListColumn extends BaseListColumn {
     public RowComparator getComparator() {
         return new RowComparator() {
             @Override
-            public int compare(Integer i, Integer j) {
-                return Double.compare(asDouble(i, null), asDouble(j, null));
+            public int compare(final Integer i, final Integer j) {
+                return DateListColumn.this.getDate(i).compareTo(DateListColumn.this.getDate(j));
             }
         };
     }

@@ -7,7 +7,7 @@ import java.util.Random;
  * Tests for TreeMap implementation f TopK.
  */
 public class TreeTopKTest {
-    public final int maxSize = 10;
+    private final int maxSize = 10;
     public final int inpSize = 1000;
     private final TreeTopK<Integer> myTree = new TreeTopK<Integer>(this.maxSize, MyCompare.instance);
 
@@ -24,12 +24,12 @@ public class TreeTopKTest {
     @Test
     public void testTreeTopKTimed() {
         final Random rn = new Random();
+        final int inpSize = 1000000;
         final long startTime = System.nanoTime();
-        int inpSize = 1000;
         for (int j = 1; j < inpSize; j++)
             this.myTree.push(rn.nextInt(inpSize));
         final long endTime = System.nanoTime();
+        PerfRegressionTest.comparePerf(endTime - startTime);
         //System.out.format("Largest: %d%n", myTree.getTopK().lastKey());
-        //System.out.format("Time taken by tree: %d%n", (endTime - startTime) / 1000000);
     }
 }

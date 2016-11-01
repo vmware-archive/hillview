@@ -45,8 +45,8 @@ public class DoubleListColumn extends BaseListColumn {
     public RowComparator getComparator() {
         return new RowComparator() {
             @Override
-            public int compare(Integer i, Integer j) {
-                return Double.compare(getDouble(i), getDouble(j));
+            public int compare(final Integer i, final Integer j) {
+                return Double.compare(DoubleListColumn.this.getDouble(i), DoubleListColumn.this.getDouble(j));
             }
         };
     }

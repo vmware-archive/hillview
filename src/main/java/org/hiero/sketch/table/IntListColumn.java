@@ -35,8 +35,8 @@ public final class IntListColumn extends BaseListColumn {
     public RowComparator getComparator() {
         return new RowComparator() {
             @Override
-            public int compare(Integer i, Integer j) {
-                return Integer.compare(getInt(i), getInt(j));
+            public int compare(final Integer i, final Integer j) {
+                return Integer.compare(IntListColumn.this.getInt(i), IntListColumn.this.getInt(j));
             }
         };
     }

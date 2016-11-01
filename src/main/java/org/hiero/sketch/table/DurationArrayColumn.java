@@ -57,8 +57,8 @@ public final class DurationArrayColumn extends BaseArrayColumn {
     public RowComparator getComparator() {
         return new RowComparator() {
             @Override
-            public int compare(Integer i, Integer j) {
-                return Double.compare(asDouble(i, null), asDouble(j, null));
+            public int compare(final Integer i, final Integer j) {
+                return DurationArrayColumn.this.getDuration(i).compareTo(DurationArrayColumn.this.getDuration(j));
             }
         };
     }

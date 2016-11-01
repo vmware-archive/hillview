@@ -8,7 +8,7 @@ import java.security.InvalidParameterException;
 import java.util.BitSet;
 
 /**
- * Column of Strings, implemented as an array of strings and a Bitvector of missing values.
+ * Column of Strings, implemented as an array of strings and a bit vector of missing values.
  * Allows ContentsKind String or Json
  */
 public final class StringArrayColumn extends BaseArrayColumn {
@@ -62,8 +62,8 @@ public final class StringArrayColumn extends BaseArrayColumn {
     public RowComparator getComparator() {
         return new RowComparator() {
             @Override
-            public int compare(Integer i, Integer j) {
-                return data[i].compareTo(data[j]);
+            public int compare(final Integer i, final Integer j) {
+                return StringArrayColumn.this.data[i].compareTo(StringArrayColumn.this.data[j]);
             }
         };
     }

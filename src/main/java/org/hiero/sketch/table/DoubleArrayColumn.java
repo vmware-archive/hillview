@@ -51,8 +51,8 @@ public final class DoubleArrayColumn extends BaseArrayColumn {
     public RowComparator getComparator() {
         return new RowComparator() {
             @Override
-            public int compare(Integer i, Integer j) {
-                return Double.compare(data[i], data[j]);
+            public int compare(final Integer i, final Integer j) {
+                return Double.compare(DoubleArrayColumn.this.data[i], DoubleArrayColumn.this.data[j]);
             }
         };
     }

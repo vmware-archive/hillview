@@ -46,8 +46,8 @@ public class StringListColumn extends BaseListColumn {
     public RowComparator getComparator() {
         return new RowComparator() {
             @Override
-            public int compare(Integer i, Integer j) {
-                return getString(i).compareTo(getString(j));
+            public int compare(final Integer i, final Integer j) {
+                return StringListColumn.this.getString(i).compareTo(StringListColumn.this.getString(j));
             }
         };
     }

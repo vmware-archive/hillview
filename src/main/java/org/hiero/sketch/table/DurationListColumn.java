@@ -47,8 +47,8 @@ public class DurationListColumn extends BaseListColumn {
     public RowComparator getComparator() {
         return new RowComparator() {
             @Override
-            public int compare(Integer i, Integer j) {
-                return Double.compare(asDouble(i, null), asDouble(j, null));
+            public int compare(final Integer i, final Integer j) {
+                return DurationListColumn.this.getDuration(i).compareTo(DurationListColumn.this.getDuration(j));
             }
         };
     }

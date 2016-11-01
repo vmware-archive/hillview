@@ -60,6 +60,7 @@ public class TestMonoidTopK {
         final long startTime = System.nanoTime();
         this.myTopK.add(this.leftTree.getTopK(), this.rightTree.getTopK());
         final long endTime = System.nanoTime();
+        PerfRegressionTest.comparePerf(endTime - startTime);
         //System.out.format("Time taken to merge: %d%n", (endTime - startTime) / 1000000);
     }
 }
