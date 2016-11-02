@@ -6,33 +6,30 @@ import org.junit.Test;
 import java.util.Random;
 
 public class TreeVsHeapTest {
-    final int inpSize = 1000;
-    private final int maxSize = 100;
-    private int[] randInp = new int[inpSize];
-    private TreeTopK<Integer> myTree;
-    private HeapTopK<Integer> myHeap;
-    final Random rn = new Random();
-    private long startTime, endTime;
+    private final int inpSize = 1000;
+    private final int[] randInp = new int[this.inpSize];
+    private final Random rn = new Random();
 
     @Test
     public void TreeVsHeapOne() {
-        for (int i = 1; i < 1; i++) {
-            myTree = new TreeTopK<Integer>(this.maxSize, MyCompare.instance);
-            myHeap = new HeapTopK<Integer>(this.maxSize, MyCompare.instance);
-            for (int j = 1; j < inpSize; j++) {
-                randInp[j] = rn.nextInt(inpSize);
+        for (int i = 1; i < 10; i++) {
+            final int maxSize = 1000;
+            final TreeTopK<Integer> myTree = new TreeTopK<Integer>(maxSize, MyCompare.instance);
+            final HeapTopK<Integer> myHeap = new HeapTopK<Integer>(maxSize, MyCompare.instance);
+            for (int j = 1; j < this.inpSize; j++) {
+                this.randInp[j] = this.rn.nextInt(this.inpSize);
             }
 
-            startTime = System.nanoTime();
-            for (int j = 1; j < inpSize; j++) {
-                this.myHeap.push(randInp[j]);
+            long startTime = System.nanoTime();
+            for (int j = 1; j < this.inpSize; j++) {
+                myHeap.push(this.randInp[j]);
             }
-            endTime = System.nanoTime();
+            long endTime = System.nanoTime();
             System.out.format("Run %d: Heap takes %d ms, ",i, (endTime - startTime)/1000000);
 
             startTime = System.nanoTime();
-            for (int j = 1; j < inpSize; j++) {
-                this.myTree.push(randInp[j]);
+            for (int j = 1; j < this.inpSize; j++) {
+                myTree.push(this.randInp[j]);
             }
             endTime = System.nanoTime();
             System.out.format(" Tree takes %d ms%n", (endTime - startTime)/1000000);
