@@ -13,7 +13,7 @@ class DurationListColumn extends BaseListColumn implements IDurationColumn{
 
     public DurationListColumn(final ColumnDescription desc) {
         super(desc);
-        if (desc.kind != ContentsKind.TimeDuration)
+        if (desc.kind != ContentsKind.Duration)
             throw new IllegalArgumentException("Unexpected column kind " + desc.kind);
         this.segments = new ArrayList<Duration []>();
     }
