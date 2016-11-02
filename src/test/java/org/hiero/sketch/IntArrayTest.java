@@ -6,6 +6,8 @@ import org.hiero.sketch.table.api.ContentsKind;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertFalse;
+import static junit.framework.TestCase.assertTrue;
 
 /**
  * Test for IntArrayColumn class
@@ -25,11 +27,12 @@ class IntArrayTest {
         }
         assertEquals(col.sizeInRows(), this.size);
         for (int i = 0; i < this.size; i++) {
-            assertEquals(i, col.getInt(i));
             if ((i % 5) == 0)
-                assertEquals(true, col.isMissing(i));
-            else
-                assertEquals(false, col.isMissing(i));
+                assertTrue(col.isMissing(i));
+            else {
+                assertFalse(col.isMissing(i));
+                assertEquals(i, col.getInt(i));
+            }
         }
     }
 
