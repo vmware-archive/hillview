@@ -13,7 +13,7 @@ public final class DurationArrayColumn extends BaseArrayColumn implements IDurat
     private final Duration[] data;
 
     private void validate() {
-        if (this.description.kind != ContentsKind.TimeDuration)
+        if (this.description.kind != ContentsKind.Duration)
             throw new InvalidParameterException("Kind should be Time Duration"
                     + this.description.kind);
     }
