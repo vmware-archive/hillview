@@ -4,8 +4,8 @@ import java.security.InvalidParameterException;
 import java.util.BitSet;
 
 /**
- * Adds a BitSet missing to BaseColumn (if missing values are allowed) to evaluate the
- * IsMissing method in the IColumn interface.
+ * Adds a BitSet missing to BaseColumn for integers and doubles (if missing values are allowed)
+ * to evaluate the IsMissing method in the IColumn interface.
  */
 abstract class BaseArrayColumn extends BaseColumn {
     private BitSet missing;
@@ -14,16 +14,8 @@ abstract class BaseArrayColumn extends BaseColumn {
         super(description);
         if (size <= 0)
             throw new InvalidParameterException("Size must be positive: " + size);
-        if (this.description.allowMissing)
+        if (this.description.allowMissing && !this.description.kind.isObject())
             this.missing = new BitSet(size);
-    }
-
-    BaseArrayColumn(final ColumnDescription description, final BitSet missing) {
-        super(description);
-        if (this.description.allowMissing)
-            this.missing = missing;
-        else
-            throw new InvalidParameterException("Description does not allow missing values");
     }
 
     @Override
@@ -35,15 +27,7 @@ abstract class BaseArrayColumn extends BaseColumn {
         this.missing.set(rowIndex);
     }
 
-    public void setMissing(final int rowIndex, final boolean val) {
-        this.missing.set(rowIndex, val);
-    }
-
     public void setMissing(final int fromIndex, final int toIndex) {
         this.missing.set(fromIndex, toIndex);
-    }
-
-    public void setMissing(final int fromIndex, final int toIndex, final boolean val) {
-        this.missing.set(fromIndex, toIndex, val);
     }
 }

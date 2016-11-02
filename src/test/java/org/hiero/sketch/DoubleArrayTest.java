@@ -4,10 +4,8 @@ import org.hiero.sketch.table.ColumnDescription;
 import org.hiero.sketch.table.DoubleArrayColumn;
 import org.hiero.sketch.table.api.ContentsKind;
 import org.junit.Test;
-import java.util.BitSet;
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertFalse;
-import static junit.framework.TestCase.assertTrue;
+
+import static junit.framework.TestCase.*;
 
 /**
  * Test for DoubleArrayColumn class
@@ -60,13 +58,14 @@ class DoubleArrayTest {
     @Test
     public void testDoubleArrayTwo() {
         final double[] data = new double[this.size];
-        final BitSet missing = new BitSet(this.size);
         for (int i = 0; i < this.size; i++) {
-            data[i] = Math.sqrt(i+1);
-            if ((i % 5) == 0)
-                missing.set(i);
+            data[i] = Math.sqrt(i + 1);
         }
-        final DoubleArrayColumn col = new DoubleArrayColumn(this.desc, data, missing);
+        final DoubleArrayColumn col = new DoubleArrayColumn(this.desc, data);
+        for (int i = 0; i < this.size; i++) {
+            if ((i % 5) == 0)
+                col.setMissing(i);
+        }
         assertEquals(col.sizeInRows(), this.size);
         for (int i = 0; i < this.size; i++) {
             assertEquals(Math.sqrt(i+1), col.getDouble(i));
