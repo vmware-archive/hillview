@@ -9,21 +9,21 @@ import static org.junit.Assert.*;
 
 
 public class IntListTest {
-    private final int size = 100;
     private final ColumnDescription desc = new ColumnDescription("test", ContentsKind.Int, true);
 
     /* Test for constructor using length and no arrays*/
     @Test
     public void testIntListColumnZero() {
         final IntListColumn col = new IntListColumn(this.desc);
-        for (int i = 0; i < this.size; i++) {
-            if (i % 5 != 0)
+        final int size = 10000;
+        for (int i = 0; i < size; i++) {
+            if ((i % 5) != 0)
                 col.append(i);
             if ((i % 5) == 0)
                 col.appendMissing();
         }
-        assertEquals(col.sizeInRows(), this.size);
-        for (int i = 0; i < this.size; i++) {
+        assertEquals(col.sizeInRows(), size);
+        for (int i = 0; i < size; i++) {
             if ((i % 5) == 0)
                 assertTrue(col.isMissing(i));
             else {
