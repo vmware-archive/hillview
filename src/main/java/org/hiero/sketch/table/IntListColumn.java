@@ -1,7 +1,6 @@
 package org.hiero.sketch.table;
 
 import org.hiero.sketch.table.api.ContentsKind;
-
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 

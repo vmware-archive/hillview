@@ -4,9 +4,7 @@ import org.hiero.sketch.table.ColumnDescription;
 import org.hiero.sketch.table.IntListColumn;
 import org.hiero.sketch.table.api.ContentsKind;
 import org.junit.Test;
-
 import static org.junit.Assert.*;
-
 
 public class IntListTest {
     private final ColumnDescription desc = new ColumnDescription("test", ContentsKind.Int, true);

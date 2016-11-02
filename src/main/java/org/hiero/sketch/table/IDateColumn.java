@@ -3,7 +3,6 @@ package org.hiero.sketch.table;
 import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IStringConverter;
 import org.hiero.sketch.table.api.RowComparator;
-
 import java.util.Date;
 
 public interface IDateColumn extends IColumn {
