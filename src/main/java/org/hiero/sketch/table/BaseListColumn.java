@@ -12,13 +12,13 @@ abstract class BaseListColumn extends BaseColumn {
     final int SegmentMask = this.SegmentSize - 1;
     private boolean sealed;  // once sealed it can't grow anymore.
 
-    private ArrayList<BitSet> present;
+    private ArrayList<BitSet> missing;
     int size;
 
     BaseListColumn(final ColumnDescription desc) {
         super(desc);
-        if (desc.allowMissing)
-            this.present = new ArrayList<BitSet>();
+        if (desc.allowMissing && !desc.kind.isObject())
+            this.missing = new ArrayList<BitSet>();
         this.size = 0;
     }
 
@@ -29,27 +29,31 @@ abstract class BaseListColumn extends BaseColumn {
 
     @Override
     public boolean isMissing(final int rowIndex) {
-        if (this.present == null)
+        if (this.missing == null)
             return false;
-        final int segmentId = this.size >> this.LogSegmentSize;
-        final int localIndex = this.size & this.SegmentMask;
-        return this.present.get(segmentId).get(localIndex);
+        final int segmentId = rowIndex >> this.LogSegmentSize;
+        final int localIndex = rowIndex & this.SegmentMask;
+        return this.missing.get(segmentId).get(localIndex);
     }
 
-    public void setMissing(final int rowIndex) {
+    public void appendMissing() {
         final int segmentId = this.size >> this.LogSegmentSize;
         final int localIndex = this.size & this.SegmentMask;
-        this.present.get(segmentId).set(localIndex);
+        if (this.missing.size() <= segmentId) {
+            this.growMissing();
+        }
+        this.missing.get(segmentId).set(localIndex);
+        this.size++;
+    }
+
+    void growMissing() {
+        if (this.sealed)
+            throw new RuntimeException("Cannot grow sealed column");
+        if (this.missing != null)
+            this.missing.add(new BitSet(this.SegmentSize));
     }
 
     public void seal() {
         this.sealed = true;
-    }
-
-    void growPresent() {
-        if (this.sealed)
-            throw new RuntimeException("Cannot grow sealed column");
-        if (this.present != null)
-            this.present.add(new BitSet(this.SegmentSize));
     }
 }
