@@ -2,6 +2,7 @@ package org.hiero.sketch.table;
 
 import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.IStringConverter;
+import org.hiero.sketch.table.api.RowComparator;
 
 import java.util.ArrayList;
 
@@ -39,5 +40,14 @@ public class DoubleListColumn extends BaseListColumn {
         }
         this.segments.get(segmentId)[localIndex] = value;
         this.size++;
+    }
+
+    public RowComparator getComparator() {
+        return new RowComparator() {
+            @Override
+            public int compare(final Integer i, final Integer j) {
+                return Double.compare(DoubleListColumn.this.getDouble(i), DoubleListColumn.this.getDouble(j));
+            }
+        };
     }
 }

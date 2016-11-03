@@ -2,6 +2,7 @@ package org.hiero.sketch.table;
 
 import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.IStringConverter;
+import org.hiero.sketch.table.api.RowComparator;
 
 import java.security.InvalidParameterException;
 import java.time.Duration;
@@ -51,5 +52,14 @@ public final class DurationArrayColumn extends BaseArrayColumn {
 
     public void set(final int rowIndex, final Duration value) {
         this.data[rowIndex] = value;
+    }
+
+    public RowComparator getComparator() {
+        return new RowComparator() {
+            @Override
+            public int compare(final Integer i, final Integer j) {
+                return DurationArrayColumn.this.getDuration(i).compareTo(DurationArrayColumn.this.getDuration(j));
+            }
+        };
     }
 }

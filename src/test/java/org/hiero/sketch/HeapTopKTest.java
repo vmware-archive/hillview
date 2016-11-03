@@ -23,12 +23,12 @@ public class HeapTopKTest {
     @Test
     public void testHeapTopKTimed() {
         final Random rn = new Random();
+        final int inpSize = 1000000;
         final long startTime = System.nanoTime();
-        int inpSize = 1000;
         for (int j = 1; j < inpSize; j++)
             this.myHeap.push(rn.nextInt(inpSize));
         final long endTime = System.nanoTime();
+        PerfRegressionTest.comparePerf(endTime - startTime);
         //System.out.format("Largest: %d%n", myHeap.getTopK().lastKey());
-        //System.out.format("Time taken by HashMap: %d%n", (endTime - startTime) / 1000000);
     }
 }
