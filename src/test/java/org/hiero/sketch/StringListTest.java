@@ -12,8 +12,6 @@ import static junit.framework.TestCase.*;
 class StringListTest {
 
     private final ColumnDescription desc = new ColumnDescription("test", ContentsKind.String, true);
-
-    /* Test for constructor using length and no arrays*/
     @Test
     public void testStringArrayZero() {
         final StringListColumn col = new StringListColumn(this.desc);

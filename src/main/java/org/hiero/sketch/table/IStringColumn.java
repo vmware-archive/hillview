@@ -12,6 +12,11 @@ public interface IStringColumn extends IColumn {
     }
 
     @Override
+    default String asString(final int rowIndex) {
+        return this.getString(rowIndex);
+    }
+
+    @Override
     default RowComparator getComparator() {
         return new RowComparator() {
             @Override
