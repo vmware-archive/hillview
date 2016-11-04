@@ -13,6 +13,13 @@ public interface IDurationColumn extends IColumn {
     }
 
     @Override
+    default String asString(final int rowIndex) {
+        if (this.isMissing(rowIndex))
+            return null;
+        return this.getDuration(rowIndex).toString();
+    }
+
+    @Override
     default RowComparator getComparator() {
         return new RowComparator() {
             @Override

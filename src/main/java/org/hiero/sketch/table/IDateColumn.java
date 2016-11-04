@@ -13,6 +13,13 @@ public interface IDateColumn extends IColumn {
     }
 
     @Override
+    default String asString(final int rowIndex) {
+        if (this.isMissing(rowIndex))
+            return null;
+        return this.getDate(rowIndex).toString();
+    }
+
+    @Override
     default RowComparator getComparator() {
         return new RowComparator() {
             @Override

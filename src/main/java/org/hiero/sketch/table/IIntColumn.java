@@ -5,10 +5,16 @@ import org.hiero.sketch.table.api.IStringConverter;
 import org.hiero.sketch.table.api.RowComparator;
 
 public interface IIntColumn extends IColumn {
-
     @Override
     default double asDouble(final int rowIndex, final IStringConverter unused) {
         return this.getInt(rowIndex);
+    }
+
+    @Override
+    default String asString(final int rowIndex) {
+        if (this.isMissing(rowIndex))
+            return null;
+        return Integer.toString(this.getInt(rowIndex));
     }
 
     default RowComparator getComparator() {

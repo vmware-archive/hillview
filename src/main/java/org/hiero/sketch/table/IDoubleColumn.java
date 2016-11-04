@@ -11,6 +11,13 @@ public interface IDoubleColumn extends IColumn {
     }
 
     @Override
+    default String asString(final int rowIndex) {
+        if (this.isMissing(rowIndex))
+            return null;
+        return Double.toString(this.getDouble(rowIndex));
+    }
+
+    @Override
     default RowComparator getComparator() {
         return new RowComparator() {
             @Override

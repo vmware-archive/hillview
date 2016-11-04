@@ -34,6 +34,7 @@ public interface IColumn {
      */
     double asDouble(int rowIndex, IStringConverter converter);
 
-    RowComparator getComparator();
+    String asString(int rowIndex);
 
+    RowComparator getComparator();
 }

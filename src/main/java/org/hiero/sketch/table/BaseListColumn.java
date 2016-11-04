@@ -29,11 +29,14 @@ abstract class BaseListColumn extends BaseColumn {
 
     @Override
     public boolean isMissing(final int rowIndex) {
-        if (this.missing == null)
+        if (this.description.allowMissing) {
+            if (this.missing == null)
+                return false;
+            final int segmentId = rowIndex >> this.LogSegmentSize;
+            final int localIndex = rowIndex & this.SegmentMask;
+            return this.missing.get(segmentId).get(localIndex);
+        } else
             return false;
-        final int segmentId = rowIndex >> this.LogSegmentSize;
-        final int localIndex = rowIndex & this.SegmentMask;
-        return this.missing.get(segmentId).get(localIndex);
     }
 
     public void appendMissing() {

@@ -45,7 +45,7 @@ public final class DateArrayColumn
     }
 
     @Override
-    public boolean isMissing(final int rowIndex){return this.getDate(rowIndex) == null;}
+    public boolean isMissing(final int rowIndex) { return this.getDate(rowIndex) == null; }
 
     @Override
     public void setMissing(final int rowIndex) { this.set(rowIndex, null);}
