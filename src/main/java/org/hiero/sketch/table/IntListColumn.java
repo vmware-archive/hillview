@@ -1,16 +1,15 @@
 package org.hiero.sketch.table;
 
 import org.hiero.sketch.table.api.ContentsKind;
-import org.hiero.sketch.table.api.IStringConverter;
-import org.hiero.sketch.table.api.RowComparator;
-
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 
 /**
  * A column of integers that can grow in size.
  */
-public final class IntListColumn extends BaseListColumn {
+public final class IntListColumn
+        extends BaseListColumn
+        implements IIntColumn {
     private final ArrayList<int[]> segments;
 
     public IntListColumn(final ColumnDescription desc) {
@@ -27,26 +26,12 @@ public final class IntListColumn extends BaseListColumn {
         return this.segments.get(segmentId)[localIndex];
     }
 
-    public double asDouble(final int rowIndex, final IStringConverter unused) {
-        return this.getInt(rowIndex);
-    }
-
-    @Override
-    public RowComparator getComparator() {
-        return new RowComparator() {
-            @Override
-            public int compare(final Integer i, final Integer j) {
-                return Integer.compare(IntListColumn.this.getInt(i), IntListColumn.this.getInt(j));
-            }
-        };
-    }
-
     public void append(final int value) {
         final int segmentId = this.size >> this.LogSegmentSize;
         final int localIndex = this.size & this.SegmentMask;
         if (this.segments.size() <= segmentId) {
             this.segments.add(new int[this.SegmentSize]);
-            this.growPresent();
+            this.growMissing();
         }
         this.segments.get(segmentId)[localIndex] = value;
         this.size++;

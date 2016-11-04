@@ -1,15 +1,14 @@
 package org.hiero.sketch.table;
 
 import org.hiero.sketch.table.api.ContentsKind;
-import org.hiero.sketch.table.api.IStringConverter;
-import org.hiero.sketch.table.api.RowComparator;
 
 import java.util.ArrayList;
 
 /**
  * A column of doubles that can grow in size.
  */
-public class DoubleListColumn extends BaseListColumn {
+public class DoubleListColumn
+        extends BaseListColumn implements IDoubleColumn {
     private final ArrayList<double[]> segments;
 
     public DoubleListColumn(final ColumnDescription desc) {
@@ -26,28 +25,14 @@ public class DoubleListColumn extends BaseListColumn {
         return this.segments.get(segmentId)[localIndex];
     }
 
-    @Override
-    public double asDouble(final int rowIndex, final IStringConverter unused) {
-        return this.getDouble(rowIndex);
-    }
-
     public void append(final double value) {
         final int segmentId = this.size >> this.LogSegmentSize;
         final int localIndex = this.size & this.SegmentMask;
         if (this.segments.size() <= segmentId) {
             this.segments.add(new double[this.SegmentSize]);
-            this.growPresent();
+            this.growMissing();
         }
         this.segments.get(segmentId)[localIndex] = value;
         this.size++;
-    }
-
-    public RowComparator getComparator() {
-        return new RowComparator() {
-            @Override
-            public int compare(final Integer i, final Integer j) {
-                return Double.compare(DoubleListColumn.this.getDouble(i), DoubleListColumn.this.getDouble(j));
-            }
-        };
     }
 }

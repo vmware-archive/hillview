@@ -4,16 +4,13 @@ import org.hiero.sketch.table.ColumnDescription;
 import org.hiero.sketch.table.StringArrayColumn;
 import org.hiero.sketch.table.api.ContentsKind;
 import org.junit.Test;
-import java.util.BitSet;
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertFalse;
-import static junit.framework.TestCase.assertTrue;
+
+import static junit.framework.TestCase.*;
 
 /*
  * Test for StringArrayColumn class.
 */
 class StringArrayTest {
-
     private final int size = 100;
     private final ColumnDescription desc = new ColumnDescription("test", ContentsKind.String, true);
 
@@ -46,27 +43,6 @@ class StringArrayTest {
         for (int i = 0; i < this.size; i++)
             if ((i % 5) == 0)
                 col.setMissing(i);
-        assertEquals(col.sizeInRows(), this.size);
-        for (int i = 0; i < this.size; i++) {
-            assertEquals(String.valueOf(i), col.getString(i));
-            if ((i % 5) == 0)
-                assertTrue(col.isMissing(i));
-            else
-                assertFalse(col.isMissing(i));
-        }
-    }
-
-    /* Test for constructor using two arrays: data and missing values*/
-    @Test
-    public void testStringArrayTwo() {
-        final String[] data = new String[this.size];
-        final BitSet missing = new BitSet(this.size);
-        for (int i = 0; i < this.size; i++) {
-            data[i] = String.valueOf(i);
-            if ((i % 5) == 0)
-                missing.set(i);
-        }
-        final StringArrayColumn col = new StringArrayColumn(this.desc, data, missing);
         assertEquals(col.sizeInRows(), this.size);
         for (int i = 0; i < this.size; i++) {
             assertEquals(String.valueOf(i), col.getString(i));
