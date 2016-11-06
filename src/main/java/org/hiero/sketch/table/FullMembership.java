@@ -1,5 +1,6 @@
 package org.hiero.sketch.table;
 
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
 
@@ -32,14 +33,16 @@ public class FullMembership implements IMembershipSet {
     }
 
     @Override
+    public int getSize(boolean exact) { return this.rowCount; }
+
+    @Override
     public IRowIterator getIterator() {
         return new FullMemebershipIterator(this.rowCount);
     }
 
     /**
-     * Samples k items. Does not seed the random generator so generator is seeded using its default
-     * method. Sampled items are first placed in a Set. The procedure samples k times with
-     * replacement so it may be that the returned set has less than k distinct items
+     * Samples k items. Generator is seeded using its default method. Sampled items are first placed in a Set.
+     * The procedure samples k times with replacement so it may return a set with less than k distinct items.
      * @param k
      * @return ImembershipSet instantiated as a Partial Sparse
      */
@@ -64,7 +67,7 @@ public class FullMembership implements IMembershipSet {
 
     //todo: use the best set implementation.
     private IMembershipSet sampleUtil(Random randomGenerator, int k) {
-        Set S = new HashSet<Integer>();
+        IntOpenHashSet S = new IntOpenHashSet();
         for (int i=0; i < k; i++)
             S.add(randomGenerator.nextInt(this.rowCount));
         return new PartialMembershipSparse(S);

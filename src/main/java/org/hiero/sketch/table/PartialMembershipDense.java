@@ -31,28 +31,32 @@ public class PartialMembershipDense implements IMembershipSet {
         this.rowCountCorrect = false;
     }
 
-    /* class is instantiated by supplying a membershipSet (perhaps the full one), and a filter
-    function. If a filter is not supplied it is defaulted to be true */
+    /**
+     * instantiated with a a membershipSet, possibly the full one, and a filter predicate.
+     * @param baseMap
+     * @param filter
+     * @throws NullArgumentException
+     */
     public PartialMembershipDense(IMembershipSet baseMap, Predicate<Integer> filter) throws
             NullArgumentException {
         if (baseMap == null) throw new NullArgumentException("PartialMembershipDense cannot be " +
                 "instantiated without a base MembershipSet");
+        if (filter == null) throw new NullArgumentException("PartialMembershipDense cannot be " +
+                "instantiated with a null filter");
         this.baseMap = baseMap;
-        this.rowCount = baseMap.getSize();
-        if (filter == null)
-            filter = Integer -> true;
+        this.rowCount = baseMap.getSize(false);
         this.filter = filter;
         this.rowCountCorrect = false;
     }
 
     @Override
     public boolean isMember(int rowIndex) {
-        return ( baseMap.isMember(rowIndex) && filter.test(rowIndex) );
+        return baseMap.isMember(rowIndex) && filter.test(rowIndex);
     }
 
     @Override
     public int getSize() {
-        if (rowCountCorrect) return this.rowCount;
+        if (this.rowCountCorrect) return this.rowCount;
         else {
             int counter = 0;
             IRowIterator IT = this.baseMap.getIterator();
@@ -66,6 +70,24 @@ public class PartialMembershipDense implements IMembershipSet {
             this.rowCountCorrect = true;
             return this.rowCount;
         }
+    }
+
+    @Override
+    public int getSize(boolean exact) {
+        if (this.rowCountCorrect)
+            return this.rowCount;
+        if (exact)
+            return this.getSize();
+        IMembershipSet sampleSet = this.sample(20);
+        int snumber = 0;
+        IRowIterator it = sampleSet.getIterator();
+        int curr = it.getNextRow();
+        while (curr >= 0) {
+            if (this.filter.test(curr))
+                snumber++;
+            curr = it.getNextRow();
+        }
+        return (this.baseMap.getSize(false) * snumber) / sampleSet.getSize(true);
     }
 
     /**
@@ -96,6 +118,13 @@ public class PartialMembershipDense implements IMembershipSet {
         return new PartialMembershipSparse(sampleSet);
     }
 
+    /**
+     * Samples the base map for k items and then applies the filter on that set. Makes 10 attempts to reach k samples
+     * this way and then gives up and returns whatever was sampled.
+     * @param k
+     * @param seed
+     * @return
+     */
     @Override
     public IMembershipSet sample(int k, long seed) {
         int samples = 0;
