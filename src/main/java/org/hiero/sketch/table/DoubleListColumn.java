@@ -1,17 +1,17 @@
 package org.hiero.sketch.table;
 
 import org.hiero.sketch.table.api.ContentsKind;
-import org.hiero.sketch.table.api.IStringConverter;
 
 import java.util.ArrayList;
 
 /**
  * A column of doubles that can grow in size.
  */
-public class DoubleListColumn extends BaseListColumn {
-    private ArrayList<double[]> segments;
+public class DoubleListColumn
+        extends BaseListColumn implements IDoubleColumn {
+    private final ArrayList<double[]> segments;
 
-    public DoubleListColumn(ColumnDescription desc) {
+    public DoubleListColumn(final ColumnDescription desc) {
         super(desc);
         if (desc.kind != ContentsKind.Double)
             throw new IllegalArgumentException("Unexpected column kind " + desc.kind);
@@ -19,23 +19,18 @@ public class DoubleListColumn extends BaseListColumn {
     }
 
     @Override
-    public double getDouble(int rowIndex) {
-        int segmentId = rowIndex >> LogSegmentSize;
-        int localIndex = rowIndex & SegmentMask;
+    public double getDouble(final int rowIndex) {
+        final int segmentId = rowIndex >> this.LogSegmentSize;
+        final int localIndex = rowIndex & this.SegmentMask;
         return this.segments.get(segmentId)[localIndex];
     }
 
-    @Override
-    public double asDouble(int rowIndex, IStringConverter unused) {
-        return this.getDouble(rowIndex);
-    }
-
-    public void append(double value) {
-        int segmentId = this.size >> LogSegmentSize;
-        int localIndex = this.size & SegmentMask;
+    public void append(final double value) {
+        final int segmentId = this.size >> this.LogSegmentSize;
+        final int localIndex = this.size & this.SegmentMask;
         if (this.segments.size() <= segmentId) {
-            this.segments.add(new double[SegmentSize]);
-            this.growPresent();
+            this.segments.add(new double[this.SegmentSize]);
+            this.growMissing();
         }
         this.segments.get(segmentId)[localIndex] = value;
         this.size++;

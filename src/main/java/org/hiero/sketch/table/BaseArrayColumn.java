@@ -4,47 +4,29 @@ import java.security.InvalidParameterException;
 import java.util.BitSet;
 
 /**
- * Adds a BitSet missing to BaseColumn (if missing values are allowed) to evaluate the
- * IsMissing method in the IColumn interface.
+ * Adds a missing bit vector to BaseColumn for integers and doubles (if missing values are allowed)
  */
 abstract class BaseArrayColumn extends BaseColumn {
-    protected BitSet missing;
+    private BitSet missing;
 
-    BaseArrayColumn(ColumnDescription description, int size) {
+    BaseArrayColumn(final ColumnDescription description, final int size) {
         super(description);
         if (size <= 0)
             throw new InvalidParameterException("Size must be positive: " + size);
-        if (this.description.allowMissing)
+        if (this.description.allowMissing && !this.description.kind.isObject())
             this.missing = new BitSet(size);
     }
 
-    BaseArrayColumn(ColumnDescription description, BitSet missing) {
-        super(description);
-        if (this.description.allowMissing)
-            this.missing = missing;
-        else
-            throw new InvalidParameterException("Description does not allow missing values");
-    }
-
     @Override
-    public boolean isMissing(int rowIndex) {
-        return missing.get(rowIndex);
+    public boolean isMissing(final int rowIndex) {
+        return this.description.allowMissing && this.missing.get(rowIndex);
     }
 
-    /* Set methods from Bitset class*/
-    public void setMissing(int rowIndex) {
+    public void setMissing(final int rowIndex) {
         this.missing.set(rowIndex);
     }
 
-    public void setMissing(int rowIndex, boolean val) {
-        this.missing.set(rowIndex, val);
-    }
-
-    public void setMissing(int fromIndex, int toIndex) {
+    public void setMissing(final int fromIndex, final int toIndex) {
         this.missing.set(fromIndex, toIndex);
-    }
-
-    public void setMissing(int fromIndex, int toIndex, boolean val) {
-        this.missing.set(fromIndex, toIndex, val);
     }
 }

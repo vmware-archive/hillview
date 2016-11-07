@@ -12,10 +12,10 @@ import static junit.framework.TestCase.assertEquals;
 public class ColumnTest {
     @Test
     public void testIntColumn() {
-        IntArrayColumn col;
+        final IntArrayColumn col;
         final int size = 100;
 
-        ColumnDescription desc = new ColumnDescription("test", ContentsKind.Int, false);
+        final ColumnDescription desc = new ColumnDescription("test", ContentsKind.Int, false);
         col = new IntArrayColumn(desc, size);
         for (int i=0; i < size; i++)
             col.set(i, i);
@@ -29,13 +29,14 @@ public class ColumnTest {
 
     @Test
     public void testDoubleListColumn() {
-        DoubleListColumn col;
-        final int size = 100;
+        final DoubleListColumn col;
+        final int size = 10000000;
 
-        ColumnDescription desc = new ColumnDescription("test", ContentsKind.Double, false);
+        final ColumnDescription desc = new ColumnDescription("test", ContentsKind.Double, false);
         col = new DoubleListColumn(desc);
         for (int i=0; i < size; i++)
             col.append(i);
+
 
         assertEquals( col.sizeInRows(), size );
         assertEquals( col.getDouble(0), 0.0 );

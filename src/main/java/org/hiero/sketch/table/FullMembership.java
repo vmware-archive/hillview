@@ -14,7 +14,7 @@ import java.util.Set;
 public class FullMembership implements IMembershipSet {
     private final int rowCount;
 
-    public FullMembership(int rowCount) throws NegativeArraySizeException {
+    public FullMembership(final int rowCount) throws NegativeArraySizeException {
         if (rowCount > 0)
             this.rowCount = rowCount;
         else
@@ -23,8 +23,8 @@ public class FullMembership implements IMembershipSet {
     }
 
     @Override
-    public boolean isMember(int rowIndex) {
-        return rowIndex < this.rowCount && rowIndex >= 0;
+    public boolean isMember(final int rowIndex) {
+        return rowIndex < this.rowCount;
     }
 
     @Override
@@ -77,7 +77,7 @@ public class FullMembership implements IMembershipSet {
         private int cursor = 0;
         private final int range;
 
-        public  FullMemebershipIterator(int range) {
+        private FullMemebershipIterator(final int range) {
             this.range = range;
         }
 

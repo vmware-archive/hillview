@@ -44,7 +44,12 @@
       <artifactId>fastutil</artifactId>
       <version>7.0.9</version>
     </dependency>
-    </dependencies>
+    <dependency>
+      <groupId>io.reactivex</groupId>
+      <artifactId>rxjava</artifactId>
+      <version>1.1.6</version>
+    </dependency>
+  </dependencies>
 
   <build>
     <plugins>

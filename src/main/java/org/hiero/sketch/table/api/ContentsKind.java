@@ -9,5 +9,19 @@ public enum ContentsKind {
     Int,
     Json,
     Double,
-    TimeDuration /* java.time.Duration values */
+    Duration; /* java.time.Duration values */
+
+    public boolean isObject() {
+        switch (this) {
+            case String:
+            case Date:
+            case Json:
+            case Duration:
+                return true;
+            case Int:
+            case Double:
+            default:
+                return false;
+        }
+    }
 }

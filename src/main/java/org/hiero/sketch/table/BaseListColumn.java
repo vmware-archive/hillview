@@ -8,17 +8,17 @@ import java.util.BitSet;
  */
 abstract class BaseListColumn extends BaseColumn {
     final int LogSegmentSize = 20;
-    final int SegmentSize = 1 << LogSegmentSize;
-    final int SegmentMask = SegmentSize - 1;
+    final int SegmentSize = 1 << this.LogSegmentSize;
+    final int SegmentMask = this.SegmentSize - 1;
     private boolean sealed;  // once sealed it can't grow anymore.
 
-    protected ArrayList<BitSet> present;
-    protected int size;
+    private ArrayList<BitSet> missing;
+    int size;
 
-    BaseListColumn(ColumnDescription desc) {
+    BaseListColumn(final ColumnDescription desc) {
         super(desc);
-        if (desc.allowMissing)
-            this.present = new ArrayList<BitSet>();
+        if (desc.allowMissing && !desc.kind.isObject())
+            this.missing = new ArrayList<BitSet>();
         this.size = 0;
     }
 
@@ -28,28 +28,35 @@ abstract class BaseListColumn extends BaseColumn {
     }
 
     @Override
-    public boolean isMissing(int rowIndex) {
-        if (this.present == null)
+    public boolean isMissing(final int rowIndex) {
+        if (this.description.allowMissing) {
+            if (this.missing == null)
+                return false;
+            final int segmentId = rowIndex >> this.LogSegmentSize;
+            final int localIndex = rowIndex & this.SegmentMask;
+            return this.missing.get(segmentId).get(localIndex);
+        } else
             return false;
-        int segmentId = this.size >> LogSegmentSize;
-        int localIndex = this.size & SegmentMask;
-        return this.present.get(segmentId).get(localIndex);
     }
 
-    public void setMissing(int rowIndex) {
-        int segmentId = this.size >> LogSegmentSize;
-        int localIndex = this.size & SegmentMask;
-        this.present.get(segmentId).set(localIndex);
+    public void appendMissing() {
+        final int segmentId = this.size >> this.LogSegmentSize;
+        final int localIndex = this.size & this.SegmentMask;
+        if (this.missing.size() <= segmentId) {
+            this.growMissing();
+        }
+        this.missing.get(segmentId).set(localIndex);
+        this.size++;
+    }
+
+    void growMissing() {
+        if (this.sealed)
+            throw new RuntimeException("Cannot grow sealed column");
+        if (this.missing != null)
+            this.missing.add(new BitSet(this.SegmentSize));
     }
 
     public void seal() {
         this.sealed = true;
-    }
-
-    void growPresent() {
-        if (this.sealed)
-            throw new RuntimeException("Cannot grow sealed column");
-        if (this.present != null)
-            this.present.add(new BitSet(SegmentSize));
     }
 }

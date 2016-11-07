@@ -1,43 +1,47 @@
 package org.hiero.sketch.table;
 
 import org.hiero.sketch.table.api.ContentsKind;
-import org.hiero.sketch.table.api.IStringConverter;
+
 import java.util.ArrayList;
 
 /**
  * A column of Strings that can grow in size.
  */
-public class StringListColumn extends BaseListColumn {
-    private ArrayList<String[]> segments;
+public class StringListColumn extends BaseListColumn implements IStringColumn {
+    private final ArrayList<String[]> segments;
 
-    public StringListColumn(ColumnDescription desc) {
+    public StringListColumn(final ColumnDescription desc) {
         super(desc);
-        if (desc.kind != ContentsKind.String && desc.kind != ContentsKind.Json)
+        if ((desc.kind != ContentsKind.String) && (desc.kind != ContentsKind.Json))
             throw new IllegalArgumentException("Unexpected column kind " + desc.kind);
         this.segments = new ArrayList<String []>();
     }
 
     @Override
-    public String getString(int rowIndex) {
-        int segmentId = rowIndex >> LogSegmentSize;
-        int localIndex = rowIndex & SegmentMask;
+    public String getString(final int rowIndex) {
+        final int segmentId = rowIndex >> this.LogSegmentSize;
+        final int localIndex = rowIndex & this.SegmentMask;
         return this.segments.get(segmentId)[localIndex];
     }
 
-    @Override
-    public double asDouble(int rowIndex, IStringConverter converter) {
-        String s = this.getString(rowIndex);
-        return converter.asDouble(s);
-    }
-
-    public void append(String value) {
-        int segmentId = this.size >> LogSegmentSize;
-        int localIndex = this.size & SegmentMask;
+    public void append(final String value) {
+        final int segmentId = this.size >> this.LogSegmentSize;
+        final int localIndex = this.size & this.SegmentMask;
         if (this.segments.size() <= segmentId) {
-            this.segments.add(new String[SegmentSize]);
-            this.growPresent();
+            this.segments.add(new String[this.SegmentSize]);
+            this.growMissing();
         }
         this.segments.get(segmentId)[localIndex] = value;
         this.size++;
+    }
+
+    @Override
+    public boolean isMissing(final int rowIndex) {
+        return this.getString(rowIndex) == null;
+    }
+
+    @Override
+    public void appendMissing() {
+        this.append(null);
     }
 }

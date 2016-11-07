@@ -6,7 +6,7 @@ import org.junit.Test;
 import static junit.framework.TestCase.assertEquals;
 
 public class StringConverterTest {
-    private ExplicitStringConverter converter;
+    private final ExplicitStringConverter converter;
 
     public StringConverterTest() {
         this.converter = new ExplicitStringConverter();

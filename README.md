@@ -103,7 +103,7 @@ in a place of your choice and run the shell script
 `ideaXXX/bin/idea.sh`.
 
 Next, setup the scala plugins for IntelliJ. Go to Preferences ->
- Plugins -> Install JetBrains Plugin and then search for Scala. 
+ Plugins -> Install JetBrains Plugin and then search for Scala.
 Wait for it to install. Next, in Preferences -> Plugins, make sure
 Scala appears in the list of plugins and is checked.
 
@@ -129,21 +129,24 @@ To run only the tests:
 * Fork the repository using the "fork" button on github, by following these instructions:
 https://help.github.com/articles/fork-a-repo/
 * To merge your fork with the original use: `git fetch upstream; git merge upstream/master`
+* Run IntelliJ code inspection (Analyze/Inspect code) before commit and solve all open issues
 * When you make changes you can submit them into your own fork
 * After committing changes, create a pull request (using the github web UI)
 
-In more detail, here is a step-by-step guide to commititng changes:
+In more detail, here is a step-by-step guide to committing your changes:
 
 1) git add <files that changed>
 
-2) git commit -m "Description of commit" (This commits to your  local repository)
+2) git commit -m "Description of commit" (Saves your work)
 
-3) git push origin master (This commits to your own remote repository)
+3) git fetch upstream (To get the upstream version)
 
-4) git fetch upsteam (To get the upstream version)
+4) git merge upstream/master
 
-5) git merge upstream/master
+5) Resolve conflicts if any. If so, repeat 1-4.
 
-6) Resolve conflicts if any and if needed, repeat 1-3.
+6) Test, analyze merged version.
 
-7) Create a pull request.
+7) git push origin master.
+
+8) Create a pull request.

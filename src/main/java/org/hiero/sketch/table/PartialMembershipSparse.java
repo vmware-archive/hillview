@@ -77,7 +77,7 @@ public class PartialMembershipSparse implements IMembershipSet {
     }
 
     @Override
-    public boolean isMember(int rowIndex) {
+    public boolean isMember(final int rowIndex) {
         return this.membershipMap.contains(rowIndex);
     }
 

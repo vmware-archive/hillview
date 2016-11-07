@@ -1,60 +1,53 @@
 package org.hiero.sketch.table;
 
 import org.hiero.sketch.table.api.ContentsKind;
-import org.hiero.sketch.table.api.IStringConverter;
 
 import java.security.InvalidParameterException;
 import java.time.Duration;
-import java.util.BitSet;
 
 /*
  * Column of durations, implemented as an array of Durations and a BitSet of missing values
  */
 
-public final class DurationArrayColumn extends BaseArrayColumn {
-    private Duration[] data;
+public final class DurationArrayColumn extends BaseArrayColumn implements IDurationColumn {
+    private final Duration[] data;
 
     private void validate() {
-        if (this.description.kind != ContentsKind.TimeDuration)
-            throw new InvalidParameterException("Kind should be Time Duration" + description.kind);
+        if (this.description.kind != ContentsKind.Duration)
+            throw new InvalidParameterException("Kind should be Time Duration"
+                    + this.description.kind);
     }
 
-    /* Will set data array. If missing values are allowed initalize missing Bitset to an array of
-     False */
-    public DurationArrayColumn(ColumnDescription description, int size) {
+    public DurationArrayColumn(final ColumnDescription description, final int size) {
         super(description, size);
         this.validate();
         this.data = new Duration[size];
     }
 
-    /* Will set description, data array, and missing Bitset to an array of False of length equal
-    to data */
-    public DurationArrayColumn(ColumnDescription description, Duration[] data) {
+    public DurationArrayColumn(final ColumnDescription description, final Duration[] data) {
         super(description, data.length);
         this.validate();
         this.data = data;
     }
 
-    /* Will initialize data Array and missing Bitset by input*/
-    public DurationArrayColumn(ColumnDescription description, Duration[] data, BitSet missing) {
-        super(description, missing);
-        this.validate();
-        this.data = data;
+
+    @Override
+    public int sizeInRows() {
+        return this.data.length;
     }
 
     @Override
-    public int sizeInRows() { return data.length; }
-
-    @Override
-    public Duration getDuration(int rowIndex) { return this.data[rowIndex]; }
-
-    @Override
-    public double asDouble(int rowIndex, IStringConverter unused) {
-        Duration tmp = this.data[rowIndex];
-        return Converters.toDouble(tmp);
+    public Duration getDuration(final int rowIndex) {
+        return this.data[rowIndex];
     }
 
-    public void set(int rowIndex, Duration value) {
+    private void set(final int rowIndex, final Duration value) {
         this.data[rowIndex] = value;
     }
+
+    @Override
+    public boolean isMissing(final int rowIndex){return this.getDuration(rowIndex) == null;}
+
+    @Override
+    public void setMissing(final int rowIndex) { this.set(rowIndex, null);}
 }
