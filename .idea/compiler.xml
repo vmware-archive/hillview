@@ -25,7 +25,7 @@
         <module name="hiero" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel target="1.8">
+    <bytecodeTargetLevel>
       <module name="hiero" target="1.8" />
     </bytecodeTargetLevel>
   </component>
