@@ -4,9 +4,6 @@ import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
 import org.scalactic.exceptions.NullArgumentException;
-
-import java.util.HashSet;
-import java.util.Set;
 import java.util.function.Predicate;
 
 /**
@@ -16,6 +13,7 @@ import java.util.function.Predicate;
  * there are many filters, and iterator takes a long time if it's sparse. Also, each first call for
  * getSize after a new filter is a linear scan.
  */
+@SuppressWarnings("ALL")
 public class PartialMembershipDense implements IMembershipSet {
     private final IMembershipSet baseMap;
     private int rowCount;
@@ -37,7 +35,7 @@ public class PartialMembershipDense implements IMembershipSet {
      * @param filter
      * @throws NullArgumentException
      */
-    public PartialMembershipDense(IMembershipSet baseMap, Predicate<Integer> filter) throws
+    public PartialMembershipDense(final IMembershipSet baseMap, final Predicate<Integer> filter) throws
             NullArgumentException {
         if (baseMap == null) throw new NullArgumentException("PartialMembershipDense cannot be " +
                 "instantiated without a base MembershipSet");
@@ -50,8 +48,8 @@ public class PartialMembershipDense implements IMembershipSet {
     }
 
     @Override
-    public boolean isMember(int rowIndex) {
-        return baseMap.isMember(rowIndex) && filter.test(rowIndex);
+    public boolean isMember(final int rowIndex) {
+        return this.baseMap.isMember(rowIndex) && this.filter.test(rowIndex);
     }
 
     @Override
@@ -73,14 +71,14 @@ public class PartialMembershipDense implements IMembershipSet {
     }
 
     @Override
-    public int getSize(boolean exact) {
+    public int getSize(final boolean exact) {
         if (this.rowCountCorrect)
             return this.rowCount;
         if (exact)
             return this.getSize();
-        IMembershipSet sampleSet = this.sample(20);
+        final IMembershipSet sampleSet = this.sample(20);
         int snumber = 0;
-        IRowIterator it = sampleSet.getIterator();
+        final IRowIterator it = sampleSet.getIterator();
         int curr = it.getNextRow();
         while (curr >= 0) {
             if (this.filter.test(curr))
@@ -97,16 +95,16 @@ public class PartialMembershipDense implements IMembershipSet {
      * gives up and returns whatever was found. This will happen if the membership is sparse.
      */
     @Override
-    public IMembershipSet sample(int k) {
+    public IMembershipSet sample(final int k) {
         int samples = 0;
         IMembershipSet batchSet;
-        IntOpenHashSet sampleSet = new IntOpenHashSet();
+        final IntOpenHashSet sampleSet = new IntOpenHashSet();
         for (int attempt = 0; attempt < 10; attempt++) {
             batchSet = this.baseMap.sample(k);
-            IRowIterator it = batchSet.getIterator();
+            final IRowIterator it = batchSet.getIterator();
             int tmprow = it.getNextRow();
             while (tmprow >= 0) {
-                if (isMember(tmprow)) {
+                if (this.isMember(tmprow)) {
                     sampleSet.add(tmprow);
                     samples++;
                     if (samples == k)
@@ -126,16 +124,16 @@ public class PartialMembershipDense implements IMembershipSet {
      * @return
      */
     @Override
-    public IMembershipSet sample(int k, long seed) {
+    public IMembershipSet sample(final int k, @SuppressWarnings("LocalCanBeFinal") final long seed) {
         int samples = 0;
         IMembershipSet batchSet;
-        IntOpenHashSet sampleSet = new IntOpenHashSet();;
+        final IntOpenHashSet sampleSet = new IntOpenHashSet();;
         for (int attempt = 0; attempt < 10; attempt++) {
             batchSet = this.baseMap.sample(k, seed + attempt);
-            IRowIterator it = batchSet.getIterator();
+            final IRowIterator it = batchSet.getIterator();
             int tmprow = it.getNextRow();
             while (tmprow >= 0) {
-                if (isMember(tmprow)) {
+                if (this.isMember(tmprow)) {
                     sampleSet.add(tmprow);
                     samples++;
                     if (samples == k)

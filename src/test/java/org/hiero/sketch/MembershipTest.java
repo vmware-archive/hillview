@@ -3,7 +3,6 @@ package org.hiero.sketch;
 import org.hiero.sketch.table.FullMembership;
 import org.hiero.sketch.table.PartialMembershipDense;
 import org.hiero.sketch.table.PartialMembershipSparse;
-import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
 import org.junit.Test;
 

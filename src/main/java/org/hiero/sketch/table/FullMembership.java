@@ -3,10 +3,8 @@ package org.hiero.sketch.table;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
-
-import java.util.HashSet;
 import java.util.Random;
-import java.util.Set;
+
 
 /**
  * A IMembershipSet which contains all rows.
@@ -33,7 +31,7 @@ public class FullMembership implements IMembershipSet {
     }
 
     @Override
-    public int getSize(boolean exact) { return this.rowCount; }
+    public int getSize(final boolean exact) { return this.rowCount; }
 
     @Override
     public IRowIterator getIterator() {
@@ -43,31 +41,31 @@ public class FullMembership implements IMembershipSet {
     /**
      * Samples k items. Generator is seeded using its default method. Sampled items are first placed in a Set.
      * The procedure samples k times with replacement so it may return a set with less than k distinct items.
-     * @param k
-     * @return ImembershipSet instantiated as a Partial Sparse
+     * @param k the number of samples with replacement
+     * @return IMembershipSet instantiated as a Partial Sparse
      */
     @Override
-    public IMembershipSet sample(int k) {
-        Random randomGenerator = new Random();
-        return sampleUtil(randomGenerator, k);
+    public IMembershipSet sample(final int k) {
+        final Random randomGenerator = new Random();
+        return this.sampleUtil(randomGenerator, k);
     }
 
     /**
      * Same as sample(k) but with the seed of the generator given as a parameter. The procedure
      * samples k times with replacement so it return a set with less than k distinct items
-     * @param k
-     * @param seed
-     * @return ImembershipSet instantiated as a partial sparse
+     * @param k the number of samples taken with replacement
+     * @param seed the seed for the randomness generator
+     * @return IMembershipSet instantiated as a partial sparse
      */
     @Override
-    public IMembershipSet sample (int k, long seed) {
-        Random randomGenerator = new Random(seed);
-        return sampleUtil(randomGenerator, k);
+    public IMembershipSet sample (final int k, final long seed) {
+        final Random randomGenerator = new Random(seed);
+        return this.sampleUtil(randomGenerator, k);
     }
 
-    //todo: use the best set implementation.
-    private IMembershipSet sampleUtil(Random randomGenerator, int k) {
-        IntOpenHashSet S = new IntOpenHashSet();
+
+    private IMembershipSet sampleUtil(final Random randomGenerator, final int k) {
+        final IntOpenHashSet S = new IntOpenHashSet();
         for (int i=0; i < k; i++)
             S.add(randomGenerator.nextInt(this.rowCount));
         return new PartialMembershipSparse(S);

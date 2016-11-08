@@ -23,14 +23,14 @@ public interface IMembershipSet {
      */
     int getSize(boolean exact);
     /**
-     * @return an ImembershipSet containing k samples from the membership map. The samples are made
+     * @return an IMembershipSet containing k samples from the membership map. The samples are made
      * with replacement so may contain less than k distinct values. There is no guarantee that two subsequent samples
      * return the same sample set.
      */
     IMembershipSet sample(int k);
 
     /**
-     * @return an ImembershipSet containing k samples from the membership map. The samples are made
+     * @return an IMembershipSet containing k samples from the membership map. The samples are made
      * with replacement so may contain less than k distinct values. The pseudo-random generated
      * is seeded with parameter seed, so subsequent calls with the same seed are guaranteed to return the same sample.
      */

@@ -6,7 +6,7 @@ import org.hiero.sketch.table.api.IRowIterator;
 import org.scalactic.exceptions.NullArgumentException;
 import java.util.*;
 import java.util.function.Predicate;
-import it.unimi.dsi.*;
+
 
 /**
  * This implementation uses a Set data structure to store the membership. It uses the Set's
@@ -16,24 +16,24 @@ import it.unimi.dsi.*;
  */
 public class PartialMembershipSparse implements IMembershipSet {
 
-    private int rowCount;
-    private IntOpenHashSet membershipMap;
+    private final int rowCount;
+    private final IntOpenHashSet membershipMap;
     /**
      * Standard way to construct this map is by supplying a membershipSet (perhaps the full one),
      * and the filter function passed as a lambda expression.
-     * @param baseMap
-     * @param filter
+     * @param baseMap the base IMembershipSet map on which the filter will be applied
+     * @param filter  the additional filter to be applied on the base map
      * @throws NullArgumentException
      */
-    public PartialMembershipSparse(IMembershipSet baseMap, Predicate<Integer> filter)
+    public PartialMembershipSparse(final IMembershipSet baseMap, final Predicate<Integer> filter)
             throws NullArgumentException {
         if (baseMap == null)
             throw new NullArgumentException("PartialMembershipDense cannot be instantiated " +
                     "without a base MembershipSet");
         if (filter == null)
             throw new NullArgumentException("Predicate for PartialMembershipDense cannot be null");
-        IRowIterator baseIterator = baseMap.getIterator();
-        this.membershipMap = new IntOpenHashSet(estimateSize(baseMap, filter));
+        final IRowIterator baseIterator = baseMap.getIterator();
+        this.membershipMap = new IntOpenHashSet(this.estimateSize(baseMap, filter));
         int tmp = baseIterator.getNextRow();
         while (tmp >= 0) {
             if (filter.test(tmp))
@@ -45,15 +45,15 @@ public class PartialMembershipSparse implements IMembershipSet {
 
     /**
      * Instantiates the class without a  predicate. Effectively converts the implementation of
-     * the basemap into that of a sparse map.
-     * @param baseMap of type ImembershipSet
+     * the baseMap into that of a sparse map.
+     * @param baseMap of type IMembershipSet
      * @throws NullArgumentException
      */
-    public PartialMembershipSparse(IMembershipSet baseMap) throws NullArgumentException {
+    public PartialMembershipSparse(final IMembershipSet baseMap) throws NullArgumentException {
         if (baseMap == null)
             throw new NullArgumentException("PartialMembershipDense cannot be instantiated " +
                     "without a base MembershipSet");
-        IRowIterator baseIterator = baseMap.getIterator();
+        final IRowIterator baseIterator = baseMap.getIterator();
         this.membershipMap = new IntOpenHashSet(baseMap.getSize(false));
         int tmp = baseIterator.getNextRow();
         while (tmp >= 0) {
@@ -64,11 +64,11 @@ public class PartialMembershipSparse implements IMembershipSet {
     }
 
     /**
-     * Essentially wraps a Set interface by ImembershipSet
+     * Essentially wraps a Set interface by IMembershipSet
      * @param baseSet of type Set
      * @throws NullArgumentException
      */
-    public PartialMembershipSparse(IntOpenHashSet baseSet) throws NullArgumentException {
+    public PartialMembershipSparse(final IntOpenHashSet baseSet) throws NullArgumentException {
         if (baseSet == null)
             throw new NullArgumentException("PartialMembershipDense cannot be instantiated " +
                     "without a base Set");
@@ -87,19 +87,21 @@ public class PartialMembershipSparse implements IMembershipSet {
     }
 
     @Override
-    public int getSize(boolean exact) { return this.rowCount; }
+    public int getSize(final boolean exact) { return this.rowCount; }
 
     /**
-     * Returns the k items from a random location in the map. Note that the k items are not completely idependent
+     * Returns the k items from a random location in the map. Note that the k items are not
+     * completely independent
      * but also depend on the placement done by the hash function of IntOpenHashSet
-     * todo: Currently iter.skip(n) takes O(n). Could be made O(1) but requires changing the library
+     * todo: Currently IntIterator.skip(n) takes O(n).
+     * Could be made O(1) but requires changing the library
      */
     @Override
-    public IMembershipSet sample(int k) {
-        IntOpenHashSet sampleSet = new IntOpenHashSet(k);
-        Random psg = new Random();
-        int offset = psg.nextInt(Integer.max(this.rowCount - k + 1, 1));
-        IntIterator iter = this.membershipMap.iterator();
+    public IMembershipSet sample(final int k) {
+        final IntOpenHashSet sampleSet = new IntOpenHashSet(k);
+        final Random psg = new Random();
+        final int offset = psg.nextInt(Integer.max((this.rowCount - k) + 1, 1));
+        final IntIterator iter = this.membershipMap.iterator();
         iter.skip(offset - 1);
         int tmp;
         for (int i = 0; i < k; i++ ) {
@@ -115,14 +117,14 @@ public class PartialMembershipSparse implements IMembershipSet {
      * Returns the k items from a random location in the map. The random location determined by a seed.
      * Note that the k items are not completely independent but also depend on the placement done by
      * the hash function of IntOpenHashSet.
-     * todo: Currently iter.skip(n) takes O(n). Could be made O(1) but requires changing the library
+     * todo: Currently IntIterator.skip(n) takes O(n). Could be made O(1) but requires changing the library
      */
     @Override
-    public IMembershipSet sample(int k, long seed) {
-        IntOpenHashSet sampleSet = new IntOpenHashSet(k);
-        Random psg = new Random(seed);
-        int offset = psg.nextInt(Integer.max(this.rowCount - k + 1, 1));
-        IntIterator iter = this.membershipMap.iterator();
+    public IMembershipSet sample(final int k, final long seed) {
+        final IntOpenHashSet sampleSet = new IntOpenHashSet(k);
+        final Random psg = new Random(seed);
+        final int offset = psg.nextInt(Integer.max((this.rowCount - k) + 1, 1));
+        final IntIterator iter = this.membershipMap.iterator();
         iter.skip(offset - 1);
         int tmp;
         for (int i = 0; i < k; i++ ) {
@@ -139,10 +141,10 @@ public class PartialMembershipSparse implements IMembershipSet {
         return new SparseIterator(this.membershipMap);
     }
 
-    private int estimateSize(IMembershipSet baseMap, Predicate<Integer> filter) {
-        IMembershipSet sampleSet = baseMap.sample(20);
+    private int estimateSize(final IMembershipSet baseMap, final Predicate<Integer> filter) {
+        final IMembershipSet sampleSet = baseMap.sample(20);
         int esize = 0;
-        IRowIterator iter= sampleSet.getIterator();
+        final IRowIterator iter= sampleSet.getIterator();
         int curr = iter.getNextRow();
         while (curr >= 0) {
             if (filter.test(curr))
@@ -154,10 +156,10 @@ public class PartialMembershipSparse implements IMembershipSet {
 
     // Implementing the Iterator
     private static class SparseIterator implements IRowIterator {
-        private IntOpenHashSet membershipMap;
-        private IntIterator myIterator;
+        private final IntOpenHashSet membershipMap;
+        private final IntIterator myIterator;
 
-        public SparseIterator(IntOpenHashSet membershipMap) {
+        private SparseIterator(final IntOpenHashSet membershipMap) {
             this.membershipMap = membershipMap;
             this.myIterator = this.membershipMap.iterator();
         }
