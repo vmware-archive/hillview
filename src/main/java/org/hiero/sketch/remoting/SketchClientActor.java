@@ -28,19 +28,25 @@ public class SketchClientActor extends AbstractActor {
             // All responses from the remote node is handled here.
             .match(OperationResponse.class,
                 response -> {
-                    final PublishSubject subject = this.operationToObservable.get(response.id);
-                    switch (response.type) {
-                        case OnCompletion:
-                            subject.onCompleted();
-                            this.operationToObservable.remove(response.id);
-                            break;
-                        case OnError:
-                            subject.onError((Throwable) response.result);
-                            this.operationToObservable.remove(response.id);
-                            break;
-                        case OnNext:
-                            subject.onNext(response.result);
-                            break;
+                    if (operationToObservable.containsKey(response.id)) {
+                        final PublishSubject subject = this.operationToObservable.get(response.id);
+                        switch (response.type) {
+                            case OnCompletion:
+                                subject.onCompleted();
+                                this.operationToObservable.remove(response.id);
+                                break;
+                            case OnError:
+                                subject.onError((Throwable) response.result);
+                                this.operationToObservable.remove(response.id);
+                                break;
+                            case OnNext:
+                                subject.onNext(response.result);
+                                break;
+                        }
+                    }
+                    else {
+                        System.err.println("Received response for " +
+                                           "ID we are not tracking" + response.id);
                     }
                 }
             )
@@ -88,8 +94,8 @@ public class SketchClientActor extends AbstractActor {
                             // It's fine if the below code gets invoked twice, the
                             // remote end is idempotent
                             if (this.operationToObservable.containsKey(sketchOp.id)) {
-                                sender().tell(new UnsubscribeOperation(sketchOp.id), self());
                                 this.operationToObservable.remove(sketchOp.id);
+                                sender().tell(new UnsubscribeOperation(sketchOp.id), self());
                             }
                         });
                         sender().tell(obs, self());
