@@ -2,15 +2,21 @@ package org.hiero.sketch.remoting;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
+import akka.actor.Props;
 import akka.japi.pf.ReceiveBuilder;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
 import org.hiero.sketch.dataset.api.IDataSet;
+import org.hiero.sketch.dataset.api.PRDataSetMonoid;
 import org.hiero.sketch.dataset.api.PartialResult;
+import org.hiero.sketch.dataset.api.PartialResultMonoid;
 import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
@@ -25,6 +31,34 @@ public class SketchServerActor<T> extends AbstractActor {
     private final ConcurrentHashMap<UUID, Subscription> operationToObservable
             = new ConcurrentHashMap<>();
 
+    private static final AtomicInteger nodeId = new AtomicInteger(0);
+    private static final Config config = ConfigFactory.parseString(
+        "akka {\n" +
+        " extensions = [\"com.romix.akka.serialization.kryo.KryoSerializationExtension$\"]\n" +
+        " stdout-loglevel = \"OFF\"\n" +
+        " loglevel = \"OFF\"\n" +
+        " actor {\n" +
+        "   serializers.java = \"com.romix.akka.serialization.kryo.KryoSerializer\"\n" +
+        "   kryo {\n" +
+        "     type = \"nograph\"\n" +
+        "     idstrategy = \"default\"\n" +
+        "     serializer-pool-size = 1024\n" +
+        "     kryo-reference-map = false\n" +
+        "   }\n" +
+        "   provider = remote\n" +
+        " }\n" +
+        " serialization-bindings {\n" +
+        "   \"java.io.Serializable\" = none\n" +
+        " }\n" +
+        " remote {\n" +
+        "   enabled-transports = [\"akka.remote.netty.tcp\"]\n" +
+        "   netty.tcp {\n" +
+        "     hostname = \"127.0.0.1\"\n" +
+        "     port = 2552\n" +
+        "   }\n" +
+        " }\n" +
+        "}");
+
     @SuppressWarnings("unchecked")
     public SketchServerActor(final IDataSet<T> dataSet) {
         this.dataSet = dataSet;
@@ -38,7 +72,7 @@ public class SketchServerActor<T> extends AbstractActor {
             .match(MapOperation.class, mapOp -> {
                 Observable<PartialResult<IDataSet>> observable = this.dataSet.map(mapOp.mapper);
                 Subscription sub =
-                    observable.subscribe(new ResponderSubscriber<PartialResult<IDataSet>>
+                    observable.subscribe(new MapResponderSubscriber<PartialResult<IDataSet>>
                                          (mapOp.id, sender()));
                 this.operationToObservable.put(mapOp.id, sub);
             })
@@ -68,12 +102,43 @@ public class SketchServerActor<T> extends AbstractActor {
         );
     }
 
+    private class MapResponderSubscriber<R> extends ResponderSubscriber<R> {
+        private final PartialResultMonoid resultMonoid = new PRDataSetMonoid();
+        private PartialResult result = this.resultMonoid.zero();
+
+        private MapResponderSubscriber(final UUID id, final ActorRef sender) {
+            super(id, sender);
+        }
+
+        @Override
+        public void onCompleted() {
+            if (!isUnsubscribed()) {
+                final String newActor = "ServerActor" + nodeId.incrementAndGet();
+                context().actorOf(Props.create(SketchServerActor.class,
+                                               this.result.deltaValue), newActor);
+                final OperationResponse<String> response =
+                        new OperationResponse<String>(newActor, this.id,
+                                                      OperationResponse.Type.NewDataSet);
+                this.sender.tell(response, self());
+            }
+        }
+
+        @Override
+        public void onNext(final R r) {
+            if (!isUnsubscribed()) {
+                final PartialResult pr = (PartialResult) r;
+                this.result = this.resultMonoid.add(this.result, pr);
+                super.onNext(r);
+            }
+        }
+    }
+
     /**
      * Generic subscriber, used to wrap results and send them back to the client
      */
     private class ResponderSubscriber<R> extends Subscriber<R> {
-        private final UUID id;
-        private final ActorRef sender;
+        final UUID id;
+        final ActorRef sender;
 
         private ResponderSubscriber(final UUID id, final ActorRef sender) {
             this.id = id;
@@ -82,26 +147,32 @@ public class SketchServerActor<T> extends AbstractActor {
 
         @Override
         public void onCompleted() {
-            final OperationResponse<Integer> response = new OperationResponse<Integer>(0, this.id,
-                    OperationResponse.Type.OnCompletion);
-            this.sender.tell(response, self());
-            SketchServerActor.this.operationToObservable.remove(this.id);
+            if (!isUnsubscribed()) {
+                final OperationResponse<Integer> response = new OperationResponse<Integer>(0, this.id,
+                        OperationResponse.Type.OnCompletion);
+                this.sender.tell(response, self());
+                SketchServerActor.this.operationToObservable.remove(this.id);
+            }
         }
 
         @Override
         public void onError(final Throwable throwable) {
-            final OperationResponse<Throwable> response =
-                    new OperationResponse<Throwable>(throwable, this.id,
-                            OperationResponse.Type.OnError);
-            this.sender.tell(response, self());
-            SketchServerActor.this.operationToObservable.remove(this.id);
+            if (!isUnsubscribed()) {
+                final OperationResponse<Throwable> response =
+                        new OperationResponse<Throwable>(throwable, this.id,
+                                OperationResponse.Type.OnError);
+                this.sender.tell(response, self());
+                SketchServerActor.this.operationToObservable.remove(this.id);
+            }
         }
 
         @Override
         public void onNext(final R r) {
-            final OperationResponse<R> response = new OperationResponse<R>(r, this.id,
-                    OperationResponse.Type.OnNext);
-            this.sender.tell(response, self());
+            if (!isUnsubscribed()) {
+                final OperationResponse<R> response = new OperationResponse<R>(r, this.id,
+                        OperationResponse.Type.OnNext);
+                this.sender.tell(response, self());
+            }
         }
     }
 }

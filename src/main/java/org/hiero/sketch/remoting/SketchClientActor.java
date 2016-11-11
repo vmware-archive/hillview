@@ -1,13 +1,19 @@
 package org.hiero.sketch.remoting;
 
 import akka.actor.AbstractActor;
+import akka.actor.ActorRef;
 import akka.actor.ActorSelection;
+import akka.actor.Props;
 import akka.japi.pf.ReceiveBuilder;
+import org.hiero.sketch.dataset.RemoteDataSet;
+import org.hiero.sketch.dataset.api.IDataSet;
+import org.hiero.sketch.dataset.api.PartialResult;
 import rx.Observable;
 import rx.subjects.PublishSubject;
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * This actor wires a local observable pertaining to a map or sketch
@@ -19,6 +25,7 @@ public class SketchClientActor extends AbstractActor {
 
     private final ConcurrentHashMap<UUID, PublishSubject> operationToObservable
             = new ConcurrentHashMap<>();
+    private static final AtomicInteger counter = new AtomicInteger(0);
 
     @SuppressWarnings("unchecked")
     public SketchClientActor(final ActorSelection remoteActor) {
@@ -28,7 +35,7 @@ public class SketchClientActor extends AbstractActor {
             // All responses from the remote node is handled here.
             .match(OperationResponse.class,
                 response -> {
-                    if (operationToObservable.containsKey(response.id)) {
+                    if (this.operationToObservable.containsKey(response.id)) {
                         final PublishSubject subject = this.operationToObservable.get(response.id);
                         switch (response.type) {
                             case OnCompletion:
@@ -41,6 +48,16 @@ public class SketchClientActor extends AbstractActor {
                                 break;
                             case OnNext:
                                 subject.onNext(response.result);
+                                break;
+                            case NewDataSet:
+                                final ActorSelection newRemote =
+                                        context().actorSelection("akka.tcp://SketchApplication@127.0.0.1:2554/user/ServerActor/"
+                                        + response.result);
+                                final ActorRef newClientActor = context().actorOf(Props.create(SketchClientActor.class, newRemote),
+                                        "ClientActor" + counter.incrementAndGet());
+                                IDataSet ids = new RemoteDataSet(newClientActor);
+                                subject.onNext(new PartialResult<IDataSet>(0.0, ids));
+                                subject.onCompleted();
                                 break;
                         }
                     }
@@ -94,7 +111,7 @@ public class SketchClientActor extends AbstractActor {
                             // It's fine if the below code gets invoked twice, the
                             // remote end is idempotent
                             if (this.operationToObservable.containsKey(sketchOp.id)) {
-                                this.operationToObservable.remove(sketchOp.id);
+                                PublishSubject ps = this.operationToObservable.remove(sketchOp.id);
                                 sender().tell(new UnsubscribeOperation(sketchOp.id), self());
                             }
                         });

@@ -1,22 +1,20 @@
 package org.hiero.sketch;
 
-import akka.actor.ActorRef;
-import akka.actor.ActorSelection;
-import akka.actor.ActorSystem;
-import akka.actor.Props;
+import akka.actor.*;
 import akka.util.Timeout;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import junit.framework.TestCase;
 import org.hiero.sketch.dataset.LocalDataSet;
+import org.hiero.sketch.dataset.RemoteDataSet;
 import org.hiero.sketch.dataset.api.*;
-import org.hiero.sketch.remoting.MapOperation;
 import org.hiero.sketch.remoting.SketchOperation;
 import org.hiero.sketch.remoting.SketchClientActor;
 import org.hiero.sketch.remoting.SketchServerActor;
 import static akka.pattern.Patterns.ask;
 import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -27,6 +25,7 @@ import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -119,9 +118,9 @@ public class AkkaTest {
             data[i] = i;
         }
         final LocalDataSet<int[]> lds = new LocalDataSet<>(data);
+        serverActorSystem.actorOf(Props.create(SketchServerActor.class, lds), "ServerActor");
 
         // Client
-        serverActorSystem.actorOf(Props.create(SketchServerActor.class, lds), "ServerActor");
         final Config clientConfig = ConfigFactory.parseString(
             "akka {\n" +
             " extensions = [\"com.romix.akka.serialization.kryo.KryoSerializationExtension$\"]\n" +
@@ -157,24 +156,6 @@ public class AkkaTest {
     }
 
     @Test
-    public void testMapThroughClient() {
-        final Timeout timeout = new Timeout(Duration.create(5, "seconds"));
-        final MapOperation mapOp = new MapOperation(new IncrementMap());
-        final Future<Object> future = ask(clientActor, mapOp, 1000);
-        try {
-            final AtomicInteger counter = new AtomicInteger();
-            final Observable obs = (Observable) Await.result(future, timeout.duration());
-            obs.subscribe(
-                m -> counter.incrementAndGet()
-            );
-            obs.toBlocking().last();
-            assertEquals(3, counter.get());
-        } catch (final Exception e) {
-            fail("Should not have thrown exception");
-        }
-    }
-
-    @Test
     public void testSketchThroughClient() {
         final Timeout timeout = new Timeout(Duration.create(5, "seconds"));
         final SketchOperation<int[], Integer> sketchOp = new SketchOperation<int[], Integer>(new SumSketch());
@@ -190,5 +171,62 @@ public class AkkaTest {
         } catch (final Exception e) {
             fail("Should not have thrown exception");
         }
+    }
+
+    @Test
+    public void testMapSketchThroughClient() {
+        final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(clientActor);
+        final IDataSet<int[]> remoteIdsNew = remoteIds.map(new IncrementMap()).toBlocking().last().deltaValue;
+        assertNotNull(remoteIdsNew);
+        final int result = remoteIdsNew.sketch(new SumSketch())
+                                       .map(e -> e.deltaValue)
+                                       .reduce((x, y) -> x + y)
+                                       .toBlocking()
+                                       .last();
+        assertEquals(50005000, result);
+    }
+
+    @Test
+    public void testMapSketchThroughClientUnsubscribe() {
+        final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(clientActor);
+        final IDataSet<int[]> remoteIdsNew = remoteIds.map(new IncrementMap()).toBlocking().last().deltaValue;
+        assertNotNull(remoteIdsNew);
+        final CountDownLatch countDownLatch = new CountDownLatch(3);
+        final Observable<PartialResult<Integer>> resultObs = remoteIds.sketch(new SumSketch());
+        final AtomicInteger counter = new AtomicInteger(0);
+        resultObs.subscribe(new Subscriber<PartialResult<Integer>>() {
+            private double done = 0.0;
+
+            @Override
+            public void onCompleted() {
+                fail("Unreachable");
+            }
+
+            @Override
+            public void onError(final Throwable throwable) {
+                fail("Unreachable");
+            }
+
+            @Override
+            public void onNext(final PartialResult<Integer> pr) {
+                this.done += pr.deltaDone;
+                final int count = counter.incrementAndGet();
+                countDownLatch.countDown();
+                if (count == 3) {
+                    this.unsubscribe();
+                }
+                else {
+                    TestCase.assertEquals(this.done, 0.1 * count);
+                }
+            }
+        });
+
+        try {
+            countDownLatch.await();
+        } catch (final InterruptedException e) {
+            fail("Should not happen");
+        }
+
+        assertEquals(3, counter.get());
     }
 }
