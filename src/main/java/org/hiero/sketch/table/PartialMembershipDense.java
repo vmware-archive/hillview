@@ -13,7 +13,6 @@ import java.util.function.Predicate;
  * there are many filters, and iterator takes a long time if it's sparse. Also, each first call for
  * getSize after a new filter is a linear scan.
  */
-@SuppressWarnings("ALL")
 public class PartialMembershipDense implements IMembershipSet {
     private final IMembershipSet baseMap;
     private int rowCount;
@@ -31,9 +30,6 @@ public class PartialMembershipDense implements IMembershipSet {
 
     /**
      * instantiated with a a membershipSet, possibly the full one, and a filter predicate.
-     * @param baseMap
-     * @param filter
-     * @throws NullArgumentException
      */
     public PartialMembershipDense(final IMembershipSet baseMap, final Predicate<Integer> filter) throws
             NullArgumentException {
@@ -119,15 +115,12 @@ public class PartialMembershipDense implements IMembershipSet {
     /**
      * Samples the base map for k items and then applies the filter on that set. Makes 10 attempts to reach k samples
      * this way and then gives up and returns whatever was sampled.
-     * @param k
-     * @param seed
-     * @return
-     */
+      */
     @Override
     public IMembershipSet sample(final int k, @SuppressWarnings("LocalCanBeFinal") final long seed) {
         int samples = 0;
         IMembershipSet batchSet;
-        final IntOpenHashSet sampleSet = new IntOpenHashSet();;
+        final IntOpenHashSet sampleSet = new IntOpenHashSet();
         for (int attempt = 0; attempt < 10; attempt++) {
             batchSet = this.baseMap.sample(k, seed + attempt);
             final IRowIterator it = batchSet.getIterator();

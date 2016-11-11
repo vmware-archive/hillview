@@ -5,7 +5,6 @@ import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
 import java.util.Random;
 
-
 /**
  * A IMembershipSet which contains all rows.
  */
