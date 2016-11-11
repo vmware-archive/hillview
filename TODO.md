@@ -13,3 +13,4 @@ Implementation tasks
 * Read/write from various storage media
 * Integrage everything in SpreadSheet
 * Dynamic code generation for higher perf
+* Implement web server in Java

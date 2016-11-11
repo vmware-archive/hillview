@@ -5,7 +5,7 @@ import org.hiero.sketch.table.IntArrayColumn;
 import org.hiero.sketch.table.api.ContentsKind;
 import org.junit.Test;
 import java.util.BitSet;
-import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Test for IntArrayColumn class

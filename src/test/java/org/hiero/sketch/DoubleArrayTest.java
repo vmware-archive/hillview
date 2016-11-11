@@ -5,9 +5,9 @@ import org.hiero.sketch.table.DoubleArrayColumn;
 import org.hiero.sketch.table.api.ContentsKind;
 import org.junit.Test;
 import java.util.BitSet;
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertFalse;
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Test for DoubleArrayColumn class
@@ -27,7 +27,7 @@ class DoubleArrayTest {
         }
         assertEquals(col.sizeInRows(), this.size);
         for (int i = 0; i < this.size; i++) {
-            assertEquals(Math.sqrt(i+1), col.getDouble(i));
+            assertEquals(Math.sqrt(i+1), col.getDouble(i), 1e-3);
             if ((i % 5) == 0)
                 assertTrue(col.isMissing(i));
             else
@@ -47,7 +47,7 @@ class DoubleArrayTest {
                 col.setMissing(i);
         assertEquals(col.sizeInRows(), this.size);
         for (int i = 0; i < this.size; i++) {
-            assertEquals(Math.sqrt(i+1), col.getDouble(i));
+            assertEquals(Math.sqrt(i+1), col.getDouble(i), 1e-3);
             //System.out.println(col.getDouble(i));
             if ((i % 5) == 0)
                 assertTrue(col.isMissing(i));
@@ -69,7 +69,7 @@ class DoubleArrayTest {
         final DoubleArrayColumn col = new DoubleArrayColumn(this.desc, data, missing);
         assertEquals(col.sizeInRows(), this.size);
         for (int i = 0; i < this.size; i++) {
-            assertEquals(Math.sqrt(i+1), col.getDouble(i));
+            assertEquals(Math.sqrt(i+1), col.getDouble(i), 1e-3);
             if ((i % 5) == 0)
                 assertTrue(col.isMissing(i));
             else
