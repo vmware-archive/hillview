@@ -4,12 +4,14 @@ import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.japi.pf.ReceiveBuilder;
+import akka.serialization.Serialization;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.hiero.sketch.dataset.api.IDataSet;
 import org.hiero.sketch.dataset.api.PRDataSetMonoid;
 import org.hiero.sketch.dataset.api.PartialResult;
 import org.hiero.sketch.dataset.api.PartialResultMonoid;
+import org.hiero.sketch.table.StringArrayColumn;
 import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
@@ -114,10 +116,10 @@ public class SketchServerActor<T> extends AbstractActor {
         public void onCompleted() {
             if (!isUnsubscribed()) {
                 final String newActor = "ServerActor" + nodeId.incrementAndGet();
-                context().actorOf(Props.create(SketchServerActor.class,
+                final ActorRef actorRef = context().actorOf(Props.create(SketchServerActor.class,
                                                this.result.deltaValue), newActor);
                 final OperationResponse<String> response =
-                        new OperationResponse<String>(newActor, this.id,
+                        new OperationResponse<String>(Serialization.serializedActorPath(actorRef), this.id,
                                                       OperationResponse.Type.NewDataSet);
                 this.sender.tell(response, self());
             }

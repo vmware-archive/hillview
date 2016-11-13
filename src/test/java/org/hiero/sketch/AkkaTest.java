@@ -149,7 +149,7 @@ public class AkkaTest {
             "}");
 
         final ActorSystem clientActorSystem = ActorSystem.create("SketchApplication", clientConfig);
-        final ActorSelection remoteActor = clientActorSystem.actorSelection(
+        final ActorRef remoteActor = clientActorSystem.actorFor(
                 "akka.tcp://SketchApplication@127.0.0.1:2554/user/ServerActor");
 
         clientActor = clientActorSystem.actorOf(Props.create(SketchClientActor.class, remoteActor), "ClientActor");

@@ -1,9 +1,6 @@
 package org.hiero.sketch.remoting;
 
-import akka.actor.AbstractActor;
-import akka.actor.ActorRef;
-import akka.actor.ActorSelection;
-import akka.actor.Props;
+import akka.actor.*;
 import akka.japi.pf.ReceiveBuilder;
 import org.hiero.sketch.dataset.RemoteDataSet;
 import org.hiero.sketch.dataset.api.IDataSet;
@@ -28,7 +25,7 @@ public class SketchClientActor extends AbstractActor {
     private static final AtomicInteger counter = new AtomicInteger(0);
 
     @SuppressWarnings("unchecked")
-    public SketchClientActor(final ActorSelection remoteActor) {
+    public SketchClientActor(final ActorRef remoteActor) {
         receive(
             ReceiveBuilder
 
@@ -50,9 +47,8 @@ public class SketchClientActor extends AbstractActor {
                                 subject.onNext(response.result);
                                 break;
                             case NewDataSet:
-                                final ActorSelection newRemote =
-                                        context().actorSelection("akka.tcp://SketchApplication@127.0.0.1:2554/user/ServerActor/"
-                                        + response.result);
+                                final ActorRef newRemote =
+                                        context().actorFor((String) response.result);
                                 final ActorRef newClientActor = context().actorOf(Props.create(SketchClientActor.class, newRemote),
                                         "ClientActor" + counter.incrementAndGet());
                                 IDataSet ids = new RemoteDataSet(newClientActor);
