@@ -9,10 +9,9 @@ import rx.Subscriber;
 
 import java.util.ArrayList;
 
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.fail;
+import static org.junit.Assert.*;
 
-public class DatasetTest {
+public class DataSetTest {
     private class Increment implements IMap<Integer, Integer> {
         @Override
         public Observable<PartialResult<Integer>> apply(final Integer data) {
@@ -96,16 +95,26 @@ public class DatasetTest {
 
     private final int largeSize = 10 * 1024 * 1024;
 
-    private IDataSet<int[]> createLargeDataset() {
+    private IDataSet<int[]> createLargeDataset(boolean separateThread) {
         final int[] data = new int[this.largeSize];
         for (int i=0; i < this.largeSize; i++)
             data[i] = ((i % 10) == 0) ? 0 : i;
-        return new LocalDataSet<int[]>(data);
+        return new LocalDataSet<int[]>(data, separateThread);
     }
 
     @Test
     public void largeDataSetTest() {
-        final IDataSet<int[]> ld = this.createLargeDataset();
+        final IDataSet<int[]> ld = this.createLargeDataset(false);
+        final int result = ld.blockingSketch(new Sum());
+        int sum = 0;
+        for (int i=0; i < this.largeSize; i++)
+            sum += ((i % 10) == 0) ? 0 : i;
+        assertEquals(result, sum);
+    }
+
+    @Test
+    public void separateThreadDataSetTest() {
+        final IDataSet<int[]> ld = this.createLargeDataset(true);
         final int result = ld.blockingSketch(new Sum());
         int sum = 0;
         for (int i=0; i < this.largeSize; i++)
@@ -115,7 +124,7 @@ public class DatasetTest {
 
     @Test
     public void unsubscriptionTest() {
-        final IDataSet<int[]> ld = this.createLargeDataset();
+        final IDataSet<int[]> ld = this.createLargeDataset(true);
         final Observable<PartialResult<Integer>> pr = ld.sketch(new Sum());
         pr.subscribe(new Subscriber<PartialResult<Integer>>() {
             private int count = 0;
@@ -138,7 +147,7 @@ public class DatasetTest {
                 if (this.count == 3)
                     this.unsubscribe();
                 else
-                    assertEquals(this.done, 0.1 * this.count);
+                    assertEquals(this.done, 0.1 * this.count, 1e-3);
             }
         });
     }

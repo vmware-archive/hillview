@@ -21,8 +21,9 @@ to the unpacked folder (e.g, <fully qualified path
 to>/jdk/jdk1.8.0_101). To set your JAVA_HOME environment variable, add
 the following to your ~/.bashrc or ~/.zshrc.
 
-> export JAVA_HOME="<path-to-jdk-folder>"
+> ```export JAVA_HOME="<path-to-jdk-folder>"```
 
+<!---
 ## Installing spark and HDFS
 
 Download Spark and Hadoop using our provided script; it will ask for
@@ -93,7 +94,7 @@ We should see the result in the output folder in HDFS:
 
 > $: hadoop-2.7.3/bin/hdfs dfs -ls /output/
 > $: hadoop-2.7.3/bin/hdfs dfs -cat /output/part-00000
-
+--->
 
 ## Setup IntelliJ IDEA
 

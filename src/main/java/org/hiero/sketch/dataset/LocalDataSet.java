@@ -2,19 +2,28 @@ package org.hiero.sketch.dataset;
 
 import org.hiero.sketch.dataset.api.*;
 import rx.Observable;
+import rx.schedulers.Schedulers;
 
 public class LocalDataSet<T> implements IDataSet<T> {
     private final T data;
-    // TODO: run on a separate thread
+    private boolean separateThread;
 
     public LocalDataSet(final T data) {
         this.data = data;
+        this.separateThread = true;
+    }
+
+    public LocalDataSet(final T data, boolean separateThread) {
+        this.data = data;
+        this.separateThread = separateThread;
     }
 
     @Override
     public <S> Observable<PartialResult<IDataSet<S>>> map(final IMap<T, S> mapper) {
         final PartialResult<S> initial = new PartialResult<S>(0.0, null);
-        final Observable<PartialResult<S>> start = Observable.just(initial);
+        Observable<PartialResult<S>> start = Observable.just(initial);
+        if (this.separateThread)
+            start = start.observeOn(Schedulers.computation());
         final Observable<PartialResult<S>> mapResult = mapper.apply(this.data);
         final Observable<PartialResult<S>> chain = start.concatWith(mapResult);
         final Observable<PartialResult<IDataSet<S>>> progress =

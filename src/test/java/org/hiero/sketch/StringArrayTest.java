@@ -4,8 +4,10 @@ import org.hiero.sketch.table.ColumnDescription;
 import org.hiero.sketch.table.StringArrayColumn;
 import org.hiero.sketch.table.api.ContentsKind;
 import org.junit.Test;
-
-import static junit.framework.TestCase.*;
+import java.util.BitSet;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /*
  * Test for StringArrayColumn class.
