@@ -19,6 +19,6 @@ public class OperationResponse<T> implements Serializable {
     }
 
     public enum Type {
-        OnNext, OnCompletion, OnError, NewDataSet
+        OnNext, OnCompletion, OnError, NewRemoteDataSet
     }
 }

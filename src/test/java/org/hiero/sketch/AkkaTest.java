@@ -2,7 +2,7 @@ package org.hiero.sketch;
 
 import akka.actor.*;
 import akka.util.Timeout;
-import com.typesafe.config.Config;
+ßimport com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import junit.framework.TestCase;
 import org.hiero.sketch.dataset.LocalDataSet;
@@ -25,6 +25,7 @@ import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 
+import java.io.File;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -33,6 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class AkkaTest {
     private static ActorRef clientActor;
+    private static ActorRef remoteActor;
 
     private class IncrementMap implements IMap<int[], int[]> {
         @Override
@@ -83,33 +85,10 @@ public class AkkaTest {
     @BeforeClass
     public static void initialize() {
         // Server
-        final Config serverConfig = ConfigFactory.parseString(
-            "akka {\n" +
-            " extensions = [\"com.romix.akka.serialization.kryo.KryoSerializationExtension$\"]\n" +
-            " stdout-loglevel = \"OFF\"\n" +
-            " loglevel = \"OFF\"\n" +
-            " actor {\n" +
-            "   serializers.java = \"com.romix.akka.serialization.kryo.KryoSerializer\"\n" +
-            "   kryo {\n" +
-            "     type = \"nograph\"\n" +
-            "     idstrategy = \"default\"\n" +
-            "     serializer-pool-size = 1024\n" +
-            "     kryo-reference-map = false\n" +
-            "   }\n" +
-            "   provider = remote\n" +
-            " }\n" +
-            " serialization-bindings {\n" +
-            "   \"java.io.Serializable\" = none\n" +
-            " }\n" +
-            " remote {\n" +
-            "   enabled-transports = [\"akka.remote.netty.tcp\"]\n" +
-            "   netty.tcp {\n" +
-            "     hostname = \"127.0.0.1\"\n" +
-            "     port = 2554\n" +
-            "   }\n" +
-            " }\n" +
-            "}");
+        final String serverConfFileUrl = ClassLoader.getSystemResource("test-server.conf").getFile();
+        final Config serverConfig = ConfigFactory.parseFile(new File(serverConfFileUrl));
         final ActorSystem serverActorSystem = ActorSystem.create("SketchApplication", serverConfig);
+        assertNotNull(serverActorSystem);
 
         // Create a dataset
         final int size = 10000;
@@ -118,50 +97,29 @@ public class AkkaTest {
             data[i] = i;
         }
         final LocalDataSet<int[]> lds = new LocalDataSet<>(data);
-        serverActorSystem.actorOf(Props.create(SketchServerActor.class, lds), "ServerActor");
+        remoteActor = serverActorSystem.actorOf(Props.create(SketchServerActor.class, lds),
+                                                "ServerActor");
 
         // Client
-        final Config clientConfig = ConfigFactory.parseString(
-            "akka {\n" +
-            " extensions = [\"com.romix.akka.serialization.kryo.KryoSerializationExtension$\"]\n" +
-            " stdout-loglevel = \"OFF\"\n" +
-            " loglevel = \"OFF\"\n" +
-            " actor {\n" +
-            "   serializers.java = \"com.romix.akka.serialization.kryo.KryoSerializer\"\n" +
-            "   kryo {\n" +
-            "     type = \"nograph\"\n" +
-            "     idstrategy = \"default\"\n" +
-            "     serializer-pool-size = 1024\n" +
-            "     kryo-reference-map = false\n" +
-            "   }\n" +
-            "   provider = remote\n" +
-            " }\n" +
-            " serialization-bindings {\n" +
-            "   \"java.io.Serializable\" = none\n" +
-            " }\n" +
-            " remote {\n" +
-            "   enabled-transports = [\"akka.remote.netty.tcp\"]\n" +
-            "   netty.tcp {\n" +
-            "     hostname = \"127.0.0.1\"\n" +
-            "     port = 2552\n" +
-            "   }\n" +
-            " }\n" +
-            "}");
-
+        final String clientConfFileUrl = ClassLoader.getSystemResource("client.conf").getFile();
+        final Config clientConfig = ConfigFactory.parseFile(new File(clientConfFileUrl));
         final ActorSystem clientActorSystem = ActorSystem.create("SketchApplication", clientConfig);
         final ActorRef remoteActor = clientActorSystem.actorFor(
                 "akka.tcp://SketchApplication@127.0.0.1:2554/user/ServerActor");
-
         clientActor = clientActorSystem.actorOf(Props.create(SketchClientActor.class, remoteActor), "ClientActor");
+        assertNotNull(clientActor);
     }
 
     @Test
     public void testSketchThroughClient() {
-        final Timeout timeout = new Timeout(Duration.create(5, "seconds"));
+        final int timeoutDuration = 1000;
+        final Timeout timeout = new Timeout(Duration.create(timeoutDuration, "milliseconds"));
         final SketchOperation<int[], Integer> sketchOp = new SketchOperation<int[], Integer>(new SumSketch());
-        final Future<Object> future = ask(clientActor, sketchOp, 1000);
+        final Future<Object> future = ask(clientActor, sketchOp, timeoutDuration);
         try {
-            final Observable<PartialResult<Integer>> obs = (Observable<PartialResult<Integer>>) Await.result(future, timeout.duration());
+            @SuppressWarnings("unchecked")
+            final Observable<PartialResult<Integer>> obs =
+                    (Observable<PartialResult<Integer>>) Await.result(future, timeout.duration());
             obs.subscribe();
             final int result = obs.map(e -> e.deltaValue)
                                    .reduce((x, y) -> x + y)
@@ -175,7 +133,7 @@ public class AkkaTest {
 
     @Test
     public void testMapSketchThroughClient() {
-        final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(clientActor);
+        final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(clientActor, remoteActor);
         final IDataSet<int[]> remoteIdsNew = remoteIds.map(new IncrementMap()).toBlocking().last().deltaValue;
         assertNotNull(remoteIdsNew);
         final int result = remoteIdsNew.sketch(new SumSketch())
@@ -188,7 +146,7 @@ public class AkkaTest {
 
     @Test
     public void testMapSketchThroughClientUnsubscribe() {
-        final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(clientActor);
+        final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(clientActor, remoteActor);
         final IDataSet<int[]> remoteIdsNew = remoteIds.map(new IncrementMap()).toBlocking().last().deltaValue;
         assertNotNull(remoteIdsNew);
         final CountDownLatch countDownLatch = new CountDownLatch(3);
@@ -228,5 +186,16 @@ public class AkkaTest {
         }
 
         assertEquals(3, counter.get());
+    }
+
+
+    @Test
+    public void testZip() {
+        final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(clientActor, remoteActor);
+        final IDataSet<int[]> remoteIdsLeft = remoteIds.map(new IncrementMap()).toBlocking().last().deltaValue;
+        final IDataSet<int[]> remoteIdsRight = remoteIds.map(new IncrementMap()).toBlocking().last().deltaValue;
+        final PartialResult<IDataSet<Pair<int[], int[]>>> last
+                = remoteIdsLeft.zip(remoteIdsRight).toBlocking().last();
+        assertNotNull(last);
     }
 }

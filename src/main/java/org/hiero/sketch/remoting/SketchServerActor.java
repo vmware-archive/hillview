@@ -5,13 +5,7 @@ import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.japi.pf.ReceiveBuilder;
 import akka.serialization.Serialization;
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
-import org.hiero.sketch.dataset.api.IDataSet;
-import org.hiero.sketch.dataset.api.PRDataSetMonoid;
-import org.hiero.sketch.dataset.api.PartialResult;
-import org.hiero.sketch.dataset.api.PartialResultMonoid;
-import org.hiero.sketch.table.StringArrayColumn;
+import org.hiero.sketch.dataset.api.*;
 import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
@@ -29,37 +23,13 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class SketchServerActor<T> extends AbstractActor {
 
+    private static final String SERVER_ACTOR_NAME = "ServerActor";
+    private static final AtomicInteger nodeId = new AtomicInteger(0);
+
     private final IDataSet<T> dataSet;
     private final ConcurrentHashMap<UUID, Subscription> operationToObservable
             = new ConcurrentHashMap<>();
 
-    private static final AtomicInteger nodeId = new AtomicInteger(0);
-    private static final Config config = ConfigFactory.parseString(
-        "akka {\n" +
-        " extensions = [\"com.romix.akka.serialization.kryo.KryoSerializationExtension$\"]\n" +
-        " stdout-loglevel = \"OFF\"\n" +
-        " loglevel = \"OFF\"\n" +
-        " actor {\n" +
-        "   serializers.java = \"com.romix.akka.serialization.kryo.KryoSerializer\"\n" +
-        "   kryo {\n" +
-        "     type = \"nograph\"\n" +
-        "     idstrategy = \"default\"\n" +
-        "     serializer-pool-size = 1024\n" +
-        "     kryo-reference-map = false\n" +
-        "   }\n" +
-        "   provider = remote\n" +
-        " }\n" +
-        " serialization-bindings {\n" +
-        "   \"java.io.Serializable\" = none\n" +
-        " }\n" +
-        " remote {\n" +
-        "   enabled-transports = [\"akka.remote.netty.tcp\"]\n" +
-        "   netty.tcp {\n" +
-        "     hostname = \"127.0.0.1\"\n" +
-        "     port = 2552\n" +
-        "   }\n" +
-        " }\n" +
-        "}");
 
     @SuppressWarnings("unchecked")
     public SketchServerActor(final IDataSet<T> dataSet) {
@@ -89,6 +59,24 @@ public class SketchServerActor<T> extends AbstractActor {
                 this.operationToObservable.put(sketchOp.id, sub);
             })
 
+            // Zips are executed as leftDataSet.zip(rightDataSet). The recipient
+            // of a ZipOperation is the actor pointing to the leftDataSet. We therefore
+            // collect the leftDataSet reference here, and send a ZipExecute message to the
+            // rightDataSet which is what will execute the Zip and stream the
+            // result back to the original sender.
+            .match(ZipOperation.class,
+                zipOp -> zipOp.remoteActor.tell(new ZipExecute(zipOp, dataSet, sender()), self()))
+
+            // Triggered by an incoming ZipOperation above.
+            .match(ZipExecute.class, zipExec -> {
+                Observable<PartialResult<IDataSet<Pair>>> observable =
+                        zipExec.dataSet.zip(this.dataSet);
+                Subscription sub = observable.subscribe(new ZipResponderSubscriber<PartialResult>
+                        (zipExec.zipOp.id, zipExec.clientActor));
+                this.operationToObservable.put(zipExec.zipOp.id, sub);
+            })
+
+            // Unsubscribe messages
             .match(UnsubscribeOperation.class, unsubscribeOp -> {
                 if (this.operationToObservable.containsKey(unsubscribeOp.id)) {
                     Subscription sub = this.operationToObservable.remove(unsubscribeOp.id);
@@ -115,12 +103,12 @@ public class SketchServerActor<T> extends AbstractActor {
         @Override
         public void onCompleted() {
             if (!isUnsubscribed()) {
-                final String newActor = "ServerActor" + nodeId.incrementAndGet();
+                final String newActor = SERVER_ACTOR_NAME + nodeId.incrementAndGet();
                 final ActorRef actorRef = context().actorOf(Props.create(SketchServerActor.class,
                                                this.result.deltaValue), newActor);
                 final OperationResponse<String> response =
                         new OperationResponse<String>(Serialization.serializedActorPath(actorRef), this.id,
-                                                      OperationResponse.Type.NewDataSet);
+                                                      OperationResponse.Type.NewRemoteDataSet);
                 this.sender.tell(response, self());
             }
         }
@@ -131,6 +119,28 @@ public class SketchServerActor<T> extends AbstractActor {
                 final PartialResult pr = (PartialResult) r;
                 this.result = this.resultMonoid.add(this.result, pr);
                 super.onNext(r);
+            }
+        }
+    }
+
+    private class ZipResponderSubscriber<R> extends ResponderSubscriber<R> {
+        private final PartialResultMonoid resultMonoid = new PRDataSetMonoid();
+        private final PartialResult result = this.resultMonoid.zero();
+
+        private ZipResponderSubscriber(final UUID id, final ActorRef sender) {
+            super(id, sender);
+        }
+
+        @Override
+        public void onCompleted() {
+            if (!isUnsubscribed()) {
+                final String newActor = SERVER_ACTOR_NAME + nodeId.incrementAndGet();
+                final ActorRef actorRef = context().actorOf(Props.create(SketchServerActor.class,
+                        this.result.deltaValue), newActor);
+                final OperationResponse<String> response =
+                        new OperationResponse<String>(Serialization.serializedActorPath(actorRef), this.id,
+                                OperationResponse.Type.NewRemoteDataSet);
+                this.sender.tell(response, self());
             }
         }
     }
