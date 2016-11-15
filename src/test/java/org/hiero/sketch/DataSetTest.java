@@ -95,7 +95,7 @@ public class DataSetTest {
 
     private final int largeSize = 10 * 1024 * 1024;
 
-    private IDataSet<int[]> createLargeDataset(boolean separateThread) {
+    private IDataSet<int[]> createLargeDataset(final boolean separateThread) {
         final int[] data = new int[this.largeSize];
         for (int i=0; i < this.largeSize; i++)
             data[i] = ((i % 10) == 0) ? 0 : i;

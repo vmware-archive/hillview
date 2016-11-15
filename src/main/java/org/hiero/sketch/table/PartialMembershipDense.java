@@ -1,9 +1,10 @@
 package org.hiero.sketch.table;
 
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import org.apache.commons.lang.NullArgumentException;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
-import org.scalactic.exceptions.NullArgumentException;
+
 import java.util.function.Predicate;
 
 /**

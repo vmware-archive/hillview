@@ -6,14 +6,14 @@ import rx.schedulers.Schedulers;
 
 public class LocalDataSet<T> implements IDataSet<T> {
     private final T data;
-    private boolean separateThread;
+    private final boolean separateThread;
 
     public LocalDataSet(final T data) {
         this.data = data;
         this.separateThread = true;
     }
 
-    public LocalDataSet(final T data, boolean separateThread) {
+    public LocalDataSet(final T data, final boolean separateThread) {
         this.data = data;
         this.separateThread = separateThread;
     }

@@ -3,7 +3,7 @@ Big data spreadsheet
 
 ## Requirements
 
-* Ubuntu Linux, Hadoop filesystem, Scala programming language, Maven build system
+* Ubuntu Linux, Hadoop filesystem, Maven build system
 * IDEA Intellij for development
 
 > $: sudo apt-get install maven
@@ -103,11 +103,6 @@ https://www.jetbrains.com/idea/.  You can just untar the linux binary
 in a place of your choice and run the shell script
 `ideaXXX/bin/idea.sh`.
 
-Next, setup the scala plugins for IntelliJ. Go to Preferences ->
- Plugins -> Install JetBrains Plugin and then search for Scala.
-Wait for it to install. Next, in Preferences -> Plugins, make sure
-Scala appears in the list of plugins and is checked.
-
 ## Import Hiero into IntelliJ IDEA
 
 Next, import the hiero project inside IntelliJ.  On the welcome
@@ -137,17 +132,10 @@ https://help.github.com/articles/fork-a-repo/
 In more detail, here is a step-by-step guide to committing your changes:
 
 1) git add <files that changed>
-
 2) git commit -m "Description of commit" (Saves your work)
-
 3) git fetch upstream (To get the upstream version)
-
 4) git merge upstream/master
-
 5) Resolve conflicts if any. If so, repeat 1-4.
-
 6) Test, analyze merged version.
-
 7) git push origin master.
-
 8) Create a pull request.

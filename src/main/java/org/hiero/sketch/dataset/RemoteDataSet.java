@@ -8,10 +8,10 @@ import org.hiero.sketch.remoting.MapOperation;
 import org.hiero.sketch.remoting.SketchOperation;
 import org.hiero.sketch.remoting.ZipOperation;
 import rx.Observable;
+import akka.pattern.Patterns;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
-import akka.pattern.Patterns;
 
 /**
  * An IDataSet that is a proxy for a DataSet on a remote machine.
