@@ -83,8 +83,9 @@ public class AkkaTest {
      * Create separate server and client actor systems to test remoting.
      */
     @BeforeClass
-    public static void initialize() {
+    public static void initialize() throws Exception {
         // Server
+        final Timeout timeout = new Timeout(Duration.create(1000, "milliseconds"));
         final String serverConfFileUrl = ClassLoader.getSystemResource("test-server.conf").getFile();
         final Config serverConfig = ConfigFactory.parseFile(new File(serverConfFileUrl));
         final ActorSystem serverActorSystem = ActorSystem.create("SketchApplication", serverConfig);
@@ -104,8 +105,9 @@ public class AkkaTest {
         final String clientConfFileUrl = ClassLoader.getSystemResource("client.conf").getFile();
         final Config clientConfig = ConfigFactory.parseFile(new File(clientConfFileUrl));
         final ActorSystem clientActorSystem = ActorSystem.create("SketchApplication", clientConfig);
-        final ActorRef remoteActor = clientActorSystem.actorFor(
-                "akka.tcp://SketchApplication@127.0.0.1:2554/user/ServerActor");
+        final ActorRef remoteActor = Await.result(clientActorSystem.actorSelection(
+                "akka.tcp://SketchApplication@127.0.0.1:2554/user/ServerActor").resolveOne(timeout),
+                timeout.duration());
         clientActor = clientActorSystem.actorOf(Props.create(SketchClientActor.class, remoteActor), "ClientActor");
         assertNotNull(clientActor);
     }
@@ -197,5 +199,6 @@ public class AkkaTest {
         final PartialResult<IDataSet<Pair<int[], int[]>>> last
                 = remoteIdsLeft.zip(remoteIdsRight).toBlocking().last();
         assertNotNull(last);
+        assertEquals(last.deltaDone, 1.0, 0.001);
     }
 }

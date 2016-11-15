@@ -82,7 +82,6 @@ public class RemoteDataSet<T> implements IDataSet<T> {
                                                                                timeout.duration());
             return retval;
         } catch (final Exception e) {
-            e.printStackTrace();
             return Observable.error(e);
         }
     }

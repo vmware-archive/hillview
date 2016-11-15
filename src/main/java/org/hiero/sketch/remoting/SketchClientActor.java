@@ -2,11 +2,14 @@ package org.hiero.sketch.remoting;
 
 import akka.actor.*;
 import akka.japi.pf.ReceiveBuilder;
+import akka.util.Timeout;
 import org.hiero.sketch.dataset.RemoteDataSet;
 import org.hiero.sketch.dataset.api.IDataSet;
 import org.hiero.sketch.dataset.api.PartialResult;
 import rx.Observable;
 import rx.subjects.PublishSubject;
+import scala.concurrent.Await;
+import scala.concurrent.duration.Duration;
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -19,7 +22,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * to its execution on the remote node.
  */
 public class SketchClientActor extends AbstractActor {
-
+    private static final Timeout RESOLVE_TIMEOUT =
+            new Timeout(Duration.create(1000, "milliseconds"));
     private static final String CLIENT_ACTOR_NAME = "ClientActor";
     private static final AtomicInteger counter = new AtomicInteger(0);
 
@@ -50,17 +54,24 @@ public class SketchClientActor extends AbstractActor {
                                 subject.onNext(response.result);
                                 break;
                             case NewRemoteDataSet:
-                                final ActorRef newRemote =
-                                        context().actorFor((String) response.result);
-                                final ActorRef newClientActor = context().actorOf(Props.create(SketchClientActor.class, newRemote),
+                                final ActorRef newRemote = Await.result(context().actorSelection(
+                                        (String) response.result).resolveOne(RESOLVE_TIMEOUT),
+                                        RESOLVE_TIMEOUT.duration());
+                                final ActorRef newClientActor =
+                                        context().actorOf(Props.create(SketchClientActor.class,
+                                                                       newRemote),
                                         CLIENT_ACTOR_NAME + counter.incrementAndGet());
                                 IDataSet ids = new RemoteDataSet(newClientActor, newRemote);
-                                subject.onNext(new PartialResult<IDataSet>(0.0, ids));
+                                subject.onNext(new PartialResult<IDataSet>(1.0, ids));
                                 subject.onCompleted();
                                 break;
                         }
                     }
                     else {
+                        // This is to handle a race condition where the local unsubscribe
+                        // is executed, and we receive a stream of in flight
+                        // on{Next, Completion, Error} events from the remote server, before
+                        // the remote unsubscribe is executed.
                         System.err.println("Received response for " +
                                            "ID we are not tracking" + response.id);
                     }
