@@ -37,6 +37,6 @@ public class PartialResult<T> implements Serializable {
 
     @Override
     public String toString() {
-        return "PR[" + Double.toString(this.deltaDone) + "," + this.deltaValue.toString() + "]";
+        return "PR[" + Double.toString(this.deltaDone) + "," + this.deltaValue + "]";
     }
 }
