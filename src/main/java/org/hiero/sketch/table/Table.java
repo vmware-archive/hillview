@@ -47,4 +47,3 @@ public class Table {
                 this.schema.getColumnCount(), this.members.getSize());
     }
 }
-

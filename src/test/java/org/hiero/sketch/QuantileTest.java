@@ -9,7 +9,6 @@ import java.util.Random;
 
 public class QuantileTest {
 
-
     @Test
     public void TestQOne() {
         final int inpSize = 100;

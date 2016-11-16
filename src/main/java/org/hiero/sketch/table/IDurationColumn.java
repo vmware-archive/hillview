@@ -39,7 +39,6 @@ public interface IDurationColumn extends IColumn {
         };
     }
 
-
     @Override
     default IColumn compress(final IMembershipSet set) {
         final int size = set.getSize();
@@ -60,5 +59,4 @@ public interface IDurationColumn extends IColumn {
         }
         return result;
     }
-
 }

@@ -36,7 +36,6 @@ public class TableTest {
         final Table smallTable = myTable.compress();
     }
 
-
     @Test
     public void TableTest1() {
         final int size = 100;
