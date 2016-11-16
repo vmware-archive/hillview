@@ -1,9 +1,10 @@
 package org.hiero.sketch.table;
 
 import it.unimi.dsi.fastutil.ints.*;
+import org.apache.commons.lang.NullArgumentException;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
-import org.scalactic.exceptions.NullArgumentException;
+
 import java.util.*;
 import java.util.function.Predicate;
 
@@ -15,7 +16,6 @@ import java.util.function.Predicate;
  * The downside is the constructor that runs in linear time.
  */
 public class PartialMembershipSparse implements IMembershipSet {
-
     private final int rowCount;
     private final IntOpenHashSet membershipMap;
     /**
@@ -23,7 +23,6 @@ public class PartialMembershipSparse implements IMembershipSet {
      * and the filter function passed as a lambda expression.
      * @param baseMap the base IMembershipSet map on which the filter will be applied
      * @param filter  the additional filter to be applied on the base map
-     * @throws NullArgumentException
      */
     public PartialMembershipSparse(final IMembershipSet baseMap, final Predicate<Integer> filter)
             throws NullArgumentException {
@@ -47,7 +46,6 @@ public class PartialMembershipSparse implements IMembershipSet {
      * Instantiates the class without a  predicate. Effectively converts the implementation of
      * the baseMap into that of a sparse map.
      * @param baseMap of type IMembershipSet
-     * @throws NullArgumentException
      */
     public PartialMembershipSparse(final IMembershipSet baseMap) throws NullArgumentException {
         if (baseMap == null)
@@ -66,7 +64,6 @@ public class PartialMembershipSparse implements IMembershipSet {
     /**
      * Essentially wraps a Set interface by IMembershipSet
      * @param baseSet of type Set
-     * @throws NullArgumentException
      */
     public PartialMembershipSparse(final IntOpenHashSet baseSet) throws NullArgumentException {
         if (baseSet == null)

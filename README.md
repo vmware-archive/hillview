@@ -3,7 +3,7 @@ Big data spreadsheet
 
 ## Requirements
 
-* Ubuntu Linux, Hadoop filesystem, Scala programming language, Maven build system
+* Ubuntu Linux, Hadoop filesystem, Maven build system
 * IDEA Intellij for development
 
 > $: sudo apt-get install maven
@@ -21,8 +21,9 @@ to the unpacked folder (e.g, <fully qualified path
 to>/jdk/jdk1.8.0_101). To set your JAVA_HOME environment variable, add
 the following to your ~/.bashrc or ~/.zshrc.
 
-> export JAVA_HOME="<path-to-jdk-folder>"
+> ```export JAVA_HOME="<path-to-jdk-folder>"```
 
+<!---
 ## Installing spark and HDFS
 
 Download Spark and Hadoop using our provided script; it will ask for
@@ -93,7 +94,7 @@ We should see the result in the output folder in HDFS:
 
 > $: hadoop-2.7.3/bin/hdfs dfs -ls /output/
 > $: hadoop-2.7.3/bin/hdfs dfs -cat /output/part-00000
-
+--->
 
 ## Setup IntelliJ IDEA
 
@@ -101,11 +102,6 @@ First, download and install Intellij IDEA:
 https://www.jetbrains.com/idea/.  You can just untar the linux binary
 in a place of your choice and run the shell script
 `ideaXXX/bin/idea.sh`.
-
-Next, setup the scala plugins for IntelliJ. Go to Preferences ->
- Plugins -> Install JetBrains Plugin and then search for Scala.
-Wait for it to install. Next, in Preferences -> Plugins, make sure
-Scala appears in the list of plugins and is checked.
 
 ## Import Hiero into IntelliJ IDEA
 
@@ -136,17 +132,10 @@ https://help.github.com/articles/fork-a-repo/
 In more detail, here is a step-by-step guide to committing your changes:
 
 1) git add <files that changed>
-
 2) git commit -m "Description of commit" (Saves your work)
-
 3) git fetch upstream (To get the upstream version)
-
 4) git merge upstream/master
-
 5) Resolve conflicts if any. If so, repeat 1-4.
-
 6) Test, analyze merged version.
-
 7) git push origin master.
-
 8) Create a pull request.

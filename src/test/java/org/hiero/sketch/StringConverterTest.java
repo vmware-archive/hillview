@@ -3,7 +3,7 @@ package org.hiero.sketch;
 import org.hiero.sketch.table.ExplicitStringConverter;
 import org.junit.Test;
 
-import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 public class StringConverterTest {
     private final ExplicitStringConverter converter;
@@ -20,6 +20,6 @@ public class StringConverterTest {
 
     @Test
     public void testMember() {
-        assertEquals( this.converter.asDouble("S"), 0.0 );
+        assertEquals( this.converter.asDouble("S"), 0.0, 1e-3 );
     }
 }

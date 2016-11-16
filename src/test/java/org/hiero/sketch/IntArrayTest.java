@@ -5,9 +5,9 @@ import org.hiero.sketch.table.IntArrayColumn;
 import org.hiero.sketch.table.api.ContentsKind;
 import org.junit.Test;
 
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertFalse;
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Test for IntArrayColumn class
