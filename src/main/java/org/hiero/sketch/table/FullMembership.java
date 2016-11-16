@@ -62,7 +62,6 @@ public class FullMembership implements IMembershipSet {
         return this.sampleUtil(randomGenerator, k);
     }
 
-
     private IMembershipSet sampleUtil(final Random randomGenerator, final int k) {
         final IntOpenHashSet S = new IntOpenHashSet();
         for (int i=0; i < k; i++)

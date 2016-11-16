@@ -4,7 +4,7 @@ class PerfRegressionTest {
     /**
      * Compare current run time of test to saved run time.
      */
-    private static void comparePerf(final String testName, final long time) {
+    private static void printPerf(final String testName, final long time) {
         System.out.println(testName + " took " + time/1000 + " us");
     }
 
@@ -16,6 +16,14 @@ class PerfRegressionTest {
         final StackTraceElement[] stack = Thread.currentThread().getStackTrace();
         final int callerIndex = 2;
         final String name = stack[callerIndex].getClassName() + "." + stack[callerIndex].getMethodName();
-        comparePerf(name, time);
+        printPerf(name, time);
+    }
+
+    static void comparePerf(final String printThis, final long time) {
+        final StackTraceElement[] stack = Thread.currentThread().getStackTrace();
+        final int callerIndex = 2;
+        final String name = stack[callerIndex].getClassName() + "."
+                + stack[callerIndex].getMethodName() + printThis;
+        printPerf(name, time);
     }
 }

@@ -1,11 +1,11 @@
 package org.hiero.sketch.table;
 
 import org.hiero.sketch.table.api.ISchema;
+import org.hiero.sketch.table.api.ISubSchema;
 
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.HashMap;
-
 
 public final class Schema implements ISchema {
     /* Map a column name into an integer index */
@@ -20,8 +20,8 @@ public final class Schema implements ISchema {
     public void append(final ColumnDescription desc) {
         if (this.index.containsKey(desc.name))
             throw new InvalidParameterException("Column with name " + desc.name + " already exists");
-        this.columns.add(desc);
         this.index.put(desc.name, this.columns.size());
+        this.columns.add(desc);
     }
 
     @Override
@@ -42,6 +42,18 @@ public final class Schema implements ISchema {
     @Override
     public int getColumnIndex(final String columnName) {
         return this.index.getOrDefault(columnName, -1);
+    }
+
+    @Override
+    public ISchema project(final ISubSchema subSchema) {
+        final Schema projection = new Schema();
+        for (int i =0; i < this.getColumnCount(); i++) {
+            ColumnDescription colDesc = this.getDescription(i);
+            if (subSchema.isColumnPresent(colDesc.name)) {
+                projection.append(colDesc);
+            }
+        }
+        return projection;
     }
 
     @Override

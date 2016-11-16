@@ -9,4 +9,5 @@ public interface ISchema {
     ColumnDescription getDescription(int index);
     int getColumnCount();
     int getColumnIndex(String columnName);
+    ISchema project(ISubSchema subSchema);
 }

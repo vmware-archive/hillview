@@ -13,20 +13,26 @@ import static junit.framework.TestCase.assertTrue;
  * Test for IntArrayColumn class
  */
 class IntArrayTest {
-    private final int size = 100;
-    private final ColumnDescription desc = new ColumnDescription("test", ContentsKind.Int, true);
+    static private final ColumnDescription desc = new
+            ColumnDescription("Identity", ContentsKind.Int, true);
 
-    /* Test for constructor using length and no arrays*/
-    @Test
-    public void testIntArrayZero() {
-        final IntArrayColumn col = new IntArrayColumn(this.desc, this.size);
-        for (int i = 0; i < this.size; i++) {
+    public static IntArrayColumn generateIntArray(int size) {
+        final IntArrayColumn col = new IntArrayColumn(desc, size);
+        for (int i = 0; i < size; i++) {
             col.set(i, i);
             if ((i % 5) == 0)
                 col.setMissing(i);
         }
-        assertEquals(col.sizeInRows(), this.size);
-        for (int i = 0; i < this.size; i++) {
+        return col;
+    }
+
+    /* Test for constructor using length and no arrays*/
+    @Test
+    public void testIntArrayZero() {
+        int size = 100;
+        final IntArrayColumn col = generateIntArray(size);
+        assertEquals(col.sizeInRows(), size);
+        for (int i = 0; i < size; i++) {
             if ((i % 5) == 0)
                 assertTrue(col.isMissing(i));
             else {
@@ -39,15 +45,17 @@ class IntArrayTest {
     /* Test for constructor using data array */
     @Test
     public void testIntArrayOne() {
-        final int[] data = new int[this.size];
-        for (int i = 0; i < this.size; i++)
+        int size = 100;
+
+        final int[] data = new int[size];
+        for (int i = 0; i < size; i++)
             data[i] = i;
-        final IntArrayColumn col = new IntArrayColumn(this.desc, data);
-        for (int i = 0; i < this.size; i++)
+        final IntArrayColumn col = new IntArrayColumn(desc, data);
+        for (int i = 0; i < size; i++)
             if ((i % 5) == 0)
                 col.setMissing(i);
-        assertEquals(col.sizeInRows(), this.size);
-        for (int i = 0; i < this.size; i++) {
+        assertEquals(col.sizeInRows(), size);
+        for (int i = 0; i < size; i++) {
             assertEquals(i, col.getInt(i));
             if ((i % 5) == 0)
                 assertEquals(true, col.isMissing(i));

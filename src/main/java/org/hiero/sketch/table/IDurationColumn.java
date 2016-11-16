@@ -1,8 +1,7 @@
 package org.hiero.sketch.table;
 
-import org.hiero.sketch.table.api.IColumn;
-import org.hiero.sketch.table.api.IStringConverter;
-import org.hiero.sketch.table.api.RowComparator;
+import org.hiero.sketch.table.api.*;
+
 import java.time.Duration;
 
 public interface IDurationColumn extends IColumn {
@@ -39,4 +38,27 @@ public interface IDurationColumn extends IColumn {
             }
         };
     }
+
+
+    @Override
+    default IColumn compress(IMembershipSet set) {
+        int size = set.getSize();
+        IRowIterator rowIt = set.getIterator();
+        DurationArrayColumn result = new DurationArrayColumn(this.getDescription(), size);
+        int row = 0;
+        while (true) {
+            int i = rowIt.getNextRow();
+            if (i == -1) {
+                break;
+            }
+            if (this.isMissing(i)) {
+                result.setMissing(row);
+            } else {
+                result.set(row, this.getDuration(i));
+            }
+            row++;
+        }
+        return result;
+    }
+
 }

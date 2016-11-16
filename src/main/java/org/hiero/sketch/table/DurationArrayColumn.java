@@ -41,7 +41,7 @@ public final class DurationArrayColumn extends BaseArrayColumn implements IDurat
         return this.data[rowIndex];
     }
 
-    private void set(final int rowIndex, final Duration value) {
+    public void set(final int rowIndex, final Duration value) {
         this.data[rowIndex] = value;
     }
 
