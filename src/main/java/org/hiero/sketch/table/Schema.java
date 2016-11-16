@@ -48,7 +48,7 @@ public final class Schema implements ISchema {
     public ISchema project(final ISubSchema subSchema) {
         final Schema projection = new Schema();
         for (int i =0; i < this.getColumnCount(); i++) {
-            ColumnDescription colDesc = this.getDescription(i);
+            final ColumnDescription colDesc = this.getDescription(i);
             if (subSchema.isColumnPresent(colDesc.name)) {
                 projection.append(colDesc);
             }

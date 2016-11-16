@@ -35,13 +35,13 @@ public interface IIntColumn extends IColumn {
     }
 
     @Override
-    default IColumn compress(IMembershipSet set) {
-        int size = set.getSize();
-        IRowIterator rowIt = set.getIterator();
-        IntArrayColumn result = new IntArrayColumn(this.getDescription(), size);
+    default IColumn compress(final IMembershipSet set) {
+        final int size = set.getSize();
+        final IRowIterator rowIt = set.getIterator();
+        final IntArrayColumn result = new IntArrayColumn(this.getDescription(), size);
         int row = 0;
         while (true) {
-            int i = rowIt.getNextRow();
+            final int i = rowIt.getNextRow();
             if (i == -1) {
                 break;
             }

@@ -14,6 +14,7 @@ public class TreeVsHeapTest {
     public void TreeVsHeapOne() {
         final int runs = 1;
         long startTime, endTime;
+        //noinspection ConstantConditions
         for (int i = 1; i < runs; i++) {
             for (int j = 1; j < this.inpSize; j++) {
                 this.randInp[j] = this.rn.nextInt(this.inpSize);
@@ -21,14 +22,14 @@ public class TreeVsHeapTest {
             final int maxSize = 100;
             final HeapTopK<Integer> myHeap = new HeapTopK<>(maxSize, MyCompare.instance);
             startTime = System.nanoTime();
-            for (final int j:randInp) {
+            for (final int j: this.randInp) {
                 myHeap.push(j);
             }
             endTime = System.nanoTime();
             PerfRegressionTest.comparePerf(" Using Heap: ", endTime - startTime);
             final TreeTopK<Integer> myTree = new TreeTopK<>(maxSize, MyCompare.instance);
             startTime = System.nanoTime();
-            for (final int j:randInp) {
+            for (final int j: this.randInp) {
                 myTree.push(j);
             }
             endTime = System.nanoTime();

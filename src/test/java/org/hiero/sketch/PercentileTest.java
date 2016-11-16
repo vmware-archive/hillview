@@ -10,16 +10,19 @@ public class PercentileTest {
     @Test
     public void plotPercentile() {
 
-        int resolution = 2000;
-        int invErrSq= 100;
+        final int resolution = 2000;
+        final int invErrSq= 100;
         final int sampleSize = 5*invErrSq*resolution;
-        int range = 1000000, i, j, runs;
+        final int range = 1000000;
+        int i;
+        int j;
+        int runs;
 
         for (runs = 0; runs < 1; runs++) {
-            int[] percentile = new int[resolution];
-            Random rn = new Random();
+            final int[] percentile = new int[resolution];
+            final Random rn = new Random();
             for (i = 0; i < sampleSize; i++) {
-                j = (int) Math.floor(rn.nextInt(range) * resolution / range);
+                j = (int) Math.floor((rn.nextInt(range) * resolution) / range);
                 percentile[j]++;
             }
       /*  for (j = 0; j < 100; j++)

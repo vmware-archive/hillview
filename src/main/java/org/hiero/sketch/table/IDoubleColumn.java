@@ -36,13 +36,13 @@ public interface IDoubleColumn extends IColumn {
     }
 
     @Override
-    default IColumn compress(IMembershipSet set) {
-        int size = set.getSize();
-        IRowIterator rowIt = set.getIterator();
-        DoubleArrayColumn result = new DoubleArrayColumn(this.getDescription(), size);
+    default IColumn compress(final IMembershipSet set) {
+        final int size = set.getSize();
+        final IRowIterator rowIt = set.getIterator();
+        final DoubleArrayColumn result = new DoubleArrayColumn(this.getDescription(), size);
         int row = 0;
         while (true) {
-            int i = rowIt.getNextRow();
+            final int i = rowIt.getNextRow();
             if (i == -1) {
                 break;
             }

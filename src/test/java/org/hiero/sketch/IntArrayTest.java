@@ -16,7 +16,7 @@ class IntArrayTest {
     static private final ColumnDescription desc = new
             ColumnDescription("Identity", ContentsKind.Int, true);
 
-    public static IntArrayColumn generateIntArray(int size) {
+    public static IntArrayColumn generateIntArray(final int size) {
         final IntArrayColumn col = new IntArrayColumn(desc, size);
         for (int i = 0; i < size; i++) {
             col.set(i, i);
@@ -29,7 +29,7 @@ class IntArrayTest {
     /* Test for constructor using length and no arrays*/
     @Test
     public void testIntArrayZero() {
-        int size = 100;
+        final int size = 100;
         final IntArrayColumn col = generateIntArray(size);
         assertEquals(col.sizeInRows(), size);
         for (int i = 0; i < size; i++) {
@@ -45,7 +45,7 @@ class IntArrayTest {
     /* Test for constructor using data array */
     @Test
     public void testIntArrayOne() {
-        int size = 100;
+        final int size = 100;
 
         final int[] data = new int[size];
         for (int i = 0; i < size; i++)

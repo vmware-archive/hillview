@@ -22,7 +22,7 @@ public class WebServer {
         return server;
     }
 
-    static class RootHandler implements HttpHandler {
+    private static class RootHandler implements HttpHandler {
         @Override
         public void handle(final HttpExchange exchange) throws IOException {
             final String reply = "Welcome to hiero";
@@ -32,7 +32,7 @@ public class WebServer {
         }
     }
 
-    static void error(final HttpExchange exchange, final String message) {
+    private static void error(final HttpExchange exchange, final String message) {
         try {
             LOGGER.severe(message);
             exchange.sendResponseHeaders(HttpURLConnection.HTTP_BAD_METHOD, message.length());
@@ -44,8 +44,8 @@ public class WebServer {
         }
     }
 
-    static class IncHandler implements HttpHandler {
-        String execute(final HttpExchange exchange, final String args) {
+    private static class IncHandler implements HttpHandler {
+        private String execute(final HttpExchange exchange, final String args) {
             try {
                 final int i = Integer.parseInt(args);
                 return Integer.toString(i+1);
