@@ -17,7 +17,7 @@ public class Quantiles {
 
     public Integer[] getQuantiles(final int resolution){
         final int invError = 100;
-        int sampleSize = invError * resolution;
+        final int sampleSize = invError * resolution;
         final Integer[] Sample = new Integer[sampleSize];
         final Random rn = new Random();
         for(int i = 0; i < sampleSize; i++){
