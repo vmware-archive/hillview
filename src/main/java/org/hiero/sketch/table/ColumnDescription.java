@@ -6,12 +6,12 @@ import org.hiero.sketch.table.api.ContentsKind;
  * Describes the contents of a column in a local table.
  */
 public class ColumnDescription {
-    final String       name;
-    final ContentsKind kind;
+    public final String name;
+    public final ContentsKind kind;
     /**
      * If true the column can have missing values (called NULL in databases).
      */
-    final boolean allowMissing;
+    public final boolean allowMissing;
 
     public ColumnDescription(final String name, final ContentsKind kind, final boolean allowMissing) {
         this.name = name;

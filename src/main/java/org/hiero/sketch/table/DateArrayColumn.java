@@ -40,7 +40,7 @@ public final class DateArrayColumn
         return this.data[rowIndex];
     }
 
-    private void set(final int rowIndex, final Date value) {
+    public void set(final int rowIndex, final Date value) {
         this.data[rowIndex] = value;
     }
 

@@ -1,8 +1,6 @@
 package org.hiero.sketch.table;
 
-import org.hiero.sketch.table.api.IColumn;
-import org.hiero.sketch.table.api.IStringConverter;
-import org.hiero.sketch.table.api.RowComparator;
+import org.hiero.sketch.table.api.*;
 
 public interface IStringColumn extends IColumn {
     @Override
@@ -35,5 +33,26 @@ public interface IStringColumn extends IColumn {
                 }
             }
         };
+    }
+
+    @Override
+    default IColumn compress(final IMembershipSet set) {
+        final int size = set.getSize();
+        final IRowIterator rowIt = set.getIterator();
+        final StringArrayColumn result = new StringArrayColumn(this.getDescription(), size);
+        int row = 0;
+        while (true) {
+            final int i = rowIt.getNextRow();
+            if (i == -1) {
+                break;
+            }
+            if (this.isMissing(i)) {
+                result.setMissing(row);
+            } else {
+                result.set(row, this.getString(i));
+            }
+            row++;
+        }
+        return result;
     }
 }

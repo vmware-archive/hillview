@@ -37,4 +37,6 @@ public interface IColumn {
     String asString(int rowIndex);
 
     RowComparator getComparator();
+
+    IColumn compress(IMembershipSet set);
 }
