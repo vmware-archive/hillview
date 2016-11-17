@@ -11,7 +11,6 @@ public enum ContentsKind {
     Double,
     Duration; /* java.time.Duration values */
 
-    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean isObject() {
         switch (this) {
             case String:

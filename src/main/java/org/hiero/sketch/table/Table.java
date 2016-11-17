@@ -17,8 +17,9 @@ public class Table {
     }
 
     /**
-     * Generates a table that contains only the columns     refereed to by subSchema,
+     * Generates a table that contains only the columns referred to by subSchema,
      * and only the rows contained in IMembership Set with consecutive numbering.
+     * The order among the columns is preserved.
      */
     public Table compress(final ISubSchema subSchema) {
         final ISchema newSchema = this.schema.project(subSchema);
@@ -42,8 +43,8 @@ public class Table {
         return compress(subSchema);
     }
 
-    public void printStats(){
-        System.out.printf("No of columns: %d, No of rows: %d%n",
-                this.schema.getColumnCount(), this.members.getSize());
+    public String toString(){
+        return("Table, " + this.schema.getColumnCount() + " columns, "
+                + this.members.getSize() + " rows");
     }
 }

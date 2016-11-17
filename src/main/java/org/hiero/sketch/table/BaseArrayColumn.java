@@ -1,12 +1,13 @@
 package org.hiero.sketch.table;
 
+import java.io.Serializable;
 import java.security.InvalidParameterException;
 import java.util.BitSet;
 
 /**
  * Adds a missing bit vector to BaseColumn for integers and doubles (if missing values are allowed)
  */
-abstract class BaseArrayColumn extends BaseColumn {
+abstract class BaseArrayColumn extends BaseColumn implements Serializable {
     private BitSet missing;
 
     BaseArrayColumn(final ColumnDescription description, final int size) {

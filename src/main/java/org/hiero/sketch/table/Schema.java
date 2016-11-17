@@ -44,6 +44,10 @@ public final class Schema implements ISchema {
         return this.index.getOrDefault(columnName, -1);
     }
 
+    /**
+     * Generates a new Schema that contains only the subset of columns contained in the subSchema.
+     * The relative order of columns is preserved.
+     */
     @Override
     public ISchema project(final ISubSchema subSchema) {
         final Schema projection = new Schema();

@@ -5,7 +5,7 @@ class PerfRegressionTest {
      * Compare current run time of test to saved run time.
      */
     private static void printPerf(final String testName, final long time) {
-        System.out.println(testName + " took " + time/1000 + " us");
+        /*System.out.println(testName + " took " + time/1000 + " us");*/
     }
 
     /**

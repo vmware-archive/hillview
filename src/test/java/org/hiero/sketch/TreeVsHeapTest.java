@@ -12,7 +12,7 @@ public class TreeVsHeapTest {
 
     @Test
     public void TreeVsHeapOne() {
-        final int runs = 1;
+        final int runs = 10;
         long startTime, endTime;
         //noinspection ConstantConditions
         for (int i = 1; i < runs; i++) {
