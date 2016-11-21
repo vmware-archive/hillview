@@ -1,7 +1,6 @@
 package org.hiero.sketch.table;
 
 import org.hiero.sketch.table.api.ContentsKind;
-import org.hiero.sketch.table.api.IStringConverter;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -9,7 +8,9 @@ import java.util.Date;
 /**
  * A column of Dates that can grow in size.
  */
-public class DateListColumn extends BaseListColumn {
+public class DateListColumn
+        extends BaseListColumn
+        implements IDateColumn {
     private final ArrayList<Date[]> segments;
 
     public DateListColumn(final ColumnDescription desc) {
@@ -26,21 +27,25 @@ public class DateListColumn extends BaseListColumn {
         return this.segments.get(segmentId)[localIndex];
     }
 
-    @Override
-    public double asDouble(final int rowIndex, final IStringConverter unused) {
-        final Date s = this.getDate(rowIndex);
-        return Converters.toDouble(s);
-    }
-
-    public void append(final Date value) {
+    private void append(final Date value) {
         final int segmentId = this.size >> this.LogSegmentSize;
         final int localIndex = this.size & this.SegmentMask;
         if (this.segments.size() <= segmentId) {
             this.segments.add(new Date[this.SegmentSize]);
-            this.growPresent();
+            this.growMissing();
         }
         this.segments.get(segmentId)[localIndex] = value;
         this.size++;
+    }
+
+    @Override
+    public boolean isMissing(final int rowIndex) {
+        return this.getDate(rowIndex) == null;
+    }
+
+    @Override
+    public void appendMissing() {
+        this.append(null);
     }
 }
 

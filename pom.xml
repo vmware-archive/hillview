@@ -40,10 +40,20 @@
       <version>3.0.0</version>
     </dependency>
     <dependency>
+      <groupId>it.unimi.dsi</groupId>
+      <artifactId>fastutil</artifactId>
+      <version>7.0.9</version>
+    </dependency>
+    <dependency>
       <groupId>io.reactivex</groupId>
       <artifactId>rxjava</artifactId>
       <version>1.1.6</version>
     </dependency>
+      <dependency>
+          <groupId>commons-lang</groupId>
+          <artifactId>commons-lang</artifactId>
+          <version>2.1</version>
+      </dependency>
   </dependencies>
 
   <build>
@@ -56,22 +66,6 @@
           <source>1.8</source>
           <target>1.8</target>
         </configuration>
-      </plugin>
-      <plugin>
-        <groupId>net.alchim31.maven</groupId>
-        <artifactId>scala-maven-plugin</artifactId>
-        <version>3.2.1</version>
-        <configuration>
-            <scalaCompatVersion>2.11.8</scalaCompatVersion>
-        </configuration>
-        <executions>
-          <execution>
-            <goals>
-              <goal>compile</goal>
-              <goal>testCompile</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>

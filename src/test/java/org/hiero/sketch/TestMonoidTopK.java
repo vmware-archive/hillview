@@ -6,25 +6,25 @@ import org.junit.Test;
 import java.util.Random;
 
 public class TestMonoidTopK {
-    public int maxSize =1000;
-    public int lSize;
-    public int rSize;
-    public final int inpSize = 10000;
+    private final int maxSize =1000;
+    private int lSize;
+    private int rSize;
+    private final int inpSize = 10000;
     private TreeTopK<Integer> leftTree;
     private TreeTopK<Integer> rightTree;
-    MonoidTopK<Integer> myTopK = new MonoidTopK<Integer>(maxSize, MyCompare.instance);
+    private final MonoidTopK<Integer> myTopK = new MonoidTopK<Integer>(this.maxSize, MyCompare.instance);
 
     @Test
     public void MonoidTopKTestZero() {
-        lSize = 100;
-        rSize = 100;
-        leftTree = new TreeTopK<Integer>(lSize, MyCompare.instance);;
-        rightTree = new TreeTopK<Integer>(rSize, MyCompare.instance);
-        Random rn = new Random();
-        for (int i = 0; i < inpSize; i++)
-            leftTree.push(rn.nextInt(inpSize));
-        for (int j = 0; j < inpSize; j++)
-            rightTree.push(rn.nextInt(inpSize));
+        this.lSize = 100;
+        this.rSize = 100;
+        this.leftTree = new TreeTopK<Integer>(this.lSize, MyCompare.instance);
+        this.rightTree = new TreeTopK<Integer>(this.rSize, MyCompare.instance);
+        final Random rn = new Random();
+        for (int i = 0; i < this.inpSize; i++)
+            this.leftTree.push(rn.nextInt(this.inpSize));
+        for (int j = 0; j < this.inpSize; j++)
+            this.rightTree.push(rn.nextInt(this.inpSize));
         /*System.out.println(rightTree.getTopK().toString());
         System.out.println(leftTree.getTopK().toString());
         System.out.println(myTopK.Add(leftTree.getTopK(), rightTree.getTopK()).toString());*/
@@ -32,15 +32,15 @@ public class TestMonoidTopK {
 
     @Test
     public void MonoidTopKTestOne() {
-        lSize = 50;
-        rSize = 50;
-        leftTree = new TreeTopK<Integer>(lSize, MyCompare.instance);
-        rightTree = new TreeTopK<Integer>(rSize, MyCompare.instance);
-        Random rn = new Random();
-        for (int i = 0; i < inpSize; i++)
-            leftTree.push(rn.nextInt(inpSize));
-        for (int j = 0; j < inpSize; j++)
-            rightTree.push(rn.nextInt(inpSize));
+        this.lSize = 50;
+        this.rSize = 50;
+        this.leftTree = new TreeTopK<Integer>(this.lSize, MyCompare.instance);
+        this.rightTree = new TreeTopK<Integer>(this.rSize, MyCompare.instance);
+        final Random rn = new Random();
+        for (int i = 0; i < this.inpSize; i++)
+            this.leftTree.push(rn.nextInt(this.inpSize));
+        for (int j = 0; j < this.inpSize; j++)
+            this.rightTree.push(rn.nextInt(this.inpSize));
         //System.out.println(rightTree.getTopK().toString());
         //System.out.println(leftTree.getTopK().toString());
         //System.out.println(myTopK.Add(leftTree.getTopK(), rightTree.getTopK()).toString());
@@ -48,18 +48,19 @@ public class TestMonoidTopK {
 
     @Test
     public void MonoidTopKTestTimed() {
-        lSize = 1000;
-        rSize = 1000;
-        leftTree = new TreeTopK<Integer>(lSize, MyCompare.instance);
-        rightTree = new TreeTopK<Integer>(rSize, MyCompare.instance);
-        Random rn = new Random();
-        for (int i = 0; i < inpSize; i++)
-            leftTree.push(rn.nextInt(inpSize));
-        for (int j = 0; j < inpSize; j++)
-            rightTree.push(rn.nextInt(inpSize));
-        long startTime = System.nanoTime();
-        myTopK.add(leftTree.getTopK(), rightTree.getTopK());
-        long endTime = System.nanoTime();
+        this.lSize = 1000;
+        this.rSize = 1000;
+        this.leftTree = new TreeTopK<Integer>(this.lSize, MyCompare.instance);
+        this.rightTree = new TreeTopK<Integer>(this.rSize, MyCompare.instance);
+        final Random rn = new Random();
+        for (int i = 0; i < this.inpSize; i++)
+            this.leftTree.push(rn.nextInt(this.inpSize));
+        for (int j = 0; j < this.inpSize; j++)
+            this.rightTree.push(rn.nextInt(this.inpSize));
+        final long startTime = System.nanoTime();
+        this.myTopK.add(this.leftTree.getTopK(), this.rightTree.getTopK());
+        final long endTime = System.nanoTime();
+        PerfRegressionTest.comparePerf(endTime - startTime);
         //System.out.format("Time taken to merge: %d%n", (endTime - startTime) / 1000000);
     }
 }

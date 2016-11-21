@@ -6,8 +6,7 @@ import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.IntArrayColumn;
 import org.junit.Test;
 
-import static junit.framework.TestCase.assertEquals;
-
+import static org.junit.Assert.assertEquals;
 
 public class ColumnTest {
     @Test
@@ -24,7 +23,7 @@ public class ColumnTest {
         assertEquals( col.getInt(0), 0 );
         for (int i=0; i < size; i++)
             assertEquals(i, col.getInt(i));
-        assertEquals( col.asDouble(0, null), 0.0 );
+        assertEquals( col.asDouble(0, null), 0.0, 1e-3 );
     }
 
     @Test
@@ -39,9 +38,9 @@ public class ColumnTest {
 
 
         assertEquals( col.sizeInRows(), size );
-        assertEquals( col.getDouble(0), 0.0 );
+        assertEquals( col.getDouble(0), 0.0, 10e-3 );
         for (int i=0; i < size; i++)
-            assertEquals((double)i, col.getDouble(i));
-        assertEquals( col.asDouble(0, null), 0.0 );
+            assertEquals((double)i, col.getDouble(i), 1e-3);
+        assertEquals( col.asDouble(0, null), 0.0, 1e-3 );
     }
 }

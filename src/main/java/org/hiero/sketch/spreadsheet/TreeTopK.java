@@ -7,12 +7,13 @@ import java.util.TreeMap;
  * Seems faster than HashMap implementation.
  */
 public class TreeTopK<T> implements ITopK<T> {
-    private int maxSize, size;
-    private SortedMap<T, Integer> data;
+    private final int maxSize;
+    private int size;
+    private final SortedMap<T, Integer> data;
     private T cutoff; /* max value that currently belongs to Top K. */
-    private Comparator<T> greater;
+    private final Comparator<T> greater;
 
-    public TreeTopK(int maxSize, Comparator<T> greater) {
+    public TreeTopK(final int maxSize, final Comparator<T> greater) {
         this.maxSize = maxSize;
         this.size = 0;
         this.greater = greater;
@@ -25,18 +26,18 @@ public class TreeTopK<T> implements ITopK<T> {
     }
 
     @Override
-    public void push(T newVal) {
+    public void push(final T newVal) {
         if (this.size == 0) {
             this.data.put(newVal, 1); // Add newVal to Top K
             this.cutoff = newVal;
             this.size = 1;
             return;
         }
-        int gt = this.greater.compare(newVal, this.cutoff);
+        final int gt = this.greater.compare(newVal, this.cutoff);
         if(gt <= 0) {
             if (this.data.containsKey(newVal)) { //Already in Top K, increase count. Size, cutoff do not change
-                int count = this.data.get(newVal) + 1;
-                data.put(newVal, count);
+                final int count = this.data.get(newVal) + 1;
+                this.data.put(newVal, count);
             } else { // Add a new key to Top K
                 this.data.put(newVal, 1);
                 if (this.size >= this.maxSize) {        // Remove the largest key, compute the new largest key

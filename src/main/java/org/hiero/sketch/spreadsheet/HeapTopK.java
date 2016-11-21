@@ -6,12 +6,13 @@ import java.util.*;
  * Possible reason: Membership and max finding are slower.
  */
 public class HeapTopK<T> implements ITopK<T> {
-    private int maxSize, size;
-    private HashMap<T, Integer> data;
+    private final int maxSize;
+    private int size;
+    private final HashMap<T, Integer> data;
     private T cutoff; /* max value that currently belongs to Top K. */
-    private Comparator<T> greater;
+    private final Comparator<T> greater;
 
-    public HeapTopK(int maxSize, Comparator<T> greater) {
+    public HeapTopK(final int maxSize, final Comparator<T> greater) {
         if(maxSize >0)
             this.maxSize = maxSize;
         else
@@ -23,28 +24,28 @@ public class HeapTopK<T> implements ITopK<T> {
 
     @Override
     public SortedMap<T, Integer> getTopK() {
-        SortedMap<T, Integer> finalMap = new TreeMap<T, Integer>(this.greater);
+        final SortedMap<T, Integer> finalMap = new TreeMap<T, Integer>(this.greater);
         finalMap.putAll(this.data);
         return finalMap;
     }
 
     @Override
-    public void push(T newVal) {
+    public void push(final T newVal) {
         if (this.size == 0) {
             this.size += 1;
             this.data.put(newVal, 1); // Add newVal to Top K
             this.cutoff = newVal;
             return;
         }
-        int gt = this.greater.compare(newVal, this.cutoff);
+        final int gt = this.greater.compare(newVal, this.cutoff);
         if (gt <= 0) {
             if (this.data.containsKey(newVal)) { //Already in Top K, increase count
-                int count = data.get(newVal) + 1;
+                final int count = this.data.get(newVal) + 1;
                 this.data.put(newVal, count);
             } else { // Add a new key to Top K
                 this.data.put(newVal, 1);
-                if (size >= maxSize) { // Remove the largest key, compute the new largest key
-                    this.data.remove(cutoff);
+                if (this.size >= this.maxSize) { // Remove the largest key, compute the new largest key
+                    this.data.remove(this.cutoff);
                     this.cutoff = Collections.max(this.data.keySet(), this.greater);
                 } else
                     this.size += 1;

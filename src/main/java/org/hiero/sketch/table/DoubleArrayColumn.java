@@ -1,15 +1,14 @@
 package org.hiero.sketch.table;
 
 import org.hiero.sketch.table.api.ContentsKind;
-import org.hiero.sketch.table.api.IStringConverter;
-
 import java.security.InvalidParameterException;
-import java.util.BitSet;
 
 /**
  * Column of doubles, implemented as an array of doubles and a BitSet of missing values.
  */
-public final class DoubleArrayColumn extends BaseArrayColumn {
+public final class DoubleArrayColumn
+        extends BaseArrayColumn
+        implements IDoubleColumn {
     private final double[] data;
 
     private void validate() {
@@ -29,21 +28,11 @@ public final class DoubleArrayColumn extends BaseArrayColumn {
         this.data = data;
     }
 
-    public DoubleArrayColumn(final ColumnDescription description, final double[] data,
-                             final BitSet missing) {
-        super(description, missing);
-        this.validate();
-        this.data = data;
-    }
-
     @Override
     public int sizeInRows() { return this.data.length;}
 
     @Override
     public double getDouble(final int rowIndex) { return this.data[rowIndex];}
-
-    @Override
-    public double asDouble(final int rowIndex, final IStringConverter unused) {return this.data[rowIndex];}
 
     public void set(final int rowIndex, final double value) {this.data[rowIndex] = value;}
 }

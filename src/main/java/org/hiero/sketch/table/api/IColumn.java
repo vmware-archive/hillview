@@ -33,4 +33,10 @@ public interface IColumn {
      * Whatever the internal data type, return a double.
      */
     double asDouble(int rowIndex, IStringConverter converter);
+
+    String asString(int rowIndex);
+
+    RowComparator getComparator();
+
+    IColumn compress(IMembershipSet set);
 }
