@@ -1,6 +1,5 @@
 package org.hiero.sketch.table;
 
-import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
 import org.scalactic.exceptions.NullArgumentException;
@@ -15,10 +14,10 @@ import java.util.function.Predicate;
  */
 @SuppressWarnings("ALL")
 public class PartialMembershipDense implements IMembershipSet {
-    private final IMembershipSet baseMap;
-    private int rowCount;
-    private boolean rowCountCorrect;
-    private final Predicate<Integer> filter;
+    protected final IMembershipSet baseMap;
+    protected int rowCount;
+    protected boolean rowCountCorrect;
+    protected final Predicate<Integer> filter;
 
     public PartialMembershipDense(final IMembershipSet baseMap) throws NullArgumentException {
         if (baseMap == null) throw new NullArgumentException("PartialMembershipDense cannot be " +
@@ -26,7 +25,7 @@ public class PartialMembershipDense implements IMembershipSet {
         this.baseMap = baseMap;
         this.rowCount = baseMap.getSize();
         this.filter = Integer -> true;
-        this.rowCountCorrect = false;
+        this.rowCountCorrect = true;
     }
 
     /**
@@ -42,7 +41,7 @@ public class PartialMembershipDense implements IMembershipSet {
         if (filter == null) throw new NullArgumentException("PartialMembershipDense cannot be " +
                 "instantiated with a null filter");
         this.baseMap = baseMap;
-        this.rowCount = baseMap.getSize(false);
+        this.rowCount = 0;
         this.filter = filter;
         this.rowCountCorrect = false;
     }
@@ -69,25 +68,6 @@ public class PartialMembershipDense implements IMembershipSet {
             return this.rowCount;
         }
     }
-
-    @Override
-    public int getSize(final boolean exact) {
-        if (this.rowCountCorrect)
-            return this.rowCount;
-        if (exact)
-            return this.getSize();
-        final IMembershipSet sampleSet = this.sample(20);
-        int snumber = 0;
-        final IRowIterator it = sampleSet.getIterator();
-        int curr = it.getNextRow();
-        while (curr >= 0) {
-            if (this.filter.test(curr))
-                snumber++;
-            curr = it.getNextRow();
-        }
-        return (this.baseMap.getSize(false) * snumber) / sampleSet.getSize(true);
-    }
-
     /**
      * @return A sample of k items from the membership set. The sample is with replacement so may
      * contain less than k distinct elements. The sample is obtained by sampling k items from the
@@ -98,7 +78,7 @@ public class PartialMembershipDense implements IMembershipSet {
     public IMembershipSet sample(final int k) {
         int samples = 0;
         IMembershipSet batchSet;
-        final IntOpenHashSet sampleSet = new IntOpenHashSet();
+        final IntSet sampleSet = new IntSet();
         for (int attempt = 0; attempt < 10; attempt++) {
             batchSet = this.baseMap.sample(k);
             final IRowIterator it = batchSet.getIterator();
@@ -108,26 +88,27 @@ public class PartialMembershipDense implements IMembershipSet {
                     sampleSet.add(tmprow);
                     samples++;
                     if (samples == k)
-                        return new PartialMembershipSparse(sampleSet);
+                        return new MembershipMapSparse(sampleSet);
                 }
                 tmprow = it.getNextRow();
             }
         }
-        return new PartialMembershipSparse(sampleSet);
+        return new MembershipMapSparse(sampleSet);
     }
 
     /**
-     * Samples the base map for k items and then applies the filter on that set. Makes 10 attempts to reach k samples
+     * Samples the base map for k items and then applies the filter on that set.
+     * Makes 10 attempts to reach k samples
      * this way and then gives up and returns whatever was sampled.
-     * @param k
-     * @param seed
+     * @param k the number of samples without replacement taken
+     * @param seed the seed for the random generator
      * @return
      */
     @Override
-    public IMembershipSet sample(final int k, @SuppressWarnings("LocalCanBeFinal") final long seed) {
+    public IMembershipSet sample(final int k, final long seed) {
         int samples = 0;
         IMembershipSet batchSet;
-        final IntOpenHashSet sampleSet = new IntOpenHashSet();;
+        final IntSet sampleSet = new IntSet();;
         for (int attempt = 0; attempt < 10; attempt++) {
             batchSet = this.baseMap.sample(k, seed + attempt);
             final IRowIterator it = batchSet.getIterator();
@@ -137,17 +118,101 @@ public class PartialMembershipDense implements IMembershipSet {
                     sampleSet.add(tmprow);
                     samples++;
                     if (samples == k)
-                        return new PartialMembershipSparse(sampleSet);
+                        return new MembershipMapSparse(sampleSet);
                 }
                 tmprow = it.getNextRow();
             }
         }
-        return new PartialMembershipSparse(sampleSet);
+        return new MembershipMapSparse(sampleSet);
+    }
+
+    /**
+     *
+     * @return An approximation of the size based on a smaple of size 20. May return
+     */
+    public int getApproxSize() {
+        if (this.rowCountCorrect)
+            return this.rowCount;
+        final IMembershipSet sampleSet = this.sample(20);
+        if (sampleSet.getSize() == 0)
+            return 0;
+        int snumber = 0;
+        final IRowIterator it = sampleSet.getIterator();
+        int curr = it.getNextRow();
+        while (curr >= 0) {
+            if (this.filter.test(curr))
+                snumber++;
+            curr = it.getNextRow();
+        }
+        if (this.baseMap instanceof PartialMembershipDense)
+            return (((PartialMembershipDense) this.baseMap).getApproxSize() * snumber)
+                    / sampleSet.getSize();
+        else
+            return (this.baseMap.getSize() * snumber) / sampleSet.getSize();
     }
 
     @Override
     public IRowIterator getIterator() {
         return new DenseIterator(this.baseMap, this.filter);
+    }
+
+    @Override
+    public IMembershipSet union(IMembershipSet otherMap) throws NullArgumentException {
+        if (otherMap == null)
+            throw new NullArgumentException("can not perform union with a null");
+        if (otherMap instanceof PartialMembershipDense) {
+            IMembershipSet newBase = this.baseMap.union(((PartialMembershipDense) otherMap).baseMap);
+            Predicate newFilter =  this.filter.or(((PartialMembershipDense) otherMap).filter);
+            return new PartialMembershipDense(newBase, newFilter);
+        }
+        if (otherMap instanceof FullMembership) {
+            IMembershipSet newBase = this.baseMap.union(otherMap);
+            Predicate newFilter =  this.filter.or(p -> ((FullMembership) otherMap).isMember(p));
+            return new PartialMembershipDense(newBase, newFilter);
+        }
+        return otherMap.union(this);
+    }
+
+    @Override
+    public IMembershipSet intersection(IMembershipSet otherMap) throws NullArgumentException {
+        if (otherMap == null)
+            throw new NullArgumentException("can not perform intersection with a null");
+        if (otherMap instanceof PartialMembershipDense) {
+            IMembershipSet newBase = this.baseMap.intersection(((PartialMembershipDense) otherMap).baseMap);
+            Predicate newFilter =  this.filter.and(((PartialMembershipDense) otherMap).filter);
+            return new PartialMembershipDense(newBase, newFilter);
+        }
+        if (otherMap instanceof FullMembership) {
+            IMembershipSet newBase = this.baseMap.intersection(otherMap);
+            Predicate newFilter =  this.filter;
+            return new PartialMembershipDense(newBase, newFilter);
+        }
+        return otherMap.intersection(this);
+    }
+
+    @Override
+    public IMembershipSet setMinus(IMembershipSet otherMap) throws NullArgumentException {
+        if (otherMap == null)
+            throw new NullArgumentException("can not perform setMinus with a null");
+        IntSet setMinusSet = new IntSet();
+        IRowIterator iter = this.getIterator();
+        int curr = iter.getNextRow();
+        while (curr >=0 ) {
+            if (!otherMap.isMember(curr))
+                setMinusSet.add(curr);
+            curr = iter.getNextRow();
+        }
+        return new MembershipMapSparse(setMinusSet);
+    }
+
+
+    @Override
+    public IMembershipSet copy() {
+        IMembershipSet newBase = this.baseMap.copy();
+        PartialMembershipDense newMap =  new PartialMembershipDense(newBase,this.filter);
+        newMap.rowCountCorrect = this.rowCountCorrect;
+        newMap.rowCount = this.rowCount;
+        return newMap;
     }
 
     private static class DenseIterator implements IRowIterator {
