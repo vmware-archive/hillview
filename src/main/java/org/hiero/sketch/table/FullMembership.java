@@ -1,8 +1,9 @@
 package org.hiero.sketch.table;
 
-import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
+import org.scalactic.exceptions.NullArgumentException;
+
 import java.util.Random;
 
 /**
@@ -30,11 +31,8 @@ public class FullMembership implements IMembershipSet {
     }
 
     @Override
-    public int getSize(final boolean exact) { return this.rowCount; }
-
-    @Override
     public IRowIterator getIterator() {
-        return new FullMemebershipIterator(this.rowCount);
+        return new FullMembershipIterator(this.rowCount);
     }
 
     /**
@@ -62,18 +60,58 @@ public class FullMembership implements IMembershipSet {
         return this.sampleUtil(randomGenerator, k);
     }
 
-    private IMembershipSet sampleUtil(final Random randomGenerator, final int k) {
-        final IntOpenHashSet S = new IntOpenHashSet();
-        for (int i=0; i < k; i++)
-            S.add(randomGenerator.nextInt(this.rowCount));
-        return new PartialMembershipSparse(S);
+    @Override
+    public IMembershipSet union (final IMembershipSet otherSet) throws NullArgumentException {
+        if (otherSet == null)
+            throw new NullArgumentException("Can not perform union with a null");
+        if (otherSet instanceof FullMembership)
+            return new FullMembership(Integer.max(this.rowCount, otherSet.getSize()));
+        return otherSet.union(this);
     }
 
-    private static class FullMemebershipIterator implements IRowIterator {
+    @Override
+    public IMembershipSet intersection (final IMembershipSet otherSet) throws NullArgumentException {
+        if (otherSet == null)
+            throw new NullArgumentException("Can not perform intersection with a null");
+        if (otherSet instanceof FullMembership)
+            return new FullMembership(Integer.min(this.rowCount, otherSet.getSize()));
+        return otherSet.intersection(this);
+    }
+
+    @Override
+    public IMembershipSet setMinus (final IMembershipSet otherSet) throws NullArgumentException {
+        if (otherSet == null)
+            throw new NullArgumentException("Can not perform setMinus with a null");
+        if (otherSet instanceof FullMembership) {
+            final IntSet baseMap = new IntSet(Integer.max(0, this.getSize()-otherSet.getSize()));
+            for (int i = otherSet.getSize(); i < this.rowCount; i++)
+                baseMap.add(i);
+            return new MembershipMapSparse(baseMap);
+        }
+        final IntSet baseMap = new IntSet();
+        for (int i = 0; i < this.getSize(); i++)
+            if (!otherSet.isMember(i))
+                baseMap.add(i);
+        return new MembershipMapSparse(baseMap);
+    }
+
+    @Override
+    public IMembershipSet copy() {
+        return new FullMembership(this.rowCount);
+    }
+    
+    private IMembershipSet sampleUtil(final Random randomGenerator, final int k) {
+        final IntSet S = new IntSet(k);
+        for (int i=0; i < k; i++)
+            S.add(randomGenerator.nextInt(this.rowCount));
+        return new MembershipMapSparse(S);
+    }
+
+    private static class FullMembershipIterator implements IRowIterator {
         private int cursor = 0;
         private final int range;
 
-        private FullMemebershipIterator(final int range) {
+        private FullMembershipIterator(final int range) {
             this.range = range;
         }
 
