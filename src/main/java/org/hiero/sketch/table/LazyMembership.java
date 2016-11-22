@@ -87,7 +87,7 @@ public class LazyMembership implements IMembershipSet {
         return (this.baseMap.getSize(false) * snumber) / sampleSet.getSize(true);
     }
 
-    private IMembershipSet sample(final int k, final long seed, boolean useSeed) {
+    private IMembershipSet sample(final int k, final long seed, final boolean useSeed) {
         int samples = 0;
         IMembershipSet batchSet;
         final IntOpenHashSet sampleSet = new IntOpenHashSet();
