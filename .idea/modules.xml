@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/hiero.iml" filepath="$PROJECT_DIR$/hiero.iml" />
+      <module fileurl="file://$PROJECT_DIR$/hieroweb/hieroweb.iml" filepath="$PROJECT_DIR$/hieroweb/hieroweb.iml" />
     </modules>
   </component>
 </project>
