@@ -1,8 +1,8 @@
 package org.hiero.sketch;
 
 import org.hiero.sketch.table.FullMembership;
-import org.hiero.sketch.table.PartialMembershipDense;
-import org.hiero.sketch.table.PartialMembershipSparse;
+import org.hiero.sketch.table.LazyMembership;
+import org.hiero.sketch.table.SparseMembership;
 import org.hiero.sketch.table.api.IRowIterator;
 import org.junit.Test;
 
@@ -33,7 +33,7 @@ public class MembershipTest {
     @Test
     public void TestPartialDense() {
         final FullMembership FM = new FullMembership(this.size);
-        final PartialMembershipDense PMD = new PartialMembershipDense(FM, row -> (row % 2) == 0);
+        final LazyMembership PMD = new LazyMembership(FM, row -> (row % 2) == 0);
         assertTrue(PMD.isMember(6));
         assertFalse(PMD.isMember(7));
         assertEquals(PMD.getSize(), 5);
@@ -48,7 +48,7 @@ public class MembershipTest {
     @Test
     public void TestPartialSparse() {
         final FullMembership FM = new FullMembership(this.size);
-        final PartialMembershipSparse PMS = new PartialMembershipSparse(FM, row -> (row % 2) == 0);
+        final SparseMembership PMS = new SparseMembership(FM, row -> (row % 2) == 0);
         assertTrue(PMS.isMember(6));
         assertFalse(PMS.isMember(7));
         assertEquals(PMS.getSize(), 5);
