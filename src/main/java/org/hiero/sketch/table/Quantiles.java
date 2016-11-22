@@ -9,13 +9,13 @@ public class Quantiles {
     private final int [] inpArray;
     private final Comparator<Integer> comp;
 
-    public Quantiles(final int [] input, final Comparator<Integer> comp){
+    public Quantiles(final int [] input, final Comparator<Integer> comp) {
         this.inpSize = input.length;
         this.inpArray = input;
         this.comp = comp;
     }
 
-    public Integer[] getQuantiles(final int resolution){
+    public Integer[] getQuantiles(final int resolution) {
         final int invError = 100;
         final int sampleSize = invError * resolution;
         final Integer[] Sample = new Integer[sampleSize];

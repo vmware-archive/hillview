@@ -56,7 +56,7 @@ public class TableTest {
         assertEquals(myTable.toString(), "Table, 2 columns, 50 rows");
         final HashSubSchema filter = new HashSubSchema();
         filter.add(columns[1].getDescription().name);
-        final Table smallTable = myTable.compress(filter);
+        final Table smallTable = myTable.compress(filter, partial);
         assertEquals(smallTable.toString(), "Table, 1 columns, 50 rows");
     }
 }

@@ -1,7 +1,7 @@
 package org.hiero.sketch.table.api;
 
 /**
- * An iterator over the rows returns the indexes of all rows.
+ * An iterator over the rows returns the indexes of the rows of a table.
  * It returns -1 when the iteration is completed.
  */
 public interface IRowIterator {
