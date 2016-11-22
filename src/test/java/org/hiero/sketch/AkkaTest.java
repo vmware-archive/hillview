@@ -122,7 +122,6 @@ public class AkkaTest {
             @SuppressWarnings("unchecked")
             final Observable<PartialResult<Integer>> obs =
                     (Observable<PartialResult<Integer>>) Await.result(future, timeout.duration());
-            obs.subscribe();
             final int result = obs.map(e -> e.deltaValue)
                                    .reduce((x, y) -> x + y)
                                    .toBlocking()
