@@ -19,8 +19,8 @@ public class LazyMembership implements IMembershipSet {
     private int rowCount;
     private boolean rowCountCorrect;
     private final Predicate<Integer> filter;
-    private final int sizeEstimationSampleSize = 20;
-    private final int samplingAttempts = 10;
+    private static final int sizeEstimationSampleSize = 20;
+    private static final int samplingAttempts = 10;
 
     public LazyMembership(final IMembershipSet baseMap) throws NullArgumentException {
         if (baseMap == null) throw new NullArgumentException("PartialMembershipDense cannot be " +
@@ -87,7 +87,7 @@ public class LazyMembership implements IMembershipSet {
         return (this.baseMap.getSize(false) * snumber) / sampleSet.getSize(true);
     }
 
-    private IMembershipSet sample(final int k, final long seed, boolean useSeed) {
+    private IMembershipSet sample(final int k, final long seed, final boolean useSeed) {
         int samples = 0;
         IMembershipSet batchSet;
         final IntOpenHashSet sampleSet = new IntOpenHashSet();

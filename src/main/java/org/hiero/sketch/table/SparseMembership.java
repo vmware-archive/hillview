@@ -18,7 +18,7 @@ import java.util.function.Predicate;
 public class SparseMembership implements IMembershipSet {
     private final int rowCount;
     private final IntOpenHashSet membershipMap;
-    private final int sizeEstimationSampleSize = 20;
+    private static final int sizeEstimationSampleSize = 20;
 
     /**
      * Standard way to construct this map is by supplying a membershipSet (perhaps the full one),
@@ -88,7 +88,7 @@ public class SparseMembership implements IMembershipSet {
     @Override
     public int getSize(final boolean exact) { return this.rowCount; }
     
-    private IMembershipSet sample(final int k, final long seed, boolean useSeed) {
+    private IMembershipSet sample(final int k, final long seed, final boolean useSeed) {
         final IntOpenHashSet sampleSet = new IntOpenHashSet(k);
         final Random psg;
         if (useSeed)
