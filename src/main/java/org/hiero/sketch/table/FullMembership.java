@@ -99,7 +99,7 @@ public class FullMembership implements IMembershipSet {
     public IMembershipSet copy() {
         return new FullMembership(this.rowCount);
     }
-    
+
     private IMembershipSet sampleUtil(final Random randomGenerator, final int k) {
         final IntSet S = new IntSet(k);
         for (int i=0; i < k; i++)
