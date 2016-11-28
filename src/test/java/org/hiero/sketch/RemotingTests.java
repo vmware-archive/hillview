@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Remoting tests for Akka.
  */
-public class AkkaTest {
+public class RemotingTests {
     private static ActorRef clientActor;
     private static ActorRef remoteActor;
 
@@ -188,7 +188,6 @@ public class AkkaTest {
 
         assertEquals(3, counter.get());
     }
-
 
     @Test
     public void testZip() {
