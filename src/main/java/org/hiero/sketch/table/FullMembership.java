@@ -34,12 +34,14 @@ public class FullMembership implements IMembershipSet {
 
     @Override
     public IRowIterator getIterator() {
-        return new FullMemebershipIterator(this.rowCount);
+        return new FullMembershipIterator(this.rowCount);
     }
 
     /**
-     * Samples k items. Generator is seeded using its default method. Sampled items are first placed in a Set.
-     * The procedure samples k times with replacement so it may return a set with less than k distinct items.
+     * Samples k items. Generator is seeded using its default method. Sampled items are
+     * first placed in a Set. The procedure samples k times with replacement so it
+     * may return a set with less than k distinct items.
+     *
      * @param k the number of samples with replacement
      * @return IMembershipSet instantiated as a Partial Sparse
      */
@@ -51,29 +53,29 @@ public class FullMembership implements IMembershipSet {
 
     /**
      * Same as sample(k) but with the seed of the generator given as a parameter. The procedure
-     * samples k times with replacement so it return a set with less than k distinct items
+     * samples k times with replacement so it may return a set with less than k distinct items
      * @param k the number of samples taken with replacement
      * @param seed the seed for the randomness generator
      * @return IMembershipSet instantiated as a partial sparse
      */
     @Override
-    public IMembershipSet sample (final int k, final long seed) {
+    public IMembershipSet sample(final int k, final long seed) {
         final Random randomGenerator = new Random(seed);
         return this.sampleUtil(randomGenerator, k);
     }
 
     private IMembershipSet sampleUtil(final Random randomGenerator, final int k) {
-        final IntOpenHashSet S = new IntOpenHashSet();
+        final IntOpenHashSet s = new IntOpenHashSet();
         for (int i=0; i < k; i++)
-            S.add(randomGenerator.nextInt(this.rowCount));
-        return new PartialMembershipSparse(S);
+            s.add(randomGenerator.nextInt(this.rowCount));
+        return new SparseMembership(s);
     }
 
-    private static class FullMemebershipIterator implements IRowIterator {
+    private static class FullMembershipIterator implements IRowIterator {
         private int cursor = 0;
         private final int range;
 
-        private FullMemebershipIterator(final int range) {
+        private FullMembershipIterator(final int range) {
             this.range = range;
         }
 

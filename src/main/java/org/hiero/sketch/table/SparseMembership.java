@@ -15,16 +15,18 @@ import java.util.function.Predicate;
  * iterator is very efficient. So this implementation is best when the set is sparse.
  * The downside is the constructor that runs in linear time.
  */
-public class PartialMembershipSparse implements IMembershipSet {
+public class SparseMembership implements IMembershipSet {
     private final int rowCount;
     private final IntOpenHashSet membershipMap;
+    private static final int sizeEstimationSampleSize = 20;
+
     /**
      * Standard way to construct this map is by supplying a membershipSet (perhaps the full one),
      * and the filter function passed as a lambda expression.
      * @param baseMap the base IMembershipSet map on which the filter will be applied
      * @param filter  the additional filter to be applied on the base map
      */
-    public PartialMembershipSparse(final IMembershipSet baseMap, final Predicate<Integer> filter)
+    public SparseMembership(final IMembershipSet baseMap, final Predicate<Integer> filter)
             throws NullArgumentException {
         if (baseMap == null)
             throw new NullArgumentException("PartialMembershipDense cannot be instantiated " +
@@ -47,7 +49,7 @@ public class PartialMembershipSparse implements IMembershipSet {
      * the baseMap into that of a sparse map.
      * @param baseMap of type IMembershipSet
      */
-    public PartialMembershipSparse(final IMembershipSet baseMap) throws NullArgumentException {
+    public SparseMembership(final IMembershipSet baseMap) throws NullArgumentException {
         if (baseMap == null)
             throw new NullArgumentException("PartialMembershipDense cannot be instantiated " +
                     "without a base MembershipSet");
@@ -65,7 +67,7 @@ public class PartialMembershipSparse implements IMembershipSet {
      * Essentially wraps a Set interface by IMembershipSet
      * @param baseSet of type Set
      */
-    public PartialMembershipSparse(final IntOpenHashSet baseSet) throws NullArgumentException {
+    public SparseMembership(final IntOpenHashSet baseSet) throws NullArgumentException {
         if (baseSet == null)
             throw new NullArgumentException("PartialMembershipDense cannot be instantiated " +
                     "without a base Set");
@@ -85,52 +87,46 @@ public class PartialMembershipSparse implements IMembershipSet {
 
     @Override
     public int getSize(final boolean exact) { return this.rowCount; }
-
-    /**
-     * Returns the k items from a random location in the map. Note that the k items are not
-     * completely independent
-     * but also depend on the placement done by the hash function of IntOpenHashSet
-     * todo: Currently IntIterator.skip(n) takes O(n).
-     * Could be made O(1) but requires changing the library
-     */
-    @Override
-    public IMembershipSet sample(final int k) {
+    
+    private IMembershipSet sample(final int k, final long seed, final boolean useSeed) {
         final IntOpenHashSet sampleSet = new IntOpenHashSet(k);
-        final Random psg = new Random();
+        final Random psg;
+        if (useSeed)
+            psg = new Random(seed);
+        else
+            psg = new Random();
         final int offset = psg.nextInt(Integer.max((this.rowCount - k) + 1, 1));
         final IntIterator iter = this.membershipMap.iterator();
+        /* TODO: Currently IntIterator.skip(n) takes O(n). */
         iter.skip(offset - 1);
         int tmp;
-        for (int i = 0; i < k; i++ ) {
+        for (int i = 0; i < k; i++) {
             if (iter.hasNext()) {
                 tmp = iter.nextInt();
                 sampleSet.add(tmp);
             }
         }
-        return new PartialMembershipSparse(sampleSet);
+        return new SparseMembership(sampleSet);
     }
 
     /**
-     * Returns the k items from a random location in the map. The random location determined by a seed.
-     * Note that the k items are not completely independent but also depend on the placement done by
+     * Returns the k items from a random location in the map. Note that the k items are not
+     * completely independent but also depend on the placement done by
      * the hash function of IntOpenHashSet.
-     * todo: Currently IntIterator.skip(n) takes O(n). Could be made O(1) but requires changing the library
+     */
+    @Override
+    public IMembershipSet sample(final int k) {
+        return sample(k, 0, false);
+    }
+
+    /**
+     * Returns the k items from a random location in the map. The random location determined
+     * by a seed. Note that the k items are not completely independent but also depend on the
+     * placement done by the hash function of IntOpenHashSet.
      */
     @Override
     public IMembershipSet sample(final int k, final long seed) {
-        final IntOpenHashSet sampleSet = new IntOpenHashSet(k);
-        final Random psg = new Random(seed);
-        final int offset = psg.nextInt(Integer.max((this.rowCount - k) + 1, 1));
-        final IntIterator iter = this.membershipMap.iterator();
-        iter.skip(offset - 1);
-        int tmp;
-        for (int i = 0; i < k; i++ ) {
-            if (iter.hasNext()) {
-                tmp = iter.nextInt();
-                sampleSet.add(tmp);
-            }
-        }
-        return new PartialMembershipSparse(sampleSet);
+        return sample(k, seed, true);
     }
 
     @Override
@@ -139,7 +135,7 @@ public class PartialMembershipSparse implements IMembershipSet {
     }
 
     private int estimateSize(final IMembershipSet baseMap, final Predicate<Integer> filter) {
-        final IMembershipSet sampleSet = baseMap.sample(20);
+        final IMembershipSet sampleSet = baseMap.sample(sizeEstimationSampleSize);
         int esize = 0;
         final IRowIterator iter= sampleSet.getIterator();
         int curr = iter.getNextRow();

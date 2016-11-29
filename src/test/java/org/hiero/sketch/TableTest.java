@@ -15,7 +15,7 @@ public class TableTest {
         final int size = 100;
         final IntArrayColumn col = generateIntArray(size);
         final FullMembership FM = new FullMembership(size);
-        final PartialMembershipDense PMD = new PartialMembershipDense(FM, row -> (row % 2) == 0);
+        final LazyMembership PMD = new LazyMembership(FM, row -> (row % 2) == 0);
         final IColumn smallCol = col.compress(PMD);
     }
 
@@ -31,7 +31,7 @@ public class TableTest {
             mySchema.append(columns[i].getDescription());
         }
         final FullMembership full = new FullMembership(size);
-        final PartialMembershipDense partial = new PartialMembershipDense(full, row -> (row % 2) == 0);
+        final LazyMembership partial = new LazyMembership(full, row -> (row % 2) == 0);
         final Table myTable = new Table(mySchema, columns, partial);
         assertEquals(myTable.toString(), "Table, 2 columns, 50 rows");
         final Table smallTable = myTable.compress();
@@ -50,8 +50,8 @@ public class TableTest {
             mySchema.append(columns[i].getDescription());
         }
         final FullMembership full = new FullMembership(size);
-        final PartialMembershipDense partial = new
-                PartialMembershipDense(full, row -> (row % 2) == 0);
+        final LazyMembership partial = new
+                LazyMembership(full, row -> (row % 2) == 0);
         final Table myTable = new Table(mySchema, columns, partial);
         assertEquals(myTable.toString(), "Table, 2 columns, 50 rows");
         final HashSubSchema filter = new HashSubSchema();
