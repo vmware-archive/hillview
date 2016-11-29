@@ -13,7 +13,7 @@ import java.util.function.Predicate;
  * iterator is very efficient. So this implementation is best when the set is sparse.
  * The downside is the constructor that runs in linear time.
  */
-public class MembershipMapSparse implements IMembershipSet {
+public class SparseMembership implements IMembershipSet {
 
     private final int rowCount;
     private final IntSet membershipMap;
@@ -25,7 +25,7 @@ public class MembershipMapSparse implements IMembershipSet {
      * @param filter  the additional filter to be applied on the base map
      * @throws NullArgumentException
      */
-    public MembershipMapSparse(final IMembershipSet baseMap, final Predicate<Integer> filter)
+    public SparseMembership(final IMembershipSet baseMap, final Predicate<Integer> filter)
             throws NullArgumentException {
         if (baseMap == null)
             throw new NullArgumentException("PartialMembershipDense cannot be instantiated " +
@@ -49,14 +49,14 @@ public class MembershipMapSparse implements IMembershipSet {
      * @param baseMap of type IMembershipSet
      * @throws NullArgumentException
      */
-    public MembershipMapSparse(final IMembershipSet baseMap) throws NullArgumentException {
+    public SparseMembership(final IMembershipSet baseMap) throws NullArgumentException {
         if (baseMap == null)
             throw new NullArgumentException("PartialMembershipDense cannot be instantiated " +
                     "without a base MembershipSet");
         final IRowIterator baseIterator = baseMap.getIterator();
         final int expectedSize;
-        if (baseMap instanceof PartialMembershipDense)
-            expectedSize = ((PartialMembershipDense) baseMap).getApproxSize();
+        if (baseMap instanceof LazyMembership)
+            expectedSize = ((LazyMembership) baseMap).getApproxSize();
         else
             expectedSize = baseMap.getSize();
         this.membershipMap = new IntSet(expectedSize);
@@ -73,7 +73,7 @@ public class MembershipMapSparse implements IMembershipSet {
      * @param baseSet of type Set
      * @throws NullArgumentException
      */
-    public MembershipMapSparse(final IntSet baseSet) throws NullArgumentException {
+    public SparseMembership(final IntSet baseSet) throws NullArgumentException {
         if (baseSet == null)
             throw new NullArgumentException("PartialMembershipDense cannot be instantiated " +
                     "without a base Set");
@@ -111,7 +111,7 @@ public class MembershipMapSparse implements IMembershipSet {
             sampleSet.add(key[randomKey& this.membershipMap.mask]);
             randomKey++;
         }
-        return new MembershipMapSparse(sampleSet);
+        return new SparseMembership(sampleSet);
     }
 
     /**
@@ -135,7 +135,7 @@ public class MembershipMapSparse implements IMembershipSet {
             sampleSet.add(key[randomKey & this.membershipMap.mask]);
             randomKey++;
         }
-        return new MembershipMapSparse(sampleSet);
+        return new SparseMembership(sampleSet);
     }
 
     @Override
@@ -154,7 +154,7 @@ public class MembershipMapSparse implements IMembershipSet {
             unionSet.add(curr);
             curr = iter.getNextRow();
         }
-        return new MembershipMapSparse(unionSet);
+        return new SparseMembership(unionSet);
     }
 
     @Override
@@ -169,7 +169,7 @@ public class MembershipMapSparse implements IMembershipSet {
                 intersectSet.add(curr);
             curr = iter.getNextRow();
         }
-        return new MembershipMapSparse(intersectSet);
+        return new SparseMembership(intersectSet);
     }
 
     @Override
@@ -184,12 +184,12 @@ public class MembershipMapSparse implements IMembershipSet {
                 setMinusSet.add(curr);
             curr = iter.getNextRow();
         }
-        return new MembershipMapSparse(setMinusSet);
+        return new SparseMembership(setMinusSet);
     }
 
     @Override
     public IMembershipSet copy() {
-        return new MembershipMapSparse(this.membershipMap.copy());
+        return new SparseMembership(this.membershipMap.copy());
     }
     /**
      * Estimates the size of a filter applied to an IMembershipSet
@@ -209,8 +209,8 @@ public class MembershipMapSparse implements IMembershipSet {
                 esize++;
             curr = iter.getNextRow();
         }
-        if (baseMap instanceof PartialMembershipDense)
-            return (((PartialMembershipDense) baseMap).getApproxSize() * esize) /
+        if (baseMap instanceof LazyMembership)
+            return (((LazyMembership) baseMap).getApproxSize() * esize) /
                     sampleSet.getSize();
         return (baseMap.getSize() * esize) / sampleSet.getSize();
     }

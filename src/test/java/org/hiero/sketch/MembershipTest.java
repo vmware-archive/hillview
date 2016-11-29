@@ -10,7 +10,7 @@ import static junit.framework.TestCase.assertTrue;
 
 
 /* Tests for the three Membership Classes:
- * FullMembership, PartialMembershipDense, MembershipMapSparse
+ * FullMembership, LazyMembership, SparseMembership
  */
 public class MembershipTest {
     private final int size = 10;
@@ -32,7 +32,7 @@ public class MembershipTest {
     @Test
     public void TestPartialDense() {
         final FullMembership FM = new FullMembership(this.size);
-        final PartialMembershipDense PMD = new PartialMembershipDense(FM, row -> (row % 2) == 0);
+        final LazyMembership PMD = new LazyMembership(FM, row -> (row % 2) == 0);
         assertTrue(PMD.isMember(6));
         assertFalse(PMD.isMember(7));
         assertEquals(PMD.getSize(), 5);
@@ -47,7 +47,7 @@ public class MembershipTest {
     @Test
     public void TestPartialSparse() {
         final FullMembership FM = new FullMembership(this.size);
-        final MembershipMapSparse PMS = new MembershipMapSparse(FM, row -> (row % 2) == 0);
+        final SparseMembership PMS = new SparseMembership(FM, row -> (row % 2) == 0);
         assertTrue(PMS.isMember(6));
         assertFalse(PMS.isMember(7));
         assertEquals(PMS.getSize(), 5);
@@ -62,7 +62,7 @@ public class MembershipTest {
         final IntSet IS = new IntSet(10);
         for (int i = 5; i < 100; i += 2)
             IS.add(i);
-        final MembershipMapSparse MS = new MembershipMapSparse(IS);
+        final SparseMembership MS = new SparseMembership(IS);
         final IRowIterator iter = MS.getIterator();
         int tmp = iter.getNextRow();
         final IntSet IS1 = new IntSet();
@@ -84,16 +84,16 @@ public class MembershipTest {
         final IntSet IS = new IntSet(10);
         for (int i = 5; i < 100; i += 2)
             IS.add(i);
-        final MembershipMapSparse MS = new MembershipMapSparse(IS);
+        final SparseMembership MS = new SparseMembership(IS);
         final FullMembership FM = new FullMembership(60);
         final IMembershipSet UnionSet = FM.union(MS);
         assertTrue(UnionSet.isMember(67));
         assertTrue(UnionSet.isMember(38));
         assertFalse(UnionSet.isMember(68));
-        final PartialMembershipDense MD = new PartialMembershipDense(FM, p -> (p % 2) == 1);
+        final LazyMembership MD = new LazyMembership(FM, p -> (p % 2) == 1);
         assertTrue(MD.isMember(35));
         assertFalse(MD.isMember(36));
-        final PartialMembershipDense MD1 = new PartialMembershipDense(FM, p -> (p % 3) == 0);
+        final LazyMembership MD1 = new LazyMembership(FM, p -> (p % 3) == 0);
         assertTrue(MD1.isMember(36));
         assertFalse(MD1.isMember(37));
         final IMembershipSet UnionSet1 = MD.union(MD1);
@@ -106,16 +106,16 @@ public class MembershipTest {
         final IntSet IS = new IntSet(10);
         for (int i = 5; i < 100; i += 2)
             IS.add(i);
-        final MembershipMapSparse MS = new MembershipMapSparse(IS);
+        final SparseMembership MS = new SparseMembership(IS);
         final FullMembership FM = new FullMembership(60);
         final IMembershipSet IntersectSet = FM.intersection(MS);
         assertFalse(IntersectSet.isMember(67));
         assertFalse(IntersectSet.isMember(38));
         assertTrue(IntersectSet.isMember(17));
-        final PartialMembershipDense MD = new PartialMembershipDense(FM, p -> (p % 2) == 1);
+        final LazyMembership MD = new LazyMembership(FM, p -> (p % 2) == 1);
         assertTrue(MD.isMember(35));
         assertFalse(MD.isMember(36));
-        final PartialMembershipDense MD1 = new PartialMembershipDense(FM, p -> (p % 3) == 0);
+        final LazyMembership MD1 = new LazyMembership(FM, p -> (p % 3) == 0);
         assertTrue(MD1.isMember(36));
         assertFalse(MD1.isMember(37));
         final IMembershipSet IntersectSet1 = MD.intersection(MD1);
@@ -128,16 +128,16 @@ public class MembershipTest {
         final IntSet IS = new IntSet(10);
         for (int i = 5; i < 100; i += 2)
             IS.add(i);
-        final MembershipMapSparse MS = new MembershipMapSparse(IS);
+        final SparseMembership MS = new SparseMembership(IS);
         final FullMembership FM = new FullMembership(60);
         final IMembershipSet SetMinusSet = FM.setMinus(MS);
         assertFalse(SetMinusSet.isMember(67));
         assertTrue(SetMinusSet.isMember(38));
         assertFalse(SetMinusSet.isMember(13));
-        final PartialMembershipDense MD = new PartialMembershipDense(FM, p -> (p % 2) == 1);
+        final LazyMembership MD = new LazyMembership(FM, p -> (p % 2) == 1);
         assertTrue(MD.isMember(35));
         assertFalse(MD.isMember(36));
-        final PartialMembershipDense MD1 = new PartialMembershipDense(FM, p -> (p % 3) == 0);
+        final LazyMembership MD1 = new LazyMembership(FM, p -> (p % 3) == 0);
         assertTrue(MD1.isMember(36));
         assertFalse(MD1.isMember(37));
         final IMembershipSet SetMinusSet1 = MD.setMinus(MD1);

@@ -36,8 +36,10 @@ public class FullMembership implements IMembershipSet {
     }
 
     /**
-     * Samples k items. Generator is seeded using its default method. Sampled items are first placed in a Set.
-     * The procedure samples k times with replacement so it may return a set with less than k distinct items.
+     * Samples k items. Generator is seeded using its default method. Sampled items are
+     * first placed in a Set. The procedure samples k times with replacement so it
+     * may return a set with less than k distinct items.
+     *
      * @param k the number of samples with replacement
      * @return IMembershipSet instantiated as a Partial Sparse
      */
@@ -55,7 +57,7 @@ public class FullMembership implements IMembershipSet {
      * @return IMembershipSet instantiated as a partial sparse
      */
     @Override
-    public IMembershipSet sample (final int k, final long seed) {
+    public IMembershipSet sample(final int k, final long seed) {
         final Random randomGenerator = new Random(seed);
         return this.sampleUtil(randomGenerator, k);
     }
@@ -86,13 +88,13 @@ public class FullMembership implements IMembershipSet {
             final IntSet baseMap = new IntSet(Integer.max(0, this.getSize()-otherSet.getSize()));
             for (int i = otherSet.getSize(); i < this.rowCount; i++)
                 baseMap.add(i);
-            return new MembershipMapSparse(baseMap);
+            return new SparseMembership(baseMap);
         }
         final IntSet baseMap = new IntSet();
         for (int i = 0; i < this.getSize(); i++)
             if (!otherSet.isMember(i))
                 baseMap.add(i);
-        return new MembershipMapSparse(baseMap);
+        return new SparseMembership(baseMap);
     }
 
     @Override
@@ -104,7 +106,7 @@ public class FullMembership implements IMembershipSet {
         final IntSet S = new IntSet(k);
         for (int i=0; i < k; i++)
             S.add(randomGenerator.nextInt(this.rowCount));
-        return new MembershipMapSparse(S);
+        return new SparseMembership(S);
     }
 
     private static class FullMembershipIterator implements IRowIterator {
