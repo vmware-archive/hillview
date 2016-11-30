@@ -1,5 +1,6 @@
 package org.hiero.sketch.table;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.table.api.IColumn;
 
 import java.time.Duration;
@@ -9,16 +10,19 @@ import java.util.Date;
  * Base class for all columns.
  */
 abstract class BaseColumn implements IColumn {
+    @NonNull
     final ColumnDescription description;
 
     BaseColumn(final ColumnDescription description) {
         this.description = description;
     }
 
+    @Override
     public ColumnDescription getDescription() {
         return this.description;
     }
 
+    @Override
     public double getDouble(final int rowIndex) {
         throw new UnsupportedOperationException();
     }
@@ -28,6 +32,7 @@ abstract class BaseColumn implements IColumn {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public int getInt(final int rowIndex) {
         throw new UnsupportedOperationException();
     }
@@ -42,5 +47,6 @@ abstract class BaseColumn implements IColumn {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public boolean isMissing(final int rowIndex) { throw new UnsupportedOperationException(); }
 }

@@ -5,6 +5,7 @@ import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
 import akka.util.Timeout;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.dataset.RemoteDataSet;
 import org.hiero.sketch.dataset.api.IDataSet;
 import org.hiero.sketch.dataset.api.PartialResult;
@@ -24,7 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * to its execution on the remote node.
  */
 public class SketchClientActor extends AbstractActor {
-    private LoggingAdapter log = Logging.getLogger(getContext().system(), this);
+    private final LoggingAdapter log = Logging.getLogger(getContext().system(), this);
     private static final Timeout RESOLVE_TIMEOUT =
             new Timeout(Duration.create(1000, "milliseconds"));
     private static final String CLIENT_ACTOR_NAME = "ClientActor";
@@ -46,17 +47,17 @@ public class SketchClientActor extends AbstractActor {
                         final PublishSubject subject = this.operationToObservable.get(response.id);
                         switch (response.type) {
                             case OnCompletion:
-                                log.debug("OnCompletion {} {}", response.id, response.result);
+                                this.log.debug("OnCompletion {} {}", response.id, response.result);
                                 subject.onCompleted();
                                 this.operationToObservable.remove(response.id);
                                 break;
                             case OnError:
-                                log.debug("OnError {} {}", response.id, response.result);
+                                this.log.debug("OnError {} {}", response.id, response.result);
                                 subject.onError((Throwable) response.result);
                                 this.operationToObservable.remove(response.id);
                                 break;
                             case OnNext:
-                                log.debug("OnNext {} {}", response.id, response.result);
+                                this.log.debug("OnNext {} {}", response.id, response.result);
                                 subject.onNext(response.result);
                                 break;
                             case NewRemoteDataSet:
@@ -78,7 +79,7 @@ public class SketchClientActor extends AbstractActor {
                         // is executed, and we receive a stream of in flight
                         // on{Next, Completion, Error} events from the remote server, before
                         // the remote unsubscribe is executed.
-                        log.error("Received response for ID we are not tracking: {}" + response.id);
+                        this.log.error("Received response for ID we are not tracking: {}" + response.id);
                     }
                 }
             )
@@ -98,9 +99,9 @@ public class SketchClientActor extends AbstractActor {
         );
     }
 
-    private <T extends RemoteOperation> void sendOperation(final T operation,
-                                                           final ActorRef remoteActor,
-                                                           final ActorRef sender) {
+    private <T extends RemoteOperation> void sendOperation(@NonNull final T operation,
+                                                           @NonNull final ActorRef remoteActor,
+                                                           @NonNull final ActorRef sender) {
         if (!this.operationToObservable.containsKey(operation.id)) {
             final PublishSubject subj = PublishSubject.create();
             final Observable obs = subj.doOnSubscribe(() -> {

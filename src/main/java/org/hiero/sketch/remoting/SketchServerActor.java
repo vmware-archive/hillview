@@ -5,6 +5,7 @@ import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.japi.pf.ReceiveBuilder;
 import akka.serialization.Serialization;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.dataset.api.*;
 import rx.Observable;
 import rx.Subscriber;
@@ -22,17 +23,17 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @param <T> Type of IDataSet backing the actor
  */
 public class SketchServerActor<T> extends AbstractActor {
-
     private static final String SERVER_ACTOR_NAME = "ServerActor";
     private static final AtomicInteger nodeId = new AtomicInteger(0);
 
+    @NonNull
     private final IDataSet<T> dataSet;
     private final ConcurrentHashMap<UUID, Subscription> operationToObservable
             = new ConcurrentHashMap<>();
 
 
     @SuppressWarnings("unchecked")
-    public SketchServerActor(final IDataSet<T> dataSet) {
+    public SketchServerActor(@NonNull final IDataSet<T> dataSet) {
         this.dataSet = dataSet;
 
         receive(
@@ -40,7 +41,6 @@ public class SketchServerActor<T> extends AbstractActor {
 
             // Handle IMap messages and respond
             // to the sender with a success message
-            // XXX: Need the S in IMap<T,S> to specify the type of the observable correctly
             .match(MapOperation.class, mapOp -> {
                 Observable<PartialResult<IDataSet>> observable = this.dataSet.map(mapOp.mapper);
                 Subscription sub =
@@ -49,9 +49,7 @@ public class SketchServerActor<T> extends AbstractActor {
                 this.operationToObservable.put(mapOp.id, sub);
             })
 
-            // Handle ISketch messages and respond to the sender
-            // with the result
-            // XXX: Need the R in ISketch<T,R> to specify the type of the observable correctly
+            // Handle ISketch messages and respond to the sender with the result
             .match(SketchOperation.class, sketchOp -> {
                 Observable<PartialResult> observable = this.dataSet.sketch(sketchOp.sketch);
                 Subscription sub = observable.subscribe(new ResponderSubscriber<PartialResult>
@@ -96,7 +94,7 @@ public class SketchServerActor<T> extends AbstractActor {
         private final PartialResultMonoid resultMonoid = new PRDataSetMonoid();
         private PartialResult result = this.resultMonoid.zero();
 
-        private MapResponderSubscriber(final UUID id, final ActorRef sender) {
+        private MapResponderSubscriber(@NonNull final UUID id, @NonNull final ActorRef sender) {
             super(id, sender);
         }
 
@@ -107,12 +105,14 @@ public class SketchServerActor<T> extends AbstractActor {
                 final ActorRef actorRef = context().actorOf(Props.create(SketchServerActor.class,
                                                this.result.deltaValue), newActor);
                 final OperationResponse<String> response =
-                        new OperationResponse<String>(Serialization.serializedActorPath(actorRef), this.id,
-                                                      OperationResponse.Type.NewRemoteDataSet);
+                        new OperationResponse<String>(
+                                Serialization.serializedActorPath(actorRef), this.id,
+                                OperationResponse.ResponseType.NewRemoteDataSet);
                 this.sender.tell(response, self());
             }
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         public void onNext(final R r) {
             if (!isUnsubscribed()) {
@@ -127,7 +127,8 @@ public class SketchServerActor<T> extends AbstractActor {
         private final PartialResultMonoid resultMonoid = new PRDataSetMonoid();
         private final PartialResult result = this.resultMonoid.zero();
 
-        private ZipResponderSubscriber(final UUID id, final ActorRef sender) {
+        private ZipResponderSubscriber(@NonNull final UUID id,
+                                       @NonNull final ActorRef sender) {
             super(id, sender);
         }
 
@@ -139,7 +140,7 @@ public class SketchServerActor<T> extends AbstractActor {
                         this.result.deltaValue), newActor);
                 final OperationResponse<String> response =
                         new OperationResponse<String>(Serialization.serializedActorPath(actorRef), this.id,
-                                OperationResponse.Type.NewRemoteDataSet);
+                                OperationResponse.ResponseType.NewRemoteDataSet);
                 this.sender.tell(response, self());
             }
         }
@@ -149,10 +150,12 @@ public class SketchServerActor<T> extends AbstractActor {
      * Generic subscriber, used to wrap results and send them back to the client
      */
     private class ResponderSubscriber<R> extends Subscriber<R> {
+        @NonNull
         final UUID id;
+        @NonNull
         final ActorRef sender;
 
-        private ResponderSubscriber(final UUID id, final ActorRef sender) {
+        private ResponderSubscriber(@NonNull final UUID id, @NonNull final ActorRef sender) {
             this.id = id;
             this.sender = sender;
         }
@@ -161,7 +164,7 @@ public class SketchServerActor<T> extends AbstractActor {
         public void onCompleted() {
             if (!isUnsubscribed()) {
                 final OperationResponse<Integer> response = new OperationResponse<Integer>(0, this.id,
-                        OperationResponse.Type.OnCompletion);
+                        OperationResponse.ResponseType.OnCompletion);
                 this.sender.tell(response, self());
                 SketchServerActor.this.operationToObservable.remove(this.id);
             }
@@ -172,7 +175,7 @@ public class SketchServerActor<T> extends AbstractActor {
             if (!isUnsubscribed()) {
                 final OperationResponse<Throwable> response =
                         new OperationResponse<Throwable>(throwable, this.id,
-                                OperationResponse.Type.OnError);
+                                OperationResponse.ResponseType.OnError);
                 this.sender.tell(response, self());
                 SketchServerActor.this.operationToObservable.remove(this.id);
             }
@@ -182,7 +185,7 @@ public class SketchServerActor<T> extends AbstractActor {
         public void onNext(final R r) {
             if (!isUnsubscribed()) {
                 final OperationResponse<R> response = new OperationResponse<R>(r, this.id,
-                        OperationResponse.Type.OnNext);
+                        OperationResponse.ResponseType.OnNext);
                 this.sender.tell(response, self());
             }
         }

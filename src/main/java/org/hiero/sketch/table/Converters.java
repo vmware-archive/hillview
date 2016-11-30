@@ -1,5 +1,7 @@
 package org.hiero.sketch.table;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
+
 import java.time.Duration;
 import java.util.Date;
 
@@ -7,11 +9,11 @@ import java.util.Date;
  * Conversion to and from doubles of various supported datatypes.
  */
 public class Converters {
-    public static double toDouble(final Date d) {
+    public static double toDouble(@NonNull final Date d) {
         return d.getTime();
     }
 
-    public static double toDouble(final Duration d) {
+    public static double toDouble(@NonNull final Duration d) {
         return d.toNanos();
     }
 

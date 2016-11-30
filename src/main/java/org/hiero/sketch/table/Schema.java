@@ -1,5 +1,6 @@
 package org.hiero.sketch.table;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.table.api.ISchema;
 import org.hiero.sketch.table.api.ISubSchema;
 
@@ -9,7 +10,9 @@ import java.util.HashMap;
 
 public final class Schema implements ISchema {
     /* Map a column name into an integer index */
+    @NonNull
     private final HashMap<String, Integer> index;
+    @NonNull
     private final ArrayList<ColumnDescription> columns;
 
     public Schema() {
@@ -17,7 +20,7 @@ public final class Schema implements ISchema {
         this.index = new HashMap<String, Integer>();
     }
 
-    public void append(final ColumnDescription desc) {
+    public void append(@NonNull final ColumnDescription desc) {
         if (this.index.containsKey(desc.name))
             throw new InvalidParameterException("Column with name " + desc.name + " already exists");
         this.index.put(desc.name, this.columns.size());
@@ -40,7 +43,7 @@ public final class Schema implements ISchema {
      * @return The column index, or -1 if the column is not present.
      */
     @Override
-    public int getColumnIndex(final String columnName) {
+    public int getColumnIndex(@NonNull final String columnName) {
         return this.index.getOrDefault(columnName, -1);
     }
 
@@ -49,9 +52,9 @@ public final class Schema implements ISchema {
      * The relative order of columns is preserved.
      */
     @Override
-    public ISchema project(final ISubSchema subSchema) {
+    public ISchema project(@NonNull final ISubSchema subSchema) {
         final Schema projection = new Schema();
-        for (int i =0; i < this.getColumnCount(); i++) {
+        for (int i = 0; i < this.getColumnCount(); i++) {
             final ColumnDescription colDesc = this.getDescription(i);
             if (subSchema.isColumnPresent(colDesc.name)) {
                 projection.append(colDesc);

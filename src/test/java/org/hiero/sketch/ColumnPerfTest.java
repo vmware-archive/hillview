@@ -12,7 +12,7 @@ public class ColumnPerfTest {
     public void testColumnGetInt() {
         final IntArrayColumn col;
         final int size = 1000000;
-        final int testnum = 100;
+        final int testnum = 10;
         final ColumnDescription desc = new ColumnDescription("test", ContentsKind.Int, false);
 
         col = new IntArrayColumn(desc, size);

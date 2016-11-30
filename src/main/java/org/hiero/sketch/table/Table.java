@@ -1,17 +1,39 @@
 package org.hiero.sketch.table;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.table.api.*;
 
 /**
  * This is a simple table held entirely in RAM.
  */
 public class Table {
+    @NonNull
     private final ISchema schema;
+    @NonNull
     private final IColumn[] columns;
+    @NonNull
     private final IMembershipSet members;
 
-    public Table(final ISchema schema, final IColumn[] columns, final IMembershipSet members) {
+    public Table(@NonNull final ISchema schema,
+                 @NonNull final IColumn[] columns,
+                 @NonNull final IMembershipSet members) {
         this.schema = schema;
+        this.columns = columns;
+        this.members = members;
+        for (final IColumn c : columns) {
+            final int ci = schema.getColumnIndex(c.getName());
+            final ColumnDescription cd = schema.getDescription(ci);
+            if (!c.getDescription().equals(cd))
+                throw new IllegalArgumentException("Schema mismatch " + cd.toString() +
+                        " vs. " + c.getDescription().toString());
+        }
+    }
+
+    public Table(@NonNull final IColumn[] columns, @NonNull final IMembershipSet members) {
+        final Schema s = new Schema();
+        for (final IColumn c : columns)
+            s.append(c.getDescription());
+        this.schema = s;
         this.columns = columns;
         this.members = members;
     }
@@ -21,7 +43,7 @@ public class Table {
      * and only the rows contained in IMembership Set with consecutive numbering.
      * The order among the columns is preserved.
      */
-    public Table compress(final ISubSchema subSchema) {
+    public Table compress(@NonNull final ISubSchema subSchema) {
         final ISchema newSchema = this.schema.project(subSchema);
         final int width = newSchema.getColumnCount();
         final IColumn[] compressedCols = new IColumn[width];

@@ -1,5 +1,6 @@
 package org.hiero.sketch.table;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.table.api.ContentsKind;
 
 import java.util.ArrayList;
@@ -11,6 +12,7 @@ import java.util.Date;
 public class DateListColumn
         extends BaseListColumn
         implements IDateColumn {
+    @NonNull
     private final ArrayList<Date[]> segments;
 
     public DateListColumn(final ColumnDescription desc) {

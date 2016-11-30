@@ -1,5 +1,6 @@
 package org.hiero.sketch.table;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.table.api.*;
 
 import java.util.Date;
@@ -7,6 +8,8 @@ import java.util.Date;
 public interface IDateColumn extends IColumn {
     @Override
     default double asDouble(final int rowIndex, final IStringConverter unused) {
+        if (isMissing(rowIndex))
+            throw new MissingException(this, rowIndex);
         final Date tmp = this.getDate(rowIndex);
         return Converters.toDouble(tmp);
     }
@@ -39,7 +42,7 @@ public interface IDateColumn extends IColumn {
     }
 
     @Override
-    default IColumn compress(final IMembershipSet set) {
+    default IColumn compress(@NonNull final IMembershipSet set) {
         final int size = set.getSize();
         final IRowIterator rowIt = set.getIterator();
         final DateArrayColumn result = new DateArrayColumn(this.getDescription(), size);

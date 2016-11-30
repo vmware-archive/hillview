@@ -1,5 +1,6 @@
 package org.hiero.sketch.table;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.table.api.ContentsKind;
 
 import java.security.InvalidParameterException;
@@ -10,6 +11,7 @@ import java.security.InvalidParameterException;
  */
 public final class StringArrayColumn
         extends BaseArrayColumn implements IStringColumn {
+    @NonNull
     private final String[] data;
 
     private void validate() {
@@ -19,13 +21,14 @@ public final class StringArrayColumn
                     + this.description.kind);
     }
 
-    public StringArrayColumn(final ColumnDescription description, final int size) {
+    public StringArrayColumn(@NonNull final ColumnDescription description, final int size) {
         super(description, size);
         this.validate();
         this.data = new String[size];
     }
 
-    public StringArrayColumn(final ColumnDescription description, final String[] data) {
+    public StringArrayColumn(@NonNull final ColumnDescription description,
+                             @NonNull final String[] data) {
         super(description, data.length);
         this.validate();
         this.data = data;
