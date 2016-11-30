@@ -103,10 +103,10 @@ public class FullMembership implements IMembershipSet {
     }
 
     private IMembershipSet sampleUtil(final Random randomGenerator, final int k) {
-        final IntSet S = new IntSet(k);
+        final IntSet s = new IntSet(k);
         for (int i=0; i < k; i++)
-            S.add(randomGenerator.nextInt(this.rowCount));
-        return new SparseMembership(S);
+            s.add(randomGenerator.nextInt(this.rowCount));
+        return new SparseMembership(s);
     }
 
     private static class FullMembershipIterator implements IRowIterator {

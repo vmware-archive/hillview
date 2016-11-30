@@ -119,12 +119,14 @@ public class LazyMembership implements IMembershipSet {
 
     /**
      *
-     * @return An approximation of the size based on a smaple of size 20. May return
+     * @return An approximation of the size based on a sample of sizeEstimationSampleSize.
+     * function may return 0.
+     * Exact size given by getSize() is expensive and takes linear time the first time it is called
      */
     public int getApproxSize() {
         if (this.rowCountCorrect)
             return this.rowCount;
-        final IMembershipSet sampleSet = this.sample(20);
+        final IMembershipSet sampleSet = this.sample(sizeEstimationSampleSize);
         if (sampleSet.getSize() == 0)
             return 0;
         int snumber = 0;

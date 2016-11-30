@@ -17,6 +17,7 @@ public class SparseMembership implements IMembershipSet {
 
     private final int rowCount;
     private final IntSet membershipMap;
+    private static final int sizeEstimationSampleSize = 20;
 
     /**
      * Standard way to construct this map is by supplying a membershipSet (perhaps the full one),
@@ -198,7 +199,7 @@ public class SparseMembership implements IMembershipSet {
      * initialization of a hash table sizes.
      */
     private int estimateSize(final IMembershipSet baseMap, final Predicate<Integer> filter) {
-        final IMembershipSet sampleSet = baseMap.sample(20);
+        final IMembershipSet sampleSet = baseMap.sample(sizeEstimationSampleSize);
         if (sampleSet.getSize()==0)
             return 0;
         int esize = 0;
