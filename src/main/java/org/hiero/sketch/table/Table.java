@@ -2,7 +2,6 @@ package org.hiero.sketch.table;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.table.api.*;
-import scala.reflect.internal.util.TableDef;
 
 /**
  * This is a simple table held entirely in RAM.
@@ -21,9 +20,9 @@ public class Table {
         this.schema = schema;
         this.columns = columns;
         this.members = members;
-        for (IColumn c : columns) {
-            int ci = schema.getColumnIndex(c.getName());
-            ColumnDescription cd = schema.getDescription(ci);
+        for (final IColumn c : columns) {
+            final int ci = schema.getColumnIndex(c.getName());
+            final ColumnDescription cd = schema.getDescription(ci);
             if (!c.getDescription().equals(cd))
                 throw new IllegalArgumentException("Schema mismatch " + cd.toString() +
                         " vs. " + c.getDescription().toString());
@@ -31,8 +30,8 @@ public class Table {
     }
 
     public Table(@NonNull final IColumn[] columns, @NonNull final IMembershipSet members) {
-        Schema s = new Schema();
-        for (IColumn c : columns)
+        final Schema s = new Schema();
+        for (final IColumn c : columns)
             s.append(c.getDescription());
         this.schema = s;
         this.columns = columns;

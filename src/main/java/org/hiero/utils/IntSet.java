@@ -49,6 +49,7 @@ public class IntSet {
      * @param k integer to add to the set
      * @return true if the set changed, false if the item is already in the set
      */
+    @SuppressWarnings("UnusedReturnValue")
     public boolean add(final int k) {
         if (k == 0) {
             if (this.containsZero) {
@@ -107,7 +108,7 @@ public class IntSet {
         return this.size == 0;
     }
 
-    protected void rehash(final int newN) {
+    private void rehash(final int newN) {
         final int[] key = this.key;
         final int mask = newN - 1;
         final int[] newKey = new int[newN + 1];
@@ -119,7 +120,7 @@ public class IntSet {
             } while(key[i] == 0);
 
             if (newKey[pos = HashUtil.murmurHash3(key[i]) & mask] != 0) {
-                while(newKey[(pos = (pos + 1) & mask)] != 0) {}
+                while (newKey[(pos = (pos + 1) & mask)] != 0) {}
             }
         }
         this.n = newN;

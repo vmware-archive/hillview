@@ -41,7 +41,6 @@ public class SketchServerActor<T> extends AbstractActor {
 
             // Handle IMap messages and respond
             // to the sender with a success message
-            // XXX: Need the S in IMap<T,S> to specify the type of the observable correctly
             .match(MapOperation.class, mapOp -> {
                 Observable<PartialResult<IDataSet>> observable = this.dataSet.map(mapOp.mapper);
                 Subscription sub =
@@ -50,9 +49,7 @@ public class SketchServerActor<T> extends AbstractActor {
                 this.operationToObservable.put(mapOp.id, sub);
             })
 
-            // Handle ISketch messages and respond to the sender
-            // with the result
-            // XXX: Need the R in ISketch<T,R> to specify the type of the observable correctly
+            // Handle ISketch messages and respond to the sender with the result
             .match(SketchOperation.class, sketchOp -> {
                 Observable<PartialResult> observable = this.dataSet.sketch(sketchOp.sketch);
                 Subscription sub = observable.subscribe(new ResponderSubscriber<PartialResult>
@@ -115,6 +112,7 @@ public class SketchServerActor<T> extends AbstractActor {
             }
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         public void onNext(final R r) {
             if (!isUnsubscribed()) {

@@ -114,7 +114,6 @@ public class LazyMembership implements IMembershipSet {
      * this way and then gives up and returns whatever was sampled.
      * @param k the number of samples without replacement taken
      * @param seed the seed for the random generator
-     * @return
      */
     @Override
     public IMembershipSet sample(final int k, final long seed) {
@@ -154,48 +153,46 @@ public class LazyMembership implements IMembershipSet {
     }
 
     @Override
-    public IMembershipSet union(@NonNull IMembershipSet otherMap) throws NullArgumentException {
-        if (otherMap == null)
-            throw new NullArgumentException("can not perform union with a null");
+    public IMembershipSet union(@NonNull final IMembershipSet otherMap) {
         if (otherMap instanceof LazyMembership) {
-            IMembershipSet newBase = this.baseMap.union(((LazyMembership) otherMap).baseMap);
-            Predicate newFilter =  this.filter.or(((LazyMembership) otherMap).filter);
+            final IMembershipSet newBase = this.baseMap.union(((LazyMembership) otherMap).baseMap);
+            final Predicate<Integer> newFilter =
+                    this.filter.or(((LazyMembership) otherMap).filter);
             return new LazyMembership(newBase, newFilter);
         }
         if (otherMap instanceof FullMembership) {
-            IMembershipSet newBase = this.baseMap.union(otherMap);
-            Predicate newFilter =  this.filter.or(p -> ((FullMembership) otherMap).isMember(p));
+            final IMembershipSet newBase = this.baseMap.union(otherMap);
+            final Predicate<Integer> newFilter =
+                    this.filter.or(p -> otherMap.isMember(p));
             return new LazyMembership(newBase, newFilter);
         }
         return otherMap.union(this);
     }
 
     @Override
-    public IMembershipSet intersection(@NonNull IMembershipSet otherMap)
+    public IMembershipSet intersection(@NonNull final IMembershipSet otherMap)
             throws NullArgumentException {
         if (otherMap == null)
             throw new NullArgumentException("can not perform intersection with a null");
         if (otherMap instanceof LazyMembership) {
-            IMembershipSet newBase = this.baseMap.intersection(((LazyMembership) otherMap).baseMap);
-            Predicate newFilter =  this.filter.and(((LazyMembership) otherMap).filter);
+            final IMembershipSet newBase =
+                    this.baseMap.intersection(((LazyMembership) otherMap).baseMap);
+            final Predicate<Integer> newFilter = this.filter.and(((LazyMembership)otherMap).filter);
             return new LazyMembership(newBase, newFilter);
         }
         if (otherMap instanceof FullMembership) {
-            IMembershipSet newBase = this.baseMap.intersection(otherMap);
-            Predicate newFilter =  this.filter;
-            return new LazyMembership(newBase, newFilter);
+            final IMembershipSet newBase = this.baseMap.intersection(otherMap);
+            return new LazyMembership(newBase, this.filter);
         }
         return otherMap.intersection(this);
     }
 
     @Override
-    public IMembershipSet setMinus(@NonNull IMembershipSet otherMap) throws NullArgumentException {
-        if (otherMap == null)
-            throw new NullArgumentException("can not perform setMinus with a null");
-        IntSet setMinusSet = new IntSet();
-        IRowIterator iter = this.getIterator();
+    public IMembershipSet setMinus(@NonNull final IMembershipSet otherMap) {
+        final IntSet setMinusSet = new IntSet();
+        final IRowIterator iter = this.getIterator();
         int curr = iter.getNextRow();
-        while (curr >=0 ) {
+        while (curr >=0) {
             if (!otherMap.isMember(curr))
                 setMinusSet.add(curr);
             curr = iter.getNextRow();
@@ -206,8 +203,8 @@ public class LazyMembership implements IMembershipSet {
 
     @Override
     public IMembershipSet copy() {
-        IMembershipSet newBase = this.baseMap.copy();
-        LazyMembership newMap =  new LazyMembership(newBase,this.filter);
+        final IMembershipSet newBase = this.baseMap.copy();
+        final LazyMembership newMap =  new LazyMembership(newBase,this.filter);
         newMap.rowCountCorrect = this.rowCountCorrect;
         newMap.rowCount = this.rowCount;
         return newMap;

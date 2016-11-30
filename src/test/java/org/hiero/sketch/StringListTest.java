@@ -9,17 +9,18 @@ import static junit.framework.TestCase.*;
 /*
  * Test for StringArrayColumn class.
 */
-class StringListTest {
-
+public class StringListTest {
     private final ColumnDescription desc = new ColumnDescription("test", ContentsKind.String, true);
+
     @Test
     public void testStringArrayZero() {
         final StringListColumn col = new StringListColumn(this.desc);
         final int size = 1000;
         for (int i = 0; i < size; i++) {
-            col.append(String.valueOf(i));
             if ((i % 5) == 0) {
                 col.appendMissing();
+            } else {
+                col.append(String.valueOf(i));
             }
         }
         assertEquals(col.sizeInRows(), size);

@@ -3,7 +3,7 @@ package org.hiero.sketch.table.api;
 /**
  * A IMembershipSet is a representation of a set of integers.
  * These integers represent row indexes in a table.  If an integer
- * is in a IMembershipSet, then it is present in the table.
+ * is in an IMembershipSet, then it is present in the table.
  */
 public interface IMembershipSet {
     /**
@@ -29,8 +29,8 @@ public interface IMembershipSet {
      */
     IMembershipSet sample(int k, long seed);
     /**
-     * @return the  union of current map and otherMap.
-     * currentMap is destroyed.
+     * @return the union of current map and otherMap.
+     * FIXME: currentMap is destroyed.
      */
     IMembershipSet union(IMembershipSet otherMap);
 
@@ -42,9 +42,9 @@ public interface IMembershipSet {
      * The iterator is initialized to point at the "first" row.
      */
     IRowIterator getIterator();
-
     /**
-     * @return a deep copy of this
+     * @return a deep copy of this.
+     * FIXME: This should be removed.
      */
     IMembershipSet copy();
 }

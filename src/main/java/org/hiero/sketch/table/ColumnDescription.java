@@ -28,11 +28,11 @@ public class ColumnDescription {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if ((o == null) || (getClass() != o.getClass())) return false;
 
-        ColumnDescription that = (ColumnDescription) o;
+        final ColumnDescription that = (ColumnDescription) o;
 
         if (this.allowMissing != that.allowMissing) return false;
         if (!this.name.equals(that.name)) return false;
@@ -42,8 +42,8 @@ public class ColumnDescription {
     @Override
     public int hashCode() {
         int result = this.name.hashCode();
-        result = 31 * result + this.kind.hashCode();
-        result = 31 * result + (this.allowMissing ? 1 : 0);
+        result = (31 * result) + this.kind.hashCode();
+        result = (31 * result) + (this.allowMissing ? 1 : 0);
         return result;
     }
 }

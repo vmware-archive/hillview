@@ -52,7 +52,7 @@ public class FullMembership implements IMembershipSet {
 
     /**
      * Same as sample(k) but with the seed of the generator given as a parameter. The procedure
-     * samples k times with replacement so it return a set with less than k distinct items
+     * samples k times with replacement so it may return a set with less than k distinct items
      * @param k the number of samples taken with replacement
      * @param seed the seed for the randomness generator
      * @return IMembershipSet instantiated as a partial sparse

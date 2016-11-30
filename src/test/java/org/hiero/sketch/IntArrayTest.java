@@ -12,7 +12,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Test for IntArrayColumn class
  */
-class IntArrayTest {
+public class IntArrayTest {
     static private final ColumnDescription desc = new
             ColumnDescription("Identity", ContentsKind.Int, true);
 

@@ -16,6 +16,7 @@ import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -32,7 +33,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Remoting tests for Akka.
  */
-public class AkkaTest {
+public class RemotingTests {
+    private static ActorSystem clientActorSystem;
+    private static ActorSystem serverActorSystem;
     private static ActorRef clientActor;
     private static ActorRef remoteActor;
 
@@ -79,6 +82,37 @@ public class AkkaTest {
         }
     }
 
+    private class ErrorSumSketch implements ISketch<int[], Integer> {
+        @Override
+        public Integer zero() {
+            return 0;
+        }
+
+        @Override
+        public Integer add(final Integer left, final Integer right) {
+            return left + right;
+        }
+
+        @Override
+        public Observable<PartialResult<Integer>> create(final int[] data) {
+            final int parts = 10;
+            return Observable.range(0, parts).map(index -> {
+                final int partSize = data.length / parts;
+                if (index == 3) {
+                    throw new RuntimeException("ErrorSumSketch");
+                }
+                final int left = partSize * index;
+                final int right = (index == (parts - 1)) ? data.length : (left + partSize);
+                int sum1 = 0;
+                for (int i = left; i < right; i++) {
+                    sum1 += data[i];
+                }
+                return new PartialResult<Integer>(1.0 / parts, sum1);
+            });
+        }
+    }
+
+
     /*
      * Create separate server and client actor systems to test remoting.
      */
@@ -88,7 +122,7 @@ public class AkkaTest {
         final Timeout timeout = new Timeout(Duration.create(1000, "milliseconds"));
         final String serverConfFileUrl = ClassLoader.getSystemResource("test-server.conf").getFile();
         final Config serverConfig = ConfigFactory.parseFile(new File(serverConfFileUrl));
-        final ActorSystem serverActorSystem = ActorSystem.create("SketchApplication", serverConfig);
+        serverActorSystem = ActorSystem.create("SketchApplication", serverConfig);
         assertNotNull(serverActorSystem);
 
         // Create a dataset
@@ -104,7 +138,7 @@ public class AkkaTest {
         // Client
         final String clientConfFileUrl = ClassLoader.getSystemResource("client.conf").getFile();
         final Config clientConfig = ConfigFactory.parseFile(new File(clientConfFileUrl));
-        final ActorSystem clientActorSystem = ActorSystem.create("SketchApplication", clientConfig);
+        clientActorSystem = ActorSystem.create("SketchApplication", clientConfig);
         final ActorRef remoteActor = Await.result(clientActorSystem.actorSelection(
                 "akka.tcp://SketchApplication@127.0.0.1:2554/user/ServerActor").resolveOne(timeout),
                 timeout.duration());
@@ -143,6 +177,42 @@ public class AkkaTest {
                                        .toBlocking()
                                        .last();
         assertEquals(50005000, result);
+    }
+
+
+    @Test
+    public void testMapSketchThroughClientWithError() {
+        final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(clientActor, remoteActor);
+        final IDataSet<int[]> remoteIdsNew = remoteIds.map(new IncrementMap()).toBlocking().last().deltaValue;
+        assertNotNull(remoteIdsNew);
+        final Observable<PartialResult<Integer>> resultObs =
+                remoteIdsNew.sketch(new ErrorSumSketch());
+        final AtomicInteger counter = new AtomicInteger(0);
+        final CountDownLatch countDownLatch = new CountDownLatch(1);
+        resultObs.subscribe(new Subscriber<PartialResult<Integer>>() {
+            @Override
+            public void onCompleted() {
+                fail("Unreachable");
+            }
+
+            @Override
+            public void onError(final Throwable throwable) {
+                counter.incrementAndGet();
+                countDownLatch.countDown();
+            }
+
+            @Override
+            public void onNext(final PartialResult<Integer> pr) {
+            }
+        });
+
+        try {
+            countDownLatch.await();
+        } catch (final InterruptedException e) {
+            fail("Should not happen");
+        }
+
+        assertEquals(1, counter.get());
     }
 
     @Test
@@ -189,7 +259,6 @@ public class AkkaTest {
         assertEquals(3, counter.get());
     }
 
-
     @Test
     public void testZip() {
         final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(clientActor, remoteActor);
@@ -199,5 +268,11 @@ public class AkkaTest {
                 = remoteIdsLeft.zip(remoteIdsRight).toBlocking().last();
         assertNotNull(last);
         assertEquals(last.deltaDone, 1.0, 0.001);
+    }
+
+    @AfterClass
+    public static void shutdown() {
+        clientActorSystem.terminate();
+        serverActorSystem.terminate();
     }
 }

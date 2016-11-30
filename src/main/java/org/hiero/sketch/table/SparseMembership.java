@@ -4,7 +4,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
 import org.hiero.utils.IntSet;
-import org.scalactic.exceptions.NullArgumentException;
+
 import java.util.*;
 import java.util.function.Predicate;
 
@@ -201,11 +201,11 @@ public class SparseMembership implements IMembershipSet {
     }
 
     private class SetSparseIterator implements IRowIterator {
-        int pos;
-        int c;
-        boolean mustReturnZero;
+        private int pos;
+        private int c;
+        private boolean mustReturnZero;
         @NonNull
-        final IntSet membershipMap;
+        private final IntSet membershipMap;
 
         private SetSparseIterator(final IntSet membershipMap) {
             this.membershipMap = membershipMap;
