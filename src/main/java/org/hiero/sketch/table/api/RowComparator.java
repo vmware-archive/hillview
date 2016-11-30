@@ -6,6 +6,9 @@ import java.util.Comparator;
  * A comparator which compares two rows given by their integer indexes.
  */
 public abstract class RowComparator implements Comparator<Integer> {
+    /**
+     * The reverse comparator.
+     */
     public RowComparator rev() {
         return new RowComparator() {
             @Override

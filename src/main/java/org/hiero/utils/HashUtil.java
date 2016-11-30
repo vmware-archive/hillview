@@ -1,6 +1,8 @@
-package org.hiero.sketch.table;
+package org.hiero.utils;
 
 /**
+ * Various utilities for computing hash functions.  This class only has
+ * static methods.
  * Based on the class HashCommons in http://fastutil.di.unimi.it
  */
 public class HashUtil {
@@ -10,8 +12,7 @@ public class HashUtil {
     private static final long LONG_PHI = -7046029254386353131L;
     private static final long INV_LONG_PHI = -1018231460777725123L;
 
-    protected HashUtil() {
-    }
+    protected HashUtil() {}
 
     public static int murmurHash3(int x) {
         x ^= x >>> 16;

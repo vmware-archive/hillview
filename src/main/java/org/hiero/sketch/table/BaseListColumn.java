@@ -12,7 +12,7 @@ abstract class BaseListColumn extends BaseColumn {
     final int SegmentMask = this.SegmentSize - 1;
     private boolean sealed;  // once sealed it can't grow anymore.
 
-    private ArrayList<BitSet> missing;
+    private ArrayList<BitSet> missing = null;
     int size;
 
     BaseListColumn(final ColumnDescription desc) {

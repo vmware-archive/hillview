@@ -1,5 +1,6 @@
 package org.hiero.sketch.table;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.table.api.ContentsKind;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
@@ -10,9 +11,10 @@ import java.util.ArrayList;
 public final class IntListColumn
         extends BaseListColumn
         implements IIntColumn {
+    @NonNull
     private final ArrayList<int[]> segments;
 
-    public IntListColumn(final ColumnDescription desc) {
+    public IntListColumn(@NonNull final ColumnDescription desc) {
         super(desc);
         if (this.description.kind != ContentsKind.Int)
             throw new InvalidParameterException("Kind should be Int " + this.description.kind);

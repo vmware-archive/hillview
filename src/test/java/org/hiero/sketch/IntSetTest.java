@@ -1,6 +1,6 @@
 package org.hiero.sketch;
 
-import org.hiero.sketch.table.IntSet;
+import org.hiero.utils.IntSet;
 import org.junit.Test;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;

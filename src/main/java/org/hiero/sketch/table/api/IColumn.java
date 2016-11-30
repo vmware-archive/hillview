@@ -12,6 +12,7 @@ import java.util.Date;
 public interface IColumn {
     ColumnDescription getDescription();
 
+    /* Only one of the following methods is supposed to work for a column */
     String getString(int rowIndex);
     double getDouble(int rowIndex);
     Date getDate(int rowIndex);
@@ -39,4 +40,8 @@ public interface IColumn {
     RowComparator getComparator();
 
     IColumn compress(IMembershipSet set);
+
+    default String getName() {
+        return getDescription().name;
+    }
 }

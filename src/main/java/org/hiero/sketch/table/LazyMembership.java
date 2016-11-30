@@ -1,5 +1,7 @@
 package org.hiero.sketch.table;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.hiero.utils.IntSet;
 import org.scalactic.exceptions.NullArgumentException;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
@@ -14,9 +16,11 @@ import java.util.function.Predicate;
  */
 
 public class LazyMembership implements IMembershipSet {
+    @NonNull
     private final IMembershipSet baseMap;
     private int rowCount;
     private boolean rowCountCorrect;
+    @NonNull
     private final Predicate<Integer> filter;
     private static final int sizeEstimationSampleSize = 20;
     private static final int samplingAttempts = 10;
@@ -33,8 +37,8 @@ public class LazyMembership implements IMembershipSet {
     /**
      * instantiated with a a membershipSet, possibly the full one, and a filter predicate.
      */
-    public LazyMembership(final IMembershipSet baseMap, final Predicate<Integer> filter) throws
-            NullArgumentException {
+    public LazyMembership(@NonNull final IMembershipSet baseMap,
+                          @NonNull final Predicate<Integer> filter) throws NullArgumentException {
         if (baseMap == null) throw new NullArgumentException("PartialMembershipDense cannot be " +
                 "instantiated without a base MembershipSet");
         if (filter == null) throw new NullArgumentException("PartialMembershipDense cannot be " +
@@ -150,7 +154,7 @@ public class LazyMembership implements IMembershipSet {
     }
 
     @Override
-    public IMembershipSet union(IMembershipSet otherMap) throws NullArgumentException {
+    public IMembershipSet union(@NonNull IMembershipSet otherMap) throws NullArgumentException {
         if (otherMap == null)
             throw new NullArgumentException("can not perform union with a null");
         if (otherMap instanceof LazyMembership) {
@@ -167,7 +171,8 @@ public class LazyMembership implements IMembershipSet {
     }
 
     @Override
-    public IMembershipSet intersection(IMembershipSet otherMap) throws NullArgumentException {
+    public IMembershipSet intersection(@NonNull IMembershipSet otherMap)
+            throws NullArgumentException {
         if (otherMap == null)
             throw new NullArgumentException("can not perform intersection with a null");
         if (otherMap instanceof LazyMembership) {
@@ -184,7 +189,7 @@ public class LazyMembership implements IMembershipSet {
     }
 
     @Override
-    public IMembershipSet setMinus(IMembershipSet otherMap) throws NullArgumentException {
+    public IMembershipSet setMinus(@NonNull IMembershipSet otherMap) throws NullArgumentException {
         if (otherMap == null)
             throw new NullArgumentException("can not perform setMinus with a null");
         IntSet setMinusSet = new IntSet();
@@ -209,9 +214,12 @@ public class LazyMembership implements IMembershipSet {
     }
 
     private static class DenseIterator implements IRowIterator {
+        @NonNull
         private final IRowIterator baseIterator;
+        @NonNull
         private final Predicate<Integer> filter;
-        private DenseIterator(final IMembershipSet baseMap, final Predicate<Integer> filter) {
+        private DenseIterator(@NonNull final IMembershipSet baseMap,
+                              @NonNull final Predicate<Integer> filter) {
             this.baseIterator = baseMap.getIterator();
             this.filter = filter;
         }

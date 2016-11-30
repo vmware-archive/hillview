@@ -1,10 +1,13 @@
 package org.hiero.sketch.table;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.table.api.*;
 
 public interface IDoubleColumn extends IColumn {
     @Override
     default double asDouble(final int rowIndex, final IStringConverter unused) {
+        if (isMissing(rowIndex))
+            throw new MissingException(this, rowIndex);
         return this.getDouble(rowIndex);
     }
 
@@ -36,7 +39,7 @@ public interface IDoubleColumn extends IColumn {
     }
 
     @Override
-    default IColumn compress(final IMembershipSet set) {
+    default IColumn compress(@NonNull final IMembershipSet set) {
         final int size = set.getSize();
         final IRowIterator rowIt = set.getIterator();
         final DoubleArrayColumn result = new DoubleArrayColumn(this.getDescription(), size);

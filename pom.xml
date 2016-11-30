@@ -49,11 +49,34 @@
       <artifactId>rxjava</artifactId>
       <version>1.1.6</version>
     </dependency>
-      <dependency>
-          <groupId>commons-lang</groupId>
-          <artifactId>commons-lang</artifactId>
-          <version>2.1</version>
-      </dependency>
+    <dependency>
+      <groupId>commons-lang</groupId>
+      <artifactId>commons-lang</artifactId>
+      <version>2.1</version>
+    </dependency>
+    <!-- annotations from the Checker Framework: nullness, interning, locking, ... -->
+    <dependency>
+      <groupId>org.checkerframework</groupId>
+      <artifactId>checker-qual</artifactId>
+      <version>2.1.5</version>
+    </dependency>
+    <dependency>
+      <groupId>org.checkerframework</groupId>
+      <artifactId>checker</artifactId>
+      <version>2.1.5</version>
+    </dependency>
+    <!-- The type annotations compiler - uncomment if desired -->
+    <!-- <dependency>
+        <groupId>org.checkerframework</groupId>
+        <artifactId>compiler</artifactId>
+        <version>2.1.5</version>
+    </dependency> -->
+    <!-- The annotated JDK to use (change to jdk7 if using Java 7) -->
+    <dependency>
+      <groupId>org.checkerframework</groupId>
+      <artifactId>jdk8</artifactId>
+      <version>2.1.5</version>
+    </dependency>
   </dependencies>
 
   <build>

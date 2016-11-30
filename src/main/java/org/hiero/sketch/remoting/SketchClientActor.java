@@ -5,6 +5,7 @@ import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
 import akka.util.Timeout;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.dataset.RemoteDataSet;
 import org.hiero.sketch.dataset.api.IDataSet;
 import org.hiero.sketch.dataset.api.PartialResult;
@@ -98,9 +99,9 @@ public class SketchClientActor extends AbstractActor {
         );
     }
 
-    private <T extends RemoteOperation> void sendOperation(final T operation,
-                                                           final ActorRef remoteActor,
-                                                           final ActorRef sender) {
+    private <T extends RemoteOperation> void sendOperation(@NonNull final T operation,
+                                                           @NonNull final ActorRef remoteActor,
+                                                           @NonNull final ActorRef sender) {
         if (!this.operationToObservable.containsKey(operation.id)) {
             final PublishSubject subj = PublishSubject.create();
             final Observable obs = subj.doOnSubscribe(() -> {

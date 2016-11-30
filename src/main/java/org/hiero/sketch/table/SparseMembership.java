@@ -1,7 +1,9 @@
 package org.hiero.sketch.table;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
+import org.hiero.utils.IntSet;
 import org.scalactic.exceptions.NullArgumentException;
 import java.util.*;
 import java.util.function.Predicate;
@@ -14,8 +16,8 @@ import java.util.function.Predicate;
  * The downside is the constructor that runs in linear time.
  */
 public class SparseMembership implements IMembershipSet {
-
     private final int rowCount;
+    @NonNull
     private final IntSet membershipMap;
     private static final int sizeEstimationSampleSize = 20;
 
@@ -24,15 +26,9 @@ public class SparseMembership implements IMembershipSet {
      * and the filter function passed as a lambda expression.
      * @param baseMap the base IMembershipSet map on which the filter will be applied
      * @param filter  the additional filter to be applied on the base map
-     * @throws NullArgumentException
      */
-    public SparseMembership(final IMembershipSet baseMap, final Predicate<Integer> filter)
-            throws NullArgumentException {
-        if (baseMap == null)
-            throw new NullArgumentException("PartialMembershipDense cannot be instantiated " +
-                    "without a base MembershipSet");
-        if (filter == null)
-            throw new NullArgumentException("Predicate for PartialMembershipDense cannot be null");
+    public SparseMembership(@NonNull final IMembershipSet baseMap,
+                            @NonNull final Predicate<Integer> filter) {
         final IRowIterator baseIterator = baseMap.getIterator();
         this.membershipMap = new IntSet(this.estimateSize(baseMap, filter));
         int tmp = baseIterator.getNextRow();
@@ -48,12 +44,8 @@ public class SparseMembership implements IMembershipSet {
      * Instantiates the class without a  predicate. Effectively converts the implementation of
      * the baseMap into that of a sparse map.
      * @param baseMap of type IMembershipSet
-     * @throws NullArgumentException
      */
-    public SparseMembership(final IMembershipSet baseMap) throws NullArgumentException {
-        if (baseMap == null)
-            throw new NullArgumentException("PartialMembershipDense cannot be instantiated " +
-                    "without a base MembershipSet");
+    public SparseMembership(@NonNull final IMembershipSet baseMap) {
         final IRowIterator baseIterator = baseMap.getIterator();
         final int expectedSize;
         if (baseMap instanceof LazyMembership)
@@ -72,12 +64,8 @@ public class SparseMembership implements IMembershipSet {
     /**
      * Essentially wraps a Set interface by IMembershipSet
      * @param baseSet of type Set
-     * @throws NullArgumentException
      */
-    public SparseMembership(final IntSet baseSet) throws NullArgumentException {
-        if (baseSet == null)
-            throw new NullArgumentException("PartialMembershipDense cannot be instantiated " +
-                    "without a base Set");
+    public SparseMembership(@NonNull final IntSet baseSet) {
         this.membershipMap = baseSet;
         this.rowCount = this.membershipMap.size();
     }
@@ -145,13 +133,11 @@ public class SparseMembership implements IMembershipSet {
     }
 
     @Override
-    public IMembershipSet union(final IMembershipSet otherSet) throws NullArgumentException{
-        if (otherSet == null)
-            throw new NullArgumentException("can not perform union with a null");
+    public IMembershipSet union(@NonNull final IMembershipSet otherSet) {
         final IntSet unionSet = this.membershipMap.copy();
         final IRowIterator iter = otherSet.getIterator();
         int curr = iter.getNextRow();
-        while (curr >=0 ) {
+        while (curr >=0) {
             unionSet.add(curr);
             curr = iter.getNextRow();
         }
@@ -159,13 +145,11 @@ public class SparseMembership implements IMembershipSet {
     }
 
     @Override
-    public IMembershipSet intersection(final IMembershipSet otherSet) throws NullArgumentException{
-        if (otherSet == null)
-            throw new NullArgumentException("can not perform intersection with a null");
+    public IMembershipSet intersection(@NonNull final IMembershipSet otherSet) {
         final IntSet intersectSet = new IntSet();
         final IRowIterator iter = otherSet.getIterator();
         int curr = iter.getNextRow();
-        while (curr >=0 ) {
+        while (curr >=0) {
             if (this.isMember(curr))
                 intersectSet.add(curr);
             curr = iter.getNextRow();
@@ -174,13 +158,11 @@ public class SparseMembership implements IMembershipSet {
     }
 
     @Override
-    public IMembershipSet setMinus(final IMembershipSet otherSet) throws NullArgumentException{
-        if (otherSet == null)
-            throw new NullArgumentException("can not perform setMinus with a null");
+    public IMembershipSet setMinus(@NonNull final IMembershipSet otherSet) {
         final IntSet setMinusSet = new IntSet();
         final IRowIterator iter = this.getIterator();
         int curr = iter.getNextRow();
-        while (curr >=0 ) {
+        while (curr >=0) {
             if (!otherSet.isMember(curr))
                 setMinusSet.add(curr);
             curr = iter.getNextRow();
@@ -192,15 +174,17 @@ public class SparseMembership implements IMembershipSet {
     public IMembershipSet copy() {
         return new SparseMembership(this.membershipMap.copy());
     }
+
     /**
      * Estimates the size of a filter applied to an IMembershipSet
      * @return an approximation of the size, based on a sample of size 20. May return 0.
      * There are no strict guarantees on the quality of the approximation, but is good enough for
      * initialization of a hash table sizes.
      */
-    private int estimateSize(final IMembershipSet baseMap, final Predicate<Integer> filter) {
+    private int estimateSize(@NonNull final IMembershipSet baseMap,
+                             @NonNull final Predicate<Integer> filter) {
         final IMembershipSet sampleSet = baseMap.sample(sizeEstimationSampleSize);
-        if (sampleSet.getSize()==0)
+        if (sampleSet.getSize() == 0)
             return 0;
         int esize = 0;
         final IRowIterator iter= sampleSet.getIterator();
@@ -220,6 +204,7 @@ public class SparseMembership implements IMembershipSet {
         int pos;
         int c;
         boolean mustReturnZero;
+        @NonNull
         final IntSet membershipMap;
 
         private SetSparseIterator(final IntSet membershipMap) {
@@ -235,15 +220,15 @@ public class SparseMembership implements IMembershipSet {
 
         @Override
         public int getNextRow() {
-            if(!this.hasNext())
+            if (!this.hasNext())
                 return -1;
             --this.c;
-            if(this.mustReturnZero) {
+            if (this.mustReturnZero) {
                 this.mustReturnZero = false;
                 return 0;
             }
             final int[] key = this.membershipMap.key;
-            while(--this.pos >= 0) {
+            while (--this.pos >= 0) {
                 if(key[this.pos] != 0)
                     return key[this.pos];
             }

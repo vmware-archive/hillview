@@ -1,5 +1,6 @@
 package org.hiero.sketch.table;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.table.api.ContentsKind;
 
 import java.security.InvalidParameterException;
@@ -10,6 +11,7 @@ import java.time.Duration;
  */
 
 public final class DurationArrayColumn extends BaseArrayColumn implements IDurationColumn {
+    @NonNull
     private final Duration[] data;
 
     private void validate() {
@@ -18,13 +20,14 @@ public final class DurationArrayColumn extends BaseArrayColumn implements IDurat
                     + this.description.kind);
     }
 
-    public DurationArrayColumn(final ColumnDescription description, final int size) {
+    public DurationArrayColumn(@NonNull final ColumnDescription description, final int size) {
         super(description, size);
         this.validate();
         this.data = new Duration[size];
     }
 
-    public DurationArrayColumn(final ColumnDescription description, final Duration[] data) {
+    public DurationArrayColumn(@NonNull final ColumnDescription description,
+                               @NonNull final Duration[] data) {
         super(description, data.length);
         this.validate();
         this.data = data;

@@ -2,6 +2,7 @@ package org.hiero.sketch.table;
 
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
+import org.hiero.utils.IntSet;
 import org.scalactic.exceptions.NullArgumentException;
 
 import java.util.Random;
@@ -72,7 +73,8 @@ public class FullMembership implements IMembershipSet {
     }
 
     @Override
-    public IMembershipSet intersection (final IMembershipSet otherSet) throws NullArgumentException {
+    public IMembershipSet intersection (final IMembershipSet otherSet)
+            throws NullArgumentException {
         if (otherSet == null)
             throw new NullArgumentException("Can not perform intersection with a null");
         if (otherSet instanceof FullMembership)

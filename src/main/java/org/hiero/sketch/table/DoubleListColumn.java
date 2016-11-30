@@ -1,5 +1,6 @@
 package org.hiero.sketch.table;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.table.api.ContentsKind;
 
 import java.util.ArrayList;
@@ -9,9 +10,10 @@ import java.util.ArrayList;
  */
 public class DoubleListColumn
         extends BaseListColumn implements IDoubleColumn {
+    @NonNull
     private final ArrayList<double[]> segments;
 
-    public DoubleListColumn(final ColumnDescription desc) {
+    public DoubleListColumn(@NonNull final ColumnDescription desc) {
         super(desc);
         if (desc.kind != ContentsKind.Double)
             throw new IllegalArgumentException("Unexpected column kind " + desc.kind);

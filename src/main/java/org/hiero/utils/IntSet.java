@@ -1,16 +1,19 @@
-package org.hiero.sketch.table;
+package org.hiero.utils;
 
 /**
+ * A set of integers.
  * A simplified version of IntOpenHash from fastutil http://fastutil.di.unimi.it
  */
 public class IntSet {
-    protected int[] key; /* The array of the linear probing */
-    protected int mask;
-    protected int n;  /* the size of the array - 1 */
+    // TODO: it would be nice if these were private
+    public int[] key; /* The array of the linear probing */
+    public int mask;
+    public int n;  /* the size of the array - 1 */
+    public boolean containsZero = false;  /* zero is reserved to signify an empty cell */
+    public int size;
+
     private int maxFill;
-    protected int size;
     private final float f; /* the maximal load of the array */
-    protected boolean containsZero = false;  /* zero is reserved to signify an empty cell */
 
     public IntSet(final int expected, final float f) {
         if ((f > 0.0F) && (f <= 1.0F)) {
@@ -43,7 +46,6 @@ public class IntSet {
     }
 
     /**
-     *
      * @param k integer to add to the set
      * @return true if the set changed, false if the item is already in the set
      */
@@ -53,13 +55,12 @@ public class IntSet {
                 return false;
             }
             this.containsZero = true;
-        }
-        else {
+        } else {
             final int[] key = this.key;
             int pos;
             int curr;
             if ((curr = key[pos = HashUtil.murmurHash3(k) & this.mask]) != 0) {
-                    if (curr == k) {
+                if (curr == k) {
                     return false;
                 }
                 while ((curr = key[(pos = (pos + 1) & this.mask)]) != 0) {
@@ -77,20 +78,17 @@ public class IntSet {
     }
 
     public boolean contains(final int k) {
-        if(k == 0) {
+        if (k == 0) {
             return this.containsZero;
-        }
-        else {
+        } else {
             final int[] key = this.key;
             int curr;
             int pos;
             if((curr = key[pos = HashUtil.murmurHash3(k) & this.mask]) == 0) {
                 return false;
-            }
-            else if(k == curr) {
+            } else if(k == curr) {
                 return true;
-            }
-            else {
+            } else {
                 while((curr = key[(pos = (pos + 1) & this.mask)]) != 0) {
                     if(k == curr) {
                         return true;
@@ -120,9 +118,8 @@ public class IntSet {
                 --i;
             } while(key[i] == 0);
 
-            if(newKey[pos = HashUtil.murmurHash3(key[i]) & mask] != 0) {
-                while(newKey[(pos = (pos + 1) & mask)] != 0) {
-                }
+            if (newKey[pos = HashUtil.murmurHash3(key[i]) & mask] != 0) {
+                while(newKey[(pos = (pos + 1) & mask)] != 0) {}
             }
         }
         this.n = newN;
@@ -142,7 +139,7 @@ public class IntSet {
         newSet.size = this.size;
         newSet.containsZero = this.containsZero;
         newSet.key = new int[this.n + 1];
-        System.arraycopy( this.key, 0, newSet.key, 0, this.key.length );
+        System.arraycopy(this.key, 0, newSet.key, 0, this.key.length);
         return newSet;
     }
 }

@@ -1,5 +1,6 @@
 package org.hiero.sketch.table;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.table.api.ContentsKind;
 
 import java.util.ArrayList;
@@ -8,9 +9,10 @@ import java.util.ArrayList;
  * A column of Strings that can grow in size.
  */
 public class StringListColumn extends BaseListColumn implements IStringColumn {
+    @NonNull
     private final ArrayList<String[]> segments;
 
-    public StringListColumn(final ColumnDescription desc) {
+    public StringListColumn(@NonNull final ColumnDescription desc) {
         super(desc);
         if ((desc.kind != ContentsKind.String) && (desc.kind != ContentsKind.Json))
             throw new IllegalArgumentException("Unexpected column kind " + desc.kind);

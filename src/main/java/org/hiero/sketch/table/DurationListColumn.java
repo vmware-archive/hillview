@@ -1,5 +1,6 @@
 package org.hiero.sketch.table;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.table.api.ContentsKind;
 
 import java.time.Duration;
@@ -9,9 +10,10 @@ import java.util.ArrayList;
  * A column of time durations that can grow in size.
  */
 class DurationListColumn extends BaseListColumn implements IDurationColumn {
+    @NonNull
     private final ArrayList<Duration[]> segments;
 
-    public DurationListColumn(final ColumnDescription desc) {
+    public DurationListColumn(@NonNull final ColumnDescription desc) {
         super(desc);
         if (desc.kind != ContentsKind.Duration)
             throw new IllegalArgumentException("Unexpected column kind " + desc.kind);
