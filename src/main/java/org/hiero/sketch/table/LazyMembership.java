@@ -1,10 +1,8 @@
 package org.hiero.sketch.table;
 
-import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
-import org.apache.commons.lang.NullArgumentException;
+import org.scalactic.exceptions.NullArgumentException;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
-
 import java.util.function.Predicate;
 
 /**
@@ -14,6 +12,7 @@ import java.util.function.Predicate;
  * there are many filters, and iterator takes a long time if it's sparse. Also, each first call for
  * getSize after a new filter is a linear scan.
  */
+
 public class LazyMembership implements IMembershipSet {
     private final IMembershipSet baseMap;
     private int rowCount;
@@ -28,7 +27,7 @@ public class LazyMembership implements IMembershipSet {
         this.baseMap = baseMap;
         this.rowCount = baseMap.getSize();
         this.filter = Integer -> true;
-        this.rowCountCorrect = false;
+        this.rowCountCorrect = true;
     }
 
     /**
@@ -41,7 +40,7 @@ public class LazyMembership implements IMembershipSet {
         if (filter == null) throw new NullArgumentException("PartialMembershipDense cannot be " +
                 "instantiated with a null filter");
         this.baseMap = baseMap;
-        this.rowCount = baseMap.getSize(false);
+        this.rowCount = 0;
         this.filter = filter;
         this.rowCountCorrect = false;
     }
@@ -69,28 +68,10 @@ public class LazyMembership implements IMembershipSet {
         }
     }
 
-    @Override
-    public int getSize(final boolean exact) {
-        if (this.rowCountCorrect)
-            return this.rowCount;
-        if (exact)
-            return this.getSize();
-        final IMembershipSet sampleSet = this.sample(sizeEstimationSampleSize);
-        int snumber = 0;
-        final IRowIterator it = sampleSet.getIterator();
-        int curr = it.getNextRow();
-        while (curr >= 0) {
-            if (this.filter.test(curr))
-                snumber++;
-            curr = it.getNextRow();
-        }
-        return (this.baseMap.getSize(false) * snumber) / sampleSet.getSize(true);
-    }
-
     private IMembershipSet sample(final int k, final long seed, final boolean useSeed) {
         int samples = 0;
         IMembershipSet batchSet;
-        final IntOpenHashSet sampleSet = new IntOpenHashSet();
+        final IntSet sampleSet = new IntSet(k);
         for (int attempt = 0; attempt < samplingAttempts; attempt++) {
             if (useSeed)
                 batchSet = this.baseMap.sample(k, seed + attempt);
@@ -127,15 +108,104 @@ public class LazyMembership implements IMembershipSet {
      * Samples the base map for k items and then applies the filter on that set.
      * Makes samplingAttempts attempts to reach k samples
      * this way and then gives up and returns whatever was sampled.
-      */
+     * @param k the number of samples without replacement taken
+     * @param seed the seed for the random generator
+     * @return
+     */
     @Override
     public IMembershipSet sample(final int k, final long seed) {
         return sample(k, seed, true);
     }
 
+    /**
+     *
+     * @return An approximation of the size based on a sample of sizeEstimationSampleSize.
+     * function may return 0.
+     * Exact size given by getSize() is expensive and takes linear time the first time it is called
+     */
+    public int getApproxSize() {
+        if (this.rowCountCorrect)
+            return this.rowCount;
+        final IMembershipSet sampleSet = this.sample(sizeEstimationSampleSize);
+        if (sampleSet.getSize() == 0)
+            return 0;
+        int snumber = 0;
+        final IRowIterator it = sampleSet.getIterator();
+        int curr = it.getNextRow();
+        while (curr >= 0) {
+            if (this.filter.test(curr))
+                snumber++;
+            curr = it.getNextRow();
+        }
+        if (this.baseMap instanceof LazyMembership)
+            return (((LazyMembership) this.baseMap).getApproxSize() * snumber)
+                    / sampleSet.getSize();
+        else
+            return (this.baseMap.getSize() * snumber) / sampleSet.getSize();
+    }
+
     @Override
     public IRowIterator getIterator() {
         return new DenseIterator(this.baseMap, this.filter);
+    }
+
+    @Override
+    public IMembershipSet union(IMembershipSet otherMap) throws NullArgumentException {
+        if (otherMap == null)
+            throw new NullArgumentException("can not perform union with a null");
+        if (otherMap instanceof LazyMembership) {
+            IMembershipSet newBase = this.baseMap.union(((LazyMembership) otherMap).baseMap);
+            Predicate newFilter =  this.filter.or(((LazyMembership) otherMap).filter);
+            return new LazyMembership(newBase, newFilter);
+        }
+        if (otherMap instanceof FullMembership) {
+            IMembershipSet newBase = this.baseMap.union(otherMap);
+            Predicate newFilter =  this.filter.or(p -> ((FullMembership) otherMap).isMember(p));
+            return new LazyMembership(newBase, newFilter);
+        }
+        return otherMap.union(this);
+    }
+
+    @Override
+    public IMembershipSet intersection(IMembershipSet otherMap) throws NullArgumentException {
+        if (otherMap == null)
+            throw new NullArgumentException("can not perform intersection with a null");
+        if (otherMap instanceof LazyMembership) {
+            IMembershipSet newBase = this.baseMap.intersection(((LazyMembership) otherMap).baseMap);
+            Predicate newFilter =  this.filter.and(((LazyMembership) otherMap).filter);
+            return new LazyMembership(newBase, newFilter);
+        }
+        if (otherMap instanceof FullMembership) {
+            IMembershipSet newBase = this.baseMap.intersection(otherMap);
+            Predicate newFilter =  this.filter;
+            return new LazyMembership(newBase, newFilter);
+        }
+        return otherMap.intersection(this);
+    }
+
+    @Override
+    public IMembershipSet setMinus(IMembershipSet otherMap) throws NullArgumentException {
+        if (otherMap == null)
+            throw new NullArgumentException("can not perform setMinus with a null");
+        IntSet setMinusSet = new IntSet();
+        IRowIterator iter = this.getIterator();
+        int curr = iter.getNextRow();
+        while (curr >=0 ) {
+            if (!otherMap.isMember(curr))
+                setMinusSet.add(curr);
+            curr = iter.getNextRow();
+        }
+        return new SparseMembership(setMinusSet);
+    }
+
+
+    @Override
+    public IMembershipSet copy() {
+        IMembershipSet newBase = this.baseMap.copy();
+        LazyMembership newMap =  new LazyMembership(newBase,this.filter);
+        newMap.rowCountCorrect = this.rowCountCorrect;
+        newMap.rowCount = this.rowCount;
+        return newMap;
     }
 
     private static class DenseIterator implements IRowIterator {
