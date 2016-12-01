@@ -18,33 +18,24 @@ public class QuantileTest {
 
 
     @Test
-    public void Testq(){
+    public void TestQZero() {
+        /* Create a table with two columns, one integer and the other double */
         final int size = 100000;
-        final int numCols =2;
+        final int numCols = 2;
         final IColumn[] columns = new IColumn[numCols];
         columns[0] = generateIntArray(size);
         columns[1] = generateDoubleArray(size);
         final Schema mySchema = new Schema();
-        for (int i=0; i< numCols; i++) {
+        for (int i = 0; i < numCols; i++) {
             mySchema.append(columns[i].getDescription());
         }
         final FullMembership full = new FullMembership(size);
         final Table myTable = new Table(mySchema, columns, full);
-        System.out.println(myTable.toString());
-        final OrderedColumn second = new OrderedColumn("Identity", true);
-        final OrderedColumn first = new OrderedColumn("SQRT", false);
         final List<OrderedColumn> sortOrder = new ArrayList<>();
-        sortOrder.add(first);
-        sortOrder.add(second);
-        final QuantileSketch qSketch = new QuantileSketch(sortOrder);
-        final Table sampleData = qSketch.sampleTable(myTable, 1000);
-        System.out.println(sampleData.toString());
-        /* for(int i =0; i <100; i++)
-            System.out.printf("%d, %f%n", sampleData.columns[0].getInt(i), sampleData.columns[1].getDouble(i));*/
-        final Table qData = qSketch.sampleTable(myTable, 100);
-        System.out.println(qData.toString());
-        /* for(int i =0; i <100; i++)
-            System.out.printf("%d, %f%n", qData.columns[0].getInt(i), qData.columns[1].getDouble(i));*/
+        sortOrder.add(new OrderedColumn("SQRT", false));
+        sortOrder.add(new OrderedColumn("Identity", true));
+        final QuantileSketch qSketch = new QuantileSketch(myTable, sortOrder);
+        qSketch.getQuantile(100).printTable();
     }
 
     @Test

@@ -35,9 +35,9 @@ public interface IIntColumn extends IColumn {
     }
 
     @Override
-    default IColumn compress(final IMembershipSet set) {
-        final int size = set.getSize();
-        final IRowIterator rowIt = set.getIterator();
+    default IColumn compress(final IMembershipSet membershipSet) {
+        final int size = membershipSet.getSize();
+        final IRowIterator rowIt = membershipSet.getIterator();
         final IntArrayColumn result = new IntArrayColumn(this.getDescription(), size);
         int row = 0;
         while (true) {

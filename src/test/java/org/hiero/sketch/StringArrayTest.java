@@ -3,12 +3,9 @@ package org.hiero.sketch;
 import org.hiero.sketch.table.ColumnDescription;
 import org.hiero.sketch.table.StringArrayColumn;
 import org.hiero.sketch.table.api.ContentsKind;
-import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /*
  * Test for StringArrayColumn class.
@@ -18,7 +15,6 @@ public class StringArrayTest {
     private final ColumnDescription desc = new ColumnDescription("test", ContentsKind.String, true);
 
     /* Test for constructor using length and no arrays*/
-    @Ignore("not ready yet")
     @Test
     public void testStringArrayZero() {
         final StringArrayColumn col = new StringArrayColumn(this.desc, this.size);
@@ -39,7 +35,6 @@ public class StringArrayTest {
     }
 
     /* Test for constructor using data array */
-    @Ignore("not ready yet")
     @Test
     public void testStringArrayOne() {
         final String[] data = new String[this.size];

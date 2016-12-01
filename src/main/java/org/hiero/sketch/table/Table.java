@@ -8,7 +8,7 @@ import org.hiero.sketch.table.api.*;
 public class Table {
     private final ISchema schema;
     private final IColumn[] columns;
-    public final IMembershipSet members;
+    private final IMembershipSet members;
 
     public Table(final ISchema schema, final IColumn[] columns, final IMembershipSet members) {
         this.schema = schema;
@@ -43,7 +43,6 @@ public class Table {
         return compress(subSchema, memberSet);
     }
 
-
     /**
      * Generates a table that contains all the columns, and only
      * the rows contained in IMembership Set members with consecutive numbering.
@@ -53,11 +52,33 @@ public class Table {
         return compress(subSchema, this.members);
     }
 
-
+    /**
+     * Creates a sample Table for an input Table,
+     * @param numSamples The number of samples
+     * @return A table of samples.
+     */
+    public Table sampleTable(final int numSamples) {
+        final int dataSize = this.getNumOfRows();
+        final IMembershipSet sampleSet = this.members.sample(numSamples);
+        return this.compress(sampleSet);
+    }
 
     public String toString() {
         return("Table, " + this.schema.getColumnCount() + " columns, "
                 + this.members.getSize() + " rows");
+    }
+
+    public void printTable() {
+        System.out.printf("%s %n", this.toString());
+        IRowIterator rowIt = this.members.getIterator();
+        int nextRow = rowIt.getNextRow();
+        while(nextRow != -1) {
+            for (IColumn nextCol: columns){
+                System.out.printf("%s, ", nextCol.asString(nextRow));
+            }
+            System.out.printf("%n");
+            nextRow = rowIt.getNextRow();
+        }
     }
 
     public int getColumnIndex(final String colName) {

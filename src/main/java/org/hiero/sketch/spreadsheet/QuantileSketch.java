@@ -15,22 +15,23 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class QuantileSketch implements ISketch<Table, QuantileList> {
+public class QuantileSketch implements ISketch<Table, Table> {
 
     private final List<OrderedColumn> sortOrder;
+    private final Table data;
 
-    public QuantileSketch(final List<OrderedColumn> sortOrder) {
+    public QuantileSketch(Table data, List<OrderedColumn> sortOrder) {
+        this.data = data;
         this.sortOrder = sortOrder;
     }
 
     /** Returns a ListComparator for rows in a Table, based on the sort order.
-     * @param data The table whose rows we wish to compare
      * @return A Comparator that compares two rows based on the Sort Order specified.
      */
-    private ListComparator getComparator(final Table data) {
+    private ListComparator getComparator(final Table inpData) {
         List<RowComparator> comparatorList = new ArrayList<RowComparator>();
         for (final OrderedColumn ordCol: this.sortOrder) {
-            final IColumn nextCol = data.getColumn(ordCol.colName);
+            final IColumn nextCol = inpData.getColumn(ordCol.colName);
             if (ordCol.isAscending) {
                 comparatorList.add(nextCol.getComparator());
             } else {
@@ -40,57 +41,42 @@ public class QuantileSketch implements ISketch<Table, QuantileList> {
         return new ListComparator(comparatorList);
     }
 
-
     /**
-     * Creates a sample Table for an input Table,
-     * @param data The input table
-     * @param numSamples The number of samples
-     * @return A table of samples.
+     * Given a table and a desired resolution for percentiles, return the answer for a sample.
+     * @param resolution Number of buckets: percentiles correspond to 100 buckets etc.
+     * @return A table of size resolution, whose ith entry is ranked approximately i/resolution.
      */
-    public Table sampleTable(final Table data, final int numSamples) {
-        final int dataSize = data.getNumOfRows();
-        final IMembershipSet sampleSet = data.members.sample(numSamples);
+    public Table getQuantile(final int resolution) {
+        final int perBin = 100;
+        final Table sampleTable = data.sampleTable(resolution * perBin);
+        final int realSize = sampleTable.getNumOfRows();
+        final Integer[] order = new Integer[realSize];
+        for (int i = 0; i < realSize; i++)
+            order[i] = i;
+        Arrays.sort(order, this.getComparator(sampleTable));
+        final int [] quantile = new int[resolution];
+        for(int i =0; i < resolution; i++)
+            quantile[i] = order[((realSize -1)*i)/(resolution - 1)];
+        final IMembershipSet quantileMembers = new ArrayMembership(quantile);
         final HashSubSchema subSchema = new HashSubSchema();
         for (final OrderedColumn ordCol: this.sortOrder) {
             subSchema.add(ordCol.colName);
         }
-        return data.compress(subSchema, sampleSet);
-    }
-
-    /**
-     * Given a table and a desired resolution for percentiles, return the answer for a sample.
-     * @param data Input table
-     * @param resolution Number of buckets: percentiles correspond to 100 bucket etc.
-     * @return A table of size resolution, whose ith entry is ranked approximately i/resolution.
-     */
-    public Table getQuantile(final Table data, final int resolution){
-        final int perBin =100;
-        final int numSamples = resolution*perBin;
-        final Table sampleTable = sampleTable(data, numSamples);
-        final RowComparator rowComparator = this.getComparator(sampleTable);
-        final Integer[] order = new Integer[numSamples];
-        for (int i = 0; i < numSamples; i++)
-            order[i] = i;
-        Arrays.sort(order, rowComparator);
-        final int [] quantile = new int[resolution];
-        for(int i =0; i < resolution; i++)
-            quantile[i] = order[perBin*i];
-        final IMembershipSet quantileMembers = new ArrayMembership(quantile);
-        return sampleTable.compress(quantileMembers);
+        return sampleTable.compress(subSchema, quantileMembers);
     }
 
     @Override
-    public QuantileList zero() {
+    public Table zero() {
         return null;
     }
 
     @Override
-    public QuantileList add(final QuantileList left, final QuantileList right) {
+    public Table add(final Table left, final Table right) {
         return null;
     }
 
     @Override
-    public Observable<PartialResult<QuantileList>> create(final Table data) {
+    public Observable<PartialResult<Table>> create(final Table data) {
         return null;
     }
 }

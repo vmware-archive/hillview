@@ -7,7 +7,7 @@ import java.util.ArrayList;
 
 public class ArrayMembership implements IMembershipSet {
 
-    private ArrayList<Integer> sortedRows;
+    private ArrayList<Integer> sortedRows = new ArrayList<>();
     private final int size;
 
     public ArrayMembership(final int[] order) {
