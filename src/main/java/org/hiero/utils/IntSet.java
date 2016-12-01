@@ -5,12 +5,11 @@ package org.hiero.utils;
  * A simplified version of IntOpenHash from fastutil http://fastutil.di.unimi.it
  */
 public class IntSet {
-    // TODO: it would be nice if these were private
     public int[] key; /* The array of the linear probing */
-    public int mask;
-    public int n;  /* the size of the array - 1 */
-    public boolean containsZero = false;  /* zero is reserved to signify an empty cell */
-    public int size;
+    private int mask;
+    private int n;  /* the size of the array - 1 */
+    private boolean containsZero = false;  /* zero is reserved to signify an empty cell */
+    private int size;
 
     private int maxFill;
     private final float f; /* the maximal load of the array */
@@ -40,6 +39,12 @@ public class IntSet {
     public IntSet() {
         this(16, 0.75F);
     }
+
+    public boolean getContainsZero() { return this.containsZero; }
+
+    public int getMask() { return this.mask; }
+
+    public int getn() { return this.n; }
 
     private int realSize() {
         return this.containsZero ? (this.size - 1) : this.size;

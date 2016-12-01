@@ -4,7 +4,6 @@ import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
 import org.hiero.utils.IntSet;
 import org.scalactic.exceptions.NullArgumentException;
-
 import java.util.Random;
 
 /**
@@ -97,11 +96,6 @@ public class FullMembership implements IMembershipSet {
             if (!otherSet.isMember(i))
                 baseMap.add(i);
         return new SparseMembership(baseMap);
-    }
-
-    @Override
-    public IMembershipSet copy() {
-        return new FullMembership(this.rowCount);
     }
 
     private IMembershipSet sampleUtil(final Random randomGenerator, final int k) {

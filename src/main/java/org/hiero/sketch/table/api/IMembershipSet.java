@@ -29,8 +29,7 @@ public interface IMembershipSet {
      */
     IMembershipSet sample(int k, long seed);
     /**
-     * @return the union of current map and otherMap.
-     * FIXME: currentMap is destroyed.
+     * @return a new map which is the union of current map and otherMap.
      */
     IMembershipSet union(IMembershipSet otherMap);
 
@@ -42,9 +41,4 @@ public interface IMembershipSet {
      * The iterator is initialized to point at the "first" row.
      */
     IRowIterator getIterator();
-    /**
-     * @return a deep copy of this.
-     * FIXME: This should be removed.
-     */
-    IMembershipSet copy();
 }
