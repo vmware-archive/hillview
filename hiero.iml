@@ -48,5 +48,8 @@
     <orderEntry type="library" name="Maven: it.unimi.dsi:fastutil:7.0.9" level="project" />
     <orderEntry type="library" name="Maven: io.reactivex:rxjava:1.1.6" level="project" />
     <orderEntry type="library" name="Maven: commons-lang:commons-lang:2.1" level="project" />
+    <orderEntry type="library" name="Maven: org.checkerframework:checker-qual:2.1.5" level="project" />
+    <orderEntry type="library" name="Maven: org.checkerframework:checker:2.1.5" level="project" />
+    <orderEntry type="library" name="Maven: org.checkerframework:jdk8:2.1.5" level="project" />
   </component>
 </module>

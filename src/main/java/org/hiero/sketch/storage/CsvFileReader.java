@@ -1,5 +1,6 @@
 package org.hiero.sketch.storage;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.table.Schema;
 import org.hiero.sketch.table.Table;
 
@@ -9,7 +10,9 @@ import java.nio.file.Path;
  * Knows how to read a CSV file (comma-separated file).
  */
 public class CsvFileReader {
+    @NonNull
     private final Path filename;
+    @NonNull
     private final Schema schema;
     private final int columnCount;
     char separator = ',';
@@ -20,7 +23,7 @@ public class CsvFileReader {
      * columns and where all columns are strings.
      * @param path File to read
      */
-    public CsvFileReader(final Path path) {
+    public CsvFileReader(@NonNull final Path path) {
         this.filename = path;
         this.schema = null;
         this.columnCount = 0;
@@ -40,7 +43,9 @@ public class CsvFileReader {
      * @param path File to read.
      * @param allowFewer If true allow rows with fewer columns.
      */
-    public CsvFileReader(final Path path, final int columnCount, final boolean allowFewer) {
+    public CsvFileReader(@NonNull final Path path,
+                         final int columnCount,
+                         final boolean allowFewer) {
         this.filename = path;
         this.columnCount = columnCount;
         this.schema = new Schema();
@@ -53,7 +58,8 @@ public class CsvFileReader {
      * @param schema  Schema of the file.  Data will be converted as described by this schema.
      * @param allowFewer If true we allow rows with fewer columns.
      */
-    public CsvFileReader(final Path path, final Schema schema, final boolean allowFewer) {
+    public CsvFileReader(@NonNull final Path path, @NonNull final Schema schema,
+                         final boolean allowFewer) {
         this.filename = path;
         this.columnCount = schema.getColumnCount();
         this.schema = schema;

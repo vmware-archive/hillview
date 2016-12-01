@@ -1,5 +1,6 @@
 package org.hiero.sketch.spreadsheet;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.dataset.api.IMonoid;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -12,6 +13,7 @@ import java.util.TreeMap;
  */
 public class MonoidTopK<T> implements IMonoid<SortedMap<T, Integer>> {
     private final int maxSize;
+    @NonNull
     private final Comparator<T> greater;
 
     /**
@@ -19,7 +21,7 @@ public class MonoidTopK<T> implements IMonoid<SortedMap<T, Integer>> {
      * @param maxSize the K in TopK, the size of the list.
      * @param greater The greaterThan comparator, we want the smallest elements in this order.
      */
-    public MonoidTopK(final int maxSize, final Comparator<T> greater) {
+    public MonoidTopK(final int maxSize, @NonNull final Comparator<T> greater) {
         this.maxSize = maxSize;
         this.greater = greater;
     }
@@ -36,14 +38,16 @@ public class MonoidTopK<T> implements IMonoid<SortedMap<T, Integer>> {
      * Addition is merge sort.
      */
     @Override
-    public SortedMap<T, Integer> add(final SortedMap<T, Integer> left, final SortedMap<T, Integer> right) {
+    public SortedMap<T, Integer> add(
+            @NonNull final SortedMap<T, Integer> left,
+            @NonNull final SortedMap<T, Integer> right) {
         final Iterator<T> itLeft = left.keySet().iterator();
         final Iterator<T> itRight = right.keySet().iterator();
         T leftKey = (itLeft.hasNext())? itLeft.next(): null;
         T rightKey = (itRight.hasNext())? itRight.next(): null;
         final TreeMap<T, Integer> mergedMap = new TreeMap<T, Integer>(this.greater);
 
-        while((mergedMap.size() < this.maxSize) && ((leftKey != null)||(rightKey != null))) {
+        while ((mergedMap.size() < this.maxSize) && ((leftKey != null) || (rightKey != null))) {
             if (leftKey == null) {
                 mergedMap.put(rightKey, right.get(rightKey));
                 rightKey = (itRight.hasNext()) ? itRight.next() : null;

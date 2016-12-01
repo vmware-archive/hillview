@@ -7,6 +7,8 @@ import java.time.Duration;
 public interface IDurationColumn extends IColumn {
     @Override
     default double asDouble(final int rowIndex, final IStringConverter unused) {
+        if (isMissing(rowIndex))
+            throw new MissingException(this, rowIndex);
         final Duration tmp = this.getDuration(rowIndex);
         return Converters.toDouble(tmp);
     }
@@ -40,7 +42,7 @@ public interface IDurationColumn extends IColumn {
     }
 
     @Override
-    default IColumn compress(final IMembershipSet set) {
+    default IColumn compress(final IRowOrder set) {
         final int size = set.getSize();
         final IRowIterator rowIt = set.getIterator();
         final DurationArrayColumn result = new DurationArrayColumn(this.getDescription(), size);

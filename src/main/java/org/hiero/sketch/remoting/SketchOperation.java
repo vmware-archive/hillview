@@ -1,5 +1,6 @@
 package org.hiero.sketch.remoting;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.dataset.api.ISketch;
 
 import java.io.Serializable;
@@ -10,9 +11,10 @@ import java.io.Serializable;
  * @param <R> Output type of the sketch function
  */
 public class SketchOperation<T, R> extends RemoteOperation implements Serializable {
+    @NonNull
     public final ISketch<T, R> sketch;
 
-    public SketchOperation(final ISketch<T, R> sketch) {
+    public SketchOperation(@NonNull final ISketch<T, R> sketch) {
         this.sketch = sketch;
     }
 }

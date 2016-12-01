@@ -11,7 +11,6 @@ import static junit.framework.TestCase.*;
  * Test for StringArrayColumn class.
 */
 public class StringListTest {
-
     private final ColumnDescription desc = new ColumnDescription("test", ContentsKind.String, true);
 
     @Test

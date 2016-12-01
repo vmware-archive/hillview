@@ -8,6 +8,7 @@ import org.hiero.sketch.table.ListComparator;
 import org.hiero.sketch.table.Table;
 import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IMembershipSet;
+import org.hiero.sketch.table.api.IRowOrder;
 import org.hiero.sketch.table.api.RowComparator;
 import rx.Observable;
 
@@ -57,7 +58,7 @@ public class QuantileSketch implements ISketch<Table, Table> {
         final int [] quantile = new int[resolution];
         for(int i =0; i < resolution; i++)
             quantile[i] = order[((realSize -1)*i)/(resolution - 1)];
-        final IMembershipSet quantileMembers = new ArrayMembership(quantile);
+        final IRowOrder quantileMembers = new ArrayMembership(quantile);
         final HashSubSchema subSchema = new HashSubSchema();
         for (final OrderedColumn ordCol: this.sortOrder) {
             subSchema.add(ordCol.colName);

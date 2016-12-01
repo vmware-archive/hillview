@@ -19,15 +19,16 @@ public class StringArrayTest {
     public void testStringArrayZero() {
         final StringArrayColumn col = new StringArrayColumn(this.desc, this.size);
         for (int i = 0; i < this.size; i++) {
-            col.set(i, String.valueOf(i));
             if ((i % 5) == 0)
                 col.setMissing(i);
+            else
+                col.set(i, String.valueOf(i));
         }
         assertEquals(col.sizeInRows(), this.size);
         for (int i = 0; i < this.size; i++) {
-            if ((i % 5) == 0)
+            if ((i % 5) == 0) {
                 assertTrue(col.isMissing(i));
-            else {
+            } else {
                 assertFalse(col.isMissing(i));
                 assertEquals(String.valueOf(i), col.getString(i));
             }
@@ -46,9 +47,9 @@ public class StringArrayTest {
                 col.setMissing(i);
         assertEquals(col.sizeInRows(), this.size);
         for (int i = 0; i < this.size; i++) {
-            if ((i % 5) == 0)
+            if ((i % 5) == 0) {
                 assertTrue(col.isMissing(i));
-            else {
+            } else {
                 assertFalse(col.isMissing(i));
                 assertEquals(String.valueOf(i), col.getString(i));
             }

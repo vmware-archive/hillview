@@ -7,9 +7,9 @@ import org.junit.Test;
 import static org.hiero.sketch.DoubleArrayTest.generateDoubleArray;
 import static org.hiero.sketch.IntArrayTest.generateIntArray;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class TableTest {
-
     @Test
     public void columnCompressTest() {
         final int size = 100;
@@ -17,6 +17,7 @@ public class TableTest {
         final FullMembership FM = new FullMembership(size);
         final LazyMembership PMD = new LazyMembership(FM, row -> (row % 2) == 0);
         final IColumn smallCol = col.compress(PMD);
+        assertNotNull(smallCol);
     }
 
     @Test

@@ -1,5 +1,7 @@
 package org.hiero.sketch.remoting;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
+
 import java.io.Serializable;
 import java.util.UUID;
 
@@ -9,16 +11,19 @@ import java.util.UUID;
  */
 public class OperationResponse<T> implements Serializable {
     public final T result;
+    @NonNull
     public final UUID id;
-    public final Type type;
+    @NonNull
+    public final ResponseType type;
 
-    public OperationResponse(final T result, final UUID id, final Type type) {
+    public OperationResponse(final T result, @NonNull final UUID id,
+                             @NonNull final ResponseType type) {
         this.result = result;
         this.id = id;
         this.type = type;
     }
 
-    public enum Type {
+    public enum ResponseType {
         OnNext, OnCompletion, OnError, NewRemoteDataSet
     }
 }

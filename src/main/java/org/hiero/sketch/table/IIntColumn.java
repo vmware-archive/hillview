@@ -5,6 +5,8 @@ import org.hiero.sketch.table.api.*;
 public interface IIntColumn extends IColumn {
     @Override
     default double asDouble(final int rowIndex, final IStringConverter unused) {
+        if (isMissing(rowIndex))
+            throw new MissingException(this, rowIndex);
         return this.getInt(rowIndex);
     }
 
@@ -35,7 +37,7 @@ public interface IIntColumn extends IColumn {
     }
 
     @Override
-    default IColumn compress(final IMembershipSet membershipSet) {
+    default IColumn compress(final IRowOrder membershipSet) {
         final int size = membershipSet.getSize();
         final IRowIterator rowIt = membershipSet.getIterator();
         final IntArrayColumn result = new IntArrayColumn(this.getDescription(), size);

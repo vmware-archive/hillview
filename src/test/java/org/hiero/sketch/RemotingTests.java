@@ -190,8 +190,6 @@ public class RemotingTests {
         final AtomicInteger counter = new AtomicInteger(0);
         final CountDownLatch countDownLatch = new CountDownLatch(1);
         resultObs.subscribe(new Subscriber<PartialResult<Integer>>() {
-            private double done = 0.0;
-
             @Override
             public void onCompleted() {
                 fail("Unreachable");
@@ -199,7 +197,7 @@ public class RemotingTests {
 
             @Override
             public void onError(final Throwable throwable) {
-                final int count = counter.incrementAndGet();
+                counter.incrementAndGet();
                 countDownLatch.countDown();
             }
 
