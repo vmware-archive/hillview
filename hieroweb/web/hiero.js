@@ -14,7 +14,6 @@ function main() {
     var text = 'TIME FLIES',
         container = document.querySelector('#textContainer'),
         mousemove = Rx.DOM.fromEvent(document, 'mousemove');
-    alert('Here');
 
     // Get the offset on mousemove from the container
     var mouseMoveOffset = mousemove.map(function (e) {
