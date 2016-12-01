@@ -10,8 +10,8 @@ public class Bucket<T> {
     private final boolean rightInclusive;
     private final Comparator<T> greater;
 
-    public Bucket(T leftBoundry, boolean leftInclusive,
-                       T rightBoundry, boolean rightInclusive, Comparator<T> greater) {
+    public Bucket(final T leftBoundry, final boolean leftInclusive,
+                  final T rightBoundry, final boolean rightInclusive, final Comparator<T> greater) {
         if (greater.compare(leftBoundry, rightBoundry) > 0)
             throw new IllegalArgumentException("Left boundry cannot be greater than right boundry");
         else if ((greater.compare(leftBoundry, rightBoundry) == 0 )
@@ -24,13 +24,13 @@ public class Bucket<T> {
         this.greater = greater;
     }
 
-    public Bucket(T leftBoundry, T rightBoundry, Comparator<T> greater) {
+    public Bucket(final T leftBoundry, final T rightBoundry, final Comparator<T> greater) {
          this(leftBoundry, true, rightBoundry, false, greater);
     }
 
-    public boolean inBucket(T item) {
-        final int leftValue = greater.compare(item, leftBoundry);
-        final int rightValue = greater.compare(item, rightBoundry);
+    public boolean inBucket(final T item) {
+        final int leftValue = this.greater.compare(item, this.leftBoundry);
+        final int rightValue = this.greater.compare(item, this.rightBoundry);
 
         if ((leftValue < 0) || (rightValue > 0))
             return false;

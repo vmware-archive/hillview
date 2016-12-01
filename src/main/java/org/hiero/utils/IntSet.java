@@ -5,7 +5,6 @@ package org.hiero.utils;
  * A simplified version of IntOpenHash from fastutil http://fastutil.di.unimi.it
  */
 public class IntSet {
-    // TODO: it would be nice if these were private
     public int[] key; /* The array of the linear probing */
     private int mask;
     private int n;  /* the size of the array - 1 */
