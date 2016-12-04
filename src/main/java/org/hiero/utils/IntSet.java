@@ -7,7 +7,7 @@ import java.util.Random;
  * A simplified version of IntOpenHash from fastutil http://fastutil.di.unimi.it
  */
 public class IntSet {
-    public int[] key; /* The array of the linear probing */
+    private int[] key; /* The array of the linear probing */
     private int mask;
     private int n;  /* the size of the array - 1 */
     private boolean containsZero = false;  /* zero is reserved to signify an empty cell */
@@ -157,7 +157,7 @@ public class IntSet {
         for (int samples = 0; samples < k; samples++) {
             while (this.key[randomKey & this.mask] == 0)
                 randomKey++;
-            sampleSet.add(key[randomKey & this.mask]);
+            sampleSet.add(this.key[randomKey & this.mask]);
             randomKey++;
         }
         return sampleSet;
@@ -173,7 +173,7 @@ public class IntSet {
         private int c;
         private boolean mustReturnZero;
 
-        public IntSetIterator() {
+        private IntSetIterator() {
             this.pos = IntSet.this.n;
             this.c = IntSet.this.size;
             this.mustReturnZero = IntSet.this.containsZero;

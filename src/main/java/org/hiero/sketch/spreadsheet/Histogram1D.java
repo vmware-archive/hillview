@@ -15,8 +15,8 @@ public class Histogram1D implements IHistogram {
     private int missingData;
     private int outOfRange;
 
-    public Histogram1D(@NonNull IColumn column, @NonNull IMembershipSet membershipSet,
-                       @NonNull IStringConverter converter, @NonNull double[] boundaries) {
+    public Histogram1D(@NonNull final IColumn column, @NonNull final IMembershipSet membershipSet,
+                       @NonNull final IStringConverter converter, @NonNull final double[] boundaries) {
         if (!isSorted(boundaries))
             throw new IllegalArgumentException("Bucket array has to be sorted");
         this.column = column;
@@ -43,14 +43,14 @@ public class Histogram1D implements IHistogram {
     }
 
     private void placeInBucket(final double entry) {
-        int index = Histogram1D.indexOf(this.boundaries, entry);
+        final int index = Histogram1D.indexOf(this.boundaries, entry);
         if (index >= 0)
             this.buckets[index]++;
         else this.outOfRange++;
     }
 
     // Todo: Move to a base class at some point
-    public static boolean isSorted(final double [] a) {
+    private static boolean isSorted(final double[] a) {
         for (int i = 0; i < (a.length - 1); i++) {
             if (a[i] > a[i + 1]) {
                 return false;
@@ -61,13 +61,12 @@ public class Histogram1D implements IHistogram {
 
     /**
      * @param a array of sorted doubles, represent the buckets
-     * @param key
      * @return index i such that a[i] <= key < a[i+1]. With the exception of the largest bucket
      * in which case the right boundary is inclusive. If key < a[0] or key > a[length] returns -1
      * Note that return is in [0..a.length-2].
      * todo: Move to a base class at some point. Perhaps implement as binary search.
      */
-    public static int indexOf(double[] a, double key) {
+    private static int indexOf(final double[] a, final double key) {
         if (key < a[0])
             return -1;
         int i = 0;

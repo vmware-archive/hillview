@@ -4,7 +4,6 @@ import org.hiero.sketch.spreadsheet.Bucket;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
 import org.junit.Test;
-import java.util.Comparator;
 
 public class BucketTest {
     @Test

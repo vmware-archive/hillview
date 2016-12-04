@@ -174,7 +174,7 @@ public class SparseMembership implements IMembershipSet {
     private class SparseIterator implements IRowIterator {
         final private IntSet.IntSetIterator mysetIterator;
 
-        private SparseIterator(@NonNull IntSet mySet) {
+        private SparseIterator(@NonNull final IntSet mySet) {
             this.mysetIterator = mySet.getIterataor();
         }
 
