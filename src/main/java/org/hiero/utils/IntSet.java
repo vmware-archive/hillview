@@ -1,5 +1,7 @@
 package org.hiero.utils;
 
+import java.util.Random;
+
 /**
  * A set of integers.
  * A simplified version of IntOpenHash from fastutil http://fastutil.di.unimi.it
@@ -39,12 +41,6 @@ public class IntSet {
     public IntSet() {
         this(16, 0.75F);
     }
-
-    public boolean getContainsZero() { return this.containsZero; }
-
-    public int getMask() { return this.mask; }
-
-    public int getn() { return this.n; }
 
     private int realSize() {
         return this.containsZero ? (this.size - 1) : this.size;
@@ -147,6 +143,60 @@ public class IntSet {
         newSet.key = new int[this.n + 1];
         System.arraycopy(this.key, 0, newSet.key, 0, this.key.length);
         return newSet;
+    }
+
+    public IntSet sample(final int k, final long seed, final boolean useSeed) {
+        final IntSet sampleSet = new IntSet(k);
+        final Random psg;
+        if (useSeed)
+            psg = new Random(seed);
+        else
+            psg = new Random();
+        int randomKey = psg.nextInt(this.n);
+
+        for (int samples = 0; samples < k; samples++) {
+            while (this.key[randomKey & this.mask] == 0)
+                randomKey++;
+            sampleSet.add(key[randomKey & this.mask]);
+            randomKey++;
+        }
+        return sampleSet;
+    }
+
+    public IntSetIterator getIterataor() {
+        return new IntSetIterator();
+    }
+
+    /* Iterator for IntSet. Returns -1 when done. Assumes IntSet is not mutated */
+    public class IntSetIterator {
+        private int pos;
+        private int c;
+        private boolean mustReturnZero;
+
+        public IntSetIterator() {
+            this.pos = IntSet.this.n;
+            this.c = IntSet.this.size;
+            this.mustReturnZero = IntSet.this.containsZero;
+        }
+
+        public boolean hasNext() {
+            return this.c != 0;
+        }
+
+        public int getNext() {
+            if (!this.hasNext())
+                return -1;
+            --this.c;
+            if (this.mustReturnZero) {
+                this.mustReturnZero = false;
+                return 0;
+            }
+            while (--this.pos >= 0) {
+                if(IntSet.this.key[this.pos] != 0)
+                    return IntSet.this.key[this.pos];
+            }
+            return -1;
+        }
     }
 }
 

@@ -3,40 +3,35 @@ import java.util.*;
 /**
  * A Bucket to be used as part of a histogram.
  */
-public class Bucket<T> {
-    private final T leftBoundry;
-    private final T rightBoundry;
+public class Bucket {
+    private final double leftBoundry;
+    private final double  rightBoundry;
     private final boolean leftInclusive;
     private final boolean rightInclusive;
-    private final Comparator<T> greater;
 
-    public Bucket(final T leftBoundry, final boolean leftInclusive,
-                  final T rightBoundry, final boolean rightInclusive, final Comparator<T> greater) {
-        if (greater.compare(leftBoundry, rightBoundry) > 0)
+    public Bucket(final double leftBoundry, final boolean leftInclusive,
+                  final double rightBoundry, final boolean rightInclusive) {
+        if (leftBoundry > rightBoundry)
             throw new IllegalArgumentException("Left boundry cannot be greater than right boundry");
-        else if ((greater.compare(leftBoundry, rightBoundry) == 0 )
-                && !(leftInclusive && rightInclusive))
+        else if ((leftBoundry == rightBoundry) && !(leftInclusive && rightInclusive))
             throw new IllegalArgumentException("Bucket defined over empty set");
         this.leftBoundry = leftBoundry;
         this.rightBoundry = rightBoundry;
         this.leftInclusive = leftInclusive;
         this.rightInclusive = rightInclusive;
-        this.greater = greater;
     }
 
-    public Bucket(final T leftBoundry, final T rightBoundry, final Comparator<T> greater) {
-         this(leftBoundry, true, rightBoundry, false, greater);
+    public Bucket(final double leftBoundry, final double rightBoundry) {
+         this(leftBoundry, true, rightBoundry, false);
     }
 
-    public boolean inBucket(final T item) {
-        final int leftValue = this.greater.compare(item, this.leftBoundry);
-        final int rightValue = this.greater.compare(item, this.rightBoundry);
+    public boolean inBucket(final double item) {
 
-        if ((leftValue < 0) || (rightValue > 0))
+        if ((item < this.leftBoundry) || (item > this.rightBoundry))
             return false;
-        if (leftValue == 0)
+        if (item == this.leftBoundry)
             return this.leftInclusive;
-        if (rightValue == 0)
+        if (item == this.rightBoundry)
             return this.rightInclusive;
         return true;
     }
