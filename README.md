@@ -3,7 +3,7 @@ Big data spreadsheet
 
 ## Requirements
 
-* Ubuntu Linux, Hadoop filesystem, Maven build system
+* Ubuntu Linux, Hadoop filesystem, Maven build system, Tomcat web application server
 * IDEA Intellij for development
 
 > $: sudo apt-get install maven
@@ -45,6 +45,7 @@ the following to your ~/.bashrc or ~/.zshrc.
 
 ## Install Apache Tomcat web application server
 
+Use version 8.5.8.
 Download the binaries from http://tomcat.apache.org/download-80.cgi and untar in the project folder.
 
 ## Setup IntelliJ IDEA

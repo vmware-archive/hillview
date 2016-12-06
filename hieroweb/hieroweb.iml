@@ -21,5 +21,9 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" scope="PROVIDED" name="Tomcat 8.5.8" level="application_server_libraries" />
     <orderEntry type="library" name="Java EE 6-Java EE 6" level="project" />
+    <orderEntry type="library" name="Maven: javax:javaee-api:7.0" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.apache.tomcat:tomcat-websocket-api:8.5.8" level="project" />
+    <orderEntry type="library" exported="" name="Maven: com.google.code.gson:gson:2.8.0" level="project" />
+    <orderEntry type="library" name="Maven: org.checkerframework:checker-qual:2.1.5" level="project" />
   </component>
 </module>
