@@ -6,82 +6,62 @@ import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
 import org.hiero.sketch.table.api.IStringConverter;
 
+/**
+ * One Dimensional histogram. Does not contain the column and membershipMap
+ */
 public class Histogram1D implements IHistogram {
-    final private IColumn column;
-    final private IMembershipSet membershipSet;
-    final private double[] boundaries;
-    final private int[] buckets;
-    final private IStringConverter converter;
+   // final private IColumn column;
+   // private IMembershipSet membershipSet;
+   // final private double[] boundaries;
+    private final Bucket[] buckets;
+   // final private IStringConverter converter;
     private int missingData;
     private int outOfRange;
+    final private BucketSetDescription bucketDescription;
 
-    public Histogram1D(@NonNull final IColumn column, @NonNull final IMembershipSet membershipSet,
-                       @NonNull final IStringConverter converter, @NonNull final double[] boundaries) {
-        if (!isSorted(boundaries))
-            throw new IllegalArgumentException("Bucket array has to be sorted");
-        this.column = column;
-        this.membershipSet = membershipSet;
-        this.boundaries = boundaries;
-        this.buckets = new int[boundaries.length - 1];
-        this.converter = converter;
-        this.createHistogram();
+    public Histogram1D(@NonNull final BucketSetDescription bucketDescription) {
+        this.bucketDescription = bucketDescription;
+        this.buckets = new Bucket[bucketDescription.numOfBuckets];
+        createBuckets();
+    }
+
+    private void createBuckets() {
+        for (int i = 0; i < this.bucketDescription.numOfBuckets; i++) {
+            this.buckets[i] = new Bucket(this.bucketDescription.boundaries[i], true,
+                    this.bucketDescription.boundaries[i + 1],
+                    (i == (this.bucketDescription.numOfBuckets - 1)));
+        }
+    }
+
+
+    public Histogram1D(BucketSetDescription bucketdescription, @NonNull final IColumn column,
+                       @NonNull final IMembershipSet membershipSet,
+                       @NonNull final IStringConverter converter) {
+        this.bucketDescription = bucketdescription;
+        this.buckets = new Bucket[bucketdescription.numOfBuckets]; //todo: create Buckets
+        this.createHistogram(column, membershipSet, converter);
     }
 
     /**
      * Creates the histogram explicitly and in full.
      */
-    private void createHistogram() {
-        final IRowIterator myIter = this.membershipSet.getIterator();
+    private void createHistogram(final IColumn column, final IMembershipSet membershipSet
+                                ,final IStringConverter converter ) {
+        final IRowIterator myIter = membershipSet.getIterator();
         int currIndex = myIter.getNextRow();
         while (currIndex >= 0) {
-            if (this.column.isMissing(currIndex))
+            if (column.isMissing(currIndex))
                 this.missingData++;
             else
-                placeInBucket(this.column.asDouble(currIndex, this.converter));
+                placeInBucket(column.asDouble(currIndex, converter));
             currIndex = myIter.getNextRow();
         }
     }
 
     private void placeInBucket(final double entry) {
-        final int index = Histogram1D.indexOf(this.boundaries, entry);
+        final int index = this.bucketDescription.indexOf(entry);
         if (index >= 0)
-            this.buckets[index]++;
+            this.buckets[index].add(entry);
         else this.outOfRange++;
-    }
-
-    // Todo: Move to a base class at some point
-    private static boolean isSorted(final double[] a) {
-        for (int i = 0; i < (a.length - 1); i++) {
-            if (a[i] > a[i + 1]) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * @param a array of sorted doubles, represent the buckets
-     * @return index i such that a[i] <= key < a[i+1]. With the exception of the largest bucket
-     * in which case the right boundary is inclusive. If key < a[0] or key > a[length] returns -1
-     * Note that return is in [0..a.length-2].
-     * todo: Move to a base class at some point. Perhaps implement as binary search.
-     */
-    private static int indexOf(final double[] a, final double key) {
-        if (key < a[0])
-            return -1;
-        int i = 0;
-        while (i < (a.length - 1)) {
-            if (key < a[i + 1])
-                return i;
-            i++;
-        }
-        if (key == a[a.length - 1])
-            return a.length - 2;
-        return -1;
-    }
-
-    @Override
-    public int[] getBuckets() {
-        return this.buckets;
     }
 }
