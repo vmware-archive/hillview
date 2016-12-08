@@ -8,6 +8,7 @@ import org.hiero.sketch.table.api.IStringConverter;
 
 /**
  * One Dimensional histogram. Does not contain the column and membershipMap
+ * todo: work in progress
  */
 public class Histogram1D implements IHistogram {
    // final private IColumn column;
