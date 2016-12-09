@@ -26,8 +26,4 @@ abstract class BaseArrayColumn extends BaseColumn implements Serializable {
     public void setMissing(final int rowIndex) {
         this.missing.set(rowIndex);
     }
-
-    public void setMissing(final int fromIndex, final int toIndex) {
-        this.missing.set(fromIndex, toIndex);
-    }
 }

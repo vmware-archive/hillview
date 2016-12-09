@@ -12,7 +12,7 @@ import java.util.function.Predicate;
  * are used for the isMember and for the iterator functions. Upside is that construction is quick,
  * adding a filter function is quick. The downside is that the isMember can take a long time if
  * there are many filters, and iterator takes a long time if it's sparse. Also, each first call for
- * getSize after a new filter is a linear scan.
+ * getQuanitleSize after a new filter is a linear scan.
  */
 
 public class LazyMembership implements IMembershipSet {
@@ -124,7 +124,7 @@ public class LazyMembership implements IMembershipSet {
      *
      * @return An approximation of the size based on a sample of sizeEstimationSampleSize.
      * function may return 0.
-     * Exact size given by getSize() is expensive and takes linear time the first time it is called
+     * Exact size given by getQuanitleSize() is expensive and takes linear time the first time it is called
      */
     public int getApproxSize() {
         if (this.rowCountCorrect)

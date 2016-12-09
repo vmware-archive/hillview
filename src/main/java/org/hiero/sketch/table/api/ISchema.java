@@ -10,4 +10,8 @@ public interface ISchema {
     int getColumnCount();
     int getColumnIndex(String columnName);
     ISchema project(ISubSchema subSchema);
+
+    default ContentsKind getKind(final String colName){
+        return this.getDescription(this.getColumnIndex(colName)).kind;
+    }
 }
