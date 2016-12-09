@@ -1,6 +1,7 @@
 package org.hiero.sketch.table.api;
 
 import org.hiero.sketch.table.ColumnDescription;
+import org.hiero.sketch.table.ObjectArrayColumn;
 
 import java.time.Duration;
 import java.util.Date;
@@ -18,6 +19,29 @@ public interface IColumn {
     Date getDate(int rowIndex);
     int getInt(int rowIndex);
     Duration getDuration(int rowIndex);
+    /* This function is inefficient, it should be used sparingly. It
+       will cast the value to an Object, boxing it if necessary. It returns null
+       if the row is missing.
+     */
+    default Object getObject(final int rowIndex) {
+        if (this.isMissing(rowIndex)) { return null; }
+        switch (this.getDescription().kind) {
+            case String:
+                return this.getString(rowIndex);
+            case Date:
+                return this.getDate(rowIndex);
+            case Int:
+                return this.getInt(rowIndex);
+            case Json:
+                return this.getString(rowIndex);
+            case Double:
+                return this.getDouble(rowIndex);
+            case Duration:
+                return this.getDuration(rowIndex);
+            default:
+                throw new RuntimeException("Unexpected data type");
+        }
+    }
 
     /**
      * @param rowIndex Row to check
@@ -37,9 +61,28 @@ public interface IColumn {
 
     String asString(int rowIndex);
 
-    RowComparator getComparator();
+    IndexComparator getComparator();
 
-    IColumn compress(IRowOrder set);
+    /**
+     * Compresses an IColumn to an ObjectArrayColumn, ordered according to the specified rowOrder
+     * @param rowOrder specifies the set of rows and their order
+     * @return An ObjectArrayColumn with the specified sequence of rows
+     */
+    default IColumn compress(final IRowOrder rowOrder) {
+        final IRowIterator rowIt = rowOrder.getIterator();
+        final ObjectArrayColumn result = new ObjectArrayColumn(
+                this.getDescription(), rowOrder.getSize());
+        int row = 0;
+        while (true) {
+            final int i = rowIt.getNextRow();
+            if (i == -1) {
+                break;
+            }
+            result.set(row, this.getObject(i));
+            row++;
+        }
+        return result;
+    }
 
     default String getName() {
         return getDescription().name;

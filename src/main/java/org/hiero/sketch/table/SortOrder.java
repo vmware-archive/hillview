@@ -2,24 +2,24 @@ package org.hiero.sketch.table;
 
 import org.hiero.sketch.table.api.IRowIterator;
 import org.hiero.sketch.table.api.IRowOrder;
-import org.hiero.sketch.table.api.RowComparator;
+import org.hiero.sketch.table.api.IndexComparator;
 
 import java.util.Arrays;
 
 /**
- * Given a (table and a) RowComparator, gives an iterator for the rows of the table in sorted order
+ * Given a (table and a) IndexComparator, gives an iterator for the rows of the table in sorted order
  */
 public class SortOrder implements IRowOrder {
     private Integer[] order;
 
     /**
      * @param size Number of rows
-     * @param rowComparator Defines the ordering
+     * @param indexComparator Defines the ordering
      */
-    public SortOrder(final int size, final RowComparator rowComparator) {
+    public SortOrder(final int size, final IndexComparator indexComparator) {
         for (int i = 0; i < size; i++)
             this.order[i] = i;
-        Arrays.sort(this.order, rowComparator);
+        Arrays.sort(this.order, indexComparator);
     }
 
     @Override

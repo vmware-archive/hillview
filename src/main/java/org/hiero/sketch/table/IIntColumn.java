@@ -17,8 +17,8 @@ public interface IIntColumn extends IColumn {
         return Integer.toString(this.getInt(rowIndex));
     }
 
-    default RowComparator getComparator() {
-        return new RowComparator() {
+    default IndexComparator getComparator() {
+        return new IndexComparator() {
             @Override
             public int compare(final Integer i, final Integer j) {
                 final boolean iMissing = IIntColumn.this.isMissing(i);
@@ -34,26 +34,5 @@ public interface IIntColumn extends IColumn {
                 }
             }
         };
-    }
-
-    @Override
-    default IColumn compress(final IRowOrder membershipSet) {
-        final int size = membershipSet.getSize();
-        final IRowIterator rowIt = membershipSet.getIterator();
-        final IntArrayColumn result = new IntArrayColumn(this.getDescription(), size);
-        int row = 0;
-        while (true) {
-            final int i = rowIt.getNextRow();
-            if (i == -1) {
-                break;
-            }
-            if (this.isMissing(i)) {
-                result.setMissing(row);
-            } else {
-                result.set(row, this.getInt(i));
-            }
-            row++;
-        }
-        return result;
     }
 }

@@ -21,8 +21,8 @@ public interface IDateColumn extends IColumn {
     }
 
     @Override
-    default RowComparator getComparator() {
-        return new RowComparator() {
+    default IndexComparator getComparator() {
+        return new IndexComparator() {
             @Override
             public int compare(final Integer i, final Integer j) {
                 final boolean iMissing = IDateColumn.this.isMissing(i);
@@ -38,26 +38,5 @@ public interface IDateColumn extends IColumn {
                 }
             }
         };
-    }
-
-    @Override
-    default IColumn compress(final IRowOrder set) {
-        final int size = set.getSize();
-        final IRowIterator rowIt = set.getIterator();
-        final DateArrayColumn result = new DateArrayColumn(this.getDescription(), size);
-        int row = 0;
-        while (true) {
-            final int i = rowIt.getNextRow();
-            if (i == -1) {
-                break;
-            }
-            if (this.isMissing(i)) {
-                result.setMissing(row);
-            } else {
-                result.set(row, this.getDate(i));
-            }
-            row++;
-        }
-        return result;
     }
 }

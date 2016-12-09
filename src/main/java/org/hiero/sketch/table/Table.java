@@ -8,11 +8,11 @@ import org.hiero.sketch.table.api.*;
  */
 public class Table {
     @NonNull
-    private final ISchema schema;
+    public final ISchema schema;
     @NonNull
-    private final IColumn[] columns;
+    public final IColumn[] columns;
     @NonNull
-    private final IMembershipSet members;
+    public final IMembershipSet members;
 
     public Table(@NonNull final ISchema schema,
                  @NonNull final IColumn[] columns,
@@ -75,34 +75,30 @@ public class Table {
         return compress(subSchema, this.members);
     }
 
-    /**
-     * Creates a sample Table for an input Table,
-     * @param numSamples The number of samples
-     * @return A table of samples.
-     */
-    public Table sampleTable(final int numSamples) {
-        final int dataSize = this.getNumOfRows();
-        final IMembershipSet sampleSet = this.members.sample(numSamples);
-        return this.compress(sampleSet);
-    }
-
     @Override
     public String toString() {
-        return("Table, " + this.schema.getColumnCount() + " columns, "
-                + this.members.getSize() + " rows");
+        final StringBuilder builder = new StringBuilder();
+        builder.append("Table, ").append(this.schema.getColumnCount()).append(" columns, ").append(this.members.getSize()).append(" rows");
+        builder.append(System.getProperty("line.separator"));
+        for (int i=0; i < this.schema.getColumnCount(); i++) {
+            builder.append(this.schema.getDescription(i).toString());
+        }
+        return builder.toString();
     }
 
     public String toLongString() {
-        StringBuilder builder = new StringBuilder();
+        final StringBuilder builder = new StringBuilder();
         builder.append(this.toString());
-        IRowIterator rowIt = this.members.getIterator();
+        builder.append(System.getProperty("line.separator"));
+        final IRowIterator rowIt = this.members.getIterator();
         int nextRow = rowIt.getNextRow();
         int count = 0;
-        while(nextRow != -1 && count < 100) {
-            for (IColumn nextCol: columns){
+        while((nextRow != -1) && (count < 100)) {
+            for (final IColumn nextCol: this.columns){
                 builder.append(nextCol.asString(nextRow));
+                builder.append(", ");
             }
-            builder.append("%n");
+            builder.append(System.getProperty("line.separator"));
             nextRow = rowIt.getNextRow();
             count++;
         }

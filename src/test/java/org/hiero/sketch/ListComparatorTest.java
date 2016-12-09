@@ -6,7 +6,7 @@ import org.hiero.sketch.table.ListComparator;
 import org.hiero.sketch.table.StringArrayColumn;
 import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.IColumn;
-import org.hiero.sketch.table.api.RowComparator;
+import org.hiero.sketch.table.api.IndexComparator;
 import org.junit.Test;
 import java.util.*;
 import static org.junit.Assert.assertTrue;
@@ -20,7 +20,7 @@ public class ListComparatorTest {
         final ColumnDescription desc2 = new ColumnDescription("test", ContentsKind.String, false);
         final IntArrayColumn col1 = new IntArrayColumn(desc1, size);
         final StringArrayColumn col2 = new StringArrayColumn(desc2, size);
-        final List<RowComparator> listCompare = new ArrayList<RowComparator>();
+        final List<IndexComparator> listCompare = new ArrayList<IndexComparator>();
         listCompare.add(col1.getComparator());
         listCompare.add(col2.getComparator().rev());
         final ListComparator listComp;
@@ -48,7 +48,7 @@ public class ListComparatorTest {
         final Random rn = new Random();
         final ColumnDescription desc = new ColumnDescription("test", ContentsKind.Int, false);
         final ArrayList<IColumn> cols = new ArrayList<IColumn>(numCols);
-        final List<RowComparator> listCompare = new ArrayList<RowComparator>();
+        final List<IndexComparator> listCompare = new ArrayList<IndexComparator>();
         for(int i = 0; i < numCols; i++) {
             final IntArrayColumn newCol = new IntArrayColumn(desc, size);
             for (int j = 0; j < size; j++) {

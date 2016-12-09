@@ -5,12 +5,12 @@ import org.hiero.sketch.table.api.IRowOrder;
 
 import java.util.ArrayList;
 
-public class ArrayMembership implements IRowOrder {
+public class ArrayRowOrder implements IRowOrder {
 
-    private ArrayList<Integer> sortedRows = new ArrayList<>();
+    private final ArrayList<Integer> sortedRows = new ArrayList<>();
     private final int size;
 
-    public ArrayMembership(final int[] order) {
+    public ArrayRowOrder(final int[] order) {
         this.size = order.length;
         for (int i = 0; i < this.size; i++) {
             this.sortedRows.add(order[i]);
@@ -29,9 +29,9 @@ public class ArrayMembership implements IRowOrder {
 
             @Override
             public int getNextRow() {
-                if (this.current < ArrayMembership.this.size) {
+                if (this.current < ArrayRowOrder.this.size) {
                     this.current++;
-                    return ArrayMembership.this.sortedRows.get(this.current - 1);
+                    return ArrayRowOrder.this.sortedRows.get(this.current - 1);
                 } else {
                     return -1;
                 }
