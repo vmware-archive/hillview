@@ -4,8 +4,6 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
 import org.hiero.utils.IntSet;
-
-import java.util.*;
 import java.util.function.Predicate;
 
 
@@ -80,26 +78,6 @@ public class SparseMembership implements IMembershipSet {
         return this.rowCount;
     }
 
-    private IMembershipSet sample(final int k, final long seed, final boolean useSeed) {
-        final IntSet sampleSet = new IntSet(k);
-        final Random psg;
-        if (useSeed)
-            psg = new Random(seed);
-        else
-            psg = new Random();
-        int randomKey = psg.nextInt(this.membershipMap.getn());
-
-        final int[] key = this.membershipMap.key;
-        for (int samples = 0; samples < k; samples++) {
-            while (key[randomKey & this.membershipMap.getMask()] == 0)
-                randomKey++;
-            sampleSet.add(key[randomKey & this.membershipMap.getMask()]);
-            randomKey++;
-        }
-        return new SparseMembership(sampleSet);
-
-    }
-
     /**
      * Returns the k items from a random location in the map. Note that the k items are not
      * completely independent but also depend on the placement done by the hash function.
@@ -109,7 +87,7 @@ public class SparseMembership implements IMembershipSet {
      */
     @Override
     public IMembershipSet sample(final int k) {
-        return this.sample(k, 0, false);
+        return new SparseMembership(this.membershipMap.sample(k, 0, false));
     }
 
     /**
@@ -122,12 +100,12 @@ public class SparseMembership implements IMembershipSet {
      */
     @Override
     public IMembershipSet sample(final int k, final long seed) {
-        return this.sample(k, seed, true);
+        return new SparseMembership(this.membershipMap.sample(k, seed, true));
     }
 
     @Override
     public IRowIterator getIterator() {
-        return new SetSparseIterator(this.membershipMap);
+        return new SparseIterator(this.membershipMap);
     }
 
     @Override
@@ -193,39 +171,16 @@ public class SparseMembership implements IMembershipSet {
         return (baseMap.getSize() * esize) / sampleSet.getSize();
     }
 
-    private class SetSparseIterator implements IRowIterator {
-        private int pos;
-        private int c;
-        private boolean mustReturnZero;
-        @NonNull
-        private final IntSet membershipMap;
+    private class SparseIterator implements IRowIterator {
+        final private IntSet.IntSetIterator mysetIterator;
 
-        private SetSparseIterator(final IntSet membershipMap) {
-            this.membershipMap = membershipMap;
-            this.pos = this.membershipMap.getn();
-            this.c = this.membershipMap.size();
-            this.mustReturnZero = membershipMap.getContainsZero();
-        }
-
-        public boolean hasNext() {
-            return this.c != 0;
+        private SparseIterator(@NonNull final IntSet mySet) {
+            this.mysetIterator = mySet.getIterataor();
         }
 
         @Override
         public int getNextRow() {
-            if (!this.hasNext())
-                return -1;
-            --this.c;
-            if (this.mustReturnZero) {
-                this.mustReturnZero = false;
-                return 0;
-            }
-            final int[] key = this.membershipMap.key;
-            while (--this.pos >= 0) {
-                if(key[this.pos] != 0)
-                    return key[this.pos];
-            }
-            return key[this.pos];
+            return this.mysetIterator.getNext();
         }
     }
 }

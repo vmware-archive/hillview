@@ -163,7 +163,7 @@ public class LazyMembership implements IMembershipSet {
         if (otherMap instanceof FullMembership) {
             final IMembershipSet newBase = this.baseMap.union(otherMap);
             final Predicate<Integer> newFilter =
-                    this.filter.or(p -> otherMap.isMember(p));
+                    this.filter.or(otherMap::isMember);
             return new LazyMembership(newBase, newFilter);
         }
         return otherMap.union(this);

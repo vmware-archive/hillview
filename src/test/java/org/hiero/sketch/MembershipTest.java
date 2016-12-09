@@ -52,10 +52,15 @@ public class MembershipTest {
         assertTrue(PMS.isMember(6));
         assertFalse(PMS.isMember(7));
         assertEquals(PMS.getSize(), 5);
+        final IntSet testSet = new IntSet();
         final IRowIterator IT = PMS.getIterator();
         int tmp = IT.getNextRow();
-        while (tmp >= 0)
+        while (tmp >= 0) {
+            testSet.add(tmp);
             tmp = IT.getNextRow();
+        }
+        final SparseMembership PMS1 = new SparseMembership(testSet);
+        assertTrue(PMS.getSize() == PMS1.getSize());
     }
 
     @Test

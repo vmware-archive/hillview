@@ -1,43 +1,63 @@
 package org.hiero.sketch.spreadsheet;
-import java.util.*;
+
 /**
  * A Bucket to be used as part of a histogram.
  */
-public class Bucket<T> {
-    private final T leftBoundry;
-    private final T rightBoundry;
+public class Bucket {
+    private final double leftBoundary;
+    private final double  rightBoundary;
     private final boolean leftInclusive;
     private final boolean rightInclusive;
-    private final Comparator<T> greater;
+    private Object minObject;
+    private Object maxObject;
+    private double minValue;
+    private double maxValue;
+    private int count;
 
-    public Bucket(final T leftBoundry, final boolean leftInclusive,
-                  final T rightBoundry, final boolean rightInclusive, final Comparator<T> greater) {
-        if (greater.compare(leftBoundry, rightBoundry) > 0)
+    public Object getMinObject() { return this.minObject; }
+    public Object getMaxObject() { return this.maxObject; }
+    public double getMinValue() { return this.minValue; }
+    public double getMaxValue() { return this.maxValue; }
+
+    public Bucket(final double leftBoundary, final boolean leftInclusive,
+                  final double rightBoundary, final boolean rightInclusive) {
+        if (leftBoundary > rightBoundary)
             throw new IllegalArgumentException("Left boundry cannot be greater than right boundry");
-        else if ((greater.compare(leftBoundry, rightBoundry) == 0 )
-                && !(leftInclusive && rightInclusive))
+        else if ((leftBoundary == rightBoundary) && !(leftInclusive && rightInclusive))
             throw new IllegalArgumentException("Bucket defined over empty set");
-        this.leftBoundry = leftBoundry;
-        this.rightBoundry = rightBoundry;
+        this.leftBoundary = leftBoundary;
+        this.rightBoundary = rightBoundary;
         this.leftInclusive = leftInclusive;
         this.rightInclusive = rightInclusive;
-        this.greater = greater;
     }
 
-    public Bucket(final T leftBoundry, final T rightBoundry, final Comparator<T> greater) {
-         this(leftBoundry, true, rightBoundry, false, greater);
+    public Bucket(final double leftBoundary, final double rightBoundary) {
+         this(leftBoundary, true, rightBoundary, false);
     }
 
-    public boolean inBucket(final T item) {
-        final int leftValue = this.greater.compare(item, this.leftBoundry);
-        final int rightValue = this.greater.compare(item, this.rightBoundry);
+    public boolean inBucket(final double item) {
 
-        if ((leftValue < 0) || (rightValue > 0))
+        if ((item < this.leftBoundary) || (item > this.rightBoundary))
             return false;
-        if (leftValue == 0)
+        if (item == this.leftBoundary)
             return this.leftInclusive;
-        if (rightValue == 0)
+        if (item == this.rightBoundary)
             return this.rightInclusive;
         return true;
+    }
+
+    //public void add(final double item, Object currObject) {
+    public void add(final double item ) {
+        this.count++;
+        if (item < this.minValue)
+        {
+            this.minValue = item;
+           // this.minObject = currObject;
+        }
+        if (item > this.maxValue)
+        {
+            this.maxValue = item;
+          //  this.maxObject = currObject;
+        }
     }
 }
