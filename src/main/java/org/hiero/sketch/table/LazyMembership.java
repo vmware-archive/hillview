@@ -200,16 +200,6 @@ public class LazyMembership implements IMembershipSet {
         return new SparseMembership(setMinusSet);
     }
 
-
-    @Override
-    public IMembershipSet copy() {
-        final IMembershipSet newBase = this.baseMap.copy();
-        final LazyMembership newMap =  new LazyMembership(newBase,this.filter);
-        newMap.rowCountCorrect = this.rowCountCorrect;
-        newMap.rowCount = this.rowCount;
-        return newMap;
-    }
-
     private static class DenseIterator implements IRowIterator {
         @NonNull
         private final IRowIterator baseIterator;

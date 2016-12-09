@@ -35,8 +35,7 @@ public interface IMembershipSet extends IRowOrder {
     IMembershipSet sample(int k, long seed);
 
     /**
-     * @return the union of current map and otherMap.
-     * FIXME: currentMap is destroyed.
+     * @return a new map which is the union of current map and otherMap.
      */
     IMembershipSet union(@NonNull IMembershipSet otherMap);
 
@@ -45,8 +44,8 @@ public interface IMembershipSet extends IRowOrder {
     IMembershipSet setMinus(@NonNull IMembershipSet otherMap);
 
     /**
-     * @return a deep copy of this.
-     * FIXME: This should be removed.
+     * @return An iterator over all the rows in the membership map.
+     * The iterator is initialized to point at the "first" row.
      */
-    IMembershipSet copy();
+    IRowIterator getIterator();
 }

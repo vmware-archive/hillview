@@ -80,6 +80,26 @@ public class SparseMembership implements IMembershipSet {
         return this.rowCount;
     }
 
+    private IMembershipSet sample(final int k, final long seed, final boolean useSeed) {
+        final IntSet sampleSet = new IntSet(k);
+        final Random psg;
+        if (useSeed)
+            psg = new Random(seed);
+        else
+            psg = new Random();
+        int randomKey = psg.nextInt(this.membershipMap.getn());
+
+        final int[] key = this.membershipMap.key;
+        for (int samples = 0; samples < k; samples++) {
+            while (key[randomKey & this.membershipMap.getMask()] == 0)
+                randomKey++;
+            sampleSet.add(key[randomKey & this.membershipMap.getMask()]);
+            randomKey++;
+        }
+        return new SparseMembership(sampleSet);
+
+    }
+
     /**
      * Returns the k items from a random location in the map. Note that the k items are not
      * completely independent but also depend on the placement done by the hash function.
@@ -89,18 +109,7 @@ public class SparseMembership implements IMembershipSet {
      */
     @Override
     public IMembershipSet sample(final int k) {
-        final IntSet sampleSet = new IntSet(k);
-        final Random psg = new Random();
-        int randomKey = psg.nextInt(this.membershipMap.n);
-
-        final int[] key = this.membershipMap.key;
-        for (int samples = 0; samples < k; samples++) {
-            while (key[randomKey & this.membershipMap.mask] == 0)
-                randomKey++;
-            sampleSet.add(key[randomKey& this.membershipMap.mask]);
-            randomKey++;
-        }
-        return new SparseMembership(sampleSet);
+        return this.sample(k, 0, false);
     }
 
     /**
@@ -113,18 +122,7 @@ public class SparseMembership implements IMembershipSet {
      */
     @Override
     public IMembershipSet sample(final int k, final long seed) {
-        final IntSet sampleSet = new IntSet(k);
-        final Random psg = new Random(seed);
-        int randomKey = psg.nextInt(this.membershipMap.n);
-
-        final int[] key = this.membershipMap.key;
-        for (int samples = 0; samples < k; samples++) {
-            while (key[randomKey & this.membershipMap.mask] == 0)
-                randomKey++;
-            sampleSet.add(key[randomKey & this.membershipMap.mask]);
-            randomKey++;
-        }
-        return new SparseMembership(sampleSet);
+        return this.sample(k, seed, true);
     }
 
     @Override
@@ -170,11 +168,6 @@ public class SparseMembership implements IMembershipSet {
         return new SparseMembership(setMinusSet);
     }
 
-    @Override
-    public IMembershipSet copy() {
-        return new SparseMembership(this.membershipMap.copy());
-    }
-
     /**
      * Estimates the size of a filter applied to an IMembershipSet
      * @return an approximation of the size, based on a sample of size 20. May return 0.
@@ -209,9 +202,9 @@ public class SparseMembership implements IMembershipSet {
 
         private SetSparseIterator(final IntSet membershipMap) {
             this.membershipMap = membershipMap;
-            this.pos = this.membershipMap.n;
-            this.c = this.membershipMap.size;
-            this.mustReturnZero = membershipMap.containsZero;
+            this.pos = this.membershipMap.getn();
+            this.c = this.membershipMap.size();
+            this.mustReturnZero = membershipMap.getContainsZero();
         }
 
         public boolean hasNext() {
