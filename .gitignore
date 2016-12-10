@@ -15,11 +15,16 @@ target/
 
 # Idea files
 # see https://intellij-support.jetbrains.com/hc/en-us/articles/206544839-How-to-manage-projects-under-Version-Control-Systems
-.idea/workspace.xml
-.idea/tasks.xml
-.idea/misc.xml
-.idea/copyright
-.idea/libraries
+*/.idea/workspace.xml
+*/.idea/tasks.xml
+*/.idea/misc.xml
+*/.idea/copyright
+*/.idea/libraries
+
+
+out
+apache-tomcat-*
+
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
