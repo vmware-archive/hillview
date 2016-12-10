@@ -3,7 +3,7 @@ Big data spreadsheet
 
 ## Requirements
 
-* Ubuntu Linux, Hadoop filesystem, Maven build system, Tomcat web application server
+* Ubuntu Linux, Hadoop filesystem, Maven build system, Tomcat web application server, TypeScript
 * IDEA Intellij for development
 
 > $: sudo apt-get install maven
@@ -43,6 +43,10 @@ the following to your ~/.bashrc or ~/.zshrc.
 
 > ```export JAVA_HOME="<path-to-jdk-folder>"```
 
+## Install typescript and JavaScript libraries
+
+sudo npm install -g typescript rx-dom
+
 ## Install Apache Tomcat web application server
 
 Use version 8.5.8.
@@ -55,7 +59,16 @@ https://www.jetbrains.com/idea/.  You can just untar the linux binary
 in a place of your choice and run the shell script
 `ideaXXX/bin/idea.sh`.
 
+## Project structure
+
+Hiero is broken down into two separate projects:
+* hieroplatform: pure Java, includes the entire back-end
+* hieroweb: the web server, web client and web services; links to hieroplatform
+
 ## Import Hiero into IntelliJ IDEA
+
+To load the project that you want to contribute to, move to the corresponding folder: `cd hieroplatform`
+or `cd hieroweb`.
 
 Next, import the hiero project inside IntelliJ.  On the welcome
 screen, select the "import project" option, point to the "pom.xml"
@@ -71,4 +84,3 @@ named "target/" with the hiero JAR inside it.
 To run only the tests:
 
 > $: mvn test
-

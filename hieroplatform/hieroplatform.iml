@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<module org.jetbrains.idea.maven.project.MavenProjectsManager.isMavenModule="true" version="4">
+<module org.jetbrains.idea.maven.project.MavenProjectsManager.isMavenModule="true" type="JAVA_MODULE" version="4">
   <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_1_8" inherit-compiler-output="false">
     <output url="file://$MODULE_DIR$/target/classes" />
     <output-test url="file://$MODULE_DIR$/target/test-classes" />
@@ -7,11 +7,6 @@
       <sourceFolder url="file://$MODULE_DIR$/src/main/java" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/test/java" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/src/test/resources" type="java-test-resource" />
-      <excludeFolder url="file://$MODULE_DIR$/apache-tomcat-8.5.8" />
-      <excludeFolder url="file://$MODULE_DIR$/hadoop-2.7.3" />
-      <excludeFolder url="file://$MODULE_DIR$/hdfs-folders" />
-      <excludeFolder url="file://$MODULE_DIR$/puppet-manifests" />
-      <excludeFolder url="file://$MODULE_DIR$/scripts" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />
@@ -52,11 +47,5 @@
     <orderEntry type="library" name="Maven: org.checkerframework:checker-qual:2.1.5" level="project" />
     <orderEntry type="library" name="Maven: org.checkerframework:checker:2.1.5" level="project" />
     <orderEntry type="library" name="Maven: org.checkerframework:jdk8:2.1.5" level="project" />
-    <orderEntry type="library" name="Maven: org.apache.tomcat:tomcat-websocket:8.5.8" level="project" />
-    <orderEntry type="library" name="Maven: org.apache.tomcat:tomcat-servlet-api:8.5.8" level="project" />
-    <orderEntry type="library" name="Maven: org.apache.tomcat:tomcat-websocket-api:8.5.8" level="project" />
-    <orderEntry type="library" name="Maven: org.apache.tomcat:tomcat-juli:8.5.8" level="project" />
-    <orderEntry type="library" name="Maven: org.apache.tomcat:tomcat-util:8.5.8" level="project" />
-    <orderEntry type="library" name="Maven: com.google.code.gson:gson:2.8.0" level="project" />
   </component>
 </module>

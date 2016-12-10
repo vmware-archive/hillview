@@ -22,11 +22,11 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="true" />
-        <module name="hiero" />
+        <module name="hieroweb" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel target="1.8">
-      <module name="hiero" target="1.8" />
+    <bytecodeTargetLevel>
+      <module name="hieroweb" target="1.8" />
     </bytecodeTargetLevel>
   </component>
 </project>

@@ -3,39 +3,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.hiero</groupId>
-    <artifactId>hiero</artifactId>
+    <artifactId>hieroweb</artifactId>
     <packaging>jar</packaging>
     <version>1.0-SNAPSHOT</version>
-    <name>hiero</name>
+    <name>hieroweb</name>
     <url>http://maven.apache.org</url>
     <dependencies>
-        <!-- Comma-separated value file I/O -->
-        <dependency>
-            <groupId>com.opencsv</groupId>
-            <artifactId>opencsv</artifactId>
-            <version>3.7</version>
-        </dependency>
-        <!-- akka: actors for remote communication -->
-        <dependency>
-            <groupId>com.github.romix.akka</groupId>
-            <artifactId>akka-kryo-serialization_2.11</artifactId>
-            <version>0.4.1</version>
-        </dependency>
-        <dependency>
-            <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-actor_2.11</artifactId>
-            <version>2.4.11</version>
-        </dependency>
-        <dependency>
-            <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-remote_2.11</artifactId>
-            <version>2.4.11</version>
-        </dependency>
-        <dependency>
-            <groupId>org.scalatest</groupId>
-            <artifactId>scalatest_2.11</artifactId>
-            <version>3.0.0</version>
-        </dependency>
         <!-- Junit for testing -->
         <dependency>
             <groupId>junit</groupId>
@@ -77,12 +50,12 @@
             <artifactId>jdk8</artifactId>
             <version>2.1.5</version>
         </dependency>
-        <!-- Tomcat web application server: local installation -->
+         <!-- Tomcat web application server: local installation -->
         <dependency>
             <groupId>org.apache.tomcat</groupId>
             <artifactId>tomcat-websocket</artifactId>
             <version>8.5.8</version>
-            <systemPath>${project.basedir}/apache-tomcat-8.5.8/lib/tomcat-websocket.jar</systemPath>
+            <systemPath>${project.basedir}/../apache-tomcat-8.5.8/lib/tomcat-websocket.jar</systemPath>
         </dependency>
         <!-- Json manipulation in Java -->
         <dependency>
