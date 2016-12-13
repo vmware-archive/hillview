@@ -12,12 +12,7 @@ public class Bucket {
     private Object maxObject;
     private double minValue;
     private double maxValue;
-    private int count;
-
-    public Object getMinObject() { return this.minObject; }
-    public Object getMaxObject() { return this.maxObject; }
-    public double getMinValue() { return this.minValue; }
-    public double getMaxValue() { return this.maxValue; }
+    private long count;
 
     public Bucket(final double leftBoundary, final boolean leftInclusive,
                   final double rightBoundary, final boolean rightInclusive) {
@@ -30,6 +25,16 @@ public class Bucket {
         this.leftInclusive = leftInclusive;
         this.rightInclusive = rightInclusive;
     }
+
+    public Object getMinObject() { return this.minObject; }
+
+    public Object getMaxObject() { return this.maxObject; }
+
+    public double getMinValue() { return this.minValue; }
+
+    public double getMaxValue() { return this.maxValue; }
+
+    public long getCount() { return this.count; }
 
     public Bucket(final double leftBoundary, final double rightBoundary) {
          this(leftBoundary, true, rightBoundary, false);
@@ -46,18 +51,17 @@ public class Bucket {
         return true;
     }
 
-    //public void add(final double item, Object currObject) {
-    public void add(final double item ) {
+    public void add(final double item, Object currObject) {
         this.count++;
         if (item < this.minValue)
         {
             this.minValue = item;
-           // this.minObject = currObject;
+            this.minObject = currObject;
         }
         if (item > this.maxValue)
         {
             this.maxValue = item;
-          //  this.maxObject = currObject;
+            this.maxObject = currObject;
         }
     }
 }
