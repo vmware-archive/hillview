@@ -175,7 +175,7 @@ public class SparseMembership implements IMembershipSet {
         final private IntSet.IntSetIterator mysetIterator;
 
         private SparseIterator(@NonNull final IntSet mySet) {
-            this.mysetIterator = mySet.getIterataor();
+            this.mysetIterator = mySet.getIterator();
         }
 
         @Override

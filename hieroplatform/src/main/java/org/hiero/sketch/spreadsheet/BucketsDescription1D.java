@@ -4,7 +4,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.util.Arrays;
 
 /**
- * MetaData for one dimensional buckets held by an histogram
+ * MetaData for one dimensional buckets held by a histogram
  */
 public class BucketsDescription1D implements IBucketsDescription1D {
     private final double minValue;

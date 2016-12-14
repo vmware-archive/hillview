@@ -163,7 +163,7 @@ public class IntSet {
         return sampleSet;
     }
 
-    public IntSetIterator getIterataor() {
+    public IntSetIterator getIterator() {
         return new IntSetIterator();
     }
 
