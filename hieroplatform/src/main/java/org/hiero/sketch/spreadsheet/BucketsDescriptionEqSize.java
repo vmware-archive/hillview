@@ -5,9 +5,9 @@ package org.hiero.sketch.spreadsheet;
  */
 public class BucketsDescriptionEqSize implements IBucketsDescription1D {
 
-    public final double minValue;
-    public final double maxValue;
-    public final int numOfBuckets;
+    private final double minValue;
+    private final double maxValue;
+    private final int numOfBuckets;
 
 
     public BucketsDescriptionEqSize(final double minValue, final double maxValue, final int numOfBuckets) {
@@ -43,6 +43,17 @@ public class BucketsDescriptionEqSize implements IBucketsDescription1D {
     public int getNumOfBuckets() { return this.numOfBuckets; }
 
     @Override
+    public double[] getBoundaries() {
+        double[] result = new double[this.numOfBuckets + 1];
+        double curr = this.minValue;
+        for (int i = 0; i <= this.numOfBuckets; i++) {
+            result[i] = curr;
+            curr += (this.maxValue - this.minValue) / this.numOfBuckets;
+        }
+        return result;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -52,7 +63,6 @@ public class BucketsDescriptionEqSize implements IBucketsDescription1D {
         if (Double.compare(that.minValue, minValue) != 0) return false;
         if (Double.compare(that.maxValue, maxValue) != 0) return false;
         return numOfBuckets == that.numOfBuckets;
-
     }
 
     @Override

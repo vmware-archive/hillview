@@ -26,4 +26,9 @@ public interface IBucketsDescription1D {
      * If item is out of range of buckets returns -1
      */
     int indexOf(final double item);
+
+    /**
+     * @return a new array with a sorted list of the bucket boundaries
+     */
+    double[] getBoundaries();
 }

@@ -7,9 +7,9 @@ import java.util.Arrays;
  * MetaData for one dimensional buckets held by an histogram
  */
 public class BucketsDescription1D implements IBucketsDescription1D {
-    public final double minValue;
-    public final double maxValue;
-    public final int numOfBuckets;
+    private final double minValue;
+    private final double maxValue;
+    private final int numOfBuckets;
     private final double[] boundaries;
 
     /**
@@ -74,6 +74,13 @@ public class BucketsDescription1D implements IBucketsDescription1D {
     @Override
     public int getNumOfBuckets() {
         return this.numOfBuckets;
+    }
+
+    @Override
+    public double[] getBoundaries() {
+        double[] result = new double[this.boundaries.length];
+        System.arraycopy(this.boundaries, 0, result, 0, this.boundaries.length);
+        return result;
     }
 
     @Override
