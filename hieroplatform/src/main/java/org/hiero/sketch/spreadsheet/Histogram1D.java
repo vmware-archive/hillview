@@ -8,61 +8,73 @@ import org.hiero.sketch.table.api.IStringConverter;
 
 /**
  * One Dimensional histogram. Does not contain the column and membershipMap
- * todo: work in progress
+ * todo: Add createApproxHistogram that takes error parameters and uses sampling
  */
-public class Histogram1D implements IHistogram {
-   // final private IColumn column;
-   // private IMembershipSet membershipSet;
-   // final private double[] boundaries;
-    private final Bucket[] buckets;
-   // final private IStringConverter converter;
-    private int missingData;
-    private int outOfRange;
-    final private BucketSetDescription bucketDescription;
+public class Histogram1D {
 
-    public Histogram1D(@NonNull final BucketSetDescription bucketDescription) {
+    private final Bucket1D[] buckets;
+
+    private long missingData;
+
+    private long outOfRange;
+
+    private final IBucketsDescription1D bucketDescription;
+
+    public Histogram1D(final @NonNull IBucketsDescription1D bucketDescription) {
         this.bucketDescription = bucketDescription;
-        this.buckets = new Bucket[bucketDescription.numOfBuckets];
-        createBuckets();
-    }
-
-    private void createBuckets() {
-        for (int i = 0; i < this.bucketDescription.numOfBuckets; i++) {
-            this.buckets[i] = new Bucket(this.bucketDescription.boundaries[i], true,
-                    this.bucketDescription.boundaries[i + 1],
-                    (i == (this.bucketDescription.numOfBuckets - 1)));
-        }
-    }
-
-
-    public Histogram1D(BucketSetDescription bucketdescription, @NonNull final IColumn column,
-                       @NonNull final IMembershipSet membershipSet,
-                       @NonNull final IStringConverter converter) {
-        this.bucketDescription = bucketdescription;
-        this.buckets = new Bucket[bucketdescription.numOfBuckets]; //todo: create Buckets
-        this.createHistogram(column, membershipSet, converter);
+        this.buckets = new Bucket1D[bucketDescription.getNumOfBuckets()];
     }
 
     /**
-     * Creates the histogram explicitly and in full.
+     * Creates the histogram explicitly and in full. Should be called at most once.
      */
-    private void createHistogram(final IColumn column, final IMembershipSet membershipSet
-                                ,final IStringConverter converter ) {
+    public void createHistogram(final IColumn column, final IMembershipSet membershipSet,
+                                final IStringConverter converter ) {
+        if (this.buckets[0] != null) //a histogram had already been created
+            throw new IllegalAccessError("A histogram cannot be created twice");
+        for (int i = 0; i < this.bucketDescription.getNumOfBuckets(); i++)
+            this.buckets[i] = new Bucket1D();
         final IRowIterator myIter = membershipSet.getIterator();
-        int currIndex = myIter.getNextRow();
-        while (currIndex >= 0) {
-            if (column.isMissing(currIndex))
+        int currRow = myIter.getNextRow();
+        while (currRow >= 0) {
+            if (column.isMissing(currRow))
                 this.missingData++;
-            else
-                placeInBucket(column.asDouble(currIndex, converter));
-            currIndex = myIter.getNextRow();
+            else {
+                double val = column.asDouble(currRow,converter);
+                int index = this.bucketDescription.indexOf(val);
+                if (index >= 0)
+                    this.buckets[index].add(val,column.getObject(currRow));
+                else this.outOfRange++;
+            }
+            currRow = myIter.getNextRow();
         }
     }
 
-    private void placeInBucket(final double entry) {
-        final int index = this.bucketDescription.indexOf(entry);
-        if (index >= 0)
-            this.buckets[index].add(entry);
-        else this.outOfRange++;
+    public long getMissingData() { return this.missingData; }
+
+    public long getOutOfRange() { return this.outOfRange; }
+
+    /**
+     * @return the index's bucket or null if not been initialized yet
+     */
+    public Bucket1D getBucket(final int index) {
+        if ((index < 0) || (index >= this.bucketDescription.getNumOfBuckets()))
+            throw new IllegalArgumentException("bucket index out of range");
+        return this.buckets[index];
+    }
+
+    /**
+     * @param  otherHistogram with the same bucketDescription
+     * @return a new Histogram which is the union of this and otherHistogram
+     */
+    public Histogram1D union( @NonNull Histogram1D otherHistogram) {
+        if (!this.bucketDescription.equals(otherHistogram.bucketDescription))
+            throw new IllegalArgumentException("Histogram union without matching buckets");
+        Histogram1D unionH = new Histogram1D(this.bucketDescription);
+        for (int i = 0; i < unionH.bucketDescription.getNumOfBuckets(); i++)
+            unionH.buckets[i] = this.buckets[i].union(otherHistogram.buckets[i]);
+        unionH.missingData = this.missingData + otherHistogram.missingData;
+        unionH.outOfRange = this.outOfRange + otherHistogram.outOfRange;
+        return unionH;
     }
 }
