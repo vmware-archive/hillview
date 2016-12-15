@@ -5,9 +5,8 @@ import org.hiero.sketch.spreadsheet.Histogram1D;
 import org.hiero.sketch.table.DoubleArrayColumn;
 import org.hiero.sketch.table.FullMembership;
 import org.junit.Test;
-
 import static junit.framework.Assert.assertEquals;
-import static junit.framework.TestCase.assertTrue;
+
 
 public class Histogram1DTest {
     @Test

@@ -1,7 +1,6 @@
 package org.hiero.sketch;
 
 import org.hiero.sketch.spreadsheet.Bucket1D;
-
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 import org.junit.Test;
