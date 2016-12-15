@@ -12,7 +12,13 @@ public class Bucket1D {
     private double maxValue;
     private long count;
 
-    public Bucket1D() { }
+    public Bucket1D() {
+    this.minObject = null;
+    this.maxObject = null;
+    this.minValue = 0;
+    this.maxValue = 0;
+    this.count = 0;
+    }
 
     private Bucket1D(final long count, final double minValue,
                      final double maxValue, final Object minObject, final Object maxObject) {
@@ -39,14 +45,10 @@ public class Bucket1D {
             this.minObject = currObject;
             this.maxValue = item;
             this.maxObject = currObject;
-        }
-        else if (item < this.minValue )
-        {
+        } else if (item < this.minValue) {
             this.minValue = item;
             this.minObject = currObject;
-        }
-        else if (item > this.maxValue )
-        {
+        } else if (item > this.maxValue) {
             this.maxValue = item;
             this.maxObject = currObject;
         }
@@ -66,18 +68,16 @@ public class Bucket1D {
         if (this.minValue < otherBucket.minValue) {
             uMinValue = this.minValue;
             uMinObject = this.minObject;
-        }
-        else {
-                uMinValue = otherBucket.minValue;
-                uMinObject = otherBucket.minObject;
+        } else {
+            uMinValue = otherBucket.minValue;
+            uMinObject = otherBucket.minObject;
         }
         if (this.maxValue > otherBucket.maxValue) {
             uMaxValue = this.maxValue;
             uMaxObject = this.maxObject;
-        }
-        else {
-                uMaxValue = otherBucket.maxValue;
-                uMaxObject = otherBucket.maxObject;
+        } else {
+            uMaxValue = otherBucket.maxValue;
+            uMaxObject = otherBucket.maxObject;
         }
         return new Bucket1D(ucount, uMinValue, uMaxValue, uMinObject, uMaxObject);
     }

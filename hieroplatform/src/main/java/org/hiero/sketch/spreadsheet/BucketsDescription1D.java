@@ -32,11 +32,9 @@ public class BucketsDescription1D implements IBucketsDescription1D {
      * Checks that an array is strongly sorted
      */
     private static boolean isSorted(final double[] a) {
-        for (int i = 0; i < (a.length - 1); i++) {
-            if (a[i] > a[i + 1]) {
+        for (int i = 0; i < (a.length - 1); i++)
+            if (a[i] > a[i + 1])
                 return false;
-            }
-        }
         return true;
     }
 
@@ -54,7 +52,7 @@ public class BucketsDescription1D implements IBucketsDescription1D {
             else if (item >= this.boundaries[mid + 1]) lo = mid;
             else return mid;
         }
-        return -1;
+        throw new IllegalStateException("bug in the indexOf function");
     }
 
     @Override
@@ -72,16 +70,7 @@ public class BucketsDescription1D implements IBucketsDescription1D {
     }
 
     @Override
-    public int getNumOfBuckets() {
-        return this.numOfBuckets;
-    }
-
-    @Override
-    public double[] getBoundaries() {
-        double[] result = new double[this.boundaries.length];
-        System.arraycopy(this.boundaries, 0, result, 0, this.boundaries.length);
-        return result;
-    }
+    public int getNumOfBuckets() { return this.numOfBuckets; }
 
     @Override
     public boolean equals(Object o) {

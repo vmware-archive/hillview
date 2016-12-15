@@ -1,6 +1,8 @@
 package org.hiero.sketch;
 
 import org.hiero.sketch.spreadsheet.Bucket1D;
+
+import static junit.framework.Assert.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 import org.junit.Test;
 
@@ -14,15 +16,15 @@ public class BucketTest {
             myBucket.add((double) i, Integer.toString(i));
             myBucket1.add( 99.5 - i , Double.toString(99.5 - i));
         }
-        assertTrue(myBucket.getCount() == 100);
-        assertTrue(myBucket1.getCount() == 100);
-        assertTrue(myBucket1.getMinValue() == 0.5);
-        assertTrue(myBucket1.getMaxValue() == 99.5);
+        assertEquals(myBucket.getCount(), 100);
+        assertEquals(myBucket1.getCount(), 100);
+        assertEquals(myBucket1.getMinValue(), 0.5);
+        assertEquals(myBucket1.getMaxValue(), 99.5);
         final Bucket1D myBucket2 = myBucket.union(myBucket1);
-        assertTrue(myBucket2.getCount() == 200);
-        assertTrue(myBucket2.getMinValue() == 0);
-        assertTrue(myBucket2.getMaxValue() == 99.5);
-        assertTrue(myBucket2.getMinObject().equals("0"));
-        assertTrue(myBucket2.getMaxObject().equals("99.5"));
+        assertEquals(myBucket2.getCount(), 200);
+        assertEquals(myBucket2.getMinValue(), 0.0);
+        assertEquals(myBucket2.getMaxValue(), 99.5);
+        assertEquals(myBucket2.getMinObject(), "0");
+        assertEquals(myBucket2.getMaxObject(), "99.5");
     }
 }

@@ -1,7 +1,9 @@
 package org.hiero.sketch.spreadsheet;
 
 /**
- * meta data for one dimensional bucket set
+ * meta data for a one dimensional bucket set. To be part of a Histogram class which also contains the buckets themselves.
+ * The implementations will contain the boundaries of buckets. All buckets are left-inclusive and right-exclusive,
+ * except the right most bucket which is right-inclusive.
  */
 public interface IBucketsDescription1D {
 
@@ -26,9 +28,4 @@ public interface IBucketsDescription1D {
      * If item is out of range of buckets returns -1
      */
     int indexOf(final double item);
-
-    /**
-     * @return a new array with a sorted list of the bucket boundaries
-     */
-    double[] getBoundaries();
 }

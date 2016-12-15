@@ -28,8 +28,8 @@ public class Histogram1D {
     /**
      * Creates the histogram explicitly and in full. Should be called at most once.
      */
-    public void createHistogram(final IColumn column, final IMembershipSet membershipSet
-                                ,final IStringConverter converter ) {
+    public void createHistogram(final IColumn column, final IMembershipSet membershipSet,
+                                final IStringConverter converter ) {
         if (this.buckets[0] != null) //a histogram had already been created
             throw new IllegalAccessError("A histogram cannot be created twice");
         for (int i = 0; i < this.bucketDescription.getNumOfBuckets(); i++)

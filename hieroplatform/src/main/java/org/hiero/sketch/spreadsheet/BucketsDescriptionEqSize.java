@@ -4,23 +4,23 @@ package org.hiero.sketch.spreadsheet;
  * MetaData for one dimensional buckets of equal size
  */
 public class BucketsDescriptionEqSize implements IBucketsDescription1D {
-
     private final double minValue;
     private final double maxValue;
     private final int numOfBuckets;
 
-
     public BucketsDescriptionEqSize(final double minValue, final double maxValue, final int numOfBuckets) {
+        if (maxValue <= minValue)
+            throw new IllegalArgumentException("Buckets range cannot be empty");
         this.minValue = minValue;
         this.maxValue = maxValue;
         this.numOfBuckets = numOfBuckets;
     }
 
     @Override
-    public int indexOf(final double  item) {
+    public int indexOf(final double item) {
         if (item < this.minValue || item > this.maxValue)
             return -1;
-        if (item == this.maxValue)
+        if (item >= this.maxValue)
             return this.numOfBuckets - 1;
         return (int) (this.numOfBuckets * (item - this.minValue)) / (int) (this.maxValue - this.minValue);
     }
@@ -41,17 +41,6 @@ public class BucketsDescriptionEqSize implements IBucketsDescription1D {
 
     @Override
     public int getNumOfBuckets() { return this.numOfBuckets; }
-
-    @Override
-    public double[] getBoundaries() {
-        double[] result = new double[this.numOfBuckets + 1];
-        double curr = this.minValue;
-        for (int i = 0; i <= this.numOfBuckets; i++) {
-            result[i] = curr;
-            curr += (this.maxValue - this.minValue) / this.numOfBuckets;
-        }
-        return result;
-    }
 
     @Override
     public boolean equals(Object o) {
