@@ -5,7 +5,7 @@ package org.hiero.utils;
  * static methods.
  * Based on the class HashCommons in http://fastutil.di.unimi.it
  */
-public class HashUtil {
+class HashUtil {
     public static final Object REMOVED = new Object();
     private static final int INT_PHI = -1640531527;
     private static final int INV_INT_PHI = 340573321;

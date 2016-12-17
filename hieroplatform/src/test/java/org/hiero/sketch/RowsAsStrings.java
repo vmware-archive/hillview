@@ -4,7 +4,7 @@ import org.hiero.sketch.table.api.IColumn;
 
 import java.util.ArrayList;
 
-public class RowsAsStrings {
+class RowsAsStrings {
     private final ArrayList<IColumn> cols;
 
     public RowsAsStrings(final ArrayList<IColumn> cols){

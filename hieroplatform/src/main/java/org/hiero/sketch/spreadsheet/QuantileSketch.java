@@ -7,52 +7,34 @@ import org.hiero.sketch.table.*;
 import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowOrder;
-import org.hiero.sketch.table.api.IndexComparator;
 import rx.Observable;
 
 import java.security.InvalidParameterException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class QuantileSketch implements ISketch<Table, Table> {
-
-    private final List<OrderedColumn> sortOrder;
-
-
-    public QuantileSketch(final List<OrderedColumn> sortOrder) {
-        this.sortOrder = sortOrder;
-    }
+public class QuantileSketch implements ISketch<Table, QuantileList> {
+    private final int resolution;
+    private final ColumnSortOrder colSortOrder;
 
     /**
-     * Returns a ListComparator for rows in a Table, based on the sort order.
-     * The table needs to share the schema of the Table data, but it could be a subset.
-     *
-     * @return A Comparator that compares two rows based on the Sort Order specified.
+     * @param sortOrder The list of column orientations.
+     * @param resolution Number of buckets: percentiles correspond to 100 buckets etc.
      */
-    private ListComparator getComparator(final Table inpData) {
-        final List<IndexComparator> comparatorList = new ArrayList<IndexComparator>();
-        for (final OrderedColumn ordCol : this.sortOrder) {
-            final IColumn nextCol = inpData.getColumn(ordCol.colName);
-            if (ordCol.isAscending) {
-                comparatorList.add(nextCol.getComparator());
-            } else {
-                comparatorList.add(nextCol.getComparator().rev());
-            }
-        }
-        return new ListComparator(comparatorList);
+    public QuantileSketch(final List<ColumnOrientation> sortOrder, final int resolution) {
+        this.colSortOrder = new ColumnSortOrder(sortOrder);
+        this.resolution = resolution;
     }
 
     /**
      * Given a table and a desired resolution for percentiles, return the answer for a sample.
-     *
-     * @param resolution Number of buckets: percentiles correspond to 100 buckets etc.
+     * The size of the sample is resolution*perBin, perBin is set to 100 by default.
      * @return A table of size resolution, whose ith entry is ranked approximately i/resolution.
      */
-    public QuantileList getQuantile(final Table data, final int resolution) {
+    public QuantileList getQuantile(final Table data) {
         /* Sample a set of rows from the table. */
         final int perBin = 100;
-        final int numSamples = resolution * perBin;
+        final int numSamples = this.resolution * perBin;
         final int dataSize = data.getNumOfRows();
         final IMembershipSet sampleSet = data.members.sample(numSamples);
         final Table sampleTable = data.compress(sampleSet);
@@ -62,10 +44,10 @@ public class QuantileSketch implements ISketch<Table, Table> {
         for (int i = 0; i < realSize; i++) {
             order[i] = i;
         }
-        Arrays.sort(order, this.getComparator(sampleTable));
+        Arrays.sort(order, this.colSortOrder.getComparator(sampleTable));
         /* Pick equally spaced elements as the sample quantiles.*/
-        final int[] quantile = new int[resolution + 1];
-        final ApproxRank[] approxRank = new ApproxRank[resolution + 1];
+        final int[] quantile = new int[this.resolution + 1];
+        final ApproxRank[] approxRank = new ApproxRank[this.resolution + 1];
         for (int i = 0; i <= resolution; i++) {
             quantile[i] = order[((realSize - 1) * i) / resolution];
             final int step = dataSize / resolution;
@@ -73,107 +55,22 @@ public class QuantileSketch implements ISketch<Table, Table> {
         }
         final IRowOrder quantileMembers = new ArrayRowOrder(quantile);
         final HashSubSchema subSchema = new HashSubSchema();
-        for (final OrderedColumn ordCol : this.sortOrder) {
+        for (final ColumnOrientation ordCol : this.colSortOrder) {
             subSchema.add(ordCol.colName);
         }
         return new QuantileList(sampleTable.compress(subSchema, quantileMembers),
                 approxRank, dataSize);
     }
 
-    private boolean[] getMergeOrder(@NonNull final QuantileList left, @NonNull final QuantileList right) {
-        if (!left.getSchema().equals(right.getSchema())) {
-            throw new RuntimeException("Tables do not have matching schemas");
-        }
-        final int length = left.getQuantileSize() + right.getQuantileSize();
-        final boolean[] mergeLeft = new boolean[length];
-        int i = 0, j = 0, k = 0;
-        int outcome;
-        while ((i < left.getQuantileSize()) && (j < right.getQuantileSize())) {
-            outcome = 0;
-            for (final OrderedColumn ordCol : this.sortOrder) {
-                final IColumn leftCol = left.getColumn(ordCol.colName);
-                final IColumn rightCol = right.getColumn(ordCol.colName);
-                final boolean leftMissing = leftCol.isMissing(i);
-                final boolean rightMissing = rightCol.isMissing(j);
-                if (leftMissing && rightMissing) {
-                    outcome = 0;
-                } else if (leftMissing) {
-                    outcome = 1;
-                } else if (rightMissing) {
-                    outcome = -1;
-                } else {
-                    switch (left.getSchema().getKind(ordCol.colName)) {
-                        case String:
-                            outcome = leftCol.getString(i).compareTo(rightCol.getString(j));
-                            break;
-                        case Date:
-                            outcome = leftCol.getDate(i).compareTo(rightCol.getDate(j));
-                            break;
-                        case Int:
-                            outcome = Integer.compare(leftCol.getInt(i), rightCol.getInt(j));
-                            /*if(outcome == 1)
-                                System.out.printf("Left is larger%n");
-                            else if(outcome == -1)
-                                System.out.printf("Right is larger%n");
-                            else
-                                System.out.printf("Its a tie!%n");*/
-                            break;
-                        case Json:
-                            outcome = leftCol.getString(i).compareTo(rightCol.getString(j));
-                            break;
-                        case Double:
-                            outcome = Double.compare(leftCol.getDouble(i), rightCol.getDouble(j));
-                            break;
-                        case Duration:
-                            outcome = leftCol.getDuration(i).compareTo(rightCol.getDuration(j));
-                            break;
-                    }
-                }
-                if (!ordCol.isAscending) {
-                    outcome *= -1;
-                }
-                if (outcome == -1) {
-                    mergeLeft[k] = true;
-                    i++;
-                    k++;
-                    break;
-                } else if (outcome == 1) {
-                    mergeLeft[k] = false;
-                    j++;
-                    k++;
-                    break;
-                }
-            }
-            if (outcome == 0) {
-                /*System.out.printf("Strange: Its a tie!%n");*/
-                mergeLeft[k] = true;
-                mergeLeft[k + 1] = false;
-                i++;
-                j++;
-                k += 2;
-            }
-        }
-        if (i < left.getQuantileSize()) {
-            while (k < length) {
-                mergeLeft[k] = true;
-                k++;
-            }
-        } else if (j < right.getQuantileSize()) {
-            while (k < length) {
-                mergeLeft[k] = false;
-                k++;
-            }
-        }
-        return mergeLeft;
-    }
-
-    private ObjectArrayColumn mergeColumns(@NonNull final IColumn left, @NonNull final IColumn right,
+    private ObjectArrayColumn mergeColumns(@NonNull final IColumn left,
+                                           @NonNull final IColumn right,
                                            @NonNull final boolean[] mergeLeft) {
         if (mergeLeft.length != (left.sizeInRows() + right.sizeInRows())) {
             throw new InvalidParameterException("Length of mergeOrder must equal " +
                     "sum of lengths of the columns");
         }
-        final ObjectArrayColumn merged = new ObjectArrayColumn(left.getDescription(), mergeLeft.length);
+        final ObjectArrayColumn merged = new
+                ObjectArrayColumn(left.getDescription(), mergeLeft.length);
         int i = 0, j = 0, k = 0;
         while (k < mergeLeft.length) {
             if (mergeLeft[k]) {
@@ -188,7 +85,8 @@ public class QuantileSketch implements ISketch<Table, Table> {
         return merged;
     }
 
-    private ApproxRank[] mergeRanks(@NonNull final QuantileList left, @NonNull final QuantileList right,
+    private ApproxRank[] mergeRanks(@NonNull final QuantileList left,
+                                    @NonNull final QuantileList right,
                                     @NonNull final boolean[] mergeLeft) {
         final int length = left.getQuantileSize() + right.getQuantileSize();
         final ApproxRank[] mergedRank = new ApproxRank[length];
@@ -220,11 +118,12 @@ public class QuantileSketch implements ISketch<Table, Table> {
         return mergedRank;
     }
 
-    public QuantileList mergeQuantiles(@NonNull final QuantileList left, @NonNull final QuantileList right) {
+    @Override
+    public QuantileList add(@NonNull final QuantileList left, @NonNull final QuantileList right) {
         final int width = left.getSchema().getColumnCount();
         final int length = left.getQuantileSize() + right.getQuantileSize();
         final ObjectArrayColumn[] mergedCol = new ObjectArrayColumn[width];
-        final boolean[] mergeLeft = getMergeOrder(left, right);
+        final boolean[] mergeLeft = this.colSortOrder.getMergeOrder(left.quantile, right.quantile);
         for (int i = 0; i < width; i++) {
             mergedCol[i] = mergeColumns(left.getColumn(i), right.getColumn(i), mergeLeft);
         }
@@ -235,19 +134,16 @@ public class QuantileSketch implements ISketch<Table, Table> {
         return new QuantileList(mergedTable, mergedRank, mergedDataSize);
     }
 
-
     @Override
-    public Table zero() {
+    public QuantileList zero() {
+        //TODO
         return null;
     }
 
     @Override
-    public Table add(final Table left, final Table right) {
-        return null;
-    }
-
-    @Override
-    public Observable<PartialResult<Table>> create(final Table data) {
-        return null;
+    public Observable<PartialResult<QuantileList>> create(final Table data) {
+        QuantileList q = this.getQuantile(data);
+        PartialResult<QuantileList> result = new PartialResult<>(1.0, q);
+        return Observable.just(result);
     }
 }

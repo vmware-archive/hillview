@@ -3,7 +3,7 @@ package org.hiero.sketch;
 import java.util.Comparator;
 import java.util.Objects;
 
-public class MyCompare implements Comparator<Integer> {
+class MyCompare implements Comparator<Integer> {
     private MyCompare() {}
 
     static final MyCompare instance = new MyCompare();

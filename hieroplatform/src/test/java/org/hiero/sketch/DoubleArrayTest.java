@@ -14,7 +14,8 @@ import static org.junit.Assert.assertTrue;
  */
 public class DoubleArrayTest {
     private final int size = 100;
-    private static final ColumnDescription desc = new ColumnDescription("SQRT", ContentsKind.Double, true);
+    private static final ColumnDescription desc = new
+            ColumnDescription("SQRT", ContentsKind.Double, true);
 
     /**
      * Generates a double array with every fifth entry missing

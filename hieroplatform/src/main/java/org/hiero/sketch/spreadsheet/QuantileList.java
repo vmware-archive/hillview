@@ -10,7 +10,7 @@ import java.io.Serializable;
 import java.security.InvalidParameterException;
 
 public class QuantileList implements Serializable {
-    private final Table quantile;
+    public final Table quantile;
     private final ApproxRank[] approxRank;
     private final int dataSize;
 
@@ -28,7 +28,7 @@ public class QuantileList implements Serializable {
     public int getQuantileSize() { return this.quantile.getNumOfRows(); }
 
     /**
-     * @return The number of inputs rows over which these quantiles have been computed.
+     * @return The number of input rows over which these quantiles have been computed.
      */
     public int getDataSize() { return this.dataSize; }
 
@@ -36,11 +36,11 @@ public class QuantileList implements Serializable {
         return this.quantile.schema.getColumnIndex(colName);
     }
 
-    public IColumn getColumn( final int index ) {
+    public IColumn getColumn(final int index) {
         return this.quantile.getColumn(index);
     }
 
-    public IColumn getColumn( final String colName ) {
+    public IColumn getColumn(final String colName) {
         return this.quantile.getColumn(this.getColumnIndex(colName));
     }
 
@@ -52,24 +52,24 @@ public class QuantileList implements Serializable {
         return new RowSnapshot(this.quantile, rowIndex);
     }
 
-    public ApproxRank getRank(final int rowIndex) { return this.approxRank[rowIndex]; }
+    //public ApproxRank getRank(final int rowIndex) { return this.approxRank[rowIndex]; }
 
-    public int getLowerRank(final int rowIndex) { return this.approxRank[rowIndex].getLower(); }
+    public int getLowerRank(final int rowIndex) { return this.approxRank[rowIndex].lower; }
 
-    public int getUpperRank(final int rowIndex) { return this.approxRank[rowIndex].getUpper(); }
+    public int getUpperRank(final int rowIndex) { return this.approxRank[rowIndex].upper; }
 
     public String toString() {
         final StringBuilder builder = new StringBuilder();
         final IRowIterator rowIt = this.quantile.members.getIterator();
         int nextRow = rowIt.getNextRow();
-        while(nextRow != -1) {
-            for (final IColumn nextCol: this.quantile.columns){
-                builder.append(nextCol.asString(nextRow));
+        while (nextRow != -1) {
+            for (final IColumn col: this.quantile.columns) {
+                builder.append(col.asString(nextRow));
                 builder.append(", ");
             }
-            builder.append("Rank: (").append(String.valueOf(this.getLowerRank(nextRow)));
-            builder.append(", ").append(String.valueOf(this.getUpperRank(nextRow))).append(")");
-            builder.append(System.getProperty("line.separator"));
+            builder.append("Rank: (").append(this.getLowerRank(nextRow));
+            builder.append(", ").append(this.getUpperRank(nextRow)).append(")");
+            builder.append(System.lineSeparator());
             nextRow = rowIt.getNextRow();
         }
         return builder.toString();
