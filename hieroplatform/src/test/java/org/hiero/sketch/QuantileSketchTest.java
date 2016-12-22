@@ -8,9 +8,6 @@ import org.hiero.sketch.table.ListComparator;
 import org.hiero.sketch.table.Table;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import static junit.framework.TestCase.assertTrue;
 import static org.hiero.sketch.TableTest.getIntTable;
 
@@ -19,27 +16,39 @@ public class QuantileSketchTest {
     @Test
     public void testQuantile() {
         final int numCols = 2;
-        final List<ColumnOrientation> sortOrder = new ArrayList<ColumnOrientation>(numCols);
-        for (int i = 0; i < numCols; i++) {
-            sortOrder.add(i, new ColumnOrientation("Column" + String.valueOf(i), ((i % 2) == 0)));
-        }
         final int leftSize = 1000;
         final Table leftTable = getIntTable(leftSize, numCols);
+        ColumnSortOrder cso = new ColumnSortOrder();
+        for (String colName: leftTable.schema.getColumnNames()) {
+            cso.append(new ColumnOrientation(leftTable.schema.getDescription(colName), true));
+        }
+
         final int rightSize = 2000;
         final Table rightTable = getIntTable(rightSize, numCols);
-        final int resolution = 10;
-        final QuantileSketch qSketch = new QuantileSketch(sortOrder, resolution);
+        final int resolution = 100;
+        final QuantileSketch qSketch = new QuantileSketch(cso, resolution);
         final QuantileList leftQ = qSketch.getQuantile(leftTable);
-        final ListComparator leftComp = new ColumnSortOrder(sortOrder).getComparator(leftQ.quantile);
-        for(int i =0; i < leftQ.getQuantileSize() -1; i++ )
+        final ListComparator leftComp = cso.getComparator(leftQ.quantile);
+        //System.out.println(leftQ);
+        for(int i = 0; i < leftQ.getQuantileSize() -1; i++ )
             assertTrue(leftComp.compare(i,i+1) <= 0);
         final QuantileList rightQ = qSketch.getQuantile(rightTable);
-        final ListComparator rightComp = new ColumnSortOrder(sortOrder).getComparator(rightQ.quantile);
-        for(int i =0; i < rightQ.getQuantileSize() -1; i++ )
+        //System.out.println(rightQ);
+        final ListComparator rightComp = cso.getComparator(rightQ.quantile);
+        for(int i = 0; i < rightQ.getQuantileSize() -1; i++ )
             assertTrue(rightComp.compare(i,i+1) <= 0);
         final QuantileList mergedQ = qSketch.add(leftQ, rightQ);
-        final ListComparator mComp = new ColumnSortOrder(sortOrder).getComparator(mergedQ.quantile);
-        for(int i =0; i < mergedQ.getQuantileSize() -1; i++ )
+        ListComparator mComp = cso.getComparator(mergedQ.quantile);
+        for(int i = 0; i < mergedQ.getQuantileSize() -1; i++ )
             assertTrue(mComp.compare(i,i+1) <= 0);
+        int newSize = 20;
+        final QuantileList approxQ = mergedQ.compressApprox(newSize);
+        ListComparator approxComp = cso.getComparator(approxQ.quantile);
+        for(int i = 0; i < approxQ.getQuantileSize() -1; i++ )
+            assertTrue(approxComp.compare(i,i+1) <= 0);
+        final QuantileList exactQ = mergedQ.compressExact(newSize);
+        ListComparator exactComp = cso.getComparator(exactQ.quantile);
+        for(int i = 0; i < exactQ.getQuantileSize() -1; i++ )
+            assertTrue(exactComp.compare(i,i+1) <= 0);
     }
 }

@@ -1,13 +1,16 @@
 package org.hiero.sketch.spreadsheet;
 
+import org.hiero.sketch.table.ColumnDescription;
+
 import java.io.Serializable;
 
 public class ColumnOrientation implements Serializable {
-    public final String colName;
+    public final ColumnDescription columnDescription;
     public final boolean isAscending;
 
-    public ColumnOrientation(final String colName, final boolean isAscending) {
-        this.colName = colName;
+    public ColumnOrientation(final ColumnDescription colDesc,
+                             final boolean isAscending) {
+        this.columnDescription = colDesc;
         this.isAscending = isAscending;
     }
 }

@@ -3,33 +3,51 @@ package org.hiero.sketch.table;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.spreadsheet.ColumnOrientation;
 import org.hiero.sketch.table.api.IColumn;
+import org.hiero.sketch.table.api.ISchema;
 import org.hiero.sketch.table.api.IndexComparator;
+
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-public class ColumnSortOrder implements Iterable<ColumnOrientation>{
-    private final List<ColumnOrientation> sortOrder;
+public class ColumnSortOrder implements Iterable<ColumnOrientation> {
+    private final List<ColumnOrientation> columnOrientationList;
 
-    public ColumnSortOrder(List<ColumnOrientation> sortOrder) {
-        this.sortOrder = sortOrder;
+    public ColumnSortOrder() {
+        this.columnOrientationList = new ArrayList<ColumnOrientation>();
+    }
+
+    public void append(ColumnOrientation columnOrientation) {
+        this.columnOrientationList.add(columnOrientation);
+    }
+
+    /**
+     * Return a schema describing the columns in this sort order.
+     */
+    public ISchema toSchema() {
+        Schema newSchema = new Schema();
+        for (ColumnOrientation o: columnOrientationList) {
+            newSchema.append(o.columnDescription);
+        }
+        return newSchema;
     }
 
     @Override
     public Iterator<ColumnOrientation> iterator() {
-        return sortOrder.iterator();
+        return columnOrientationList.iterator();
     }
 
     /**
      * Returns a ListComparator for rows in a Table, based on the sort order.
-     * The table needs to share the schema of the Table data, but it could be a subset.
+     * The table and the list of Column Orientations need to be compatible.
      * @param inpData The Table we wish to sort.
      * @return A Comparator that compares two rows based on the Sort Order specified.
      */
     public ListComparator getComparator(@NonNull final Table inpData) {
         final List<IndexComparator> comparatorList = new ArrayList<IndexComparator>();
-        for (final ColumnOrientation ordCol : this.sortOrder) {
-            final IColumn nextCol = inpData.getColumn(ordCol.colName);
+        for (final ColumnOrientation ordCol : this.columnOrientationList) {
+            final IColumn nextCol = inpData.getColumn(ordCol.columnDescription.name);
             if (ordCol.isAscending) {
                 comparatorList.add(nextCol.getComparator());
             } else {
@@ -37,6 +55,16 @@ public class ColumnSortOrder implements Iterable<ColumnOrientation>{
             }
         }
         return new ListComparator(comparatorList);
+    }
+
+    public Integer[] getSortedRowOrder(@NonNull final Table table) {
+        final int size = table.getNumOfRows();
+        final Integer[] order = new Integer[size];
+        for (int i = 0; i < size; i++) {
+            order[i] = i;
+        }
+        Arrays.sort(order, this.getComparator(table));
+        return order;
     }
 
     /**
@@ -57,9 +85,9 @@ public class ColumnSortOrder implements Iterable<ColumnOrientation>{
         int outcome;
         while ((i < leftLength) && (j < rightLength)) {
             outcome = 0;
-            for (final ColumnOrientation ordCol : this.sortOrder) {
-                final IColumn leftCol = left.getColumn(ordCol.colName);
-                final IColumn rightCol = right.getColumn(ordCol.colName);
+            for (final ColumnOrientation ordCol : this.columnOrientationList) {
+                final IColumn leftCol = left.getColumn(ordCol.columnDescription.name);
+                final IColumn rightCol = right.getColumn(ordCol.columnDescription.name);
                 final boolean leftMissing = leftCol.isMissing(i);
                 final boolean rightMissing = rightCol.isMissing(j);
                 if (leftMissing && rightMissing) {
@@ -69,7 +97,7 @@ public class ColumnSortOrder implements Iterable<ColumnOrientation>{
                 } else if (rightMissing) {
                     outcome = -1;
                 } else {
-                    switch (left.schema.getKind(ordCol.colName)) {
+                    switch (left.schema.getKind(ordCol.columnDescription.name)) {
                         case String:
                             outcome = leftCol.getString(i).compareTo(rightCol.getString(j));
                             break;
