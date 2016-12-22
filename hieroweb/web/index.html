@@ -1,30 +1,31 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<!DOCTYPE HTML>
+<meta charset="utf-8">
 <html>
 <head>
-    <!-- Library for loading other JavaScript programs -->
-    <script src="require.js"></script>
+    <script type="text/javascript" src="./bundle.js" charset="utf-8"></script>
     <script>
-        requirejs(["hiero.js"]);
-
-        function onData(data) {
+         var hiero = this.hiero;
+         function onData(data) {
             console.log("onData: " + data.data);
             var span = document.getElementById("cell");
             span.textContent += "{" + data.data + "}";
             if (data.data === "0")
                 socket.onCompleted();
         };
-
         function cellClick() {
             console.log("cellClick");
             var span = document.getElementById("cell");
             span.textContent += "subscribed";
-            var req = new RpcRequest(0, "none", null);
+            console.log(hiero.person);
+            var x = hiero.inc(2);
+            var req = new hiero.RpcRequest("0", "none", []);
             req.invoke(onData);
         };
     </script>
     <link rel="stylesheet" href="hiero.css">
 </head>
 <body>
+    <H1>Hello</H1>
     <span id="cell" onclick="cellClick()">[ ]</span>
 </body>
 </html>

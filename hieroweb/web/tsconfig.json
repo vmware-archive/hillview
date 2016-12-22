@@ -1,6 +1,14 @@
 {
+  // This configuration is required to properly interoperate with webpack.
   "compilerOptions": {
-    "target": "es5",
-    "module": "amd"
-  }
+    // Output format is a module in the commonjs format.
+    "module": "commonjs",
+    "sourceMap": true,
+    "target": "es5"
+  },
+  "files": [
+    "hiero.ts",
+    "rpc.ts"
+  ],
+  "exclude": [ "node_modules" ]
 }

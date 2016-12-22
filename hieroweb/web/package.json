@@ -1,0 +1,20 @@
+{
+  "name": "hieroweb",
+  "version": "0.0.1",
+  "description": "Client side for hiero project",
+  "main": "hiero.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "mbudiu@vmware.com",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/mbudiu-vmw/hiero.git"
+  },
+  "dependencies": {
+    "rx": "^4.1.0",
+    "rx-dom": "^7.0.3"
+  }
+}

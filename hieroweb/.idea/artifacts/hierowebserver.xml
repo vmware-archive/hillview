@@ -5,7 +5,10 @@
       <element id="javaee-facet-resources" facet="hieroweb/web/Web" />
       <element id="directory" name="WEB-INF">
         <element id="directory" name="classes">
-          <element id="module-output" name="hieroweb" />
+          <element id="javaee-facet-classes" facet="hieroweb/web/Web" />
+        </element>
+        <element id="directory" name="lib">
+          <element id="library" level="project" name="Maven: com.google.code.gson:gson:2.8.0" />
         </element>
       </element>
     </root>
