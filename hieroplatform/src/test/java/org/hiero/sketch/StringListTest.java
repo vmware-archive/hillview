@@ -4,6 +4,7 @@ import org.hiero.sketch.table.ColumnDescription;
 import org.hiero.sketch.table.StringListColumn;
 import org.hiero.sketch.table.api.ContentsKind;
 import org.junit.Test;
+
 import static junit.framework.TestCase.*;
 
 /*

@@ -8,11 +8,11 @@ import org.hiero.sketch.table.api.*;
  */
 public class Table {
     @NonNull
-    private final ISchema schema;
+    public final ISchema schema;
     @NonNull
-    private final IColumn[] columns;
+    public final IColumn[] columns;
     @NonNull
-    private final IMembershipSet members;
+    public final IMembershipSet members;
 
     public Table(@NonNull final ISchema schema,
                  @NonNull final IColumn[] columns,
@@ -43,30 +43,81 @@ public class Table {
      * and only the rows contained in IMembership Set with consecutive numbering.
      * The order among the columns is preserved.
      */
-    public Table compress(@NonNull final ISubSchema subSchema) {
+    public Table compress(@NonNull final ISubSchema subSchema,
+                          @NonNull final IRowOrder rowOrder) {
         final ISchema newSchema = this.schema.project(subSchema);
         final int width = newSchema.getColumnCount();
         final IColumn[] compressedCols = new IColumn[width];
         for (int i = 0; i < width; i++) {
             final String colName = newSchema.getDescription(i).name;
             final int j = this.schema.getColumnIndex(colName);
-            compressedCols[i] = this.columns[j].compress(this.members);
+            compressedCols[i] = this.columns[j].compress(rowOrder);
         }
-        final IMembershipSet full = new FullMembership(this.members.getSize());
+        final IMembershipSet full = new FullMembership(rowOrder.getSize());
         return new Table(newSchema, compressedCols, full);
     }
 
     /**
+     * @param rowOrder Ordered set of rows to include in the compressed table.
+     * @return A compressed table containing only the rows contained in rowOrder.
+     */
+    public Table compress(final IRowOrder rowOrder) {
+        final ISubSchema subSchema = new FullSubSchema();
+        return compress(subSchema, rowOrder);
+    }
+
+    /**
      * Generates a table that contains all the columns, and only
-     * the rows contained in IMembership Set with consecutive numbering.
+     * the rows contained in IMembership Set members with consecutive numbering.
      */
     public Table compress() {
         final ISubSchema subSchema = new FullSubSchema();
-        return compress(subSchema);
+        return compress(subSchema, this.members);
     }
 
-    public String toString(){
-        return("Table, " + this.schema.getColumnCount() + " columns, "
-                + this.members.getSize() + " rows");
+    @Override
+    public String toString() {
+        final StringBuilder builder = new StringBuilder();
+        builder.append("Table, ").append(this.schema.getColumnCount()).append(" columns, ").append(this.members.getSize()).append(" rows");
+        builder.append(System.getProperty("line.separator"));
+        for (int i=0; i < this.schema.getColumnCount(); i++) {
+            builder.append(this.schema.getDescription(i).toString());
+        }
+        return builder.toString();
+    }
+
+    public String toLongString() {
+        final StringBuilder builder = new StringBuilder();
+        builder.append(this.toString());
+        builder.append(System.getProperty("line.separator"));
+        final IRowIterator rowIt = this.members.getIterator();
+        int nextRow = rowIt.getNextRow();
+        int count = 0;
+        while((nextRow != -1) && (count < 100)) {
+            for (final IColumn nextCol: this.columns){
+                builder.append(nextCol.asString(nextRow));
+                builder.append(", ");
+            }
+            builder.append(System.getProperty("line.separator"));
+            nextRow = rowIt.getNextRow();
+            count++;
+        }
+        return builder.toString();
+    }
+
+    public int getColumnIndex(final String colName) {
+        return this.schema.getColumnIndex(colName);
+    }
+
+    public IColumn getColumn(final String colName) {
+        return this.columns[this.schema.getColumnIndex(colName)];
+    }
+
+    public IColumn getColumn(final int index) {
+        return this.columns[index];
+    }
+
+    public int getNumOfRows() {
+        return this.members.getSize();
     }
 }

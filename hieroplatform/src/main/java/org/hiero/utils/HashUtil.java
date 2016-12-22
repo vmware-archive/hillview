@@ -79,7 +79,7 @@ public class HashUtil {
         }
     }
 
-    public static long nextPowerOfTwo(long x) {
+    private static long nextPowerOfTwo(long x) {
         if(x == 0L) {
             return 1L;
         } else {

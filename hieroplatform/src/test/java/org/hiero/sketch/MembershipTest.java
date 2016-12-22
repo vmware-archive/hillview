@@ -31,7 +31,7 @@ public class MembershipTest {
     }
 
     @Test
-    public void TestPartialDense() {
+    public void TestLazyMembership() {
         final FullMembership FM = new FullMembership(this.size);
         final LazyMembership PMD = new LazyMembership(FM, row -> (row % 2) == 0);
         assertTrue(PMD.isMember(6));
@@ -46,16 +46,21 @@ public class MembershipTest {
     }
 
     @Test
-    public void TestPartialSparse() {
+    public void TestSparseMembership() {
         final FullMembership FM = new FullMembership(this.size);
         final SparseMembership PMS = new SparseMembership(FM, row -> (row % 2) == 0);
         assertTrue(PMS.isMember(6));
         assertFalse(PMS.isMember(7));
         assertEquals(PMS.getSize(), 5);
+        final IntSet testSet = new IntSet();
         final IRowIterator IT = PMS.getIterator();
         int tmp = IT.getNextRow();
-        while (tmp >= 0)
+        while (tmp >= 0) {
+            testSet.add(tmp);
             tmp = IT.getNextRow();
+        }
+        final SparseMembership PMS1 = new SparseMembership(testSet);
+        assertTrue(PMS.getSize() == PMS1.getSize());
     }
 
     @Test
@@ -100,6 +105,8 @@ public class MembershipTest {
         final IMembershipSet UnionSet1 = MD.union(MD1);
         assertTrue(UnionSet1.isMember(36));
         assertFalse(UnionSet1.isMember(8));
+        final IMembershipSet LazyFull = MD.union(FM);
+        assertTrue(LazyFull.isMember(50));
     }
 
     @Test

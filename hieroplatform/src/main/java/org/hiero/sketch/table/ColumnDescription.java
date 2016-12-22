@@ -35,8 +35,7 @@ public class ColumnDescription {
         final ColumnDescription that = (ColumnDescription) o;
 
         if (this.allowMissing != that.allowMissing) return false;
-        if (!this.name.equals(that.name)) return false;
-        return this.kind == that.kind;
+        return this.name.equals(that.name) && (this.kind == that.kind);
     }
 
     @Override

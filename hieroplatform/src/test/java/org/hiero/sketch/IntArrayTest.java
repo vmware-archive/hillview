@@ -3,11 +3,13 @@ package org.hiero.sketch;
 import org.hiero.sketch.table.ColumnDescription;
 import org.hiero.sketch.table.IntArrayColumn;
 import org.hiero.sketch.table.api.ContentsKind;
+import org.hiero.sketch.table.api.IndexComparator;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import java.util.Arrays;
+import java.util.Random;
+
+import static org.junit.Assert.*;
 
 /**
  * Test for IntArrayColumn class
@@ -24,6 +26,32 @@ public class IntArrayTest {
                 col.setMissing(i);
         }
         return col;
+    }
+
+    public static IntArrayColumn getRandIntArray(final int size, final int range, final String name) {
+        final ColumnDescription desc = new ColumnDescription(name, ContentsKind.Int, false);
+        final IntArrayColumn col = new IntArrayColumn(desc, size);
+        final Random rn = new Random();
+        for (int i = 0; i < size; i++) {
+            col.set(i, rn.nextInt(range));
+            }
+        return col;
+    }
+
+    @Test
+    public void testRandArray(){
+        final int size =1000;
+        final int range = 1000;
+        final IntArrayColumn col = getRandIntArray(size, range, "Test");
+        final IndexComparator comp = col.getComparator();
+        final Integer[] order = new Integer[size];
+        for (int i = 0; i < size; i++) {
+            order[i] = i;
+        }
+        Arrays.sort(order, comp);
+        for (int i = 0; i < (size - 1); i++) {
+            assertTrue(col.getInt(order[i])<=  col.getInt(order[i+1]));
+        }
     }
 
     /* Test for constructor using length and no arrays*/

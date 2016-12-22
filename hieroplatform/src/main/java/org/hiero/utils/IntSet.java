@@ -1,16 +1,17 @@
 package org.hiero.utils;
 
+import java.util.Random;
+
 /**
  * A set of integers.
  * A simplified version of IntOpenHash from fastutil http://fastutil.di.unimi.it
  */
 public class IntSet {
-    // TODO: it would be nice if these were private
-    public int[] key; /* The array of the linear probing */
-    public int mask;
-    public int n;  /* the size of the array - 1 */
-    public boolean containsZero = false;  /* zero is reserved to signify an empty cell */
-    public int size;
+    private int[] key; /* The array of the linear probing */
+    private int mask;
+    private int n;  /* the size of the array - 1 */
+    private boolean containsZero = false;  /* zero is reserved to signify an empty cell */
+    private int size;
 
     private int maxFill;
     private final float f; /* the maximal load of the array */
@@ -142,6 +143,60 @@ public class IntSet {
         newSet.key = new int[this.n + 1];
         System.arraycopy(this.key, 0, newSet.key, 0, this.key.length);
         return newSet;
+    }
+
+    public IntSet sample(final int k, final long seed, final boolean useSeed) {
+        final IntSet sampleSet = new IntSet(k);
+        final Random psg;
+        if (useSeed)
+            psg = new Random(seed);
+        else
+            psg = new Random();
+        int randomKey = psg.nextInt(this.n);
+
+        for (int samples = 0; samples < k; samples++) {
+            while (this.key[randomKey & this.mask] == 0)
+                randomKey++;
+            sampleSet.add(this.key[randomKey & this.mask]);
+            randomKey++;
+        }
+        return sampleSet;
+    }
+
+    public IntSetIterator getIterator() {
+        return new IntSetIterator();
+    }
+
+    /* Iterator for IntSet. Returns -1 when done. Assumes IntSet is not mutated */
+    public class IntSetIterator {
+        private int pos;
+        private int c;
+        private boolean mustReturnZero;
+
+        private IntSetIterator() {
+            this.pos = IntSet.this.n;
+            this.c = IntSet.this.size;
+            this.mustReturnZero = IntSet.this.containsZero;
+        }
+
+        public boolean hasNext() {
+            return this.c != 0;
+        }
+
+        public int getNext() {
+            if (!this.hasNext())
+                return -1;
+            --this.c;
+            if (this.mustReturnZero) {
+                this.mustReturnZero = false;
+                return 0;
+            }
+            while (--this.pos >= 0) {
+                if(IntSet.this.key[this.pos] != 0)
+                    return IntSet.this.key[this.pos];
+            }
+            return -1;
+        }
     }
 }
 
