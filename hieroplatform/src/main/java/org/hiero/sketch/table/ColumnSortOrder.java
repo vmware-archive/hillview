@@ -71,7 +71,8 @@ public class ColumnSortOrder implements Iterable<ColumnOrientation> {
      * Given two Tables in sorted order, decide the order in which to merge them.
      * @param left The left side Table
      * @param right the right side Table
-     * @return A boolean array which
+     * @return A Boolean array where the i^th element is True if the i^th element in merged table
+     * comes form the Left.
      */
     public boolean[] getMergeOrder(@NonNull final Table left, @NonNull final Table right) {
         if (!left.schema.equals(right.schema)) {

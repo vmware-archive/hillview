@@ -70,8 +70,8 @@ public class QuantileList implements Serializable {
     }
 
     /**
-     * Given a RowOrder as input, compressApprox the QuantileList down to a new one containing only the
-     * sequence of rows specified by the input RowOrder.
+     * Helper method that given a RowOrder as input, compressApprox the QuantileList down to contain
+     * only the sequence of rows specified by the input RowOrder.
      * @param rowOrder The subset of Rows (and their ordering)
      * @return A new QuantileList
      */
@@ -88,10 +88,11 @@ public class QuantileList implements Serializable {
         return new QuantileList(this.quantile.compress(rowOrder), newRank, this.dataSize);
     }
 
-    /** Given a desired size parameter, compressApprox down to nearly the desired size.
-     * More precisely, we define the average gap to be the datasize/ the desired size.
+    /** Given a desired size parameter (newSize), compress down to nearly the desired size.
+     * In detail, we define the average gap to be the dataSize/newSize.
      * We greedily discard an entry if the gap between the previous and next
-     * entry in the quantile is less than the average gap.
+     * entry in the quantile is less than the average gap. This will result in a list whose
+     * size is between newSize and 2*newSize.
      */
     public QuantileList compressApprox(int newSize) {
         int oldSize = this.getQuantileSize();
@@ -115,6 +116,10 @@ public class QuantileList implements Serializable {
         return this.compress(rowOrder);
     }
 
+    /** Given a desired size parameter (newSize), compress down to exactly that size.
+     * More precisely, we compute the desired rank of element i (roughly i*dataSize/newSize).
+     * We then pick the element of the QuantileList whose rank is the closest.
+     */
     public QuantileList compressExact(int newSize) {
         int oldSize = this.getQuantileSize();
         if (oldSize <= newSize) { return this; }
@@ -126,6 +131,7 @@ public class QuantileList implements Serializable {
             while (this.getApproxRank(j) <= i * stepSize) {
                 if (j + 2 <= oldSize) { j++; }
             }
+            /* Check whether j or j-1 is closer to i*stepSize */
             if (this.getApproxRank(j) + this.getApproxRank(j - 1) <= 2* i * stepSize )
                 newSubset.add(j);
             else
