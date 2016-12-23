@@ -1,18 +1,41 @@
 package org.hiero.sketch.spreadsheet;
 
+import org.hiero.sketch.table.ArrayRowOrder;
 import org.hiero.sketch.table.RowSnapshot;
 import org.hiero.sketch.table.Table;
 import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IRowIterator;
+import org.hiero.sketch.table.api.IRowOrder;
 import org.hiero.sketch.table.api.ISchema;
 
 import java.io.Serializable;
 import java.security.InvalidParameterException;
+import java.util.ArrayList;
+import java.util.List;
 
+/**
+ * QuantileList is the data structure for storing Quantile information. It consists  of
+ * - dataSize: the size of the set that the quantiles are calculated over.
+ * - quantile: A table containing a sorted list of elements.
+ * - approxRank: an array containing approximate ranks for each element in the Table.
+ * Each entry has two fields: wins and losses. Wins represents the number of elements that are
+ * definitely less than  this element, Losses represents the number that are greater. For the
+ * remaining elements, we do not what know the result of the comparison will be. Hence for any element:
+ *      Wins + Losses < dataSize.
+ */
 public class QuantileList implements Serializable {
-    private final Table quantile;
+    public final Table quantile;
     private final ApproxRank[] approxRank;
     private final int dataSize;
+
+    /**
+     * An empty quantile list for a table with the specified schema.
+     */
+    public QuantileList(ISchema schema) {
+        this.approxRank = new ApproxRank[0];
+        this.dataSize = 0;
+        this.quantile = new Table(schema);
+    }
 
     public QuantileList(final Table quantile, final ApproxRank[] approxRank, final int dataSize) {
         this.approxRank = approxRank;
@@ -22,26 +45,20 @@ public class QuantileList implements Serializable {
         this.dataSize = dataSize;
     }
 
+
+
     /**
-     * @return The number of elements in the list of quanitles
+     * @return The number of elements in the list of quantiles
      */
     public int getQuantileSize() { return this.quantile.getNumOfRows(); }
 
     /**
-     * @return The number of inputs rows over which these quantiles have been computed.
+     * @return The number of input rows over which these quantiles have been computed.
      */
     public int getDataSize() { return this.dataSize; }
 
-    private int getColumnIndex(final String colName) {
-        return this.quantile.schema.getColumnIndex(colName);
-    }
-
-    public IColumn getColumn( final int index ) {
-        return this.quantile.getColumn(index);
-    }
-
-    public IColumn getColumn( final String colName ) {
-        return this.quantile.getColumn(this.getColumnIndex(colName));
+    public IColumn getColumn(final String colName) {
+        return this.quantile.getColumn(colName);
     }
 
     public ISchema getSchema() {
@@ -52,27 +69,120 @@ public class QuantileList implements Serializable {
         return new RowSnapshot(this.quantile, rowIndex);
     }
 
-    public ApproxRank getRank(final int rowIndex) { return this.approxRank[rowIndex]; }
+    /**
+     * @param rowIndex The index of an element in the table quantile (call it x).
+     * @return The number of elements in the dataset that are known to be less than x.
+     */
+    public int getWins(final int rowIndex) { return this.approxRank[rowIndex].wins; }
 
-    public int getLowerRank(final int rowIndex) { return this.approxRank[rowIndex].getLower(); }
+    /**
+     * @param rowIndex The index of an element in the table quantile (call it x).
+     * @return The number of elements in the dataset that are known to be greater than x.
+     */
+    public int getLosses(final int rowIndex) { return this.approxRank[rowIndex].losses; }
 
-    public int getUpperRank(final int rowIndex) { return this.approxRank[rowIndex].getUpper(); }
+    /**
+     * Given an element in the QuantileList (specified as an index in the table), return an estimate
+     * for the rank of that element in sorted (ascending) order.
+     * @param rowIndex The index of an element x in the table quantile.
+     * @return A guess for the rank of the element x. We know it lies in
+     * the interval (wins(x), dataSize - losses(x)), so the return the average of the two.
+     */
+    private double getApproxRank(final int rowIndex) {
+        return (((double) this.getWins(rowIndex) + this.getDataSize() -
+                this.getLosses(rowIndex)) / 2);
+    }
+
+    /**
+     * Helper method that given a RowOrder as input, compresses the QuantileList down to contain
+     * only the sequence of rows specified by the input RowOrder.
+     * @param rowOrder The subset of Rows (and their ordering)
+     * @return A new QuantileList
+     */
+    private QuantileList compress(IRowOrder rowOrder) {
+        ApproxRank[] newRank = new ApproxRank[rowOrder.getSize()];
+        final IRowIterator rowIt = rowOrder.getIterator();
+        int row = 0;
+        while (true) {
+            final int i = rowIt.getNextRow();
+            if (i == -1) { break; }
+            newRank[row] = new ApproxRank(this.getWins(i), this.getLosses(i));
+            row++;
+        }
+        return new QuantileList(this.quantile.compress(rowOrder), newRank, this.dataSize);
+    }
+
+    /** Given a desired size parameter (newSize), compress down to nearly the desired size.
+     * In detail, we define the average gap to be the dataSize/newSize.
+     * We greedily discard an entry if the gap between the previous and next
+     * entry in the quantile is less than the average gap. This will result in a list whose
+     * size is between newSize and 2*newSize.
+     * @param newSize The desired size of the compressed table.
+     * @return A QuantileList whose size lies in (newSize, 2*newSize), unless the size of the List
+     * is already smaller than newSize, in which case we return the existing List.
+     */
+    public QuantileList compressApprox(int newSize) {
+        int oldSize = this.getQuantileSize();
+        if (oldSize <= newSize) { return this; }
+        //System.out.printf("Shrinking from size %d down to %d:%n", oldSize, newSize);
+        double avgGap = ((double) this.getDataSize()) / (newSize -1);
+        List<Integer> newSubset = new ArrayList<>();
+        newSubset.add(0);
+        double open = this.getApproxRank(0);
+        double close;
+        for (int i = 1; i < oldSize - 1; i++) {
+            close = this.getApproxRank(i+1);
+            if (close - open > avgGap) {
+                newSubset.add(i);
+                open = this.getApproxRank(i);
+            }
+        }
+        newSubset.add(oldSize - 1);
+        IRowOrder rowOrder = new ArrayRowOrder(newSubset);
+        return this.compress(rowOrder);
+    }
+
+    /** Given a desired size parameter (newSize), compress down to exactly that size.
+     * More precisely, we compute the desired rank of element i (roughly i*dataSize/newSize).
+     * We then pick the element of the QuantileList whose rank is the closest.
+     * @param newSize The desired size of the compressed table.
+     * @return A QuantileList of size newSize, computed as described above.
+     */
+    public QuantileList compressExact(int newSize) {
+        int oldSize = this.getQuantileSize();
+        if (oldSize <= newSize) { return this; }
+        List<Integer> newSubset = new ArrayList<>();
+        double stepSize = ((double) this.getDataSize()) / (newSize - 1);
+        newSubset.add(0);
+        int j = 0;
+        for (int i = 1; i < newSize - 1; i++) {
+            while (this.getApproxRank(j) <= i * stepSize) {
+                if (j + 2 <= oldSize) { j++; }
+            }
+            /* Check whether j or j-1 is closer to i*stepSize */
+            if (this.getApproxRank(j) + this.getApproxRank(j - 1) <= 2* i * stepSize )
+                newSubset.add(j);
+            else
+                newSubset.add(j - 1);
+        }
+        newSubset.add(oldSize - 1);
+        IRowOrder rowOrder = new ArrayRowOrder(newSubset);
+        return this.compress(rowOrder);
+    }
 
     public String toString() {
         final StringBuilder builder = new StringBuilder();
         final IRowIterator rowIt = this.quantile.members.getIterator();
         int nextRow = rowIt.getNextRow();
-        while(nextRow != -1) {
-            for (final IColumn nextCol: this.quantile.columns){
-                builder.append(nextCol.asString(nextRow));
+        while (nextRow != -1) {
+            for (final String colName: this.quantile.schema.getColumnNames()) {
+                builder.append(this.getColumn(colName).asString(nextRow));
                 builder.append(", ");
             }
-            builder.append("Rank: (").append(String.valueOf(this.getLowerRank(nextRow)));
-            builder.append(", ").append(String.valueOf(this.getUpperRank(nextRow))).append(")");
-            builder.append(System.getProperty("line.separator"));
+            builder.append("Approx Rank: ").append(this.getApproxRank(nextRow));
+            builder.append(System.lineSeparator());
             nextRow = rowIt.getNextRow();
         }
         return builder.toString();
     }
 }
-

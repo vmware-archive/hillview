@@ -13,7 +13,8 @@ public class TableTest {
 
     public static Table getIntTable(final int size, final int numCols) {
         final IColumn[] columns = new IColumn[numCols];
-        final int range = size/10;
+        double exp = 1.0/numCols;
+        final int range = (int) Math.pow(size, exp);
         for (int i = 0; i < numCols; i++) {
             final String colName = "Column" + String.valueOf(i);
             columns[i] = getRandIntArray(size, range, colName);

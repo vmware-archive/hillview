@@ -5,12 +5,12 @@ import org.hiero.sketch.spreadsheet.Histogram1D;
 import org.hiero.sketch.table.DoubleArrayColumn;
 import org.hiero.sketch.table.FullMembership;
 import org.junit.Test;
-import static junit.framework.Assert.assertEquals;
 
+import static org.junit.Assert.assertEquals;
 
 public class Histogram1DTest {
     @Test
-    public void testHistogram1D() throws Exception {
+    public void testHistogram1D() {
         final int bucketnum = 110;
         BucketsDescriptionEqSize buckDes = new BucketsDescriptionEqSize(0,100,bucketnum);
         Histogram1D hist = new Histogram1D(buckDes);

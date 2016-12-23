@@ -5,7 +5,7 @@ package org.hiero.sketch.spreadsheet;
  * The implementations will contain the boundaries of buckets. All buckets are left-inclusive and right-exclusive,
  * except the right most bucket which is right-inclusive.
  */
-public interface IBucketsDescription1D {
+interface IBucketsDescription1D {
 
     int getNumOfBuckets();
 

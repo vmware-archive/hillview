@@ -1,25 +1,29 @@
 package org.hiero.sketch.table;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IRow;
 import org.hiero.sketch.table.api.ISchema;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
 
+/**
+ * The copy of the data in a row of the table.
+ * This is quite inefficient, it should be used rarely.
+ */
 public class RowSnapshot implements IRow {
-
     @NonNull
     private final ISchema schema;
-    @NonNull
-    private final List<Object> field = new ArrayList<Object>();
 
-    public RowSnapshot(final Table data, final int rowIndex) {
+    /**
+     * Maps a column name to a value.
+     */
+    @NonNull
+    private final HashMap<String, Object> field = new HashMap<String, Object>();
+
+    public RowSnapshot(@NonNull final Table data, final int rowIndex) {
         this.schema = data.schema;
-        for(final IColumn col: data.columns) {
-            final int i = this.schema.getColumnIndex(col.getName());
-            this.field.add(i, col.getObject(rowIndex));
+        for(final String colName : this.schema.getColumnNames()) {
+            this.field.put(colName, data.getColumn(colName).getObject(rowIndex));
         }
     }
 
@@ -34,7 +38,20 @@ public class RowSnapshot implements IRow {
     }
 
     @Override
-    public Object get(final int colIndex) {
-        return this.field.get(colIndex);
+    public Object get(@NonNull String colName) {
+        return this.field.get(colName);
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder builder = new StringBuilder();
+        boolean first = true;
+        for (final String nextCol: this.schema.getColumnNames()) {
+            if (!first)
+                builder.append(", ");
+            builder.append(this.field.get(nextCol).toString());
+            first = false;
+        }
+        return builder.toString();
     }
 }

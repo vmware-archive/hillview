@@ -8,13 +8,9 @@ public interface IRow {
 
     ISchema getSchema();
 
-    Object get(int colIndex);
-
-    default Object get(final String colName) {
-        return this.get(this.getSchema().getColumnIndex(colName));
-    }
+    Object get(final String colName);
 
     default ContentsKind getKind(final String colName) {
-        return this.getSchema().getDescription(this.getSchema().getColumnIndex(colName)).kind;
+        return this.getSchema().getKind(colName);
     }
 }

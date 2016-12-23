@@ -1,6 +1,8 @@
 package org.hiero.sketch;
 
-import akka.actor.*;
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import akka.actor.Props;
 import akka.util.Timeout;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -8,18 +10,12 @@ import junit.framework.TestCase;
 import org.hiero.sketch.dataset.LocalDataSet;
 import org.hiero.sketch.dataset.RemoteDataSet;
 import org.hiero.sketch.dataset.api.*;
-import org.hiero.sketch.remoting.SketchOperation;
 import org.hiero.sketch.remoting.SketchClientActor;
+import org.hiero.sketch.remoting.SketchOperation;
 import org.hiero.sketch.remoting.SketchServerActor;
-import static akka.pattern.Patterns.ask;
-import static junit.framework.TestCase.fail;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
 import rx.Observable;
 import rx.Subscriber;
 import scala.concurrent.Await;
@@ -29,6 +25,11 @@ import scala.concurrent.duration.Duration;
 import java.io.File;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static akka.pattern.Patterns.ask;
+import static junit.framework.TestCase.fail;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * Remoting tests for Akka.
