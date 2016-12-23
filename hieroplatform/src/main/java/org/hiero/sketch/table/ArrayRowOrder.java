@@ -17,7 +17,7 @@ public class ArrayRowOrder implements IRowOrder {
 
     public ArrayRowOrder(final int[] order) {
         this.size = order.length;
-        this.sortedRows = new ArrayList<>(this.size);
+        this.sortedRows = new ArrayList<Integer>(this.size);
         for (int i = 0; i < this.size; i++) {
             this.sortedRows.add(order[i]);
         }

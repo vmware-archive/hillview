@@ -1,9 +1,10 @@
 package org.hiero.sketch.table;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.hiero.sketch.spreadsheet.ColumnOrientation;
+import org.hiero.sketch.spreadsheet.ColumnSortOrientation;
 import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.ISchema;
+import org.hiero.sketch.table.api.ISubSchema;
 import org.hiero.sketch.table.api.IndexComparator;
 
 import java.util.ArrayList;
@@ -11,15 +12,22 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-public class ColumnSortOrder implements Iterable<ColumnOrientation> {
-    private final List<ColumnOrientation> columnOrientationList;
+/**
+ * This class specifies an ordering over all records that share a particular schema. These could be
+ * records in a single table, or across distinct tables (possibly with different schemas).
+ * A RecordOrder is specified by an ordered list of Column names, along with orientations for each.
+ * As long as a record contains all these columns, we can project onto just these columns and order
+ * the record.
+ */
+public class RecordOrder implements Iterable<ColumnSortOrientation> {
+    private final List<ColumnSortOrientation> sortOrientationList;
 
-    public ColumnSortOrder() {
-        this.columnOrientationList = new ArrayList<ColumnOrientation>();
+    public RecordOrder() {
+        this.sortOrientationList = new ArrayList<ColumnSortOrientation>();
     }
 
-    public void append(ColumnOrientation columnOrientation) {
-        this.columnOrientationList.add(columnOrientation);
+    public void append(ColumnSortOrientation columnSortOrientation) {
+        this.sortOrientationList.add(columnSortOrientation);
     }
 
     /**
@@ -27,27 +35,38 @@ public class ColumnSortOrder implements Iterable<ColumnOrientation> {
      */
     public ISchema toSchema() {
         Schema newSchema = new Schema();
-        for (ColumnOrientation o: columnOrientationList) {
+        for (ColumnSortOrientation o: sortOrientationList) {
             newSchema.append(o.columnDescription);
         }
         return newSchema;
     }
 
+    /**
+     * Return a subSchema describing the columns in this sort order.
+     */
+    public ISubSchema toSubSchema() {
+        final HashSubSchema subSchema = new HashSubSchema();
+        for (final ColumnSortOrientation ordCol : this) {
+            subSchema.add(ordCol.columnDescription.name);
+        }
+        return subSchema;
+    }
+
     @Override
-    public Iterator<ColumnOrientation> iterator() {
-        return columnOrientationList.iterator();
+    public Iterator<ColumnSortOrientation> iterator() {
+        return sortOrientationList.iterator();
     }
 
     /**
-     * Returns a ListComparator for rows in a Table, based on the sort order.
-     * The table and the list of Column Orientations need to be compatible.
-     * @param inpData The Table we wish to sort.
-     * @return A Comparator that compares two rows based on the Sort Order specified.
+     * Returns an IndexComparator for rows in a Table, based on the sort order.
+     * The table and the RecordOrder need to be compatible.
+     * @param table The Table we wish to sort.
+     * @return A Comparator that compares two records based on the Sort Order specified.
      */
-    public ListComparator getComparator(@NonNull final Table inpData) {
+    public IndexComparator getComparator(@NonNull final Table table) {
         final List<IndexComparator> comparatorList = new ArrayList<IndexComparator>();
-        for (final ColumnOrientation ordCol : this.columnOrientationList) {
-            final IColumn nextCol = inpData.getColumn(ordCol.columnDescription.name);
+        for (final ColumnSortOrientation ordCol : this.sortOrientationList) {
+            final IColumn nextCol = table.getColumn(ordCol.columnDescription.name);
             if (ordCol.isAscending) {
                 comparatorList.add(nextCol.getComparator());
             } else {
@@ -56,7 +75,12 @@ public class ColumnSortOrder implements Iterable<ColumnOrientation> {
         }
         return new ListComparator(comparatorList);
     }
-
+    /**
+     * Returns a ordering of rows in a Table, based on the sort order.
+     * The table and the RecordOrder need to be compatible.
+     * @param table The Table we wish to sort.
+     * @return A Comparator that compares two rows based on the Sort Order specified.
+     */
     public Integer[] getSortedRowOrder(@NonNull final Table table) {
         final int size = table.getNumOfRows();
         final Integer[] order = new Integer[size];
@@ -86,7 +110,7 @@ public class ColumnSortOrder implements Iterable<ColumnOrientation> {
         int outcome;
         while ((i < leftLength) && (j < rightLength)) {
             outcome = 0;
-            for (final ColumnOrientation ordCol : this.columnOrientationList) {
+            for (final ColumnSortOrientation ordCol : this.sortOrientationList) {
                 final IColumn leftCol = left.getColumn(ordCol.columnDescription.name);
                 final IColumn rightCol = right.getColumn(ordCol.columnDescription.name);
                 final boolean leftMissing = leftCol.isMissing(i);

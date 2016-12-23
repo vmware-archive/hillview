@@ -13,6 +13,10 @@ import java.util.HashMap;
 public class RowSnapshot implements IRow {
     @NonNull
     private final ISchema schema;
+
+    /**
+     * Maps a column name to a value.
+     */
     @NonNull
     private final HashMap<String, Object> field = new HashMap<String, Object>();
 

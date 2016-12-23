@@ -11,15 +11,26 @@ import rx.Observable;
 
 import java.security.InvalidParameterException;
 
+/**
+ * QuantileSketch is used to compute Quantiles over a distributed data set according to a prescribed
+ * ordering of the elements. Quantiles are represented using the QuantileList class.
+ * QuantileSketch provides two main methods:
+ * - getQuantile: It creates a QuantileList from an input Table
+ * - add: It combines two QuantileLists created from disjoint dataSets to create a single new
+ * QuantileList, that captures Quantile information for the union.
+ * It stores the following objects:
+ * - resolution: the desired number of quantiles.
+ * - colSortOrder: the order and orientation of the columns to define the sorted order.
+ */
 public class QuantileSketch implements ISketch<Table, QuantileList> {
     private final int resolution;
-    private final ColumnSortOrder colSortOrder;
+    private final RecordOrder colSortOrder;
 
     /**
      * @param sortOrder The list of column orientations.
      * @param resolution Number of buckets: percentiles correspond to 100 buckets etc.
      */
-    public QuantileSketch(final ColumnSortOrder sortOrder, final int resolution) {
+    public QuantileSketch(final RecordOrder sortOrder, final int resolution) {
         this.colSortOrder = sortOrder;
         this.resolution = resolution;
     }
@@ -27,6 +38,7 @@ public class QuantileSketch implements ISketch<Table, QuantileList> {
     /**
      * Given a table and a desired resolution for percentiles, return the answer for a sample.
      * The size of the sample is resolution*perBin, perBin is set to 100 by default.
+     * @param data The input data on which we want to compute Quantiles.
      * @return A table of size resolution, whose ith entry is ranked approximately i/resolution.
      */
     public QuantileList getQuantile(final Table data) {
@@ -50,14 +62,19 @@ public class QuantileSketch implements ISketch<Table, QuantileList> {
             approxRank[i] = new ApproxRank(i * step, (resolution - i) * step);
         }
         final IRowOrder quantileMembers = new ArrayRowOrder(quantile);
-        final HashSubSchema subSchema = new HashSubSchema();
-        for (final ColumnOrientation ordCol : this.colSortOrder) {
-            subSchema.add(ordCol.columnDescription.name);
-        }
-        return new QuantileList(sampleTable.compress(subSchema, quantileMembers),
+        return new QuantileList(sampleTable.compress(colSortOrder.toSubSchema(), quantileMembers),
                 approxRank, dataSize);
     }
 
+    /**
+     * Given two Columns left and right, merge them to a single Column, using the Boolean
+     * array mergeLeft which represents the order in which elements merge. mergeLeft[i] = true means
+     * the i^th element comes from the left column.
+     * @param left The left column
+     * @param right The right column
+     * @param mergeLeft The order in which to merge the two columns.
+     * @return The merged column.
+     */
     private ObjectArrayColumn mergeColumns(@NonNull final IColumn left,
                                            @NonNull final IColumn right,
                                            @NonNull final boolean[] mergeLeft) {
@@ -80,7 +97,15 @@ public class QuantileSketch implements ISketch<Table, QuantileList> {
         }
         return merged;
     }
-
+    /**
+     * Given two QuantileLists left and right, compute the number of Wins and Losses for the
+     * elements in the merged order, represented by Boolean array mergeLeft which represents the
+     * order in which elements merge.
+     * @param left The left column
+     * @param right The right column
+     * @param mergeLeft The order in which to merge the two columns.
+     * @return The ApproxRanks (wins and losses) for elements in the merged QuantileList.
+     */
     private ApproxRank[] mergeRanks(@NonNull final QuantileList left,
                                     @NonNull final QuantileList right,
                                     @NonNull final boolean[] mergeLeft) {
@@ -89,16 +114,13 @@ public class QuantileSketch implements ISketch<Table, QuantileList> {
         int i = 0, j = 0, lower, upper;
         for (int k = 0; k < length; k++) {
             if (mergeLeft[k]) { /* i lost to j, so we insert i next*/
-                 /*
-                 *  Entry i gets its own lowerRank + the lowerRank for the biggest entry on
+                 /* Entry i gets its own lowerRank + the lowerRank for the biggest entry on
                  *  the right that lost to it. This is either the wins Rank of j-1, or 0 if i beat
-                 *  nobody on the right (which means j = 0);
-                 */
+                 *  nobody on the right (which means j = 0);*/
                 lower = left.getWins(i) + ((j > 0) ? right.getWins(j - 1) : 0);
                 /*  Similarly, its losses bound is its own losses bound + the losses bound of the
                  *  smallest element on the right that beat it. This is the losses rank of j if the
-                 *  right hand side has not been exhausted, in which case it is 0.
-                 */
+                 *  right hand side has not been exhausted, in which case it is 0. */
                 upper = left.getLosses(i) +
                         ((j < right.getQuantileSize()) ? right.getLosses(j) : 0);
                 mergedRank[k] = new ApproxRank(lower, upper);
@@ -114,6 +136,13 @@ public class QuantileSketch implements ISketch<Table, QuantileList> {
         return mergedRank;
     }
 
+
+    /**
+     * Given two QuantileLists left and right, merge them to a single QuantileList.
+     * @param left The left Quantile
+     * @param right The right Quantile
+     * @return The merged Quantile
+     */
     @Override
     public QuantileList add(@NonNull final QuantileList left, @NonNull final QuantileList right) {
         if (!left.getSchema().equals(right.getSchema()))
@@ -134,9 +163,6 @@ public class QuantileSketch implements ISketch<Table, QuantileList> {
         final int mergedDataSize = left.getDataSize() + right.getDataSize();
         return new QuantileList(mergedTable, mergedRank, mergedDataSize);
     }
-
-
-
 
     @Override
     public QuantileList zero() {

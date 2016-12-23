@@ -11,8 +11,13 @@ import java.util.HashMap;
 public class Table {
     @NonNull
     public final ISchema schema;
+
+    /**
+     * Maps columns name to an IColumn.
+     */
     @NonNull
     private final HashMap<String, IColumn> columns;
+
     @NonNull
     public final IMembershipSet members;
 
@@ -54,7 +59,7 @@ public class Table {
     }
 
     /**
-     * Generates a table that contains only the columns referred to by subSchema,
+     * Compress generates a table that contains only the columns referred to by subSchema,
      * and only the rows contained in IMembership Set with consecutive numbering.
      * The order among the columns is preserved.
      */
@@ -92,10 +97,9 @@ public class Table {
 
     @Override
     public String toString() {
-        String builder = "Table, " + this.schema.getColumnCount() + " columns, " +
+        return "Table, " + this.schema.getColumnCount() + " columns, " +
                 this.members.getSize() + " rows" +
                 System.getProperty("line.separator");
-        return builder;
     }
 
     public String toLongString() {
@@ -105,7 +109,8 @@ public class Table {
         final IRowIterator rowIt = this.members.getIterator();
         int nextRow = rowIt.getNextRow();
         int count = 0;
-        while ((nextRow != -1) && (count < 100)) {
+        int rowsToDisplay = 100;
+        while ((nextRow != -1) && (count < rowsToDisplay)) {
             RowSnapshot rs = new RowSnapshot(this, nextRow);
             builder.append(rs.toString());
             builder.append(System.getProperty("line.separator"));

@@ -13,6 +13,16 @@ import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * QuantileList is the data structure for storing Quantile information. It consists  of
+ * - dataSize: the size of the set that the quantiles are calculated over.
+ * - quantile: A table containing a sorted list of elements.
+ * - approxRank: an array containing approximate ranks for each element in the Table.
+ * Each entry has two fields: wins and losses. Wins represents the number of elements that are
+ * definitely less than  this element, Losses represents the number that are greater. For the
+ * remaining elements, we do not what know the result of the comparison will be. Hence for any element:
+ *      Wins + Losses < dataSize.
+ */
 public class QuantileList implements Serializable {
     public final Table quantile;
     private final ApproxRank[] approxRank;
@@ -59,18 +69,32 @@ public class QuantileList implements Serializable {
         return new RowSnapshot(this.quantile, rowIndex);
     }
 
-    //public ApproxRank getRank(final int rowIndex) { return this.approxRank[rowIndex]; }
-
+    /**
+     * @param rowIndex The index of an element in the table quantile (call it x).
+     * @return The number of elements in the dataset that are known to be less than x.
+     */
     public int getWins(final int rowIndex) { return this.approxRank[rowIndex].wins; }
 
+    /**
+     * @param rowIndex The index of an element in the table quantile (call it x).
+     * @return The number of elements in the dataset that are known to be greater than x.
+     */
     public int getLosses(final int rowIndex) { return this.approxRank[rowIndex].losses; }
 
+    /**
+     * Given an element in the QuantileList (specified as an index in the table), return an estimate
+     * for the rank of that element in sorted (ascending) order.
+     * @param rowIndex The index of an element x in the table quantile.
+     * @return A guess for the rank of the element x. We know it lies in
+     * the interval (wins(x), dataSize - losses(x)), so the return the average of the two.
+     */
     private double getApproxRank(final int rowIndex) {
-        return (((double) this.getWins(rowIndex) + this.getDataSize() - this.getLosses(rowIndex)) / 2);
+        return (((double) this.getWins(rowIndex) + this.getDataSize() -
+                this.getLosses(rowIndex)) / 2);
     }
 
     /**
-     * Helper method that given a RowOrder as input, compressApprox the QuantileList down to contain
+     * Helper method that given a RowOrder as input, compresses the QuantileList down to contain
      * only the sequence of rows specified by the input RowOrder.
      * @param rowOrder The subset of Rows (and their ordering)
      * @return A new QuantileList
@@ -93,6 +117,9 @@ public class QuantileList implements Serializable {
      * We greedily discard an entry if the gap between the previous and next
      * entry in the quantile is less than the average gap. This will result in a list whose
      * size is between newSize and 2*newSize.
+     * @param newSize The desired size of the compressed table.
+     * @return A QuantileList whose size lies in (newSize, 2*newSize), unless the size of the List
+     * is already smaller than newSize, in which case we return the existing List.
      */
     public QuantileList compressApprox(int newSize) {
         int oldSize = this.getQuantileSize();
@@ -111,7 +138,6 @@ public class QuantileList implements Serializable {
             }
         }
         newSubset.add(oldSize - 1);
-        //System.out.printf("Desired size %d, actual size %d:%n", newSize, newSubset.size());
         IRowOrder rowOrder = new ArrayRowOrder(newSubset);
         return this.compress(rowOrder);
     }
@@ -119,6 +145,8 @@ public class QuantileList implements Serializable {
     /** Given a desired size parameter (newSize), compress down to exactly that size.
      * More precisely, we compute the desired rank of element i (roughly i*dataSize/newSize).
      * We then pick the element of the QuantileList whose rank is the closest.
+     * @param newSize The desired size of the compressed table.
+     * @return A QuantileList of size newSize, computed as described above.
      */
     public QuantileList compressExact(int newSize) {
         int oldSize = this.getQuantileSize();
