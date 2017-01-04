@@ -1,5 +1,3 @@
-package org.hiero.web;
-
 import com.google.gson.JsonElement;
 import com.google.gson.internal.Streams;
 import com.google.gson.stream.JsonReader;
@@ -25,12 +23,14 @@ public class RpcServer {
 
     public RpcServer() {
         this.objects = new HashMap<String, RpcTarget>();
+        this.addObject(new SampleTarget("0"));
     }
 
     private void addObject(@NonNull RpcTarget object) {
         if (this.objects.containsKey(object.objectId))
             throw new RuntimeException("Object with id " + object.objectId + " already in map");
         this.objects.put(object.objectId, object);
+        object.setServer(this);
     }
 
     private RpcTarget getObject(String id) {
@@ -55,7 +55,7 @@ public class RpcServer {
 
     @OnMessage
     public void onMessage(@NonNull String message, @NonNull Session session) {
-        LOGGER.log(Level.FINE, "New message from Client [{0}]: {1}",
+        LOGGER.log(Level.INFO, "New message from Client [{0}]: {1}",
                 new Object[] {session.getId(), message});
 
         RpcRequest req;

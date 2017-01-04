@@ -3,8 +3,9 @@ Big data spreadsheet
 
 ## Requirements
 
-* Ubuntu Linux, Hadoop filesystem, Maven build system, Tomcat web application server, TypeScript
+* Ubuntu Linux, Hadoop filesystem, Maven build system
 * IDEA Intellij for development
+* Additional dependences listed in [./hieroweb/README.md]
 
 > $: sudo apt-get install maven
 
@@ -43,15 +44,6 @@ the following to your ~/.bashrc or ~/.zshrc.
 
 > ```export JAVA_HOME="<path-to-jdk-folder>"```
 
-## Install typescript and JavaScript libraries
-
-sudo npm install -g typescript rx-dom
-
-## Install Apache Tomcat web application server
-
-Use version 8.5.8.
-Download the binaries from http://tomcat.apache.org/download-80.cgi and untar in the project folder.
-
 ## Setup IntelliJ IDEA
 
 First, download and install Intellij IDEA:
@@ -61,26 +53,23 @@ in a place of your choice and run the shell script
 
 ## Project structure
 
-Hiero is broken down into two separate projects:
-* hieroplatform: pure Java, includes the entire back-end
-* hieroweb: the web server, web client and web services; links to hieroplatform
+Hiero is broken down into two separate projects.
 
-## Import Hiero into IntelliJ IDEA
+* hieroplatform: pure Java, includes the entire back-end.  `hieroplatform` can be
+developed using the free (community edition) of Intellij IDEA.
 
-To load the project that you want to contribute to, move to the corresponding folder: `cd hieroplatform`
-or `cd hieroweb`.
+* hieroweb: the web server, web client and web services; links to
+hieroplatform `hieroweb` uses features of Intellij Ultimate.  TODO:
+integrate it with the maven build system.
 
-Next, import the hiero project inside IntelliJ.  On the welcome
-screen, select the "import project" option, point to the "pom.xml"
-file inside the hiero folder, click "next" a few times and you're good
-to go.
-To build the project from the commandline type:
+## Loding into IntelliJ IDEA
 
-> $: mvn package
+To load the project that you want to contribute to, move to the
+corresponding folder: `cd hieroplatform` or `cd hieroweb` and start
+intellij there.
 
-This will build the project, run the tests, and then produce a folder
-named "target/" with the hiero JAR inside it.
+The first time you start Intellij you must import the project: on the
+welcome screen, select the "import project" option, point to the
+"pom.xml" file inside the hiero folder, click "next" a few times and
+you're good to go.
 
-To run only the tests:
-
-> $: mvn test
