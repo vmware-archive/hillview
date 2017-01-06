@@ -1,5 +1,3 @@
-package org.hiero.web;
-
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 

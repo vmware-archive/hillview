@@ -1,13 +1,10 @@
-package org.hiero.web;
-
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import javax.websocket.Session;
 
 public class SampleTarget extends RpcTarget {
-    public SampleTarget(@NonNull String objectId,
-                        @NonNull RpcServer server) {
-        super(objectId, server);
+    public SampleTarget(@NonNull String objectId) {
+        super(objectId);
     }
 
     public void execute(@NonNull RpcRequest request, @NonNull Session session) {

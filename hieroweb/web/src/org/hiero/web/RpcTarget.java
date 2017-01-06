@@ -1,5 +1,3 @@
-package org.hiero.web;
-
 import com.google.gson.JsonElement;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -9,10 +7,13 @@ import java.util.logging.Level;
 
 public abstract class RpcTarget {
     public final String objectId;
-    public final RpcServer server;
+    RpcServer server;
 
-    RpcTarget(@NonNull String objectId, @NonNull RpcServer server) {
+    RpcTarget(@NonNull String objectId) {
         this.objectId = objectId;
+    }
+
+    void setServer(@NonNull RpcServer server) {
         this.server = server;
     }
 
