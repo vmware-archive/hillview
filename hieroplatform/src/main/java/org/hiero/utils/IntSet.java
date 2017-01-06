@@ -34,6 +34,10 @@ public class IntSet {
         }
     }
 
+    /**
+     * Create an IntSet
+     * @param expected The expected number of elements.
+     */
     public IntSet(final int expected) {
         this(expected, 0.75F);
     }

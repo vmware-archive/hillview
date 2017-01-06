@@ -17,14 +17,21 @@ import java.security.InvalidParameterException;
  * QuantileSketch provides two main methods:
  * - getQuantile: It creates a QuantileList from an input Table
  * - add: It combines two QuantileLists created from disjoint dataSets to create a single new
- * QuantileList, that captures Quantile information for the union.
+ *   QuantileList, that captures Quantile information for the union.
  * It stores the following objects:
  * - colSortOrder: the order and orientation of the columns to define the sorted order.
  * - resolution: the desired number of quantiles.
+ * - perBin: a knob to control the sample size taken fromm a table to create a QuantileList
+ *   (the size is perBin*resolution)
+ * - slack: a knob to control the size of the QuantileList that is shipped around
+ *   (the size is slack*resolution)
  */
 public class QuantileSketch implements ISketch<Table, QuantileList> {
     private final RecordOrder colSortOrder;
     private final int resolution;
+    private final int perBin = 50;
+    private final int slack = 5;
+
 
     /**
      * @param sortOrder The list of column orientations.
@@ -38,31 +45,33 @@ public class QuantileSketch implements ISketch<Table, QuantileList> {
     /**
      * Given a table and a desired resolution for percentiles, return the answer for a sample.
      * The size of the sample is resolution*perBin, perBin is set to 100 by default.
+     * The size of the Quantile table we return is slack*resolution. Since this table is shipped
+     * around, we might want to take perBin >> slack to improve the quality of our sample.
      * @param data The input data on which we want to compute Quantiles.
      * @return A table of size resolution, whose ith entry is ranked approximately i/resolution.
      */
     public QuantileList getQuantile(final Table data) {
-        /* Sample a set of rows from the table. */
-        final int perBin = 100;
-        final int dataSize = data.getNumOfRows();
-        /* Sample, then sort the sampled rows. */
-        final IMembershipSet sampleSet = data.members.sample(this.resolution * perBin);
+        /* Sample a set of rows from the table, then sort the sampled rows. */
+        final IMembershipSet sampleSet = data.members.sample(this.resolution * this.perBin);
         final Table sampleTable = data.compress(sampleSet);
         final Integer[] order = this.colSortOrder.getSortedRowOrder(sampleTable);
+        /* We will shrink the set of samples  down to slack*resolution. Number of samples might be
+            less than resolution*perBin, because of repetitions. */
+        final int newRes = Math.min(this.slack * this.resolution, sampleSet.getSize());
+        final int[] quantile = new int[newRes];
+        final WinsAndLosses[] winsAndLosses = new WinsAndLosses[newRes];
+        final double sampleStep = ((double) sampleSet.getSize()+1)/(newRes+ 1);
+        final double dataStep = ((double) data.getNumOfRows() +1)/(newRes +1);
         /* Pick equally spaced elements as the sample quantiles.
-        *  Our estimate for the rank of element i is the i*step. */
-        final int[] quantile = new int[this.resolution];
-        final WinsAndLosses[] winsAndLosses = new WinsAndLosses[this.resolution];
-        /* Number of samples might be less than resolution*perBin, because of repetitions */
-        final int sampleStep = sampleTable.getNumOfRows()/(resolution + 1);
-        final int dataStep = dataSize/(resolution +1);
-        for (int i = 0; i < resolution; i++) {
-            quantile[i] = order[ (i+1)* sampleStep - 1];
-            winsAndLosses[i] = new WinsAndLosses((i +1) * dataStep, (resolution - i) * dataStep);
+        *  Our estimate for the rank of element i is i*dataStep. */
+        for (int i = 0; i < newRes; i++) {
+            quantile[i] = order[(int) (Math.round((i + 1) * sampleStep) - 1)];
+            winsAndLosses[i] = new WinsAndLosses((int) Math.round((i +1) * dataStep),
+                    (int) Math.round((newRes - i - 1) * dataStep));
         }
         final IRowOrder quantileMembers = new ArrayRowOrder(quantile);
-        return new QuantileList(sampleTable.compress(colSortOrder.toSubSchema(), quantileMembers),
-                winsAndLosses, dataSize);
+        return new QuantileList(sampleTable.compress(this.colSortOrder.toSubSchema(),
+                quantileMembers), winsAndLosses, data.getNumOfRows());
     }
 
     /**
@@ -160,10 +169,9 @@ public class QuantileSketch implements ISketch<Table, QuantileList> {
         final Table mergedTable = new Table(left.getSchema(), mergedCol, full);
         final WinsAndLosses[] mergedRank = mergeRanks(left, right, mergeLeft);
         final int mergedDataSize = left.getDataSize() + right.getDataSize();
-        final int slack = 10;
         /* The returned quantileList can be of size up to slack* resolution*/
         return new QuantileList(mergedTable, mergedRank, mergedDataSize).
-                compressExact(slack*this.resolution);
+                compressExact(this.slack*this.resolution);
     }
 
     @Override

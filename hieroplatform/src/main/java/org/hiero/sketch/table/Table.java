@@ -77,7 +77,7 @@ public class Table {
         return new Table(newSchema, compressedCols, full);
     }
 
-    /**
+    /** Version of Compress that defaults subSchema to the entire Schema.
      * @param rowOrder Ordered set of rows to include in the compressed table.
      * @return A compressed table containing only the rows contained in rowOrder.
      */
@@ -102,14 +102,36 @@ public class Table {
                 System.getProperty("line.separator");
     }
 
-    public String toLongString() {
+    public String toLongString(int startRow, int rowsToDisplay) {
+        final StringBuilder builder = new StringBuilder();
+        builder.append(this.toString());
+        builder.append(System.getProperty("line.separator"));
+        final IRowIterator rowIt = this.members.getIterator();
+        int nextRow = rowIt.getNextRow();
+        while ((nextRow != startRow) && (nextRow != -1))
+            nextRow = rowIt.getNextRow();
+        if(nextRow == -1) {
+            builder.append("Start row not found!%n");
+            return builder.toString();
+        }
+        int count = 0;
+        while ((nextRow != -1) && (count < rowsToDisplay)) {
+            RowSnapshot rs = new RowSnapshot(this, nextRow);
+            builder.append(rs.toString());
+            builder.append(System.getProperty("line.separator"));
+            nextRow = rowIt.getNextRow();
+            count++;
+        }
+        return builder.toString();
+    }
+
+    public String toLongString(int rowsToDisplay) {
         final StringBuilder builder = new StringBuilder();
         builder.append(this.toString());
         builder.append(System.getProperty("line.separator"));
         final IRowIterator rowIt = this.members.getIterator();
         int nextRow = rowIt.getNextRow();
         int count = 0;
-        int rowsToDisplay = 100;
         while ((nextRow != -1) && (count < rowsToDisplay)) {
             RowSnapshot rs = new RowSnapshot(this, nextRow);
             builder.append(rs.toString());

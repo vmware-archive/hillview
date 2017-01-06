@@ -14,7 +14,6 @@ import java.util.function.Predicate;
  * The downside is the constructor that runs in linear time.
  */
 public class SparseMembership implements IMembershipSet {
-    private final int rowCount;
     @NonNull
     private final IntSet membershipMap;
     private static final int sizeEstimationSampleSize = 20;
@@ -35,7 +34,6 @@ public class SparseMembership implements IMembershipSet {
                 this.membershipMap.add(tmp);
             tmp = baseIterator.getNextRow();
         }
-        this.rowCount = this.membershipMap.size();
     }
 
     /**
@@ -56,7 +54,6 @@ public class SparseMembership implements IMembershipSet {
             this.membershipMap.add(tmp);
             tmp = baseIterator.getNextRow();
         }
-        this.rowCount = this.membershipMap.size();
     }
 
     /**
@@ -65,7 +62,17 @@ public class SparseMembership implements IMembershipSet {
      */
     public SparseMembership(@NonNull final IntSet baseSet) {
         this.membershipMap = baseSet;
-        this.rowCount = this.membershipMap.size();
+    }
+
+    /**
+     * Create a membership set which contains the integers (start, ..., start + size)
+     * @param start The first integer in the set.
+     * @param size The number of integers in the set.
+     */
+    public SparseMembership(int start, int size) {
+        this.membershipMap = new IntSet(size);
+        for (int i = 0; i < size; i++)
+            this.membershipMap.add(start + i);
     }
 
     @Override
@@ -75,7 +82,7 @@ public class SparseMembership implements IMembershipSet {
 
     @Override
     public int getSize() {
-        return this.rowCount;
+        return this.membershipMap.size();
     }
 
     /**
@@ -125,7 +132,7 @@ public class SparseMembership implements IMembershipSet {
         final IntSet intersectSet = new IntSet();
         final IRowIterator iter = otherSet.getIterator();
         int curr = iter.getNextRow();
-        while (curr >=0) {
+        while (curr >= 0) {
             if (this.isMember(curr))
                 intersectSet.add(curr);
             curr = iter.getNextRow();
@@ -138,7 +145,7 @@ public class SparseMembership implements IMembershipSet {
         final IntSet setMinusSet = new IntSet();
         final IRowIterator iter = this.getIterator();
         int curr = iter.getNextRow();
-        while (curr >=0) {
+        while (curr >= 0) {
             if (!otherSet.isMember(curr))
                 setMinusSet.add(curr);
             curr = iter.getNextRow();
@@ -158,7 +165,7 @@ public class SparseMembership implements IMembershipSet {
         if (sampleSet.getSize() == 0)
             return 0;
         int esize = 0;
-        final IRowIterator iter= sampleSet.getIterator();
+        final IRowIterator iter = sampleSet.getIterator();
         int curr = iter.getNextRow();
         while (curr >= 0) {
             if (filter.test(curr))

@@ -85,7 +85,7 @@ public class QuantileList implements Serializable {
      * @param rowIndex The index of an element in the table quantile (call it x).
      * @return The Win and Loss record for that element.
      */
-    public WinsAndLosses getWinsAndLosses(final int rowIndex) { return this.winsAndLosses[rowIndex]; }
+    private WinsAndLosses getWinsAndLosses(final int rowIndex) { return this.winsAndLosses[rowIndex]; }
 
     /**
      * Given an element in the QuantileList (specified as an index in the table), return an estimate
@@ -94,7 +94,7 @@ public class QuantileList implements Serializable {
      * @return A guess for the rank of the element x. We know it lies in
      * the interval (wins(x), dataSize - losses(x)), so we return the average of the two.
      */
-    private double getApproxRank(final int rowIndex) {
+    public double getApproxRank(final int rowIndex) {
         return (((double) this.getWins(rowIndex) + this.getDataSize() -
                 this.getLosses(rowIndex)) / 2);
     }
@@ -161,10 +161,12 @@ public class QuantileList implements Serializable {
         int j = 0;
         for (int i = 0; i < newSize; i++) {
             double targetRank = (i + 1) * stepSize;
-            while (this.getApproxRank(j) <= targetRank) {
-                if (j <= oldSize - 2) {
+            while (true) {
+                double ar = this.getApproxRank(j);
+                if (ar <=  targetRank && j <= oldSize - 2)
                     j++;
-                }
+                else
+                    break;
             }
             if (j == 0)
                 newSubset.add(0);
