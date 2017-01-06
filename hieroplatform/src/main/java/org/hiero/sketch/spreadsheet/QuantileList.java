@@ -148,7 +148,7 @@ public class QuantileList implements Serializable {
     }
 
     /** Given a desired size parameter (newSize), compress down to exactly that size.
-     *  Let stepSize = dataSize/newSize. The "target" rank for element i is (i +1)* StepSize.
+     *  Let stepSize = dataSize/(newSize +1). The "target" rank for element i is (i +1)* StepSize.
      *  We pick the element of the QuantileList whose approxRank is the closest to this.
      * @param newSize The desired size of the compressed table.
      * @return A QuantileList of size newSize, computed as described above.

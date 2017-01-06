@@ -29,8 +29,8 @@ import java.security.InvalidParameterException;
 public class QuantileSketch implements ISketch<Table, QuantileList> {
     private final RecordOrder colSortOrder;
     private final int resolution;
-    private final int perBin = 50;
-    private final int slack = 5;
+    private final int perBin = 100;
+    private final int slack = 10;
 
 
     /**
