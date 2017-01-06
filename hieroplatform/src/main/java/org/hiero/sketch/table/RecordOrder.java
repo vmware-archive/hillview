@@ -54,7 +54,7 @@ public class RecordOrder implements Iterable<ColumnSortOrientation> {
 
     @Override
     public Iterator<ColumnSortOrientation> iterator() {
-        return sortOrientationList.iterator();
+        return this.sortOrientationList.iterator();
     }
 
     /**
@@ -76,8 +76,8 @@ public class RecordOrder implements Iterable<ColumnSortOrientation> {
         return new ListComparator(comparatorList);
     }
     /**
-     * Returns a ordering of rows in a Table, based on the sort order.
-     * The table and the RecordOrder need to be compatible.
+     * Returns an array containing rows indices of a Table in sorted order, using the getComparator
+     * method above. The table and the RecordOrder need to be compatible.
      * @param table The Table we wish to sort.
      * @return A Comparator that compares two rows based on the Sort Order specified.
      */

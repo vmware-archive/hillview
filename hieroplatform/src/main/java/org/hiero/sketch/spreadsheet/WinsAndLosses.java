@@ -1,10 +1,10 @@
 package org.hiero.sketch.spreadsheet;
 
-class ApproxRank {
+class WinsAndLosses {
     public final int wins;
     public final int losses;
 
-    public ApproxRank(final int wins, final int losses) {
+    public WinsAndLosses(final int wins, final int losses) {
         this.wins = wins;
         this.losses = losses;
     }

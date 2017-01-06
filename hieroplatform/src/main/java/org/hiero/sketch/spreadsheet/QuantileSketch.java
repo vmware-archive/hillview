@@ -17,14 +17,27 @@ import java.security.InvalidParameterException;
  * QuantileSketch provides two main methods:
  * - getQuantile: It creates a QuantileList from an input Table
  * - add: It combines two QuantileLists created from disjoint dataSets to create a single new
- * QuantileList, that captures Quantile information for the union.
- * It stores the following objects:
- * - resolution: the desired number of quantiles.
- * - colSortOrder: the order and orientation of the columns to define the sorted order.
+ *   QuantileList, that captures Quantile information for the union.
  */
 public class QuantileSketch implements ISketch<Table, QuantileList> {
-    private final int resolution;
+    /**
+     * the order and orientation of the columns to define the sorted order.
+     */
     private final RecordOrder colSortOrder;
+    /**
+     * the desired number of quantiles.
+     */
+    private final int resolution;
+    /**
+     * a knob to control the sample size taken fromm a table to create a QuantileList
+     * (the size is perBin*resolution)
+     */
+    private final int perBin = 100;
+    /**
+     * a knob to control the size of the QuantileList that is shipped around
+     * (the size is slack*resolution)
+     */
+    private final int slack = 10;
 
     /**
      * @param sortOrder The list of column orientations.
@@ -38,38 +51,39 @@ public class QuantileSketch implements ISketch<Table, QuantileList> {
     /**
      * Given a table and a desired resolution for percentiles, return the answer for a sample.
      * The size of the sample is resolution*perBin, perBin is set to 100 by default.
+     * The size of the Quantile table we return is slack*resolution. Since this table is shipped
+     * around, we might want to take perBin >> slack to improve the quality of our sample.
      * @param data The input data on which we want to compute Quantiles.
      * @return A table of size resolution, whose ith entry is ranked approximately i/resolution.
      */
     public QuantileList getQuantile(final Table data) {
-        /* Sample a set of rows from the table. */
-        final int perBin = 100;
-        final int dataSize = data.getNumOfRows();
-        /* Sample, then sort the sampled rows. */
-        final IMembershipSet sampleSet = data.members.sample(this.resolution * perBin);
+        /* Sample a set of rows from the table, then sort the sampled rows. */
+        final IMembershipSet sampleSet = data.members.sample(this.resolution * this.perBin);
         final Table sampleTable = data.compress(sampleSet);
         final Integer[] order = this.colSortOrder.getSortedRowOrder(sampleTable);
+        /* We will shrink the set of samples  down to slack*resolution. Number of samples might be
+            less than resolution*perBin, because of repetitions. */
+        final int newRes = Math.min(this.slack * this.resolution, sampleSet.getSize());
+        final int[] quantile = new int[newRes];
+        final WinsAndLosses[] winsAndLosses = new WinsAndLosses[newRes];
+        final double sampleStep = ((double)sampleSet.getSize() + 1)/(newRes + 1);
+        final double dataStep = ((double)data.getNumOfRows() + 1)/(newRes + 1);
         /* Pick equally spaced elements as the sample quantiles.
-        *  Our estimate for the rank of element i is the i*step.
-        */
-        final int[] quantile = new int[this.resolution + 1];
-        final ApproxRank[] approxRank = new ApproxRank[this.resolution + 1];
-        /* Number of samples might be less than resolution*perBin, because of repetitions */
-        final int realSize = sampleTable.getNumOfRows();
-        final int step = dataSize / resolution;
-        for (int i = 0; i <= resolution; i++) {
-            quantile[i] = order[((realSize - 1) * i) / resolution];
-            approxRank[i] = new ApproxRank(i * step, (resolution - i) * step);
+        *  Our estimate for the rank of element i is i*dataStep. */
+        for (int i = 0; i < newRes; i++) {
+            quantile[i] = order[(int)(Math.round((i + 1) * sampleStep) - 1)];
+            winsAndLosses[i] = new WinsAndLosses((int)Math.round((i + 1) * dataStep),
+                    (int)Math.round((newRes - i - 1) * dataStep));
         }
         final IRowOrder quantileMembers = new ArrayRowOrder(quantile);
-        return new QuantileList(sampleTable.compress(colSortOrder.toSubSchema(), quantileMembers),
-                approxRank, dataSize);
+        return new QuantileList(sampleTable.compress(this.colSortOrder.toSubSchema(),
+                quantileMembers), winsAndLosses, data.getNumOfRows());
     }
 
     /**
      * Given two Columns left and right, merge them to a single Column, using the Boolean
-     * array mergeLeft which represents the order in which elements merge. mergeLeft[i] = true means
-     * the i^th element comes from the left column.
+     * array mergeLeft which represents the order in which elements merge.
+     * mergeLeft[i] = true means the i^th element comes from the left column.
      * @param left The left column
      * @param right The right column
      * @param mergeLeft The order in which to merge the two columns.
@@ -106,36 +120,35 @@ public class QuantileSketch implements ISketch<Table, QuantileList> {
      * @param mergeLeft The order in which to merge the two columns.
      * @return The ApproxRanks (wins and losses) for elements in the merged QuantileList.
      */
-    private ApproxRank[] mergeRanks(@NonNull final QuantileList left,
-                                    @NonNull final QuantileList right,
-                                    @NonNull final boolean[] mergeLeft) {
+    private WinsAndLosses[] mergeRanks(@NonNull final QuantileList left,
+                                       @NonNull final QuantileList right,
+                                       @NonNull final boolean[] mergeLeft) {
         final int length = left.getQuantileSize() + right.getQuantileSize();
-        final ApproxRank[] mergedRank = new ApproxRank[length];
+        final WinsAndLosses[] mergedRank = new WinsAndLosses[length];
         int i = 0, j = 0, lower, upper;
         for (int k = 0; k < length; k++) {
             if (mergeLeft[k]) { /* i lost to j, so we insert i next*/
-                 /* Entry i gets its own lowerRank + the lowerRank for the biggest entry on
-                 *  the right that lost to it. This is either the wins Rank of j-1, or 0 if i beat
+                 /* Entry i gets its own Wins + the Wins for the biggest entry on
+                 *  the right that lost to it. This is either the Wins of j-1, or 0 if i beat
                  *  nobody on the right (which means j = 0);*/
                 lower = left.getWins(i) + ((j > 0) ? right.getWins(j - 1) : 0);
-                /*  Similarly, its losses bound is its own losses bound + the losses bound of the
-                 *  smallest element on the right that beat it. This is the losses rank of j if the
+                /*  Similarly, its Losses are its own Losses + the Losses of the
+                 *  smallest element on the right that beat it. This is the Losses of j if the
                  *  right hand side has not been exhausted, in which case it is 0. */
                 upper = left.getLosses(i) +
                         ((j < right.getQuantileSize()) ? right.getLosses(j) : 0);
-                mergedRank[k] = new ApproxRank(lower, upper);
+                mergedRank[k] = new WinsAndLosses(lower, upper);
                 i++;
             } else {
                 lower = right.getWins(j) + ((i > 0) ? left.getWins(i - 1) : 0);
                 upper = right.getLosses(j) +
                         ((i < left.getQuantileSize()) ? left.getLosses(i) : 0);
-                mergedRank[k] = new ApproxRank(lower, upper);
+                mergedRank[k] = new WinsAndLosses(lower, upper);
                 j++;
             }
         }
         return mergedRank;
     }
-
 
     /**
      * Given two QuantileLists left and right, merge them to a single QuantileList.
@@ -159,9 +172,11 @@ public class QuantileSketch implements ISketch<Table, QuantileList> {
         }
         final IMembershipSet full = new FullMembership(length);
         final Table mergedTable = new Table(left.getSchema(), mergedCol, full);
-        final ApproxRank[] mergedRank = mergeRanks(left, right, mergeLeft);
+        final WinsAndLosses[] mergedRank = mergeRanks(left, right, mergeLeft);
         final int mergedDataSize = left.getDataSize() + right.getDataSize();
-        return new QuantileList(mergedTable, mergedRank, mergedDataSize);
+        /* The returned quantileList can be of size up to slack* resolution*/
+        return new QuantileList(mergedTable, mergedRank, mergedDataSize).
+                compressExact(this.slack*this.resolution);
     }
 
     @Override

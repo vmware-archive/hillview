@@ -23,6 +23,14 @@ public class ArrayRowOrder implements IRowOrder {
         }
     }
 
+    public ArrayRowOrder(final Integer[] order) {
+        this.size = order.length;
+        this.sortedRows = new ArrayList<Integer>(this.size);
+        for (int i = 0; i < this.size; i++) {
+            this.sortedRows.add(order[i]);
+        }
+    }
+
     public ArrayRowOrder(final List<Integer> order) {
         this.sortedRows = order;
         this.size = order.size();

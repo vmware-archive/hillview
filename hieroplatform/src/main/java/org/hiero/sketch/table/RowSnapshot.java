@@ -22,9 +22,27 @@ public class RowSnapshot implements IRow {
 
     public RowSnapshot(@NonNull final Table data, final int rowIndex) {
         this.schema = data.schema;
-        for(final String colName : this.schema.getColumnNames()) {
+        for (final String colName : this.schema.getColumnNames()) {
             this.field.put(colName, data.getColumn(colName).getObject(rowIndex));
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        RowSnapshot that = (RowSnapshot) o;
+
+        if (!schema.equals(that.schema)) return false;
+        return field.equals(that.field);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = schema.hashCode();
+        result = 31 * result + field.hashCode();
+        return result;
     }
 
     @Override

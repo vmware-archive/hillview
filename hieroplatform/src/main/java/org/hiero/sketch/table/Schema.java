@@ -13,7 +13,6 @@ import java.util.Set;
  * to a column description.  Column names are case-sensitive.
  */
 public final class Schema implements ISchema {
-    /* Map a column name into an integer index */
     @NonNull
     private final HashMap<String, ColumnDescription> columns;
 
@@ -71,7 +70,6 @@ public final class Schema implements ISchema {
     public boolean equals(final Object o) {
         if (this == o) return true;
         if ((o == null) || (getClass() != o.getClass())) return false;
-
         final Schema schema = (Schema) o;
         return this.columns.equals(schema.columns);
     }

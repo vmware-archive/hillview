@@ -25,21 +25,21 @@ import java.util.List;
  */
 public class QuantileList implements Serializable {
     public final Table quantile;
-    private final ApproxRank[] approxRank;
+    private final WinsAndLosses[] winsAndLosses;
     private final int dataSize;
 
     /**
      * An empty quantile list for a table with the specified schema.
      */
     public QuantileList(ISchema schema) {
-        this.approxRank = new ApproxRank[0];
+        this.winsAndLosses = new WinsAndLosses[0];
         this.dataSize = 0;
         this.quantile = new Table(schema);
     }
 
-    public QuantileList(final Table quantile, final ApproxRank[] approxRank, final int dataSize) {
-        this.approxRank = approxRank;
-        if (quantile.getNumOfRows() != approxRank.length)
+    public QuantileList(final Table quantile, final WinsAndLosses[] winsAndLosses, final int dataSize) {
+        this.winsAndLosses = winsAndLosses;
+        if (quantile.getNumOfRows() != winsAndLosses.length)
             throw new InvalidParameterException("Two arguments have different lengths");
         this.quantile = quantile;
         this.dataSize = dataSize;
@@ -73,22 +73,28 @@ public class QuantileList implements Serializable {
      * @param rowIndex The index of an element in the table quantile (call it x).
      * @return The number of elements in the dataset that are known to be less than x.
      */
-    public int getWins(final int rowIndex) { return this.approxRank[rowIndex].wins; }
+    public int getWins(final int rowIndex) { return this.winsAndLosses[rowIndex].wins; }
 
     /**
      * @param rowIndex The index of an element in the table quantile (call it x).
      * @return The number of elements in the dataset that are known to be greater than x.
      */
-    public int getLosses(final int rowIndex) { return this.approxRank[rowIndex].losses; }
+    public int getLosses(final int rowIndex) { return this.winsAndLosses[rowIndex].losses; }
+
+    /**
+     * @param rowIndex The index of an element in the table quantile (call it x).
+     * @return The Win and Loss record for that element.
+     */
+    private WinsAndLosses getWinsAndLosses(final int rowIndex) { return this.winsAndLosses[rowIndex]; }
 
     /**
      * Given an element in the QuantileList (specified as an index in the table), return an estimate
      * for the rank of that element in sorted (ascending) order.
      * @param rowIndex The index of an element x in the table quantile.
      * @return A guess for the rank of the element x. We know it lies in
-     * the interval (wins(x), dataSize - losses(x)), so the return the average of the two.
+     * the interval (wins(x), dataSize - losses(x)), so we return the average of the two.
      */
-    private double getApproxRank(final int rowIndex) {
+    public double getApproxRank(final int rowIndex) {
         return (((double) this.getWins(rowIndex) + this.getDataSize() -
                 this.getLosses(rowIndex)) / 2);
     }
@@ -100,13 +106,13 @@ public class QuantileList implements Serializable {
      * @return A new QuantileList
      */
     private QuantileList compress(IRowOrder rowOrder) {
-        ApproxRank[] newRank = new ApproxRank[rowOrder.getSize()];
+        WinsAndLosses[] newRank = new WinsAndLosses[rowOrder.getSize()];
         final IRowIterator rowIt = rowOrder.getIterator();
         int row = 0;
         while (true) {
             final int i = rowIt.getNextRow();
             if (i == -1) { break; }
-            newRank[row] = new ApproxRank(this.getWins(i), this.getLosses(i));
+            newRank[row] = this.getWinsAndLosses(i);
             row++;
         }
         return new QuantileList(this.quantile.compress(rowOrder), newRank, this.dataSize);
@@ -124,13 +130,12 @@ public class QuantileList implements Serializable {
     public QuantileList compressApprox(int newSize) {
         int oldSize = this.getQuantileSize();
         if (oldSize <= newSize) { return this; }
-        //System.out.printf("Shrinking from size %d down to %d:%n", oldSize, newSize);
-        double avgGap = ((double) this.getDataSize()) / (newSize -1);
+        double avgGap = ((double) this.getDataSize()) / (newSize+1);
         List<Integer> newSubset = new ArrayList<>();
         newSubset.add(0);
         double open = this.getApproxRank(0);
         double close;
-        for (int i = 1; i < oldSize - 1; i++) {
+        for (int i = 1; i <= oldSize - 2; i++) {
             close = this.getApproxRank(i+1);
             if (close - open > avgGap) {
                 newSubset.add(i);
@@ -143,8 +148,8 @@ public class QuantileList implements Serializable {
     }
 
     /** Given a desired size parameter (newSize), compress down to exactly that size.
-     * More precisely, we compute the desired rank of element i (roughly i*dataSize/newSize).
-     * We then pick the element of the QuantileList whose rank is the closest.
+     *  Let stepSize = dataSize/(newSize +1). The "target" rank for element i is (i +1)* StepSize.
+     *  We pick the element of the QuantileList whose approxRank is the closest to this.
      * @param newSize The desired size of the compressed table.
      * @return A QuantileList of size newSize, computed as described above.
      */
@@ -152,20 +157,27 @@ public class QuantileList implements Serializable {
         int oldSize = this.getQuantileSize();
         if (oldSize <= newSize) { return this; }
         List<Integer> newSubset = new ArrayList<>();
-        double stepSize = ((double) this.getDataSize()) / (newSize - 1);
-        newSubset.add(0);
+        double stepSize = ((double) this.getDataSize()) / (newSize + 1);
         int j = 0;
-        for (int i = 1; i < newSize - 1; i++) {
-            while (this.getApproxRank(j) <= i * stepSize) {
-                if (j + 2 <= oldSize) { j++; }
+        for (int i = 0; i < newSize; i++) {
+            double targetRank = (i + 1) * stepSize;
+            while (true) {
+                double ar = this.getApproxRank(j);
+                if (ar <=  targetRank && j <= oldSize - 2)
+                    j++;
+                else
+                    break;
             }
-            /* Check whether j or j-1 is closer to i*stepSize */
-            if (this.getApproxRank(j) + this.getApproxRank(j - 1) <= 2* i * stepSize )
-                newSubset.add(j);
-            else
-                newSubset.add(j - 1);
+            if (j == 0)
+                newSubset.add(0);
+            else {
+            /* Check whether j or j-1 is closer to the targetRank */
+                if (this.getApproxRank(j) + this.getApproxRank(j - 1) <= 2 * targetRank)
+                    newSubset.add(j);
+                else
+                    newSubset.add(j - 1);
+            }
         }
-        newSubset.add(oldSize - 1);
         IRowOrder rowOrder = new ArrayRowOrder(newSubset);
         return this.compress(rowOrder);
     }
