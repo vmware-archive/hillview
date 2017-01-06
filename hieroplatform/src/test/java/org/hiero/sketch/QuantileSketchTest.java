@@ -6,10 +6,12 @@ import org.hiero.sketch.dataset.api.IDataSet;
 import org.hiero.sketch.spreadsheet.ColumnSortOrientation;
 import org.hiero.sketch.spreadsheet.QuantileList;
 import org.hiero.sketch.spreadsheet.QuantileSketch;
+import org.hiero.sketch.table.ArrayRowOrder;
 import org.hiero.sketch.table.RecordOrder;
 import org.hiero.sketch.table.SparseMembership;
 import org.hiero.sketch.table.Table;
 import org.hiero.sketch.table.api.IMembershipSet;
+import org.hiero.sketch.table.api.IRowOrder;
 import org.hiero.sketch.table.api.IndexComparator;
 import org.junit.Test;
 
@@ -86,18 +88,18 @@ public class QuantileSketchTest {
 
     @Test
     public void testQuantile1() {
-        printTime("start");
+        //printTime("start");
         final int numCols = 3;
         final int resolution = 49;
-        final int bigSize = 10000000;
+        final int bigSize = 100000;
         final Table bigTable = getIntTable(bigSize, numCols);
-        printTime("created");
+        //printTime("created");
         RecordOrder cso = new RecordOrder();
         for (String colName : bigTable.schema.getColumnNames()) {
             cso.append(new ColumnSortOrientation(bigTable.schema.getDescription(colName), true));
         }
-        List<Table> tabList = this.SplitTable(bigTable, 1000000);
-        printTime("split");
+        List<Table> tabList = this.SplitTable(bigTable, 10000);
+        //printTime("split");
         // Create a big parallel data set containing all table fragments
         ArrayList<IDataSet<Table>> a = new ArrayList<IDataSet<Table>>();
         for (Table t : tabList) {
@@ -105,10 +107,10 @@ public class QuantileSketchTest {
             a.add(ds);
         }
         ParallelDataSet<Table> all = new ParallelDataSet<Table>(a);
-        printTime("Parallel");
+        //printTime("Parallel");
         QuantileList ql = all.blockingSketch(new QuantileSketch(cso, resolution)).
                 compressExact(resolution);
-        printTime("Quantile");
+        //printTime("Quantile");
         /*
         IRowOrder order = new ArrayRowOrder(cso.getSortedRowOrder(bigTable));
         printTime("sort");
@@ -144,25 +146,25 @@ public class QuantileSketchTest {
         */
     }
 
-    /*
+
     @Test
     public void testQuantileSample() {
-        printTime("start");
+        //printTime("start");
         final int numCols = 3;
         final int resolution = 99;
         final int bigSize = 1000;
         final Table bigTable = getIntTable(bigSize, numCols);
-        printTime("created");
+        //printTime("created");
         RecordOrder cso = new RecordOrder();
         for (String colName : bigTable.schema.getColumnNames()) {
             cso.append(new ColumnSortOrientation(bigTable.schema.getDescription(colName), true));
         }
         QuantileList ql = new QuantileSketch(cso, resolution).getQuantile(bigTable).compressExact(resolution);
-        printTime("Quantile");
+        //printTime("Quantile");
         IRowOrder order = new ArrayRowOrder(cso.getSortedRowOrder(bigTable));
-        printTime("sort");
+        //printTime("sort");
         Table sortTable = bigTable.compress(order);
-        printTime("compressed");
+        //printTime("compressed");
         int j =0;
         for (int i =0; i < resolution; i++) {
             boolean match = false;
@@ -183,7 +185,6 @@ public class QuantileSketchTest {
                 }
             }
         }
-        printTime("done");
+        //printTime("done");
     }
-    */
 }
