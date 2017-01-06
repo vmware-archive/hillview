@@ -110,6 +110,9 @@ public class QuantileSketchTest {
         //printTime("Parallel");
         QuantileList ql = all.blockingSketch(new QuantileSketch(cso, resolution)).
                 compressExact(resolution);
+        IndexComparator mComp = cso.getComparator(ql.quantile);
+        for (int i = 0; i < ql.getQuantileSize() - 1; i++)
+            assertTrue(mComp.compare(i, i + 1) <= 0);
         //printTime("Quantile");
         /*
         IRowOrder order = new ArrayRowOrder(cso.getSortedRowOrder(bigTable));

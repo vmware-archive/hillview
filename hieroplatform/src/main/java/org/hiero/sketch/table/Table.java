@@ -77,7 +77,8 @@ public class Table {
         return new Table(newSchema, compressedCols, full);
     }
 
-    /** Version of Compress that defaults subSchema to the entire Schema.
+    /**
+     * Version of Compress that defaults subSchema to the entire Schema.
      * @param rowOrder Ordered set of rows to include in the compressed table.
      * @return A compressed table containing only the rows contained in rowOrder.
      */
@@ -110,7 +111,7 @@ public class Table {
         int nextRow = rowIt.getNextRow();
         while ((nextRow != startRow) && (nextRow != -1))
             nextRow = rowIt.getNextRow();
-        if(nextRow == -1) {
+        if (nextRow == -1) {
             builder.append("Start row not found!%n");
             return builder.toString();
         }

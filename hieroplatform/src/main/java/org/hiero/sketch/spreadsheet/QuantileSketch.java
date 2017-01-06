@@ -18,20 +18,26 @@ import java.security.InvalidParameterException;
  * - getQuantile: It creates a QuantileList from an input Table
  * - add: It combines two QuantileLists created from disjoint dataSets to create a single new
  *   QuantileList, that captures Quantile information for the union.
- * It stores the following objects:
- * - colSortOrder: the order and orientation of the columns to define the sorted order.
- * - resolution: the desired number of quantiles.
- * - perBin: a knob to control the sample size taken fromm a table to create a QuantileList
- *   (the size is perBin*resolution)
- * - slack: a knob to control the size of the QuantileList that is shipped around
- *   (the size is slack*resolution)
  */
 public class QuantileSketch implements ISketch<Table, QuantileList> {
+    /**
+     * the order and orientation of the columns to define the sorted order.
+     */
     private final RecordOrder colSortOrder;
+    /**
+     * the desired number of quantiles.
+     */
     private final int resolution;
+    /**
+     * a knob to control the sample size taken fromm a table to create a QuantileList
+     * (the size is perBin*resolution)
+     */
     private final int perBin = 100;
+    /**
+     * a knob to control the size of the QuantileList that is shipped around
+     * (the size is slack*resolution)
+     */
     private final int slack = 10;
-
 
     /**
      * @param sortOrder The list of column orientations.
@@ -60,14 +66,14 @@ public class QuantileSketch implements ISketch<Table, QuantileList> {
         final int newRes = Math.min(this.slack * this.resolution, sampleSet.getSize());
         final int[] quantile = new int[newRes];
         final WinsAndLosses[] winsAndLosses = new WinsAndLosses[newRes];
-        final double sampleStep = ((double) sampleSet.getSize()+1)/(newRes+ 1);
-        final double dataStep = ((double) data.getNumOfRows() +1)/(newRes +1);
+        final double sampleStep = ((double)sampleSet.getSize() + 1)/(newRes + 1);
+        final double dataStep = ((double)data.getNumOfRows() + 1)/(newRes + 1);
         /* Pick equally spaced elements as the sample quantiles.
         *  Our estimate for the rank of element i is i*dataStep. */
         for (int i = 0; i < newRes; i++) {
-            quantile[i] = order[(int) (Math.round((i + 1) * sampleStep) - 1)];
-            winsAndLosses[i] = new WinsAndLosses((int) Math.round((i +1) * dataStep),
-                    (int) Math.round((newRes - i - 1) * dataStep));
+            quantile[i] = order[(int)(Math.round((i + 1) * sampleStep) - 1)];
+            winsAndLosses[i] = new WinsAndLosses((int)Math.round((i + 1) * dataStep),
+                    (int)Math.round((newRes - i - 1) * dataStep));
         }
         final IRowOrder quantileMembers = new ArrayRowOrder(quantile);
         return new QuantileList(sampleTable.compress(this.colSortOrder.toSubSchema(),
@@ -144,7 +150,6 @@ public class QuantileSketch implements ISketch<Table, QuantileList> {
         return mergedRank;
     }
 
-
     /**
      * Given two QuantileLists left and right, merge them to a single QuantileList.
      * @param left The left Quantile
@@ -153,7 +158,7 @@ public class QuantileSketch implements ISketch<Table, QuantileList> {
      */
     @Override
     public QuantileList add(@NonNull final QuantileList left, @NonNull final QuantileList right) {
-         if (!left.getSchema().equals(right.getSchema()))
+        if (!left.getSchema().equals(right.getSchema()))
             throw new RuntimeException("The schemas do not match.");
         final int width = left.getSchema().getColumnCount();
         final int length = left.getQuantileSize() + right.getQuantileSize();
