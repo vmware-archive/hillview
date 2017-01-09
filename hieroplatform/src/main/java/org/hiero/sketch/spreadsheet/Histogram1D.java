@@ -13,11 +13,8 @@ import org.hiero.sketch.table.api.IStringConverter;
 public class Histogram1D {
 
     private final Bucket1D[] buckets;
-
     private long missingData;
-
     private long outOfRange;
-
     private final IBucketsDescription1D bucketDescription;
 
     public Histogram1D(final @NonNull IBucketsDescription1D bucketDescription) {
@@ -49,18 +46,22 @@ public class Histogram1D {
             currRow = myIter.getNextRow();
         }
     }
+    public int getNumOfBuckets() { return this.bucketDescription.getNumOfBuckets(); }
 
     public long getMissingData() { return this.missingData; }
 
     public long getOutOfRange() { return this.outOfRange; }
 
     /**
-     * @return the index's bucket or null if not been initialized yet
+     * @return the index's bucket or exception if doesn't exist.
      */
     public Bucket1D getBucket(final int index) {
         if ((index < 0) || (index >= this.bucketDescription.getNumOfBuckets()))
             throw new IllegalArgumentException("bucket index out of range");
-        return this.buckets[index];
+        Bucket1D res = this.buckets[index];
+        if (res == null)
+            throw new IllegalArgumentException("bucket not initialized yet");
+        return res;
     }
 
     /**
@@ -70,6 +71,8 @@ public class Histogram1D {
     public Histogram1D union( @NonNull Histogram1D otherHistogram) {
         if (!this.bucketDescription.equals(otherHistogram.bucketDescription))
             throw new IllegalArgumentException("Histogram union without matching buckets");
+        if ((this.buckets[0] == null) || (otherHistogram.buckets[0] == null) )
+            throw new IllegalArgumentException("Uninitialized histogram cannot be part of a union");
         Histogram1D unionH = new Histogram1D(this.bucketDescription);
         for (int i = 0; i < unionH.bucketDescription.getNumOfBuckets(); i++)
             unionH.buckets[i] = this.buckets[i].union(otherHistogram.buckets[i]);
