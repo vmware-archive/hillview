@@ -8,7 +8,7 @@ import java.util.Date;
 /**
  * Conversion to and from doubles of various supported datatypes.
  */
-public class Converters {
+class Converters {
     public static double toDouble(@NonNull final Date d) {
         return d.getTime();
     }

@@ -9,7 +9,7 @@ import java.nio.file.Path;
 /**
  * Knows how to read a CSV file (comma-separated file).
  */
-public class CsvFileReader {
+class CsvFileReader {
     @NonNull
     private final Path filename;
     @NonNull

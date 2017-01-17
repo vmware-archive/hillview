@@ -15,11 +15,6 @@ public interface IMembershipSet extends IRowOrder {
     boolean isMember(int rowIndex);
 
     /**
-     * @return Total number of elements in this membership map.
-     */
-    int getSize();
-
-    /**
      * @return an IMembershipSet containing k samples from the membership map. The samples are made
      * with replacement so may contain less than k distinct values. There is no guarantee that
      * two subsequent samples return the same sample set.
@@ -42,10 +37,4 @@ public interface IMembershipSet extends IRowOrder {
     IMembershipSet intersection(@NonNull IMembershipSet otherMap);
 
     IMembershipSet setMinus(@NonNull IMembershipSet otherMap);
-
-    /**
-     * @return An iterator over all the rows in the membership map.
-     * The iterator is initialized to point at the "first" row.
-     */
-    IRowIterator getIterator();
 }

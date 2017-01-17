@@ -8,7 +8,7 @@ import java.util.UUID;
 /**
  * Unsubscribe to a remote Map/Sketch operation
  */
-public class UnsubscribeOperation implements Serializable {
+class UnsubscribeOperation implements Serializable {
     @NonNull
     public final UUID id;
 

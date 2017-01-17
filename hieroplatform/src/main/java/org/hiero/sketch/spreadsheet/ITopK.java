@@ -10,7 +10,7 @@ import java.util.SortedMap;
  * - Maximum: If not present, compare to the Maximum value currently in the Top K
  * - Insert: If we need to Insert newVal
  */
-public interface ITopK<T> {
+interface ITopK<T> {
     SortedMap<T,Integer> getTopK();
     void push(T newVal);
 }

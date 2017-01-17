@@ -2,16 +2,18 @@ package org.hiero.sketch.table.api;
 
 import org.hiero.sketch.table.ColumnDescription;
 
+import java.util.Set;
+
 /**
  * Represents the schema of a table.
  */
 public interface ISchema {
-    ColumnDescription getDescription(int index);
     int getColumnCount();
-    int getColumnIndex(String columnName);
+    ColumnDescription getDescription(String columnName);
     ISchema project(ISubSchema subSchema);
+    Set<String> getColumnNames();
 
     default ContentsKind getKind(final String colName){
-        return this.getDescription(this.getColumnIndex(colName)).kind;
+        return this.getDescription(colName).kind;
     }
 }

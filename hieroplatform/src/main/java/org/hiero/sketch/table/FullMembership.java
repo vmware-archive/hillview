@@ -13,7 +13,7 @@ public class FullMembership implements IMembershipSet {
     private final int rowCount;
 
     public FullMembership(final int rowCount) throws NegativeArraySizeException {
-        if (rowCount > 0)
+        if (rowCount >= 0)
             this.rowCount = rowCount;
         else
             throw (new NegativeArraySizeException("Can't initialize FullMembership with " +

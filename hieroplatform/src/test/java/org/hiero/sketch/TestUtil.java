@@ -2,7 +2,7 @@ package org.hiero.sketch;
 import java.util.Arrays;
 import java.util.function.Consumer;
 
-public class TestUtil {
+class TestUtil {
     private static void Percentiles(final long[] R1) {
         Arrays.sort(R1);
         System.out.println("Percentiles: 0,10,20,50,90,99 ");
