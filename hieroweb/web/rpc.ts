@@ -12,9 +12,11 @@ const RpcRequestUrl = HieroServiceUrl + "/rpc";
 // over web sockets.  When the last reply has been received
 // the web socked is closed.
 export class RpcRequest {
-    readonly protoVersion  : number = 6;
+    readonly protoVersion : number = 6;
     readonly requestId: number;
-    socket   : any;  // result of Rx.DOM.fromWebSocket
+    socket   : any; // result of Rx.DOM.fromWebSocket.
+    // Should be Rx.Subject<MessageEvent>, but this does not typecheck
+    // the this.socket.onNext method with a String argument.
 
     static requestCounter : number = 0;
 
@@ -38,7 +40,7 @@ export class RpcRequest {
 
     onOpen() : void {
         console.log('socket open');
-        var reqStr = this.serialize();
+        let reqStr = this.serialize();
         console.log("Sending message " + reqStr);
         this.socket.onNext(reqStr);
     }
