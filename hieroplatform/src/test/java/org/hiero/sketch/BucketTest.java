@@ -1,9 +1,10 @@
 package org.hiero.sketch;
 
 import org.hiero.sketch.spreadsheet.Bucket1D;
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.TestCase.assertTrue;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class BucketTest {
     @Test
@@ -17,12 +18,12 @@ public class BucketTest {
         }
         assertEquals(myBucket.getCount(), 100);
         assertEquals(myBucket1.getCount(), 100);
-        assertEquals(myBucket1.getMinValue(), 0.5);
-        assertEquals(myBucket1.getMaxValue(), 99.5);
+        assertEquals(myBucket1.getMinValue(), 0.5, .1);
+        assertEquals(myBucket1.getMaxValue(), 99.5, .1);
         final Bucket1D myBucket2 = myBucket.union(myBucket1);
         assertEquals(myBucket2.getCount(), 200);
-        assertEquals(myBucket2.getMinValue(), 0.0);
-        assertEquals(myBucket2.getMaxValue(), 99.5);
+        assertEquals(myBucket2.getMinValue(), 0.0, .1);
+        assertEquals(myBucket2.getMaxValue(), 99.5, .1);
         assertEquals(myBucket2.getMinObject(), "0");
         assertEquals(myBucket2.getMaxObject(), "99.5");
     }

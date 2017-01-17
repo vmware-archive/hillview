@@ -3,9 +3,11 @@ package org.hiero.sketch;
 import org.hiero.sketch.spreadsheet.BucketsDescription1D;
 import org.hiero.sketch.spreadsheet.BucketsDescriptionEqSize;
 import org.junit.Test;
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertFalse;
-import static junit.framework.TestCase.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 
 public class BucketsDescription1DTest {
     @Test
@@ -18,9 +20,9 @@ public class BucketsDescription1DTest {
         assertEquals(bdEqSize.indexOf(100.4), 99);
         assertEquals(bdEqSize.indexOf(70.5), 70);
         assertEquals(bdEqSize.indexOf(30.6), 30);
-        assertEquals(bdEqSize.getLeftBoundary(23), 23.5);
-        assertEquals(bdEqSize.getRightBoundary(23), 24.5);
-        assertEquals(bdEqSize.getRightBoundary(99), 100.5);
+        assertEquals(bdEqSize.getLeftBoundary(23), 23.5, .1);
+        assertEquals(bdEqSize.getRightBoundary(23), 24.5, .1);
+        assertEquals(bdEqSize.getRightBoundary(99), 100.5, .1);
         BucketsDescriptionEqSize bdEqSize1 = new BucketsDescriptionEqSize(0.5, 100.5, 99);
         assertFalse(bdEqSize.equals(bdEqSize1));
         BucketsDescriptionEqSize bdEqSize2 = new BucketsDescriptionEqSize(0.5, 100.5, 99);
@@ -40,9 +42,9 @@ public class BucketsDescription1DTest {
         assertEquals(bdEq.indexOf(100.4), 99);
         assertEquals(bdEq.indexOf(70.5), 70);
         assertEquals(bdEq.indexOf(30.6), 30);
-        assertEquals(bdEq.getLeftBoundary(23), 23.5);
-        assertEquals(bdEq.getRightBoundary(23), 24.5);
-        assertEquals(bdEq.getRightBoundary(99), 100.5);
+        assertEquals(bdEq.getLeftBoundary(23), 23.5, .1);
+        assertEquals(bdEq.getRightBoundary(23), 24.5, .1);
+        assertEquals(bdEq.getRightBoundary(99), 100.5, .1);
         double[] boundaries1 = new double[101];
         for (int i = 0; i < 101; i++)
             boundaries1[i] = i + 0.4;
