@@ -4,8 +4,8 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 public class Bucket2D {
 
-    private Bucket1D bucket1;
-    private Bucket1D bucket2;
+    private final Bucket1D bucket1;
+    private final Bucket1D bucket2;
     long count;
 
     public Bucket2D() {

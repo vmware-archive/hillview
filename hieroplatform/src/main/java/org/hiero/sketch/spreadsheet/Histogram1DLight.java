@@ -6,34 +6,44 @@ import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
 import org.hiero.sketch.table.api.IStringConverter;
 
+import java.util.Random;
 
 /**
- * One Dimensional histogram. Does not contain the column and membershipMap
+ * One dimensional histogram where buckets are just longs and not a full object.
  */
-public class Histogram1D {
-
-    private final Bucket1D[] buckets;
+public class Histogram1DLight {
+    private final long[] buckets;
     private long missingData;
     private long outOfRange;
     private final IBucketsDescription1D bucketDescription;
     private boolean initialized;
 
-    public Histogram1D(final @NonNull IBucketsDescription1D bucketDescription) {
+    public Histogram1DLight(final @NonNull IBucketsDescription1D bucketDescription) {
         this.bucketDescription = bucketDescription;
-        this.buckets = new Bucket1D[bucketDescription.getNumOfBuckets()];
-        for (int i = 0; i < this.bucketDescription.getNumOfBuckets(); i++)
-            this.buckets[i] = new Bucket1D();
+        this.buckets = new long[bucketDescription.getNumOfBuckets()]; //default by java initialized to zero
         this.initialized = false;
     }
 
     public void createSampleHistogram(final IColumn column, final IMembershipSet membershipSet,
-                                       final IStringConverter converter, double sampleRate) {
+            final IStringConverter converter, double sampleRate) {
         this.createHistogram(column, membershipSet.sample(sampleRate), converter);
     }
 
     public void createSampleHistogram(final IColumn column, final IMembershipSet membershipSet,
                                       final IStringConverter converter, double sampleRate, long seed) {
         this.createHistogram(column, membershipSet.sample(sampleRate, seed), converter);
+    }
+
+    /**
+     *
+     * @param val already as double to be added to the buckets.
+     */
+    public void addValue(final double val) {
+        this.initialized = true;
+        int index = this.bucketDescription.indexOf(val);
+        if (index >= 0)
+            this.buckets[index]++;
+        else this.outOfRange++;
     }
 
     /**
@@ -53,20 +63,12 @@ public class Histogram1D {
                 double val = column.asDouble(currRow,converter);
                 int index = this.bucketDescription.indexOf(val);
                 if (index >= 0)
-                    this.buckets[index].add(val,column.getObject(currRow));
+                    this.buckets[index]++;
                 else this.outOfRange++;
             }
             currRow = myIter.getNextRow();
         }
     }
-
-    public void addItem(final double value, final Object item) {
-        int index = this.bucketDescription.indexOf(value);
-        if (index >= 0)
-            this.buckets[index].add(value,item);
-        else this.outOfRange++;
-    }
-
     public int getNumOfBuckets() { return this.bucketDescription.getNumOfBuckets(); }
 
     public long getMissingData() { return this.missingData; }
@@ -76,28 +78,27 @@ public class Histogram1D {
     /**
      * @return the index's bucket or exception if doesn't exist.
      */
-    public Bucket1D getBucket(final int index) {
+    public long getBucket(final int index) {
+        if (!this.initialized) //a histogram had not been created
+            throw new IllegalAccessError("A histogram was not created");
         if ((index < 0) || (index >= this.bucketDescription.getNumOfBuckets()))
             throw new IllegalArgumentException("bucket index out of range");
-        Bucket1D res = this.buckets[index];
-        if (res == null)
-            throw new IllegalArgumentException("bucket not initialized yet");
-        return res;
+        return this.buckets[index];
     }
 
     /**
      * @param  otherHistogram with the same bucketDescription
      * @return a new Histogram which is the union of this and otherHistogram
      */
-    public Histogram1D union( @NonNull Histogram1D otherHistogram) {
+    public Histogram1DLight union( @NonNull Histogram1DLight otherHistogram) {
         if (!this.bucketDescription.equals(otherHistogram.bucketDescription))
             throw new IllegalArgumentException("Histogram union without matching buckets");
-        //if ((!this.initialized) || (!otherHistogram.initialized))
-          //  throw new IllegalArgumentException("Uninitialized histogram cannot be part of a union");
-        Histogram1D unionH = new Histogram1D(this.bucketDescription);
+  //      if ((!this.initialized) || (!otherHistogram.initialized))
+  //          throw new IllegalArgumentException("Uninitialized histogram cannot be part of a union");
+        Histogram1DLight unionH = new Histogram1DLight(this.bucketDescription);
         unionH.initialized = true;
         for (int i = 0; i < unionH.bucketDescription.getNumOfBuckets(); i++)
-            unionH.buckets[i] = this.buckets[i].union(otherHistogram.buckets[i]);
+            unionH.buckets[i] = this.buckets[i] + otherHistogram.buckets[i];
         unionH.missingData = this.missingData + otherHistogram.missingData;
         unionH.outOfRange = this.outOfRange + otherHistogram.outOfRange;
         return unionH;

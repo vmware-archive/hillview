@@ -22,12 +22,16 @@ public class MembershipTest {
         final IRowIterator IT = FM.getIterator();
         int tmp = IT.getNextRow();
         while (tmp >= 0) {
-            //System.out.print(tmp+",");
             tmp = IT.getNextRow();
         }
         assertEquals(this.size, FM.getSize());
         assertTrue(FM.isMember(7));
         assertFalse(FM.isMember(20));
+        final FullMembership FM1 = new FullMembership(1000);
+        final IMembershipSet FM2 = FM1.sample(0.1);
+        assertEquals(100, FM2.getSize());
+        final IMembershipSet FM3 = FM2.sample(0.1);
+        assertEquals(10, FM3.getSize());
     }
 
     @Test
@@ -40,9 +44,13 @@ public class MembershipTest {
         final IRowIterator IT = PMD.getIterator();
         int tmp = IT.getNextRow();
         while (tmp >= 0) {
-            //System.out.print(tmp+",");
             tmp = IT.getNextRow();
         }
+        final FullMembership FM1 = new FullMembership(1000);
+        final LazyMembership LM = new LazyMembership(FM1, row -> (row % 2) == 0);
+        assertEquals(500, LM.getSize());
+        final IMembershipSet FM3 = LM.sample(0.1);
+        assertEquals(50, FM3.getSize());
     }
 
     @Test
@@ -60,7 +68,7 @@ public class MembershipTest {
             tmp = IT.getNextRow();
         }
         final SparseMembership PMS1 = new SparseMembership(testSet);
-        assertTrue(PMS.getSize() == PMS1.getSize());
+        assertEquals(PMS.getSize(), PMS1.getSize());
     }
 
     @Test

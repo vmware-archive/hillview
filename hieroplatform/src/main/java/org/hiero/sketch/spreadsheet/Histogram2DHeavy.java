@@ -9,7 +9,6 @@ import org.hiero.sketch.table.api.IStringConverter;
 /**
  * A 2 dimension histogram where each bucket is a Bucket2D object. Designed to be used for visualizations where the
  * number of buckets is small enough so that the semantics of Bucket2D are useful.
- * TODO: Perhaps make implement Histogram2DHeavy/Light as one class. put a switch in the constructor which bucket to use.
  */
 public class Histogram2DHeavy {
     private final Bucket2D[][] buckets;
@@ -18,13 +17,40 @@ public class Histogram2DHeavy {
     private final IBucketsDescription1D bucketDescDim1;
     private final IBucketsDescription1D bucketDescDim2;
     private boolean initialized;
+    private Histogram1D histogramMissingD1; // hist of items that are missing in D2
+    private Histogram1D histogramMissingD2; // hist of items that are missing in D1
+    private long totalsize;
+
 
     public Histogram2DHeavy(final @NonNull IBucketsDescription1D buckets1, final @NonNull IBucketsDescription1D buckets2) {
         this.bucketDescDim1 = buckets1;
         this.bucketDescDim2 = buckets2;
+        this.histogramMissingD1 = new Histogram1D(this.bucketDescDim1);
+        this.histogramMissingD2 = new Histogram1D(this.bucketDescDim2);
         this.buckets = new Bucket2D[buckets1.getNumOfBuckets()][buckets2.getNumOfBuckets()];
         this.initialized = false;
+        this.totalsize = 0;
     }
+
+    public void createSampleHistogram(final IColumn columnD1, final IColumn columnD2,
+                                      final IStringConverter converterD1, final IStringConverter converterD2,
+                                      final IMembershipSet membershipSet, double sampleRate) {
+        this.createHistogram(columnD1, columnD2, converterD1, converterD2, membershipSet.sample(sampleRate));
+    }
+
+    public void createSampleHistogram(final IColumn columnD1, final IColumn columnD2,
+                                      final IStringConverter converterD1, final IStringConverter converterD2,
+                                      final IMembershipSet membershipSet, double sampleRate, long seed) {
+        this.createHistogram(columnD1, columnD2, converterD1, converterD2, membershipSet.sample(sampleRate, seed));
+    }
+
+    public Histogram1D getMissingHistogramD1() { return this.histogramMissingD1; }
+
+    public long getSize() { return this.totalsize; }
+
+
+    public Histogram1D getMissingHistogramD2() { return this.histogramMissingD2; }
+
 
     /**
      * Creates the histogram explicitly and in full. Should be called at most once.
@@ -35,21 +61,28 @@ public class Histogram2DHeavy {
         if (this.initialized) //a histogram had already been created
             throw new IllegalAccessError("A histogram cannot be created twice");
         this.initialized = true;
+        for (int i = 0; i < this.bucketDescDim1.getNumOfBuckets(); i++)
+            for (int j = 0; j < this.bucketDescDim2.getNumOfBuckets(); j++)
+                this.buckets[i][j] = new Bucket2D();
         final IRowIterator myIter = membershipSet.getIterator();
         int currRow = myIter.getNextRow();
         while (currRow >= 0) {
-            if ((columnD1.isMissing(currRow)) || (columnD2.isMissing(currRow)))
-                this.missingData++;
+            if ((columnD1.isMissing(currRow)) || (columnD2.isMissing(currRow))) {
+                if (!columnD1.isMissing(currRow))  //only column 2 is missing
+                    this.histogramMissingD1.addItem(columnD1.asDouble(currRow, converterD1), columnD1.getObject(currRow));
+                else if (!columnD2.isMissing(currRow)) // only column 1 is missing
+                    this.histogramMissingD2.addItem(columnD2.asDouble(currRow, converterD2), columnD2.getObject(currRow));
+                else
+                    this.missingData++; // both are missing
+            }
             else {
                 double val1 = columnD1.asDouble(currRow,converterD1);
                 double val2 = columnD2.asDouble(currRow,converterD2);
                 int index1 = this.bucketDescDim1.indexOf(val1);
                 int index2 = this.bucketDescDim2.indexOf(val2);
                 if ((index1 >= 0) && (index2 >= 0)) {
-                    /* todo: what is the object in a two dimensional histogram. One option is to keep the one dimensional
-                     * mins and maxs. The question is whether each of these spans two columns or just one.
-                     */
                     this.buckets[index1][index2].add(val1, columnD1.getObject(currRow), val2, columnD2.getObject(currRow));
+                    this.totalsize++;
                 }
                 else this.outOfRange++;
             }
@@ -60,6 +93,7 @@ public class Histogram2DHeavy {
     public int getNumOfBucketsD1() { return this.bucketDescDim1.getNumOfBuckets(); }
 
     public int getNumOfBucketsD2() { return this.bucketDescDim2.getNumOfBuckets(); }
+
 
     public long getMissingData() { return this.missingData; }
 
@@ -91,8 +125,12 @@ public class Histogram2DHeavy {
         for (int i = 0; i < unionH.bucketDescDim1.getNumOfBuckets(); i++)
             for (int j = 0; j < unionH.bucketDescDim2.getNumOfBuckets(); j++)
                 unionH.buckets[i][j] = this.buckets[i][j].union(otherHistogram.buckets[i][j]);
-        unionH.missingData = this.missingData + otherHistogram.missingData;
+        unionH.missingData= this.missingData + otherHistogram.missingData;
         unionH.outOfRange = this.outOfRange + otherHistogram.outOfRange;
+        unionH.initialized = true;
+        unionH.totalsize = this.totalsize + otherHistogram.totalsize;
+        unionH.histogramMissingD1 = this.histogramMissingD1.union(otherHistogram.histogramMissingD1);
+        unionH.histogramMissingD2 = this.histogramMissingD2.union(otherHistogram.histogramMissingD2);
         return unionH;
     }
 }

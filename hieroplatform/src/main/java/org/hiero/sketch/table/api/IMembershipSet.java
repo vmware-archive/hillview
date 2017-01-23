@@ -21,18 +21,28 @@ public interface IMembershipSet extends IRowOrder {
 
     /**
      * @return an IMembershipSet containing k samples from the membership map. The samples are made
-     * with replacement so may contain less than k distinct values. There is no guarantee that
+     * without replacement. Returns the full set if its size is smaller than k. There is no guarantee that
      * two subsequent samples return the same sample set.
      */
     IMembershipSet sample(int k);
 
     /**
      * @return an IMembershipSet containing k samples from the membership map. The samples are made
-     * with replacement so may contain less than k distinct values. The pseudo-random generated
+     * without replacement. Returns the full set if its size is smaller than k. The pseudo-random generated
      * is seeded with parameter seed, so subsequent calls with the same seed are guaranteed to
      * return the same sample.
      */
     IMembershipSet sample(int k, long seed);
+
+    /**
+     * @return a sample of size (rate * rowCount). randomizes between the floor and ceiling of this expression.
+     */
+    IMembershipSet sample(double rate);
+
+    /**
+     * @return same as sample(double rate) but with the seed for randomness specified by the caller.
+     */
+    IMembershipSet sample(double rate, long seed);
 
     /**
      * @return a new map which is the union of current map and otherMap.
