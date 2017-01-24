@@ -24,6 +24,7 @@ public class RpcServer {
     public RpcServer() {
         this.objects = new HashMap<String, RpcTarget>();
         this.addObject(new SampleTarget("0"));
+        this.addObject(new TableTarget("1"));
     }
 
     private void addObject(@NonNull RpcTarget object) {

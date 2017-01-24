@@ -1,5 +1,6 @@
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import org.hiero.sketch.view.IJson;
 
 public class RpcReply {
     private final int requestId;

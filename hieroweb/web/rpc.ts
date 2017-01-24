@@ -3,9 +3,32 @@
 
 import Rx = require('rx');
 import RxDOM = require('rx-dom');
+import Observer = Rx.Observer;
+import Observable = Rx.Observable;
 
 const HieroServiceUrl : string = "ws://localhost:8080";
 const RpcRequestUrl = HieroServiceUrl + "/rpc";
+
+export class RemoteObject {
+    constructor(public readonly remoteObjectId : string) {}
+
+    createRpcRequest(method: string, args: any[]) : RpcRequest {
+        return new RpcRequest(this.remoteObjectId, method, args);
+    }
+}
+
+export class PartialResult<T> {
+    constructor(public done: number, public data: T) {}
+}
+
+export interface Callback<T> {
+    (data: T) : void;
+}
+
+export interface RpcReply {
+    result: string;  // JSON
+    requestId: number;  // request that is being replied
+}
 
 // A streaming RPC request: for each request made
 // we expect a stream of replies.  The requests are made
@@ -22,13 +45,13 @@ export class RpcRequest {
 
     constructor(public objectId : string,
                 public method : string,
-                public args : string[]) {
+                public args : any[]) {
         this.requestId = RpcRequest.requestCounter++;
         this.socket = null;
     }
 
     serialize() : string {
-        var result = {
+        let result = {
             "objectId": this.objectId,
             "method": this.method,
             "arguments": this.args,
@@ -45,23 +68,27 @@ export class RpcRequest {
         this.socket.onNext(reqStr);
     }
 
+    replyReceived<T>(replyEvent: MessageEvent, onReply: Callback<T>) : void {
+        console.log('reply received: ' + replyEvent.data);
+        let reply = <RpcReply>JSON.parse(replyEvent.data);
+        let response = <T>JSON.parse(reply.result);
+        onReply(response);
+    }
+
     // Function to call to execute the RPC.
     // onReply is the continuation function which is invoked for
     // each result received by the streaming RPC.
-    invoke(onReply : (r : any) => void) : void {
+    invoke<T>(onReply : Callback<T>) : void {
         // Invoked when the socked is opened
-        var openObserver = Rx.Observer.create(() => this.onOpen());
+        let openObserver = Rx.Observer.create(() => this.onOpen());
         // Invoked when the socket is closed
-        var closeObserver = Rx.Observer.create(function () {
+        let closeObserver = Rx.Observer.create(function () {
             console.log('socket closing');
         });
 
         // Create a web socked and send the request
         this.socket = RxDOM.DOM.fromWebSocket(RpcRequestUrl, null, openObserver, closeObserver);
         console.log('socket created');
-        this.socket.subscribe(
-            onReply,
-            function(e) { console.log('error: ' + e.toString()); },
-            function() { console.log('socket closed'); });
+        this.socket.subscribe((r : MessageEvent) => this.replyReceived(r, onReply));
     };
 }

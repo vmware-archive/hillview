@@ -14,16 +14,18 @@ table {
     border-collapse: collapse;
 }
 
-hidden {
+.hidden {
     font-weight: normal;
 }
 
 th, td {
     border: 1px solid black;
     padding: 3px;
+    background: lightgrey;
 }
 
 .progressBarOuter {
+    margin: 10px;
     background: white;
     display: flex;
     flex-direction: row;

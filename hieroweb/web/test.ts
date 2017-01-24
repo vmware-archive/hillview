@@ -1,35 +1,58 @@
-import {ContentsKind, TableView, SchemaView} from "./table";
+import {ContentsKind, TableView, SchemaView, TableDataView} from "./table";
+import {RemoteObject, Callback} from "./rpc";
+import Observer = Rx.Observer;
 
 let schemaJson : SchemaView = [{
         kind: ContentsKind.String,
         name: "city",
-        allowMissing: false,
-        sortInfo: -1
+        sortOrder: -1
     },
     {
         kind: ContentsKind.Integer,
         name: "zipcode",
-        allowMissing: false,
-        sortInfo: 2
+        sortOrder: 2
     },
     {
         kind: ContentsKind.Date,
         name: "when",
-        allowMissing: false,
-        sortInfo: 0
+        sortOrder: 0
     }
 ];
 
-let tableJson = {
+export let tableJson1 : TableDataView = {
     schema: schemaJson,
     rows: [
-        [ "Sunnyvale", 94087 ],
-        [ "Mountain View", 94043 ]
-    ]
+        { count: 1, values: [ "Sunnyvale", 94087 ] },
+        { count: 3, values: [ "Mountain View", 94043 ] }
+    ],
+    rowCount: 10,
+    startPosition: 0
+};
+
+export let tableJson2 : TableDataView = {
+    schema: schemaJson,
+    rows: [
+        { count: 1, values: [ "Sunnyvale", 94087 ] },
+        { count: 3, values: [ "Mountain View", 94043 ] },
+        { count: 1, values: [ "Palo Alto", 94304 ] }
+    ],
+    rowCount : 10,
+    startPosition : 0
 };
 
 export function createTable() : TableView {
-    let tbl = new TableView(tableJson);
-    tbl.setScroll(0.1, 0.3);
-    return tbl;
+    return new TableView();
+}
+
+export class InitialObject extends RemoteObject {
+    private constructor() {
+        super("*");
+    }
+
+    public static readonly instance : InitialObject = new InitialObject();
+
+    loadTable(tableName: string, c : Callback<TableView>) : void {
+        let rr = this.createRpcRequest("loadTable", [tableName]);
+        rr.invoke(c);
+    }
 }

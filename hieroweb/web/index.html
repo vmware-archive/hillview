@@ -6,18 +6,35 @@
     <script type="text/javascript" src="./bundle.js" charset="utf-8"></script>
     <script>
         var hiero = this.hiero;
+        var table;
+
+        function onTableData(d) {
+            console.log("onData: " + d);
+            table.updateView(d);
+        }
+
+        function updateTable(d) {
+            /*
+            if (d == 1)
+                table.updateView(hiero.tableJson1);
+            else
+                table.updateView(hiero.tableJson2);
+            */
+            var req = new hiero.RpcRequest("1", "none", [d]);
+            req.invoke(onTableData);
+        }
 
         function onData(data) {
-            console.log("onData: " + data.data);
+            console.log("onData: " + data);
             var span = document.getElementById("cell");
-            span.textContent += "{" + data.data + "}";
-            if (data.data === "0")
+            span.textContent += "{" + data + "}";
+            if (data === "0")
                 socket.onCompleted();
         }
         function render() {
             var tableDiv = document.getElementById('table');
-            var t = hiero.createTable();
-            tableDiv.appendChild(t.getHTMLRepresentation());
+            table = hiero.createTable();
+            tableDiv.appendChild(table.getHTMLRepresentation());
 
             var progressDiv = document.getElementById('progress');
             var p = new hiero.ProgressBar();
@@ -37,6 +54,8 @@
 <body onload="render()">
     <H1>Hello</H1>
     <span id="cell" onclick="cellClick()">[ ]</span>
+    <span onclick="updateTable(1)">[ ]</span>
+    <span onclick="updateTable(2)">[ ]</span>
     <div id="progress"></div>
     <div id="table"></div>
 </body>
