@@ -21,10 +21,17 @@ public class DoubleArrayTest {
      * Generates a double array with every fifth entry missing
      */
     public static DoubleArrayColumn generateDoubleArray(final int size) {
+        return DoubleArrayTest.generateDoubleArray(size, 5);
+    }
+
+    /**
+     * Generates a double array with every skip entry missing
+     */
+    public static DoubleArrayColumn generateDoubleArray(final int size, int skip) {
         final DoubleArrayColumn col = new DoubleArrayColumn(desc, size);
         for (int i = 0; i < size; i++) {
             col.set(i, Math.sqrt(i + 1));
-            if ((i % 5) == 0)
+            if ((i % skip) == 0)
                 col.setMissing(i);
         }
         return col;

@@ -5,6 +5,8 @@ import org.hiero.utils.IntSet;
 import org.scalactic.exceptions.NullArgumentException;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
+
+import java.util.Random;
 import java.util.function.Predicate;
 
 /**
@@ -12,7 +14,7 @@ import java.util.function.Predicate;
  * are used for the isMember and for the iterator functions. Upside is that construction is quick,
  * adding a filter function is quick. The downside is that the isMember can take a long time if
  * there are many filters, and iterator takes a long time if it's sparse. Also, each first call for
- * getQuanitleSize after a new filter is a linear scan.
+ * getSize after a new filter is a linear scan.
  */
 
 public class LazyMembership implements IMembershipSet {
@@ -78,9 +80,9 @@ public class LazyMembership implements IMembershipSet {
         final IntSet sampleSet = new IntSet(k);
         for (int attempt = 0; attempt < samplingAttempts; attempt++) {
             if (useSeed)
-                batchSet = this.baseMap.sample(k, seed + attempt);
+                batchSet = this.baseMap.sample(k * 2, seed + attempt);
             else
-                batchSet = this.baseMap.sample(k);
+                batchSet = this.baseMap.sample(k * 2);
             final IRowIterator it = batchSet.getIterator();
             int tmprow = it.getNextRow();
             while (tmprow >= 0) {
