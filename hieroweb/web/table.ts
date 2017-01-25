@@ -1,4 +1,4 @@
-import {IHtmlElement, ScrollBar} from "./ui";
+import {IHtmlElement, ScrollBar, Menu} from "./ui";
 
 // These classes are direct counterparts to server-side Java classes
 // with the same names.  JSON serialization
@@ -93,17 +93,18 @@ export class TableView implements IHtmlElement {
         this.top.appendChild(this.scrollBar.getHTMLRepresentation());
     }
 
-    private static addHeaderCell(thr: Node, cd: ColumnDescriptionView) : void {
+    private static addHeaderCell(thr: Node, cd: ColumnDescriptionView) : HTMLElement {
         let thd = document.createElement("th");
         let label = cd.name;
         if (!cd.isVisible()) {
-            thd.className = "hidden";
+            thd.className = "hiddenColumn";
         } else {
             label += " " +
                 cd.getSortArrow() + cd.getSortIndex();
         }
         thd.innerHTML = label;
         thr.appendChild(thd);
+        return thd;
     }
 
     public updateView(data : TableDataView) : void {
@@ -127,7 +128,12 @@ export class TableView implements IHtmlElement {
         for (let i = 0; i < this.schema.length; i++) {
             let cd = new ColumnDescriptionView(this.schema[i]);
             cds.push(cd);
-            TableView.addHeaderCell(thr, cd);
+            let thd = TableView.addHeaderCell(thr, cd);
+            let menu = new Menu(
+                [{text: "show"},{text: "hide"}]
+            );
+            thd.onclick = () => menu.toggleVisibility();
+            thd.appendChild(menu.getHTMLRepresentation());
         }
         this.tbody = this.htmlTable.createTBody();
 

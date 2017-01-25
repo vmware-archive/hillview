@@ -50,9 +50,4 @@ export class InitialObject extends RemoteObject {
     }
 
     public static readonly instance : InitialObject = new InitialObject();
-
-    loadTable(tableName: string, c : Callback<TableView>) : void {
-        let rr = this.createRpcRequest("loadTable", [tableName]);
-        rr.invoke(c);
-    }
 }

@@ -9,8 +9,12 @@
         var table;
 
         function onTableData(d) {
-            console.log("onData: " + d);
+            console.log("onTableData: " + d);
             table.updateView(d);
+        }
+
+        function onError(d) {
+            console.log("Error: " + d);
         }
 
         function updateTable(d) {
@@ -20,17 +24,11 @@
             else
                 table.updateView(hiero.tableJson2);
             */
-            var req = new hiero.RpcRequest("1", "none", [d]);
-            req.invoke(onTableData);
+            var req = new hiero.RpcRequest("0", "mockTable", [d]);
+            var obs = Rx.Observer.create(onTableData, onError);
+            req.invoke(obs);
         }
 
-        function onData(data) {
-            console.log("onData: " + data);
-            var span = document.getElementById("cell");
-            span.textContent += "{" + data + "}";
-            if (data === "0")
-                socket.onCompleted();
-        }
         function render() {
             var tableDiv = document.getElementById('table');
             table = hiero.createTable();
@@ -41,21 +39,11 @@
             p.setPosition(.5);
             progressDiv.appendChild(p.getHTMLRepresentation());
         }
-
-        function cellClick() {
-            console.log("cellClick");
-            var span = document.getElementById("cell");
-            span.textContent += "subscribed";
-            var req = new hiero.RpcRequest("0", "none", []);
-            req.invoke(onData);
-        }
     </script>
 </head>
 <body onload="render()">
     <H1>Hello</H1>
-    <span id="cell" onclick="cellClick()">[ ]</span>
     <span onclick="updateTable(1)">[ ]</span>
-    <span onclick="updateTable(2)">[ ]</span>
     <div id="progress"></div>
     <div id="table"></div>
 </body>

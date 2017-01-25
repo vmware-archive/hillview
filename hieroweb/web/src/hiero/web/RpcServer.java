@@ -1,3 +1,5 @@
+package hiero.web;
+
 import com.google.gson.JsonElement;
 import com.google.gson.internal.Streams;
 import com.google.gson.stream.JsonReader;
@@ -5,9 +7,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 import javax.websocket.*;
 import javax.websocket.server.ServerEndpoint;
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
+import java.io.*;
 import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -23,8 +23,7 @@ public class RpcServer {
 
     public RpcServer() {
         this.objects = new HashMap<String, RpcTarget>();
-        this.addObject(new SampleTarget("0"));
-        this.addObject(new TableTarget("1"));
+        this.addObject(new TableTarget("0", null));
     }
 
     private void addObject(@NonNull RpcTarget object) {
@@ -34,8 +33,11 @@ public class RpcServer {
         object.setServer(this);
     }
 
-    private RpcTarget getObject(String id) {
-        return this.objects.get(id);
+    private @NonNull RpcTarget getObject(String id) {
+        RpcTarget target = this.objects.get(id);
+        if (target == null)
+            throw new RuntimeException("RPC target " + id + " is unknown");
+        return target;
     }
 
     private void deleteObject(String id) {
@@ -47,6 +49,7 @@ public class RpcServer {
     private static final Logger LOGGER =
             Logger.getLogger(RpcServer.class.getName());
 
+    @SuppressWarnings("unused")
     @OnOpen
     public void onOpen(@NonNull Session session) {
         LOGGER.log(Level.INFO, "Server " + Integer.toString(version) +
@@ -54,6 +57,7 @@ public class RpcServer {
                 session.getId());
     }
 
+    @SuppressWarnings("unused")
     @OnMessage
     public void onMessage(@NonNull String message, @NonNull Session session) {
         LOGGER.log(Level.INFO, "New message from Client [{0}]: {1}",
@@ -67,14 +71,14 @@ public class RpcServer {
             req = new RpcRequest(elem);
         } catch (Exception ex) {
             LOGGER.log(Level.SEVERE, "Error processing json: ", ex);
-            replyWithError(ex, session);
+            this.replyWithError(ex, session);
             return;
         }
 
         execute(req, session);
     }
 
-    public void sendReply(@NonNull RpcReply reply, @NonNull Session session) {
+    void sendReply(@NonNull RpcReply reply, @NonNull Session session) {
         try {
             JsonElement json = reply.toJson();
             session.getBasicRemote().sendText(json.toString());
@@ -91,30 +95,48 @@ public class RpcServer {
         }
     }
 
+    public static String asString(Throwable t) {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        t.printStackTrace(pw);
+        return sw.toString();
+    }
+
     private void execute(@NonNull RpcRequest rpcRequest, @NonNull Session session) {
         LOGGER.log(Level.INFO, "Executing " + rpcRequest.toString());
+
+        RpcTarget stub = null;
         try {
-            RpcTarget stub = this.getObject(rpcRequest.objectId);
+            stub = this.getObject(rpcRequest.objectId);
+        } catch (Exception ex) {
+            this.replyWithError(ex, session);
+        }
+
+        try {
             if (stub == null)
-                throw new RuntimeException("No object with id " + rpcRequest.objectId);
+                throw new RuntimeException("RpcServer.getObject() returned null");
             stub.execute(rpcRequest, session);
         } catch (Exception ex) {
-            replyWithError(ex, session);
+            RpcReply reply = rpcRequest.createReply(ex);
+            this.sendReply(reply, session);
         }
-        closeSession(session);
+
+        this.closeSession(session);
     }
 
     private void replyWithError(final Throwable th, final Session session) {
-        final RpcReply reply = new RpcReply(-1, "Error: " + th.toString());
-        sendReply(reply, session);
-        closeSession(session);
+        final RpcReply reply = new RpcReply(-1, asString(th), true);
+        this.sendReply(reply, session);
+        this.closeSession(session);
     }
 
+    @SuppressWarnings("unused")
     @OnClose
     public void onClose(final Session session) {
         LOGGER.log(Level.FINE, "Close connection for client: {0}", session.getId());
     }
 
+    @SuppressWarnings("unused")
     @OnError
     public void onError(final Throwable exception, final Session unused) {
         LOGGER.log(Level.SEVERE, "Error: ", exception);

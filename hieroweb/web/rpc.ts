@@ -26,8 +26,9 @@ export interface Callback<T> {
 }
 
 export interface RpcReply {
-    result: string;  // JSON
+    result: string;  // JSON or error message
     requestId: number;  // request that is being replied
+    isError: boolean;
 }
 
 // A streaming RPC request: for each request made
@@ -68,17 +69,21 @@ export class RpcRequest {
         this.socket.onNext(reqStr);
     }
 
-    replyReceived<T>(replyEvent: MessageEvent, onReply: Callback<T>) : void {
+    replyReceived<T>(replyEvent: MessageEvent, onReply: Observer<T>) : void {
         console.log('reply received: ' + replyEvent.data);
         let reply = <RpcReply>JSON.parse(replyEvent.data);
-        let response = <T>JSON.parse(reply.result);
-        onReply(response);
+        if (reply.isError) {
+            onReply.onError(reply.result);
+        } else {
+           let response = <T>JSON.parse(reply.result);
+           onReply.onNext(response);
+        }
     }
 
     // Function to call to execute the RPC.
-    // onReply is the continuation function which is invoked for
+    // onReply is an observer which is invoked for
     // each result received by the streaming RPC.
-    invoke<T>(onReply : Callback<T>) : void {
+    invoke<T>(onReply : Observer<T>) : void {
         // Invoked when the socked is opened
         let openObserver = Rx.Observer.create(() => this.onOpen());
         // Invoked when the socket is closed
