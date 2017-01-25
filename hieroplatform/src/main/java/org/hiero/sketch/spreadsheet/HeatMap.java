@@ -45,10 +45,12 @@ public class HeatMap {
         final IRowIterator myIter = membershipSet.getIterator();
         int currRow = myIter.getNextRow();
         while (currRow >= 0) {
-            if ((columnD1.isMissing(currRow)) || (columnD2.isMissing(currRow))){
-                if (!columnD1.isMissing(currRow))  //only column 2 is missing
+            boolean isMissingD1 = columnD1.isMissing(currRow);
+            boolean isMissingD2 = columnD2.isMissing(currRow);
+            if (isMissingD1 || isMissingD2) {
+                if (!isMissingD1)  //only column 2 is missing
                     this.histogramMissingD1.addValue(columnD1.asDouble(currRow, converterD1));
-                else if (!columnD2.isMissing(currRow)) // only column 1 is missing
+                else if (!isMissingD2) // only column 1 is missing
                     this.histogramMissingD2.addValue(columnD2.asDouble(currRow, converterD2));
                 else
                     this.missingData++; // both are missing
@@ -71,7 +73,6 @@ public class HeatMap {
     public Histogram1DLight getMissingHistogramD1() { return this.histogramMissingD1; }
 
     public long getSize() { return this.totalsize; }
-
 
     public Histogram1DLight getMissingHistogramD2() { return this.histogramMissingD2; }
 
@@ -96,16 +97,9 @@ public class HeatMap {
     public long getOutOfRange() { return this.outOfRange; }
 
     /**
-     * @return the index's bucket or null if not been initialized yet
+     * @return the index's count
      */
-    public long getBucket(final int index1, final int index2) {
-        if (!this.initialized)
-            throw new IllegalArgumentException("bucket not initialized yet");
-        if ((index1 < 0) || (index1 >= this.bucketDescDim1.getNumOfBuckets())
-              || (index2 < 0) || (index2 >= this.bucketDescDim2.getNumOfBuckets()))
-            throw new IllegalArgumentException("bucket index out of range");
-        return this.buckets[index1][index2];
-    }
+    public long getCount(final int index1, final int index2) { return this.buckets[index1][index2]; }
 
     /**
      * @param  otherHeatmap with the same bucketDescriptions

@@ -2,6 +2,8 @@ package org.hiero.sketch.table.api;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.Random;
+
 /**
  * A IMembershipSet is a representation of a set of integers.
  * These integers represent row indexes in a table.  If an integer
@@ -23,21 +25,25 @@ public interface IMembershipSet extends IRowOrder {
 
     /**
      * @return an IMembershipSet containing k samples from the membership map. The samples are made
-     * without replacement. Returns the full set if its size is smaller than k. The pseudo-random generated
-     * is seeded with parameter seed, so subsequent calls with the same seed are guaranteed to
-     * return the same sample.
+     * without replacement. Returns the full set if its size is smaller than k. The pseudo-random
+     * generator is seeded with parameter seed, so subsequent calls with the same seed are
+     * guaranteed to return the same sample.
      */
     IMembershipSet sample(int k, long seed);
 
     /**
      * @return a sample of size (rate * rowCount). randomizes between the floor and ceiling of this expression.
      */
-    IMembershipSet sample(double rate);
+    default IMembershipSet sample(double rate) {
+        return this.sample(this.getSampleSize(rate, 0, false));
+    }
 
     /**
      * @return same as sample(double rate) but with the seed for randomness specified by the caller.
      */
-    IMembershipSet sample(double rate, long seed);
+    default IMembershipSet sample(double rate, long seed) {
+        return this.sample(this.getSampleSize(rate, seed, true), seed);
+    }
 
     /**
      * @return a new map which is the union of current map and otherMap.
@@ -47,4 +53,18 @@ public interface IMembershipSet extends IRowOrder {
     IMembershipSet intersection(@NonNull IMembershipSet otherMap);
 
     IMembershipSet setMinus(@NonNull IMembershipSet otherMap);
+
+    default int getSampleSize(double rate, long seed, boolean useSeed) {
+        Random r;
+        if (useSeed)
+            r = new Random(seed);
+        else
+            r = new Random();
+        final int sampleSize;
+        final double appSampleSize = rate * this.getSize();
+        if (r.nextDouble() < (appSampleSize - Math.floor(appSampleSize)))
+            sampleSize = (int) Math.floor(appSampleSize);
+        else sampleSize = (int) Math.ceil(appSampleSize);
+        return sampleSize;
+    }
 }

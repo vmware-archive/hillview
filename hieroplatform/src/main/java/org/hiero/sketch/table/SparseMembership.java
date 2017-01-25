@@ -112,31 +112,6 @@ public class SparseMembership implements IMembershipSet {
         return new SparseMembership(this.membershipMap.sample(k, seed, true));
     }
 
-
-    @Override
-    public IMembershipSet sample(double rate){
-        return this.sample(getSampleSize(rate, 0, false));
-    }
-
-    @Override
-    public IMembershipSet sample(double rate, long seed){
-        return this.sample(getSampleSize(rate, seed, true), seed);
-    }
-
-    private int getSampleSize(double rate, long seed, boolean useSeed) {
-        Random r;
-        if (useSeed)
-            r = new Random(seed);
-        else
-            r = new Random();
-        final int sampleSize;
-        final double appSampleSize = rate * this.getSize();
-        if (r.nextDouble() < (appSampleSize - Math.floor(appSampleSize)))
-            sampleSize = (int) Math.floor(appSampleSize);
-        else sampleSize = (int) Math.ceil(appSampleSize);
-        return sampleSize;
-    }
-
     @Override
     public IRowIterator getIterator() {
         return new SparseIterator(this.membershipMap);

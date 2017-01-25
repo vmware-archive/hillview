@@ -160,7 +160,7 @@ public class IntSet {
         else
             psg = new Random();
         int randomKey = psg.nextInt(this.n);
-        if ((this.containsZero) && (randomKey == 0)) {  //sampling zero is done separately
+        if ((this.containsZero) && (randomKey == 0)) {  // sampling zero is done separately
             sampleSet.add(0);
             sampleSize = k-1;
         }

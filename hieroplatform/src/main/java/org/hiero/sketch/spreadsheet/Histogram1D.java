@@ -76,14 +76,7 @@ public class Histogram1D {
     /**
      * @return the index's bucket or exception if doesn't exist.
      */
-    public Bucket1D getBucket(final int index) {
-        if ((index < 0) || (index >= this.bucketDescription.getNumOfBuckets()))
-            throw new IllegalArgumentException("bucket index out of range");
-        Bucket1D res = this.buckets[index];
-        if (res == null)
-            throw new IllegalArgumentException("bucket not initialized yet");
-        return res;
-    }
+    public Bucket1D getBucket(final int index) { return this.buckets[index]; }
 
     /**
      * @param  otherHistogram with the same bucketDescription
@@ -92,8 +85,6 @@ public class Histogram1D {
     public Histogram1D union( @NonNull Histogram1D otherHistogram) {
         if (!this.bucketDescription.equals(otherHistogram.bucketDescription))
             throw new IllegalArgumentException("Histogram union without matching buckets");
-        //if ((!this.initialized) || (!otherHistogram.initialized))
-          //  throw new IllegalArgumentException("Uninitialized histogram cannot be part of a union");
         Histogram1D unionH = new Histogram1D(this.bucketDescription);
         unionH.initialized = true;
         for (int i = 0; i < unionH.bucketDescription.getNumOfBuckets(); i++)

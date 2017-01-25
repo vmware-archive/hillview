@@ -7,8 +7,10 @@ import org.hiero.sketch.table.api.IRowIterator;
 import org.hiero.sketch.table.api.IStringConverter;
 
 /**
- * A 2 dimension histogram where each bucket is a Bucket2D object. Designed to be used for visualizations where the
- * number of buckets is small enough so that the semantics of Bucket2D are useful.
+ * A 2 dimension histogram where each bucket is a Bucket2D object. Designed to be used for
+ * visualizations where we need to have more information on each bucket such as the minimum and
+ * maximum values with their respective objects. The 1D histograms of missing items are composed
+ * of (1D) bucket objects
  */
 public class Histogram2DHeavy {
     private final Bucket2D[][] buckets;
@@ -48,9 +50,7 @@ public class Histogram2DHeavy {
 
     public long getSize() { return this.totalsize; }
 
-
     public Histogram1D getMissingHistogramD2() { return this.histogramMissingD2; }
-
 
     /**
      * Creates the histogram explicitly and in full. Should be called at most once.
@@ -67,11 +67,15 @@ public class Histogram2DHeavy {
         final IRowIterator myIter = membershipSet.getIterator();
         int currRow = myIter.getNextRow();
         while (currRow >= 0) {
-            if ((columnD1.isMissing(currRow)) || (columnD2.isMissing(currRow))) {
-                if (!columnD1.isMissing(currRow))  //only column 2 is missing
-                    this.histogramMissingD1.addItem(columnD1.asDouble(currRow, converterD1), columnD1.getObject(currRow));
-                else if (!columnD2.isMissing(currRow)) // only column 1 is missing
-                    this.histogramMissingD2.addItem(columnD2.asDouble(currRow, converterD2), columnD2.getObject(currRow));
+            boolean isMissingD1 = columnD1.isMissing(currRow);
+            boolean isMissingD2 = columnD2.isMissing(currRow);
+            if (isMissingD1 || isMissingD2) {
+                if (!isMissingD1)  //only column 2 is missing
+                    this.histogramMissingD1.addItem(columnD1.asDouble(currRow, converterD1),
+                            columnD1.getObject(currRow));
+                else if (!isMissingD2) // only column 1 is missing
+                    this.histogramMissingD2.addItem(columnD2.asDouble(currRow, converterD2),
+                            columnD2.getObject(currRow));
                 else
                     this.missingData++; // both are missing
             }
@@ -81,7 +85,8 @@ public class Histogram2DHeavy {
                 int index1 = this.bucketDescDim1.indexOf(val1);
                 int index2 = this.bucketDescDim2.indexOf(val2);
                 if ((index1 >= 0) && (index2 >= 0)) {
-                    this.buckets[index1][index2].add(val1, columnD1.getObject(currRow), val2, columnD2.getObject(currRow));
+                    this.buckets[index1][index2].add(val1, columnD1.getObject(currRow),
+                            val2, columnD2.getObject(currRow));
                     this.totalsize++;
                 }
                 else this.outOfRange++;
@@ -94,7 +99,6 @@ public class Histogram2DHeavy {
 
     public int getNumOfBucketsD2() { return this.bucketDescDim2.getNumOfBuckets(); }
 
-
     public long getMissingData() { return this.missingData; }
 
     public long getOutOfRange() { return this.outOfRange; }
@@ -102,14 +106,7 @@ public class Histogram2DHeavy {
     /**
      * @return the index's bucket or null if not been initialized yet
      */
-    public Bucket2D getBucket(final int index1, final int index2) {
-        if (!this.initialized)
-            throw new IllegalArgumentException("bucket not initialized yet");
-        if ((index1 < 0) || (index1 >= this.bucketDescDim1.getNumOfBuckets())
-                || (index2 < 0) || (index2 >= this.bucketDescDim2.getNumOfBuckets()))
-            throw new IllegalArgumentException("bucket index out of range");
-        return this.buckets[index1][index2];
-    }
+    public Bucket2D getBucket(final int index1, final int index2) { return this.buckets[index1][index2]; }
 
     /**
      * @param  otherHistogram with the same bucketDescription
