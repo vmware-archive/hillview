@@ -2,30 +2,61 @@
 <meta charset="utf-8">
 <html>
 <head>
+    <link rel="stylesheet" href="hiero.css">
     <script type="text/javascript" src="./bundle.js" charset="utf-8"></script>
     <script>
-         var hiero = this.hiero;
-         function onData(data) {
-            console.log("onData: " + data.data);
+        var hiero = this.hiero;
+        var table;
+
+        function onTableData(d) {
+            console.log("onData: " + d);
+            table.updateView(d);
+        }
+
+        function updateTable(d) {
+            /*
+            if (d == 1)
+                table.updateView(hiero.tableJson1);
+            else
+                table.updateView(hiero.tableJson2);
+            */
+            var req = new hiero.RpcRequest("1", "none", [d]);
+            req.invoke(onTableData);
+        }
+
+        function onData(data) {
+            console.log("onData: " + data);
             var span = document.getElementById("cell");
-            span.textContent += "{" + data.data + "}";
-            if (data.data === "0")
+            span.textContent += "{" + data + "}";
+            if (data === "0")
                 socket.onCompleted();
-        };
+        }
+        function render() {
+            var tableDiv = document.getElementById('table');
+            table = hiero.createTable();
+            tableDiv.appendChild(table.getHTMLRepresentation());
+
+            var progressDiv = document.getElementById('progress');
+            var p = new hiero.ProgressBar();
+            p.setPosition(.5);
+            progressDiv.appendChild(p.getHTMLRepresentation());
+        }
+
         function cellClick() {
             console.log("cellClick");
             var span = document.getElementById("cell");
             span.textContent += "subscribed";
-            console.log(hiero.person);
-            var x = hiero.inc(2);
             var req = new hiero.RpcRequest("0", "none", []);
             req.invoke(onData);
-        };
+        }
     </script>
-    <link rel="stylesheet" href="hiero.css">
 </head>
-<body>
+<body onload="render()">
     <H1>Hello</H1>
     <span id="cell" onclick="cellClick()">[ ]</span>
+    <span onclick="updateTable(1)">[ ]</span>
+    <span onclick="updateTable(2)">[ ]</span>
+    <div id="progress"></div>
+    <div id="table"></div>
 </body>
 </html>

@@ -9,6 +9,7 @@
         </element>
         <element id="directory" name="lib">
           <element id="library" level="project" name="Maven: com.google.code.gson:gson:2.8.0" />
+          <element id="library" level="project" name="Maven: org.hiero:hieroplatform:1.0-SNAPSHOT" />
         </element>
       </element>
     </root>

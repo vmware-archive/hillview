@@ -11,8 +11,7 @@ public class SampleTarget extends RpcTarget {
         // TODO: dispatch here to the right procedure
         int replies = 3;
         for (int i = 1; i < replies; i++) {
-            RpcReply reply = request.createReply(
-                    request.requestId + " " + Integer.toString(i));
+            RpcReply reply = request.createReply(Integer.toString(i));
             this.server.sendReply(reply, session);
         }
     }

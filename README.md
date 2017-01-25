@@ -13,7 +13,7 @@ Big data spreadsheet
 
 * Fork the repository using the "fork" button on github, by following these instructions:
 https://help.github.com/articles/fork-a-repo/
-* To merge your fork with the original use: `git fetch upstream; git merge upstream/master`
+* To merge your fork with the original use: `git fetch upstream; git rebase upstream/master`
 * Run IntelliJ code inspection (Analyze/Inspect code) before commit and solve all open issues
 * When you make changes you can submit them into your own fork
 * After committing changes, create a pull request (using the github web UI)
@@ -72,4 +72,3 @@ The first time you start Intellij you must import the project: on the
 welcome screen, select the "import project" option, point to the
 "pom.xml" file inside the hiero folder, click "next" a few times and
 you're good to go.
-

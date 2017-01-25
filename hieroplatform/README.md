@@ -14,3 +14,7 @@ To run only the tests:
 > $: mvn test
 
 To run tests from Intellij: run using the JUnit run configuration.
+
+The package must be installed to be used by the hieroweb project:
+
+> $: mvn install

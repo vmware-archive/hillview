@@ -47,5 +47,6 @@
     <orderEntry type="library" name="Maven: org.checkerframework:checker-qual:2.1.5" level="project" />
     <orderEntry type="library" name="Maven: org.checkerframework:checker:2.1.5" level="project" />
     <orderEntry type="library" name="Maven: org.checkerframework:jdk8:2.1.5" level="project" />
+    <orderEntry type="library" name="Maven: com.google.code.gson:gson:2.8.0" level="project" />
   </component>
 </module>
