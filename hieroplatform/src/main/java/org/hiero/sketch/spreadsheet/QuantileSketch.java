@@ -29,11 +29,6 @@ public class QuantileSketch implements ISketch<Table, QuantileList> {
      */
     private final int resolution;
     /**
-     * a knob to control the sample size taken fromm a table to create a QuantileList
-     * (the size is perBin*resolution)
-     */
-    private final int perBin = 100;
-    /**
      * a knob to control the size of the QuantileList that is shipped around
      * (the size is slack*resolution)
      */
@@ -58,7 +53,12 @@ public class QuantileSketch implements ISketch<Table, QuantileList> {
      */
     public QuantileList getQuantile(final Table data) {
         /* Sample a set of rows from the table, then sort the sampled rows. */
-        final IMembershipSet sampleSet = data.members.sample(this.resolution * this.perBin);
+        /*
+      a knob to control the sample size taken fromm a table to create a QuantileList
+      (the size is perBin*resolution)
+     */
+        int perBin = 100;
+        final IMembershipSet sampleSet = data.members.sample(this.resolution * perBin);
         final Table sampleTable = data.compress(sampleSet);
         final Integer[] order = this.colSortOrder.getSortedRowOrder(sampleTable);
         /* We will shrink the set of samples  down to slack*resolution. Number of samples might be

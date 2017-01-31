@@ -6,8 +6,6 @@ import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
 import org.hiero.sketch.table.api.IStringConverter;
 
-import java.util.Random;
-
 /**
  * One dimensional histogram where buckets are just longs and not a full object.
  */

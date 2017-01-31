@@ -95,7 +95,7 @@ public class QuantileList implements Serializable {
      * the interval (wins(x), dataSize - losses(x)), so we return the average of the two.
      */
     public double getApproxRank(final int rowIndex) {
-        return (((double) this.getWins(rowIndex) + this.getDataSize() -
+        return ((((double) this.getWins(rowIndex) + this.getDataSize()) -
                 this.getLosses(rowIndex)) / 2);
     }
 
@@ -135,9 +135,9 @@ public class QuantileList implements Serializable {
         newSubset.add(0);
         double open = this.getApproxRank(0);
         double close;
-        for (int i = 1; i <= oldSize - 2; i++) {
+        for (int i = 1; i <= (oldSize - 2); i++) {
             close = this.getApproxRank(i+1);
-            if (close - open > avgGap) {
+            if ((close - open) > avgGap) {
                 newSubset.add(i);
                 open = this.getApproxRank(i);
             }
@@ -163,7 +163,7 @@ public class QuantileList implements Serializable {
             double targetRank = (i + 1) * stepSize;
             while (true) {
                 double ar = this.getApproxRank(j);
-                if (ar <=  targetRank && j <= oldSize - 2)
+                if ((ar <= targetRank) && (j <= (oldSize - 2)))
                     j++;
                 else
                     break;
@@ -172,7 +172,7 @@ public class QuantileList implements Serializable {
                 newSubset.add(0);
             else {
             /* Check whether j or j-1 is closer to the targetRank */
-                if (this.getApproxRank(j) + this.getApproxRank(j - 1) <= 2 * targetRank)
+                if ((this.getApproxRank(j) + this.getApproxRank(j - 1)) <= (2 * targetRank))
                     newSubset.add(j);
                 else
                     newSubset.add(j - 1);

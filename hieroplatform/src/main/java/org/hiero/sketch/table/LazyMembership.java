@@ -6,7 +6,6 @@ import org.scalactic.exceptions.NullArgumentException;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
 
-import java.util.Random;
 import java.util.function.Predicate;
 
 /**

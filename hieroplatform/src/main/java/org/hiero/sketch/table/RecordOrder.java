@@ -35,7 +35,7 @@ public class RecordOrder implements Iterable<ColumnSortOrientation> {
      */
     public ISchema toSchema() {
         Schema newSchema = new Schema();
-        for (ColumnSortOrientation o: sortOrientationList) {
+        for (ColumnSortOrientation o: this.sortOrientationList) {
             newSchema.append(o.columnDescription);
         }
         return newSchema;

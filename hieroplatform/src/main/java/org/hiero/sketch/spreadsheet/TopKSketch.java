@@ -124,13 +124,13 @@ public class TopKSketch implements ISketch<Table, NextKList> {
 
     /**
      * Given a table, generate a TopK List according to the Sorted Order.
-     * @param data
+     * @param data The input table on which we want to compute the TopK list.
      * @return A Table containing the top K rows (projected onto the relevant columns) and a list
      * containing counts of how often each rows appeared.
      */
     public NextKList getKList(Table data) {
-        IndexComparator comp = colSortOrder.getComparator(data);
-        TreeTopK<Integer> topK = new TreeTopK<>(maxSize, comp);
+        IndexComparator comp = this.colSortOrder.getComparator(data);
+        TreeTopK<Integer> topK = new TreeTopK<>(this.maxSize, comp);
         for(int i = 0; i < data.getNumOfRows(); i++)
             topK.push(i);
         SortedMap<Integer, Integer> topKList = topK.getTopK();

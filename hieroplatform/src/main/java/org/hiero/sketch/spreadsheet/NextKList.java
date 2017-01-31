@@ -9,7 +9,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-/** The data structure used to store the next K rows specfied by a starting point (topRow) and a
+/** The data structure used to store the next K rows specified by a starting point (topRow) and a
  *  RecordSortOrder.
  */
 public class NextKList implements Serializable {
@@ -43,7 +43,7 @@ public class NextKList implements Serializable {
         int i = 0;
         while ((nextRow != -1) && (i < rowsToDisplay)) {
             RowSnapshot rs = new RowSnapshot(this.table, nextRow);
-            builder.append(rs.toString() + ": " + this.count.get(i));
+            builder.append(rs.toString()).append(": ").append(this.count.get(i));
             builder.append(System.getProperty("line.separator"));
             nextRow = rowIt.getNextRow();
             i++;

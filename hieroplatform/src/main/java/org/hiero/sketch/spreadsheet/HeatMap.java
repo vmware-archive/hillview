@@ -5,7 +5,6 @@ import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
 import org.hiero.sketch.table.api.IStringConverter;
-import org.hiero.utils.IntSet;
 
 /**
  * An implementation of a 2 dimension histogram. It is designed assuming the number of buckets is very large, so there
@@ -29,8 +28,8 @@ public class HeatMap {
         this.bucketDescDim2 = buckets2;
         this.buckets = new long[buckets1.getNumOfBuckets()][buckets2.getNumOfBuckets()]; // Automatically initialized to 0
         this.initialized = false;
-        histogramMissingD1 = new Histogram1DLight(bucketDescDim1);
-        histogramMissingD2 = new Histogram1DLight(bucketDescDim2);
+        this.histogramMissingD1 = new Histogram1DLight(this.bucketDescDim1);
+        this.histogramMissingD2 = new Histogram1DLight(this.bucketDescDim2);
     }
 
     /**

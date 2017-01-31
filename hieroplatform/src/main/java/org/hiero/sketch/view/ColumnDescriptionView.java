@@ -1,7 +1,6 @@
 package org.hiero.sketch.view;
 
 import org.hiero.sketch.table.api.ContentsKind;
-import scala.reflect.internal.util.TableDef;
 
 public class ColumnDescriptionView implements IJson {
     public final ContentsKind kind;
