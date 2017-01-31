@@ -6,6 +6,6 @@ package org.hiero.sketch.table.api;
  */
 public interface IRowIterator {
     // Returns -1 when iteration is completed; else it returns
-    // the index of the next row.
+    // the index of the table row.
     int getNextRow();
 }

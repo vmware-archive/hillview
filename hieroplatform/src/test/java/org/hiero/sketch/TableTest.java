@@ -27,6 +27,22 @@ public class TableTest {
         return new Table(mySchema, columns, full);
     }
 
+    public static Table getRepIntTable(final int size, final int numCols) {
+        final IColumn[] columns = new IColumn[numCols];
+        double exp = 0.8/numCols;
+        final int range =  ((int)Math.pow(size, exp));
+        for (int i = 0; i < numCols; i++) {
+            final String colName = "Column" + String.valueOf(i);
+            columns[i] = getRandIntArray(size, range, colName);
+        }
+        final Schema mySchema = new Schema();
+        for (int i = 0; i < numCols; i++) {
+            mySchema.append(columns[i].getDescription());
+        }
+        final FullMembership full = new FullMembership(size);
+        return new Table(mySchema, columns, full);
+    }
+
     @Test
     public void getTableTest(){
         final Table leftTable = getIntTable(100, 2);

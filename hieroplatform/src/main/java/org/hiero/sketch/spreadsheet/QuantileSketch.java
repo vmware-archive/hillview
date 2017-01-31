@@ -127,7 +127,7 @@ public class QuantileSketch implements ISketch<Table, QuantileList> {
         final WinsAndLosses[] mergedRank = new WinsAndLosses[length];
         int i = 0, j = 0, lower, upper;
         for (int k = 0; k < length; k++) {
-            if (mergeLeft[k]) { /* i lost to j, so we insert i next*/
+            if (mergeLeft[k]) { /* i lost to j, so we insert i table*/
                  /* Entry i gets its own Wins + the Wins for the biggest entry on
                  *  the right that lost to it. This is either the Wins of j-1, or 0 if i beat
                  *  nobody on the right (which means j = 0);*/

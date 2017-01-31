@@ -4,7 +4,9 @@ import org.hiero.sketch.table.api.IRowIterator;
 import org.hiero.sketch.table.api.IRowOrder;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 /**
  * ArrayRowOrder takes an array, which is meant to represent a sequence of rows in a table.
@@ -28,6 +30,35 @@ public class ArrayRowOrder implements IRowOrder {
         this.sortedRows = new ArrayList<Integer>(this.size);
         for (int i = 0; i < this.size; i++) {
             this.sortedRows.add(order[i]);
+        }
+    }
+
+    public ArrayRowOrder(final Iterator<Integer> it) {
+        int tmp = 0;
+        this.sortedRows = new ArrayList<>();
+        while (it.hasNext() == true) {
+            this.sortedRows.add(it.next());
+            tmp++;
+        }
+        this.size = tmp;
+    }
+
+    public ArrayRowOrder(final Iterable<Integer> iterable) {
+        int tmp = 0;
+        this.sortedRows = new ArrayList<>();
+        for(Integer i : iterable) {
+            this.sortedRows.add(i);
+            tmp++;
+        }
+        this.size = tmp;
+    }
+
+    public ArrayRowOrder(final Set<Integer> order) {
+        this.size = order.size();
+        this.sortedRows = new ArrayList<>(this.size);
+        Iterator<Integer> it = order.iterator();
+        while (it.hasNext() == true) {
+            this.sortedRows.add(it.next());
         }
     }
 
