@@ -33,6 +33,11 @@ public class QuantileSketch implements ISketch<Table, QuantileList> {
      * (the size is slack*resolution)
      */
     private final int slack = 10;
+    /**
+     * a knob to control the sample size taken fromm a table to create a QuantileList
+     * (the size is perBin*resolution)
+     */
+    private final int perBin = 100;
 
     /**
      * @param sortOrder The list of column orientations.
@@ -53,12 +58,7 @@ public class QuantileSketch implements ISketch<Table, QuantileList> {
      */
     public QuantileList getQuantile(final Table data) {
         /* Sample a set of rows from the table, then sort the sampled rows. */
-        /*
-      a knob to control the sample size taken fromm a table to create a QuantileList
-      (the size is perBin*resolution)
-     */
-        int perBin = 100;
-        final IMembershipSet sampleSet = data.members.sample(this.resolution * perBin);
+        final IMembershipSet sampleSet = data.members.sample(this.resolution * this.perBin);
         final Table sampleTable = data.compress(sampleSet);
         final Integer[] order = this.colSortOrder.getSortedRowOrder(sampleTable);
         /* We will shrink the set of samples  down to slack*resolution. Number of samples might be
@@ -127,7 +127,7 @@ public class QuantileSketch implements ISketch<Table, QuantileList> {
         final WinsAndLosses[] mergedRank = new WinsAndLosses[length];
         int i = 0, j = 0, lower, upper;
         for (int k = 0; k < length; k++) {
-            if (mergeLeft[k]) { /* i lost to j, so we insert i table*/
+            if (mergeLeft[k]) { /* i lost to j, so we insert i next*/
                  /* Entry i gets its own Wins + the Wins for the biggest entry on
                  *  the right that lost to it. This is either the Wins of j-1, or 0 if i beat
                  *  nobody on the right (which means j = 0);*/

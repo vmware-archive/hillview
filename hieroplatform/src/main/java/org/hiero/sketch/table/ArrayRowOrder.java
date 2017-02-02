@@ -48,20 +48,6 @@ public class ArrayRowOrder implements IRowOrder {
         this.size = tmp;
     }
 
-    public ArrayRowOrder(final Set<Integer> order) {
-        this.size = order.size();
-        this.sortedRows = new ArrayList<>(this.size);
-        Iterator<Integer> it = order.iterator();
-        while (it.hasNext()) {
-            this.sortedRows.add(it.next());
-        }
-    }
-
-    public ArrayRowOrder(final List<Integer> order) {
-        this.sortedRows = order;
-        this.size = order.size();
-    }
-
     @Override
     public int getSize() {
         return this.size;

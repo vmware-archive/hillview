@@ -94,7 +94,7 @@ public class QuantileList implements Serializable {
      * @return A guess for the rank of the element x. We know it lies in
      * the interval (wins(x), dataSize - losses(x)), so we return the average of the two.
      */
-    public double getApproxRank(final int rowIndex) {
+    private double getApproxRank(final int rowIndex) {
         return ((((double) this.getWins(rowIndex) + this.getDataSize()) -
                 this.getLosses(rowIndex)) / 2);
     }

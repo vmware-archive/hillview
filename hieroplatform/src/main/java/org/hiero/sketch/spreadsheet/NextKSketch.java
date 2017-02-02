@@ -7,7 +7,7 @@ import org.hiero.sketch.table.Table;
 import rx.Observable;
 
 public class NextKSketch implements ISketch<Table, NextKList> {
-    public final RowSnapshot topRow;
+    private final RowSnapshot topRow;
 
     public NextKSketch(RowSnapshot topRow) {
         this.topRow = topRow;

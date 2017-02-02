@@ -8,9 +8,7 @@ import org.hiero.sketch.spreadsheet.QuantileList;
 import org.hiero.sketch.spreadsheet.QuantileSketch;
 import org.hiero.sketch.table.ArrayRowOrder;
 import org.hiero.sketch.table.RecordOrder;
-import org.hiero.sketch.table.SparseMembership;
 import org.hiero.sketch.table.Table;
-import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowOrder;
 import org.hiero.sketch.table.api.IndexComparator;
 import org.junit.Test;
@@ -19,24 +17,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static junit.framework.TestCase.assertTrue;
+import static org.hiero.sketch.TableTest.SplitTable;
 import static org.hiero.sketch.TableTest.getIntTable;
 
 public class QuantileSketchTest {
-
-    private List<Table> SplitTable(Table bigTable, int fragmentSize) {
-        int tableSize = bigTable.members.getSize();
-        int numTables = (tableSize / fragmentSize) + 1;
-        List<Table> tableList = new ArrayList<Table>(numTables);
-        int start = 0;
-        while (start < tableSize){
-            int thisFragSize = Math.min(fragmentSize, tableSize - start);
-            IMembershipSet members = new SparseMembership(start, thisFragSize);
-            tableList.add(bigTable.compress(members));
-            start += fragmentSize;
-        }
-        return tableList;
-    }
-
 
     @Test
     public void testQuantile() {
@@ -98,7 +82,7 @@ public class QuantileSketchTest {
         for (String colName : bigTable.schema.getColumnNames()) {
             cso.append(new ColumnSortOrientation(bigTable.schema.getDescription(colName), true));
         }
-        List<Table> tabList = this.SplitTable(bigTable, 10000);
+        List<Table> tabList = SplitTable(bigTable, 10000);
         //printTime("split");
         // Create a big parallel data set containing all table fragments
         ArrayList<IDataSet<Table>> a = new ArrayList<IDataSet<Table>>();
@@ -171,17 +155,14 @@ public class QuantileSketchTest {
         int j =0;
         for (int i =0; i < resolution; i++) {
             boolean match = false;
-            while(!match) {
+            while (!match) {
                 match = true;
                 for (String colName : ql.getSchema().getColumnNames()) {
                     if (ql.getColumn(colName).getObject(i) != sortTable.getColumn(colName).getObject(j))
                         match = false;
                 }
-                //if (match) {
-                //    System.out.printf("%d has rank: %f, %n", i + 1, (j * 100.0) / bigSize);
-                //}
                 j++;
-                if(j >= bigSize) {
+                if (j >= bigSize) {
                     System.out.printf("Error! No match for %d%n", i + 1);
                     j = 0;
                     break;

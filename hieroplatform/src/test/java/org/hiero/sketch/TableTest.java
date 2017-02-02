@@ -2,7 +2,11 @@ package org.hiero.sketch;
 
 import org.hiero.sketch.table.*;
 import org.hiero.sketch.table.api.IColumn;
+import org.hiero.sketch.table.api.IMembershipSet;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.hiero.sketch.DoubleArrayTest.generateDoubleArray;
 import static org.hiero.sketch.IntArrayTest.generateIntArray;
@@ -10,6 +14,21 @@ import static org.hiero.sketch.IntArrayTest.getRandIntArray;
 import static org.junit.Assert.assertNotNull;
 
 public class TableTest {
+
+    public static List<Table> SplitTable(Table bigTable, int fragmentSize) {
+        int tableSize = bigTable.members.getSize();
+        int numTables = (tableSize / fragmentSize) + 1;
+        List<Table> tableList = new ArrayList<Table>(numTables);
+        int start = 0;
+        while (start < tableSize){
+            int thisFragSize = Math.min(fragmentSize, tableSize - start);
+            IMembershipSet members = new SparseMembership(start, thisFragSize);
+            tableList.add(bigTable.compress(members));
+            start += fragmentSize;
+        }
+        return tableList;
+    }
+
 
     public static Table getIntTable(final int size, final int numCols) {
         final IColumn[] columns = new IColumn[numCols];

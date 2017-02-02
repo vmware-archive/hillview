@@ -93,7 +93,7 @@ public class RecordOrder implements Iterable<ColumnSortOrientation> {
 
     /**
      * Given two Tables in sorted order, decide the order in which to merge them. We do not treat
-     * equality specially: any order is ok.
+     * equality specially: any order is ok. This is used for instance in computing Quantiles.
      * @param left The left side Table
      * @param right the right side Table
      * @return A Boolean array where the i^th element is True if the i^th element in merged table
@@ -103,8 +103,8 @@ public class RecordOrder implements Iterable<ColumnSortOrientation> {
         if (!left.schema.equals(right.schema)) {
             throw new RuntimeException("Tables do not have matching schemas");
         }
-        final int  leftLength = left.getNumOfRows();
-        final int  rightLength = right.getNumOfRows();
+        final int  leftLength = left.members.getSize();
+        final int  rightLength = right.members.getSize();
         final int length = leftLength + rightLength;
         final boolean[] mergeLeft = new boolean[length];
         int i = 0, j = 0, k = 0;
@@ -183,7 +183,8 @@ public class RecordOrder implements Iterable<ColumnSortOrientation> {
 
     /**
      * Given two Tables in sorted order, decide the order in which to merge them. If two rows
-     * are equal, they will be combined to a single row (possibly with a larger  count).
+     * are equal, they will be combined to a single row (perhaps with a larger count). This is used
+     * for instance in TopK computations.
      * @param left The left side Table
      * @param right the right side Table
      * @return A Integer array whose entries encode where the next element in the sorted order comes
@@ -251,11 +252,11 @@ public class RecordOrder implements Iterable<ColumnSortOrientation> {
                 j++;
             }
         }
-        while(i < leftLength) {
+        while (i < leftLength) {
             merge.add(-1);
             i++;
             }
-        while(j < rightLength) {
+        while (j < rightLength) {
             merge.add(1);
             j++;
         }

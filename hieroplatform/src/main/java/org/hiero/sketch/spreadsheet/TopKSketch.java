@@ -4,14 +4,10 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.dataset.api.ISketch;
 import org.hiero.sketch.dataset.api.PartialResult;
 import org.hiero.sketch.table.*;
-import org.hiero.sketch.table.api.IColumn;
-import org.hiero.sketch.table.api.IMembershipSet;
-import org.hiero.sketch.table.api.IRowOrder;
-import org.hiero.sketch.table.api.IndexComparator;
+import org.hiero.sketch.table.api.*;
 import rx.Observable;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.SortedMap;
 
@@ -43,7 +39,6 @@ public class TopKSketch implements ISketch<Table, NextKList> {
     private ObjectArrayColumn mergeColumns(@NonNull final IColumn left,
                                            @NonNull final IColumn right,
                                            @NonNull final List<Integer> mergeOrder) {
-
         final int size = Math.min(this.maxSize, mergeOrder.size());
         final ObjectArrayColumn merged = new ObjectArrayColumn(left.getDescription(), size);
         int i = 0, j = 0, k = 0;
@@ -96,7 +91,7 @@ public class TopKSketch implements ISketch<Table, NextKList> {
     }
 
     /**
-     * Add two NextK Lists using the preceding helper functions.
+     * Add two NextK Lists, merging counts of identical rows.
      * @param left The left TopK list
      * @param right The right TopK list
      * @return The merged list.
@@ -118,7 +113,6 @@ public class TopKSketch implements ISketch<Table, NextKList> {
                 right.count, mergeOrder);
         final IMembershipSet full = new FullMembership(mergedCounts.size());
         final Table mergedTable = new Table(left.table.schema, mergedCol, full);
-        /* The returned quantileList can be of size up to slack* resolution*/
         return new NextKList(mergedTable, mergedCounts, 0, null);
     }
 
@@ -130,17 +124,20 @@ public class TopKSketch implements ISketch<Table, NextKList> {
      */
     public NextKList getKList(Table data) {
         IndexComparator comp = this.colSortOrder.getComparator(data);
-        TreeTopK<Integer> topK = new TreeTopK<>(this.maxSize, comp);
-        for(int i = 0; i < data.getNumOfRows(); i++)
-            topK.push(i);
+        TreeTopK<Integer> topK = new TreeTopK<Integer>(this.maxSize, comp);
+        IRowIterator rowIt = data.members.getIterator();
+        int i = 0;
+        while(i != -1) {
+            i = rowIt.getNextRow();
+            if (i != -1)
+                topK.push(i);
+        }
         SortedMap<Integer, Integer> topKList = topK.getTopK();
         IRowOrder rowOrder = new ArrayRowOrder(topKList.keySet());
         Table topKRows = data.compress(this.colSortOrder.toSubSchema(), rowOrder);
         List<Integer> count = new ArrayList<Integer>();
-        Iterator<Integer> it = topKList.values().iterator();
-        while (it.hasNext()) {
-            count.add(it.next());
-        }
+        // The values() method of a SortedMap generates the values in the sorted order of the keys.
+        count.addAll(topKList.values());
         return new NextKList(topKRows, count, 0, null);
     }
 

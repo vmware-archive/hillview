@@ -6,7 +6,7 @@ public class Bucket2D {
 
     private final Bucket1D bucket1;
     private final Bucket1D bucket2;
-    long count;
+    private long count;
 
     public Bucket2D() {
         this.bucket1 = new Bucket1D();

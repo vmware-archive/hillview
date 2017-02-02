@@ -9,20 +9,25 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-/** The data structure used to store the next K rows specified by a starting point (topRow) and a
- *  RecordSortOrder.
+/**
+ * The data structure used to store the next K rows in a Table from a given starting point (topRow)
+ * according to a RecordSortOrder.
  */
 public class NextKList implements Serializable {
     public final Table table;
+    /**
+     * The number of times each row in the above table occurs in the original DataSet.
+     */
     public final List<Integer> count;
-    public final int position;
-    public final RowSnapshot topRow;
+    /**
+     * The row number of the starting point (topRow)
+     */
+    private final long position;
 
     public NextKList(Table table, List<Integer> count, int position, RowSnapshot topRow) {
         this.table = table;
         this.count = count;
         this.position = position;
-        this.topRow = topRow;
     }
     /**
      * A NextK list containing an empty table with the specified schema.
@@ -31,7 +36,6 @@ public class NextKList implements Serializable {
         this.table = new Table(schema);
         this.count = new ArrayList<Integer>(0);
         this.position = 0;
-        this.topRow = null;
     }
 
     public String toLongString(int rowsToDisplay) {
@@ -50,5 +54,4 @@ public class NextKList implements Serializable {
         }
         return builder.toString();
     }
-
 }

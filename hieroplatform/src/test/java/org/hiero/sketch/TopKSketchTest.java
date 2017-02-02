@@ -1,19 +1,25 @@
 package org.hiero.sketch;
 
-import org.hiero.sketch.spreadsheet.ColumnSortOrientation;
-import org.hiero.sketch.spreadsheet.NextKList;
-import org.hiero.sketch.spreadsheet.TopKSketch;
+import org.hiero.sketch.dataset.LocalDataSet;
+import org.hiero.sketch.dataset.ParallelDataSet;
+import org.hiero.sketch.dataset.api.IDataSet;
+import org.hiero.sketch.spreadsheet.*;
 import org.hiero.sketch.table.RecordOrder;
 import org.hiero.sketch.table.Table;
+import org.hiero.sketch.table.api.IndexComparator;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import static junit.framework.TestCase.assertTrue;
+import static org.hiero.sketch.TableTest.SplitTable;
+import static org.hiero.sketch.TableTest.getIntTable;
 import static org.hiero.sketch.TableTest.getRepIntTable;
 
 public class TopKSketchTest {
-
-
     @Test
-    public void testTopK() {
+    public void testTopK1() {
         final int numCols = 2;
         final int maxSize = 50;
         final int rightSize = 1000;
@@ -26,12 +32,49 @@ public class TopKSketchTest {
         }
         final TopKSketch tkSketch = new TopKSketch(cso, maxSize);
         final NextKList leftK = tkSketch.getKList(leftTable);
-        System.out.println(leftK.toLongString(maxSize));
+        IndexComparator leftComp = cso.getComparator(leftK.table);
+        for (int i = 0; i < (leftK.table.getNumOfRows() - 1); i++)
+            assertTrue(leftComp.compare(i, i + 1) <= 0);
+        //System.out.println(leftK.toLongString(maxSize));
         final Table rightTable = getRepIntTable(rightSize, numCols);
         final NextKList rightK = tkSketch.getKList(rightTable);
-        System.out.println(rightK.toLongString(maxSize));
+        IndexComparator rightComp = cso.getComparator(rightK.table);
+        for (int i = 0; i < (rightK.table.getNumOfRows() - 1); i++)
+            assertTrue(rightComp.compare(i, i + 1) <= 0);
+        //System.out.println(rightK.toLongString(maxSize));
         final NextKList tK = tkSketch.add(leftK, rightK);
-        System.out.println(tK.toLongString(maxSize));
+        IndexComparator tComp = cso.getComparator(tK.table);
+        for (int i = 0; i < (tK.table.getNumOfRows() - 1); i++)
+            assertTrue(tComp.compare(i, i + 1) <= 0);
+        //System.out.println(tK.toLongString(maxSize));
+    }
+
+    @Test
+    public void testTopK2() {
+        //printTime("start");
+        final int numCols = 3;
+        final int maxSize = 50;
+        final int bigSize = 100000;
+        final Table bigTable = getIntTable(bigSize, numCols);
+        //printTime("created");
+        RecordOrder cso = new RecordOrder();
+        for (String colName : bigTable.schema.getColumnNames()) {
+            cso.append(new ColumnSortOrientation(bigTable.schema.getDescription(colName), true));
+        }
+        List<Table> tabList = SplitTable(bigTable, 10000);
+        //printTime("split");
+        ArrayList<IDataSet<Table>> a = new ArrayList<IDataSet<Table>>();
+        for (Table t : tabList) {
+            LocalDataSet<Table> ds = new LocalDataSet<Table>(t);
+            a.add(ds);
+        }
+        ParallelDataSet<Table> all = new ParallelDataSet<Table>(a);
+        //printTime("Parallel");
+        NextKList tk = all.blockingSketch(new TopKSketch(cso, maxSize));
+        IndexComparator mComp = cso.getComparator(tk.table);
+        for (int i = 0; i < (tk.table.getNumOfRows() - 1); i++)
+            assertTrue(mComp.compare(i, i + 1) <= 0);
+        //System.out.println(tk.toLongString(maxSize));
     }
 }
 
