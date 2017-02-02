@@ -29,7 +29,6 @@ public class TableTest {
         return tableList;
     }
 
-
     public static Table getIntTable(final int size, final int numCols) {
         final IColumn[] columns = new IColumn[numCols];
         double exp = 1.0/numCols;
@@ -67,7 +66,6 @@ public class TableTest {
         final Table leftTable = getIntTable(100, 2);
         //System.out.print(leftTable.toLongString());
     }
-
 
     @Test
     public void columnCompressTest() {
