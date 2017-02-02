@@ -103,8 +103,8 @@ public class RecordOrder implements Iterable<ColumnSortOrientation> {
         if (!left.schema.equals(right.schema)) {
             throw new RuntimeException("Tables do not have matching schemas");
         }
-        final int  leftLength = left.members.getSize();
-        final int  rightLength = right.members.getSize();
+        final int  leftLength = left.getNumOfRows();
+        final int  rightLength = right.getNumOfRows();
         final int length = leftLength + rightLength;
         final boolean[] mergeLeft = new boolean[length];
         int i = 0, j = 0, k = 0;

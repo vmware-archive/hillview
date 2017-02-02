@@ -10,6 +10,7 @@ import java.time.LocalTime;
 /**
  * Conversion to and from doubles of various supported datatypes.
  */
+@SuppressWarnings("WeakerAccess")
 class Converters {
     private static final LocalDateTime baseTime = LocalDateTime.of(
             LocalDate.of(1970, 1, 1),
@@ -35,7 +36,7 @@ class Converters {
         return baseTime.plus(span);
     }
 
-    private static Duration toDuration(final double d) {
+    public static Duration toDuration(final double d) {
         return Duration.ofNanos((long)d);
     }
 }

@@ -120,7 +120,7 @@ public class QuantileList implements Serializable {
 
     /** Given a desired size parameter (newSize), compress down to nearly the desired size.
      * In detail, we define the average gap to be the dataSize/newSize.
-     * We greedily discard an entry if the gap between the previous and table
+     * We greedily discard an entry if the gap between the previous and next
      * entry in the quantile is less than the average gap. This will result in a list whose
      * size is between newSize and 2*newSize.
      * @param newSize The desired size of the compressed table.
