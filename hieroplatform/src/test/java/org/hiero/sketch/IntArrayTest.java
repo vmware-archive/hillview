@@ -7,7 +7,7 @@ import org.hiero.sketch.table.api.IndexComparator;
 import org.junit.Test;
 
 import java.util.Arrays;
-import java.util.Random;
+import org.hiero.utils.Randomness;
 
 import static org.junit.Assert.*;
 
@@ -31,7 +31,7 @@ public class IntArrayTest {
     public static IntArrayColumn getRandIntArray(final int size, final int range, final String name) {
         final ColumnDescription desc = new ColumnDescription(name, ContentsKind.Int, false);
         final IntArrayColumn col = new IntArrayColumn(desc, size);
-        final Random rn = new Random();
+        final Randomness rn = Randomness.getInstance();
         for (int i = 0; i < size; i++) {
             col.set(i, rn.nextInt(range));
             }

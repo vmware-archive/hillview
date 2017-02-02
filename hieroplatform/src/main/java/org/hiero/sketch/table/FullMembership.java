@@ -3,8 +3,9 @@ package org.hiero.sketch.table;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
 import org.hiero.utils.IntSet;
+import org.hiero.utils.Randomness;
 import org.scalactic.exceptions.NullArgumentException;
-import java.util.Random;
+
 
 /**
  * A IMembershipSet which contains all rows.
@@ -47,7 +48,7 @@ public class FullMembership implements IMembershipSet {
     public IMembershipSet sample(final int k) {
         if (k >= this.rowCount)
             return new FullMembership(this.rowCount);
-        final Random randomGenerator = new Random();
+        final Randomness randomGenerator = Randomness.getInstance();
         return this.sampleUtil(randomGenerator, k);
     }
 
@@ -62,7 +63,7 @@ public class FullMembership implements IMembershipSet {
     public IMembershipSet sample(final int k, final long seed) {
         if (k >= this.rowCount)
             return new FullMembership(this.rowCount);
-        final Random randomGenerator = new Random(seed);
+        final Randomness randomGenerator = Randomness.getInstance(seed);
         return this.sampleUtil(randomGenerator, k);
     }
 
@@ -102,7 +103,7 @@ public class FullMembership implements IMembershipSet {
         return new SparseMembership(baseMap);
     }
 
-    private IMembershipSet sampleUtil(final Random randomGenerator, final int k) {
+    private IMembershipSet sampleUtil(final Randomness randomGenerator, final int k) {
         final IntSet s = new IntSet(k);
         for (int i=0; i < k; i++)
             s.add(randomGenerator.nextInt(this.rowCount));

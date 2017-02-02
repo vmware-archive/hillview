@@ -2,13 +2,13 @@ package org.hiero.sketch;
 
 import org.hiero.sketch.spreadsheet.HeapTopK;
 import org.hiero.sketch.spreadsheet.TreeTopK;
+import org.hiero.utils.Randomness;
 import org.junit.Test;
-import java.util.Random;
 
 public class TreeVsHeapTest {
     private final int inpSize = 1000;
     private final int[] randInp = new int[this.inpSize];
-    private final Random rn = new Random();
+    private final Randomness rn = Randomness.getInstance();
 
     @Test
     public void TreeVsHeapOne() {

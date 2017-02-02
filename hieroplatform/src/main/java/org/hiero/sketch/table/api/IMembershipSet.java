@@ -1,8 +1,8 @@
 package org.hiero.sketch.table.api;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.hiero.utils.Randomness;
 
-import java.util.Random;
 
 /**
  * A IMembershipSet is a representation of a set of integers.
@@ -55,11 +55,11 @@ public interface IMembershipSet extends IRowOrder {
     IMembershipSet setMinus(@NonNull IMembershipSet otherMap);
 
     default int getSampleSize(double rate, long seed, boolean useSeed) {
-        Random r;
+        Randomness r;
         if (useSeed)
-            r = new Random(seed);
+            r = Randomness.getInstance(seed); // if instance exists seed is ignored
         else
-            r = new Random();
+            r = Randomness.getInstance();
         final int sampleSize;
         final double appSampleSize = rate * this.getSize();
         if (r.nextDouble() < (appSampleSize - Math.floor(appSampleSize)))

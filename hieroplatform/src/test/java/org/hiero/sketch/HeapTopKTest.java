@@ -1,7 +1,8 @@
 package org.hiero.sketch;
 import org.hiero.sketch.spreadsheet.HeapTopK;
+import org.hiero.utils.Randomness;
 import org.junit.Test;
-import java.util.Random;
+
 
 /**
  * Tests for HashMap Implementation of TopK
@@ -12,7 +13,7 @@ public class HeapTopKTest {
 
     @Test
     public void testHeapTopKZero() {
-        final Random rn =new Random();
+        final Randomness rn = Randomness.getInstance();
         for (int j =1; j <20; j++) {
             for (int i = 1; i < 1000; i++)
                 this.myHeap.push(rn.nextInt(10000));
@@ -22,7 +23,7 @@ public class HeapTopKTest {
 
     @Test
     public void testHeapTopKTimed() {
-        final Random rn = new Random();
+        final Randomness rn = Randomness.getInstance();
         final int inpSize = 1000000;
         final long startTime = System.nanoTime();
         for (int j = 1; j < inpSize; j++)
