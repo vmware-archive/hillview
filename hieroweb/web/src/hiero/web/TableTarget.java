@@ -18,8 +18,20 @@ public class TableTarget extends RpcTarget {
         this.table = table;
     }
 
+    static class TableViewRequest {
+        public ColumnDescriptionView[] schema;
+        public int rowCount;
+    }
+
     @HieroRpc
-    void mockTable(@NonNull RpcRequest request, @NonNull Session session) {
+    void getTableView(@NonNull RpcRequest request, @NonNull Session session) {
+        TableViewRequest cols = gson.fromJson(request.arguments, TableViewRequest.class);
+        // TODO
+    }
+
+    @HieroRpc
+    void mockTable(@NonNull RpcRequest request, @NonNull Session session)
+            throws InterruptedException {
         ColumnDescriptionView c0 = new ColumnDescriptionView(ContentsKind.String, "Name", 1);
         ColumnDescriptionView c1 = new ColumnDescriptionView(ContentsKind.Int, "Age", -2);
         RowView rv0 = new RowView(4, new Object[] { "Mike", 20 });
@@ -30,9 +42,7 @@ public class TableTarget extends RpcTarget {
         RpcReply reply = request.createReply(tdv);
         this.server.sendReply(reply, session);
 
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {}
+        Thread.sleep(1000);
 
         RowView rv3 = new RowView(2, new Object[] { "Jake", 40 });
         tdv = new TableDataView(new ColumnDescriptionView[] { c0, c1 }, 10, 0,

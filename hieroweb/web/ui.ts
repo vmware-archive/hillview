@@ -92,6 +92,7 @@ export class ProgressBar implements IHtmlElement {
 
 export class MenuItem {
     text: string;
+    action: () => void;
 }
 
 export class Menu implements IHtmlElement {
@@ -124,6 +125,7 @@ export class Menu implements IHtmlElement {
         let cell = trow.insertCell(0);
         cell.innerHTML = mi.text;
         cell.className = "menuItem";
+        cell.onclick = () => { this.toggleVisibility(); mi.action(); }
     }
 
     getHTMLRepresentation(): HTMLElement {

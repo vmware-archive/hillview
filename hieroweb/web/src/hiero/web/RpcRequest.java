@@ -11,21 +11,14 @@ public class RpcRequest {
     @NonNull
     public final String objectId;
     @NonNull public final String method;
-    @NonNull public final String[] arguments;
+    @NonNull public final String arguments;  // A JSON string
 
     public RpcRequest(@NonNull JsonElement element) {
         final JsonObject obj = element.getAsJsonObject();
         this.requestId = obj.get("requestId").getAsInt();
         this.objectId = obj.get("objectId").getAsString();
         this.method = obj.get("method").getAsString();
-        JsonArray array = obj.get("arguments").getAsJsonArray();
-        if (array == null) {
-            this.arguments = new String[0];
-        } else {
-            this.arguments = new String[array.size()];
-            for (int i=0; i < array.size(); i++)
-                this.arguments[i] = array.get(i).getAsString();
-        }
+        this.arguments = obj.get("arguments").getAsString();
     }
 
     @Override

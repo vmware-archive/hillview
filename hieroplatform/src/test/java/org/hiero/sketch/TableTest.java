@@ -7,6 +7,7 @@ import org.junit.Test;
 import static org.hiero.sketch.DoubleArrayTest.generateDoubleArray;
 import static org.hiero.sketch.IntArrayTest.generateIntArray;
 import static org.hiero.sketch.IntArrayTest.getRandIntArray;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 public class TableTest {
@@ -19,12 +20,8 @@ public class TableTest {
             final String colName = "Column" + String.valueOf(i);
             columns[i] = getRandIntArray(size, range, colName);
         }
-        final Schema mySchema = new Schema();
-        for (int i = 0; i < numCols; i++) {
-            mySchema.append(columns[i].getDescription());
-        }
         final FullMembership full = new FullMembership(size);
-        return new Table(mySchema, columns, full);
+        return new Table(columns, full);
     }
 
     @Test
@@ -51,16 +48,12 @@ public class TableTest {
         final IColumn[] columns = new IColumn[numCols];
         columns[0] = generateIntArray(size);
         columns[1] = generateDoubleArray(size);
-        final Schema mySchema = new Schema();
-        for (int i=0; i< numCols; i++) {
-            mySchema.append(columns[i].getDescription());
-        }
         final FullMembership full = new FullMembership(size);
         final LazyMembership partial = new LazyMembership(full, row -> (row % 2) == 0);
-        final Table myTable = new Table(mySchema, columns, partial);
-        //assertEquals(myTable.toString(), "Table, 2 columns, 50 rows");
+        final Table myTable = new Table(columns, partial);
+        assertEquals(myTable.toString(), "Table, 2 columns, 50 rows");
         final Table smallTable = myTable.compress();
-        //assertEquals(smallTable.toString(), "Table, 2 columns, 50 rows");
+        assertEquals(smallTable.toString(), "Table, 2 columns, 50 rows");
     }
 
     @Test
@@ -70,18 +63,14 @@ public class TableTest {
         final IColumn[] columns = new IColumn[numCols];
         columns[0] = generateIntArray(size);
         columns[1] = generateDoubleArray(size);
-        final Schema mySchema = new Schema();
-        for (int i=0; i< numCols; i++) {
-            mySchema.append(columns[i].getDescription());
-        }
         final FullMembership full = new FullMembership(size);
         final LazyMembership partial = new
                 LazyMembership(full, row -> (row % 2) == 0);
-        final Table myTable = new Table(mySchema, columns, partial);
-        //assertEquals(myTable.toString(), "Table, 2 columns, 50 rows");
+        final Table myTable = new Table(columns, partial);
+        assertEquals(myTable.toString(), "Table, 2 columns, 50 rows");
         final HashSubSchema filter = new HashSubSchema();
         filter.add(columns[1].getDescription().name);
         final Table smallTable = myTable.compress(filter, partial);
-        //assertEquals(smallTable.toString(), "Table, 1 columns, 50 rows");
+        assertEquals(smallTable.toString(), "Table, 1 columns, 50 rows");
     }
 }

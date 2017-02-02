@@ -1,5 +1,6 @@
 package hiero.web;
 
+import com.google.gson.Gson;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import javax.websocket.Session;
@@ -10,6 +11,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public abstract class RpcTarget {
+    static Gson gson = new Gson();
+
     protected final String objectId;
     protected RpcServer server;
     private HashMap<String, Method> executor;

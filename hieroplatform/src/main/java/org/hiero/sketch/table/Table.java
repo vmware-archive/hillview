@@ -35,10 +35,12 @@ public class Table {
         }
     }
 
-    public Table(@NonNull final ISchema schema,
-                 @NonNull final IColumn[] columns,
-                 @NonNull final IMembershipSet members) {
-        this.schema = schema;
+    public Table(@NonNull final IColumn[] columns, @NonNull final IMembershipSet members) {
+        columnSize(columns);  // validate column sizes
+        final Schema s = new Schema();
+        for (final IColumn c : columns)
+            s.append(c.getDescription());
+        this.schema = s;
         this.columns = new HashMap<String, IColumn>();
         this.members = members;
         for (final IColumn c : columns) {
@@ -46,16 +48,27 @@ public class Table {
         }
     }
 
-    public Table(@NonNull final IColumn[] columns, @NonNull final IMembershipSet members) {
-        final Schema s = new Schema();
-        for (final IColumn c : columns)
-            s.append(c.getDescription());
-        this.schema = s;
-        this.columns = new HashMap<>();
-        this.members = members;
-        for (final IColumn c : columns) {
-            this.columns.put(c.getName(), c);
+    public Table(@NonNull final IColumn[] columns) {
+        this(columns, new FullMembership(columnSize(columns)));
+    }
+
+    /**
+     * Compute the size common to all these columns.
+     * @param columns A set of columns.
+     * @return The common size, or 0 if the set is empty.
+     * Throws if the columns do not all have the same size.
+     */
+    private static int columnSize(IColumn[] columns) {
+        if (columns.length == 0)
+            return 0;
+        int size = -1;
+        for (IColumn c : columns) {
+            if (size < 0)
+                size = c.sizeInRows();
+            else if (size != c.sizeInRows())
+                throw new IllegalArgumentException("Columns do not have the same size");
         }
+        return size;
     }
 
     /**
@@ -74,7 +87,7 @@ public class Table {
             i++;
         }
         final IMembershipSet full = new FullMembership(rowOrder.getSize());
-        return new Table(newSchema, compressedCols, full);
+        return new Table(compressedCols, full);
     }
 
     /**
@@ -99,8 +112,7 @@ public class Table {
     @Override
     public String toString() {
         return "Table, " + this.schema.getColumnCount() + " columns, " +
-                this.members.getSize() + " rows" +
-                System.getProperty("line.separator");
+                this.members.getSize() + " rows";
     }
 
     public String toLongString(int startRow, int rowsToDisplay) {
@@ -109,12 +121,8 @@ public class Table {
         builder.append(System.getProperty("line.separator"));
         final IRowIterator rowIt = this.members.getIterator();
         int nextRow = rowIt.getNextRow();
-        while ((nextRow != startRow) && (nextRow != -1))
+        while ((nextRow < startRow) && (nextRow != -1))
             nextRow = rowIt.getNextRow();
-        if (nextRow == -1) {
-            builder.append("Start row not found!%n");
-            return builder.toString();
-        }
         int count = 0;
         while ((nextRow != -1) && (count < rowsToDisplay)) {
             RowSnapshot rs = new RowSnapshot(this, nextRow);
@@ -127,20 +135,7 @@ public class Table {
     }
 
     public String toLongString(int rowsToDisplay) {
-        final StringBuilder builder = new StringBuilder();
-        builder.append(this.toString());
-        builder.append(System.getProperty("line.separator"));
-        final IRowIterator rowIt = this.members.getIterator();
-        int nextRow = rowIt.getNextRow();
-        int count = 0;
-        while ((nextRow != -1) && (count < rowsToDisplay)) {
-            RowSnapshot rs = new RowSnapshot(this, nextRow);
-            builder.append(rs.toString());
-            builder.append(System.getProperty("line.separator"));
-            nextRow = rowIt.getNextRow();
-            count++;
-        }
-        return builder.toString();
+        return this.toLongString(0, rowsToDisplay);
     }
 
     public IColumn getColumn(final String colName) {
@@ -149,5 +144,19 @@ public class Table {
 
     public int getNumOfRows() {
         return this.members.getSize();
+    }
+
+    /**
+     * Can be used for testing.
+     * @return A small table with some interesting contents.
+     */
+    public static Table testTable() {
+        ColumnDescription c0 = new ColumnDescription("Name", ContentsKind.String, false);
+        ColumnDescription c1 = new ColumnDescription("Age", ContentsKind.Int, false);
+        StringArrayColumn sac = new StringArrayColumn(c0, new String[] { "Mike", "John", "Tom"});
+        IntArrayColumn iac = new IntArrayColumn(c1, new int[] { 20, 30, 10 });
+
+        Table table = new Table(new IColumn[] { sac, iac });
+        return table;
     }
 }

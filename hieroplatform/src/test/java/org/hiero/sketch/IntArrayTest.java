@@ -50,7 +50,7 @@ public class IntArrayTest {
         }
         Arrays.sort(order, comp);
         for (int i = 0; i < (size - 1); i++) {
-            assertTrue(col.getInt(order[i])<=  col.getInt(order[i+1]));
+            assertTrue(col.getInt(order[i]) <= col.getInt(order[i+1]));
         }
     }
 

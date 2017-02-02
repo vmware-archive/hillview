@@ -9,14 +9,14 @@ import java.util.Arrays;
 /**
  * Given a (table and a) IndexComparator, gives an iterator for the rows of the table in sorted order
  */
-public class SortOrder implements IRowOrder {
+public class SortedAscendingRowOrder implements IRowOrder {
     private Integer[] order;
 
     /**
      * @param size Number of rows
      * @param indexComparator Defines the ordering
      */
-    public SortOrder(final int size, final IndexComparator indexComparator) {
+    public SortedAscendingRowOrder(final int size, final IndexComparator indexComparator) {
         for (int i = 0; i < size; i++)
             this.order[i] = i;
         Arrays.sort(this.order, indexComparator);
@@ -34,8 +34,8 @@ public class SortOrder implements IRowOrder {
 
             @Override
             public int getNextRow() {
-                if (this.current < SortOrder.this.order.length) {
-                    final int i = SortOrder.this.order[this.current];
+                if (this.current < SortedAscendingRowOrder.this.order.length) {
+                    final int i = SortedAscendingRowOrder.this.order[this.current];
                     this.current++;
                     return i;
                 } else {

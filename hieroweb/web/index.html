@@ -8,43 +8,24 @@
         var hiero = this.hiero;
         var table;
 
-        function onTableData(d) {
-            console.log("onTableData: " + d);
-            table.updateView(d);
-        }
-
-        function onError(d) {
-            console.log("Error: " + d);
-        }
-
-        function updateTable(d) {
-            /*
-            if (d == 1)
-                table.updateView(hiero.tableJson1);
-            else
-                table.updateView(hiero.tableJson2);
-            */
-            var req = new hiero.RpcRequest("0", "mockTable", [d]);
-            var obs = Rx.Observer.create(onTableData, onError);
-            req.invoke(obs);
-        }
-
-        function render() {
+        function loadTable() {
+            table = new hiero.TableView("0");
             var tableDiv = document.getElementById('table');
-            table = hiero.createTable();
             tableDiv.appendChild(table.getHTMLRepresentation());
+        }
 
+        function initialize() {
             var progressDiv = document.getElementById('progress');
             var p = new hiero.ProgressBar();
-            p.setPosition(.5);
             progressDiv.appendChild(p.getHTMLRepresentation());
         }
     </script>
 </head>
-<body onload="render()">
-    <H1>Hello</H1>
-    <span onclick="updateTable(1)">[ ]</span>
-    <div id="progress"></div>
-    <div id="table"></div>
+<body onload="initialize()">
+    <div id="contents">
+        <button onclick="loadTable()">Load table</button>
+        <div id="table"></div>
+        <div id="progress"></div>
+    </div>
 </body>
 </html>

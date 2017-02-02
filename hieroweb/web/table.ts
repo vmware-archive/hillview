@@ -1,4 +1,6 @@
 import {IHtmlElement, ScrollBar, Menu} from "./ui";
+import {RemoteObject} from "./rpc";
+import Rx = require('rx');
 
 // These classes are direct counterparts to server-side Java classes
 // with the same names.  JSON serialization
@@ -16,17 +18,20 @@ export interface IColumnDescriptionView {
     readonly kind: ContentsKind;
     readonly name: string;
     readonly sortOrder: number;  // 0 - not visible, >0 - ascending, <0 - descending
+    readonly allowMissing: boolean;
 }
 
 export class ColumnDescriptionView implements IColumnDescriptionView {
     readonly kind: ContentsKind;
     readonly name: string;
     readonly sortOrder: number;  // 0 - not visible, >0 - ascending, <0 - descending
+    readonly allowMissing: boolean;
 
     constructor(v : IColumnDescriptionView) {
         this.kind = v.kind;
         this.name = v.name;
         this.sortOrder = v.sortOrder;
+        this.allowMissing = v.allowMissing;
     }
 
     // If something is not sorted, it is not visible
@@ -74,7 +79,7 @@ export interface TableDataView {
  ------------------------------------------
  */
 
-export class TableView implements IHtmlElement {
+export class TableView extends RemoteObject implements IHtmlElement  {
     protected schema: SchemaView;
     protected top : HTMLDivElement;
     protected scrollBar : ScrollBar;
@@ -84,13 +89,24 @@ export class TableView implements IHtmlElement {
     protected elementCount: number;
     protected startPosition: number;
 
-    constructor() {
+    constructor(objectId: string) {
+        super(objectId);
         this.top = document.createElement("div");
         this.htmlTable = document.createElement("table");
         this.top.className = "flexcontainer";
         this.scrollBar = new ScrollBar();
         this.top.appendChild(this.htmlTable);
         this.top.appendChild(this.scrollBar.getHTMLRepresentation());
+        this.getData([]);
+    }
+
+    private getData(schema: SchemaView) {
+        let rr = this.createRpcRequest("getTableView", { schema: schema, rows: 100 });
+        let obs = Rx.Observer.create<TableDataView>(
+            (d) => this.updateView(d),
+            (d) => { console.log("Error: " + String(d)); }
+        );
+        rr.invoke(obs);
     }
 
     private static addHeaderCell(thr: Node, cd: ColumnDescriptionView) : HTMLElement {
@@ -107,6 +123,11 @@ export class TableView implements IHtmlElement {
         return thd;
     }
 
+    public showColumn(columnName: string, show: boolean) : void {
+        let rr = this.createRpcRequest("show", null);
+        // TODO
+    }
+
     public updateView(data : TableDataView) : void {
         this.elementCount = 0;
         this.startPosition = data.startPosition;
@@ -119,9 +140,18 @@ export class TableView implements IHtmlElement {
         this.thead = this.htmlTable.createTHead();
         let thr = this.thead.appendChild(document.createElement("tr"));
 
+        // These two columns are always shown
         let cds : ColumnDescriptionView[] = [];
-        let poscd = new ColumnDescriptionView({ kind: ContentsKind.Integer, name: ":position", sortOrder: 0 });
-        let ctcd = new ColumnDescriptionView({ kind: ContentsKind.Integer, name: ":count", sortOrder: 0 });
+        let poscd = new ColumnDescriptionView({
+            kind: ContentsKind.Integer,
+            name: ":position",
+            sortOrder: 0,
+            allowMissing: false });
+        let ctcd = new ColumnDescriptionView({
+            kind: ContentsKind.Integer,
+            name: ":count",
+            sortOrder: 0,
+            allowMissing: false });
 
         TableView.addHeaderCell(thr, poscd);
         TableView.addHeaderCell(thr, ctcd);
@@ -129,9 +159,10 @@ export class TableView implements IHtmlElement {
             let cd = new ColumnDescriptionView(this.schema[i]);
             cds.push(cd);
             let thd = TableView.addHeaderCell(thr, cd);
-            let menu = new Menu(
-                [{text: "show"},{text: "hide"}]
-            );
+            let menu = new Menu([
+                {text: "show", action: () => this.showColumn(cd.name, true) },
+                {text: "hide", action: () => this.showColumn(cd.name, false)}
+             ]);
             thd.onclick = () => menu.toggleVisibility();
             thd.appendChild(menu.getHTMLRepresentation());
         }

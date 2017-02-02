@@ -24,6 +24,20 @@ import java.util.List;
  *      Wins + Losses < dataSize.
  */
 public class QuantileList implements Serializable {
+    static class WinsAndLosses {
+        public final int wins;
+        public final int losses;
+
+        public WinsAndLosses(final int wins, final int losses) {
+            this.wins = wins;
+            this.losses = losses;
+        }
+
+        public String toString() {
+            return String.valueOf(this.wins) + ", " + String.valueOf(this.losses);
+        }
+    }
+
     public final Table quantile;
     private final WinsAndLosses[] winsAndLosses;
     private final int dataSize;
@@ -44,8 +58,6 @@ public class QuantileList implements Serializable {
         this.quantile = quantile;
         this.dataSize = dataSize;
     }
-
-
 
     /**
      * @return The number of elements in the list of quantiles

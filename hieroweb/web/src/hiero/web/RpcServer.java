@@ -4,6 +4,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.internal.Streams;
 import com.google.gson.stream.JsonReader;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.hiero.sketch.dataset.LocalDataSet;
+import org.hiero.sketch.table.Table;
 
 import javax.websocket.*;
 import javax.websocket.server.ServerEndpoint;
@@ -23,7 +25,9 @@ public class RpcServer {
 
     public RpcServer() {
         this.objects = new HashMap<String, RpcTarget>();
-        this.addObject(new TableTarget("0", null));
+        Table t = Table.testTable();
+        LocalDataSet<Table> local = new LocalDataSet<Table>(t);
+        this.addObject(new TableTarget("0", local));
     }
 
     private void addObject(@NonNull RpcTarget object) {
@@ -75,7 +79,7 @@ public class RpcServer {
             return;
         }
 
-        execute(req, session);
+        this.execute(req, session);
     }
 
     void sendReply(@NonNull RpcReply reply, @NonNull Session session) {
@@ -95,7 +99,7 @@ public class RpcServer {
         }
     }
 
-    public static String asString(Throwable t) {
+    static String asString(Throwable t) {
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);
         t.printStackTrace(pw);
@@ -105,16 +109,11 @@ public class RpcServer {
     private void execute(@NonNull RpcRequest rpcRequest, @NonNull Session session) {
         LOGGER.log(Level.INFO, "Executing " + rpcRequest.toString());
 
-        RpcTarget stub = null;
         try {
-            stub = this.getObject(rpcRequest.objectId);
-        } catch (Exception ex) {
-            this.replyWithError(ex, session);
-        }
-
-        try {
+            RpcTarget stub = this.getObject(rpcRequest.objectId);
             if (stub == null)
                 throw new RuntimeException("RpcServer.getObject() returned null");
+            // Normally this sends the reply as well
             stub.execute(rpcRequest, session);
         } catch (Exception ex) {
             RpcReply reply = rpcRequest.createReply(ex);
