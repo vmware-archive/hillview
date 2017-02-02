@@ -2,14 +2,14 @@ package org.hiero.sketch.table;
 
 import org.hiero.sketch.table.api.*;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 public interface IDateColumn extends IColumn {
     @Override
     default double asDouble(final int rowIndex, final IStringConverter unused) {
         if (isMissing(rowIndex))
             throw new MissingException(this, rowIndex);
-        final Date tmp = this.getDate(rowIndex);
+        final LocalDateTime tmp = this.getDate(rowIndex);
         return Converters.toDouble(tmp);
     }
 

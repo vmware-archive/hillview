@@ -40,14 +40,14 @@ public class BucketsDescription1D implements IBucketsDescription1D {
 
     @Override
     public int indexOf(final double item) {
-        if (item < this.minValue || item > this.maxValue)
+        if ((item < this.minValue) || (item > this.maxValue))
             return -1;
         if (item == this.maxValue)
             return this.numOfBuckets - 1;
         int lo = 0;
         int hi = this.boundaries.length - 1;
         while (lo <= hi) {
-            int mid = lo + (hi - lo) / 2;
+            int mid = lo + ((hi - lo) / 2);
             if (item < this.boundaries[mid]) hi = mid ;
             else if (item >= this.boundaries[mid + 1]) lo = mid;
             else return mid;
@@ -57,7 +57,7 @@ public class BucketsDescription1D implements IBucketsDescription1D {
 
     @Override
     public double getLeftBoundary(int index) {
-        if (index < 0 || index >= this.numOfBuckets)
+        if ((index < 0) || (index >= this.numOfBuckets))
             throw new IllegalArgumentException("Bucket index out of range");
         return this.boundaries[index];
     }
@@ -75,26 +75,26 @@ public class BucketsDescription1D implements IBucketsDescription1D {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if ((o == null) || (getClass() != o.getClass())) return false;
 
         BucketsDescription1D that = (BucketsDescription1D) o;
 
-        if (Double.compare(that.minValue, minValue) != 0) return false;
-        if (Double.compare(that.maxValue, maxValue) != 0) return false;
-        if (numOfBuckets != that.numOfBuckets) return false;
-        return Arrays.equals(boundaries, that.boundaries);
+        if (Double.compare(that.minValue, this.minValue) != 0) return false;
+        if (Double.compare(that.maxValue, this.maxValue) != 0) return false;
+        if (this.numOfBuckets != that.numOfBuckets) return false;
+        return Arrays.equals(this.boundaries, that.boundaries);
     }
 
     @Override
     public int hashCode() {
         int result;
         long temp;
-        temp = Double.doubleToLongBits(minValue);
+        temp = Double.doubleToLongBits(this.minValue);
         result = (int) (temp ^ (temp >>> 32));
-        temp = Double.doubleToLongBits(maxValue);
-        result = 31 * result + (int) (temp ^ (temp >>> 32));
-        result = 31 * result + numOfBuckets;
-        result = 31 * result + Arrays.hashCode(boundaries);
+        temp = Double.doubleToLongBits(this.maxValue);
+        result = (31 * result) + (int) (temp ^ (temp >>> 32));
+        result = (31 * result) + this.numOfBuckets;
+        result = (31 * result) + Arrays.hashCode(this.boundaries);
         return result;
     }
 }

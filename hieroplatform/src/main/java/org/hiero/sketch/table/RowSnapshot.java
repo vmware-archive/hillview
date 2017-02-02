@@ -30,18 +30,18 @@ public class RowSnapshot implements IRow {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if ((o == null) || (getClass() != o.getClass())) return false;
 
         RowSnapshot that = (RowSnapshot) o;
 
-        if (!schema.equals(that.schema)) return false;
-        return field.equals(that.field);
+        if (!this.schema.equals(that.schema)) return false;
+        return this.field.equals(that.field);
     }
 
     @Override
     public int hashCode() {
-        int result = schema.hashCode();
-        result = 31 * result + field.hashCode();
+        int result = this.schema.hashCode();
+        result = (31 * result) + this.field.hashCode();
         return result;
     }
 

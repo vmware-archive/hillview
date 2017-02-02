@@ -4,7 +4,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.table.api.ContentsKind;
 
 import java.security.InvalidParameterException;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 /*
  * Column of dates, implemented as an array of dates and a BitSet of missing values
@@ -13,7 +13,7 @@ public final class DateArrayColumn
         extends BaseArrayColumn
         implements IDateColumn {
     @NonNull
-    private final Date[] data;
+    private final LocalDateTime[] data;
 
     private void validate() {
         if (this.description.kind != ContentsKind.Date)
@@ -23,11 +23,11 @@ public final class DateArrayColumn
     public DateArrayColumn(@NonNull final ColumnDescription description, final int size) {
         super(description, size);
         this.validate();
-        this.data = new Date[size];
+        this.data = new LocalDateTime[size];
     }
 
     public DateArrayColumn(@NonNull final ColumnDescription description,
-                           @NonNull final Date[] data) {
+                           @NonNull final LocalDateTime[] data) {
         super(description, data.length);
         this.validate();
         this.data = data;
@@ -39,11 +39,11 @@ public final class DateArrayColumn
     }
 
     @Override
-    public Date getDate(final int rowIndex) {
+    public LocalDateTime getDate(final int rowIndex) {
         return this.data[rowIndex];
     }
 
-    private void set(final int rowIndex, final Date value) {
+    private void set(final int rowIndex, final LocalDateTime value) {
         this.data[rowIndex] = value;
     }
 

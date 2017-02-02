@@ -8,9 +8,7 @@ import org.hiero.sketch.spreadsheet.QuantileList;
 import org.hiero.sketch.spreadsheet.QuantileSketch;
 import org.hiero.sketch.table.ArrayRowOrder;
 import org.hiero.sketch.table.RecordOrder;
-import org.hiero.sketch.table.SparseMembership;
 import org.hiero.sketch.table.Table;
-import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowOrder;
 import org.hiero.sketch.table.api.IndexComparator;
 import org.junit.Test;
@@ -19,24 +17,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static junit.framework.TestCase.assertTrue;
+import static org.hiero.sketch.TableTest.SplitTable;
 import static org.hiero.sketch.TableTest.getIntTable;
 
 public class QuantileSketchTest {
-
-    private List<Table> SplitTable(Table bigTable, int fragmentSize) {
-        int tableSize = bigTable.members.getSize();
-        int numTables = tableSize/fragmentSize + 1;
-        List<Table> tableList = new ArrayList<Table>(numTables);
-        int start = 0;
-        while (start < tableSize){
-            int thisFragSize = Math.min(fragmentSize, tableSize - start);
-            IMembershipSet members = new SparseMembership(start, thisFragSize);
-            tableList.add(bigTable.compress(members));
-            start += fragmentSize;
-        }
-        return tableList;
-    }
-
 
     @Test
     public void testQuantile() {
@@ -55,25 +39,25 @@ public class QuantileSketchTest {
         final QuantileList leftQ = qSketch.getQuantile(leftTable);
         final IndexComparator leftComp = cso.getComparator(leftQ.quantile);
         //System.out.println(leftQ);
-        for (int i = 0; i < leftQ.getQuantileSize() - 1; i++)
+        for (int i = 0; i < (leftQ.getQuantileSize() - 1); i++)
             assertTrue(leftComp.compare(i, i + 1) <= 0);
         final QuantileList rightQ = qSketch.getQuantile(rightTable);
         //System.out.println(rightQ);
         final IndexComparator rightComp = cso.getComparator(rightQ.quantile);
-        for (int i = 0; i < rightQ.getQuantileSize() - 1; i++)
+        for (int i = 0; i < (rightQ.getQuantileSize() - 1); i++)
             assertTrue(rightComp.compare(i, i + 1) <= 0);
         final QuantileList mergedQ = qSketch.add(leftQ, rightQ);
         IndexComparator mComp = cso.getComparator(mergedQ.quantile);
-        for (int i = 0; i < mergedQ.getQuantileSize() - 1; i++)
+        for (int i = 0; i < (mergedQ.getQuantileSize() - 1); i++)
             assertTrue(mComp.compare(i, i + 1) <= 0);
         int newSize = 20;
         final QuantileList approxQ = mergedQ.compressApprox(newSize);
         IndexComparator approxComp = cso.getComparator(approxQ.quantile);
-        for (int i = 0; i < approxQ.getQuantileSize() - 1; i++)
+        for (int i = 0; i < (approxQ.getQuantileSize() - 1); i++)
             assertTrue(approxComp.compare(i, i + 1) <= 0);
         final QuantileList exactQ = mergedQ.compressExact(newSize);
         IndexComparator exactComp = cso.getComparator(exactQ.quantile);
-        for (int i = 0; i < exactQ.getQuantileSize() - 1; i++)
+        for (int i = 0; i < (exactQ.getQuantileSize() - 1); i++)
             assertTrue(exactComp.compare(i, i + 1) <= 0);
     }
 
@@ -81,9 +65,9 @@ public class QuantileSketchTest {
 
     private void printTime(String when) {
         long now = System.currentTimeMillis();
-        if (last > 0)
-            System.out.println(when + " " + (now - last));
-        last = now;
+        if (this.last > 0)
+            System.out.println(when + " " + (now - this.last));
+        this.last = now;
     }
 
     @Test
@@ -98,7 +82,7 @@ public class QuantileSketchTest {
         for (String colName : bigTable.schema.getColumnNames()) {
             cso.append(new ColumnSortOrientation(bigTable.schema.getDescription(colName), true));
         }
-        List<Table> tabList = this.SplitTable(bigTable, 10000);
+        List<Table> tabList = SplitTable(bigTable, 10000);
         //printTime("split");
         // Create a big parallel data set containing all table fragments
         ArrayList<IDataSet<Table>> a = new ArrayList<IDataSet<Table>>();
@@ -111,7 +95,7 @@ public class QuantileSketchTest {
         QuantileList ql = all.blockingSketch(new QuantileSketch(cso, resolution)).
                 compressExact(resolution);
         IndexComparator mComp = cso.getComparator(ql.quantile);
-        for (int i = 0; i < ql.getQuantileSize() - 1; i++)
+        for (int i = 0; i < (ql.getQuantileSize() - 1); i++)
             assertTrue(mComp.compare(i, i + 1) <= 0);
         //printTime("Quantile");
         /*
@@ -171,18 +155,15 @@ public class QuantileSketchTest {
         int j =0;
         for (int i =0; i < resolution; i++) {
             boolean match = false;
-            while(match == false) {
+            while (!match) {
                 match = true;
                 for (String colName : ql.getSchema().getColumnNames()) {
                     if (ql.getColumn(colName).getObject(i) != sortTable.getColumn(colName).getObject(j))
                         match = false;
                 }
-                if (match == true) {
-                //    System.out.printf("%d has rank: %f, %n", i + 1, (j * 100.0) / bigSize);
-                }
                 j++;
-                if(j >= bigSize) {
-                    System.out.printf("Error! No match for %n", i + 1);
+                if (j >= bigSize) {
+                    System.out.printf("Error! No match for %d%n", i + 1);
                     j = 0;
                     break;
                 }

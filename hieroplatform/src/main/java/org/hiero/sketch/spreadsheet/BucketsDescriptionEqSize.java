@@ -18,7 +18,7 @@ public class BucketsDescriptionEqSize implements IBucketsDescription1D {
 
     @Override
     public int indexOf(final double item) {
-        if (item < this.minValue || item > this.maxValue)
+        if ((item < this.minValue) || (item > this.maxValue))
             return -1;
         if (item >= this.maxValue)
             return this.numOfBuckets - 1;
@@ -27,7 +27,7 @@ public class BucketsDescriptionEqSize implements IBucketsDescription1D {
 
     @Override
     public double getLeftBoundary(final int index) {
-        if (index < 0 || index >= this.numOfBuckets)
+        if ((index < 0) || (index >= this.numOfBuckets))
             throw new IllegalArgumentException("Bucket index out of range");
         return this.minValue + (((this.maxValue - this.minValue) * index) / this.numOfBuckets);
     }
@@ -45,24 +45,24 @@ public class BucketsDescriptionEqSize implements IBucketsDescription1D {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if ((o == null) || (getClass() != o.getClass())) return false;
 
         BucketsDescriptionEqSize that = (BucketsDescriptionEqSize) o;
 
-        if (Double.compare(that.minValue, minValue) != 0) return false;
-        if (Double.compare(that.maxValue, maxValue) != 0) return false;
-        return numOfBuckets == that.numOfBuckets;
+        if (Double.compare(that.minValue, this.minValue) != 0) return false;
+        if (Double.compare(that.maxValue, this.maxValue) != 0) return false;
+        return this.numOfBuckets == that.numOfBuckets;
     }
 
     @Override
     public int hashCode() {
         int result;
         long temp;
-        temp = Double.doubleToLongBits(minValue);
+        temp = Double.doubleToLongBits(this.minValue);
         result = (int) (temp ^ (temp >>> 32));
-        temp = Double.doubleToLongBits(maxValue);
-        result = 31 * result + (int) (temp ^ (temp >>> 32));
-        result = 31 * result + numOfBuckets;
+        temp = Double.doubleToLongBits(this.maxValue);
+        result = (31 * result) + (int) (temp ^ (temp >>> 32));
+        result = (31 * result) + this.numOfBuckets;
         return result;
     }
 }

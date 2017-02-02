@@ -4,7 +4,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.table.api.IColumn;
 
 import java.time.Duration;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 /**
  * Base class for all columns.
@@ -28,7 +28,7 @@ abstract class BaseColumn implements IColumn {
     }
 
     @Override
-    public Date getDate(final int rowIndex) {
+    public LocalDateTime getDate(final int rowIndex) {
         throw new UnsupportedOperationException();
     }
 

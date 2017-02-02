@@ -29,15 +29,15 @@ public class QuantileSketch implements ISketch<Table, QuantileList> {
      */
     private final int resolution;
     /**
-     * a knob to control the sample size taken fromm a table to create a QuantileList
-     * (the size is perBin*resolution)
-     */
-    private final int perBin = 100;
-    /**
      * a knob to control the size of the QuantileList that is shipped around
      * (the size is slack*resolution)
      */
     private final int slack = 10;
+    /**
+     * a knob to control the sample size taken fromm a table to create a QuantileList
+     * (the size is perBin*resolution)
+     */
+    private static final int perBin = 100;
 
     /**
      * @param sortOrder The list of column orientations.
