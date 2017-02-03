@@ -141,19 +141,6 @@ public class SparseMembership implements IMembershipSet {
         return new SparseMembership(intersectSet);
     }
 
-    @Override
-    public IMembershipSet setMinus(@NonNull final IMembershipSet otherSet) {
-        final IntSet setMinusSet = new IntSet();
-        final IRowIterator iter = this.getIterator();
-        int curr = iter.getNextRow();
-        while (curr >= 0) {
-            if (!otherSet.isMember(curr))
-                setMinusSet.add(curr);
-            curr = iter.getNextRow();
-        }
-        return new SparseMembership(setMinusSet);
-    }
-
     /**
      * Estimates the size of a filter applied to an IMembershipSet
      * @return an approximation of the size, based on a sample of size 20. May return 0.

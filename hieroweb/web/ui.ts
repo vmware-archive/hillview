@@ -89,3 +89,46 @@ export class ProgressBar implements IHtmlElement {
         this.bar.style.width = String(this.end * 100) + "%";
     }
 }
+
+export class MenuItem {
+    text: string;
+    action: () => void;
+}
+
+export class Menu implements IHtmlElement {
+    items: MenuItem[];
+    private outer: HTMLElement;
+    private htmlTable: HTMLTableElement;
+    private tableBody: HTMLTableSectionElement;
+
+    constructor(mis: MenuItem[]) {
+        this.outer = document.createElement("div");
+        this.outer.className = "dropdown";
+        this.outer.onmouseout = () => this.toggleVisibility();
+        this.htmlTable = document.createElement("table");
+        this.outer.appendChild(this.htmlTable);
+        this.tableBody = this.htmlTable.createTBody();
+        this.items = [];
+        if (mis != null) {
+            for (let mi of mis)
+                this.addItem(mi);
+        }
+    }
+
+    toggleVisibility(): void {
+        this.outer.classList.toggle("shown");
+    }
+
+    addItem(mi: MenuItem): void {
+        this.items.push(mi);
+        let trow = this.tableBody.insertRow();
+        let cell = trow.insertCell(0);
+        cell.innerHTML = mi.text;
+        cell.className = "menuItem";
+        cell.onclick = () => { this.toggleVisibility(); mi.action(); }
+    }
+
+    getHTMLRepresentation(): HTMLElement {
+        return this.outer;
+    }
+}

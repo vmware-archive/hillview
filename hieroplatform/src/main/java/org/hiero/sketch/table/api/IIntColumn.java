@@ -1,6 +1,4 @@
-package org.hiero.sketch.table;
-
-import org.hiero.sketch.table.api.*;
+package org.hiero.sketch.table.api;
 
 public interface IIntColumn extends IColumn {
     @Override

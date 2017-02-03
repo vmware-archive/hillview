@@ -1,20 +1,19 @@
-package org.hiero.sketch.table;
+package org.hiero.sketch.table.api;
 
-import org.hiero.sketch.table.api.*;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
-public interface IDoubleColumn extends IColumn {
+public interface IStringColumn extends IColumn {
     @Override
-    default double asDouble(final int rowIndex, final IStringConverter unused) {
+    default double asDouble(final int rowIndex, @NonNull final IStringConverter conv) {
         if (isMissing(rowIndex))
             throw new MissingException(this, rowIndex);
-        return this.getDouble(rowIndex);
+        final String tmp = this.getString(rowIndex);
+        return conv.asDouble(tmp);
     }
 
     @Override
     default String asString(final int rowIndex) {
-        if (this.isMissing(rowIndex))
-            return null;
-        return Double.toString(this.getDouble(rowIndex));
+        return this.getString(rowIndex);
     }
 
     @Override
@@ -22,8 +21,8 @@ public interface IDoubleColumn extends IColumn {
         return new IndexComparator() {
             @Override
             public int compare(final Integer i, final Integer j) {
-                final boolean iMissing = IDoubleColumn.this.isMissing(i);
-                final boolean jMissing = IDoubleColumn.this.isMissing(j);
+                final boolean iMissing = IStringColumn.this.isMissing(i);
+                final boolean jMissing = IStringColumn.this.isMissing(j);
                 if (iMissing && jMissing) {
                     return 0;
                 } else if (iMissing) {
@@ -31,7 +30,8 @@ public interface IDoubleColumn extends IColumn {
                 } else if (jMissing) {
                     return -1;
                 } else {
-                    return Double.compare(IDoubleColumn.this.getDouble(i), IDoubleColumn.this.getDouble(j));
+                    return IStringColumn.this.getString(i).compareTo(
+                            IStringColumn.this.getString(j));
                 }
             }
         };

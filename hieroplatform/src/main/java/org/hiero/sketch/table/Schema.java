@@ -1,9 +1,10 @@
 package org.hiero.sketch.table;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.hiero.sketch.table.api.ISchema;
+import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.ISubSchema;
 
+import java.io.Serializable;
 import java.security.InvalidParameterException;
 import java.util.HashMap;
 import java.util.Set;
@@ -12,7 +13,8 @@ import java.util.Set;
  * A schema is just a map from a column name
  * to a column description.  Column names are case-sensitive.
  */
-public final class Schema implements ISchema {
+public final class Schema
+        implements Serializable {
     @NonNull
     private final HashMap<String, ColumnDescription> columns;
 
@@ -26,17 +28,14 @@ public final class Schema implements ISchema {
         this.columns.put(desc.name, desc);
     }
 
-    @Override
     public ColumnDescription getDescription(@NonNull final String columnName) {
         return this.columns.get(columnName);
     }
 
-    @Override
     public int getColumnCount() {
         return this.columns.size();
     }
 
-    @Override
     public Set<String> getColumnNames() {
         return this.columns.keySet();
     }
@@ -44,8 +43,7 @@ public final class Schema implements ISchema {
     /**
      * Generates a new Schema that contains only the subset of columns contained in the subSchema.
      */
-    @Override
-    public ISchema project(@NonNull final ISubSchema subSchema) {
+    public Schema project(@NonNull final ISubSchema subSchema) {
         final Schema projection = new Schema();
         for (String colName : this.getColumnNames()) {
             if (subSchema.isColumnPresent(colName)) {
@@ -77,5 +75,9 @@ public final class Schema implements ISchema {
     @Override
     public int hashCode() {
         return this.columns.hashCode();
+    }
+
+    public ContentsKind getKind(final String colName){
+        return this.getDescription(colName).kind;
     }
 }

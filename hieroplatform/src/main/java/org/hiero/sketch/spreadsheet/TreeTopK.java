@@ -23,7 +23,7 @@ public class TreeTopK<T> implements ITopK<T> {
     }
 
     @Override
-    public SortedMap<T,Integer> getTopK() {
+    public SortedMap<T, Integer> getTopK() {
         return this.data;
     }
 

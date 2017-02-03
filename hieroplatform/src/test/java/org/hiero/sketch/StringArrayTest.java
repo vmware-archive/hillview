@@ -14,6 +14,17 @@ public class StringArrayTest {
     private final int size = 100;
     private final ColumnDescription desc = new ColumnDescription("test", ContentsKind.String, true);
 
+    void checkContents(StringArrayColumn col) {
+        for (int i = 0; i < col.sizeInRows(); i++) {
+            if ((i % 5) == 0) {
+                assertTrue(col.isMissing(i));
+            } else {
+                assertFalse(col.isMissing(i));
+                assertEquals(String.valueOf(i), col.getString(i));
+            }
+        }
+    }
+
     /* Test for constructor using length and no arrays*/
     @Test
     public void testStringArrayZero() {
@@ -25,14 +36,7 @@ public class StringArrayTest {
                 col.set(i, String.valueOf(i));
         }
         assertEquals(col.sizeInRows(), this.size);
-        for (int i = 0; i < this.size; i++) {
-            if ((i % 5) == 0) {
-                assertTrue(col.isMissing(i));
-            } else {
-                assertFalse(col.isMissing(i));
-                assertEquals(String.valueOf(i), col.getString(i));
-            }
-        }
+        checkContents(col);
     }
 
     /* Test for constructor using data array */
@@ -46,13 +50,6 @@ public class StringArrayTest {
             if ((i % 5) == 0)
                 col.setMissing(i);
         assertEquals(col.sizeInRows(), this.size);
-        for (int i = 0; i < this.size; i++) {
-            if ((i % 5) == 0) {
-                assertTrue(col.isMissing(i));
-            } else {
-                assertFalse(col.isMissing(i));
-                assertEquals(String.valueOf(i), col.getString(i));
-            }
-        }
+        checkContents(col);
     }
 }

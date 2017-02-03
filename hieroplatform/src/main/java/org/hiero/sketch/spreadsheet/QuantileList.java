@@ -1,12 +1,9 @@
 package org.hiero.sketch.spreadsheet;
 
-import org.hiero.sketch.table.ArrayRowOrder;
-import org.hiero.sketch.table.RowSnapshot;
-import org.hiero.sketch.table.Table;
+import org.hiero.sketch.table.*;
 import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IRowIterator;
 import org.hiero.sketch.table.api.IRowOrder;
-import org.hiero.sketch.table.api.ISchema;
 
 import java.io.Serializable;
 import java.security.InvalidParameterException;
@@ -24,28 +21,40 @@ import java.util.List;
  *      Wins + Losses < dataSize.
  */
 public class QuantileList implements Serializable {
-    public final Table quantile;
+    static class WinsAndLosses {
+        public final int wins;
+        public final int losses;
+
+        public WinsAndLosses(final int wins, final int losses) {
+            this.wins = wins;
+            this.losses = losses;
+        }
+
+        public String toString() {
+            return String.valueOf(this.wins) + ", " + String.valueOf(this.losses);
+        }
+    }
+
+    public final SmallTable quantile;
     private final WinsAndLosses[] winsAndLosses;
     private final int dataSize;
 
     /**
      * An empty quantile list for a table with the specified schema.
      */
-    public QuantileList(ISchema schema) {
+    public QuantileList(Schema schema) {
         this.winsAndLosses = new WinsAndLosses[0];
         this.dataSize = 0;
-        this.quantile = new Table(schema);
+        this.quantile = new SmallTable(schema);
     }
 
-    public QuantileList(final Table quantile, final WinsAndLosses[] winsAndLosses, final int dataSize) {
+    public QuantileList(final SmallTable quantile, final WinsAndLosses[] winsAndLosses, final int dataSize) {
         this.winsAndLosses = winsAndLosses;
         if (quantile.getNumOfRows() != winsAndLosses.length)
             throw new InvalidParameterException("Two arguments have different lengths");
         this.quantile = quantile;
         this.dataSize = dataSize;
     }
-
-
 
     /**
      * @return The number of elements in the list of quantiles
@@ -61,8 +70,8 @@ public class QuantileList implements Serializable {
         return this.quantile.getColumn(colName);
     }
 
-    public ISchema getSchema() {
-        return this.quantile.schema;
+    public Schema getSchema() {
+        return this.quantile.getSchema();
     }
 
     public RowSnapshot getRow(final int rowIndex) {
@@ -184,10 +193,10 @@ public class QuantileList implements Serializable {
 
     public String toString() {
         final StringBuilder builder = new StringBuilder();
-        final IRowIterator rowIt = this.quantile.members.getIterator();
+        final IRowIterator rowIt = this.quantile.getRowIterator();
         int nextRow = rowIt.getNextRow();
         while (nextRow != -1) {
-            for (final String colName: this.quantile.schema.getColumnNames()) {
+            for (final String colName: this.quantile.getSchema().getColumnNames()) {
                 builder.append(this.getColumn(colName).asString(nextRow));
                 builder.append(", ");
             }

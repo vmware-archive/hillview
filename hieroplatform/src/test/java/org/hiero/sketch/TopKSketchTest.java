@@ -5,7 +5,9 @@ import org.hiero.sketch.dataset.ParallelDataSet;
 import org.hiero.sketch.dataset.api.IDataSet;
 import org.hiero.sketch.spreadsheet.*;
 import org.hiero.sketch.table.RecordOrder;
+import org.hiero.sketch.table.SmallTable;
 import org.hiero.sketch.table.Table;
+import org.hiero.sketch.table.api.ITable;
 import org.hiero.sketch.table.api.IndexComparator;
 import org.junit.Test;
 
@@ -27,8 +29,8 @@ public class TopKSketchTest {
         final Table leftTable = getRepIntTable(leftSize, numCols);
         //System.out.println(leftTable.toLongString(50));
         RecordOrder cso = new RecordOrder();
-        for (String colName : leftTable.schema.getColumnNames()) {
-            cso.append(new ColumnSortOrientation(leftTable.schema.getDescription(colName), true));
+        for (String colName : leftTable.getSchema().getColumnNames()) {
+            cso.append(new ColumnSortOrientation(leftTable.getSchema().getDescription(colName), true));
         }
         final TopKSketch tkSketch = new TopKSketch(cso, maxSize);
         final NextKList leftK = tkSketch.getKList(leftTable);
@@ -55,20 +57,20 @@ public class TopKSketchTest {
         final int numCols = 3;
         final int maxSize = 50;
         final int bigSize = 100000;
-        final Table bigTable = getIntTable(bigSize, numCols);
+        final SmallTable bigTable = getIntTable(bigSize, numCols);
         //printTime("created");
         RecordOrder cso = new RecordOrder();
-        for (String colName : bigTable.schema.getColumnNames()) {
-            cso.append(new ColumnSortOrientation(bigTable.schema.getDescription(colName), true));
+        for (String colName : bigTable.getSchema().getColumnNames()) {
+            cso.append(new ColumnSortOrientation(bigTable.getSchema().getDescription(colName), true));
         }
-        List<Table> tabList = SplitTable(bigTable, 10000);
+        List<SmallTable> tabList = SplitTable(bigTable, 10000);
         //printTime("split");
-        ArrayList<IDataSet<Table>> a = new ArrayList<IDataSet<Table>>();
-        for (Table t : tabList) {
-            LocalDataSet<Table> ds = new LocalDataSet<Table>(t);
+        ArrayList<IDataSet<ITable>> a = new ArrayList<IDataSet<ITable>>();
+        for (SmallTable t : tabList) {
+            LocalDataSet<ITable> ds = new LocalDataSet<ITable>(t);
             a.add(ds);
         }
-        ParallelDataSet<Table> all = new ParallelDataSet<Table>(a);
+        ParallelDataSet<ITable> all = new ParallelDataSet<ITable>(a);
         //printTime("Parallel");
         NextKList tk = all.blockingSketch(new TopKSketch(cso, maxSize));
         IndexComparator mComp = cso.getComparator(tk.table);

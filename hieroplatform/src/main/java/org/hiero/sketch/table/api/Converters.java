@@ -1,4 +1,4 @@
-package org.hiero.sketch.table;
+package org.hiero.sketch.table.api;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -26,7 +26,7 @@ class Converters {
     }
 
     /**
-     * Conerts a date d to a double by taking the interval from a base date (Jan 1st 1970) and
+     * Converts a date d to a double by taking the interval from a base date (Jan 1st 1970) and
      * converting this to a double
      * @param d input date
      * @return Span from base converted to a double

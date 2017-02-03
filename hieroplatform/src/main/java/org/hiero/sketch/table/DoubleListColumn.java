@@ -2,6 +2,7 @@ package org.hiero.sketch.table;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.table.api.ContentsKind;
+import org.hiero.sketch.table.api.IDoubleColumn;
 
 import java.util.ArrayList;
 

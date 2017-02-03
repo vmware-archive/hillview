@@ -6,6 +6,7 @@ import java.util.Random;
  * A set of integers.
  * A simplified version of IntOpenHash from fastutil http://fastutil.di.unimi.it
  */
+@SuppressWarnings("NestedAssignment")
 public class IntSet {
     private int[] key; /* The array of the linear probing */
     private int mask;
@@ -125,6 +126,7 @@ public class IntSet {
             } while(key[i] == 0);
 
             if (newKey[pos = HashUtil.murmurHash3(key[i]) & mask] != 0) {
+                //noinspection StatementWithEmptyBody
                 while (newKey[(pos = (pos + 1) & mask)] != 0) {}
             }
         }
