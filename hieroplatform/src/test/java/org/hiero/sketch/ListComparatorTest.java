@@ -32,7 +32,7 @@ public class ListComparatorTest {
             col2.set(i, String.valueOf(alphabet.charAt(rn.nextInt(26))));
             toSort.add(i);
         }
-        Collections.sort(toSort, listComp);
+        toSort.sort(listComp);
         for (int i = 0; i < (size - 1); i++) {
             assertTrue(listComp.compare(toSort.get(i), toSort.get(i + 1)) <= 0);
             assertTrue(col1.getComparator().compare(toSort.get(i), toSort.get(i + 1)) <= 0);
@@ -62,7 +62,7 @@ public class ListComparatorTest {
         for (int j = 0; j < size; j++) {
             toSort.add(j);
         }
-        Collections.sort(toSort, lComp);
+        toSort.sort(lComp);
         String thisRow, nextRow;
         final RowsAsStrings rowString = new RowsAsStrings(cols);
         for(int i = 0; i < (size - 1); i++) {

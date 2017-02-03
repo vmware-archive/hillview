@@ -5,7 +5,7 @@ import org.hiero.sketch.table.api.IStringConverter;
 import org.hiero.sketch.table.api.IndexComparator;
 
 import java.time.Duration;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 /*
  * Column of objects of any type; only for moving data around. Size of column expected to be small.
@@ -104,8 +104,8 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
     }
 
     @Override
-    public Date getDate(final int rowIndex) {
-        return (Date)this.data[rowIndex];
+    public LocalDateTime getDate(final int rowIndex) {
+        return (LocalDateTime) this.data[rowIndex];
     }
 
     @Override

@@ -1,32 +1,26 @@
-package org.hiero.sketch.table;
+package org.hiero.sketch.table.api;
 
-import org.hiero.sketch.table.api.*;
-
-import java.util.Date;
-
-public interface IDateColumn extends IColumn {
+public interface IIntColumn extends IColumn {
     @Override
     default double asDouble(final int rowIndex, final IStringConverter unused) {
         if (isMissing(rowIndex))
             throw new MissingException(this, rowIndex);
-        final Date tmp = this.getDate(rowIndex);
-        return Converters.toDouble(tmp);
+        return this.getInt(rowIndex);
     }
 
     @Override
     default String asString(final int rowIndex) {
         if (this.isMissing(rowIndex))
             return null;
-        return this.getDate(rowIndex).toString();
+        return Integer.toString(this.getInt(rowIndex));
     }
 
-    @Override
     default IndexComparator getComparator() {
         return new IndexComparator() {
             @Override
             public int compare(final Integer i, final Integer j) {
-                final boolean iMissing = IDateColumn.this.isMissing(i);
-                final boolean jMissing = IDateColumn.this.isMissing(j);
+                final boolean iMissing = IIntColumn.this.isMissing(i);
+                final boolean jMissing = IIntColumn.this.isMissing(j);
                 if (iMissing && jMissing) {
                     return 0;
                 } else if (iMissing) {
@@ -34,7 +28,7 @@ public interface IDateColumn extends IColumn {
                 } else if (jMissing) {
                     return -1;
                 } else {
-                    return IDateColumn.this.getDate(i).compareTo(IDateColumn.this.getDate(j));
+                    return Integer.compare(IIntColumn.this.getInt(i), IIntColumn.this.getInt(j));
                 }
             }
         };

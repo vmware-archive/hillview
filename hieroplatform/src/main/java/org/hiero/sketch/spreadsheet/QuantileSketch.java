@@ -7,9 +7,12 @@ import org.hiero.sketch.table.*;
 import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowOrder;
+import org.hiero.sketch.table.api.ITable;
 import rx.Observable;
 
 import java.security.InvalidParameterException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * QuantileSketch is used to compute Quantiles over a distributed data set according to a prescribed
@@ -19,7 +22,7 @@ import java.security.InvalidParameterException;
  * - add: It combines two QuantileLists created from disjoint dataSets to create a single new
  *   QuantileList, that captures Quantile information for the union.
  */
-public class QuantileSketch implements ISketch<Table, QuantileList> {
+public class QuantileSketch implements ISketch<ITable, QuantileList> {
     /**
      * the order and orientation of the columns to define the sorted order.
      */
@@ -29,15 +32,15 @@ public class QuantileSketch implements ISketch<Table, QuantileList> {
      */
     private final int resolution;
     /**
-     * a knob to control the sample size taken fromm a table to create a QuantileList
-     * (the size is perBin*resolution)
-     */
-    private final int perBin = 100;
-    /**
      * a knob to control the size of the QuantileList that is shipped around
      * (the size is slack*resolution)
      */
     private final int slack = 10;
+    /**
+     * a knob to control the sample size taken fromm a table to create a QuantileList
+     * (the size is perBin*resolution)
+     */
+    private static final int perBin = 100;
 
     /**
      * @param sortOrder The list of column orientations.
@@ -56,10 +59,10 @@ public class QuantileSketch implements ISketch<Table, QuantileList> {
      * @param data The input data on which we want to compute Quantiles.
      * @return A table of size resolution, whose ith entry is ranked approximately i/resolution.
      */
-    public QuantileList getQuantile(final Table data) {
+    public QuantileList getQuantile(final ITable data) {
         /* Sample a set of rows from the table, then sort the sampled rows. */
-        final IMembershipSet sampleSet = data.members.sample(this.resolution * this.perBin);
-        final Table sampleTable = data.compress(sampleSet);
+        final IMembershipSet sampleSet = data.getMembershipSet().sample(this.resolution * perBin);
+        final SmallTable sampleTable = data.compress(sampleSet);
         final Integer[] order = this.colSortOrder.getSortedRowOrder(sampleTable);
         /* We will shrink the set of samples  down to slack*resolution. Number of samples might be
             less than resolution*perBin, because of repetitions. */
@@ -162,16 +165,12 @@ public class QuantileSketch implements ISketch<Table, QuantileList> {
             throw new RuntimeException("The schemas do not match.");
         final int width = left.getSchema().getColumnCount();
         final int length = left.getQuantileSize() + right.getQuantileSize();
-        final ObjectArrayColumn[] mergedCol = new ObjectArrayColumn[width];
+        final List<IColumn> mergedCol = new ArrayList<IColumn>(width);
         final boolean[] mergeLeft = this.colSortOrder.getMergeOrder(left.quantile, right.quantile);
-        int i = 0;
-        for (String colName: left.getSchema().getColumnNames()) {
-            mergedCol[i] = mergeColumns(left.getColumn(colName),
-                    right.getColumn(colName), mergeLeft);
-            i++;
-        }
-        final IMembershipSet full = new FullMembership(length);
-        final Table mergedTable = new Table(mergedCol, full);
+        for (String colName: left.getSchema().getColumnNames())
+            mergedCol.add(mergeColumns(left.getColumn(colName),
+                    right.getColumn(colName), mergeLeft));
+        final SmallTable mergedTable = new SmallTable(mergedCol);
         final QuantileList.WinsAndLosses[] mergedRank = mergeRanks(left, right, mergeLeft);
         final int mergedDataSize = left.getDataSize() + right.getDataSize();
         /* The returned quantileList can be of size up to slack* resolution*/
@@ -185,7 +184,7 @@ public class QuantileSketch implements ISketch<Table, QuantileList> {
     }
 
     @Override
-    public Observable<PartialResult<QuantileList>> create(final Table data) {
+    public Observable<PartialResult<QuantileList>> create(final ITable data) {
         QuantileList q = this.getQuantile(data);
         PartialResult<QuantileList> result = new PartialResult<>(1.0, q);
         return Observable.just(result);

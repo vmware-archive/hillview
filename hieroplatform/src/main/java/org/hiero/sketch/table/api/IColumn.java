@@ -4,7 +4,7 @@ import org.hiero.sketch.table.ColumnDescription;
 import org.hiero.sketch.table.ObjectArrayColumn;
 
 import java.time.Duration;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 /**
  * Interface describing operations on a column.
@@ -16,7 +16,7 @@ public interface IColumn {
     /* Only one of the following methods is supposed to work for a column */
     String getString(int rowIndex);
     double getDouble(int rowIndex);
-    Date getDate(int rowIndex);
+    LocalDateTime getDate(int rowIndex);
     int getInt(int rowIndex);
     Duration getDuration(int rowIndex);
     /* This function is inefficient, it should be used sparingly. It

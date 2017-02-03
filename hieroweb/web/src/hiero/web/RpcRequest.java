@@ -1,12 +1,18 @@
 package hiero.web;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.hiero.sketch.view.IJson;
+import org.hiero.sketch.dataset.api.IJson;
+
+import javax.websocket.Session;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class RpcRequest {
+    private static final Logger LOGGER =
+            Logger.getLogger(RpcRequest.class.getName());
+
     public final int    requestId;
     @NonNull
     public final String objectId;
@@ -32,5 +38,13 @@ public class RpcRequest {
 
     public RpcReply createReply(Throwable th) {
         return new RpcReply(this.requestId, this.toString() + "\n" + RpcServer.asString(th), true);
+    }
+
+    public void closeSession(@NonNull Session session) {
+        try {
+            session.close();
+        } catch (Exception ex) {
+            LOGGER.log(Level.SEVERE, "Error closing session");
+        }
     }
 }

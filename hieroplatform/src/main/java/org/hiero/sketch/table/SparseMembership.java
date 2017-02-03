@@ -4,6 +4,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
 import org.hiero.utils.IntSet;
+
 import java.util.function.Predicate;
 
 
@@ -138,19 +139,6 @@ public class SparseMembership implements IMembershipSet {
             curr = iter.getNextRow();
         }
         return new SparseMembership(intersectSet);
-    }
-
-    @Override
-    public IMembershipSet setMinus(@NonNull final IMembershipSet otherSet) {
-        final IntSet setMinusSet = new IntSet();
-        final IRowIterator iter = this.getIterator();
-        int curr = iter.getNextRow();
-        while (curr >= 0) {
-            if (!otherSet.isMember(curr))
-                setMinusSet.add(curr);
-            curr = iter.getNextRow();
-        }
-        return new SparseMembership(setMinusSet);
     }
 
     /**

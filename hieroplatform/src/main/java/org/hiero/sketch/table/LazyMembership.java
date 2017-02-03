@@ -5,6 +5,7 @@ import org.hiero.utils.IntSet;
 import org.scalactic.exceptions.NullArgumentException;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
+
 import java.util.function.Predicate;
 
 /**
@@ -12,7 +13,7 @@ import java.util.function.Predicate;
  * are used for the isMember and for the iterator functions. Upside is that construction is quick,
  * adding a filter function is quick. The downside is that the isMember can take a long time if
  * there are many filters, and iterator takes a long time if it's sparse. Also, each first call for
- * getQuanitleSize after a new filter is a linear scan.
+ * getSize after a new filter is a linear scan.
  */
 
 public class LazyMembership implements IMembershipSet {
@@ -78,9 +79,9 @@ public class LazyMembership implements IMembershipSet {
         final IntSet sampleSet = new IntSet(k);
         for (int attempt = 0; attempt < samplingAttempts; attempt++) {
             if (useSeed)
-                batchSet = this.baseMap.sample(k, seed + attempt);
+                batchSet = this.baseMap.sample(k * 2, seed + attempt);
             else
-                batchSet = this.baseMap.sample(k);
+                batchSet = this.baseMap.sample(k * 2);
             final IRowIterator it = batchSet.getIterator();
             int tmprow = it.getNextRow();
             while (tmprow >= 0) {
@@ -121,10 +122,10 @@ public class LazyMembership implements IMembershipSet {
     }
 
     /**
-     *
      * @return An approximation of the size based on a sample of sizeEstimationSampleSize.
      * function may return 0.
-     * Exact size given by getQuanitleSize() is expensive and takes linear time the first time it is called
+     * Exact size given by getQuantileSize() is expensive and takes linear time
+     * the first time it is called.
      */
     public int getApproxSize() {
         if (this.rowCountCorrect)
@@ -185,19 +186,6 @@ public class LazyMembership implements IMembershipSet {
             return new LazyMembership(newBase, this.filter);
         }
         return otherMap.intersection(this);
-    }
-
-    @Override
-    public IMembershipSet setMinus(@NonNull final IMembershipSet otherMap) {
-        final IntSet setMinusSet = new IntSet();
-        final IRowIterator iter = this.getIterator();
-        int curr = iter.getNextRow();
-        while (curr >=0) {
-            if (!otherMap.isMember(curr))
-                setMinusSet.add(curr);
-            curr = iter.getNextRow();
-        }
-        return new SparseMembership(setMinusSet);
     }
 
     private static class DenseIterator implements IRowIterator {

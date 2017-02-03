@@ -2,17 +2,18 @@ package org.hiero.sketch.table;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.table.api.IRow;
-import org.hiero.sketch.table.api.ISchema;
+import org.hiero.sketch.table.api.ITable;
 
+import java.io.Serializable;
 import java.util.HashMap;
 
 /**
  * The copy of the data in a row of the table.
  * This is quite inefficient, it should be used rarely.
  */
-public class RowSnapshot implements IRow {
+public class RowSnapshot implements IRow, Serializable {
     @NonNull
-    private final ISchema schema;
+    protected final Schema schema;
 
     /**
      * Maps a column name to a value.
@@ -20,8 +21,8 @@ public class RowSnapshot implements IRow {
     @NonNull
     private final HashMap<String, Object> field = new HashMap<String, Object>();
 
-    public RowSnapshot(@NonNull final Table data, final int rowIndex) {
-        this.schema = data.schema;
+    public RowSnapshot(@NonNull final ITable data, final int rowIndex) {
+        this.schema = data.getSchema();
         for (final String colName : this.schema.getColumnNames()) {
             this.field.put(colName, data.getColumn(colName).getObject(rowIndex));
         }
@@ -30,18 +31,16 @@ public class RowSnapshot implements IRow {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if ((o == null) || (getClass() != o.getClass())) return false;
 
         RowSnapshot that = (RowSnapshot) o;
-
-        if (!schema.equals(that.schema)) return false;
-        return field.equals(that.field);
+        return this.schema.equals(that.schema) && this.field.equals(that.field);
     }
 
     @Override
     public int hashCode() {
-        int result = schema.hashCode();
-        result = 31 * result + field.hashCode();
+        int result = this.schema.hashCode();
+        result = (31 * result) + this.field.hashCode();
         return result;
     }
 
@@ -51,7 +50,7 @@ public class RowSnapshot implements IRow {
     }
 
     @Override
-    public ISchema getSchema() {
+    public Schema getSchema() {
         return this.schema;
     }
 

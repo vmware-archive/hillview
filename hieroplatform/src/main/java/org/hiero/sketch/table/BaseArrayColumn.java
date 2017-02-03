@@ -5,9 +5,9 @@ import java.security.InvalidParameterException;
 import java.util.BitSet;
 
 /**
- * Adds a missing bit vector to BaseColumn for integers and doubles (if missing values are allowed)
+ * Adds a missing bit vector to BaseColumn (if missing values are allowed)
  */
-abstract class BaseArrayColumn extends BaseColumn implements Serializable {
+public abstract class BaseArrayColumn extends BaseColumn implements Serializable {
     private BitSet missing = null;
 
     BaseArrayColumn(final ColumnDescription description, final int size) {

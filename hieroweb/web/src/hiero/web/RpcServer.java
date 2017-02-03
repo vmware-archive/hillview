@@ -6,6 +6,7 @@ import com.google.gson.stream.JsonReader;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.dataset.LocalDataSet;
 import org.hiero.sketch.table.Table;
+import org.hiero.sketch.table.api.ITable;
 
 import javax.websocket.*;
 import javax.websocket.server.ServerEndpoint;
@@ -22,11 +23,13 @@ import java.util.logging.Logger;
 public class RpcServer {
     static private final int version = 2;
     private final HashMap<String, RpcTarget> objects;
+    private static final Logger LOGGER =
+            Logger.getLogger(RpcServer.class.getName());
 
     public RpcServer() {
         this.objects = new HashMap<String, RpcTarget>();
         Table t = Table.testTable();
-        LocalDataSet<Table> local = new LocalDataSet<Table>(t);
+        LocalDataSet<ITable> local = new LocalDataSet<ITable>(t);
         this.addObject(new TableTarget("0", local));
     }
 
@@ -49,9 +52,6 @@ public class RpcServer {
             throw new RuntimeException("Object with id " + id + " does not exist");
         this.objects.remove(id);
     }
-
-    private static final Logger LOGGER =
-            Logger.getLogger(RpcServer.class.getName());
 
     @SuppressWarnings("unused")
     @OnOpen
@@ -91,13 +91,6 @@ public class RpcServer {
         }
     }
 
-    private void closeSession(@NonNull Session session) {
-        try {
-            session.close();
-        } catch (Exception ex) {
-            LOGGER.log(Level.SEVERE, "Error closing session");
-        }
-    }
 
     static String asString(Throwable t) {
         StringWriter sw = new StringWriter();
@@ -113,14 +106,21 @@ public class RpcServer {
             RpcTarget stub = this.getObject(rpcRequest.objectId);
             if (stub == null)
                 throw new RuntimeException("RpcServer.getObject() returned null");
-            // Normally this sends the reply as well
+            // This sends the reply and closes the session.
             stub.execute(rpcRequest, session);
         } catch (Exception ex) {
             RpcReply reply = rpcRequest.createReply(ex);
             this.sendReply(reply, session);
+            rpcRequest.closeSession(session);
         }
+    }
 
-        this.closeSession(session);
+    private void closeSession(@NonNull Session session) {
+        try {
+            session.close();
+        } catch (Exception ex) {
+            LOGGER.log(Level.SEVERE, "Error closing session");
+        }
     }
 
     private void replyWithError(final Throwable th, final Session session) {

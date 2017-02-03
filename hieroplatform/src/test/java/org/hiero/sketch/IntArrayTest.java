@@ -54,13 +54,8 @@ public class IntArrayTest {
         }
     }
 
-    /* Test for constructor using length and no arrays*/
-    @Test
-    public void testIntArrayZero() {
-        final int size = 100;
-        final IntArrayColumn col = generateIntArray(size);
-        assertEquals(col.sizeInRows(), size);
-        for (int i = 0; i < size; i++) {
+    void checkContents(IntArrayColumn col) {
+        for (int i = 0; i < col.sizeInRows(); i++) {
             if ((i % 5) == 0)
                 assertTrue(col.isMissing(i));
             else {
@@ -68,6 +63,15 @@ public class IntArrayTest {
                 assertEquals(i, col.getInt(i));
             }
         }
+    }
+
+    /* Test for constructor using length and no arrays*/
+    @Test
+    public void testIntArrayZero() {
+        final int size = 100;
+        final IntArrayColumn col = generateIntArray(size);
+        assertEquals(col.sizeInRows(), size);
+        checkContents(col);
     }
 
     /* Test for constructor using data array */
@@ -83,12 +87,6 @@ public class IntArrayTest {
             if ((i % 5) == 0)
                 col.setMissing(i);
         assertEquals(col.sizeInRows(), size);
-        for (int i = 0; i < size; i++) {
-            assertEquals(i, col.getInt(i));
-            if ((i % 5) == 0)
-                assertEquals(true, col.isMissing(i));
-            else
-                assertEquals(false, col.isMissing(i));
-        }
+        checkContents(col);
     }
 }

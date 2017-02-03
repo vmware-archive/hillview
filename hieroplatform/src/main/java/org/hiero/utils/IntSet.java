@@ -6,6 +6,7 @@ import java.util.Random;
  * A set of integers.
  * A simplified version of IntOpenHash from fastutil http://fastutil.di.unimi.it
  */
+@SuppressWarnings("NestedAssignment")
 public class IntSet {
     private int[] key; /* The array of the linear probing */
     private int mask;
@@ -125,6 +126,7 @@ public class IntSet {
             } while(key[i] == 0);
 
             if (newKey[pos = HashUtil.murmurHash3(key[i]) & mask] != 0) {
+                //noinspection StatementWithEmptyBody
                 while (newKey[(pos = (pos + 1) & mask)] != 0) {}
             }
         }
@@ -150,15 +152,23 @@ public class IntSet {
     }
 
     public IntSet sample(final int k, final long seed, final boolean useSeed) {
+        if (k >= this.size)
+            return this.copy();
         final IntSet sampleSet = new IntSet(k);
         final Random psg;
+        int sampleSize;
         if (useSeed)
             psg = new Random(seed);
         else
             psg = new Random();
         int randomKey = psg.nextInt(this.n);
-
-        for (int samples = 0; samples < k; samples++) {
+        if ((this.containsZero) && (randomKey == 0)) {  // sampling zero is done separately
+            sampleSet.add(0);
+            sampleSize = k-1;
+        }
+        else sampleSize = k;
+        randomKey = psg.nextInt();
+        for (int samples = 0; samples < sampleSize; samples++) {
             while (this.key[randomKey & this.mask] == 0)
                 randomKey++;
             sampleSet.add(this.key[randomKey & this.mask]);

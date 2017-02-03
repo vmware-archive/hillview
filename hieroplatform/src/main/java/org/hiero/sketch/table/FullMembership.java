@@ -45,6 +45,8 @@ public class FullMembership implements IMembershipSet {
      */
     @Override
     public IMembershipSet sample(final int k) {
+        if (k >= this.rowCount)
+            return new FullMembership(this.rowCount);
         final Random randomGenerator = new Random();
         return this.sampleUtil(randomGenerator, k);
     }
@@ -58,6 +60,8 @@ public class FullMembership implements IMembershipSet {
      */
     @Override
     public IMembershipSet sample(final int k, final long seed) {
+        if (k >= this.rowCount)
+            return new FullMembership(this.rowCount);
         final Random randomGenerator = new Random(seed);
         return this.sampleUtil(randomGenerator, k);
     }
@@ -102,14 +106,16 @@ public class FullMembership implements IMembershipSet {
         final IntSet s = new IntSet(k);
         for (int i=0; i < k; i++)
             s.add(randomGenerator.nextInt(this.rowCount));
+        while (s.size() < k)
+            s.add(randomGenerator.nextInt(this.rowCount));
         return new SparseMembership(s);
     }
 
-    private static class FullMembershipIterator implements IRowIterator {
+    public static class FullMembershipIterator implements IRowIterator {
         private int cursor = 0;
         private final int range;
 
-        private FullMembershipIterator(final int range) {
+        public FullMembershipIterator(final int range) {
             this.range = range;
         }
 

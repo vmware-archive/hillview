@@ -21,13 +21,30 @@ public class DoubleArrayTest {
      * Generates a double array with every fifth entry missing
      */
     public static DoubleArrayColumn generateDoubleArray(final int size) {
+        return DoubleArrayTest.generateDoubleArray(size, 5);
+    }
+
+    /**
+     * Generates a double array with every skip entry missing
+     */
+    public static DoubleArrayColumn generateDoubleArray(final int size, int skip) {
         final DoubleArrayColumn col = new DoubleArrayColumn(desc, size);
         for (int i = 0; i < size; i++) {
             col.set(i, Math.sqrt(i + 1));
-            if ((i % 5) == 0)
+            if ((i % skip) == 0)
                 col.setMissing(i);
         }
         return col;
+    }
+
+    void checkContents(DoubleArrayColumn col) {
+        for (int i = 0; i < col.sizeInRows(); i++) {
+            assertEquals(Math.sqrt(i+1), col.getDouble(i), 1e-3);
+            if ((i % 5) == 0)
+                assertTrue(col.isMissing(i));
+            else
+                assertFalse(col.isMissing(i));
+        }
     }
 
     /* Test for constructor using length and no arrays*/
@@ -35,13 +52,7 @@ public class DoubleArrayTest {
     public void testDoubleArrayZero() {
         final DoubleArrayColumn col = generateDoubleArray(this.size);
         assertEquals(col.sizeInRows(), this.size);
-        for (int i = 0; i < this.size; i++) {
-            assertEquals(Math.sqrt(i+1), col.getDouble(i), 1e-3);
-            if ((i % 5) == 0)
-                assertTrue(col.isMissing(i));
-            else
-                assertFalse(col.isMissing(i));
-        }
+        this.checkContents(col);
     }
 
     /* Test for constructor using data array */
@@ -55,14 +66,7 @@ public class DoubleArrayTest {
             if ((i % 5) == 0)
                 col.setMissing(i);
         assertEquals(col.sizeInRows(), this.size);
-        for (int i = 0; i < this.size; i++) {
-            assertEquals(Math.sqrt(i+1), col.getDouble(i), 1e-3);
-            //System.out.println(col.getDouble(i));
-            if ((i % 5) == 0)
-                assertTrue(col.isMissing(i));
-            else
-                assertFalse(col.isMissing(i));
-        }
+        this.checkContents(col);
     }
 
     /* Test for constructor using two arrays: data and missing values*/
@@ -78,12 +82,6 @@ public class DoubleArrayTest {
                 col.setMissing(i);
         }
         assertEquals(col.sizeInRows(), this.size);
-        for (int i = 0; i < this.size; i++) {
-            assertEquals(Math.sqrt(i+1), col.getDouble(i), 1e-3);
-            if ((i % 5) == 0)
-                assertTrue(col.isMissing(i));
-            else
-                assertFalse(col.isMissing(i));
-        }
+        this.checkContents(col);
     }
 }

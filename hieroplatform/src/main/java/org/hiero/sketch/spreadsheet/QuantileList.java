@@ -1,12 +1,9 @@
 package org.hiero.sketch.spreadsheet;
 
-import org.hiero.sketch.table.ArrayRowOrder;
-import org.hiero.sketch.table.RowSnapshot;
-import org.hiero.sketch.table.Table;
+import org.hiero.sketch.table.*;
 import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IRowIterator;
 import org.hiero.sketch.table.api.IRowOrder;
-import org.hiero.sketch.table.api.ISchema;
 
 import java.io.Serializable;
 import java.security.InvalidParameterException;
@@ -38,20 +35,20 @@ public class QuantileList implements Serializable {
         }
     }
 
-    public final Table quantile;
+    public final SmallTable quantile;
     private final WinsAndLosses[] winsAndLosses;
     private final int dataSize;
 
     /**
      * An empty quantile list for a table with the specified schema.
      */
-    public QuantileList(ISchema schema) {
+    public QuantileList(Schema schema) {
         this.winsAndLosses = new WinsAndLosses[0];
         this.dataSize = 0;
-        this.quantile = new Table(schema);
+        this.quantile = new SmallTable(schema);
     }
 
-    public QuantileList(final Table quantile, final WinsAndLosses[] winsAndLosses, final int dataSize) {
+    public QuantileList(final SmallTable quantile, final WinsAndLosses[] winsAndLosses, final int dataSize) {
         this.winsAndLosses = winsAndLosses;
         if (quantile.getNumOfRows() != winsAndLosses.length)
             throw new InvalidParameterException("Two arguments have different lengths");
@@ -73,8 +70,8 @@ public class QuantileList implements Serializable {
         return this.quantile.getColumn(colName);
     }
 
-    public ISchema getSchema() {
-        return this.quantile.schema;
+    public Schema getSchema() {
+        return this.quantile.getSchema();
     }
 
     public RowSnapshot getRow(final int rowIndex) {
@@ -106,8 +103,8 @@ public class QuantileList implements Serializable {
      * @return A guess for the rank of the element x. We know it lies in
      * the interval (wins(x), dataSize - losses(x)), so we return the average of the two.
      */
-    public double getApproxRank(final int rowIndex) {
-        return (((double) this.getWins(rowIndex) + this.getDataSize() -
+    private double getApproxRank(final int rowIndex) {
+        return ((((double) this.getWins(rowIndex) + this.getDataSize()) -
                 this.getLosses(rowIndex)) / 2);
     }
 
@@ -147,9 +144,9 @@ public class QuantileList implements Serializable {
         newSubset.add(0);
         double open = this.getApproxRank(0);
         double close;
-        for (int i = 1; i <= oldSize - 2; i++) {
+        for (int i = 1; i <= (oldSize - 2); i++) {
             close = this.getApproxRank(i+1);
-            if (close - open > avgGap) {
+            if ((close - open) > avgGap) {
                 newSubset.add(i);
                 open = this.getApproxRank(i);
             }
@@ -175,7 +172,7 @@ public class QuantileList implements Serializable {
             double targetRank = (i + 1) * stepSize;
             while (true) {
                 double ar = this.getApproxRank(j);
-                if (ar <=  targetRank && j <= oldSize - 2)
+                if ((ar <= targetRank) && (j <= (oldSize - 2)))
                     j++;
                 else
                     break;
@@ -184,7 +181,7 @@ public class QuantileList implements Serializable {
                 newSubset.add(0);
             else {
             /* Check whether j or j-1 is closer to the targetRank */
-                if (this.getApproxRank(j) + this.getApproxRank(j - 1) <= 2 * targetRank)
+                if ((this.getApproxRank(j) + this.getApproxRank(j - 1)) <= (2 * targetRank))
                     newSubset.add(j);
                 else
                     newSubset.add(j - 1);
@@ -196,10 +193,10 @@ public class QuantileList implements Serializable {
 
     public String toString() {
         final StringBuilder builder = new StringBuilder();
-        final IRowIterator rowIt = this.quantile.members.getIterator();
+        final IRowIterator rowIt = this.quantile.getRowIterator();
         int nextRow = rowIt.getNextRow();
         while (nextRow != -1) {
-            for (final String colName: this.quantile.schema.getColumnNames()) {
+            for (final String colName: this.quantile.getSchema().getColumnNames()) {
                 builder.append(this.getColumn(colName).asString(nextRow));
                 builder.append(", ");
             }
