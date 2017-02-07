@@ -2,11 +2,12 @@ package org.hiero.sketch;
 
 import org.hiero.sketch.spreadsheet.MonoidTopK;
 import org.hiero.sketch.spreadsheet.TreeTopK;
+import org.hiero.utils.Randomness;
 import org.junit.Test;
-import java.util.Random;
-import java.util.SortedMap;
 
+import java.util.SortedMap;
 import static org.junit.Assert.assertTrue;
+
 
 public class TestMonoidTopK {
     private final int maxSize =1000;
@@ -34,7 +35,7 @@ public class TestMonoidTopK {
         this.rSize = 100;
         this.leftTree = new TreeTopK<Integer>(this.lSize, MyCompare.instance);
         this.rightTree = new TreeTopK<Integer>(this.rSize, MyCompare.instance);
-        final Random rn = new Random();
+        final Randomness rn = Randomness.getInstance();
         for (int i = 0; i < this.inpSize; i++)
             this.leftTree.push(rn.nextInt(this.inpSize));
         for (int j = 0; j < this.inpSize; j++)
@@ -51,7 +52,7 @@ public class TestMonoidTopK {
         this.rSize = 50;
         this.leftTree = new TreeTopK<Integer>(this.lSize, MyCompare.instance);
         this.rightTree = new TreeTopK<Integer>(this.rSize, MyCompare.instance);
-        final Random rn = new Random();
+        final Randomness rn = Randomness.getInstance();
         for (int i = 0; i < this.inpSize; i++)
             this.leftTree.push(rn.nextInt(this.inpSize));
         for (int j = 0; j < this.inpSize; j++)
@@ -68,7 +69,7 @@ public class TestMonoidTopK {
         this.rSize = 1000;
         this.leftTree = new TreeTopK<Integer>(this.lSize, MyCompare.instance);
         this.rightTree = new TreeTopK<Integer>(this.rSize, MyCompare.instance);
-        final Random rn = new Random();
+        final Randomness rn = Randomness.getInstance();
         for (int i = 0; i < this.inpSize; i++)
             this.leftTree.push(rn.nextInt(this.inpSize));
         for (int j = 0; j < this.inpSize; j++)

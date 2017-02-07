@@ -1,9 +1,8 @@
 package org.hiero.sketch;
 
+import org.hiero.utils.Randomness;
 import org.junit.Test;
-
 import java.util.Arrays;
-import java.util.Random;
 
 public class PercentileTest {
     @Test
@@ -18,7 +17,7 @@ public class PercentileTest {
 
         for (runs = 0; runs < 1; runs++) {
             final int[] percentile = new int[resolution];
-            final Random rn = new Random();
+            final Randomness rn = Randomness.getInstance();
             for (i = 0; i < sampleSize; i++) {
                 j = (int) Math.floor((rn.nextInt(range) * resolution) / range);
                 percentile[j]++;

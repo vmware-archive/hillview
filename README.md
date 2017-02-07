@@ -72,3 +72,8 @@ The first time you start Intellij you must import the project: on the
 welcome screen, select the "import project" option, point to the
 "pom.xml" file inside the hiero folder, click "next" a few times and
 you're good to go.
+
+## Guidance in writing code
+
+The pseudorandom generator is implemented in the class Randomness.java and uses 
+Mersenne Twister. Do not use the class Random but this class instead.

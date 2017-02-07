@@ -1,6 +1,5 @@
 package org.hiero.utils;
 
-import java.util.Random;
 
 /**
  * A set of integers.
@@ -151,16 +150,21 @@ public class IntSet {
         return newSet;
     }
 
+    /**
+     * Uses the class Randomness to sample k items without replacement. If k > size returns the
+     * the entire set.
+     * @param k the number of items to be sampled
+     * @param seed
+     * @return an IntSet of the sample
+     */
     public IntSet sample(final int k, final long seed, final boolean useSeed) {
         if (k >= this.size)
             return this.copy();
         final IntSet sampleSet = new IntSet(k);
-        final Random psg;
+        final Randomness psg = Randomness.getInstance();
         int sampleSize;
         if (useSeed)
-            psg = new Random(seed);
-        else
-            psg = new Random();
+            psg.setSeed(seed);
         int randomKey = psg.nextInt(this.n);
         if ((this.containsZero) && (randomKey == 0)) {  // sampling zero is done separately
             sampleSet.add(0);
