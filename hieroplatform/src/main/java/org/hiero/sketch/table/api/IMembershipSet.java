@@ -5,10 +5,6 @@ import org.hiero.utils.Randomness;
 import org.hiero.sketch.table.SparseMembership;
 import org.hiero.utils.IntSet;
 
-
-import java.util.Random;
-
-
 /**
  * A IMembershipSet is a representation of a set of integers.
  * These integers represent row indexes in a table.  If an integer
