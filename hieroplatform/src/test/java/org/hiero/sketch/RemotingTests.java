@@ -52,7 +52,7 @@ public class RemotingTests {
                 dataNew[i] = data[i] + 1;
             }
 
-            return Observable.just(new PartialResult<int[]>(1.0, dataNew));
+            return Observable.just(new PartialResult<int[]>(dataNew));
         }
     }
 

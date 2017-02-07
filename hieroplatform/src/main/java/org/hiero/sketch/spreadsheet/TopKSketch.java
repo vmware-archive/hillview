@@ -108,7 +108,9 @@ public class TopKSketch implements ISketch<ITable, NextKList> {
         List<Integer> mergedCounts = this.mergeCounts(left.count,
                 right.count, mergeOrder);
         final SmallTable mergedTable = new SmallTable(mergedCol);
-        return new NextKList(mergedTable, mergedCounts, 0, null);
+        return new NextKList(mergedTable, mergedCounts,
+                left.startPosition + right.startPosition,
+                left.totalRows + right.totalRows);
     }
 
     /**
@@ -133,13 +135,12 @@ public class TopKSketch implements ISketch<ITable, NextKList> {
         List<Integer> count = new ArrayList<Integer>();
         // The values() method of a SortedMap generates the values in the sorted order of the keys.
         count.addAll(topKList.values());
-        return new NextKList(topKRows, count, 0, null);
+        return new NextKList(topKRows, count, 0, data.getNumOfRows());
     }
 
     @Override
     public Observable<PartialResult<NextKList>> create(final ITable data) {
         NextKList q = this.getKList(data);
-        PartialResult<NextKList> result = new PartialResult<>(1.0, q);
-        return Observable.just(result);
+        return this.pack(q);
     }
 }

@@ -1,20 +1,23 @@
 package org.hiero.sketch.table;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.hiero.sketch.dataset.api.IJson;
 import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.ISubSchema;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
 import java.security.InvalidParameterException;
-import java.util.HashMap;
-import java.util.Set;
+import java.util.*;
 
 /**
  * A schema is just a map from a column name
  * to a column description.  Column names are case-sensitive.
  */
 public final class Schema
-        implements Serializable {
+        implements Serializable, IJson {
     @NonNull
     private final HashMap<String, ColumnDescription> columns;
 
@@ -36,13 +39,23 @@ public final class Schema
         return this.columns.size();
     }
 
+    @NotNull
+    @NonNull
     public Set<String> getColumnNames() {
         return this.columns.keySet();
+    }
+
+    @NonNull
+    public List<String> getSortedColumnNames() {
+        ArrayList<String> keys = new ArrayList<String>(this.getColumnNames());
+        Collections.sort(keys);
+        return keys;
     }
 
     /**
      * Generates a new Schema that contains only the subset of columns contained in the subSchema.
      */
+    @NonNull
     public Schema project(@NonNull final ISubSchema subSchema) {
         final Schema projection = new Schema();
         for (String colName : this.getColumnNames()) {
@@ -54,6 +67,7 @@ public final class Schema
     }
 
     @Override
+    @NonNull
     public String toString() {
         String result = "";
         String separator = "";
@@ -77,7 +91,30 @@ public final class Schema
         return this.columns.hashCode();
     }
 
+    @NonNull
     public ContentsKind getKind(final String colName){
         return this.getDescription(colName).kind;
+    }
+
+    // The columns will always be sorted alphabetically
+    @NonNull
+    private ColumnDescription[] toArray() {
+        ColumnDescription[] all = new ColumnDescription[this.columns.size()];
+        int i = 0;
+        for (String name: this.getSortedColumnNames()) {
+            ColumnDescription cd = this.getDescription(name);
+            all[i++] = cd;
+        }
+        return all;
+    }
+
+    @Override
+    @NonNull
+    public JsonElement toJsonTree() {
+        ColumnDescription[] all = this.toArray();
+        JsonArray result = new JsonArray();
+        for (ColumnDescription cd : all)
+            result.add(cd.toJsonTree());
+        return result;
     }
 }

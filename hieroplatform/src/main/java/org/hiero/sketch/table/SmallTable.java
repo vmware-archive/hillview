@@ -1,9 +1,15 @@
 package org.hiero.sketch.table;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.hiero.sketch.dataset.api.IJson;
 import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
+import scala.util.parsing.json.JSONObject;
 
 import java.io.Serializable;
 
@@ -13,7 +19,7 @@ import java.io.Serializable;
  */
 public class SmallTable
         extends BaseTable
-        implements Serializable {
+        implements Serializable, IJson {
     @NonNull
     protected final Schema schema;
     protected final int rowCount;
@@ -54,5 +60,25 @@ public class SmallTable
     @Override
     public int getNumOfRows() {
         return this.rowCount;
+    }
+
+    private RowSnapshot[] getRows() {
+        RowSnapshot[] rows = new RowSnapshot[this.getNumOfRows()];
+        for (int i = 0; i < this.getNumOfRows(); i++)
+            rows[i] = new RowSnapshot(this, i);
+        return rows;
+    }
+
+    @Override
+    public JsonElement toJsonTree() {
+        JsonObject result = new JsonObject();
+        result.add("schema", this.schema.toJsonTree());
+        result.addProperty("rowCount", this.rowCount);
+        RowSnapshot[] rows = this.getRows();
+        JsonArray jrows = new JsonArray();
+        for (RowSnapshot rs : rows)
+            jrows.add(rs.toJsonTree());
+        result.add("rows", jrows);
+        return result;
     }
 }

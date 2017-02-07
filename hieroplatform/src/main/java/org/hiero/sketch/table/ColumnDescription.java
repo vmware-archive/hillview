@@ -1,14 +1,16 @@
 package org.hiero.sketch.table;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.hiero.sketch.dataset.api.IJson;
 import org.hiero.sketch.table.api.ContentsKind;
+import scala.reflect.internal.util.TableDef;
 
 import java.io.Serializable;
 
 /**
  * Describes the contents of a column in a local table.
  */
-public class ColumnDescription implements Serializable {
+public class ColumnDescription implements Serializable, IJson {
     @NonNull
     public final String name;
     @NonNull

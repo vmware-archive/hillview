@@ -1,6 +1,8 @@
 package org.hiero.sketch.table;
 
+import com.google.gson.JsonElement;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.hiero.sketch.dataset.api.IJson;
 import org.hiero.sketch.table.api.IRow;
 import org.hiero.sketch.table.api.ITable;
 
@@ -11,7 +13,7 @@ import java.util.HashMap;
  * The copy of the data in a row of the table.
  * This is quite inefficient, it should be used rarely.
  */
-public class RowSnapshot implements IRow, Serializable {
+public class RowSnapshot implements IRow, Serializable, IJson {
     @NonNull
     protected final Schema schema;
 
@@ -23,9 +25,8 @@ public class RowSnapshot implements IRow, Serializable {
 
     public RowSnapshot(@NonNull final ITable data, final int rowIndex) {
         this.schema = data.getSchema();
-        for (final String colName : this.schema.getColumnNames()) {
+        for (final String colName : this.schema.getColumnNames())
             this.field.put(colName, data.getColumn(colName).getObject(rowIndex));
-        }
     }
 
     @Override
@@ -59,16 +60,30 @@ public class RowSnapshot implements IRow, Serializable {
         return this.field.get(colName);
     }
 
+    private Object[] getData() {
+        Object[] data = new Object[this.schema.getColumnCount()];
+        int i = 0;
+        for (final String nextCol: this.schema.getSortedColumnNames())
+            data[i++] = this.get(nextCol);
+        return data;
+    }
+
     @Override
     public String toString() {
         final StringBuilder builder = new StringBuilder();
         boolean first = true;
-        for (final String nextCol: this.schema.getColumnNames()) {
+        for (Object o : this.getData()) {
             if (!first)
                 builder.append(", ");
-            builder.append(this.field.get(nextCol).toString());
+            builder.append(o.toString());
             first = false;
         }
         return builder.toString();
+    }
+
+    @Override
+    public JsonElement toJsonTree() {
+        Object[] data = this.getData();
+        return gsonInstance.toJsonTree(data);
     }
 }

@@ -69,7 +69,7 @@ public class SketchClientActor extends AbstractActor {
                                                                        newRemote),
                                         CLIENT_ACTOR_NAME + counter.incrementAndGet());
                                 IDataSet ids = new RemoteDataSet(newClientActor, newRemote);
-                                subject.onNext(new PartialResult<IDataSet>(1.0, ids));
+                                subject.onNext(new PartialResult<IDataSet>(ids));
                                 subject.onCompleted();
                                 break;
                         }

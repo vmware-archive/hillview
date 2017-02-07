@@ -32,8 +32,16 @@ public class RpcRequest {
         return "RpcRequest: " + this.objectId + "." + this.method + "()";
     }
 
+    public RpcReply createReply(String json) {
+        return new RpcReply(this.requestId, json, false);
+    }
+
+    public RpcReply createReply(JsonElement userResult) {
+        return this.createReply(userResult.toString());
+    }
+
     public RpcReply createReply(IJson userResult) {
-        return new RpcReply(this.requestId, userResult.toJson(), false);
+        return this.createReply(userResult.toJson());
     }
 
     public RpcReply createReply(Throwable th) {

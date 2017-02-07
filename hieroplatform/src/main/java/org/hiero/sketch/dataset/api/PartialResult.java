@@ -24,7 +24,7 @@ public class PartialResult<T> implements Serializable {
      * @param deltaDone  How much more has been done.  A number between 0 and 1.
      * @param deltaValue Extra result produced.
      */
-    public PartialResult(double deltaDone, final T deltaValue) {
+    public PartialResult(double deltaDone, T deltaValue) {
         if (deltaDone < 0) {
             throw new RuntimeException("Illegal value for deltaDone");
         } else if (deltaDone > 1) {
@@ -33,6 +33,14 @@ public class PartialResult<T> implements Serializable {
         }
         this.deltaDone = deltaDone;
         this.deltaValue = deltaValue;
+    }
+
+    /**
+     * Creates a complete partial result (deltaDone = 1.0).
+     * @param deltaValue Result produced.
+     */
+    public PartialResult(T deltaValue) {
+        this(1.0, deltaValue);
     }
 
     @Override
