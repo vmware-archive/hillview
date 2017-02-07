@@ -14,15 +14,25 @@ public class Randomness {
         this.myPrg = new MersenneTwister(seed);
     }
 
+    /**
+     * @return If existing, the instance. Otherwise a new instance.
+     */
     public static Randomness getInstance() {
         if (prg == null)
             prg = new Randomness();
         return prg;
     }
 
-    public static Randomness getInstance(long seed) {
-        if (prg == null)
-            prg = new Randomness(seed);
+    /**
+     * @return a new instance of Randomness, whether one existed before or not.
+     */
+    public static Randomness createInstance(long seed) {
+        prg = new Randomness(seed);
+        return prg;
+    }
+
+    public static Randomness createInstance() {
+        prg = new Randomness();
         return prg;
     }
 
@@ -31,4 +41,6 @@ public class Randomness {
     public int nextInt(int range) { return this.myPrg.nextInt(range); }
 
     public double nextDouble() { return this.myPrg.nextDouble(); }
+
+    public void setSeed(long seed) { this.myPrg.setSeed(seed); }
 }
