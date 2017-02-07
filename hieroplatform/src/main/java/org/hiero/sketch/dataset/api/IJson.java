@@ -1,4 +1,4 @@
-package org.hiero.sketch.view;
+package org.hiero.sketch.dataset.api;
 
 import com.google.gson.Gson;
 

@@ -5,6 +5,10 @@ import org.hiero.sketch.spreadsheet.TreeTopK;
 import org.hiero.utils.Randomness;
 import org.junit.Test;
 
+import java.util.SortedMap;
+import static org.junit.Assert.assertTrue;
+
+
 public class TestMonoidTopK {
     private final int maxSize =1000;
     private int lSize;
@@ -14,8 +18,19 @@ public class TestMonoidTopK {
     private TreeTopK<Integer> rightTree;
     private final MonoidTopK<Integer> myTopK = new MonoidTopK<Integer>(this.maxSize, MyCompare.instance);
 
+    void checkSorted(SortedMap<Integer, Integer> t) {
+        boolean first = true;
+        int previous = 0;
+        for (int k : t.keySet()) {
+            if (!first)
+                assertTrue(previous < k);
+            previous = k;
+            first = false;
+        }
+    }
+
     @Test
-    public void MonoidTopKTestZero() {
+    public void MonoidTopKTest0() {
         this.lSize = 100;
         this.rSize = 100;
         this.leftTree = new TreeTopK<Integer>(this.lSize, MyCompare.instance);
@@ -25,13 +40,14 @@ public class TestMonoidTopK {
             this.leftTree.push(rn.nextInt(this.inpSize));
         for (int j = 0; j < this.inpSize; j++)
             this.rightTree.push(rn.nextInt(this.inpSize));
-        /*System.out.println(rightTree.getTopK().toString());
-        System.out.println(leftTree.getTopK().toString());
-        System.out.println(myTopK.Add(leftTree.getTopK(), rightTree.getTopK()).toString());*/
+        this.checkSorted(this.leftTree.getTopK());
+        this.checkSorted(this.rightTree.getTopK());
+        SortedMap<Integer, Integer> s = this.myTopK.add(this.leftTree.getTopK(), this.rightTree.getTopK());
+        this.checkSorted(s);
     }
 
     @Test
-    public void MonoidTopKTestOne() {
+    public void MonoidTopKTest1() {
         this.lSize = 50;
         this.rSize = 50;
         this.leftTree = new TreeTopK<Integer>(this.lSize, MyCompare.instance);
@@ -41,9 +57,10 @@ public class TestMonoidTopK {
             this.leftTree.push(rn.nextInt(this.inpSize));
         for (int j = 0; j < this.inpSize; j++)
             this.rightTree.push(rn.nextInt(this.inpSize));
-        //System.out.println(rightTree.getTopK().toString());
-        //System.out.println(leftTree.getTopK().toString());
-        //System.out.println(myTopK.Add(leftTree.getTopK(), rightTree.getTopK()).toString());
+        this.checkSorted(this.leftTree.getTopK());
+        this.checkSorted(this.rightTree.getTopK());
+        SortedMap<Integer, Integer> s = this.myTopK.add(this.leftTree.getTopK(), this.rightTree.getTopK());
+        this.checkSorted(s);
     }
 
     @Test
@@ -61,7 +78,6 @@ public class TestMonoidTopK {
         this.myTopK.add(this.leftTree.getTopK(), this.rightTree.getTopK());
         final long endTime = System.nanoTime();
         PerfRegressionTest.comparePerf(endTime - startTime);
-        //System.out.format("Time taken to merge: %d%n", (endTime - startTime) / 1000000);
     }
 }
 

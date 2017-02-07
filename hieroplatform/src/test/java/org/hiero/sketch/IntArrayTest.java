@@ -50,7 +50,18 @@ public class IntArrayTest {
         }
         Arrays.sort(order, comp);
         for (int i = 0; i < (size - 1); i++) {
-            assertTrue(col.getInt(order[i])<=  col.getInt(order[i+1]));
+            assertTrue(col.getInt(order[i]) <= col.getInt(order[i+1]));
+        }
+    }
+
+    void checkContents(IntArrayColumn col) {
+        for (int i = 0; i < col.sizeInRows(); i++) {
+            if ((i % 5) == 0)
+                assertTrue(col.isMissing(i));
+            else {
+                assertFalse(col.isMissing(i));
+                assertEquals(i, col.getInt(i));
+            }
         }
     }
 
@@ -60,14 +71,7 @@ public class IntArrayTest {
         final int size = 100;
         final IntArrayColumn col = generateIntArray(size);
         assertEquals(col.sizeInRows(), size);
-        for (int i = 0; i < size; i++) {
-            if ((i % 5) == 0)
-                assertTrue(col.isMissing(i));
-            else {
-                assertFalse(col.isMissing(i));
-                assertEquals(i, col.getInt(i));
-            }
-        }
+        checkContents(col);
     }
 
     /* Test for constructor using data array */
@@ -83,12 +87,6 @@ public class IntArrayTest {
             if ((i % 5) == 0)
                 col.setMissing(i);
         assertEquals(col.sizeInRows(), size);
-        for (int i = 0; i < size; i++) {
-            assertEquals(i, col.getInt(i));
-            if ((i % 5) == 0)
-                assertEquals(true, col.isMissing(i));
-            else
-                assertEquals(false, col.isMissing(i));
-        }
+        checkContents(col);
     }
 }

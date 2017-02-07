@@ -1,5 +1,8 @@
 package org.hiero.sketch.view;
 
+import org.hiero.sketch.dataset.api.IJson;
+
+@SuppressWarnings("FieldCanBeLocal")
 public class TableDataView implements IJson {
     private final ColumnDescriptionView[] schema;
     private final int rowCount;

@@ -122,10 +122,10 @@ public class LazyMembership implements IMembershipSet {
     }
 
     /**
-     *
      * @return An approximation of the size based on a sample of sizeEstimationSampleSize.
      * function may return 0.
-     * Exact size given by getQuanitleSize() is expensive and takes linear time the first time it is called
+     * Exact size given by getQuantileSize() is expensive and takes linear time
+     * the first time it is called.
      */
     public int getApproxSize() {
         if (this.rowCountCorrect)
@@ -186,19 +186,6 @@ public class LazyMembership implements IMembershipSet {
             return new LazyMembership(newBase, this.filter);
         }
         return otherMap.intersection(this);
-    }
-
-    @Override
-    public IMembershipSet setMinus(@NonNull final IMembershipSet otherMap) {
-        final IntSet setMinusSet = new IntSet();
-        final IRowIterator iter = this.getIterator();
-        int curr = iter.getNextRow();
-        while (curr >=0) {
-            if (!otherMap.isMember(curr))
-                setMinusSet.add(curr);
-            curr = iter.getNextRow();
-        }
-        return new SparseMembership(setMinusSet);
     }
 
     private static class DenseIterator implements IRowIterator {

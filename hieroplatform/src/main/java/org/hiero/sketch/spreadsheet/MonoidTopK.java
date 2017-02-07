@@ -43,8 +43,8 @@ public class MonoidTopK<T> implements IMonoid<SortedMap<T, Integer>> {
             @NonNull final SortedMap<T, Integer> right) {
         final Iterator<T> itLeft = left.keySet().iterator();
         final Iterator<T> itRight = right.keySet().iterator();
-        T leftKey = (itLeft.hasNext())? itLeft.next(): null;
-        T rightKey = (itRight.hasNext())? itRight.next(): null;
+        T leftKey = (itLeft.hasNext()) ? itLeft.next() : null;
+        T rightKey = (itRight.hasNext()) ? itRight.next() : null;
         final TreeMap<T, Integer> mergedMap = new TreeMap<T, Integer>(this.greater);
 
         while ((mergedMap.size() < this.maxSize) && ((leftKey != null) || (rightKey != null))) {

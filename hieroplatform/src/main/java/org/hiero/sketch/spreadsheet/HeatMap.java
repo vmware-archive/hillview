@@ -9,7 +9,7 @@ import org.hiero.sketch.table.api.IStringConverter;
 /**
  * An implementation of a 2 dimension histogram. It is designed assuming the number of buckets is very large, so there
  * are no bucket objects, nor min and max items per bucket, the only thing stored is counts.
- * The buckets are assumed to be equisize.
+ * The buckets are assumed to have equal sizes.
  */
 public class HeatMap {
     private final long[][] buckets;

@@ -112,11 +112,11 @@ public class FullMembership implements IMembershipSet {
         return new SparseMembership(s);
     }
 
-    private static class FullMembershipIterator implements IRowIterator {
+    public static class FullMembershipIterator implements IRowIterator {
         private int cursor = 0;
         private final int range;
 
-        private FullMembershipIterator(final int range) {
+        public FullMembershipIterator(final int range) {
             this.range = range;
         }
 

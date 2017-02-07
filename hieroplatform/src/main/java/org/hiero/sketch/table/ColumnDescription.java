@@ -3,10 +3,12 @@ package org.hiero.sketch.table;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.table.api.ContentsKind;
 
+import java.io.Serializable;
+
 /**
  * Describes the contents of a column in a local table.
  */
-public class ColumnDescription {
+public class ColumnDescription implements Serializable {
     @NonNull
     public final String name;
     @NonNull

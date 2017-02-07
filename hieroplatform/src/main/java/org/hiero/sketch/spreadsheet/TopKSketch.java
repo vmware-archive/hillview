@@ -11,11 +11,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedMap;
 
-public class TopKSketch implements ISketch<Table, NextKList> {
+public class TopKSketch implements ISketch<ITable, NextKList> {
     @NonNull
     private final RecordOrder colSortOrder;
     private final int maxSize;
-
 
     public TopKSketch(RecordOrder colSortOrder, int maxSize) {
         this.colSortOrder = colSortOrder;
@@ -98,21 +97,17 @@ public class TopKSketch implements ISketch<Table, NextKList> {
      */
     @Override
     public NextKList add(NextKList left, NextKList right) {
-        if (!left.table.schema.equals(right.table.schema))
+        if (!left.table.getSchema().equals(right.table.getSchema()))
             throw new RuntimeException("The schemas do not match.");
-        final int width = left.table.schema.getColumnCount();
-        final ObjectArrayColumn[] mergedCol = new ObjectArrayColumn[width];
+        int width = left.table.getSchema().getColumnCount();
+        List<IColumn> mergedCol = new ArrayList<IColumn>(width);
         List<Integer> mergeOrder = this.colSortOrder.getIntMergeOrder(left.table, right.table);
-        int i = 0;
-        for (String colName : left.table.schema.getColumnNames()) {
-            mergedCol[i] = this.mergeColumns(left.table.getColumn(colName),
-                    right.table.getColumn(colName), mergeOrder);
-            i++;
-        }
+        for (String colName : left.table.getSchema().getColumnNames())
+            mergedCol.add(this.mergeColumns(left.table.getColumn(colName),
+                    right.table.getColumn(colName), mergeOrder));
         List<Integer> mergedCounts = this.mergeCounts(left.count,
                 right.count, mergeOrder);
-        final IMembershipSet full = new FullMembership(mergedCounts.size());
-        final Table mergedTable = new Table(left.table.schema, mergedCol, full);
+        final SmallTable mergedTable = new SmallTable(mergedCol);
         return new NextKList(mergedTable, mergedCounts, 0, null);
     }
 
@@ -122,10 +117,10 @@ public class TopKSketch implements ISketch<Table, NextKList> {
      * @return A Table containing the top K rows (projected onto the relevant columns) and a list
      * containing counts of how often each rows appeared.
      */
-    public NextKList getKList(Table data) {
+    public NextKList getKList(ITable data) {
         IndexComparator comp = this.colSortOrder.getComparator(data);
         TreeTopK<Integer> topK = new TreeTopK<Integer>(this.maxSize, comp);
-        IRowIterator rowIt = data.members.getIterator();
+        IRowIterator rowIt = data.getRowIterator();
         int i = 0;
         while(i != -1) {
             i = rowIt.getNextRow();
@@ -134,7 +129,7 @@ public class TopKSketch implements ISketch<Table, NextKList> {
         }
         SortedMap<Integer, Integer> topKList = topK.getTopK();
         IRowOrder rowOrder = new ArrayRowOrder(topKList.keySet());
-        Table topKRows = data.compress(this.colSortOrder.toSubSchema(), rowOrder);
+        SmallTable topKRows = data.compress(this.colSortOrder.toSubSchema(), rowOrder);
         List<Integer> count = new ArrayList<Integer>();
         // The values() method of a SortedMap generates the values in the sorted order of the keys.
         count.addAll(topKList.values());
@@ -142,7 +137,7 @@ public class TopKSketch implements ISketch<Table, NextKList> {
     }
 
     @Override
-    public Observable<PartialResult<NextKList>> create(final Table data) {
+    public Observable<PartialResult<NextKList>> create(final ITable data) {
         NextKList q = this.getKList(data);
         PartialResult<NextKList> result = new PartialResult<>(1.0, q);
         return Observable.just(result);

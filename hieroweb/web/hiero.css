@@ -5,23 +5,44 @@
 
 th {
     border: 1px solid black;
-    padding: 0px;
     margin: 0px;
     font-weight: bold;
+    background: lightgray;
 }
 
 table {
     border-collapse: collapse;
 }
 
-.hidden {
+/* Used for hidden column names */
+.hiddenColumn {
     font-weight: normal;
+}
+
+.dropdown {
+    display: none;
+    position: absolute;
+    background-color: #f9f9f9;
+    z-index: 1;
+    text-align: right;
+}
+
+/* Used for menus */
+.shown {
+    display: block;
+}
+
+.menuItem {
+    text-align: right;
+}
+
+.menuItem:hover {
+    background-color: aqua;
 }
 
 th, td {
     border: 1px solid black;
     padding: 3px;
-    background: lightgrey;
 }
 
 .progressBarOuter {

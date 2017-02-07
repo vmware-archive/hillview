@@ -12,7 +12,7 @@ const RpcRequestUrl = HieroServiceUrl + "/rpc";
 export class RemoteObject {
     constructor(public readonly remoteObjectId : string) {}
 
-    createRpcRequest(method: string, args: any[]) : RpcRequest {
+    createRpcRequest(method: string, args: any) : RpcRequest {
         return new RpcRequest(this.remoteObjectId, method, args);
     }
 }
@@ -21,13 +21,10 @@ export class PartialResult<T> {
     constructor(public done: number, public data: T) {}
 }
 
-export interface Callback<T> {
-    (data: T) : void;
-}
-
 export interface RpcReply {
-    result: string;  // JSON
+    result: string;  // JSON or error message
     requestId: number;  // request that is being replied
+    isError: boolean;
 }
 
 // A streaming RPC request: for each request made
@@ -45,7 +42,7 @@ export class RpcRequest {
 
     constructor(public objectId : string,
                 public method : string,
-                public args : any[]) {
+                public args : any) {
         this.requestId = RpcRequest.requestCounter++;
         this.socket = null;
     }
@@ -54,31 +51,35 @@ export class RpcRequest {
         let result = {
             "objectId": this.objectId,
             "method": this.method,
-            "arguments": this.args,
+            "arguments": JSON.stringify(this.args),
             "requestId": this.requestId,
             "protoVersion": this.protoVersion
         };
         return JSON.stringify(result);
     }
 
-    onOpen() : void {
+    private onOpen() : void {
         console.log('socket open');
         let reqStr = this.serialize();
         console.log("Sending message " + reqStr);
         this.socket.onNext(reqStr);
     }
 
-    replyReceived<T>(replyEvent: MessageEvent, onReply: Callback<T>) : void {
+    private static replyReceived<T>(replyEvent: MessageEvent, onReply: Observer<T>) : void {
         console.log('reply received: ' + replyEvent.data);
         let reply = <RpcReply>JSON.parse(replyEvent.data);
-        let response = <T>JSON.parse(reply.result);
-        onReply(response);
+        if (reply.isError) {
+            onReply.onError(reply.result);
+        } else {
+           let response = <T>JSON.parse(reply.result);
+           onReply.onNext(response);
+        }
     }
 
     // Function to call to execute the RPC.
-    // onReply is the continuation function which is invoked for
+    // onReply is an observer which is invoked for
     // each result received by the streaming RPC.
-    invoke<T>(onReply : Callback<T>) : void {
+    public invoke<T>(onReply : Observer<T>) : void {
         // Invoked when the socked is opened
         let openObserver = Rx.Observer.create(() => this.onOpen());
         // Invoked when the socket is closed
@@ -89,6 +90,6 @@ export class RpcRequest {
         // Create a web socked and send the request
         this.socket = RxDOM.DOM.fromWebSocket(RpcRequestUrl, null, openObserver, closeObserver);
         console.log('socket created');
-        this.socket.subscribe((r : MessageEvent) => this.replyReceived(r, onReply));
+        this.socket.subscribe((r : MessageEvent) => RpcRequest.replyReceived(r, onReply));
     };
 }
