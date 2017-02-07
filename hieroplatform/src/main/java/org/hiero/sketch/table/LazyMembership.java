@@ -73,6 +73,10 @@ public class LazyMembership implements IMembershipSet {
         }
     }
 
+    /**
+     * Makes samplingAttempts attempts at sampling k items without replacement. If the set is sparse
+     * these attempts may be insufficient and the returned map would contain less than k items.
+     */
     private IMembershipSet sample(final int k, final long seed, final boolean useSeed) {
         int samples = 0;
         IMembershipSet batchSet;

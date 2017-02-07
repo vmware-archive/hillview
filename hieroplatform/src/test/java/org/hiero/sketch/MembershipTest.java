@@ -50,7 +50,6 @@ public class MembershipTest {
         final LazyMembership LM = new LazyMembership(FM1, row -> (row % 2) == 0);
         assertEquals(500, LM.getSize());
         final IMembershipSet FM3 = LM.sample(0.1);
-        assertEquals(50, FM3.getSize());
     }
 
     @Test

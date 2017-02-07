@@ -1,10 +1,9 @@
 package org.hiero.sketch.table.api;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.hiero.utils.Randomness;
 import org.hiero.sketch.table.SparseMembership;
 import org.hiero.utils.IntSet;
-
-import java.util.Random;
 
 /**
  * A IMembershipSet is a representation of a set of integers.
@@ -28,8 +27,7 @@ public interface IMembershipSet extends IRowOrder {
     /**
      * @return an IMembershipSet containing k samples from the membership map. The samples are made
      * without replacement. Returns the full set if its size is smaller than k. The pseudo-random
-     * generator is seeded with parameter seed, so subsequent calls with the same seed are
-     * guaranteed to return the same sample.
+     * generator is seeded with parameter seed.
      */
     IMembershipSet sample(int k, long seed);
 
@@ -67,11 +65,9 @@ public interface IMembershipSet extends IRowOrder {
     }
 
     default int getSampleSize(double rate, long seed, boolean useSeed) {
-        Random r;
+        Randomness r = Randomness.getInstance();
         if (useSeed)
-            r = new Random(seed);
-        else
-            r = new Random();
+            r.setSeed(seed);
         final int sampleSize;
         final double appSampleSize = rate * this.getSize();
         if (r.nextDouble() < (appSampleSize - Math.floor(appSampleSize)))

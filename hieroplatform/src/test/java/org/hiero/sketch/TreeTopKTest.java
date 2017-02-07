@@ -1,7 +1,7 @@
 package org.hiero.sketch;
 import org.hiero.sketch.spreadsheet.TreeTopK;
+import org.hiero.utils.Randomness;
 import org.junit.Test;
-import java.util.Random;
 
 /**
  * Tests for TreeMap implementation f TopK.
@@ -13,7 +13,7 @@ public class TreeTopKTest {
 
     @Test
     public void testHeapTopKZero() {
-        final Random rn =new Random();
+        final Randomness rn = Randomness.getInstance();
         for (int j =1; j <20; j++) {
             for (int i = 1; i < 1000; i++)
                 this.myTree.push(rn.nextInt(10000));
@@ -23,7 +23,7 @@ public class TreeTopKTest {
 
     @Test
     public void testTreeTopKTimed() {
-        final Random rn = new Random();
+        final Randomness rn = Randomness.getInstance();
         final int inpSize = 1000000;
         final long startTime = System.nanoTime();
         for (int j = 1; j < inpSize; j++)
