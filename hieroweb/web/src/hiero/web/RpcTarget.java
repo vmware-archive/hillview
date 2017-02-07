@@ -73,6 +73,7 @@ public abstract class RpcTarget {
         public void onError(Throwable throwable) {
             if (!this.session.isOpen()) return;
 
+            RpcTarget.this.logger.log(Level.SEVERE, throwable.toString());
             RpcReply reply = this.request.createReply(throwable);
             RpcTarget.this.server.sendReply(reply, this.session);
         }

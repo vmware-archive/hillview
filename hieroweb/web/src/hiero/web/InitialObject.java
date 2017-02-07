@@ -9,6 +9,7 @@ import org.hiero.sketch.table.api.ITable;
 import javax.websocket.Session;
 
 public class InitialObject extends RpcTarget {
+    // Used as a reply for loadTable.
     static class RemoteTableId implements IJson {
         public final String id;
         RemoteTableId(String id) { this.id = id; }

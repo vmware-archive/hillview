@@ -124,7 +124,7 @@ public class TopKSketch implements ISketch<ITable, NextKList> {
         TreeTopK<Integer> topK = new TreeTopK<Integer>(this.maxSize, comp);
         IRowIterator rowIt = data.getRowIterator();
         int i = 0;
-        while(i != -1) {
+        while (i != -1) {
             i = rowIt.getNextRow();
             if (i != -1)
                 topK.push(i);

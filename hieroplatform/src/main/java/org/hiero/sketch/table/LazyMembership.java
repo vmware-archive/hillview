@@ -2,7 +2,6 @@ package org.hiero.sketch.table;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.utils.IntSet;
-import org.scalactic.exceptions.NullArgumentException;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
 
@@ -26,8 +25,8 @@ public class LazyMembership implements IMembershipSet {
     private static final int sizeEstimationSampleSize = 20;
     private static final int samplingAttempts = 10;
 
-    public LazyMembership(final IMembershipSet baseMap) throws NullArgumentException {
-        if (baseMap == null) throw new NullArgumentException("PartialMembershipDense cannot be " +
+    public LazyMembership(final IMembershipSet baseMap) {
+        if (baseMap == null) throw new NullPointerException("PartialMembershipDense cannot be " +
                 "instantiated without a base MembershipSet");
         this.baseMap = baseMap;
         this.rowCount = baseMap.getSize();
@@ -39,10 +38,10 @@ public class LazyMembership implements IMembershipSet {
      * instantiated with a a membershipSet, possibly the full one, and a filter predicate.
      */
     public LazyMembership(@NonNull final IMembershipSet baseMap,
-                          @NonNull final Predicate<Integer> filter) throws NullArgumentException {
-        if (baseMap == null) throw new NullArgumentException("PartialMembershipDense cannot be " +
+                          @NonNull final Predicate<Integer> filter) {
+        if (baseMap == null) throw new NullPointerException("PartialMembershipDense cannot be " +
                 "instantiated without a base MembershipSet");
-        if (filter == null) throw new NullArgumentException("PartialMembershipDense cannot be " +
+        if (filter == null) throw new NullPointerException("PartialMembershipDense cannot be " +
                 "instantiated with a null filter");
         this.baseMap = baseMap;
         this.rowCount = 0;
@@ -175,10 +174,9 @@ public class LazyMembership implements IMembershipSet {
     }
 
     @Override
-    public IMembershipSet intersection(@NonNull final IMembershipSet otherMap)
-            throws NullArgumentException {
+    public IMembershipSet intersection(@NonNull final IMembershipSet otherMap) {
         if (otherMap == null)
-            throw new NullArgumentException("can not perform intersection with a null");
+            throw new NullPointerException("can not perform intersection with a null");
         if (otherMap instanceof LazyMembership) {
             final IMembershipSet newBase =
                     this.baseMap.intersection(((LazyMembership) otherMap).baseMap);
