@@ -49,15 +49,15 @@ public class JsonTests {
         // Columns are ordered by name: Age, Name, Weight
         RowSnapshot rs = new RowSnapshot(t, 0);
         s = rs.toJson();
-        assertEquals(s, "[10,\"John\",90.0]");
+        assertEquals(s, "[10,90.0,\"John\"]");
 
         s = t.toJson();
         assertEquals(s, "{" +
                 "\"schema\":[{\"name\":\"Age\",\"kind\":\"Int\",\"allowMissing\":false}," +
-                        "{\"name\":\"Name\",\"kind\":\"String\",\"allowMissing\":false}," +
-                        "{\"name\":\"Weight\",\"kind\":\"Double\",\"allowMissing\":false}]," +
+                "{\"name\":\"Weight\",\"kind\":\"Double\",\"allowMissing\":false}," +
+                        "{\"name\":\"Name\",\"kind\":\"String\",\"allowMissing\":false}]," +
                 "\"rowCount\":2," +
-                "\"rows\":[[10,\"John\",90.0],[20,\"Mike\",120.0]]" +
+                "\"rows\":[[10,90.0,\"John\"],[20,120.0,\"Mike\"]]" +
         "}");
 
         List<Integer> li = Arrays.asList(2, 3);
@@ -65,13 +65,13 @@ public class JsonTests {
         s = list.toJson();
         assertEquals(s, "{" +
                 "\"schema\":[{\"name\":\"Age\",\"kind\":\"Int\",\"allowMissing\":false}," +
-                "{\"name\":\"Name\",\"kind\":\"String\",\"allowMissing\":false}," +
-                "{\"name\":\"Weight\",\"kind\":\"Double\",\"allowMissing\":false}]," +
+                "{\"name\":\"Weight\",\"kind\":\"Double\",\"allowMissing\":false}," +
+                        "{\"name\":\"Name\",\"kind\":\"String\",\"allowMissing\":false}]," +
                 "\"rowCount\":100," +
                 "\"startPosition\":0," +
                 "\"rows\":[" +
-                    "{\"count\":2,\"values\":[10,\"John\",90.0]}," +
-                    "{\"count\":3,\"values\":[20,\"Mike\",120.0]}" +
+                    "{\"count\":2,\"values\":[10,90.0,\"John\"]}," +
+                    "{\"count\":3,\"values\":[20,120.0,\"Mike\"]}" +
                 "]}");
     }
 }

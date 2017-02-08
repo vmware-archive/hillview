@@ -63,7 +63,7 @@ public class RowSnapshot implements IRow, Serializable, IJson {
     private Object[] getData() {
         Object[] data = new Object[this.schema.getColumnCount()];
         int i = 0;
-        for (final String nextCol: this.schema.getSortedColumnNames())
+        for (final String nextCol: this.schema.getColumnNames())
             data[i++] = this.get(nextCol);
         return data;
     }

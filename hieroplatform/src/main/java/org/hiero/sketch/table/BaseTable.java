@@ -92,4 +92,23 @@ public abstract class BaseTable implements ITable {
         final ISubSchema subSchema = new FullSubSchema();
         return this.compress(subSchema, rowOrder);
     }
+
+    public String toLongString(int startRow, int rowsToDisplay) {
+        final StringBuilder builder = new StringBuilder();
+        builder.append(this.toString());
+        builder.append(System.getProperty("line.separator"));
+        final IRowIterator rowIt = this.getRowIterator();
+        int nextRow = rowIt.getNextRow();
+        while ((nextRow < startRow) && (nextRow != -1))
+            nextRow = rowIt.getNextRow();
+        int count = 0;
+        while ((nextRow != -1) && (count < rowsToDisplay)) {
+            RowSnapshot rs = new RowSnapshot(this, nextRow);
+            builder.append(rs.toString());
+            builder.append(System.getProperty("line.separator"));
+            nextRow = rowIt.getNextRow();
+            count++;
+        }
+        return builder.toString();
+    }
 }

@@ -38,8 +38,15 @@ public class NextKList implements Serializable, IJson {
         this.count = count;
         this.startPosition = position;
         this.totalRows = totalRows;
-        if (count.size() != table.getNumOfRows())
+        if((table.getNumOfRows() !=0) && (count.size() != table.getNumOfRows()))
             throw new IllegalArgumentException("Mismatched table and count length");
+    }
+
+    public NextKList(Schema schema, int numOfRows) {
+        this.table = new SmallTable(schema);
+        this.count = new ArrayList<Integer>(0);
+        this.startPosition = 0;
+        this.totalRows = numOfRows;
     }
 
     /**

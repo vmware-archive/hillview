@@ -54,24 +54,6 @@ public class Table extends BaseTable {
         this(columns, new FullMembership(columnSize(columns)));
     }
 
-    public String toLongString(int startRow, int rowsToDisplay) {
-        final StringBuilder builder = new StringBuilder();
-        builder.append(this.toString());
-        builder.append(System.getProperty("line.separator"));
-        final IRowIterator rowIt = this.members.getIterator();
-        int nextRow = rowIt.getNextRow();
-        while ((nextRow < startRow) && (nextRow != -1))
-            nextRow = rowIt.getNextRow();
-        int count = 0;
-        while ((nextRow != -1) && (count < rowsToDisplay)) {
-            RowSnapshot rs = new RowSnapshot(this, nextRow);
-            builder.append(rs.toString());
-            builder.append(System.getProperty("line.separator"));
-            nextRow = rowIt.getNextRow();
-            count++;
-        }
-        return builder.toString();
-    }
 
     public String toLongString(int rowsToDisplay) {
         return this.toLongString(0, rowsToDisplay);

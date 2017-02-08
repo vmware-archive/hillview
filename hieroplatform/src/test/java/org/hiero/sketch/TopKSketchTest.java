@@ -53,6 +53,21 @@ public class TopKSketchTest {
 
     @Test
     public void testTopK2() {
+        final int numCols = 2;
+        final int maxSize = 50;
+        final int rightSize = 1000;
+        final int leftSize = 1000;
+        final Table leftTable = getRepIntTable(leftSize, numCols);
+        //System.out.println(leftTable.toLongString(50));
+        RecordOrder cso = new RecordOrder();
+        final TopKSketch tkSketch = new TopKSketch(cso, maxSize);
+        final NextKList leftK = tkSketch.getKList(leftTable);
+        IndexComparator leftComp = cso.getComparator(leftK.table);
+        //System.out.println(leftK.toLongString(maxSize));
+    }
+
+    @Test
+    public void testTopK3() {
         //printTime("start");
         final int numCols = 3;
         final int maxSize = 50;
