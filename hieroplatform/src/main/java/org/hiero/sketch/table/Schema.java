@@ -13,22 +13,26 @@ import java.security.InvalidParameterException;
 import java.util.*;
 
 /**
- * A schema is just a map from a column name
- * to a column description.  Column names are case-sensitive.
+ * A schema is an ordering of the columns, plus a map from a column name to a column description.
+ * Column names are case-sensitive.
  */
 public final class Schema
         implements Serializable, IJson {
     @NonNull
     private final HashMap<String, ColumnDescription> columns;
 
+    private final List<String> colOrder;
+
     public Schema() {
         this.columns = new HashMap<String, ColumnDescription>();
+        this.colOrder = new ArrayList<String>();
     }
 
     public void append(@NonNull final ColumnDescription desc) {
         if (this.columns.containsKey(desc.name))
             throw new InvalidParameterException("Column with name " + desc.name + " already exists");
         this.columns.put(desc.name, desc);
+        this.colOrder.add(desc.name);
     }
 
     public ColumnDescription getDescription(@NonNull final String columnName) {
@@ -41,15 +45,8 @@ public final class Schema
 
     @NotNull
     @NonNull
-    public Set<String> getColumnNames() {
-        return this.columns.keySet();
-    }
-
-    @NonNull
-    public List<String> getSortedColumnNames() {
-        ArrayList<String> keys = new ArrayList<String>(this.getColumnNames());
-        Collections.sort(keys);
-        return keys;
+    public List<String> getColumnNames() {
+        return this.colOrder;
     }
 
     /**
@@ -96,12 +93,12 @@ public final class Schema
         return this.getDescription(colName).kind;
     }
 
-    // The columns will always be sorted alphabetically
+    // The columns will be sorted by the order prescribed by the List colOrder
     @NonNull
     private ColumnDescription[] toArray() {
         ColumnDescription[] all = new ColumnDescription[this.columns.size()];
         int i = 0;
-        for (String name: this.getSortedColumnNames()) {
+        for (String name: this.getColumnNames()) {
             ColumnDescription cd = this.getDescription(name);
             all[i++] = cd;
         }

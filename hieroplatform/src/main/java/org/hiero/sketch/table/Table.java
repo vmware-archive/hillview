@@ -54,25 +54,6 @@ public class Table extends BaseTable {
         this(columns, new FullMembership(columnSize(columns)));
     }
 
-    public String toLongString(int startRow, int rowsToDisplay) {
-        final StringBuilder builder = new StringBuilder();
-        builder.append(this.toString());
-        builder.append(System.getProperty("line.separator"));
-        final IRowIterator rowIt = this.members.getIterator();
-        int nextRow = rowIt.getNextRow();
-        while ((nextRow < startRow) && (nextRow != -1))
-            nextRow = rowIt.getNextRow();
-        int count = 0;
-        while ((nextRow != -1) && (count < rowsToDisplay)) {
-            RowSnapshot rs = new RowSnapshot(this, nextRow);
-            builder.append(rs.toString());
-            builder.append(System.getProperty("line.separator"));
-            nextRow = rowIt.getNextRow();
-            count++;
-        }
-        return builder.toString();
-    }
-
     public String toLongString(int rowsToDisplay) {
         return this.toLongString(0, rowsToDisplay);
     }
@@ -91,7 +72,6 @@ public class Table extends BaseTable {
         ColumnDescription c1 = new ColumnDescription("Age", ContentsKind.Int, false);
         StringArrayColumn sac = new StringArrayColumn(c0, new String[] { "Mike", "John", "Tom"});
         IntArrayColumn iac = new IntArrayColumn(c1, new int[] { 20, 30, 10 });
-
         return new Table(Arrays.asList(sac, iac));
     }
 
