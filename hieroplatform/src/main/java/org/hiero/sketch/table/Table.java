@@ -54,7 +54,6 @@ public class Table extends BaseTable {
         this(columns, new FullMembership(columnSize(columns)));
     }
 
-
     public String toLongString(int rowsToDisplay) {
         return this.toLongString(0, rowsToDisplay);
     }
@@ -73,7 +72,6 @@ public class Table extends BaseTable {
         ColumnDescription c1 = new ColumnDescription("Age", ContentsKind.Int, false);
         StringArrayColumn sac = new StringArrayColumn(c0, new String[] { "Mike", "John", "Tom"});
         IntArrayColumn iac = new IntArrayColumn(c1, new int[] { 20, 30, 10 });
-
         return new Table(Arrays.asList(sac, iac));
     }
 
