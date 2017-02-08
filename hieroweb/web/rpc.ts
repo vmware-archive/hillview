@@ -5,7 +5,7 @@ import Rx = require('rx');
 import RxDOM = require('rx-dom');
 import Observer = Rx.Observer;
 import Observable = Rx.Observable;
-import {ErrorReporter} from "./InitialObject";
+import {ErrorReporter, ConsoleErrorReporter} from "./errorReporter";
 
 const HieroServiceUrl : string = "ws://localhost:8080";
 const RpcRequestUrl = HieroServiceUrl + "/rpc";
@@ -95,14 +95,17 @@ export class RpcRequest {
     };
 }
 
-export abstract class Renderer<T> implements Rx.Observer<PartialResult<T>> {
-    constructor(public reporter: ErrorReporter) {}
+export abstract class RpcReceiver<T> implements Rx.Observer<T> {
+    public constructor(public reporter: ErrorReporter) {
+        if (this.reporter == null)
+            this.reporter = ConsoleErrorReporter.instance;
+    }
 
-    makeSafe(disposable: Rx.IDisposable): Rx.Observer<PartialResult<T>> {
+    public makeSafe(disposable: Rx.IDisposable): Rx.Observer<T> {
         return null;
     }
 
-    public abstract onNext(value: PartialResult<T>): void;
+    public abstract onNext(value: T): void;
 
     public onError(exception: any): void {
         this.reporter.reportError(String(exception));

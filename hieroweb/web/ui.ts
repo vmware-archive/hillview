@@ -1,3 +1,5 @@
+import {RpcReceiver, PartialResult} from "./rpc";
+import {ErrorReporter, ConsoleErrorReporter} from "./errorReporter";
 export interface IHtmlElement {
     getHTMLRepresentation() : HTMLElement;
 }
@@ -130,5 +132,11 @@ export class Menu implements IHtmlElement {
 
     getHTMLRepresentation(): HTMLElement {
         return this.outer;
+    }
+}
+
+export abstract class Renderer<T> extends RpcReceiver<PartialResult<T>> {
+    public constructor(public progress: ProgressBar, reporter?: ErrorReporter) {
+        super(reporter === null ? ConsoleErrorReporter.instance : reporter);
     }
 }

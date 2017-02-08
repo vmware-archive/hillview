@@ -13,8 +13,7 @@ import javax.websocket.Session;
 public class TableTarget extends RpcTarget {
     protected final IDataSet<ITable> table;
 
-    public TableTarget(@NonNull String objectId, IDataSet<ITable> table) {
-        super(objectId);
+    public TableTarget(IDataSet<ITable> table) {
         this.table = table;
     }
 
@@ -32,5 +31,10 @@ public class TableTarget extends RpcTarget {
 
     @HieroRpc
     void getTableView(@NonNull RpcRequest request, @NonNull Session session) {
+    }
+
+    @Override
+    public String toString() {
+        return "TableTarget object, " + super.toString();
     }
 }

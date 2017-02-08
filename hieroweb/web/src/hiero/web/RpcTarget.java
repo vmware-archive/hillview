@@ -14,19 +14,17 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public abstract class RpcTarget {
-    protected final String objectId;
-    protected RpcServer server;
+    protected String objectId;
     private HashMap<String, Method> executor;
-    protected Logger logger = Logger.getLogger(RpcTarget.class.getName());
+    protected static Logger logger = Logger.getLogger(RpcTarget.class.getName());
 
-    RpcTarget(@NonNull String objectId) {
-        this.objectId = objectId;
+    RpcTarget() {
         this.executor = new HashMap<String, Method>();
         this.registerExecutors();
     }
 
-    public void setServer(@NonNull RpcServer server) {
-        this.server = server;
+    public void setId(String objectId) {
+        this.objectId = objectId;
     }
 
     private void registerExecutors() {
@@ -35,7 +33,7 @@ public abstract class RpcTarget {
         Class<?> type = this.getClass();
         for (Method m : type.getDeclaredMethods()) {
             if (m.isAnnotationPresent(HieroRpc.class)) {
-                this.logger.log(Level.INFO, "Registered RPC method " + m.getName());
+                logger.log(Level.INFO, "Registered RPC method " + m.getName());
                 this.executor.put(m.getName(), m);
             }
         }
@@ -73,9 +71,9 @@ public abstract class RpcTarget {
         public void onError(Throwable throwable) {
             if (!this.session.isOpen()) return;
 
-            RpcTarget.this.logger.log(Level.SEVERE, throwable.toString());
+            RpcTarget.logger.log(Level.SEVERE, throwable.toString());
             RpcReply reply = this.request.createReply(throwable);
-            RpcTarget.this.server.sendReply(reply, this.session);
+            reply.send(this.session);
         }
 
         @Override
@@ -86,7 +84,16 @@ public abstract class RpcTarget {
             json.addProperty("done", pr.deltaDone);
             json.add("data", pr.deltaValue.toJsonTree());
             RpcReply reply = this.request.createReply(json);
-            RpcTarget.this.server.sendReply(reply, this.session);
+            reply.send(this.session);
         }
+    }
+
+    @Override
+    public String toString() {
+        return "id: " + this.objectId;
+    }
+
+    public String idToJson() {
+        return RpcObjectManager.gson.toJson(this.objectId);
     }
 }

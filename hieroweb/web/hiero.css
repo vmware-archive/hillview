@@ -19,6 +19,10 @@ table {
     font-weight: normal;
 }
 
+.footer {
+    background-color: grey;
+}
+
 .dropdown {
     display: none;
     position: absolute;

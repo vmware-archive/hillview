@@ -6,9 +6,5 @@
     "sourceMap": true,
     "target": "es5"
   },
-  "files": [
-    "hiero.ts",
-    "rpc.ts"
-  ],
   "exclude": [ "node_modules" ]
 }

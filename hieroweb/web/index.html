@@ -13,8 +13,8 @@
 
         function loadTable() {
             var tableDiv = document.getElementById('table');
-            var tableRenderer = new hiero.TableRenderer(tableDiv, progressBar, errorReporter);
-            initialObject.loadTable(tableRenderer);
+            var obs = new hiero.RemoteTableReceiver(tableDiv, progressBar, errorReporter);
+            initialObject.loadTable(obs);
         }
 
         function initialize() {

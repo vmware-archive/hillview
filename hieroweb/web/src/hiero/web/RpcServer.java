@@ -8,66 +8,24 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import javax.websocket.*;
 import javax.websocket.server.ServerEndpoint;
 import java.io.*;
-import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
  * A server which implements RPC calls between a web browser client and
- * a Java-based web server.
+ * a Java-based web server.  The web server could create a different
+ * instance of this class for each request.
  */
 @ServerEndpoint(value = "/rpc")
 public final class RpcServer {
     static private final int version = 2;
-    // Used to generate fresh object ids
-    private int objectIdGenerator;
-    // Map object id to object.
-    private final HashMap<String, RpcTarget> objects;
-    private static final Logger LOGGER =
+    private static final Logger logger =
             Logger.getLogger(RpcServer.class.getName());
-
-    public RpcServer() {
-        this.objects = new HashMap<String, RpcTarget>();
-        this.objectIdGenerator = 1;
-        // The initial object must start with a well-known object id
-        InitialObject initial = new InitialObject("0");
-        this.addObject(initial);
-    }
-
-    public String freshId() {
-        while (true) {
-            String id = Integer.toString(this.objectIdGenerator);
-            if (!this.objects.containsKey(id))
-                return id;
-            this.objectIdGenerator++;
-        }
-    }
-
-    public void addObject(@NonNull RpcTarget object) {
-        if (this.objects.containsKey(object.objectId))
-            throw new RuntimeException("Object with id " + object.objectId + " already in map");
-        this.objects.put(object.objectId, object);
-        object.setServer(this);
-    }
-
-    private @NonNull RpcTarget getObject(String id) {
-        RpcTarget target = this.objects.get(id);
-        if (target == null)
-            throw new RuntimeException("RPC target " + id + " is unknown");
-        return target;
-    }
-
-    @SuppressWarnings("unused")
-    private void deleteObject(String id) {
-        if (!this.objects.containsKey(id))
-            throw new RuntimeException("Object with id " + id + " does not exist");
-        this.objects.remove(id);
-    }
 
     @SuppressWarnings("unused")
     @OnOpen
     public void onOpen(@NonNull Session session) {
-        LOGGER.log(Level.INFO, "Server " + Integer.toString(version) +
+        logger.log(Level.INFO, "Server " + Integer.toString(version) +
                         " new connection with client: {0}",
                 session.getId());
     }
@@ -75,7 +33,7 @@ public final class RpcServer {
     @SuppressWarnings("unused")
     @OnMessage
     public void onMessage(@NonNull String message, @NonNull Session session) {
-        LOGGER.log(Level.INFO, "New message from Client [{0}]: {1}",
+        logger.log(Level.INFO, "New message from Client [{0}]: {1}",
                 new Object[] {session.getId(), message});
 
         RpcRequest req;
@@ -85,7 +43,7 @@ public final class RpcServer {
             JsonElement elem = Streams.parse(jreader);
             req = new RpcRequest(elem);
         } catch (Exception ex) {
-            LOGGER.log(Level.SEVERE, "Error processing json: ", ex);
+            logger.log(Level.SEVERE, "Error processing json: ", ex);
             this.replyWithError(ex, session);
             return;
         }
@@ -93,12 +51,12 @@ public final class RpcServer {
         this.execute(req, session);
     }
 
-    void sendReply(@NonNull RpcReply reply, @NonNull Session session) {
+    private void sendReply(@NonNull RpcReply reply, @NonNull Session session) {
         try {
             JsonElement json = reply.toJson();
             session.getBasicRemote().sendText(json.toString());
         } catch (IOException e) {
-            LOGGER.log(Level.SEVERE, "Could not send reply");
+            logger.log(Level.SEVERE, "Could not send reply");
         }
     }
 
@@ -110,10 +68,10 @@ public final class RpcServer {
     }
 
     private void execute(@NonNull RpcRequest rpcRequest, @NonNull Session session) {
-        LOGGER.log(Level.INFO, "Executing " + rpcRequest.toString());
+        logger.log(Level.INFO, "Executing " + rpcRequest.toString());
 
         try {
-            RpcTarget stub = this.getObject(rpcRequest.objectId);
+            RpcTarget stub = RpcObjectManager.instance.getObject(rpcRequest.objectId);
             if (stub == null)
                 throw new RuntimeException("RpcServer.getObject() returned null");
             // This sends the reply and closes the session.
@@ -129,7 +87,7 @@ public final class RpcServer {
         try {
             session.close();
         } catch (Exception ex) {
-            LOGGER.log(Level.SEVERE, "Error closing session");
+            logger.log(Level.SEVERE, "Error closing session");
         }
     }
 
@@ -142,12 +100,12 @@ public final class RpcServer {
     @SuppressWarnings("unused")
     @OnClose
     public void onClose(final Session session) {
-        LOGGER.log(Level.FINE, "Close connection for client: {0}", session.getId());
+        logger.log(Level.FINE, "Close connection for client: {0}", session.getId());
     }
 
     @SuppressWarnings("unused")
     @OnError
     public void onError(final Throwable exception, final Session unused) {
-        LOGGER.log(Level.SEVERE, "Error: ", exception);
+        logger.log(Level.SEVERE, "Error: ", exception);
     }
 }
