@@ -4,9 +4,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.internal.Streams;
 import com.google.gson.stream.JsonReader;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.hiero.sketch.dataset.LocalDataSet;
-import org.hiero.sketch.table.Table;
-import org.hiero.sketch.table.api.ITable;
 
 import javax.websocket.*;
 import javax.websocket.server.ServerEndpoint;
@@ -20,20 +17,33 @@ import java.util.logging.Logger;
  * a Java-based web server.
  */
 @ServerEndpoint(value = "/rpc")
-public class RpcServer {
+public final class RpcServer {
     static private final int version = 2;
+    // Used to generate fresh object ids
+    private int objectIdGenerator;
+    // Map object id to object.
     private final HashMap<String, RpcTarget> objects;
     private static final Logger LOGGER =
             Logger.getLogger(RpcServer.class.getName());
 
     public RpcServer() {
         this.objects = new HashMap<String, RpcTarget>();
-        Table t = Table.testTable();
-        LocalDataSet<ITable> local = new LocalDataSet<ITable>(t);
-        this.addObject(new TableTarget("0", local));
+        this.objectIdGenerator = 1;
+        // The initial object must start with a well-known object id
+        InitialObject initial = new InitialObject("0");
+        this.addObject(initial);
     }
 
-    private void addObject(@NonNull RpcTarget object) {
+    public String freshId() {
+        while (true) {
+            String id = Integer.toString(this.objectIdGenerator);
+            if (!this.objects.containsKey(id))
+                return id;
+            this.objectIdGenerator++;
+        }
+    }
+
+    public void addObject(@NonNull RpcTarget object) {
         if (this.objects.containsKey(object.objectId))
             throw new RuntimeException("Object with id " + object.objectId + " already in map");
         this.objects.put(object.objectId, object);
@@ -47,6 +57,7 @@ public class RpcServer {
         return target;
     }
 
+    @SuppressWarnings("unused")
     private void deleteObject(String id) {
         if (!this.objects.containsKey(id))
             throw new RuntimeException("Object with id " + id + " does not exist");
@@ -90,7 +101,6 @@ public class RpcServer {
             LOGGER.log(Level.SEVERE, "Could not send reply");
         }
     }
-
 
     static String asString(Throwable t) {
         StringWriter sw = new StringWriter();

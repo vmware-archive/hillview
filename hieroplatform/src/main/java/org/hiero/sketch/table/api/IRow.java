@@ -4,7 +4,7 @@ import org.hiero.sketch.table.Schema;
 
 public interface IRow {
     /**
-     * @return  The number of fields in the row
+     * @return The number of fields in the row.
      */
     int rowSize();
 

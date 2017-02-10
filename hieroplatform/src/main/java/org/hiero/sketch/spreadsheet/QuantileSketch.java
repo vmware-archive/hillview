@@ -186,7 +186,6 @@ public class QuantileSketch implements ISketch<ITable, QuantileList> {
     @Override
     public Observable<PartialResult<QuantileList>> create(final ITable data) {
         QuantileList q = this.getQuantile(data);
-        PartialResult<QuantileList> result = new PartialResult<>(1.0, q);
-        return Observable.just(result);
+        return this.pack(q);
     }
 }

@@ -5,19 +5,22 @@
     <link rel="stylesheet" href="hiero.css">
     <script type="text/javascript" src="./bundle.js" charset="utf-8"></script>
     <script>
+        //noinspection ThisExpressionReferencesGlobalObjectJS
         var hiero = this.hiero;
-        var table;
+        var initialObject = hiero.InitialObject.instance;
+        var errorReporter = hiero.ConsoleErrorReporter.instance;
+        var progressBar;
 
         function loadTable() {
-            table = new hiero.TableView("0");
             var tableDiv = document.getElementById('table');
-            tableDiv.appendChild(table.getHTMLRepresentation());
+            var tableRenderer = new hiero.TableRenderer(tableDiv, progressBar, errorReporter);
+            initialObject.loadTable(tableRenderer);
         }
 
         function initialize() {
             var progressDiv = document.getElementById('progress');
-            var p = new hiero.ProgressBar();
-            progressDiv.appendChild(p.getHTMLRepresentation());
+            progressBar = new hiero.ProgressBar();
+            progressDiv.appendChild(progressBar.getHTMLRepresentation());
         }
     </script>
 </head>

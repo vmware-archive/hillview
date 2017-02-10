@@ -1,6 +1,7 @@
-import {IHtmlElement, ScrollBar, Menu} from "./ui";
-import {RemoteObject} from "./rpc";
+import {IHtmlElement, ScrollBar, Menu, ProgressBar} from "./ui";
+import {RemoteObject, Renderer, PartialResult} from "./rpc";
 import Rx = require('rx');
+import {ErrorReporter} from "./InitialObject";
 
 // These classes are direct counterparts to server-side Java classes
 // with the same names.  JSON serialization
@@ -79,7 +80,7 @@ export interface TableDataView {
  ------------------------------------------
  */
 
-export class TableView extends RemoteObject implements IHtmlElement  {
+export class TableView implements IHtmlElement  {
     protected schema: SchemaView;
     protected top : HTMLDivElement;
     protected scrollBar : ScrollBar;
@@ -89,24 +90,13 @@ export class TableView extends RemoteObject implements IHtmlElement  {
     protected elementCount: number;
     protected startPosition: number;
 
-    constructor(objectId: string) {
-        super(objectId);
+    constructor() {
         this.top = document.createElement("div");
         this.htmlTable = document.createElement("table");
         this.top.className = "flexcontainer";
         this.scrollBar = new ScrollBar();
         this.top.appendChild(this.htmlTable);
         this.top.appendChild(this.scrollBar.getHTMLRepresentation());
-        this.getData([]);
-    }
-
-    private getData(schema: SchemaView) {
-        let rr = this.createRpcRequest("getTableView", { schema: schema, rows: 100 });
-        let obs = Rx.Observer.create<TableDataView>(
-            (d) => this.updateView(d),
-            (d) => { console.log("Error: " + String(d)); }
-        );
-        rr.invoke(obs);
     }
 
     private static addHeaderCell(thr: Node, cd: ColumnDescriptionView) : HTMLElement {
@@ -124,7 +114,7 @@ export class TableView extends RemoteObject implements IHtmlElement  {
     }
 
     public showColumn(columnName: string, show: boolean) : void {
-        let rr = this.createRpcRequest("show", null);
+        // let rr = this.createRpcRequest("show", null);
         // TODO
     }
 
@@ -214,5 +204,22 @@ export class TableView extends RemoteObject implements IHtmlElement  {
 
     public setScroll(top: number, bottom: number) : void {
         this.scrollBar.setPosition(top, bottom);
+    }
+}
+
+export class TableRenderer extends Renderer<TableDataView> {
+    protected table: TableView;
+
+    constructor(protected parent: HTMLElement,
+                protected progress: ProgressBar,
+                reporter: ErrorReporter) {
+        super(reporter);
+        this.table = new TableView();
+        this.parent.appendChild(this.table.getHTMLRepresentation());
+    }
+
+    public onNext(value: PartialResult<TableDataView>): void {
+        this.progress.setPosition(value.done);
+        this.table.updateView(value.data);
     }
 }

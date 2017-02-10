@@ -32,7 +32,7 @@ public class DataSetTest {
 
         @Override
         public Observable<PartialResult<Integer>> create(final Integer data) {
-            return Observable.just(new PartialResult<Integer>(1.0, data));
+            return Observable.just(new PartialResult<Integer>(data));
         }
     }
 

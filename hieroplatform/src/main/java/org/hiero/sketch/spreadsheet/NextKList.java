@@ -1,5 +1,9 @@
 package org.hiero.sketch.spreadsheet;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.table.RowSnapshot;
 import org.hiero.sketch.table.Schema;
 import org.hiero.sketch.table.SmallTable;
@@ -23,22 +27,33 @@ public class NextKList implements Serializable, IJson {
     /**
      * The row number of the starting point (topRow)
      */
-    private final long position;
+    public final long startPosition;
+    /**
+     * Total rows in the original table over which this is computed.
+     */
+    public final long totalRows;
 
-    public NextKList(SmallTable table, List<Integer> count, int position, RowSnapshot topRow) {
+    public NextKList(SmallTable table, List<Integer> count, long position, long totalRows) {
         this.table = table;
         this.count = count;
-        this.position = position;
+        this.startPosition = position;
+        this.totalRows = totalRows;
+        /* If the table is empty, discard the counts. Else check we have counts for each row.*/
+        if((table.getNumOfRows() !=0) && (count.size() != table.getNumOfRows()))
+            throw new IllegalArgumentException("Mismatched table and count length");
     }
+
     /**
      * A NextK list containing an empty table with the specified schema.
      */
     public NextKList(Schema schema) {
         this.table = new SmallTable(schema);
         this.count = new ArrayList<Integer>(0);
-        this.position = 0;
+        this.startPosition = 0;
+        this.totalRows = 0;
     }
 
+    @NonNull
     public String toLongString(int rowsToDisplay) {
         final StringBuilder builder = new StringBuilder();
         builder.append(this.toString());
@@ -54,5 +69,23 @@ public class NextKList implements Serializable, IJson {
             i++;
         }
         return builder.toString();
+    }
+
+    @NonNull
+    @Override
+    public JsonElement toJsonTree() {
+        JsonObject result = new JsonObject();
+        result.add("schema", this.table.getSchema().toJsonTree());
+        result.addProperty("rowCount", this.totalRows);
+        result.addProperty("startPosition", this.startPosition);
+        JsonArray rows = new JsonArray();
+        result.add("rows", rows);
+        for (int i = 0; i < this.count.size(); i++) {
+            JsonObject row = new JsonObject();
+            row.addProperty("count", this.count.get(i));
+            row.add("values", new RowSnapshot(this.table, i).toJsonTree());
+            rows.add(row);
+        }
+        return result;
     }
 }
