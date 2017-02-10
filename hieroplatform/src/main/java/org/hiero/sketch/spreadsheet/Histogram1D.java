@@ -10,35 +10,25 @@ import org.hiero.sketch.table.api.IStringConverter;
 /**
  * One Dimensional histogram. Does not contain the column and membershipMap
  */
-public class Histogram1D {
+public class Histogram1D extends BaseHist1D {
 
     private final Bucket1D[] buckets;
     private long missingData;
     private long outOfRange;
-    private final IBucketsDescription1D bucketDescription;
     private boolean initialized;
 
     public Histogram1D(final @NonNull IBucketsDescription1D bucketDescription) {
-        this.bucketDescription = bucketDescription;
+        super(bucketDescription);
         this.buckets = new Bucket1D[bucketDescription.getNumOfBuckets()];
         for (int i = 0; i < this.bucketDescription.getNumOfBuckets(); i++)
             this.buckets[i] = new Bucket1D();
         this.initialized = false;
     }
 
-    public void createSampleHistogram(final IColumn column, final IMembershipSet membershipSet,
-                                       final IStringConverter converter, double sampleRate) {
-        this.createHistogram(column, membershipSet.sample(sampleRate), converter);
-    }
-
-    public void createSampleHistogram(final IColumn column, final IMembershipSet membershipSet,
-                                      final IStringConverter converter, double sampleRate, long seed) {
-        this.createHistogram(column, membershipSet.sample(sampleRate, seed), converter);
-    }
-
     /**
      * Creates the histogram explicitly and in full. Should be called at most once.
      */
+    @Override
     public void createHistogram(final IColumn column, final IMembershipSet membershipSet,
                                 final IStringConverter converter ) {
         if (this.initialized) //a histogram had already been created
@@ -67,8 +57,6 @@ public class Histogram1D {
         else this.outOfRange++;
     }
 
-    public int getNumOfBuckets() { return this.bucketDescription.getNumOfBuckets(); }
-
     public long getMissingData() { return this.missingData; }
 
     public long getOutOfRange() { return this.outOfRange; }
@@ -82,15 +70,18 @@ public class Histogram1D {
      * @param  otherHistogram with the same bucketDescription
      * @return a new Histogram which is the union of this and otherHistogram
      */
-    public Histogram1D union( @NonNull Histogram1D otherHistogram) {
-        if (!this.bucketDescription.equals(otherHistogram.bucketDescription))
+    @Override
+    public Histogram1D union( @NonNull IHistogram1D otherHistogram) {
+        if (!(otherHistogram instanceof Histogram1D))
+            throw new IllegalArgumentException("Histogram union of different types");
+        if (!this.bucketDescription.equals(((Histogram1D) otherHistogram).bucketDescription))
             throw new IllegalArgumentException("Histogram union without matching buckets");
         Histogram1D unionH = new Histogram1D(this.bucketDescription);
         unionH.initialized = true;
         for (int i = 0; i < unionH.bucketDescription.getNumOfBuckets(); i++)
-            unionH.buckets[i] = this.buckets[i].union(otherHistogram.buckets[i]);
-        unionH.missingData = this.missingData + otherHistogram.missingData;
-        unionH.outOfRange = this.outOfRange + otherHistogram.outOfRange;
+            unionH.buckets[i] = this.buckets[i].union(((Histogram1D) otherHistogram).buckets[i]);
+        unionH.missingData = this.missingData + ((Histogram1D) otherHistogram).missingData;
+        unionH.outOfRange = this.outOfRange + ((Histogram1D) otherHistogram).outOfRange;
         return unionH;
     }
 }

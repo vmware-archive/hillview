@@ -9,27 +9,16 @@ import org.hiero.sketch.table.api.IStringConverter;
 /**
  * One dimensional histogram where buckets are just longs and not a full object.
  */
-public class Histogram1DLight {
+public class Histogram1DLight extends BaseHist1D {
     private final long[] buckets;
     private long missingData;
     private long outOfRange;
-    private final IBucketsDescription1D bucketDescription;
     private boolean initialized;
 
     public Histogram1DLight(final @NonNull IBucketsDescription1D bucketDescription) {
-        this.bucketDescription = bucketDescription;
+        super(bucketDescription);
         this.buckets = new long[bucketDescription.getNumOfBuckets()]; //default by java initialized to zero
         this.initialized = false;
-    }
-
-    public void createSampleHistogram(final IColumn column, final IMembershipSet membershipSet,
-            final IStringConverter converter, double sampleRate) {
-        this.createHistogram(column, membershipSet.sample(sampleRate), converter);
-    }
-
-    public void createSampleHistogram(final IColumn column, final IMembershipSet membershipSet,
-                                      final IStringConverter converter, double sampleRate, long seed) {
-        this.createHistogram(column, membershipSet.sample(sampleRate, seed), converter);
     }
 
     /**
@@ -46,6 +35,7 @@ public class Histogram1DLight {
     /**
      * Creates the histogram explicitly and in full. Should be called at most once.
      */
+    @Override
     public void createHistogram(final IColumn column, final IMembershipSet membershipSet,
                                 final IStringConverter converter ) {
         if (this.initialized) //a histogram had already been created
@@ -66,7 +56,6 @@ public class Histogram1DLight {
             currRow = myIter.getNextRow();
         }
     }
-    public int getNumOfBuckets() { return this.bucketDescription.getNumOfBuckets(); }
 
     public long getMissingData() { return this.missingData; }
 
@@ -81,15 +70,18 @@ public class Histogram1DLight {
      * @param  otherHistogram with the same bucketDescription
      * @return a new Histogram which is the union of this and otherHistogram
      */
-    public Histogram1DLight union( @NonNull Histogram1DLight otherHistogram) {
-        if (!this.bucketDescription.equals(otherHistogram.bucketDescription))
+    @Override
+    public Histogram1DLight union( @NonNull IHistogram1D otherHistogram) {
+        if (!(otherHistogram instanceof Histogram1DLight))
+            throw new IllegalArgumentException("Histogram union of different types");
+        if (!this.bucketDescription.equals(((Histogram1DLight) otherHistogram).bucketDescription))
             throw new IllegalArgumentException("Histogram union without matching buckets");
         Histogram1DLight unionH = new Histogram1DLight(this.bucketDescription);
         unionH.initialized = true;
         for (int i = 0; i < unionH.bucketDescription.getNumOfBuckets(); i++)
-            unionH.buckets[i] = this.buckets[i] + otherHistogram.buckets[i];
-        unionH.missingData = this.missingData + otherHistogram.missingData;
-        unionH.outOfRange = this.outOfRange + otherHistogram.outOfRange;
+            unionH.buckets[i] = this.buckets[i] + ((Histogram1DLight) otherHistogram).buckets[i];
+        unionH.missingData = this.missingData + ((Histogram1DLight) otherHistogram).missingData;
+        unionH.outOfRange = this.outOfRange + ((Histogram1DLight) otherHistogram).outOfRange;
         return unionH;
     }
 }
