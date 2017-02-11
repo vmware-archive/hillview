@@ -9,6 +9,7 @@ import org.hiero.sketch.dataset.api.ISketch;
 import org.hiero.sketch.dataset.api.PartialResult;
 import org.hiero.sketch.table.Schema;
 import org.hiero.sketch.table.api.ITable;
+import org.hiero.utils.Randomness;
 import rx.Observable;
 
 /**
@@ -67,6 +68,9 @@ public class SummarySketch implements ISketch<ITable, SummarySketch.TableSummary
     @NonNull
     @Override
     public Observable<PartialResult<TableSummary>> create(@NonNull ITable data) {
+        try {
+            Thread.sleep(1000 * Randomness.getInstance().nextInt(5));
+        } catch (InterruptedException unused) {}
         TableSummary ts = new TableSummary(data.getSchema(), data.getNumOfRows());
         return this.pack(ts);
     }
