@@ -34,6 +34,7 @@ public class RpcReply {
         try {
             JsonElement json = this.toJson();
             session.getBasicRemote().sendText(json.toString());
+            RpcReply.logger.log(Level.INFO, "Reply sent");
         } catch (IOException e) {
             RpcReply.logger.log(Level.SEVERE, "Could not send reply");
         }

@@ -90,7 +90,7 @@ public class ParallelDataSet<T> implements IDataSet<T> {
             final IDataSet<T> child = this.children.get(i);
             final Observable<PartialResult<R>> sk =
                     child.sketch(sketch)
-                    .map(e -> new PartialResult<R>(e.deltaDone / this.size(), e.deltaValue));
+                    .map(e -> new PartialResult<R>(e.deltaDone / mySize, e.deltaValue));
             obs.add(sk);
         }
         return Observable.merge(obs);

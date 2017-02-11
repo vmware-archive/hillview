@@ -12,12 +12,18 @@ import org.hiero.sketch.table.api.ITable;
 import org.hiero.utils.Randomness;
 import rx.Observable;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  * A sketch which retrieves the Schema and size of a distributed table.
  * Two schemas can be added only if they are identical.
  * We use the empty schema to represent a zero.
  */
 public class SummarySketch implements ISketch<ITable, SummarySketch.TableSummary> {
+    private static final Logger logger =
+            Logger.getLogger(SummarySketch.class.getName());
+
     public static class TableSummary implements IJson {
         public TableSummary(Schema schema, long rowCount) {
             this.schema = schema;
@@ -67,11 +73,14 @@ public class SummarySketch implements ISketch<ITable, SummarySketch.TableSummary
 
     @NonNull
     @Override
-    public Observable<PartialResult<TableSummary>> create(@NonNull ITable data) {
+    public TableSummary create(@NonNull ITable data) {
+        /*
         try {
             Thread.sleep(1000 * Randomness.getInstance().nextInt(5));
         } catch (InterruptedException unused) {}
+        */
+        logger.log(Level.INFO, "Completed sketch");
         TableSummary ts = new TableSummary(data.getSchema(), data.getNumOfRows());
-        return this.pack(ts);
+        return ts;
     }
 }

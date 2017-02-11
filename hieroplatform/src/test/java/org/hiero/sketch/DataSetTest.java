@@ -31,8 +31,8 @@ public class DataSetTest {
         }
 
         @Override
-        public Observable<PartialResult<Integer>> create(final Integer data) {
-            return Observable.just(new PartialResult<Integer>(data));
+        public Integer create(final Integer data) {
+            return data;
         }
     }
 
@@ -79,27 +79,31 @@ public class DataSetTest {
         }
 
         @Override
-        public Observable<PartialResult<Integer>> create(final int[] data) {
-            final int parts = 10;
-            return Observable.range(0, parts).map(index -> {
-                final int partSize = data.length / parts;
-                final int left = partSize * index;
-                final int right = (index == (parts - 1)) ? data.length : (left + partSize);
-                int sum1 = 0;
-                for (int i=left; i < right; i++)
-                    sum1 += data[i];
-                return new PartialResult<Integer>(1.0 / parts, sum1);
-            });
+        public Integer create(final int[] data) {
+            int sum = 0;
+            for (int aData : data) sum += aData;
+            return sum;
         }
     }
 
     private final int largeSize = 10 * 1024 * 1024;
+    private final int parts = 10;
 
     private IDataSet<int[]> createLargeDataset(final boolean separateThread) {
-        final int[] data = new int[this.largeSize];
-        for (int i=0; i < this.largeSize; i++)
-            data[i] = ((i % 10) == 0) ? 0 : i;
-        return new LocalDataSet<int[]>(data, separateThread);
+        ArrayList<IDataSet<int[]>> l = new ArrayList<IDataSet<int[]>>(this.parts);
+        int v = 0;
+        for (int j=0; j < this.parts; j++) {
+            int partSize = this.largeSize / this.parts;
+            final int[] data = new int[partSize];
+            for (int i = 0; i < partSize; i++) {
+                data[i] = ((v % 10) == 0) ? 0 : v;
+                v++;
+            }
+            LocalDataSet<int[]> ld = new LocalDataSet<int[]>(data, separateThread);
+            l.add(ld);
+        }
+        ParallelDataSet<int[]> p = new ParallelDataSet<int[]>(l);
+        return p;
     }
 
     @Test

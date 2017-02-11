@@ -46,7 +46,11 @@ public class LocalDataSet<T> implements IDataSet<T> {
 
     @Override
     public <R> Observable<PartialResult<R>> sketch(final ISketch<T, R> sketch) {
-        return sketch.create(this.data);
+        R r = sketch.create(this.data);
+        Observable<PartialResult<R>> o = Observable.just(new PartialResult<R>(r));
+        if (this.separateThread)
+            o = o.observeOn(Schedulers.computation());
+        return o;
     }
 
     @Override

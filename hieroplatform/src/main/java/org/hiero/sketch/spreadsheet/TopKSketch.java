@@ -138,8 +138,7 @@ public class TopKSketch implements ISketch<ITable, NextKList> {
     }
 
     @Override
-    public Observable<PartialResult<NextKList>> create(final ITable data) {
-        NextKList q = this.getKList(data);
-        return this.pack(q);
+    public NextKList create(final ITable data) {
+        return this.getKList(data);
     }
 }
