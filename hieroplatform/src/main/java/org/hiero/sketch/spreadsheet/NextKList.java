@@ -38,7 +38,8 @@ public class NextKList implements Serializable, IJson {
         this.count = count;
         this.startPosition = position;
         this.totalRows = totalRows;
-        if (count.size() != table.getNumOfRows())
+        /* If the table is empty, discard the counts. Else check we have counts for each row.*/
+        if((table.getNumOfRows() !=0) && (count.size() != table.getNumOfRows()))
             throw new IllegalArgumentException("Mismatched table and count length");
     }
 
