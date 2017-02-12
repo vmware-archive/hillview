@@ -1,13 +1,13 @@
 package org.hiero.sketch;
-
 import org.hiero.sketch.table.api.IStringConverter;
 
 /**
- * Created by uwieder on 2/12/17.
+ * A converter for integers. Created solely for testing. Will be scrapped once
+ * decent converters are implemented.
  */
 public class IntConverter implements IStringConverter{
     @Override
-    public double asDouble(String string) {
+    public double asDouble(final String string) {
         return (double) Integer.parseInt(string);
     }
 }
