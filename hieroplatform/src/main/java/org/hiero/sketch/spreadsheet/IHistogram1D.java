@@ -16,7 +16,4 @@ public interface IHistogram1D {
                          final IStringConverter converter);
 
     int getNumOfBuckets();
-
-    IHistogram1D union(IHistogram1D otherHistogram);
-
 }

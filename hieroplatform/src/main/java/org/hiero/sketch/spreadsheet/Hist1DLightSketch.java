@@ -1,5 +1,4 @@
 package org.hiero.sketch.spreadsheet;
-
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.dataset.api.ISketch;
 import org.hiero.sketch.dataset.api.PartialResult;
@@ -8,22 +7,10 @@ import org.hiero.sketch.table.api.ITable;
 import rx.Observable;
 
 public class Hist1DLightSketch implements ISketch<ITable, Histogram1DLight> {
-
     final IBucketsDescription1D bucketDesc;
     final String colName;
     final IStringConverter converter;
     final double rate;
-
-    public Histogram1DLight getHistogram(ITable data){
-        Histogram1DLight result = this.zero();
-        if (this.rate == 1)
-            result.createHistogram(data.getColumn(this.colName),
-                    data.getMembershipSet(), this.converter);
-        else
-            result.createHistogram(data.getColumn(this.colName),
-                    data.getMembershipSet().sample(this.rate), this.converter);
-        return result;
-    }
 
     public Hist1DLightSketch(IBucketsDescription1D bucketDesc, String colName, IStringConverter converter) {
         this.bucketDesc = bucketDesc;
@@ -40,14 +27,21 @@ public class Hist1DLightSketch implements ISketch<ITable, Histogram1DLight> {
         this.rate = rate;
     }
 
+    public Histogram1DLight getHistogram(final ITable data) {
+        Histogram1DLight result = this.zero();
+        result.createHistogram(data.getColumn(this.colName),
+                    data.getMembershipSet().sample(this.rate), this.converter);
+        return result;
+    }
+
     @Override
-    public Histogram1DLight add(@NonNull final Histogram1DLight left,
+    public @NonNull Histogram1DLight add(@NonNull final Histogram1DLight left,
                                 @NonNull final Histogram1DLight right) {
         return left.union(right);
     }
 
     @Override
-    public Histogram1DLight zero() {
+    public @NonNull Histogram1DLight zero() {
         return new Histogram1DLight(this.bucketDesc);
     }
 

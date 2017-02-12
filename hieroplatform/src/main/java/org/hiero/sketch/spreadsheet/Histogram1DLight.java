@@ -37,7 +37,7 @@ public class Histogram1DLight extends BaseHist1D {
      */
     @Override
     public void createHistogram(final IColumn column, final IMembershipSet membershipSet,
-                                final IStringConverter converter ) {
+                                final IStringConverter converter) {
         if (this.initialized) //a histogram had already been created
             throw new IllegalAccessError("A histogram cannot be created twice");
         this.initialized = true;
@@ -70,18 +70,15 @@ public class Histogram1DLight extends BaseHist1D {
      * @param  otherHistogram with the same bucketDescription
      * @return a new Histogram which is the union of this and otherHistogram
      */
-    @Override
-    public Histogram1DLight union( @NonNull IHistogram1D otherHistogram) {
-        if (!(otherHistogram instanceof Histogram1DLight))
-            throw new IllegalArgumentException("Histogram union of different types");
-        if (!this.bucketDescription.equals(((Histogram1DLight) otherHistogram).bucketDescription))
+    public @NonNull Histogram1DLight union( @NonNull Histogram1DLight otherHistogram) {
+        if (!this.bucketDescription.equals(otherHistogram.bucketDescription))
             throw new IllegalArgumentException("Histogram union without matching buckets");
         Histogram1DLight unionH = new Histogram1DLight(this.bucketDescription);
         unionH.initialized = true;
         for (int i = 0; i < unionH.bucketDescription.getNumOfBuckets(); i++)
-            unionH.buckets[i] = this.buckets[i] + ((Histogram1DLight) otherHistogram).buckets[i];
-        unionH.missingData = this.missingData + ((Histogram1DLight) otherHistogram).missingData;
-        unionH.outOfRange = this.outOfRange + ((Histogram1DLight) otherHistogram).outOfRange;
+            unionH.buckets[i] = this.buckets[i] + otherHistogram.buckets[i];
+        unionH.missingData = this.missingData + otherHistogram.missingData;
+        unionH.outOfRange = this.outOfRange + otherHistogram.outOfRange;
         return unionH;
     }
 }
