@@ -3,13 +3,11 @@ package org.hiero.sketch.table;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.dataset.api.IJson;
 import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
-import scala.util.parsing.json.JSONObject;
 
 import java.io.Serializable;
 
@@ -29,11 +27,11 @@ public class SmallTable
         return this.schema;
     }
 
-    public SmallTable(@NonNull final Iterable<IColumn> columns) {
-        super(columns);
+    public SmallTable(@NonNull final Iterable<IColumn> cols) {
+        super(cols);
         this.rowCount = BaseTable.columnSize(this.columns.values());
         final Schema s = new Schema();
-        for (final IColumn c : columns) {
+        for (final IColumn c : cols) {
             s.append(c.getDescription());
             if (!(c instanceof Serializable))
                 throw new RuntimeException("Column for SmallTable is not serializable");

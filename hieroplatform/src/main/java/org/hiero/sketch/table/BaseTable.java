@@ -76,7 +76,6 @@ public abstract class BaseTable implements ITable {
     @Override public SmallTable compress(@NonNull final ISubSchema subSchema,
                                          @NonNull final IRowOrder rowOrder) {
         Schema newSchema = this.getSchema().project(subSchema);
-        int width = newSchema.getColumnCount();
         List<IColumn> compressedCols = new ArrayList<IColumn>();
         for (String colName: newSchema.getColumnNames())
             compressedCols.add(this.columns.get(colName).compress(rowOrder));

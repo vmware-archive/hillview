@@ -1,4 +1,4 @@
-package org.hiero.sketch.table.api;
+package org.hiero.utils;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -10,8 +10,7 @@ import java.time.LocalTime;
 /**
  * Conversion to and from doubles of various supported datatypes.
  */
-@SuppressWarnings("WeakerAccess")
-class Converters {
+public class Converters {
     private static final LocalDateTime baseTime = LocalDateTime.of(
             LocalDate.of(1970, 1, 1),
             LocalTime.of(0, 0));

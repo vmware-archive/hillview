@@ -1,6 +1,7 @@
 package org.hiero.sketch.table;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.hiero.utils.Converters;
 import org.hiero.sketch.table.api.IStringConverter;
 import org.hiero.sketch.table.api.IndexComparator;
 
@@ -28,20 +29,19 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
     public int sizeInRows() { return this.data.length; }
 
     @Override
-    public double asDouble(final int rowIndex, @NonNull final IStringConverter converter) {
+    public double asDouble(final int rowIndex, final IStringConverter converter) {
         switch (ObjectArrayColumn.this.description.kind) {
+            case Json:
             case String:
                 return converter.asDouble(this.getString(rowIndex));
             case Date:
-                return converter.asDouble(this.getDate(rowIndex).toString());
+                return Converters.toDouble(this.getDate(rowIndex));
             case Int:
-                return converter.asDouble(String.valueOf(this.getInt(rowIndex)));
-            case Json:
-                return converter.asDouble(this.getString(rowIndex));
+                return this.getInt(rowIndex);
             case Double:
                 return this.getDouble(rowIndex);
             case Duration:
-                return converter.asDouble(this.getDuration(rowIndex).toString());
+                return Converters.toDouble(this.getDuration(rowIndex));
             default:
                 throw new RuntimeException("Unexpected data type");
         }

@@ -1,5 +1,7 @@
 package org.hiero.sketch.table.api;
 
+import org.hiero.utils.Converters;
+
 import java.time.Duration;
 
 public interface IDurationColumn extends IColumn {

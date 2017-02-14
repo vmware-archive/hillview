@@ -7,6 +7,8 @@ import org.hiero.sketch.table.api.IRow;
 import org.hiero.sketch.table.api.ITable;
 
 import java.io.Serializable;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 
 /**
@@ -16,7 +18,6 @@ import java.util.HashMap;
 public class RowSnapshot implements IRow, Serializable, IJson {
     @NonNull
     protected final Schema schema;
-
     /**
      * Maps a column name to a value.
      */
@@ -58,6 +59,26 @@ public class RowSnapshot implements IRow, Serializable, IJson {
     @Override
     public Object get(@NonNull String colName) {
         return this.field.get(colName);
+    }
+
+    public String getString(@NonNull String colName) {
+        return (String) this.field.get(colName);
+    }
+
+    public Integer getInt(@NonNull String colName) {
+        return (Integer) this.field.get(colName);
+    }
+
+    public Double getDouble(@NonNull String colName) {
+        return (Double) this.field.get(colName);
+    }
+
+    public LocalDateTime getDate(@NonNull String colName) {
+        return (LocalDateTime) this.field.get(colName);
+    }
+
+    public Duration getDuration(@NonNull String colName) {
+        return (Duration) this.field.get(colName);
     }
 
     private Object[] getData() {

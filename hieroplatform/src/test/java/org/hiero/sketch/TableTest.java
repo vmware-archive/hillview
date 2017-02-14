@@ -21,7 +21,7 @@ public class TableTest {
         int numTables = (tableSize / fragmentSize) + 1;
         List<SmallTable> tableList = new ArrayList<SmallTable>(numTables);
         int start = 0;
-        while (start < tableSize){
+        while (start < tableSize) {
             int thisFragSize = Math.min(fragmentSize, tableSize - start);
             IMembershipSet members = new SparseMembership(start, thisFragSize);
             tableList.add(bigTable.compress(members));
