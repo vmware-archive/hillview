@@ -6,10 +6,13 @@ import rx.Observable;
 
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ParallelDataSet<T> implements IDataSet<T> {
     @NonNull
     private final ArrayList<IDataSet<T>> children;
+    protected static Logger logger = Logger.getLogger(ParallelDataSet.class.getName());
 
     private ParallelDataSet(@NonNull final Map<Integer, IDataSet<T>> elements) {
         this.children = new ArrayList<IDataSet<T>>(elements.size());
@@ -82,6 +85,11 @@ public class ParallelDataSet<T> implements IDataSet<T> {
         return dones.concatWith(result);
     }
 
+    private <T> T log(T data, String message) {
+        logger.log(Level.INFO, message);
+        return data;
+    }
+
     @Override
     public <R> Observable<PartialResult<R>> sketch(final ISketch<T, R> sketch) {
         final ArrayList<Observable<PartialResult<R>>> obs = new ArrayList<Observable<PartialResult<R>>>();
@@ -90,10 +98,11 @@ public class ParallelDataSet<T> implements IDataSet<T> {
             final IDataSet<T> child = this.children.get(i);
             final Observable<PartialResult<R>> sk =
                     child.sketch(sketch)
+                    .map(e -> log(e, "child sketch done"))
                     .map(e -> new PartialResult<R>(e.deltaDone / mySize, e.deltaValue));
             obs.add(sk);
         }
-        return Observable.merge(obs);
+        return Observable.merge(obs).map(e -> log(e, "child merge done"));
     }
 
     @Override

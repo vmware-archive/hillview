@@ -61,7 +61,7 @@ export class RpcRequest {
 
     private onOpen() : void {
         console.log('socket open');
-        let reqStr = this.serialize();
+        let reqStr : string = this.serialize();
         console.log("Sending message " + reqStr);
         this.socket.onNext(reqStr);
     }

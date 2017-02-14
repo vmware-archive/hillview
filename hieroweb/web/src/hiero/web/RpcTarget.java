@@ -78,7 +78,11 @@ public abstract class RpcTarget {
 
         @Override
         public void onNext(PartialResult<T> pr) {
-            if (!this.session.isOpen()) return;
+            logger.log(Level.INFO, "Received partial result");
+            if (!this.session.isOpen()) {
+                logger.log(Level.WARNING, "Session closed, ignoring partial result");
+                return;
+            }
 
             JsonObject json = new JsonObject();
             json.addProperty("done", pr.deltaDone);

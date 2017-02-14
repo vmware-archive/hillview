@@ -5,7 +5,7 @@ import org.hiero.sketch.dataset.ParallelDataSet;
 import org.hiero.sketch.dataset.api.*;
 import org.junit.Test;
 import rx.Observable;
-import rx.Subscriber;
+import rx.observers.TestSubscriber;
 
 import java.util.ArrayList;
 
@@ -14,8 +14,8 @@ import static org.junit.Assert.*;
 public class DataSetTest {
     private class Increment implements IMap<Integer, Integer> {
         @Override
-        public Observable<PartialResult<Integer>> apply(final Integer data) {
-            return Observable.just(new PartialResult<Integer>(1.0, data + 1));
+        public Integer apply(final Integer data) {
+            return data + 1;
         }
     }
 
@@ -87,13 +87,13 @@ public class DataSetTest {
     }
 
     private final int largeSize = 10 * 1024 * 1024;
-    private final int parts = 10;
+    private static final int parts = 10;
 
     private IDataSet<int[]> createLargeDataset(final boolean separateThread) {
-        ArrayList<IDataSet<int[]>> l = new ArrayList<IDataSet<int[]>>(this.parts);
+        ArrayList<IDataSet<int[]>> l = new ArrayList<IDataSet<int[]>>(parts);
         int v = 0;
-        for (int j=0; j < this.parts; j++) {
-            int partSize = this.largeSize / this.parts;
+        for (int j=0; j < parts; j++) {
+            int partSize = this.largeSize / parts;
             final int[] data = new int[partSize];
             for (int i = 0; i < partSize; i++) {
                 data[i] = ((v % 10) == 0) ? 0 : v;
@@ -102,8 +102,7 @@ public class DataSetTest {
             LocalDataSet<int[]> ld = new LocalDataSet<int[]>(data, separateThread);
             l.add(ld);
         }
-        ParallelDataSet<int[]> p = new ParallelDataSet<int[]>(l);
-        return p;
+        return new ParallelDataSet<int[]>(l);
     }
 
     @Test
@@ -130,29 +129,21 @@ public class DataSetTest {
     public void unsubscriptionTest() {
         final IDataSet<int[]> ld = this.createLargeDataset(true);
         final Observable<PartialResult<Integer>> pr = ld.sketch(new Sum());
-        pr.subscribe(new Subscriber<PartialResult<Integer>>() {
+        TestSubscriber<PartialResult<Integer>> ts =
+                new TestSubscriber<PartialResult<Integer>>() {
             private int count = 0;
-            private double done = 0.0;
-
-            @Override
-            public void onCompleted() {
-                fail("Unreachable");
-            }
-
-            @Override
-            public void onError(final Throwable throwable) {
-                fail("Unreachable");
-            }
 
             @Override
             public void onNext(final PartialResult<Integer> pr) {
-                this.done += pr.deltaDone;
+                super.onNext(pr);
                 this.count++;
                 if (this.count == 3)
                     this.unsubscribe();
-                else
-                    assertEquals(this.done, 0.1 * this.count, 1e-3);
             }
-        });
+        };
+        pr.toBlocking().subscribe(ts);
+
+        ts.assertNotCompleted();
+        ts.assertValueCount(3);
     }
 }

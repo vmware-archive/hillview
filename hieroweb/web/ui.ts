@@ -1,5 +1,6 @@
 import {RpcReceiver, PartialResult} from "./rpc";
 import {ErrorReporter, ConsoleErrorReporter} from "./errorReporter";
+
 export interface IHtmlElement {
     getHTMLRepresentation() : HTMLElement;
 }

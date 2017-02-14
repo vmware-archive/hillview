@@ -12,7 +12,6 @@ public class RandomnessTest {
 
     @Test
     public void testRandomnessPerf() {
-
         this.randomPRG = new Random();
         this.MT_PRG = new MersenneTwister();
         int iterationnNum = 100; // number of iterations

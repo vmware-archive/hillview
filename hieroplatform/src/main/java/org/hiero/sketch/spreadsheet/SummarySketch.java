@@ -38,7 +38,9 @@ public class SummarySketch implements ISketch<ITable, SummarySketch.TableSummary
         public TableSummary add(TableSummary other) {
             Schema s = this.schema;
             if (this.schema == null)
-                 s = other.schema;
+                s = other.schema;
+            else if (other.schema == null)
+                s = this.schema;
             else if (!this.schema.equals(other.schema))
                 throw new RuntimeException("Schemas differ");
             return new TableSummary(s, this.rowCount + other.rowCount);
@@ -74,11 +76,10 @@ public class SummarySketch implements ISketch<ITable, SummarySketch.TableSummary
     @NonNull
     @Override
     public TableSummary create(@NonNull ITable data) {
-        /*
         try {
             Thread.sleep(1000 * Randomness.getInstance().nextInt(5));
         } catch (InterruptedException unused) {}
-        */
+
         logger.log(Level.INFO, "Completed sketch");
         TableSummary ts = new TableSummary(data.getSchema(), data.getNumOfRows());
         return ts;

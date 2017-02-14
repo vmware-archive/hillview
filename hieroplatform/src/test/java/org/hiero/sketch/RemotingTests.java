@@ -17,15 +17,13 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import rx.Observable;
-import rx.Subscriber;
+import rx.observers.TestSubscriber;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static akka.pattern.Patterns.ask;
 import static org.junit.Assert.assertEquals;
@@ -43,7 +41,7 @@ public class RemotingTests {
 
     private class IncrementMap implements IMap<int[], int[]> {
         @Override
-        public Observable<PartialResult<int[]>> apply(final int[] data) {
+        public int[] apply(final int[] data) {
             if (data.length == 0) {
                 throw new RuntimeException("Cannot apply map against empty data");
             }
@@ -53,7 +51,7 @@ public class RemotingTests {
                 dataNew[i] = data[i] + 1;
             }
 
-            return Observable.just(new PartialResult<int[]>(dataNew));
+            return dataNew;
         }
     }
 
@@ -112,7 +110,7 @@ public class RemotingTests {
         for (int i=0; i < parts; i++) {
             final int[] data = new int[size];
             for (int j = 0; j < size; j++)
-                data[j] = i * size + j;
+                data[j] = (i * size) + j;
             LocalDataSet<int[]> lds = new LocalDataSet<>(data);
             al.add(lds);
         }
@@ -165,39 +163,18 @@ public class RemotingTests {
     }
 
 
-    //@Test
+    @Test
     public void testMapSketchThroughClientWithError() {
         final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(clientActor, remoteActor);
-        final IDataSet<int[]> remoteIdsNew = remoteIds.map(new IncrementMap()).toBlocking().last().deltaValue;
+        final IDataSet<int[]> remoteIdsNew = remoteIds.map(new IncrementMap())
+                                                      .toBlocking()
+                                                      .last().deltaValue;
         assertNotNull(remoteIdsNew);
         final Observable<PartialResult<Integer>> resultObs =
                 remoteIdsNew.sketch(new ErrorSumSketch());
-        final AtomicInteger counter = new AtomicInteger(0);
-        final CountDownLatch countDownLatch = new CountDownLatch(1);
-        resultObs.subscribe(new Subscriber<PartialResult<Integer>>() {
-            @Override
-            public void onCompleted() {
-                fail("Unreachable");
-            }
-
-            @Override
-            public void onError(final Throwable throwable) {
-                counter.incrementAndGet();
-                countDownLatch.countDown();
-            }
-
-            @Override
-            public void onNext(final PartialResult<Integer> pr) {
-            }
-        });
-
-        try {
-            countDownLatch.await();
-        } catch (final InterruptedException e) {
-            fail("Should not happen");
-        }
-
-        assertEquals(1, counter.get());
+        TestSubscriber<PartialResult<Integer>> ts = new TestSubscriber<PartialResult<Integer>>();
+        resultObs.toBlocking().subscribe(ts);
+        ts.assertError(RuntimeException.class);
     }
 
     @Test
@@ -205,43 +182,24 @@ public class RemotingTests {
         final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(clientActor, remoteActor);
         final IDataSet<int[]> remoteIdsNew = remoteIds.map(new IncrementMap()).toBlocking().last().deltaValue;
         assertNotNull(remoteIdsNew);
-        final CountDownLatch countDownLatch = new CountDownLatch(3);
+
         final Observable<PartialResult<Integer>> resultObs = remoteIds.sketch(new SumSketch());
-        final AtomicInteger counter = new AtomicInteger(0);
-        resultObs.subscribe(new Subscriber<PartialResult<Integer>>() {
-            private double done = 0.0;
+        TestSubscriber<PartialResult<Integer>> ts =
+                new TestSubscriber<PartialResult<Integer>>() {
+                    private int counter = 0;
 
-            @Override
-            public void onCompleted() {
-                fail("Unreachable");
-            }
+                    @Override
+                    public void onNext(final PartialResult<Integer> pr) {
+                        this.counter++;
+                        super.onNext(pr);
+                        if (this.counter == 3)
+                            this.unsubscribe();
+                    }
+                };
 
-            @Override
-            public void onError(final Throwable throwable) {
-                fail("Unreachable");
-            }
-
-            @Override
-            public void onNext(final PartialResult<Integer> pr) {
-                this.done += pr.deltaDone;
-                final int count = counter.incrementAndGet();
-                countDownLatch.countDown();
-                if (count == 3) {
-                    this.unsubscribe();
-                }
-                else {
-                    assertEquals(this.done, 0.1 * count, .1);
-                }
-            }
-        });
-
-        try {
-            countDownLatch.await();
-        } catch (final InterruptedException e) {
-            fail("Should not happen");
-        }
-
-        assertEquals(3, counter.get());
+        resultObs.toBlocking().subscribe(ts);
+        ts.assertValueCount(3);
+        ts.assertNotCompleted();
     }
 
     @Test
