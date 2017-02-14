@@ -108,8 +108,6 @@ public class HeatMap {
         if ((!this.bucketDescDim1.equals(otherHeatmap.bucketDescDim1))
             || (!this.bucketDescDim2.equals(otherHeatmap.bucketDescDim2)))
             throw new IllegalArgumentException("Histogram union without matching buckets");
-        if ((!this.initialized) || (!otherHeatmap.initialized))
-            throw new IllegalArgumentException("Uninitialized histogram cannot be part of a union");
         HeatMap unionH = new HeatMap(this.bucketDescDim1, this.bucketDescDim2);
         for (int i = 0; i < unionH.bucketDescDim1.getNumOfBuckets(); i++)
             for (int j = 0; j < unionH.bucketDescDim2.getNumOfBuckets(); j++)

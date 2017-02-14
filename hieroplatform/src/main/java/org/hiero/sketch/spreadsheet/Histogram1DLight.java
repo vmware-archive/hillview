@@ -47,7 +47,7 @@ public class Histogram1DLight extends BaseHist1D {
             if (column.isMissing(currRow))
                 this.missingData++;
             else {
-                double val = column.asDouble(currRow,converter);
+                double val = column.asDouble(currRow, converter);
                 int index = this.bucketDescription.indexOf(val);
                 if (index >= 0)
                     this.buckets[index]++;
