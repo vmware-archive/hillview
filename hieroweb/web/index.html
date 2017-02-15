@@ -8,27 +8,23 @@
         //noinspection ThisExpressionReferencesGlobalObjectJS
         var hiero = this.hiero;
         var initialObject = hiero.InitialObject.instance;
-        var errorReporter = hiero.ConsoleErrorReporter.instance;
-        var progressBar;
+        var page = new hiero.FullPage();
 
         function loadTable() {
-            var tableDiv = document.getElementById('table');
-            var obs = new hiero.RemoteTableReceiver(tableDiv, progressBar, errorReporter);
+            var obs = new hiero.RemoteTableReceiver(page);
             initialObject.loadTable(obs);
         }
 
         function initialize() {
-            var progressDiv = document.getElementById('progress');
-            progressBar = new hiero.ProgressBar();
-            progressDiv.appendChild(progressBar.getHTMLRepresentation());
+            var top = document.getElementById('top');
+            top.appendChild(page.getHTMLRepresentation());
         }
     </script>
 </head>
 <body onload="initialize()">
     <div id="contents">
         <button onclick="loadTable()">Load table</button>
-        <div id="table"></div>
-        <div id="progress"></div>
+        <div id="top"></div>
     </div>
 </body>
 </html>

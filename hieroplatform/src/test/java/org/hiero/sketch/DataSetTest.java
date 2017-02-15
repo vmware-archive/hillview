@@ -89,7 +89,7 @@ public class DataSetTest {
     private final int largeSize = 10 * 1024 * 1024;
     private static final int parts = 10;
 
-    private IDataSet<int[]> createLargeDataset(final boolean separateThread) {
+    private ParallelDataSet<int[]> createLargeDataset(final boolean separateThread) {
         ArrayList<IDataSet<int[]>> l = new ArrayList<IDataSet<int[]>>(parts);
         int v = 0;
         for (int j=0; j < parts; j++) {
@@ -107,11 +107,20 @@ public class DataSetTest {
 
     @Test
     public void largeDataSetTest() {
-        final IDataSet<int[]> ld = this.createLargeDataset(false);
-        final int result = ld.blockingSketch(new Sum());
+        ParallelDataSet<int[]> ld = this.createLargeDataset(false);
+        int result = ld.blockingSketch(new Sum());
         int sum = 0;
         for (int i=0; i < this.largeSize; i++)
             sum += ((i % 10) == 0) ? 0 : i;
+        assertEquals(result, sum);
+
+        ld.setBundleInterval(100);
+        result = ld.blockingSketch(new Sum());
+        assertEquals(result, sum);
+
+        ld = this.createLargeDataset(true);
+        ld.setBundleInterval(100);
+        result = ld.blockingSketch(new Sum());
         assertEquals(result, sum);
     }
 
@@ -127,8 +136,8 @@ public class DataSetTest {
 
     @Test
     public void unsubscriptionTest() {
-        final IDataSet<int[]> ld = this.createLargeDataset(true);
-        final Observable<PartialResult<Integer>> pr = ld.sketch(new Sum());
+        ParallelDataSet<int[]> ld = this.createLargeDataset(true);
+        Observable<PartialResult<Integer>> pr = ld.sketch(new Sum());
         TestSubscriber<PartialResult<Integer>> ts =
                 new TestSubscriber<PartialResult<Integer>>() {
             private int count = 0;

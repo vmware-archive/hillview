@@ -1,5 +1,5 @@
 import {TableView, RemoteTableReceiver} from "./table";
-import {ScrollBar, ProgressBar} from "./ui";
+import {ScrollBar, ProgressBar, DataDisplay, FullPage} from "./ui";
 import {InitialObject} from "./InitialObject";
 import {ConsoleErrorReporter} from "./errorReporter";
 
@@ -14,7 +14,9 @@ let public_symbols = {
     ProgressBar,
     InitialObject,
     ConsoleErrorReporter,
-    RemoteTableReceiver
+    RemoteTableReceiver,
+    DataDisplay,
+    FullPage
 };
 
 window["hiero"] = public_symbols;

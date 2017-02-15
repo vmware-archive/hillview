@@ -1,7 +1,6 @@
-import {IHtmlElement, ScrollBar, Menu, ProgressBar, Renderer} from "./ui";
+import {IHtmlElement, ScrollBar, Menu, Renderer, FullPage, HieroDataView} from "./ui";
 import {RemoteObject, PartialResult, RpcReceiver} from "./rpc";
 import Rx = require('rx');
-import {ErrorReporter} from "./errorReporter";
 
 // These classes are direct counterparts to server-side Java classes
 // with the same names.  JSON serialization
@@ -54,7 +53,7 @@ export interface RecordOrder {
 }
 
 export interface TableDataView {
-    schema: Schema;
+    schema?: Schema;
     // Total number of rows in the complete table
     rowCount: number;
     startPosition?: number;
@@ -72,9 +71,10 @@ export interface TableDataView {
  ------------------------------------------
  */
 
-export class TableView extends RemoteObject implements IHtmlElement {
+export class TableView extends RemoteObject
+    implements IHtmlElement, HieroDataView {
     // Data view part: received from remote site
-    protected schema: Schema;
+    protected schema?: Schema;
     // Logical position of first row displayed
     protected startPosition?: number;
     // Total rows in the table
@@ -89,6 +89,7 @@ export class TableView extends RemoteObject implements IHtmlElement {
     protected htmlTable : HTMLTableElement;
     protected thead : HTMLTableSectionElement;
     protected tbody: HTMLTableSectionElement;
+    protected page: FullPage;
 
     public constructor(id: string) {
         super(id);
@@ -98,6 +99,14 @@ export class TableView extends RemoteObject implements IHtmlElement {
         this.scrollBar = new ScrollBar();
         this.top.appendChild(this.htmlTable);
         this.top.appendChild(this.scrollBar.getHTMLRepresentation());
+    }
+
+    setPage(page: FullPage) {
+        this.page = page;
+    }
+
+    getPage() : FullPage {
+        return this.page;
     }
 
     getSortOrder(column: string): [boolean, number] {
@@ -153,8 +162,8 @@ export class TableView extends RemoteObject implements IHtmlElement {
     }
 
     public showColumn(columnName: string, show: boolean) : void {
-        // let rr = this.createRpcRequest("show", null);
-        // TODO
+        let rr = this.createRpcRequest("show", null);
+        //rr.invoke();
     }
 
     public updateView(data: TableDataView) : void {
@@ -164,10 +173,10 @@ export class TableView extends RemoteObject implements IHtmlElement {
         this.schema = data.schema;
         this.order = data.order;
 
-        if (this.thead != null) {
+        if (this.thead != null)
             this.thead.remove();
+        if (this.tbody != null)
             this.tbody.remove();
-        }
         this.thead = this.htmlTable.createTHead();
         let thr = this.thead.appendChild(document.createElement("tr"));
 
@@ -175,16 +184,19 @@ export class TableView extends RemoteObject implements IHtmlElement {
         let cds : ColumnDescription[] = [];
         let poscd = new ColumnDescription({
             kind: ContentsKind.Integer,
-            name: ":position",
+            name: "(position)",
             allowMissing: false });
         let ctcd = new ColumnDescription({
             kind: ContentsKind.Integer,
-            name: ":count",
+            name: "(count)",
             allowMissing: false });
 
         // Create column headers
         this.addHeaderCell(thr, poscd);
         this.addHeaderCell(thr, ctcd);
+        if (this.schema == null)
+            return;
+
         for (let i = 0; i < this.schema.length; i++) {
             let cd = new ColumnDescription(this.schema[i]);
             cds.push(cd);
@@ -263,33 +275,31 @@ export class TableView extends RemoteObject implements IHtmlElement {
 }
 
 export class TableRenderer extends Renderer<TableDataView> {
+    constructor(page: FullPage, protected table: TableView) {
+        super(page.progressManager.newProgressBar("Get info"), page.getErrorReporter());
+    }
+
     onNext(value: PartialResult<TableDataView>): void {
         this.progress.setPosition(value.done);
         this.table.updateView(value.data);
-    }
-
-    constructor(progress: ProgressBar, reporter: ErrorReporter, public table: TableView) {
-        super(progress, reporter);
     }
 }
 
 export class RemoteTableReceiver extends RpcReceiver<string> {
     public table: TableView;
 
-    constructor(protected parent: HTMLElement,
-                protected progress: ProgressBar,
-                reporter?: ErrorReporter) {
-        super(reporter);
+    constructor(protected page: FullPage) {
+        super(page.getErrorReporter());
     }
 
     private retrieveSchema(): void {
         let rr = this.table.createRpcRequest("getSchema", null);
-        rr.invoke(new TableRenderer(this.progress, this.reporter, this.table));
+        rr.invoke(new TableRenderer(this.page, this.table));
     }
 
     public onNext(value: string): void {
         this.table = new TableView(value);
-        this.parent.appendChild(this.table.getHTMLRepresentation());
+        this.page.setHieroDataView(this.table);
         this.retrieveSchema();
     }
 }

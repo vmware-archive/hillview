@@ -6,10 +6,14 @@ import rx.Observable;
 
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ParallelDataSet<T> implements IDataSet<T> {
+    int bundleInterval = 0;  // If non zero then add up partial results that come close to each other
+    static final TimeUnit bundleTimeUnit = TimeUnit.MILLISECONDS;
+
     @NonNull
     private final ArrayList<IDataSet<T>> children;
     protected static Logger logger = Logger.getLogger(ParallelDataSet.class.getName());
@@ -26,29 +30,53 @@ public class ParallelDataSet<T> implements IDataSet<T> {
 
     private int size() { return this.children.size(); }
 
+    public void setBundleInterval(int timeIntervalInMilliseconds) {
+        this.bundleInterval = timeIntervalInMilliseconds;
+        if (timeIntervalInMilliseconds < 0)
+            throw new RuntimeException("Negative time interval: " + timeIntervalInMilliseconds);
+    }
+
+    private <S> S log(S data, String message) {
+        logger.log(Level.INFO, message);
+        return data;
+    }
+
+    // This function groups R values that come too close in time (within a 'bundleInterval'
+    // time interval) and "adds" them up emitting a single value.
+    public <R> Observable<R> bundle(final Observable<R> data, IMonoid<R> adder) {
+        if (this.bundleInterval > 0)
+            return data.buffer(this.bundleInterval, bundleTimeUnit)
+                       .filter(e -> !e.isEmpty())  // we don't want lots of zeros
+                       .map(l -> adder.reduce(l));
+        else
+            return data;
+    }
+
     @Override
     public <S> Observable<PartialResult<IDataSet<S>>> map(@NonNull final IMap<T, S> mapper) {
-        final ArrayList<Observable<Pair<Integer, PartialResult<IDataSet<S>>>>> obs =
+        ArrayList<Observable<Pair<Integer, PartialResult<IDataSet<S>>>>> obs =
                 new ArrayList<Observable<Pair<Integer, PartialResult<IDataSet<S>>>>>(this.size());
         for (int i = 0; i < this.size(); i++) {
-            final int finalI = i;
-            final Observable<Pair<Integer, PartialResult<IDataSet<S>>>> ci =
+            int finalI = i;
+            Observable<Pair<Integer, PartialResult<IDataSet<S>>>> ci =
                     this.children.get(i)
                             .map(mapper)
                             .map(e -> new Pair<Integer, PartialResult<IDataSet<S>>>(finalI, e));
             obs.add(i, ci);
         }
-        final Observable<Pair<Integer, PartialResult<IDataSet<S>>>> merged =
+        Observable<Pair<Integer, PartialResult<IDataSet<S>>>> merged =
                 Observable.merge(obs);
 
-        final Observable<PartialResult<IDataSet<S>>> map = merged.filter(p -> p.second.deltaValue != null)
+        Observable<PartialResult<IDataSet<S>>> map = merged.filter(p -> p.second.deltaValue != null)
                 .toMap(p -> p.first, p -> p.second.deltaValue)
                 .single()
                 .map(m -> new PartialResult<IDataSet<S>>(0.0, new ParallelDataSet<S>(m)));
-        final Observable<PartialResult<IDataSet<S>>> dones =
+        Observable<PartialResult<IDataSet<S>>> dones =
                 merged.map(p -> p.second.deltaDone / this.size())
                         .map(e -> new PartialResult<IDataSet<S>>(e, null));
-        return dones.concatWith(map);
+        Observable<PartialResult<IDataSet<S>>> result = dones.concatWith(map);
+        result = bundle(result, new PartialResultMonoid<IDataSet<S>>(new OptionMonoid<IDataSet<S>>()));
+        return result;
     }
 
     @Override
@@ -85,24 +113,23 @@ public class ParallelDataSet<T> implements IDataSet<T> {
         return dones.concatWith(result);
     }
 
-    private <T> T log(T data, String message) {
-        logger.log(Level.INFO, message);
-        return data;
-    }
-
     @Override
     public <R> Observable<PartialResult<R>> sketch(final ISketch<T, R> sketch) {
-        final ArrayList<Observable<PartialResult<R>>> obs = new ArrayList<Observable<PartialResult<R>>>();
-        final int mySize = this.size();
+        PartialResultMonoid<R> prm = new PartialResultMonoid<R>(sketch);
+        ArrayList<Observable<PartialResult<R>>> obs = new ArrayList<Observable<PartialResult<R>>>();
+        int mySize = this.size();
         for (int i = 0; i < mySize; i++) {
-            final IDataSet<T> child = this.children.get(i);
-            final Observable<PartialResult<R>> sk =
+            IDataSet<T> child = this.children.get(i);
+            Observable<PartialResult<R>> sk =
                     child.sketch(sketch)
                     .map(e -> log(e, "child sketch done"))
                     .map(e -> new PartialResult<R>(e.deltaDone / mySize, e.deltaValue));
             obs.add(sk);
         }
-        return Observable.merge(obs).map(e -> log(e, "child merge done"));
+        Observable<PartialResult<R>> result = Observable.merge(obs);
+        result = result.map(e -> log(e, "child merge done"));
+        result = bundle(result, prm);
+        return result;
     }
 
     @Override
