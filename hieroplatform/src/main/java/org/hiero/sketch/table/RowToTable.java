@@ -6,12 +6,18 @@ import org.hiero.sketch.table.api.ITable;
 
 import java.util.Iterator;
 
+/**
+ * This class lets us compare a RowSnapShot to entries from a Table according to a prescribed
+ * RecordOrder. The schema of the snapshot should be a subset of that of the Table.
+ * This method is used to generate the NextK items in some order starting at a prescribed row by
+ * NextKSketch.
+ */
 public class RowToTable {
     private final RowSnapshot topRow;
     private final ITable table;
     private final RecordOrder recordOrder;
 
-    public RowToTable(RowSnapshot topRow, ITable table, RecordOrder recordOrder) {
+    public RowToTable(RowSnapshot topRow, ITable table, RecordOrder recordOrder ) {
         this.topRow = topRow;
         this.table = table;
         this.recordOrder = recordOrder;
@@ -29,12 +35,11 @@ public class RowToTable {
             ColumnSortOrientation ordCol = it.next();
             String colName = ordCol.columnDescription.name;
             IColumn iCol = this.table.getColumn(colName);
-            boolean topRowMissing = (this.topRow.get(colName) == null);
-            if (iCol.isMissing(i) && topRowMissing)
+            if (iCol.isMissing(i) && this.topRow.isMissing(colName))
                 outcome = 0;
             else if (iCol.isMissing(i)) {
                 outcome = 1;
-            } else if (topRowMissing) {
+            } else if (this.topRow.isMissing(colName)) {
                 outcome = -1;
             } else {
                 switch (this.table.getSchema().getKind(colName)) {
@@ -62,6 +67,6 @@ public class RowToTable {
             if (outcome != 0)
                 return outcome;
         }
-        return outcome;
+        return 0;
     }
 }

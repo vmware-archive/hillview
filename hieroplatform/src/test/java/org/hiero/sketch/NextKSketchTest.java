@@ -17,6 +17,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 import static org.hiero.sketch.TableTest.*;
 
@@ -64,11 +65,10 @@ public class NextKSketchTest {
         //System.out.println(tK.toLongString(maxSize));
     }
 
-
+    @Test
     public void testTopK2() {
         final int numCols = 2;
         final int maxSize = 50;
-        final int rightSize = 1000;
         final int leftSize = 1000;
         final Table leftTable = getRepIntTable(leftSize, numCols);
         final RowSnapshot topRow = new RowSnapshot(leftTable, 10);
@@ -76,10 +76,10 @@ public class NextKSketchTest {
         RecordOrder cso = new RecordOrder();
         final NextKSketch nk= new NextKSketch(cso, topRow, maxSize);
         final NextKList leftK = nk.getNextKList(leftTable);
-        IndexComparator leftComp = cso.getComparator(leftK.table);
-        System.out.println(leftK.toLongString(maxSize));
+        assertEquals(leftK.table.getNumOfRows(), 0);
     }
 
+    @Test
     public void testTopK3() {
         //printTime("start");
         final int numCols = 3;
@@ -87,7 +87,7 @@ public class NextKSketchTest {
         final int bigSize = 100000;
         final SmallTable bigTable = getIntTable(bigSize, numCols);
         final RowSnapshot topRow = new RowSnapshot(bigTable, 1000);
-        System.out.printf("Top Row %s. %n", topRow.toString());
+        //System.out.printf("Top Row %s. %n", topRow.toString());
         //printTime("created");
         RecordOrder cso = new RecordOrder();
         for (String colName : bigTable.getSchema().getColumnNames()) {
@@ -106,7 +106,7 @@ public class NextKSketchTest {
         IndexComparator mComp = cso.getComparator(nk.table);
         for (int i = 0; i < (nk.table.getNumOfRows() - 1); i++)
             assertTrue(mComp.compare(i, i + 1) <= 0);
-        System.out.println(nk.toLongString(maxSize));
+        //System.out.println(nk.toLongString(maxSize));
     }
 
 }

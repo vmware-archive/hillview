@@ -8,10 +8,11 @@ import org.hiero.sketch.table.api.ITable;
 
 import java.util.List;
 
+import static junit.framework.TestCase.assertNotNull;
 import static org.hiero.sketch.TableTest.SplitTable;
 import static org.hiero.sketch.TableTest.getIntTable;
 
-public class UdiBug {
+public class Issue46 {
 
     public void createBug() {
         // Creating Int Table
@@ -32,7 +33,7 @@ public class UdiBug {
         IMembershipSet memset1 = subtable.getMembershipSet();
         IRowIterator iter1 = memset1.getIterator();
         //Null Exception!!!
-        System.out.println(" printing the double " + column1.asDouble(iter1.getNextRow(), null));
-        System.out.println(" printing the double " + column1.asDouble(iter1.getNextRow(), null));
+        assertNotNull(column1.asDouble(iter1.getNextRow(), null));
+        assertNotNull(column1.asDouble(iter1.getNextRow(), null));
     }
 }

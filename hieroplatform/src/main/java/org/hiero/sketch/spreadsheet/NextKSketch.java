@@ -17,7 +17,7 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
     private final RowSnapshot topRow;
     private final int maxSize;
 
-    public NextKSketch(RecordOrder recordOrder, RowSnapshot topRow, int maxSize) {
+    public NextKSketch(@NonNull RecordOrder recordOrder, @NonNull RowSnapshot topRow, int maxSize) {
         this.recordOrder = recordOrder;
         this.topRow = topRow;
         this.maxSize = maxSize;
@@ -25,11 +25,9 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
 
     /**
      * Given a table, generate the Next K items in Sorted Order starting from a specified
-     * rowSnapShot (topRow).
+     * rowSnapShot (topRow), together with counts.
      * @param data The input table on which we want to compute the NextK list.
-     * @return A Table containing the Next K rows (projected onto the relevant columns), a list
-     * containing counts of how often each rows appeared, the row index of the first row in the
-     * list (starting from 0), and a count of the total number of elements in the Table .
+     * @return A NextKList.
      */
     public NextKList getNextKList(ITable data) {
         IndexComparator comp = this.recordOrder.getComparator(data);
@@ -131,11 +129,12 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
         int width = left.table.getSchema().getColumnCount();
         List<IColumn> mergedCol = new ArrayList<IColumn>(width);
         List<Integer> mergeOrder = this.recordOrder.getIntMergeOrder(left.table, right.table);
-        for (String colName : left.table.getSchema().getColumnNames())
-            mergedCol.add(this.mergeColumns(left.table.getColumn(colName),
-                    right.table.getColumn(colName), mergeOrder));
-        List<Integer> mergedCounts = this.mergeCounts(left.count,
-                right.count, mergeOrder);
+        for (String colName : left.table.getSchema().getColumnNames()) {
+            IColumn newCol = this.mergeColumns(left.table.getColumn(colName),
+                    right.table.getColumn(colName), mergeOrder);
+            mergedCol.add(newCol);
+        }
+        List<Integer> mergedCounts = this.mergeCounts(left.count, right.count, mergeOrder);
         final SmallTable mergedTable = new SmallTable(mergedCol);
         return new NextKList(mergedTable, mergedCounts,
                 left.startPosition + right.startPosition,

@@ -164,12 +164,13 @@ public class QuantileSketch implements ISketch<ITable, QuantileList> {
         if (!left.getSchema().equals(right.getSchema()))
             throw new RuntimeException("The schemas do not match.");
         final int width = left.getSchema().getColumnCount();
-        final int length = left.getQuantileSize() + right.getQuantileSize();
         final List<IColumn> mergedCol = new ArrayList<IColumn>(width);
         final boolean[] mergeLeft = this.colSortOrder.getMergeOrder(left.quantile, right.quantile);
-        for (String colName: left.getSchema().getColumnNames())
-            mergedCol.add(mergeColumns(left.getColumn(colName),
-                    right.getColumn(colName), mergeLeft));
+        for (String colName: left.getSchema().getColumnNames()) {
+            IColumn newCol = mergeColumns(left.getColumn(colName),
+                    right.getColumn(colName), mergeLeft);
+            mergedCol.add(newCol);
+        }
         final SmallTable mergedTable = new SmallTable(mergedCol);
         final QuantileList.WinsAndLosses[] mergedRank = mergeRanks(left, right, mergeLeft);
         final int mergedDataSize = left.getDataSize() + right.getDataSize();

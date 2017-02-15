@@ -51,6 +51,8 @@ public class RowSnapshot implements IRow, Serializable, IJson {
         return this.field.size();
     }
 
+    public boolean isMissing(@NonNull String colName){ return (this.field.get(colName) == null); }
+
     @Override
     public Schema getSchema() {
         return this.schema;
