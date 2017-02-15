@@ -3,7 +3,7 @@ package org.hiero.sketch.spreadsheet;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
-import org.checkerframework.checker.nullness.qual.NonNull;
+import javax.annotation.Nonnull;
 import org.hiero.sketch.dataset.api.IJson;
 import org.hiero.sketch.dataset.api.ISketch;
 import org.hiero.sketch.dataset.api.PartialResult;
@@ -52,21 +52,21 @@ public class SummarySketch implements ISketch<ITable, SummarySketch.TableSummary
         }
     }
 
-    @NonNull
+    @Nonnull
     @Override
     public TableSummary zero() {
         return new TableSummary();
     }
 
-    @NonNull
+    @Nonnull
     @Override
-    public TableSummary add(@NonNull TableSummary left, @NonNull TableSummary right) {
+    public TableSummary add(@Nonnull TableSummary left, @Nonnull TableSummary right) {
         return left.add(right);
     }
 
-    @NonNull
+    @Nonnull
     @Override
-    public Observable<PartialResult<TableSummary>> create(@NonNull ITable data) {
+    public Observable<PartialResult<TableSummary>> create(@Nonnull ITable data) {
         TableSummary ts = new TableSummary(data.getSchema(), data.getNumOfRows());
         return this.pack(ts);
     }

@@ -1,6 +1,6 @@
 package org.hiero.sketch.table;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
+import javax.annotation.Nonnull;
 import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.IDoubleColumn;
 
@@ -12,7 +12,7 @@ import java.security.InvalidParameterException;
 public final class DoubleArrayColumn
         extends BaseArrayColumn
         implements IDoubleColumn {
-    @NonNull
+    @Nonnull
     private final double[] data;
 
     private void validate() {
@@ -20,14 +20,14 @@ public final class DoubleArrayColumn
             throw new InvalidParameterException("Kind should be Double " + this.description.kind);
     }
 
-    public DoubleArrayColumn(@NonNull final ColumnDescription description, final int size) {
+    public DoubleArrayColumn(@Nonnull final ColumnDescription description, final int size) {
         super(description, size);
         this.validate();
         this.data = new double[size];
     }
 
-    public DoubleArrayColumn(@NonNull final ColumnDescription description,
-                             @NonNull final double[] data) {
+    public DoubleArrayColumn(@Nonnull final ColumnDescription description,
+                             @Nonnull final double[] data) {
         super(description, data.length);
         this.validate();
         this.data = data;

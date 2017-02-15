@@ -1,6 +1,6 @@
 package org.hiero.sketch.table.api;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
+import javax.annotation.Nonnull;
 import org.hiero.utils.Randomness;
 import org.hiero.sketch.table.SparseMembership;
 import org.hiero.utils.IntSet;
@@ -48,11 +48,11 @@ public interface IMembershipSet extends IRowOrder {
     /**
      * @return a new map which is the union of current map and otherMap.
      */
-    IMembershipSet union(@NonNull IMembershipSet otherMap);
+    IMembershipSet union(@Nonnull IMembershipSet otherMap);
 
-    IMembershipSet intersection(@NonNull IMembershipSet otherMap);
+    IMembershipSet intersection(@Nonnull IMembershipSet otherMap);
 
-    default IMembershipSet setMinus(@NonNull IMembershipSet otherMap) {
+    default IMembershipSet setMinus(@Nonnull IMembershipSet otherMap) {
         final IntSet setMinusSet = new IntSet();
         final IRowIterator iter = this.getIterator();
         int curr = iter.getNextRow();

@@ -1,6 +1,6 @@
 package org.hiero.sketch.table;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
+import javax.annotation.Nonnull;
 import org.hiero.sketch.spreadsheet.ColumnSortOrientation;
 import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.ISubSchema;
@@ -63,7 +63,7 @@ public class RecordOrder implements Iterable<ColumnSortOrientation> {
      * @param table The Table we wish to sort.
      * @return A Comparator that compares two records based on the RecordOrder specified.
      */
-    public IndexComparator getComparator(@NonNull final ITable table) {
+    public IndexComparator getComparator(@Nonnull final ITable table) {
         final List<IndexComparator> comparatorList = new ArrayList<IndexComparator>();
         for (final ColumnSortOrientation ordCol : this.sortOrientationList) {
             final IColumn nextCol = table.getColumn(ordCol.columnDescription.name);
@@ -83,7 +83,7 @@ public class RecordOrder implements Iterable<ColumnSortOrientation> {
      * @param table The Table we wish to sort.
      * @return A Comparator that compares two rows based on the Sort Order specified.
      */
-    public Integer[] getSortedRowOrder(@NonNull final SmallTable table) {
+    public Integer[] getSortedRowOrder(@Nonnull final SmallTable table) {
         final int size = table.getNumOfRows();
         final Integer[] order = new Integer[size];
         for (int i = 0; i < size; i++) {
@@ -101,7 +101,7 @@ public class RecordOrder implements Iterable<ColumnSortOrientation> {
      * @return A Boolean array where the i^th element is True if the i^th element in merged table
      * comes form the Left.
      */
-    public boolean[] getMergeOrder(@NonNull final SmallTable left, @NonNull final SmallTable right) {
+    public boolean[] getMergeOrder(@Nonnull final SmallTable left, @Nonnull final SmallTable right) {
         if (!left.schema.equals(right.schema)) {
             throw new RuntimeException("Tables do not have matching schemas");
         }
@@ -193,7 +193,7 @@ public class RecordOrder implements Iterable<ColumnSortOrientation> {
      * from. Its i^th element is -1 if the i^th element in merged table
      * comes form the Left, 1 if it comes from the Right, 0 if the two are equal.
      */
-    public List<Integer> getIntMergeOrder(@NonNull SmallTable left, @NonNull SmallTable right) {
+    public List<Integer> getIntMergeOrder(@Nonnull SmallTable left, @Nonnull SmallTable right) {
         if (!left.schema.equals(right.schema)) {
             throw new RuntimeException("Tables do not have matching schemas");
         }

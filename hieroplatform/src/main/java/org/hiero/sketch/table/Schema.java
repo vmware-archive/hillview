@@ -2,11 +2,10 @@ package org.hiero.sketch.table;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
-import org.checkerframework.checker.nullness.qual.NonNull;
+import javax.annotation.Nonnull;
 import org.hiero.sketch.dataset.api.IJson;
 import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.ISubSchema;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
 import java.security.InvalidParameterException;
@@ -18,7 +17,7 @@ import java.util.*;
  */
 public final class Schema
         implements Serializable, IJson {
-    @NonNull
+    @Nonnull
     private final HashMap<String, ColumnDescription> columns;
 
     private final List<String> colOrder;
@@ -28,14 +27,14 @@ public final class Schema
         this.colOrder = new ArrayList<String>();
     }
 
-    public void append(@NonNull final ColumnDescription desc) {
+    public void append(@Nonnull final ColumnDescription desc) {
         if (this.columns.containsKey(desc.name))
             throw new InvalidParameterException("Column with name " + desc.name + " already exists");
         this.columns.put(desc.name, desc);
         this.colOrder.add(desc.name);
     }
 
-    public ColumnDescription getDescription(@NonNull final String columnName) {
+    public ColumnDescription getDescription(@Nonnull final String columnName) {
         return this.columns.get(columnName);
     }
 
@@ -43,8 +42,7 @@ public final class Schema
         return this.columns.size();
     }
 
-    @NotNull
-    @NonNull
+    @Nonnull
     public List<String> getColumnNames() {
         return this.colOrder;
     }
@@ -52,8 +50,8 @@ public final class Schema
     /**
      * Generates a new Schema that contains only the subset of columns contained in the subSchema.
      */
-    @NonNull
-    public Schema project(@NonNull final ISubSchema subSchema) {
+    @Nonnull
+    public Schema project(@Nonnull final ISubSchema subSchema) {
         final Schema projection = new Schema();
         for (String colName : this.getColumnNames()) {
             if (subSchema.isColumnPresent(colName)) {
@@ -64,7 +62,7 @@ public final class Schema
     }
 
     @Override
-    @NonNull
+    @Nonnull
     public String toString() {
         String result = "";
         String separator = "";
@@ -88,13 +86,13 @@ public final class Schema
         return this.columns.hashCode();
     }
 
-    @NonNull
+    @Nonnull
     public ContentsKind getKind(final String colName){
         return this.getDescription(colName).kind;
     }
 
     // The columns will be sorted by the order prescribed by the List colOrder
-    @NonNull
+    @Nonnull
     private ColumnDescription[] toArray() {
         ColumnDescription[] all = new ColumnDescription[this.columns.size()];
         int i = 0;
@@ -106,7 +104,7 @@ public final class Schema
     }
 
     @Override
-    @NonNull
+    @Nonnull
     public JsonElement toJsonTree() {
         ColumnDescription[] all = this.toArray();
         JsonArray result = new JsonArray();

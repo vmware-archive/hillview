@@ -1,6 +1,6 @@
 package org.hiero.sketch.table;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
+import javax.annotation.Nonnull;
 import org.hiero.sketch.table.api.IStringConverter;
 import org.hiero.sketch.table.api.IndexComparator;
 
@@ -11,15 +11,15 @@ import java.time.LocalDateTime;
  * Column of objects of any type; only for moving data around. Size of column expected to be small.
  */
 public final class ObjectArrayColumn extends BaseArrayColumn {
-    @NonNull private final Object[] data;
+    @Nonnull private final Object[] data;
 
-    public ObjectArrayColumn(@NonNull final ColumnDescription description, final int size) {
+    public ObjectArrayColumn(@Nonnull final ColumnDescription description, final int size) {
         super(description, size);
         this.data = new Object[size];
     }
 
-    public ObjectArrayColumn(@NonNull final ColumnDescription description,
-                             @NonNull final Object[] data) {
+    public ObjectArrayColumn(@Nonnull final ColumnDescription description,
+                             @Nonnull final Object[] data) {
         super(description, data.length);
         this.data = data;
     }
@@ -28,7 +28,7 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
     public int sizeInRows() { return this.data.length; }
 
     @Override
-    public double asDouble(final int rowIndex, @NonNull final IStringConverter converter) {
+    public double asDouble(final int rowIndex, @Nonnull final IStringConverter converter) {
         switch (ObjectArrayColumn.this.description.kind) {
             case String:
                 return converter.asDouble(this.getString(rowIndex));

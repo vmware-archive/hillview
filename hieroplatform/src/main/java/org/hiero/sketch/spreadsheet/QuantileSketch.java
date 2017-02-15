@@ -1,6 +1,6 @@
 package org.hiero.sketch.spreadsheet;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
+import javax.annotation.Nonnull;
 import org.hiero.sketch.dataset.api.ISketch;
 import org.hiero.sketch.dataset.api.PartialResult;
 import org.hiero.sketch.table.*;
@@ -92,9 +92,9 @@ public class QuantileSketch implements ISketch<ITable, QuantileList> {
      * @param mergeLeft The order in which to merge the two columns.
      * @return The merged column.
      */
-    private ObjectArrayColumn mergeColumns(@NonNull final IColumn left,
-                                           @NonNull final IColumn right,
-                                           @NonNull final boolean[] mergeLeft) {
+    private ObjectArrayColumn mergeColumns(@Nonnull final IColumn left,
+                                           @Nonnull final IColumn right,
+                                           @Nonnull final boolean[] mergeLeft) {
         if (mergeLeft.length != (left.sizeInRows() + right.sizeInRows())) {
             throw new InvalidParameterException("Length of mergeOrder must equal " +
                     "sum of lengths of the columns");
@@ -123,9 +123,9 @@ public class QuantileSketch implements ISketch<ITable, QuantileList> {
      * @param mergeLeft The order in which to merge the two columns.
      * @return The ApproxRanks (wins and losses) for elements in the merged QuantileList.
      */
-    private QuantileList.WinsAndLosses[] mergeRanks(@NonNull final QuantileList left,
-                                                    @NonNull final QuantileList right,
-                                                    @NonNull final boolean[] mergeLeft) {
+    private QuantileList.WinsAndLosses[] mergeRanks(@Nonnull final QuantileList left,
+                                                    @Nonnull final QuantileList right,
+                                                    @Nonnull final boolean[] mergeLeft) {
         final int length = left.getQuantileSize() + right.getQuantileSize();
         final QuantileList.WinsAndLosses[] mergedRank = new QuantileList.WinsAndLosses[length];
         int i = 0, j = 0, lower, upper;
@@ -160,7 +160,7 @@ public class QuantileSketch implements ISketch<ITable, QuantileList> {
      * @return The merged Quantile
      */
     @Override
-    public QuantileList add(@NonNull final QuantileList left, @NonNull final QuantileList right) {
+    public QuantileList add(@Nonnull final QuantileList left, @Nonnull final QuantileList right) {
         if (!left.getSchema().equals(right.getSchema()))
             throw new RuntimeException("The schemas do not match.");
         final int width = left.getSchema().getColumnCount();

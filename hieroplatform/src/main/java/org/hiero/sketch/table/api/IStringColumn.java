@@ -1,10 +1,10 @@
 package org.hiero.sketch.table.api;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
+import javax.annotation.Nonnull;
 
 public interface IStringColumn extends IColumn {
     @Override
-    default double asDouble(final int rowIndex, @NonNull final IStringConverter conv) {
+    default double asDouble(final int rowIndex, @Nonnull final IStringConverter conv) {
         if (isMissing(rowIndex))
             throw new MissingException(this, rowIndex);
         final String tmp = this.getString(rowIndex);
