@@ -92,7 +92,7 @@ public class HistogramTest {
         basicTest2DHeavy(hist3, (int) (colSize * 0.2));
     }
 
-    private void basicTest2DHeavy(Histogram2DHeavy hist, long expectedSize){
+    public static void basicTest2DHeavy(Histogram2DHeavy hist, long expectedSize){
         long size = 0;
         long size1 = 0;
         long size2 = 0;
@@ -132,7 +132,7 @@ public class HistogramTest {
         basicTestHeatMap(hm2, (long) (1.2 * colSize));
     }
 
-    private void basicTestHeatMap(HeatMap hist, long expectedSize) {
+    public static void basicTestHeatMap(HeatMap hist, long expectedSize) {
         long size = 0;
         long size1 = 0;
         long size2 = 0;

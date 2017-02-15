@@ -65,6 +65,8 @@ public interface IMembershipSet extends IRowOrder {
     }
 
     default int getSampleSize(double rate, long seed, boolean useSeed) {
+        if (rate >= 1)
+            return this.getSize();
         Randomness r = Randomness.getInstance();
         if (useSeed)
             r.setSeed(seed);

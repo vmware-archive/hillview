@@ -154,7 +154,6 @@ public class IntSet {
      * Uses the class Randomness to sample k items without replacement. If k > size returns the
      * the entire set.
      * @param k the number of items to be sampled
-     * @param seed
      * @return an IntSet of the sample
      */
     public IntSet sample(final int k, final long seed, final boolean useSeed) {

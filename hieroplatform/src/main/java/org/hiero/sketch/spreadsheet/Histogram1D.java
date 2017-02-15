@@ -1,44 +1,31 @@
 package org.hiero.sketch.spreadsheet;
-
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
 import org.hiero.sketch.table.api.IStringConverter;
 
-
 /**
  * One Dimensional histogram. Does not contain the column and membershipMap
  */
-public class Histogram1D {
-
+public class Histogram1D extends BaseHist1D {
     private final Bucket1D[] buckets;
     private long missingData;
     private long outOfRange;
-    private final IBucketsDescription1D bucketDescription;
     private boolean initialized;
 
     public Histogram1D(final @NonNull IBucketsDescription1D bucketDescription) {
-        this.bucketDescription = bucketDescription;
+        super(bucketDescription);
         this.buckets = new Bucket1D[bucketDescription.getNumOfBuckets()];
         for (int i = 0; i < this.bucketDescription.getNumOfBuckets(); i++)
             this.buckets[i] = new Bucket1D();
         this.initialized = false;
     }
 
-    public void createSampleHistogram(final IColumn column, final IMembershipSet membershipSet,
-                                       final IStringConverter converter, double sampleRate) {
-        this.createHistogram(column, membershipSet.sample(sampleRate), converter);
-    }
-
-    public void createSampleHistogram(final IColumn column, final IMembershipSet membershipSet,
-                                      final IStringConverter converter, double sampleRate, long seed) {
-        this.createHistogram(column, membershipSet.sample(sampleRate, seed), converter);
-    }
-
     /**
      * Creates the histogram explicitly and in full. Should be called at most once.
      */
+    @Override
     public void createHistogram(final IColumn column, final IMembershipSet membershipSet,
                                 final IStringConverter converter ) {
         if (this.initialized) //a histogram had already been created
@@ -67,8 +54,6 @@ public class Histogram1D {
         else this.outOfRange++;
     }
 
-    public int getNumOfBuckets() { return this.bucketDescription.getNumOfBuckets(); }
-
     public long getMissingData() { return this.missingData; }
 
     public long getOutOfRange() { return this.outOfRange; }
@@ -76,13 +61,13 @@ public class Histogram1D {
     /**
      * @return the index's bucket or exception if doesn't exist.
      */
-    public Bucket1D getBucket(final int index) { return this.buckets[index]; }
+    public @NonNull Bucket1D getBucket(final int index) { return this.buckets[index]; }
 
     /**
      * @param  otherHistogram with the same bucketDescription
      * @return a new Histogram which is the union of this and otherHistogram
      */
-    public Histogram1D union( @NonNull Histogram1D otherHistogram) {
+    public @NonNull Histogram1D union( @NonNull Histogram1D otherHistogram) {
         if (!this.bucketDescription.equals(otherHistogram.bucketDescription))
             throw new IllegalArgumentException("Histogram union without matching buckets");
         Histogram1D unionH = new Histogram1D(this.bucketDescription);
