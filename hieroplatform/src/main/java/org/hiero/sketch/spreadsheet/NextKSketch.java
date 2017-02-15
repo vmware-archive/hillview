@@ -33,7 +33,7 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
         IndexComparator comp = this.recordOrder.getComparator(data);
         TreeTopK<Integer> topK = new TreeTopK<Integer>(this.maxSize, comp);
         IRowIterator rowIt = data.getRowIterator();
-        RowToTable rowToTable = new RowToTable(this.topRow, data, this.recordOrder);
+        RowTableComparison rowToTable = new RowTableComparison(this.topRow, data, this.recordOrder);
         int i, position = 0;
         do {
             i = rowIt.getNextRow();

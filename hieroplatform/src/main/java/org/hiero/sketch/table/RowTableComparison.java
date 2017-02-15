@@ -12,12 +12,12 @@ import java.util.Iterator;
  * This method is used to generate the NextK items in some order starting at a prescribed row by
  * NextKSketch.
  */
-public class RowToTable {
+public class RowTableComparison {
     private final RowSnapshot topRow;
     private final ITable table;
     private final RecordOrder recordOrder;
 
-    public RowToTable(RowSnapshot topRow, ITable table, RecordOrder recordOrder ) {
+    public RowTableComparison(RowSnapshot topRow, ITable table, RecordOrder recordOrder ) {
         this.topRow = topRow;
         this.table = table;
         this.recordOrder = recordOrder;
