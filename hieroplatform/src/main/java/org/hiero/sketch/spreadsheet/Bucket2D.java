@@ -1,6 +1,6 @@
 package org.hiero.sketch.spreadsheet;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
+import javax.annotation.Nonnull;
 
 public class Bucket2D {
 
@@ -38,8 +38,8 @@ public class Bucket2D {
 
     public long getCount() { return this.count; }
 
-    public void add(final double val1, @NonNull final Object currObject1,
-                    final double val2, @NonNull final Object currObject2) {
+    public void add(final double val1, @Nonnull final Object currObject1,
+                    final double val2, @Nonnull final Object currObject2) {
         this.bucket1.add(val1, currObject1);
         this.bucket2.add(val2, currObject2);
         this.count++;
@@ -51,7 +51,7 @@ public class Bucket2D {
      * @return A bucket with the union count of the two buckets and the min/max updated accordingly. Procedure allows
      * both buckets to have objects of different types.
      */
-    public Bucket2D union(@NonNull final Bucket2D otherBucket) {
+    public Bucket2D union(@Nonnull final Bucket2D otherBucket) {
         long ucount = this.count + otherBucket.count;
         Bucket1D uBucket1 = this.bucket1.union(otherBucket.bucket1);
         Bucket1D uBucket2 = this.bucket2.union(otherBucket.bucket2);

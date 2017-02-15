@@ -1,15 +1,15 @@
 package org.hiero.sketch.table;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.table.api.IndexComparator;
 
+import javax.annotation.Nonnull;
 import java.util.List;
 
 public class ListComparator extends IndexComparator {
-    @NonNull
+    @Nonnull
     private final List<IndexComparator> comparatorList;
 
-    public ListComparator(@NonNull final List<IndexComparator> comparatorList) {
+    public ListComparator(@Nonnull final List<IndexComparator> comparatorList) {
         this.comparatorList = comparatorList;
     }
 

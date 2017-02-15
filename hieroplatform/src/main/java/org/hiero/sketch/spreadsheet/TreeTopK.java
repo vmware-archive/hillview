@@ -1,5 +1,5 @@
 package org.hiero.sketch.spreadsheet;
-import org.checkerframework.checker.nullness.qual.NonNull;
+import javax.annotation.Nonnull;
 
 import java.util.Comparator;
 import java.util.SortedMap;
@@ -11,11 +11,11 @@ import java.util.TreeMap;
 public class TreeTopK<T> implements ITopK<T> {
     private final int maxSize;
     private int size;
-    @NonNull private final SortedMap<T, Integer> data;
+    @Nonnull private final SortedMap<T, Integer> data;
     private T cutoff; /* max value that currently belongs to Top K. */
-    @NonNull private final Comparator<T> greater;
+    @Nonnull private final Comparator<T> greater;
 
-    public TreeTopK(final int maxSize, @NonNull final Comparator<T> greater) {
+    public TreeTopK(final int maxSize, @Nonnull final Comparator<T> greater) {
         this.maxSize = maxSize;
         this.size = 0;
         this.greater = greater;

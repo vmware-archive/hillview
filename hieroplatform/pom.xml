@@ -75,29 +75,6 @@
             <artifactId>commons-lang</artifactId>
             <version>2.1</version>
         </dependency>
-        <!-- Checker Framework: used for annotations such as @NonNull -->
-        <dependency>
-            <groupId>org.checkerframework</groupId>
-            <artifactId>checker-qual</artifactId>
-            <version>2.1.5</version>
-        </dependency>
-        <dependency>
-            <groupId>org.checkerframework</groupId>
-            <artifactId>checker</artifactId>
-            <version>2.1.5</version>
-        </dependency>
-        <!-- The type annotations compiler - uncomment if desired -->
-        <!-- <dependency>
-            <groupId>org.checkerframework</groupId>
-            <artifactId>compiler</artifactId>
-            <version>2.1.5</version>
-        </dependency> -->
-        <!-- The annotated JDK to use for the checker framework (change to jdk7 if using Java 7) -->
-        <dependency>
-            <groupId>org.checkerframework</groupId>
-            <artifactId>jdk8</artifactId>
-            <version>2.1.5</version>
-        </dependency>
         <dependency>
              <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
@@ -107,6 +84,12 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math3</artifactId>
             <version>3.6.1</version>
+        </dependency>
+        <!-- JSR-305 annotations -->
+        <dependency>
+            <groupId>com.google.code.findbugs</groupId>
+            <artifactId>jsr305</artifactId>
+            <version>3.0.1</version>
         </dependency>
     </dependencies>
 

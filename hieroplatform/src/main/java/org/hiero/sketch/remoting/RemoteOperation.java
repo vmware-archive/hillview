@@ -1,7 +1,6 @@
 package org.hiero.sketch.remoting;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
-
+import javax.annotation.Nonnull;
 import java.io.Serializable;
 import java.util.UUID;
 
@@ -9,6 +8,6 @@ import java.util.UUID;
  * Base type for remote operations with a unique ID
  */
 class RemoteOperation implements Serializable {
-    @NonNull
+    @Nonnull
     public final UUID id = UUID.randomUUID();
 }

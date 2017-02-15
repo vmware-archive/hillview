@@ -1,6 +1,6 @@
 package org.hiero.sketch.table.api;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
+import javax.annotation.Nonnull;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -16,12 +16,12 @@ class Converters {
             LocalDate.of(1970, 1, 1),
             LocalTime.of(0, 0));
 
-    public static double toDouble(@NonNull final LocalDateTime d) {
+    public static double toDouble(@Nonnull final LocalDateTime d) {
         Duration span = Duration.between(d, baseTime);
         return Converters.toDouble(span);
     }
 
-    public static double toDouble(@NonNull final Duration d) {
+    public static double toDouble(@Nonnull final Duration d) {
         return d.toNanos();
     }
 

@@ -1,5 +1,5 @@
 package org.hiero.sketch.spreadsheet;
-import org.checkerframework.checker.nullness.qual.NonNull;
+import javax.annotation.Nonnull;
 import org.hiero.sketch.dataset.api.ISketch;
 import org.hiero.sketch.dataset.api.PartialResult;
 import org.hiero.sketch.table.api.IStringConverter;
@@ -39,7 +39,7 @@ public class HeatMapSketch implements ISketch<ITable, HeatMap> {
         this.rate = rate;
     }
 
-    public HeatMap getHistogram(@NonNull final ITable data) {
+    public HeatMap getHistogram(@Nonnull final ITable data) {
         HeatMap result = this.zero();
         result.createHistogram(data.getColumn(this.colNameD1), data.getColumn(this.colNameD2),
                 this.converterD1, this.converterD2, data.getMembershipSet().sample(this.rate));
@@ -47,17 +47,17 @@ public class HeatMapSketch implements ISketch<ITable, HeatMap> {
     }
 
     @Override
-    public @NonNull HeatMap zero() {
+    public @Nonnull HeatMap zero() {
         return new HeatMap(this.bucketDescD1, this.bucketDescD2);
     }
 
     @Override
-    public @NonNull HeatMap add(@NonNull final HeatMap left, @NonNull final HeatMap right) {
+    public @Nonnull HeatMap add(@Nonnull final HeatMap left, @Nonnull final HeatMap right) {
         return left.union(right);
     }
 
     @Override
-    public @NonNull Observable<PartialResult<HeatMap>> create(final ITable data) {
+    public @Nonnull Observable<PartialResult<HeatMap>> create(final ITable data) {
         HeatMap hist = this.getHistogram(data);
         PartialResult<HeatMap> result = new PartialResult<>(1.0, hist);
         return Observable.just(result);

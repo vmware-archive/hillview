@@ -1,9 +1,10 @@
 package org.hiero.sketch.spreadsheet;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IStringConverter;
+
+import javax.annotation.Nonnull;
 
 /**
  * Abstract class for a one dimensional histogram. Derived classes mainly vary in the way they
@@ -13,7 +14,7 @@ import org.hiero.sketch.table.api.IStringConverter;
 public abstract class BaseHist1D implements IHistogram1D {
     final protected IBucketsDescription1D bucketDescription;
 
-    public BaseHist1D(final @NonNull IBucketsDescription1D bucketDescription) {
+    public BaseHist1D(final @Nonnull IBucketsDescription1D bucketDescription) {
         this.bucketDescription = bucketDescription;
     }
 

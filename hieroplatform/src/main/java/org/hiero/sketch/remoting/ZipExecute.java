@@ -1,9 +1,9 @@
 package org.hiero.sketch.remoting;
 
 import akka.actor.ActorRef;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.dataset.api.IDataSet;
 
+import javax.annotation.Nonnull;
 import java.io.Serializable;
 
 /**
@@ -13,16 +13,16 @@ import java.io.Serializable;
  * Triggered by a ZipOperation at a remote actor pointing a data-set.
  */
 class ZipExecute implements Serializable{
-    @NonNull
+    @Nonnull
     final ZipOperation zipOp;
-    @NonNull
+    @Nonnull
     final IDataSet dataSet;
-    @NonNull
+    @Nonnull
     final ActorRef clientActor;
 
-    ZipExecute(@NonNull final ZipOperation zipOperation,
-               @NonNull final IDataSet dataSet,
-               @NonNull final ActorRef sourceActor) {
+    ZipExecute(@Nonnull final ZipOperation zipOperation,
+               @Nonnull final IDataSet dataSet,
+               @Nonnull final ActorRef sourceActor) {
         this.zipOp = zipOperation;
         this.dataSet = dataSet;
         this.clientActor = sourceActor;
