@@ -1,7 +1,6 @@
 package org.hiero.sketch.remoting;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
-
+import javax.annotation.Nonnull;
 import java.io.Serializable;
 import java.util.UUID;
 
@@ -9,10 +8,10 @@ import java.util.UUID;
  * Unsubscribe to a remote Map/Sketch operation
  */
 class UnsubscribeOperation implements Serializable {
-    @NonNull
+    @Nonnull
     public final UUID id;
 
-    public UnsubscribeOperation(@NonNull final UUID id) {
+    public UnsubscribeOperation(@Nonnull final UUID id) {
         this.id = id;
     }
 }

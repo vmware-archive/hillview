@@ -3,7 +3,7 @@ package org.hiero.sketch.spreadsheet;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import org.checkerframework.checker.nullness.qual.NonNull;
+import javax.annotation.Nonnull;
 import org.hiero.sketch.table.RowSnapshot;
 import org.hiero.sketch.table.Schema;
 import org.hiero.sketch.table.SmallTable;
@@ -53,7 +53,7 @@ public class NextKList implements Serializable, IJson {
         this.totalRows = 0;
     }
 
-    @NonNull
+    @Nonnull
     public String toLongString(int rowsToDisplay) {
         final StringBuilder builder = new StringBuilder();
         builder.append(this.toString());
@@ -71,7 +71,7 @@ public class NextKList implements Serializable, IJson {
         return builder.toString();
     }
 
-    @NonNull
+    @Nonnull
     @Override
     public JsonElement toJsonTree() {
         JsonObject result = new JsonObject();

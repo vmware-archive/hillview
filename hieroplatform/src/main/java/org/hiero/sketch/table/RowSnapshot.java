@@ -1,11 +1,11 @@
 package org.hiero.sketch.table;
 
 import com.google.gson.JsonElement;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.dataset.api.IJson;
 import org.hiero.sketch.table.api.IRow;
 import org.hiero.sketch.table.api.ITable;
 
+import javax.annotation.Nonnull;
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -16,15 +16,15 @@ import java.util.HashMap;
  * This is quite inefficient, it should be used rarely.
  */
 public class RowSnapshot implements IRow, Serializable, IJson {
-    @NonNull
+    @Nonnull
     protected final Schema schema;
     /**
      * Maps a column name to a value.
      */
-    @NonNull
+    @Nonnull
     private final HashMap<String, Object> field = new HashMap<String, Object>();
 
-    public RowSnapshot(@NonNull final ITable data, final int rowIndex) {
+    public RowSnapshot(@Nonnull final ITable data, final int rowIndex) {
         this.schema = data.getSchema();
         for (final String colName : this.schema.getColumnNames())
             this.field.put(colName, data.getColumn(colName).getObject(rowIndex));
@@ -51,7 +51,7 @@ public class RowSnapshot implements IRow, Serializable, IJson {
         return this.field.size();
     }
 
-    public boolean isMissing(@NonNull String colName){ return (this.field.get(colName) == null); }
+    public boolean isMissing(@Nonnull String colName){ return (this.field.get(colName) == null); }
 
     @Override
     public Schema getSchema() {
@@ -59,27 +59,27 @@ public class RowSnapshot implements IRow, Serializable, IJson {
     }
 
     @Override
-    public Object get(@NonNull String colName) {
+    public Object get(@Nonnull String colName) {
         return this.field.get(colName);
     }
 
-    public String getString(@NonNull String colName) {
+    public String getString(@Nonnull String colName) {
         return (String) this.field.get(colName);
     }
 
-    public Integer getInt(@NonNull String colName) {
+    public Integer getInt(@Nonnull String colName) {
         return (Integer) this.field.get(colName);
     }
 
-    public Double getDouble(@NonNull String colName) {
+    public Double getDouble(@Nonnull String colName) {
         return (Double) this.field.get(colName);
     }
 
-    public LocalDateTime getDate(@NonNull String colName) {
+    public LocalDateTime getDate(@Nonnull String colName) {
         return (LocalDateTime) this.field.get(colName);
     }
 
-    public Duration getDuration(@NonNull String colName) {
+    public Duration getDuration(@Nonnull String colName) {
         return (Duration) this.field.get(colName);
     }
 

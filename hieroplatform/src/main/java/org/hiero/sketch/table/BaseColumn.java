@@ -1,8 +1,8 @@
 package org.hiero.sketch.table;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.table.api.IColumn;
 
+import javax.annotation.Nonnull;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
@@ -10,13 +10,14 @@ import java.time.LocalDateTime;
  * Base class for all columns.
  */
 abstract class BaseColumn implements IColumn {
-    @NonNull
+    @Nonnull
     final ColumnDescription description;
 
-    BaseColumn(final ColumnDescription description) {
+    BaseColumn(@Nonnull final ColumnDescription description) {
         this.description = description;
     }
 
+    @Nonnull
     @Override
     public ColumnDescription getDescription() {
         return this.description;

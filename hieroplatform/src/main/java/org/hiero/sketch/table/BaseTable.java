@@ -1,6 +1,6 @@
 package org.hiero.sketch.table;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
+import javax.annotation.Nonnull;
 import org.hiero.sketch.table.api.*;
 
 import java.util.ArrayList;
@@ -14,24 +14,24 @@ public abstract class BaseTable implements ITable {
     /**
      * Maps columns name to an IColumn.
      */
-    @NonNull
+    @Nonnull
     protected final HashMap<String, IColumn> columns;
 
     /**
      * @return An iterator over the rows in the table.
      */
-    @Override@NonNull public IRowIterator getRowIterator() {
+    @Override@Nonnull public IRowIterator getRowIterator() {
         return this.getMembershipSet().getIterator();
     }
 
-    protected BaseTable(@NonNull Iterable<IColumn> columns) {
+    protected BaseTable(@Nonnull Iterable<IColumn> columns) {
         BaseTable.columnSize(columns);  // validate column sizes
         this.columns = new HashMap<String, IColumn>();
         for (final IColumn c : columns)
             this.columns.put(c.getName(), c);
     }
 
-    protected BaseTable(@NonNull Schema schema) {
+    protected BaseTable(@Nonnull Schema schema) {
         this.columns = new HashMap<String, IColumn>();
         for (final String c : schema.getColumnNames()) {
             ColumnDescription cd = schema.getDescription(c);
@@ -73,8 +73,8 @@ public abstract class BaseTable implements ITable {
      * and only the rows contained in IMembership Set with consecutive numbering.
      * The order among the columns is preserved.
      */
-    @Override public SmallTable compress(@NonNull final ISubSchema subSchema,
-                                         @NonNull final IRowOrder rowOrder) {
+    @Override public SmallTable compress(@Nonnull final ISubSchema subSchema,
+                                         @Nonnull final IRowOrder rowOrder) {
         Schema newSchema = this.getSchema().project(subSchema);
         List<IColumn> compressedCols = new ArrayList<IColumn>();
         for (String colName: newSchema.getColumnNames())

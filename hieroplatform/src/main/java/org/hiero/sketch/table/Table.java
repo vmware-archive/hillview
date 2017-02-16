@@ -1,6 +1,6 @@
 package org.hiero.sketch.table;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
+import javax.annotation.Nonnull;
 import org.hiero.sketch.table.api.*;
 
 import java.util.Arrays;
@@ -9,23 +9,23 @@ import java.util.Arrays;
  * This is a simple table held entirely in RAM.
  */
 public class Table extends BaseTable {
-    @NonNull
+    @Nonnull
     protected final Schema schema;
 
-    @NonNull
+    @Nonnull
     protected final IMembershipSet members;
 
     /**
      * Create an empty table with the specified schema.
      * @param schema schema of the empty table
      */
-    public Table(@NonNull final Schema schema) {
+    public Table(@Nonnull final Schema schema) {
         super(schema);
         this.schema = schema;
         this.members = new FullMembership(0);
     }
 
-    public Table(@NonNull final Iterable<IColumn> columns, @NonNull final IMembershipSet members) {
+    public Table(@Nonnull final Iterable<IColumn> columns, @Nonnull final IMembershipSet members) {
         super(columns);
         final Schema s = new Schema();
         for (final IColumn c : columns)
@@ -47,10 +47,10 @@ public class Table extends BaseTable {
     /**
      * Describes the set of rows that are really present in the table.
      */
-    @Override @NonNull
+    @Override @Nonnull
     public IMembershipSet getMembershipSet() { return this.members; }
 
-    public Table(@NonNull final Iterable<IColumn> columns) {
+    public Table(@Nonnull final Iterable<IColumn> columns) {
         this(columns, new FullMembership(columnSize(columns)));
     }
 

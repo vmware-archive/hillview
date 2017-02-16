@@ -1,6 +1,6 @@
 package org.hiero.sketch.dataset.api;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
+import javax.annotation.Nonnull;
 import rx.Observable;
 
 /**
@@ -18,31 +18,31 @@ public interface IDataSet<T> {
      * @return        A stream of partial results (all IDataSet[S]), only one of which should really
      *                be the actual result.  All the other ones should be null.
      */
-    <S> Observable<PartialResult<IDataSet<S>>> map(@NonNull IMap<T, S> mapper);
+    <S> Observable<PartialResult<IDataSet<S>>> map(@Nonnull IMap<T, S> mapper);
 
-    <R> Observable<PartialResult<R>> sketch(@NonNull ISketch<T, R> sketch);
+    <R> Observable<PartialResult<R>> sketch(@Nonnull ISketch<T, R> sketch);
 
-    <S> Observable<PartialResult<IDataSet<Pair<T, S>>>> zip(@NonNull IDataSet<S> other);
+    <S> Observable<PartialResult<IDataSet<Pair<T, S>>>> zip(@Nonnull IDataSet<S> other);
 
-    static <R> Observable<R> getValues(@NonNull final Observable<PartialResult<R>> results) {
+    static <R> Observable<R> getValues(@Nonnull final Observable<PartialResult<R>> results) {
         return results.map(e -> e.deltaValue);
     }
 
     static <R> Observable<PartialResult<R>> reducePR(
-            @NonNull final Observable<PartialResult<R>> results,
-            @NonNull final IMonoid<PartialResult<R>> monoid) {
+            @Nonnull final Observable<PartialResult<R>> results,
+            @Nonnull final IMonoid<PartialResult<R>> monoid) {
         return results.reduce(monoid.zero(), monoid::add);
     }
 
     static <R> Observable<R> reduce(
-            @NonNull final Observable<PartialResult<R>> results,
-            @NonNull final IMonoid<R> monoid) {
+            @Nonnull final Observable<PartialResult<R>> results,
+            @Nonnull final IMonoid<R> monoid) {
         final PartialResultMonoid<R> mono = new PartialResultMonoid<R>(monoid);
         return getValues(reducePR(results, mono));
     }
 
     static <S> Observable<IDataSet<S>> reduce(
-            @NonNull final Observable<PartialResult<IDataSet<S>>> results) {
+            @Nonnull final Observable<PartialResult<IDataSet<S>>> results) {
         final IMonoid<PartialResult<IDataSet<S>>> mono = new PRDataSetMonoid<S>();
         return getValues(reducePR(results, mono));
     }
@@ -53,30 +53,30 @@ public interface IDataSet<T> {
      * @param <S>     Type of data in the result.
      * @return   An observable with a single element.
      */
-    default <S> Observable<IDataSet<S>> singleMap(@NonNull final IMap<T, S> mapper) {
+    default <S> Observable<IDataSet<S>> singleMap(@Nonnull final IMap<T, S> mapper) {
         return reduce(this.map(mapper));
     }
 
-    default <S> Observable<IDataSet<Pair<T, S>>> singleZip(@NonNull final IDataSet<S> other) {
+    default <S> Observable<IDataSet<Pair<T, S>>> singleZip(@Nonnull final IDataSet<S> other) {
         return reduce(this.zip(other));
     }
 
-    default <R> Observable<R> singleSketch(@NonNull final ISketch<T, R> sketch) {
+    default <R> Observable<R> singleSketch(@Nonnull final ISketch<T, R> sketch) {
         return reduce(this.sketch(sketch), sketch);
     }
 
     /*
      * The blocking methods should be used only for testing.
      */
-    default <S> IDataSet<S> blockingMap(@NonNull final IMap<T, S> mapper) {
+    default <S> IDataSet<S> blockingMap(@Nonnull final IMap<T, S> mapper) {
         return this.singleMap(mapper).toBlocking().single();
     }
 
-    default <S> IDataSet<Pair<T, S>> blockingZip(@NonNull final IDataSet<S> other) {
+    default <S> IDataSet<Pair<T, S>> blockingZip(@Nonnull final IDataSet<S> other) {
         return this.singleZip(other).toBlocking().single();
     }
 
-    default <R> R blockingSketch(@NonNull final ISketch<T, R> sketch) {
+    default <R> R blockingSketch(@Nonnull final ISketch<T, R> sketch) {
         return this.singleSketch(sketch).toBlocking().single();
     }
 }

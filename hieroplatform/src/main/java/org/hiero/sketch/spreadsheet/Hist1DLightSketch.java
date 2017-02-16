@@ -1,5 +1,5 @@
 package org.hiero.sketch.spreadsheet;
-import org.checkerframework.checker.nullness.qual.NonNull;
+import javax.annotation.Nonnull;
 import org.hiero.sketch.dataset.api.ISketch;
 import org.hiero.sketch.dataset.api.PartialResult;
 import org.hiero.sketch.table.api.IStringConverter;
@@ -27,7 +27,7 @@ public class Hist1DLightSketch implements ISketch<ITable, Histogram1DLight> {
         this.rate = rate;
     }
 
-    public Histogram1DLight getHistogram(@NonNull final ITable data) {
+    public Histogram1DLight getHistogram(@Nonnull final ITable data) {
         Histogram1DLight result = this.zero();
         result.createHistogram(data.getColumn(this.colName),
                     data.getMembershipSet().sample(this.rate), this.converter);
@@ -35,18 +35,18 @@ public class Hist1DLightSketch implements ISketch<ITable, Histogram1DLight> {
     }
 
     @Override
-    public @NonNull Histogram1DLight add(@NonNull final Histogram1DLight left,
-                                @NonNull final Histogram1DLight right) {
+    public @Nonnull Histogram1DLight add(@Nonnull final Histogram1DLight left,
+                                @Nonnull final Histogram1DLight right) {
         return left.union(right);
     }
 
     @Override
-    public @NonNull Histogram1DLight zero() {
+    public @Nonnull Histogram1DLight zero() {
         return new Histogram1DLight(this.bucketDesc);
     }
 
     @Override
-    public @NonNull Observable<PartialResult<Histogram1DLight>> create(final ITable data) {
+    public @Nonnull Observable<PartialResult<Histogram1DLight>> create(final ITable data) {
         Histogram1DLight hist = this.getHistogram(data);
         PartialResult<Histogram1DLight> result = new PartialResult<>(1.0, hist);
         return Observable.just(result);

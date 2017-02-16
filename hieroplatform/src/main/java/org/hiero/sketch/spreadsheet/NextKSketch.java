@@ -1,23 +1,23 @@
 package org.hiero.sketch.spreadsheet;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.dataset.api.ISketch;
 import org.hiero.sketch.dataset.api.PartialResult;
 import org.hiero.sketch.table.*;
 import org.hiero.sketch.table.api.*;
 import rx.Observable;
 
+import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedMap;
 
 public class NextKSketch implements ISketch<ITable, NextKList> {
-    @NonNull
+    @Nonnull
     private final RecordOrder recordOrder;
     private final RowSnapshot topRow;
     private final int maxSize;
 
-    public NextKSketch(@NonNull RecordOrder recordOrder, @NonNull RowSnapshot topRow, int maxSize) {
+    public NextKSketch(@Nonnull RecordOrder recordOrder, @Nonnull RowSnapshot topRow, int maxSize) {
         this.recordOrder = recordOrder;
         this.topRow = topRow;
         this.maxSize = maxSize;
@@ -62,9 +62,9 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
      * @param mergeOrder The order in which to merge the two columns.
      * @return The merged column.
      */
-    private ObjectArrayColumn mergeColumns(@NonNull final IColumn left,
-                                           @NonNull final IColumn right,
-                                           @NonNull final List<Integer> mergeOrder) {
+    private ObjectArrayColumn mergeColumns(@Nonnull final IColumn left,
+                                           @Nonnull final IColumn right,
+                                           @Nonnull final List<Integer> mergeOrder) {
         final int size = Math.min(this.maxSize, mergeOrder.size());
         final ObjectArrayColumn merged = new ObjectArrayColumn(left.getDescription(), size);
         int i = 0, j = 0, k = 0;
@@ -93,9 +93,9 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
      * @param mergeOrder The order in which to merge the two columns.
      * @return The merged counts.
      */
-    private List<Integer> mergeCounts(@NonNull final List<Integer> left,
-                                      @NonNull final List<Integer> right,
-                                      @NonNull final List<Integer> mergeOrder) {
+    private List<Integer> mergeCounts(@Nonnull final List<Integer> left,
+                                      @Nonnull final List<Integer> right,
+                                      @Nonnull final List<Integer> mergeOrder) {
         final int size = Math.min(this.maxSize, mergeOrder.size());
         final List<Integer> mergedCounts = new ArrayList<Integer>(mergeOrder.size());
         int i = 0, j = 0, k = 0;

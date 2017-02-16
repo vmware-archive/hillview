@@ -1,6 +1,6 @@
 package org.hiero.sketch.storage;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
+import javax.annotation.Nonnull;
 import org.hiero.sketch.table.ColumnDescription;
 import org.hiero.sketch.table.StringListColumn;
 import org.hiero.sketch.table.api.ContentsKind;
@@ -14,13 +14,13 @@ import java.nio.file.Path;
  * Reads a newline-separated text file into a string column.
  */
 class TextFileReader {
-    @NonNull
+    @Nonnull
     private final Path file;
-    TextFileReader(@NonNull final Path filename) {
+    TextFileReader(@Nonnull final Path filename) {
         this.file = filename;
     }
 
-    IColumn readFile(@NonNull final String columnName) throws IOException {
+    IColumn readFile(@Nonnull final String columnName) throws IOException {
         final ColumnDescription desc = new ColumnDescription(columnName, ContentsKind.String, false);
         final StringListColumn result = new StringListColumn(desc);
         Files.lines(this.file).forEach(result::append);
