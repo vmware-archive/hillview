@@ -1,6 +1,8 @@
 {
   "name": "hieroweb",
-  "dependencies": {},
+  "dependencies": {
+    "rx-dom": "registry:dt/rx-dom#7.0.0+20170119172950"
+  },
   "globalDependencies": {
     "rx-dom": "registry:dt/rx-dom#2.5.3+20160921164505"
   }
