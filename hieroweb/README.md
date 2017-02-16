@@ -7,11 +7,10 @@ The web services part links with the jars produced by the hieroplatform project.
 
 ## Install typescript and JavaScript libraries
 
-sudo npm install -g typescript ts-loader webpack typings
-
-## Install type information for TypeScript compiler
-
-typings install dt~rx-dom --global --save
+$: sudo npm install -g typescript ts-loader webpack@1.14 typings
+$: cd src/main/webapp
+$: npm install rx rx-dom
+$: typings install dt~rx-dom --save
 
 ## Install Apache Tomcat web application server
 
