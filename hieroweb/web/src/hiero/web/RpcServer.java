@@ -69,13 +69,12 @@ public final class RpcServer {
 
     private void execute(@NonNull RpcRequest rpcRequest, @NonNull Session session) {
         logger.log(Level.INFO, "Executing " + rpcRequest.toString());
-
         try {
-            RpcTarget stub = RpcObjectManager.instance.getObject(rpcRequest.objectId);
-            if (stub == null)
+            RpcTarget target = RpcObjectManager.instance.getObject(rpcRequest.objectId);
+            if (target == null)
                 throw new RuntimeException("RpcServer.getObject() returned null");
-            // This sends the reply and closes the session.
-            stub.execute(rpcRequest, session);
+            // This function is responsible for sending the replies and closing the session.
+            target.execute(rpcRequest, session);
         } catch (Exception ex) {
             RpcReply reply = rpcRequest.createReply(ex);
             this.sendReply(reply, session);

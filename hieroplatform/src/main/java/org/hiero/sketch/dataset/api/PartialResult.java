@@ -3,15 +3,17 @@ package org.hiero.sketch.dataset.api;
 import java.io.Serializable;
 
 /**
- * A partial result always describes a DELTA between the previous partial result
- * and the current one.
+ * A partial result always describes a DELTA.  All Hiero computations
+ * return streams of partial results; adding these partial results together produces
+ * the final result.
  * @param <T>  Type of data in partial result.
  */
 public class PartialResult<T> implements Serializable {
     /**
-     * How much more has been deltaDone from the computation has been deltaDone
+     * How much more has been done from the computation
      * since the previous partial result.  A number between 0 and 1.  Even if this
-     * is 1, it does not necessarily mean that the work is finished.
+     * is 1, it does not necessarily mean that the work is finished; this is necessary
+     * due to rounding issues with double values.
      */
     public final double deltaDone;
     /**

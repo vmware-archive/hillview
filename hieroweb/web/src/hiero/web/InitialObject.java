@@ -10,7 +10,7 @@ import org.hiero.sketch.table.api.ITable;
 import javax.websocket.Session;
 import java.util.ArrayList;
 
-public class InitialObject extends RpcTarget {
+public final class InitialObject extends RpcTarget {
     @HieroRpc
     void loadTable(@NonNull RpcRequest request, @NonNull Session session) {
         // TODO: look at request.  Now we just supply always the same table
@@ -23,8 +23,6 @@ public class InitialObject extends RpcTarget {
         }
         IDataSet<ITable> big = new ParallelDataSet<ITable>(fragments);
         TableTarget table = new TableTarget(big);
-        RpcObjectManager.instance.addObject(table);
-
         RpcReply reply = request.createReply(table.idToJson());
         reply.send(session);
         request.closeSession(session);

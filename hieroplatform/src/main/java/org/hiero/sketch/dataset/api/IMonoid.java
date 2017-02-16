@@ -2,7 +2,6 @@ package org.hiero.sketch.dataset.api;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.function.BiFunction;
 
 /**
  * A monoid structure.
@@ -19,7 +18,8 @@ public interface IMonoid<R> extends Serializable {
             return this.zero();
 
         R result = data.get(0);
-        for (int i=0; i < data.size(); i++)
+        // add the rest of the elements
+        for (int i = 1; i < data.size(); i++)
             result = this.add(result, data.get(i));
         return result;
     }

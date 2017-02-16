@@ -4,6 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.hiero.sketch.dataset.api.IJson;
 import org.hiero.sketch.dataset.api.ISketch;
 import org.hiero.sketch.dataset.api.PartialResult;
@@ -18,13 +19,22 @@ import java.util.logging.Logger;
 /**
  * A sketch which retrieves the Schema and size of a distributed table.
  * Two schemas can be added only if they are identical.
- * We use the empty schema to represent a zero.
+ * We use a null to represent a "zero" for the schemas.
+ * (This Sketch is logically a ConcurrentSketch combining
+ * an OptionMonoid[Schema] sketch and integer addtion).
  */
 public class SummarySketch implements ISketch<ITable, SummarySketch.TableSummary> {
     private static final Logger logger =
             Logger.getLogger(SummarySketch.class.getName());
 
     public static class TableSummary implements IJson {
+        // The sketch zero() element can be produced without looking at the data at all.
+        // So we need a way to represent a "zero" schema.  An empty schema is in principle
+        // legal for a table, so we use a null to represent a yet "unknown" schema.
+        @Nullable
+        public final Schema schema;
+        public final long   rowCount;
+
         public TableSummary(Schema schema, long rowCount) {
             this.schema = schema;
             this.rowCount = rowCount;
@@ -45,9 +55,6 @@ public class SummarySketch implements ISketch<ITable, SummarySketch.TableSummary
                 throw new RuntimeException("Schemas differ");
             return new TableSummary(s, this.rowCount + other.rowCount);
         }
-
-        public final Schema schema;
-        public final long   rowCount;
 
         @Override
         public JsonElement toJsonTree() {
@@ -76,12 +83,13 @@ public class SummarySketch implements ISketch<ITable, SummarySketch.TableSummary
     @NonNull
     @Override
     public TableSummary create(@NonNull ITable data) {
+        /*
+         Testing code
         try {
             Thread.sleep(1000 * Randomness.getInstance().nextInt(5));
         } catch (InterruptedException unused) {}
-
+        */
         logger.log(Level.INFO, "Completed sketch");
-        TableSummary ts = new TableSummary(data.getSchema(), data.getNumOfRows());
-        return ts;
+        return new TableSummary(data.getSchema(), data.getNumOfRows());
     }
 }

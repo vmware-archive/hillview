@@ -21,15 +21,24 @@ public abstract class RpcTarget {
     RpcTarget() {
         this.executor = new HashMap<String, Method>();
         this.registerExecutors();
+        RpcObjectManager.instance.addObject(this);
     }
 
     public void setId(String objectId) {
         this.objectId = objectId;
     }
 
+    /**
+     * Use reflection to register all methods that have an @HieroRpc annotation.
+     * These methods will be invoked for each RpcRequest received.
+     * All these methods should have the following signature:
+     * method(RpcRequest req, Session session).
+     * The method is responsible for:
+     * - parsing the arguments of the RpcCall
+     * - sending the replies, in any number they may be, using the session
+     * - closing the session on termination.
+     */
     private void registerExecutors() {
-        // use reflection to register all methods that have an @HieroRpc annotation
-        // as executors
         Class<?> type = this.getClass();
         for (Method m : type.getDeclaredMethods()) {
             if (m.isAnnotationPresent(HieroRpc.class)) {
@@ -39,7 +48,11 @@ public abstract class RpcTarget {
         }
     }
 
-    // Dispatches an RPC request for execution
+    /**
+     * Dispatches an RPC request for execution.
+     * This will look up the method in the RpcRequest using reflection
+     * and invoke it using Java reflection.
+     */
     public void execute(@NonNull RpcRequest request, @NonNull Session session)
             throws InvocationTargetException, IllegalAccessException {
         Method cons = this.executor.get(request.method);
