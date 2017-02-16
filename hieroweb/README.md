@@ -8,6 +8,7 @@ The web services part links with the jars produced by the hieroplatform project.
 ## Install typescript and JavaScript libraries
 
 sudo npm install -g typescript ts-loader webpack typings
+npm install rx rx-dom
 
 ## Install type information for TypeScript compiler
 

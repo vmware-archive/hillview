@@ -1,8 +1,7 @@
+// Configuration file for webpack 1.X
+
 var path = require('path');
 var nodepath = path.resolve("/usr/local/lib/node_modules");
-// This is very weird: webpack is installed globally,
-// but apparently webpack cannot load itself from a global location
-var webpack = require(nodepath + '/' + 'webpack');
 
 module.exports = {
     entry: "./hiero.ts",
@@ -26,12 +25,5 @@ module.exports = {
             }
         ],
     },
-    // This is needed for webpack to export some global symbols
-    //plugins: [
-    //    new webpack.ProvidePlugin({
-    //        $: "jquery",
-    //        jQuery: "jquery"
-    //    })
-    //],
     devtool: "source-map"
 };
