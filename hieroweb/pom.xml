@@ -55,7 +55,6 @@
             <groupId>org.apache.tomcat</groupId>
             <artifactId>tomcat-websocket</artifactId>
             <version>8.5.8</version>
-            <systemPath>${project.basedir}/../apache-tomcat-8.5.8/lib/tomcat-websocket.jar</systemPath>
         </dependency>
         <!-- Json manipulation in Java -->
         <dependency>

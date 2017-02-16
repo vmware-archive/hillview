@@ -1,4 +1,4 @@
-package hiero.web;
+package org.hiero;
 
 import com.google.gson.Gson;
 import org.checkerframework.checker.nullness.qual.NonNull;
