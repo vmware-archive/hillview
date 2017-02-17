@@ -1,6 +1,5 @@
 package org.hiero.sketch.table;
 
-import javax.annotation.Nonnull;
 import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.IDoubleColumn;
 
@@ -11,10 +10,10 @@ import java.util.ArrayList;
  */
 public class DoubleListColumn
         extends BaseListColumn implements IDoubleColumn {
-    @Nonnull
+
     private final ArrayList<double[]> segments;
 
-    public DoubleListColumn(@Nonnull final ColumnDescription desc) {
+    public DoubleListColumn(final ColumnDescription desc) {
         super(desc);
         if (desc.kind != ContentsKind.Double)
             throw new IllegalArgumentException("Unexpected column kind " + desc.kind);

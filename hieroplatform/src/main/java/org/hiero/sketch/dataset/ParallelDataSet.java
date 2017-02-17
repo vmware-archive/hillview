@@ -3,7 +3,6 @@ package org.hiero.sketch.dataset;
 import org.hiero.sketch.dataset.api.*;
 import rx.Observable;
 
-import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +38,7 @@ public class ParallelDataSet<T> implements IDataSet<T> {
      */
 
     protected final List<IDataSet<T>> children;
-    protected static Logger logger = Logger.getLogger(ParallelDataSet.class.getName());
+    protected static final Logger logger = Logger.getLogger(ParallelDataSet.class.getName());
 
     /**
      * Create a ParallelDataSet from a map that indicates the index of each child.

@@ -1,5 +1,6 @@
 package org.hiero.sketch.dataset.api;
 
+import javax.annotation.Nullable;
 import java.io.Serializable;
 
 /**
@@ -19,6 +20,7 @@ public class PartialResult<T> implements Serializable {
     /**
      * Additional data computed since the previous partial result.
      */
+    @Nullable
     public final T deltaValue;
 
     /**
@@ -26,7 +28,7 @@ public class PartialResult<T> implements Serializable {
      * @param deltaDone  How much more has been done.  A number between 0 and 1.
      * @param deltaValue Extra result produced.
      */
-    public PartialResult(double deltaDone, T deltaValue) {
+    public PartialResult(double deltaDone, @Nullable T deltaValue) {
         if (deltaDone < 0) {
             throw new RuntimeException("Illegal value for deltaDone");
         } else if (deltaDone > 1) {

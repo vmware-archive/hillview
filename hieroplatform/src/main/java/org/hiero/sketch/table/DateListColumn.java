@@ -1,9 +1,9 @@
 package org.hiero.sketch.table;
 
-import javax.annotation.Nonnull;
 import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.IDateColumn;
 
+import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 
@@ -13,7 +13,7 @@ import java.util.ArrayList;
 public class DateListColumn
         extends BaseListColumn
         implements IDateColumn {
-    @Nonnull
+
     private final ArrayList<LocalDateTime[]> segments;
 
     public DateListColumn(final ColumnDescription desc) {
@@ -30,7 +30,7 @@ public class DateListColumn
         return this.segments.get(segmentId)[localIndex];
     }
 
-    private void append(final LocalDateTime value) {
+    private void append(@Nullable final LocalDateTime value) {
         final int segmentId = this.size >> this.LogSegmentSize;
         final int localIndex = this.size & this.SegmentMask;
         if (this.segments.size() <= segmentId) {

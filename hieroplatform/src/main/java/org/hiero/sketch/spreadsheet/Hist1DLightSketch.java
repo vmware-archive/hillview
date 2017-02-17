@@ -1,14 +1,14 @@
 package org.hiero.sketch.spreadsheet;
-import javax.annotation.Nonnull;
 import org.hiero.sketch.dataset.api.ISketch;
-import org.hiero.sketch.dataset.api.PartialResult;
 import org.hiero.sketch.table.api.IStringConverter;
 import org.hiero.sketch.table.api.ITable;
-import rx.Observable;
+
+import javax.annotation.Nullable;
 
 public class Hist1DLightSketch implements ISketch<ITable, Histogram1DLight> {
     final IBucketsDescription1D bucketDesc;
     final String colName;
+    @Nullable
     final IStringConverter converter;
     final double rate;
 
@@ -20,7 +20,7 @@ public class Hist1DLightSketch implements ISketch<ITable, Histogram1DLight> {
     }
 
     public Hist1DLightSketch(IBucketsDescription1D bucketDesc, String colName,
-                             IStringConverter converter, double rate) {
+                             @Nullable IStringConverter converter, double rate) {
         this.bucketDesc = bucketDesc;
         this.colName = colName;
         this.converter = converter;
@@ -31,7 +31,7 @@ public class Hist1DLightSketch implements ISketch<ITable, Histogram1DLight> {
     public Histogram1DLight create(final ITable data) {
         Histogram1DLight result = this.zero();
         result.createHistogram(data.getColumn(this.colName),
-                    data.getMembershipSet().sample(this.rate), this.converter);
+                               data.getMembershipSet().sample(this.rate), this.converter);
         return result;
     }
 

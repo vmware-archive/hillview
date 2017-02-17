@@ -1,6 +1,5 @@
 package org.hiero.sketch.table;
 
-import javax.annotation.Nonnull;
 import org.hiero.sketch.table.api.IColumn;
 
 import java.time.Duration;
@@ -10,7 +9,7 @@ import java.time.LocalDateTime;
  * Base class for all columns.
  */
 abstract class BaseColumn implements IColumn {
-    @Nonnull
+
     final ColumnDescription description;
 
     BaseColumn(final ColumnDescription description) {

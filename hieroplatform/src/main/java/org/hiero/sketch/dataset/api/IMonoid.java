@@ -1,5 +1,6 @@
 package org.hiero.sketch.dataset.api;
 
+import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.util.List;
 
@@ -8,10 +9,11 @@ import java.util.List;
  * @param <R> Type of data representing an element of the monoid.
  */
 public interface IMonoid<R> extends Serializable {
+    @Nullable
     R zero();
-    R add(R left, R right);
+    @Nullable R add(@Nullable R left, @Nullable R right);
 
-    default R reduce(List<R> data) {
+    @Nullable default R reduce(List<R> data) {
         // This implementation avoids allocating a zero
         // if the list is non-empty.
         if (data.isEmpty())

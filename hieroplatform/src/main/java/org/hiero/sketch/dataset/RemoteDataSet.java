@@ -2,8 +2,6 @@ package org.hiero.sketch.dataset;
 
 import akka.actor.ActorRef;
 import akka.actor.Address;
-import akka.util.Timeout;
-import javax.annotation.Nonnull;
 import org.hiero.sketch.dataset.api.*;
 import org.hiero.sketch.remoting.MapOperation;
 import org.hiero.sketch.remoting.SketchOperation;
@@ -24,7 +22,7 @@ public class RemoteDataSet<T> implements IDataSet<T> {
     protected final ActorRef remoteActor;
 
     public RemoteDataSet(
-            @Nonnull final ActorRef clientActor, @Nonnull final ActorRef remoteActor) {
+            final ActorRef clientActor, final ActorRef remoteActor) {
         this.clientActor = clientActor;
         this.remoteActor = remoteActor;
     }
@@ -59,7 +57,7 @@ public class RemoteDataSet<T> implements IDataSet<T> {
 
     @Override
     public <S> Observable<PartialResult<IDataSet<Pair<T, S>>>> zip(
-            @Nonnull final IDataSet<S> other) {
+            final IDataSet<S> other) {
         if (!(other instanceof RemoteDataSet<?>)) {
             throw new RuntimeException("Unexpected type in Zip " + other);
         }

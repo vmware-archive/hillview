@@ -1,13 +1,15 @@
 package org.hiero.sketch.table.api;
 
-import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public interface IStringColumn extends IColumn {
     @Override
-    default double asDouble(final int rowIndex, @Nonnull final IStringConverter conv) {
+    default double asDouble(final int rowIndex, @Nullable final IStringConverter conv) {
         if (isMissing(rowIndex))
             throw new MissingException(this, rowIndex);
         final String tmp = this.getString(rowIndex);
+        if (conv == null)
+            throw new NullPointerException();
         return conv.asDouble(tmp);
     }
 

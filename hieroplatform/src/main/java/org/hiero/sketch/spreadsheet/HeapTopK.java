@@ -1,5 +1,4 @@
 package org.hiero.sketch.spreadsheet;
-import javax.annotation.Nonnull;
 
 import java.util.*;
 /**
@@ -10,13 +9,13 @@ import java.util.*;
 public class HeapTopK<T> implements ITopK<T> {
     private final int maxSize;
     private int size;
-    @Nonnull
+
     private final HashMap<T, Integer> data;
     private T cutoff; /* max value that currently belongs to Top K. */
-    @Nonnull
+
     private final Comparator<T> greater;
 
-    public HeapTopK(@Nonnull final int maxSize, @Nonnull final Comparator<T> greater) {
+    public HeapTopK(final int maxSize, final Comparator<T> greater) {
         if (maxSize > 0)
             this.maxSize = maxSize;
         else

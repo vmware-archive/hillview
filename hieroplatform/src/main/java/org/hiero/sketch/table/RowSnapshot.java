@@ -1,7 +1,6 @@
 package org.hiero.sketch.table;
 
 import com.google.gson.JsonElement;
-import javax.annotation.Nonnull;
 import org.hiero.sketch.dataset.api.IJson;
 import org.hiero.sketch.table.api.IRow;
 import org.hiero.sketch.table.api.ITable;
@@ -14,16 +13,16 @@ import java.util.HashMap;
  * This is quite inefficient, it should be used rarely.
  */
 public class RowSnapshot implements IRow, Serializable, IJson {
-    @Nonnull
+
     protected final Schema schema;
 
     /**
      * Maps a column name to a value.
      */
-    @Nonnull
+
     private final HashMap<String, Object> field = new HashMap<String, Object>();
 
-    public RowSnapshot(@Nonnull final ITable data, final int rowIndex) {
+    public RowSnapshot(final ITable data, final int rowIndex) {
         this.schema = data.getSchema();
         for (final String colName : this.schema.getColumnNames())
             this.field.put(colName, data.getColumn(colName).getObject(rowIndex));
@@ -56,7 +55,7 @@ public class RowSnapshot implements IRow, Serializable, IJson {
     }
 
     @Override
-    public Object get(@Nonnull String colName) {
+    public Object get(String colName) {
         return this.field.get(colName);
     }
 

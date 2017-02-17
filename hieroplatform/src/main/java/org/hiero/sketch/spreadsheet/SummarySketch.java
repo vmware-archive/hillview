@@ -3,15 +3,12 @@ package org.hiero.sketch.spreadsheet;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
-import javax.annotation.Nonnull;
 import org.hiero.sketch.dataset.api.IJson;
 import org.hiero.sketch.dataset.api.ISketch;
-import org.hiero.sketch.dataset.api.PartialResult;
 import org.hiero.sketch.table.Schema;
 import org.hiero.sketch.table.api.ITable;
-import org.hiero.utils.Randomness;
-import rx.Observable;
 
+import javax.annotation.Nullable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -20,7 +17,7 @@ import java.util.logging.Logger;
  * Two schemas can be added only if they are identical.
  * We use a null to represent a "zero" for the schemas.
  * (This Sketch is logically a ConcurrentSketch combining
- * an OptionMonoid[Schema] sketch and integer addtion).
+ * an OptionMonoid[Schema] sketch and integer addition).
  */
 public class SummarySketch implements ISketch<ITable, SummarySketch.TableSummary> {
     private static final Logger logger =
@@ -30,11 +27,11 @@ public class SummarySketch implements ISketch<ITable, SummarySketch.TableSummary
         // The sketch zero() element can be produced without looking at the data at all.
         // So we need a way to represent a "zero" schema.  An empty schema is in principle
         // legal for a table, so we use a null to represent a yet "unknown" schema.
-        // @Nullable // TODO: put it back
+        @Nullable
         public final Schema schema;
         public final long   rowCount;
 
-        public TableSummary(Schema schema, long rowCount) {
+        public TableSummary(@Nullable Schema schema, long rowCount) {
             this.schema = schema;
             this.rowCount = rowCount;
         }

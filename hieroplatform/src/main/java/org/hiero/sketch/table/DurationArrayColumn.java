@@ -1,9 +1,9 @@
 package org.hiero.sketch.table;
 
-import javax.annotation.Nonnull;
 import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.IDurationColumn;
 
+import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
 import java.time.Duration;
 
@@ -12,7 +12,7 @@ import java.time.Duration;
  */
 
 public final class DurationArrayColumn extends BaseArrayColumn implements IDurationColumn {
-    @Nonnull
+
     private final Duration[] data;
 
     private void validate() {
@@ -21,14 +21,14 @@ public final class DurationArrayColumn extends BaseArrayColumn implements IDurat
                     + this.description.kind);
     }
 
-    public DurationArrayColumn(@Nonnull final ColumnDescription description, final int size) {
+    public DurationArrayColumn(final ColumnDescription description, final int size) {
         super(description, size);
         this.validate();
         this.data = new Duration[size];
     }
 
-    public DurationArrayColumn(@Nonnull final ColumnDescription description,
-                               @Nonnull final Duration[] data) {
+    public DurationArrayColumn(final ColumnDescription description,
+                               final Duration[] data) {
         super(description, data.length);
         this.validate();
         this.data = data;
@@ -45,7 +45,7 @@ public final class DurationArrayColumn extends BaseArrayColumn implements IDurat
         return this.data[rowIndex];
     }
 
-    private void set(final int rowIndex, final Duration value) {
+    private void set(final int rowIndex, @Nullable final Duration value) {
         this.data[rowIndex] = value;
     }
 

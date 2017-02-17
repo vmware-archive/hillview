@@ -1,10 +1,11 @@
 package org.hiero.sketch.spreadsheet;
 
-import javax.annotation.Nonnull;
 import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
 import org.hiero.sketch.table.api.IStringConverter;
+
+import javax.annotation.Nullable;
 
 /**
  * One Dimensional histogram. Does not contain the column and membershipMap
@@ -15,7 +16,7 @@ public class Histogram1D extends BaseHist1D {
     private long outOfRange;
     private boolean initialized;
 
-    public Histogram1D(final @Nonnull IBucketsDescription1D bucketDescription) {
+    public Histogram1D(final IBucketsDescription1D bucketDescription) {
         super(bucketDescription);
         this.buckets = new Bucket1D[bucketDescription.getNumOfBuckets()];
         for (int i = 0; i < this.bucketDescription.getNumOfBuckets(); i++)
@@ -28,7 +29,7 @@ public class Histogram1D extends BaseHist1D {
      */
     @Override
     public void createHistogram(final IColumn column, final IMembershipSet membershipSet,
-                                final IStringConverter converter ) {
+                                @Nullable final IStringConverter converter) {
         if (this.initialized) //a histogram had already been created
             throw new IllegalAccessError("A histogram cannot be created twice");
         this.initialized = true;
@@ -62,13 +63,13 @@ public class Histogram1D extends BaseHist1D {
     /**
      * @return the index's bucket or exception if doesn't exist.
      */
-    public @Nonnull Bucket1D getBucket(final int index) { return this.buckets[index]; }
+    public Bucket1D getBucket(final int index) { return this.buckets[index]; }
 
     /**
      * @param  otherHistogram with the same bucketDescription
      * @return a new Histogram which is the union of this and otherHistogram
      */
-    public @Nonnull Histogram1D union( @Nonnull Histogram1D otherHistogram) {
+    public Histogram1D union( Histogram1D otherHistogram) {
         if (!this.bucketDescription.equals(otherHistogram.bucketDescription))
             throw new IllegalArgumentException("Histogram union without matching buckets");
         Histogram1D unionH = new Histogram1D(this.bucketDescription);

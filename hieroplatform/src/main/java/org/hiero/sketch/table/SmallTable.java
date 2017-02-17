@@ -3,13 +3,10 @@ package org.hiero.sketch.table;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
-import javax.annotation.Nonnull;
 import org.hiero.sketch.dataset.api.IJson;
 import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
-import scala.util.parsing.json.JSONObject;
 
 import java.io.Serializable;
 
@@ -20,7 +17,7 @@ import java.io.Serializable;
 public class SmallTable
         extends BaseTable
         implements Serializable, IJson {
-    @Nonnull
+
     protected final Schema schema;
     protected final int rowCount;
 
@@ -29,7 +26,7 @@ public class SmallTable
         return this.schema;
     }
 
-    public SmallTable(@Nonnull final Iterable<IColumn> columns) {
+    public SmallTable(final Iterable<IColumn> columns) {
         super(columns);
         this.rowCount = BaseTable.columnSize(this.columns.values());
         final Schema s = new Schema();
@@ -41,7 +38,7 @@ public class SmallTable
         this.schema = s;
     }
 
-    public SmallTable(@Nonnull final Schema schema) {
+    public SmallTable(final Schema schema) {
         super(schema);
         this.schema = schema;
         this.rowCount = 0;
@@ -53,7 +50,7 @@ public class SmallTable
     }
 
     @Override
-    public @Nonnull IMembershipSet getMembershipSet() {
+    public IMembershipSet getMembershipSet() {
         return new FullMembership(this.rowCount);
     }
 

@@ -1,10 +1,11 @@
 package org.hiero.sketch.spreadsheet;
 
-import javax.annotation.Nonnull;
 import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
 import org.hiero.sketch.table.api.IStringConverter;
+
+import javax.annotation.Nullable;
 
 /**
  * One dimensional histogram where buckets are just longs and not a full object.
@@ -15,7 +16,7 @@ public class Histogram1DLight extends BaseHist1D {
     private long outOfRange;
     private boolean initialized;
 
-    public Histogram1DLight(final @Nonnull IBucketsDescription1D bucketDescription) {
+    public Histogram1DLight(final IBucketsDescription1D bucketDescription) {
         super(bucketDescription);
         this.buckets = new long[bucketDescription.getNumOfBuckets()]; //default by java initialized to zero
         this.initialized = false;
@@ -37,7 +38,7 @@ public class Histogram1DLight extends BaseHist1D {
      */
     @Override
     public void createHistogram(final IColumn column, final IMembershipSet membershipSet,
-                                final IStringConverter converter) {
+                                @Nullable final IStringConverter converter) {
         if (this.initialized) //a histogram had already been created
             throw new IllegalAccessError("A histogram cannot be created twice");
         this.initialized = true;
@@ -70,7 +71,7 @@ public class Histogram1DLight extends BaseHist1D {
      * @param  otherHistogram with the same bucketDescription
      * @return a new Histogram which is the union of this and otherHistogram
      */
-    public @Nonnull Histogram1DLight union( @Nonnull Histogram1DLight otherHistogram) {
+    public Histogram1DLight union( Histogram1DLight otherHistogram) {
         if (!this.bucketDescription.equals(otherHistogram.bucketDescription))
             throw new IllegalArgumentException("Histogram union without matching buckets");
         Histogram1DLight unionH = new Histogram1DLight(this.bucketDescription);

@@ -68,8 +68,6 @@ public class FullMembership implements IMembershipSet {
 
     @Override
     public IMembershipSet union (final IMembershipSet otherSet) {
-        if (otherSet == null)
-            throw new NullPointerException("Can not perform union with a null");
         if (otherSet instanceof FullMembership)
             return new FullMembership(Integer.max(this.rowCount, otherSet.getSize()));
         return otherSet.union(this);
@@ -77,8 +75,6 @@ public class FullMembership implements IMembershipSet {
 
     @Override
     public IMembershipSet intersection (final IMembershipSet otherSet) {
-        if (otherSet == null)
-            throw new NullPointerException("Can not perform intersection with a null");
         if (otherSet instanceof FullMembership)
             return new FullMembership(Integer.min(this.rowCount, otherSet.getSize()));
         return otherSet.intersection(this);
@@ -86,8 +82,6 @@ public class FullMembership implements IMembershipSet {
 
     @Override
     public IMembershipSet setMinus (final IMembershipSet otherSet) {
-        if (otherSet == null)
-            throw new NullPointerException("Can not perform setMinus with a null");
         if (otherSet instanceof FullMembership) {
             final IntSet baseMap = new IntSet(Integer.max(0, this.getSize()-otherSet.getSize()));
             for (int i = otherSet.getSize(); i < this.rowCount; i++)

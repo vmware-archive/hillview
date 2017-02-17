@@ -2,7 +2,6 @@ package org.hiero.sketch.remoting;
 
 import org.hiero.sketch.dataset.api.ISketch;
 
-import javax.annotation.Nonnull;
 import java.io.Serializable;
 
 /**
@@ -11,10 +10,10 @@ import java.io.Serializable;
  * @param <R> Output type of the sketch function
  */
 public class SketchOperation<T, R> extends RemoteOperation implements Serializable {
-    @Nonnull
+
     public final ISketch<T, R> sketch;
 
-    public SketchOperation(@Nonnull final ISketch<T, R> sketch) {
+    public SketchOperation(final ISketch<T, R> sketch) {
         this.sketch = sketch;
     }
 }

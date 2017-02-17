@@ -3,7 +3,6 @@ package org.hiero.sketch.spreadsheet;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import javax.annotation.Nonnull;
 import org.hiero.sketch.table.RowSnapshot;
 import org.hiero.sketch.table.Schema;
 import org.hiero.sketch.table.SmallTable;
@@ -53,7 +52,7 @@ public class NextKList implements Serializable, IJson {
         this.totalRows = 0;
     }
 
-    @Nonnull
+
     public String toLongString(int rowsToDisplay) {
         final StringBuilder builder = new StringBuilder();
         builder.append(this.toString());
@@ -71,7 +70,7 @@ public class NextKList implements Serializable, IJson {
         return builder.toString();
     }
 
-    @Nonnull
+
     @Override
     public JsonElement toJsonTree() {
         JsonObject result = new JsonObject();

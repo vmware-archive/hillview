@@ -1,10 +1,11 @@
 package org.hiero.sketch.spreadsheet;
 
-import javax.annotation.Nonnull;
 import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
 import org.hiero.sketch.table.api.IStringConverter;
+
+import javax.annotation.Nullable;
 
 /**
  * A 2 dimension histogram where each bucket is a Bucket2D object. Designed to be used for
@@ -24,7 +25,7 @@ public class Histogram2DHeavy {
     private long totalsize;
 
 
-    public Histogram2DHeavy(final @Nonnull IBucketsDescription1D buckets1, final @Nonnull IBucketsDescription1D buckets2) {
+    public Histogram2DHeavy(final IBucketsDescription1D buckets1, final IBucketsDescription1D buckets2) {
         this.bucketDescDim1 = buckets1;
         this.bucketDescDim2 = buckets2;
         this.histogramMissingD1 = new Histogram1D(this.bucketDescDim1);
@@ -38,13 +39,15 @@ public class Histogram2DHeavy {
     }
 
     public void createSampleHistogram(final IColumn columnD1, final IColumn columnD2,
-                                      final IStringConverter converterD1, final IStringConverter converterD2,
+                                      @Nullable final IStringConverter converterD1,
+                                      @Nullable final IStringConverter converterD2,
                                       final IMembershipSet membershipSet, double sampleRate) {
         this.createHistogram(columnD1, columnD2, converterD1, converterD2, membershipSet.sample(sampleRate));
     }
 
     public void createSampleHistogram(final IColumn columnD1, final IColumn columnD2,
-                                      final IStringConverter converterD1, final IStringConverter converterD2,
+                                      @Nullable final IStringConverter converterD1,
+                                      @Nullable final IStringConverter converterD2,
                                       final IMembershipSet membershipSet, double sampleRate, long seed) {
         this.createHistogram(columnD1, columnD2, converterD1, converterD2, membershipSet.sample(sampleRate, seed));
     }
@@ -59,7 +62,8 @@ public class Histogram2DHeavy {
      * Creates the histogram explicitly and in full. Should be called at most once.
      */
     public void createHistogram(final IColumn columnD1, final IColumn columnD2,
-                                final IStringConverter converterD1, final IStringConverter converterD2,
+                                @Nullable final IStringConverter converterD1,
+                                @Nullable final IStringConverter converterD2,
                                 final IMembershipSet membershipSet) {
         if (this.initialized) //a histogram had already been created
             throw new IllegalAccessError("A histogram cannot be created twice");
@@ -112,7 +116,7 @@ public class Histogram2DHeavy {
      * @param  otherHistogram with the same bucketDescription
      * @return a new Histogram which is the union of this and otherHistogram
      */
-    public Histogram2DHeavy union( @Nonnull Histogram2DHeavy otherHistogram) {
+    public Histogram2DHeavy union( Histogram2DHeavy otherHistogram) {
         if ((!this.bucketDescDim1.equals(otherHistogram.bucketDescDim1))
                 || (!this.bucketDescDim2.equals(otherHistogram.bucketDescDim2)))
             throw new IllegalArgumentException("Histogram union without matching buckets");

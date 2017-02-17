@@ -1,5 +1,6 @@
 package org.hiero.sketch.dataset.api;
 
+import javax.annotation.Nullable;
 import java.io.Serializable;
 
 /**
@@ -11,16 +12,18 @@ import java.io.Serializable;
  * @param <S>  Second element in the pair.
  */
 public class Pair<T, S> implements Serializable {
+    @Nullable
     public final T first;
+    @Nullable
     public final S second;
 
-    public Pair(final T first, final S second) {
+    public Pair(@Nullable final T first, @Nullable final S second) {
         this.first = first;
         this.second = second;
     }
 
     @Override
-    public boolean equals(final Object o) {
+    public boolean equals(@Nullable final Object o) {
         if (this == o) return true;
         if ((o == null) || (getClass() != o.getClass())) return false;
         final Pair<?, ?> pair = (Pair<?, ?>) o;

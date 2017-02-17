@@ -78,4 +78,5 @@ Randomness.java and uses Mersenne Twister.  Do not use the class
 Random but this class instead.
 
 * By default all pointers are assumed to be non-null; use the
-  @Nullable annotation for all pointers which can be null.
+  @Nullable annotation (from javax.annotation) for all pointers which
+  can be null.

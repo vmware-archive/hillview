@@ -1,9 +1,6 @@
 package org.hiero.sketch.dataset.api;
 
 import com.google.gson.*;
-import com.google.gson.reflect.TypeToken;
-
-import java.lang.reflect.Type;
 
 @SuppressWarnings("UnnecessaryInterfaceModifier")
 public interface IJson {

@@ -1,22 +1,21 @@
 package org.hiero.sketch.spreadsheet;
-import javax.annotation.Nonnull;
 import org.hiero.sketch.dataset.api.ISketch;
-import org.hiero.sketch.dataset.api.PartialResult;
 import org.hiero.sketch.table.api.IStringConverter;
 import org.hiero.sketch.table.api.ITable;
-import rx.Observable;
+
+import javax.annotation.Nullable;
 
 public class Hist2DSketch implements ISketch<ITable, Histogram2DHeavy> {
     final IBucketsDescription1D bucketDescD1;
     final IBucketsDescription1D bucketDescD2;
     final String colNameD1;
     final String colNameD2;
-    final IStringConverter converterD1;
-    final IStringConverter converterD2;
+    @Nullable final IStringConverter converterD1;
+    @Nullable final IStringConverter converterD2;
     final double rate;
 
     public Hist2DSketch(IBucketsDescription1D bucketDesc1, IBucketsDescription1D bucketDesc2,
-                         IStringConverter converter1, IStringConverter converter2,
+                         @Nullable IStringConverter converter1, @Nullable IStringConverter converter2,
                          String colName1, String colName2) {
         this.bucketDescD1 = bucketDesc1;
         this.bucketDescD2 = bucketDesc2;
@@ -28,7 +27,7 @@ public class Hist2DSketch implements ISketch<ITable, Histogram2DHeavy> {
     }
 
     public Hist2DSketch(IBucketsDescription1D bucketDesc1, IBucketsDescription1D bucketDesc2,
-                         IStringConverter converter1, IStringConverter converter2,
+                         @Nullable IStringConverter converter1, @Nullable IStringConverter converter2,
                          String colName1, String colName2, double rate) {
         this.bucketDescD1 = bucketDesc1;
         this.bucketDescD2 = bucketDesc2;

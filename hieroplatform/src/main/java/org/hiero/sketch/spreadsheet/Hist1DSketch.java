@@ -1,15 +1,15 @@
 package org.hiero.sketch.spreadsheet;
 
-import javax.annotation.Nonnull;
 import org.hiero.sketch.dataset.api.ISketch;
-import org.hiero.sketch.dataset.api.PartialResult;
 import org.hiero.sketch.table.api.IStringConverter;
 import org.hiero.sketch.table.api.ITable;
-import rx.Observable;
+
+import javax.annotation.Nullable;
 
 public class Hist1DSketch implements ISketch<ITable, Histogram1D> {
     final IBucketsDescription1D bucketDesc;
     final String colName;
+    @Nullable
     final IStringConverter converter;
     final double rate;
 
@@ -21,7 +21,7 @@ public class Hist1DSketch implements ISketch<ITable, Histogram1D> {
     }
 
     public Hist1DSketch(IBucketsDescription1D bucketDesc, String colName,
-                        IStringConverter converter, double rate) {
+                        @Nullable IStringConverter converter, double rate) {
         this.bucketDesc = bucketDesc;
         this.colName = colName;
         this.converter = converter;

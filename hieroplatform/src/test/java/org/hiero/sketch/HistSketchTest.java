@@ -17,8 +17,6 @@ import static org.junit.Assert.assertEquals;
 
 /**
  * Test class for the sketches of all types of histograms.
- * IntConverter is used for the IStringConverter due to a reported issue.
- * Will be replaced by Null once it is resolved, allowing the default converter to kisk in.
  */
 public class HistSketchTest {
     @Test
