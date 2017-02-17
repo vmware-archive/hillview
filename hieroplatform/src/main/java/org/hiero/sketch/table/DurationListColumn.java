@@ -11,7 +11,6 @@ import java.util.ArrayList;
  * A column of time durations that can grow in size.
  */
 class DurationListColumn extends BaseListColumn implements IDurationColumn {
-
     private final ArrayList<Duration[]> segments;
 
     public DurationListColumn(final ColumnDescription desc) {

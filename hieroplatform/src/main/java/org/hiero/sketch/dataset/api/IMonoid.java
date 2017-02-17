@@ -7,13 +7,14 @@ import java.util.List;
 /**
  * A monoid structure.
  * @param <R> Type of data representing an element of the monoid.
+ *           R is not nullable; one should use Optional[R] if null is desired.
  */
 public interface IMonoid<R> extends Serializable {
-    @Nullable
-    R zero();
+    @Nullable R zero();
     @Nullable R add(@Nullable R left, @Nullable R right);
 
-    @Nullable default R reduce(List<R> data) {
+    @Nullable
+    default R reduce(List<R> data) {
         // This implementation avoids allocating a zero
         // if the list is non-empty.
         if (data.isEmpty())

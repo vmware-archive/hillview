@@ -63,8 +63,6 @@ public final class RpcObjectManager {
 
     synchronized public RpcTarget getObject(String id) {
         LOGGER.log(Level.INFO, "Getting object " + id);
-        if (id == null)
-            throw new RuntimeException("Null object id");
         RpcTarget target = this.objects.get(id);
         if (target == null)
             throw new RuntimeException("RPC target " + id + " is unknown");

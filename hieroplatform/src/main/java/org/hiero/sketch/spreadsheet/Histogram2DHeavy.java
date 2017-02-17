@@ -24,7 +24,6 @@ public class Histogram2DHeavy {
     private Histogram1D histogramMissingD2; // hist of items that are missing in D1
     private long totalsize;
 
-
     public Histogram2DHeavy(final IBucketsDescription1D buckets1, final IBucketsDescription1D buckets2) {
         this.bucketDescDim1 = buckets1;
         this.bucketDescDim2 = buckets2;

@@ -9,7 +9,6 @@ import java.nio.file.Path;
  * Knows how to read a CSV file (comma-separated file).
  */
 class CsvFileReader {
-
     private final Path filename;
     private final Schema schema;
     private final int columnCount;

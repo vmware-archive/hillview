@@ -12,7 +12,6 @@ import java.util.ArrayList;
 public final class IntListColumn
         extends BaseListColumn
         implements IIntColumn {
-
     private final ArrayList<int[]> segments;
 
     public IntListColumn(final ColumnDescription desc) {

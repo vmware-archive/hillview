@@ -1,5 +1,6 @@
-package org.hiero.sketch.table.api;
+package org.hiero.utils;
 
+import javax.annotation.Nullable;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -8,8 +9,7 @@ import java.time.LocalTime;
 /**
  * Conversion to and from doubles of various supported datatypes.
  */
-@SuppressWarnings("WeakerAccess")
-class Converters {
+public class Converters {
     private static final LocalDateTime baseTime = LocalDateTime.of(
             LocalDate.of(1970, 1, 1),
             LocalTime.of(0, 0));
@@ -36,5 +36,17 @@ class Converters {
 
     public static Duration toDuration(final double d) {
         return Duration.ofNanos((long)d);
+    }
+
+    /**
+     * Casts a Nullable pointer to a NonNullable one.  Throws if pointer is null.
+     * @param data  Nullable pointer.
+     * @param <T>   Type of nullable pointer.
+     * @return      The same pointer, but never null.
+     */
+    public static <T> T checkNull(@Nullable T data) {
+        if (data == null)
+            throw new NullPointerException();
+        return data;
     }
 }

@@ -17,7 +17,6 @@ import java.io.Serializable;
 public class SmallTable
         extends BaseTable
         implements Serializable, IJson {
-
     protected final Schema schema;
     protected final int rowCount;
 

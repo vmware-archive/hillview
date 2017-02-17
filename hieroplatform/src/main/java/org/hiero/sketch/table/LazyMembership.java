@@ -15,7 +15,6 @@ import java.util.function.Predicate;
  */
 
 public class LazyMembership implements IMembershipSet {
-
     private final IMembershipSet baseMap;
     private int rowCount;
     private boolean rowCountCorrect;

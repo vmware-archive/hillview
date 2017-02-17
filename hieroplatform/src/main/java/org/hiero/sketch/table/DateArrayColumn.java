@@ -13,7 +13,6 @@ import java.time.LocalDateTime;
 public final class DateArrayColumn
         extends BaseArrayColumn
         implements IDateColumn {
-
     private final LocalDateTime[] data;
 
     private void validate() {

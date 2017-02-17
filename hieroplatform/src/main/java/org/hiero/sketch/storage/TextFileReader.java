@@ -13,7 +13,6 @@ import java.nio.file.Path;
  * Reads a newline-separated text file into a string column.
  */
 class TextFileReader {
-
     private final Path file;
     TextFileReader(final Path filename) {
         this.file = filename;

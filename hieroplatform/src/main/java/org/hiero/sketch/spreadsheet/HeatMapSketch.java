@@ -2,6 +2,7 @@ package org.hiero.sketch.spreadsheet;
 import org.hiero.sketch.dataset.api.ISketch;
 import org.hiero.sketch.table.api.IStringConverter;
 import org.hiero.sketch.table.api.ITable;
+import org.hiero.utils.Converters;
 
 import javax.annotation.Nullable;
 
@@ -40,7 +41,7 @@ public class HeatMapSketch implements ISketch<ITable, HeatMap> {
 
     @Override
     public HeatMap create(final ITable data) {
-        HeatMap result = this.zero();
+        HeatMap result = this.getZero();
         result.createHistogram(data.getColumn(this.colNameD1), data.getColumn(this.colNameD2),
                 this.converterD1, this.converterD2, data.getMembershipSet().sample(this.rate));
         return result;
@@ -52,7 +53,7 @@ public class HeatMapSketch implements ISketch<ITable, HeatMap> {
     }
 
     @Override
-    public HeatMap add(final HeatMap left, final HeatMap right) {
-        return left.union(right);
+    public HeatMap add(@Nullable final HeatMap left, @Nullable final HeatMap right) {
+        return Converters.checkNull(left).union(Converters.checkNull(right));
     }
 }

@@ -13,6 +13,7 @@ import org.hiero.sketch.dataset.api.*;
 import org.hiero.sketch.remoting.SketchClientActor;
 import org.hiero.sketch.remoting.SketchOperation;
 import org.hiero.sketch.remoting.SketchServerActor;
+import org.hiero.utils.Converters;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -22,6 +23,7 @@ import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.util.ArrayList;
 
@@ -56,14 +58,14 @@ public class RemotingTests {
     }
 
     private class SumSketch implements ISketch<int[], Integer> {
-        @Override
+        @Override @Nullable
         public Integer zero() {
             return 0;
         }
 
-        @Override
-        public Integer add(final Integer left, final Integer right) {
-            return left + right;
+        @Override @Nullable
+        public Integer add(@Nullable final Integer left, @Nullable final Integer right) {
+            return Converters.checkNull(left) + Converters.checkNull(right);
         }
 
         @Override
@@ -75,14 +77,14 @@ public class RemotingTests {
     }
 
     private class ErrorSumSketch implements ISketch<int[], Integer> {
-        @Override
+        @Override @Nullable
         public Integer zero() {
             return 0;
         }
 
-        @Override
-        public Integer add(final Integer left, final Integer right) {
-            return left + right;
+        @Override @Nullable
+        public Integer add(@Nullable final Integer left, @Nullable final Integer right) {
+            return Converters.checkNull(left) + Converters.checkNull(right);
         }
 
         @Override
@@ -205,10 +207,12 @@ public class RemotingTests {
     @Test
     public void testZip() {
         final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(clientActor, remoteActor);
-        final IDataSet<int[]> remoteIdsLeft = remoteIds.map(new IncrementMap()).toBlocking().last().deltaValue;
-        final IDataSet<int[]> remoteIdsRight = remoteIds.map(new IncrementMap()).toBlocking().last().deltaValue;
+        final IDataSet<int[]> remoteIdsLeft = Converters.checkNull(
+                remoteIds.map(new IncrementMap()).toBlocking().last().deltaValue);
+        final IDataSet<int[]> remoteIdsRight = Converters.checkNull(
+                remoteIds.map(new IncrementMap()).toBlocking().last().deltaValue);
         final PartialResult<IDataSet<Pair<int[], int[]>>> last
-                = remoteIdsLeft.zip(remoteIdsRight).toBlocking().last();
+                = Converters.checkNull(remoteIdsLeft.zip(remoteIdsRight)).toBlocking().last();
         assertNotNull(last);
         assertEquals(last.deltaDone, 1.0, 0.001);
     }

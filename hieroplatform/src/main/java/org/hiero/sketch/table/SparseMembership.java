@@ -14,7 +14,6 @@ import java.util.function.Predicate;
  * The downside is the constructor that runs in linear time.
  */
 public class SparseMembership implements IMembershipSet {
-
     private final IntSet membershipMap;
     private static final int sizeEstimationSampleSize = 20;
 

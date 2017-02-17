@@ -77,3 +77,4 @@ public interface IMembershipSet extends IRowOrder {
         return sampleSize;
     }
 }
+//TODO: Add a split membership set method to split a table into smaller tables.

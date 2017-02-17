@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.dataset.api.IJson;
 import org.hiero.sketch.dataset.api.PartialResult;
+import org.hiero.utils.Converters;
 import rx.Observer;
 
 import javax.websocket.Session;
@@ -15,8 +16,8 @@ import java.util.logging.Logger;
 
 public abstract class RpcTarget {
     protected String objectId;
-    private HashMap<String, Method> executor;
-    protected static Logger logger = Logger.getLogger(RpcTarget.class.getName());
+    private final HashMap<String, Method> executor;
+    protected static final Logger logger = Logger.getLogger(RpcTarget.class.getName());
 
     RpcTarget() {
         this.executor = new HashMap<String, Method>();
@@ -53,7 +54,7 @@ public abstract class RpcTarget {
      * This will look up the method in the RpcRequest using reflection
      * and invoke it using Java reflection.
      */
-    public void execute(@NonNull RpcRequest request, @NonNull Session session)
+    public void execute(RpcRequest request, Session session)
             throws InvocationTargetException, IllegalAccessException {
         Method cons = this.executor.get(request.method);
         if (cons == null)
@@ -65,12 +66,12 @@ public abstract class RpcTarget {
     public int hashCode() { return this.objectId.hashCode(); }
 
     class ResultObserver<T extends IJson> implements Observer<PartialResult<T>> {
-        @NonNull final RpcRequest request;
-        @NonNull final Session session;
+        final RpcRequest request;
+        final Session session;
 
         // TODO: handle session disconnections
 
-        ResultObserver(@NonNull RpcRequest request, @NonNull Session session) {
+        ResultObserver(RpcRequest request, Session session) {
             this.request = request;
             this.session = session;
         }
@@ -99,7 +100,8 @@ public abstract class RpcTarget {
 
             JsonObject json = new JsonObject();
             json.addProperty("done", pr.deltaDone);
-            json.add("data", pr.deltaValue.toJsonTree());
+            T delta = Converters.checkNull(pr.deltaValue);
+            json.add("data", delta.toJsonTree());
             RpcReply reply = this.request.createReply(json);
             reply.send(this.session);
         }

@@ -12,11 +12,8 @@ import java.io.Serializable;
  * Triggered by a ZipOperation at a remote actor pointing a data-set.
  */
 class ZipExecute implements Serializable{
-
     final ZipOperation zipOp;
-
     final IDataSet dataSet;
-
     final ActorRef clientActor;
 
     ZipExecute(final ZipOperation zipOperation,

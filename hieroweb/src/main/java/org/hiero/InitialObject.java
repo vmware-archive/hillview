@@ -1,7 +1,6 @@
 package org.hiero;
 
 import org.hiero.sketch.dataset.LocalDataSet;
-import org.hiero.sketch.dataset.api.IJson;
 import org.hiero.sketch.dataset.ParallelDataSet;
 import org.hiero.sketch.dataset.api.IDataSet;
 import org.hiero.sketch.table.Table;

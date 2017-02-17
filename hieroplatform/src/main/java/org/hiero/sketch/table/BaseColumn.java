@@ -12,9 +12,10 @@ abstract class BaseColumn implements IColumn {
 
     final ColumnDescription description;
 
-    BaseColumn(final ColumnDescription description) {
+    BaseColumn( final ColumnDescription description) {
         this.description = description;
     }
+
 
     @Override
     public ColumnDescription getDescription() {

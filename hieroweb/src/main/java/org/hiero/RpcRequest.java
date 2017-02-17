@@ -2,7 +2,6 @@ package org.hiero;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.dataset.api.IJson;
 
 import javax.websocket.Session;
@@ -14,12 +13,11 @@ public class RpcRequest {
             Logger.getLogger(RpcRequest.class.getName());
 
     public final int    requestId;
-    @NonNull
     public final String objectId;
-    @NonNull public final String method;
-    @NonNull public final String arguments;  // A JSON string
+    public final String method;
+    public final String arguments;  // A JSON string
 
-    public RpcRequest(@NonNull JsonElement element) {
+    public RpcRequest(JsonElement element) {
         final JsonObject obj = element.getAsJsonObject();
         this.requestId = obj.get("requestId").getAsInt();
         this.objectId = obj.get("objectId").getAsString();
@@ -48,7 +46,7 @@ public class RpcRequest {
         return new RpcReply(this.requestId, this.toString() + "\n" + RpcServer.asString(th), true);
     }
 
-    public void closeSession(@NonNull Session session) {
+    public void closeSession(Session session) {
         try {
             session.close();
         } catch (Exception ex) {

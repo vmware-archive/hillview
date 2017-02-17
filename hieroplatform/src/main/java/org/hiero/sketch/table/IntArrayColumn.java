@@ -11,7 +11,6 @@ import java.security.InvalidParameterException;
 public final class IntArrayColumn
         extends BaseArrayColumn
         implements IIntColumn {
-
     private final int[] data;
 
     private void validate() {

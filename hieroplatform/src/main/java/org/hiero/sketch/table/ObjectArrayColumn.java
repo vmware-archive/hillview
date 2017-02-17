@@ -2,6 +2,7 @@ package org.hiero.sketch.table;
 
 import org.hiero.sketch.table.api.IStringConverter;
 import org.hiero.sketch.table.api.IndexComparator;
+import org.hiero.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.time.Duration;
@@ -30,18 +31,18 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
     @Override
     public double asDouble(final int rowIndex, @Nullable final IStringConverter converter) {
         switch (ObjectArrayColumn.this.description.kind) {
-            case String:
-                return converter.asDouble(this.getString(rowIndex));
-            case Date:
-                return converter.asDouble(this.getDate(rowIndex).toString());
-            case Int:
-                return converter.asDouble(String.valueOf(this.getInt(rowIndex)));
             case Json:
-                return converter.asDouble(this.getString(rowIndex));
+            case String:
+                IStringConverter c = Converters.checkNull(converter);
+                return c.asDouble(this.getString(rowIndex));
+            case Date:
+                return Converters.toDouble(this.getDate(rowIndex));
+            case Int:
+                return this.getInt(rowIndex);
             case Double:
                 return this.getDouble(rowIndex);
             case Duration:
-                return converter.asDouble(this.getDuration(rowIndex).toString());
+                return Converters.toDouble(this.getDuration(rowIndex));
             default:
                 throw new RuntimeException("Unexpected data type");
         }
@@ -117,7 +118,7 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
         return (String)this.data[rowIndex];
     }
 
-    public void set(final int rowIndex, final Object value) {
+    public void set(final int rowIndex, @Nullable final Object value) {
         this.data[rowIndex] = value;
     }
 

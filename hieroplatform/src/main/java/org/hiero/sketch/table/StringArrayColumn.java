@@ -12,7 +12,6 @@ import java.security.InvalidParameterException;
  */
 public final class StringArrayColumn
         extends BaseArrayColumn implements IStringColumn {
-
     private final String[] data;
 
     private void validate() {

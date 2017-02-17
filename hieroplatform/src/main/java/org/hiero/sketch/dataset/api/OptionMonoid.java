@@ -18,8 +18,8 @@ public class OptionMonoid<T> implements IMonoid<T> {
      * @param right Null or some value of type T.
      * @return null if both are null, or else the non-null value.
      */
-    @Override @Nullable
-    public T add(@Nullable final T left, @Nullable final T right) {
-        return (left == null) ? right : left;
+    @Override
+    @Nullable public T add(@Nullable final T left, @Nullable final T right) {
+        return (left != null) ? left : right;
     }
 }

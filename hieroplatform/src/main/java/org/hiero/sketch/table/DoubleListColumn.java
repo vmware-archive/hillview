@@ -10,7 +10,6 @@ import java.util.ArrayList;
  */
 public class DoubleListColumn
         extends BaseListColumn implements IDoubleColumn {
-
     private final ArrayList<double[]> segments;
 
     public DoubleListColumn(final ColumnDescription desc) {

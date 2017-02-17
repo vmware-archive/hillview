@@ -11,7 +11,6 @@ import java.security.InvalidParameterException;
 public final class DoubleArrayColumn
         extends BaseArrayColumn
         implements IDoubleColumn {
-
     private final double[] data;
 
     private void validate() {

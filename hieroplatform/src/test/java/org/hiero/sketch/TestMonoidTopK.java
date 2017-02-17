@@ -2,6 +2,7 @@ package org.hiero.sketch;
 
 import org.hiero.sketch.spreadsheet.MonoidTopK;
 import org.hiero.sketch.spreadsheet.TreeTopK;
+import org.hiero.utils.Converters;
 import org.hiero.utils.Randomness;
 import org.junit.Test;
 
@@ -43,7 +44,7 @@ public class TestMonoidTopK {
         this.checkSorted(this.leftTree.getTopK());
         this.checkSorted(this.rightTree.getTopK());
         SortedMap<Integer, Integer> s = this.myTopK.add(this.leftTree.getTopK(), this.rightTree.getTopK());
-        this.checkSorted(s);
+        this.checkSorted(Converters.checkNull(s));
     }
 
     @Test
@@ -60,7 +61,7 @@ public class TestMonoidTopK {
         this.checkSorted(this.leftTree.getTopK());
         this.checkSorted(this.rightTree.getTopK());
         SortedMap<Integer, Integer> s = this.myTopK.add(this.leftTree.getTopK(), this.rightTree.getTopK());
-        this.checkSorted(s);
+        this.checkSorted(Converters.checkNull(s));
     }
 
     @Test

@@ -1,7 +1,6 @@
 package org.hiero.sketch.spreadsheet;
 
 public class Bucket2D {
-
     private final Bucket1D bucket1;
     private final Bucket1D bucket2;
     private long count;

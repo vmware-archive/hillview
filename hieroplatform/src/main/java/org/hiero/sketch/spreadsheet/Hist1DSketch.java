@@ -3,6 +3,7 @@ package org.hiero.sketch.spreadsheet;
 import org.hiero.sketch.dataset.api.ISketch;
 import org.hiero.sketch.table.api.IStringConverter;
 import org.hiero.sketch.table.api.ITable;
+import org.hiero.utils.Converters;
 
 import javax.annotation.Nullable;
 
@@ -28,17 +29,17 @@ public class Hist1DSketch implements ISketch<ITable, Histogram1D> {
         this.rate = rate;
     }
 
-    @Override
+    @Override @Nullable
     public Histogram1D create(final ITable data) {
-        Histogram1D result = this.zero();
+        Histogram1D result = this.getZero();
         result.createHistogram(data.getColumn(this.colName),
                 data.getMembershipSet().sample(this.rate), this.converter);
         return result;
     }
 
-    @Override
-    public Histogram1D add(final Histogram1D left,final Histogram1D right) {
-        return left.union(right);
+    @Override @Nullable
+    public Histogram1D add(@Nullable final Histogram1D left, @Nullable final Histogram1D right) {
+        return Converters.checkNull(left).union(Converters.checkNull(right));
     }
 
     @Override

@@ -1,5 +1,6 @@
 package org.hiero.sketch.table.api;
 
+import org.hiero.utils.Converters;
 import javax.annotation.Nullable;
 import java.time.Duration;
 

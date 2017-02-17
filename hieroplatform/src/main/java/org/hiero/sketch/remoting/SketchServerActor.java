@@ -6,6 +6,7 @@ import akka.actor.Props;
 import akka.japi.pf.ReceiveBuilder;
 import akka.serialization.Serialization;
 import org.hiero.sketch.dataset.api.*;
+import org.hiero.utils.Converters;
 import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
@@ -91,7 +92,6 @@ public class SketchServerActor<T> extends AbstractActor {
     private class MapResponderSubscriber<R> extends ResponderSubscriber<R> {
         private final PartialResultMonoid resultMonoid = new PRDataSetMonoid();
         private PartialResult result = this.resultMonoid.zero();
-
         private MapResponderSubscriber(final UUID id,  final ActorRef sender) {
             super(id, sender);
         }
@@ -123,7 +123,7 @@ public class SketchServerActor<T> extends AbstractActor {
 
     private class ZipResponderSubscriber<R> extends ResponderSubscriber<R> {
         private final PartialResultMonoid resultMonoid = new PRDataSetMonoid();
-        private final PartialResult result = this.resultMonoid.zero();
+        private final PartialResult result = Converters.checkNull(this.resultMonoid.zero());
 
         private ZipResponderSubscriber( final UUID id,
                                         final ActorRef sender) {
@@ -148,12 +148,10 @@ public class SketchServerActor<T> extends AbstractActor {
      * Generic subscriber, used to wrap results and send them back to the client
      */
     private class ResponderSubscriber<R> extends Subscriber<R> {
-        
         final UUID id;
-        
         final ActorRef sender;
 
-        private ResponderSubscriber(final UUID id, final ActorRef sender) {
+        private ResponderSubscriber( final UUID id,  final ActorRef sender) {
             this.id = id;
             this.sender = sender;
         }

@@ -7,6 +7,7 @@ import org.hiero.sketch.dataset.api.IJson;
 import org.hiero.sketch.dataset.api.ISketch;
 import org.hiero.sketch.table.Schema;
 import org.hiero.sketch.table.api.ITable;
+import org.hiero.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.util.logging.Level;
@@ -64,13 +65,15 @@ public class SummarySketch implements ISketch<ITable, SummarySketch.TableSummary
         }
     }
 
-    @Override
+    @Override @Nullable
     public TableSummary zero() {
         return new TableSummary();
     }
 
-    @Override
-    public TableSummary add(TableSummary left, TableSummary right) {
+    @Override @Nullable
+    public TableSummary add(@Nullable TableSummary left, @Nullable TableSummary right) {
+        left = Converters.checkNull(left);
+        right = Converters.checkNull(right);
         return left.add(right);
     }
 

@@ -16,9 +16,7 @@ import java.util.*;
  */
 public final class Schema
         implements Serializable, IJson {
-
     private final HashMap<String, ColumnDescription> columns;
-
     private final List<String> colOrder;
 
     public Schema() {
@@ -41,7 +39,6 @@ public final class Schema
         return this.columns.size();
     }
 
-
     public List<String> getColumnNames() {
         return this.colOrder;
     }
@@ -49,7 +46,6 @@ public final class Schema
     /**
      * Generates a new Schema that contains only the subset of columns contained in the subSchema.
      */
-
     public Schema project(final ISubSchema subSchema) {
         final Schema projection = new Schema();
         for (String colName : this.getColumnNames()) {
@@ -59,7 +55,6 @@ public final class Schema
         }
         return projection;
     }
-
     @Override
 
     public String toString() {
@@ -85,13 +80,11 @@ public final class Schema
         return this.columns.hashCode();
     }
 
-
     public ContentsKind getKind(final String colName){
         return this.getDescription(colName).kind;
     }
 
-    // The columns will be sorted by the order prescribed by the List colOrder
-
+    // The columns will be ordered as in colOrder
     private ColumnDescription[] toArray() {
         ColumnDescription[] all = new ColumnDescription[this.columns.size()];
         int i = 0;
@@ -103,7 +96,6 @@ public final class Schema
     }
 
     @Override
-
     public JsonElement toJsonTree() {
         ColumnDescription[] all = this.toArray();
         JsonArray result = new JsonArray();

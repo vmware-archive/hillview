@@ -71,7 +71,7 @@ public class Histogram1DLight extends BaseHist1D {
      * @param  otherHistogram with the same bucketDescription
      * @return a new Histogram which is the union of this and otherHistogram
      */
-    public Histogram1DLight union( Histogram1DLight otherHistogram) {
+    public Histogram1DLight union(Histogram1DLight otherHistogram) {
         if (!this.bucketDescription.equals(otherHistogram.bucketDescription))
             throw new IllegalArgumentException("Histogram union without matching buckets");
         Histogram1DLight unionH = new Histogram1DLight(this.bucketDescription);

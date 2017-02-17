@@ -24,7 +24,7 @@ public final class RpcServer {
 
     @SuppressWarnings("unused")
     @OnOpen
-    public void onOpen(@NonNull Session session) {
+    public void onOpen(Session session) {
         logger.log(Level.INFO, "Server " + Integer.toString(version) +
                         " new connection with client: {0}",
                 session.getId());
@@ -32,7 +32,7 @@ public final class RpcServer {
 
     @SuppressWarnings("unused")
     @OnMessage
-    public void onMessage(@NonNull String message, @NonNull Session session) {
+    public void onMessage(String message, Session session) {
         logger.log(Level.INFO, "New message from Client [{0}]: {1}",
                 new Object[] {session.getId(), message});
 
@@ -51,7 +51,7 @@ public final class RpcServer {
         this.execute(req, session);
     }
 
-    private void sendReply(@NonNull RpcReply reply, @NonNull Session session) {
+    private void sendReply(RpcReply reply, Session session) {
         try {
             JsonElement json = reply.toJson();
             session.getBasicRemote().sendText(json.toString());
@@ -67,7 +67,7 @@ public final class RpcServer {
         return sw.toString();
     }
 
-    private void execute(@NonNull RpcRequest rpcRequest, @NonNull Session session) {
+    private void execute(RpcRequest rpcRequest, Session session) {
         logger.log(Level.INFO, "Executing " + rpcRequest.toString());
         try {
             RpcTarget target = RpcObjectManager.instance.getObject(rpcRequest.objectId);
@@ -82,7 +82,7 @@ public final class RpcServer {
         }
     }
 
-    private void closeSession(@NonNull Session session) {
+    private void closeSession(Session session) {
         try {
             session.close();
         } catch (Exception ex) {

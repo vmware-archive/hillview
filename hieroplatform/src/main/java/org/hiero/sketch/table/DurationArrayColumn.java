@@ -12,7 +12,6 @@ import java.time.Duration;
  */
 
 public final class DurationArrayColumn extends BaseArrayColumn implements IDurationColumn {
-
     private final Duration[] data;
 
     private void validate() {

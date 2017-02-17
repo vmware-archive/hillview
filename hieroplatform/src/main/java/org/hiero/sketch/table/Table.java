@@ -8,10 +8,7 @@ import java.util.Arrays;
  * This is a simple table held entirely in RAM.
  */
 public class Table extends BaseTable {
-
     protected final Schema schema;
-
-
     protected final IMembershipSet members;
 
     /**

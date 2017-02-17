@@ -2,12 +2,12 @@ package org.hiero.sketch.dataset;
 
 import akka.actor.ActorRef;
 import akka.actor.Address;
+import akka.pattern.Patterns;
 import org.hiero.sketch.dataset.api.*;
 import org.hiero.sketch.remoting.MapOperation;
 import org.hiero.sketch.remoting.SketchOperation;
 import org.hiero.sketch.remoting.ZipOperation;
 import rx.Observable;
-import akka.pattern.Patterns;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;

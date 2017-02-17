@@ -18,7 +18,7 @@ public class TableTarget extends RpcTarget {
     }
 
     @HieroRpc
-    void getSchema(@NonNull RpcRequest request, @NonNull Session session) {
+    void getSchema(RpcRequest request, Session session) {
         SummarySketch ss = new SummarySketch();
         Observable<PartialResult<SummarySketch.TableSummary>> sketches = this.table.sketch(ss);
         PartialResultMonoid<SummarySketch.TableSummary> prm =
@@ -30,7 +30,8 @@ public class TableTarget extends RpcTarget {
     }
 
     @HieroRpc
-    void getTableView(@NonNull RpcRequest request, @NonNull Session session) {
+    void getTableView(RpcRequest request, Session session) {
+        // TODO
     }
 
     @Override

@@ -10,7 +10,6 @@ import java.io.Serializable;
  * @param <R> Output type of the sketch function
  */
 public class SketchOperation<T, R> extends RemoteOperation implements Serializable {
-
     public final ISketch<T, R> sketch;
 
     public SketchOperation(final ISketch<T, R> sketch) {

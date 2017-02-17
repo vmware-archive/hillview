@@ -6,7 +6,9 @@ import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowOrder;
 import org.hiero.sketch.table.api.ITable;
+import org.hiero.utils.Converters;
 
+import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.List;
@@ -156,17 +158,20 @@ public class QuantileSketch implements ISketch<ITable, QuantileList> {
      * @param right The right Quantile
      * @return The merged Quantile
      */
-    @Override
-    public QuantileList add(final QuantileList left, final QuantileList right) {
+    @Override @Nullable
+    public QuantileList add(@Nullable QuantileList left, @Nullable QuantileList right) {
+        left = Converters.checkNull(left);
+        right = Converters.checkNull(right);
         if (!left.getSchema().equals(right.getSchema()))
             throw new RuntimeException("The schemas do not match.");
         final int width = left.getSchema().getColumnCount();
-        final int length = left.getQuantileSize() + right.getQuantileSize();
         final List<IColumn> mergedCol = new ArrayList<IColumn>(width);
         final boolean[] mergeLeft = this.colSortOrder.getMergeOrder(left.quantile, right.quantile);
-        for (String colName: left.getSchema().getColumnNames())
-            mergedCol.add(mergeColumns(left.getColumn(colName),
-                    right.getColumn(colName), mergeLeft));
+        for (String colName: left.getSchema().getColumnNames()) {
+            IColumn newCol = mergeColumns(left.getColumn(colName),
+                    right.getColumn(colName), mergeLeft);
+            mergedCol.add(newCol);
+        }
         final SmallTable mergedTable = new SmallTable(mergedCol);
         final QuantileList.WinsAndLosses[] mergedRank = mergeRanks(left, right, mergeLeft);
         final int mergedDataSize = left.getDataSize() + right.getDataSize();
@@ -175,7 +180,7 @@ public class QuantileSketch implements ISketch<ITable, QuantileList> {
                 compressExact(this.slack*this.resolution);
     }
 
-    @Override
+    @Override @Nullable
     public QuantileList zero() {
         return new QuantileList(this.colSortOrder.toSchema());
     }

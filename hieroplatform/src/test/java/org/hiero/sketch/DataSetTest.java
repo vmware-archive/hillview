@@ -3,11 +3,11 @@ package org.hiero.sketch;
 import org.hiero.sketch.dataset.LocalDataSet;
 import org.hiero.sketch.dataset.ParallelDataSet;
 import org.hiero.sketch.dataset.api.*;
+import org.hiero.utils.Converters;
 import org.junit.Test;
 import rx.Observable;
 import rx.observers.TestSubscriber;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 
@@ -16,24 +16,24 @@ import static org.junit.Assert.*;
 public class DataSetTest {
     private class Increment implements IMap<Integer, Integer> {
         @Override
-        public Integer apply(final Integer data) {
-            return data + 1;
+        public Integer apply(final @Nullable Integer data) {
+            return Converters.checkNull(data) + 1;
         }
     }
 
     private class Sketch implements ISketch<Integer, Integer> {
-        @Override
+        @Override @Nullable
         public Integer zero() {
             return 0;
         }
 
-        @Override
-        public Integer add(final Integer left, final Integer right) {
-            return left + right;
+        @Override @Nullable
+        public Integer add(@Nullable final Integer left, @Nullable final Integer right) {
+            return Converters.checkNull(left) + Converters.checkNull(right);
         }
 
-        @Override
-        public Integer create(final Integer data) {
+        @Override @Nullable
+        public Integer create(@Nullable final Integer data) {
             return data;
         }
     }
@@ -70,20 +70,20 @@ public class DataSetTest {
     }
 
     private class Sum implements ISketch<int[], Integer> {
-        @Override
+        @Override @Nullable
         public Integer zero() {
             return 0;
         }
 
-        @Override
-        public Integer add(final Integer left, final Integer right) {
-            return left + right;
+        @Override @Nullable
+        public Integer add(@Nullable final Integer left, @Nullable final Integer right) {
+            return Converters.checkNull(left) + Converters.checkNull(right);
         }
 
-        @Override
-        public Integer create(final int[] data) {
+        @Override @Nullable
+        public Integer create(@Nullable final int[] data) {
             int sum = 0;
-            for (int aData : data) sum += aData;
+            for (int aData : Converters.checkNull(data)) sum += aData;
             return sum;
         }
     }

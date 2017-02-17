@@ -2,7 +2,6 @@ package org.hiero;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import javax.websocket.Session;
 import java.io.IOException;
@@ -30,7 +29,7 @@ public class RpcReply {
         return result;
     }
 
-    public void send(@NonNull Session session) {
+    public void send(Session session) {
         try {
             JsonElement json = this.toJson();
             session.getBasicRemote().sendText(json.toString());

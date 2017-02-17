@@ -43,7 +43,7 @@ public class PartialResult<T> implements Serializable {
      * Creates a complete partial result (deltaDone = 1.0).
      * @param deltaValue Result produced.
      */
-    public PartialResult(T deltaValue) {
+    public PartialResult(@Nullable T deltaValue) {
         this(1.0, deltaValue);
     }
 
