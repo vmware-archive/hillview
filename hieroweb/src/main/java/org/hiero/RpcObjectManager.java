@@ -1,7 +1,6 @@
 package org.hiero;
 
 import com.google.gson.Gson;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.HashMap;
 import java.util.logging.Level;
@@ -53,7 +52,7 @@ public final class RpcObjectManager {
         }
     }
 
-    synchronized public void addObject(@NonNull RpcTarget object) {
+    synchronized public void addObject(RpcTarget object) {
         String id = this.freshId();
         object.setId(id);
         if (this.objects.containsKey(object.objectId))
@@ -62,7 +61,7 @@ public final class RpcObjectManager {
         this.objects.put(object.objectId, object);
     }
 
-    synchronized public @NonNull RpcTarget getObject(@NonNull String id) {
+    synchronized public RpcTarget getObject(String id) {
         LOGGER.log(Level.INFO, "Getting object " + id);
         if (id == null)
             throw new RuntimeException("Null object id");
@@ -73,7 +72,7 @@ public final class RpcObjectManager {
     }
 
     @SuppressWarnings("unused")
-    synchronized public void deleteObject(@NonNull String id) {
+    synchronized public void deleteObject(String id) {
         if (!this.objects.containsKey(id))
             throw new RuntimeException("Object with id " + id + " does not exist");
         this.objects.remove(id);

@@ -1,8 +1,5 @@
 package org.hiero.sketch.dataset.api;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
-import rx.Observable;
-
 import java.io.Serializable;
 
 /**
@@ -33,5 +30,5 @@ public interface ISketch<T, R> extends Serializable, IMonoid<R> {
      * @param data  Data to sketch.
      * @return  A sketch of the data.
      */
-    @NonNull R create(T data);
+    R create(T data);
 }

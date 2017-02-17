@@ -6,5 +6,6 @@
     "sourceMap": true,
     "target": "es5"
   },
-  "exclude": [ "node_modules", "target", "classes" ]
+  "files": [ "hiero.ts" ],
+  "exclude": [ "node_modules" ]
 }

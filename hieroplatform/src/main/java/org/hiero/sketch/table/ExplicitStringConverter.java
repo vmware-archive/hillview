@@ -1,6 +1,6 @@
 package org.hiero.sketch.table;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
+import javax.annotation.Nonnull;
 import org.hiero.sketch.table.api.IStringConverter;
 
 import java.util.HashMap;
@@ -9,7 +9,7 @@ import java.util.HashMap;
  * A string converter which uses an explicit hash table to map strings to integers.
  */
 public final class ExplicitStringConverter implements IStringConverter {
-    @NonNull
+    @Nonnull
     private final HashMap<String, Integer> stringValue;
 
     public ExplicitStringConverter() {

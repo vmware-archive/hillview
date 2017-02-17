@@ -1,7 +1,7 @@
 package org.hiero;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.dataset.LocalDataSet;
+import org.hiero.sketch.dataset.api.IJson;
 import org.hiero.sketch.dataset.ParallelDataSet;
 import org.hiero.sketch.dataset.api.IDataSet;
 import org.hiero.sketch.table.Table;
@@ -9,14 +9,15 @@ import org.hiero.sketch.table.api.ITable;
 
 import javax.websocket.Session;
 import java.util.ArrayList;
+import java.util.List;
 
-public final class InitialObject extends RpcTarget {
+public class InitialObject extends RpcTarget {
     @HieroRpc
-    void loadTable(@NonNull RpcRequest request, @NonNull Session session) {
+    void loadTable(RpcRequest request, Session session) {
         // TODO: look at request.  Now we just supply always the same table
         Table t = Table.testTable();
         final int parts = 5;
-        ArrayList<IDataSet<ITable>> fragments = new ArrayList<IDataSet<ITable>>();
+        List<IDataSet<ITable>> fragments = new ArrayList<IDataSet<ITable>>();
         for (int i = 0; i < parts; i++) {
             LocalDataSet<ITable> data = new LocalDataSet<ITable>(t);
             fragments.add(data);

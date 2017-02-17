@@ -4,7 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import org.checkerframework.checker.nullness.qual.NonNull;
+import javax.annotation.Nonnull;
 import org.hiero.sketch.dataset.api.IJson;
 import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IMembershipSet;
@@ -20,7 +20,7 @@ import java.io.Serializable;
 public class SmallTable
         extends BaseTable
         implements Serializable, IJson {
-    @NonNull
+    @Nonnull
     protected final Schema schema;
     protected final int rowCount;
 
@@ -29,7 +29,7 @@ public class SmallTable
         return this.schema;
     }
 
-    public SmallTable(@NonNull final Iterable<IColumn> columns) {
+    public SmallTable(@Nonnull final Iterable<IColumn> columns) {
         super(columns);
         this.rowCount = BaseTable.columnSize(this.columns.values());
         final Schema s = new Schema();
@@ -41,7 +41,7 @@ public class SmallTable
         this.schema = s;
     }
 
-    public SmallTable(@NonNull final Schema schema) {
+    public SmallTable(@Nonnull final Schema schema) {
         super(schema);
         this.schema = schema;
         this.rowCount = 0;
@@ -53,7 +53,7 @@ public class SmallTable
     }
 
     @Override
-    public @NonNull IMembershipSet getMembershipSet() {
+    public @Nonnull IMembershipSet getMembershipSet() {
         return new FullMembership(this.rowCount);
     }
 

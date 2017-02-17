@@ -1,6 +1,6 @@
 package org.hiero.sketch.dataset.api;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
+import javax.annotation.Nonnull;
 import rx.Observable;
 
 /**
@@ -18,7 +18,7 @@ public interface IDataSet<T> {
      * @return        A stream of partial results (all IDataSet[S]), only one of which should really
      *                be the actual result.  All the other ones should be null.
      */
-    @NonNull <S> Observable<PartialResult<IDataSet<S>>> map(@NonNull IMap<T, S> mapper);
+    <S> Observable<PartialResult<IDataSet<S>>> map(IMap<T, S> mapper);
 
     /**
      * Run a sketch on a dataset, returning a value.
@@ -27,7 +27,7 @@ public interface IDataSet<T> {
      * @return        A stream of partial results, all of type R.  Adding these partial results
      *                will produce the correct final result.  The sketch itself has an 'add' method.
      */
-    @NonNull <R> Observable<PartialResult<R>> sketch(@NonNull ISketch<T, R> sketch);
+    <R> Observable<PartialResult<R>> sketch(ISketch<T, R> sketch);
 
     /**
      * Combine two datasets that have the exact same topology by pairing the values in the
@@ -37,7 +37,7 @@ public interface IDataSet<T> {
      * @return       A stream of partial results which are all IDataSet[Pair[T,S]].  In fact this
      *               stream will contain exactly one result.
      */
-    @NonNull <S> Observable<PartialResult<IDataSet<Pair<T, S>>>> zip(@NonNull IDataSet<S> other);
+    <S> Observable<PartialResult<IDataSet<Pair<T, S>>>> zip(IDataSet<S> other);
 
     // The following are various helper methods.
 
@@ -47,8 +47,8 @@ public interface IDataSet<T> {
      * @param <R>      Type of data in partial results.
      * @return         A stream containing just the data of the partial results.
      */
-    @NonNull static <R> Observable<R> getValues(
-            @NonNull final Observable<PartialResult<R>> results) {
+    static <R> Observable<R> getValues(
+            final Observable<PartialResult<R>> results) {
         return results.map(e -> e.deltaValue);
     }
 
@@ -60,14 +60,14 @@ public interface IDataSet<T> {
      * @return         A stream containing exactly one value - the sum of all
      *                 values in the data stream.
      */
-    @NonNull static <R> Observable<R> reduce(
-            @NonNull final Observable<R> data,
-            @NonNull final IMonoid<R> monoid) {
+    static <R> Observable<R> reduce(
+            final Observable<R> data,
+            final IMonoid<R> monoid) {
         return data.reduce(monoid.zero(), monoid::add);
     }
 
-    @NonNull static <S> Observable<IDataSet<S>> reduce(
-            @NonNull final Observable<PartialResult<IDataSet<S>>> results) {
+    static <S> Observable<IDataSet<S>> reduce(
+            final Observable<PartialResult<IDataSet<S>>> results) {
         final IMonoid<PartialResult<IDataSet<S>>> mono = new PRDataSetMonoid<S>();
         return getValues(reduce(results, mono));
     }
@@ -80,8 +80,8 @@ public interface IDataSet<T> {
      * @param <S>     Type of data in the result.
      * @return        An observable with a single element.
      */
-    @NonNull default <S> Observable<IDataSet<S>> singleMap(
-            @NonNull final IMap<T, S> mapper) {
+    default <S> Observable<IDataSet<S>> singleMap(
+            final IMap<T, S> mapper) {
         return reduce(this.map(mapper));
     }
 
@@ -90,8 +90,8 @@ public interface IDataSet<T> {
      * @param <S>     Type of data in the result.
      * @return        An observable with a single element.
      */
-    @NonNull default <S> Observable<IDataSet<Pair<T, S>>> singleZip(
-            @NonNull final IDataSet<S> other) {
+    default <S> Observable<IDataSet<Pair<T, S>>> singleZip(
+            final IDataSet<S> other) {
         return reduce(this.zip(other));
     }
 
@@ -101,8 +101,8 @@ public interface IDataSet<T> {
      * @param <R>     Type of data in the result.
      * @return        An observable with a single element.
      */
-    @NonNull default <R> Observable<R> singleSketch(
-            @NonNull final ISketch<T, R> sketch) {
+    default <R> Observable<R> singleSketch(
+            final ISketch<T, R> sketch) {
         return reduce(getValues(this.sketch(sketch)), sketch);
     }
 
@@ -112,7 +112,7 @@ public interface IDataSet<T> {
      * @param <S>     Type of data produced.
      * @return        An IDataSet containing the final result of the map.
      */
-    @NonNull default <S> IDataSet<S> blockingMap(@NonNull final IMap<T, S> mapper) {
+    default <S> IDataSet<S> blockingMap(final IMap<T, S> mapper) {
         return this.singleMap(mapper).toBlocking().single();
     }
 
@@ -121,7 +121,7 @@ public interface IDataSet<T> {
      * @param <S>     Type of data produced.
      * @return        An IDataSet containing the final result of the zip.
      */
-    @NonNull default <S> IDataSet<Pair<T, S>> blockingZip(@NonNull final IDataSet<S> other) {
+    default <S> IDataSet<Pair<T, S>> blockingZip(final IDataSet<S> other) {
         return this.singleZip(other).toBlocking().single();
     }
 
@@ -131,7 +131,7 @@ public interface IDataSet<T> {
      * @param <R>     Type of data produced.
      * @return        An IDataSet containing the final result of the sketch.
      */
-    @NonNull default <R> R blockingSketch(@NonNull final ISketch<T, R> sketch) {
+    default <R> R blockingSketch(final ISketch<T, R> sketch) {
         return this.singleSketch(sketch).toBlocking().single();
     }
 }

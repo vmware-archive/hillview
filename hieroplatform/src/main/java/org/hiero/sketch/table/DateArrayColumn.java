@@ -1,6 +1,6 @@
 package org.hiero.sketch.table;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
+import javax.annotation.Nonnull;
 import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.IDateColumn;
 
@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 public final class DateArrayColumn
         extends BaseArrayColumn
         implements IDateColumn {
-    @NonNull
+    @Nonnull
     private final LocalDateTime[] data;
 
     private void validate() {
@@ -21,14 +21,14 @@ public final class DateArrayColumn
             throw new InvalidParameterException("Kind should be Date" + this.description.kind);
     }
 
-    public DateArrayColumn(@NonNull final ColumnDescription description, final int size) {
+    public DateArrayColumn(@Nonnull final ColumnDescription description, final int size) {
         super(description, size);
         this.validate();
         this.data = new LocalDateTime[size];
     }
 
-    public DateArrayColumn(@NonNull final ColumnDescription description,
-                           @NonNull final LocalDateTime[] data) {
+    public DateArrayColumn(@Nonnull final ColumnDescription description,
+                           @Nonnull final LocalDateTime[] data) {
         super(description, data.length);
         this.validate();
         this.data = data;

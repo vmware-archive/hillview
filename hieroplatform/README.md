@@ -1,4 +1,4 @@
-# This folder contains Java code for implementing the hiero back-end services.
+# This folder contains Java code for implementing the Hiero back-end services.
 
 ## Building and testing:
 

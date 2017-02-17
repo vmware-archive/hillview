@@ -19,10 +19,6 @@ table {
     font-weight: normal;
 }
 
-.footer {
-    background-color: grey;
-}
-
 .dropdown {
     display: none;
     position: absolute;
@@ -58,7 +54,7 @@ th, td {
     justify-content: flex-start;
     height: 10px;
     border: solid black 1px;
-    width: 250px;
+    max-width: 250px;
 }
 
 .progressBarInner {
@@ -99,22 +95,4 @@ th, td {
     flex-wrap: nowrap;
     justify-content: flex-start;
     align-items: stretch;
-}
-
-.console {
-    background: cyan;
-    float: right;
-    width: 70%;
-}
-
-.progressManager {
-    background: grey;
-    float: left;
-    width: 30%;
-}
-
-.dataDisplay {
-    background: white;
-    float: top;
-    height: 80%;
 }

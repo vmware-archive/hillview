@@ -1,6 +1,6 @@
 package org.hiero.sketch.spreadsheet;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
+import javax.annotation.Nonnull;
 import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
@@ -9,27 +9,16 @@ import org.hiero.sketch.table.api.IStringConverter;
 /**
  * One dimensional histogram where buckets are just longs and not a full object.
  */
-public class Histogram1DLight {
+public class Histogram1DLight extends BaseHist1D {
     private final long[] buckets;
     private long missingData;
     private long outOfRange;
-    private final IBucketsDescription1D bucketDescription;
     private boolean initialized;
 
-    public Histogram1DLight(final @NonNull IBucketsDescription1D bucketDescription) {
-        this.bucketDescription = bucketDescription;
+    public Histogram1DLight(final @Nonnull IBucketsDescription1D bucketDescription) {
+        super(bucketDescription);
         this.buckets = new long[bucketDescription.getNumOfBuckets()]; //default by java initialized to zero
         this.initialized = false;
-    }
-
-    public void createSampleHistogram(final IColumn column, final IMembershipSet membershipSet,
-            final IStringConverter converter, double sampleRate) {
-        this.createHistogram(column, membershipSet.sample(sampleRate), converter);
-    }
-
-    public void createSampleHistogram(final IColumn column, final IMembershipSet membershipSet,
-                                      final IStringConverter converter, double sampleRate, long seed) {
-        this.createHistogram(column, membershipSet.sample(sampleRate, seed), converter);
     }
 
     /**
@@ -46,8 +35,9 @@ public class Histogram1DLight {
     /**
      * Creates the histogram explicitly and in full. Should be called at most once.
      */
+    @Override
     public void createHistogram(final IColumn column, final IMembershipSet membershipSet,
-                                final IStringConverter converter ) {
+                                final IStringConverter converter) {
         if (this.initialized) //a histogram had already been created
             throw new IllegalAccessError("A histogram cannot be created twice");
         this.initialized = true;
@@ -57,7 +47,7 @@ public class Histogram1DLight {
             if (column.isMissing(currRow))
                 this.missingData++;
             else {
-                double val = column.asDouble(currRow,converter);
+                double val = column.asDouble(currRow, converter);
                 int index = this.bucketDescription.indexOf(val);
                 if (index >= 0)
                     this.buckets[index]++;
@@ -66,7 +56,6 @@ public class Histogram1DLight {
             currRow = myIter.getNextRow();
         }
     }
-    public int getNumOfBuckets() { return this.bucketDescription.getNumOfBuckets(); }
 
     public long getMissingData() { return this.missingData; }
 
@@ -81,7 +70,7 @@ public class Histogram1DLight {
      * @param  otherHistogram with the same bucketDescription
      * @return a new Histogram which is the union of this and otherHistogram
      */
-    public Histogram1DLight union( @NonNull Histogram1DLight otherHistogram) {
+    public @Nonnull Histogram1DLight union( @Nonnull Histogram1DLight otherHistogram) {
         if (!this.bucketDescription.equals(otherHistogram.bucketDescription))
             throw new IllegalArgumentException("Histogram union without matching buckets");
         Histogram1DLight unionH = new Histogram1DLight(this.bucketDescription);

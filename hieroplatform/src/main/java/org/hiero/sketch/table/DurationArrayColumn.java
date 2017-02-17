@@ -1,6 +1,6 @@
 package org.hiero.sketch.table;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
+import javax.annotation.Nonnull;
 import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.IDurationColumn;
 
@@ -12,7 +12,7 @@ import java.time.Duration;
  */
 
 public final class DurationArrayColumn extends BaseArrayColumn implements IDurationColumn {
-    @NonNull
+    @Nonnull
     private final Duration[] data;
 
     private void validate() {
@@ -21,14 +21,14 @@ public final class DurationArrayColumn extends BaseArrayColumn implements IDurat
                     + this.description.kind);
     }
 
-    public DurationArrayColumn(@NonNull final ColumnDescription description, final int size) {
+    public DurationArrayColumn(@Nonnull final ColumnDescription description, final int size) {
         super(description, size);
         this.validate();
         this.data = new Duration[size];
     }
 
-    public DurationArrayColumn(@NonNull final ColumnDescription description,
-                               @NonNull final Duration[] data) {
+    public DurationArrayColumn(@Nonnull final ColumnDescription description,
+                               @Nonnull final Duration[] data) {
         super(description, data.length);
         this.validate();
         this.data = data;

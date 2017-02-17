@@ -8,6 +8,27 @@
     <version>1.0-SNAPSHOT</version>
     <name>hieroplatform</name>
     <url>http://maven.apache.org</url>
+
+    <!-- Generates findbugs report -->
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>findbugs-maven-plugin</artifactId>
+                <version>3.0.4</version>
+                <configuration>
+                    <!--
+                        Enables analysis which takes more memory but finds more bugs.
+                        If you run out of memory, changes the value of the effort element
+                        to 'low'.
+                    -->
+                    <effort>Max</effort>
+                    <!-- Reports all bugs (other values are medium and max) -->
+                    <threshold>Low</threshold>
+                </configuration>
+            </plugin>
+        </plugins>
+    </reporting>
     <dependencies>
         <!-- Comma-separated value file I/O -->
         <dependency>
@@ -50,34 +71,6 @@
             <version>1.1.6</version>
         </dependency>
         <dependency>
-            <groupId>commons-lang</groupId>
-            <artifactId>commons-lang</artifactId>
-            <version>2.1</version>
-        </dependency>
-        <!-- Checker Framework: used for annotations such as @NonNull -->
-        <dependency>
-            <groupId>org.checkerframework</groupId>
-            <artifactId>checker-qual</artifactId>
-            <version>2.1.5</version>
-        </dependency>
-        <dependency>
-            <groupId>org.checkerframework</groupId>
-            <artifactId>checker</artifactId>
-            <version>2.1.5</version>
-        </dependency>
-        <!-- The type annotations compiler - uncomment if desired -->
-        <!-- <dependency>
-            <groupId>org.checkerframework</groupId>
-            <artifactId>compiler</artifactId>
-            <version>2.1.5</version>
-        </dependency> -->
-        <!-- The annotated JDK to use for the checker framework (change to jdk7 if using Java 7) -->
-        <dependency>
-            <groupId>org.checkerframework</groupId>
-            <artifactId>jdk8</artifactId>
-            <version>2.1.5</version>
-        </dependency>
-        <dependency>
              <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
             <version>2.8.0</version>
@@ -86,6 +79,12 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math3</artifactId>
             <version>3.6.1</version>
+        </dependency>
+        <!-- JSR-305 annotations -->
+        <dependency>
+            <groupId>com.google.code.findbugs</groupId>
+            <artifactId>jsr305</artifactId>
+            <version>3.0.1</version>
         </dependency>
     </dependencies>
 

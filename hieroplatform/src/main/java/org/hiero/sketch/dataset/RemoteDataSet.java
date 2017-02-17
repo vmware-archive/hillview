@@ -2,7 +2,8 @@ package org.hiero.sketch.dataset;
 
 import akka.actor.ActorRef;
 import akka.actor.Address;
-import org.checkerframework.checker.nullness.qual.NonNull;
+import akka.util.Timeout;
+import javax.annotation.Nonnull;
 import org.hiero.sketch.dataset.api.*;
 import org.hiero.sketch.remoting.MapOperation;
 import org.hiero.sketch.remoting.SketchOperation;
@@ -19,20 +20,17 @@ import scala.concurrent.duration.Duration;
 public class RemoteDataSet<T> implements IDataSet<T> {
     protected final static int TIMEOUT_MS = 1000;  // TODO: import via config file
     protected static final Duration duration = Duration.create(TIMEOUT_MS, "milliseconds");
-    @NonNull
     protected final ActorRef clientActor;
-    @NonNull
     protected final ActorRef remoteActor;
 
     public RemoteDataSet(
-            @NonNull final ActorRef clientActor, @NonNull final ActorRef remoteActor) {
+            @Nonnull final ActorRef clientActor, @Nonnull final ActorRef remoteActor) {
         this.clientActor = clientActor;
         this.remoteActor = remoteActor;
     }
 
     @Override
-    @NonNull public <S> Observable<PartialResult<IDataSet<S>>> map(
-            @NonNull final IMap<T, S> mapper) {
+    public <S> Observable<PartialResult<IDataSet<S>>> map(final IMap<T, S> mapper) {
         final MapOperation<T, S> mapOp = new MapOperation<T, S>(mapper);
         final Future<Object> future = Patterns.ask(this.clientActor, mapOp, TIMEOUT_MS);
         try {
@@ -46,7 +44,7 @@ public class RemoteDataSet<T> implements IDataSet<T> {
     }
 
     @Override
-    public <R> Observable<PartialResult<R>> sketch(@NonNull final ISketch<T, R> sketch) {
+    public <R> Observable<PartialResult<R>> sketch(final ISketch<T, R> sketch) {
         final SketchOperation<T, R> sketchOp = new SketchOperation<T, R>(sketch);
         final Future<Object> future = Patterns.ask(this.clientActor, sketchOp, TIMEOUT_MS);
         try {
@@ -61,7 +59,7 @@ public class RemoteDataSet<T> implements IDataSet<T> {
 
     @Override
     public <S> Observable<PartialResult<IDataSet<Pair<T, S>>>> zip(
-            @NonNull final IDataSet<S> other) {
+            @Nonnull final IDataSet<S> other) {
         if (!(other instanceof RemoteDataSet<?>)) {
             throw new RuntimeException("Unexpected type in Zip " + other);
         }

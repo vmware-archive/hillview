@@ -1,6 +1,6 @@
 package org.hiero.sketch.spreadsheet;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
+import javax.annotation.Nonnull;
 import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
@@ -24,12 +24,15 @@ public class Histogram2DHeavy {
     private long totalsize;
 
 
-    public Histogram2DHeavy(final @NonNull IBucketsDescription1D buckets1, final @NonNull IBucketsDescription1D buckets2) {
+    public Histogram2DHeavy(final @Nonnull IBucketsDescription1D buckets1, final @Nonnull IBucketsDescription1D buckets2) {
         this.bucketDescDim1 = buckets1;
         this.bucketDescDim2 = buckets2;
         this.histogramMissingD1 = new Histogram1D(this.bucketDescDim1);
         this.histogramMissingD2 = new Histogram1D(this.bucketDescDim2);
         this.buckets = new Bucket2D[buckets1.getNumOfBuckets()][buckets2.getNumOfBuckets()];
+        for (int i = 0; i < this.bucketDescDim1.getNumOfBuckets(); i++)
+            for (int j = 0; j < this.bucketDescDim2.getNumOfBuckets(); j++)
+                this.buckets[i][j] = new Bucket2D();
         this.initialized = false;
         this.totalsize = 0;
     }
@@ -61,9 +64,6 @@ public class Histogram2DHeavy {
         if (this.initialized) //a histogram had already been created
             throw new IllegalAccessError("A histogram cannot be created twice");
         this.initialized = true;
-        for (int i = 0; i < this.bucketDescDim1.getNumOfBuckets(); i++)
-            for (int j = 0; j < this.bucketDescDim2.getNumOfBuckets(); j++)
-                this.buckets[i][j] = new Bucket2D();
         final IRowIterator myIter = membershipSet.getIterator();
         int currRow = myIter.getNextRow();
         while (currRow >= 0) {
@@ -112,12 +112,10 @@ public class Histogram2DHeavy {
      * @param  otherHistogram with the same bucketDescription
      * @return a new Histogram which is the union of this and otherHistogram
      */
-    public Histogram2DHeavy union( @NonNull Histogram2DHeavy otherHistogram) {
+    public Histogram2DHeavy union( @Nonnull Histogram2DHeavy otherHistogram) {
         if ((!this.bucketDescDim1.equals(otherHistogram.bucketDescDim1))
                 || (!this.bucketDescDim2.equals(otherHistogram.bucketDescDim2)))
             throw new IllegalArgumentException("Histogram union without matching buckets");
-        if ((!this.initialized) || (!otherHistogram.initialized))
-            throw new IllegalArgumentException("Uninitialized histogram cannot be part of a union");
         Histogram2DHeavy unionH = new Histogram2DHeavy(this.bucketDescDim1, this.bucketDescDim2);
         for (int i = 0; i < unionH.bucketDescDim1.getNumOfBuckets(); i++)
             for (int j = 0; j < unionH.bucketDescDim2.getNumOfBuckets(); j++)

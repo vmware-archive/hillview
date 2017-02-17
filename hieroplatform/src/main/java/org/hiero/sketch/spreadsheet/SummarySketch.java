@@ -3,8 +3,7 @@ package org.hiero.sketch.spreadsheet;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import javax.annotation.Nonnull;
 import org.hiero.sketch.dataset.api.IJson;
 import org.hiero.sketch.dataset.api.ISketch;
 import org.hiero.sketch.dataset.api.PartialResult;
@@ -31,7 +30,7 @@ public class SummarySketch implements ISketch<ITable, SummarySketch.TableSummary
         // The sketch zero() element can be produced without looking at the data at all.
         // So we need a way to represent a "zero" schema.  An empty schema is in principle
         // legal for a table, so we use a null to represent a yet "unknown" schema.
-        @Nullable
+        // @Nullable // TODO: put it back
         public final Schema schema;
         public final long   rowCount;
 
@@ -68,21 +67,18 @@ public class SummarySketch implements ISketch<ITable, SummarySketch.TableSummary
         }
     }
 
-    @NonNull
     @Override
     public TableSummary zero() {
         return new TableSummary();
     }
 
-    @NonNull
     @Override
-    public TableSummary add(@NonNull TableSummary left, @NonNull TableSummary right) {
+    public TableSummary add(TableSummary left, TableSummary right) {
         return left.add(right);
     }
 
-    @NonNull
     @Override
-    public TableSummary create(@NonNull ITable data) {
+    public TableSummary create(ITable data) {
         /*
          Testing code
         try {

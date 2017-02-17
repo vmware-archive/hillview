@@ -5,12 +5,12 @@ import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.japi.pf.ReceiveBuilder;
 import akka.serialization.Serialization;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.dataset.api.*;
 import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
 
+import javax.annotation.Nonnull;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -26,14 +26,14 @@ public class SketchServerActor<T> extends AbstractActor {
     private static final String SERVER_ACTOR_NAME = "ServerActor";
     private static final AtomicInteger nodeId = new AtomicInteger(0);
 
-    @NonNull
+    @Nonnull
     private final IDataSet<T> dataSet;
     private final ConcurrentHashMap<UUID, Subscription> operationToObservable
             = new ConcurrentHashMap<>();
 
 
     @SuppressWarnings("unchecked")
-    public SketchServerActor(@NonNull final IDataSet<T> dataSet) {
+    public SketchServerActor(@Nonnull final IDataSet<T> dataSet) {
         this.dataSet = dataSet;
 
         receive(
@@ -94,7 +94,7 @@ public class SketchServerActor<T> extends AbstractActor {
         private final PartialResultMonoid resultMonoid = new PRDataSetMonoid();
         private PartialResult result = this.resultMonoid.zero();
 
-        private MapResponderSubscriber(@NonNull final UUID id, @NonNull final ActorRef sender) {
+        private MapResponderSubscriber(@Nonnull final UUID id, @Nonnull final ActorRef sender) {
             super(id, sender);
         }
 
@@ -127,8 +127,8 @@ public class SketchServerActor<T> extends AbstractActor {
         private final PartialResultMonoid resultMonoid = new PRDataSetMonoid();
         private final PartialResult result = this.resultMonoid.zero();
 
-        private ZipResponderSubscriber(@NonNull final UUID id,
-                                       @NonNull final ActorRef sender) {
+        private ZipResponderSubscriber(@Nonnull final UUID id,
+                                       @Nonnull final ActorRef sender) {
             super(id, sender);
         }
 
@@ -150,12 +150,12 @@ public class SketchServerActor<T> extends AbstractActor {
      * Generic subscriber, used to wrap results and send them back to the client
      */
     private class ResponderSubscriber<R> extends Subscriber<R> {
-        @NonNull
+        @Nonnull
         final UUID id;
-        @NonNull
+        @Nonnull
         final ActorRef sender;
 
-        private ResponderSubscriber(@NonNull final UUID id, @NonNull final ActorRef sender) {
+        private ResponderSubscriber(@Nonnull final UUID id, @Nonnull final ActorRef sender) {
             this.id = id;
             this.sender = sender;
         }

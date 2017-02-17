@@ -1,9 +1,9 @@
 package org.hiero.sketch.dataset;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.dataset.api.*;
 import rx.Observable;
 
+import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -37,7 +37,7 @@ public class ParallelDataSet<T> implements IDataSet<T> {
     /**
      * Children of the data set.
      */
-    @NonNull
+
     protected final List<IDataSet<T>> children;
     protected static Logger logger = Logger.getLogger(ParallelDataSet.class.getName());
 
@@ -45,7 +45,7 @@ public class ParallelDataSet<T> implements IDataSet<T> {
      * Create a ParallelDataSet from a map that indicates the index of each child.
      * @param elements  Children, presented as a map indexed by child position.
      */
-    protected ParallelDataSet(@NonNull final Map<Integer, IDataSet<T>> elements) {
+    protected ParallelDataSet(final Map<Integer, IDataSet<T>> elements) {
         this.children = new ArrayList<IDataSet<T>>(elements.size());
         for (final Map.Entry<Integer, IDataSet<T>> e : elements.entrySet())
             this.children.add(e.getKey(), e.getValue());
@@ -55,7 +55,7 @@ public class ParallelDataSet<T> implements IDataSet<T> {
      * Create a ParallelDataSet from a list of children.
      * @param children  List of children.
      */
-    public ParallelDataSet(@NonNull final List<IDataSet<T>> children) {
+    public ParallelDataSet(final List<IDataSet<T>> children) {
         this.children = children;
     }
 
@@ -87,7 +87,7 @@ public class ParallelDataSet<T> implements IDataSet<T> {
      * @return  A shorter stream, in which some of the values in the data stream have been
      * added together.
      */
-    @NonNull
+
     public <R> Observable<R> bundle(final Observable<R> data, IMonoid<R> adder) {
         if (this.bundleInterval > 0)
             return data.buffer(this.bundleInterval, bundleTimeUnit)
@@ -104,9 +104,9 @@ public class ParallelDataSet<T> implements IDataSet<T> {
      * @param <S>     Type of result data.
      * @return        A stream of partial results produced by running the mapper on all children.
      */
-    @Override @NonNull
+    @Override
     public <S> Observable<PartialResult<IDataSet<S>>> map(
-            @NonNull final IMap<T, S> mapper) {
+             final IMap<T, S> mapper) {
         final List<Observable<Pair<Integer, PartialResult<IDataSet<S>>>>> obs =
                 new ArrayList<Observable<Pair<Integer, PartialResult<IDataSet<S>>>>>(this.size());
         // We run the mapper over each child, and then we tag the results produced by
@@ -145,7 +145,7 @@ public class ParallelDataSet<T> implements IDataSet<T> {
         return result;
     }
 
-    @Override @NonNull
+    @Override
     public <S> Observable<PartialResult<IDataSet<Pair<T, S>>>> zip(
             final IDataSet<S> other) {
         if (!(other instanceof ParallelDataSet<?>))
@@ -190,7 +190,7 @@ public class ParallelDataSet<T> implements IDataSet<T> {
         return result;
     }
 
-    @Override @NonNull
+    @Override
     public <R> Observable<PartialResult<R>> sketch(final ISketch<T, R> sketch) {
         List<Observable<PartialResult<R>>> obs = new ArrayList<Observable<PartialResult<R>>>();
         int mySize = this.size();
