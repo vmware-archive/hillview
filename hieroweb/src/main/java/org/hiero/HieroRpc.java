@@ -1,4 +1,4 @@
-package hiero.web;
+package org.hiero;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

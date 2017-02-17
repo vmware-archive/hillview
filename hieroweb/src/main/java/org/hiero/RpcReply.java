@@ -1,4 +1,4 @@
-package hiero.web;
+package org.hiero;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -22,4 +22,3 @@ public class RpcReply {
         return result;
     }
 }
-

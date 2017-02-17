@@ -2,7 +2,7 @@ var path = require('path');
 var nodepath = path.resolve("/usr/local/lib/node_modules");
 // This is very weird: webpack is installed globally,
 // but apparently webpack cannot load itself from a global location
-var webpack = require(nodepath + '/' + 'webpack');
+// var webpack = require(nodepath + '/' + 'webpack');
 
 module.exports = {
     entry: "./hiero.ts",
@@ -15,7 +15,7 @@ module.exports = {
     },
     resolve: {
         // Add '.ts' and '.tsx' as a resolvable extension.
-        extensions: ["", ".ts", ".tsx", ".js"],
+        extensions: ["", ".ts", ".tsx", ".js"]
     },
     module: {
         loaders: [
