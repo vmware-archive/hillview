@@ -7,10 +7,10 @@ import javax.annotation.Nonnull;
  * @param <T> Type of value from a monoid.
  */
 public class PartialResultMonoid<T> implements IMonoid<PartialResult<T>> {
-    @Nonnull
+
     private final IMonoid<T> monoid;
 
-    public PartialResultMonoid(@Nonnull final IMonoid<T> monoid) {
+    public PartialResultMonoid( final IMonoid<T> monoid) {
         this.monoid = monoid;
     }
 
@@ -19,8 +19,8 @@ public class PartialResultMonoid<T> implements IMonoid<PartialResult<T>> {
     }
 
     @Override
-    public PartialResult<T> add(@Nonnull final PartialResult<T> left,
-                                @Nonnull final PartialResult<T> right) {
+    public PartialResult<T> add( final PartialResult<T> left,
+                                 final PartialResult<T> right) {
         return new PartialResult<T>(left.deltaDone + right.deltaDone,
                 this.monoid.add(left.deltaValue, right.deltaValue));
     }

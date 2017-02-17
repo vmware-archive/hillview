@@ -14,7 +14,7 @@ import javax.annotation.Nonnull;
 public abstract class BaseHist1D implements IHistogram1D {
     final protected IBucketsDescription1D bucketDescription;
 
-    public BaseHist1D(final @Nonnull IBucketsDescription1D bucketDescription) {
+    public BaseHist1D(final  IBucketsDescription1D bucketDescription) {
         this.bucketDescription = bucketDescription;
     }
 

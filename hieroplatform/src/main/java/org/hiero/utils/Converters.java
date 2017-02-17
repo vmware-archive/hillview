@@ -15,12 +15,12 @@ public class Converters {
             LocalDate.of(1970, 1, 1),
             LocalTime.of(0, 0));
 
-    public static double toDouble(@Nonnull final LocalDateTime d) {
+    public static double toDouble( final LocalDateTime d) {
         Duration span = Duration.between(d, baseTime);
         return Converters.toDouble(span);
     }
 
-    public static double toDouble(@Nonnull final Duration d) {
+    public static double toDouble( final Duration d) {
         return d.toNanos();
     }
 

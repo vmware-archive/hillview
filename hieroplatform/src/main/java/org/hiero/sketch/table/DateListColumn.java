@@ -13,7 +13,7 @@ import java.util.ArrayList;
 public class DateListColumn
         extends BaseListColumn
         implements IDateColumn {
-    @Nonnull
+
     private final ArrayList<LocalDateTime[]> segments;
 
     public DateListColumn(final ColumnDescription desc) {

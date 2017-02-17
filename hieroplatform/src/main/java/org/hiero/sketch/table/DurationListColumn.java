@@ -11,10 +11,10 @@ import java.util.ArrayList;
  * A column of time durations that can grow in size.
  */
 class DurationListColumn extends BaseListColumn implements IDurationColumn {
-    @Nonnull
+
     private final ArrayList<Duration[]> segments;
 
-    public DurationListColumn(@Nonnull final ColumnDescription desc) {
+    public DurationListColumn( final ColumnDescription desc) {
         super(desc);
         if (desc.kind != ContentsKind.Duration)
             throw new IllegalArgumentException("Unexpected column kind " + desc.kind);

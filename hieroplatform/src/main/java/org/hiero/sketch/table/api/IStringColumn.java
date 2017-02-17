@@ -4,7 +4,7 @@ import javax.annotation.Nonnull;
 
 public interface IStringColumn extends IColumn {
     @Override
-    default double asDouble(final int rowIndex, @Nonnull final IStringConverter conv) {
+    default double asDouble(final int rowIndex,  final IStringConverter conv) {
         if (isMissing(rowIndex))
             throw new MissingException(this, rowIndex);
         final String tmp = this.getString(rowIndex);

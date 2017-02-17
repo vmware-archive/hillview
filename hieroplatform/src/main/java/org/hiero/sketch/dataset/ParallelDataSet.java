@@ -8,23 +8,23 @@ import java.util.ArrayList;
 import java.util.Map;
 
 public class ParallelDataSet<T> implements IDataSet<T> {
-    @Nonnull
+
     private final ArrayList<IDataSet<T>> children;
 
-    private ParallelDataSet(@Nonnull final Map<Integer, IDataSet<T>> elements) {
+    private ParallelDataSet( final Map<Integer, IDataSet<T>> elements) {
         this.children = new ArrayList<IDataSet<T>>(elements.size());
         for (final Map.Entry<Integer, IDataSet<T>> e : elements.entrySet())
             this.children.add(e.getKey(), e.getValue());
     }
 
-    public ParallelDataSet(@Nonnull final ArrayList<IDataSet<T>> children) {
+    public ParallelDataSet( final ArrayList<IDataSet<T>> children) {
         this.children = children;
     }
 
     private int size() { return this.children.size(); }
 
     @Override
-    public <S> Observable<PartialResult<IDataSet<S>>> map(@Nonnull final IMap<T, S> mapper) {
+    public <S> Observable<PartialResult<IDataSet<S>>> map( final IMap<T, S> mapper) {
         final ArrayList<Observable<Pair<Integer, PartialResult<IDataSet<S>>>>> obs =
                 new ArrayList<Observable<Pair<Integer, PartialResult<IDataSet<S>>>>>(this.size());
         for (int i = 0; i < this.size(); i++) {

@@ -22,8 +22,8 @@ public class HeatMap {
     private boolean initialized;
     private long totalsize;
 
-    public HeatMap(final @Nonnull IBucketsDescription1D buckets1,
-                   final @Nonnull IBucketsDescription1D buckets2) {
+    public HeatMap(final  IBucketsDescription1D buckets1,
+                   final  IBucketsDescription1D buckets2) {
         this.bucketDescDim1 = buckets1;
         this.bucketDescDim2 = buckets2;
         this.buckets = new long[buckets1.getNumOfBuckets()][buckets2.getNumOfBuckets()]; // Automatically initialized to 0
@@ -104,7 +104,7 @@ public class HeatMap {
      * @param  otherHeatmap with the same bucketDescriptions
      * @return a new Histogram which is the union of this and otherHeatmap
      */
-    public HeatMap union( @Nonnull HeatMap otherHeatmap) {
+    public HeatMap union(  HeatMap otherHeatmap) {
         if ((!this.bucketDescDim1.equals(otherHeatmap.bucketDescDim1))
             || (!this.bucketDescDim2.equals(otherHeatmap.bucketDescDim2)))
             throw new IllegalArgumentException("Histogram union without matching buckets");

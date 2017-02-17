@@ -6,22 +6,22 @@ import org.hiero.sketch.table.SmallTable;
 import javax.annotation.Nonnull;
 
 public interface ITable {
-    @Nonnull
+
     Schema getSchema();
 
-    @Nonnull IRowIterator getRowIterator();
+     IRowIterator getRowIterator();
 
     /**
      * Describes the set of rows that are really present in the table.
      */
-    @Nonnull IMembershipSet getMembershipSet();
+     IMembershipSet getMembershipSet();
 
     int getNumOfRows();
 
     IColumn getColumn(String colName);
 
-    SmallTable compress(@Nonnull ISubSchema subSchema,
-                        @Nonnull IRowOrder rowOrder);
+    SmallTable compress( ISubSchema subSchema,
+                         IRowOrder rowOrder);
 
     SmallTable compress(IRowOrder rowOrder);
 }

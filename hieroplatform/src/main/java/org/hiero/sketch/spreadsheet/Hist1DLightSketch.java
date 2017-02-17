@@ -27,7 +27,7 @@ public class Hist1DLightSketch implements ISketch<ITable, Histogram1DLight> {
         this.rate = rate;
     }
 
-    public Histogram1DLight getHistogram(@Nonnull final ITable data) {
+    public Histogram1DLight getHistogram( final ITable data) {
         Histogram1DLight result = this.zero();
         result.createHistogram(data.getColumn(this.colName),
                     data.getMembershipSet().sample(this.rate), this.converter);
@@ -35,18 +35,18 @@ public class Hist1DLightSketch implements ISketch<ITable, Histogram1DLight> {
     }
 
     @Override
-    public @Nonnull Histogram1DLight add(@Nonnull final Histogram1DLight left,
-                                @Nonnull final Histogram1DLight right) {
+    public  Histogram1DLight add( final Histogram1DLight left,
+                                 final Histogram1DLight right) {
         return left.union(right);
     }
 
     @Override
-    public @Nonnull Histogram1DLight zero() {
+    public  Histogram1DLight zero() {
         return new Histogram1DLight(this.bucketDesc);
     }
 
     @Override
-    public @Nonnull Observable<PartialResult<Histogram1DLight>> create(final ITable data) {
+    public  Observable<PartialResult<Histogram1DLight>> create(final ITable data) {
         Histogram1DLight hist = this.getHistogram(data);
         PartialResult<Histogram1DLight> result = new PartialResult<>(1.0, hist);
         return Observable.just(result);

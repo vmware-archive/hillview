@@ -53,7 +53,7 @@ public class NextKList implements Serializable, IJson {
         this.totalRows = 0;
     }
 
-    @Nonnull
+
     public String toLongString(int rowsToDisplay) {
         final StringBuilder builder = new StringBuilder();
         builder.append(this.toString());
@@ -71,7 +71,7 @@ public class NextKList implements Serializable, IJson {
         return builder.toString();
     }
 
-    @Nonnull
+
     @Override
     public JsonElement toJsonTree() {
         JsonObject result = new JsonObject();

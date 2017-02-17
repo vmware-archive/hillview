@@ -48,11 +48,11 @@ public interface IMembershipSet extends IRowOrder {
     /**
      * @return a new map which is the union of current map and otherMap.
      */
-    IMembershipSet union(@Nonnull IMembershipSet otherMap);
+    IMembershipSet union( IMembershipSet otherMap);
 
-    IMembershipSet intersection(@Nonnull IMembershipSet otherMap);
+    IMembershipSet intersection( IMembershipSet otherMap);
 
-    default IMembershipSet setMinus(@Nonnull IMembershipSet otherMap) {
+    default IMembershipSet setMinus( IMembershipSet otherMap) {
         final IntSet setMinusSet = new IntSet();
         final IRowIterator iter = this.getIterator();
         int curr = iter.getNextRow();

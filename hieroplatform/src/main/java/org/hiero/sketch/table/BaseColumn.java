@@ -10,14 +10,14 @@ import java.time.LocalDateTime;
  * Base class for all columns.
  */
 abstract class BaseColumn implements IColumn {
-    @Nonnull
+
     final ColumnDescription description;
 
-    BaseColumn(@Nonnull final ColumnDescription description) {
+    BaseColumn( final ColumnDescription description) {
         this.description = description;
     }
 
-    @Nonnull
+
     @Override
     public ColumnDescription getDescription() {
         return this.description;

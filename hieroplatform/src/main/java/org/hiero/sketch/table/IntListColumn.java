@@ -13,10 +13,10 @@ import java.util.ArrayList;
 public final class IntListColumn
         extends BaseListColumn
         implements IIntColumn {
-    @Nonnull
+
     private final ArrayList<int[]> segments;
 
-    public IntListColumn(@Nonnull final ColumnDescription desc) {
+    public IntListColumn( final ColumnDescription desc) {
         super(desc);
         if (this.description.kind != ContentsKind.Int)
             throw new InvalidParameterException("Kind should be Int " + this.description.kind);

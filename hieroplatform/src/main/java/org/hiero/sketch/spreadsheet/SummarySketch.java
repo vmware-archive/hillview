@@ -52,21 +52,21 @@ public class SummarySketch implements ISketch<ITable, SummarySketch.TableSummary
         }
     }
 
-    @Nonnull
+
     @Override
     public TableSummary zero() {
         return new TableSummary();
     }
 
-    @Nonnull
+
     @Override
-    public TableSummary add(@Nonnull TableSummary left, @Nonnull TableSummary right) {
+    public TableSummary add( TableSummary left,  TableSummary right) {
         return left.add(right);
     }
 
-    @Nonnull
+
     @Override
-    public Observable<PartialResult<TableSummary>> create(@Nonnull ITable data) {
+    public Observable<PartialResult<TableSummary>> create( ITable data) {
         TableSummary ts = new TableSummary(data.getSchema(), data.getNumOfRows());
         return this.pack(ts);
     }

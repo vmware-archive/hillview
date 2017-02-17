@@ -10,9 +10,9 @@ import java.io.Serializable;
  * Describes the contents of a column in a local table.
  */
 public class ColumnDescription implements Serializable, IJson {
-    @Nonnull
+
     public final String name;
-    @Nonnull
+
     public final ContentsKind kind;
     /**
      * If true the column can have missing values (called NULL in databases).

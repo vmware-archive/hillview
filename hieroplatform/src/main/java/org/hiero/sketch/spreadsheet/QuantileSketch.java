@@ -92,9 +92,9 @@ public class QuantileSketch implements ISketch<ITable, QuantileList> {
      * @param mergeLeft The order in which to merge the two columns.
      * @return The merged column.
      */
-    private ObjectArrayColumn mergeColumns(@Nonnull final IColumn left,
-                                           @Nonnull final IColumn right,
-                                           @Nonnull final boolean[] mergeLeft) {
+    private ObjectArrayColumn mergeColumns( final IColumn left,
+                                            final IColumn right,
+                                            final boolean[] mergeLeft) {
         if (mergeLeft.length != (left.sizeInRows() + right.sizeInRows())) {
             throw new InvalidParameterException("Length of mergeOrder must equal " +
                     "sum of lengths of the columns");
@@ -123,9 +123,9 @@ public class QuantileSketch implements ISketch<ITable, QuantileList> {
      * @param mergeLeft The order in which to merge the two columns.
      * @return The ApproxRanks (wins and losses) for elements in the merged QuantileList.
      */
-    private QuantileList.WinsAndLosses[] mergeRanks(@Nonnull final QuantileList left,
-                                                    @Nonnull final QuantileList right,
-                                                    @Nonnull final boolean[] mergeLeft) {
+    private QuantileList.WinsAndLosses[] mergeRanks( final QuantileList left,
+                                                     final QuantileList right,
+                                                     final boolean[] mergeLeft) {
         final int length = left.getQuantileSize() + right.getQuantileSize();
         final QuantileList.WinsAndLosses[] mergedRank = new QuantileList.WinsAndLosses[length];
         int i = 0, j = 0, lower, upper;
@@ -160,7 +160,7 @@ public class QuantileSketch implements ISketch<ITable, QuantileList> {
      * @return The merged Quantile
      */
     @Override
-    public QuantileList add(@Nonnull final QuantileList left, @Nonnull final QuantileList right) {
+    public QuantileList add( final QuantileList left,  final QuantileList right) {
         if (!left.getSchema().equals(right.getSchema()))
             throw new RuntimeException("The schemas do not match.");
         final int width = left.getSchema().getColumnCount();

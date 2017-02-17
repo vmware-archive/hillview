@@ -34,14 +34,14 @@ public interface ISketch<T, R> extends Serializable, IMonoid<R> {
      * @return  An observable containing a sequence of sketches; adding these sketches
      * produces the sketch over the complete data.
      */
-    @Nonnull Observable<PartialResult<R>> create(T data);
+     Observable<PartialResult<R>> create(T data);
 
     /**
      * Packages some data in an Observable of a PartialResult.
      * @param data Data; usually the result of the sketch computation.
      * @return An observable which contains exactly one partial result containing the whole data.
      */
-    @Nonnull default Observable<PartialResult<R>> pack(@Nonnull final R data) {
+     default Observable<PartialResult<R>> pack( final R data) {
         PartialResult<R> pr = new PartialResult<R>(data);
         return Observable.just(pr);
     }

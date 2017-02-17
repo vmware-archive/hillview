@@ -12,15 +12,15 @@ import java.time.LocalDateTime;
  * Column of objects of any type; only for moving data around. Size of column expected to be small.
  */
 public final class ObjectArrayColumn extends BaseArrayColumn {
-    @Nonnull private final Object[] data;
+     private final Object[] data;
 
-    public ObjectArrayColumn(@Nonnull final ColumnDescription description, final int size) {
+    public ObjectArrayColumn( final ColumnDescription description, final int size) {
         super(description, size);
         this.data = new Object[size];
     }
 
-    public ObjectArrayColumn(@Nonnull final ColumnDescription description,
-                             @Nonnull final Object[] data) {
+    public ObjectArrayColumn( final ColumnDescription description,
+                              final Object[] data) {
         super(description, data.length);
         this.data = data;
     }

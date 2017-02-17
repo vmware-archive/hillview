@@ -2,14 +2,13 @@ package org.hiero.sketch.dataset;
 
 import akka.actor.ActorRef;
 import akka.actor.Address;
+import akka.pattern.Patterns;
 import akka.util.Timeout;
-import javax.annotation.Nonnull;
 import org.hiero.sketch.dataset.api.*;
 import org.hiero.sketch.remoting.MapOperation;
 import org.hiero.sketch.remoting.SketchOperation;
 import org.hiero.sketch.remoting.ZipOperation;
 import rx.Observable;
-import akka.pattern.Patterns;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
@@ -19,19 +18,19 @@ import scala.concurrent.duration.Duration;
  */
 public class RemoteDataSet<T> implements IDataSet<T> {
     private final static int TIMEOUT_MS = 1000;  // TODO: import via config file
-    @Nonnull
+
     private final ActorRef clientActor;
-    @Nonnull
+
     private final ActorRef remoteActor;
 
     public RemoteDataSet(
-            @Nonnull final ActorRef clientActor, @Nonnull final ActorRef remoteActor) {
+             final ActorRef clientActor,  final ActorRef remoteActor) {
         this.clientActor = clientActor;
         this.remoteActor = remoteActor;
     }
 
     @Override
-    public <S> Observable<PartialResult<IDataSet<S>>> map(@Nonnull final IMap<T, S> mapper) {
+    public <S> Observable<PartialResult<IDataSet<S>>> map( final IMap<T, S> mapper) {
         final Timeout timeout = new Timeout(Duration.create(TIMEOUT_MS, "milliseconds"));
         final MapOperation<T, S> mapOp = new MapOperation<T, S>(mapper);
         final Future<Object> future = Patterns.ask(this.clientActor, mapOp, TIMEOUT_MS);
@@ -46,7 +45,7 @@ public class RemoteDataSet<T> implements IDataSet<T> {
     }
 
     @Override
-    public <R> Observable<PartialResult<R>> sketch(@Nonnull final ISketch<T, R> sketch) {
+    public <R> Observable<PartialResult<R>> sketch( final ISketch<T, R> sketch) {
         final Timeout timeout = new Timeout(Duration.create(TIMEOUT_MS, "milliseconds"));
         final SketchOperation<T, R> sketchOp = new SketchOperation<T, R>(sketch);
         final Future<Object> future = Patterns.ask(this.clientActor, sketchOp, TIMEOUT_MS);
@@ -62,7 +61,7 @@ public class RemoteDataSet<T> implements IDataSet<T> {
 
     @Override
     public <S> Observable<PartialResult<IDataSet<Pair<T, S>>>> zip(
-            @Nonnull final IDataSet<S> other) {
+             final IDataSet<S> other) {
         if (!(other instanceof RemoteDataSet<?>)) {
             throw new RuntimeException("Unexpected type in Zip " + other);
         }

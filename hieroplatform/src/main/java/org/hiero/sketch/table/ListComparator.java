@@ -6,10 +6,10 @@ import javax.annotation.Nonnull;
 import java.util.List;
 
 public class ListComparator extends IndexComparator {
-    @Nonnull
+
     private final List<IndexComparator> comparatorList;
 
-    public ListComparator(@Nonnull final List<IndexComparator> comparatorList) {
+    public ListComparator( final List<IndexComparator> comparatorList) {
         this.comparatorList = comparatorList;
     }
 
