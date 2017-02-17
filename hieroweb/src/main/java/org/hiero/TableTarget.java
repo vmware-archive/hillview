@@ -1,4 +1,4 @@
-package hiero.web;
+package org.hiero;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.dataset.api.IDataSet;

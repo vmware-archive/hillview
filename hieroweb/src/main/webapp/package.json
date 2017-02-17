@@ -14,10 +14,7 @@
     "url": "git://github.com/mbudiu-vmw/hiero.git"
   },
   "dependencies": {
-    "css-loader": "^0.26.1",
     "imports-loader": "^0.7.0",
-    "jquery": "^3.1.1",
-    "jquery.event.drag": "^2.2.2",
     "rx": "^4.1.0",
     "rx-dom": "^7.0.3",
     "style-loader": "^0.13.1"
