@@ -2,7 +2,6 @@ package org.hiero.sketch.table;
 
 import org.hiero.sketch.table.api.IndexComparator;
 
-import javax.annotation.Nonnull;
 import java.util.List;
 
 public class ListComparator extends IndexComparator {

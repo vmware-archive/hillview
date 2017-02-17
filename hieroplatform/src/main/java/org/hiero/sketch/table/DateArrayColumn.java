@@ -1,9 +1,9 @@
 package org.hiero.sketch.table;
 
-import javax.annotation.Nonnull;
 import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.IDateColumn;
 
+import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
 import java.time.LocalDateTime;
 
@@ -44,7 +44,7 @@ public final class DateArrayColumn
         return this.data[rowIndex];
     }
 
-    private void set(final int rowIndex, final LocalDateTime value) {
+    private void set(final int rowIndex, @Nullable final LocalDateTime value) {
         this.data[rowIndex] = value;
     }
 

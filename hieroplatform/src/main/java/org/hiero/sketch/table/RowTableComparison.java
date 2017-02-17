@@ -4,6 +4,7 @@ import org.hiero.sketch.spreadsheet.ColumnSortOrientation;
 import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.ITable;
 
+import javax.annotation.Nullable;
 import java.util.Iterator;
 
 /**
@@ -17,7 +18,7 @@ public class RowTableComparison {
     private final ITable table;
     private final RecordOrder recordOrder;
 
-    public RowTableComparison(RowSnapshot topRow, ITable table, RecordOrder recordOrder ) {
+    public RowTableComparison(@Nullable RowSnapshot topRow, ITable table, RecordOrder recordOrder ) {
         this.topRow = topRow;
         this.table = table;
         this.recordOrder = recordOrder;
@@ -30,6 +31,7 @@ public class RowTableComparison {
      */
     public int compareToRow(int i) {
         int outcome = 0;
+        if (this.topRow == null) return 1;
         Iterator<ColumnSortOrientation> it = this.recordOrder.iterator();
         while (it.hasNext()) {
             ColumnSortOrientation ordCol = it.next();

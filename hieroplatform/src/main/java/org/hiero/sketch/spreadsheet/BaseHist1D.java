@@ -4,8 +4,6 @@ import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IStringConverter;
 
-import javax.annotation.Nonnull;
-
 /**
  * Abstract class for a one dimensional histogram. Derived classes mainly vary in the way they
  * implement buckets.

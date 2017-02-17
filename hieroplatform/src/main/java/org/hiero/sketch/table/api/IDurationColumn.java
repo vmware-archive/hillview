@@ -2,11 +2,12 @@ package org.hiero.sketch.table.api;
 
 import org.hiero.utils.Converters;
 
+import javax.annotation.Nullable;
 import java.time.Duration;
 
 public interface IDurationColumn extends IColumn {
     @Override
-    default double asDouble(final int rowIndex, final IStringConverter unused) {
+    default double asDouble(final int rowIndex, @Nullable final IStringConverter unused) {
         if (isMissing(rowIndex))
             throw new MissingException(this, rowIndex);
         final Duration tmp = this.getDuration(rowIndex);

@@ -2,7 +2,6 @@ package org.hiero.sketch.remoting;
 
 import akka.actor.ActorRef;
 
-import javax.annotation.Nonnull;
 import java.io.Serializable;
 
 /**

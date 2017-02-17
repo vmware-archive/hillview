@@ -4,7 +4,8 @@ import org.hiero.sketch.table.api.IStringConverter;
 import org.hiero.sketch.table.api.IndexComparator;
 import org.hiero.utils.Converters;
 
-import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.security.InvalidParameterException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
@@ -29,11 +30,14 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
     public int sizeInRows() { return this.data.length; }
 
     @Override
-    public double asDouble(final int rowIndex, final IStringConverter converter) {
+    public double asDouble(final int rowIndex, @Nullable final IStringConverter converter) {
         switch (ObjectArrayColumn.this.description.kind) {
             case Json:
             case String:
-                return converter.asDouble(this.getString(rowIndex));
+                if(converter == null)
+                    throw new InvalidParameterException("Need a non-null string converter.");
+                else
+                    return converter.asDouble(this.getString(rowIndex));
             case Date:
                 return Converters.toDouble(this.getDate(rowIndex));
             case Int:
@@ -117,7 +121,7 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
         return (String)this.data[rowIndex];
     }
 
-    public void set(final int rowIndex, final Object value) {
+    public void set(final int rowIndex, @Nullable final Object value) {
         this.data[rowIndex] = value;
     }
 

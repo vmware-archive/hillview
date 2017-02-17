@@ -1,6 +1,5 @@
 package org.hiero.sketch.dataset.api;
 
-import javax.annotation.Nonnull;
 import rx.Observable;
 
 import java.io.Serializable;

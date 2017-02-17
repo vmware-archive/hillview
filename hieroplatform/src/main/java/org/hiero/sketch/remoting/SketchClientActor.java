@@ -13,7 +13,6 @@ import rx.subjects.PublishSubject;
 import scala.concurrent.Await;
 import scala.concurrent.duration.Duration;
 
-import javax.annotation.Nonnull;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;

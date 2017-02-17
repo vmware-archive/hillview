@@ -1,9 +1,9 @@
 package org.hiero.sketch.table;
 
-import javax.annotation.Nonnull;
 import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.IDurationColumn;
 
+import javax.annotation.Nullable;
 import java.time.Duration;
 import java.util.ArrayList;
 
@@ -28,7 +28,7 @@ class DurationListColumn extends BaseListColumn implements IDurationColumn {
         return this.segments.get(segmentId)[localIndex];
     }
 
-    private void append(final Duration value) {
+    private void append(@Nullable final Duration value) {
         final int segmentId = this.size >> this.LogSegmentSize;
         final int localIndex = this.size & this.SegmentMask;
         if (this.segments.size() <= segmentId) {

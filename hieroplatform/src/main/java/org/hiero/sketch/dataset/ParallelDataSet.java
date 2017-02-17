@@ -3,7 +3,6 @@ package org.hiero.sketch.dataset;
 import org.hiero.sketch.dataset.api.*;
 import rx.Observable;
 
-import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Map;
 

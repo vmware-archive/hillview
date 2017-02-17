@@ -1,6 +1,5 @@
 package org.hiero.sketch.table;
 
-import javax.annotation.Nonnull;
 import org.hiero.sketch.spreadsheet.ColumnSortOrientation;
 import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.ISubSchema;

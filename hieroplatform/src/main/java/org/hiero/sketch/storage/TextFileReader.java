@@ -1,6 +1,5 @@
 package org.hiero.sketch.storage;
 
-import javax.annotation.Nonnull;
 import org.hiero.sketch.table.ColumnDescription;
 import org.hiero.sketch.table.StringListColumn;
 import org.hiero.sketch.table.api.ContentsKind;

@@ -1,6 +1,5 @@
 package org.hiero.sketch.remoting;
 
-import javax.annotation.Nonnull;
 import java.io.Serializable;
 import java.util.UUID;
 

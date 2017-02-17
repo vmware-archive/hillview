@@ -3,7 +3,6 @@ package org.hiero.sketch.storage;
 import org.hiero.sketch.table.Schema;
 import org.hiero.sketch.table.Table;
 
-import javax.annotation.Nonnull;
 import java.nio.file.Path;
 
 /**

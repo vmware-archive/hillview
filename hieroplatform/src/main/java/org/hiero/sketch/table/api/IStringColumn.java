@@ -1,7 +1,5 @@
 package org.hiero.sketch.table.api;
 
-import javax.annotation.Nonnull;
-
 public interface IStringColumn extends IColumn {
     @Override
     default double asDouble(final int rowIndex,  final IStringConverter conv) {

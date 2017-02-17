@@ -3,8 +3,6 @@ package org.hiero.sketch.table.api;
 import org.hiero.sketch.table.Schema;
 import org.hiero.sketch.table.SmallTable;
 
-import javax.annotation.Nonnull;
-
 public interface ITable {
 
     Schema getSchema();

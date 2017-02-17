@@ -2,7 +2,6 @@ package org.hiero.sketch.table;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
-import javax.annotation.Nonnull;
 import org.hiero.sketch.dataset.api.IJson;
 import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.ISubSchema;

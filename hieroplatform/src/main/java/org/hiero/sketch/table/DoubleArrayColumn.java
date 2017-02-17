@@ -1,6 +1,5 @@
 package org.hiero.sketch.table;
 
-import javax.annotation.Nonnull;
 import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.IDoubleColumn;
 

@@ -1,7 +1,5 @@
 package org.hiero.sketch.spreadsheet;
 
-import javax.annotation.Nonnull;
-
 /**
  * A one dimensional bucket designed for a Histogram1D
  */

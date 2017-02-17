@@ -8,7 +8,6 @@ import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
 
-import javax.annotation.Nonnull;
 import java.io.Serializable;
 
 /**

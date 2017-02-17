@@ -1,7 +1,5 @@
 package org.hiero.sketch.spreadsheet;
 
-import javax.annotation.Nonnull;
-
 public class Bucket2D {
 
     private final Bucket1D bucket1;

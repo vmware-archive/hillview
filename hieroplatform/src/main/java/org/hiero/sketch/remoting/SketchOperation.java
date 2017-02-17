@@ -2,7 +2,6 @@ package org.hiero.sketch.remoting;
 
 import org.hiero.sketch.dataset.api.ISketch;
 
-import javax.annotation.Nonnull;
 import java.io.Serializable;
 
 /**

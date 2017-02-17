@@ -2,7 +2,6 @@ package org.hiero.sketch.table;
 
 import org.hiero.sketch.table.api.IColumn;
 
-import javax.annotation.Nonnull;
 import java.time.Duration;
 import java.time.LocalDateTime;
 

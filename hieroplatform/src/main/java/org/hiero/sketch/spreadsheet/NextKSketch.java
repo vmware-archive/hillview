@@ -6,18 +6,28 @@ import org.hiero.sketch.table.*;
 import org.hiero.sketch.table.api.*;
 import rx.Observable;
 
-import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedMap;
 
+/**
+ * Given a data set, the NextKSketch generates the Next K items in Sorted Order (specified by a
+ * RecordOrder) starting from a specified rowSnapShot (topRow). It also computes counts for how many
+ * rows in the data project onto each entry, and how many rows come before topRow.
+ */
 public class NextKSketch implements ISketch<ITable, NextKList> {
 
     private final RecordOrder recordOrder;
     private final RowSnapshot topRow;
     private final int maxSize;
 
-    public NextKSketch( RecordOrder recordOrder,  RowSnapshot topRow, int maxSize) {
+    /**
+     * @param recordOrder The ordering on rows of the table
+     * @param topRow The row to start from, set to null if we want to start from the top row.
+     * @param maxSize The parameter K in NextK.
+     */
+    public NextKSketch(RecordOrder recordOrder, @Nullable RowSnapshot topRow, int maxSize) {
         this.recordOrder = recordOrder;
         this.topRow = topRow;
         this.maxSize = maxSize;

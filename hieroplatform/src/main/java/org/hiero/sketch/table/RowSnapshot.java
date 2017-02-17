@@ -21,7 +21,7 @@ public class RowSnapshot implements IRow, Serializable, IJson {
      */
     private final HashMap<String, Object> field = new HashMap<String, Object>();
 
-    public RowSnapshot( final ITable data, final int rowIndex) {
+    public RowSnapshot(final ITable data, final int rowIndex) {
         this.schema = data.getSchema();
         for (final String colName : this.schema.getColumnNames())
             this.field.put(colName, data.getColumn(colName).getObject(rowIndex));
@@ -48,7 +48,7 @@ public class RowSnapshot implements IRow, Serializable, IJson {
         return this.field.size();
     }
 
-    public boolean isMissing( String colName){ return (this.field.get(colName) == null); }
+    public boolean isMissing(String colName) { return (this.field.get(colName) == null); }
 
     @Override
     public Schema getSchema() {
@@ -56,15 +56,15 @@ public class RowSnapshot implements IRow, Serializable, IJson {
     }
 
     @Override
-    public Object get( String colName) {
+    public Object get(String colName) {
         return this.field.get(colName);
     }
 
-    public String getString( String colName) {
+    public String getString(String colName) {
         return (String) this.field.get(colName);
     }
 
-    public Integer getInt( String colName) {
+    public Integer getInt(String colName) {
         return (Integer) this.field.get(colName);
     }
 

@@ -1,7 +1,5 @@
 package org.hiero.sketch.dataset.api;
 
-import javax.annotation.Nonnull;
-
 /**
  * A Partial result with a value from a monoid is also a monoid.
  * @param <T> Type of value from a monoid.

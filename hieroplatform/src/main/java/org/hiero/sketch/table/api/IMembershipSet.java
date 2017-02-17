@@ -1,6 +1,5 @@
 package org.hiero.sketch.table.api;
 
-import javax.annotation.Nonnull;
 import org.hiero.utils.Randomness;
 import org.hiero.sketch.table.SparseMembership;
 import org.hiero.utils.IntSet;
