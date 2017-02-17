@@ -30,7 +30,6 @@ $> mvn package
 
 ## Running the web ui
 
-[TODO]
 * Run the Tomcat web server
 
 $> cd hieroweb

@@ -10,6 +10,7 @@ import org.hiero.sketch.table.*;
 import org.hiero.sketch.table.api.IRowOrder;
 import org.hiero.sketch.table.api.ITable;
 import org.hiero.sketch.table.api.IndexComparator;
+import org.hiero.utils.Converters;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -44,7 +45,8 @@ public class QuantileSketchTest {
         final IndexComparator rightComp = rso.getComparator(rightQ.quantile);
         for (int i = 0; i < (rightQ.getQuantileSize() - 1); i++)
             assertTrue(rightComp.compare(i, i + 1) <= 0);
-        final QuantileList mergedQ = qSketch.add(leftQ, rightQ);
+        QuantileList mergedQ = qSketch.add(leftQ, rightQ);
+        mergedQ = Converters.checkNull(mergedQ);
         IndexComparator mComp = rso.getComparator(mergedQ.quantile);
         for (int i = 0; i < (mergedQ.getQuantileSize() - 1); i++)
             assertTrue(mComp.compare(i, i + 1) <= 0);

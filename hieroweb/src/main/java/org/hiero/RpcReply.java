@@ -3,10 +3,17 @@ package org.hiero;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import javax.websocket.Session;
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 public class RpcReply {
     private final int requestId;
     private final String result;
     private final boolean isError;
+    private static final Logger logger =
+            Logger.getLogger(RpcReply.class.getName());
 
     public RpcReply(final int requestId, final String result, boolean isError) {
         this.requestId = requestId;
@@ -20,5 +27,15 @@ public class RpcReply {
         result.addProperty("result", this.result);
         result.addProperty("isError", this.isError);
         return result;
+    }
+
+    public void send(Session session) {
+        try {
+            JsonElement json = this.toJson();
+            session.getBasicRemote().sendText(json.toString());
+            RpcReply.logger.log(Level.INFO, "Reply sent");
+        } catch (IOException e) {
+            RpcReply.logger.log(Level.SEVERE, "Could not send reply");
+        }
     }
 }

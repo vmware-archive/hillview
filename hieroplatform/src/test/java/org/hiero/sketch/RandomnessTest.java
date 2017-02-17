@@ -12,10 +12,9 @@ public class RandomnessTest {
 
     @Test
     public void testRandomnessPerf() {
-
         this.randomPRG = new Random();
         this.MT_PRG = new MersenneTwister();
-        int iterationnNum = 1000; // number of iterations
+        int iterationnNum = 100; // number of iterations
         int length = 100000; // number of random numbers to generate
 
         TestUtil.runPerfTest((k) -> totalRandom(length), iterationnNum);

@@ -11,7 +11,6 @@ import java.security.InvalidParameterException;
 public final class DoubleArrayColumn
         extends BaseArrayColumn
         implements IDoubleColumn {
-
     private final double[] data;
 
     private void validate() {
@@ -19,14 +18,14 @@ public final class DoubleArrayColumn
             throw new InvalidParameterException("Kind should be Double " + this.description.kind);
     }
 
-    public DoubleArrayColumn( final ColumnDescription description, final int size) {
+    public DoubleArrayColumn(final ColumnDescription description, final int size) {
         super(description, size);
         this.validate();
         this.data = new double[size];
     }
 
-    public DoubleArrayColumn( final ColumnDescription description,
-                              final double[] data) {
+    public DoubleArrayColumn(final ColumnDescription description,
+                             final double[] data) {
         super(description, data.length);
         this.validate();
         this.data = data;

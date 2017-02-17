@@ -13,13 +13,12 @@ import javax.websocket.Session;
 public class TableTarget extends RpcTarget {
     protected final IDataSet<ITable> table;
 
-    public TableTarget(@NonNull String objectId, IDataSet<ITable> table) {
-        super(objectId);
+    public TableTarget(IDataSet<ITable> table) {
         this.table = table;
     }
 
     @HieroRpc
-    void getSchema(@NonNull RpcRequest request, @NonNull Session session) {
+    void getSchema(RpcRequest request, Session session) {
         SummarySketch ss = new SummarySketch();
         Observable<PartialResult<SummarySketch.TableSummary>> sketches = this.table.sketch(ss);
         PartialResultMonoid<SummarySketch.TableSummary> prm =
@@ -31,6 +30,12 @@ public class TableTarget extends RpcTarget {
     }
 
     @HieroRpc
-    void getTableView(@NonNull RpcRequest request, @NonNull Session session) {
+    void getTableView(RpcRequest request, Session session) {
+        // TODO
+    }
+
+    @Override
+    public String toString() {
+        return "TableTarget object, " + super.toString();
     }
 }

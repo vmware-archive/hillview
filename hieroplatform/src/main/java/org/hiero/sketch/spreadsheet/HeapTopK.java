@@ -9,13 +9,11 @@ import java.util.*;
 public class HeapTopK<T> implements ITopK<T> {
     private final int maxSize;
     private int size;
-
     private final HashMap<T, Integer> data;
     private T cutoff; /* max value that currently belongs to Top K. */
-
     private final Comparator<T> greater;
 
-    public HeapTopK( final int maxSize,  final Comparator<T> greater) {
+    public HeapTopK(final int maxSize, final Comparator<T> greater) {
         if (maxSize > 0)
             this.maxSize = maxSize;
         else

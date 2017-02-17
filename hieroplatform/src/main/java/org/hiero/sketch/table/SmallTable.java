@@ -17,7 +17,6 @@ import java.io.Serializable;
 public class SmallTable
         extends BaseTable
         implements Serializable, IJson {
-
     protected final Schema schema;
     protected final int rowCount;
 
@@ -26,11 +25,11 @@ public class SmallTable
         return this.schema;
     }
 
-    public SmallTable( final Iterable<IColumn> cols) {
-        super(cols);
+    public SmallTable(final Iterable<IColumn> columns) {
+        super(columns);
         this.rowCount = BaseTable.columnSize(this.columns.values());
         final Schema s = new Schema();
-        for (final IColumn c : cols) {
+        for (final IColumn c : columns) {
             s.append(c.getDescription());
             if (!(c instanceof Serializable))
                 throw new RuntimeException("Column for SmallTable is not serializable");
@@ -38,7 +37,7 @@ public class SmallTable
         this.schema = s;
     }
 
-    public SmallTable( final Schema schema) {
+    public SmallTable(final Schema schema) {
         super(schema);
         this.schema = schema;
         this.rowCount = 0;
@@ -50,7 +49,7 @@ public class SmallTable
     }
 
     @Override
-    public  IMembershipSet getMembershipSet() {
+    public IMembershipSet getMembershipSet() {
         return new FullMembership(this.rowCount);
     }
 

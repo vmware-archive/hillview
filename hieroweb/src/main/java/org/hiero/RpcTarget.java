@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.dataset.api.IJson;
 import org.hiero.sketch.dataset.api.PartialResult;
+import org.hiero.utils.Converters;
 import rx.Observer;
 
 import javax.websocket.Session;
@@ -14,35 +15,46 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public abstract class RpcTarget {
-    protected final String objectId;
-    protected RpcServer server;
-    private HashMap<String, Method> executor;
-    protected Logger logger = Logger.getLogger(RpcTarget.class.getName());
+    protected String objectId;
+    private final HashMap<String, Method> executor;
+    protected static final Logger logger = Logger.getLogger(RpcTarget.class.getName());
 
-    RpcTarget(@NonNull String objectId) {
-        this.objectId = objectId;
+    RpcTarget() {
         this.executor = new HashMap<String, Method>();
         this.registerExecutors();
+        RpcObjectManager.instance.addObject(this);
     }
 
-    public void setServer(@NonNull RpcServer server) {
-        this.server = server;
+    public void setId(String objectId) {
+        this.objectId = objectId;
     }
 
+    /**
+     * Use reflection to register all methods that have an @HieroRpc annotation.
+     * These methods will be invoked for each RpcRequest received.
+     * All these methods should have the following signature:
+     * method(RpcRequest req, Session session).
+     * The method is responsible for:
+     * - parsing the arguments of the RpcCall
+     * - sending the replies, in any number they may be, using the session
+     * - closing the session on termination.
+     */
     private void registerExecutors() {
-        // use reflection to register all methods that have an @HieroRpc annotation
-        // as executors
         Class<?> type = this.getClass();
         for (Method m : type.getDeclaredMethods()) {
             if (m.isAnnotationPresent(HieroRpc.class)) {
-                this.logger.log(Level.INFO, "Registered RPC method " + m.getName());
+                logger.log(Level.INFO, "Registered RPC method " + m.getName());
                 this.executor.put(m.getName(), m);
             }
         }
     }
 
-    // Dispatches an RPC request for execution
-    public void execute(@NonNull RpcRequest request, @NonNull Session session)
+    /**
+     * Dispatches an RPC request for execution.
+     * This will look up the method in the RpcRequest using reflection
+     * and invoke it using Java reflection.
+     */
+    public void execute(RpcRequest request, Session session)
             throws InvocationTargetException, IllegalAccessException {
         Method cons = this.executor.get(request.method);
         if (cons == null)
@@ -54,12 +66,12 @@ public abstract class RpcTarget {
     public int hashCode() { return this.objectId.hashCode(); }
 
     class ResultObserver<T extends IJson> implements Observer<PartialResult<T>> {
-        @NonNull final RpcRequest request;
-        @NonNull final Session session;
+        final RpcRequest request;
+        final Session session;
 
         // TODO: handle session disconnections
 
-        ResultObserver(@NonNull RpcRequest request, @NonNull Session session) {
+        ResultObserver(RpcRequest request, Session session) {
             this.request = request;
             this.session = session;
         }
@@ -73,20 +85,34 @@ public abstract class RpcTarget {
         public void onError(Throwable throwable) {
             if (!this.session.isOpen()) return;
 
-            RpcTarget.this.logger.log(Level.SEVERE, throwable.toString());
+            RpcTarget.logger.log(Level.SEVERE, throwable.toString());
             RpcReply reply = this.request.createReply(throwable);
-            RpcTarget.this.server.sendReply(reply, this.session);
+            reply.send(this.session);
         }
 
         @Override
         public void onNext(PartialResult<T> pr) {
-            if (!this.session.isOpen()) return;
+            logger.log(Level.INFO, "Received partial result");
+            if (!this.session.isOpen()) {
+                logger.log(Level.WARNING, "Session closed, ignoring partial result");
+                return;
+            }
 
             JsonObject json = new JsonObject();
             json.addProperty("done", pr.deltaDone);
-            json.add("data", pr.deltaValue.toJsonTree());
+            T delta = Converters.checkNull(pr.deltaValue);
+            json.add("data", delta.toJsonTree());
             RpcReply reply = this.request.createReply(json);
-            RpcTarget.this.server.sendReply(reply, this.session);
+            reply.send(this.session);
         }
+    }
+
+    @Override
+    public String toString() {
+        return "id: " + this.objectId;
+    }
+
+    public String idToJson() {
+        return RpcObjectManager.gson.toJson(this.objectId);
     }
 }

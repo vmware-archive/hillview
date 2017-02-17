@@ -10,11 +10,11 @@ import java.util.TreeMap;
 public class TreeTopK<T> implements ITopK<T> {
     private final int maxSize;
     private int size;
-     private final SortedMap<T, Integer> data;
+    private final SortedMap<T, Integer> data;
     private T cutoff; /* max value that currently belongs to Top K. */
-     private final Comparator<T> greater;
+    private final Comparator<T> greater;
 
-    public TreeTopK(final int maxSize,  final Comparator<T> greater) {
+    public TreeTopK(final int maxSize, final Comparator<T> greater) {
         this.maxSize = maxSize;
         this.size = 0;
         this.greater = greater;

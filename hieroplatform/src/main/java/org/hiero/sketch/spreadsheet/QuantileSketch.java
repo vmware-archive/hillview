@@ -1,14 +1,14 @@
 package org.hiero.sketch.spreadsheet;
 
 import org.hiero.sketch.dataset.api.ISketch;
-import org.hiero.sketch.dataset.api.PartialResult;
 import org.hiero.sketch.table.*;
 import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowOrder;
 import org.hiero.sketch.table.api.ITable;
-import rx.Observable;
+import org.hiero.utils.Converters;
 
+import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.List;
@@ -91,9 +91,9 @@ public class QuantileSketch implements ISketch<ITable, QuantileList> {
      * @param mergeLeft The order in which to merge the two columns.
      * @return The merged column.
      */
-    private ObjectArrayColumn mergeColumns( final IColumn left,
-                                            final IColumn right,
-                                            final boolean[] mergeLeft) {
+    private ObjectArrayColumn mergeColumns(final IColumn left,
+                                           final IColumn right,
+                                           final boolean[] mergeLeft) {
         if (mergeLeft.length != (left.sizeInRows() + right.sizeInRows())) {
             throw new InvalidParameterException("Length of mergeOrder must equal " +
                     "sum of lengths of the columns");
@@ -122,9 +122,9 @@ public class QuantileSketch implements ISketch<ITable, QuantileList> {
      * @param mergeLeft The order in which to merge the two columns.
      * @return The ApproxRanks (wins and losses) for elements in the merged QuantileList.
      */
-    private QuantileList.WinsAndLosses[] mergeRanks( final QuantileList left,
-                                                     final QuantileList right,
-                                                     final boolean[] mergeLeft) {
+    private QuantileList.WinsAndLosses[] mergeRanks(final QuantileList left,
+                                                    final QuantileList right,
+                                                    final boolean[] mergeLeft) {
         final int length = left.getQuantileSize() + right.getQuantileSize();
         final QuantileList.WinsAndLosses[] mergedRank = new QuantileList.WinsAndLosses[length];
         int i = 0, j = 0, lower, upper;
@@ -158,8 +158,10 @@ public class QuantileSketch implements ISketch<ITable, QuantileList> {
      * @param right The right Quantile
      * @return The merged Quantile
      */
-    @Override
-    public QuantileList add( final QuantileList left,  final QuantileList right) {
+    @Override @Nullable
+    public QuantileList add(@Nullable QuantileList left, @Nullable QuantileList right) {
+        left = Converters.checkNull(left);
+        right = Converters.checkNull(right);
         if (!left.getSchema().equals(right.getSchema()))
             throw new RuntimeException("The schemas do not match.");
         final int width = left.getSchema().getColumnCount();
@@ -178,14 +180,13 @@ public class QuantileSketch implements ISketch<ITable, QuantileList> {
                 compressExact(this.slack*this.resolution);
     }
 
-    @Override
+    @Override @Nullable
     public QuantileList zero() {
         return new QuantileList(this.colSortOrder.toSchema());
     }
 
     @Override
-    public Observable<PartialResult<QuantileList>> create(final ITable data) {
-        QuantileList q = this.getQuantile(data);
-        return this.pack(q);
+    public QuantileList create(final ITable data) {
+        return this.getQuantile(data);
     }
 }

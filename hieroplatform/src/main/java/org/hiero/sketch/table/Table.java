@@ -8,23 +8,20 @@ import java.util.Arrays;
  * This is a simple table held entirely in RAM.
  */
 public class Table extends BaseTable {
-
     protected final Schema schema;
-
-
     protected final IMembershipSet members;
 
     /**
      * Create an empty table with the specified schema.
      * @param schema schema of the empty table
      */
-    public Table( final Schema schema) {
+    public Table(final Schema schema) {
         super(schema);
         this.schema = schema;
         this.members = new FullMembership(0);
     }
 
-    public Table( final Iterable<IColumn> columns,  final IMembershipSet members) {
+    public Table(final Iterable<IColumn> columns, final IMembershipSet members) {
         super(columns);
         final Schema s = new Schema();
         for (final IColumn c : columns)
@@ -49,7 +46,7 @@ public class Table extends BaseTable {
     @Override
     public IMembershipSet getMembershipSet() { return this.members; }
 
-    public Table( final Iterable<IColumn> columns) {
+    public Table(final Iterable<IColumn> columns) {
         this(columns, new FullMembership(columnSize(columns)));
     }
 

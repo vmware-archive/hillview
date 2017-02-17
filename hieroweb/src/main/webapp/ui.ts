@@ -1,5 +1,18 @@
+import {RpcReceiver, PartialResult} from "./rpc";
+import {ErrorReporter, ConsoleErrorReporter} from "./errorReporter";
+
 export interface IHtmlElement {
     getHTMLRepresentation() : HTMLElement;
+}
+
+export interface HieroDataView extends IHtmlElement {
+    setPage(page: FullPage): void;
+    getPage(): FullPage;
+}
+
+function removeAllChildren(h: HTMLElement): void {
+    while (h.hasChildNodes())
+        h.removeChild(h.lastChild);
 }
 
 export class ScrollBar implements IHtmlElement {
@@ -58,10 +71,20 @@ export class ScrollBar implements IHtmlElement {
 export class ProgressBar implements IHtmlElement {
     end: number;
 
-    private outer : HTMLElement;
-    private bar   : HTMLElement;
+    private outer    : HTMLElement;
+    private bar      : HTMLElement;
+    private topLevel : HTMLElement;
+    private cancel   : HTMLButtonElement;
+    private label    : HTMLElement;
 
-    constructor() {
+    // TODO: must pass an event handler to be invoked by cancel.
+    constructor(private manager: ProgressManager, public readonly lab: string) {
+        this.topLevel = document.createElement("div");
+        this.cancel = document.createElement("button");
+        this.cancel.textContent = "Stop";
+        this.label = document.createElement("div");
+        this.label.textContent = lab;
+
         this.outer = document.createElement("div");
         this.outer.className = "progressBarOuter";
 
@@ -69,11 +92,16 @@ export class ProgressBar implements IHtmlElement {
         this.bar.className = "progressBarInner";
 
         this.outer.appendChild(this.bar);
-        this.setPosition(1.0);
+        this.topLevel.appendChild(this.outer);
+        this.topLevel.appendChild(this.cancel);
+        this.topLevel.appendChild(this.label);
+        this.topLevel.className = "flexcontainer";
+
+        this.setPosition(0.0);
     }
 
     getHTMLRepresentation(): HTMLElement {
-        return this.outer;
+        return this.topLevel;
     }
 
     setPosition(end: number) : void {
@@ -82,11 +110,114 @@ export class ProgressBar implements IHtmlElement {
         if (end > 1)
             end = 1;
         this.end = end;
-        this.computePosition();
+        if (this.done())
+            this.manager.removeProgressBar(this);
+        else
+            this.computePosition();
     }
 
     computePosition() : void {
         this.bar.style.width = String(this.end * 100) + "%";
+    }
+
+    done() : boolean { return this.end >= 1.0; }
+}
+
+// This class manages multiple progress bars.
+export class ProgressManager implements IHtmlElement {
+    topLevel: HTMLElement;
+
+    constructor() {
+        this.topLevel = document.createElement("div");
+        this.topLevel.className = "progressManager";
+    }
+
+    getHTMLRepresentation(): HTMLElement {
+        return this.topLevel;
+    }
+
+    newProgressBar(message: string) {
+        let p = new ProgressBar(this, message);
+        this.topLevel.appendChild(p.getHTMLRepresentation());
+        return p;
+    }
+
+    removeProgressBar(p: ProgressBar) {
+        this.topLevel.removeChild(p.getHTMLRepresentation());
+    }
+}
+
+// Here we display the main visualization
+export class DataDisplay implements IHtmlElement {
+    topLevel: HTMLElement;
+
+    constructor() {
+        this.topLevel = document.createElement("div");
+        this.topLevel.className = "dataDisplay";
+    }
+
+    public getHTMLRepresentation(): HTMLElement {
+        return this.topLevel;
+    }
+
+    public setHieroDataView(element: HieroDataView): void {
+        removeAllChildren(this.topLevel);
+        this.topLevel.appendChild(element.getHTMLRepresentation());
+    }
+}
+
+export class ConsoleDisplay implements IHtmlElement, ErrorReporter {
+    topLevel: HTMLElement;
+
+    constructor() {
+        this.topLevel = document.createElement("div");
+        this.topLevel.className = "console";
+    }
+
+    public getHTMLRepresentation(): HTMLElement {
+        return this.topLevel;
+    }
+
+    public reportError(message: string): void {
+        this.topLevel.textContent += message;
+    }
+}
+
+// A page is divided into several sections:
+// - the data display
+// - the progress manager
+// - the console
+export class FullPage implements IHtmlElement {
+    public dataDisplay: DataDisplay;
+    bottomContainer: HTMLElement;
+    public progressManager: ProgressManager;
+    protected console: ConsoleDisplay;
+    topLevel: HTMLElement;
+
+    public constructor() {
+        this.console = new ConsoleDisplay();
+        this.progressManager = new ProgressManager();
+        this.dataDisplay = new DataDisplay();
+
+        this.topLevel = document.createElement("div");
+        this.bottomContainer = document.createElement("div");
+        this.topLevel.appendChild(this.dataDisplay.getHTMLRepresentation());
+        this.topLevel.appendChild(this.bottomContainer);
+
+        this.bottomContainer.appendChild(this.progressManager.getHTMLRepresentation());
+        this.bottomContainer.appendChild(this.console.getHTMLRepresentation());
+    }
+
+    public getHTMLRepresentation(): HTMLElement {
+        return this.topLevel;
+    }
+
+    public getErrorReporter(): ErrorReporter {
+        return this.console;
+    }
+
+    public setHieroDataView(hdv: HieroDataView): void {
+        this.dataDisplay.setHieroDataView(hdv);
     }
 }
 
@@ -130,5 +261,11 @@ export class Menu implements IHtmlElement {
 
     getHTMLRepresentation(): HTMLElement {
         return this.outer;
+    }
+}
+
+export abstract class Renderer<T> extends RpcReceiver<PartialResult<T>> {
+    public constructor(public progress: ProgressBar, reporter?: ErrorReporter) {
+        super(reporter === null ? ConsoleErrorReporter.instance : reporter);
     }
 }

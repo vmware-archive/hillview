@@ -1,10 +1,9 @@
 package org.hiero.sketch.spreadsheet;
 
 import org.hiero.sketch.dataset.api.ISketch;
-import org.hiero.sketch.dataset.api.PartialResult;
 import org.hiero.sketch.table.*;
 import org.hiero.sketch.table.api.*;
-import rx.Observable;
+import org.hiero.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -17,7 +16,6 @@ import java.util.SortedMap;
  * rows in the data project onto each entry, and how many rows come before topRow.
  */
 public class NextKSketch implements ISketch<ITable, NextKList> {
-
     private final RecordOrder recordOrder;
     private final RowSnapshot topRow;
     private final int maxSize;
@@ -39,7 +37,8 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
      * @param data The input table on which we want to compute the NextK list.
      * @return A NextKList.
      */
-    public NextKList getNextKList(ITable data) {
+    @Override
+    public NextKList create(ITable data) {
         IndexComparator comp = this.recordOrder.getComparator(data);
         TreeTopK<Integer> topK = new TreeTopK<Integer>(this.maxSize, comp);
         IRowIterator rowIt = data.getRowIterator();
@@ -132,8 +131,10 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
      * @param right The right TopK list
      * @return The merged list.
      */
-    @Override
-    public NextKList add(NextKList left, NextKList right) {
+    @Override @Nullable
+    public NextKList add(@Nullable NextKList left, @Nullable NextKList right) {
+        left = Converters.checkNull(left);
+        right = Converters.checkNull(right);
         if (!left.table.getSchema().equals(right.table.getSchema()))
             throw new RuntimeException("The schemas do not match.");
         int width = left.table.getSchema().getColumnCount();
@@ -154,10 +155,5 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
     @Override
     public NextKList zero() {
         return new NextKList(this.recordOrder.toSchema());
-    }
-
-    @Override
-    public Observable<PartialResult<NextKList>> create(ITable data) {
-        return this.pack(this.getNextKList(data));
     }
 }

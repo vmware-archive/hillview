@@ -4,10 +4,30 @@ import org.hiero.sketch.dataset.api.*;
 import rx.Observable;
 import rx.schedulers.Schedulers;
 
+import java.util.concurrent.Callable;
+
+/**
+ * A LocalDataSet is an implementation of IDataSet which contains exactly one
+ * item of type T.
+ * @param <T> type of data held in the dataset.
+ */
 public class LocalDataSet<T> implements IDataSet<T> {
+    /**
+     * Actual data held by the LocalDataSet.
+     */
     private final T data;
+    /**
+     * If this is set to 'true' then data processing (i.e., the map and sketch calls)
+     * are done on a separate thread.  This is the only place where multithreading
+     * is used in the whole platform code base.  The effect is that all observers of
+     * the results are invoked on a separate thread.
+     */
     private final boolean separateThread;
 
+    /**
+     * Create a LocalDataSet, processing the data on a separate thread by default.
+     * @param data: Data to store in the LocalDataSet.
+     */
     public LocalDataSet(final T data) {
         this.data = data;
         this.separateThread = true;
@@ -18,20 +38,39 @@ public class LocalDataSet<T> implements IDataSet<T> {
         this.separateThread = separateThread;
     }
 
+    /**
+     * Helper function to create the first result in a stream of results.
+     * This is used to immediately return a "zero" when processing start;
+     * the zero value is then updated with additional increments as processing
+     * proceeds.  The zero is useful because it percolates through the invocation
+     * chain all the way to the GUI, where it updates the progress bar.  This makes
+     * it clear that processing has started even if no other partial results appear for
+     * a long time.
+     * @param z   A callable which produces the zero value.
+     * @param <R> Type of result produced.
+     * @return    An observable stream which contains just the zero value, produced lazily.
+     */
+    private <R> Observable<PartialResult<R>> zero(Callable<R> z) {
+        // The callable is used to produce the zero value lazily only when someone subscribes
+        // to the observable.
+        Observable<R> zero = Observable.fromCallable(z);
+        return zero.map(e-> new PartialResult<R>(0.0, e));
+    }
+
     @Override
     public <S> Observable<PartialResult<IDataSet<S>>> map(final IMap<T, S> mapper) {
-        final PartialResult<S> initial = new PartialResult<S>(0.0, null);
-        Observable<PartialResult<S>> start = Observable.just(initial);
+        // Immediately return a null partial result
+        final Observable<PartialResult<IDataSet<S>>> zero = this.zero(() -> null);
+        // Actual map computation performed lazily when observable is subscribed to.
+        final Callable<IDataSet<S>> callable = () -> new LocalDataSet<S>(mapper.apply(this.data));
+        final Observable<IDataSet<S>> mapped = Observable.fromCallable(callable);
+        // Wrap the produced data in a PartialResult
+        final Observable<PartialResult<IDataSet<S>>> data = mapped.map(PartialResult::new);
+        // Concatenate the zero with the actual data produced
+        Observable<PartialResult<IDataSet<S>>> result = zero.concatWith(data);
         if (this.separateThread)
-            start = start.observeOn(Schedulers.computation());
-        final Observable<PartialResult<S>> mapResult = mapper.apply(this.data);
-        final Observable<PartialResult<S>> chain = start.concatWith(mapResult);
-        final Observable<PartialResult<IDataSet<S>>> progress =
-                chain.map(e -> new PartialResult<IDataSet<S>>(e.deltaDone, null));
-        final PartialResultMonoid<S> monoid = new PartialResultMonoid<S>(new OptionMonoid<S>());
-        final Observable<PartialResult<S>> last = chain.reduce(monoid.zero(), monoid::add);
-        return progress.concatWith(last.map(e ->
-                new PartialResult<IDataSet<S>>(0.0, new LocalDataSet<S>(e.deltaValue))));
+            result = result.observeOn(Schedulers.computation());
+        return result;
     }
 
     @Override
@@ -41,12 +80,24 @@ public class LocalDataSet<T> implements IDataSet<T> {
         final LocalDataSet<S> lds = (LocalDataSet<S>) other;
         final Pair<T, S> data = new Pair<T, S>(this.data, lds.data);
         final LocalDataSet<Pair<T, S>> retval = new LocalDataSet<Pair<T, S>>(data);
-        return Observable.just(new PartialResult<IDataSet<Pair<T, S>>>(1.0, retval));
+        // This is very fast, so there is no need to use a callable or to return a zero.
+        return Observable.just(new PartialResult<IDataSet<Pair<T, S>>>(retval));
     }
 
     @Override
     public <R> Observable<PartialResult<R>> sketch(final ISketch<T, R> sketch) {
-        return sketch.create(this.data);
+        // Immediately return a zero partial result
+        final Observable<PartialResult<R>> zero = this.zero(sketch::zero);
+        // Actual sketch computation performed lazily when observable is subscribed to.
+        final Callable<R> callable = () -> sketch.create(this.data);
+        final Observable<R> sketched = Observable.fromCallable(callable);
+        // Wrap sketch results in a stream of PartialResults.
+        final Observable<PartialResult<R>> pro = sketched.map(PartialResult::new);
+        // Concatenate with the zero.
+        Observable<PartialResult<R>> result = zero.concatWith(pro);
+        if (this.separateThread)
+            result = result.observeOn(Schedulers.computation());
+        return result;
     }
 
     @Override

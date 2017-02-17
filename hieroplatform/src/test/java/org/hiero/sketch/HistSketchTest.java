@@ -17,8 +17,6 @@ import static org.junit.Assert.assertEquals;
 
 /**
  * Test class for the sketches of all types of histograms.
- * IntConverter is used for the IStringConverter due to a reported issue.
- * Will be replaced by Null once it is resolved, allowing the default converter to kisk in.
  */
 public class HistSketchTest {
     @Test
@@ -28,10 +26,8 @@ public class HistSketchTest {
         final Table myTable = getRepIntTable(tableSize, numCols);
         final BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(1, 50, 10);
         final Hist1DLightSketch mySketch = new Hist1DLightSketch(buckets,
-                myTable.getSchema().
-                        getColumnNames().
-                               iterator().next(), new IntConverter());
-        Histogram1DLight result = mySketch.getHistogram(myTable);
+                myTable.getSchema().getColumnNames().iterator().next(), null);
+        Histogram1DLight result = mySketch.create(myTable);
         int size = 0;
         int bucketnum = result.getNumOfBuckets();
         for (int i = 0; i < bucketnum; i++)
@@ -56,7 +52,7 @@ public class HistSketchTest {
         }
         final ParallelDataSet<ITable> all = new ParallelDataSet<ITable>(a);
         final Histogram1DLight hdl = all.blockingSketch(new Hist1DLightSketch(buckets, colName,
-                new IntConverter(), 0.5));
+                null, 0.5));
         int size = 0;
         int bucketnum = hdl.getNumOfBuckets();
         for (int i = 0; i < bucketnum; i++)
@@ -81,8 +77,7 @@ public class HistSketchTest {
             a.add(ds);
         }
         final ParallelDataSet<ITable> all = new ParallelDataSet<ITable>(a);
-        final Histogram1D hd = all.blockingSketch(new Hist1DSketch(buckets, colName,
-                new IntConverter(), rate));
+        final Histogram1D hd = all.blockingSketch(new Hist1DSketch(buckets, colName, null, rate));
         int size = 0;
         int bucketnum = hd.getNumOfBuckets();
         for (int i = 0; i < bucketnum; i++)
@@ -110,8 +105,7 @@ public class HistSketchTest {
             a.add(ds);
         }
         final ParallelDataSet<ITable> all = new ParallelDataSet<ITable>(a);
-        final HeatMap hm = all.blockingSketch(new HeatMapSketch(buckets1, buckets2,
-                                                            new IntConverter(), new IntConverter(),
+        final HeatMap hm = all.blockingSketch(new HeatMapSketch(buckets1, buckets2, null, null,
                                                             colName1, colName2, rate));
         HistogramTest.basicTestHeatMap(hm, (long) (bigSize * rate));
     }
@@ -136,13 +130,7 @@ public class HistSketchTest {
         }
         final ParallelDataSet<ITable> all = new ParallelDataSet<ITable>(a);
         final Histogram2DHeavy hm = all.blockingSketch(new Hist2DSketch(buckets1, buckets2,
-                new IntConverter(), new IntConverter(),
-                colName1, colName2, rate));
+                null, null, colName1, colName2, rate));
         HistogramTest.basicTest2DHeavy(hm, (long) (bigSize * rate));
     }
 }
-
-
-
-
-

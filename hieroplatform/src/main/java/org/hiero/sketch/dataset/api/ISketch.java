@@ -1,6 +1,6 @@
 package org.hiero.sketch.dataset.api;
 
-import rx.Observable;
+import org.hiero.utils.Converters;
 
 import java.io.Serializable;
 
@@ -13,35 +13,14 @@ import java.io.Serializable;
  */
 public interface ISketch<T, R> extends Serializable, IMonoid<R> {
     /**
-     * The zero of the monoid: the result obtained applying the sketch to some empty dataset T.
-     * @return The zero element of the monoid.
-     */
-    R zero();
-
-    /**
-     * The addition function of the monoid.  Addition must be associative, symmetric, and
-     * zero must be its neutral element.
-     * @param left   Left value to add.
-     * @param right  Right value to add.
-     * @return       The result of the addition.
-     */
-    R add(R left, R right);
-
-    /**
      * Sketch computation on some dataset T.
      * @param data  Data to sketch.
-     * @return  An observable containing a sequence of sketches; adding these sketches
-     * produces the sketch over the complete data.
+     * @return  A sketch of the data.
      */
-     Observable<PartialResult<R>> create(T data);
+    R create(T data);
 
     /**
-     * Packages some data in an Observable of a PartialResult.
-     * @param data Data; usually the result of the sketch computation.
-     * @return An observable which contains exactly one partial result containing the whole data.
+     * Helper method to return non-null zeros.
      */
-     default Observable<PartialResult<R>> pack( final R data) {
-        PartialResult<R> pr = new PartialResult<R>(data);
-        return Observable.just(pr);
-    }
+    default R getZero() { return Converters.checkNull(this.zero()); }
 }

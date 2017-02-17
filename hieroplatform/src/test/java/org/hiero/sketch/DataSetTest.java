@@ -3,10 +3,12 @@ package org.hiero.sketch;
 import org.hiero.sketch.dataset.LocalDataSet;
 import org.hiero.sketch.dataset.ParallelDataSet;
 import org.hiero.sketch.dataset.api.*;
+import org.hiero.utils.Converters;
 import org.junit.Test;
 import rx.Observable;
-import rx.Subscriber;
+import rx.observers.TestSubscriber;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 
 import static org.junit.Assert.*;
@@ -14,25 +16,25 @@ import static org.junit.Assert.*;
 public class DataSetTest {
     private class Increment implements IMap<Integer, Integer> {
         @Override
-        public Observable<PartialResult<Integer>> apply(final Integer data) {
-            return Observable.just(new PartialResult<Integer>(1.0, data + 1));
+        public Integer apply(final @Nullable Integer data) {
+            return Converters.checkNull(data) + 1;
         }
     }
 
     private class Sketch implements ISketch<Integer, Integer> {
-        @Override
+        @Override @Nullable
         public Integer zero() {
             return 0;
         }
 
-        @Override
-        public Integer add(final Integer left, final Integer right) {
-            return left + right;
+        @Override @Nullable
+        public Integer add(@Nullable final Integer left, @Nullable final Integer right) {
+            return Converters.checkNull(left) + Converters.checkNull(right);
         }
 
-        @Override
-        public Observable<PartialResult<Integer>> create(final Integer data) {
-            return Observable.just(new PartialResult<Integer>(data));
+        @Override @Nullable
+        public Integer create(@Nullable final Integer data) {
+            return data;
         }
     }
 
@@ -68,47 +70,59 @@ public class DataSetTest {
     }
 
     private class Sum implements ISketch<int[], Integer> {
-        @Override
+        @Override @Nullable
         public Integer zero() {
             return 0;
         }
 
-        @Override
-        public Integer add(final Integer left, final Integer right) {
-            return left + right;
+        @Override @Nullable
+        public Integer add(@Nullable final Integer left, @Nullable final Integer right) {
+            return Converters.checkNull(left) + Converters.checkNull(right);
         }
 
-        @Override
-        public Observable<PartialResult<Integer>> create(final int[] data) {
-            final int parts = 10;
-            return Observable.range(0, parts).map(index -> {
-                final int partSize = data.length / parts;
-                final int left = partSize * index;
-                final int right = (index == (parts - 1)) ? data.length : (left + partSize);
-                int sum1 = 0;
-                for (int i=left; i < right; i++)
-                    sum1 += data[i];
-                return new PartialResult<Integer>(1.0 / parts, sum1);
-            });
+        @Override @Nullable
+        public Integer create(@Nullable final int[] data) {
+            int sum = 0;
+            for (int aData : Converters.checkNull(data)) sum += aData;
+            return sum;
         }
     }
 
     private final int largeSize = 10 * 1024 * 1024;
+    private static final int parts = 10;
 
-    private IDataSet<int[]> createLargeDataset(final boolean separateThread) {
-        final int[] data = new int[this.largeSize];
-        for (int i=0; i < this.largeSize; i++)
-            data[i] = ((i % 10) == 0) ? 0 : i;
-        return new LocalDataSet<int[]>(data, separateThread);
+    private ParallelDataSet<int[]> createLargeDataset(final boolean separateThread) {
+        ArrayList<IDataSet<int[]>> l = new ArrayList<IDataSet<int[]>>(parts);
+        int v = 0;
+        for (int j=0; j < parts; j++) {
+            int partSize = this.largeSize / parts;
+            final int[] data = new int[partSize];
+            for (int i = 0; i < partSize; i++) {
+                data[i] = ((v % 10) == 0) ? 0 : v;
+                v++;
+            }
+            LocalDataSet<int[]> ld = new LocalDataSet<int[]>(data, separateThread);
+            l.add(ld);
+        }
+        return new ParallelDataSet<int[]>(l);
     }
 
     @Test
     public void largeDataSetTest() {
-        final IDataSet<int[]> ld = this.createLargeDataset(false);
-        final int result = ld.blockingSketch(new Sum());
+        ParallelDataSet<int[]> ld = this.createLargeDataset(false);
+        int result = ld.blockingSketch(new Sum());
         int sum = 0;
         for (int i=0; i < this.largeSize; i++)
             sum += ((i % 10) == 0) ? 0 : i;
+        assertEquals(result, sum);
+
+        ld.setBundleInterval(100);
+        result = ld.blockingSketch(new Sum());
+        assertEquals(result, sum);
+
+        ld = this.createLargeDataset(true);
+        ld.setBundleInterval(100);
+        result = ld.blockingSketch(new Sum());
         assertEquals(result, sum);
     }
 
@@ -124,31 +138,23 @@ public class DataSetTest {
 
     @Test
     public void unsubscriptionTest() {
-        final IDataSet<int[]> ld = this.createLargeDataset(true);
-        final Observable<PartialResult<Integer>> pr = ld.sketch(new Sum());
-        pr.subscribe(new Subscriber<PartialResult<Integer>>() {
+        ParallelDataSet<int[]> ld = this.createLargeDataset(true);
+        Observable<PartialResult<Integer>> pr = ld.sketch(new Sum());
+        TestSubscriber<PartialResult<Integer>> ts =
+                new TestSubscriber<PartialResult<Integer>>() {
             private int count = 0;
-            private double done = 0.0;
-
-            @Override
-            public void onCompleted() {
-                fail("Unreachable");
-            }
-
-            @Override
-            public void onError(final Throwable throwable) {
-                fail("Unreachable");
-            }
 
             @Override
             public void onNext(final PartialResult<Integer> pr) {
-                this.done += pr.deltaDone;
+                super.onNext(pr);
                 this.count++;
                 if (this.count == 3)
                     this.unsubscribe();
-                else
-                    assertEquals(this.done, 0.1 * this.count, 1e-3);
             }
-        });
+        };
+        pr.toBlocking().subscribe(ts);
+
+        ts.assertNotCompleted();
+        ts.assertValueCount(3);
     }
 }

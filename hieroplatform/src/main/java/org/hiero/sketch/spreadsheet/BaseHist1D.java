@@ -4,6 +4,8 @@ import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IStringConverter;
 
+import javax.annotation.Nullable;
+
 /**
  * Abstract class for a one dimensional histogram. Derived classes mainly vary in the way they
  * implement buckets.
@@ -12,7 +14,7 @@ import org.hiero.sketch.table.api.IStringConverter;
 public abstract class BaseHist1D implements IHistogram1D {
     final protected IBucketsDescription1D bucketDescription;
 
-    public BaseHist1D(final  IBucketsDescription1D bucketDescription) {
+    public BaseHist1D(final IBucketsDescription1D bucketDescription) {
         this.bucketDescription = bucketDescription;
     }
 
@@ -21,13 +23,13 @@ public abstract class BaseHist1D implements IHistogram1D {
 
     @Override
     public void createSampleHistogram(final IColumn column, final IMembershipSet membershipSet,
-                                      final IStringConverter converter, double sampleRate) {
+                                      @Nullable final IStringConverter converter, double sampleRate) {
         this.createHistogram(column, membershipSet.sample(sampleRate), converter);
     }
 
     @Override
     public void createSampleHistogram(final IColumn column, final IMembershipSet membershipSet,
-                                      final IStringConverter converter, double sampleRate, long seed) {
+                                      @Nullable final IStringConverter converter, double sampleRate, long seed) {
         this.createHistogram(column, membershipSet.sample(sampleRate, seed), converter);
     }
 }

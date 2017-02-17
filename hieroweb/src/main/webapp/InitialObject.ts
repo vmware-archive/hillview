@@ -1,4 +1,3 @@
-
 import {RemoteObject, PartialResult} from "./rpc";
 import {TableDataView} from "./table";
 
@@ -14,19 +13,5 @@ export class InitialObject extends RemoteObject {
         // TODO: add table name argument
         let rr = this.createRpcRequest("loadTable", null);
         rr.invoke(observer);
-    }
-}
-
-export interface ErrorReporter {
-    reportError(message: string) : void;
-}
-
-export class ConsoleErrorReporter implements ErrorReporter {
-    public static instance: ConsoleErrorReporter = new ConsoleErrorReporter();
-
-    private constructor() {}
-
-    public reportError(message: string) : void {
-        console.log(message);
     }
 }

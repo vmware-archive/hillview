@@ -37,7 +37,7 @@ public class Bucket1D {
 
     public long getCount() { return this.count; }
 
-    public void add(final double item,  final Object currObject) {
+    public void add(final double item, final Object currObject) {
         if (this.count == 0) {
             this.minValue = item;
             this.minObject = currObject;
@@ -59,7 +59,7 @@ public class Bucket1D {
      * @return A bucket with the union count of the two buckets and the min/max updated accordingly. Procedure allows
      * both buckets to have objects of different types.
      */
-    public Bucket1D union( final Bucket1D otherBucket) {
+    public Bucket1D union(final Bucket1D otherBucket) {
         long ucount = this.count + otherBucket.count;
         double uMinValue, uMaxValue;
         Object uMinObject, uMaxObject;

@@ -6,30 +6,31 @@ import akka.actor.Props;
 import akka.util.Timeout;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import junit.framework.TestCase;
 import org.hiero.sketch.dataset.LocalDataSet;
+import org.hiero.sketch.dataset.ParallelDataSet;
 import org.hiero.sketch.dataset.RemoteDataSet;
 import org.hiero.sketch.dataset.api.*;
 import org.hiero.sketch.remoting.SketchClientActor;
 import org.hiero.sketch.remoting.SketchOperation;
 import org.hiero.sketch.remoting.SketchServerActor;
+import org.hiero.utils.Converters;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import rx.Observable;
-import rx.Subscriber;
+import rx.observers.TestSubscriber;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 
+import javax.annotation.Nullable;
 import java.io.File;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.ArrayList;
 
 import static akka.pattern.Patterns.ask;
-import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 /**
  * Remoting tests for Akka.
@@ -42,7 +43,7 @@ public class RemotingTests {
 
     private class IncrementMap implements IMap<int[], int[]> {
         @Override
-        public Observable<PartialResult<int[]>> apply(final int[] data) {
+        public int[] apply(final int[] data) {
             if (data.length == 0) {
                 throw new RuntimeException("Cannot apply map against empty data");
             }
@@ -52,67 +53,45 @@ public class RemotingTests {
                 dataNew[i] = data[i] + 1;
             }
 
-            return Observable.just(new PartialResult<int[]>(dataNew));
+            return dataNew;
         }
     }
 
     private class SumSketch implements ISketch<int[], Integer> {
-        @Override
+        @Override @Nullable
         public Integer zero() {
             return 0;
         }
 
-        @Override
-        public Integer add(final Integer left, final Integer right) {
-            return left + right;
+        @Override @Nullable
+        public Integer add(@Nullable final Integer left, @Nullable final Integer right) {
+            return Converters.checkNull(left) + Converters.checkNull(right);
         }
 
         @Override
-        public Observable<PartialResult<Integer>> create(final int[] data) {
-            final int parts = 10;
-            return Observable.range(0, parts).map(index -> {
-                final int partSize = data.length / parts;
-                final int left = partSize * index;
-                final int right = (index == (parts - 1)) ? data.length : (left + partSize);
-                int sum1 = 0;
-                for (int i = left; i < right; i++) {
-                    sum1 += data[i];
-                }
-                return new PartialResult<Integer>(1.0 / parts, sum1);
-            });
+        public Integer create(final int[] data) {
+            int sum = 0;
+            for (int d : data) sum += d;
+            return sum;
         }
     }
 
     private class ErrorSumSketch implements ISketch<int[], Integer> {
-        @Override
+        @Override @Nullable
         public Integer zero() {
             return 0;
         }
 
-        @Override
-        public Integer add(final Integer left, final Integer right) {
-            return left + right;
+        @Override @Nullable
+        public Integer add(@Nullable final Integer left, @Nullable final Integer right) {
+            return Converters.checkNull(left) + Converters.checkNull(right);
         }
 
         @Override
-        public Observable<PartialResult<Integer>> create(final int[] data) {
-            final int parts = 10;
-            return Observable.range(0, parts).map(index -> {
-                final int partSize = data.length / parts;
-                if (index == 3) {
-                    throw new RuntimeException("ErrorSumSketch");
-                }
-                final int left = partSize * index;
-                final int right = (index == (parts - 1)) ? data.length : (left + partSize);
-                int sum1 = 0;
-                for (int i = left; i < right; i++) {
-                    sum1 += data[i];
-                }
-                return new PartialResult<Integer>(1.0 / parts, sum1);
-            });
+        public Integer create(final int[] data) {
+            throw new RuntimeException("ErrorSumSketch");
         }
     }
-
 
     /*
      * Create separate server and client actor systems to test remoting.
@@ -127,13 +106,18 @@ public class RemotingTests {
         assertNotNull(serverActorSystem);
 
         // Create a dataset
-        final int size = 10000;
-        final int[] data = new int[size];
-        for (int i = 0; i < size; i++) {
-            data[i] = i;
+        final int parts = 10;
+        final int size = 1000;
+        ArrayList<IDataSet<int[]>> al = new ArrayList<IDataSet<int[]>>(10);
+        for (int i=0; i < parts; i++) {
+            final int[] data = new int[size];
+            for (int j = 0; j < size; j++)
+                data[j] = (i * size) + j;
+            LocalDataSet<int[]> lds = new LocalDataSet<>(data);
+            al.add(lds);
         }
-        final LocalDataSet<int[]> lds = new LocalDataSet<>(data);
-        remoteActor = serverActorSystem.actorOf(Props.create(SketchServerActor.class, lds),
+        ParallelDataSet<int[]> pds = new ParallelDataSet<int[]>(al);
+        remoteActor = serverActorSystem.actorOf(Props.create(SketchServerActor.class, pds),
                                                 "ServerActor");
 
         // Client
@@ -184,36 +168,15 @@ public class RemotingTests {
     @Test
     public void testMapSketchThroughClientWithError() {
         final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(clientActor, remoteActor);
-        final IDataSet<int[]> remoteIdsNew = remoteIds.map(new IncrementMap()).toBlocking().last().deltaValue;
+        final IDataSet<int[]> remoteIdsNew = remoteIds.map(new IncrementMap())
+                                                      .toBlocking()
+                                                      .last().deltaValue;
         assertNotNull(remoteIdsNew);
         final Observable<PartialResult<Integer>> resultObs =
                 remoteIdsNew.sketch(new ErrorSumSketch());
-        final AtomicInteger counter = new AtomicInteger(0);
-        final CountDownLatch countDownLatch = new CountDownLatch(1);
-        resultObs.subscribe(new Subscriber<PartialResult<Integer>>() {
-            @Override
-            public void onCompleted() {
-                fail("Unreachable");
-            }
-
-            @Override
-            public void onError(final Throwable throwable) {
-                counter.incrementAndGet();
-                countDownLatch.countDown();
-            }
-
-            @Override
-            public void onNext(final PartialResult<Integer> pr) {
-            }
-        });
-
-        try {
-            countDownLatch.await();
-        } catch (final InterruptedException e) {
-            fail("Should not happen");
-        }
-
-        assertEquals(1, counter.get());
+        TestSubscriber<PartialResult<Integer>> ts = new TestSubscriber<PartialResult<Integer>>();
+        resultObs.toBlocking().subscribe(ts);
+        ts.assertError(RuntimeException.class);
     }
 
     @Test
@@ -221,52 +184,35 @@ public class RemotingTests {
         final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(clientActor, remoteActor);
         final IDataSet<int[]> remoteIdsNew = remoteIds.map(new IncrementMap()).toBlocking().last().deltaValue;
         assertNotNull(remoteIdsNew);
-        final CountDownLatch countDownLatch = new CountDownLatch(3);
+
         final Observable<PartialResult<Integer>> resultObs = remoteIds.sketch(new SumSketch());
-        final AtomicInteger counter = new AtomicInteger(0);
-        resultObs.subscribe(new Subscriber<PartialResult<Integer>>() {
-            private double done = 0.0;
+        TestSubscriber<PartialResult<Integer>> ts =
+                new TestSubscriber<PartialResult<Integer>>() {
+                    private int counter = 0;
 
-            @Override
-            public void onCompleted() {
-                fail("Unreachable");
-            }
+                    @Override
+                    public void onNext(final PartialResult<Integer> pr) {
+                        this.counter++;
+                        super.onNext(pr);
+                        if (this.counter == 3)
+                            this.unsubscribe();
+                    }
+                };
 
-            @Override
-            public void onError(final Throwable throwable) {
-                fail("Unreachable");
-            }
-
-            @Override
-            public void onNext(final PartialResult<Integer> pr) {
-                this.done += pr.deltaDone;
-                final int count = counter.incrementAndGet();
-                countDownLatch.countDown();
-                if (count == 3) {
-                    this.unsubscribe();
-                }
-                else {
-                    TestCase.assertEquals(this.done, 0.1 * count);
-                }
-            }
-        });
-
-        try {
-            countDownLatch.await();
-        } catch (final InterruptedException e) {
-            fail("Should not happen");
-        }
-
-        assertEquals(3, counter.get());
+        resultObs.toBlocking().subscribe(ts);
+        ts.assertValueCount(3);
+        ts.assertNotCompleted();
     }
 
     @Test
     public void testZip() {
         final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(clientActor, remoteActor);
-        final IDataSet<int[]> remoteIdsLeft = remoteIds.map(new IncrementMap()).toBlocking().last().deltaValue;
-        final IDataSet<int[]> remoteIdsRight = remoteIds.map(new IncrementMap()).toBlocking().last().deltaValue;
+        final IDataSet<int[]> remoteIdsLeft = Converters.checkNull(
+                remoteIds.map(new IncrementMap()).toBlocking().last().deltaValue);
+        final IDataSet<int[]> remoteIdsRight = Converters.checkNull(
+                remoteIds.map(new IncrementMap()).toBlocking().last().deltaValue);
         final PartialResult<IDataSet<Pair<int[], int[]>>> last
-                = remoteIdsLeft.zip(remoteIdsRight).toBlocking().last();
+                = Converters.checkNull(remoteIdsLeft.zip(remoteIdsRight)).toBlocking().last();
         assertNotNull(last);
         assertEquals(last.deltaDone, 1.0, 0.001);
     }

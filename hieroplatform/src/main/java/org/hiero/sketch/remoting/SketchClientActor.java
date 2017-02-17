@@ -98,9 +98,9 @@ public class SketchClientActor extends AbstractActor {
         );
     }
 
-    private <T extends RemoteOperation> void sendOperation( final T operation,
-                                                            final ActorRef remoteActor,
-                                                            final ActorRef sender) {
+    private <T extends RemoteOperation> void sendOperation(final T operation,
+                                                           final ActorRef remoteActor,
+                                                           final ActorRef sender) {
         if (!this.operationToObservable.containsKey(operation.id)) {
             final PublishSubject subj = PublishSubject.create();
             final Observable obs = subj.doOnSubscribe(() -> {

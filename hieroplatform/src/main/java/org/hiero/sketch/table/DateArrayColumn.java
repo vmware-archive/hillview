@@ -13,7 +13,6 @@ import java.time.LocalDateTime;
 public final class DateArrayColumn
         extends BaseArrayColumn
         implements IDateColumn {
-
     private final LocalDateTime[] data;
 
     private void validate() {
@@ -21,14 +20,14 @@ public final class DateArrayColumn
             throw new InvalidParameterException("Kind should be Date" + this.description.kind);
     }
 
-    public DateArrayColumn( final ColumnDescription description, final int size) {
+    public DateArrayColumn(final ColumnDescription description, final int size) {
         super(description, size);
         this.validate();
         this.data = new LocalDateTime[size];
     }
 
-    public DateArrayColumn( final ColumnDescription description,
-                            final LocalDateTime[] data) {
+    public DateArrayColumn(final ColumnDescription description,
+                           final LocalDateTime[] data) {
         super(description, data.length);
         this.validate();
         this.data = data;

@@ -1,21 +1,22 @@
 package org.hiero.sketch.spreadsheet;
 import org.hiero.sketch.dataset.api.ISketch;
-import org.hiero.sketch.dataset.api.PartialResult;
 import org.hiero.sketch.table.api.IStringConverter;
 import org.hiero.sketch.table.api.ITable;
-import rx.Observable;
+import org.hiero.utils.Converters;
+
+import javax.annotation.Nullable;
 
 public class Hist2DSketch implements ISketch<ITable, Histogram2DHeavy> {
     final IBucketsDescription1D bucketDescD1;
     final IBucketsDescription1D bucketDescD2;
     final String colNameD1;
     final String colNameD2;
-    final IStringConverter converterD1;
-    final IStringConverter converterD2;
+    @Nullable final IStringConverter converterD1;
+    @Nullable final IStringConverter converterD2;
     final double rate;
 
     public Hist2DSketch(IBucketsDescription1D bucketDesc1, IBucketsDescription1D bucketDesc2,
-                         IStringConverter converter1, IStringConverter converter2,
+                         @Nullable IStringConverter converter1, @Nullable IStringConverter converter2,
                          String colName1, String colName2) {
         this.bucketDescD1 = bucketDesc1;
         this.bucketDescD2 = bucketDesc2;
@@ -27,7 +28,7 @@ public class Hist2DSketch implements ISketch<ITable, Histogram2DHeavy> {
     }
 
     public Hist2DSketch(IBucketsDescription1D bucketDesc1, IBucketsDescription1D bucketDesc2,
-                         IStringConverter converter1, IStringConverter converter2,
+                         @Nullable IStringConverter converter1, @Nullable IStringConverter converter2,
                          String colName1, String colName2, double rate) {
         this.bucketDescD1 = bucketDesc1;
         this.bucketDescD2 = bucketDesc2;
@@ -38,28 +39,22 @@ public class Hist2DSketch implements ISketch<ITable, Histogram2DHeavy> {
         this.rate = rate;
     }
 
-    public Histogram2DHeavy getHistogram( final ITable data) {
-        Histogram2DHeavy result = this.zero();
+    @Override @Nullable
+    public Histogram2DHeavy create(final ITable data) {
+        Histogram2DHeavy result = this.getZero();
         result.createHistogram(data.getColumn(this.colNameD1), data.getColumn(this.colNameD2),
                 this.converterD1, this.converterD2, data.getMembershipSet().sample(this.rate));
         return result;
     }
 
-    @Override
-    public  Histogram2DHeavy zero() {
+    @Override @Nullable
+    public Histogram2DHeavy zero() {
         return new Histogram2DHeavy(this.bucketDescD1, this.bucketDescD2);
     }
 
-    @Override
-    public  Histogram2DHeavy add( final Histogram2DHeavy left,
-                                          final Histogram2DHeavy right) {
-        return left.union(right);
-    }
-
-    @Override
-    public  Observable<PartialResult<Histogram2DHeavy>> create(final ITable data) {
-        Histogram2DHeavy hist = this.getHistogram(data);
-        PartialResult<Histogram2DHeavy> result = new PartialResult<>(1.0, hist);
-        return Observable.just(result);
+    @Override @Nullable
+    public Histogram2DHeavy add(@Nullable final Histogram2DHeavy left,
+                                @Nullable final Histogram2DHeavy right) {
+        return Converters.checkNull(left).union(Converters.checkNull(right));
     }
 }

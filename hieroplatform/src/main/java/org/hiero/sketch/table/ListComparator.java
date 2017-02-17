@@ -5,10 +5,9 @@ import org.hiero.sketch.table.api.IndexComparator;
 import java.util.List;
 
 public class ListComparator extends IndexComparator {
-
     private final List<IndexComparator> comparatorList;
 
-    public ListComparator( final List<IndexComparator> comparatorList) {
+    public ListComparator(final List<IndexComparator> comparatorList) {
         this.comparatorList = comparatorList;
     }
 

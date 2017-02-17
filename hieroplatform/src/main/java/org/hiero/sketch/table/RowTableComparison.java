@@ -5,7 +5,6 @@ import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.ITable;
 
 import javax.annotation.Nullable;
-import java.util.Iterator;
 
 /**
  * This class lets us compare a RowSnapShot to entries from a Table according to a prescribed
@@ -32,14 +31,12 @@ public class RowTableComparison {
     public int compareToRow(int i) {
         int outcome = 0;
         if (this.topRow == null) return 1;
-        Iterator<ColumnSortOrientation> it = this.recordOrder.iterator();
-        while (it.hasNext()) {
-            ColumnSortOrientation ordCol = it.next();
+        for (ColumnSortOrientation ordCol : this.recordOrder) {
             String colName = ordCol.columnDescription.name;
             IColumn iCol = this.table.getColumn(colName);
-            if (iCol.isMissing(i) && this.topRow.isMissing(colName))
+            if (iCol.isMissing(i) && this.topRow.isMissing(colName)) {
                 outcome = 0;
-            else if (iCol.isMissing(i)) {
+            } else if (iCol.isMissing(i)) {
                 outcome = 1;
             } else if (this.topRow.isMissing(colName)) {
                 outcome = -1;
@@ -66,8 +63,9 @@ public class RowTableComparison {
             if (!ordCol.isAscending) {
                 outcome *= -1;
             }
-            if (outcome != 0)
+            if (outcome != 0) {
                 return outcome;
+            }
         }
         return 0;
     }

@@ -5,7 +5,6 @@ import org.hiero.sketch.table.api.IndexComparator;
 import org.hiero.utils.Converters;
 
 import javax.annotation.Nullable;
-import java.security.InvalidParameterException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
@@ -13,15 +12,15 @@ import java.time.LocalDateTime;
  * Column of objects of any type; only for moving data around. Size of column expected to be small.
  */
 public final class ObjectArrayColumn extends BaseArrayColumn {
-     private final Object[] data;
+    private final Object[] data;
 
-    public ObjectArrayColumn( final ColumnDescription description, final int size) {
+    public ObjectArrayColumn(final ColumnDescription description, final int size) {
         super(description, size);
         this.data = new Object[size];
     }
 
-    public ObjectArrayColumn( final ColumnDescription description,
-                              final Object[] data) {
+    public ObjectArrayColumn(final ColumnDescription description,
+                             final Object[] data) {
         super(description, data.length);
         this.data = data;
     }
@@ -34,10 +33,8 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
         switch (ObjectArrayColumn.this.description.kind) {
             case Json:
             case String:
-                if(converter == null)
-                    throw new InvalidParameterException("Need a non-null string converter.");
-                else
-                    return converter.asDouble(this.getString(rowIndex));
+                IStringConverter c = Converters.checkNull(converter);
+                return c.asDouble(this.getString(rowIndex));
             case Date:
                 return Converters.toDouble(this.getDate(rowIndex));
             case Int:

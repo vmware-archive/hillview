@@ -12,7 +12,6 @@ import java.time.Duration;
  */
 
 public final class DurationArrayColumn extends BaseArrayColumn implements IDurationColumn {
-
     private final Duration[] data;
 
     private void validate() {
@@ -21,14 +20,14 @@ public final class DurationArrayColumn extends BaseArrayColumn implements IDurat
                     + this.description.kind);
     }
 
-    public DurationArrayColumn( final ColumnDescription description, final int size) {
+    public DurationArrayColumn(final ColumnDescription description, final int size) {
         super(description, size);
         this.validate();
         this.data = new Duration[size];
     }
 
-    public DurationArrayColumn( final ColumnDescription description,
-                                final Duration[] data) {
+    public DurationArrayColumn(final ColumnDescription description,
+                               final Duration[] data) {
         super(description, data.length);
         this.validate();
         this.data = data;

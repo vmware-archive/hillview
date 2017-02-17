@@ -13,7 +13,6 @@ public abstract class BaseTable implements ITable {
     /**
      * Maps columns name to an IColumn.
      */
-
     protected final HashMap<String, IColumn> columns;
 
     /**
@@ -23,14 +22,14 @@ public abstract class BaseTable implements ITable {
         return this.getMembershipSet().getIterator();
     }
 
-    protected BaseTable( Iterable<IColumn> columns) {
+    protected BaseTable(Iterable<IColumn> columns) {
         BaseTable.columnSize(columns);  // validate column sizes
         this.columns = new HashMap<String, IColumn>();
         for (final IColumn c : columns)
             this.columns.put(c.getName(), c);
     }
 
-    protected BaseTable( Schema schema) {
+    protected BaseTable(Schema schema) {
         this.columns = new HashMap<String, IColumn>();
         for (final String c : schema.getColumnNames()) {
             ColumnDescription cd = schema.getDescription(c);
@@ -72,8 +71,8 @@ public abstract class BaseTable implements ITable {
      * and only the rows contained in IMembership Set with consecutive numbering.
      * The order among the columns is preserved.
      */
-    @Override public SmallTable compress( final ISubSchema subSchema,
-                                          final IRowOrder rowOrder) {
+    @Override public SmallTable compress(final ISubSchema subSchema,
+                                         final IRowOrder rowOrder) {
         Schema newSchema = this.getSchema().project(subSchema);
         List<IColumn> compressedCols = new ArrayList<IColumn>();
         for (String colName: newSchema.getColumnNames())

@@ -8,7 +8,6 @@ import java.util.HashMap;
  * A string converter which uses an explicit hash table to map strings to integers.
  */
 public final class ExplicitStringConverter implements IStringConverter {
-
     private final HashMap<String, Integer> stringValue;
 
     public ExplicitStringConverter() {

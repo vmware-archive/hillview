@@ -1,7 +1,6 @@
-import {IHtmlElement, ScrollBar, Menu, ProgressBar} from "./ui";
-import {RemoteObject, Renderer, PartialResult} from "./rpc";
+import {IHtmlElement, ScrollBar, Menu, Renderer, FullPage, HieroDataView} from "./ui";
+import {RemoteObject, PartialResult, RpcReceiver} from "./rpc";
 import Rx = require('rx');
-import {ErrorReporter} from "./InitialObject";
 
 // These classes are direct counterparts to server-side Java classes
 // with the same names.  JSON serialization
@@ -15,46 +14,26 @@ export enum ContentsKind {
     Interval
 }
 
-export interface IColumnDescriptionView {
+export interface IColumnDescription {
     readonly kind: ContentsKind;
     readonly name: string;
-    readonly sortOrder: number;  // 0 - not visible, >0 - ascending, <0 - descending
     readonly allowMissing: boolean;
 }
 
-export class ColumnDescriptionView implements IColumnDescriptionView {
+export class ColumnDescription implements IColumnDescription {
     readonly kind: ContentsKind;
     readonly name: string;
-    readonly sortOrder: number;  // 0 - not visible, >0 - ascending, <0 - descending
     readonly allowMissing: boolean;
 
-    constructor(v : IColumnDescriptionView) {
+    constructor(v : IColumnDescription) {
         this.kind = v.kind;
         this.name = v.name;
-        this.sortOrder = v.sortOrder;
         this.allowMissing = v.allowMissing;
-    }
-
-    // If something is not sorted, it is not visible
-    public isVisible(): boolean {
-        return this.sortOrder != 0;
-    }
-    public isAscending(): boolean {
-        return this.sortOrder > 0;
-    }
-    public getSortIndex(): number {
-        return this.sortOrder < 0 ? -this.sortOrder : this.sortOrder;
-    }
-    public getSortArrow() : string {
-        if (this.isAscending())
-            return "&dArr;";
-        else
-            return "&uArr;";
     }
 }
 
-export interface SchemaView {
-    [index: number] : IColumnDescriptionView;
+export interface Schema {
+    [index: number] : IColumnDescription;
     length: number;
 }
 
@@ -63,11 +42,23 @@ export interface RowView {
     values: any[];
 }
 
+export interface ColumnSortOrientation {
+    columnDescription: IColumnDescription;
+    ascending: boolean;
+}
+
+export interface RecordOrder {
+    length: number;
+    [index: number]: ColumnSortOrientation;
+}
+
 export interface TableDataView {
-    schema: SchemaView;
+    schema?: Schema;
+    // Total number of rows in the complete table
     rowCount: number;
-    startPosition: number;
+    startPosition?: number;
     rows?: RowView[];
+    order?: RecordOrder;
 }
 
 /* Example table view:
@@ -80,17 +71,28 @@ export interface TableDataView {
  ------------------------------------------
  */
 
-export class TableView implements IHtmlElement  {
-    protected schema: SchemaView;
+export class TableView extends RemoteObject
+    implements IHtmlElement, HieroDataView {
+    // Data view part: received from remote site
+    protected schema?: Schema;
+    // Logical position of first row displayed
+    protected startPosition?: number;
+    // Total rows in the table
+    protected rowCount?: number;
+    protected order?: RecordOrder;
+    // Computed
+    // Logical number of data rows displayed; includes count of each data row
+    protected dataRowsDisplayed: number;
+    // HTML part
     protected top : HTMLDivElement;
     protected scrollBar : ScrollBar;
     protected htmlTable : HTMLTableElement;
     protected thead : HTMLTableSectionElement;
     protected tbody: HTMLTableSectionElement;
-    protected elementCount: number;
-    protected startPosition: number;
+    protected page: FullPage;
 
-    constructor() {
+    public constructor(id: string) {
+        super(id);
         this.top = document.createElement("div");
         this.htmlTable = document.createElement("table");
         this.top.className = "flexcontainer";
@@ -99,14 +101,60 @@ export class TableView implements IHtmlElement  {
         this.top.appendChild(this.scrollBar.getHTMLRepresentation());
     }
 
-    private static addHeaderCell(thr: Node, cd: ColumnDescriptionView) : HTMLElement {
+    setPage(page: FullPage) {
+        this.page = page;
+    }
+
+    getPage() : FullPage {
+        return this.page;
+    }
+
+    getSortOrder(column: string): [boolean, number] {
+        if (this.order == null)
+            return null;
+        for (let i = 0; i < this.order.length; i++) {
+            let o = this.order[i];
+            if (o.columnDescription.name == column)
+                return [o.ascending, i];
+        }
+        return null;
+    }
+
+    public isVisible(column: string): boolean {
+        let so = this.getSortOrder(column);
+        return so != null;
+     }
+
+    public isAscending(column: string): boolean {
+        let so = this.getSortOrder(column);
+        if (so == null) return null;
+        return so[0];
+    }
+
+    public getSortIndex(column: string): number {
+        let so = this.getSortOrder(column);
+        if (so == null) return null;
+        return so[1];
+    }
+
+    public getSortArrow(column: string): string {
+        let asc = this.isAscending(column);
+        if (asc == null)
+            return "";
+        else if (asc)
+            return "&dArr;";
+        else
+            return "&uArr;";
+    }
+
+    private addHeaderCell(thr: Node, cd: ColumnDescription) : HTMLElement {
         let thd = document.createElement("th");
         let label = cd.name;
-        if (!cd.isVisible()) {
+        if (!this.isVisible(cd.name)) {
             thd.className = "hiddenColumn";
         } else {
             label += " " +
-                cd.getSortArrow() + cd.getSortIndex();
+                this.getSortArrow(cd.name) + this.getSortIndex(cd.name);
         }
         thd.innerHTML = label;
         thr.appendChild(thd);
@@ -114,41 +162,45 @@ export class TableView implements IHtmlElement  {
     }
 
     public showColumn(columnName: string, show: boolean) : void {
-        // let rr = this.createRpcRequest("show", null);
-        // TODO
+        let rr = this.createRpcRequest("show", null);
+        //rr.invoke();
     }
 
-    public updateView(data : TableDataView) : void {
-        this.elementCount = 0;
+    public updateView(data: TableDataView) : void {
+        this.dataRowsDisplayed = 0;
         this.startPosition = data.startPosition;
+        this.rowCount = data.rowCount;
         this.schema = data.schema;
+        this.order = data.order;
 
-        if (this.thead != null) {
+        if (this.thead != null)
             this.thead.remove();
+        if (this.tbody != null)
             this.tbody.remove();
-        }
         this.thead = this.htmlTable.createTHead();
         let thr = this.thead.appendChild(document.createElement("tr"));
 
         // These two columns are always shown
-        let cds : ColumnDescriptionView[] = [];
-        let poscd = new ColumnDescriptionView({
+        let cds : ColumnDescription[] = [];
+        let poscd = new ColumnDescription({
             kind: ContentsKind.Integer,
-            name: ":position",
-            sortOrder: 0,
+            name: "(position)",
             allowMissing: false });
-        let ctcd = new ColumnDescriptionView({
+        let ctcd = new ColumnDescription({
             kind: ContentsKind.Integer,
-            name: ":count",
-            sortOrder: 0,
+            name: "(count)",
             allowMissing: false });
 
-        TableView.addHeaderCell(thr, poscd);
-        TableView.addHeaderCell(thr, ctcd);
+        // Create column headers
+        this.addHeaderCell(thr, poscd);
+        this.addHeaderCell(thr, ctcd);
+        if (this.schema == null)
+            return;
+
         for (let i = 0; i < this.schema.length; i++) {
-            let cd = new ColumnDescriptionView(this.schema[i]);
+            let cd = new ColumnDescription(this.schema[i]);
             cds.push(cd);
-            let thd = TableView.addHeaderCell(thr, cd);
+            let thd = this.addHeaderCell(thr, cd);
             let menu = new Menu([
                 {text: "show", action: () => this.showColumn(cd.name, true) },
                 {text: "hide", action: () => this.showColumn(cd.name, false)}
@@ -158,12 +210,27 @@ export class TableView implements IHtmlElement  {
         }
         this.tbody = this.htmlTable.createTBody();
 
+        // Add row data
         if (data.rows != null) {
             for (let i = 0; i < data.rows.length; i++)
                 this.addRow(data.rows[i], cds);
         }
-        this.setScroll(data.startPosition / data.rowCount,
-            (data.startPosition + this.elementCount) / data.rowCount);
+
+        // Create table footer
+        let footer = this.tbody.insertRow();
+        let cell = footer.insertCell(0);
+        cell.colSpan = this.schema.length + 2;
+        cell.className = "footer";
+        cell.textContent = String(this.rowCount + " rows");
+
+        this.updateScrollBar();
+    }
+
+    private updateScrollBar(): void {
+        if (this.startPosition == null || this.rowCount == null)
+            return;
+        this.setScroll(this.startPosition / this.rowCount,
+            (this.startPosition + this.dataRowsDisplayed) / this.rowCount);
     }
 
     public getRowCount() : number {
@@ -178,13 +245,13 @@ export class TableView implements IHtmlElement  {
         return this.top;
     }
 
-    public addRow(row : RowView, cds: ColumnDescriptionView[]) : void {
+    public addRow(row : RowView, cds: ColumnDescription[]) : void {
         let trow = this.tbody.insertRow();
         let dataIndex : number = 0;
 
         let cell = trow.insertCell(0);
         cell.className = "rightAlign";
-        cell.textContent = String(this.startPosition + this.elementCount);
+        cell.textContent = String(this.startPosition + this.dataRowsDisplayed);
 
         cell = trow.insertCell(1);
         cell.className = "rightAlign";
@@ -193,13 +260,13 @@ export class TableView implements IHtmlElement  {
         for (let i = 0; i < cds.length; i++) {
             let cd = cds[i];
             cell = trow.insertCell(i + 2);
-            if (cd.isVisible()) {
+            if (this.isVisible(cd.name)) {
                 cell.className = "rightAlign";
                 cell.textContent = String(row.values[dataIndex]);
                 dataIndex++;
             }
         }
-        this.elementCount += row.count;
+        this.dataRowsDisplayed += row.count;
     }
 
     public setScroll(top: number, bottom: number) : void {
@@ -208,18 +275,31 @@ export class TableView implements IHtmlElement  {
 }
 
 export class TableRenderer extends Renderer<TableDataView> {
-    protected table: TableView;
-
-    constructor(protected parent: HTMLElement,
-                protected progress: ProgressBar,
-                reporter: ErrorReporter) {
-        super(reporter);
-        this.table = new TableView();
-        this.parent.appendChild(this.table.getHTMLRepresentation());
+    constructor(page: FullPage, protected table: TableView) {
+        super(page.progressManager.newProgressBar("Get info"), page.getErrorReporter());
     }
 
-    public onNext(value: PartialResult<TableDataView>): void {
+    onNext(value: PartialResult<TableDataView>): void {
         this.progress.setPosition(value.done);
         this.table.updateView(value.data);
+    }
+}
+
+export class RemoteTableReceiver extends RpcReceiver<string> {
+    public table: TableView;
+
+    constructor(protected page: FullPage) {
+        super(page.getErrorReporter());
+    }
+
+    private retrieveSchema(): void {
+        let rr = this.table.createRpcRequest("getSchema", null);
+        rr.invoke(new TableRenderer(this.page, this.table));
+    }
+
+    public onNext(value: string): void {
+        this.table = new TableView(value);
+        this.page.setHieroDataView(this.table);
+        this.retrieveSchema();
     }
 }

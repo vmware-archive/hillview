@@ -13,7 +13,7 @@ public class MapOperation<T, S> extends RemoteOperation implements Serializable 
 
     public final IMap<T, S> mapper;
 
-    public MapOperation( final IMap<T, S> mapper) {
+    public MapOperation(final IMap<T, S> mapper) {
         this.mapper = mapper;
     }
 }

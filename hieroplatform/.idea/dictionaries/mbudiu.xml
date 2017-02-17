@@ -2,11 +2,15 @@
   <dictionary name="mbudiu">
     <words>
       <w>dataset</w>
+      <w>datasets</w>
       <w>datatypes</w>
+      <w>dones</w>
       <w>fastutil</w>
       <w>heatmap</w>
       <w>hiero</w>
       <w>monoid</w>
+      <w>multithreading</w>
+      <w>nullable</w>
       <w>printf</w>
       <w>quantile</w>
       <w>remoting</w>

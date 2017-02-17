@@ -15,7 +15,6 @@ import java.util.function.Predicate;
  */
 
 public class LazyMembership implements IMembershipSet {
-
     private final IMembershipSet baseMap;
     private int rowCount;
     private boolean rowCountCorrect;
@@ -25,8 +24,6 @@ public class LazyMembership implements IMembershipSet {
     private static final int samplingAttempts = 10;
 
     public LazyMembership(final IMembershipSet baseMap) {
-        if (baseMap == null) throw new NullPointerException("PartialMembershipDense cannot be " +
-                "instantiated without a base MembershipSet");
         this.baseMap = baseMap;
         this.rowCount = baseMap.getSize();
         this.filter = Integer -> true;
@@ -36,12 +33,8 @@ public class LazyMembership implements IMembershipSet {
     /**
      * instantiated with a a membershipSet, possibly the full one, and a filter predicate.
      */
-    public LazyMembership( final IMembershipSet baseMap,
-                           final Predicate<Integer> filter) {
-        if (baseMap == null) throw new NullPointerException("PartialMembershipDense cannot be " +
-                "instantiated without a base MembershipSet");
-        if (filter == null) throw new NullPointerException("PartialMembershipDense cannot be " +
-                "instantiated with a null filter");
+    public LazyMembership(final IMembershipSet baseMap,
+                          final Predicate<Integer> filter) {
         this.baseMap = baseMap;
         this.rowCount = 0;
         this.filter = filter;
@@ -156,7 +149,7 @@ public class LazyMembership implements IMembershipSet {
     }
 
     @Override
-    public IMembershipSet union( final IMembershipSet otherMap) {
+    public IMembershipSet union(final IMembershipSet otherMap) {
         if (otherMap instanceof LazyMembership) {
             final IMembershipSet newBase = this.baseMap.union(((LazyMembership) otherMap).baseMap);
             final Predicate<Integer> newFilter =
@@ -173,9 +166,7 @@ public class LazyMembership implements IMembershipSet {
     }
 
     @Override
-    public IMembershipSet intersection( final IMembershipSet otherMap) {
-        if (otherMap == null)
-            throw new NullPointerException("can not perform intersection with a null");
+    public IMembershipSet intersection(final IMembershipSet otherMap) {
         if (otherMap instanceof LazyMembership) {
             final IMembershipSet newBase =
                     this.baseMap.intersection(((LazyMembership) otherMap).baseMap);
@@ -190,12 +181,11 @@ public class LazyMembership implements IMembershipSet {
     }
 
     private static class DenseIterator implements IRowIterator {
-
         private final IRowIterator baseIterator;
 
         private final Predicate<Integer> filter;
-        private DenseIterator( final IMembershipSet baseMap,
-                               final Predicate<Integer> filter) {
+        private DenseIterator(final IMembershipSet baseMap,
+                              final Predicate<Integer> filter) {
             this.baseIterator = baseMap.getIterator();
             this.filter = filter;
         }
