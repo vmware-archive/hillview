@@ -1,35 +1,14 @@
 # Hiero
 Big data spreadsheet
 
-## Requirements
+## Dependences
 
-* Ubuntu Linux, Hadoop filesystem, Maven build system
-* IDEA Intellij for development
-* Additional dependences listed in [./hieroweb/README.md]
+* Ubuntu Linux, Maven build system, typescript, webpack, Tomcat app server
+* IDEA Intellij for development (optional)
 
 > $: sudo apt-get install maven
 
-## Using git to contribute
-
-* Fork the repository using the "fork" button on github, by following these instructions:
-https://help.github.com/articles/fork-a-repo/
-* To merge your fork with the original use: `git fetch upstream; git rebase upstream/master`
-* Run IntelliJ code inspection (Analyze/Inspect code) before commit and solve all open issues
-* When you make changes you can submit them into your own fork
-* After committing changes, create a pull request (using the github web UI)
-
-In more detail, here is a step-by-step guide to committing your changes:
-
-1. git add <files that changed>
-2. git commit -m "Description of commit" (Saves your work)
-3. git fetch upstream (To get the upstream version)
-4. git merge upstream/master
-5. Resolve conflicts if any. If so, repeat 1-4.
-6. Test, analyze merged version.
-7. git push origin master.
-8. Create a pull request.
-
-## Installing Java
+### Installing Java
 
 We use Java 8.
 
@@ -44,6 +23,36 @@ the following to your ~/.bashrc or ~/.zshrc.
 
 > ```export JAVA_HOME="<path-to-jdk-folder>"```
 
+## Using git to contribute
+
+* Fork the repository using the "fork" button on github, by following these instructions:
+https://help.github.com/articles/fork-a-repo/
+* Run IntelliJ code inspection (Analyze/Inspect code) before commit and solve all open issues
+* When you make changes you can submit them into your own fork
+
+In more detail, here is a step-by-step guide to committing your changes:
+
+1. git add <files that changed>
+2. git commit -m "Description of commit" (Saves your work)
+3. git fetch upstream (To get the upstream version)
+4. git rebase upstream/master
+5. Resolve conflicts if any. If so, repeat 1-4.
+6. Test, analyze merged version.
+7. git push -f origin master.
+8. Create a pull request (using the web ui).
+
+## Project structure
+
+Hiero is broken down into two separate projects.
+
+* hieroplatform: pure Java, includes the entire back-end.  `hieroplatform` can be
+developed using the free (community edition) of Intellij IDEA.  See
+[hieroplatform/README.md]
+
+* hieroweb: the web server, web client and web services; links to the
+result produced by the `hieroweb` project.  To develop this we have
+used Intellij Ultimate.  See [hieroweb/README.md]
+
 ## Setup IntelliJ IDEA
 
 First, download and install Intellij IDEA:
@@ -51,18 +60,7 @@ https://www.jetbrains.com/idea/.  You can just untar the linux binary
 in a place of your choice and run the shell script
 `ideaXXX/bin/idea.sh`.
 
-## Project structure
-
-Hiero is broken down into two separate projects.
-
-* hieroplatform: pure Java, includes the entire back-end.  `hieroplatform` can be
-developed using the free (community edition) of Intellij IDEA.
-
-* hieroweb: the web server, web client and web services; links to
-hieroplatform `hieroweb` uses features of Intellij Ultimate.  TODO:
-integrate it with the maven build system.
-
-## Loding into IntelliJ IDEA
+### Loading into IntelliJ IDEA
 
 To load the project that you want to contribute to, move to the
 corresponding folder: `cd hieroplatform` or `cd hieroweb` and start
@@ -75,5 +73,5 @@ you're good to go.
 
 ## Guidance in writing code
 
-The pseudorandom generator is implemented in the class Randomness.java and uses 
-Mersenne Twister. Do not use the class Random but this class instead.
+The pseudorandom generator is implemented in the class Randomness.java and uses
+Mersenne Twister.  Do not use the class Random but this class instead.
