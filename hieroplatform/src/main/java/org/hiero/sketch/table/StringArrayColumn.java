@@ -1,9 +1,9 @@
 package org.hiero.sketch.table;
 
-import javax.annotation.Nonnull;
 import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.IStringColumn;
 
+import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
 
 /**
@@ -12,7 +12,7 @@ import java.security.InvalidParameterException;
  */
 public final class StringArrayColumn
         extends BaseArrayColumn implements IStringColumn {
-    @Nonnull
+
     private final String[] data;
 
     private void validate() {
@@ -22,14 +22,14 @@ public final class StringArrayColumn
                     + this.description.kind);
     }
 
-    public StringArrayColumn(@Nonnull final ColumnDescription description, final int size) {
+    public StringArrayColumn( final ColumnDescription description, final int size) {
         super(description, size);
         this.validate();
         this.data = new String[size];
     }
 
-    public StringArrayColumn(@Nonnull final ColumnDescription description,
-                             @Nonnull final String[] data) {
+    public StringArrayColumn( final ColumnDescription description,
+                              final String[] data) {
         super(description, data.length);
         this.validate();
         this.data = data;
@@ -45,7 +45,7 @@ public final class StringArrayColumn
         return this.data[rowIndex];
     }
 
-    public void set(final int rowIndex, final String value) {
+    public void set(final int rowIndex, @Nullable final String value) {
         this.data[rowIndex] = value;
     }
 

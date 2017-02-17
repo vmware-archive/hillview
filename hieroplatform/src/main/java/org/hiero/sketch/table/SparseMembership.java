@@ -1,6 +1,5 @@
 package org.hiero.sketch.table;
 
-import javax.annotation.Nonnull;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
 import org.hiero.utils.IntSet;
@@ -15,7 +14,7 @@ import java.util.function.Predicate;
  * The downside is the constructor that runs in linear time.
  */
 public class SparseMembership implements IMembershipSet {
-    @Nonnull
+
     private final IntSet membershipMap;
     private static final int sizeEstimationSampleSize = 20;
 
@@ -25,8 +24,8 @@ public class SparseMembership implements IMembershipSet {
      * @param baseMap the base IMembershipSet map on which the filter will be applied
      * @param filter  the additional filter to be applied on the base map
      */
-    public SparseMembership(@Nonnull final IMembershipSet baseMap,
-                            @Nonnull final Predicate<Integer> filter) {
+    public SparseMembership( final IMembershipSet baseMap,
+                             final Predicate<Integer> filter) {
         final IRowIterator baseIterator = baseMap.getIterator();
         this.membershipMap = new IntSet(this.estimateSize(baseMap, filter));
         int tmp = baseIterator.getNextRow();
@@ -42,7 +41,7 @@ public class SparseMembership implements IMembershipSet {
      * the baseMap into that of a sparse map.
      * @param baseMap of type IMembershipSet
      */
-    public SparseMembership(@Nonnull final IMembershipSet baseMap) {
+    public SparseMembership( final IMembershipSet baseMap) {
         final IRowIterator baseIterator = baseMap.getIterator();
         final int expectedSize;
         if (baseMap instanceof LazyMembership)
@@ -61,7 +60,7 @@ public class SparseMembership implements IMembershipSet {
      * Essentially wraps a Set interface by IMembershipSet
      * @param baseSet of type Set
      */
-    public SparseMembership(@Nonnull final IntSet baseSet) {
+    public SparseMembership( final IntSet baseSet) {
         this.membershipMap = baseSet;
     }
 
@@ -117,7 +116,7 @@ public class SparseMembership implements IMembershipSet {
     }
 
     @Override
-    public IMembershipSet union(@Nonnull final IMembershipSet otherSet) {
+    public IMembershipSet union( final IMembershipSet otherSet) {
         final IntSet unionSet = this.membershipMap.copy();
         final IRowIterator iter = otherSet.getIterator();
         int curr = iter.getNextRow();
@@ -129,7 +128,7 @@ public class SparseMembership implements IMembershipSet {
     }
 
     @Override
-    public IMembershipSet intersection(@Nonnull final IMembershipSet otherSet) {
+    public IMembershipSet intersection( final IMembershipSet otherSet) {
         final IntSet intersectSet = new IntSet();
         final IRowIterator iter = otherSet.getIterator();
         int curr = iter.getNextRow();
@@ -147,8 +146,8 @@ public class SparseMembership implements IMembershipSet {
      * There are no strict guarantees on the quality of the approximation, but is good enough for
      * initialization of a hash table sizes.
      */
-    private int estimateSize(@Nonnull final IMembershipSet baseMap,
-                             @Nonnull final Predicate<Integer> filter) {
+    private int estimateSize( final IMembershipSet baseMap,
+                              final Predicate<Integer> filter) {
         final IMembershipSet sampleSet = baseMap.sample(sizeEstimationSampleSize);
         if (sampleSet.getSize() == 0)
             return 0;
@@ -169,7 +168,7 @@ public class SparseMembership implements IMembershipSet {
     private class SparseIterator implements IRowIterator {
         final private IntSet.IntSetIterator mysetIterator;
 
-        private SparseIterator(@Nonnull final IntSet mySet) {
+        private SparseIterator( final IntSet mySet) {
             this.mysetIterator = mySet.getIterator();
         }
 

@@ -6,23 +6,61 @@ import org.hiero.sketch.table.*;
 import org.hiero.sketch.table.api.*;
 import rx.Observable;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedMap;
 
-public class TopKSketch implements ISketch<ITable, NextKList> {
+/**
+ * Given a data set, the NextKSketch generates the Next K items in Sorted Order (specified by a
+ * RecordOrder) starting from a specified rowSnapShot (topRow). It also computes counts for how many
+ * rows in the data project onto each entry, and how many rows come before topRow.
+ */
+public class NextKSketch implements ISketch<ITable, NextKList> {
 
-    private final RecordOrder colSortOrder;
+    private final RecordOrder recordOrder;
+    private final RowSnapshot topRow;
     private final int maxSize;
 
-    public TopKSketch(RecordOrder colSortOrder, int maxSize) {
-        this.colSortOrder = colSortOrder;
+    /**
+     * @param recordOrder The ordering on rows of the table
+     * @param topRow The row to start from, set to null if we want to start from the top row.
+     * @param maxSize The parameter K in NextK.
+     */
+    public NextKSketch(RecordOrder recordOrder, @Nullable RowSnapshot topRow, int maxSize) {
+        this.recordOrder = recordOrder;
+        this.topRow = topRow;
         this.maxSize = maxSize;
     }
 
-    @Override
-    public NextKList zero() {
-        return new NextKList(this.colSortOrder.toSchema());
+    /**
+     * Given a table, generate the Next K items in Sorted Order starting from a specified
+     * rowSnapShot (topRow), together with counts.
+     * @param data The input table on which we want to compute the NextK list.
+     * @return A NextKList.
+     */
+    public NextKList getNextKList(ITable data) {
+        IndexComparator comp = this.recordOrder.getComparator(data);
+        TreeTopK<Integer> topK = new TreeTopK<Integer>(this.maxSize, comp);
+        IRowIterator rowIt = data.getRowIterator();
+        RowTableComparison rowToTable = new RowTableComparison(this.topRow, data, this.recordOrder);
+        int i, position = 0;
+        do {
+            i = rowIt.getNextRow();
+            if (i != -1) {
+                if (rowToTable.compareToRow(i) >= 0) {
+                    topK.push(i);
+                } else {
+                    position++;
+                }
+            }
+        } while (i != -1);
+        SortedMap<Integer, Integer> topKList = topK.getTopK();
+        IRowOrder rowOrder = new ArrayRowOrder(topKList.keySet());
+        SmallTable topKRows = data.compress(this.recordOrder.toSubSchema(), rowOrder);
+        List<Integer> count = new ArrayList<Integer>();
+        count.addAll(topKList.values());
+        return new NextKList(topKRows, count, position, data.getNumOfRows());
     }
 
     /**
@@ -100,45 +138,26 @@ public class TopKSketch implements ISketch<ITable, NextKList> {
             throw new RuntimeException("The schemas do not match.");
         int width = left.table.getSchema().getColumnCount();
         List<IColumn> mergedCol = new ArrayList<IColumn>(width);
-        List<Integer> mergeOrder = this.colSortOrder.getIntMergeOrder(left.table, right.table);
-        for (String colName : left.table.getSchema().getColumnNames())
-            mergedCol.add(this.mergeColumns(left.table.getColumn(colName),
-                    right.table.getColumn(colName), mergeOrder));
-        List<Integer> mergedCounts = this.mergeCounts(left.count,
-                right.count, mergeOrder);
+        List<Integer> mergeOrder = this.recordOrder.getIntMergeOrder(left.table, right.table);
+        for (String colName : left.table.getSchema().getColumnNames()) {
+            IColumn newCol = this.mergeColumns(left.table.getColumn(colName),
+                    right.table.getColumn(colName), mergeOrder);
+            mergedCol.add(newCol);
+        }
+        List<Integer> mergedCounts = this.mergeCounts(left.count, right.count, mergeOrder);
         final SmallTable mergedTable = new SmallTable(mergedCol);
         return new NextKList(mergedTable, mergedCounts,
                 left.startPosition + right.startPosition,
                 left.totalRows + right.totalRows);
     }
 
-    /**
-     * Given a table, generate a TopK List according to the Sorted Order.
-     * @param data The input table on which we want to compute the TopK list.
-     * @return A Table containing the top K rows (projected onto the relevant columns) and a list
-     * containing counts of how often each rows appeared.
-     */
-    public NextKList getKList(ITable data) {
-        IndexComparator comp = this.colSortOrder.getComparator(data);
-        TreeTopK<Integer> topK = new TreeTopK<Integer>(this.maxSize, comp);
-        IRowIterator rowIt = data.getRowIterator();
-        int i;
-        do {
-            i = rowIt.getNextRow();
-            if (i != -1)
-                topK.push(i);
-        } while (i != -1);
-        SortedMap<Integer, Integer> topKList = topK.getTopK();
-        IRowOrder rowOrder = new ArrayRowOrder(topKList.keySet());
-        SmallTable topKRows = data.compress(this.colSortOrder.toSubSchema(), rowOrder);
-        List<Integer> count = new ArrayList<Integer>();
-        count.addAll(topKList.values());
-        return new NextKList(topKRows, count, 0, data.getNumOfRows());
+    @Override
+    public NextKList zero() {
+        return new NextKList(this.recordOrder.toSchema());
     }
 
     @Override
-    public Observable<PartialResult<NextKList>> create(final ITable data) {
-        NextKList q = this.getKList(data);
-        return this.pack(q);
+    public Observable<PartialResult<NextKList>> create(ITable data) {
+        return this.pack(this.getNextKList(data));
     }
 }

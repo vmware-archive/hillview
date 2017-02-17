@@ -12,7 +12,7 @@ import javax.annotation.meta.TypeQualifierDefault;
  * Applies the {@link Nonnull} annotation to every method unless overridden.
  */
 @Documented
-@Nonnull
+
 @TypeQualifierDefault(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface MethodsAreNonnullByDefault

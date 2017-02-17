@@ -3,6 +3,7 @@ package org.hiero.sketch.table.api;
 import org.hiero.sketch.table.ColumnDescription;
 import org.hiero.sketch.table.ObjectArrayColumn;
 
+import javax.annotation.Nullable;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
@@ -57,7 +58,7 @@ public interface IColumn {
     /**
      * Whatever the internal data type, return a double.
      */
-    double asDouble(int rowIndex, IStringConverter converter);
+    double asDouble(int rowIndex, @Nullable IStringConverter converter);
 
     String asString(int rowIndex);
 

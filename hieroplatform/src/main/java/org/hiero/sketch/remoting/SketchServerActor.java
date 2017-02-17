@@ -10,7 +10,6 @@ import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
 
-import javax.annotation.Nonnull;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -26,14 +25,14 @@ public class SketchServerActor<T> extends AbstractActor {
     private static final String SERVER_ACTOR_NAME = "ServerActor";
     private static final AtomicInteger nodeId = new AtomicInteger(0);
 
-    @Nonnull
+
     private final IDataSet<T> dataSet;
     private final ConcurrentHashMap<UUID, Subscription> operationToObservable
             = new ConcurrentHashMap<>();
 
 
     @SuppressWarnings("unchecked")
-    public SketchServerActor(@Nonnull final IDataSet<T> dataSet) {
+    public SketchServerActor( final IDataSet<T> dataSet) {
         this.dataSet = dataSet;
 
         receive(
@@ -94,7 +93,7 @@ public class SketchServerActor<T> extends AbstractActor {
         private final PartialResultMonoid resultMonoid = new PRDataSetMonoid();
         private PartialResult result = this.resultMonoid.zero();
 
-        private MapResponderSubscriber(@Nonnull final UUID id, @Nonnull final ActorRef sender) {
+        private MapResponderSubscriber( final UUID id,  final ActorRef sender) {
             super(id, sender);
         }
 
@@ -127,8 +126,8 @@ public class SketchServerActor<T> extends AbstractActor {
         private final PartialResultMonoid resultMonoid = new PRDataSetMonoid();
         private final PartialResult result = this.resultMonoid.zero();
 
-        private ZipResponderSubscriber(@Nonnull final UUID id,
-                                       @Nonnull final ActorRef sender) {
+        private ZipResponderSubscriber( final UUID id,
+                                        final ActorRef sender) {
             super(id, sender);
         }
 
@@ -150,12 +149,12 @@ public class SketchServerActor<T> extends AbstractActor {
      * Generic subscriber, used to wrap results and send them back to the client
      */
     private class ResponderSubscriber<R> extends Subscriber<R> {
-        @Nonnull
+
         final UUID id;
-        @Nonnull
+
         final ActorRef sender;
 
-        private ResponderSubscriber(@Nonnull final UUID id, @Nonnull final ActorRef sender) {
+        private ResponderSubscriber( final UUID id,  final ActorRef sender) {
             this.id = id;
             this.sender = sender;
         }

@@ -1,6 +1,5 @@
 package org.hiero.sketch.table;
 
-import javax.annotation.Nonnull;
 import org.hiero.utils.IntSet;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
@@ -16,11 +15,11 @@ import java.util.function.Predicate;
  */
 
 public class LazyMembership implements IMembershipSet {
-    @Nonnull
+
     private final IMembershipSet baseMap;
     private int rowCount;
     private boolean rowCountCorrect;
-    @Nonnull
+
     private final Predicate<Integer> filter;
     private static final int sizeEstimationSampleSize = 20;
     private static final int samplingAttempts = 10;
@@ -37,8 +36,8 @@ public class LazyMembership implements IMembershipSet {
     /**
      * instantiated with a a membershipSet, possibly the full one, and a filter predicate.
      */
-    public LazyMembership(@Nonnull final IMembershipSet baseMap,
-                          @Nonnull final Predicate<Integer> filter) {
+    public LazyMembership( final IMembershipSet baseMap,
+                           final Predicate<Integer> filter) {
         if (baseMap == null) throw new NullPointerException("PartialMembershipDense cannot be " +
                 "instantiated without a base MembershipSet");
         if (filter == null) throw new NullPointerException("PartialMembershipDense cannot be " +
@@ -157,7 +156,7 @@ public class LazyMembership implements IMembershipSet {
     }
 
     @Override
-    public IMembershipSet union(@Nonnull final IMembershipSet otherMap) {
+    public IMembershipSet union( final IMembershipSet otherMap) {
         if (otherMap instanceof LazyMembership) {
             final IMembershipSet newBase = this.baseMap.union(((LazyMembership) otherMap).baseMap);
             final Predicate<Integer> newFilter =
@@ -174,7 +173,7 @@ public class LazyMembership implements IMembershipSet {
     }
 
     @Override
-    public IMembershipSet intersection(@Nonnull final IMembershipSet otherMap) {
+    public IMembershipSet intersection( final IMembershipSet otherMap) {
         if (otherMap == null)
             throw new NullPointerException("can not perform intersection with a null");
         if (otherMap instanceof LazyMembership) {
@@ -191,12 +190,12 @@ public class LazyMembership implements IMembershipSet {
     }
 
     private static class DenseIterator implements IRowIterator {
-        @Nonnull
+
         private final IRowIterator baseIterator;
-        @Nonnull
+
         private final Predicate<Integer> filter;
-        private DenseIterator(@Nonnull final IMembershipSet baseMap,
-                              @Nonnull final Predicate<Integer> filter) {
+        private DenseIterator( final IMembershipSet baseMap,
+                               final Predicate<Integer> filter) {
             this.baseIterator = baseMap.getIterator();
             this.filter = filter;
         }

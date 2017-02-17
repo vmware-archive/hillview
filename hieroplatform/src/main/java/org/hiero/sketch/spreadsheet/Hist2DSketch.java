@@ -1,5 +1,4 @@
 package org.hiero.sketch.spreadsheet;
-import javax.annotation.Nonnull;
 import org.hiero.sketch.dataset.api.ISketch;
 import org.hiero.sketch.dataset.api.PartialResult;
 import org.hiero.sketch.table.api.IStringConverter;
@@ -39,7 +38,7 @@ public class Hist2DSketch implements ISketch<ITable, Histogram2DHeavy> {
         this.rate = rate;
     }
 
-    public Histogram2DHeavy getHistogram(@Nonnull final ITable data) {
+    public Histogram2DHeavy getHistogram( final ITable data) {
         Histogram2DHeavy result = this.zero();
         result.createHistogram(data.getColumn(this.colNameD1), data.getColumn(this.colNameD2),
                 this.converterD1, this.converterD2, data.getMembershipSet().sample(this.rate));
@@ -47,18 +46,18 @@ public class Hist2DSketch implements ISketch<ITable, Histogram2DHeavy> {
     }
 
     @Override
-    public @Nonnull Histogram2DHeavy zero() {
+    public  Histogram2DHeavy zero() {
         return new Histogram2DHeavy(this.bucketDescD1, this.bucketDescD2);
     }
 
     @Override
-    public @Nonnull Histogram2DHeavy add(@Nonnull final Histogram2DHeavy left,
-                                         @Nonnull final Histogram2DHeavy right) {
+    public  Histogram2DHeavy add( final Histogram2DHeavy left,
+                                          final Histogram2DHeavy right) {
         return left.union(right);
     }
 
     @Override
-    public @Nonnull Observable<PartialResult<Histogram2DHeavy>> create(final ITable data) {
+    public  Observable<PartialResult<Histogram2DHeavy>> create(final ITable data) {
         Histogram2DHeavy hist = this.getHistogram(data);
         PartialResult<Histogram2DHeavy> result = new PartialResult<>(1.0, hist);
         return Observable.just(result);

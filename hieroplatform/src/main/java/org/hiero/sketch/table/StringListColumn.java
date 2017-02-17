@@ -1,19 +1,19 @@
 package org.hiero.sketch.table;
 
-import javax.annotation.Nonnull;
 import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.IStringColumn;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 
 /**
  * A column of Strings that can grow in size.
  */
 public class StringListColumn extends BaseListColumn implements IStringColumn {
-    @Nonnull
+
     private final ArrayList<String[]> segments;
 
-    public StringListColumn(@Nonnull final ColumnDescription desc) {
+    public StringListColumn( final ColumnDescription desc) {
         super(desc);
         if ((desc.kind != ContentsKind.String) && (desc.kind != ContentsKind.Json))
             throw new IllegalArgumentException("Unexpected column kind " + desc.kind);
@@ -27,7 +27,7 @@ public class StringListColumn extends BaseListColumn implements IStringColumn {
         return this.segments.get(segmentId)[localIndex];
     }
 
-    public void append(final String value) {
+    public void append(@Nullable final String value) {
         final int segmentId = this.size >> this.LogSegmentSize;
         final int localIndex = this.size & this.SegmentMask;
         if (this.segments.size() <= segmentId) {

@@ -1,6 +1,5 @@
 package org.hiero.sketch.table;
 
-import javax.annotation.Nonnull;
 import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.IIntColumn;
 
@@ -12,7 +11,7 @@ import java.security.InvalidParameterException;
 public final class IntArrayColumn
         extends BaseArrayColumn
         implements IIntColumn {
-    @Nonnull
+
     private final int[] data;
 
     private void validate() {
@@ -20,13 +19,13 @@ public final class IntArrayColumn
             throw new InvalidParameterException("Kind should be Int " + this.description.kind);
     }
 
-    public IntArrayColumn(@Nonnull final ColumnDescription description, final int size) {
+    public IntArrayColumn( final ColumnDescription description, final int size) {
         super(description, size);
         this.validate();
         this.data = new int[size];
     }
 
-    public IntArrayColumn(@Nonnull final ColumnDescription description, @Nonnull final int[] data) {
+    public IntArrayColumn( final ColumnDescription description,  final int[] data) {
         super(description, data.length);
         this.validate();
         this.data = data;

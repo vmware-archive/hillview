@@ -1,6 +1,5 @@
 package org.hiero.sketch.spreadsheet;
 
-import javax.annotation.Nonnull;
 import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
@@ -24,7 +23,7 @@ public class Histogram2DHeavy {
     private long totalsize;
 
 
-    public Histogram2DHeavy(final @Nonnull IBucketsDescription1D buckets1, final @Nonnull IBucketsDescription1D buckets2) {
+    public Histogram2DHeavy(final  IBucketsDescription1D buckets1, final  IBucketsDescription1D buckets2) {
         this.bucketDescDim1 = buckets1;
         this.bucketDescDim2 = buckets2;
         this.histogramMissingD1 = new Histogram1D(this.bucketDescDim1);
@@ -112,7 +111,7 @@ public class Histogram2DHeavy {
      * @param  otherHistogram with the same bucketDescription
      * @return a new Histogram which is the union of this and otherHistogram
      */
-    public Histogram2DHeavy union( @Nonnull Histogram2DHeavy otherHistogram) {
+    public Histogram2DHeavy union(  Histogram2DHeavy otherHistogram) {
         if ((!this.bucketDescDim1.equals(otherHistogram.bucketDescDim1))
                 || (!this.bucketDescDim2.equals(otherHistogram.bucketDescDim2)))
             throw new IllegalArgumentException("Histogram union without matching buckets");

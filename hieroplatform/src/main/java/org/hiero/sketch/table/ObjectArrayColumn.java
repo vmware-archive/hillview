@@ -1,9 +1,11 @@
 package org.hiero.sketch.table;
 
-import javax.annotation.Nonnull;
 import org.hiero.sketch.table.api.IStringConverter;
 import org.hiero.sketch.table.api.IndexComparator;
+import org.hiero.utils.Converters;
 
+import javax.annotation.Nullable;
+import java.security.InvalidParameterException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
@@ -11,15 +13,15 @@ import java.time.LocalDateTime;
  * Column of objects of any type; only for moving data around. Size of column expected to be small.
  */
 public final class ObjectArrayColumn extends BaseArrayColumn {
-    @Nonnull private final Object[] data;
+     private final Object[] data;
 
-    public ObjectArrayColumn(@Nonnull final ColumnDescription description, final int size) {
+    public ObjectArrayColumn( final ColumnDescription description, final int size) {
         super(description, size);
         this.data = new Object[size];
     }
 
-    public ObjectArrayColumn(@Nonnull final ColumnDescription description,
-                             @Nonnull final Object[] data) {
+    public ObjectArrayColumn( final ColumnDescription description,
+                              final Object[] data) {
         super(description, data.length);
         this.data = data;
     }
@@ -28,20 +30,22 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
     public int sizeInRows() { return this.data.length; }
 
     @Override
-    public double asDouble(final int rowIndex, @Nonnull final IStringConverter converter) {
+    public double asDouble(final int rowIndex, @Nullable final IStringConverter converter) {
         switch (ObjectArrayColumn.this.description.kind) {
-            case String:
-                return converter.asDouble(this.getString(rowIndex));
-            case Date:
-                return converter.asDouble(this.getDate(rowIndex).toString());
-            case Int:
-                return converter.asDouble(String.valueOf(this.getInt(rowIndex)));
             case Json:
-                return converter.asDouble(this.getString(rowIndex));
+            case String:
+                if(converter == null)
+                    throw new InvalidParameterException("Need a non-null string converter.");
+                else
+                    return converter.asDouble(this.getString(rowIndex));
+            case Date:
+                return Converters.toDouble(this.getDate(rowIndex));
+            case Int:
+                return this.getInt(rowIndex);
             case Double:
                 return this.getDouble(rowIndex);
             case Duration:
-                return converter.asDouble(this.getDuration(rowIndex).toString());
+                return Converters.toDouble(this.getDuration(rowIndex));
             default:
                 throw new RuntimeException("Unexpected data type");
         }
@@ -117,7 +121,7 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
         return (String)this.data[rowIndex];
     }
 
-    public void set(final int rowIndex, final Object value) {
+    public void set(final int rowIndex, @Nullable final Object value) {
         this.data[rowIndex] = value;
     }
 
