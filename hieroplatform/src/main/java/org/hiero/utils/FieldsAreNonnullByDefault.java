@@ -12,7 +12,7 @@ import javax.annotation.meta.TypeQualifierDefault;
  * Applies the {@link Nonnull} annotation to every field unless overridden.
  */
 @Documented
-
+@Nonnull
 @TypeQualifierDefault(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface FieldsAreNonnullByDefault
