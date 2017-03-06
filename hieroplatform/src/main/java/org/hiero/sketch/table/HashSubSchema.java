@@ -17,10 +17,13 @@
  */
 
 package org.hiero.sketch.table;
-import org.hiero.sketch.table.api.ISubSchema;
-import java.util.HashSet;
 
-public class HashSubSchema implements ISubSchema {
+import org.hiero.sketch.table.api.ISubSchema;
+
+import java.util.HashSet;
+import java.util.Iterator;
+
+public class HashSubSchema implements ISubSchema, Iterable<String> {
     private final HashSet<String> colNames;
 
     public HashSubSchema() {
@@ -49,4 +52,9 @@ public class HashSubSchema implements ISubSchema {
     }
 
     public int getColumnCount() { return this.colNames.size(); }
+
+    @Override
+    public Iterator<String> iterator() {
+        return colNames.iterator();
+    }
 }

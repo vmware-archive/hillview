@@ -21,6 +21,7 @@ package org.hiero.sketch.table;
 import com.google.gson.JsonElement;
 import org.hiero.sketch.dataset.api.IJson;
 import org.hiero.sketch.table.api.IRow;
+import org.hiero.sketch.table.api.ISubSchema;
 import org.hiero.sketch.table.api.ITable;
 
 import java.io.Serializable;
@@ -41,6 +42,12 @@ public class RowSnapshot implements IRow, Serializable, IJson {
 
     public RowSnapshot(final ITable data, final int rowIndex) {
         this.schema = data.getSchema();
+        for (final String colName : this.schema.getColumnNames())
+            this.field.put(colName, data.getColumn(colName).getObject(rowIndex));
+    }
+
+    public RowSnapshot(final ITable data, final int rowIndex, final ISubSchema subSchema) {
+        this.schema = data.getSchema().project(subSchema);
         for (final String colName : this.schema.getColumnNames())
             this.field.put(colName, data.getColumn(colName).getObject(rowIndex));
     }
