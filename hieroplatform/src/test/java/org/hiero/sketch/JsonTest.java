@@ -30,7 +30,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-public class JsonTests {
+public class JsonTest {
     @Test
     public void convert() {
         ColumnDescription cd0 = new ColumnDescription("Age", ContentsKind.Int, false);

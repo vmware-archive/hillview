@@ -28,14 +28,14 @@ import java.util.SortedMap;
 import static org.junit.Assert.assertTrue;
 
 
-public class TestMonoidTopK {
+public class MonoidTopKTest {
     private final int maxSize =1000;
     private int lSize;
     private int rSize;
     private final int inpSize = 10000;
     private TreeTopK<Integer> leftTree;
     private TreeTopK<Integer> rightTree;
-    private final MonoidTopK<Integer> myTopK = new MonoidTopK<Integer>(this.maxSize, MyCompare.instance);
+    private final MonoidTopK<Integer> myTopK = new MonoidTopK<Integer>(this.maxSize, Integer::compare);
 
     void checkSorted(SortedMap<Integer, Integer> t) {
         boolean first = true;
@@ -52,8 +52,8 @@ public class TestMonoidTopK {
     public void MonoidTopKTest0() {
         this.lSize = 100;
         this.rSize = 100;
-        this.leftTree = new TreeTopK<Integer>(this.lSize, MyCompare.instance);
-        this.rightTree = new TreeTopK<Integer>(this.rSize, MyCompare.instance);
+        this.leftTree = new TreeTopK<Integer>(this.lSize, Integer::compare);
+        this.rightTree = new TreeTopK<Integer>(this.rSize, Integer::compare);
         final Randomness rn = Randomness.getInstance();
         for (int i = 0; i < this.inpSize; i++)
             this.leftTree.push(rn.nextInt(this.inpSize));
@@ -69,8 +69,8 @@ public class TestMonoidTopK {
     public void MonoidTopKTest1() {
         this.lSize = 50;
         this.rSize = 50;
-        this.leftTree = new TreeTopK<Integer>(this.lSize, MyCompare.instance);
-        this.rightTree = new TreeTopK<Integer>(this.rSize, MyCompare.instance);
+        this.leftTree = new TreeTopK<Integer>(this.lSize, Integer::compare);
+        this.rightTree = new TreeTopK<Integer>(this.rSize, Integer::compare);
         final Randomness rn = Randomness.getInstance();
         for (int i = 0; i < this.inpSize; i++)
             this.leftTree.push(rn.nextInt(this.inpSize));
@@ -86,8 +86,8 @@ public class TestMonoidTopK {
     public void MonoidTopKTestTimed() {
         this.lSize = 1000;
         this.rSize = 1000;
-        this.leftTree = new TreeTopK<Integer>(this.lSize, MyCompare.instance);
-        this.rightTree = new TreeTopK<Integer>(this.rSize, MyCompare.instance);
+        this.leftTree = new TreeTopK<Integer>(this.lSize, Integer::compare);
+        this.rightTree = new TreeTopK<Integer>(this.rSize, Integer::compare);
         final Randomness rn = Randomness.getInstance();
         for (int i = 0; i < this.inpSize; i++)
             this.leftTree.push(rn.nextInt(this.inpSize));

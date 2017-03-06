@@ -27,6 +27,11 @@ import {ErrorReporter, ConsoleErrorReporter} from "./errorReporter";
 const HieroServiceUrl : string = "ws://localhost:8080";
 const RpcRequestUrl = HieroServiceUrl + "/rpc";
 
+export interface IJSON {
+    // Convert object to JSON
+    toJSON(): string;
+}
+
 export class RemoteObject {
     constructor(public readonly remoteObjectId : string) {}
 
@@ -66,10 +71,15 @@ export class RpcRequest {
     }
 
     serialize() : string {
+        let argString = "";
+        if  (this.args.toJSON != null)
+            argString = this.args.toJSON();
+        else
+            argString = JSON.stringify(this.args);
         let result = {
             "objectId": this.objectId,
             "method": this.method,
-            "arguments": JSON.stringify(this.args),
+            "arguments": argString,
             "requestId": this.requestId,
             "protoVersion": this.protoVersion
         };

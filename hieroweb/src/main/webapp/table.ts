@@ -16,7 +16,7 @@
  */
 
 import {IHtmlElement, ScrollBar, Menu, Renderer, FullPage, HieroDataView} from "./ui";
-import {RemoteObject, PartialResult, RpcReceiver} from "./rpc";
+import {RemoteObject, PartialResult, RpcReceiver, IJSON} from "./rpc";
 import Rx = require('rx');
 
 // These classes are direct counterparts to server-side Java classes
@@ -64,9 +64,30 @@ export interface ColumnSortOrientation {
     ascending: boolean;
 }
 
-export interface RecordOrder {
-    length: number;
-    [index: number]: ColumnSortOrientation;
+class RecordOrder {
+    constructor(public order: Array<ColumnSortOrientation>) {}
+    public length(): number { return this.order.length; }
+    public get(i: number): ColumnSortOrientation { return this.order[i]; }
+
+    // Find the index of a specific column; return -1 if columns is not in the sort order
+    public find(col: string): number {
+        for (let i = 0; i < this.length(); i++)
+            if (this.order[i].columnDescription.name == col)
+                return i;
+        return -1;
+    }
+    public hide(col: string): void {
+        let index = this.find(col);
+        if (index == -1)
+            throw ("Column " + col + " not found");
+        this.order.splice(index, 1);
+    }
+    public show(cso: ColumnSortOrientation) {
+        let index = this.find(cso.columnDescription.name);
+        if (index != -1)
+            this.order.splice(index, 1);
+        this.order.splice(0, 0, cso);
+    }
 }
 
 export interface TableDataView {
@@ -96,7 +117,7 @@ export class TableView extends RemoteObject
     protected startPosition?: number;
     // Total rows in the table
     protected rowCount?: number;
-    protected order?: RecordOrder;
+    protected order: RecordOrder;
     // Computed
     // Logical number of data rows displayed; includes count of each data row
     protected dataRowsDisplayed: number;
@@ -116,6 +137,16 @@ export class TableView extends RemoteObject
         this.scrollBar = new ScrollBar();
         this.top.appendChild(this.htmlTable);
         this.top.appendChild(this.scrollBar.getHTMLRepresentation());
+        this.order = new RecordOrder([]);
+    }
+
+    findColumn(colName: string): IColumnDescription {
+        if (this.schema == null)
+            return null;
+        for (let i = 0; i < this.schema.length; i++)
+            if (this.schema[i].name == colName)
+                return this.schema[i];
+        return null;
     }
 
     setPage(page: FullPage) {
@@ -127,10 +158,8 @@ export class TableView extends RemoteObject
     }
 
     getSortOrder(column: string): [boolean, number] {
-        if (this.order == null)
-            return null;
-        for (let i = 0; i < this.order.length; i++) {
-            let o = this.order[i];
+        for (let i = 0; i < this.order.length(); i++) {
+            let o = this.order.get(i);
             if (o.columnDescription.name == column)
                 return [o.ascending, i];
         }
@@ -179,8 +208,17 @@ export class TableView extends RemoteObject
     }
 
     public showColumn(columnName: string, show: boolean) : void {
-        let rr = this.createRpcRequest("show", null);
-        //rr.invoke();
+        let o = this.order;
+        if (show) {
+            let col = this.findColumn(columnName);
+            if (col == null)
+                return;
+            o.show({ columnDescription: col, ascending: true });
+        } else {
+            o.hide(columnName);
+        }
+        let rr = this.createRpcRequest("getTableView", o);
+        rr.invoke(new TableRenderer(this.page, this));
     }
 
     public updateView(data: TableDataView) : void {
@@ -189,6 +227,8 @@ export class TableView extends RemoteObject
         this.rowCount = data.rowCount;
         this.schema = data.schema;
         this.order = data.order;
+        if (this.order == null)
+            this.order = new RecordOrder([]);
 
         if (this.thead != null)
             this.thead.remove();
@@ -219,7 +259,7 @@ export class TableView extends RemoteObject
             cds.push(cd);
             let thd = this.addHeaderCell(thr, cd);
             let menu = new Menu([
-                {text: "show", action: () => this.showColumn(cd.name, true) },
+                {text: "sort", action: () => this.showColumn(cd.name, true) },
                 {text: "hide", action: () => this.showColumn(cd.name, false)}
              ]);
             thd.onclick = () => menu.toggleVisibility();

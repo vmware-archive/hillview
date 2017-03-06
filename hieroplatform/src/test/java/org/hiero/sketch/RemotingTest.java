@@ -53,7 +53,7 @@ import static org.junit.Assert.fail;
 /**
  * Remoting tests for Akka.
  */
-public class RemotingTests {
+public class RemotingTest {
     private static ActorSystem clientActorSystem;
     private static ActorSystem serverActorSystem;
     private static ActorRef clientActor;

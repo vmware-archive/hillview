@@ -27,7 +27,7 @@ import org.junit.Test;
 public class TreeTopKTest {
     private final int maxSize = 10;
     public final int inpSize = 1000;
-    private final TreeTopK<Integer> myTree = new TreeTopK<Integer>(this.maxSize, MyCompare.instance);
+    private final TreeTopK<Integer> myTree = new TreeTopK<Integer>(this.maxSize, Integer::compare);
 
     @Test
     public void testHeapTopKZero() {

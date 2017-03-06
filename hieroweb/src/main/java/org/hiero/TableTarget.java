@@ -21,10 +21,13 @@ import org.hiero.sketch.dataset.api.IDataSet;
 import org.hiero.sketch.dataset.api.PartialResult;
 import org.hiero.sketch.dataset.api.PartialResultMonoid;
 import org.hiero.sketch.spreadsheet.SummarySketch;
+import org.hiero.sketch.table.RecordOrder;
 import org.hiero.sketch.table.api.ITable;
 import rx.Observable;
 
 import javax.websocket.Session;
+
+import static org.hiero.RpcObjectManager.gson;
 
 public class TableTarget extends RpcTarget {
     protected final IDataSet<ITable> table;
@@ -47,6 +50,7 @@ public class TableTarget extends RpcTarget {
 
     @HieroRpc
     void getTableView(RpcRequest request, Session session) {
+        RecordOrder ro = gson.fromJson(request.arguments, RecordOrder.class);
         // TODO
     }
 

@@ -27,7 +27,7 @@ import org.junit.Test;
  */
 public class HeapTopKTest {
     private final int maxSize = 10;
-    private final HeapTopK<Integer> myHeap = new HeapTopK<Integer>(this.maxSize, MyCompare.instance);
+    private final HeapTopK<Integer> myHeap = new HeapTopK<Integer>(this.maxSize, Integer::compare);
 
     @Test
     public void testHeapTopKZero() {

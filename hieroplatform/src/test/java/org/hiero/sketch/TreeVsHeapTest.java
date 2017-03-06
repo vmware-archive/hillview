@@ -38,14 +38,14 @@ public class TreeVsHeapTest {
                 this.randInp[j] = this.rn.nextInt(this.inpSize);
             }
             final int maxSize = 100;
-            final HeapTopK<Integer> myHeap = new HeapTopK<>(maxSize, MyCompare.instance);
+            final HeapTopK<Integer> myHeap = new HeapTopK<Integer>(maxSize, Integer::compare);
             startTime = System.nanoTime();
             for (final int j: this.randInp) {
                 myHeap.push(j);
             }
             endTime = System.nanoTime();
             PerfRegressionTest.comparePerf(" Using Heap: ", endTime - startTime);
-            final TreeTopK<Integer> myTree = new TreeTopK<>(maxSize, MyCompare.instance);
+            final TreeTopK<Integer> myTree = new TreeTopK<Integer>(maxSize, Integer::compare);
             startTime = System.nanoTime();
             for (final int j: this.randInp) {
                 myTree.push(j);

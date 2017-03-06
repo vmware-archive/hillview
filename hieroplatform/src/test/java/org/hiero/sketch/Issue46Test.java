@@ -23,6 +23,7 @@ import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
 import org.hiero.sketch.table.api.ITable;
+import org.junit.Test;
 
 import java.util.List;
 
@@ -30,8 +31,8 @@ import static junit.framework.TestCase.assertNotNull;
 import static org.hiero.sketch.TableTest.SplitTable;
 import static org.hiero.sketch.TableTest.getIntTable;
 
-public class Issue46 {
-
+public class Issue46Test {
+    @Test
     public void createBug() {
         // Creating Int Table
         final SmallTable bigTable = getIntTable(10000, 1);
