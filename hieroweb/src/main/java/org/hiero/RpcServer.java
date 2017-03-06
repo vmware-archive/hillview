@@ -3,7 +3,6 @@ package org.hiero;
 import com.google.gson.JsonElement;
 import com.google.gson.internal.Streams;
 import com.google.gson.stream.JsonReader;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import javax.websocket.*;
 import javax.websocket.server.ServerEndpoint;

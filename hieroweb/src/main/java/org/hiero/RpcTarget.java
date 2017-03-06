@@ -1,7 +1,6 @@
 package org.hiero;
 
 import com.google.gson.JsonObject;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hiero.sketch.dataset.api.IJson;
 import org.hiero.sketch.dataset.api.PartialResult;
 import org.hiero.utils.Converters;
