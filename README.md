@@ -81,3 +81,5 @@ Random but this class instead.
   @Nullable annotation (from javax.annotation) for all pointers which
   can be null.  Use Converters.checkNull to cast a @Nullable to a
   @NonNull pointer.
+* Use "mvn site" to generate the FindBugs report in target/site/findbugs.html.
+  Make sure any new code checked in does not introduce any violations.
