@@ -18,6 +18,9 @@
 
 package org.hiero.sketch.table;
 
+import org.hiero.utils.Converters;
+
+import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.security.InvalidParameterException;
 import java.util.BitSet;
@@ -26,6 +29,7 @@ import java.util.BitSet;
  * Adds a missing bit vector to BaseColumn (if missing values are allowed)
  */
 public abstract class BaseArrayColumn extends BaseColumn implements Serializable {
+    @Nullable
     private BitSet missing = null;
 
     BaseArrayColumn(final ColumnDescription description, final int size) {
@@ -38,11 +42,11 @@ public abstract class BaseArrayColumn extends BaseColumn implements Serializable
 
     @Override
     public boolean isMissing(final int rowIndex) {
-        return this.description.allowMissing && this.missing.get(rowIndex);
+        return this.description.allowMissing && Converters.checkNull(this.missing).get(rowIndex);
     }
 
     public void setMissing(final int rowIndex) {
-        this.missing.set(rowIndex);
+        Converters.checkNull(this.missing).set(rowIndex);
     }
 
     /**

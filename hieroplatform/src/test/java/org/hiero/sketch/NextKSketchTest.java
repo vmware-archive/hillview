@@ -24,10 +24,8 @@ import org.hiero.sketch.dataset.api.IDataSet;
 import org.hiero.sketch.spreadsheet.ColumnSortOrientation;
 import org.hiero.sketch.spreadsheet.NextKList;
 import org.hiero.sketch.spreadsheet.NextKSketch;
-import org.hiero.sketch.table.RecordOrder;
-import org.hiero.sketch.table.RowSnapshot;
-import org.hiero.sketch.table.SmallTable;
-import org.hiero.sketch.table.Table;
+import org.hiero.sketch.table.*;
+import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.ITable;
 import org.hiero.sketch.table.api.IndexComparator;
 import org.hiero.utils.Converters;
@@ -41,7 +39,6 @@ import static junit.framework.TestCase.assertTrue;
 import static org.hiero.sketch.TableTest.*;
 
 public class NextKSketchTest {
-
     @Test
     public void testTopK1() {
         final int numCols = 2;
@@ -129,4 +126,30 @@ public class NextKSketchTest {
         //System.out.println(nk.toLongString(maxSize));
     }
 
+    @Test
+    public void testNextList() {
+        ColumnDescription cd = new ColumnDescription("X", ContentsKind.Int, false);
+        Schema schema = new Schema();
+        schema.append(cd);
+        NextKList nkl = new NextKList(schema);
+        String s = nkl.toLongString(Integer.MAX_VALUE);
+        assertEquals(s, "Table, 1 columns, 0 rows" + System.lineSeparator());
+    }
+
+    @Test
+    public void testTopK4() {
+        Table t = Table.testTable();
+        final int parts = 1;
+        List<IDataSet<ITable>> fragments = new ArrayList<IDataSet<ITable>>();
+        for (int i = 0; i < parts; i++) {
+            LocalDataSet<ITable> data = new LocalDataSet<ITable>(t);
+            fragments.add(data);
+        }
+        IDataSet<ITable> big = new ParallelDataSet<ITable>(fragments);
+        RecordOrder ro = new RecordOrder();
+        ro.append(new ColumnSortOrientation(t.getSchema().getDescription("Name"), true));
+        NextKSketch nk = new NextKSketch(ro, null, 10);
+        NextKList nkl = big.blockingSketch(nk);
+        assertEquals(nkl.table.toString(), "Table, 1 columns, 10 rows");
+    }
 }

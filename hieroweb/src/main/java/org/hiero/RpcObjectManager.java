@@ -17,8 +17,6 @@
 
 package org.hiero;
 
-import com.google.gson.Gson;
-
 import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -32,17 +30,15 @@ import java.util.logging.Logger;
  */
 public final class RpcObjectManager {
     // We have exactly one instance of this object, because the web server
-    // is multithreaded and it instantiates various classes on demand to service requests.
+    // is multi-threaded and it instantiates various classes on demand to service requests.
     // These need to be able to find the ObjectManager - they do it through
     // the unique global instance.
     public static final RpcObjectManager instance;
-    protected static final Gson gson;
     private static final Logger LOGGER;
 
     static {
         LOGGER = Logger.getLogger(RpcObjectManager.class.getName());
         instance = new RpcObjectManager();
-        gson = new Gson();
         new InitialObject();  // indirectly registers this object with the RpcObjectManager
     }
 
@@ -69,7 +65,7 @@ public final class RpcObjectManager {
         }
     }
 
-    synchronized public void addObject(RpcTarget object) {
+    synchronized void addObject(RpcTarget object) {
         String id = this.freshId();
         object.setId(id);
         if (this.objects.containsKey(object.objectId))
@@ -78,7 +74,7 @@ public final class RpcObjectManager {
         this.objects.put(object.objectId, object);
     }
 
-    synchronized public RpcTarget getObject(String id) {
+    synchronized RpcTarget getObject(String id) {
         LOGGER.log(Level.INFO, "Getting object " + id);
         RpcTarget target = this.objects.get(id);
         if (target == null)

@@ -23,6 +23,7 @@ import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.ISubSchema;
 import org.hiero.sketch.table.api.ITable;
 import org.hiero.sketch.table.api.IndexComparator;
+import org.hiero.utils.Converters;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -144,22 +145,28 @@ public class RecordOrder implements Iterable<ColumnSortOrientation> {
                 } else {
                     switch (left.schema.getKind(ordCol.columnDescription.name)) {
                         case String:
-                            outcome = leftCol.getString(i).compareTo(rightCol.getString(j));
+                            outcome = Converters.checkNull(leftCol.getString(i))
+                                                .compareTo(Converters.checkNull(rightCol.getString(j)));
                             break;
                         case Date:
-                            outcome = leftCol.getDate(i).compareTo(rightCol.getDate(j));
+                            outcome = Converters.checkNull(leftCol.getDate(i))
+                                                .compareTo(Converters.checkNull(rightCol.getDate(j)));
                             break;
                         case Int:
-                            outcome = Integer.compare(leftCol.getInt(i), rightCol.getInt(j));
+                            outcome = Integer.compare(Converters.checkNull(leftCol.getInt(i)),
+                                    Converters.checkNull(rightCol.getInt(j)));
                             break;
                         case Json:
-                            outcome = leftCol.getString(i).compareTo(rightCol.getString(j));
+                            outcome = Converters.checkNull(leftCol.getString(i))
+                                                .compareTo(Converters.checkNull(rightCol.getString(j)));
                             break;
                         case Double:
-                            outcome = Double.compare(leftCol.getDouble(i), rightCol.getDouble(j));
+                            outcome = Double.compare(Converters.checkNull(leftCol.getDouble(i)),
+                                    Converters.checkNull(rightCol.getDouble(j)));
                             break;
                         case Duration:
-                            outcome = leftCol.getDuration(i).compareTo(rightCol.getDuration(j));
+                            outcome = Converters.checkNull(leftCol.getDuration(i))
+                                                .compareTo(Converters.checkNull(rightCol.getDuration(j)));
                             break;
                     }
                 }
@@ -236,19 +243,24 @@ public class RecordOrder implements Iterable<ColumnSortOrientation> {
                     switch (left.schema.getKind(ordCol.columnDescription.name)) {
                         case String:
                         case Json:
-                            outcome = leftCol.getString(i).compareTo(rightCol.getString(j));
+                            outcome = Converters.checkNull(leftCol.getString(i))
+                                                .compareTo(Converters.checkNull(rightCol.getString(j)));
                             break;
                         case Date:
-                            outcome = leftCol.getDate(i).compareTo(rightCol.getDate(j));
+                            outcome = Converters.checkNull(leftCol.getDate(i))
+                                                .compareTo(Converters.checkNull(rightCol.getDate(j)));
                             break;
                         case Int:
-                            outcome = Integer.compare(leftCol.getInt(i), rightCol.getInt(j));
+                            outcome = Integer.compare(Converters.checkNull(leftCol.getInt(i)),
+                                    Converters.checkNull(rightCol.getInt(j)));
                             break;
                         case Double:
-                            outcome = Double.compare(leftCol.getDouble(i), rightCol.getDouble(j));
+                            outcome = Double.compare(Converters.checkNull(leftCol.getDouble(i)),
+                                    Converters.checkNull(rightCol.getDouble(j)));
                             break;
                         case Duration:
-                            outcome = leftCol.getDuration(i).compareTo(rightCol.getDuration(j));
+                            outcome = Converters.checkNull(leftCol.getDuration(i))
+                                                .compareTo(Converters.checkNull(rightCol.getDuration(j)));
                             break;
                     }
                 }

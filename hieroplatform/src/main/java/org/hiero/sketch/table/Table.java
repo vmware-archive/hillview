@@ -84,8 +84,10 @@ public class Table extends BaseTable {
     public static Table testTable() {
         ColumnDescription c0 = new ColumnDescription("Name", ContentsKind.String, false);
         ColumnDescription c1 = new ColumnDescription("Age", ContentsKind.Int, false);
-        StringArrayColumn sac = new StringArrayColumn(c0, new String[] { "Mike", "John", "Tom"});
-        IntArrayColumn iac = new IntArrayColumn(c1, new int[] { 20, 30, 10 });
+        StringArrayColumn sac = new StringArrayColumn(c0,
+                new String[] { "Mike", "John", "Tom", "Bill", "Bill", "Smith", "Donald", "Bruce",
+                               "Bob", "Frank", "Richard", "Steve", "Dave" });
+        IntArrayColumn iac = new IntArrayColumn(c1, new int[] { 20, 30, 10, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
         return new Table(Arrays.asList(sac, iac));
     }
 

@@ -33,15 +33,19 @@ public interface IColumn {
     ColumnDescription getDescription();
 
     /* Only one of the following methods is supposed to work for a column */
+    @Nullable
     String getString(int rowIndex);
     double getDouble(int rowIndex);
+    @Nullable
     LocalDateTime getDate(int rowIndex);
     int getInt(int rowIndex);
+    @Nullable
     Duration getDuration(int rowIndex);
     /* This function is inefficient, it should be used sparingly. It
        will cast the value to an Object, boxing it if necessary. It returns null
        if the row is missing.
      */
+    @Nullable
     default Object getObject(final int rowIndex) {
         if (this.isMissing(rowIndex)) { return null; }
         switch (this.getDescription().kind) {
@@ -78,6 +82,8 @@ public interface IColumn {
      */
     double asDouble(int rowIndex, @Nullable IStringConverter converter);
 
+    // Returns null only if the object is missing.
+    @Nullable
     String asString(int rowIndex);
 
     IndexComparator getComparator();
@@ -94,9 +100,8 @@ public interface IColumn {
         int row = 0;
         while (true) {
             final int i = rowIt.getNextRow();
-            if (i == -1) {
+            if (i == -1)
                 break;
-            }
             result.set(row, this.getObject(i));
             row++;
         }

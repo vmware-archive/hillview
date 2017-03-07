@@ -28,6 +28,7 @@ public interface IDoubleColumn extends IColumn {
         return this.getDouble(rowIndex);
     }
 
+    @Nullable
     @Override
     default String asString(final int rowIndex) {
         if (this.isMissing(rowIndex))

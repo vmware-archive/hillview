@@ -27,4 +27,4 @@ import java.lang.annotation.Target;
 // BiConsumer<RpcRequest, Session>
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface HieroRpc {}
+@interface HieroRpc {}

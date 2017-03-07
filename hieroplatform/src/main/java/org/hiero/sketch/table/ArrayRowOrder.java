@@ -28,7 +28,6 @@ import java.util.*;
  * The iterator returns those rows in sequence.
  */
 public class ArrayRowOrder implements IRowOrder {
-
     private final List<Integer> sortedRows;
     private final int size;
 

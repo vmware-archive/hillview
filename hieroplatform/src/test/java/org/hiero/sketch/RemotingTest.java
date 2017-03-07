@@ -54,9 +54,13 @@ import static org.junit.Assert.fail;
  * Remoting tests for Akka.
  */
 public class RemotingTest {
+    @Nullable
     private static ActorSystem clientActorSystem;
+    @Nullable
     private static ActorSystem serverActorSystem;
+    @Nullable
     private static ActorRef clientActor;
+    @Nullable
     private static ActorRef remoteActor;
 
     private class IncrementMap implements IMap<int[], int[]> {
@@ -135,6 +139,7 @@ public class RemotingTest {
             al.add(lds);
         }
         ParallelDataSet<int[]> pds = new ParallelDataSet<int[]>(al);
+        pds.setBundleInterval(0);
         remoteActor = serverActorSystem.actorOf(Props.create(SketchServerActor.class, pds),
                                                 "ServerActor");
 
@@ -171,7 +176,8 @@ public class RemotingTest {
 
     @Test
     public void testMapSketchThroughClient() {
-        final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(clientActor, remoteActor);
+        final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(
+                Converters.checkNull(clientActor), Converters.checkNull(remoteActor));
         final IDataSet<int[]> remoteIdsNew = remoteIds.map(new IncrementMap()).toBlocking().last().deltaValue;
         assertNotNull(remoteIdsNew);
         final int result = remoteIdsNew.sketch(new SumSketch())
@@ -185,7 +191,8 @@ public class RemotingTest {
 
     @Test
     public void testMapSketchThroughClientWithError() {
-        final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(clientActor, remoteActor);
+        final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(
+                Converters.checkNull(clientActor), Converters.checkNull(remoteActor));
         final IDataSet<int[]> remoteIdsNew = remoteIds.map(new IncrementMap())
                                                       .toBlocking()
                                                       .last().deltaValue;
@@ -199,7 +206,8 @@ public class RemotingTest {
 
     @Test
     public void testMapSketchThroughClientUnsubscribe() {
-        final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(clientActor, remoteActor);
+        final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(
+                Converters.checkNull(clientActor), Converters.checkNull(remoteActor));
         final IDataSet<int[]> remoteIdsNew = remoteIds.map(new IncrementMap()).toBlocking().last().deltaValue;
         assertNotNull(remoteIdsNew);
 
@@ -224,7 +232,8 @@ public class RemotingTest {
 
     @Test
     public void testZip() {
-        final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(clientActor, remoteActor);
+        final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(
+                Converters.checkNull(clientActor), Converters.checkNull(remoteActor));
         final IDataSet<int[]> remoteIdsLeft = Converters.checkNull(
                 remoteIds.map(new IncrementMap()).toBlocking().last().deltaValue);
         final IDataSet<int[]> remoteIdsRight = Converters.checkNull(
@@ -237,7 +246,7 @@ public class RemotingTest {
 
     @AfterClass
     public static void shutdown() {
-        clientActorSystem.terminate();
-        serverActorSystem.terminate();
+        Converters.checkNull(clientActorSystem).terminate();
+        Converters.checkNull(serverActorSystem).terminate();
     }
 }

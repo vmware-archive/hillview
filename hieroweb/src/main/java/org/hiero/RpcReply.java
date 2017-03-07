@@ -32,13 +32,13 @@ public class RpcReply {
     private static final Logger logger =
             Logger.getLogger(RpcReply.class.getName());
 
-    public RpcReply(final int requestId, final String result, boolean isError) {
+    RpcReply(final int requestId, final String result, boolean isError) {
         this.requestId = requestId;
         this.result = result;
         this.isError = isError;
     }
 
-    public JsonElement toJson() {
+    JsonElement toJson() {
         JsonObject result = new JsonObject();
         result.addProperty("requestId", this.requestId);
         result.addProperty("result", this.result);

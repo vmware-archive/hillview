@@ -17,9 +17,7 @@
  */
 
 package org.hiero.sketch.dataset.api;
-
 import org.hiero.utils.Converters;
-
 import java.io.Serializable;
 
 /**

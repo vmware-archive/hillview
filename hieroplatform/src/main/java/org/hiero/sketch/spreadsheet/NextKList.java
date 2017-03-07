@@ -70,10 +70,9 @@ public class NextKList implements Serializable, IJson {
         this.totalRows = 0;
     }
 
-
     public String toLongString(int rowsToDisplay) {
         final StringBuilder builder = new StringBuilder();
-        builder.append(this.toString());
+        builder.append(this.table.toString());
         builder.append(System.getProperty("line.separator"));
         final IRowIterator rowIt = this.table.getRowIterator();
         int nextRow = rowIt.getNextRow();
@@ -88,9 +87,14 @@ public class NextKList implements Serializable, IJson {
         return builder.toString();
     }
 
+    @Override
+    public String toString() {
+        return this.toLongString(Integer.MAX_VALUE);
+    }
 
     @Override
     public JsonElement toJsonTree() {
+        // The result looks like a TableDataView typescript class
         JsonObject result = new JsonObject();
         result.add("schema", this.table.getSchema().toJsonTree());
         result.addProperty("rowCount", this.totalRows);

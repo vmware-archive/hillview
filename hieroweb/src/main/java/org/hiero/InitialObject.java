@@ -42,7 +42,7 @@ public class InitialObject extends RpcTarget {
         TableTarget table = new TableTarget(big);
         RpcReply reply = request.createReply(table.idToJson());
         reply.send(session);
-        request.closeSession(session);
+        request.syncCloseSession(session);
     }
 
     @Override

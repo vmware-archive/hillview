@@ -18,6 +18,9 @@
 
 package org.hiero.sketch.table;
 
+import org.hiero.utils.Converters;
+
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.BitSet;
 
@@ -30,6 +33,7 @@ abstract class BaseListColumn extends BaseColumn {
     final int SegmentMask = this.SegmentSize - 1;
     private boolean sealed;  // once sealed it can't grow anymore.
 
+    @Nullable
     private ArrayList<BitSet> missing = null;
     int size;
 
@@ -58,6 +62,7 @@ abstract class BaseListColumn extends BaseColumn {
     }
 
     public void appendMissing() {
+        Converters.checkNull(this.missing);
         final int segmentId = this.size >> this.LogSegmentSize;
         final int localIndex = this.size & this.SegmentMask;
         if (this.missing.size() <= segmentId) {

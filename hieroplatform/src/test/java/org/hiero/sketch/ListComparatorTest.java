@@ -99,12 +99,12 @@ public class ListComparatorTest {
         }
 
         public String getRow(final Integer rowIndex){
-            String row = "";
+            StringBuilder row = new StringBuilder();
             for(final IColumn thisCol: this.cols){
-                row += (thisCol.asString(rowIndex) == null)? " " : thisCol.asString(rowIndex);
-                row += " ";
+                row.append((thisCol.asString(rowIndex) == null) ? " " : thisCol.asString(rowIndex));
+                row.append(" ");
             }
-            return row;
+            return row.toString();
         }
     }
 }

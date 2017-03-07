@@ -20,18 +20,15 @@ package org.hiero.sketch;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.junit.Test;
-
 import java.util.Random;
 
 
 public class RandomnessTest {
-    Random randomPRG;
-    MersenneTwister MT_PRG;
+    final Random randomPRG = new Random();
+    final MersenneTwister MT_PRG = new MersenneTwister();
 
     @Test
     public void testRandomnessPerf() {
-        this.randomPRG = new Random();
-        this.MT_PRG = new MersenneTwister();
         int iterationnNum = 100; // number of iterations
         int length = 100000; // number of random numbers to generate
 

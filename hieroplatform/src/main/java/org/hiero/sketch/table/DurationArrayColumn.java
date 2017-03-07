@@ -57,6 +57,7 @@ public final class DurationArrayColumn extends BaseArrayColumn implements IDurat
         return this.data.length;
     }
 
+    @Nullable
     @Override
     public Duration getDuration(final int rowIndex) {
         return this.data[rowIndex];
@@ -67,7 +68,7 @@ public final class DurationArrayColumn extends BaseArrayColumn implements IDurat
     }
 
     @Override
-    public boolean isMissing(final int rowIndex){return this.getDuration(rowIndex) == null;}
+    public boolean isMissing(final int rowIndex) {return this.getDuration(rowIndex) == null; }
 
     @Override
     public void setMissing(final int rowIndex) { this.set(rowIndex, null);}

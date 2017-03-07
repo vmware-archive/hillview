@@ -33,8 +33,6 @@ public class MonoidTopKTest {
     private int lSize;
     private int rSize;
     private final int inpSize = 10000;
-    private TreeTopK<Integer> leftTree;
-    private TreeTopK<Integer> rightTree;
     private final MonoidTopK<Integer> myTopK = new MonoidTopK<Integer>(this.maxSize, Integer::compare);
 
     void checkSorted(SortedMap<Integer, Integer> t) {
@@ -52,16 +50,16 @@ public class MonoidTopKTest {
     public void MonoidTopKTest0() {
         this.lSize = 100;
         this.rSize = 100;
-        this.leftTree = new TreeTopK<Integer>(this.lSize, Integer::compare);
-        this.rightTree = new TreeTopK<Integer>(this.rSize, Integer::compare);
+        TreeTopK<Integer> leftTree = new TreeTopK<Integer>(this.lSize, Integer::compare);
+        TreeTopK<Integer> rightTree = new TreeTopK<Integer>(this.rSize, Integer::compare);
         final Randomness rn = Randomness.getInstance();
         for (int i = 0; i < this.inpSize; i++)
-            this.leftTree.push(rn.nextInt(this.inpSize));
+            leftTree.push(rn.nextInt(this.inpSize));
         for (int j = 0; j < this.inpSize; j++)
-            this.rightTree.push(rn.nextInt(this.inpSize));
-        this.checkSorted(this.leftTree.getTopK());
-        this.checkSorted(this.rightTree.getTopK());
-        SortedMap<Integer, Integer> s = this.myTopK.add(this.leftTree.getTopK(), this.rightTree.getTopK());
+            rightTree.push(rn.nextInt(this.inpSize));
+        this.checkSorted(leftTree.getTopK());
+        this.checkSorted(rightTree.getTopK());
+        SortedMap<Integer, Integer> s = this.myTopK.add(leftTree.getTopK(), rightTree.getTopK());
         this.checkSorted(Converters.checkNull(s));
     }
 
@@ -69,16 +67,16 @@ public class MonoidTopKTest {
     public void MonoidTopKTest1() {
         this.lSize = 50;
         this.rSize = 50;
-        this.leftTree = new TreeTopK<Integer>(this.lSize, Integer::compare);
-        this.rightTree = new TreeTopK<Integer>(this.rSize, Integer::compare);
+        TreeTopK<Integer> leftTree = new TreeTopK<Integer>(this.lSize, Integer::compare);
+        TreeTopK<Integer> rightTree = new TreeTopK<Integer>(this.rSize, Integer::compare);
         final Randomness rn = Randomness.getInstance();
         for (int i = 0; i < this.inpSize; i++)
-            this.leftTree.push(rn.nextInt(this.inpSize));
+            leftTree.push(rn.nextInt(this.inpSize));
         for (int j = 0; j < this.inpSize; j++)
-            this.rightTree.push(rn.nextInt(this.inpSize));
-        this.checkSorted(this.leftTree.getTopK());
-        this.checkSorted(this.rightTree.getTopK());
-        SortedMap<Integer, Integer> s = this.myTopK.add(this.leftTree.getTopK(), this.rightTree.getTopK());
+            rightTree.push(rn.nextInt(this.inpSize));
+        this.checkSorted(leftTree.getTopK());
+        this.checkSorted(rightTree.getTopK());
+        SortedMap<Integer, Integer> s = this.myTopK.add(leftTree.getTopK(), rightTree.getTopK());
         this.checkSorted(Converters.checkNull(s));
     }
 
@@ -86,15 +84,15 @@ public class MonoidTopKTest {
     public void MonoidTopKTestTimed() {
         this.lSize = 1000;
         this.rSize = 1000;
-        this.leftTree = new TreeTopK<Integer>(this.lSize, Integer::compare);
-        this.rightTree = new TreeTopK<Integer>(this.rSize, Integer::compare);
+        TreeTopK<Integer> leftTree = new TreeTopK<Integer>(this.lSize, Integer::compare);
+        TreeTopK<Integer> rightTree = new TreeTopK<Integer>(this.rSize, Integer::compare);
         final Randomness rn = Randomness.getInstance();
         for (int i = 0; i < this.inpSize; i++)
-            this.leftTree.push(rn.nextInt(this.inpSize));
+            leftTree.push(rn.nextInt(this.inpSize));
         for (int j = 0; j < this.inpSize; j++)
-            this.rightTree.push(rn.nextInt(this.inpSize));
+            rightTree.push(rn.nextInt(this.inpSize));
         final long startTime = System.nanoTime();
-        this.myTopK.add(this.leftTree.getTopK(), this.rightTree.getTopK());
+        this.myTopK.add(leftTree.getTopK(), rightTree.getTopK());
         final long endTime = System.nanoTime();
         PerfRegressionTest.comparePerf(endTime - startTime);
     }

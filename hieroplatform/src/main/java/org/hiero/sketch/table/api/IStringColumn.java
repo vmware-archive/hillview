@@ -18,6 +18,8 @@
 
 package org.hiero.sketch.table.api;
 
+import org.hiero.utils.Converters;
+
 import javax.annotation.Nullable;
 
 public interface IStringColumn extends IColumn {
@@ -26,11 +28,10 @@ public interface IStringColumn extends IColumn {
         if (isMissing(rowIndex))
             throw new MissingException(this, rowIndex);
         final String tmp = this.getString(rowIndex);
-        if (conv == null)
-            throw new NullPointerException();
-        return conv.asDouble(tmp);
+        return Converters.checkNull(conv).asDouble(Converters.checkNull(tmp));
     }
 
+    @Nullable
     @Override
     default String asString(final int rowIndex) {
         return this.getString(rowIndex);
@@ -50,8 +51,8 @@ public interface IStringColumn extends IColumn {
                 } else if (jMissing) {
                     return -1;
                 } else {
-                    return IStringColumn.this.getString(i).compareTo(
-                            IStringColumn.this.getString(j));
+                    return Converters.checkNull(IStringColumn.this.getString(i)).compareTo(
+                            Converters.checkNull(IStringColumn.this.getString(j)));
                 }
             }
         };

@@ -60,14 +60,14 @@ public class Histogram1D extends BaseHist1D {
                 double val = column.asDouble(currRow,converter);
                 int index = this.bucketDescription.indexOf(val);
                 if (index >= 0)
-                    this.buckets[index].add(val,column.getObject(currRow));
+                    this.buckets[index].add(val, column.getObject(currRow));
                 else this.outOfRange++;
             }
             currRow = myIter.getNextRow();
         }
     }
 
-    public void addItem(final double value, final Object item) {
+    public void addItem(final double value, @Nullable final Object item) {
         int index = this.bucketDescription.indexOf(value);
         if (index >= 0)
             this.buckets[index].add(value,item);

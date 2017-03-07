@@ -18,11 +18,15 @@
 
 package org.hiero.sketch.spreadsheet;
 
+import javax.annotation.Nullable;
+
 /**
  * A one dimensional bucket designed for a Histogram1D
  */
 public class Bucket1D {
+    @Nullable
     private Object minObject;
+    @Nullable
     private Object maxObject;
     private double minValue;
     private double maxValue;
@@ -31,13 +35,14 @@ public class Bucket1D {
     public Bucket1D() {
         this.minObject = null;
         this.maxObject = null;
-        this.minValue = 0;
+        this.minValue = Double.MAX_VALUE;
         this.maxValue = 0;
         this.count = 0;
     }
 
-    private Bucket1D(final long count, final double minValue,
-                     final double maxValue, final Object minObject, final Object maxObject) {
+    private Bucket1D(final long count, final double minValue, final double maxValue,
+                     @Nullable final Object minObject,
+                     @Nullable final Object maxObject) {
         this.count = count;
         this.minValue = minValue;
         this.maxValue = maxValue;
@@ -45,8 +50,10 @@ public class Bucket1D {
         this.maxObject = maxObject;
     }
 
+    @Nullable
     public Object getMinObject() { return this.minObject; }
 
+    @Nullable
     public Object getMaxObject() { return this.maxObject; }
 
     public double getMinValue() { return this.minValue; }
@@ -55,7 +62,7 @@ public class Bucket1D {
 
     public long getCount() { return this.count; }
 
-    public void add(final double item, final Object currObject) {
+    public void add(final double item, @Nullable final Object currObject) {
         if (this.count == 0) {
             this.minValue = item;
             this.minObject = currObject;

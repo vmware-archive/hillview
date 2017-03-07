@@ -18,6 +18,8 @@
 
 package org.hiero.sketch.spreadsheet;
 
+import javax.annotation.Nullable;
+
 public class Bucket2D {
     private final Bucket1D bucket1;
     private final Bucket1D bucket2;
@@ -35,12 +37,16 @@ public class Bucket2D {
         this.bucket2 = bucket2;
     }
 
+    @Nullable
     public Object getMinObject1() { return this.bucket1.getMinObject(); }
 
+    @Nullable
     public Object getMinObject2() { return this.bucket2.getMinObject(); }
 
+    @Nullable
     public Object getMaxObject1() { return this.bucket1.getMaxObject(); }
 
+    @Nullable
     public Object getMaxObject2() { return this.bucket2.getMaxObject(); }
 
     public double getMinValue1() { return this.bucket1.getMinValue(); }
@@ -53,8 +59,8 @@ public class Bucket2D {
 
     public long getCount() { return this.count; }
 
-    public void add(final double val1, final Object currObject1,
-                    final double val2, final Object currObject2) {
+    public void add(final double val1, @Nullable final Object currObject1,
+                    final double val2, @Nullable final Object currObject2) {
         this.bucket1.add(val1, currObject1);
         this.bucket2.add(val2, currObject2);
         this.count++;

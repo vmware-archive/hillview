@@ -18,40 +18,31 @@
 package org.hiero;
 
 import org.hiero.sketch.dataset.api.IDataSet;
-import org.hiero.sketch.dataset.api.PartialResult;
-import org.hiero.sketch.dataset.api.PartialResultMonoid;
+import org.hiero.sketch.spreadsheet.NextKSketch;
 import org.hiero.sketch.spreadsheet.SummarySketch;
 import org.hiero.sketch.table.RecordOrder;
 import org.hiero.sketch.table.api.ITable;
-import rx.Observable;
 
 import javax.websocket.Session;
 
-import static org.hiero.RpcObjectManager.gson;
+public final class TableTarget extends RpcTarget {
+    private final IDataSet<ITable> table;
 
-public class TableTarget extends RpcTarget {
-    protected final IDataSet<ITable> table;
-
-    public TableTarget(IDataSet<ITable> table) {
+    TableTarget(IDataSet<ITable> table) {
         this.table = table;
     }
 
     @HieroRpc
     void getSchema(RpcRequest request, Session session) {
         SummarySketch ss = new SummarySketch();
-        Observable<PartialResult<SummarySketch.TableSummary>> sketches = this.table.sketch(ss);
-        PartialResultMonoid<SummarySketch.TableSummary> prm =
-                new PartialResultMonoid<SummarySketch.TableSummary>(ss);
-        Observable<PartialResult<SummarySketch.TableSummary>> accum = sketches.scan(prm::add);
-        ResultObserver<SummarySketch.TableSummary> ro =
-                new ResultObserver<SummarySketch.TableSummary>(request, session);
-        accum.subscribe(ro);
+        this.runSketch(this.table, ss, request, session);
     }
 
     @HieroRpc
     void getTableView(RpcRequest request, Session session) {
         RecordOrder ro = gson.fromJson(request.arguments, RecordOrder.class);
-        // TODO
+        NextKSketch nk = new NextKSketch(ro, null, 10);
+        this.runSketch(this.table, nk, request, session);
     }
 
     @Override

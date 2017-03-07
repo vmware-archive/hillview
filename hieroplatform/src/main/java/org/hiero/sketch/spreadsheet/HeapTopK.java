@@ -18,6 +18,7 @@
 
 package org.hiero.sketch.spreadsheet;
 
+import javax.annotation.Nullable;
 import java.util.*;
 /**
  * HeapTopK implements the TopK Interface as a HashMap, and only sorts it when asked to return topK.
@@ -28,6 +29,7 @@ public class HeapTopK<T> implements ITopK<T> {
     private final int maxSize;
     private int size;
     private final HashMap<T, Integer> data;
+    @Nullable
     private T cutoff; /* max value that currently belongs to Top K. */
     private final Comparator<T> greater;
 

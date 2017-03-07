@@ -45,7 +45,7 @@ public class ParallelDataSet<T> implements IDataSet<T> {
      * If this is set to zero no aggregation is performed.
      * If this is set to a value too large then progress reporting to the user may be impacted.
      */
-    protected int bundleInterval = 0;
+    protected int bundleInterval = 100;
     /**
      * The bundleInterval specifies a time in milliseconds.
      */
@@ -80,6 +80,7 @@ public class ParallelDataSet<T> implements IDataSet<T> {
 
     /**
      * Can be used to change the time interval in which partial results are aggregated.
+     * This should be done only once after construction; datasets are supposed to be immutable.
      */
     public void setBundleInterval(int timeIntervalInMilliseconds) {
         this.bundleInterval = timeIntervalInMilliseconds;
@@ -224,7 +225,7 @@ public class ParallelDataSet<T> implements IDataSet<T> {
         Observable<PartialResult<R>> result = Observable.merge(obs);
         //result = result.map(e -> log(e, "child merge done"));  // debugging code
         PartialResultMonoid<R> prm = new PartialResultMonoid<R>(sketch);
-        result = bundle(result, prm);
+        result = this.bundle(result, prm);
         return result;
     }
 

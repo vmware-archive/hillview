@@ -16,7 +16,7 @@
  */
 
 import {IHtmlElement, ScrollBar, Menu, Renderer, FullPage, HieroDataView} from "./ui";
-import {RemoteObject, PartialResult, RpcReceiver, IJSON} from "./rpc";
+import {RemoteObject, PartialResult, RpcReceiver, ICancellable} from "./rpc";
 import Rx = require('rx');
 
 // These classes are direct counterparts to server-side Java classes
@@ -37,6 +37,7 @@ export interface IColumnDescription {
     readonly allowMissing: boolean;
 }
 
+// Direct counterpart to Java class
 export class ColumnDescription implements IColumnDescription {
     readonly kind: ContentsKind;
     readonly name: string;
@@ -49,6 +50,7 @@ export class ColumnDescription implements IColumnDescription {
     }
 }
 
+// Direct counterpart to Java class
 export interface Schema {
     [index: number] : IColumnDescription;
     length: number;
@@ -59,20 +61,22 @@ export interface RowView {
     values: any[];
 }
 
+// Direct counterpart to Java class
 export interface ColumnSortOrientation {
     columnDescription: IColumnDescription;
     ascending: boolean;
 }
 
+// Direct counterpart to Java class
 class RecordOrder {
-    constructor(public order: Array<ColumnSortOrientation>) {}
-    public length(): number { return this.order.length; }
-    public get(i: number): ColumnSortOrientation { return this.order[i]; }
+    constructor(public sortOrientationList: Array<ColumnSortOrientation>) {}
+    public length(): number { return this.sortOrientationList.length; }
+    public get(i: number): ColumnSortOrientation { return this.sortOrientationList[i]; }
 
     // Find the index of a specific column; return -1 if columns is not in the sort order
     public find(col: string): number {
         for (let i = 0; i < this.length(); i++)
-            if (this.order[i].columnDescription.name == col)
+            if (this.sortOrientationList[i].columnDescription.name == col)
                 return i;
         return -1;
     }
@@ -80,13 +84,16 @@ class RecordOrder {
         let index = this.find(col);
         if (index == -1)
             throw ("Column " + col + " not found");
-        this.order.splice(index, 1);
+        this.sortOrientationList.splice(index, 1);
     }
     public show(cso: ColumnSortOrientation) {
         let index = this.find(cso.columnDescription.name);
         if (index != -1)
-            this.order.splice(index, 1);
-        this.order.splice(0, 0, cso);
+            this.sortOrientationList.splice(index, 1);
+        this.sortOrientationList.splice(0, 0, cso);
+    }
+    public clone() : RecordOrder {
+        return new RecordOrder(this.sortOrientationList.slice(0));
     }
 }
 
@@ -96,7 +103,6 @@ export interface TableDataView {
     rowCount: number;
     startPosition?: number;
     rows?: RowView[];
-    order?: RecordOrder;
 }
 
 /* Example table view:
@@ -125,11 +131,11 @@ export class TableView extends RemoteObject
     protected top : HTMLDivElement;
     protected scrollBar : ScrollBar;
     protected htmlTable : HTMLTableElement;
-    protected thead : HTMLTableSectionElement;
-    protected tbody: HTMLTableSectionElement;
+    protected tHead : HTMLTableSectionElement;
+    protected tBody: HTMLTableSectionElement;
     protected page: FullPage;
 
-    public constructor(id: string) {
+    public constructor(id: string, page: FullPage) {
         super(id);
         this.top = document.createElement("div");
         this.htmlTable = document.createElement("table");
@@ -138,6 +144,7 @@ export class TableView extends RemoteObject
         this.top.appendChild(this.htmlTable);
         this.top.appendChild(this.scrollBar.getHTMLRepresentation());
         this.order = new RecordOrder([]);
+        this.setPage(page);
     }
 
     findColumn(colName: string): IColumnDescription {
@@ -150,10 +157,14 @@ export class TableView extends RemoteObject
     }
 
     setPage(page: FullPage) {
+        if (page == null)
+            throw("null FullPage");
         this.page = page;
     }
 
     getPage() : FullPage {
+        if (this.page == null)
+            throw("Page not set");
         return this.page;
     }
 
@@ -208,7 +219,7 @@ export class TableView extends RemoteObject
     }
 
     public showColumn(columnName: string, show: boolean) : void {
-        let o = this.order;
+        let o = this.order.clone();
         if (show) {
             let col = this.findColumn(columnName);
             if (col == null)
@@ -217,8 +228,9 @@ export class TableView extends RemoteObject
         } else {
             o.hide(columnName);
         }
+        this.order = o;  // TODO: this should be set by the renderer
         let rr = this.createRpcRequest("getTableView", o);
-        rr.invoke(new TableRenderer(this.page, this));
+        rr.invoke(new TableRenderer(this.getPage(), this, rr));
     }
 
     public updateView(data: TableDataView) : void {
@@ -226,31 +238,28 @@ export class TableView extends RemoteObject
         this.startPosition = data.startPosition;
         this.rowCount = data.rowCount;
         this.schema = data.schema;
-        this.order = data.order;
-        if (this.order == null)
-            this.order = new RecordOrder([]);
 
-        if (this.thead != null)
-            this.thead.remove();
-        if (this.tbody != null)
-            this.tbody.remove();
-        this.thead = this.htmlTable.createTHead();
-        let thr = this.thead.appendChild(document.createElement("tr"));
+        if (this.tHead != null)
+            this.tHead.remove();
+        if (this.tBody != null)
+            this.tBody.remove();
+        this.tHead = this.htmlTable.createTHead();
+        let thr = this.tHead.appendChild(document.createElement("tr"));
 
         // These two columns are always shown
         let cds : ColumnDescription[] = [];
-        let poscd = new ColumnDescription({
+        let posCd = new ColumnDescription({
             kind: ContentsKind.Integer,
             name: "(position)",
             allowMissing: false });
-        let ctcd = new ColumnDescription({
+        let ctCd = new ColumnDescription({
             kind: ContentsKind.Integer,
             name: "(count)",
             allowMissing: false });
 
         // Create column headers
-        this.addHeaderCell(thr, poscd);
-        this.addHeaderCell(thr, ctcd);
+        this.addHeaderCell(thr, posCd);
+        this.addHeaderCell(thr, ctCd);
         if (this.schema == null)
             return;
 
@@ -265,7 +274,7 @@ export class TableView extends RemoteObject
             thd.onclick = () => menu.toggleVisibility();
             thd.appendChild(menu.getHTMLRepresentation());
         }
-        this.tbody = this.htmlTable.createTBody();
+        this.tBody = this.htmlTable.createTBody();
 
         // Add row data
         if (data.rows != null) {
@@ -274,7 +283,7 @@ export class TableView extends RemoteObject
         }
 
         // Create table footer
-        let footer = this.tbody.insertRow();
+        let footer = this.tBody.insertRow();
         let cell = footer.insertCell(0);
         cell.colSpan = this.schema.length + 2;
         cell.className = "footer";
@@ -291,7 +300,7 @@ export class TableView extends RemoteObject
     }
 
     public getRowCount() : number {
-        return this.tbody.childNodes.length;
+        return this.tBody.childNodes.length;
     }
 
     public getColumnCount() : number {
@@ -303,7 +312,7 @@ export class TableView extends RemoteObject
     }
 
     public addRow(row : RowView, cds: ColumnDescription[]) : void {
-        let trow = this.tbody.insertRow();
+        let trow = this.tBody.insertRow();
         let dataIndex : number = 0;
 
         let cell = trow.insertCell(0);
@@ -332,12 +341,15 @@ export class TableView extends RemoteObject
 }
 
 export class TableRenderer extends Renderer<TableDataView> {
-    constructor(page: FullPage, protected table: TableView) {
-        super(page.progressManager.newProgressBar("Get info"), page.getErrorReporter());
+    constructor(page: FullPage,
+                protected table: TableView,
+                operation: ICancellable) {
+        super(page.progressManager.newProgressBar(operation, "Get info"),
+            page.getErrorReporter());
     }
 
     onNext(value: PartialResult<TableDataView>): void {
-        this.progress.setPosition(value.done);
+        this.progressBar.setPosition(value.done);
         this.table.updateView(value.data);
     }
 }
@@ -345,18 +357,22 @@ export class TableRenderer extends Renderer<TableDataView> {
 export class RemoteTableReceiver extends RpcReceiver<string> {
     public table: TableView;
 
-    constructor(protected page: FullPage) {
-        super(page.getErrorReporter());
+    constructor(protected page: FullPage, operation: ICancellable) {
+        super(page.progressManager.newProgressBar(operation, "Get schema"),
+              page.getErrorReporter());
     }
 
     private retrieveSchema(): void {
         let rr = this.table.createRpcRequest("getSchema", null);
-        rr.invoke(new TableRenderer(this.page, this.table));
+        rr.invoke(new TableRenderer(this.page, this.table, rr));
     }
 
     public onNext(value: string): void {
-        this.table = new TableView(value);
+        this.table = new TableView(value, this.page);
         this.page.setHieroDataView(this.table);
+        // We only expect 1 reply
+        this.finished();
+        // Retrieve the table schema
         this.retrieveSchema();
     }
 }

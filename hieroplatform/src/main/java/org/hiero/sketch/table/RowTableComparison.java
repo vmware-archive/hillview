@@ -21,6 +21,7 @@ package org.hiero.sketch.table;
 import org.hiero.sketch.spreadsheet.ColumnSortOrientation;
 import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.ITable;
+import org.hiero.utils.Converters;
 
 import javax.annotation.Nullable;
 
@@ -31,6 +32,7 @@ import javax.annotation.Nullable;
  * NextKSketch.
  */
 public class RowTableComparison {
+    @Nullable
     private final RowSnapshot topRow;
     private final ITable table;
     private final RecordOrder recordOrder;
@@ -62,19 +64,24 @@ public class RowTableComparison {
                 switch (this.table.getSchema().getKind(colName)) {
                     case String:
                     case Json:
-                        outcome = iCol.getString(i).compareTo(this.topRow.getString(colName));
+                        outcome = Converters.checkNull(iCol.getString(i))
+                                            .compareTo(Converters.checkNull(this.topRow.getString(colName)));
                         break;
                     case Date:
-                        outcome = iCol.getDate(i).compareTo(this.topRow.getDate(colName));
+                        outcome = Converters.checkNull(iCol.getDate(i)).compareTo(
+                                Converters.checkNull(this.topRow.getDate(colName)));
                         break;
                     case Int:
-                        outcome = Integer.compare(iCol.getInt(i), this.topRow.getInt(colName));
+                        outcome = Integer.compare(Converters.checkNull(iCol.getInt(i)),
+                                Converters.checkNull(this.topRow.getInt(colName)));
                         break;
                     case Double:
-                        outcome = Double.compare(iCol.getDouble(i), this.topRow.getDouble(colName));
+                        outcome = Double.compare(Converters.checkNull(iCol.getDouble(i)),
+                                Converters.checkNull(this.topRow.getDouble(colName)));
                         break;
                     case Duration:
-                        outcome = iCol.getDuration(i).compareTo(this.topRow.getDuration(colName));
+                        outcome = Converters.checkNull(iCol.getDuration(i))
+                                            .compareTo(Converters.checkNull(this.topRow.getDuration(colName)));
                         break;
                 }
             }

@@ -57,6 +57,7 @@ public final class StringArrayColumn
         return this.data.length;
     }
 
+    @Nullable
     @Override
     public String getString(final int rowIndex) {
         return this.data[rowIndex];
@@ -67,7 +68,7 @@ public final class StringArrayColumn
     }
 
     @Override
-    public boolean isMissing(final int rowIndex){return this.getString(rowIndex) == null;}
+    public boolean isMissing(final int rowIndex){ return this.getString(rowIndex) == null;}
 
     @Override
     public void setMissing(final int rowIndex) { this.set(rowIndex, null);}

@@ -37,6 +37,7 @@ public class StringListColumn extends BaseListColumn implements IStringColumn {
         this.segments = new ArrayList<String []>();
     }
 
+    @Nullable
     @Override
     public String getString(final int rowIndex) {
         final int segmentId = rowIndex >> this.LogSegmentSize;

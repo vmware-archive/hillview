@@ -57,7 +57,7 @@ public class Hist2DSketch implements ISketch<ITable, Histogram2DHeavy> {
         this.rate = rate;
     }
 
-    @Override @Nullable
+    @Override
     public Histogram2DHeavy create(final ITable data) {
         Histogram2DHeavy result = this.getZero();
         result.createHistogram(data.getColumn(this.colNameD1), data.getColumn(this.colNameD2),
@@ -65,12 +65,12 @@ public class Hist2DSketch implements ISketch<ITable, Histogram2DHeavy> {
         return result;
     }
 
-    @Override @Nullable
+    @Override
     public Histogram2DHeavy zero() {
         return new Histogram2DHeavy(this.bucketDescD1, this.bucketDescD2);
     }
 
-    @Override @Nullable
+    @Override
     public Histogram2DHeavy add(@Nullable final Histogram2DHeavy left,
                                 @Nullable final Histogram2DHeavy right) {
         return Converters.checkNull(left).union(Converters.checkNull(right));

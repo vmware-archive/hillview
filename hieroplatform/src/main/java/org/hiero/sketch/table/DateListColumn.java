@@ -41,6 +41,7 @@ public class DateListColumn
         this.segments = new ArrayList<LocalDateTime[]>();
     }
 
+    @Nullable
     @Override
     public LocalDateTime getDate(final int rowIndex) {
         final int segmentId = rowIndex >> this.LogSegmentSize;

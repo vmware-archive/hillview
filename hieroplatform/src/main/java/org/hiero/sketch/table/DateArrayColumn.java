@@ -56,6 +56,7 @@ public final class DateArrayColumn
         return this.data.length;
     }
 
+    @Nullable
     @Override
     public LocalDateTime getDate(final int rowIndex) {
         return this.data[rowIndex];

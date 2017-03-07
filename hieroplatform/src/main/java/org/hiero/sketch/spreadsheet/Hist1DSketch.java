@@ -47,7 +47,7 @@ public class Hist1DSketch implements ISketch<ITable, Histogram1D> {
         this.rate = rate;
     }
 
-    @Override @Nullable
+    @Override
     public Histogram1D create(final ITable data) {
         Histogram1D result = this.getZero();
         result.createHistogram(data.getColumn(this.colName),
@@ -55,7 +55,7 @@ public class Hist1DSketch implements ISketch<ITable, Histogram1D> {
         return result;
     }
 
-    @Override @Nullable
+    @Override
     public Histogram1D add(@Nullable final Histogram1D left, @Nullable final Histogram1D right) {
         return Converters.checkNull(left).union(Converters.checkNull(right));
     }

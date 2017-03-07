@@ -38,6 +38,7 @@ class DurationListColumn extends BaseListColumn implements IDurationColumn {
         this.segments = new ArrayList<Duration []>();
     }
 
+    @Nullable
     @Override
     public Duration getDuration(final int rowIndex) {
         final int segmentId = rowIndex >> this.LogSegmentSize;

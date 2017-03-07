@@ -19,18 +19,17 @@ package org.hiero;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import org.hiero.sketch.dataset.api.IJson;
 
 import javax.websocket.Session;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class RpcRequest {
+public final class RpcRequest {
     private static final Logger LOGGER =
             Logger.getLogger(RpcRequest.class.getName());
 
-    public final int    requestId;
-    public final String objectId;
+    private final int    requestId;
+    final String objectId;
     public final String method;
     public final String arguments;  // A JSON string
 
@@ -47,23 +46,23 @@ public class RpcRequest {
         return "RpcRequest: " + this.objectId + "." + this.method + "()";
     }
 
-    public RpcReply createReply(String json) {
+    RpcReply createReply(String json) {
         return new RpcReply(this.requestId, json, false);
     }
 
-    public RpcReply createReply(JsonElement userResult) {
+    RpcReply createReply(JsonElement userResult) {
         return this.createReply(userResult.toString());
     }
 
-    public RpcReply createReply(IJson userResult) {
-        return this.createReply(userResult.toJson());
-    }
-
-    public RpcReply createReply(Throwable th) {
+    RpcReply createReply(Throwable th) {
         return new RpcReply(this.requestId, this.toString() + "\n" + RpcServer.asString(th), true);
     }
 
-    public void closeSession(Session session) {
+    /**
+     * Initiated by the server.
+     * @param session  Session to close.
+     */
+    void syncCloseSession(Session session) {
         try {
             session.close();
         } catch (Exception ex) {

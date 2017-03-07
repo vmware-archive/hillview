@@ -21,6 +21,7 @@ package org.hiero.sketch.storage;
 import org.hiero.sketch.table.Schema;
 import org.hiero.sketch.table.Table;
 
+import javax.annotation.Nullable;
 import java.nio.file.Path;
 
 /**
@@ -28,6 +29,7 @@ import java.nio.file.Path;
  */
 class CsvFileReader {
     private final Path filename;
+    @Nullable
     private final Schema schema;
     private final int columnCount;
     char separator = ',';
@@ -81,6 +83,7 @@ class CsvFileReader {
         this.allowFewerColumns = allowFewer;
     }
 
+    @Nullable
     Table read() {
         // TODO
         return null;

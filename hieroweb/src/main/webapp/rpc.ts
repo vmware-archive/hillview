@@ -1,3 +1,6 @@
+/// <reference path="node_modules/rx/ts/rx.d.ts" />
+/// <reference path="typings/index.d.ts" />
+
 /*
  * Copyright (c) 2017 VMWare Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
@@ -15,14 +18,12 @@
  *  limitations under the License.
  */
 
-/// <reference path="node_modules/rx/ts/rx.d.ts" />
-/// <reference path="typings/index.d.ts" />
-
 import Rx = require('rx');
 import RxDOM = require('rx-dom');
 import Observer = Rx.Observer;
 import Observable = Rx.Observable;
 import {ErrorReporter, ConsoleErrorReporter} from "./errorReporter";
+import {ProgressBar} from "./ui";
 
 const HieroServiceUrl : string = "ws://localhost:8080";
 const RpcRequestUrl = HieroServiceUrl + "/rpc";
@@ -50,14 +51,22 @@ export interface RpcReply {
     isError: boolean;
 }
 
+export interface ICancellable {
+    // return 'true' if cancellation succeeds.
+    // Cancellation may fail if the computation is terminated.
+    cancel(): boolean;
+}
+
 // A streaming RPC request: for each request made
 // we expect a stream of replies.  The requests are made
 // over web sockets.  When the last reply has been received
 // the web socked is closed.
-export class RpcRequest {
+export class RpcRequest implements ICancellable {
     readonly protoVersion : number = 6;
     readonly requestId: number;
-    socket   : any; // result of Rx.DOM.fromWebSocket.
+    cancelled: boolean;
+    closed:    boolean;  // i.e., not opened
+    socket:    any; // result of Rx.DOM.fromWebSocket.
     // Should be Rx.Subject<MessageEvent>, but this does not typecheck
     // the this.socket.onNext method with a String argument.
 
@@ -68,11 +77,15 @@ export class RpcRequest {
                 public args : any) {
         this.requestId = RpcRequest.requestCounter++;
         this.socket = null;
+        this.cancelled = false;
+        this.closed = true;
     }
 
     serialize() : string {
         let argString = "";
-        if  (this.args.toJSON != null)
+        if (this.args == null)
+            argString = JSON.stringify(null);
+        else if  (this.args.toJSON != null)
             argString = this.args.toJSON();
         else
             argString = JSON.stringify(this.args);
@@ -87,6 +100,7 @@ export class RpcRequest {
     }
 
     private onOpen() : void {
+        this.closed = false;
         console.log('socket open');
         let reqStr : string = this.serialize();
         console.log("Sending message " + reqStr);
@@ -104,6 +118,19 @@ export class RpcRequest {
         }
     }
 
+    private onClose() {
+        this.closed = true;
+        console.log('socket closing');
+    }
+
+    public cancel(): boolean {
+        if (!this.closed) {
+            this.socket.close();
+            return true;
+        }
+        return false;
+    }
+
     // Function to call to execute the RPC.
     // onReply is an observer which is invoked for
     // each result received by the streaming RPC.
@@ -111,9 +138,7 @@ export class RpcRequest {
         // Invoked when the socked is opened
         let openObserver = Rx.Observer.create(() => this.onOpen());
         // Invoked when the socket is closed
-        let closeObserver = Rx.Observer.create(function () {
-            console.log('socket closing');
-        });
+        let closeObserver = Rx.Observer.create(() => this.onClose());
 
         // Create a web socked and send the request
         this.socket = RxDOM.DOM.fromWebSocket(RpcRequestUrl, null, openObserver, closeObserver);
@@ -123,7 +148,8 @@ export class RpcRequest {
 }
 
 export abstract class RpcReceiver<T> implements Rx.Observer<T> {
-    public constructor(public reporter: ErrorReporter) {
+    public constructor(protected progressBar: ProgressBar,
+                       protected reporter: ErrorReporter) {
         if (this.reporter == null)
             this.reporter = ConsoleErrorReporter.instance;
     }
@@ -132,11 +158,16 @@ export abstract class RpcReceiver<T> implements Rx.Observer<T> {
         return null;
     }
 
+    public finished(): void {
+        this.progressBar.setFinished();
+    }
+
     public abstract onNext(value: T): void;
 
     public onError(exception: any): void {
         this.reporter.reportError(String(exception));
+        this.finished();
     }
 
-    public onCompleted(): void {}
+    public onCompleted(): void { this.finished(); }
 }

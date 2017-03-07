@@ -21,16 +21,21 @@ import com.google.gson.JsonElement;
 import com.google.gson.internal.Streams;
 import com.google.gson.stream.JsonReader;
 
+import javax.annotation.Nullable;
 import javax.websocket.*;
 import javax.websocket.server.ServerEndpoint;
 import java.io.*;
+import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
  * A server which implements RPC calls between a web browser client and
- * a Java-based web server.  The web server could create a different
- * instance of this class for each request.
+ * a Java-based web server.  The web server may create a different
+ * instance of this class for each request.  The client should
+ * send exactly one request for each session; the server may send zero, one
+ * or more replies for each session.  The client or server can both
+ * choose to close the connection at any time.
  */
 @ServerEndpoint(value = "/rpc")
 public final class RpcServer {
@@ -38,12 +43,29 @@ public final class RpcServer {
     private static final Logger logger =
             Logger.getLogger(RpcServer.class.getName());
 
+    // Map the session to its outstanding request, if any
+    private static HashMap<Session, RpcTarget> sessionRequest =
+            new HashMap<Session, RpcTarget>(10);
+
+    synchronized private void addSession(Session session, @Nullable RpcTarget target) {
+        sessionRequest.put(session, target);
+    }
+
+    synchronized private void removeSession(Session session) {
+        sessionRequest.remove(session);
+    }
+
+    @Nullable synchronized private RpcTarget getTarget(Session session) {
+        return sessionRequest.get(session);
+    }
+
     @SuppressWarnings("unused")
     @OnOpen
     public void onOpen(Session session) {
         logger.log(Level.INFO, "Server " + Integer.toString(version) +
                         " new connection with client: {0}",
                 session.getId());
+        this.addSession(session, null);
     }
 
     @SuppressWarnings("unused")
@@ -55,9 +77,11 @@ public final class RpcServer {
         RpcRequest req;
         try {
             Reader reader = new StringReader(message);
-            JsonReader jreader = new JsonReader(reader);
-            JsonElement elem = Streams.parse(jreader);
+            JsonReader jReader = new JsonReader(reader);
+            JsonElement elem = Streams.parse(jReader);
             req = new RpcRequest(elem);
+            if (sessionRequest.get(session) != null)
+                throw new RuntimeException("Session already associated with a request!");
         } catch (Exception ex) {
             logger.log(Level.SEVERE, "Error processing json: ", ex);
             this.replyWithError(ex, session);
@@ -87,20 +111,20 @@ public final class RpcServer {
         logger.log(Level.INFO, "Executing " + rpcRequest.toString());
         try {
             RpcTarget target = RpcObjectManager.instance.getObject(rpcRequest.objectId);
-            if (target == null)
-                throw new RuntimeException("RpcServer.getObject() returned null");
+            this.addSession(session, target);
             // This function is responsible for sending the replies and closing the session.
             target.execute(rpcRequest, session);
         } catch (Exception ex) {
             RpcReply reply = rpcRequest.createReply(ex);
             this.sendReply(reply, session);
-            rpcRequest.closeSession(session);
+            rpcRequest.syncCloseSession(session);
         }
     }
 
-    private void closeSession(Session session) {
+    private void closeSession(final Session session) {
         try {
             session.close();
+            this.removeSession(session);
         } catch (Exception ex) {
             logger.log(Level.SEVERE, "Error closing session");
         }
@@ -115,7 +139,11 @@ public final class RpcServer {
     @SuppressWarnings("unused")
     @OnClose
     public void onClose(final Session session) {
+        RpcTarget target = this.getTarget(session);
+        if (target != null)
+            target.cancel();
         logger.log(Level.FINE, "Close connection for client: {0}", session.getId());
+        this.removeSession(session);
     }
 
     @SuppressWarnings("unused")

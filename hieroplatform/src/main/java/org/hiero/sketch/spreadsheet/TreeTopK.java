@@ -18,6 +18,7 @@
 
 package org.hiero.sketch.spreadsheet;
 
+import javax.annotation.Nullable;
 import java.util.Comparator;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -29,6 +30,7 @@ public class TreeTopK<T> implements ITopK<T> {
     private final int maxSize;
     private int size;
     private final SortedMap<T, Integer> data;
+    @Nullable
     private T cutoff; /* max value that currently belongs to Top K. */
     private final Comparator<T> greater;
 

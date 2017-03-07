@@ -28,6 +28,7 @@ public interface IIntColumn extends IColumn {
         return this.getInt(rowIndex);
     }
 
+    @Nullable
     @Override
     default String asString(final int rowIndex) {
         if (this.isMissing(rowIndex))

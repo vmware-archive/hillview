@@ -44,6 +44,7 @@ public class DoubleListColumn
         return this.segments.get(segmentId)[localIndex];
     }
 
+    @SuppressWarnings("Duplicates")
     public void append(final double value) {
         final int segmentId = this.size >> this.LogSegmentSize;
         final int localIndex = this.size & this.SegmentMask;

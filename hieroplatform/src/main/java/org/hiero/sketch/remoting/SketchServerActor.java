@@ -109,7 +109,7 @@ public class SketchServerActor<T> extends AbstractActor {
 
     private class MapResponderSubscriber<R> extends ResponderSubscriber<R> {
         private final PartialResultMonoid resultMonoid = new PRDataSetMonoid();
-        private PartialResult result = this.resultMonoid.zero();
+        private PartialResult result = Converters.checkNull(this.resultMonoid.zero());
         private MapResponderSubscriber(final UUID id,  final ActorRef sender) {
             super(id, sender);
         }
@@ -133,7 +133,7 @@ public class SketchServerActor<T> extends AbstractActor {
         public void onNext(final R r) {
             if (!isUnsubscribed()) {
                 final PartialResult pr = (PartialResult) r;
-                this.result = this.resultMonoid.add(this.result, pr);
+                this.result = Converters.checkNull(this.resultMonoid.add(this.result, pr));
                 super.onNext(r);
             }
         }

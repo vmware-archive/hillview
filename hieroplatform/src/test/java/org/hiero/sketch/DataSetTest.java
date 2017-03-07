@@ -40,19 +40,19 @@ public class DataSetTest {
     }
 
     private class Sketch implements ISketch<Integer, Integer> {
-        @Override @Nullable
+        @Override
         public Integer zero() {
             return 0;
         }
 
-        @Override @Nullable
+        @Override
         public Integer add(@Nullable final Integer left, @Nullable final Integer right) {
             return Converters.checkNull(left) + Converters.checkNull(right);
         }
 
-        @Override @Nullable
+        @Override
         public Integer create(@Nullable final Integer data) {
-            return data;
+            return Converters.checkNull(data);
         }
     }
 
@@ -88,17 +88,17 @@ public class DataSetTest {
     }
 
     private class Sum implements ISketch<int[], Integer> {
-        @Override @Nullable
+        @Override
         public Integer zero() {
             return 0;
         }
 
-        @Override @Nullable
+        @Override
         public Integer add(@Nullable final Integer left, @Nullable final Integer right) {
             return Converters.checkNull(left) + Converters.checkNull(right);
         }
 
-        @Override @Nullable
+        @Override
         public Integer create(@Nullable final int[] data) {
             int sum = 0;
             for (int aData : Converters.checkNull(data)) sum += aData;
@@ -157,6 +157,7 @@ public class DataSetTest {
     @Test
     public void unsubscriptionTest() {
         ParallelDataSet<int[]> ld = this.createLargeDataset(true);
+        ld.setBundleInterval(0);  // important for this test
         Observable<PartialResult<Integer>> pr = ld.sketch(new Sum());
         TestSubscriber<PartialResult<Integer>> ts =
                 new TestSubscriber<PartialResult<Integer>>() {

@@ -46,6 +46,7 @@ public final class IntListColumn
         return this.segments.get(segmentId)[localIndex];
     }
 
+    @SuppressWarnings("Duplicates")
     public void append(final int value) {
         final int segmentId = this.size >> this.LogSegmentSize;
         final int localIndex = this.size & this.SegmentMask;

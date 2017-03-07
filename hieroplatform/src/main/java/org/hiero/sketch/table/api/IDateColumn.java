@@ -28,14 +28,15 @@ public interface IDateColumn extends IColumn {
         if (isMissing(rowIndex))
             throw new MissingException(this, rowIndex);
         final LocalDateTime tmp = this.getDate(rowIndex);
-        return Converters.toDouble(tmp);
+        return Converters.toDouble(Converters.checkNull(tmp));
     }
 
+    @Nullable
     @Override
     default String asString(final int rowIndex) {
         if (this.isMissing(rowIndex))
             return null;
-        return this.getDate(rowIndex).toString();
+        return Converters.checkNull(this.getDate(rowIndex)).toString();
     }
 
     @Override
@@ -52,7 +53,8 @@ public interface IDateColumn extends IColumn {
                 } else if (jMissing) {
                     return -1;
                 } else {
-                    return IDateColumn.this.getDate(i).compareTo(IDateColumn.this.getDate(j));
+                    return Converters.checkNull(IDateColumn.this.getDate(i))
+                                     .compareTo(Converters.checkNull(IDateColumn.this.getDate(j)));
                 }
             }
         };

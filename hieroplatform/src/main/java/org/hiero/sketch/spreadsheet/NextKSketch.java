@@ -35,6 +35,7 @@ import java.util.SortedMap;
  */
 public class NextKSketch implements ISketch<ITable, NextKList> {
     private final RecordOrder recordOrder;
+    @Nullable
     private final RowSnapshot topRow;
     private final int maxSize;
 
@@ -120,9 +121,9 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
      * @param mergeOrder The order in which to merge the two columns.
      * @return The merged counts.
      */
-    private List<Integer> mergeCounts( final List<Integer> left,
-                                       final List<Integer> right,
-                                       final List<Integer> mergeOrder) {
+    private List<Integer> mergeCounts(final List<Integer> left,
+                                      final List<Integer> right,
+                                      final List<Integer> mergeOrder) {
         final int size = Math.min(this.maxSize, mergeOrder.size());
         final List<Integer> mergedCounts = new ArrayList<Integer>(mergeOrder.size());
         int i = 0, j = 0, k = 0;
@@ -131,7 +132,7 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
                 mergedCounts.add(left.get(i));
                 i++;
             } else if (mergeOrder.get(k) == 1) {
-                mergedCounts.add(right.get(i));
+                mergedCounts.add(right.get(j));
                 j++;
             } else {
                 mergedCounts.add(left.get(i) + right.get(j));

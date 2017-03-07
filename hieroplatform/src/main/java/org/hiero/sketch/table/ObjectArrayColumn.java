@@ -52,15 +52,15 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
             case Json:
             case String:
                 IStringConverter c = Converters.checkNull(converter);
-                return c.asDouble(this.getString(rowIndex));
+                return c.asDouble(Converters.checkNull(this.getString(rowIndex)));
             case Date:
-                return Converters.toDouble(this.getDate(rowIndex));
+                return Converters.toDouble(Converters.checkNull(this.getDate(rowIndex)));
             case Int:
                 return this.getInt(rowIndex);
             case Double:
                 return this.getDouble(rowIndex);
             case Duration:
-                return Converters.toDouble(this.getDuration(rowIndex));
+                return Converters.toDouble(Converters.checkNull(this.getDuration(rowIndex)));
             default:
                 throw new RuntimeException("Unexpected data type");
         }
@@ -87,23 +87,23 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
                 } else {
                     switch (ObjectArrayColumn.this.description.kind) {
                         case String:
-                            return ObjectArrayColumn.this.getString(i).compareTo(
-                                    ObjectArrayColumn.this.getString(j));
+                            return Converters.checkNull(ObjectArrayColumn.this.getString(i)).compareTo(
+                                    Converters.checkNull(ObjectArrayColumn.this.getString(j)));
                         case Date:
-                            return ObjectArrayColumn.this.getDate(i).compareTo(
-                                    ObjectArrayColumn.this.getDate(j));
+                            return Converters.checkNull(ObjectArrayColumn.this.getDate(i)).compareTo(
+                                    Converters.checkNull(ObjectArrayColumn.this.getDate(j)));
                         case Int:
-                            return Integer.compare(ObjectArrayColumn.this.getInt(i),
-                                    ObjectArrayColumn.this.getInt(j));
+                            return Integer.compare(Converters.checkNull(ObjectArrayColumn.this.getInt(i)),
+                                    Converters.checkNull(ObjectArrayColumn.this.getInt(j)));
                         case Json:
-                            return ObjectArrayColumn.this.getString(i).compareTo(
-                                    ObjectArrayColumn.this.getString(j));
+                            return Converters.checkNull(ObjectArrayColumn.this.getString(i)).compareTo(
+                                    Converters.checkNull(ObjectArrayColumn.this.getString(j)));
                         case Double:
-                            return Double.compare(ObjectArrayColumn.this.getDouble(i),
-                                    ObjectArrayColumn.this.getDouble(j));
+                            return Double.compare(Converters.checkNull(ObjectArrayColumn.this.getDouble(i)),
+                                    Converters.checkNull(ObjectArrayColumn.this.getDouble(j)));
                         case Duration:
-                            return ObjectArrayColumn.this.getDuration(i).
-                                    compareTo(ObjectArrayColumn.this.getDuration(j));
+                            return Converters.checkNull(ObjectArrayColumn.this.getDuration(i)).
+                                    compareTo(Converters.checkNull(ObjectArrayColumn.this.getDuration(j)));
                         default:
                             throw new RuntimeException("Unexpected data type");
                     }

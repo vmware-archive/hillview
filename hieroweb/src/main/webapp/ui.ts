@@ -15,8 +15,8 @@
  *  limitations under the License.
  */
 
-import {RpcReceiver, PartialResult} from "./rpc";
-import {ErrorReporter, ConsoleErrorReporter} from "./errorReporter";
+import {RpcReceiver, PartialResult, ICancellable} from "./rpc";
+import {ErrorReporter} from "./errorReporter";
 
 export interface IHtmlElement {
     getHTMLRepresentation() : HTMLElement;
@@ -91,14 +91,16 @@ export class ProgressBar implements IHtmlElement {
     private outer    : HTMLElement;
     private bar      : HTMLElement;
     private topLevel : HTMLElement;
-    private cancel   : HTMLButtonElement;
+    private cancelButton : HTMLButtonElement;
     private label    : HTMLElement;
 
     // TODO: must pass an event handler to be invoked by cancel.
-    constructor(private manager: ProgressManager, public readonly lab: string) {
+    constructor(private manager: ProgressManager,
+                public readonly lab: string,
+                private readonly operation: ICancellable) {
         this.topLevel = document.createElement("div");
-        this.cancel = document.createElement("button");
-        this.cancel.textContent = "Stop";
+        this.cancelButton = document.createElement("button");
+        this.cancelButton.textContent = "Stop";
         this.label = document.createElement("div");
         this.label.textContent = lab;
 
@@ -110,11 +112,12 @@ export class ProgressBar implements IHtmlElement {
 
         this.outer.appendChild(this.bar);
         this.topLevel.appendChild(this.outer);
-        this.topLevel.appendChild(this.cancel);
+        this.topLevel.appendChild(this.cancelButton);
         this.topLevel.appendChild(this.label);
         this.topLevel.className = "flexcontainer";
 
         this.setPosition(0.0);
+        this.cancelButton.onclick = () => this.cancel();
     }
 
     getHTMLRepresentation(): HTMLElement {
@@ -138,6 +141,13 @@ export class ProgressBar implements IHtmlElement {
     }
 
     done() : boolean { return this.end >= 1.0; }
+
+    setFinished() : void { this.setPosition(1.0); }
+
+    cancel(): void {
+        this.operation.cancel();
+        this.setFinished();
+    }
 }
 
 // This class manages multiple progress bars.
@@ -153,8 +163,8 @@ export class ProgressManager implements IHtmlElement {
         return this.topLevel;
     }
 
-    newProgressBar(message: string) {
-        let p = new ProgressBar(this, message);
+    newProgressBar(operation: ICancellable, message: string) {
+        let p = new ProgressBar(this, message, operation);
         this.topLevel.appendChild(p.getHTMLRepresentation());
         return p;
     }
@@ -282,7 +292,7 @@ export class Menu implements IHtmlElement {
 }
 
 export abstract class Renderer<T> extends RpcReceiver<PartialResult<T>> {
-    public constructor(public progress: ProgressBar, reporter?: ErrorReporter) {
-        super(reporter === null ? ConsoleErrorReporter.instance : reporter);
+    public constructor(public bar: ProgressBar, reporter?: ErrorReporter) {
+        super(bar, reporter);
     }
 }

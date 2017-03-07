@@ -28,14 +28,15 @@ public interface IDurationColumn extends IColumn {
         if (isMissing(rowIndex))
             throw new MissingException(this, rowIndex);
         final Duration tmp = this.getDuration(rowIndex);
-        return Converters.toDouble(tmp);
+        return Converters.toDouble(Converters.checkNull(tmp));
     }
 
+    @Nullable
     @Override
     default String asString(final int rowIndex) {
         if (this.isMissing(rowIndex))
             return null;
-        return this.getDuration(rowIndex).toString();
+        return Converters.checkNull(this.getDuration(rowIndex)).toString();
     }
 
     @Override
@@ -52,8 +53,8 @@ public interface IDurationColumn extends IColumn {
                 } else if (jMissing) {
                     return -1;
                 } else {
-                    return IDurationColumn.this.getDuration(i).
-                            compareTo(IDurationColumn.this.getDuration(j));
+                    return Converters.checkNull(IDurationColumn.this.getDuration(i)).
+                            compareTo(Converters.checkNull(IDurationColumn.this.getDuration(j)));
                 }
             }
         };
