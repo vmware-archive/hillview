@@ -56,13 +56,18 @@ public abstract class RpcTarget {
         this.objectId = objectId;
     }
 
-    void cancel() {
+    synchronized void cancel() {
         logger.log(Level.INFO, "Cancelling " + this.toString());
-        this.subscription.unsubscribe();
-        this.removeSubscription();
+        if (this.subscription != null) {
+            this.subscription.unsubscribe();
+            this.subscription = null;
+        }
     }
 
     private synchronized void saveSubscription(Subscription sub) {
+        if (sub.isUnsubscribed())
+            // The computation may have already finished by the time we get here!
+            return;
         logger.log(Level.INFO, "Saving subscription " + this.toString());
         if (this.subscription != null)
             throw new RuntimeException("Subscription already active");

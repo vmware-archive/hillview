@@ -16,7 +16,8 @@
  */
 
 import {RemoteObject, PartialResult} from "./rpc";
-import {TableDataView} from "./table";
+import {TableDataView, RemoteTableReceiver} from "./table";
+import {FullPage} from "./ui";
 
 export class InitialObject extends RemoteObject {
     public static instance: InitialObject = new InitialObject();
@@ -26,9 +27,9 @@ export class InitialObject extends RemoteObject {
     // This is a "well-known" name used for bootstrapping the system.
     private constructor() { super("0"); }
 
-    public loadTable(observer: Rx.Observer<PartialResult<TableDataView>>): void {
-        // TODO: add table name argument
+    public loadTable(page: FullPage): void {
         let rr = this.createRpcRequest("loadTable", null);
+        var observer = new RemoteTableReceiver(page, rr);
         rr.invoke(observer);
     }
 }

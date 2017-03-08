@@ -97,12 +97,12 @@ class RecordOrder {
     }
 }
 
-export interface TableDataView {
-    schema?: Schema;
+export class TableDataView {
+    public schema?: Schema;
     // Total number of rows in the complete table
-    rowCount: number;
-    startPosition?: number;
-    rows?: RowView[];
+    public rowCount: number;
+    public startPosition?: number;
+    public rows?: RowView[];
 }
 
 /* Example table view:

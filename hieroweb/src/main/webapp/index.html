@@ -28,8 +28,7 @@
         var page = new hiero.FullPage();
 
         function loadTable() {
-            var obs = new hiero.RemoteTableReceiver(page);
-            initialObject.loadTable(obs);
+            initialObject.loadTable(page);
         }
 
         function initialize() {

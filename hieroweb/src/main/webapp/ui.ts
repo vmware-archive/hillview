@@ -94,10 +94,16 @@ export class ProgressBar implements IHtmlElement {
     private cancelButton : HTMLButtonElement;
     private label    : HTMLElement;
 
-    // TODO: must pass an event handler to be invoked by cancel.
     constructor(private manager: ProgressManager,
                 public readonly lab: string,
                 private readonly operation: ICancellable) {
+        if (operation == null)
+            throw "Null operation";
+        if (lab == null)
+            throw "Null label";
+        if (manager == null)
+            throw "Null ProgressManager";
+
         this.topLevel = document.createElement("div");
         this.cancelButton = document.createElement("button");
         this.cancelButton.textContent = "Stop";

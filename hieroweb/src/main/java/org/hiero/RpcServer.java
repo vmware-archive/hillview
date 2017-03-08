@@ -43,7 +43,7 @@ public final class RpcServer {
     private static final Logger logger =
             Logger.getLogger(RpcServer.class.getName());
 
-    // Map the session to its outstanding request, if any
+    // Map the session to the target object that is replying, if any
     private static HashMap<Session, RpcTarget> sessionRequest =
             new HashMap<Session, RpcTarget>(10);
 
@@ -95,7 +95,7 @@ public final class RpcServer {
         try {
             JsonElement json = reply.toJson();
             session.getBasicRemote().sendText(json.toString());
-        } catch (IOException e) {
+        } catch (Exception e) {
             logger.log(Level.SEVERE, "Could not send reply");
         }
     }
@@ -115,6 +115,7 @@ public final class RpcServer {
             // This function is responsible for sending the replies and closing the session.
             target.execute(rpcRequest, session);
         } catch (Exception ex) {
+            logger.log(Level.SEVERE, "Return exception ", ex);
             RpcReply reply = rpcRequest.createReply(ex);
             this.sendReply(reply, session);
             rpcRequest.syncCloseSession(session);
@@ -123,7 +124,8 @@ public final class RpcServer {
 
     private void closeSession(final Session session) {
         try {
-            session.close();
+            if (session.isOpen())
+                session.close();
             this.removeSession(session);
         } catch (Exception ex) {
             logger.log(Level.SEVERE, "Error closing session");
