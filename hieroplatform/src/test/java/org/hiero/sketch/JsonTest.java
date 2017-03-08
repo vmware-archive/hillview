@@ -82,9 +82,6 @@ public class JsonTest {
         NextKList list = new NextKList(t, li, 0, 100);
         s = list.toJson();
         assertEquals(s, "{" +
-                "\"schema\":[{\"name\":\"Age\",\"kind\":\"Int\",\"allowMissing\":false}," +
-                "{\"name\":\"Weight\",\"kind\":\"Double\",\"allowMissing\":false}," +
-                        "{\"name\":\"Name\",\"kind\":\"String\",\"allowMissing\":false}]," +
                 "\"rowCount\":100," +
                 "\"startPosition\":0," +
                 "\"rows\":[" +

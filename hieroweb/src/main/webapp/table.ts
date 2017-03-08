@@ -64,7 +64,7 @@ export interface RowView {
 // Direct counterpart to Java class
 export interface ColumnSortOrientation {
     columnDescription: IColumnDescription;
-    ascending: boolean;
+    isAscending: boolean;
 }
 
 // Direct counterpart to Java class
@@ -83,7 +83,8 @@ class RecordOrder {
     public hide(col: string): void {
         let index = this.find(col);
         if (index == -1)
-            throw ("Column " + col + " not found");
+            // already hidden
+            return;
         this.sortOrientationList.splice(index, 1);
     }
     public show(cso: ColumnSortOrientation) {
@@ -147,12 +148,19 @@ export class TableView extends RemoteObject
         this.setPage(page);
     }
 
-    findColumn(colName: string): IColumnDescription {
+    columnIndex(colName: string): number {
         if (this.schema == null)
             return null;
         for (let i = 0; i < this.schema.length; i++)
             if (this.schema[i].name == colName)
-                return this.schema[i];
+                return i;
+        return null;
+    }
+
+    findColumn(colName: string): IColumnDescription {
+        let colIndex = this.columnIndex(colName);
+        if (colIndex != null)
+            return this.schema[colIndex];
         return null;
     }
 
@@ -172,7 +180,7 @@ export class TableView extends RemoteObject
         for (let i = 0; i < this.order.length(); i++) {
             let o = this.order.get(i);
             if (o.columnDescription.name == column)
-                return [o.ascending, i];
+                return [o.isAscending, i];
         }
         return null;
     }
@@ -218,13 +226,16 @@ export class TableView extends RemoteObject
         return thd;
     }
 
-    public showColumn(columnName: string, show: boolean) : void {
+    public showColumn(columnName: string, order: number) : void {
+        // order is 0 to hide
+        //         -1 to sort descending
+        //          1 to sort ascending
         let o = this.order.clone();
-        if (show) {
+        if (order != 0) {
             let col = this.findColumn(columnName);
             if (col == null)
                 return;
-            o.show({ columnDescription: col, ascending: true });
+            o.show({ columnDescription: col, isAscending: order > 0 });
         } else {
             o.hide(columnName);
         }
@@ -237,7 +248,8 @@ export class TableView extends RemoteObject
         this.dataRowsDisplayed = 0;
         this.startPosition = data.startPosition;
         this.rowCount = data.rowCount;
-        this.schema = data.schema;
+        if (this.schema == null)
+            this.schema = data.schema;
 
         if (this.tHead != null)
             this.tHead.remove();
@@ -268,9 +280,12 @@ export class TableView extends RemoteObject
             cds.push(cd);
             let thd = this.addHeaderCell(thr, cd);
             let menu = new Menu([
-                {text: "sort", action: () => this.showColumn(cd.name, true) },
-                {text: "hide", action: () => this.showColumn(cd.name, false)}
+                {text: "sort asc", action: () => this.showColumn(cd.name, 1) },
+                {text: "sort desc", action: () => this.showColumn(cd.name, -1) }
              ]);
+            if (this.order != null && this.order.find(cd.name) != -1)
+                menu.addItem({text: "hide", action: () => this.showColumn(cd.name, 0)});
+
             thd.onclick = () => menu.toggleVisibility();
             thd.appendChild(menu.getHTMLRepresentation());
         }
@@ -313,7 +328,6 @@ export class TableView extends RemoteObject
 
     public addRow(row : RowView, cds: ColumnDescription[]) : void {
         let trow = this.tBody.insertRow();
-        let dataIndex : number = 0;
 
         let cell = trow.insertCell(0);
         cell.className = "rightAlign";
@@ -326,10 +340,13 @@ export class TableView extends RemoteObject
         for (let i = 0; i < cds.length; i++) {
             let cd = cds[i];
             cell = trow.insertCell(i + 2);
+
+            let dataIndex = this.order.find(cd.name);
+            if (dataIndex == -1)
+                continue;
             if (this.isVisible(cd.name)) {
                 cell.className = "rightAlign";
                 cell.textContent = String(row.values[dataIndex]);
-                dataIndex++;
             }
         }
         this.dataRowsDisplayed += row.count;
@@ -370,7 +387,9 @@ export class RemoteTableReceiver extends RpcReceiver<string> {
     public onNext(value: string): void {
         this.table = new TableView(value, this.page);
         this.page.setHieroDataView(this.table);
-        // We only expect 1 reply
+    }
+
+    public onCompleted(): void {
         this.finished();
         // Retrieve the table schema
         this.retrieveSchema();

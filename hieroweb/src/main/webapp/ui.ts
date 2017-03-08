@@ -88,6 +88,7 @@ export class ScrollBar implements IHtmlElement {
 export class ProgressBar implements IHtmlElement {
     end: number;
 
+    private finished : boolean;
     private outer    : HTMLElement;
     private bar      : HTMLElement;
     private topLevel : HTMLElement;
@@ -104,6 +105,7 @@ export class ProgressBar implements IHtmlElement {
         if (manager == null)
             throw "Null ProgressManager";
 
+        this.finished = false;
         this.topLevel = document.createElement("div");
         this.cancelButton = document.createElement("button");
         this.cancelButton.textContent = "Stop";
@@ -131,24 +133,31 @@ export class ProgressBar implements IHtmlElement {
     }
 
     setPosition(end: number) : void {
+        if (this.finished)
+            // One may attempt to update the progress bar
+            // even after completion
+            return;
         if (end < 0)
             end = 0;
         if (end > 1)
             end = 1;
+        if (end < this.end)
+            console.log("Progress bar moves backward:" + this.end + " to " + end);
         this.end = end;
-        if (this.done())
-            this.manager.removeProgressBar(this);
-        else
-            this.computePosition();
+        this.computePosition();
     }
 
     computePosition() : void {
         this.bar.style.width = String(this.end * 100) + "%";
     }
 
-    done() : boolean { return this.end >= 1.0; }
-
-    setFinished() : void { this.setPosition(1.0); }
+    setFinished() : void {
+        if (this.finished)
+            return;
+        this.setPosition(1.0);
+        this.finished = true;
+        this.manager.removeProgressBar(this);
+    }
 
     cancel(): void {
         this.operation.cancel();

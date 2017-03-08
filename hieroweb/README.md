@@ -32,6 +32,6 @@ $> mvn package
 
 * Run the Tomcat web server
 
-$> ./apache-tomcat-8.5.8/bin/catalina.sh run
+$> ../apache-tomcat-8.5.8/bin/catalina.sh run
 
 * Open a browser at [http://localhost:8080]

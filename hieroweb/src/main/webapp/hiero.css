@@ -16,12 +16,12 @@
  */
 
 #container {
-    font-family: Consolas monospace;
+    font-family: monospace;
     overflow: hidden;
 }
 
 .console {
-    font-family: Consolas monospace;
+    font-family: monospace;
 }
 
 th {

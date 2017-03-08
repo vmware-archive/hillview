@@ -74,12 +74,15 @@ you're good to go.
 ## Guidance in writing code
 
 * The pseudorandom generator is implemented in the class
-Randomness.java and uses Mersenne Twister.  Do not use the class
-Random but this class instead.
+  Randomness.java and uses Mersenne Twister.  Do not use the class
+  Random but this class instead.
 
 * By default all pointers are assumed to be non-null; use the
   @Nullable annotation (from javax.annotation) for all pointers which
   can be null.  Use Converters.checkNull to cast a @Nullable to a
   @NonNull pointer.
-* Use "mvn site" to generate the FindBugs report in target/site/findbugs.html.
-  Make sure any new code checked in does not introduce any violations.
+
+* (optional) Use "mvn site" to generate the FindBugs report in
+  target/site/findbugs.html.  Make sure any new code checked in does
+  not introduce any violations.  This is also done by the IDEA code
+  inspection.

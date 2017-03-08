@@ -96,7 +96,6 @@ public class NextKList implements Serializable, IJson {
     public JsonElement toJsonTree() {
         // The result looks like a TableDataView typescript class
         JsonObject result = new JsonObject();
-        result.add("schema", this.table.getSchema().toJsonTree());
         result.addProperty("rowCount", this.totalRows);
         result.addProperty("startPosition", this.startPosition);
         JsonArray rows = new JsonArray();

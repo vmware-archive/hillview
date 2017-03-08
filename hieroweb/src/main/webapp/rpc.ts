@@ -28,10 +28,12 @@ import {ProgressBar} from "./ui";
 const HieroServiceUrl : string = "ws://localhost:8080";
 const RpcRequestUrl = HieroServiceUrl + "/rpc";
 
+/*
 export interface IJSON {
     // Convert object to JSON
     toJSON(): string;
 }
+*/
 
 export class RemoteObject {
     constructor(public readonly remoteObjectId : string) {}
@@ -107,22 +109,6 @@ export class RpcRequest implements ICancellable {
         this.socket.onNext(reqStr);
     }
 
-    private static replyReceived<T>(replyEvent: MessageEvent, onReply: Observer<T>) : void {
-        console.log('reply received: ' + replyEvent.data);
-        let reply = <RpcReply>JSON.parse(replyEvent.data);
-        if (reply.isError) {
-            onReply.onError(reply.result);
-        } else {
-           let response = <T>JSON.parse(reply.result);
-           onReply.onNext(response);
-        }
-    }
-
-    private onClose() {
-        this.closed = true;
-        console.log('socket closing');
-    }
-
     public cancel(): boolean {
         if (!this.closed) {
             this.socket.close();
@@ -137,13 +123,76 @@ export class RpcRequest implements ICancellable {
     public invoke<T>(onReply : Observer<T>) : void {
         // Invoked when the socked is opened
         let openObserver = Rx.Observer.create(() => this.onOpen());
-        // Invoked when the socket is closed
-        let closeObserver = Rx.Observer.create(() => this.onClose());
+        let closeObserver = Rx.Observer.create(
+            function() { this.closed = true; console.log('socket closing'); },
+            function(e: CloseEvent) {
+                if (e == null)
+                    return;
 
-        // Create a web socked and send the request
-        this.socket = RxDOM.DOM.fromWebSocket(RpcRequestUrl, null, openObserver, closeObserver);
-        console.log('socket created');
-        this.socket.subscribe((r : MessageEvent) => RpcRequest.replyReceived(r, onReply));
+                // TODO: the onError method does not seem to be ever called.
+                let reason = "Unknown reason";
+                // See http://tools.ietf.org/html/rfc6455#section-7.4.1
+                if (e.code == 1000)
+                    return; // normal
+                else if (e.code == 1001)
+                    reason = "Endpoint disconnected.";
+                else if (e.code == 1002)
+                    reason = "Protocol error";
+                else if (e.code == 1003)
+                    reason = "Incorrect data.";
+                else if (e.code == 1004)
+                    reason = "Reserved.";
+                else if (e.code == 1005)
+                    reason = "No status code.";
+                else if (e.code == 1006)
+                    reason = "Connection closed abnormally.";
+                else if (e.code == 1007)
+                    reason = "Incorrect message type.";
+                else if (e.code == 1008)
+                    reason = "Message violates policy.";
+                else if (e.code == 1009)
+                    reason = "Message too large.";
+                else if (e.code == 1010)
+                    reason = "Protocol extension not supported.";
+                else if (e.code == 1011)
+                    reason = "Unexpected server condition.";
+                else if (e.code == 1015)
+                    reason = "Cannot verify server TLS certificate.";
+                // else unknown
+                onReply.onError(reason);
+            },
+            function() {}
+        );
+
+        try {
+            // Create a web socked and send the request
+            this.socket = RxDOM.DOM.fromWebSocket(RpcRequestUrl, null, openObserver, closeObserver);
+            this.socket.onclose =
+            console.log('socket created');
+            this.socket.subscribe(
+                // onNext -> parse json and invoke onReply.onNext
+                function (r: MessageEvent) {
+                    console.log('reply received: ' + r.data);
+                    let reply = <RpcReply>JSON.parse(r.data);
+                    if (reply.isError) {
+                        onReply.onError(reply.result);
+                    } else {
+                        try {
+                            let response = <T>JSON.parse(reply.result);
+                            onReply.onNext(response);
+                        } catch (e) {
+                            onReply.onError(e);
+                        }
+                    }
+                },
+                // onError -> invoke onReply.onError
+                function (e: MessageEvent) { onReply.onError(e.type); },
+                // onCompleted -> invoke onReply.onCompleted
+                function () { onReply.onCompleted(); }
+            );
+        } catch (e) {
+            onReply.onError(e);
+        }
     };
 }
 

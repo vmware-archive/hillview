@@ -246,7 +246,9 @@ public class RemotingTest {
 
     @AfterClass
     public static void shutdown() {
-        Converters.checkNull(clientActorSystem).terminate();
-        Converters.checkNull(serverActorSystem).terminate();
+        if (clientActorSystem != null)
+            clientActorSystem.terminate();
+        if (serverActorSystem != null)
+            serverActorSystem.terminate();
     }
 }

@@ -15,8 +15,8 @@
  *  limitations under the License.
  */
 
-import {RemoteObject, PartialResult} from "./rpc";
-import {TableDataView, RemoteTableReceiver} from "./table";
+import {RemoteObject} from "./rpc";
+import {RemoteTableReceiver} from "./table";
 import {FullPage} from "./ui";
 
 export class InitialObject extends RemoteObject {
@@ -29,7 +29,7 @@ export class InitialObject extends RemoteObject {
 
     public loadTable(page: FullPage): void {
         let rr = this.createRpcRequest("loadTable", null);
-        var observer = new RemoteTableReceiver(page, rr);
+        let observer = new RemoteTableReceiver(page, rr);
         rr.invoke(observer);
     }
 }
