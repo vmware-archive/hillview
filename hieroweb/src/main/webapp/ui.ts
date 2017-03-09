@@ -89,11 +89,8 @@ export class ProgressBar implements IHtmlElement {
     end: number;
 
     private finished : boolean;
-    private outer    : HTMLElement;
     private bar      : HTMLElement;
     private topLevel : HTMLElement;
-    private cancelButton : HTMLButtonElement;
-    private label    : HTMLElement;
 
     constructor(private manager: ProgressManager,
                 public readonly lab: string,
@@ -106,26 +103,35 @@ export class ProgressBar implements IHtmlElement {
             throw "Null ProgressManager";
 
         this.finished = false;
-        this.topLevel = document.createElement("div");
-        this.cancelButton = document.createElement("button");
-        this.cancelButton.textContent = "Stop";
-        this.label = document.createElement("div");
-        this.label.textContent = lab;
+        let top = document.createElement("table");
+        top.className = "noBorder";
+        this.topLevel = top;
+        let body = top.createTBody();
+        let row = body.insertRow();
 
-        this.outer = document.createElement("div");
-        this.outer.className = "progressBarOuter";
+        let cancelButton = document.createElement("button");
+        cancelButton.textContent = "Stop";
+        let label = document.createElement("div");
+        label.textContent = lab;
+        label.className = "label";
+
+        let outer = document.createElement("div");
+        outer.className = "progressBarOuter";
 
         this.bar = document.createElement("div");
         this.bar.className = "progressBarInner";
 
-        this.outer.appendChild(this.bar);
-        this.topLevel.appendChild(this.outer);
-        this.topLevel.appendChild(this.cancelButton);
-        this.topLevel.appendChild(this.label);
-        this.topLevel.className = "flexcontainer";
+        outer.appendChild(this.bar);
+
+        let labelCell = row.insertCell(0);
+        labelCell.appendChild(label);
+        let barCell = row.insertCell(1);
+        barCell.appendChild(outer);
+        let buttonCell = row.insertCell(2);
+        buttonCell.appendChild(cancelButton);
 
         this.setPosition(0.0);
-        this.cancelButton.onclick = () => this.cancel();
+        cancelButton.onclick = () => this.cancel();
     }
 
     getHTMLRepresentation(): HTMLElement {

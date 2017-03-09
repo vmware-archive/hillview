@@ -32,7 +32,7 @@ public class InitialObject extends RpcTarget {
     void loadTable(RpcRequest request, Session session) {
         // TODO: look at request.  Now we just supply always the same table
         Table t = Table.testTable();
-        final int parts = 5;
+        final int parts = 5000;
         List<IDataSet<ITable>> fragments = new ArrayList<IDataSet<ITable>>();
         for (int i = 0; i < parts; i++) {
             LocalDataSet<ITable> data = new LocalDataSet<ITable>(t);

@@ -111,7 +111,7 @@ export class RpcRequest implements ICancellable {
 
     public cancel(): boolean {
         if (!this.closed) {
-            this.socket.close();
+            this.socket.onCompleted();
             return true;
         }
         return false;

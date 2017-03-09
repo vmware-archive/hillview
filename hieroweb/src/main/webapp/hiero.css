@@ -26,7 +26,7 @@
 
 th {
     border: 1px solid black;
-    margin: 0px;
+    margin: 0;
     font-weight: bold;
     background: lightgray;
 }
@@ -67,15 +67,22 @@ th, td {
 }
 
 .progressBarOuter {
-    margin: 10px;
+    margin: 0;
+    padding: 0;
     background: white;
-    display: flex;
+    height: 10px;
+    border: solid black 1px;
+    width: 250px;
     flex-direction: row;
     flex-wrap: nowrap;
     justify-content: flex-start;
-    height: 10px;
-    border: solid black 1px;
-    max-width: 250px;
+    display: flex;
+}
+
+.noBorder {
+    border: 0;
+    margin: 0;
+    padding: 0;
 }
 
 .progressBarInner {
@@ -84,7 +91,9 @@ th, td {
 }
 
 .scrollbarOuter {
-    background: green;
+    margin: 0;
+    padding: 0;
+    background: white;
     display: flex;
     flex-direction: column;
     flex-wrap: nowrap;
@@ -93,12 +102,18 @@ th, td {
 }
 
 .scrollBarBefore, .scrollBarAfter {
-    background: green;
+    background: lightgray;
     width: 100%;
 }
 
+.label {
+    display: flex;
+    justify-content: center;
+    align-content: center;
+}
+
 .scrollBarInner {
-    background: red;
+    background: darkgrey;
     width: 100%;
 }
 
