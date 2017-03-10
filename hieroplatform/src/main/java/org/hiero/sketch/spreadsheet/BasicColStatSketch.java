@@ -11,18 +11,22 @@ public class BasicColStatSketch implements ISketch<ITable, BasicColStat> {
     final String colName;
     @Nullable
     final IStringConverter converter;
-    double rate;
+    final double rate;
+    final int momentNum;
 
     public BasicColStatSketch( String colName, @Nullable IStringConverter converter) {
         this.colName = colName;
         this.converter = converter;
         this.rate = 1;
+        this.momentNum = 2;
     }
 
-    public BasicColStatSketch( String colName, @Nullable IStringConverter converter, double rate) {
+    public BasicColStatSketch( String colName, @Nullable IStringConverter converter,
+                               int momentNum, double rate) {
         this.colName = colName;
         this.converter = converter;
         this.rate = rate;
+        this.momentNum = 2;
     }
 
     @Override
@@ -35,7 +39,7 @@ public class BasicColStatSketch implements ISketch<ITable, BasicColStat> {
 
     @Override
     public BasicColStat zero() {
-        return new BasicColStat();
+        return new BasicColStat(momentNum);
     }
 
     @Override

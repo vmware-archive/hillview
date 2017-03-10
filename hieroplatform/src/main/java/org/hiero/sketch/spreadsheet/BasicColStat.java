@@ -8,7 +8,7 @@ import org.hiero.sketch.table.api.IStringConverter;
 import javax.annotation.Nullable;
 
 public class BasicColStat {
-    private final int MOMENT_NUM = 4;
+    private final int MOMENT_NUM;
     private double min;
     private Object minObject;
     private double max;
@@ -16,7 +16,17 @@ public class BasicColStat {
     private double moments[];
     private long size;
 
+    public BasicColStat(int momentNum) {
+        if (momentNum < 1)
+            throw new IllegalArgumentException("number of moments cannot be positive");
+        this.MOMENT_NUM = momentNum;
+        this.moments = new double[this.MOMENT_NUM];
+        this.min = Double.POSITIVE_INFINITY;
+        this.max = Double.NEGATIVE_INFINITY;
+    }
+
     public BasicColStat() {
+        this.MOMENT_NUM = 2;
         this.moments = new double[this.MOMENT_NUM];
         this.min = Double.POSITIVE_INFINITY;
         this.max = Double.NEGATIVE_INFINITY;
@@ -37,7 +47,7 @@ public class BasicColStat {
      */
     public double getMoment(int i) {
         if ((i < 1) || (i > this.MOMENT_NUM))
-            throw new IllegalArgumentException("moments are in {1,2,3,4}");
+            throw new IllegalArgumentException("moment requested doesn't exist");
         return this.moments[i - 1];
     }
 
@@ -46,6 +56,8 @@ public class BasicColStat {
     public void createStats (final IColumn column, final IMembershipSet membershipSet,
     @Nullable
     final IStringConverter converter) {
+        if (this.min < Double.POSITIVE_INFINITY)
+            throw new IllegalStateException("can't create stats more than once");
         final IRowIterator myIter = membershipSet.getIterator();
         int currRow = myIter.getNextRow();
         while (currRow >= 0) {
@@ -59,13 +71,17 @@ public class BasicColStat {
                     this.max = val;
                     this.maxObject = column.getObject(currRow);
                 }
-                this.size ++;
-                double tmpMoment = val;
-                this.moments[0] += tmpMoment;
-                for (int i = 1; i < this.MOMENT_NUM; i++) {
-                    tmpMoment = tmpMoment * val;
-                    this.moments[i] += tmpMoment;
+                if (this.MOMENT_NUM > 0) {
+                    double tmpMoment = val;
+                    double alpha = (double) this.size / (double) (this.size + 1);
+                    double beta = 1.0 - alpha;
+                    this.moments[0] = (alpha * this.moments[0]) + (beta * val);
+                    for (int i = 1; i < this.MOMENT_NUM; i++) {
+                        tmpMoment = tmpMoment * val;
+                        this.moments[i] = (alpha * this.moments[i]) + (beta * tmpMoment);
+                    }
                 }
+                this.size++;
             }
             currRow = myIter.getNextRow();
         }
@@ -90,8 +106,12 @@ public class BasicColStat {
             result.maxObject = otherStat.maxObject;
         }
         result.size = this.size + otherStat.size;
-        for (int i = 0; i < this.MOMENT_NUM; i++)
-            result.moments[i] = this.moments[i] + otherStat.moments[i];
+        if (result.size > 0) {
+            double alpha = (double) this.size / ((double) result.size);
+            double beta = 1.0 - alpha;
+            for (int i = 0; i < this.MOMENT_NUM; i++)
+                result.moments[i] = (alpha * this.moments[i]) + (beta * otherStat.moments[i]);
+        }
         return result;
     }
 }
