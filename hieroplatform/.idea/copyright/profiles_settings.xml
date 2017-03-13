@@ -1,5 +1,5 @@
 <component name="CopyrightManager">
-  <settings default="VMware-Apache">
+  <settings default="">
     <module2copyright>
       <element module="All" copyright="VMware-Apache" />
     </module2copyright>
