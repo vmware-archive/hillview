@@ -21,7 +21,6 @@ public class CDFTest {
         final SmallTable bigTable = getIntTable(bigSize, numCols);
         this.colName = bigTable.getSchema().getColumnNames().iterator().next();
         this.dataSet = new LocalDataSet<ITable>(bigTable);
-        long startTime, endTime;
         this.colStat =
                this.dataSet.blockingSketch(new BasicColStatSketch(this.colName, null));
     }
