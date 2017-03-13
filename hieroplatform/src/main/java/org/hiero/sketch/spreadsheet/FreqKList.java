@@ -9,4 +9,8 @@ import java.util.List;
 public class FreqKList implements Serializable, IJson {
     public final SmallTable table;
     public final List<Integer> count;
+
+    public FreqKList() {
+        table = null;
+    }
 }
