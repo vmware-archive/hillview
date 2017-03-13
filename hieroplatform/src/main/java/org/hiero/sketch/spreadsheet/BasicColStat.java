@@ -10,10 +10,10 @@ import javax.annotation.Nullable;
 public class BasicColStat {
     private final int MOMENT_NUM;
     private double min;
-    private Object minObject;
+    @Nullable private Object minObject;
     private double max;
-    private Object maxObject;
-    private double moments[];
+    @Nullable private Object maxObject;
+    private final double moments[];
     private long size;
 
     public BasicColStat(int momentNum) {
@@ -34,15 +34,21 @@ public class BasicColStat {
 
     public double getMin() { return this.min; }
 
-    public Object getMinObject() { return this.minObject; }
+    public Object getMinObject() {
+        assert this.minObject != null;
+        return this.minObject;
+    }
 
     public double getMax() { return this.max; }
 
-    public Object getMaxObject() { return this.maxObject; }
+    public Object getMaxObject() {
+        assert this.maxObject != null;
+        return this.maxObject;
+    }
 
     /**
      *
-     * @param i a number in {1,2,...,MOMENT_NUM}
+     * @param i a number in {0,1,...,MOMENT_NUM}
      * @return the i'th moment which is the sum of x^i
      */
     public double getMoment(int i) {
@@ -54,8 +60,7 @@ public class BasicColStat {
     public long getSize() { return this.size; }
 
     public void createStats (final IColumn column, final IMembershipSet membershipSet,
-    @Nullable
-    final IStringConverter converter) {
+    @Nullable final IStringConverter converter) {
         if (this.min < Double.POSITIVE_INFINITY)
             throw new IllegalStateException("can't create stats more than once");
         final IRowIterator myIter = membershipSet.getIterator();
