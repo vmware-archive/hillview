@@ -14,8 +14,7 @@ public class CDFTest {
     private final BasicColStat colStat;
     private final LocalDataSet<ITable> dataSet;
     private final String colName;
-
-
+    
     public CDFTest () {
         final int bigSize = 30000000;
         final int numCols = 1;

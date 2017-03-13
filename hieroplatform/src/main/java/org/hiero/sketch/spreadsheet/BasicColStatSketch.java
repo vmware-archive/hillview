@@ -4,7 +4,6 @@ import org.hiero.sketch.dataset.api.ISketch;
 import org.hiero.sketch.table.api.IStringConverter;
 import org.hiero.sketch.table.api.ITable;
 import org.hiero.utils.Converters;
-
 import javax.annotation.Nullable;
 
 public class BasicColStatSketch implements ISketch<ITable, BasicColStat> {

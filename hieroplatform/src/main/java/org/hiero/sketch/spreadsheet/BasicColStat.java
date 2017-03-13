@@ -4,7 +4,6 @@ import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
 import org.hiero.sketch.table.api.IStringConverter;
-
 import javax.annotation.Nullable;
 
 public class BasicColStat {

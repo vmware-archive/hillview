@@ -1,6 +1,5 @@
 package org.hiero.sketch;
 
-
 import org.hiero.sketch.dataset.LocalDataSet;
 import org.hiero.sketch.dataset.ParallelDataSet;
 import org.hiero.sketch.dataset.api.IDataSet;
@@ -22,7 +21,6 @@ public class BasicStatSketchTest {
         final int numCols = 1;
         final int tableSize = 1000;
         final Table myTable = getRepIntTable(tableSize, numCols);
-
         final BasicColStatSketch mySketch = new BasicColStatSketch(
                 myTable.getSchema().getColumnNames().iterator().next(), null, 0 , 0.1);
         BasicColStat result = mySketch.create(myTable);
