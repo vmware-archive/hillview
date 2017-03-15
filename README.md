@@ -5,8 +5,9 @@ Big data spreadsheet
 
 * Ubuntu Linux, Maven build system, typescript, webpack, Tomcat app server
 * IDEA Intellij for development (optional)
+* node.js
 
-> $: sudo apt-get install maven
+> $: sudo apt-get install maven node
 
 ### Installing Java
 
