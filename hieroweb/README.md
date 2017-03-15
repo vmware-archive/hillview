@@ -12,9 +12,9 @@ Use version 8.5.8.  Download the binaries from
 [http://tomcat.apache.org/download-80.cgi] and untar in the hiero
 toplevel folder.
 
-$> cd apache-tocat-8.5.8/webapps
-$> rm -rf ROOT
-$> ln -s ../hieroweb/target/hieroweb-1.0-SNAPSHOT.war ROOT.war
+>$ cd apache-tocat-8.5.8/webapps
+>$ rm -rf ROOT
+>$ ln -s ../../hieroweb/target/hieroweb-1.0-SNAPSHOT.war ROOT.war
 
 ## Install typescript and JavaScript libraries
 
@@ -26,13 +26,13 @@ $> typings install dt~rx-dom d3 --save
 
 ## Building
 
-$> cd hieroweb
-$> mvn package
+>$ cd hieroweb
+>$ mvn package
 
 ## Running the web ui
 
 * Run the Tomcat web server
 
-$> ../apache-tomcat-8.5.8/bin/catalina.sh run
+>$ ../apache-tomcat-8.5.8/bin/catalina.sh run
 
 * Open a browser at [http://localhost:8080]
