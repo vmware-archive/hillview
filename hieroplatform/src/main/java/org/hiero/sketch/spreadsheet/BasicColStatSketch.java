@@ -13,19 +13,19 @@ public class BasicColStatSketch implements ISketch<ITable, BasicColStat> {
     final double rate;
     final int momentNum;
 
-    public BasicColStatSketch( String colName, @Nullable IStringConverter converter) {
+    public BasicColStatSketch(String colName, @Nullable IStringConverter converter) {
         this.colName = colName;
         this.converter = converter;
         this.rate = 1;
         this.momentNum = 2;
     }
 
-    public BasicColStatSketch( String colName, @Nullable IStringConverter converter,
+    public BasicColStatSketch(String colName, @Nullable IStringConverter converter,
                                int momentNum, double rate) {
         this.colName = colName;
         this.converter = converter;
         this.rate = rate;
-        this.momentNum = 2;
+        this.momentNum = momentNum;
     }
 
     @Override
@@ -37,12 +37,10 @@ public class BasicColStatSketch implements ISketch<ITable, BasicColStat> {
     }
 
     @Override
-    public BasicColStat zero() {
-        return new BasicColStat(momentNum);
-    }
+    public BasicColStat zero() { return new BasicColStat(this.momentNum); }
 
     @Override
-    public BasicColStat add(@Nullable final BasicColStat left, @Nullable final BasicColStat right) {
+    public BasicColStat add(final BasicColStat left, final BasicColStat right) {
         return Converters.checkNull(left).union(Converters.checkNull(right));
     }
 }

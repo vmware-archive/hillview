@@ -29,9 +29,9 @@ public class CDFTest {
         BucketsDescriptionEqSize bDec  =
                 new BucketsDescriptionEqSize(this.colStat.getMin(), this.colStat.getMax(), width);
         double sampleSize  =  2 * height * height * width;
-        double rate = sampleSize / this.colStat.getSize();
+        double rate = sampleSize / this.colStat.getRowCount();
         if ((rate > 0.1) || (!useSampling))
-            rate = 1.0; //no use in sampling
+            rate = 1.0; // no performance gains in sampling
         final Histogram1DLight tmpHist =
                 this.dataSet.blockingSketch(new Hist1DLightSketch(bDec, this.colName, null, rate));
         return tmpHist.createCDF();
@@ -41,9 +41,9 @@ public class CDFTest {
         int bucketNum = width / barWidth;
         BucketsDescriptionEqSize bDec  =
                 new BucketsDescriptionEqSize(this.colStat.getMin(), this.colStat.getMax(), bucketNum);
-        //approximately what is needed to have error smaller than a single pixel
+        // approximately what is needed to have error smaller than a single pixel
         double sampleSize  =  2 * height * height * bucketNum;
-        double rate = sampleSize / this.colStat.getSize();
+        double rate = sampleSize / this.colStat.getRowCount();
         if ((rate > 0.1) || (!useSampling))
             rate = 1.0; //no use in sampling
         return this.dataSet.blockingSketch(new Hist1DSketch(bDec, this.colName, null, rate));
@@ -52,18 +52,11 @@ public class CDFTest {
     @Test
     public void HistE2E() {
         CDFTest cdftest = new CDFTest();
-        long startTime, endTime;
-        startTime = System.nanoTime();
-        cdftest.prepareCDF(1000, 1000, false);
-        endTime = System.nanoTime();
-        System.out.println("Running time of cdf: " + (double) (endTime - startTime)/1000000000);
-        startTime = System.nanoTime();
-        cdftest.prepareHist(1000, 100, 10, true);
-        endTime = System.nanoTime();
-        System.out.println("Running time of hist with sampling: " + (double) (endTime - startTime)/1000000000);
-        startTime = System.nanoTime();
-        cdftest.prepareHist(1000, 100, 10, false);
-        endTime = System.nanoTime();
-        System.out.println("Running time of hist without sampling: " + (double) (endTime - startTime)/1000000000);
+        System.out.println("Running time of cdf: ");
+        TestUtil.runPerfTest(k -> cdftest.prepareCDF(1000, 1000, false), 2);
+        System.out.println("Running time of hist with sampling: ");
+        TestUtil.runPerfTest(k -> prepareHist(1000, 100, 10, true), 2);
+        System.out.println("Running time of hist without sampling: ");
+        TestUtil.runPerfTest(k -> cdftest.prepareHist(1000, 100, 10, false), 2);
     }
 }

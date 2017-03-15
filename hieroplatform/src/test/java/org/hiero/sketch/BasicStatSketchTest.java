@@ -24,7 +24,7 @@ public class BasicStatSketchTest {
         final BasicColStatSketch mySketch = new BasicColStatSketch(
                 myTable.getSchema().getColumnNames().iterator().next(), null, 0 , 0.1);
         BasicColStat result = mySketch.create(myTable);
-        assertEquals(result.getSize(), 100);
+        assertEquals(result.getRowCount(), 100);
     }
 
     @Test
