@@ -18,14 +18,28 @@ $ rm -rf ROOT
 $ ln -s ../../hieroweb/target/hieroweb-1.0-SNAPSHOT.war ROOT.war
 ```
 
-## Install typescript and JavaScript libraries
+## Install typescript and JavaScript libraries and tools
+
+First command may need sudo; on Mac it seems to work without sudo.
 
 ```
 $ sudo npm install -g typescript ts-loader webpack@1.14.0 typings
+```
+
+This installs the typescript compiler, the webpack tool which can be used to bundle 
+multiple JavaScript files together, the ts-loader tool for webpack, which allows it to 
+compile directly javascript, and the typings tool, which can be used to install
+typescript type definition files for JavaScript code.   Then using 
+
+Then we install various JavaScript libraries that we use: rx, rx-dom and d3, together with
+the typescript type definitions for these libraries.
+
+```
 $ cd src/main/webapp
 $ npm install rx rx-dom d3
 $ npm install @types/d3 --save
 $ typings install dt~rx-dom --save
+$ cd ../../..
 ```
 
 ## Building
