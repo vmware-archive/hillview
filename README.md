@@ -47,11 +47,11 @@ Hiero is broken down into two separate projects.
 
 * hieroplatform: pure Java, includes the entire back-end.  `hieroplatform` can be
 developed using the free (community edition) of Intellij IDEA.  See
-[hieroplatform/README.md]
+[](hieroplatform/README.md)
 
 * hieroweb: the web server, web client and web services; links to the
 result produced by the `hieroweb` project.  To develop this we have
-used Intellij Ultimate.  See [hieroweb/README.md]
+used Intellij Ultimate.  See [](hieroweb/README.md)
 
 ## Setup IntelliJ IDEA
 
