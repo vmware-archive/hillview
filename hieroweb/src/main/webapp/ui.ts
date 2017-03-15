@@ -16,7 +16,7 @@
  */
 
 import {RpcReceiver, PartialResult, ICancellable} from "./rpc";
-import {ErrorReporter} from "./errorReporter";
+import {ErrorReporter} from "./errReporter";
 
 export interface IHtmlElement {
     getHTMLRepresentation() : HTMLElement;
@@ -27,7 +27,7 @@ export interface HieroDataView extends IHtmlElement {
     getPage(): FullPage;
 }
 
-function removeAllChildren(h: HTMLElement): void {
+export function removeAllChildren(h: HTMLElement): void {
     while (h.hasChildNodes())
         h.removeChild(h.lastChild);
 }

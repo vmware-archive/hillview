@@ -18,8 +18,7 @@
 package org.hiero;
 
 import org.hiero.sketch.dataset.api.IDataSet;
-import org.hiero.sketch.spreadsheet.NextKSketch;
-import org.hiero.sketch.spreadsheet.SummarySketch;
+import org.hiero.sketch.spreadsheet.*;
 import org.hiero.sketch.table.RecordOrder;
 import org.hiero.sketch.table.api.ITable;
 
@@ -43,6 +42,14 @@ public final class TableTarget extends RpcTarget {
         RecordOrder ro = gson.fromJson(request.arguments, RecordOrder.class);
         NextKSketch nk = new NextKSketch(ro, null, 10);
         this.runSketch(this.table, nk, request, session);
+    }
+
+    @HieroRpc
+    void histogram(RpcRequest request, Session session) {
+        String column = gson.fromJson(request.arguments, String.class);
+        BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(0, 100, 10);
+        Hist1DSketch sk = new Hist1DSketch(buckets, column, null);
+        this.runSketch(this.table, sk, request, session);
     }
 
     @Override

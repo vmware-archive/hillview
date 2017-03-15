@@ -20,8 +20,9 @@ $> ln -s ../hieroweb/target/hieroweb-1.0-SNAPSHOT.war ROOT.war
 
 $> sudo npm install -g typescript ts-loader webpack@1.4.0 typings
 $> cd src/main/webapp
-$> npm install rx rx-dom
-$> typings install dt~rx-dom --save
+$> npm install rx rx-dom d3
+$> npm install @types/d3 --save
+$> typings install dt~rx-dom d3 --save
 
 ## Building
 

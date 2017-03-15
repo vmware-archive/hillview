@@ -18,6 +18,8 @@
 
 package org.hiero.sketch.spreadsheet;
 
+import com.google.gson.JsonElement;
+import org.hiero.sketch.dataset.api.IJson;
 import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
@@ -28,18 +30,16 @@ import javax.annotation.Nullable;
 /**
  * One Dimensional histogram. Does not contain the column and membershipMap
  */
-public class Histogram1D extends BaseHist1D {
+public class Histogram1D extends BaseHist1D implements IJson {
     private final Bucket1D[] buckets;
     private long missingData;
     private long outOfRange;
-    private boolean initialized;
 
     public Histogram1D(final IBucketsDescription1D bucketDescription) {
         super(bucketDescription);
         this.buckets = new Bucket1D[bucketDescription.getNumOfBuckets()];
         for (int i = 0; i < this.bucketDescription.getNumOfBuckets(); i++)
             this.buckets[i] = new Bucket1D();
-        this.initialized = false;
     }
 
     /**
@@ -48,16 +48,13 @@ public class Histogram1D extends BaseHist1D {
     @Override
     public void createHistogram(final IColumn column, final IMembershipSet membershipSet,
                                 @Nullable final IStringConverter converter) {
-        if (this.initialized) //a histogram had already been created
-            throw new IllegalAccessError("A histogram cannot be created twice");
-        this.initialized = true;
         final IRowIterator myIter = membershipSet.getIterator();
         int currRow = myIter.getNextRow();
         while (currRow >= 0) {
             if (column.isMissing(currRow))
                 this.missingData++;
             else {
-                double val = column.asDouble(currRow,converter);
+                double val = column.asDouble(currRow, converter);
                 int index = this.bucketDescription.indexOf(val);
                 if (index >= 0)
                     this.buckets[index].add(val, column.getObject(currRow));
@@ -91,7 +88,6 @@ public class Histogram1D extends BaseHist1D {
         if (!this.bucketDescription.equals(otherHistogram.bucketDescription))
             throw new IllegalArgumentException("Histogram union without matching buckets");
         Histogram1D unionH = new Histogram1D(this.bucketDescription);
-        unionH.initialized = true;
         for (int i = 0; i < unionH.bucketDescription.getNumOfBuckets(); i++)
             unionH.buckets[i] = this.buckets[i].union(otherHistogram.buckets[i]);
         unionH.missingData = this.missingData + otherHistogram.missingData;

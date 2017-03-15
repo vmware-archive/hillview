@@ -18,6 +18,7 @@
 import {IHtmlElement, ScrollBar, Menu, Renderer, FullPage, HieroDataView} from "./ui";
 import {RemoteObject, PartialResult, RpcReceiver, ICancellable} from "./rpc";
 import Rx = require('rx');
+import {HistogramRenderer} from "./histogram";
 
 // These classes are direct counterparts to server-side Java classes
 // with the same names.  JSON serialization
@@ -244,6 +245,11 @@ export class TableView extends RemoteObject
         rr.invoke(new TableRenderer(this.getPage(), this, rr));
     }
 
+    public histogram(columnName: string): void {
+        let rr = this.createRpcRequest("histogram", columnName);
+        rr.invoke(new HistogramRenderer(this.getPage(), this.remoteObjectId, rr));
+    }
+
     public updateView(data: TableDataView) : void {
         this.dataRowsDisplayed = 0;
         this.startPosition = data.startPosition;
@@ -281,7 +287,8 @@ export class TableView extends RemoteObject
             let thd = this.addHeaderCell(thr, cd);
             let menu = new Menu([
                 {text: "sort asc", action: () => this.showColumn(cd.name, 1) },
-                {text: "sort desc", action: () => this.showColumn(cd.name, -1) }
+                {text: "sort desc", action: () => this.showColumn(cd.name, -1) },
+                {text: "histogram", action: () => this.histogram(cd.name) }
              ]);
             if (this.order != null && this.order.find(cd.name) != -1)
                 menu.addItem({text: "hide", action: () => this.showColumn(cd.name, 0)});

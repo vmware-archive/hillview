@@ -14,10 +14,10 @@
     "url": "git://github.com/mbudiu-vmw/hiero.git"
   },
   "dependencies": {
-    "imports-loader": "^0.7.0",
+    "@types/d3": "^4.7.0",
+    "d3": "^4.0.5",
     "rx": "^4.1.0",
-    "rx-dom": "^7.0.3",
-    "style-loader": "^0.13.1"
+    "rx-dom": "^7.0.3"
   },
   "devDependencies": {
     "webpack": "^1.14.0"
