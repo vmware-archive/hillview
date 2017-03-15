@@ -100,4 +100,12 @@ public class Histogram1DLight extends BaseHist1D {
         unionH.outOfRange = this.outOfRange + otherHistogram.outOfRange;
         return unionH;
     }
+
+    public Histogram1DLight createCDF() {
+        Histogram1DLight cdf = new Histogram1DLight(this.bucketDescription);
+        cdf.buckets[0] = this.buckets[0];
+        for (int i = 1; i < this.bucketDescription.getNumOfBuckets(); i++)
+            cdf.buckets[i] = cdf.buckets[i - 1] + this.buckets[i];
+        return cdf;
+    }
 }
