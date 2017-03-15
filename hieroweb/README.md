@@ -15,7 +15,7 @@ toplevel folder.
 
 ```
 $ cd apache-tocat-8.5.8/webapps
-$ rm -rf ROOT
+$ rm -rf ROOT*
 $ ln -s ../../hieroweb/target/hieroweb-1.0-SNAPSHOT.war ROOT.war
 ```
 
