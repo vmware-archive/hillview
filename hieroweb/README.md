@@ -2,6 +2,7 @@
 
 - web services
 - web client
+
 The web services part links with the jars produced by the hieroplatform project.
 
 # Installation
