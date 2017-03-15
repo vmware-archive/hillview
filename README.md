@@ -3,9 +3,8 @@ Big data spreadsheet
 
 ## Dependences
 
-* Ubuntu Linux, Maven build system, typescript, webpack, Tomcat app server
+* Ubuntu Linux, Maven build system, typescript, webpack, Tomcat app server, node.js
 * IDEA Intellij for development (optional)
-* node.js
 
 > $: sudo apt-get install maven node
 
@@ -24,24 +23,6 @@ the following to your ~/.bashrc or ~/.zshrc.
 
 > ```export JAVA_HOME="<path-to-jdk-folder>"```
 
-## Using git to contribute
-
-* Fork the repository using the "fork" button on github, by following these instructions:
-https://help.github.com/articles/fork-a-repo/
-* Run IntelliJ code inspection (Analyze/Inspect code) before commit and solve all open issues
-* When you make changes you can submit them into your own fork
-
-In more detail, here is a step-by-step guide to committing your changes:
-
-1. git add <files that changed>
-2. git commit -m "Description of commit" (Saves your work)
-3. git fetch upstream (To get the upstream version)
-4. git rebase upstream/master
-5. Resolve conflicts if any. If so, repeat 1-4.
-6. Test, analyze merged version.
-7. git push -f origin master.
-8. Create a pull request (using the web ui).
-
 ## Project structure
 
 Hiero is broken down into two separate projects.
@@ -50,13 +31,14 @@ Hiero is broken down into two separate projects.
 developed using the free (community edition) of Intellij IDEA.  See
 [hieroplatform/README.md](hieroplatform/README.md)
 
-* hieroweb: the web server, web client and web services; links to the
-result produced by the `hieroweb` project.  To develop this we have
-used Intellij Ultimate.  See [hieroweb/README.md](hieroweb/README.md)
+* hieroweb: the web server, web client and web services; this project links to the
+result produced by the `hieroweb` project.  To develop and debug this we have
+used capabilities available only in the paid version of Intellij, Ultimate, 
+but only maven is needed to build.  See [hieroweb/README.md](hieroweb/README.md)
 
 ## Setup IntelliJ IDEA
 
-First, download and install Intellij IDEA:
+Download and install Intellij IDEA:
 https://www.jetbrains.com/idea/.  You can just untar the linux binary
 in a place of your choice and run the shell script
 `ideaXXX/bin/idea.sh`.
@@ -72,18 +54,36 @@ welcome screen, select the "import project" option, point to the
 "pom.xml" file inside the hiero folder, click "next" a few times and
 you're good to go.
 
+## Using git to contribute
+
+* Fork the repository using the "fork" button on github, by following these instructions:
+https://help.github.com/articles/fork-a-repo/
+* Run IntelliJ code inspection (Analyze/Inspect code) before commit and solve all open issues.
+* Submit them into your own forked repository and send us a pull request.
+
+In more detail, here is a step-by-step guide to committing your changes:
+
+1. `git add <files that changed>`
+2. `git commit -m "Description of commit"`
+3. `git fetch upstream`
+4. `git rebase upstream/master`
+5. Resolve conflicts if any. If so, repeat 1-4.
+6. Test, analyze merged version.
+7. `git push -f origin master`
+8. Create a pull request (using the web ui).
+
 ## Guidance in writing code
 
 * The pseudorandom generator is implemented in the class
-  Randomness.java and uses Mersenne Twister.  Do not use the class
-  Random but this class instead.
+  Randomness.java and uses Mersenne Twister.  Do not use the 
+  Java `Random` class, but this one.
 
 * By default all pointers are assumed to be non-null; use the
   @Nullable annotation (from javax.annotation) for all pointers which
-  can be null.  Use Converters.checkNull to cast a @Nullable to a
+  can be null.  Use `Converters.checkNull` to cast a @Nullable to a
   @NonNull pointer.
 
 * (optional) Use "mvn site" to generate the FindBugs report in
   target/site/findbugs.html.  Make sure any new code checked in does
-  not introduce any violations.  This is also done by the IDEA code
-  inspection.
+  not introduce any violations.  A subset of these checks is also
+  done by the IDEA code inspection tool.
