@@ -20,7 +20,7 @@ $ ln -s ../../hieroweb/target/hieroweb-1.0-SNAPSHOT.war ROOT.war
 
 ## Install typescript and JavaScript libraries and tools
 
-First command may need sudo; on Mac it seems to work without sudo.
+On Mac the following command seems to work correctly only without sudo.
 
 ```
 $ sudo npm install -g typescript ts-loader webpack@1.14.0 typings
