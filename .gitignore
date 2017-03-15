@@ -20,6 +20,7 @@ target/
 */.idea/misc.xml
 */.idea/copyright
 */.idea/libraries
+*/.idea/uiDesigner.xml
 
 out
 apache-tomcat-*
