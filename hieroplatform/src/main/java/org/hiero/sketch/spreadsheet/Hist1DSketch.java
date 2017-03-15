@@ -32,7 +32,8 @@ public class Hist1DSketch implements ISketch<ITable, Histogram1D> {
     final IStringConverter converter;
     final double rate;
 
-    public Hist1DSketch(IBucketsDescription1D bucketDesc, String colName, IStringConverter converter) {
+    public Hist1DSketch(IBucketsDescription1D bucketDesc, String colName,
+                        @Nullable IStringConverter converter) {
         this.bucketDesc = bucketDesc;
         this.colName = colName;
         this.converter = converter;

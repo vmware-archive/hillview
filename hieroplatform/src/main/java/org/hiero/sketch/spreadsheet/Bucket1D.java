@@ -18,12 +18,14 @@
 
 package org.hiero.sketch.spreadsheet;
 
+import org.hiero.sketch.dataset.api.IJson;
+
 import javax.annotation.Nullable;
 
 /**
  * A one dimensional bucket designed for a Histogram1D
  */
-public class Bucket1D {
+public class Bucket1D implements IJson {
     @Nullable
     private Object minObject;
     @Nullable

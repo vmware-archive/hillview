@@ -22,7 +22,7 @@ import Rx = require('rx');
 import RxDOM = require('rx-dom');
 import Observer = Rx.Observer;
 import Observable = Rx.Observable;
-import {ErrorReporter, ConsoleErrorReporter} from "./errorReporter";
+import {ErrorReporter, ConsoleErrorReporter} from "./errReporter";
 import {ProgressBar} from "./ui";
 
 const HieroServiceUrl : string = "ws://localhost:8080";

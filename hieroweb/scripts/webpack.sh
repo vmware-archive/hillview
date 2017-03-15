@@ -7,7 +7,7 @@ cd src/main/webapp/
 rm -rf bundle*
 
 # Webpack is so stupid that it returns 0 even if there are errors!
-if webpack | grep -i error
+if webpack --display-modules | grep -i error
 then
     echo "Webpack command failed"
     exit 1
