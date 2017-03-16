@@ -17,6 +17,7 @@
 
 export interface ErrorReporter {
     reportError(message: string) : void;
+    clear(): void;
 }
 
 export class ConsoleErrorReporter implements ErrorReporter {
@@ -27,4 +28,7 @@ export class ConsoleErrorReporter implements ErrorReporter {
     public reportError(message: string) : void {
         console.log(message);
     }
+
+    // We cannot clear the console
+    public clear() : void {}
 }

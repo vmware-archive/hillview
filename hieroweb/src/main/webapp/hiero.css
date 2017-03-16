@@ -132,3 +132,7 @@ th, td {
     justify-content: flex-start;
     align-items: stretch;
 }
+
+.histogramBoxLabel {
+    font: 10px sans-serif;
+}

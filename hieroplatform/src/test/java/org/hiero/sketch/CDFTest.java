@@ -11,7 +11,7 @@ import static org.hiero.sketch.TableTest.getIntTable;
  * Test class for performance profiling of histogram and CDF
  */
 public class CDFTest {
-    private final BasicColStat colStat;
+    private final BasicColStats colStat;
     private final LocalDataSet<ITable> dataSet;
     private final String colName;
 

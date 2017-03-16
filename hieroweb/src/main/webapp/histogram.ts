@@ -15,9 +15,14 @@
  *  limitations under the License.
  */
 
-import {IHtmlElement, HieroDataView, FullPage, Renderer, removeAllChildren} from "./ui";
+import {
+    IHtmlElement, HieroDataView, FullPage, Renderer, removeAllChildren, significantDigits,
+    getWindowSize
+} from "./ui";
 import d3 = require('d3');
 import {RemoteObject, ICancellable, PartialResult} from "./rpc";
+import {ColumnDescription, TableView} from "./table";
+import {histogram} from "d3-array";
 
 // same as a Java class
 interface Bucket1D {
@@ -35,15 +40,36 @@ interface Histogram1D {
     buckets:     Bucket1D[];
 }
 
+// same as Java class
+interface BasicColStats {
+    momentCount: number;
+    min: number;
+    max: number;
+    minObject: any;
+    maxObject: any;
+    moments: Array<number>;
+    rowCount: number;
+}
+
 export class Histogram extends RemoteObject
     implements IHtmlElement, HieroDataView {
     private topLevel: HTMLElement;
-    public readonly width: number = 500;
-    public readonly height: number = 200;
+    public readonly margin = {
+        top: 30,
+        right: 30,
+        bottom: 30,
+        left: 40
+    };
     private barWidth = 10;
     private topSpace = 20;
     protected page: FullPage;
     protected svg: any;
+    private maxHeight = 200;
+    protected currentData: {
+        histogram: Histogram1D,
+        description: ColumnDescription,
+        stats: BasicColStats
+    };
 
     constructor(id: string, page: FullPage) {
         super(id);
@@ -56,39 +82,93 @@ export class Histogram extends RemoteObject
         return this.topLevel;
     }
 
-    public updateView(h: Histogram1D) : void {
-        let data = h.buckets.map(b => b.count);
-        let max = d3.max(data);
+    static translateString(x: number, y: number): string {
+        return "translate(" + String(x) + ", " + String(y) + ")";
+    }
 
+    public refresh(): void {
+        this.updateView(this.currentData.histogram,
+            this.currentData.description,
+            this.currentData.stats);
+    }
+
+    public updateView(h: Histogram1D, cd: ColumnDescription, stats: BasicColStats) : void {
+        this.currentData = { histogram: h, description: cd, stats: stats };
+
+        let ws = getWindowSize();
+        let width = ws.width;
+        let height = ws.height;
+        if (height > this.maxHeight)
+            height = this.maxHeight;
+
+        let chartWidth = width - this.margin.left - this.margin.right;
+        let chartHeight = height - this.margin.top - this.margin.bottom;
+
+        let counts = h.buckets.map(b => b.count);
+        let max = d3.max(counts);
+        let min = d3.min(counts);
         removeAllChildren(this.topLevel);
 
-        let svg = d3.select(this.topLevel)
+        let canvas = d3.select(this.topLevel)
             .append("svg")
-            .attr("width", this.width)
-            .attr("height", this.height);
+            .attr("width", width)
+            .attr("height", height);
+
+        let chart = canvas
+            .append("g")
+            .attr("transform", Histogram.translateString(this.margin.left, this.margin.top));
 
         let y = d3.scaleLinear()
             .domain([0, max])
-            .range([0, this.height]);
+            .range([chartHeight, 0]);
+        let yAxis = d3.axisLeft(y);
 
-        let barWidth = this.width / data.length;
+        let x = d3.scaleLinear()
+            .domain([stats.min, stats.max])
+            .range([0, chartWidth]);
+        let xAxis = d3.axisBottom(x);
 
-        let bar = svg.selectAll("g")
-            .data(data)
+        canvas.append("text")
+            .text(cd.name)
+            .attr("transform", Histogram.translateString(chartWidth / 2, this.margin.top/2))
+            .attr("text-anchor", "middle");
+
+        let barWidth = chartWidth / counts.length;
+        let bars = chart.selectAll("g")
+            .data(counts)
             .enter().append("g")
-            .attr("transform", (d, i) => "translate(" + i * barWidth + ",0)");
+            .attr("transform", (d, i) => Histogram.translateString(i * barWidth, 0));
 
-        bar.append("rect")
-            .attr("y", d => this.height - y(d))
-            .attr("height", d => y(d))
+        bars.append("rect")
+            .attr("y", d => y(d))
+            .attr("height", d => chartHeight - y(d))
             .attr("width", barWidth - 1);
 
-        bar.append("text")
+        bars.append("text")
+            .attr("class", "histogramBoxLabel")
             .attr("x", barWidth / 2)
-            .attr("y", d => this.height - y(d))
+            .attr("y", d => y(d))
+            .attr("text-anchor", "middle")
             .attr("dy", d => d <= (max / 2) ? "-.25em" : ".75em")
             .attr("fill", d => d <= (max / 2) ? "black" : "white")
-            .text(d => d);
+            .text(d => (d == 0) ? "" : significantDigits(d))
+            .exit();
+
+        chart.append("g")
+            .attr("class", "y-axis")
+            .call(yAxis);
+        chart.append("g")
+            .attr("class", "x-axis")
+            .attr("transform", Histogram.translateString(0, chartHeight))
+            .call(xAxis);
+
+        console.log(String(counts.length) + " data points");
+
+        let infoBox = document.createElement("div");
+        this.topLevel.appendChild(infoBox);
+        if (h.missingData != 0)
+            infoBox.textContent = String(h.missingData) + " missing, ";
+        infoBox.textContent += String(stats.rowCount) + " points";
     }
 
     setPage(page: FullPage) {
@@ -104,20 +184,52 @@ export class Histogram extends RemoteObject
     }
 }
 
+// Waits for all column stats to be received and then initiates a histogram
+// rendering.
+export class RangeCollector extends Renderer<BasicColStats> {
+    protected stats: BasicColStats;
+
+    constructor(protected cd: ColumnDescription,
+                page: FullPage,
+                protected table: TableView,
+                operation: ICancellable) {
+        super(page, operation, "histogram");
+    }
+
+    onNext(value: PartialResult<BasicColStats>): void {
+        this.progressBar.setPosition(value.done);
+        this.stats = value.data;
+    }
+
+    onCompleted(): void {
+        super.onCompleted();
+        let rr = this.table.createRpcRequest("histogram", {
+            columnName: this.cd.name,
+            min: this.stats.min,
+            max: this.stats.max
+        });
+        let renderer = new HistogramRenderer(
+            this.page, this.table.remoteObjectId, this.cd, this.stats, rr);
+        rr.invoke(renderer);
+    }
+}
+
+// Renders a column histogram
 export class HistogramRenderer extends Renderer<Histogram1D> {
     protected histogram: Histogram;
 
     constructor(page: FullPage,
                 remoteTableId: string,
+                protected cd: ColumnDescription,
+                protected stats: BasicColStats,
                 operation: ICancellable) {
-        super(page.progressManager.newProgressBar(operation, "histogram"),
-            page.getErrorReporter());
+        super(page, operation, "histogram");
         this.histogram = new Histogram(remoteTableId, page);
         page.setHieroDataView(this.histogram);
     }
 
     onNext(value: PartialResult<Histogram1D>): void {
         this.progressBar.setPosition(value.done);
-        this.histogram.updateView(value.data);
+        this.histogram.updateView(value.data, this.cd, this.stats);
     }
 }

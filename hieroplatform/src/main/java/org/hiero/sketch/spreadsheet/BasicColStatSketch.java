@@ -6,7 +6,7 @@ import org.hiero.sketch.table.api.ITable;
 import org.hiero.utils.Converters;
 import javax.annotation.Nullable;
 
-public class BasicColStatSketch implements ISketch<ITable, BasicColStat> {
+public class BasicColStatSketch implements ISketch<ITable, BasicColStats> {
     final String colName;
     @Nullable
     final IStringConverter converter;
@@ -21,7 +21,7 @@ public class BasicColStatSketch implements ISketch<ITable, BasicColStat> {
     }
 
     public BasicColStatSketch(String colName, @Nullable IStringConverter converter,
-                               int momentNum, double rate) {
+                              int momentNum, double rate) {
         this.colName = colName;
         this.converter = converter;
         this.rate = rate;
@@ -29,18 +29,18 @@ public class BasicColStatSketch implements ISketch<ITable, BasicColStat> {
     }
 
     @Override
-    public BasicColStat create(final ITable data) {
-        BasicColStat result = this.getZero();
+    public BasicColStats create(final ITable data) {
+        BasicColStats result = this.getZero();
         result.createStats(data.getColumn(this.colName), data.getMembershipSet().sample(this.rate),
                 this.converter);
         return result;
     }
 
     @Override
-    public BasicColStat zero() { return new BasicColStat(this.momentNum); }
+    public BasicColStats zero() { return new BasicColStats(this.momentNum); }
 
     @Override
-    public BasicColStat add(final BasicColStat left, final BasicColStat right) {
+    public BasicColStats add(final BasicColStats left, final BasicColStats right) {
         return Converters.checkNull(left).union(Converters.checkNull(right));
     }
 }

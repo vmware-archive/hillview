@@ -18,7 +18,7 @@
 import {IHtmlElement, ScrollBar, Menu, Renderer, FullPage, HieroDataView} from "./ui";
 import {RemoteObject, PartialResult, RpcReceiver, ICancellable} from "./rpc";
 import Rx = require('rx');
-import {HistogramRenderer} from "./histogram";
+import {RangeCollector} from "./histogram";
 
 // These classes are direct counterparts to server-side Java classes
 // with the same names.  JSON serialization
@@ -136,6 +136,7 @@ export class TableView extends RemoteObject
     protected tHead : HTMLTableSectionElement;
     protected tBody: HTMLTableSectionElement;
     protected page: FullPage;
+    protected currentData: TableDataView;
 
     public constructor(id: string, page: FullPage) {
         super(id);
@@ -246,11 +247,17 @@ export class TableView extends RemoteObject
     }
 
     public histogram(columnName: string): void {
-        let rr = this.createRpcRequest("histogram", columnName);
-        rr.invoke(new HistogramRenderer(this.getPage(), this.remoteObjectId, rr));
+        let rr = this.createRpcRequest("range", columnName);
+        let cd = this.findColumn(columnName);
+        rr.invoke(new RangeCollector(cd, this.getPage(), this, rr));
+    }
+
+    public refresh(): void {
+        this.updateView(this.currentData);
     }
 
     public updateView(data: TableDataView) : void {
+        this.currentData = data;
         this.dataRowsDisplayed = 0;
         this.startPosition = data.startPosition;
         this.rowCount = data.rowCount;
@@ -368,8 +375,7 @@ export class TableRenderer extends Renderer<TableDataView> {
     constructor(page: FullPage,
                 protected table: TableView,
                 operation: ICancellable) {
-        super(page.progressManager.newProgressBar(operation, "Get info"),
-            page.getErrorReporter());
+        super(page, operation, "Geting table info");
     }
 
     onNext(value: PartialResult<TableDataView>): void {

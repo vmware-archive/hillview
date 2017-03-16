@@ -18,6 +18,7 @@
 
 package org.hiero.sketch.dataset.api;
 
+import org.hiero.sketch.dataset.PRDataSetMonoid;
 import rx.Observable;
 
 /**

@@ -20,6 +20,7 @@ package org.hiero;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import org.hiero.sketch.dataset.api.*;
+import org.hiero.sketch.dataset.*;
 import org.hiero.utils.Converters;
 import rx.Observable;
 import rx.Observer;

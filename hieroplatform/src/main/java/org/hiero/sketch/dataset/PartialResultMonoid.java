@@ -16,8 +16,10 @@
  *
  */
 
-package org.hiero.sketch.dataset.api;
+package org.hiero.sketch.dataset;
 
+import org.hiero.sketch.dataset.api.IMonoid;
+import org.hiero.sketch.dataset.api.PartialResult;
 import org.hiero.utils.Converters;
 
 import javax.annotation.Nullable;

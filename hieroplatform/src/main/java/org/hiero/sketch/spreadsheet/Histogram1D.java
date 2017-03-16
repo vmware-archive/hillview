@@ -18,7 +18,6 @@
 
 package org.hiero.sketch.spreadsheet;
 
-import com.google.gson.JsonElement;
 import org.hiero.sketch.dataset.api.IJson;
 import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IMembershipSet;
@@ -28,7 +27,7 @@ import org.hiero.sketch.table.api.IStringConverter;
 import javax.annotation.Nullable;
 
 /**
- * One Dimensional histogram. Does not contain the column and membershipMap
+ * One Dimensional histogram.
  */
 public class Histogram1D extends BaseHist1D implements IJson {
     private final Bucket1D[] buckets;

@@ -23,7 +23,7 @@ public class BasicStatSketchTest {
         final Table myTable = getRepIntTable(tableSize, numCols);
         final BasicColStatSketch mySketch = new BasicColStatSketch(
                 myTable.getSchema().getColumnNames().iterator().next(), null, 0 , 0.1);
-        BasicColStat result = mySketch.create(myTable);
+        BasicColStats result = mySketch.create(myTable);
         assertEquals(result.getRowCount(), 100);
     }
 
@@ -40,10 +40,10 @@ public class BasicStatSketchTest {
             a.add(ds);
         }
         final ParallelDataSet<ITable> all = new ParallelDataSet<ITable>(a);
-        final BasicColStat result = all.blockingSketch(new BasicColStatSketch(colName, null));
+        final BasicColStats result = all.blockingSketch(new BasicColStatSketch(colName, null));
         final BasicColStatSketch mySketch = new BasicColStatSketch(
                 bigTable.getSchema().getColumnNames().iterator().next(), null);
-        BasicColStat result1 = mySketch.create(bigTable);
+        BasicColStats result1 = mySketch.create(bigTable);
         assertEquals(result.getMoment(1), result1.getMoment(1), 0.001);
     }
 }

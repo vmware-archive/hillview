@@ -22,9 +22,53 @@ export interface IHtmlElement {
     getHTMLRepresentation() : HTMLElement;
 }
 
+interface Size {
+    width: number;
+    height: number;
+}
+
 export interface HieroDataView extends IHtmlElement {
     setPage(page: FullPage): void;
     getPage(): FullPage;
+    refresh(): void;
+}
+
+export function getWindowSize(): Size {
+    return {
+        width: window.innerWidth,
+        height: window.innerHeight
+    };
+}
+
+export function significantDigits(n: number): string {
+    let suffix = "";
+    let absn = Math.abs(n);
+    if (absn > 1e12) {
+        suffix = "T";
+        n = n / 1e12;
+    } else if (absn > 1e9) {
+        suffix = "B";
+        n = n / 1e9;
+    } else if (absn > 1e6) {
+        suffix = "M";
+        n = n / 1e6;
+    } else if (absn > 1e3) {
+        suffix = "K";
+        n = n / 1e3;
+    } else if (absn < 1e-12) {
+        n = 0;
+    } else if (absn < 1e-9) {
+        suffix = "n";
+        n = n * 1e9;
+    } else if (absn < 1e-6) {
+        suffix = "u";
+        n = n * 1e6;
+    } else if (absn < 1e-3) {
+        suffix = "m";
+        n = n * 1e3;
+    }
+    n = Math.round(n * 100) / 100;
+    return String(n) + suffix;
 }
 
 export function removeAllChildren(h: HTMLElement): void {
@@ -93,11 +137,11 @@ export class ProgressBar implements IHtmlElement {
     private topLevel : HTMLElement;
 
     constructor(private manager: ProgressManager,
-                public readonly lab: string,
+                public readonly description: string,
                 private readonly operation: ICancellable) {
         if (operation == null)
             throw "Null operation";
-        if (lab == null)
+        if (description == null)
             throw "Null label";
         if (manager == null)
             throw "Null ProgressManager";
@@ -112,7 +156,7 @@ export class ProgressBar implements IHtmlElement {
         let cancelButton = document.createElement("button");
         cancelButton.textContent = "Stop";
         let label = document.createElement("div");
-        label.textContent = lab;
+        label.textContent = description;
         label.className = "label";
 
         let outer = document.createElement("div");
@@ -184,8 +228,8 @@ export class ProgressManager implements IHtmlElement {
         return this.topLevel;
     }
 
-    newProgressBar(operation: ICancellable, message: string) {
-        let p = new ProgressBar(this, message, operation);
+    newProgressBar(operation: ICancellable, description: string) {
+        let p = new ProgressBar(this, description, operation);
         this.topLevel.appendChild(p.getHTMLRepresentation());
         return p;
     }
@@ -198,10 +242,16 @@ export class ProgressManager implements IHtmlElement {
 // Here we display the main visualization
 export class DataDisplay implements IHtmlElement {
     topLevel: HTMLElement;
+    element: HieroDataView;
 
     constructor() {
         this.topLevel = document.createElement("div");
         this.topLevel.className = "dataDisplay";
+    }
+
+    public onResize(): void {
+        if (this.element != null)
+            this.element.refresh();
     }
 
     public getHTMLRepresentation(): HTMLElement {
@@ -209,6 +259,7 @@ export class DataDisplay implements IHtmlElement {
     }
 
     public setHieroDataView(element: HieroDataView): void {
+        this.element = element;
         removeAllChildren(this.topLevel);
         this.topLevel.appendChild(element.getHTMLRepresentation());
     }
@@ -228,6 +279,10 @@ export class ConsoleDisplay implements IHtmlElement, ErrorReporter {
 
     public reportError(message: string): void {
         this.topLevel.textContent += message;
+    }
+
+    public clear(): void {
+        this.topLevel.textContent = "";
     }
 }
 
@@ -254,6 +309,10 @@ export class FullPage implements IHtmlElement {
 
         this.bottomContainer.appendChild(this.progressManager.getHTMLRepresentation());
         this.bottomContainer.appendChild(this.console.getHTMLRepresentation());
+    }
+
+    public onResize(): void {
+        this.dataDisplay.onResize();
     }
 
     public getHTMLRepresentation(): HTMLElement {
@@ -313,7 +372,12 @@ export class Menu implements IHtmlElement {
 }
 
 export abstract class Renderer<T> extends RpcReceiver<PartialResult<T>> {
-    public constructor(public bar: ProgressBar, reporter?: ErrorReporter) {
-        super(bar, reporter);
+    public constructor(public page: FullPage,
+                       public operation: ICancellable,
+                       public description: string) {
+        super(page.progressManager.newProgressBar(operation, description),
+              page.getErrorReporter());
+        // TODO: This may be too eager.
+        page.getErrorReporter().clear();
     }
 }

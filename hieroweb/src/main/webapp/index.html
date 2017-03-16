@@ -26,6 +26,7 @@
         var hiero = this.hiero;
         var initialObject = hiero.InitialObject.instance;
         var page = new hiero.FullPage();
+        window.addEventListener("resize", function() { page.onResize() });
 
         function loadTable() {
             initialObject.loadTable(page);

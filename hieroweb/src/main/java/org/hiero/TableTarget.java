@@ -26,9 +26,14 @@ import javax.websocket.Session;
 
 public final class TableTarget extends RpcTarget {
     private final IDataSet<ITable> table;
-
     TableTarget(IDataSet<ITable> table) {
         this.table = table;
+    }
+
+    static class HistoArgs {
+        String columnName = "";
+        int    min;
+        int    max;
     }
 
     @HieroRpc
@@ -46,9 +51,18 @@ public final class TableTarget extends RpcTarget {
 
     @HieroRpc
     void histogram(RpcRequest request, Session session) {
+        HistoArgs info = gson.fromJson(request.arguments, HistoArgs.class);
+        // TODO: compute number of buckets
+        BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(info.min, info.max, 40);
+        Hist1DSketch sk = new Hist1DSketch(buckets, info.columnName, null);
+        this.runSketch(this.table, sk, request, session);
+    }
+
+    @HieroRpc
+    void range(RpcRequest request, Session session) {
         String column = gson.fromJson(request.arguments, String.class);
-        BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(0, 100, 10);
-        Hist1DSketch sk = new Hist1DSketch(buckets, column, null);
+        // TODO: create a string converter if necessary
+        BasicColStatSketch sk = new BasicColStatSketch(column, null, 0, 1.0);
         this.runSketch(this.table, sk, request, session);
     }
 

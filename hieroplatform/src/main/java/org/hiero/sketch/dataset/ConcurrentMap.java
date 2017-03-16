@@ -16,14 +16,24 @@
  *
  */
 
-package org.hiero.sketch.dataset.api;
+package org.hiero.sketch.dataset;
 
-/**
- * This is a Monoid of values of type PartialResult[IDataSet[S]]
- * @param <S> Type of data in the data set.
- */
-public class PRDataSetMonoid<S> extends PartialResultMonoid<IDataSet<S>> {
-    public PRDataSetMonoid() {
-        super(new OptionMonoid<IDataSet<S>>());
+import org.hiero.sketch.dataset.api.IMap;
+import org.hiero.sketch.dataset.api.Pair;
+
+public class ConcurrentMap<T, S1, S2> implements IMap<T, Pair<S1, S2>> {
+    final IMap<T, S1> first;
+    final IMap<T, S2> second;
+
+    public ConcurrentMap(IMap<T, S1> first, IMap<T, S2> second) {
+        this.first = first;
+        this.second = second;
+    }
+
+    @Override
+    public Pair<S1, S2> apply(T data) {
+        S1 first = this.first.apply(data);
+        S2 second = this.second.apply(data);
+        return new Pair<S1, S2>(first, second);
     }
 }

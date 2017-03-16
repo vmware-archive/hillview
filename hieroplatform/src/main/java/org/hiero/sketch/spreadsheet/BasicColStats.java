@@ -1,5 +1,6 @@
 package org.hiero.sketch.spreadsheet;
 
+import org.hiero.sketch.dataset.api.IJson;
 import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
@@ -10,8 +11,8 @@ import javax.annotation.Nullable;
  * A class that scans a column and collects basic statistics: maximum, minimum,
  * number of non-empty rows and the moments of asDouble values.
  */
-public class BasicColStat {
-    private final int momentNum;
+public class BasicColStats implements IJson {
+    private final int momentCount;
     private double min;
     @Nullable private Object minObject;
     private double max;
@@ -19,18 +20,18 @@ public class BasicColStat {
     private final double moments[];
     private long rowCount;
 
-    public BasicColStat(int momentNum) {
-        if (momentNum < 0)
+    public BasicColStats(int momentCount) {
+        if (momentCount < 0)
             throw new IllegalArgumentException("number of moments cannot be negative");
-        this.momentNum = momentNum;
-        this.moments = new double[this.momentNum];
+        this.momentCount = momentCount;
+        this.moments = new double[this.momentCount];
         this.min = Double.POSITIVE_INFINITY;
         this.max = Double.NEGATIVE_INFINITY;
     }
 
-    public BasicColStat() {
-        this.momentNum = 2;
-        this.moments = new double[this.momentNum];
+    public BasicColStats() {
+        this.momentCount = 2;
+        this.moments = new double[this.momentCount];
         this.min = Double.POSITIVE_INFINITY;
         this.max = Double.NEGATIVE_INFINITY;
     }
@@ -44,12 +45,10 @@ public class BasicColStat {
     public Object getMaxObject() { return this.maxObject; }
     /**
      *
-     * @param i a number in {1,...,momentNum}
-     * @return the i'th moment which is the sum of x^i
+     * @param i Moment number; note that moments are numbered from 1, not 0.
+     * @return the i'th moment: the normalized sum of x^i
      */
     public double getMoment(int i) {
-        if ((i < 1) || (i > this.momentNum))
-            throw new IllegalArgumentException("moment requested doesn't exist");
         return this.moments[i - 1];
     }
 
@@ -58,10 +57,8 @@ public class BasicColStat {
      */
     public long getRowCount() { return this.rowCount; }
 
-    public void createStats (final IColumn column, final IMembershipSet membershipSet,
-                             @Nullable final IStringConverter converter) {
-        if (this.min < Double.POSITIVE_INFINITY)
-            throw new IllegalStateException("can't create stats more than once");
+    public void createStats(final IColumn column, final IMembershipSet membershipSet,
+                            @Nullable final IStringConverter converter) {
         final IRowIterator myIter = membershipSet.getIterator();
         int currRow = myIter.getNextRow();
         while (currRow >= 0) {
@@ -75,12 +72,12 @@ public class BasicColStat {
                     this.max = val;
                     this.maxObject = column.getObject(currRow);
                 }
-                if (this.momentNum > 0) {
+                if (this.momentCount > 0) {
                     double tmpMoment = val;
                     double alpha = (double) this.rowCount / (double) (this.rowCount + 1);
                     double beta = 1.0 - alpha;
                     this.moments[0] = (alpha * this.moments[0]) + (beta * val);
-                    for (int i = 1; i < this.momentNum; i++) {
+                    for (int i = 1; i < this.momentCount; i++) {
                         tmpMoment = tmpMoment * val;
                         this.moments[i] = (alpha * this.moments[i]) + (beta * tmpMoment);
                     }
@@ -91,8 +88,8 @@ public class BasicColStat {
         }
     }
 
-    public BasicColStat union(final BasicColStat otherStat) {
-        BasicColStat result = new BasicColStat();
+    public BasicColStats union(final BasicColStats otherStat) {
+        BasicColStats result = new BasicColStats(this.momentCount);
         if (this.min < otherStat.min) {
             result.min = this.min;
             result.minObject = this.minObject;
@@ -113,7 +110,7 @@ public class BasicColStat {
         if (result.rowCount > 0) {
             double alpha = (double) this.rowCount / ((double) result.rowCount);
             double beta = 1.0 - alpha;
-            for (int i = 0; i < this.momentNum; i++)
+            for (int i = 0; i < this.momentCount; i++)
                 result.moments[i] = (alpha * this.moments[i]) + (beta * otherStat.moments[i]);
         }
         return result;
