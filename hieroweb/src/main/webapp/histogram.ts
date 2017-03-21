@@ -17,12 +17,14 @@
 
 import {
     IHtmlElement, HieroDataView, FullPage, Renderer, removeAllChildren, significantDigits,
-    getWindowSize
+    getWindowSize, Point
 } from "./ui";
 import d3 = require('d3');
 import {RemoteObject, ICancellable, PartialResult} from "./rpc";
-import {ColumnDescription, TableView} from "./table";
+import {ColumnDescription, TableView, ContentsKind} from "./table";
 import {histogram} from "d3-array";
+import {BaseType} from "d3-selection";
+import {ScaleLinear} from "d3-scale";
 
 // same as a Java class
 interface Bucket1D {
@@ -64,12 +66,20 @@ export class Histogram extends RemoteObject
     private topSpace = 20;
     protected page: FullPage;
     protected svg: any;
-    private maxHeight = 200;
+    private maxHeight = 300;
+    private selectionOrigin: Point;
+    private selectionRectangle: d3.Selection<BaseType, any, BaseType, BaseType>;
+    private xLabel: HTMLElement;
+    private yLabel: HTMLElement;
+    private xScale: ScaleLinear<number, number>;
+    private yScale: ScaleLinear<number, number>;
+
     protected currentData: {
         histogram: Histogram1D,
         description: ColumnDescription,
         stats: BasicColStats
     };
+    private chart: any;  // it is in fact a d3.Selection<>, but I can't make it typecheck
 
     constructor(id: string, page: FullPage) {
         super(id);
@@ -82,6 +92,7 @@ export class Histogram extends RemoteObject
         return this.topLevel;
     }
 
+    // Generates a string that encodes a call to the SVG translate method
     static translateString(x: number, y: number): string {
         return "translate(" + String(x) + ", " + String(y) + ")";
     }
@@ -109,24 +120,40 @@ export class Histogram extends RemoteObject
         let min = d3.min(counts);
         removeAllChildren(this.topLevel);
 
+        let drag = d3.drag()
+            .on("start", () => this.dragStart())
+            .on("drag", () => this.dragging())
+            .on("end", () => this.dragEnd());
+        // Everything is drawn on top of the canvas.
+        // The canvas includes the margins
         let canvas = d3.select(this.topLevel)
             .append("svg")
+            .call(drag)
             .attr("width", width)
             .attr("height", height);
 
-        let chart = canvas
+        canvas.on("mousemove", () => this.onMouseMove());
+
+        this.selectionRectangle = canvas
+            .append("rect")
+            .attr("class", "dashed")
+            .attr("width", 0)
+            .attr("height", 0);
+
+        // The chart uses a fragment of the canvas offset by the margins
+        this.chart = canvas
             .append("g")
             .attr("transform", Histogram.translateString(this.margin.left, this.margin.top));
 
-        let y = d3.scaleLinear()
+        this.yScale = d3.scaleLinear()
             .domain([0, max])
             .range([chartHeight, 0]);
-        let yAxis = d3.axisLeft(y);
+        let yAxis = d3.axisLeft(this.yScale);
 
-        let x = d3.scaleLinear()
+        this.xScale = d3.scaleLinear()
             .domain([stats.min, stats.max])
             .range([0, chartWidth]);
-        let xAxis = d3.axisBottom(x);
+        let xAxis = d3.axisBottom(this.xScale);
 
         canvas.append("text")
             .text(cd.name)
@@ -134,30 +161,30 @@ export class Histogram extends RemoteObject
             .attr("text-anchor", "middle");
 
         let barWidth = chartWidth / counts.length;
-        let bars = chart.selectAll("g")
+        let bars = this.chart.selectAll("g")
             .data(counts)
             .enter().append("g")
             .attr("transform", (d, i) => Histogram.translateString(i * barWidth, 0));
 
         bars.append("rect")
-            .attr("y", d => y(d))
-            .attr("height", d => chartHeight - y(d))
+            .attr("y", d => this.yScale(d))
+            .attr("height", d => chartHeight - this.yScale(d))
             .attr("width", barWidth - 1);
 
         bars.append("text")
             .attr("class", "histogramBoxLabel")
             .attr("x", barWidth / 2)
-            .attr("y", d => y(d))
+            .attr("y", d => this.yScale(d))
             .attr("text-anchor", "middle")
             .attr("dy", d => d <= (max / 2) ? "-.25em" : ".75em")
             .attr("fill", d => d <= (max / 2) ? "black" : "white")
             .text(d => (d == 0) ? "" : significantDigits(d))
             .exit();
 
-        chart.append("g")
+        this.chart.append("g")
             .attr("class", "y-axis")
             .call(yAxis);
-        chart.append("g")
+        this.chart.append("g")
             .attr("class", "x-axis")
             .attr("transform", Histogram.translateString(0, chartHeight))
             .call(xAxis);
@@ -169,6 +196,83 @@ export class Histogram extends RemoteObject
         if (h.missingData != 0)
             infoBox.textContent = String(h.missingData) + " missing, ";
         infoBox.textContent += String(stats.rowCount) + " points";
+
+        let position = document.createElement("table");
+        this.topLevel.appendChild(position);
+        position.className = "noBorder";
+        let body = position.createTBody();
+        let row = body.insertRow();
+        row.className = "noBorder";
+
+        let infoWidth = "100px";
+        let labelCell = row.insertCell(0);
+        labelCell.width = infoWidth;
+        this.xLabel = document.createElement("div");
+        this.xLabel.className = "leftAlign";
+        labelCell.appendChild(this.xLabel);
+        labelCell.className = "noBorder";
+
+        labelCell = row.insertCell(1);
+        labelCell.width = infoWidth;
+        this.yLabel = document.createElement("div");
+        this.yLabel.className = "leftAlign";
+        labelCell.appendChild(this.yLabel);
+        labelCell.className = "noBorder";
+    }
+
+    onMouseMove(): void {
+        let position = d3.mouse(this.chart.node());
+        let x = this.xScale.invert(position[0]);
+        // TODO: handle strings
+        if (this.currentData.description.kind == ContentsKind.Integer)
+            x = Math.round(x);
+        let xs = significantDigits(x);
+        let y = Math.round(this.yScale.invert(position[1]));
+        let ys = significantDigits(y);
+        this.xLabel.textContent = "x=" + xs;
+        this.yLabel.textContent = "y=" + ys;
+    }
+
+    dragStart(): void {
+        this.selectionOrigin = {
+            x: d3.event.x,
+            y: d3.event.y };
+    }
+
+    dragging(): void {
+        let x = this.selectionOrigin.x;
+        let y = this.selectionOrigin.y;
+        let width = d3.event.x - x;
+        let height = d3.event.y - y;
+
+        if (width < 0) {
+            x = d3.event.x;
+            width = -width;
+        }
+        if (height < 0) {
+            y = d3.event.y;
+            height = -height;
+        }
+
+        this.selectionRectangle
+            .attr("x", x)
+            .attr("y", y)
+            .attr("width", width)
+            .attr("height", height);
+    }
+
+    dragEnd(): void {
+        this.selectionRectangle
+            .attr("width", 0)
+            .attr("height", 0);
+
+        let x = this.selectionOrigin.x;
+        let y = this.selectionOrigin.y;
+        this.selectionCompleted(x, y, d3.event.x, d3.event.y);
+    }
+
+    selectionCompleted(xl: number, yl: number, xr: number, yr: number): void {
+        // TODO: run a filtering operation
     }
 
     setPage(page: FullPage) {

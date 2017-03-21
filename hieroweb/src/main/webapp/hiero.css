@@ -80,9 +80,11 @@ th, td {
 }
 
 .noBorder {
-    border: 0;
+    border: none;
+    boder-collapse: collapse;
     margin: 0;
     padding: 0;
+    text-align: left;
 }
 
 .progressBarInner {
@@ -135,4 +137,11 @@ th, td {
 
 .histogramBoxLabel {
     font: 10px sans-serif;
+}
+
+.dashed {
+    stroke: gray;
+    fill: none;
+    stroke-width: 1;
+    stroke-dasharray: 5,5
 }

@@ -22,9 +22,28 @@ export interface IHtmlElement {
     getHTMLRepresentation() : HTMLElement;
 }
 
-interface Size {
+export interface Size {
     width: number;
     height: number;
+}
+
+export interface Point {
+    x: number;
+    y: number;
+}
+
+export class Rectangle {
+    constructor(public readonly origin: Point, public readonly size: Size) {}
+    upperLeft(): Point { return this.origin; }
+    upperRight(): Point { return {
+        x: this.origin.x + this.size.width,
+        y: this.origin.y }; }
+    lowerLeft(): Point { return {
+        x: this.origin.x,
+        y: this.origin.y + this.size.height }; }
+    lowerRight(): Point { return {
+        x: this.origin.x + this.size.width,
+        y: this.origin.y + this.size.height }; }
 }
 
 export interface HieroDataView extends IHtmlElement {
@@ -152,6 +171,7 @@ export class ProgressBar implements IHtmlElement {
         this.topLevel = top;
         let body = top.createTBody();
         let row = body.insertRow();
+        row.className = "noBorder";
 
         let cancelButton = document.createElement("button");
         cancelButton.textContent = "Stop";
@@ -169,10 +189,15 @@ export class ProgressBar implements IHtmlElement {
 
         let labelCell = row.insertCell(0);
         labelCell.appendChild(label);
+        labelCell.className = "leftAlign noBorder";
+
         let barCell = row.insertCell(1);
         barCell.appendChild(outer);
+        barCell.className = "noBorder";
+
         let buttonCell = row.insertCell(2);
         buttonCell.appendChild(cancelButton);
+        buttonCell.className = "noBorder";
 
         this.setPosition(0.0);
         cancelButton.onclick = () => this.cancel();
