@@ -16,7 +16,10 @@
  *
  */
 
-package org.hiero.sketch.dataset.api;
+package org.hiero.sketch.dataset;
+
+import org.hiero.sketch.dataset.api.IMap;
+import org.hiero.sketch.dataset.api.ISketch;
 
 import javax.annotation.Nullable;
 

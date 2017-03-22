@@ -63,6 +63,7 @@ public class RowTableComparison {
             } else {
                 switch (this.table.getSchema().getKind(colName)) {
                     case String:
+                    case Category:
                     case Json:
                         outcome = Converters.checkNull(iCol.getString(i))
                                             .compareTo(Converters.checkNull(this.topRow.getString(colName)));

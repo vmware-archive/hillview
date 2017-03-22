@@ -25,6 +25,7 @@ import org.hiero.sketch.dataset.api.IJson;
 import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.IRowIterator;
+import org.hiero.sketch.table.api.ITable;
 
 import java.io.Serializable;
 
@@ -59,6 +60,11 @@ public class SmallTable
         super(schema);
         this.schema = schema;
         this.rowCount = 0;
+    }
+
+    @Override
+    public ITable filter(IMembershipSet set) {
+        return this.compress(set);
     }
 
     @Override

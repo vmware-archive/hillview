@@ -49,6 +49,7 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
     @Override
     public double asDouble(final int rowIndex, @Nullable final IStringConverter converter) {
         switch (ObjectArrayColumn.this.description.kind) {
+            case Category:
             case Json:
             case String:
                 IStringConverter c = Converters.checkNull(converter);
@@ -86,6 +87,8 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
                     return -1;
                 } else {
                     switch (ObjectArrayColumn.this.description.kind) {
+                        case Json:
+                        case Category:
                         case String:
                             return Converters.checkNull(ObjectArrayColumn.this.getString(i)).compareTo(
                                     Converters.checkNull(ObjectArrayColumn.this.getString(j)));
@@ -95,9 +98,6 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
                         case Int:
                             return Integer.compare(Converters.checkNull(ObjectArrayColumn.this.getInt(i)),
                                     Converters.checkNull(ObjectArrayColumn.this.getInt(j)));
-                        case Json:
-                            return Converters.checkNull(ObjectArrayColumn.this.getString(i)).compareTo(
-                                    Converters.checkNull(ObjectArrayColumn.this.getString(j)));
                         case Double:
                             return Double.compare(Converters.checkNull(ObjectArrayColumn.this.getDouble(i)),
                                     Converters.checkNull(ObjectArrayColumn.this.getDouble(j)));

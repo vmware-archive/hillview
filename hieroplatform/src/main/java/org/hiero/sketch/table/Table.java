@@ -77,12 +77,17 @@ public class Table extends BaseTable {
         return this.members.getSize();
     }
 
+    @Override
+    public ITable filter(IMembershipSet set) {
+        return new Table(this.getColumns(), set);
+    }
+
     /**
      * Can be used for testing.
      * @return A small table with some interesting contents.
      */
     public static Table testTable() {
-        ColumnDescription c0 = new ColumnDescription("Name", ContentsKind.String, false);
+        ColumnDescription c0 = new ColumnDescription("Name", ContentsKind.Category, false);
         ColumnDescription c1 = new ColumnDescription("Age", ContentsKind.Int, false);
         StringArrayColumn sac = new StringArrayColumn(c0,
                 new String[] { "Mike", "John", "Tom", "Bill", "Bill", "Smith", "Donald", "Bruce",

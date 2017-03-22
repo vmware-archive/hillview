@@ -49,14 +49,14 @@ public interface IColumn {
     default Object getObject(final int rowIndex) {
         if (this.isMissing(rowIndex)) { return null; }
         switch (this.getDescription().kind) {
+            case Json:
+            case Category:
             case String:
                 return this.getString(rowIndex);
             case Date:
                 return this.getDate(rowIndex);
             case Int:
                 return this.getInt(rowIndex);
-            case Json:
-                return this.getString(rowIndex);
             case Double:
                 return this.getDouble(rowIndex);
             case Duration:

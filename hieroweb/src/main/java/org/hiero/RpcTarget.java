@@ -31,6 +31,7 @@ import javax.websocket.Session;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -120,7 +121,7 @@ public abstract class RpcTarget {
         return Converters.checkNull(this.objectId).hashCode();
     }
 
-    class ResultObserver<T extends IJson> implements Observer<PartialResult<T>> {
+    abstract class ResultObserver<T> implements Observer<PartialResult<T>> {
         final RpcRequest request;
         final Session session;
 
@@ -143,6 +144,12 @@ public abstract class RpcTarget {
             RpcReply reply = this.request.createReply(throwable);
             reply.send(this.session);
         }
+    }
+
+    class SketchResultObserver<T extends IJson> extends ResultObserver<T> {
+        SketchResultObserver(RpcRequest request, Session session) {
+            super(request, session);
+        }
 
         @Override
         public void onNext(PartialResult<T> pr) {
@@ -158,6 +165,48 @@ public abstract class RpcTarget {
             json.add("data", delta.toJsonTree());
             RpcReply reply = this.request.createReply(json);
             reply.send(this.session);
+        }
+    }
+
+    class MapResultObserver<T> extends ResultObserver<IDataSet<T>> {
+        @Nullable
+        IDataSet<T> result;
+        final Function<IDataSet<T>, RpcTarget> factory;
+
+        MapResultObserver(RpcRequest request, Session session, Function<IDataSet<T>, RpcTarget> factory) {
+            super(request, session);
+            this.factory = factory;
+        }
+
+        @Override
+        public void onCompleted() {
+            if (this.result != null) {
+                RpcTarget target = this.factory.apply(this.result);
+                RpcReply reply = this.request.createReply(target.idToJson());
+                reply.send(session);
+            }
+            this.request.syncCloseSession(this.session);
+            RpcTarget.this.removeSubscription();
+        }
+
+        @Override
+        public void onNext(PartialResult<IDataSet<T>> pr) {
+            logger.log(Level.INFO, "Received partial result");
+            if (!this.session.isOpen()) {
+                logger.log(Level.WARNING, "Session closed, ignoring partial result");
+                return;
+            }
+
+            JsonObject json = new JsonObject();
+            json.addProperty("done", pr.deltaDone);
+            IDataSet<T> dataSet = pr.deltaValue;
+            if (dataSet != null)
+                this.result = dataSet;
+            /*
+            TODO: enable progress reporting
+            RpcReply reply = this.request.createReply(json);
+            reply.send(this.session);
+            */
         }
     }
 
@@ -180,7 +229,22 @@ public abstract class RpcTarget {
         // Prefix sum of the partial results
         Observable<PartialResult<R>> add = sketches.scan(prm::add);
         // Send the partial results back
-        ResultObserver<R> robs = new ResultObserver<R>(request, session);
+        SketchResultObserver<R> robs = new SketchResultObserver<R>(request, session);
+        Subscription sub = add.subscribe(robs);
+        this.saveSubscription(sub);
+    }
+
+    <T, S> void
+    runMap(IDataSet<T> data, IMap<T, S> map, Function<IDataSet<S>, RpcTarget> factory,
+              RpcRequest request, Session session) {
+        // Run the sketch
+        Observable<PartialResult<IDataSet<S>>> stream = data.map(map);
+        // Knows how to add partial results
+        PRDataSetMonoid<S> monoid = new PRDataSetMonoid<S>();
+        // Prefix sum of the partial results
+        Observable<PartialResult<IDataSet<S>>> add = stream.scan(monoid::add);
+        // Send the partial results back
+        MapResultObserver<S> robs = new MapResultObserver<S>(request, session, factory);
         Subscription sub = add.subscribe(robs);
         this.saveSubscription(sub);
     }

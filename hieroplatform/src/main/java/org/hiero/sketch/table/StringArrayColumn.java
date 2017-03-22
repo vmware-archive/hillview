@@ -34,7 +34,8 @@ public final class StringArrayColumn
 
     private void validate() {
         if ((this.description.kind != ContentsKind.String) &&
-                (this.description.kind != ContentsKind.Json))
+                (this.description.kind != ContentsKind.Json) &&
+                (this.description.kind != ContentsKind.Category))
             throw new InvalidParameterException("Kind should be String or Json "
                     + this.description.kind);
     }

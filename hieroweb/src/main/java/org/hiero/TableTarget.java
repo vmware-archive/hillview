@@ -20,20 +20,20 @@ package org.hiero;
 import org.hiero.sketch.dataset.api.IDataSet;
 import org.hiero.sketch.spreadsheet.*;
 import org.hiero.sketch.table.RecordOrder;
+import org.hiero.sketch.table.TableFilter;
+import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.ITable;
+import org.hiero.utils.Converters;
 
+import javax.annotation.Nullable;
 import javax.websocket.Session;
+import java.io.Serializable;
+import java.util.function.Function;
 
 public final class TableTarget extends RpcTarget {
     private final IDataSet<ITable> table;
     TableTarget(IDataSet<ITable> table) {
         this.table = table;
-    }
-
-    static class HistoArgs {
-        String columnName = "";
-        int    min;
-        int    max;
     }
 
     @HieroRpc
@@ -44,14 +44,20 @@ public final class TableTarget extends RpcTarget {
 
     @HieroRpc
     void getTableView(RpcRequest request, Session session) {
-        RecordOrder ro = gson.fromJson(request.arguments, RecordOrder.class);
+        RecordOrder ro = request.parseArgs(RecordOrder.class);
         NextKSketch nk = new NextKSketch(ro, null, 10);
         this.runSketch(this.table, nk, request, session);
     }
 
+    static class ColumnAndRange implements Serializable {
+        String columnName = "";
+        double min;
+        double max;
+    }
+
     @HieroRpc
     void histogram(RpcRequest request, Session session) {
-        HistoArgs info = gson.fromJson(request.arguments, HistoArgs.class);
+        ColumnAndRange info = request.parseArgs(ColumnAndRange.class);
         // TODO: compute number of buckets
         BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(info.min, info.max, 40);
         Hist1DSketch sk = new Hist1DSketch(buckets, info.columnName, null);
@@ -60,10 +66,46 @@ public final class TableTarget extends RpcTarget {
 
     @HieroRpc
     void range(RpcRequest request, Session session) {
-        String column = gson.fromJson(request.arguments, String.class);
+        String column = request.parseArgs(String.class);
         // TODO: create a string converter if necessary
         BasicColStatSketch sk = new BasicColStatSketch(column, null, 0, 1.0);
         this.runSketch(this.table, sk, request, session);
+    }
+
+    static class RangeFilter implements TableFilter, Serializable {
+        final ColumnAndRange args;
+        @Nullable
+        IColumn column;
+
+        RangeFilter(ColumnAndRange args) {
+            this.args = args;
+            this.column = null;
+        }
+
+        @Override
+        public void setTable(ITable table) {
+            Converters.checkNull(this.args);
+            Converters.checkNull(this.args.columnName);
+            IColumn col = table.getColumn(this.args.columnName);
+            this.column = Converters.checkNull(col);
+        }
+
+        public boolean test(int rowIndex) {
+            if (Converters.checkNull(this.column).isMissing(rowIndex))
+                return false;
+            // TODO: use a proper string converter
+            double d = this.column.asDouble(rowIndex, null);
+            return this.args.min <= d && d <= this.args.max;
+        }
+    }
+
+    @HieroRpc
+    void filterRange(RpcRequest request, Session session) {
+        ColumnAndRange info = request.parseArgs(ColumnAndRange.class);
+        RangeFilter filter = new RangeFilter(info);
+        FilterMap fm = new FilterMap(filter);
+        Function<IDataSet<ITable>, RpcTarget> factory = TableTarget::new;
+        this.runMap(this.table, fm, factory, request, session);
     }
 
     @Override

@@ -144,6 +144,8 @@ public class RecordOrder implements Iterable<ColumnSortOrientation> {
                     outcome = -1;
                 } else {
                     switch (left.schema.getKind(ordCol.columnDescription.name)) {
+                        case Json:
+                        case Category:
                         case String:
                             outcome = Converters.checkNull(leftCol.getString(i))
                                                 .compareTo(Converters.checkNull(rightCol.getString(j)));
@@ -155,10 +157,6 @@ public class RecordOrder implements Iterable<ColumnSortOrientation> {
                         case Int:
                             outcome = Integer.compare(Converters.checkNull(leftCol.getInt(i)),
                                     Converters.checkNull(rightCol.getInt(j)));
-                            break;
-                        case Json:
-                            outcome = Converters.checkNull(leftCol.getString(i))
-                                                .compareTo(Converters.checkNull(rightCol.getString(j)));
                             break;
                         case Double:
                             outcome = Double.compare(Converters.checkNull(leftCol.getDouble(i)),
@@ -241,6 +239,7 @@ public class RecordOrder implements Iterable<ColumnSortOrientation> {
                     outcome = -1;
                 } else {
                     switch (left.schema.getKind(ordCol.columnDescription.name)) {
+                        case Category:
                         case String:
                         case Json:
                             outcome = Converters.checkNull(leftCol.getString(i))

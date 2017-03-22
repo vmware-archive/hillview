@@ -48,4 +48,11 @@ public interface ITable {
     SmallTable compress(ISubSchema subSchema, IRowOrder rowOrder);
 
     SmallTable compress(IRowOrder rowOrder);
+
+    /**
+     * Creates a new table which is identical with this one except the
+     * provided membership set.
+     * @param set: Membership set of the resulting table.
+     */
+    ITable filter(IMembershipSet set);
 }

@@ -24,11 +24,13 @@ import javax.websocket.Session;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static org.hiero.RpcTarget.gson;
+
 public final class RpcRequest {
     private static final Logger LOGGER =
             Logger.getLogger(RpcRequest.class.getName());
 
-    private final int    requestId;
+    private final int requestId;
     final String objectId;
     public final String method;
     public final String arguments;  // A JSON string
@@ -56,6 +58,10 @@ public final class RpcRequest {
 
     RpcReply createReply(Throwable th) {
         return new RpcReply(this.requestId, this.toString() + "\n" + RpcServer.asString(th), true);
+    }
+
+    <T> T parseArgs(Class<T> classOfT) {
+        return gson.fromJson(this.arguments, classOfT);
     }
 
     /**

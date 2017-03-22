@@ -85,21 +85,21 @@ public class FullMembership implements IMembershipSet {
     }
 
     @Override
-    public IMembershipSet union (final IMembershipSet otherSet) {
+    public IMembershipSet union(final IMembershipSet otherSet) {
         if (otherSet instanceof FullMembership)
             return new FullMembership(Integer.max(this.rowCount, otherSet.getSize()));
         return otherSet.union(this);
     }
 
     @Override
-    public IMembershipSet intersection (final IMembershipSet otherSet) {
+    public IMembershipSet intersection(final IMembershipSet otherSet) {
         if (otherSet instanceof FullMembership)
             return new FullMembership(Integer.min(this.rowCount, otherSet.getSize()));
         return otherSet.intersection(this);
     }
 
     @Override
-    public IMembershipSet setMinus (final IMembershipSet otherSet) {
+    public IMembershipSet setMinus(final IMembershipSet otherSet) {
         if (otherSet instanceof FullMembership) {
             final IntSet baseMap = new IntSet(Integer.max(0, this.getSize()-otherSet.getSize()));
             for (int i = otherSet.getSize(); i < this.rowCount; i++)

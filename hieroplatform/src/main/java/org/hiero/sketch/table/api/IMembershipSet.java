@@ -18,9 +18,12 @@
 
 package org.hiero.sketch.table.api;
 
+import org.hiero.sketch.table.LazyMembership;
 import org.hiero.utils.Randomness;
 import org.hiero.sketch.table.SparseMembership;
 import org.hiero.utils.IntSet;
+
+import java.util.function.Predicate;
 
 /**
  * A IMembershipSet is a representation of a set of integers.
@@ -40,6 +43,10 @@ public interface IMembershipSet extends IRowOrder {
      * two subsequent samples return the same sample set.
      */
     IMembershipSet sample(int k);
+
+    default IMembershipSet filter(Predicate<Integer> predicate) {
+        return new LazyMembership(this, predicate);
+    }
 
     /**
      * @return an IMembershipSet containing k samples from the membership map. The samples are made

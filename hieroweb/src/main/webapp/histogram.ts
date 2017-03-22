@@ -20,8 +20,8 @@ import {
     getWindowSize, Point
 } from "./ui";
 import d3 = require('d3');
-import {RemoteObject, ICancellable, PartialResult} from "./rpc";
-import {ColumnDescription, TableView, ContentsKind} from "./table";
+import {RemoteObject, ICancellable, PartialResult, RpcReceiver} from "./rpc";
+import {ColumnDescription, ContentsKind} from "./table";
 import {histogram} from "d3-array";
 import {BaseType} from "d3-selection";
 import {ScaleLinear} from "d3-scale";
@@ -272,7 +272,24 @@ export class Histogram extends RemoteObject
     }
 
     selectionCompleted(xl: number, yl: number, xr: number, yr: number): void {
-        // TODO: run a filtering operation
+        let x0 = this.xScale.invert(xl);
+        let x1 = this.xScale.invert(xr);
+        let y0 = this.yScale.invert(yl);
+        let y1 = this.yScale.invert(yr);
+        if (y0 < 0 && y1 < 0) {
+            // If the selection is below the x axis then we only use the
+            // x range to perform the selection
+            let range = {
+                min: Math.min(x0, x1),
+                max: Math.max(x0, x1),
+                column: this.currentData.description.name
+            };
+            let rr = this.createRpcRequest("filterRange", range);
+            let rangeCollector = new RangeCollector(this.currentData.description, this.page, this, rr);
+            rr.invoke(rangeCollector);
+        } else {
+            // TODO: find overlapping boxes
+        }
     }
 
     setPage(page: FullPage) {
@@ -288,6 +305,36 @@ export class Histogram extends RemoteObject
     }
 }
 
+class TableStub extends RemoteObject {
+    constructor(remoteObjectId: string) {
+        super(remoteObjectId);
+    }
+}
+
+// After filtering we obtain a handle to a new table
+export class FilterReceiver extends RpcReceiver<string> {
+    private stub: TableStub;
+
+    constructor(protected description: ColumnDescription,
+                protected page: FullPage,
+                operation: ICancellable) {
+        super(page.progressManager.newProgressBar(operation, "Filter"),
+            page.getErrorReporter());
+    }
+
+    // we expect exactly one reply
+    public onNext(value: string): void {
+        this.stub = new TableStub(value);
+    }
+
+    public onCompleted(): void {
+        this.finished();
+        // Retrieve the histogram
+        let rr = this.stub.createRpcRequest("range", this.description.name);
+        rr.invoke(new RangeCollector(this.description, this.page, this.stub, rr));
+    }
+}
+
 // Waits for all column stats to be received and then initiates a histogram
 // rendering.
 export class RangeCollector extends Renderer<BasicColStats> {
@@ -295,7 +342,7 @@ export class RangeCollector extends Renderer<BasicColStats> {
 
     constructor(protected cd: ColumnDescription,
                 page: FullPage,
-                protected table: TableView,
+                protected remoteObject: RemoteObject,
                 operation: ICancellable) {
         super(page, operation, "histogram");
     }
@@ -307,13 +354,16 @@ export class RangeCollector extends Renderer<BasicColStats> {
 
     onCompleted(): void {
         super.onCompleted();
-        let rr = this.table.createRpcRequest("histogram", {
+        if (this.stats == null)
+            // probably some error occurred
+            return;
+        let rr = this.remoteObject.createRpcRequest("histogram", {
             columnName: this.cd.name,
             min: this.stats.min,
             max: this.stats.max
         });
         let renderer = new HistogramRenderer(
-            this.page, this.table.remoteObjectId, this.cd, this.stats, rr);
+            this.page, this.remoteObject.remoteObjectId, this.cd, this.stats, rr);
         rr.invoke(renderer);
     }
 }

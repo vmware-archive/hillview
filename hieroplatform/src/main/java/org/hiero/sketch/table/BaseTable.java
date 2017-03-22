@@ -47,6 +47,10 @@ public abstract class BaseTable implements ITable {
             this.columns.put(c.getName(), c);
     }
 
+    public Iterable<IColumn> getColumns() {
+        return this.columns.values();
+    }
+
     protected BaseTable(Schema schema) {
         this.columns = new HashMap<String, IColumn>();
         for (final String c : schema.getColumnNames()) {

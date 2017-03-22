@@ -55,6 +55,7 @@ public abstract class BaseArrayColumn extends BaseColumn implements Serializable
      */
     public static BaseArrayColumn create(ColumnDescription description) {
         switch (description.kind) {
+            case Category:
             case Json:
             case String:
                 return new StringArrayColumn(description, 0);
@@ -67,7 +68,7 @@ public abstract class BaseArrayColumn extends BaseColumn implements Serializable
             case Duration:
                 return new DurationArrayColumn(description, 0);
             default:
-                throw new RuntimeException(description.toString());
+                throw new RuntimeException("Unexpected column kind " + description.toString());
         }
     }
 }

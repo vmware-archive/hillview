@@ -25,6 +25,8 @@ import {RangeCollector} from "./histogram";
 // of the Java classes produces JSON that can be directly cast
 // into these interfaces.
 export enum ContentsKind {
+    Category,
+    Json,
     String,
     Integer,
     Double,
@@ -294,9 +296,11 @@ export class TableView extends RemoteObject
             let thd = this.addHeaderCell(thr, cd);
             let menu = new Menu([
                 {text: "sort asc", action: () => this.showColumn(cd.name, 1) },
-                {text: "sort desc", action: () => this.showColumn(cd.name, -1) },
-                {text: "histogram", action: () => this.histogram(cd.name) }
+                {text: "sort desc", action: () => this.showColumn(cd.name, -1) }
              ]);
+            if (cd.kind != ContentsKind.Json &&
+                cd.kind != ContentsKind.String)
+                menu.addItem({text: "histogram", action: () => this.histogram(cd.name) });
             if (this.order != null && this.order.find(cd.name) != -1)
                 menu.addItem({text: "hide", action: () => this.showColumn(cd.name, 0)});
 
@@ -397,6 +401,7 @@ export class RemoteTableReceiver extends RpcReceiver<string> {
         rr.invoke(new TableRenderer(this.page, this.table, rr));
     }
 
+    // we expect exactly one reply
     public onNext(value: string): void {
         this.table = new TableView(value, this.page);
         this.page.setHieroDataView(this.table);

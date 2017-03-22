@@ -24,6 +24,7 @@ import java.io.Serializable;
  * Describes the kind of data that is in the column,
  */
 public enum ContentsKind implements Serializable {
+    Category, /* Categories and strings are the same, but strings cannot be histogrammed */
     String,
     Date,  /* java.Util.Date values */
     Int,
@@ -37,6 +38,7 @@ public enum ContentsKind implements Serializable {
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean isObject() {
         switch (this) {
+            case Category:
             case String:
             case Date:
             case Json:
