@@ -61,8 +61,8 @@ public class TableTest {
 
     public static Table getRepIntTable(final int size, final int numCols) {
         final List<IColumn> columns = new ArrayList<IColumn>(numCols);
-        double exp = 0.8/numCols;
-        final int range =  ((int)Math.pow(size, exp));
+        double exp = 0.8 / numCols;
+        final int range = ((int)Math.pow(size, exp));
         for (int i = 0; i < numCols; i++) {
             final String colName = "Column" + String.valueOf(i);
             columns.add(getRandIntArray(size, range, colName));
@@ -83,7 +83,7 @@ public class TableTest {
         final int size = 100;
         final IntArrayColumn col = generateIntArray(size);
         final FullMembership FM = new FullMembership(size);
-        final LazyMembership PMD = new LazyMembership(FM, row -> (row % 2) == 0);
+        final IMembershipSet PMD = FM.filter(row -> (row % 2) == 0);
         final IColumn smallCol = col.compress(PMD);
         assertNotNull(smallCol);
     }
@@ -96,7 +96,7 @@ public class TableTest {
         columns.add(generateIntArray(size));
         columns.add(generateDoubleArray(size));
         FullMembership full = new FullMembership(size);
-        LazyMembership partial = new LazyMembership(full, row -> (row % 2) == 0);
+        IMembershipSet partial = full.filter(row -> (row % 2) == 0);
         Table myTable = new Table(columns, partial);
         assertEquals(myTable.toString(), "Table, 2 columns, 50 rows");
         ITable smallTable = myTable.compress();
@@ -111,8 +111,7 @@ public class TableTest {
         columns.add(generateIntArray(size));
         columns.add(generateDoubleArray(size));
         final FullMembership full = new FullMembership(size);
-        final LazyMembership partial = new
-                LazyMembership(full, row -> (row % 2) == 0);
+        final IMembershipSet partial = full.filter(row -> (row % 2) == 0);
         final Table myTable = new Table(columns, partial);
         assertEquals(myTable.toString(), "Table, 2 columns, 50 rows");
         HashSubSchema filter = new HashSubSchema();

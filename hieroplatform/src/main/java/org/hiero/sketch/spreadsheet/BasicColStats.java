@@ -13,27 +13,24 @@ import javax.annotation.Nullable;
  */
 public class BasicColStats implements IJson {
     private final int momentCount;
+    // Number of values that have been used to compute the stats.
+    private long rowCount;
+    // The following values are meaningful only if rowCount > 0.
     private double min;
     @Nullable private Object minObject;
     private double max;
     @Nullable private Object maxObject;
     private final double moments[];
-    private long rowCount;
+
 
     public BasicColStats(int momentCount) {
         if (momentCount < 0)
             throw new IllegalArgumentException("number of moments cannot be negative");
         this.momentCount = momentCount;
         this.moments = new double[this.momentCount];
-        this.min = Double.POSITIVE_INFINITY;
-        this.max = Double.NEGATIVE_INFINITY;
-    }
-
-    public BasicColStats() {
-        this.momentCount = 2;
-        this.moments = new double[this.momentCount];
-        this.min = Double.POSITIVE_INFINITY;
-        this.max = Double.NEGATIVE_INFINITY;
+        this.min = 0;  // we cannot use infinity, since that cannot be serialized as JSON
+        this.max = 0;
+        this.rowCount = 0;
     }
 
     public double getMin() { return this.min; }
@@ -64,11 +61,15 @@ public class BasicColStats implements IJson {
         while (currRow >= 0) {
             if (!column.isMissing(currRow)) {
                 double val = column.asDouble(currRow, converter);
-                if (val < this.min) {
+                if (this.rowCount == 0) {
+                    this.min = val;
+                    this.max = val;
+                    this.minObject = column.getObject(currRow);
+                    this.maxObject = this.minObject;
+                } else if (val < this.min) {
                     this.min = val;
                     this.minObject = column.getObject(currRow);
-                }
-                if (val > this.max) {
+                } else if (val > this.max) {
                     this.max = val;
                     this.maxObject = column.getObject(currRow);
                 }
@@ -90,19 +91,23 @@ public class BasicColStats implements IJson {
 
     public BasicColStats union(final BasicColStats otherStat) {
         BasicColStats result = new BasicColStats(this.momentCount);
+        if (this.rowCount == 0)
+            return otherStat;
+        if (otherStat.rowCount == 0)
+            return this;
+
         if (this.min < otherStat.min) {
             result.min = this.min;
             result.minObject = this.minObject;
-        }
-        else {
+        } else {
             result.min = otherStat.min;
             result.minObject = otherStat.minObject;
         }
+
         if (this.max > otherStat.max) {
             result.max = this.max;
             result.maxObject = this.maxObject;
-        }
-        else {
+        } else {
             result.max = otherStat.max;
             result.maxObject = otherStat.maxObject;
         }

@@ -53,13 +53,19 @@ public final class TableTarget extends RpcTarget {
         String columnName = "";
         double min;
         double max;
+        // rendering size in pixels
+        double width;
+        double height;
     }
 
     @HieroRpc
     void histogram(RpcRequest request, Session session) {
         ColumnAndRange info = request.parseArgs(ColumnAndRange.class);
-        // TODO: compute number of buckets
-        BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(info.min, info.max, 40);
+        // TODO: compute number of buckets based on screen resolution
+        int bucketCount = 40;
+        if (info.min >= info.max)
+            bucketCount = 1;
+        BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(info.min, info.max, bucketCount);
         Hist1DSketch sk = new Hist1DSketch(buckets, info.columnName, null);
         this.runSketch(this.table, sk, request, session);
     }
@@ -84,8 +90,6 @@ public final class TableTarget extends RpcTarget {
 
         @Override
         public void setTable(ITable table) {
-            Converters.checkNull(this.args);
-            Converters.checkNull(this.args.columnName);
             IColumn col = table.getColumn(this.args.columnName);
             this.column = Converters.checkNull(col);
         }

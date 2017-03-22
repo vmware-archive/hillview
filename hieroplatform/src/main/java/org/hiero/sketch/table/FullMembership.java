@@ -23,6 +23,8 @@ import org.hiero.sketch.table.api.IRowIterator;
 import org.hiero.utils.IntSet;
 import org.hiero.utils.Randomness;
 
+import java.util.function.Predicate;
+
 /**
  * A IMembershipSet which contains all rows.
  */
@@ -66,6 +68,11 @@ public class FullMembership implements IMembershipSet {
             return new FullMembership(this.rowCount);
         final Randomness randomGenerator = Randomness.getInstance();
         return this.sampleUtil(randomGenerator, k);
+    }
+
+    @Override
+    public IMembershipSet filter(Predicate<Integer> predicate) {
+        return new SparseMembership(this, predicate);
     }
 
     /**

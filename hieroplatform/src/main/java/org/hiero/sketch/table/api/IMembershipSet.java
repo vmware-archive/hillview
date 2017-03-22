@@ -18,7 +18,6 @@
 
 package org.hiero.sketch.table.api;
 
-import org.hiero.sketch.table.LazyMembership;
 import org.hiero.utils.Randomness;
 import org.hiero.sketch.table.SparseMembership;
 import org.hiero.utils.IntSet;
@@ -44,9 +43,12 @@ public interface IMembershipSet extends IRowOrder {
      */
     IMembershipSet sample(int k);
 
-    default IMembershipSet filter(Predicate<Integer> predicate) {
-        return new LazyMembership(this, predicate);
-    }
+    /**
+     * Return a membership containing only the rows in the current one where
+     * the predicate evaluates to true.
+     * @param predicate  Predicate evaluated for each row.
+     */
+    IMembershipSet filter(Predicate<Integer> predicate);
 
     /**
      * @return an IMembershipSet containing k samples from the membership map. The samples are made

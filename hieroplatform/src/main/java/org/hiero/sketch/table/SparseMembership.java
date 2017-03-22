@@ -60,11 +60,7 @@ public class SparseMembership implements IMembershipSet {
      */
     public SparseMembership(final IMembershipSet baseMap) {
         final IRowIterator baseIterator = baseMap.getIterator();
-        final int expectedSize;
-        if (baseMap instanceof LazyMembership)
-            expectedSize = ((LazyMembership) baseMap).getApproxSize();
-        else
-            expectedSize = baseMap.getSize();
+        final int expectedSize = baseMap.getSize();
         this.membershipMap = new IntSet(expectedSize);
         int tmp = baseIterator.getNextRow();
         while (tmp >= 0) {
@@ -90,6 +86,11 @@ public class SparseMembership implements IMembershipSet {
         this.membershipMap = new IntSet(size);
         for (int i = 0; i < size; i++)
             this.membershipMap.add(start + i);
+    }
+
+    @Override
+    public IMembershipSet filter(Predicate<Integer> predicate) {
+        return new SparseMembership(this, predicate);
     }
 
     @Override
@@ -176,9 +177,6 @@ public class SparseMembership implements IMembershipSet {
                 esize++;
             curr = iter.getNextRow();
         }
-        if (baseMap instanceof LazyMembership)
-            return (((LazyMembership) baseMap).getApproxSize() * esize) /
-                    sampleSet.getSize();
         return (baseMap.getSize() * esize) / sampleSet.getSize();
     }
 

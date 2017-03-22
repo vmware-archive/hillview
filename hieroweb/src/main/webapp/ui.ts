@@ -351,14 +351,19 @@ export class FullPage implements IHtmlElement {
     public setHieroDataView(hdv: HieroDataView): void {
         this.dataDisplay.setHieroDataView(hdv);
     }
+
+    public reportError(error: string) {
+        this.getErrorReporter().clear();
+        this.getErrorReporter().reportError(error);
+    }
 }
 
-export class MenuItem {
+export interface MenuItem {
     text: string;
     action: () => void;
 }
 
-export class Menu implements IHtmlElement {
+export class ContextMenu implements IHtmlElement {
     items: MenuItem[];
     private outer: HTMLElement;
     private htmlTable: HTMLTableElement;
@@ -389,6 +394,44 @@ export class Menu implements IHtmlElement {
         cell.innerHTML = mi.text;
         cell.className = "menuItem";
         cell.onclick = () => { this.toggleVisibility(); mi.action(); }
+    }
+
+    getHTMLRepresentation(): HTMLElement {
+        return this.outer;
+    }
+}
+
+interface SubMenu {
+    readonly text: string;
+    readonly subMenu: ContextMenu;
+}
+
+export class DropDownMenu implements IHtmlElement {
+    items: SubMenu[];
+    private outer: HTMLElement;
+    private htmlTable: HTMLTableElement;
+    private tableBody: HTMLTableSectionElement;
+    private tableRow: HTMLTableRowElement;
+
+    constructor(mis: SubMenu[]) {
+        this.outer = document.createElement("div");
+        this.htmlTable = document.createElement("table");
+        this.outer.appendChild(this.htmlTable);
+        this.tableBody = this.htmlTable.createTBody();
+        this.tableRow = this.tableBody.insertRow();
+        this.items = [];
+        if (mis != null) {
+            for (let mi of mis)
+                this.addItem(mi);
+        }
+    }
+
+    addItem(mi: SubMenu): void {
+        this.items.push(mi);
+        let cell = this.tableRow.insertCell();
+        cell.innerHTML = mi.text;
+        cell.className = "menuItem";
+        cell.onclick = () => { mi.subMenu.toggleVisibility(); }
     }
 
     getHTMLRepresentation(): HTMLElement {

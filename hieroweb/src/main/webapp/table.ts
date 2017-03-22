@@ -15,7 +15,7 @@
  *  limitations under the License.
  */
 
-import {IHtmlElement, ScrollBar, Menu, Renderer, FullPage, HieroDataView} from "./ui";
+import {IHtmlElement, ScrollBar, ContextMenu, Renderer, FullPage, HieroDataView, DropDownMenu} from "./ui";
 import {RemoteObject, PartialResult, RpcReceiver, ICancellable} from "./rpc";
 import Rx = require('rx');
 import {RangeCollector} from "./histogram";
@@ -143,6 +143,17 @@ export class TableView extends RemoteObject
     public constructor(id: string, page: FullPage) {
         super(id);
         this.top = document.createElement("div");
+        let menu = new DropDownMenu([
+            { text: "View", subMenu: new ContextMenu([
+                { text: "close", action: () => {} }
+            ])},
+            { text: "Data", subMenu: new ContextMenu([
+                { text: "find", action: () => {} },
+                { text: "filter", action: () => {} }
+            ]),
+            }
+        ]);
+        //this.top.appendChild(menu.getHTMLRepresentation());
         this.htmlTable = document.createElement("table");
         this.top.className = "flexcontainer";
         this.scrollBar = new ScrollBar();
@@ -294,7 +305,7 @@ export class TableView extends RemoteObject
             let cd = new ColumnDescription(this.schema[i]);
             cds.push(cd);
             let thd = this.addHeaderCell(thr, cd);
-            let menu = new Menu([
+            let menu = new ContextMenu([
                 {text: "sort asc", action: () => this.showColumn(cd.name, 1) },
                 {text: "sort desc", action: () => this.showColumn(cd.name, -1) }
              ]);

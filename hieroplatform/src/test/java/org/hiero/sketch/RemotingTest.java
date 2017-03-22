@@ -189,7 +189,7 @@ public class RemotingTest {
     }
 
 
-    @Test
+    //@Test
     public void testMapSketchThroughClientWithError() {
         final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(
                 Converters.checkNull(clientActor), Converters.checkNull(remoteActor));

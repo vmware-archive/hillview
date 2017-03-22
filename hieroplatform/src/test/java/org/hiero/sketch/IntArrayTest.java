@@ -50,15 +50,14 @@ public class IntArrayTest {
         final ColumnDescription desc = new ColumnDescription(name, ContentsKind.Int, false);
         final IntArrayColumn col = new IntArrayColumn(desc, size);
         final Randomness rn = Randomness.getInstance();
-        for (int i = 0; i < size; i++) {
+        for (int i = 0; i < size; i++)
             col.set(i, rn.nextInt(range));
-            }
         return col;
     }
 
     @Test
     public void testRandArray(){
-        final int size =1000;
+        final int size = 1000;
         final int range = 1000;
         final IntArrayColumn col = getRandIntArray(size, range, "Test");
         final IndexComparator comp = col.getComparator();

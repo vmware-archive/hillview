@@ -179,17 +179,6 @@ public abstract class RpcTarget {
         }
 
         @Override
-        public void onCompleted() {
-            if (this.result != null) {
-                RpcTarget target = this.factory.apply(this.result);
-                RpcReply reply = this.request.createReply(target.idToJson());
-                reply.send(session);
-            }
-            this.request.syncCloseSession(this.session);
-            RpcTarget.this.removeSubscription();
-        }
-
-        @Override
         public void onNext(PartialResult<IDataSet<T>> pr) {
             logger.log(Level.INFO, "Received partial result");
             if (!this.session.isOpen()) {
@@ -200,13 +189,16 @@ public abstract class RpcTarget {
             JsonObject json = new JsonObject();
             json.addProperty("done", pr.deltaDone);
             IDataSet<T> dataSet = pr.deltaValue;
-            if (dataSet != null)
+            // Replace the "data" with the remote object ID
+            if (dataSet != null) {
                 this.result = dataSet;
-            /*
-            TODO: enable progress reporting
+                RpcTarget target = this.factory.apply(this.result);
+                json.addProperty("data", target.objectId);
+            } else {
+                json.add("data", null);
+            }
             RpcReply reply = this.request.createReply(json);
             reply.send(this.session);
-            */
         }
     }
 

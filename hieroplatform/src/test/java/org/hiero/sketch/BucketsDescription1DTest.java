@@ -41,10 +41,6 @@ public class BucketsDescription1DTest {
         assertEquals(bdEqSize.getLeftBoundary(23), 23.5, .1);
         assertEquals(bdEqSize.getRightBoundary(23), 24.5, .1);
         assertEquals(bdEqSize.getRightBoundary(99), 100.5, .1);
-        BucketsDescriptionEqSize bdEqSize1 = new BucketsDescriptionEqSize(0.5, 100.5, 99);
-        assertFalse(bdEqSize.equals(bdEqSize1));
-        BucketsDescriptionEqSize bdEqSize2 = new BucketsDescriptionEqSize(0.5, 100.5, 99);
-        assertTrue(bdEqSize2.equals(bdEqSize1));
     }
 
     @Test

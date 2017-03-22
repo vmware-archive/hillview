@@ -25,13 +25,17 @@ public class BucketsDescriptionEqSize implements IBucketsDescription1D {
     private final double minValue;
     private final double maxValue;
     private final int numOfBuckets;
+    private final double range;
 
     public BucketsDescriptionEqSize(final double minValue, final double maxValue, final int numOfBuckets) {
-        if (maxValue <= minValue)
-            throw new IllegalArgumentException("Buckets range cannot be empty");
+        if (maxValue < minValue)
+            throw new IllegalArgumentException("Negative range");
         this.minValue = minValue;
         this.maxValue = maxValue;
         this.numOfBuckets = numOfBuckets;
+        this.range = this.maxValue - this.minValue;  // could be 0
+        if (this.range <= 0 && this.numOfBuckets != 1)
+            throw new IllegalArgumentException("Zero range must have exactly 1 bucket");
     }
 
     @Override
@@ -40,14 +44,14 @@ public class BucketsDescriptionEqSize implements IBucketsDescription1D {
             return -1;
         if (item >= this.maxValue)
             return this.numOfBuckets - 1;
-        return (int) (this.numOfBuckets * (item - this.minValue)) / (int) (this.maxValue - this.minValue);
+        return (int) (this.numOfBuckets * (item - this.minValue) / this.range);
     }
 
     @Override
     public double getLeftBoundary(final int index) {
         if ((index < 0) || (index >= this.numOfBuckets))
             throw new IllegalArgumentException("Bucket index out of range");
-        return this.minValue + (((this.maxValue - this.minValue) * index) / this.numOfBuckets);
+        return this.minValue + ((this.range * index) / this.numOfBuckets);
     }
 
     @Override
@@ -59,28 +63,4 @@ public class BucketsDescriptionEqSize implements IBucketsDescription1D {
 
     @Override
     public int getNumOfBuckets() { return this.numOfBuckets; }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if ((o == null) || (getClass() != o.getClass())) return false;
-
-        BucketsDescriptionEqSize that = (BucketsDescriptionEqSize) o;
-
-        if (Double.compare(that.minValue, this.minValue) != 0) return false;
-        if (Double.compare(that.maxValue, this.maxValue) != 0) return false;
-        return this.numOfBuckets == that.numOfBuckets;
-    }
-
-    @Override
-    public int hashCode() {
-        int result;
-        long temp;
-        temp = Double.doubleToLongBits(this.minValue);
-        result = (int) (temp ^ (temp >>> 32));
-        temp = Double.doubleToLongBits(this.maxValue);
-        result = (31 * result) + (int) (temp ^ (temp >>> 32));
-        result = (31 * result) + this.numOfBuckets;
-        return result;
-    }
 }

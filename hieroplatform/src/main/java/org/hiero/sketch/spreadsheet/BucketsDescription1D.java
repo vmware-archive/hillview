@@ -88,30 +88,4 @@ public class BucketsDescription1D implements IBucketsDescription1D {
 
     @Override
     public int getNumOfBuckets() { return this.numOfBuckets; }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if ((o == null) || (getClass() != o.getClass())) return false;
-
-        BucketsDescription1D that = (BucketsDescription1D) o;
-
-        if (Double.compare(that.minValue, this.minValue) != 0) return false;
-        if (Double.compare(that.maxValue, this.maxValue) != 0) return false;
-        if (this.numOfBuckets != that.numOfBuckets) return false;
-        return Arrays.equals(this.boundaries, that.boundaries);
-    }
-
-    @Override
-    public int hashCode() {
-        int result;
-        long temp;
-        temp = Double.doubleToLongBits(this.minValue);
-        result = (int) (temp ^ (temp >>> 32));
-        temp = Double.doubleToLongBits(this.maxValue);
-        result = (31 * result) + (int) (temp ^ (temp >>> 32));
-        result = (31 * result) + this.numOfBuckets;
-        result = (31 * result) + Arrays.hashCode(this.boundaries);
-        return result;
-    }
 }

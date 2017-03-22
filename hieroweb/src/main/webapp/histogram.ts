@@ -16,11 +16,11 @@
  */
 
 import {
-    IHtmlElement, HieroDataView, FullPage, Renderer, removeAllChildren, significantDigits,
-    getWindowSize, Point
+    IHtmlElement, HieroDataView, FullPage, Renderer, significantDigits,
+    getWindowSize, Point, DropDownMenu, ContextMenu, Size
 } from "./ui";
 import d3 = require('d3');
-import {RemoteObject, ICancellable, PartialResult, RpcReceiver} from "./rpc";
+import {RemoteObject, ICancellable, PartialResult} from "./rpc";
 import {ColumnDescription, ContentsKind} from "./table";
 import {histogram} from "d3-array";
 import {BaseType} from "d3-selection";
@@ -62,8 +62,6 @@ export class Histogram extends RemoteObject
         bottom: 30,
         left: 40
     };
-    private barWidth = 10;
-    private topSpace = 20;
     protected page: FullPage;
     protected svg: any;
     private maxHeight = 300;
@@ -71,8 +69,12 @@ export class Histogram extends RemoteObject
     private selectionRectangle: d3.Selection<BaseType, any, BaseType, BaseType>;
     private xLabel: HTMLElement;
     private yLabel: HTMLElement;
+    protected chartDiv: HTMLElement;
+    protected summary: HTMLElement;
     private xScale: ScaleLinear<number, number>;
     private yScale: ScaleLinear<number, number>;
+    protected canvas: d3.Selection<BaseType, any, BaseType, BaseType>;
+    protected chartResolution: Size;
 
     protected currentData: {
         histogram: Histogram1D,
@@ -86,6 +88,46 @@ export class Histogram extends RemoteObject
         this.topLevel = document.createElement("div");
         this.topLevel.className = "chart";
         this.setPage(page);
+        let menu = new DropDownMenu( [
+            { text: "View", subMenu: new ContextMenu([
+                { text: "table", action: () => this.showTable() }
+            ]) }
+        ]);
+
+        //this.topLevel.appendChild(menu.getHTMLRepresentation());
+
+        this.chartDiv = document.createElement("div");
+        this.topLevel.appendChild(this.chartDiv);
+
+        this.summary = document.createElement("div");
+        this.topLevel.appendChild(this.summary);
+
+        let position = document.createElement("table");
+        this.topLevel.appendChild(position);
+        position.className = "noBorder";
+        let body = position.createTBody();
+        let row = body.insertRow();
+        row.className = "noBorder";
+
+        let infoWidth = "100px";
+        let labelCell = row.insertCell(0);
+        labelCell.width = infoWidth;
+        this.xLabel = document.createElement("div");
+        this.xLabel.className = "leftAlign";
+        labelCell.appendChild(this.xLabel);
+        labelCell.className = "noBorder";
+
+        labelCell = row.insertCell(1);
+        labelCell.width = infoWidth;
+        this.yLabel = document.createElement("div");
+        this.yLabel.className = "leftAlign";
+        labelCell.appendChild(this.yLabel);
+        labelCell.className = "noBorder";
+    }
+
+    // show the table corresponding to the data in the histogram
+    showTable(): void {
+        // TODO
     }
 
     getHTMLRepresentation(): HTMLElement {
@@ -115,10 +157,13 @@ export class Histogram extends RemoteObject
         let chartWidth = width - this.margin.left - this.margin.right;
         let chartHeight = height - this.margin.top - this.margin.bottom;
 
+        this.chartResolution = { width: chartWidth, height: chartHeight };
+
         let counts = h.buckets.map(b => b.count);
         let max = d3.max(counts);
-        let min = d3.min(counts);
-        removeAllChildren(this.topLevel);
+
+        if (this.canvas != null)
+            this.canvas.remove();
 
         let drag = d3.drag()
             .on("start", () => this.dragStart())
@@ -126,22 +171,23 @@ export class Histogram extends RemoteObject
             .on("end", () => this.dragEnd());
         // Everything is drawn on top of the canvas.
         // The canvas includes the margins
-        let canvas = d3.select(this.topLevel)
+        this.canvas = d3.select(this.chartDiv)
             .append("svg")
+            .attr("id", "canvas")
             .call(drag)
             .attr("width", width)
             .attr("height", height);
 
-        canvas.on("mousemove", () => this.onMouseMove());
+        this.canvas.on("mousemove", () => this.onMouseMove());
 
-        this.selectionRectangle = canvas
+        this.selectionRectangle = this.canvas
             .append("rect")
             .attr("class", "dashed")
             .attr("width", 0)
             .attr("height", 0);
 
         // The chart uses a fragment of the canvas offset by the margins
-        this.chart = canvas
+        this.chart = this.canvas
             .append("g")
             .attr("transform", Histogram.translateString(this.margin.left, this.margin.top));
 
@@ -155,7 +201,11 @@ export class Histogram extends RemoteObject
             .range([0, chartWidth]);
         let xAxis = d3.axisBottom(this.xScale);
 
-        canvas.append("text")
+        // force a tick on x axis for degenerate scales
+        if (stats.min >= stats.max)
+            xAxis.ticks(1);
+
+        this.canvas.append("text")
             .text(cd.name)
             .attr("transform", Histogram.translateString(chartWidth / 2, this.margin.top/2))
             .attr("text-anchor", "middle");
@@ -189,35 +239,12 @@ export class Histogram extends RemoteObject
             .attr("transform", Histogram.translateString(0, chartHeight))
             .call(xAxis);
 
-        console.log(String(counts.length) + " data points");
-
-        let infoBox = document.createElement("div");
-        this.topLevel.appendChild(infoBox);
+        let summary = "";
         if (h.missingData != 0)
-            infoBox.textContent = String(h.missingData) + " missing, ";
-        infoBox.textContent += String(stats.rowCount) + " points";
-
-        let position = document.createElement("table");
-        this.topLevel.appendChild(position);
-        position.className = "noBorder";
-        let body = position.createTBody();
-        let row = body.insertRow();
-        row.className = "noBorder";
-
-        let infoWidth = "100px";
-        let labelCell = row.insertCell(0);
-        labelCell.width = infoWidth;
-        this.xLabel = document.createElement("div");
-        this.xLabel.className = "leftAlign";
-        labelCell.appendChild(this.xLabel);
-        labelCell.className = "noBorder";
-
-        labelCell = row.insertCell(1);
-        labelCell.width = infoWidth;
-        this.yLabel = document.createElement("div");
-        this.yLabel.className = "leftAlign";
-        labelCell.appendChild(this.yLabel);
-        labelCell.className = "noBorder";
+            summary = String(h.missingData) + " missing, ";
+        summary += String(stats.rowCount) + " points";
+        this.summary.textContent = summary;
+        console.log(String(counts.length) + " data points");
     }
 
     onMouseMove(): void {
@@ -254,6 +281,8 @@ export class Histogram extends RemoteObject
             height = -height;
         }
 
+        this.onMouseMove();
+
         this.selectionRectangle
             .attr("x", x)
             .attr("y", y)
@@ -272,24 +301,22 @@ export class Histogram extends RemoteObject
     }
 
     selectionCompleted(xl: number, yl: number, xr: number, yr: number): void {
-        let x0 = this.xScale.invert(xl);
-        let x1 = this.xScale.invert(xr);
-        let y0 = this.yScale.invert(yl);
-        let y1 = this.yScale.invert(yr);
-        if (y0 < 0 && y1 < 0) {
-            // If the selection is below the x axis then we only use the
-            // x range to perform the selection
-            let range = {
-                min: Math.min(x0, x1),
-                max: Math.max(x0, x1),
-                column: this.currentData.description.name
-            };
-            let rr = this.createRpcRequest("filterRange", range);
-            let rangeCollector = new RangeCollector(this.currentData.description, this.page, this, rr);
-            rr.invoke(rangeCollector);
-        } else {
-            // TODO: find overlapping boxes
-        }
+        let x0 = this.xScale.invert(xl - this.margin.left);
+        let x1 = this.xScale.invert(xr - this.margin.left);
+        // TODO: rectangle overlap
+        let y0 = this.yScale.invert(yl - this.margin.top);
+        let y1 = this.yScale.invert(yr - this.margin.top);
+
+        let range = {
+            min: Math.min(x0, x1),
+            max: Math.max(x0, x1),
+            columnName: this.currentData.description.name,
+            width: this.chartResolution.width,
+            height: this.chartResolution.height
+        };
+        let rr = this.createRpcRequest("filterRange", range);
+        let filterReceiver = new FilterReceiver(this.currentData.description, this.page, rr);
+        rr.invoke(filterReceiver);
     }
 
     setPage(page: FullPage) {
@@ -312,26 +339,28 @@ class TableStub extends RemoteObject {
 }
 
 // After filtering we obtain a handle to a new table
-export class FilterReceiver extends RpcReceiver<string> {
+export class FilterReceiver extends Renderer<string> {
     private stub: TableStub;
 
-    constructor(protected description: ColumnDescription,
-                protected page: FullPage,
+    constructor(protected columnDescription: ColumnDescription,
+                page: FullPage,
                 operation: ICancellable) {
-        super(page.progressManager.newProgressBar(operation, "Filter"),
-            page.getErrorReporter());
+        super(page, operation, "Filter");
     }
 
-    // we expect exactly one reply
-    public onNext(value: string): void {
-        this.stub = new TableStub(value);
+    public onNext(value: PartialResult<string>): void {
+        this.progressBar.setPosition(value.done);
+        if (value.data != null)
+            this.stub = new TableStub(value.data);
     }
 
     public onCompleted(): void {
         this.finished();
-        // Retrieve the histogram
-        let rr = this.stub.createRpcRequest("range", this.description.name);
-        rr.invoke(new RangeCollector(this.description, this.page, this.stub, rr));
+        if (this.stub != null) {
+            // initiate a histogram on the new table
+            let rr = this.stub.createRpcRequest("range", this.columnDescription.name);
+            rr.invoke(new RangeCollector(this.columnDescription, this.page, this.stub, rr));
+        }
     }
 }
 
@@ -357,6 +386,10 @@ export class RangeCollector extends Renderer<BasicColStats> {
         if (this.stats == null)
             // probably some error occurred
             return;
+        if (this.stats.rowCount == 0) {
+            this.page.reportError("No data in range");
+            return;
+        }
         let rr = this.remoteObject.createRpcRequest("histogram", {
             columnName: this.cd.name,
             min: this.stats.min,
