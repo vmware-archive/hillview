@@ -1,8 +1,11 @@
 package org.hiero.sketch.table;
 
 import org.hiero.sketch.table.api.IStringConverter;
-
 import java.util.HashMap;
+
+/**
+ * A string converter which uses an explicit hash table to map strings to integers.
+ */
 
 public abstract class BaseExplicitConverter implements IStringConverter {
     protected final HashMap<String, Integer> stringValue;

@@ -19,10 +19,6 @@
 package org.hiero.sketch.table;
 
 
-/**
- * A string converter which uses an explicit hash table to map strings to integers.
- * Throws an exception if string is not known.
- */
 public final class ExplicitStringConverter extends BaseExplicitConverter {
 
     /* Will throw an exception when string is not known */

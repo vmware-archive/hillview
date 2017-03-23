@@ -58,13 +58,22 @@ public class TestUtil {
      * named "Name" and a double column named "Income".
      */
     static public Table createTable(int size) {
-        final int numCols = 5;
+        final int numCols = 3;
         final List<IColumn> columns = new ArrayList<IColumn>(numCols);
         columns.add(getRandDateArray(size, "DOB"));
         columns.add(getStringArray(size, "Name"));
         columns.add(generateDoubleArray(size, "Income"));
         final FullMembership full = new FullMembership(size);
         return new Table(columns, full);
+    }
+
+    static public SmallTable createSmallTable(int size) {
+        final int numCols = 3;
+        final List<IColumn> columns = new ArrayList<IColumn>(numCols);
+        columns.add(getRandDateArray(size, "DOB"));
+        columns.add(getStringArray(size, "Name"));
+        columns.add(generateDoubleArray(size, "Income"));
+        return new SmallTable(columns);
     }
 
     static public IColumn getRandDateArray(int size, String colName) {

@@ -2,9 +2,9 @@ package org.hiero.sketch.table;
 
 public class SemiExplicitConverter extends BaseExplicitConverter {
     final double defaultValue;
-    public SemiExplicitConverter (double defValue) {
+    public SemiExplicitConverter () {
         super();
-        this.defaultValue = defValue;
+        this.defaultValue = -1;
     }
 
     /* Will return a default value when string is not known */
