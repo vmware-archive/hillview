@@ -34,3 +34,6 @@ hieroweb/src/main/webapp/typings/*
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
+
+# data which is too big to put into git
+data/On_Time_On_Time*

@@ -32,8 +32,8 @@ public final class IntArrayColumn
     private final int[] data;
 
     private void validate() {
-        if (this.description.kind != ContentsKind.Int)
-            throw new InvalidParameterException("Kind should be Int " + this.description.kind);
+        if (this.description.kind != ContentsKind.Integer)
+            throw new InvalidParameterException("Kind should be Integer " + this.description.kind);
     }
 
     public IntArrayColumn(final ColumnDescription description, final int size) {

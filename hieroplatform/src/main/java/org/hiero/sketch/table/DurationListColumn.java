@@ -23,6 +23,7 @@ import org.hiero.sketch.table.api.IDurationColumn;
 
 import javax.annotation.Nullable;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 
 /**
@@ -65,5 +66,13 @@ class DurationListColumn extends BaseListColumn implements IDurationColumn {
     @Override
     public void appendMissing() {
         this.append(null);
+    }
+
+    @Override
+    public void parseAndAppendString(String s) {
+        if (s.isEmpty())
+            this.parseEmptyOrNull();
+        else
+            this.append(Duration.parse(s));
     }
 }

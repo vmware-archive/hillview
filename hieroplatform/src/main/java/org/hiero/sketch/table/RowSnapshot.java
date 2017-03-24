@@ -122,6 +122,6 @@ public class RowSnapshot implements IRow, Serializable, IJson {
     @Override
     public JsonElement toJsonTree() {
         Object[] data = this.getData();
-        return gsonInstance.toJsonTree(data);
+        return IJson.gsonInstance.toJsonTree(data);
     }
 }

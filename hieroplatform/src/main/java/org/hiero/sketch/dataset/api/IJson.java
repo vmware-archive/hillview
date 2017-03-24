@@ -19,10 +19,14 @@
 package org.hiero.sketch.dataset.api;
 
 import com.google.gson.*;
+import org.hiero.sketch.table.Schema;
 
 @SuppressWarnings("UnnecessaryInterfaceModifier")
 public interface IJson {
-    final static GsonBuilder builder = new GsonBuilder();
+    // Use these instances for all your json serialization needs
+    final static GsonBuilder builder = new GsonBuilder()
+        .registerTypeAdapter(Schema.class, new Schema.SchemaSerializer())
+        .registerTypeAdapter(Schema.class, new Schema.SchemaDeserializer());;
     final static Gson gsonInstance = builder.serializeNulls().create();
 
     /**

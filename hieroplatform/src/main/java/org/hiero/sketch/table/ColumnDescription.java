@@ -27,9 +27,7 @@ import java.io.Serializable;
  * Describes the contents of a column in a local table.
  */
 public class ColumnDescription implements Serializable, IJson {
-
     public final String name;
-
     public final ContentsKind kind;
     /**
      * If true the column can have missing values (called NULL in databases).
@@ -41,6 +39,8 @@ public class ColumnDescription implements Serializable, IJson {
         this.name = name;
         this.kind = kind;
         this.allowMissing = allowMissing;
+        if (name.isEmpty())
+            throw new RuntimeException("Column names cannot be empty");
     }
 
     @Override public String toString() {

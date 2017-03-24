@@ -154,7 +154,7 @@ public class RecordOrder implements Iterable<ColumnSortOrientation> {
                             outcome = Converters.checkNull(leftCol.getDate(i))
                                                 .compareTo(Converters.checkNull(rightCol.getDate(j)));
                             break;
-                        case Int:
+                        case Integer:
                             outcome = Integer.compare(Converters.checkNull(leftCol.getInt(i)),
                                     Converters.checkNull(rightCol.getInt(j)));
                             break;
@@ -249,7 +249,7 @@ public class RecordOrder implements Iterable<ColumnSortOrientation> {
                             outcome = Converters.checkNull(leftCol.getDate(i))
                                                 .compareTo(Converters.checkNull(rightCol.getDate(j)));
                             break;
-                        case Int:
+                        case Integer:
                             outcome = Integer.compare(Converters.checkNull(leftCol.getInt(i)),
                                     Converters.checkNull(rightCol.getInt(j)));
                             break;

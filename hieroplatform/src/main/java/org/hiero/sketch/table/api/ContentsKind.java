@@ -27,7 +27,7 @@ public enum ContentsKind implements Serializable {
     Category, /* Categories and strings are the same, but strings cannot be histogrammed */
     String,
     Date,  /* java.Util.Date values */
-    Int,
+    Integer,
     Json,
     Double,
     Duration; /* java.time.Duration values */
@@ -44,7 +44,7 @@ public enum ContentsKind implements Serializable {
             case Json:
             case Duration:
                 return true;
-            case Int:
+            case Integer:
             case Double:
             default:
                 return false;

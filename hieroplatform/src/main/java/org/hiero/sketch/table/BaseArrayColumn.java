@@ -61,7 +61,7 @@ public abstract class BaseArrayColumn extends BaseColumn implements Serializable
                 return new StringArrayColumn(description, 0);
             case Date:
                 return new DateArrayColumn(description, 0);
-            case Int:
+            case Integer:
                 return new IntArrayColumn(description, 0);
             case Double:
                 return new DoubleArrayColumn(description, 0);

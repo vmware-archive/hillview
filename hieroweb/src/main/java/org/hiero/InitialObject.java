@@ -20,17 +20,24 @@ package org.hiero;
 import org.hiero.sketch.dataset.LocalDataSet;
 import org.hiero.sketch.dataset.ParallelDataSet;
 import org.hiero.sketch.dataset.api.IDataSet;
+import org.hiero.sketch.storage.CsvFileReader;
+import org.hiero.sketch.table.Schema;
 import org.hiero.sketch.table.Table;
 import org.hiero.sketch.table.api.ITable;
 
 import javax.websocket.Session;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
 public class InitialObject extends RpcTarget {
     @HieroRpc
-    void loadTable(RpcRequest request, Session session) {
+    void loadTable(RpcRequest request, Session session) throws IOException {
         // TODO: look at request.  Now we just supply always the same table
+        /*
         Table t = Table.testTable();
         final int parts = 2000;
         List<IDataSet<ITable>> fragments = new ArrayList<IDataSet<ITable>>();
@@ -39,6 +46,25 @@ public class InitialObject extends RpcTarget {
             fragments.add(data);
         }
         IDataSet<ITable> big = new ParallelDataSet<ITable>(fragments);
+        */
+        String folder = "../data";
+        String schemaFile = "On_Time.schema";
+        String dataFile = "On_Time_On_Time_Performance_2015_1.csv";
+
+        Path path = Paths.get(folder, schemaFile);
+        String s = new String(Files.readAllBytes(path));
+        Schema schema = Schema.fromJson(s);
+
+        path = Paths.get(folder, dataFile);
+        CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
+        config.allowFewerColumns = false;
+        config.hasHeaderRow = true;
+        config.allowMissingData = false;
+        config.schema = schema;
+        CsvFileReader r = new CsvFileReader(path, config);
+        ITable t = r.read();
+        LocalDataSet<ITable> big = new LocalDataSet<ITable>(t);
+
         TableTarget table = new TableTarget(big);
         RpcReply reply = request.createReply(table.idToJson());
         reply.send(session);

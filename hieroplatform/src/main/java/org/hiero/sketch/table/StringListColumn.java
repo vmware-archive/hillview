@@ -32,7 +32,9 @@ public class StringListColumn extends BaseListColumn implements IStringColumn {
 
     public StringListColumn(final ColumnDescription desc) {
         super(desc);
-        if ((desc.kind != ContentsKind.String) && (desc.kind != ContentsKind.Json))
+        if ((desc.kind != ContentsKind.String) &&
+                (desc.kind != ContentsKind.Json) &&
+                (desc.kind != ContentsKind.Category))
             throw new IllegalArgumentException("Unexpected column kind " + desc.kind);
         this.segments = new ArrayList<String []>();
     }
@@ -64,5 +66,10 @@ public class StringListColumn extends BaseListColumn implements IStringColumn {
     @Override
     public void appendMissing() {
         this.append(null);
+    }
+
+    @Override
+    public void parseAndAppendString(String s) {
+        this.append(s);
     }
 }

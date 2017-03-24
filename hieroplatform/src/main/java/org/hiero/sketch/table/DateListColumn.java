@@ -22,7 +22,10 @@ import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.IDateColumn;
 
 import javax.annotation.Nullable;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 
 /**
@@ -31,14 +34,27 @@ import java.util.ArrayList;
 public class DateListColumn
         extends BaseListColumn
         implements IDateColumn {
-
     private final ArrayList<LocalDateTime[]> segments;
+    /**
+     * Used when parsing; this is set the first time when parsing a date
+     * and used subsequently.
+     */
+    @Nullable
+    private DateTimeFormatter parserFormatter;
+    /**
+     * Used in conjunction with the parseFormatter.  If true
+     * parse the strings as LocalDate. Java is really stupid in this respect,
+     * and the spec is unclear about this.
+     * http://stackoverflow.com/questions/27454025/unable-to-obtain-localdatetime-from-temporalaccessor-when-parsing-localdatetime
+     */
+    boolean parseAsDate;
 
     public DateListColumn(final ColumnDescription desc) {
         super(desc);
         if (desc.kind != ContentsKind.Date)
             throw new IllegalArgumentException("Unexpected column kind " + desc.kind);
         this.segments = new ArrayList<LocalDateTime[]>();
+        this.parserFormatter = null;
     }
 
     @Nullable
@@ -68,6 +84,63 @@ public class DateListColumn
     @Override
     public void appendMissing() {
         this.append(null);
+    }
+
+    static final DateTimeFormatter[] toTry = {
+            DateTimeFormatter.BASIC_ISO_DATE,
+            DateTimeFormatter.ISO_LOCAL_DATE,
+            DateTimeFormatter.ISO_OFFSET_DATE,
+
+            DateTimeFormatter.ISO_DATE,
+            DateTimeFormatter.ISO_LOCAL_TIME,
+            DateTimeFormatter.ISO_OFFSET_TIME,
+            DateTimeFormatter.ISO_TIME,
+            DateTimeFormatter.ISO_LOCAL_DATE_TIME,
+            DateTimeFormatter.ISO_OFFSET_DATE_TIME,
+            DateTimeFormatter.ISO_ZONED_DATE_TIME,
+            DateTimeFormatter.ISO_DATE_TIME,
+            DateTimeFormatter.ISO_ORDINAL_DATE,
+            DateTimeFormatter.ISO_INSTANT,
+            DateTimeFormatter.RFC_1123_DATE_TIME
+    };
+
+    protected void guessParseFormat(String s) {
+        boolean[] asDate = {false, true};
+
+        for (boolean b : asDate) {
+            this.parseAsDate = b;
+            for (DateTimeFormatter d : toTry) {
+                try {
+                    if (b)
+                        LocalDate.parse(s, d);
+                    else
+                        LocalDateTime.parse(s, d);
+                    this.parserFormatter = d;
+                    return;
+                } catch (DateTimeParseException ex) {
+                    continue;
+                }
+            }
+        }
+        throw new RuntimeException("Could not guess parsing format for date " + s);
+    }
+
+    @Override
+    public void parseAndAppendString(String s) {
+        if (s.isEmpty())
+            this.parseEmptyOrNull();
+        else {
+            if (this.parserFormatter == null)
+                this.guessParseFormat(s);
+            LocalDateTime dt;
+            if (this.parseAsDate) {
+                LocalDate date = LocalDate.parse(s, this.parserFormatter);
+                dt = date.atStartOfDay();
+            } else {
+                dt = LocalDateTime.parse(s, this.parserFormatter);
+            }
+            this.append(dt);
+        }
     }
 }
 

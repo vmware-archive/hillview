@@ -32,7 +32,7 @@ public class ColumnTest {
         final IntArrayColumn col;
         final int size = 100;
 
-        final ColumnDescription desc = new ColumnDescription("test", ContentsKind.Int, false);
+        final ColumnDescription desc = new ColumnDescription("test", ContentsKind.Integer, false);
         col = new IntArrayColumn(desc, size);
         for (int i=0; i < size; i++)
             col.set(i, i);

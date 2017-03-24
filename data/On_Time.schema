@@ -1,0 +1,552 @@
+[
+  {
+    "allowMissing": true,
+    "kind": "Integer",
+    "name": "Year"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Integer",
+    "name": "Quarter"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Integer",
+    "name": "Month"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Integer",
+    "name": "DayofMonth"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Integer",
+    "name": "DayOfWeek"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Date",
+    "name": "FlightDate"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Category",
+    "name": "UniqueCarrier"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Integer",
+    "name": "AirlineID"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Category",
+    "name": "Carrier"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "TailNum"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "FlightNum"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Integer",
+    "name": "OriginAirportID"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Integer",
+    "name": "OriginAirportSeqID"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Integer",
+    "name": "OriginCityMarketID"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Origin"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "OriginCityName"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Category",
+    "name": "OriginState"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Integer",
+    "name": "OriginStateFips"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "OriginStateName"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Integer",
+    "name": "OriginWac"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Integer",
+    "name": "DestAirportID"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Integer",
+    "name": "DestAirportSeqID"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Integer",
+    "name": "DestCityMarketID"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Category",
+    "name": "Dest"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "DestCityName"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Category",
+    "name": "DestState"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Integer",
+    "name": "DestStateFips"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "DestStateName"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Integer",
+    "name": "DestWac"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Integer",
+    "name": "CRSDepTime"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Integer",
+    "name": "DepTime"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Double",
+    "name": "DepDelay"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "DepDelayMinutes"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Double",
+    "name": "DepDel15"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Integer",
+    "name": "DepartureDelayGroups"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Category",
+    "name": "DepTimeBlk"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Double",
+    "name": "TaxiOut"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Integer",
+    "name": "WheelsOff"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Integer",
+    "name": "WheelsOn"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Double",
+    "name": "TaxiIn"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Integer",
+    "name": "CRSArrTime"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Integer",
+    "name": "ArrTime"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Double",
+    "name": "ArrDelay"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Double",
+    "name": "ArrDelayMinutes"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Double",
+    "name": "ArrDel15"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Integer",
+    "name": "ArrivalDelayGroups"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Category",
+    "name": "ArrTimeBlk"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Double",
+    "name": "Cancelled"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "CancellationCode"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Double",
+    "name": "Diverted"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Double",
+    "name": "CRSElapsedTime"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Double",
+    "name": "ActualElapsedTime"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Double",
+    "name": "AirTime"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Double",
+    "name": "Flights"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Double",
+    "name": "Distance"
+  },
+  {
+    "allowMissing": true,
+    "kind": "Integer",
+    "name": "DistanceGroup"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "CarrierDelay"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "WeatherDelay"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "NASDelay"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "SecurityDelay"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "LateAircraftDelay"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "FirstDepTime"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "TotalAddGTime"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "LongestAddGTime"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "DivAirportLandings"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "DivReachedDest"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "DivActualElapsedTime"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "DivArrDelay"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "DivDistance"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div1Airport"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div1AirportID"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div1AirportSeqID"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div1WheelsOn"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div1TotalGTime"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div1LongestGTime"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div1WheelsOff"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div1TailNum"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div2Airport"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div2AirportID"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div2AirportSeqID"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div2WheelsOn"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div2TotalGTime"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div2LongestGTime"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div2WheelsOff"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div2TailNum"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div3Airport"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div3AirportID"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div3AirportSeqID"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div3WheelsOn"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div3TotalGTime"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div3LongestGTime"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div3WheelsOff"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div3TailNum"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div4Airport"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div4AirportID"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div4AirportSeqID"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div4WheelsOn"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div4TotalGTime"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div4LongestGTime"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div4WheelsOff"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div4TailNum"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div5Airport"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div5AirportID"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div5AirportSeqID"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div5WheelsOn"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div5TotalGTime"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div5LongestGTime"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div5WheelsOff"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Div5TailNum"
+  },
+  {
+    "allowMissing": true,
+    "kind": "String",
+    "name": "Column_109"
+  }
+]

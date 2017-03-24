@@ -27,7 +27,7 @@ import java.util.BitSet;
 /**
  * Base class for a column that can grow in size.
  */
-abstract class BaseListColumn extends BaseColumn {
+public abstract class BaseListColumn extends BaseColumn {
     final int LogSegmentSize = 20;
     final int SegmentSize = 1 << this.LogSegmentSize;
     final int SegmentMask = this.SegmentSize - 1;
@@ -72,6 +72,14 @@ abstract class BaseListColumn extends BaseColumn {
         this.size++;
     }
 
+    public abstract void parseAndAppendString(String s);
+
+    protected void parseEmptyOrNull() {
+        if (!this.description.allowMissing)
+            throw new RuntimeException("Appending missing data to column " + this.toString());
+        this.appendMissing();
+    }
+
     void growMissing() {
         if (this.sealed)
             throw new RuntimeException("Cannot grow sealed column");
@@ -81,5 +89,29 @@ abstract class BaseListColumn extends BaseColumn {
 
     public void seal() {
         this.sealed = true;
+    }
+
+    public static BaseListColumn create(ColumnDescription desc) {
+        switch (desc.kind) {
+            case Category:
+            case String:
+            case Json:
+                return new StringListColumn(desc);
+            case Date:
+                return new DateListColumn(desc);
+            case Integer:
+                return new IntListColumn(desc);
+            case Double:
+                return new DoubleListColumn(desc);
+            case Duration:
+                return new DurationListColumn(desc);
+            default:
+                throw new RuntimeException("Unexpected description " + desc.toString());
+        }
+    }
+
+    @Override
+    public String toString() {
+        return this.getDescription().toString();
     }
 }

@@ -310,7 +310,8 @@ export class TableView extends RemoteObject
                 {text: "sort desc", action: () => this.showColumn(cd.name, -1) }
              ]);
             if (cd.kind != ContentsKind.Json &&
-                cd.kind != ContentsKind.String)
+                cd.kind != ContentsKind.String &&
+                cd.kind != ContentsKind.Category)  // TODO: delete this
                 menu.addItem({text: "histogram", action: () => this.histogram(cd.name) });
             if (this.order != null && this.order.find(cd.name) != -1)
                 menu.addItem({text: "hide", action: () => this.showColumn(cd.name, 0)});
@@ -420,7 +421,7 @@ export class RemoteTableReceiver extends RpcReceiver<string> {
 
     public onCompleted(): void {
         this.finished();
-        // Retrieve the table schema
-        this.retrieveSchema();
+        if (this.table)
+            this.retrieveSchema();
     }
 }

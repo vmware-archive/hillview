@@ -19,12 +19,11 @@ package org.hiero;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import org.hiero.sketch.dataset.api.IJson;
 
 import javax.websocket.Session;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import static org.hiero.RpcTarget.gson;
 
 public final class RpcRequest {
     private static final Logger LOGGER =
@@ -61,7 +60,7 @@ public final class RpcRequest {
     }
 
     <T> T parseArgs(Class<T> classOfT) {
-        return gson.fromJson(this.arguments, classOfT);
+        return IJson.gsonInstance.fromJson(this.arguments, classOfT);
     }
 
     /**

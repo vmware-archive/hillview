@@ -17,7 +17,6 @@
 
 package org.hiero;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import org.hiero.sketch.dataset.api.*;
 import org.hiero.sketch.dataset.*;
@@ -38,7 +37,6 @@ import java.util.logging.Logger;
 import static org.hiero.utils.Converters.checkNull;
 
 public abstract class RpcTarget {
-    static final Gson gson = new Gson();
     @Nullable // This is null for a very brief time
     String objectId;
     private final HashMap<String, Method> executor;
@@ -208,7 +206,7 @@ public abstract class RpcTarget {
     }
 
     String idToJson() {
-        return gson.toJson(this.objectId);
+        return IJson.gsonInstance.toJson(this.objectId);
     }
 
     <T, R extends IJson> void

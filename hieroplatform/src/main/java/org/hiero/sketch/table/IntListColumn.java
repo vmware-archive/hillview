@@ -34,8 +34,8 @@ public final class IntListColumn
 
     public IntListColumn(final ColumnDescription desc) {
         super(desc);
-        if (this.description.kind != ContentsKind.Int)
-            throw new InvalidParameterException("Kind should be Int " + this.description.kind);
+        if (this.description.kind != ContentsKind.Integer)
+            throw new InvalidParameterException("Kind should be Integer " + this.description.kind);
         this.segments = new ArrayList<int []>();
     }
 
@@ -56,5 +56,13 @@ public final class IntListColumn
         }
         this.segments.get(segmentId)[localIndex] = value;
         this.size++;
+    }
+
+    @Override
+    public void parseAndAppendString(String s) {
+        if (s.isEmpty())
+            this.parseEmptyOrNull();
+        else
+            this.append(Integer.parseInt(s));
     }
 }

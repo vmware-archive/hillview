@@ -72,7 +72,7 @@ public class RowTableComparison {
                         outcome = Converters.checkNull(iCol.getDate(i)).compareTo(
                                 Converters.checkNull(this.topRow.getDate(colName)));
                         break;
-                    case Int:
+                    case Integer:
                         outcome = Integer.compare(Converters.checkNull(iCol.getInt(i)),
                                 Converters.checkNull(this.topRow.getInt(colName)));
                         break;

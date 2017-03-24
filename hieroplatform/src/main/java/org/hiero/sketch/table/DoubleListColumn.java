@@ -21,6 +21,7 @@ package org.hiero.sketch.table;
 import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.IDoubleColumn;
 
+import java.time.Duration;
 import java.util.ArrayList;
 
 /**
@@ -54,5 +55,13 @@ public class DoubleListColumn
         }
         this.segments.get(segmentId)[localIndex] = value;
         this.size++;
+    }
+
+    @Override
+    public void parseAndAppendString(String s) {
+        if (s.isEmpty())
+            this.parseEmptyOrNull();
+        else
+            this.append(Double.parseDouble(s));
     }
 }

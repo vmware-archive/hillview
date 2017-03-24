@@ -55,7 +55,7 @@ public interface IColumn {
                 return this.getString(rowIndex);
             case Date:
                 return this.getDate(rowIndex);
-            case Int:
+            case Integer:
                 return this.getInt(rowIndex);
             case Double:
                 return this.getDouble(rowIndex);

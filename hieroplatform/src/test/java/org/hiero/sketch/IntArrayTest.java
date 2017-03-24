@@ -34,7 +34,7 @@ import static org.junit.Assert.*;
  */
 public class IntArrayTest {
     static private final ColumnDescription desc = new
-            ColumnDescription("Identity", ContentsKind.Int, true);
+            ColumnDescription("Identity", ContentsKind.Integer, true);
 
     public static IntArrayColumn generateIntArray(final int size) {
         final IntArrayColumn col = new IntArrayColumn(desc, size);
@@ -47,7 +47,7 @@ public class IntArrayTest {
     }
 
     public static IntArrayColumn getRandIntArray(final int size, final int range, final String name) {
-        final ColumnDescription desc = new ColumnDescription(name, ContentsKind.Int, false);
+        final ColumnDescription desc = new ColumnDescription(name, ContentsKind.Integer, false);
         final IntArrayColumn col = new IntArrayColumn(desc, size);
         final Randomness rn = Randomness.getInstance();
         for (int i = 0; i < size; i++)

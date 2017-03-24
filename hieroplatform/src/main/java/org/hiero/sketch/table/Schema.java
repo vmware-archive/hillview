@@ -18,13 +18,14 @@
 
 package org.hiero.sketch.table;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
+import com.google.gson.*;
 import org.hiero.sketch.dataset.api.IJson;
 import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.ISubSchema;
 
+import javax.annotation.Nullable;
 import java.io.Serializable;
+import java.lang.reflect.Type;
 import java.security.InvalidParameterException;
 import java.util.*;
 
@@ -36,6 +37,29 @@ public final class Schema
         implements Serializable, IJson {
     private final HashMap<String, ColumnDescription> columns;
     private final List<String> colOrder;
+
+    public static class SchemaSerializer implements JsonSerializer<Schema> {
+        public JsonElement serialize(Schema schema, Type typeOfSchema, JsonSerializationContext context) {
+            JsonArray result = new JsonArray();
+            for (String col: schema.colOrder) {
+                ColumnDescription cd = schema.getDescription(col);
+                result.add(cd.toJsonTree());
+            }
+            return result;
+        }
+    }
+
+    public static class SchemaDeserializer implements JsonDeserializer<Schema> {
+        public Schema deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+                throws JsonParseException {
+            Schema result = new Schema();
+            for (JsonElement e: json.getAsJsonArray()) {
+                ColumnDescription cd = gsonInstance.fromJson(e, ColumnDescription.class);
+                result.append(cd);
+            }
+            return result;
+        }
+    }
 
     public Schema() {
         this.columns = new HashMap<String, ColumnDescription>();
@@ -73,13 +97,29 @@ public final class Schema
         }
         return projection;
     }
-    @Override
 
+    /**
+     * Generates a column name not already in the schema, starting from the supplied prefix.
+     */
+    public String newColumnName(@Nullable String prefix) {
+        if (prefix == null)
+            prefix = "Column";
+        int i = 0;
+        String name = prefix;
+        while (true) {
+            if (!this.columns.containsKey(name))
+                return name;
+            name = prefix + Integer.toString(i);
+            ++i;
+        }
+    }
+
+    @Override
     public String toString() {
         String result = "";
         String separator = "";
-        for (final ColumnDescription c : this.columns.values()) {
-            result += separator + c.toString();
+        for (final String c : this.colOrder) {
+            result += separator + this.columns.get(c).toString();
             separator = ", ";
         }
         return result;
@@ -102,23 +142,7 @@ public final class Schema
         return this.getDescription(colName).kind;
     }
 
-    // The columns will be ordered as in colOrder
-    private ColumnDescription[] toArray() {
-        ColumnDescription[] all = new ColumnDescription[this.columns.size()];
-        int i = 0;
-        for (String name: this.getColumnNames()) {
-            ColumnDescription cd = this.getDescription(name);
-            all[i++] = cd;
-        }
-        return all;
-    }
-
-    @Override
-    public JsonElement toJsonTree() {
-        ColumnDescription[] all = this.toArray();
-        JsonArray result = new JsonArray();
-        for (ColumnDescription cd : all)
-            result.add(cd.toJsonTree());
-        return result;
+    public static Schema fromJson(String json) {
+        return IJson.gsonInstance.fromJson(json, Schema.class);
     }
 }

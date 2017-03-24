@@ -56,7 +56,7 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
                 return c.asDouble(Converters.checkNull(this.getString(rowIndex)));
             case Date:
                 return Converters.toDouble(Converters.checkNull(this.getDate(rowIndex)));
-            case Int:
+            case Integer:
                 return this.getInt(rowIndex);
             case Double:
                 return this.getDouble(rowIndex);
@@ -95,7 +95,7 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
                         case Date:
                             return Converters.checkNull(ObjectArrayColumn.this.getDate(i)).compareTo(
                                     Converters.checkNull(ObjectArrayColumn.this.getDate(j)));
-                        case Int:
+                        case Integer:
                             return Integer.compare(Converters.checkNull(ObjectArrayColumn.this.getInt(i)),
                                     Converters.checkNull(ObjectArrayColumn.this.getInt(j)));
                         case Double:
