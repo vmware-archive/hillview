@@ -138,7 +138,11 @@ public class ParallelDataSet<T> implements IDataSet<T> {
             obs.add(i, ci);
         }
         // Merge the streams from all children
-        final Observable<Pair<Integer, PartialResult<IDataSet<S>>>> merged = Observable.merge(obs);
+        final Observable<Pair<Integer, PartialResult<IDataSet<S>>>> merged =
+                // publish().autoConnect(2) ensures that the two consumers
+                // of this stream pull from the *same* stream, and not from
+                // two different copies.
+                Observable.merge(obs).publish().autoConnect(2);
         // We split the merged stream of PartialResults into two separate streams
         // - mapResult for the actual PartialResult.deltaValue
         // - dones for the PartialResult.doneValue
@@ -158,7 +162,7 @@ public class ParallelDataSet<T> implements IDataSet<T> {
                 // Each child produces a 1/this.size() fraction of the result.
                 merged.map(p -> p.second.deltaDone / this.size())
                         .map(e -> new PartialResult<IDataSet<S>>(e, null));
-        Observable<PartialResult<IDataSet<S>>> result = dones.concatWith(mapResult);
+        Observable<PartialResult<IDataSet<S>>> result = dones.mergeWith(mapResult);
         result = bundle(result, new PRDataSetMonoid<S>());
         return result;
     }
@@ -185,7 +189,10 @@ public class ParallelDataSet<T> implements IDataSet<T> {
                     e -> new Pair<Integer, PartialResult<IDataSet<Pair<T, S>>>>(finalI, e)));
         }
         final Observable<Pair<Integer, PartialResult<IDataSet<Pair<T, S>>>>> merged =
-                Observable.merge(obs);
+                // publish().autoConnect(2) ensures that the two consumers
+                // of this stream pull from the *same* stream, and not from
+                // two different copies.
+                Observable.merge(obs).publish().autoConnect(2);
         // We split the merged stream of PartialResults into two separate streams
         // - zipResult for the actual PartialResult.deltaValue
         // - dones for the PartialResult.doneValue
@@ -202,7 +209,7 @@ public class ParallelDataSet<T> implements IDataSet<T> {
                 // Each child produces a 1/this.size() fraction of the result.
                 merged.map(p -> p.second.deltaDone / this.size())
                       .map(e -> new PartialResult<IDataSet<Pair<T, S>>>(e, null));
-        Observable<PartialResult<IDataSet<Pair<T, S>>>> result = dones.concatWith(zipResult);
+        Observable<PartialResult<IDataSet<Pair<T, S>>>> result = dones.mergeWith(zipResult);
         PRDataSetMonoid<Pair<T, S>> prm = new PRDataSetMonoid<Pair<T, S>>();
         result = bundle(result, prm);
         return result;

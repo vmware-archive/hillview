@@ -35,33 +35,6 @@ table {
     border-collapse: collapse;
 }
 
-/* Used for hidden column names */
-.hiddenColumn {
-    font-weight: normal;
-}
-
-.dropdown {
-    display: none;
-    position: absolute;
-    background-color: #f9f9f9;
-    z-index: 1;
-    text-align: right;
-}
-
-/* Used for menus */
-.shown {
-    display: block;
-    background-color: lightgray;
-}
-
-.menuItem {
-    text-align: right;
-}
-
-.menuItem:hover {
-    background-color: gray;
-}
-
 th, td {
     border: 1px solid black;
     padding: 3px;
@@ -120,22 +93,6 @@ th, td {
     width: 100%;
 }
 
-.rightAlign {
-    text-align: right;
-}
-
-.leftAlign {
-    text-align: left;
-}
-
-.flexcontainer {
-    flex-direction: row;
-    display: flex;
-    flex-wrap: nowrap;
-    justify-content: flex-start;
-    align-items: stretch;
-}
-
 .histogramBoxLabel {
     font: 10px sans-serif;
 }
@@ -145,4 +102,74 @@ th, td {
     fill: none;
     stroke-width: 1;
     stroke-dasharray: 5,5
+}
+
+/* menus in CSS; from http://codepen.io/philhoyt/pen/ujHzd */
+
+.menu {
+    margin-top:15px
+}
+
+.menu ul {
+    list-style: none;
+    position: relative;
+    float: left;
+    margin: 0;
+    padding: 0;
+    background: lightgray;
+}
+
+.menu ul span {
+    display:block;
+    text-decoration: none;
+    text-align: left;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 32px;
+    padding:0 15px;
+}
+
+.menu ul li  {
+    position: relative;
+    float: left;
+    margin: 0;
+    padding: 0;
+    transition: all 0.2s;
+    display: inline-block;
+    position: relative;
+}
+
+.menu ul li:hover  {
+    background: grey;
+}
+
+.menu ul ul {
+    display:none;
+    position:absolute;
+    top:100%;
+    left:0;
+    background:#fff;
+    padding:0;
+}
+
+.menu ul ul span {
+    line-height:120%;
+    padding:10px 15px
+}
+
+.menu ul li:hover > ul {
+    display:block;
+}
+
+.dropdown {
+    display: none;
+    position: absolute;
+    background-color: lightgray;
+    z-index: 1;
+    text-align: right;
+}
+
+/* for pop-up menu */
+.menuItem:hover {
+    background-color: gray;
 }

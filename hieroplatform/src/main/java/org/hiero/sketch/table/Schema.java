@@ -24,8 +24,13 @@ import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.ISubSchema;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.security.InvalidParameterException;
 import java.util.*;
 
@@ -144,5 +149,16 @@ public final class Schema
 
     public static Schema fromJson(String json) {
         return IJson.gsonInstance.fromJson(json, Schema.class);
+    }
+
+    public static Schema readFromJsonFile(Path file) throws IOException {
+        String s = new String(Files.readAllBytes(file));
+        return Schema.fromJson(s);
+    }
+
+    public void writeToJsonFile(Path file) throws IOException {
+        String text = this.toJson();
+        byte[] bytes = text.getBytes(StandardCharsets.UTF_8);
+        Files.write(file, bytes, StandardOpenOption.CREATE);
     }
 }

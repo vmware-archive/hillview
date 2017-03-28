@@ -20,14 +20,28 @@ package org.hiero.sketch.dataset.api;
 
 import com.google.gson.*;
 import org.hiero.sketch.table.Schema;
+import org.hiero.utils.Converters;
 
-@SuppressWarnings("UnnecessaryInterfaceModifier")
+import java.lang.reflect.Type;
+import java.time.LocalDateTime;
+
+// Unfortunately this module introduces many circular dependences, because it has
+// to register various type adaptors.
+
 public interface IJson {
+    class DateSerializer implements JsonSerializer<LocalDateTime> {
+        public JsonElement serialize(LocalDateTime data, Type typeOfSchema, JsonSerializationContext context) {
+            double d = Converters.toDouble(data);
+            return new JsonPrimitive(d);
+        }
+    }
+
     // Use these instances for all your json serialization needs
-    final static GsonBuilder builder = new GsonBuilder()
+    GsonBuilder builder = new GsonBuilder()
         .registerTypeAdapter(Schema.class, new Schema.SchemaSerializer())
-        .registerTypeAdapter(Schema.class, new Schema.SchemaDeserializer());;
-    final static Gson gsonInstance = builder.serializeNulls().create();
+        .registerTypeAdapter(Schema.class, new Schema.SchemaDeserializer())
+        .registerTypeAdapter(LocalDateTime.class, new DateSerializer());
+    Gson gsonInstance = builder.serializeNulls().create();
 
     /**
      * Default JSON string representation of this.

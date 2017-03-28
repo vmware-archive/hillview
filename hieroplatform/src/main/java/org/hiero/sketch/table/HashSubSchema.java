@@ -19,12 +19,25 @@
 package org.hiero.sketch.table;
 import org.hiero.sketch.table.api.ISubSchema;
 import java.util.HashSet;
+import java.util.Iterator;
 
 public class HashSubSchema implements ISubSchema {
     private final HashSet<String> colNames;
 
     public HashSubSchema() {
         this.colNames = new HashSet<String>();
+    }
+
+    public HashSubSchema(Iterable<String> columns) {
+        this.colNames = new HashSet<String>();
+        for (String s : columns)
+            this.add(s);
+    }
+
+    public HashSubSchema(String[] columns) {
+        this.colNames = new HashSet<String>();
+        for (String s : columns)
+            this.add(s);
     }
 
     public void add(final String newCol){
@@ -35,4 +48,6 @@ public class HashSubSchema implements ISubSchema {
     public boolean isColumnPresent(final String name) {
         return this.colNames.contains(name);
     }
+
+    public int getColumnCount() { return this.colNames.size(); }
 }

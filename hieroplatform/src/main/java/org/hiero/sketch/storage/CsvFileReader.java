@@ -87,74 +87,75 @@ public class CsvFileReader {
         this.currentColumn = 0;
     }
 
+    // May return null when an error occurs.
     @Nullable
     public ITable read() throws IOException {
         if (this.configuration.schema != null)
             this.actualSchema = this.configuration.schema;
 
-        Reader file = new FileReader(this.filename.toString());
-        CSVReader reader = new CSVReader(file, this.configuration.separator);
-        if (this.configuration.hasHeaderRow) {
-            @Nullable
-            String[] line = reader.readNext();
-            if (line == null)
-                throw new RuntimeException("Missing header row " + this.filename.toString());
-            if (this.configuration.schema == null) {
-                this.actualSchema = new Schema();
-                int index = 0;
-                for (String col : line) {
-                    if (col.isEmpty())
-                        col = this.actualSchema.newColumnName("Column_" + Integer.toString(index));
-                    ColumnDescription cd = new ColumnDescription(col,
-                            ContentsKind.String,
-                            this.configuration.allowMissingData);
-                    this.actualSchema.append(cd);
-                    index++;
+        try (Reader file = new FileReader(this.filename.toString());
+             CSVReader reader = new CSVReader(file, this.configuration.separator)) {
+            if (this.configuration.hasHeaderRow) {
+                @Nullable
+                String[] line = reader.readNext();
+                if (line == null)
+                    throw new RuntimeException("Missing header row " + this.filename.toString());
+                if (this.configuration.schema == null) {
+                    this.actualSchema = new Schema();
+                    int index = 0;
+                    for (String col : line) {
+                        if (col.isEmpty())
+                            col = this.actualSchema.newColumnName("Column_" + Integer.toString(index));
+                        ColumnDescription cd = new ColumnDescription(col,
+                                ContentsKind.String,
+                                this.configuration.allowMissingData);
+                        this.actualSchema.append(cd);
+                        index++;
+                    }
+                } else {
+                    this.currentRow++;
                 }
-            } else {
-                this.currentRow++;
-            }
-        }
-
-        String[] firstLine = null;
-        if (this.actualSchema == null) {
-            this.actualSchema = new Schema();
-            if (this.configuration.columnCount == 0) {
-                firstLine = reader.readNext();
-                if (firstLine == null)
-                    throw new RuntimeException("Cannot create schema from empty CSV file");
-                this.actualColumnCount = firstLine.length;
             }
 
-            for (int i = 0; i < this.configuration.columnCount; i++) {
-                ColumnDescription cd = new ColumnDescription("Column " + Integer.toString(i),
-                        ContentsKind.String, this.configuration.allowMissingData);
-                this.actualSchema.append(cd);
+            String[] firstLine = null;
+            if (this.actualSchema == null) {
+                this.actualSchema = new Schema();
+                if (this.configuration.columnCount == 0) {
+                    firstLine = reader.readNext();
+                    if (firstLine == null)
+                        throw new RuntimeException("Cannot create schema from empty CSV file");
+                    this.actualColumnCount = firstLine.length;
+                }
+
+                for (int i = 0; i < this.configuration.columnCount; i++) {
+                    ColumnDescription cd = new ColumnDescription("Column " + Integer.toString(i),
+                            ContentsKind.String, this.configuration.allowMissingData);
+                    this.actualSchema.append(cd);
+                }
             }
-        }
 
-        Converters.checkNull(this.actualSchema);
-        this.actualColumnCount = this.actualSchema.getColumnCount();
-        List<IColumn> columns = new ArrayList<IColumn>(this.actualColumnCount);
-        this.columns = new BaseListColumn[this.actualColumnCount];
-        int index = 0;
-        for (String col : this.actualSchema.getColumnNames()) {
-            ColumnDescription cd = Converters.checkNull(this.actualSchema.getDescription(col));
-            BaseListColumn column = BaseListColumn.create(cd);
-            columns.add(column);
-            this.columns[index++] = column;
-        }
+            Converters.checkNull(this.actualSchema);
+            this.actualColumnCount = this.actualSchema.getColumnCount();
+            List<IColumn> columns = new ArrayList<IColumn>(this.actualColumnCount);
+            this.columns = new BaseListColumn[this.actualColumnCount];
+            int index = 0;
+            for (String col : this.actualSchema.getColumnNames()) {
+                ColumnDescription cd = Converters.checkNull(this.actualSchema.getDescription(col));
+                BaseListColumn column = BaseListColumn.create(cd);
+                columns.add(column);
+                this.columns[index++] = column;
+            }
 
-        if (firstLine != null)
-            this.append(firstLine);
-        while (true) {
-            String[] line = reader.readNext();
-            if (line == null)
-                break;
-            this.append(line);
+            if (firstLine != null)
+                this.append(firstLine);
+            while (true) {
+                String[] line = reader.readNext();
+                if (line == null)
+                    break;
+                this.append(line);
+            }
+            return new Table(columns);
         }
-
-        return new Table(columns);
     }
 
     protected void append(String[] data) {
@@ -174,6 +175,10 @@ public class CsvFileReader {
                 }
             }
             this.currentRow++;
+            if ((this.currentRow % 10000) == 0) {
+                System.out.print(".");
+                System.out.flush();
+            }
         } catch (Exception ex) {
             this.error(ex);
         }
@@ -181,7 +186,8 @@ public class CsvFileReader {
 
     protected String errorMessage() {
         return "Error while parsing CSV file " + this.filename.toString() +
-                " line " + this.currentRow + " column " + this.columns[this.currentColumn].getName();
+                " line " + this.currentRow + " column " +
+                Converters.checkNull(this.columns)[this.currentColumn].getName();
     }
 
     protected void error(String message) {

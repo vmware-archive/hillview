@@ -29,14 +29,11 @@ import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.ITable;
 import org.hiero.sketch.table.api.IndexComparator;
 import org.hiero.utils.Converters;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertTrue;
-import static org.hiero.sketch.TableTest.*;
 
 public class NextKSketchTest {
     @Test
@@ -45,7 +42,7 @@ public class NextKSketchTest {
         final int maxSize = 50;
         final int rightSize = 1000;
         final int leftSize = 1000;
-        final Table leftTable = getRepIntTable(leftSize, numCols);
+        final Table leftTable = TableTest.getRepIntTable(leftSize, numCols);
         //System.out.println(leftTable.toLongString(50));
         RecordOrder cso = new RecordOrder();
         for (String colName : leftTable.getSchema().getColumnNames()) {
@@ -57,7 +54,7 @@ public class NextKSketchTest {
         final NextKList leftK = nk.create(leftTable);
         IndexComparator leftComp = cso.getComparator(leftK.table);
         for (int i = 0; i < (leftK.table.getNumOfRows() - 1); i++)
-            assertTrue(leftComp.compare(i, i + 1) <= 0);
+            Assert.assertTrue(leftComp.compare(i, i + 1) <= 0);
         //System.out.println(leftK.toLongString(maxSize));
 
         final RowSnapshot topRow2 = new RowSnapshot(leftTable, 100);
@@ -66,19 +63,19 @@ public class NextKSketchTest {
         final NextKList leftK2 = nk2.create(leftTable);
         IndexComparator leftComp2 = cso.getComparator(leftK2.table);
         for (int i = 0; i < (leftK2.table.getNumOfRows() - 1); i++)
-            assertTrue(leftComp2.compare(i, i + 1) <= 0);
+            Assert.assertTrue(leftComp2.compare(i, i + 1) <= 0);
         //System.out.println(leftK2.toLongString(maxSize));
-        final Table rightTable = getRepIntTable(rightSize, numCols);
+        final Table rightTable = TableTest.getRepIntTable(rightSize, numCols);
         final NextKList rightK = nk.create(rightTable);
         IndexComparator rightComp = cso.getComparator(rightK.table);
         for (int i = 0; i < (rightK.table.getNumOfRows() - 1); i++)
-            assertTrue(rightComp.compare(i, i + 1) <= 0);
+            Assert.assertTrue(rightComp.compare(i, i + 1) <= 0);
         //System.out.println(rightK.toLongString(maxSize));
         NextKList tK = nk.add(leftK, rightK);
         tK = Converters.checkNull(tK);
         IndexComparator tComp = cso.getComparator(tK.table);
         for (int i = 0; i < (tK.table.getNumOfRows() - 1); i++)
-            assertTrue(tComp.compare(i, i + 1) <= 0);
+            Assert.assertTrue(tComp.compare(i, i + 1) <= 0);
         //System.out.println(tK.toLongString(maxSize));
     }
 
@@ -87,13 +84,13 @@ public class NextKSketchTest {
         final int numCols = 2;
         final int maxSize = 50;
         final int leftSize = 1000;
-        final Table leftTable = getRepIntTable(leftSize, numCols);
+        final Table leftTable = TableTest.getRepIntTable(leftSize, numCols);
         final RowSnapshot topRow = new RowSnapshot(leftTable, 10);
         //System.out.println(leftTable.toLongString(50));
         RecordOrder cso = new RecordOrder();
         final NextKSketch nk= new NextKSketch(cso, topRow, maxSize);
         final NextKList leftK = nk.create(leftTable);
-        assertEquals(leftK.table.getNumOfRows(), 0);
+        Assert.assertEquals(leftK.table.getNumOfRows(), 0);
     }
 
     @Test
@@ -102,7 +99,7 @@ public class NextKSketchTest {
         final int numCols = 3;
         final int maxSize = 50;
         final int bigSize = 100000;
-        final SmallTable bigTable = getIntTable(bigSize, numCols);
+        final SmallTable bigTable = TableTest.getIntTable(bigSize, numCols);
         final RowSnapshot topRow = new RowSnapshot(bigTable, 1000);
         //System.out.printf("Top Row %s. %n", topRow.toString());
         //printTime("created");
@@ -110,19 +107,11 @@ public class NextKSketchTest {
         for (String colName : bigTable.getSchema().getColumnNames()) {
             cso.append(new ColumnSortOrientation(bigTable.getSchema().getDescription(colName), true));
         }
-        List<SmallTable> tabList = SplitTable(bigTable, 10000);
-        //printTime("split");
-        ArrayList<IDataSet<ITable>> a = new ArrayList<IDataSet<ITable>>();
-        for (SmallTable t : tabList) {
-            LocalDataSet<ITable> ds = new LocalDataSet<ITable>(t);
-            a.add(ds);
-        }
-        ParallelDataSet<ITable> all = new ParallelDataSet<ITable>(a);
-        //printTime("Parallel");
+        ParallelDataSet<ITable> all = TableTest.makeParallel(bigTable, 10000);
         NextKList nk = all.blockingSketch(new NextKSketch(cso, topRow, maxSize));
         IndexComparator mComp = cso.getComparator(nk.table);
         for (int i = 0; i < (nk.table.getNumOfRows() - 1); i++)
-            assertTrue(mComp.compare(i, i + 1) <= 0);
+            Assert.assertTrue(mComp.compare(i, i + 1) <= 0);
         //System.out.println(nk.toLongString(maxSize));
     }
 
@@ -133,7 +122,7 @@ public class NextKSketchTest {
         schema.append(cd);
         NextKList nkl = new NextKList(schema);
         String s = nkl.toLongString(Integer.MAX_VALUE);
-        assertEquals(s, "Table, 1 columns, 0 rows" + System.lineSeparator());
+        Assert.assertEquals(s, "Table, 1 columns, 0 rows" + System.lineSeparator());
     }
 
     @Test
@@ -150,6 +139,6 @@ public class NextKSketchTest {
         ro.append(new ColumnSortOrientation(t.getSchema().getDescription("Name"), true));
         NextKSketch nk = new NextKSketch(ro, null, 10);
         NextKList nkl = big.blockingSketch(nk);
-        assertEquals(nkl.table.toString(), "Table, 1 columns, 10 rows");
+        Assert.assertEquals(nkl.table.toString(), "Table, 1 columns, 10 rows");
     }
 }

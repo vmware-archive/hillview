@@ -47,7 +47,10 @@ public class StringListColumn extends BaseListColumn implements IStringColumn {
         return this.segments.get(segmentId)[localIndex];
     }
 
-    public void append(@Nullable final String value) {
+    public void append(@Nullable String value) {
+        if (this.description.kind == ContentsKind.Category)
+            value = value.intern();
+
         final int segmentId = this.size >> this.LogSegmentSize;
         final int localIndex = this.size & this.SegmentMask;
         if (this.segments.size() <= segmentId) {

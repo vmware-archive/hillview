@@ -39,7 +39,7 @@ public final class RpcObjectManager {
     static {
         LOGGER = Logger.getLogger(RpcObjectManager.class.getName());
         instance = new RpcObjectManager();
-        new InitialObject();  // indirectly registers this object with the RpcObjectManager
+        new InitialObjectTarget();  // indirectly registers this object with the RpcObjectManager
     }
 
     // Used to generate fresh object ids

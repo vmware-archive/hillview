@@ -28,6 +28,8 @@ import org.hiero.sketch.table.api.IRowIterator;
 import org.hiero.sketch.table.api.ITable;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * A SmallTable is similar to a Table, but it is intended to be shipped over the network.
@@ -43,6 +45,26 @@ public class SmallTable
     public Schema getSchema() {
         return this.schema;
     }
+
+    /**
+     * Create a small table from a list of columns and a precomputed schema.
+     * @param columns  List of columns.
+     * @param schema   The schema of the result; it must match the list of columns.
+     */
+    protected SmallTable(final Iterable<IColumn> columns, final Schema schema) {
+        super(columns);
+        this.rowCount = BaseTable.columnSize(this.columns.values());
+        final Schema s = new Schema();
+        for (final IColumn c : columns) {
+            s.append(c.getDescription());
+            if (!(c instanceof Serializable))
+                throw new RuntimeException("Column for SmallTable is not serializable");
+        }
+        this.schema = schema;
+        if (!schema.equals(s))
+            throw new RuntimeException("Schemas do not match");
+    }
+
 
     public SmallTable(final Iterable<IColumn> columns) {
         super(columns);
@@ -63,8 +85,14 @@ public class SmallTable
     }
 
     @Override
-    public ITable filter(IMembershipSet set) {
+    public ITable selectRowsFromFullTable(IMembershipSet set) {
         return this.compress(set);
+    }
+
+    @Override
+    public ITable project(Schema schema) {
+        Iterable<IColumn> cols = this.getColumns(schema);
+        return new SmallTable(cols, schema);
     }
 
     @Override

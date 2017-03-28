@@ -59,6 +59,10 @@ export function getWindowSize(): Size {
     };
 }
 
+export function formatNumber(n: number): string {
+    return n.toLocaleString();
+}
+
 export function significantDigits(n: number): string {
     let suffix = "";
     let absn = Math.abs(n);
@@ -71,7 +75,8 @@ export function significantDigits(n: number): string {
     } else if (absn > 1e6) {
         suffix = "M";
         n = n / 1e6;
-    } else if (absn > 1e3) {
+    } else if (absn > 5e3) {
+        // This will prevent many year values from being converted
         suffix = "K";
         n = n / 1e3;
     } else if (absn < 1e-12) {
@@ -189,7 +194,8 @@ export class ProgressBar implements IHtmlElement {
 
         let labelCell = row.insertCell(0);
         labelCell.appendChild(label);
-        labelCell.className = "leftAlign noBorder";
+        labelCell.style.textAlign = "left";
+        labelCell.className = "noBorder";
 
         let barCell = row.insertCell(1);
         barCell.appendChild(outer);
@@ -356,86 +362,9 @@ export class FullPage implements IHtmlElement {
         this.getErrorReporter().clear();
         this.getErrorReporter().reportError(error);
     }
-}
 
-export interface MenuItem {
-    text: string;
-    action: () => void;
-}
-
-export class ContextMenu implements IHtmlElement {
-    items: MenuItem[];
-    private outer: HTMLElement;
-    private htmlTable: HTMLTableElement;
-    private tableBody: HTMLTableSectionElement;
-
-    constructor(mis: MenuItem[]) {
-        this.outer = document.createElement("div");
-        this.outer.className = "dropdown";
-        this.outer.onmouseout = () => this.toggleVisibility();
-        this.htmlTable = document.createElement("table");
-        this.outer.appendChild(this.htmlTable);
-        this.tableBody = this.htmlTable.createTBody();
-        this.items = [];
-        if (mis != null) {
-            for (let mi of mis)
-                this.addItem(mi);
-        }
-    }
-
-    toggleVisibility(): void {
-        this.outer.classList.toggle("shown");
-    }
-
-    addItem(mi: MenuItem): void {
-        this.items.push(mi);
-        let trow = this.tableBody.insertRow();
-        let cell = trow.insertCell(0);
-        cell.innerHTML = mi.text;
-        cell.className = "menuItem";
-        cell.onclick = () => { this.toggleVisibility(); mi.action(); }
-    }
-
-    getHTMLRepresentation(): HTMLElement {
-        return this.outer;
-    }
-}
-
-interface SubMenu {
-    readonly text: string;
-    readonly subMenu: ContextMenu;
-}
-
-export class DropDownMenu implements IHtmlElement {
-    items: SubMenu[];
-    private outer: HTMLElement;
-    private htmlTable: HTMLTableElement;
-    private tableBody: HTMLTableSectionElement;
-    private tableRow: HTMLTableRowElement;
-
-    constructor(mis: SubMenu[]) {
-        this.outer = document.createElement("div");
-        this.htmlTable = document.createElement("table");
-        this.outer.appendChild(this.htmlTable);
-        this.tableBody = this.htmlTable.createTBody();
-        this.tableRow = this.tableBody.insertRow();
-        this.items = [];
-        if (mis != null) {
-            for (let mi of mis)
-                this.addItem(mi);
-        }
-    }
-
-    addItem(mi: SubMenu): void {
-        this.items.push(mi);
-        let cell = this.tableRow.insertCell();
-        cell.innerHTML = mi.text;
-        cell.className = "menuItem";
-        cell.onclick = () => { mi.subMenu.toggleVisibility(); }
-    }
-
-    getHTMLRepresentation(): HTMLElement {
-        return this.outer;
+    public getSize(): Size {
+        return getWindowSize();
     }
 }
 
@@ -447,5 +376,9 @@ export abstract class Renderer<T> extends RpcReceiver<PartialResult<T>> {
               page.getErrorReporter());
         // TODO: This may be too eager.
         page.getErrorReporter().clear();
+    }
+
+    public onNext(value: PartialResult<T>) {
+        this.progressBar.setPosition(value.done);
     }
 }

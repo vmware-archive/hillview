@@ -39,6 +39,18 @@ public class Table extends BaseTable {
         this.members = new FullMembership(0);
     }
 
+    /**
+     * Create a table from raw ingredients.
+     * @param columns  Columns in the table.
+     * @param members  Membership set (rows in the table).
+     * @param schema   Schema; must match the set of columns.
+     */
+    protected Table(final Iterable<IColumn> columns, final IMembershipSet members, Schema schema) {
+        super(columns);
+        this.members = members;
+        this.schema = schema;
+    }
+
     public Table(final Iterable<IColumn> columns, final IMembershipSet members) {
         super(columns);
         final Schema s = new Schema();
@@ -46,6 +58,12 @@ public class Table extends BaseTable {
             s.append(c.getDescription());
         this.schema = s;
         this.members = members;
+    }
+
+    @Override
+    public ITable project(Schema schema) {
+        Iterable<IColumn> cols = this.getColumns(schema);
+        return new Table(cols, this.members);
     }
 
     @Override
@@ -68,17 +86,13 @@ public class Table extends BaseTable {
         this(columns, new FullMembership(columnSize(columns)));
     }
 
-    public String toLongString(int rowsToDisplay) {
-        return this.toLongString(0, rowsToDisplay);
-    }
-
     @Override
     public int getNumOfRows() {
         return this.members.getSize();
     }
 
     @Override
-    public ITable filter(IMembershipSet set) {
+    public ITable selectRowsFromFullTable(IMembershipSet set) {
         return new Table(this.getColumns(), set);
     }
 

@@ -50,9 +50,21 @@ public interface ITable {
     SmallTable compress(IRowOrder rowOrder);
 
     /**
-     * Creates a new table which is identical with this one except the
-     * provided membership set.
+     * Creates a new table which has the same data with this one except the
+     * provided membership set.  Note that the result can have more rows
+     * than the original table - the original membership set is ignored.
      * @param set: Membership set of the resulting table.
      */
-    ITable filter(IMembershipSet set);
+    ITable selectRowsFromFullTable(IMembershipSet set);
+
+    /**
+     * Return a new table which only contains the specified columns.
+     * @param schema: Schema of the resulting table.
+     */
+    ITable project(Schema schema);
+
+    /**
+     * Formats the first rows in the table as a long string.
+     */
+    String toLongString(int rowsToDisplay);
 }

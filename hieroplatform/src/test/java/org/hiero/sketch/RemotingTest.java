@@ -178,7 +178,10 @@ public class RemotingTest {
     public void testMapSketchThroughClient() {
         final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(
                 Converters.checkNull(clientActor), Converters.checkNull(remoteActor));
-        final IDataSet<int[]> remoteIdsNew = remoteIds.map(new IncrementMap()).toBlocking().last().deltaValue;
+        final IDataSet<int[]> remoteIdsNew = remoteIds.map(new IncrementMap())
+                                                      .filter(p -> p.deltaValue != null)
+                                                      .toBlocking()
+                                                      .last().deltaValue;
         assertNotNull(remoteIdsNew);
         final int result = remoteIdsNew.sketch(new SumSketch())
                                        .map(e -> e.deltaValue)

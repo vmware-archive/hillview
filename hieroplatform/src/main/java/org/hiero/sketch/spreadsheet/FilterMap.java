@@ -42,6 +42,6 @@ public class FilterMap implements IMap<ITable, ITable> {
     public ITable apply(ITable data) {
         this.rowFilterPredicate.setTable(data);
         IMembershipSet result = data.getMembershipSet().filter(this.rowFilterPredicate::test);
-        return data.filter(result);
+        return data.selectRowsFromFullTable(result);
     }
 }

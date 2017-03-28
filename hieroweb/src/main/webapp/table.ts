@@ -15,24 +15,24 @@
  *  limitations under the License.
  */
 
-import {IHtmlElement, ScrollBar, ContextMenu, Renderer, FullPage, HieroDataView, DropDownMenu} from "./ui";
-import {RemoteObject, PartialResult, RpcReceiver, ICancellable} from "./rpc";
+import {
+    IHtmlElement, ScrollBar, Renderer, FullPage, HieroDataView,formatNumber
+} from "./ui";
+import {RemoteObject, PartialResult, ICancellable} from "./rpc";
 import Rx = require('rx');
 import {RangeCollector} from "./histogram";
+import {DropDownMenu, ContextMenu, PopupMenu} from "./menu";
+import {Converters} from "./util";
 
 // These classes are direct counterparts to server-side Java classes
 // with the same names.  JSON serialization
 // of the Java classes produces JSON that can be directly cast
 // into these interfaces.
-export enum ContentsKind {
-    Category,
-    Json,
-    String,
-    Integer,
-    Double,
-    Date,
-    Interval
-}
+
+// I can't use an enum for ContentsKind because JSON deserialization does not
+// return an enum from a string.
+
+export type ContentsKind = "Category" | "Json" | "String" | "Integer" | "Double" | "Date" | "Interval";
 
 export interface IColumnDescription {
     readonly kind: ContentsKind;
@@ -143,6 +143,11 @@ export class TableView extends RemoteObject
     public constructor(id: string, page: FullPage) {
         super(id);
         this.top = document.createElement("div");
+        this.top.style.flexDirection = "column";
+        this.top.style.display = "flex";
+        this.top.style.flexWrap = "nowrap";
+        this.top.style.justifyContent = "flex-start";
+        this.top.style.alignItems = "stretch";
         let menu = new DropDownMenu([
             { text: "View", subMenu: new ContextMenu([
                 { text: "close", action: () => {} }
@@ -153,9 +158,10 @@ export class TableView extends RemoteObject
             ]),
             }
         ]);
-        //this.top.appendChild(menu.getHTMLRepresentation());
+        this.top.appendChild(menu.getHTMLRepresentation());
+        this.top.appendChild(document.createElement("hr"));
         this.htmlTable = document.createElement("table");
-        this.top.className = "flexcontainer";
+        //this.htmlTable.style.clear = "both";
         this.scrollBar = new ScrollBar();
         this.top.appendChild(this.htmlTable);
         this.top.appendChild(this.scrollBar.getHTMLRepresentation());
@@ -231,7 +237,7 @@ export class TableView extends RemoteObject
         let thd = document.createElement("th");
         let label = cd.name;
         if (!this.isVisible(cd.name)) {
-            thd.className = "hiddenColumn";
+            thd.style.fontWeight = "normal";
         } else {
             label += " " +
                 this.getSortArrow(cd.name) + this.getSortIndex(cd.name);
@@ -287,11 +293,11 @@ export class TableView extends RemoteObject
         // These two columns are always shown
         let cds : ColumnDescription[] = [];
         let posCd = new ColumnDescription({
-            kind: ContentsKind.Integer,
+            kind: "Integer",
             name: "(position)",
             allowMissing: false });
         let ctCd = new ColumnDescription({
-            kind: ContentsKind.Integer,
+            kind: "Integer",
             name: "(count)",
             allowMissing: false });
 
@@ -305,16 +311,15 @@ export class TableView extends RemoteObject
             let cd = new ColumnDescription(this.schema[i]);
             cds.push(cd);
             let thd = this.addHeaderCell(thr, cd);
-            let menu = new ContextMenu([
+            let menu = new PopupMenu([
                 {text: "sort asc", action: () => this.showColumn(cd.name, 1) },
-                {text: "sort desc", action: () => this.showColumn(cd.name, -1) }
+                {text: "sort desc", action: () => this.showColumn(cd.name, -1) },
+                {text: "hide", action: () => this.showColumn(cd.name, 0)}
              ]);
-            if (cd.kind != ContentsKind.Json &&
-                cd.kind != ContentsKind.String &&
-                cd.kind != ContentsKind.Category)  // TODO: delete this
+            if (cd.kind != "Json" &&
+                cd.kind != "String" &&
+                cd.kind != "Category")  // TODO: delete this
                 menu.addItem({text: "histogram", action: () => this.histogram(cd.name) });
-            if (this.order != null && this.order.find(cd.name) != -1)
-                menu.addItem({text: "hide", action: () => this.showColumn(cd.name, 0)});
 
             thd.onclick = () => menu.toggleVisibility();
             thd.appendChild(menu.getHTMLRepresentation());
@@ -332,7 +337,7 @@ export class TableView extends RemoteObject
         let cell = footer.insertCell(0);
         cell.colSpan = this.schema.length + 2;
         cell.className = "footer";
-        cell.textContent = String(this.rowCount + " rows");
+        cell.textContent = formatNumber(this.rowCount) + " rows";
 
         this.updateScrollBar();
     }
@@ -356,15 +361,26 @@ export class TableView extends RemoteObject
         return this.top;
     }
 
+    protected static convert(val: any, kind: ContentsKind): string {
+        if (kind == "Integer" || kind == "Double")
+            return String(val);
+        else if (kind == "Date")
+            return Converters.dateFromDouble(<number>val).toDateString();
+        else if (kind == "Category" || kind == "String")
+            return <string>val;
+        else
+            return "?";  // TODO
+    }
+
     public addRow(row : RowView, cds: ColumnDescription[]) : void {
         let trow = this.tBody.insertRow();
 
         let cell = trow.insertCell(0);
-        cell.className = "rightAlign";
+        cell.style.textAlign = "right";
         cell.textContent = String(this.startPosition + this.dataRowsDisplayed);
 
         cell = trow.insertCell(1);
-        cell.className = "rightAlign";
+        cell.style.textAlign = "right";
         cell.textContent = String(row.count);
 
         for (let i = 0; i < cds.length; i++) {
@@ -375,8 +391,9 @@ export class TableView extends RemoteObject
             if (dataIndex == -1)
                 continue;
             if (this.isVisible(cd.name)) {
-                cell.className = "rightAlign";
-                cell.textContent = String(row.values[dataIndex]);
+                cell.style.textAlign = "right";
+                let repr = TableView.convert(row.values[dataIndex], cd.kind);
+                cell.textContent = repr;
             }
         }
         this.dataRowsDisplayed += row.count;
@@ -395,33 +412,32 @@ export class TableRenderer extends Renderer<TableDataView> {
     }
 
     onNext(value: PartialResult<TableDataView>): void {
-        this.progressBar.setPosition(value.done);
+        super.onNext(value);
         this.table.updateView(value.data);
     }
 }
 
-export class RemoteTableReceiver extends RpcReceiver<string> {
-    public table: TableView;
+export class RemoteTableReceiver extends Renderer<string> {
+    public remoteTableId: string;
 
-    constructor(protected page: FullPage, operation: ICancellable) {
-        super(page.progressManager.newProgressBar(operation, "Get schema"),
-              page.getErrorReporter());
+    constructor(page: FullPage, operation: ICancellable) {
+        super(page, operation, "Get schema");
     }
 
-    private retrieveSchema(): void {
-        let rr = this.table.createRpcRequest("getSchema", null);
-        rr.invoke(new TableRenderer(this.page, this.table, rr));
-    }
-
-    // we expect exactly one reply
-    public onNext(value: string): void {
-        this.table = new TableView(value, this.page);
-        this.page.setHieroDataView(this.table);
+    public onNext(value: PartialResult<string>): void {
+        super.onNext(value);
+        if (value.data != null)
+            this.remoteTableId = value.data;
     }
 
     public onCompleted(): void {
         this.finished();
-        if (this.table)
-            this.retrieveSchema();
+        if (this.remoteTableId == null)
+            return;
+
+        let table = new TableView(this.remoteTableId, this.page);
+        this.page.setHieroDataView(table);
+        let rr = table.createRpcRequest("getSchema", null);
+        rr.invoke(new TableRenderer(this.page, table, rr));
     }
 }

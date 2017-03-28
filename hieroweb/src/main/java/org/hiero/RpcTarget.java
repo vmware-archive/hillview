@@ -40,7 +40,7 @@ public abstract class RpcTarget {
     @Nullable // This is null for a very brief time
     String objectId;
     private final HashMap<String, Method> executor;
-    private static final Logger logger = Logger.getLogger(RpcTarget.class.getName());
+    protected static final Logger logger = Logger.getLogger(RpcTarget.class.getName());
 
     @Nullable
     protected Subscription subscription;
@@ -110,7 +110,7 @@ public abstract class RpcTarget {
             throws InvocationTargetException, IllegalAccessException {
         Method cons = this.executor.get(request.method);
         if (cons == null)
-            throw new RuntimeException("No such method " + request.method);
+            throw new RuntimeException(this.toString() + ": No such method " + request.method);
         cons.invoke(this, request, session);
     }
 

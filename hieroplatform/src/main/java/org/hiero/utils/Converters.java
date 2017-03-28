@@ -33,19 +33,21 @@ public class Converters {
             LocalTime.of(0, 0));
 
     public static double toDouble(final LocalDateTime d) {
-        Duration span = Duration.between(d, baseTime);
+        Duration span = Duration.between(baseTime, d);
         return Converters.toDouble(span);
     }
 
     public static double toDouble(final Duration d) {
-        return d.toNanos();
+        return d.toMillis();
     }
+
+    // TODO: these representations are too coarse to support sub-millisecond timestamps
 
     /**
      * Converts a date d to a double by taking the interval from a base date (Jan 1st 1970) and
-     * converting this to a double
-     * @param d input date
-     * @return Span from base converted to a double
+     * converting this to a double.
+     * @param d input date.
+     * @return Span from base converted to a double.
      */
     public static LocalDateTime toDate(final double d) {
         Duration span = toDuration(d);
@@ -53,7 +55,7 @@ public class Converters {
     }
 
     public static Duration toDuration(final double d) {
-        return Duration.ofNanos((long)d);
+        return Duration.ofMillis((long)d);
     }
 
     /**

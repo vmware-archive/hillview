@@ -22,14 +22,14 @@ import org.hiero.sketch.dataset.LocalDataSet;
 import org.hiero.sketch.dataset.ParallelDataSet;
 import org.hiero.sketch.dataset.api.*;
 import org.hiero.utils.Converters;
+import org.junit.Assert;
 import org.junit.Test;
 import rx.Observable;
 import rx.observers.TestSubscriber;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-
-import static org.junit.Assert.*;
+import java.util.List;
 
 public class DataSetTest {
     private class Increment implements IMap<Integer, Integer> {
@@ -64,7 +64,49 @@ public class DataSetTest {
         final IDataSet<Integer> r = ld.blockingMap(increment);
         final Sketch sketch = new Sketch();
         final int result = r.blockingSketch(sketch);
-        assertEquals(result, 5);
+        Assert.assertEquals(result, 5);
+    }
+
+    @Test
+    public void IdempotenceTest() {
+        int[] count = new int[1];
+        count[0] = 0;
+
+        LocalDataSet<Integer> local = new LocalDataSet<Integer>(10);
+        List<IDataSet<Integer>> l = new ArrayList<IDataSet<Integer>>();
+        l.add(local);
+        ParallelDataSet<Integer> pds = new ParallelDataSet<Integer>(l);
+        IMap<Integer, Integer> map = (IMap<Integer, Integer>) data -> {
+            count[0]++;
+            System.out.println("Map executed on " + data);
+            return data+1;
+        };
+        IDataSet<Integer> r = local.blockingMap(map);
+        Assert.assertNotNull(r);
+        Assert.assertEquals(count[0], 1);
+
+        r = pds.blockingMap(map);
+        Assert.assertNotNull(r);
+        Assert.assertEquals(count[0], 2);
+    }
+
+    // This test explores the semantics of publish/connect.
+    @Test
+    public void RxJavaTest() {
+        Observable<String> o = Observable
+                .just("a", "b", "c")
+                .map(s -> {
+                      System.out.println("Expensive operation for " + s);
+                      return s;
+                })
+                .publish()
+                .autoConnect(2);
+
+        Observable<String> o1 = o.map(s -> s + "0").first().single();
+        Observable<String> o2 = o.map(s -> s + "1");
+        Observable<String> m = o1.mergeWith(o2);
+        m.subscribe(s -> System.out.println("Sub1 got: " + s));
+        //m.subscribe(s -> System.out.println("Sub2 got: " + s));
     }
 
     @Test
@@ -80,11 +122,11 @@ public class DataSetTest {
         final IDataSet<Integer> r1 = par.blockingMap(increment);
         final Sketch sketch = new Sketch();
         final int result = r1.blockingSketch(sketch);
-        assertEquals(result, 11);
+        Assert.assertEquals(result, 11);
 
         final IDataSet<Integer> r2 = r1.blockingMap(increment);
         final int result1 = r2.blockingSketch(sketch);
-        assertEquals(result1, 13);
+        Assert.assertEquals(result1, 13);
     }
 
     private class Sum implements ISketch<int[], Integer> {
@@ -132,16 +174,16 @@ public class DataSetTest {
         int sum = 0;
         for (int i=0; i < this.largeSize; i++)
             sum += ((i % 10) == 0) ? 0 : i;
-        assertEquals(result, sum);
+        Assert.assertEquals(result, sum);
 
         ld.setBundleInterval(100);
         result = ld.blockingSketch(new Sum());
-        assertEquals(result, sum);
+        Assert.assertEquals(result, sum);
 
         ld = this.createLargeDataset(true);
         ld.setBundleInterval(100);
         result = ld.blockingSketch(new Sum());
-        assertEquals(result, sum);
+        Assert.assertEquals(result, sum);
     }
 
     @Test
@@ -151,7 +193,7 @@ public class DataSetTest {
         int sum = 0;
         for (int i=0; i < this.largeSize; i++)
             sum += ((i % 10) == 0) ? 0 : i;
-        assertEquals(result, sum);
+        Assert.assertEquals(result, sum);
     }
 
     @Test

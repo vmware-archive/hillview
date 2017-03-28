@@ -17,6 +17,7 @@
 
 package org.hiero;
 
+import org.hiero.sketch.dataset.ConcurrentSketch;
 import org.hiero.sketch.dataset.api.IDataSet;
 import org.hiero.sketch.spreadsheet.*;
 import org.hiero.sketch.table.RecordOrder;
@@ -45,7 +46,8 @@ public final class TableTarget extends RpcTarget {
     @HieroRpc
     void getTableView(RpcRequest request, Session session) {
         RecordOrder ro = request.parseArgs(RecordOrder.class);
-        NextKSketch nk = new NextKSketch(ro, null, 10);
+        // TODO: number of rows should depend on screen size
+        NextKSketch nk = new NextKSketch(ro, null, 20);
         this.runSketch(this.table, nk, request, session);
     }
 
@@ -53,21 +55,23 @@ public final class TableTarget extends RpcTarget {
         String columnName = "";
         double min;
         double max;
-        // rendering size in pixels
+        // view size
         double width;
         double height;
+        // only used for histogram
+        int bucketCount;
     }
 
     @HieroRpc
     void histogram(RpcRequest request, Session session) {
         ColumnAndRange info = request.parseArgs(ColumnAndRange.class);
-        // TODO: compute number of buckets based on screen resolution
-        int bucketCount = 40;
-        if (info.min >= info.max)
-            bucketCount = 1;
-        BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(info.min, info.max, bucketCount);
+        // TODO: use height in histogram computation
+        BucketsDescriptionEqSize cdfBuckets = new BucketsDescriptionEqSize(info.min, info.max, (int)info.width);
+        Hist1DLightSketch cdf = new Hist1DLightSketch(cdfBuckets, info.columnName, null);
+        BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(info.min, info.max, info.bucketCount);
         Hist1DSketch sk = new Hist1DSketch(buckets, info.columnName, null);
-        this.runSketch(this.table, sk, request, session);
+        ConcurrentSketch<ITable, Histogram1D, Histogram1DLight> csk = new ConcurrentSketch(cdf, sk);
+        this.runSketch(this.table, csk, request, session);
     }
 
     @HieroRpc

@@ -20,12 +20,12 @@ package org.hiero.sketch.table;
 import org.hiero.sketch.table.api.ITable;
 
 /**
- * Interface implemented a filter over a table.
+ * Interface implemented a selectRowsFromFullTable over a table.
  */
 public interface TableFilter {
     /**
-     * Called before the filter is applied to each row index.
-     * @param table: Table on which the filter operates.
+     * Called before the selectRowsFromFullTable is applied to each row index.
+     * @param table: Table on which the selectRowsFromFullTable operates.
      */
     void setTable(ITable table);
 

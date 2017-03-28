@@ -25,10 +25,11 @@ import java.io.Serializable;
  * (How come Java does not have such a class built-in?)
  * Technically this class is serializable only if both T and S are, but there is no simple
  * way to check it statically, and we don't want a separate SerializablePair class.
+ * (Same observation applies for the for IJson interface).
  * @param <T>  First element in the pair.
  * @param <S>  Second element in the pair.
  */
-public class Pair<T, S> implements Serializable {
+public class Pair<T, S> implements Serializable, IJson {
     public final T first;
     public final S second;
 

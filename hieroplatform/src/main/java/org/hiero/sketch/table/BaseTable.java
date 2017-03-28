@@ -47,6 +47,17 @@ public abstract class BaseTable implements ITable {
             this.columns.put(c.getName(), c);
     }
 
+    public List<IColumn> getColumns(Schema schema) {
+        List<IColumn> cols = new ArrayList<IColumn>();
+        for (String col : schema.getColumnNames()) {
+            IColumn mycol = this.getColumn(col);
+            if (mycol == null)
+                throw new RuntimeException("No column named " + col);
+            cols.add(mycol);
+        }
+        return cols;
+    }
+
     public Iterable<IColumn> getColumns() {
         return this.columns.values();
     }
@@ -63,6 +74,10 @@ public abstract class BaseTable implements ITable {
     public String toString() {
         return "Table, " + this.getSchema().getColumnCount() + " columns, " +
                 this.getNumOfRows() + " rows";
+    }
+
+    public String toLongString(int rowsToDisplay) {
+        return this.toLongString(0, rowsToDisplay);
     }
 
     /**

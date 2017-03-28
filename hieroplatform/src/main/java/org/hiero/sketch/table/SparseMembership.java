@@ -37,9 +37,9 @@ public class SparseMembership implements IMembershipSet {
 
     /**
      * Standard way to construct this map is by supplying a membershipSet (perhaps the full one),
-     * and the filter function passed as a lambda expression.
-     * @param baseMap the base IMembershipSet map on which the filter will be applied
-     * @param filter  the additional filter to be applied on the base map
+     * and the selectRowsFromFullTable function passed as a lambda expression.
+     * @param baseMap the base IMembershipSet map on which the selectRowsFromFullTable will be applied
+     * @param filter  the additional selectRowsFromFullTable to be applied on the base map
      */
     public SparseMembership(final IMembershipSet baseMap,
                             final Predicate<Integer> filter) {
@@ -159,7 +159,7 @@ public class SparseMembership implements IMembershipSet {
     }
 
     /**
-     * Estimates the size of a filter applied to an IMembershipSet
+     * Estimates the size of a selectRowsFromFullTable applied to an IMembershipSet
      * @return an approximation of the size, based on a sample of size 20. May return 0.
      * There are no strict guarantees on the quality of the approximation, but is good enough for
      * initialization of a hash table sizes.

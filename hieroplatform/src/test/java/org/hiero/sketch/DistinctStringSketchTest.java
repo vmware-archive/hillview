@@ -12,7 +12,6 @@ import org.junit.Assert;
 import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
-import static org.hiero.sketch.TableTest.SplitTable;
 
 
 public class DistinctStringSketchTest {
@@ -34,13 +33,7 @@ public class DistinctStringSketchTest {
     public void DistinctSketchTest2() {
         final int tableSize = 1000;
         final SmallTable myTable = TestUtil.createSmallTable(tableSize);
-        final List<SmallTable> tabList = SplitTable(myTable, tableSize/10);
-        final ArrayList<IDataSet<ITable>> a = new ArrayList<IDataSet<ITable>>();
-        for (SmallTable t : tabList) {
-            LocalDataSet<ITable> ds = new LocalDataSet<ITable>(t);
-            a.add(ds);
-        }
-        final ParallelDataSet<ITable> all = new ParallelDataSet<ITable>(a);
+        final ParallelDataSet<ITable> all = TableTest.makeParallel(myTable, tableSize/10);
         final DistinctStrings ds = all.blockingSketch(new DistinctStringsSketch(tableSize, "Name"));
         SemiExplicitConverter converter = ds.getStringConverter();
         BucketsDescriptionEqSize desc = new BucketsDescriptionEqSize(-1, ds.size(), ds.size() + 1);

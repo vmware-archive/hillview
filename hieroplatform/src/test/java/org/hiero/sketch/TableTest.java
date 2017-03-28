@@ -18,6 +18,9 @@
 
 package org.hiero.sketch;
 
+import org.hiero.sketch.dataset.LocalDataSet;
+import org.hiero.sketch.dataset.ParallelDataSet;
+import org.hiero.sketch.dataset.api.IDataSet;
 import org.hiero.sketch.table.*;
 import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IMembershipSet;
@@ -34,18 +37,29 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 public class TableTest {
-    public static List<SmallTable> SplitTable(SmallTable bigTable, int fragmentSize) {
+    public static List<ITable> splitTable(ITable bigTable, int fragmentSize) {
         int tableSize = bigTable.getNumOfRows();
         int numTables = (tableSize / fragmentSize) + 1;
-        List<SmallTable> tableList = new ArrayList<SmallTable>(numTables);
+        List<ITable> tableList = new ArrayList<ITable>(numTables);
         int start = 0;
         while (start < tableSize) {
             int thisFragSize = Math.min(fragmentSize, tableSize - start);
             IMembershipSet members = new SparseMembership(start, thisFragSize);
-            tableList.add(bigTable.compress(members));
+            tableList.add(bigTable.selectRowsFromFullTable(members));
             start += fragmentSize;
         }
         return tableList;
+    }
+
+    public static ParallelDataSet<ITable> makeParallel(ITable bigTable, int fragmentSize) {
+        final List<ITable> tabList = splitTable(bigTable, fragmentSize);
+        final ArrayList<IDataSet<ITable>> a = new ArrayList<IDataSet<ITable>>();
+        for (ITable t : tabList) {
+            LocalDataSet<ITable> ds = new LocalDataSet<ITable>(t);
+            a.add(ds);
+        }
+        final ParallelDataSet<ITable> all = new ParallelDataSet<ITable>(a);
+        return all;
     }
 
     public static SmallTable getIntTable(final int size, final int numCols) {
