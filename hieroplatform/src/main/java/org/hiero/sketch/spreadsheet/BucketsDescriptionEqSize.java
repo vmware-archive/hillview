@@ -34,8 +34,9 @@ public class BucketsDescriptionEqSize implements IBucketsDescription1D {
         this.maxValue = maxValue;
         this.numOfBuckets = numOfBuckets;
         this.range = this.maxValue - this.minValue;  // could be 0
-        if (this.range <= 0 && this.numOfBuckets != 1)
-            throw new IllegalArgumentException("Zero range must have exactly 1 bucket");
+        if ((this.range <= 0) && (this.numOfBuckets != 1))
+            throw new IllegalArgumentException("Zero range must have exactly 1 bucket, not "
+                    + this.numOfBuckets);
     }
 
     @Override
@@ -44,7 +45,7 @@ public class BucketsDescriptionEqSize implements IBucketsDescription1D {
             return -1;
         if (item >= this.maxValue)
             return this.numOfBuckets - 1;
-        return (int) (this.numOfBuckets * (item - this.minValue) / this.range);
+        return (int) ((this.numOfBuckets * (item - this.minValue)) / this.range);
     }
 
     @Override

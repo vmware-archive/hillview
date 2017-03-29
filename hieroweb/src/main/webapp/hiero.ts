@@ -17,7 +17,7 @@
 
 import {TableView, RemoteTableReceiver} from "./table";
 import {ScrollBar, ProgressBar, DataDisplay, FullPage} from "./ui";
-import {InitialObject} from "./InitialObject";
+import {InitialObject} from "./initialObject";
 import {ConsoleErrorReporter} from "./errReporter";
 import {Histogram} from "./histogram";
 

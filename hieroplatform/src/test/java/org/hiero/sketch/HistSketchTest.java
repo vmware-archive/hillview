@@ -17,17 +17,15 @@
  */
 
 package org.hiero.sketch;
-import org.hiero.sketch.dataset.LocalDataSet;
 import org.hiero.sketch.dataset.ParallelDataSet;
-import org.hiero.sketch.dataset.api.IDataSet;
 import org.hiero.sketch.spreadsheet.*;
 import org.hiero.sketch.table.SmallTable;
 import org.hiero.sketch.table.Table;
 import org.hiero.sketch.table.api.ITable;
 import org.junit.Test;
-import java.util.ArrayList;
+
 import java.util.Iterator;
-import java.util.List;
+
 import static org.junit.Assert.assertEquals;
 
 /**

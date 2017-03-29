@@ -18,8 +18,6 @@
 
 package org.hiero.sketch.spreadsheet;
 
-import java.util.Arrays;
-
 /**
  * MetaData for one dimensional buckets held by a histogram
  */

@@ -74,7 +74,8 @@ th, td {
     flex-direction: column;
     flex-wrap: nowrap;
     justify-content: flex-start;
-    width: 10px;
+    width: 15px;
+    height: 100%;
 }
 
 .scrollBarBefore, .scrollBarAfter {
@@ -89,7 +90,7 @@ th, td {
 }
 
 .scrollBarInner {
-    background: darkgrey;
+    background: darkslategrey;
     width: 100%;
 }
 
@@ -98,7 +99,7 @@ th, td {
 }
 
 .dashed {
-    stroke: gray;
+    stroke: red;
     fill: none;
     stroke-width: 1;
     stroke-dasharray: 5,5
@@ -116,7 +117,9 @@ th, td {
     float: left;
     margin: 0;
     padding: 0;
-    background: lightgray;
+    background: #efefef;
+    background: linear-gradient(top, #efefef 0%, #bbbbbb 100%);
+    box-shadow: 0 0 9px rgba(0,0,0,0.15);
 }
 
 .menu ul span {
@@ -125,7 +128,7 @@ th, td {
     text-align: left;
     font-weight: 700;
     font-size: 16px;
-    line-height: 32px;
+    line-height: 24px;
     padding:0 15px;
 }
 
@@ -135,12 +138,14 @@ th, td {
     margin: 0;
     padding: 0;
     transition: all 0.2s;
-    display: inline-block;
-    position: relative;
+    background: #efefef;
+    background: linear-gradient(top, #efefef 0%, #bbbbbb 100%);
+    box-shadow: 0 0 9px rgba(0,0,0,0.15);
 }
 
 .menu ul li:hover  {
-    background: grey;
+    background: #4b545f;
+    background: linear-gradient(top, #4f5964 0%, #5f6975 40%);
 }
 
 .menu ul ul {
@@ -148,13 +153,17 @@ th, td {
     position:absolute;
     top:100%;
     left:0;
-    background:#fff;
     padding:0;
+}
+
+.menu ul ul li {
+    float:none;
+    width:200px
 }
 
 .menu ul ul span {
     line-height:120%;
-    padding:10px 15px
+    padding:10px 15px;
 }
 
 .menu ul li:hover > ul {

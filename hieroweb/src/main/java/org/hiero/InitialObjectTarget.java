@@ -39,6 +39,7 @@ public class InitialObjectTarget extends RpcTarget {
         String schemaFile = "short.schema";
         Path schemaPath = Paths.get(dataFolder, schemaFile);
 
+        /*
         List<IDataSet<CsvFileObject>> fileNames = new ArrayList<IDataSet<CsvFileObject>>();
 
         Path folder = Paths.get(dataFolder);
@@ -46,9 +47,9 @@ public class InitialObjectTarget extends RpcTarget {
         files.filter(f -> {
             String filename = f.getFileName().toString();
             if (!filename.endsWith(".csv")) return false;
-            if (!filename.startsWith("201")) return false;
+            if (!filename.startsWith("2016")) return false;
             return true;
-        }).limit(1).forEach(f -> {
+        }).forEach(f -> {
             CsvFileObject cfo = new CsvFileObject(f, schemaPath);
             LocalDataSet<CsvFileObject> local = new LocalDataSet<CsvFileObject>(cfo);
             fileNames.add(local);
@@ -56,11 +57,11 @@ public class InitialObjectTarget extends RpcTarget {
         });
 
         ParallelDataSet<CsvFileObject> result = new ParallelDataSet<CsvFileObject>(fileNames);
-        /*
-        Path f = Paths.get(dataFolder, "On_Time_Sample.csv");
-        CsvFileObject cfo = new CsvFileObject(f, null);
-        LocalDataSet<CsvFileObject> result = new LocalDataSet<CsvFileObject>(cfo);
         */
+        Path f = Paths.get(dataFolder, "2016_1.csv");
+        CsvFileObject cfo = new CsvFileObject(f, schemaPath);
+        LocalDataSet<CsvFileObject> result = new LocalDataSet<CsvFileObject>(cfo);
+
         FileNamesTarget target = new FileNamesTarget(result);
         RpcReply reply = request.createReply(target.idToJson());
         reply.send(session);

@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -104,13 +105,13 @@ public class CsvReaderTest {
         }
     }
 
-    //@Test
+    //@Test // This is not really a test.
     public void SplitTable() throws IOException {
         String[] columns = {
-                "Year", "Month", "DayofMonth", "DayOfWeek", "FlightDate", "UniqueCarrier",
-                "FlightNum", "Origin", "OriginCityName", "OriginState", "Dest", "DestState",
-                "DepTime", "DepDelay", "ArrTime", "ArrDelay", "Cancelled", "Diverted",
-                "ActualElapsedTime", "AirTime", "Distance"
+                "DayOfWeek", "FlightDate", "UniqueCarrier",
+                "Origin", "OriginCityName", "OriginState", "Dest", "DestState",
+                "DepTime", "DepDelay", "ArrTime", "ArrDelay", "Cancelled",
+                "ActualElapsedTime", "Distance"
         };
 
         Path path = Paths.get(dataFolder, schemaFile);
@@ -119,12 +120,15 @@ public class CsvReaderTest {
         Schema proj = schema.project(subschema);
         proj.writeToJsonFile(Paths.get(dataFolder, "short.schema"));
 
+        // If non-zero, split each table into parts of this size.
+        final int splitSize = 0;
+
         String prefix = "On_Time_On_Time_Performance";
         Path folder = Paths.get(dataFolder);
         Stream<Path> files = Files.walk(folder, 1);
         files.forEach(f -> {
             String filename = f.getFileName().toString();
-            if (!filename.endsWith(".csv")) return;
+            if (!filename.endsWith("csv")) return;
             if (!filename.startsWith(prefix)) return;
             String end = filename.substring(prefix.length() + 1);
 
@@ -146,13 +150,32 @@ public class CsvReaderTest {
 
             ITable p = tbl.project(proj);
 
-            Path outpath = Paths.get(dataFolder, end);
-            CsvFileWriter writer = new CsvFileWriter(outpath);
-            try {
-                System.out.println("Writing " + outpath);
-                writer.writeTable(p);
-            } catch (IOException e) {
-                e.printStackTrace();
+            if (splitSize > 0) {
+                List<ITable> pieces = TableTest.splitTable(p, splitSize);
+
+                int index = 0;
+                for (ITable t : pieces) {
+                    String baseName = end.substring(0, end.lastIndexOf("."));
+                    String name = baseName + "-" + Integer.toString(index) + ".csv";
+                    Path outpath = Paths.get(dataFolder, name);
+                    CsvFileWriter writer = new CsvFileWriter(outpath);
+                    try {
+                        System.out.println("Writing " + outpath);
+                        writer.writeTable(t);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    index++;
+                }
+            } else {
+                Path outpath = Paths.get(dataFolder, end);
+                CsvFileWriter writer = new CsvFileWriter(outpath);
+                try {
+                    System.out.println("Writing " + outpath);
+                    writer.writeTable(p);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         });
     }

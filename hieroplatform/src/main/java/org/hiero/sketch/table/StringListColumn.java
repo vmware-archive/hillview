@@ -48,7 +48,7 @@ public class StringListColumn extends BaseListColumn implements IStringColumn {
     }
 
     public void append(@Nullable String value) {
-        if (this.description.kind == ContentsKind.Category)
+        if ((value != null) && (this.description.kind == ContentsKind.Category))
             value = value.intern();
 
         final int segmentId = this.size >> this.LogSegmentSize;

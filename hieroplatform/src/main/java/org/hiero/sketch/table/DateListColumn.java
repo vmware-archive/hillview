@@ -45,7 +45,7 @@ public class DateListColumn
      * Used in conjunction with the parseFormatter.  If true
      * parse the strings as LocalDate. Java is really stupid in this respect,
      * and the spec is unclear about this.
-     * http://stackoverflow.com/questions/27454025/unable-to-obtain-localdatetime-from-temporalaccessor-when-parsing-localdatetime
+     * @see <a href="http://stackoverflow.com/questions/27454025/unable-to-obtain-localdatetime-from-temporalaccessor-when-parsing-localdatetime">Parsing LocalDateTime</a>
      */
     boolean parseAsDate;
 
@@ -104,6 +104,7 @@ public class DateListColumn
             DateTimeFormatter.RFC_1123_DATE_TIME
     };
 
+    @SuppressWarnings("UnnecessaryContinue")
     protected void guessParseFormat(String s) {
         boolean[] asDate = {false, true};
 

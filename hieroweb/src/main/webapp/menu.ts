@@ -89,6 +89,7 @@ export class ContextMenu implements IHtmlElement {
         let cell = document.createElement("span");
         li.appendChild(cell);
         cell.innerHTML = mi.text;
+        cell.style.width = "100%";
         cell.onclick = () => { mi.action(); }
     }
 
@@ -125,6 +126,7 @@ export class DropDownMenu implements IHtmlElement {
         let li = document.createElement("li");
         let span = document.createElement("span");
         span.textContent = mi.text;
+        span.style.width = "100%";
         li.appendChild(span);
         this.list.appendChild(li);
         li.appendChild(mi.subMenu.list);

@@ -19,6 +19,7 @@
 package org.hiero.sketch.dataset;
 
 import org.hiero.sketch.dataset.api.*;
+import org.hiero.utils.Converters;
 import rx.Observable;
 
 import java.util.ArrayList;
@@ -45,7 +46,7 @@ public class ParallelDataSet<T> implements IDataSet<T> {
      * If this is set to zero no aggregation is performed.
      * If this is set to a value too large then progress reporting to the user may be impacted.
      */
-    protected int bundleInterval = 100;
+    protected int bundleInterval = 0;
     /**
      * The bundleInterval specifies a time in milliseconds.
      */
@@ -111,7 +112,9 @@ public class ParallelDataSet<T> implements IDataSet<T> {
             return data.buffer(this.bundleInterval, bundleTimeUnit)
                        .filter(e -> !e.isEmpty())
                        // If a time interval has no data we don't want to produce a zero.
-                       .map(adder::reduce);
+                       .map(e -> log(e, "bundling " + e.size() + " values"))
+                       .map(adder::reduce)
+                    ;
         else
             return data;
     }
@@ -150,17 +153,17 @@ public class ParallelDataSet<T> implements IDataSet<T> {
         // whereas the mapResult part we process locally
         final Observable<PartialResult<IDataSet<S>>> mapResult =
                 // drop partial results which have no value
-                merged.filter(p -> p.second.deltaValue != null)
+                merged.filter(p -> Converters.checkNull(p.second).deltaValue != null)
                       // Create a java.Util.Map with all the non-null results;
                       // there should be exactly one per child
-                      .toMap(p -> p.first, p -> p.second.deltaValue)
+                      .toMap(p -> p.first, p -> Converters.checkNull(p.second).deltaValue)
                       // We expect to produce a single map
                       .single()
                       // Finally, create a ParallelDataSet from the map; these have 0 'done' progress
                       .map(m -> new PartialResult<IDataSet<S>>(0.0, new ParallelDataSet<S>(m)));
         final Observable<PartialResult<IDataSet<S>>> dones =
                 // Each child produces a 1/this.size() fraction of the result.
-                merged.map(p -> p.second.deltaDone / this.size())
+                merged.map(p -> Converters.checkNull(p.second).deltaDone / this.size())
                         .map(e -> new PartialResult<IDataSet<S>>(e, null));
         Observable<PartialResult<IDataSet<S>>> result = dones.mergeWith(mapResult);
         result = bundle(result, new PRDataSetMonoid<S>());
@@ -199,15 +202,15 @@ public class ParallelDataSet<T> implements IDataSet<T> {
         // The dones we "send" out immediately to indicate progress,
         // whereas the zipResult part we process locally.
         final Observable<PartialResult<IDataSet<Pair<T, S>>>> zipResult =
-                merged.filter(p -> p.second.deltaValue != null)
+                merged.filter(p -> Converters.checkNull(p.second).deltaValue != null)
                       // Convert to a java.utils.Map
-                      .toMap(p -> p.first, p -> p.second.deltaValue)
+                      .toMap(p -> p.first, p -> Converters.checkNull(p.second).deltaValue)
                       .single()
                       .map(m -> new PartialResult<IDataSet<Pair<T, S>>>(
                             0.0, new ParallelDataSet<Pair<T, S>>(m)));
         final Observable<PartialResult<IDataSet<Pair<T, S>>>> dones =
                 // Each child produces a 1/this.size() fraction of the result.
-                merged.map(p -> p.second.deltaDone / this.size())
+                merged.map(p -> Converters.checkNull(p.second).deltaDone / this.size())
                       .map(e -> new PartialResult<IDataSet<Pair<T, S>>>(e, null));
         Observable<PartialResult<IDataSet<Pair<T, S>>>> result = dones.mergeWith(zipResult);
         PRDataSetMonoid<Pair<T, S>> prm = new PRDataSetMonoid<Pair<T, S>>();
@@ -218,21 +221,23 @@ public class ParallelDataSet<T> implements IDataSet<T> {
     @Override
     public <R> Observable<PartialResult<R>> sketch(final ISketch<T, R> sketch) {
         List<Observable<PartialResult<R>>> obs = new ArrayList<Observable<PartialResult<R>>>();
-        int mySize = this.size();
+        final int mySize = this.size();
         // Run sketch over each child separately
         for (int i = 0; i < mySize; i++) {
             IDataSet<T> child = this.children.get(i);
+            final int finalI = i;
             Observable<PartialResult<R>> sk =
                     child.sketch(sketch)
-                    //.map(e -> log(e, "child sketch done")) // debugging code
+                    .map(e -> log(e, "child " + finalI + " sketch done " + sketch.toString()))
                     .map(e -> new PartialResult<R>(e.deltaDone / mySize, e.deltaValue));
             obs.add(sk);
         }
         // Just merge all sketch results
         Observable<PartialResult<R>> result = Observable.merge(obs);
-        //result = result.map(e -> log(e, "child merge done"));  // debugging code
+        result = result.map(e -> log(e, "after merge " + sketch.toString()));
         PartialResultMonoid<R> prm = new PartialResultMonoid<R>(sketch);
         result = this.bundle(result, prm);
+        result = result.map(e -> log(e, "after bundle " + sketch.toString()));
         return result;
     }
 

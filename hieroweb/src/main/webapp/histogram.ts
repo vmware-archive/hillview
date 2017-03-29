@@ -17,7 +17,7 @@
 
 import {
     IHtmlElement, HieroDataView, FullPage, Renderer, significantDigits,
-    Point, Size, formatNumber
+    Point, Size, formatNumber, percent
 } from "./ui";
 import d3 = require('d3');
 import {RemoteObject, ICancellable, PartialResult} from "./rpc";
@@ -64,6 +64,9 @@ interface BasicColStats {
 
 export class Histogram extends RemoteObject
     implements IHtmlElement, HieroDataView {
+    public static readonly maxBucketCount: number = 40;
+    public static readonly minBarWidth: number = 5;
+
     private topLevel: HTMLElement;
     public static readonly margin = {
         top: 30,
@@ -78,6 +81,7 @@ export class Histogram extends RemoteObject
     private selectionRectangle: d3.Selection<BaseType, any, BaseType, BaseType>;
     private xLabel: HTMLElement;
     private yLabel: HTMLElement;
+    private yPercentLabel: HTMLElement;
     protected chartDiv: HTMLElement;
     protected summary: HTMLElement;
     private xScale: ScaleLinear<number, number> | ScaleTime<number, number>;
@@ -100,12 +104,16 @@ export class Histogram extends RemoteObject
         this.setPage(page);
         let menu = new DropDownMenu( [
             { text: "View", subMenu: new ContextMenu([
-                { text: "table", action: () => this.showTable() }
+                { text: "home", action: () => { TableView.goHome(this.page); } },
+                { text: "refresh", action: () => { this.refresh(); } },
+                { text: "table", action: () => this.showTable() },
+                { text: "#buckets", action: () => this.chooseBuckets() },
+                { text: "correlate", action: () => this.chooseSecondColumn() },
             ]) }
         ]);
 
         this.topLevel.appendChild(menu.getHTMLRepresentation());
-        this.topLevel.appendChild(document.createElement("br"));
+        this.topLevel.appendChild(document.createElement("hr"));
 
         this.chartDiv = document.createElement("div");
         this.topLevel.appendChild(this.chartDiv);
@@ -120,7 +128,7 @@ export class Histogram extends RemoteObject
         let row = body.insertRow();
         row.className = "noBorder";
 
-        let infoWidth = "100px";
+        let infoWidth = "150px";
         let labelCell = row.insertCell(0);
         labelCell.width = infoWidth;
         this.xLabel = document.createElement("div");
@@ -134,6 +142,41 @@ export class Histogram extends RemoteObject
         this.yLabel.style.textAlign = "left";
         labelCell.appendChild(this.yLabel);
         labelCell.className = "noBorder";
+
+        labelCell = row.insertCell(2);
+        labelCell.width = infoWidth;
+        this.yPercentLabel = document.createElement("div");
+        this.yPercentLabel.style.textAlign = "left";
+        labelCell.appendChild(this.yPercentLabel);
+        labelCell.className = "noBorder";
+    }
+
+    chooseSecondColumn(): void { // TODO
+    }
+
+    chooseBuckets(): void {
+        if (this.currentData == null)
+            return;
+
+        let buckets = window.prompt("Choose number of buckets (between 1 and "
+            + Histogram.maxBucketCount + ")", "10");
+        if (buckets == null)
+            return;
+        if (isNaN(+buckets))
+            this.page.reportError(buckets + " is not a number");
+
+        let ws = this.page.getSize();
+        let rr = this.createRpcRequest("histogram", {
+            columnName: this.currentData.description.name,
+            min: this.currentData.stats.min,
+            max: this.currentData.stats.max,
+            bucketCount: +buckets,
+            width: ws.width,
+            height: ws.height
+        });
+        let renderer = new HistogramRenderer(
+            this.page, this.remoteObjectId, this.currentData.description, this.currentData.stats, rr);
+        rr.invoke(renderer);
     }
 
     // show the table corresponding to the data in the histogram
@@ -154,6 +197,8 @@ export class Histogram extends RemoteObject
     }
 
     public refresh(): void {
+        if (this.currentData == null)
+            return;
         this.updateView(
             this.currentData.cdf,
             this.currentData.histogram,
@@ -179,11 +224,14 @@ export class Histogram extends RemoteObject
         let counts = h.buckets.map(b => b.count);
         let max = d3.max(counts);
 
-        let cdfData = cdf.buckets;
+        let cdfData: number[] = [];
         let current = 0;
-        for (let i in cdfData) {
-            current += cdfData[i];
-            cdfData[i] = current * max / (stats.rowCount - cdf.missingData);
+        let point = 0;
+        for (let i in cdf.buckets) {
+            cdfData.push(point);
+            current += cdf.buckets[i];
+            point = current * max / (stats.rowCount - cdf.missingData);
+            cdfData.push(point);
         }
 
         if (this.canvas != null)
@@ -200,6 +248,7 @@ export class Histogram extends RemoteObject
             .attr("id", "canvas")
             .call(drag)
             .attr("width", width)
+            .attr("border", 1)
             .attr("height", height);
 
         this.canvas.on("mousemove", () => this.onMouseMove());
@@ -207,6 +256,7 @@ export class Histogram extends RemoteObject
         this.selectionRectangle = this.canvas
             .append("rect")
             .attr("class", "dashed")
+            .attr("stroke", "red")
             .attr("width", 0)
             .attr("height", 0);
 
@@ -223,9 +273,11 @@ export class Histogram extends RemoteObject
 
         let minRange = stats.min;
         let maxRange = stats.max;
-        if (cd.kind == "Integer" || cd.kind == "Category") {
+        let adjustment = 0;
+        if (cd.kind == "Integer" || cd.kind == "Category" || stats.min >= stats.max) {
             minRange -= .5;
             maxRange += .5;
+            adjustment = chartWidth / (maxRange - minRange);
         }
         if (cd.kind == "Integer" ||
             cd.kind == "Double") {
@@ -242,6 +294,11 @@ export class Histogram extends RemoteObject
         }
         let xAxis = d3.axisBottom(this.xScale);
 
+        let adjust = function(x: number, a: number, w: number): number {
+            x = Math.floor(x / 2); // two points for each data point, for a zig-zag
+            return a/2 + x * (1 - a / w);
+        };
+
         // force a tick on x axis for degenerate scales
         if (stats.min >= stats.max)
             xAxis.ticks(1);
@@ -253,9 +310,10 @@ export class Histogram extends RemoteObject
             .attr("text-anchor", "middle");
 
         let cdfLine = d3.line<number>()
-            .x((d, i) => i)
+            .x((d, i) => adjust(i, adjustment, chartWidth))
             .y((d, i) => this.yScale(d));
 
+        // draw CDF curve
         this.canvas.append("path")
             .attr("transform", Histogram.translateString(
                 Histogram.margin.left, Histogram.margin.top))
@@ -272,6 +330,7 @@ export class Histogram extends RemoteObject
 
         bars.append("rect")
             .attr("y", d => this.yScale(d))
+            .attr("fill", "grey")
             .attr("height", d => chartHeight - this.yScale(d))
             .attr("width", barWidth - 1);
 
@@ -280,8 +339,7 @@ export class Histogram extends RemoteObject
             .attr("x", barWidth / 2)
             .attr("y", d => this.yScale(d))
             .attr("text-anchor", "middle")
-            .attr("dy", d => d <= (8 * max / 10) ? "-.25em" : ".75em")
-            .attr("fill", d => d <= (8 * max / 10) ? "black" : "red")
+            .attr("dy", d => d <= (9 * max / 10) ? "-.25em" : ".75em")
             .text(d => (d == 0) ? "" : significantDigits(d))
             .exit();
 
@@ -315,6 +373,8 @@ export class Histogram extends RemoteObject
         let ys = significantDigits(y);
         this.xLabel.textContent = "x=" + xs;
         this.yLabel.textContent = "y=" + ys;
+        let perc = percent(1 - position[1] / this.chartResolution.height);
+        this.yPercentLabel.textContent = "cdf=" + perc;
     }
 
     dragStart(): void {
@@ -436,9 +496,6 @@ export class FilterReceiver extends Renderer<string> {
 // rendering.
 export class RangeCollector extends Renderer<BasicColStats> {
     protected stats: BasicColStats;
-    protected readonly maxBucketCount: number = 40;
-    protected readonly minBarWidth: number = 5;
-
     constructor(protected cd: ColumnDescription,
                 page: FullPage,
                 protected remoteObject: RemoteObject,
@@ -461,14 +518,14 @@ export class RangeCollector extends Renderer<BasicColStats> {
             return;
         }
 
-        let bucketCount = this.maxBucketCount;
+        let bucketCount = Histogram.maxBucketCount;
         if (this.stats.min >= this.stats.max)
             bucketCount = 1;
         let size = this.page.getSize();
         let width = size.width - Histogram.margin.left - Histogram.margin.right;
         let height = size.height - Histogram.margin.top - Histogram.margin.bottom;
-        if (width / this.minBarWidth < bucketCount)
-            bucketCount = width / this.minBarWidth;
+        if (width / Histogram.minBarWidth < bucketCount)
+            bucketCount = width / Histogram.minBarWidth;
         if (this.cd.kind == "Integer" ||
             this.cd.kind == "Category") {
             bucketCount = Math.min(bucketCount, this.stats.max - this.stats.min + 1);

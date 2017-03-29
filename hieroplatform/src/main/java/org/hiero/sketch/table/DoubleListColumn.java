@@ -21,7 +21,6 @@ package org.hiero.sketch.table;
 import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.IDoubleColumn;
 
-import java.time.Duration;
 import java.util.ArrayList;
 
 /**

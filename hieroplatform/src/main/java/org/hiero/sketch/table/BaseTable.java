@@ -51,15 +51,16 @@ public abstract class BaseTable implements ITable {
         List<IColumn> cols = new ArrayList<IColumn>();
         for (String col : schema.getColumnNames()) {
             IColumn mycol = this.getColumn(col);
-            if (mycol == null)
-                throw new RuntimeException("No column named " + col);
             cols.add(mycol);
         }
         return cols;
     }
 
+    /**
+     * Returns columns in the order they appear in the schema.
+     */
     public Iterable<IColumn> getColumns() {
-        return this.columns.values();
+        return this.getColumns(this.getSchema());
     }
 
     protected BaseTable(Schema schema) {

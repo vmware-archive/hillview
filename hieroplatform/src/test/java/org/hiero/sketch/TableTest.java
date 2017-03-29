@@ -58,8 +58,7 @@ public class TableTest {
             LocalDataSet<ITable> ds = new LocalDataSet<ITable>(t);
             a.add(ds);
         }
-        final ParallelDataSet<ITable> all = new ParallelDataSet<ITable>(a);
-        return all;
+        return new ParallelDataSet<ITable>(a);
     }
 
     public static SmallTable getIntTable(final int size, final int numCols) {

@@ -90,9 +90,9 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
      * @param mergeOrder The order in which to merge the two columns.
      * @return The merged column.
      */
-    private ObjectArrayColumn mergeColumns( final IColumn left,
-                                            final IColumn right,
-                                            final List<Integer> mergeOrder) {
+    private ObjectArrayColumn mergeColumns(final IColumn left,
+                                           final IColumn right,
+                                           final List<Integer> mergeOrder) {
         final int size = Math.min(this.maxSize, mergeOrder.size());
         final ObjectArrayColumn merged = new ObjectArrayColumn(left.getDescription(), size);
         int i = 0, j = 0, k = 0;
@@ -174,5 +174,10 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
     @Override
     public NextKList zero() {
         return new NextKList(this.recordOrder.toSchema());
+    }
+
+    @Override
+    public String toString() {
+        return "NextKSketch(" + this.maxSize + ")";
     }
 }

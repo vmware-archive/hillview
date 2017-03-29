@@ -30,6 +30,8 @@
 
         function loadTable() {
             initialObject.loadTable(page);
+            var b = document.getElementById("loadButton");
+            b.style.display = "none";
         }
 
         function initialize() {
@@ -40,7 +42,7 @@
 </head>
 <body onload="initialize()">
     <div id="contents">
-        <button onclick="loadTable()">Load table</button>
+        <button id="loadButton" onclick="loadTable()">Load table</button>
         <div id="top"></div>
     </div>
 </body>

@@ -159,6 +159,6 @@ public final class Schema
     public void writeToJsonFile(Path file) throws IOException {
         String text = this.toJson();
         byte[] bytes = text.getBytes(StandardCharsets.UTF_8);
-        Files.write(file, bytes, StandardOpenOption.CREATE);
+        Files.write(file, bytes, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
     }
 }

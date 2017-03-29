@@ -40,7 +40,7 @@ public class BasicColStatSketch implements ISketch<ITable, BasicColStats> {
     public BasicColStats zero() { return new BasicColStats(this.momentNum); }
 
     @Override
-    public BasicColStats add(final BasicColStats left, final BasicColStats right) {
+    public BasicColStats add(@Nullable final BasicColStats left, @Nullable final BasicColStats right) {
         return Converters.checkNull(left).union(Converters.checkNull(right));
     }
 }

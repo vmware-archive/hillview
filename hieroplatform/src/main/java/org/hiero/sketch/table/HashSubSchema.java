@@ -19,7 +19,6 @@
 package org.hiero.sketch.table;
 import org.hiero.sketch.table.api.ISubSchema;
 import java.util.HashSet;
-import java.util.Iterator;
 
 public class HashSubSchema implements ISubSchema {
     private final HashSet<String> colNames;

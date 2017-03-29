@@ -63,6 +63,11 @@ export function formatNumber(n: number): string {
     return n.toLocaleString();
 }
 
+export function percent(n: number): string {
+    n = Math.round(n * 1000) / 10;
+    return significantDigits(n) + "%";
+}
+
 export function significantDigits(n: number): string {
     let suffix = "";
     let absn = Math.abs(n);
@@ -106,12 +111,15 @@ export class ScrollBar implements IHtmlElement {
     start : number;
     end : number;
 
-    private outer  : HTMLElement;
-    private inner  : HTMLElement;
-    private before : HTMLElement;
-    private after  : HTMLElement;
+    private outer   : HTMLElement;
+    private inner   : HTMLElement;
+    private before  : HTMLElement;
+    private after   : HTMLElement;
+    private topLevel: HTMLElement;
 
     constructor() {
+        this.topLevel = document.createElement("div");
+
         this.outer = document.createElement("div");
         this.outer.className = "scrollbarOuter";
 
@@ -128,10 +136,11 @@ export class ScrollBar implements IHtmlElement {
         this.outer.appendChild(this.inner);
         this.outer.appendChild(this.after);
         this.setPosition(0, 1);
+        this.topLevel.appendChild(this.outer);
     }
 
     getHTMLRepresentation() : HTMLElement {
-        return this.outer;
+        return this.topLevel;
     }
 
     computePosition() : void {

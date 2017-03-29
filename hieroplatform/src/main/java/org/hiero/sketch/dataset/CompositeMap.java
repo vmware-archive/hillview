@@ -32,7 +32,6 @@ public class CompositeMap<T, S, V> implements IMap<T, V> {
     @Override
     public V apply(T data) {
         S second = this.first.apply(data);
-        V result = this.second.apply(second);
-        return result;
+        return this.second.apply(second);
     }
 }

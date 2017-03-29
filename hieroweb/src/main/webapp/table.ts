@@ -16,7 +16,7 @@
  */
 
 import {
-    IHtmlElement, ScrollBar, Renderer, FullPage, HieroDataView,formatNumber
+    IHtmlElement, ScrollBar, Renderer, FullPage, HieroDataView, formatNumber, significantDigits, percent
 } from "./ui";
 import {RemoteObject, PartialResult, ICancellable} from "./rpc";
 import Rx = require('rx');
@@ -96,6 +96,11 @@ class RecordOrder {
             this.sortOrientationList.splice(index, 1);
         this.sortOrientationList.splice(0, 0, cso);
     }
+    public showIfNotVisible(cso: ColumnSortOrientation) {
+        let index = this.find(cso.columnDescription.name);
+        if (index == -1)
+            this.sortOrientationList.push(cso);
+    }
     public clone() : RecordOrder {
         return new RecordOrder(this.sortOrientationList.slice(0));
     }
@@ -121,6 +126,8 @@ export class TableDataView {
 
 export class TableView extends RemoteObject
     implements IHtmlElement, HieroDataView {
+    protected static initialTableId: string = null;
+
     // Data view part: received from remote site
     protected schema?: Schema;
     // Logical position of first row displayed
@@ -142,6 +149,11 @@ export class TableView extends RemoteObject
 
     public constructor(id: string, page: FullPage) {
         super(id);
+
+        this.order = new RecordOrder([]);
+        this.setPage(page);
+        if (TableView.initialTableId == null)
+            TableView.initialTableId = id;
         this.top = document.createElement("div");
         this.top.style.flexDirection = "column";
         this.top.style.display = "flex";
@@ -150,23 +162,64 @@ export class TableView extends RemoteObject
         this.top.style.alignItems = "stretch";
         let menu = new DropDownMenu([
             { text: "View", subMenu: new ContextMenu([
-                { text: "close", action: () => {} }
+                { text: "home", action: () => { TableView.goHome(this.page); } },
+                { text: "refresh", action: () => { this.refresh(); } },
+                { text: "all rows", action: () => { this.showAllRows(); } },
+                { text: "no rows", action: () => { this.setOrder(new RecordOrder([])); } }
             ])},
+            /*
             { text: "Data", subMenu: new ContextMenu([
                 { text: "find", action: () => {} },
                 { text: "filter", action: () => {} }
             ]),
-            }
+            } */
         ]);
         this.top.appendChild(menu.getHTMLRepresentation());
         this.top.appendChild(document.createElement("hr"));
         this.htmlTable = document.createElement("table");
-        //this.htmlTable.style.clear = "both";
         this.scrollBar = new ScrollBar();
-        this.top.appendChild(this.htmlTable);
-        this.top.appendChild(this.scrollBar.getHTMLRepresentation());
-        this.order = new RecordOrder([]);
-        this.setPage(page);
+
+        // to force the scroll bar next to the table we put them in yet another div
+        let tblAndBar = document.createElement("div");
+        tblAndBar.style.flexDirection = "row";
+        tblAndBar.style.display = "flex";
+        tblAndBar.style.flexWrap = "nowrap";
+        tblAndBar.style.justifyContent = "flex-start";
+        tblAndBar.style.alignItems = "stretch";
+        this.top.appendChild(tblAndBar);
+        tblAndBar.appendChild(this.htmlTable);
+        tblAndBar.appendChild(this.scrollBar.getHTMLRepresentation());
+    }
+
+    protected setOrder(o: RecordOrder): void {
+        this.order = o;  // TODO: this should be set by the renderer
+        let rr = this.createRpcRequest("getTableView", o);
+        rr.invoke(new TableRenderer(this.getPage(), this, rr));
+    }
+
+    protected showAllRows(): void {
+        if (this.schema == null) {
+            this.page.reportError("No data loaded");
+            return;
+        }
+
+        let o = this.order.clone();
+        for (let i = 0; i < this.schema.length; i++) {
+            let c = this.schema[i];
+            o.showIfNotVisible({ columnDescription: c, isAscending: true });
+        }
+        this.setOrder(o);
+    }
+
+    // Navigate back to the first table known
+    public static goHome(page: FullPage): void {
+        if (TableView.initialTableId == null)
+            return;
+
+        let table = new TableView(TableView.initialTableId, page);
+        page.setHieroDataView(table);
+        let rr = table.createRpcRequest("getSchema", null);
+        rr.invoke(new TableRenderer(page, table, rr));
     }
 
     columnIndex(colName: string): number {
@@ -260,9 +313,7 @@ export class TableView extends RemoteObject
         } else {
             o.hide(columnName);
         }
-        this.order = o;  // TODO: this should be set by the renderer
-        let rr = this.createRpcRequest("getTableView", o);
-        rr.invoke(new TableRenderer(this.getPage(), this, rr));
+        this.setOrder(o);
     }
 
     public histogram(columnName: string): void {
@@ -272,6 +323,10 @@ export class TableView extends RemoteObject
     }
 
     public refresh(): void {
+        if (this.currentData == null) {
+            this.page.reportError("Nothing to refresh");
+            return;
+        }
         this.updateView(this.currentData);
     }
 
@@ -337,7 +392,15 @@ export class TableView extends RemoteObject
         let cell = footer.insertCell(0);
         cell.colSpan = this.schema.length + 2;
         cell.className = "footer";
-        cell.textContent = formatNumber(this.rowCount) + " rows";
+
+        let perc = "";
+        if (this.rowCount > 0) {
+            perc = percent(this.dataRowsDisplayed / this.rowCount);
+            perc = " (" + perc + ")";
+        }
+
+        cell.textContent = "Showing " + formatNumber(this.dataRowsDisplayed) +
+            " of " + formatNumber(this.rowCount) + " rows" + perc;
 
         this.updateScrollBar();
     }
@@ -345,6 +408,8 @@ export class TableView extends RemoteObject
     private updateScrollBar(): void {
         if (this.startPosition == null || this.rowCount == null)
             return;
+        console.log("Scroll bar ", this.startPosition/this.rowCount,
+            (this.startPosition+this.dataRowsDisplayed)/this.rowCount);
         this.setScroll(this.startPosition / this.rowCount,
             (this.startPosition + this.dataRowsDisplayed) / this.rowCount);
     }
@@ -377,11 +442,11 @@ export class TableView extends RemoteObject
 
         let cell = trow.insertCell(0);
         cell.style.textAlign = "right";
-        cell.textContent = String(this.startPosition + this.dataRowsDisplayed);
+        cell.textContent = significantDigits(this.startPosition + this.dataRowsDisplayed);
 
         cell = trow.insertCell(1);
         cell.style.textAlign = "right";
-        cell.textContent = String(row.count);
+        cell.textContent = significantDigits(row.count);
 
         for (let i = 0; i < cds.length; i++) {
             let cd = cds[i];
@@ -392,8 +457,7 @@ export class TableView extends RemoteObject
                 continue;
             if (this.isVisible(cd.name)) {
                 cell.style.textAlign = "right";
-                let repr = TableView.convert(row.values[dataIndex], cd.kind);
-                cell.textContent = repr;
+                cell.textContent = TableView.convert(row.values[dataIndex], cd.kind);
             }
         }
         this.dataRowsDisplayed += row.count;
@@ -424,6 +488,13 @@ export class RemoteTableReceiver extends Renderer<string> {
         super(page, operation, "Get schema");
     }
 
+    protected getTableSchema(tableId: string) {
+        let table = new TableView(tableId, this.page);
+        this.page.setHieroDataView(table);
+        let rr = table.createRpcRequest("getSchema", null);
+        rr.invoke(new TableRenderer(this.page, table, rr));
+    }
+
     public onNext(value: PartialResult<string>): void {
         super.onNext(value);
         if (value.data != null)
@@ -434,10 +505,6 @@ export class RemoteTableReceiver extends Renderer<string> {
         this.finished();
         if (this.remoteTableId == null)
             return;
-
-        let table = new TableView(this.remoteTableId, this.page);
-        this.page.setHieroDataView(table);
-        let rr = table.createRpcRequest("getSchema", null);
-        rr.invoke(new TableRenderer(this.page, table, rr));
+        this.getTableSchema(this.remoteTableId);
     }
 }

@@ -23,7 +23,6 @@ import org.hiero.sketch.table.api.IDurationColumn;
 
 import javax.annotation.Nullable;
 import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 
 /**

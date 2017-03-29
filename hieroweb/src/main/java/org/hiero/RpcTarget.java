@@ -59,6 +59,7 @@ public abstract class RpcTarget {
     synchronized void cancel() {
         logger.log(Level.INFO, "Cancelling " + this.toString());
         if (this.subscription != null) {
+            logger.log(Level.INFO, "Unsubscribing " + this.toString());
             this.subscription.unsubscribe();
             this.subscription = null;
         }

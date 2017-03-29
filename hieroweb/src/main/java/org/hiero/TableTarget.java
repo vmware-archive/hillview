@@ -18,6 +18,7 @@
 package org.hiero;
 
 import org.hiero.sketch.dataset.ConcurrentSketch;
+import org.hiero.sketch.dataset.TripleSketch;
 import org.hiero.sketch.dataset.api.IDataSet;
 import org.hiero.sketch.spreadsheet.*;
 import org.hiero.sketch.table.RecordOrder;
@@ -66,11 +67,63 @@ public final class TableTarget extends RpcTarget {
     void histogram(RpcRequest request, Session session) {
         ColumnAndRange info = request.parseArgs(ColumnAndRange.class);
         // TODO: use height in histogram computation
-        BucketsDescriptionEqSize cdfBuckets = new BucketsDescriptionEqSize(info.min, info.max, (int)info.width);
+        int width = (int)info.width;
+        if (info.min >= info.max)
+            width = 1;
+        BucketsDescriptionEqSize cdfBuckets = new BucketsDescriptionEqSize(info.min, info.max, width);
         Hist1DLightSketch cdf = new Hist1DLightSketch(cdfBuckets, info.columnName, null);
         BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(info.min, info.max, info.bucketCount);
         Hist1DSketch sk = new Hist1DSketch(buckets, info.columnName, null);
-        ConcurrentSketch<ITable, Histogram1D, Histogram1DLight> csk = new ConcurrentSketch(cdf, sk);
+        ConcurrentSketch<ITable, Histogram1DLight, Histogram1D> csk =
+                new ConcurrentSketch<ITable, Histogram1DLight, Histogram1D>(cdf, sk);
+        this.runSketch(this.table, csk, request, session);
+    }
+
+    static class ColPair {
+        @Nullable
+        ColumnAndRange first;
+        @Nullable
+        ColumnAndRange second;
+    }
+
+    @HieroRpc
+    void histogram2D(RpcRequest request, Session session) {
+        ColPair info = request.parseArgs(ColPair.class);
+        Converters.checkNull(info.first);
+        Converters.checkNull(info.second);
+        int width = (int)info.first.width;
+        if (info.first.min >= info.first.max)
+            width = 1;
+        BucketsDescriptionEqSize cdfBuckets =
+                new BucketsDescriptionEqSize(info.first.min, info.first.max, width);
+        Hist1DLightSketch cdf = new Hist1DLightSketch(cdfBuckets, info.first.columnName, null);
+
+        BucketsDescriptionEqSize buckets1 = new BucketsDescriptionEqSize(
+                info.first.min, info.first.max, info.first.bucketCount);
+        Hist1DSketch sk1 = new Hist1DSketch(buckets1, info.first.columnName, null);
+
+        BucketsDescriptionEqSize buckets2 = new BucketsDescriptionEqSize(
+                info.second.min, info.second.max, info.second.bucketCount);
+        Hist1DSketch sk2 = new Hist1DSketch(buckets2, info.second.columnName, null);
+
+        TripleSketch<ITable, Histogram1DLight, Histogram1D, Histogram1D> csk =
+                new TripleSketch<ITable, Histogram1DLight, Histogram1D, Histogram1D>(cdf, sk1, sk2);
+        this.runSketch(this.table, csk, request, session);
+    }
+
+    static class Columns {
+        String col1 = "";
+        String col2 = "";
+    }
+
+    @HieroRpc
+    void range2D(RpcRequest request, Session session) {
+        Columns cols = request.parseArgs(Columns.class);
+        // TODO: create a string converter if necessary
+        BasicColStatSketch sk1 = new BasicColStatSketch(cols.col1, null, 0, 1.0);
+        BasicColStatSketch sk2 = new BasicColStatSketch(cols.col2, null, 0, 1.0);
+        ConcurrentSketch<ITable, BasicColStats, BasicColStats> csk =
+                new ConcurrentSketch<>(sk1, sk2);
         this.runSketch(this.table, csk, request, session);
     }
 

@@ -39,9 +39,6 @@ import java.util.logging.Logger;
  * an OptionMonoid[Schema] sketch and integer addition).
  */
 public class SummarySketch implements ISketch<ITable, SummarySketch.TableSummary> {
-    private static final Logger logger =
-            Logger.getLogger(SummarySketch.class.getName());
-
     public static class TableSummary implements IJson {
         // The sketch zero() element can be produced without looking at the data at all.
         // So we need a way to represent a "zero" schema.  An empty schema is in principle
@@ -97,13 +94,6 @@ public class SummarySketch implements ISketch<ITable, SummarySketch.TableSummary
 
     @Override
     public TableSummary create(ITable data) {
-        /*
-         Testing code
-        try {
-            Thread.sleep(1000 * Randomness.getInstance().nextInt(5));
-        } catch (InterruptedException unused) {}
-        */
-        logger.log(Level.INFO, "Completed sketch");
         return new TableSummary(data.getSchema(), data.getNumOfRows());
     }
 }

@@ -28,7 +28,7 @@ import java.util.BitSet;
  * Base class for a column that can grow in size.
  */
 public abstract class BaseListColumn extends BaseColumn {
-    final int LogSegmentSize = 20;
+    final int LogSegmentSize = 14;
     final int SegmentSize = 1 << this.LogSegmentSize;
     final int SegmentMask = this.SegmentSize - 1;
     private boolean sealed;  // once sealed it can't grow anymore.

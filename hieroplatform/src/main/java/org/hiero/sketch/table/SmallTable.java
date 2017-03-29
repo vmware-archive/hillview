@@ -28,8 +28,6 @@ import org.hiero.sketch.table.api.IRowIterator;
 import org.hiero.sketch.table.api.ITable;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * A SmallTable is similar to a Table, but it is intended to be shipped over the network.

@@ -2,6 +2,9 @@ package org.hiero.sketch.spreadsheet;
 
 import org.hiero.sketch.dataset.api.ISketch;
 import org.hiero.sketch.table.api.ITable;
+import org.hiero.utils.Converters;
+
+import javax.annotation.Nullable;
 
 public class DistinctStringsSketch implements ISketch<ITable, DistinctStrings> {
     private final int maxSize;
@@ -16,8 +19,8 @@ public class DistinctStringsSketch implements ISketch<ITable, DistinctStrings> {
     public DistinctStrings zero() { return new DistinctStrings(this.maxSize); }
 
     @Override
-    public DistinctStrings add(DistinctStrings left, DistinctStrings right) {
-        return left.union(right);
+    public DistinctStrings add(@Nullable DistinctStrings left, @Nullable DistinctStrings right) {
+        return Converters.checkNull(left).union(Converters.checkNull(right));
     }
 
     @Override

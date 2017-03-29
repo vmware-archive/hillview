@@ -34,6 +34,7 @@ public interface IMembershipSet extends IRowOrder {
      * @param rowIndex A non-negative row index.
      * @return True if the given rowIndex is a member of the set.
      */
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     boolean isMember(int rowIndex);
 
     /**

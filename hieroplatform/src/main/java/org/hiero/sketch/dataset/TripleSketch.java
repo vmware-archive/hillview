@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * Copyright (c) 2017 VMware Inc. All Rights Reserved. 
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,40 +19,45 @@
 package org.hiero.sketch.dataset;
 
 import org.hiero.sketch.dataset.api.ISketch;
-import org.hiero.sketch.dataset.api.Pair;
+import org.hiero.sketch.dataset.api.Triple;
 import org.hiero.utils.Converters;
 
 import javax.annotation.Nullable;
 
-public class ConcurrentSketch<T, R1, R2> implements ISketch<T, Pair<R1, R2>> {
+public class TripleSketch<T, R1, R2, R3> implements ISketch<T, Triple<R1, R2, R3>> {
     final ISketch<T, R1> first;
     final ISketch<T, R2> second;
+    final ISketch<T, R3> third;
 
-    public ConcurrentSketch(ISketch<T, R1> first, ISketch<T, R2> second) {
+    public TripleSketch(ISketch<T, R1> first, ISketch<T, R2> second, ISketch<T, R3> third) {
         this.first = first;
         this.second = second;
+        this.third = third;
     }
 
     @Nullable
     @Override
-    public Pair<R1, R2> zero() {
-        return new Pair<R1, R2>(this.first.zero(), this.second.zero());
+    public Triple<R1, R2, R3> zero() {
+        return new Triple<R1, R2, R3>(
+                this.first.zero(), this.second.zero(), this.third.zero());
     }
 
     @Nullable
     @Override
-    public Pair<R1, R2> add(@Nullable Pair<R1, R2> left, @Nullable Pair<R1, R2> right) {
+    public Triple<R1, R2, R3> add(@Nullable Triple<R1, R2, R3> left, @Nullable Triple<R1, R2, R3> right) {
         left = Converters.checkNull(left);
         right = Converters.checkNull(right);
         R1 first = this.first.add(left.first, right.first);
         R2 second = this.second.add(left.second, right.second);
-        return new Pair<R1, R2>(first, second);
+        R3 third = this.third.add(left.third, right.third);
+        return new Triple<R1, R2, R3>(first, second, third);
     }
 
     @Override
-    public Pair<R1, R2> create(T data) {
+    public Triple<R1, R2, R3> create(T data) {
         R1 first = this.first.create(data);
         R2 second = this.second.create(data);
-        return new Pair<R1, R2>(first, second);
+        R3 third = this.third.create(data);
+        return new Triple<R1, R2, R3>(first, second, third);
     }
 }

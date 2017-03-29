@@ -44,7 +44,7 @@ public class CsvFileReader {
         /**
          * Field separator in CSV file.
          */
-        public char separator = ',';
+        public final char separator = ',';
         /**
          * If true we allow a row to have fewer columns; the row is padded with "nulls".
          */
@@ -64,7 +64,7 @@ public class CsvFileReader {
         /**
          * If non-null it specifies the expected file schema.
          * In this case columnCount is ignored.  If schema is not specified
-         * all columns are threated as strings.
+         * all columns are treated as strings.
          */
         @Nullable
         public Schema schema;
