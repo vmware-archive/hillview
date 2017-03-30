@@ -19,7 +19,9 @@
 package org.hiero.sketch.table.api;
 
 /**
- * Subset of the columns in a schema.
+ * Represents a subset of the columns in a schema. We assume that the schema is stored elsewhere.
+ * The subSchema merely returns a Boolean value for an input string (the column name), signifying
+ * if a column by that name is present in the subSchema.
  */
 public interface ISubSchema {
     boolean isColumnPresent(String name);

@@ -20,9 +20,9 @@ package org.hiero.sketch.table;
 
 import org.hiero.sketch.table.api.*;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Base class for in-memory tables.
@@ -112,9 +112,7 @@ public abstract class BaseTable implements ITable {
     @Override public SmallTable compress(final ISubSchema subSchema,
                                          final IRowOrder rowOrder) {
         Schema newSchema = this.getSchema().project(subSchema);
-        List<IColumn> compressedCols = new ArrayList<IColumn>();
-        for (String colName: newSchema.getColumnNames())
-            compressedCols.add(this.columns.get(colName).compress(rowOrder));
+        List<IColumn> compressedCols = newSchema.getColumnNames().stream().map(colName -> this.columns.get(colName).compress(rowOrder)).collect(Collectors.toList());
         return new SmallTable(compressedCols);
     }
 

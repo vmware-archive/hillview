@@ -22,10 +22,11 @@ import org.hiero.sketch.table.ColumnDescription;
 import org.hiero.sketch.table.IntArrayColumn;
 import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.IndexComparator;
+import org.hiero.utils.Randomness;
 import org.junit.Test;
 
+import java.security.InvalidParameterException;
 import java.util.Arrays;
-import org.hiero.utils.Randomness;
 
 import static org.junit.Assert.*;
 
@@ -54,6 +55,35 @@ public class IntArrayTest {
             col.set(i, rn.nextInt(range));
         return col;
     }
+
+    /**
+     * Returns a table containing a single column of a specified number integers in the range
+     * (1,..range), with the frequency of i proportional to base^i.
+     * @param size the number of elements in the array.
+     * @param base the base for the probabilities above.
+     * @param range integers in the array lie in the interval (1,range)
+     * @param name name of the column
+     * @return An IntArray Column as described above.
+     */
+
+    public static IntArrayColumn getHeavyIntArray(final int size, final double base,
+                                                  final int range, final String name) {
+        if(base <= 1)
+            throw new InvalidParameterException("Base should be  greater than 1.");
+        final ColumnDescription desc = new ColumnDescription(name, ContentsKind.Int, false);
+        final IntArrayColumn col = new IntArrayColumn(desc, size);
+        final Randomness rn = Randomness.getInstance();
+        final int max = (int) Math.round(Math.pow(base,range));
+        for (int i = 0; i < size; i++) {
+            int j = rn.nextInt(max);
+            int k = 0;
+            while(j >= Math.pow(base,k))
+                k++;
+            col.set(i,k);
+        }
+        return col;
+    }
+
 
     @Test
     public void testRandArray(){

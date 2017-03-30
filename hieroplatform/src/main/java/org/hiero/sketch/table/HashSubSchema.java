@@ -55,6 +55,6 @@ public class HashSubSchema implements ISubSchema, Iterable<String> {
 
     @Override
     public Iterator<String> iterator() {
-        return colNames.iterator();
+        return this.colNames.iterator();
     }
 }
