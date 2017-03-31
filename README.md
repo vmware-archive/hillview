@@ -4,15 +4,16 @@ A big data spreadsheet.
 
 ## Dependences
 
-* Back-end: Ubuntu Linux
-  (Technically we don't depend on Linux, it's just that we have only tested this on Linux)
+* Back-end: Ubuntu Linux (Technically we don't depend on Linux, it's
+  just that we have only tested this on Linux and Mac; the
+  instructions here are just for Linux)
 * Java 8, Maven build system, various Java libraries, in particular RxJava
   (Maven will manage the libraries for you)
 * Front-end: typescript, webpack, Tomcat app server, node.js
-* Some JavaScript libraries: d3 and rxdom
+* Some JavaScript libraries: d3 and rxjs
 * IDEA Intellij for development (optional)
 
-See #installing-the-software for detailed installation instructions.
+See (#installing-the-software) for detailed installation instructions.
 
 ## Project structure
 
@@ -28,9 +29,13 @@ but only maven is needed to build.
 
 ## How to run the demo
 
+* First install all software required as described
+  [below](#installing-the-software).
+
 * Download the data for the demo.  The download script will download
-  and decompress some CSV files with flights data.  You can edit the
-  script to change the range of data that will be downloaded.
+  and decompress some CSV files with flights data from FAA.  You can
+  edit the script to change the range of data that will be downloaded;
+  the default is to download 2 months of data.
 
 ```
 $ cd data
@@ -38,16 +43,17 @@ $ ./download.sh
 $ cd ..
 ```
 
-* Install the distributed platform library:
+* Install the Hiero distributed platform library:
 
 ```
 $ cd hieroplatform
 $ mvn install
 ```
 
-* The dataset has 110 columns; we can use them all, but for the demo I
-  have stripped the dataset to 15 columns to better fit on the screen.
-  The following command creates the smaller files:
+* The dataset has 110 columns; we can use them all, but for the demo
+  we have stripped the dataset to 15 columns to better fit on the
+  screen.  The following command creates the smaller files from the
+  downloaded data:
 
 ```
 $ mvn exec:java
@@ -67,11 +73,11 @@ $ mvn package
 $ ../apache-tomcat-8.5.8/bin/catalina.sh run
 ```
 
-* start a web browser at http://localhost:8080
+* start a web browser at http://localhost:8080 and browse the data!
 
 ## Contributing code
 
-## Setup IntelliJ IDEA
+### Setup IntelliJ IDEA
 
 Download and install Intellij IDEA: https://www.jetbrains.com/idea/.
 You can just untar the linux binary in a place of your choice and run
@@ -123,7 +129,7 @@ In more detail, here is a step-by-step guide to committing your changes:
   not introduce any violations.  A subset of these checks is also
   done by the IDEA code inspection tool.
 
-## Installing the software
+## Installing the software needed
 
 Install Maven and node.js:
 
@@ -172,16 +178,15 @@ On Mac the following command seems to work correctly only without `sudo`.
 $ sudo npm install -g typescript ts-loader webpack@1.14.0 typings
 ```
 
-This installs the typescript compiler, the webpack tool which can be
-used to bundle multiple JavaScript files together, the ts-loader tool
-for webpack, which allows it to compile directly typescript into
-javascript, and the typings tool, which can be used to install
-typescript type definition files for the JavaScript libraries that we
-are using.
+This installs the typescript compiler, the `webpack` tool, used to
+bundle multiple JavaScript files together, the `ts-loader` tool for
+webpack, which allows it to compile directly typescript into
+javascript, and the `typings` tool, which can be used to install
+typescript type definition files for some of the JavaScript libraries
+that we are using.
 
-Then we install various JavaScript libraries: rx, rx-dom and d3,
-together with the typescript type definitions for these libraries. We
-are trying to maintain the number of dependences to a minimum.
+Then install various JavaScript libraries: `rx`, `rx-dom` and `d3`,
+together with the typescript type definitions for these libraries:
 
 ```
 $ cd hieroweb/src/main/webapp
