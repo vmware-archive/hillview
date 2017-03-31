@@ -22,20 +22,21 @@ import org.hiero.sketch.table.*;
 import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.ITable;
+import org.hiero.utils.TestTables;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.hiero.sketch.DoubleArrayTest.generateDoubleArray;
-import static org.hiero.sketch.table.GetIntArray.generateIntArray;
+import static org.hiero.utils.IntArrayGenerator.generateIntArray;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 public class TableTest {
     @Test
     public void getTableTest(){
-        final SmallTable leftTable = GetTable.getIntTable(100, 2);
+        final SmallTable leftTable = TestTables.getIntTable(100, 2);
         assertNotNull(leftTable);
         //System.out.print(leftTable.toLongString());
     }

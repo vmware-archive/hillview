@@ -19,7 +19,7 @@
 package org.hiero.sketch;
 import org.hiero.sketch.dataset.ParallelDataSet;
 import org.hiero.sketch.spreadsheet.*;
-import org.hiero.sketch.table.GetTable;
+import org.hiero.utils.TestTables;
 import org.hiero.sketch.table.SmallTable;
 import org.hiero.sketch.table.Table;
 import org.hiero.sketch.table.api.ITable;
@@ -37,7 +37,7 @@ public class HistSketchTest {
     public void Hist1DLightTest() {
         final int numCols = 1;
         final int tableSize = 1000;
-        final Table myTable = GetTable.getRepIntTable(tableSize, numCols);
+        final Table myTable = TestTables.getRepIntTable(tableSize, numCols);
         final BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(1, 50, 10);
         final Hist1DLightSketch mySketch = new Hist1DLightSketch(buckets,
                 myTable.getSchema().getColumnNames().iterator().next(), null);
@@ -56,9 +56,9 @@ public class HistSketchTest {
         final int maxSize = 50;
         final int bigSize = 100000;
         final BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(1, 50, 10);
-        final SmallTable bigTable = GetTable.getIntTable(bigSize, numCols);
+        final SmallTable bigTable = TestTables.getIntTable(bigSize, numCols);
         final String colName = bigTable.getSchema().getColumnNames().iterator().next();
-        final ParallelDataSet<ITable> all = GetTable.makeParallel(bigTable, bigSize / 10);
+        final ParallelDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize / 10);
         final Histogram1DLight hdl = all.blockingSketch(new Hist1DLightSketch(buckets, colName,
                 null, 0.5));
         int size = 0;
@@ -76,9 +76,9 @@ public class HistSketchTest {
         final int bigSize = 100000;
         final double rate = 0.1;
         final BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(1, 50, 10);
-        final SmallTable bigTable = GetTable.getIntTable(bigSize, numCols);
+        final SmallTable bigTable = TestTables.getIntTable(bigSize, numCols);
         final String colName = bigTable.getSchema().getColumnNames().iterator().next();
-        final ParallelDataSet<ITable> all = GetTable.makeParallel(bigTable, bigSize / 10);
+        final ParallelDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize / 10);
         final Histogram1D hd = all.blockingSketch(new Hist1DSketch(buckets, colName, null, rate));
         int size = 0;
         int bucketnum = hd.getNumOfBuckets();
@@ -96,11 +96,11 @@ public class HistSketchTest {
         final double rate = 0.5;
         final BucketsDescriptionEqSize buckets1 = new BucketsDescriptionEqSize(1, 50, 10);
         final BucketsDescriptionEqSize buckets2 = new BucketsDescriptionEqSize(1, 50, 15);
-        final SmallTable bigTable = GetTable.getIntTable(bigSize, numCols);
+        final SmallTable bigTable = TestTables.getIntTable(bigSize, numCols);
         final Iterator<String> iter = bigTable.getSchema().getColumnNames().iterator();
         final String colName1 = iter.next();
         final String colName2 = iter.next();
-        final ParallelDataSet<ITable> all = GetTable.makeParallel(bigTable, bigSize/10);
+        final ParallelDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize/10);
         final HeatMap hm = all.blockingSketch(new HeatMapSketch(buckets1, buckets2, null, null,
                                                             colName1, colName2, rate));
         HistogramTest.basicTestHeatMap(hm, (long) (bigSize * rate));
@@ -114,11 +114,11 @@ public class HistSketchTest {
         final double rate = 0.5;
         final BucketsDescriptionEqSize buckets1 = new BucketsDescriptionEqSize(1, 50, 10);
         final BucketsDescriptionEqSize buckets2 = new BucketsDescriptionEqSize(1, 50, 15);
-        final SmallTable bigTable = GetTable.getIntTable(bigSize, numCols);
+        final SmallTable bigTable = TestTables.getIntTable(bigSize, numCols);
         final Iterator<String> iter = bigTable.getSchema().getColumnNames().iterator();
         final String colName1 = iter.next();
         final String colName2 = iter.next();
-        final ParallelDataSet<ITable> all = GetTable.makeParallel(bigTable, bigSize/10);
+        final ParallelDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize/10);
         final Histogram2DHeavy hm = all.blockingSketch(new Hist2DSketch(buckets1, buckets2,
                 null, null, colName1, colName2, rate));
         HistogramTest.basicTest2DHeavy(hm, (long) (bigSize * rate));

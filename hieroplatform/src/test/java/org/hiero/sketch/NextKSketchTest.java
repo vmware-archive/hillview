@@ -29,6 +29,7 @@ import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.ITable;
 import org.hiero.sketch.table.api.IndexComparator;
 import org.hiero.utils.Converters;
+import org.hiero.utils.TestTables;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -42,7 +43,7 @@ public class NextKSketchTest {
         final int maxSize = 5;
         final int rightSize = 1000;
         final int leftSize = 1000;
-        final Table leftTable = GetTable.getRepIntTable(leftSize, numCols);
+        final Table leftTable = TestTables.getRepIntTable(leftSize, numCols);
         RecordOrder cso = new RecordOrder();
         for (String colName : leftTable.getSchema().getColumnNames())
             cso.append(new ColumnSortOrientation(leftTable.getSchema().getDescription(colName), true));
@@ -75,7 +76,7 @@ public class NextKSketchTest {
                 "4, 6: 5\n" +
                 "4, 7: 4\n" +
                 "4, 8: 5\n");
-        final Table rightTable = GetTable.getRepIntTable(rightSize, numCols);
+        final Table rightTable = TestTables.getRepIntTable(rightSize, numCols);
         final NextKList rightK = nk.create(rightTable);
         IndexComparator rightComp = cso.getComparator(rightK.table);
         for (int i = 0; i < (rightK.table.getNumOfRows() - 1); i++)
@@ -106,7 +107,7 @@ public class NextKSketchTest {
         final int numCols = 2;
         final int maxSize = 5;
         final int leftSize = 1000;
-        final Table leftTable = GetTable.getRepIntTable(leftSize, numCols);
+        final Table leftTable = TestTables.getRepIntTable(leftSize, numCols);
         final RowSnapshot topRow = new RowSnapshot(leftTable, 10);
         Assert.assertEquals(leftTable.toLongString(5), "Table, 2 columns, 1000 rows\n" +
                 "9, 10\n" +
@@ -125,14 +126,14 @@ public class NextKSketchTest {
         final int numCols = 3;
         final int maxSize = 5;
         final int bigSize = 100000;
-        final SmallTable bigTable = GetTable.getIntTable(bigSize, numCols);
+        final SmallTable bigTable = TestTables.getIntTable(bigSize, numCols);
         final RowSnapshot topRow = new RowSnapshot(bigTable, 1000);
         Assert.assertEquals(topRow.toString(), "44, 95, 56");
         RecordOrder cso = new RecordOrder();
         for (String colName : bigTable.getSchema().getColumnNames())
             cso.append(new ColumnSortOrientation(bigTable.getSchema().getDescription(colName),
                     true));
-        ParallelDataSet<ITable> all = GetTable.makeParallel(bigTable, 10000);
+        ParallelDataSet<ITable> all = TestTables.makeParallel(bigTable, 10000);
         NextKList nk = all.blockingSketch(new NextKSketch(cso, topRow, maxSize));
         IndexComparator mComp = cso.getComparator(nk.table);
         for (int i = 0; i < (nk.table.getNumOfRows() - 1); i++)
@@ -157,7 +158,7 @@ public class NextKSketchTest {
 
     @Test
     public void testTopK4() {
-        Table t = GetTable.testTable();
+        Table t = TestTables.testTable();
         final int parts = 1;
         List<IDataSet<ITable>> fragments = new ArrayList<IDataSet<ITable>>();
         for (int i = 0; i < parts; i++) {
@@ -174,7 +175,7 @@ public class NextKSketchTest {
 
     @Test
     public  void TestTopK5() {
-        Table t = GetTable.testTable();
+        Table t = TestTables.testTable();
         RecordOrder ro = new RecordOrder();
         ro.append(new ColumnSortOrientation(t.getSchema().getDescription("Age"), true));
         ro.append(new ColumnSortOrientation(t.getSchema().getDescription("Name"), true));

@@ -18,7 +18,7 @@
 
 package org.hiero.sketch;
 
-import org.hiero.sketch.table.GetTable;
+import org.hiero.utils.TestTables;
 import org.hiero.sketch.table.SmallTable;
 import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IMembershipSet;
@@ -33,7 +33,7 @@ public class Issue46Test {
     @Test
     public void createBug() {
         // Creating Int Table
-        final SmallTable bigTable = GetTable.getIntTable(10000, 1);
+        final SmallTable bigTable = TestTables.getIntTable(10000, 1);
         // Grabbing the Column
         String colName = bigTable.getSchema().getColumnNames().iterator().next();
         IColumn column  = bigTable.getColumn(colName);
@@ -43,7 +43,7 @@ public class Issue46Test {
         System.out.println(" printing the double " + column.asDouble(iter.getNextRow(), null));
         System.out.println(" printing the double " + column.asDouble(iter.getNextRow(), null));
         // Splitting the table
-        List<ITable> tabList = GetTable.splitTable(bigTable, 10000);
+        List<ITable> tabList = TestTables.splitTable(bigTable, 10000);
         // Grabbing the column from  the sub-tables
         ITable subtable = tabList.iterator().next();
         IColumn column1 = subtable.getColumn(colName);

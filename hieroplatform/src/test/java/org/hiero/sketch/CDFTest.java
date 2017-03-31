@@ -5,7 +5,7 @@ import org.hiero.sketch.spreadsheet.*;
 import org.hiero.sketch.table.SmallTable;
 import org.hiero.sketch.table.api.ITable;
 import org.junit.Test;
-import static org.hiero.sketch.table.GetTable.getIntTable;
+import static org.hiero.utils.TestTables.getIntTable;
 
 /**
  * Test class for performance profiling of histogram and CDF

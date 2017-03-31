@@ -27,6 +27,7 @@ import org.hiero.sketch.table.api.IRowOrder;
 import org.hiero.sketch.table.api.ITable;
 import org.hiero.sketch.table.api.IndexComparator;
 import org.hiero.utils.Converters;
+import org.hiero.utils.TestTables;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -35,14 +36,14 @@ public class QuantileSketchTest {
     public void testQuantile() {
         final int numCols = 2;
         final int leftSize = 100;
-        final SmallTable leftTable = GetTable.getIntTable(leftSize, numCols);
+        final SmallTable leftTable = TestTables.getIntTable(leftSize, numCols);
         RecordOrder rso = new RecordOrder();
         for (String colName : leftTable.getSchema().getColumnNames())
             rso.append(
                     new ColumnSortOrientation(leftTable.getSchema().getDescription(colName), true));
 
         final int rightSize = 200;
-        final SmallTable rightTable = GetTable.getIntTable(rightSize, numCols);
+        final SmallTable rightTable = TestTables.getIntTable(rightSize, numCols);
         final int resolution = 100;
         final QuantileSketch qSketch = new QuantileSketch(rso, resolution);
         final QuantileList leftQ = qSketch.getQuantile(leftTable);
@@ -86,13 +87,13 @@ public class QuantileSketchTest {
         final int numCols = 3;
         final int resolution = 49;
         final int bigSize = 100000;
-        final SmallTable bigTable = GetTable.getIntTable(bigSize, numCols);
+        final SmallTable bigTable = TestTables.getIntTable(bigSize, numCols);
         //printTime("created");
         RecordOrder cso = new RecordOrder();
         for (String colName : bigTable.getSchema().getColumnNames()) {
             cso.append(new ColumnSortOrientation(bigTable.getSchema().getDescription(colName), true));
         }
-        ParallelDataSet<ITable> all = GetTable.makeParallel(bigTable, 10000);
+        ParallelDataSet<ITable> all = TestTables.makeParallel(bigTable, 10000);
         QuantileList ql = all.blockingSketch(new QuantileSketch(cso, resolution)).
                 compressExact(resolution);
         IndexComparator mComp = cso.getComparator(ql.quantile);
@@ -141,7 +142,7 @@ public class QuantileSketchTest {
         final int numCols = 3;
         final int resolution = 99;
         final int bigSize = 1000;
-        final SmallTable bigTable = GetTable.getIntTable(bigSize, numCols);
+        final SmallTable bigTable = TestTables.getIntTable(bigSize, numCols);
         //printTime("created");
         RecordOrder cso = new RecordOrder();
         for (String colName : bigTable.getSchema().getColumnNames()) {

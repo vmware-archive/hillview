@@ -31,11 +31,7 @@ but only maven is needed to build.
 
 >$ cd data
 >$ ./download.sh
-
-* The dataset has 110 columns; we can use them all, but for the demo I
-  have stripped the dataset to 15 columns to better fit on the screen.
-
-[TODO: split the demo data]
+>$ cd ..
 
 * Install the distributed platform library:
 
@@ -43,9 +39,15 @@ but only maven is needed to build.
 >$ cd hieroplatform
 >$ mvn install
 
+* The dataset has 110 columns; we can use them all, but for the demo I
+  have stripped the dataset to 15 columns to better fit on the screen.
+  The following command creates the smaller files:
+
+>$ mvn exec:java
+>$ cd ..
+
 * Build the web server and the front-end
 
->$ cd ..
 >$ cd hieroweb
 >$ mvn package
 

@@ -18,7 +18,7 @@
 
 package org.hiero.sketch;
 
-import org.hiero.sketch.table.GetIntArray;
+import org.hiero.utils.IntArrayGenerator;
 import org.hiero.sketch.table.IntArrayColumn;
 import org.hiero.sketch.table.api.IndexComparator;
 import org.junit.Test;
@@ -37,7 +37,7 @@ public class IntArrayTest {
     public void testRandArray(){
         final int size = 1000;
         final int range = 1000;
-        final IntArrayColumn col = GetIntArray.getRandIntArray(size, range, "Test");
+        final IntArrayColumn col = IntArrayGenerator.getRandIntArray(size, range, "Test");
         final IndexComparator comp = col.getComparator();
         final Integer[] order = new Integer[size];
         for (int i = 0; i < size; i++) {
@@ -64,7 +64,7 @@ public class IntArrayTest {
     @Test
     public void testIntArrayZero() {
         final int size = 100;
-        final IntArrayColumn col = GetIntArray.generateIntArray(size);
+        final IntArrayColumn col = IntArrayGenerator.generateIntArray(size);
         assertEquals(col.sizeInRows(), size);
         checkContents(col);
     }
@@ -77,7 +77,7 @@ public class IntArrayTest {
         final int[] data = new int[size];
         for (int i = 0; i < size; i++)
             data[i] = i;
-        final IntArrayColumn col = new IntArrayColumn(GetIntArray.desc, data);
+        final IntArrayColumn col = new IntArrayColumn(IntArrayGenerator.desc, data);
         for (int i = 0; i < size; i++)
             if ((i % 5) == 0)
                 col.setMissing(i);

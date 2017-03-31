@@ -24,7 +24,7 @@ import org.hiero.sketch.dataset.api.IDataSet;
 import org.hiero.sketch.spreadsheet.ColumnSortOrientation;
 import org.hiero.sketch.spreadsheet.QuantileList;
 import org.hiero.sketch.spreadsheet.QuantileSketch;
-import org.hiero.sketch.table.GetTable;
+import org.hiero.utils.TestTables;
 import org.hiero.sketch.table.api.ITable;
 import org.hiero.sketch.table.RecordOrder;
 import org.hiero.sketch.table.SmallTable;
@@ -40,7 +40,7 @@ public class TableDataSetTest {
     public void localDataSetTest() {
         final int numCols = 3;
         final int size = 1000, resolution = 20;
-        final SmallTable randTable = GetTable.getIntTable(size, numCols);
+        final SmallTable randTable = TestTables.getIntTable(size, numCols);
         RecordOrder cso = new RecordOrder();
         for (String colName : randTable.getSchema().getColumnNames()) {
             cso.append(new ColumnSortOrientation(randTable.getSchema().getDescription(colName), true));
@@ -58,8 +58,8 @@ public class TableDataSetTest {
     public void parallelDataSetTest() {
         final int numCols = 3;
         final int size = 1000, resolution = 20;
-        final SmallTable randTable1 = GetTable.getIntTable(size, numCols);
-        final SmallTable randTable2 = GetTable.getIntTable(size, numCols);
+        final SmallTable randTable1 = TestTables.getIntTable(size, numCols);
+        final SmallTable randTable2 = TestTables.getIntTable(size, numCols);
         RecordOrder cso = new RecordOrder();
         for (String colName : randTable1.getSchema().getColumnNames()) {
             cso.append(new ColumnSortOrientation(randTable1.getSchema().getDescription(colName), true));

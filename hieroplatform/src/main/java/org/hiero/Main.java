@@ -33,7 +33,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 
-import org.hiero.sketch.table.GetTable;
+import org.hiero.utils.TestTables;
 
 /**
  * TODO: delete this class
@@ -47,7 +47,7 @@ public class Main {
     static final String csvFile = "On_Time_Sample.csv";
     static final String schemaFile = "On_Time.schema";
 
-    public static void main() throws IOException {
+    public static void main(String[] args) throws IOException {
         String[] columns = {
                 "DayOfWeek", "FlightDate", "UniqueCarrier",
                 "Origin", "OriginCityName", "OriginState", "Dest", "DestState",
@@ -55,6 +55,7 @@ public class Main {
                 "ActualElapsedTime", "Distance"
         };
 
+        System.out.println("Splitting files in folder " + dataFolder);
         Path path = Paths.get(dataFolder, schemaFile);
         Schema schema = Schema.readFromJsonFile(path);
         HashSubSchema subschema = new HashSubSchema(columns);
@@ -95,7 +96,7 @@ public class Main {
                  ITable p = tbl.project(proj);
 
                  if (splitSize > 0) {
-                     List<ITable> pieces = GetTable.splitTable(p, splitSize);
+                     List<ITable> pieces = TestTables.splitTable(p, splitSize);
 
                      int index = 0;
                      for (ITable t : pieces) {
