@@ -4,12 +4,15 @@ A big data spreadsheet.
 
 ## Dependences
 
-* Back-end: Ubuntu Linux, Java 8, Maven build system
+* Back-end: Ubuntu Linux
   (Technically we don't depend on Linux, it's just that we have only tested this on Linux)
+* Java 8, Maven build system, various Java libraries, in particular RxJava
+  (Maven will manage the libraries for you)
 * Front-end: typescript, webpack, Tomcat app server, node.js
+* Some JavaScript libraries: d3 and rxdom
 * IDEA Intellij for development (optional)
 
-See below for installation instructions.
+See #installing-the-software for detailed installation instructions.
 
 ## Project structure
 
@@ -125,7 +128,7 @@ In more detail, here is a step-by-step guide to committing your changes:
 Install Maven and node.js:
 
 ```
-$: sudo apt-get install maven node
+$ sudo apt-get install maven node
 ```
 
 ### Installing Java
@@ -181,9 +184,9 @@ together with the typescript type definitions for these libraries. We
 are trying to maintain the number of dependences to a minimum.
 
 ```
-$ cd src/main/webapp
+$ cd hieroweb/src/main/webapp
 $ npm install rx rx-dom d3
 $ npm install @types/d3 --save
 $ typings install dt~rx-dom --save
-$ cd ../../..
+$ cd ../../../..
 ```
