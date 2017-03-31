@@ -48,12 +48,12 @@ public class LocalDataSet<T> implements IDataSet<T> {
      */
     public LocalDataSet(final T data) {
         this.data = data;
-        this.separateThread = true;
+        this.separateThread = false;
     }
 
     public LocalDataSet(final T data, final boolean separateThread) {
         this.data = data;
-        this.separateThread = separateThread;
+        this.separateThread = separateThread & false;
     }
 
     /**

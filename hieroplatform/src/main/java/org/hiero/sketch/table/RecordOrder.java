@@ -171,12 +171,12 @@ public class RecordOrder implements Iterable<ColumnSortOrientation> {
                 if (!ordCol.isAscending) {
                     outcome *= -1;
                 }
-                if (outcome == -1) {
+                if (outcome < 0) {
                     mergeLeft[k] = true;
                     i++;
                     k++;
                     break;
-                } else if (outcome == 1) {
+                } else if (outcome > 0) {
                     mergeLeft[k] = false;
                     j++;
                     k++;
@@ -216,11 +216,11 @@ public class RecordOrder implements Iterable<ColumnSortOrientation> {
      * comes form the Left, 1 if it comes from the Right, 0 if the two are equal.
      */
     public List<Integer> getIntMergeOrder(SmallTable left, SmallTable right) {
-        if (!left.schema.equals(right.schema)) {
+        if (!left.schema.equals(right.schema))
             throw new RuntimeException("Tables do not have matching schemas");
-        }
-        final int  leftLength = left.getNumOfRows();
-        final int  rightLength = right.getNumOfRows();
+
+        final int leftLength = left.getNumOfRows();
+        final int rightLength = right.getNumOfRows();
         final List<Integer> merge = new ArrayList<>();
         int i = 0, j = 0;
         int outcome;
@@ -266,11 +266,11 @@ public class RecordOrder implements Iterable<ColumnSortOrientation> {
                 if (!ordCol.isAscending) {
                     outcome *= -1;
                 }
-                if (outcome == -1) {
+                if (outcome < 0) {
                     merge.add(outcome);
                     i++;
                     break;
-                } else if (outcome == 1) {
+                } else if (outcome > 0) {
                     merge.add(outcome);
                     j++;
                     break;
@@ -285,7 +285,7 @@ public class RecordOrder implements Iterable<ColumnSortOrientation> {
         while (i < leftLength) {
             merge.add(-1);
             i++;
-            }
+        }
         while (j < rightLength) {
             merge.add(1);
             j++;

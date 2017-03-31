@@ -140,11 +140,12 @@ public final class RpcServer {
 
     @SuppressWarnings("unused")
     @OnClose
-    public void onClose(final Session session) {
+    public void onClose(final Session session, final CloseReason reason) {
         RpcTarget target = this.getTarget(session);
         if (target != null)
             target.cancel();
-        logger.log(Level.FINE, "Close connection for client: {0}", session.getId());
+        logger.log(Level.FINE, "Close connection for client: {0}, {1}",
+                new Object[] { session.getId(), reason.toString() });
         this.removeSession(session);
     }
 

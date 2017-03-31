@@ -25,6 +25,7 @@ import org.hiero.sketch.table.*;
 import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.ITable;
+import org.hiero.utils.Randomness;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -62,6 +63,7 @@ public class TableTest {
     }
 
     public static SmallTable getIntTable(final int size, final int numCols) {
+        Randomness.createInstance(2);  // we want deterministic random numbers for testing
         final List<IColumn> columns = new ArrayList<IColumn>(numCols);
         double exp = 1.0/numCols;
         final int range =  5*((int)Math.pow(size, exp));
@@ -73,6 +75,7 @@ public class TableTest {
     }
 
     public static Table getRepIntTable(final int size, final int numCols) {
+        Randomness.createInstance(1);  // we want deterministic random numbers for testing
         final List<IColumn> columns = new ArrayList<IColumn>(numCols);
         double exp = 0.8 / numCols;
         final int range = ((int)Math.pow(size, exp));

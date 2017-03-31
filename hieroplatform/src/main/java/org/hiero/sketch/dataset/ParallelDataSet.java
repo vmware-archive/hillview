@@ -228,7 +228,7 @@ public class ParallelDataSet<T> implements IDataSet<T> {
             final int finalI = i;
             Observable<PartialResult<R>> sk =
                     child.sketch(sketch)
-                    .map(e -> log(e, "child " + finalI + " sketch done " + sketch.toString()))
+                    .map(e -> log(e, "child " + finalI + " sketch result " + sketch.toString()))
                     .map(e -> new PartialResult<R>(e.deltaDone / mySize, e.deltaValue));
             obs.add(sk);
         }

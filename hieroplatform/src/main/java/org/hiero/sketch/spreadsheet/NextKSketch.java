@@ -65,14 +65,14 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
         int i, position = 0;
         do {
             i = rowIt.getNextRow();
-            if (i != -1) {
+            if (i >= 0) {
                 if (rowToTable.compareToRow(i) >= 0) {
                     topK.push(i);
                 } else {
                     position++;
                 }
             }
-        } while (i != -1);
+        } while (i >= 0);
         SortedMap<Integer, Integer> topKList = topK.getTopK();
         IRowOrder rowOrder = new ArrayRowOrder(topKList.keySet());
         SmallTable topKRows = data.compress(this.recordOrder.toSubSchema(), rowOrder);
@@ -97,10 +97,10 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
         final ObjectArrayColumn merged = new ObjectArrayColumn(left.getDescription(), size);
         int i = 0, j = 0, k = 0;
         while (k < size) {
-            if (mergeOrder.get(k) == -1) {
+            if (mergeOrder.get(k) < 0) {
                 merged.set(k, left.getObject(i));
                 i++;
-            } else if (mergeOrder.get(k) == 1) {
+            } else if (mergeOrder.get(k) > 0) {
                 merged.set(k, right.getObject(j));
                 j++;
             } else {
@@ -128,10 +128,10 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
         final List<Integer> mergedCounts = new ArrayList<Integer>(mergeOrder.size());
         int i = 0, j = 0, k = 0;
         while (k < size) {
-            if (mergeOrder.get(k) == -1) {
+            if (mergeOrder.get(k) < 0) {
                 mergedCounts.add(left.get(i));
                 i++;
-            } else if (mergeOrder.get(k) == 1) {
+            } else if (mergeOrder.get(k) > 0) {
                 mergedCounts.add(right.get(j));
                 j++;
             } else {

@@ -39,28 +39,30 @@ public class InitialObjectTarget extends RpcTarget {
         String schemaFile = "short.schema";
         Path schemaPath = Paths.get(dataFolder, schemaFile);
 
-        /*
-        List<IDataSet<CsvFileObject>> fileNames = new ArrayList<IDataSet<CsvFileObject>>();
+        IDataSet<CsvFileObject> result;
 
-        Path folder = Paths.get(dataFolder);
-        Stream<Path> files = Files.walk(folder, 1);
-        files.filter(f -> {
-            String filename = f.getFileName().toString();
-            if (!filename.endsWith(".csv")) return false;
-            if (!filename.startsWith("2016")) return false;
-            return true;
-        }).forEach(f -> {
+        if (true) {
+            List<IDataSet<CsvFileObject>> fileNames = new ArrayList<IDataSet<CsvFileObject>>();
+            Path folder = Paths.get(dataFolder);
+            Stream<Path> files = Files.walk(folder, 1);
+            files.filter(f -> {
+                String filename = f.getFileName().toString();
+                if (!filename.endsWith(".csv")) return false;
+                if (!filename.startsWith("2016")) return false;
+                return true;
+            }).forEach(f -> {
+                CsvFileObject cfo = new CsvFileObject(f, schemaPath);
+                LocalDataSet<CsvFileObject> local = new LocalDataSet<CsvFileObject>(cfo);
+                fileNames.add(local);
+                logger.log(Level.INFO, "Added " + toString());
+            });
+
+            result = new ParallelDataSet<CsvFileObject>(fileNames);
+        } else {
+            Path f = Paths.get(dataFolder, "2016_1.csv");
             CsvFileObject cfo = new CsvFileObject(f, schemaPath);
-            LocalDataSet<CsvFileObject> local = new LocalDataSet<CsvFileObject>(cfo);
-            fileNames.add(local);
-            logger.log(Level.INFO, "Added " + toString());
-        });
-
-        ParallelDataSet<CsvFileObject> result = new ParallelDataSet<CsvFileObject>(fileNames);
-        */
-        Path f = Paths.get(dataFolder, "2016_1.csv");
-        CsvFileObject cfo = new CsvFileObject(f, schemaPath);
-        LocalDataSet<CsvFileObject> result = new LocalDataSet<CsvFileObject>(cfo);
+            result = new LocalDataSet<CsvFileObject>(cfo);
+        }
 
         FileNamesTarget target = new FileNamesTarget(result);
         RpcReply reply = request.createReply(target.idToJson());

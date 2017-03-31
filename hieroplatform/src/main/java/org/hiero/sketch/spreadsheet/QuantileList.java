@@ -138,7 +138,7 @@ public class QuantileList implements Serializable {
         int row = 0;
         while (true) {
             final int i = rowIt.getNextRow();
-            if (i == -1) { break; }
+            if (i < 0) { break; }
             newRank[row] = this.getWinsAndLosses(i);
             row++;
         }
@@ -213,7 +213,7 @@ public class QuantileList implements Serializable {
         final StringBuilder builder = new StringBuilder();
         final IRowIterator rowIt = this.quantile.getRowIterator();
         int nextRow = rowIt.getNextRow();
-        while (nextRow != -1) {
+        while (nextRow >= 0) {
             for (final String colName: this.quantile.getSchema().getColumnNames()) {
                 builder.append(this.getColumn(colName).asString(nextRow));
                 builder.append(", ");

@@ -100,7 +100,7 @@ public interface IColumn {
         int row = 0;
         while (true) {
             final int i = rowIt.getNextRow();
-            if (i == -1)
+            if (i < 0)
                 break;
             result.set(row, this.getObject(i));
             row++;

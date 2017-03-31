@@ -77,10 +77,10 @@ public class MonoidTopK<T> implements IMonoid<SortedMap<T, Integer>> {
                 mergedMap.put(leftKey, left.get(leftKey));
                 leftKey = (itLeft.hasNext()) ? itLeft.next() : null;
             } else {
-                if (this.greater.compare(leftKey, rightKey) == 1) {
+                if (this.greater.compare(leftKey, rightKey) > 0) {
                     mergedMap.put(rightKey, right.get(rightKey));
                     rightKey = (itRight.hasNext()) ? itRight.next() : null;
-                } else if (this.greater.compare(leftKey, rightKey) == -1) {
+                } else if (this.greater.compare(leftKey, rightKey) < 0) {
                     mergedMap.put(leftKey, left.get(leftKey));
                     leftKey = (itLeft.hasNext()) ? itLeft.next() : null;
                 } else { //Keys are equal

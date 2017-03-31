@@ -56,7 +56,7 @@ public class NextKList implements Serializable, IJson {
         this.startPosition = position;
         this.totalRows = totalRows;
         /* If the table is empty, discard the counts. Else check we have counts for each row.*/
-        if((table.getNumOfRows() !=0) && (count.size() != table.getNumOfRows()))
+        if ((table.getNumOfRows() !=0) && (count.size() != table.getNumOfRows()))
             throw new IllegalArgumentException("Mismatched table and count length");
     }
 
@@ -77,7 +77,7 @@ public class NextKList implements Serializable, IJson {
         final IRowIterator rowIt = this.table.getRowIterator();
         int nextRow = rowIt.getNextRow();
         int i = 0;
-        while ((nextRow != -1) && (i < rowsToDisplay)) {
+        while ((nextRow >= 0) && (i < rowsToDisplay)) {
             RowSnapshot rs = new RowSnapshot(this.table, nextRow);
             builder.append(rs.toString()).append(": ").append(this.count.get(i));
             builder.append(System.getProperty("line.separator"));

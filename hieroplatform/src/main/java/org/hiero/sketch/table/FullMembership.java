@@ -147,9 +147,9 @@ public class FullMembership implements IMembershipSet {
         public int getNextRow() {
             if (this.cursor < this.range) {
                 this.cursor++;
-                return this.cursor-1;
+                return this.cursor - 1;
             }
-            else return -1;
+            else return - 1;
         }
     }
 }

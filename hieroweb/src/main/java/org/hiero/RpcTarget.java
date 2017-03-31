@@ -40,7 +40,7 @@ public abstract class RpcTarget {
     @Nullable // This is null for a very brief time
     String objectId;
     private final HashMap<String, Method> executor;
-    protected static final Logger logger = Logger.getLogger(RpcTarget.class.getName());
+    static final Logger logger = Logger.getLogger(RpcTarget.class.getName());
 
     @Nullable
     protected Subscription subscription;
@@ -57,11 +57,12 @@ public abstract class RpcTarget {
     }
 
     synchronized void cancel() {
-        logger.log(Level.INFO, "Cancelling " + this.toString());
         if (this.subscription != null) {
             logger.log(Level.INFO, "Unsubscribing " + this.toString());
             this.subscription.unsubscribe();
             this.subscription = null;
+        } else {
+            logger.log(Level.WARNING, "Cancellation failed: no subscription " + this.toString());
         }
     }
 
@@ -123,14 +124,17 @@ public abstract class RpcTarget {
     abstract class ResultObserver<T> implements Observer<PartialResult<T>> {
         final RpcRequest request;
         final Session session;
+        final String name;
 
-        ResultObserver(RpcRequest request, Session session) {
+        ResultObserver(String name, RpcRequest request, Session session) {
+            this.name = name;
             this.request = request;
             this.session = session;
         }
 
         @Override
         public void onCompleted() {
+            logger.log(Level.INFO, "Computation completed for " + this.name);
             this.request.syncCloseSession(this.session);
             RpcTarget.this.removeSubscription();
         }
@@ -139,6 +143,7 @@ public abstract class RpcTarget {
         public void onError(Throwable throwable) {
             if (!this.session.isOpen()) return;
 
+            RpcTarget.logger.log(Level.SEVERE, name + " onError");
             RpcTarget.logger.log(Level.SEVERE, throwable.toString());
             RpcReply reply = this.request.createReply(throwable);
             reply.send(this.session);
@@ -146,13 +151,13 @@ public abstract class RpcTarget {
     }
 
     class SketchResultObserver<T extends IJson> extends ResultObserver<T> {
-        SketchResultObserver(RpcRequest request, Session session) {
-            super(request, session);
+        SketchResultObserver(String name, RpcRequest request, Session session) {
+            super(name, request, session);
         }
 
         @Override
         public void onNext(PartialResult<T> pr) {
-            logger.log(Level.INFO, "Received partial result");
+            logger.log(Level.INFO, "Received partial result from " + this.name);
             if (!this.session.isOpen()) {
                 logger.log(Level.WARNING, "Session closed, ignoring partial result");
                 return;
@@ -172,14 +177,15 @@ public abstract class RpcTarget {
         IDataSet<T> result;
         final Function<IDataSet<T>, RpcTarget> factory;
 
-        MapResultObserver(RpcRequest request, Session session, Function<IDataSet<T>, RpcTarget> factory) {
-            super(request, session);
+        MapResultObserver(String name, RpcRequest request,
+                          Session session, Function<IDataSet<T>, RpcTarget> factory) {
+            super(name, request, session);
             this.factory = factory;
         }
 
         @Override
         public void onNext(PartialResult<IDataSet<T>> pr) {
-            logger.log(Level.INFO, "Received partial result");
+            logger.log(Level.INFO, "Received partial result from " + this.name);
             if (!this.session.isOpen()) {
                 logger.log(Level.WARNING, "Session closed, ignoring partial result");
                 return;
@@ -220,7 +226,8 @@ public abstract class RpcTarget {
         // Prefix sum of the partial results
         Observable<PartialResult<R>> add = sketches.scan(prm::add);
         // Send the partial results back
-        SketchResultObserver<R> robs = new SketchResultObserver<R>(request, session);
+        SketchResultObserver<R> robs = new SketchResultObserver<R>(
+                sketch.toString(), request, session);
         Subscription sub = add.subscribe(robs);
         this.saveSubscription(sub);
     }
@@ -235,7 +242,8 @@ public abstract class RpcTarget {
         // Prefix sum of the partial results
         Observable<PartialResult<IDataSet<S>>> add = stream.scan(monoid::add);
         // Send the partial results back
-        MapResultObserver<S> robs = new MapResultObserver<S>(request, session, factory);
+        MapResultObserver<S> robs = new MapResultObserver<S>(
+                map.toString(), request, session, factory);
         Subscription sub = add.subscribe(robs);
         this.saveSubscription(sub);
     }
