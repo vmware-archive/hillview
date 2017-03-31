@@ -29,31 +29,40 @@ but only maven is needed to build.
   and decompress some CSV files with flights data.  You can edit the
   script to change the range of data that will be downloaded.
 
->$ cd data
->$ ./download.sh
->$ cd ..
+```
+$ cd data
+$ ./download.sh
+$ cd ..
+```
 
 * Install the distributed platform library:
 
->$ cd ..
->$ cd hieroplatform
->$ mvn install
+```
+$ cd hieroplatform
+$ mvn install
+```
 
 * The dataset has 110 columns; we can use them all, but for the demo I
   have stripped the dataset to 15 columns to better fit on the screen.
   The following command creates the smaller files:
 
->$ mvn exec:java
->$ cd ..
+```
+$ mvn exec:java
+$ cd ..
+```
 
 * Build the web server and the front-end
 
->$ cd hieroweb
->$ mvn package
+```
+$ cd hieroweb
+$ mvn package
+```
 
 * Start the tomcat web server
 
->$ ../apache-tomcat-8.5.8/bin/catalina.sh run
+```
+$ ../apache-tomcat-8.5.8/bin/catalina.sh run
+```
 
 * start a web browser at http://localhost:8080
 
@@ -115,7 +124,9 @@ In more detail, here is a step-by-step guide to committing your changes:
 
 Install Maven and node.js:
 
->$: sudo apt-get install maven node
+```
+$: sudo apt-get install maven node
+```
 
 ### Installing Java
 
@@ -131,7 +142,9 @@ to the unpacked folder (e.g, <fully qualified path
 to>/jdk/jdk1.8.0_101). To set your JAVA_HOME environment variable, add
 the following to your ~/.bashrc or ~/.zshrc.
 
->$ ```export JAVA_HOME="<path-to-jdk-folder>"```
+```
+$ export JAVA_HOME="<path-to-jdk-folder>"
+```
 
 ## Install Apache Tomcat web application server
 
@@ -140,17 +153,21 @@ one).  Download the binaries from
 [http://tomcat.apache.org/download-80.cgi] and untar in the hiero
 toplevel folder.
 
->$ cd hieroweb
->$ cd apache-tocat-8.5.8/webapps
->$ rm -rf ROOT*
->$ ln -s ../../hieroweb/target/hieroweb-1.0-SNAPSHOT.war ROOT.war
->$ cd ..
+```
+$ cd hieroweb
+$ cd apache-tocat-8.5.8/webapps
+$ rm -rf ROOT*
+$ ln -s ../../hieroweb/target/hieroweb-1.0-SNAPSHOT.war ROOT.war
+$ cd ..
+```
 
 ## Install typescript and JavaScript libraries and tools
 
 On Mac the following command seems to work correctly only without `sudo`.
 
->$ sudo npm install -g typescript ts-loader webpack@1.14.0 typings
+```
+$ sudo npm install -g typescript ts-loader webpack@1.14.0 typings
+```
 
 This installs the typescript compiler, the webpack tool which can be
 used to bundle multiple JavaScript files together, the ts-loader tool
@@ -163,8 +180,10 @@ Then we install various JavaScript libraries: rx, rx-dom and d3,
 together with the typescript type definitions for these libraries. We
 are trying to maintain the number of dependences to a minimum.
 
->$ cd src/main/webapp
->$ npm install rx rx-dom d3
->$ npm install @types/d3 --save
->$ typings install dt~rx-dom --save
->$ cd ../../..
+```
+$ cd src/main/webapp
+$ npm install rx rx-dom d3
+$ npm install @types/d3 --save
+$ typings install dt~rx-dom --save
+$ cd ../../..
+```
