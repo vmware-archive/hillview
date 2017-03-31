@@ -46,11 +46,15 @@ public class ParallelDataSet<T> implements IDataSet<T> {
      * If this is set to zero no aggregation is performed.
      * If this is set to a value too large then progress reporting to the user may be impacted.
      */
-    protected int bundleInterval = 0;
+    protected int bundleInterval = 250;
     /**
      * The bundleInterval specifies a time in milliseconds.
      */
     protected static final TimeUnit bundleTimeUnit = TimeUnit.MILLISECONDS;
+    /**
+     * If this is set to true there is some additional logging inserted.
+     */
+    protected static boolean useLogging = false;
 
     /**
      * Children of the data set.
@@ -108,15 +112,16 @@ public class ParallelDataSet<T> implements IDataSet<T> {
      */
 
     public <R> Observable<R> bundle(final Observable<R> data, IMonoid<R> adder) {
-        if (this.bundleInterval > 0)
-            return data.buffer(this.bundleInterval, bundleTimeUnit)
-                       .filter(e -> !e.isEmpty())
+        if (this.bundleInterval > 0) {
+            Observable<List<R>> bundled = data.buffer(this.bundleInterval, bundleTimeUnit)
+                       .filter(e -> !e.isEmpty());
+            if (ParallelDataSet.useLogging)
                        // If a time interval has no data we don't want to produce a zero.
-                       .map(e -> log(e, "bundling " + e.size() + " values"))
-                       .map(adder::reduce)
-                    ;
-        else
+                bundled = bundled.map(e -> log(e, "bundling " + e.size() + " values"));
+            return bundled.map(adder::reduce);
+        } else {
             return data;
+        }
     }
 
     /**
@@ -226,18 +231,20 @@ public class ParallelDataSet<T> implements IDataSet<T> {
         for (int i = 0; i < mySize; i++) {
             IDataSet<T> child = this.children.get(i);
             final int finalI = i;
-            Observable<PartialResult<R>> sk =
-                    child.sketch(sketch)
-                    .map(e -> log(e, "child " + finalI + " sketch result " + sketch.toString()))
-                    .map(e -> new PartialResult<R>(e.deltaDone / mySize, e.deltaValue));
+            Observable<PartialResult<R>> sk = child.sketch(sketch);
+            if (useLogging)
+                    sk = sk.map(e -> log(e, "child " + finalI + " sketch result " + sketch.toString()));
+            sk = sk.map(e -> new PartialResult<R>(e.deltaDone / mySize, e.deltaValue));
             obs.add(sk);
         }
         // Just merge all sketch results
         Observable<PartialResult<R>> result = Observable.merge(obs);
-        result = result.map(e -> log(e, "after merge " + sketch.toString()));
+        if (useLogging)
+            result = result.map(e -> log(e, "after merge " + sketch.toString()));
         PartialResultMonoid<R> prm = new PartialResultMonoid<R>(sketch);
         result = this.bundle(result, prm);
-        result = result.map(e -> log(e, "after bundle " + sketch.toString()));
+        if (useLogging)
+            result = result.map(e -> log(e, "after bundle " + sketch.toString()));
         return result;
     }
 

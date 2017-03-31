@@ -48,12 +48,12 @@ public class LocalDataSet<T> implements IDataSet<T> {
      */
     public LocalDataSet(final T data) {
         this.data = data;
-        this.separateThread = false;
+        this.separateThread = true;
     }
 
     public LocalDataSet(final T data, final boolean separateThread) {
         this.data = data;
-        this.separateThread = separateThread & false;
+        this.separateThread = separateThread;
     }
 
     /**
@@ -77,15 +77,15 @@ public class LocalDataSet<T> implements IDataSet<T> {
 
     @Override
     public <S> Observable<PartialResult<IDataSet<S>>> map(final IMap<T, S> mapper) {
-        // Immediately return a null partial result
-        // final Observable<PartialResult<IDataSet<S>>> zero = this.zero(() -> null);
         // Actual map computation performed lazily when observable is subscribed to.
-        final Callable<IDataSet<S>> callable = () -> new LocalDataSet<S>(mapper.apply(this.data));
+        final Callable<IDataSet<S>> callable = () -> {
+            S result = mapper.apply(LocalDataSet.this.data);
+            return new LocalDataSet<S>(result);
+        };
         final Observable<IDataSet<S>> mapped = Observable.fromCallable(callable);
         // Wrap the produced data in a PartialResult
         Observable<PartialResult<IDataSet<S>>> data = mapped.map(PartialResult::new);
         // Concatenate the zero with the actual data produced
-        // Observable<PartialResult<IDataSet<S>>> result = zero.concatWith(data);
         if (this.separateThread)
             data = data.observeOn(Schedulers.computation());
         return data;

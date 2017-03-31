@@ -27,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.stream.Stream;
@@ -35,34 +36,27 @@ public class InitialObjectTarget extends RpcTarget {
     @HieroRpc
     void prepareFiles(RpcRequest request, Session session) throws IOException {
         // TODO: look at request.  Now we just supply always the same table
-        String dataFolder = "/home/mbudiu/git/hiero/data";
+        String dataFolder = "../data/";
         String schemaFile = "short.schema";
         Path schemaPath = Paths.get(dataFolder, schemaFile);
 
-        IDataSet<CsvFileObject> result;
-
-        if (true) {
-            List<IDataSet<CsvFileObject>> fileNames = new ArrayList<IDataSet<CsvFileObject>>();
-            Path folder = Paths.get(dataFolder);
-            Stream<Path> files = Files.walk(folder, 1);
-            files.filter(f -> {
-                String filename = f.getFileName().toString();
-                if (!filename.endsWith(".csv")) return false;
-                if (!filename.startsWith("2016")) return false;
-                return true;
-            }).forEach(f -> {
-                CsvFileObject cfo = new CsvFileObject(f, schemaPath);
-                LocalDataSet<CsvFileObject> local = new LocalDataSet<CsvFileObject>(cfo);
-                fileNames.add(local);
-                logger.log(Level.INFO, "Added " + toString());
-            });
-
-            result = new ParallelDataSet<CsvFileObject>(fileNames);
-        } else {
-            Path f = Paths.get(dataFolder, "2016_1.csv");
+        List<IDataSet<CsvFileObject>> fileNames = new ArrayList<IDataSet<CsvFileObject>>();
+        Path folder = Paths.get(dataFolder);
+        Stream<Path> files = Files.walk(folder, 1);
+        files.filter(f -> {
+            String filename = f.getFileName().toString();
+            if (!filename.endsWith(".csv")) return false;
+            if (!filename.startsWith("2016")) return false;
+            return true;
+        }).sorted(Comparator.comparing(Path::toString))
+                .forEach(f -> {
             CsvFileObject cfo = new CsvFileObject(f, schemaPath);
-            result = new LocalDataSet<CsvFileObject>(cfo);
-        }
+            LocalDataSet<CsvFileObject> local = new LocalDataSet<CsvFileObject>(cfo);
+            fileNames.add(local);
+            logger.log(Level.INFO, "Added " + toString());
+        });
+
+        IDataSet<CsvFileObject> result = new ParallelDataSet<CsvFileObject>(fileNames);
 
         FileNamesTarget target = new FileNamesTarget(result);
         RpcReply reply = request.createReply(target.idToJson());

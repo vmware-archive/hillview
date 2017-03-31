@@ -20,10 +20,8 @@ package org.hiero.sketch;
 
 import org.hiero.sketch.storage.CsvFileReader;
 import org.hiero.sketch.storage.CsvFileWriter;
-import org.hiero.sketch.table.HashSubSchema;
 import org.hiero.sketch.table.Schema;
 import org.hiero.sketch.table.api.ITable;
-import org.hiero.utils.Converters;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -32,9 +30,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Stream;
 
 public class CsvReaderTest {
     static final String dataFolder = "../data";
@@ -103,80 +99,5 @@ public class CsvReaderTest {
             if (Files.exists(path))
                 Files.delete(path);
         }
-    }
-
-    //@Test // This is not really a test.
-    public void SplitTable() throws IOException {
-        String[] columns = {
-                "DayOfWeek", "FlightDate", "UniqueCarrier",
-                "Origin", "OriginCityName", "OriginState", "Dest", "DestState",
-                "DepTime", "DepDelay", "ArrTime", "ArrDelay", "Cancelled",
-                "ActualElapsedTime", "Distance"
-        };
-
-        Path path = Paths.get(dataFolder, schemaFile);
-        Schema schema = Schema.readFromJsonFile(path);
-        HashSubSchema subschema = new HashSubSchema(columns);
-        Schema proj = schema.project(subschema);
-        proj.writeToJsonFile(Paths.get(dataFolder, "short.schema"));
-
-        // If non-zero, split each table into parts of this size.
-        final int splitSize = 0;
-
-        String prefix = "On_Time_On_Time_Performance";
-        Path folder = Paths.get(dataFolder);
-        Stream<Path> files = Files.walk(folder, 1);
-        files.forEach(f -> {
-            String filename = f.getFileName().toString();
-            if (!filename.endsWith("csv")) return;
-            if (!filename.startsWith(prefix)) return;
-            String end = filename.substring(prefix.length() + 1);
-
-            CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
-            config.allowFewerColumns = false;
-            config.hasHeaderRow = true;
-            config.allowMissingData = false;
-            config.schema = schema;
-            CsvFileReader r = new CsvFileReader(f, config);
-
-            ITable tbl = null;
-            try {
-                System.out.println("Reading " + f);
-                tbl = r.read();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            Converters.checkNull(tbl);
-
-            ITable p = tbl.project(proj);
-
-            if (splitSize > 0) {
-                List<ITable> pieces = TableTest.splitTable(p, splitSize);
-
-                int index = 0;
-                for (ITable t : pieces) {
-                    String baseName = end.substring(0, end.lastIndexOf("."));
-                    String name = baseName + "-" + Integer.toString(index) + ".csv";
-                    Path outpath = Paths.get(dataFolder, name);
-                    CsvFileWriter writer = new CsvFileWriter(outpath);
-                    try {
-                        System.out.println("Writing " + outpath);
-                        writer.writeTable(t);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    index++;
-                }
-            } else {
-                Path outpath = Paths.get(dataFolder, end);
-                CsvFileWriter writer = new CsvFileWriter(outpath);
-                try {
-                    System.out.println("Writing " + outpath);
-                    writer.writeTable(p);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
     }
 }
