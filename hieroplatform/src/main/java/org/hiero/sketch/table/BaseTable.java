@@ -20,6 +20,7 @@ package org.hiero.sketch.table;
 
 import org.hiero.sketch.table.api.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;

@@ -45,7 +45,7 @@ public abstract class BaseRowSnapshot implements IRow {
                                 Converters.checkNull(that.getDate(cn))) != 0)
                             return false;
                         break;
-                    case Int:
+                    case Integer:
                         if (Converters.checkNull(this.getInt(cn)).compareTo(
                                 Converters.checkNull(that.getInt(cn))) != 0)
                             return false;
