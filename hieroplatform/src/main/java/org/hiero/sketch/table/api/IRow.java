@@ -20,6 +20,10 @@ package org.hiero.sketch.table.api;
 
 import org.hiero.sketch.table.Schema;
 
+import javax.annotation.Nullable;
+import java.time.Duration;
+import java.time.LocalDateTime;
+
 public interface IRow {
     /**
      * @return The number of fields in the row.
@@ -28,9 +32,19 @@ public interface IRow {
 
     Schema getSchema();
 
-    Object get(final String colName);
+    @Nullable
+    Object getObject(final String colName);
+    @Nullable
+    String getString(String colName);
+    Integer getInt(String colName);
+    Double getDouble(String colName);
+    @Nullable
+    LocalDateTime getDate(String colName);
+    @Nullable
+    Duration getDuration(String colName);
 
     default ContentsKind getKind(final String colName) {
         return this.getSchema().getKind(colName);
     }
+    boolean isMissing(final String colName);
 }

@@ -20,7 +20,7 @@ package org.hiero.sketch.table;
 
 import com.google.gson.JsonElement;
 import org.hiero.sketch.dataset.api.IJson;
-import org.hiero.sketch.table.api.IRow;
+import org.hiero.sketch.table.api.ISubSchema;
 import org.hiero.sketch.table.api.ITable;
 
 import java.io.Serializable;
@@ -32,15 +32,20 @@ import java.util.HashMap;
  * The copy of the data in a row of the table.
  * This is quite inefficient, it should be used rarely.
  */
-public class RowSnapshot implements IRow, Serializable, IJson {
-    protected final Schema schema;
+public class RowSnapshot extends BaseRowSnapshot implements Serializable, IJson {
     /**
      * Maps a column name to a value.
      */
     private final HashMap<String, Object> field = new HashMap<String, Object>();
 
     public RowSnapshot(final ITable data, final int rowIndex) {
-        this.schema = data.getSchema();
+        super(data.getSchema());
+        for (final String colName : this.schema.getColumnNames())
+            this.field.put(colName, data.getColumn(colName).getObject(rowIndex));
+    }
+
+    public RowSnapshot(final ITable data, final int rowIndex, final ISubSchema subSchema) {
+        super(data.getSchema().project(subSchema));
         for (final String colName : this.schema.getColumnNames())
             this.field.put(colName, data.getColumn(colName).getObject(rowIndex));
     }
@@ -61,11 +66,6 @@ public class RowSnapshot implements IRow, Serializable, IJson {
         return result;
     }
 
-    @Override
-    public int rowSize() {
-        return this.field.size();
-    }
-
     public boolean isMissing(String colName) { return (this.field.get(colName) == null); }
 
     @Override
@@ -74,7 +74,7 @@ public class RowSnapshot implements IRow, Serializable, IJson {
     }
 
     @Override
-    public Object get(String colName) {
+    public Object getObject(String colName) {
         return this.field.get(colName);
     }
 
@@ -96,27 +96,6 @@ public class RowSnapshot implements IRow, Serializable, IJson {
 
     public Duration getDuration( String colName) {
         return (Duration) this.field.get(colName);
-    }
-
-    private Object[] getData() {
-        Object[] data = new Object[this.schema.getColumnCount()];
-        int i = 0;
-        for (final String nextCol: this.schema.getColumnNames())
-            data[i++] = this.get(nextCol);
-        return data;
-    }
-
-    @Override
-    public String toString() {
-        final StringBuilder builder = new StringBuilder();
-        boolean first = true;
-        for (Object o : this.getData()) {
-            if (!first)
-                builder.append(", ");
-            builder.append(o.toString());
-            first = false;
-        }
-        return builder.toString();
     }
 
     @Override

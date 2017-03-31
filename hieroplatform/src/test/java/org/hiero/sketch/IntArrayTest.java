@@ -18,14 +18,12 @@
 
 package org.hiero.sketch;
 
-import org.hiero.sketch.table.ColumnDescription;
+import org.hiero.sketch.table.GetIntArray;
 import org.hiero.sketch.table.IntArrayColumn;
-import org.hiero.sketch.table.api.ContentsKind;
 import org.hiero.sketch.table.api.IndexComparator;
 import org.junit.Test;
 
 import java.util.Arrays;
-import org.hiero.utils.Randomness;
 
 import static org.junit.Assert.*;
 
@@ -33,33 +31,13 @@ import static org.junit.Assert.*;
  * Test for IntArrayColumn class
  */
 public class IntArrayTest {
-    static private final ColumnDescription desc = new
-            ColumnDescription("Identity", ContentsKind.Integer, true);
 
-    public static IntArrayColumn generateIntArray(final int size) {
-        final IntArrayColumn col = new IntArrayColumn(desc, size);
-        for (int i = 0; i < size; i++) {
-            col.set(i, i);
-            if ((i % 5) == 0)
-                col.setMissing(i);
-        }
-        return col;
-    }
-
-    public static IntArrayColumn getRandIntArray(final int size, final int range, final String name) {
-        final ColumnDescription desc = new ColumnDescription(name, ContentsKind.Integer, false);
-        final IntArrayColumn col = new IntArrayColumn(desc, size);
-        final Randomness rn = Randomness.getInstance();
-        for (int i = 0; i < size; i++)
-            col.set(i, rn.nextInt(range));
-        return col;
-    }
 
     @Test
     public void testRandArray(){
         final int size = 1000;
         final int range = 1000;
-        final IntArrayColumn col = getRandIntArray(size, range, "Test");
+        final IntArrayColumn col = GetIntArray.getRandIntArray(size, range, "Test");
         final IndexComparator comp = col.getComparator();
         final Integer[] order = new Integer[size];
         for (int i = 0; i < size; i++) {
@@ -86,7 +64,7 @@ public class IntArrayTest {
     @Test
     public void testIntArrayZero() {
         final int size = 100;
-        final IntArrayColumn col = generateIntArray(size);
+        final IntArrayColumn col = GetIntArray.generateIntArray(size);
         assertEquals(col.sizeInRows(), size);
         checkContents(col);
     }
@@ -99,7 +77,7 @@ public class IntArrayTest {
         final int[] data = new int[size];
         for (int i = 0; i < size; i++)
             data[i] = i;
-        final IntArrayColumn col = new IntArrayColumn(desc, data);
+        final IntArrayColumn col = new IntArrayColumn(GetIntArray.desc, data);
         for (int i = 0; i < size; i++)
             if ((i % 5) == 0)
                 col.setMissing(i);

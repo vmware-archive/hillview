@@ -20,6 +20,7 @@ package org.hiero.sketch;
 
 import org.hiero.sketch.storage.CsvFileReader;
 import org.hiero.sketch.storage.CsvFileWriter;
+import org.hiero.sketch.table.GetTable;
 import org.hiero.sketch.table.HashSubSchema;
 import org.hiero.sketch.table.Schema;
 import org.hiero.sketch.table.api.ITable;
@@ -151,7 +152,7 @@ public class CsvReaderTest {
             ITable p = tbl.project(proj);
 
             if (splitSize > 0) {
-                List<ITable> pieces = TableTest.splitTable(p, splitSize);
+                List<ITable> pieces = GetTable.splitTable(p, splitSize);
 
                 int index = 0;
                 for (ITable t : pieces) {
