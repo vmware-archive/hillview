@@ -22,8 +22,6 @@ import org.hiero.sketch.storage.CsvFileReader;
 import org.hiero.sketch.storage.CsvFileWriter;
 import org.hiero.sketch.table.HashSubSchema;
 import org.hiero.sketch.table.Schema;
-import org.hiero.sketch.table.SparseMembership;
-import org.hiero.sketch.table.api.IMembershipSet;
 import org.hiero.sketch.table.api.ITable;
 import org.hiero.utils.Converters;
 
@@ -31,10 +29,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
+
+import org.hiero.sketch.table.GetTable;
 
 /**
  * TODO: delete this class
@@ -47,20 +46,6 @@ public class Main {
     static final String dataFolder = "../data";
     static final String csvFile = "On_Time_Sample.csv";
     static final String schemaFile = "On_Time.schema";
-
-    private static List<ITable> splitTable(ITable bigTable, int fragmentSize) {
-        int tableSize = bigTable.getNumOfRows();
-        int numTables = (tableSize / fragmentSize) + 1;
-        List<ITable> tableList = new ArrayList<ITable>(numTables);
-        int start = 0;
-        while (start < tableSize) {
-            int thisFragSize = Math.min(fragmentSize, tableSize - start);
-            IMembershipSet members = new SparseMembership(start, thisFragSize);
-            tableList.add(bigTable.selectRowsFromFullTable(members));
-            start += fragmentSize;
-        }
-        return tableList;
-    }
 
     public static void main() throws IOException {
         String[] columns = {
@@ -110,7 +95,7 @@ public class Main {
                  ITable p = tbl.project(proj);
 
                  if (splitSize > 0) {
-                     List<ITable> pieces = splitTable(p, splitSize);
+                     List<ITable> pieces = GetTable.splitTable(p, splitSize);
 
                      int index = 0;
                      for (ITable t : pieces) {

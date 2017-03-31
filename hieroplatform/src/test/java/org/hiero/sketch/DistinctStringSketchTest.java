@@ -2,6 +2,7 @@ package org.hiero.sketch;
 
 import org.hiero.sketch.dataset.ParallelDataSet;
 import org.hiero.sketch.spreadsheet.*;
+import org.hiero.sketch.table.GetTable;
 import org.hiero.sketch.table.SemiExplicitConverter;
 import org.hiero.sketch.table.SmallTable;
 import org.hiero.sketch.table.Table;
@@ -29,7 +30,7 @@ public class DistinctStringSketchTest {
     public void DistinctSketchTest2() {
         final int tableSize = 1000;
         final SmallTable myTable = TestUtil.createSmallTable(tableSize);
-        final ParallelDataSet<ITable> all = TableTest.makeParallel(myTable, tableSize/10);
+        final ParallelDataSet<ITable> all = GetTable.makeParallel(myTable, tableSize/10);
         final DistinctStrings ds = all.blockingSketch(new DistinctStringsSketch(tableSize, "Name"));
         SemiExplicitConverter converter = ds.getStringConverter();
         BucketsDescriptionEqSize desc = new BucketsDescriptionEqSize(-1, ds.size(), ds.size() + 1);
