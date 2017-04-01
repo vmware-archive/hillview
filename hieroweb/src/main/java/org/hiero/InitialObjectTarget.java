@@ -37,6 +37,8 @@ public class InitialObjectTarget extends RpcTarget {
     void prepareFiles(RpcRequest request, Session session) throws IOException {
         // TODO: look at request.  Now we just supply always the same table
         String dataFolder = "../data/";
+        String smallFileSchema = "On_Time.schema";
+        String smallFile = "On_Time_Sample.csv";
         String schemaFile = "short.schema";
         Path schemaPath = Paths.get(dataFolder, schemaFile);
 
@@ -57,7 +59,13 @@ public class InitialObjectTarget extends RpcTarget {
         });
 
         IDataSet<CsvFileObject> result = new ParallelDataSet<CsvFileObject>(fileNames);
-
+        /*
+        CsvFileObject file = new CsvFileObject(
+                Paths.get(dataFolder, smallFile),
+                Paths.get(dataFolder, smallFileSchema));
+        IDataSet<CsvFileObject> result = new LocalDataSet<CsvFileObject>(file);
+        */
+        
         FileNamesTarget target = new FileNamesTarget(result);
         RpcReply reply = request.createReply(target.idToJson());
         reply.send(session);

@@ -66,17 +66,19 @@ export class Histogram extends RemoteObject
     implements IHtmlElement, HieroDataView {
     public static readonly maxBucketCount: number = 40;
     public static readonly minBarWidth: number = 5;
+    public static readonly minChartWidth = 200;  // pixels
+    public static readonly minChartHeight = 100;  // picles
+    public static readonly maxChartHeight = 400;
 
     private topLevel: HTMLElement;
     public static readonly margin = {
         top: 30,
         right: 30,
         bottom: 30,
-        left: 40
+        left: 50
     };
     protected page: FullPage;
     protected svg: any;
-    private maxHeight = 300;
     private selectionOrigin: Point;
     private selectionRectangle: d3.Selection<BaseType, any, BaseType, BaseType>;
     private xLabel: HTMLElement;
@@ -213,11 +215,15 @@ export class Histogram extends RemoteObject
         let ws = this.page.getSize();
         let width = ws.width;
         let height = ws.height;
-        if (height > this.maxHeight)
-            height = this.maxHeight;
 
         let chartWidth = width - Histogram.margin.left - Histogram.margin.right;
         let chartHeight = height - Histogram.margin.top - Histogram.margin.bottom;
+        if (chartWidth < Histogram.minChartWidth)
+            chartWidth = Histogram.minChartWidth;
+        if (chartHeight > Histogram.maxChartHeight)
+            chartHeight = Histogram.maxChartHeight;
+        if (chartHeight < Histogram.minChartHeight)
+            chartHeight = Histogram.minChartHeight;
 
         this.chartResolution = { width: chartWidth, height: chartHeight };
 
@@ -294,11 +300,6 @@ export class Histogram extends RemoteObject
         }
         let xAxis = d3.axisBottom(this.xScale);
 
-        let adjust = function(x: number, a: number, w: number): number {
-            x = Math.floor(x / 2); // two points for each data point, for a zig-zag
-            return a/2 + x * (1 - a / w);
-        };
-
         // force a tick on x axis for degenerate scales
         if (stats.min >= stats.max)
             xAxis.ticks(1);
@@ -309,9 +310,14 @@ export class Histogram extends RemoteObject
                 chartWidth / 2, Histogram.margin.top/2))
             .attr("text-anchor", "middle");
 
+        // After resizing the line may not have the exact number of points
+        // as the screen width.
         let cdfLine = d3.line<number>()
-            .x((d, i) => adjust(i, adjustment, chartWidth))
-            .y((d, i) => this.yScale(d));
+            .x((d, i) => {
+                let index = Math.floor(i / 2); // two points for each data point, for a zig-zag
+                return adjustment/2 + index * 2 * (chartWidth - adjustment) / cdfData.length;
+            })
+            .y(d => this.yScale(d));
 
         // draw CDF curve
         this.canvas.append("path")
