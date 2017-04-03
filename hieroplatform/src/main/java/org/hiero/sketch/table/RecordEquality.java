@@ -6,12 +6,17 @@ import org.hiero.sketch.table.api.ITable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RecordEq {
+/**
+ * A class that compares two IRows based on a list of columns.
+ */
+public class RecordEquality {
     private final List<ColumnDescription> colNames;
 
-    public RecordEq() {
+    public RecordEquality() {
         this.colNames = new ArrayList<ColumnDescription>();
     }
+
+    public RecordEquality(List<ColumnDescription> cdl) { this.colNames = cdl; }
 
     public void append(ColumnDescription colDesc) {
         this.colNames.add(colDesc);
@@ -51,7 +56,7 @@ public class RecordEq {
         return (lvrs.equals(rvrs) ? 0 : 1);
     }
 
-    public int compareRowsInTable(ITable Table, int i, int j) {
-        return compareRows(Table, i, Table, j);
+    public int compareRowsInTable(ITable table, int i, int j) {
+        return compareRows(table, i, table, j);
     }
 }

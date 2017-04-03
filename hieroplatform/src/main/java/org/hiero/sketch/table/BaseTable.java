@@ -113,7 +113,8 @@ public abstract class BaseTable implements ITable {
     @Override public SmallTable compress(final ISubSchema subSchema,
                                          final IRowOrder rowOrder) {
         Schema newSchema = this.getSchema().project(subSchema);
-        List<IColumn> compressedCols = newSchema.getColumnNames().stream().map(colName -> this.columns.get(colName).compress(rowOrder)).collect(Collectors.toList());
+        List<IColumn> compressedCols = newSchema.getColumnNames().stream().map(colName ->
+                this.columns.get(colName).compress(rowOrder)).collect(Collectors.toList());
         return new SmallTable(compressedCols);
     }
 

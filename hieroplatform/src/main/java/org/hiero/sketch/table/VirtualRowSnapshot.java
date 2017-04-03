@@ -44,14 +44,7 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
     }
 
     public RowSnapshot materialize() {
-        HashSubSchema hs = new HashSubSchema();
-        this.schema.getColumnNames().forEach(hs::add);
-        return new RowSnapshot(this.table, this.rowIndex, hs);
-    }
-
-    @Override
-    public int rowSize() {
-        return this.schema.getColumnCount();
+        return new RowSnapshot(this.table, this.rowIndex, this.schema);
     }
 
     @Override

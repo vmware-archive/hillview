@@ -21,9 +21,8 @@ package org.hiero.sketch.table;
 import org.hiero.sketch.table.api.ISubSchema;
 
 import java.util.HashSet;
-import java.util.Iterator;
 
-public class HashSubSchema implements ISubSchema, Iterable<String> {
+public class HashSubSchema implements ISubSchema {
     private final HashSet<String> colNames;
 
     public HashSubSchema() {
@@ -52,9 +51,4 @@ public class HashSubSchema implements ISubSchema, Iterable<String> {
     }
 
     public int getColumnCount() { return this.colNames.size(); }
-
-    @Override
-    public Iterator<String> iterator() {
-        return this.colNames.iterator();
-    }
 }

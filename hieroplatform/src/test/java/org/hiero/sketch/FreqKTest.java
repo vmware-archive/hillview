@@ -11,6 +11,7 @@ import org.hiero.sketch.table.SmallTable;
 import org.hiero.sketch.table.Table;
 import org.hiero.sketch.table.api.ITable;
 import org.hiero.utils.Converters;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -27,7 +28,7 @@ public class FreqKTest {
         List<ColumnDescription> cdl = leftTable.getSchema().getColumnNames().stream().map(colName ->
                 leftTable.getSchema().getDescription(colName)).collect(Collectors.toList());
         FreqKSketch fk = new FreqKSketch(cdl, maxSize);
-    //    System.out.println(fk.create(leftTable).toLongString());
+    //    System.out.println(fk.create(leftTable).toString());
     }
 
     @Test
@@ -40,7 +41,7 @@ public class FreqKTest {
         List<ColumnDescription> cdl = leftTable.getSchema().getColumnNames().stream().map(colName ->
                 leftTable.getSchema().getDescription(colName)).collect(Collectors.toList());
         FreqKSketch fk = new FreqKSketch(cdl, maxSize);
-    //  System.out.println(fk.add(fk.create(leftTable), fk.create(rightTable)).toLongString());
+    //  System.out.println(fk.add(fk.create(leftTable), fk.create(rightTable)).toString());
     }
 
     @Test
@@ -54,7 +55,7 @@ public class FreqKTest {
         List<ColumnDescription> cdl = leftTable.getSchema().getColumnNames().stream().map(colName ->
                 leftTable.getSchema().getDescription(colName)).collect(Collectors.toList());
         FreqKSketch fk = new FreqKSketch(cdl, maxSize);
-        //System.out.println(fk.create(leftTable).toLongString());
+        //System.out.println(fk.create(leftTable).toString());
     }
 
     @Test
@@ -69,8 +70,9 @@ public class FreqKTest {
         List<ColumnDescription> cdl = leftTable.getSchema().getColumnNames().stream().map(colName ->
                 leftTable.getSchema().getDescription(colName)).collect(Collectors.toList());
         FreqKSketch fk = new FreqKSketch(cdl, maxSize);
-        FreqKList freqKList = Converters.checkNull(fk.add(fk.create(leftTable), fk.create(rightTable)));
-        freqKList.toLongString();
+        FreqKList freqKList = Converters.checkNull(fk.add(fk.create(leftTable),
+                fk.create(rightTable)));
+        freqKList.toString();
     }
 
     @Test
@@ -88,7 +90,7 @@ public class FreqKTest {
         List<ColumnDescription> cdl = bigTable.getSchema().getColumnNames().stream().map(colName ->
                 bigTable.getSchema().getDescription(colName)).collect(Collectors.toList());
         FreqKSketch fk = new FreqKSketch(cdl, maxSize);
-        System.out.println(all.blockingSketch(fk).toLongString());
+        all.blockingSketch(fk).toString();
     }
 
     @Test
@@ -97,6 +99,7 @@ public class FreqKTest {
         List<ColumnDescription> cdl = new ArrayList<>();
         cdl.add(t.getSchema().getDescription("Age"));
         FreqKSketch fk = new FreqKSketch(cdl, 5);
-        System.out.println(fk.create(t).toLongString());
+        String s = new String("60: (1-3)\n10: (1-3)\n50: (1-3)\nError bound: 2\n");
+        Assert.assertEquals(fk.create(t).toString(), s);
     }
 }

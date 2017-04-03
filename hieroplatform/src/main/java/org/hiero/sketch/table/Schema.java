@@ -44,7 +44,8 @@ public final class Schema
     private final List<String> colOrder;
 
     public static class SchemaSerializer implements JsonSerializer<Schema> {
-        public JsonElement serialize(Schema schema, Type typeOfSchema, JsonSerializationContext context) {
+        public JsonElement serialize(Schema schema, Type typeOfSchema,
+                                     JsonSerializationContext context) {
             JsonArray result = new JsonArray();
             for (String col: schema.colOrder) {
                 ColumnDescription cd = schema.getDescription(col);
@@ -55,7 +56,8 @@ public final class Schema
     }
 
     public static class SchemaDeserializer implements JsonDeserializer<Schema> {
-        public Schema deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+        public Schema deserialize(JsonElement json, Type typeOfT,
+                                  JsonDeserializationContext context)
                 throws JsonParseException {
             Schema result = new Schema();
             for (JsonElement e: json.getAsJsonArray()) {
@@ -73,7 +75,8 @@ public final class Schema
 
     public void append(final ColumnDescription desc) {
         if (this.columns.containsKey(desc.name))
-            throw new InvalidParameterException("Column with name " + desc.name + " already exists");
+            throw new InvalidParameterException("Column with name " +
+                    desc.name + " already exists");
         this.columns.put(desc.name, desc);
         this.colOrder.add(desc.name);
     }
@@ -95,7 +98,8 @@ public final class Schema
      */
     public Schema project(final ISubSchema subSchema) {
         final Schema projection = new Schema();
-        this.getColumnNames().stream().filter(subSchema::isColumnPresent).forEach(colName -> projection.append(this.getDescription(colName)));
+        this.getColumnNames().stream().filter(subSchema::isColumnPresent)
+            .forEach(colName -> projection.append(this.getDescription(colName)));
         return projection;
     }
 

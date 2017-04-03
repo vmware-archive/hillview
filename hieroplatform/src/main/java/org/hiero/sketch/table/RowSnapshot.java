@@ -20,7 +20,6 @@ package org.hiero.sketch.table;
 
 import com.google.gson.JsonElement;
 import org.hiero.sketch.dataset.api.IJson;
-import org.hiero.sketch.table.api.ISubSchema;
 import org.hiero.sketch.table.api.ITable;
 
 import java.io.Serializable;
@@ -38,23 +37,21 @@ public class RowSnapshot extends BaseRowSnapshot implements Serializable, IJson 
      */
     private final HashMap<String, Object> field = new HashMap<String, Object>();
 
-    public RowSnapshot(final ITable data, final int rowIndex) {
-        super(data.getSchema());
-        for (final String colName : this.schema.getColumnNames())
-            this.field.put(colName, data.getColumn(colName).getObject(rowIndex));
+
+    public RowSnapshot(final ITable data, final int rowIndex, final Schema schema) {
+        super(schema);
+        this.schema.getColumnNames().forEach(cn ->
+                this.field.put(cn, data.getColumn(cn).getObject(rowIndex)));
     }
 
-    public RowSnapshot(final ITable data, final int rowIndex, final ISubSchema subSchema) {
-        super(data.getSchema().project(subSchema));
-        for (final String colName : this.schema.getColumnNames())
-            this.field.put(colName, data.getColumn(colName).getObject(rowIndex));
+    public RowSnapshot(final ITable data, final int rowIndex) {
+        this(data, rowIndex, data.getSchema());
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if ((o == null) || (getClass() != o.getClass())) return false;
-
         RowSnapshot that = (RowSnapshot) o;
         return this.schema.equals(that.schema) && this.field.equals(that.field);
     }
