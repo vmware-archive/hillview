@@ -38,7 +38,7 @@ public class TableTest {
     public void getTableTest(){
         final SmallTable leftTable = TestTables.getIntTable(100, 2);
         assertNotNull(leftTable);
-        //System.out.print(leftTable.toLongString());
+        //System.out.print(leftTable.toString());
     }
 
     @Test

@@ -179,14 +179,9 @@ public class NextKSketchTest {
         RecordOrder ro = new RecordOrder();
         ro.append(new ColumnSortOrientation(t.getSchema().getDescription("Age"), true));
         ro.append(new ColumnSortOrientation(t.getSchema().getDescription("Name"), true));
-        StringBuilder sb = new StringBuilder();
-        sb.append("Table, 2 columns, 13 rows\n");
-        sb.append("Bill, 1: 1\n");
-        sb.append("Bill, 2: 1\n");
-        sb.append("Smith, 3: 1\n");
-        sb.append("Donald, 4: 1\n");
-        sb.append("Bruce, 5: 1\n");
+        String sb = new String("Table, 2 columns, 13 rows\nBill, 1: 1\nBill, 2: 1\n");
+        sb += "Smith, 3: 1\nDonald, 4: 1\nBruce, 5: 1\n";
         NextKSketch nks = new NextKSketch(ro, null, 20);
-        Assert.assertEquals(sb.toString(),nks.create(t).toLongString(5));
+        Assert.assertEquals(sb,nks.create(t).toLongString(5));
     }
 }
