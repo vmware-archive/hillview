@@ -16,17 +16,19 @@ import java.util.List;
  * described in the ACM TODS paper "Mergeable Summaries" by Agarwal et al., which gives a
  * non-trivial error bound. The algorithm ensures that every element of frequency greater than
  * N/(k +1) appears in the list.
- *
- * The class requires an equality predicate specified by RecordEquality, which specifies a subset of
- * columns used to test equality.
  */
 public class FreqKSketch implements ISketch<ITable, FreqKList> {
-    private final RecordOrder recordOrder;
+    /**
+     * The schema specifies which columns are relevant in determining equality of records.
+     */
+    private final Schema schema;
+    /**
+     * The parameter K in top-K heavy hitters.
+     */
     private final int maxSize;
 
-    public FreqKSketch(List<ColumnDescription> colDescList, int maxSize) {
-        this.recordOrder = new RecordOrder();
-        colDescList.forEach(cd -> this.recordOrder.append(new ColumnSortOrientation(cd, true)));
+    public FreqKSketch(Schema schema, int maxSize) {
+        this.schema = schema;
         this.maxSize = maxSize;
     }
 
@@ -39,7 +41,7 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
     /**
      * The add procedure as specified by Agarwal et al. (Mergeable Summaries, TODS).
      * @param left The first MG sketch.
-     * @param right The csecond MG sketch.
+     * @param right The second MG sketch.
      * @return The merged sketch, where we first add the frequency vectors, and then subtract the
      * (k+1)^th frequency from the top k. This guarantees a strong error bound.
      */
@@ -75,7 +77,6 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
     @Override
     public FreqKList create(ITable data) {
         IRowIterator rowIt = data.getRowIterator();
-        Schema schema = this.recordOrder.toSchema();
         HashMap<VirtualRowSnapshot, Integer> hMap = new
                 HashMap<VirtualRowSnapshot, Integer>(this.maxSize);
         List<VirtualRowSnapshot> toRemove = new ArrayList<VirtualRowSnapshot>(this.maxSize);
@@ -98,9 +99,7 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
             i = rowIt.getNextRow();
         }
         HashMap<RowSnapshot,Integer> hm = new HashMap<RowSnapshot, Integer>(this.maxSize);
-        for (VirtualRowSnapshot vrs : hMap.keySet()) {
-            hm.put(vrs.materialize(), hMap.get(vrs));
-        }
+        hMap.keySet().forEach(vrs -> hm.put(vrs.materialize(), hMap.get(vrs)));
         return new FreqKList(data.getNumOfRows(), this.maxSize, hm);
     }
 }

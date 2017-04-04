@@ -48,6 +48,7 @@ public class RowSnapshot extends BaseRowSnapshot implements Serializable, IJson 
         this(data, rowIndex, data.getSchema());
     }
 
+    /**
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -55,7 +56,8 @@ public class RowSnapshot extends BaseRowSnapshot implements Serializable, IJson 
         RowSnapshot that = (RowSnapshot) o;
         return this.schema.equals(that.schema) && this.field.equals(that.field);
     }
-
+    */
+    
     @Override
     public int hashCode() {
         int result = this.schema.hashCode();

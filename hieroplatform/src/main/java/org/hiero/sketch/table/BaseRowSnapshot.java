@@ -35,41 +35,43 @@ public abstract class BaseRowSnapshot implements IRow {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if ((o == null) || !(o instanceof IRow)) return false;
+        if ((o == null) || !(o instanceof IRow))
+            return false;
         IRow that = (IRow) o;
-        if (this.schema != that.getSchema())
+        if (!this.schema.equals(that.getSchema()))
             return false;
         for (String cn: this.schema.getColumnNames()) {
-            if (this.isMissing(cn) && that.isMissing(cn)) {
-                return true;
-            } else if (this.isMissing(cn) || that.isMissing(cn)) {
+            if (this.isMissing(cn) != that.isMissing(cn)) {
                 return false;
-            } else {
+            } else if (this.isMissing(cn) && that.isMissing(cn)) {
+                break;
+            } else
+                {
                 switch (this.schema.getKind(cn)) {
                     case String:
                     case Category:
                     case Json:
-                        if (Converters.checkNull(this.getString(cn)).equals(
+                        if (!Converters.checkNull(this.getString(cn)).equals(
                                 Converters.checkNull(that.getString(cn))))
                             return false;
                         break;
                     case Date:
-                        if (Converters.checkNull(this.getDate(cn)).equals(
+                        if (!Converters.checkNull(this.getDate(cn)).equals(
                                 Converters.checkNull(that.getDate(cn))))
                             return false;
                         break;
                     case Integer:
-                        if (Converters.checkNull(this.getInt(cn)) ==
-                                Converters.checkNull(that.getInt(cn)))
+                        if (!(Converters.checkNull(this.getInt(cn)) ==
+                                Converters.checkNull(that.getInt(cn))))
                             return false;
                         break;
                     case Double:
-                        if (Converters.checkNull(this.getDouble(cn)) ==
-                                Converters.checkNull(that.getDouble(cn)))
+                        if (!(Converters.checkNull(this.getDouble(cn)) ==
+                                Converters.checkNull(that.getDouble(cn))))
                             return false;
                         break;
                     case Duration:
-                        if (Converters.checkNull(this.getDuration(cn)).equals(
+                        if (!Converters.checkNull(this.getDuration(cn)).equals(
                                 Converters.checkNull(that.getDuration(cn))))
                         return false;
                     break;
