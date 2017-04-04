@@ -50,6 +50,13 @@ public class RowSnapshot extends BaseRowSnapshot implements Serializable, IJson 
             this.field.put(colName, data.getColumn(colName).getObject(rowIndex));
     }
 
+    public RowSnapshot(final Schema schema, final Object[] data) {
+        super(schema);
+        int index = 0;
+        for (String col: schema.getColumnNames())
+            this.field.put(col, data[index++]);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

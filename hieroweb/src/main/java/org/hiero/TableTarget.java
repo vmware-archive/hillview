@@ -22,6 +22,7 @@ import org.hiero.sketch.dataset.TripleSketch;
 import org.hiero.sketch.dataset.api.IDataSet;
 import org.hiero.sketch.spreadsheet.*;
 import org.hiero.sketch.table.RecordOrder;
+import org.hiero.sketch.table.RowSnapshot;
 import org.hiero.sketch.table.TableFilter;
 import org.hiero.sketch.table.api.IColumn;
 import org.hiero.sketch.table.api.ITable;
@@ -44,11 +45,21 @@ public final class TableTarget extends RpcTarget {
         this.runSketch(this.table, ss, request, session);
     }
 
+    static class NextKArgs {
+        RecordOrder order = new RecordOrder();
+        @Nullable
+        RowSnapshot firstRow;
+        int rowsOnScreen;
+    }
+
     @HieroRpc
-    void getTableView(RpcRequest request, Session session) {
-        RecordOrder ro = request.parseArgs(RecordOrder.class);
-        // TODO: number of rows should depend on screen size
-        NextKSketch nk = new NextKSketch(ro, null, 20);
+    void getNextK(RpcRequest request, Session session) {
+        NextKArgs nextKArgs = request.parseArgs(NextKArgs.class);
+        RowSnapshot rs = null;
+        if (nextKArgs.firstRow != null) {
+            // TODO
+        }
+        NextKSketch nk = new NextKSketch(nextKArgs.order, rs, nextKArgs.rowsOnScreen);
         this.runSketch(this.table, nk, request, session);
     }
 

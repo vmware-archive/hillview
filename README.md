@@ -60,6 +60,13 @@ $ mvn exec:java
 $ cd ..
 ```
 
+If you run out of memory while doing this try to increase the java
+heap size as follows:
+
+```
+$ MAVEN_OPTS="-Xmx2048M mvn exec:java
+```
+
 * Build the web server and the front-end
 
 ```
@@ -164,7 +171,7 @@ toplevel folder.
 
 ```
 $ cd hieroweb
-$ cd apache-tocat-8.5.8/webapps
+$ cd apache-tomcat-8.5.8/webapps
 $ rm -rf ROOT*
 $ ln -s ../../hieroweb/target/hieroweb-1.0-SNAPSHOT.war ROOT.war
 $ cd ..

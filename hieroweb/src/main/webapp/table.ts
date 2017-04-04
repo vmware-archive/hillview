@@ -155,6 +155,10 @@ export class TableView extends RemoteObject
         if (TableView.initialTableId == null)
             TableView.initialTableId = id;
         this.top = document.createElement("div");
+        this.top.id = "tableContainer";
+        this.top.tabIndex = 1;  // necessary for keyboard events?
+        this.top.onkeydown = e => this.keyDown(e);
+
         this.top.style.flexDirection = "column";
         this.top.style.display = "flex";
         this.top.style.flexWrap = "nowrap";
@@ -191,9 +195,53 @@ export class TableView extends RemoteObject
         tblAndBar.appendChild(this.scrollBar.getHTMLRepresentation());
     }
 
+    static readonly pageUpKeyCode = 33;
+    static readonly pageDownKeyCode = 34;
+
+    protected keyDown(ev: KeyboardEvent): void {
+        if (ev.keyCode == 33)
+            this.pageUp();
+        else if (ev.keyCode == 34)
+            this.pageDown();
+    }
+
+    // TODO: measure window size somehow
+    static readonly rowsOnScreen = 20;
+
+    protected pageUp(): void {
+        if (this.currentData == null)
+            return;
+        if (this.startPosition <= 0)
+            this.page.reportError("Already at the top");
+        // TODO
+    }
+
+    protected pageDown(): void {
+        if (this.currentData == null)
+            return;
+        if (this.startPosition + this.dataRowsDisplayed >= this.rowCount)
+            this.page.reportError("Already at the bottom");
+        // TODO
+        return;
+        /*
+        let nextKArgs = {
+            order: this.order,
+            firstRow: this.currentData.rows[this.currentData.rows.length - 1].values,
+            rowsOnScreen: TableView.rowsOnScreen
+        };
+        let rr = this.createRpcRequest("getNextK", nextKArgs);
+        rr.invoke(new TableRenderer(this.getPage(), this, rr));
+        */
+    }
+
     protected setOrder(o: RecordOrder): void {
         this.order = o;  // TODO: this should be set by the renderer
-        let rr = this.createRpcRequest("getTableView", o);
+        let nextKArgs = {
+            order: o,
+            firstRow: null,
+            rowsOnScreen: TableView.rowsOnScreen
+        };
+        let rr = this.createRpcRequest("getNextK", nextKArgs);
         rr.invoke(new TableRenderer(this.getPage(), this, rr));
     }
 

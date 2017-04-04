@@ -65,7 +65,7 @@ public class InitialObjectTarget extends RpcTarget {
                 Paths.get(dataFolder, smallFileSchema));
         IDataSet<CsvFileObject> result = new LocalDataSet<CsvFileObject>(file);
         */
-        
+
         FileNamesTarget target = new FileNamesTarget(result);
         RpcReply reply = request.createReply(target.idToJson());
         reply.send(session);
