@@ -36,7 +36,7 @@ public class ExactFreqSketchTest {
         Table t = TestTables.testRepTable();
         int maxSize = 10;
         String s = getFrequencies(t, maxSize);
-        System.out.println(s);
+        //System.out.println(s);
     }
 
     @Test
@@ -44,7 +44,7 @@ public class ExactFreqSketchTest {
         SmallTable t = TestTables.getHeavyIntTable(2,10000,2,14);
         int maxSize = 10;
         String s = getFrequencies(t, maxSize);
-        System.out.println(s);
+        //System.out.println(s);
     }
 
     @Test
@@ -52,7 +52,6 @@ public class ExactFreqSketchTest {
         SmallTable t = TestTables.getHeavyIntTable(2,10000,1.4,20);
         int maxSize = 20;
         String s = getFrequencies(t, maxSize);
-        System.out.println(s);
+        //System.out.println(s);
     }
-
 }
