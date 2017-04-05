@@ -17,9 +17,9 @@
  */
 
 package org.hiero.sketch;
-import org.hiero.sketch.table.*;
-import org.hiero.sketch.table.api.ContentsKind;
-import org.hiero.sketch.table.api.IColumn;
+import org.hiero.table.*;
+import org.hiero.table.api.ContentsKind;
+import org.hiero.table.api.IColumn;
 import org.hiero.utils.Randomness;
 import java.time.LocalDateTime;
 import java.util.ArrayList;

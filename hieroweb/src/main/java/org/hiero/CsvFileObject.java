@@ -17,9 +17,9 @@
 
 package org.hiero;
 
-import org.hiero.sketch.storage.CsvFileReader;
-import org.hiero.sketch.table.Schema;
-import org.hiero.sketch.table.api.ITable;
+import org.hiero.storage.CsvFileReader;
+import org.hiero.table.Schema;
+import org.hiero.table.api.ITable;
 import org.hiero.utils.Converters;
 
 import javax.annotation.Nullable;

@@ -1,11 +1,11 @@
 package org.hiero.sketch;
 
-import org.hiero.sketch.dataset.api.IDataSet;
-import org.hiero.sketch.spreadsheet.*;
+import org.hiero.dataset.api.IDataSet;
+import org.hiero.sketches.*;
 import org.hiero.utils.TestTables;
-import org.hiero.sketch.table.SmallTable;
-import org.hiero.sketch.table.Table;
-import org.hiero.sketch.table.api.ITable;
+import org.hiero.table.SmallTable;
+import org.hiero.table.Table;
+import org.hiero.table.api.ITable;
 import org.junit.Assert;
 import org.junit.Test;
 

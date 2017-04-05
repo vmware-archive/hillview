@@ -18,7 +18,7 @@
 
 package org.hiero.sketch;
 
-import org.hiero.sketch.spreadsheet.Bucket1D;
+import org.hiero.sketches.Bucket1D;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

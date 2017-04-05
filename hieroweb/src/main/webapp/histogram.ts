@@ -21,7 +21,7 @@ import {
 } from "./ui";
 import d3 = require('d3');
 import {RemoteObject, ICancellable, PartialResult} from "./rpc";
-import {ColumnDescription, TableRenderer, TableView} from "./table";
+import {ColumnDescription, TableRenderer, TableView, RecordOrder} from "./table";
 import {histogram} from "d3-array";
 import {BaseType} from "d3-selection";
 import {ScaleLinear, ScaleTime} from "d3-scale";
@@ -116,6 +116,7 @@ export class Histogram extends RemoteObject
 
         this.topLevel.appendChild(menu.getHTMLRepresentation());
         this.topLevel.appendChild(document.createElement("hr"));
+        this.topLevel.tabIndex = 1;
 
         this.chartDiv = document.createElement("div");
         this.topLevel.appendChild(this.chartDiv);
@@ -186,7 +187,8 @@ export class Histogram extends RemoteObject
         let table = new TableView(this.remoteObjectId, this.page);
         this.page.setHieroDataView(table);
         let rr = table.createRpcRequest("getSchema", null);
-        rr.invoke(new TableRenderer(this.page, table, rr));
+        // TODO: put at least this column in the order
+        rr.invoke(new TableRenderer(this.page, table, rr, false, new RecordOrder([])));
     }
 
     getHTMLRepresentation(): HTMLElement {

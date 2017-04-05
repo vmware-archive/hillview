@@ -18,17 +18,17 @@
 
 package org.hiero.sketch;
 
-import org.hiero.sketch.dataset.LocalDataSet;
-import org.hiero.sketch.dataset.ParallelDataSet;
-import org.hiero.sketch.dataset.api.IDataSet;
-import org.hiero.sketch.spreadsheet.ColumnSortOrientation;
-import org.hiero.sketch.spreadsheet.QuantileList;
-import org.hiero.sketch.spreadsheet.QuantileSketch;
+import org.hiero.dataset.LocalDataSet;
+import org.hiero.dataset.ParallelDataSet;
+import org.hiero.dataset.api.IDataSet;
+import org.hiero.sketches.ColumnSortOrientation;
+import org.hiero.sketches.QuantileList;
+import org.hiero.sketches.QuantileSketch;
 import org.hiero.utils.TestTables;
-import org.hiero.sketch.table.api.ITable;
-import org.hiero.sketch.table.RecordOrder;
-import org.hiero.sketch.table.SmallTable;
-import org.hiero.sketch.table.api.IndexComparator;
+import org.hiero.table.api.ITable;
+import org.hiero.table.RecordOrder;
+import org.hiero.table.SmallTable;
+import org.hiero.table.api.IndexComparator;
 import org.junit.Test;
 
 import java.util.ArrayList;

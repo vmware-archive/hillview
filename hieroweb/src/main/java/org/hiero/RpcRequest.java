@@ -19,7 +19,7 @@ package org.hiero;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import org.hiero.sketch.dataset.api.IJson;
+import org.hiero.dataset.api.IJson;
 
 import javax.websocket.Session;
 import java.util.logging.Level;

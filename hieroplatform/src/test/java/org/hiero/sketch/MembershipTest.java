@@ -18,9 +18,9 @@
 
 package org.hiero.sketch;
 
-import org.hiero.sketch.table.*;
-import org.hiero.sketch.table.api.IMembershipSet;
-import org.hiero.sketch.table.api.IRowIterator;
+import org.hiero.table.*;
+import org.hiero.table.api.IMembershipSet;
+import org.hiero.table.api.IRowIterator;
 import org.hiero.utils.IntSet;
 import org.junit.Test;
 import static junit.framework.TestCase.assertEquals;

@@ -18,8 +18,8 @@
 
 package org.hiero.sketch;
 
-import org.hiero.sketch.spreadsheet.BucketsDescription1D;
-import org.hiero.sketch.spreadsheet.BucketsDescriptionEqSize;
+import org.hiero.sketches.BucketsDescription1D;
+import org.hiero.sketches.BucketsDescriptionEqSize;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

@@ -17,15 +17,17 @@
 
 package org.hiero;
 
-import org.hiero.sketch.dataset.ConcurrentSketch;
-import org.hiero.sketch.dataset.TripleSketch;
-import org.hiero.sketch.dataset.api.IDataSet;
-import org.hiero.sketch.spreadsheet.*;
-import org.hiero.sketch.table.RecordOrder;
-import org.hiero.sketch.table.RowSnapshot;
-import org.hiero.sketch.table.TableFilter;
-import org.hiero.sketch.table.api.IColumn;
-import org.hiero.sketch.table.api.ITable;
+import org.hiero.dataset.ConcurrentSketch;
+import org.hiero.dataset.TripleSketch;
+import org.hiero.dataset.api.IDataSet;
+import org.hiero.maps.FilterMap;
+import org.hiero.sketches.*;
+import org.hiero.table.RecordOrder;
+import org.hiero.table.RowSnapshot;
+import org.hiero.table.Schema;
+import org.hiero.table.TableFilter;
+import org.hiero.table.api.IColumn;
+import org.hiero.table.api.ITable;
 import org.hiero.utils.Converters;
 
 import javax.annotation.Nullable;
@@ -48,7 +50,7 @@ public final class TableTarget extends RpcTarget {
     static class NextKArgs {
         RecordOrder order = new RecordOrder();
         @Nullable
-        RowSnapshot firstRow;
+        Object[] firstRow;
         int rowsOnScreen;
     }
 
@@ -57,7 +59,8 @@ public final class TableTarget extends RpcTarget {
         NextKArgs nextKArgs = request.parseArgs(NextKArgs.class);
         RowSnapshot rs = null;
         if (nextKArgs.firstRow != null) {
-            // TODO
+            Schema schema = nextKArgs.order.toSchema();
+            rs = RowSnapshot.parse(schema, nextKArgs.firstRow);
         }
         NextKSketch nk = new NextKSketch(nextKArgs.order, rs, nextKArgs.rowsOnScreen);
         this.runSketch(this.table, nk, request, session);

@@ -18,14 +18,14 @@
 
 package org.hiero.sketch;
 
-import org.hiero.sketch.dataset.ParallelDataSet;
-import org.hiero.sketch.spreadsheet.ColumnSortOrientation;
-import org.hiero.sketch.spreadsheet.QuantileList;
-import org.hiero.sketch.spreadsheet.QuantileSketch;
-import org.hiero.sketch.table.*;
-import org.hiero.sketch.table.api.IRowOrder;
-import org.hiero.sketch.table.api.ITable;
-import org.hiero.sketch.table.api.IndexComparator;
+import org.hiero.dataset.ParallelDataSet;
+import org.hiero.sketches.ColumnSortOrientation;
+import org.hiero.sketches.QuantileList;
+import org.hiero.sketches.QuantileSketch;
+import org.hiero.table.*;
+import org.hiero.table.api.IRowOrder;
+import org.hiero.table.api.ITable;
+import org.hiero.table.api.IndexComparator;
 import org.hiero.utils.Converters;
 import org.hiero.utils.TestTables;
 import org.junit.Assert;
@@ -104,8 +104,8 @@ public class QuantileSketchTest {
         IRowOrder order = new ArrayRowOrder(cso.getSortedRowOrder(bigTable));
         printTime("sort");
         Table sortTable = bigTable.compress(order);
-        //System.out.println(sortTable.toLongString(50));
-        //System.out.println(ql.quantile.toLongString(50));
+        //System.out.println(sortTable.toString(50));
+        //System.out.println(ql.quantile.toString(50));
         printTime("Compress");
         int j =0, lastMatch = 0;
         for (int i =0; i < ql.getQuantileSize(); i++) {
@@ -125,7 +125,7 @@ public class QuantileSketchTest {
                 j++;
                 if (j >= bigSize) {
                     System.out.printf("Error! No match for %s %n", new RowSnapshot(ql.quantile, i).toString());
-                    //System.out.println(sortTable.toLongString(lastMatch,50));
+                    //System.out.println(sortTable.toString(lastMatch,50));
                     j = 0;
                     break;
                 }

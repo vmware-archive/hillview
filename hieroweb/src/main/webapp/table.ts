@@ -71,7 +71,7 @@ export interface ColumnSortOrientation {
 }
 
 // Direct counterpart to Java class
-class RecordOrder {
+export class RecordOrder {
     constructor(public sortOrientationList: Array<ColumnSortOrientation>) {}
     public length(): number { return this.sortOrientationList.length; }
     public get(i: number): ColumnSortOrientation { return this.sortOrientationList[i]; }
@@ -101,8 +101,29 @@ class RecordOrder {
         if (index == -1)
             this.sortOrientationList.push(cso);
     }
-    public clone() : RecordOrder {
+    public clone(): RecordOrder {
         return new RecordOrder(this.sortOrientationList.slice(0));
+    }
+    public invert(): RecordOrder {
+        let result = new Array<ColumnSortOrientation>(this.sortOrientationList.length);
+        for (let i in this.sortOrientationList) {
+            let cso = this.sortOrientationList[i];
+            result[i] = {
+                isAscending: !cso.isAscending,
+                columnDescription: cso.columnDescription
+            };
+        }
+        return new RecordOrder(result);
+    }
+
+    protected static coToString(cso: ColumnSortOrientation): string {
+        return cso.columnDescription.name + " " + (cso.isAscending ? "up" : "down");
+    }
+    public toString(): string {
+        let result = "";
+        for (let i = 0; i < this.sortOrientationList.length; i++)
+            result += RecordOrder.coToString(this.sortOrientationList[i]);
+        return result;
     }
 }
 
@@ -197,52 +218,97 @@ export class TableView extends RemoteObject
 
     static readonly pageUpKeyCode = 33;
     static readonly pageDownKeyCode = 34;
+    static readonly endKeyCode = 35;
+    static readonly homeKeyCode = 36;
 
     protected keyDown(ev: KeyboardEvent): void {
-        if (ev.keyCode == 33)
+        if (ev.keyCode == TableView.pageUpKeyCode)
             this.pageUp();
-        else if (ev.keyCode == 34)
+        else if (ev.keyCode == TableView.pageDownKeyCode)
             this.pageDown();
+        else if (ev.keyCode == TableView.endKeyCode)
+            this.end();
+        else if (ev.keyCode == TableView.homeKeyCode)
+            this.begin();
     }
 
     // TODO: measure window size somehow
     static readonly rowsOnScreen = 20;
 
     protected pageUp(): void {
-        if (this.currentData == null)
+        if (this.currentData == null || this.currentData.rows.length == 0)
             return;
-        if (this.startPosition <= 0)
+        if (this.startPosition <= 0) {
             this.page.reportError("Already at the top");
-        // TODO
+            return;
+        }
+        let order = this.order.invert();
+        let nextKArgs = {
+            order: order,
+            firstRow: this.currentData.rows[0].values,
+            rowsOnScreen: TableView.rowsOnScreen
+        };
+        let rr = this.createRpcRequest("getNextK", nextKArgs);
+        rr.invoke(new TableRenderer(this.getPage(), this, rr, true, order));
+    }
+
+    protected begin(): void {
+        if (this.currentData == null || this.currentData.rows.length == 0)
+            return;
+        if (this.startPosition <= 0) {
+            this.page.reportError("Already at the top");
+            return;
+        }
+        let nextKArgs = {
+            order: this.order,
+            firstRow: null,
+            rowsOnScreen: TableView.rowsOnScreen
+        };
+        let rr = this.createRpcRequest("getNextK", nextKArgs);
+        rr.invoke(new TableRenderer(this.getPage(), this, rr, false, this.order));
+    }
+
+    protected end(): void {
+        if (this.currentData == null || this.currentData.rows.length == 0)
+            return;
+        if (this.startPosition + this.dataRowsDisplayed >= this.rowCount - 1) {
+            this.page.reportError("Already at the bottom");
+            return;
+        }
+        let order = this.order.invert();
+        let nextKArgs = {
+            order: order,
+            firstRow: null,
+            rowsOnScreen: TableView.rowsOnScreen
+        };
+        let rr = this.createRpcRequest("getNextK", nextKArgs);
+        rr.invoke(new TableRenderer(this.getPage(), this, rr, true, order));
     }
 
     protected pageDown(): void {
-        if (this.currentData == null)
+        if (this.currentData == null || this.currentData.rows.length == 0)
             return;
-        if (this.startPosition + this.dataRowsDisplayed >= this.rowCount)
+        if (this.startPosition + this.dataRowsDisplayed >= this.rowCount - 1) {
             this.page.reportError("Already at the bottom");
-        // TODO
-        return;
-        /*
+            return;
+        }
         let nextKArgs = {
             order: this.order,
             firstRow: this.currentData.rows[this.currentData.rows.length - 1].values,
             rowsOnScreen: TableView.rowsOnScreen
         };
         let rr = this.createRpcRequest("getNextK", nextKArgs);
-        rr.invoke(new TableRenderer(this.getPage(), this, rr));
-        */
+        rr.invoke(new TableRenderer(this.getPage(), this, rr, false, this.order));
     }
 
     protected setOrder(o: RecordOrder): void {
-        this.order = o;  // TODO: this should be set by the renderer
         let nextKArgs = {
             order: o,
             firstRow: null,
             rowsOnScreen: TableView.rowsOnScreen
         };
         let rr = this.createRpcRequest("getNextK", nextKArgs);
-        rr.invoke(new TableRenderer(this.getPage(), this, rr));
+        rr.invoke(new TableRenderer(this.getPage(), this, rr, false, o));
     }
 
     protected showAllRows(): void {
@@ -267,7 +333,7 @@ export class TableView extends RemoteObject
         let table = new TableView(TableView.initialTableId, page);
         page.setHieroDataView(table);
         let rr = table.createRpcRequest("getSchema", null);
-        rr.invoke(new TableRenderer(page, table, rr));
+        rr.invoke(new TableRenderer(page, table, rr, false, new RecordOrder([])));
     }
 
     columnIndex(colName: string): number {
@@ -375,14 +441,27 @@ export class TableView extends RemoteObject
             this.page.reportError("Nothing to refresh");
             return;
         }
-        this.updateView(this.currentData);
+        this.updateView(this.currentData, false, this.order);
     }
 
-    public updateView(data: TableDataView) : void {
+    public updateView(data: TableDataView, revert: boolean, order: RecordOrder) : void {
+        console.log("updateView " + revert + " " + order);
+
         this.currentData = data;
         this.dataRowsDisplayed = 0;
         this.startPosition = data.startPosition;
         this.rowCount = data.rowCount;
+        this.order = order.clone();
+        if (revert) {
+            let rowsDisplayed = 0;
+            if (data.rows != null) {
+                data.rows.reverse();
+                rowsDisplayed = data.rows.map(r => r.count)
+                    .reduce( (a, b) => { return a + b; }, 0 );
+            }
+            this.startPosition = this.rowCount - this.startPosition - rowsDisplayed;
+            this.order = this.order.invert();
+        }
         if (this.schema == null)
             this.schema = data.schema;
 
@@ -442,10 +521,15 @@ export class TableView extends RemoteObject
         cell.className = "footer";
 
         let perc = "";
-        if (this.rowCount > 0) {
+        if (this.rowCount > 0)
             perc = percent(this.dataRowsDisplayed / this.rowCount);
-            perc = " (" + perc + ")";
+        if (this.startPosition > 0) {
+            if (perc != "")
+                perc += " ";
+            perc += "starting at " + percent(this.startPosition / this.rowCount);
         }
+        if (perc != "")
+            perc = " (" + perc + ")";
 
         cell.textContent = "Showing " + formatNumber(this.dataRowsDisplayed) +
             " of " + formatNumber(this.rowCount) + " rows" + perc;
@@ -519,13 +603,15 @@ export class TableView extends RemoteObject
 export class TableRenderer extends Renderer<TableDataView> {
     constructor(page: FullPage,
                 protected table: TableView,
-                operation: ICancellable) {
+                operation: ICancellable,
+                protected revert: boolean,
+                protected order: RecordOrder) {
         super(page, operation, "Geting table info");
     }
 
     onNext(value: PartialResult<TableDataView>): void {
         super.onNext(value);
-        this.table.updateView(value.data);
+        this.table.updateView(value.data, this.revert, this.order);
     }
 }
 
@@ -540,7 +626,7 @@ export class RemoteTableReceiver extends Renderer<string> {
         let table = new TableView(tableId, this.page);
         this.page.setHieroDataView(table);
         let rr = table.createRpcRequest("getSchema", null);
-        rr.invoke(new TableRenderer(this.page, table, rr));
+        rr.invoke(new TableRenderer(this.page, table, rr, false, new RecordOrder([])));
     }
 
     public onNext(value: PartialResult<string>): void {

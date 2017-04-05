@@ -18,10 +18,9 @@
 
 package org.hiero.utils;
 
-import org.hiero.sketch.table.ColumnDescription;
-import org.hiero.sketch.table.IntArrayColumn;
-import org.hiero.sketch.table.api.ContentsKind;
-import org.hiero.utils.Randomness;
+import org.hiero.table.ColumnDescription;
+import org.hiero.table.IntArrayColumn;
+import org.hiero.table.api.ContentsKind;
 
 import java.security.InvalidParameterException;
 

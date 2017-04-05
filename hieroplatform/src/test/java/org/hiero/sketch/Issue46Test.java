@@ -19,11 +19,11 @@
 package org.hiero.sketch;
 
 import org.hiero.utils.TestTables;
-import org.hiero.sketch.table.SmallTable;
-import org.hiero.sketch.table.api.IColumn;
-import org.hiero.sketch.table.api.IMembershipSet;
-import org.hiero.sketch.table.api.IRowIterator;
-import org.hiero.sketch.table.api.ITable;
+import org.hiero.table.SmallTable;
+import org.hiero.table.api.IColumn;
+import org.hiero.table.api.IMembershipSet;
+import org.hiero.table.api.IRowIterator;
+import org.hiero.table.api.ITable;
 import org.junit.Assert;
 import org.junit.Test;
 

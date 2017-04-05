@@ -18,9 +18,9 @@
 
 package org.hiero.sketch;
 
-import org.hiero.sketch.spreadsheet.*;
-import org.hiero.sketch.table.DoubleArrayColumn;
-import org.hiero.sketch.table.FullMembership;
+import org.hiero.sketches.*;
+import org.hiero.table.DoubleArrayColumn;
+import org.hiero.table.FullMembership;
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 

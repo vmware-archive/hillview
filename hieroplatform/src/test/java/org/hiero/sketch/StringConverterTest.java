@@ -18,7 +18,7 @@
 
 package org.hiero.sketch;
 
-import org.hiero.sketch.table.ExplicitStringConverter;
+import org.hiero.table.ExplicitStringConverter;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

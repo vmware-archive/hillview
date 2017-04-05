@@ -17,9 +17,9 @@
 
 package org.hiero;
 
-import org.hiero.sketch.dataset.LocalDataSet;
-import org.hiero.sketch.dataset.ParallelDataSet;
-import org.hiero.sketch.dataset.api.IDataSet;
+import org.hiero.dataset.LocalDataSet;
+import org.hiero.dataset.ParallelDataSet;
+import org.hiero.dataset.api.IDataSet;
 
 import javax.websocket.Session;
 import java.io.IOException;

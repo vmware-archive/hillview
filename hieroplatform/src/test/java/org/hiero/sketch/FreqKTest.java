@@ -1,21 +1,21 @@
 package org.hiero.sketch;
 
-import org.hiero.sketch.dataset.LocalDataSet;
-import org.hiero.sketch.dataset.ParallelDataSet;
-import org.hiero.sketch.dataset.api.IDataSet;
-import org.hiero.sketch.spreadsheet.FreqKList;
-import org.hiero.sketch.spreadsheet.FreqKSketch;
-import org.hiero.sketch.table.ColumnDescription;
-import org.hiero.utils.TestTables;
-import org.hiero.sketch.table.SmallTable;
-import org.hiero.sketch.table.Table;
-import org.hiero.sketch.table.api.ITable;
+import org.hiero.dataset.LocalDataSet;
+import org.hiero.dataset.ParallelDataSet;
+import org.hiero.dataset.api.IDataSet;
+import org.hiero.sketches.FreqKList;
+import org.hiero.sketches.FreqKSketch;
+import org.hiero.table.HashSubSchema;
+import org.hiero.table.SmallTable;
+import org.hiero.table.Table;
+import org.hiero.table.api.ITable;
 import org.hiero.utils.Converters;
+import org.hiero.utils.TestTables;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class FreqKTest {
     @Test
@@ -24,10 +24,8 @@ public class FreqKTest {
         final int maxSize = 10;
         final int size = 100;
         Table leftTable = TestTables.getRepIntTable(size, numCols);
-        List<ColumnDescription> cdl = leftTable.getSchema().getColumnNames().stream().map(colName ->
-                leftTable.getSchema().getDescription(colName)).collect(Collectors.toList());
-        FreqKSketch fk = new FreqKSketch(cdl, maxSize);
-    //    System.out.println(fk.create(leftTable).toLongString());
+        FreqKSketch fk = new FreqKSketch(leftTable.getSchema(), maxSize);
+    //    System.out.println(fk.create(leftTable).toString());
     }
 
     @Test
@@ -37,10 +35,8 @@ public class FreqKTest {
         final int size = 1000;
         Table leftTable = TestTables.getRepIntTable(size, numCols);
         Table rightTable = TestTables.getRepIntTable(size, numCols);
-        List<ColumnDescription> cdl = leftTable.getSchema().getColumnNames().stream().map(colName ->
-                leftTable.getSchema().getDescription(colName)).collect(Collectors.toList());
-        FreqKSketch fk = new FreqKSketch(cdl, maxSize);
-    //  System.out.println(fk.add(fk.create(leftTable), fk.create(rightTable)).toLongString());
+        FreqKSketch fk = new FreqKSketch(leftTable.getSchema(), maxSize);
+        fk.add(fk.create(leftTable), fk.create(rightTable));
     }
 
     @Test
@@ -51,10 +47,7 @@ public class FreqKTest {
         final int range = 14;
         final int size = 20000;
         SmallTable leftTable = TestTables.getHeavyIntTable(numCols, size, base, range);
-        List<ColumnDescription> cdl = leftTable.getSchema().getColumnNames().stream().map(colName ->
-                leftTable.getSchema().getDescription(colName)).collect(Collectors.toList());
-        FreqKSketch fk = new FreqKSketch(cdl, maxSize);
-        //System.out.println(fk.create(leftTable).toLongString());
+        FreqKSketch fk = new FreqKSketch(leftTable.getSchema(), maxSize);
     }
 
     @Test
@@ -66,11 +59,10 @@ public class FreqKTest {
         final int size = 20000;
         SmallTable leftTable = TestTables.getHeavyIntTable(numCols, size, base, range);
         SmallTable rightTable = TestTables.getHeavyIntTable(numCols, size, base, range);
-        List<ColumnDescription> cdl = leftTable.getSchema().getColumnNames().stream().map(colName ->
-                leftTable.getSchema().getDescription(colName)).collect(Collectors.toList());
-        FreqKSketch fk = new FreqKSketch(cdl, maxSize);
-        FreqKList freqKList = Converters.checkNull(fk.add(fk.create(leftTable), fk.create(rightTable)));
-        freqKList.toLongString();
+        FreqKSketch fk = new FreqKSketch(leftTable.getSchema(), maxSize);
+        FreqKList freqKList = Converters.checkNull(fk.add(fk.create(leftTable),
+                fk.create(rightTable)));
+        Assert.assertNotNull(freqKList.toString());
     }
 
     @Test
@@ -85,18 +77,17 @@ public class FreqKTest {
         ArrayList<IDataSet<ITable>> a = new ArrayList<IDataSet<ITable>>();
         tabList.forEach(t -> a.add(new LocalDataSet<ITable>(t)));
         ParallelDataSet<ITable> all = new ParallelDataSet<ITable>(a);
-        List<ColumnDescription> cdl = bigTable.getSchema().getColumnNames().stream().map(colName ->
-                bigTable.getSchema().getDescription(colName)).collect(Collectors.toList());
-        FreqKSketch fk = new FreqKSketch(cdl, maxSize);
-        System.out.println(all.blockingSketch(fk).toLongString());
+        FreqKSketch fk = new FreqKSketch(bigTable.getSchema(), maxSize);
+        Assert.assertNotNull(all.blockingSketch(fk).toString());
     }
 
     @Test
     public void testTopK6() {
         Table t = TestTables.testRepTable();
-        List<ColumnDescription> cdl = new ArrayList<>();
-        cdl.add(t.getSchema().getDescription("Age"));
-        FreqKSketch fk = new FreqKSketch(cdl, 5);
-        System.out.println(fk.create(t).toLongString());
+        HashSubSchema hss = new HashSubSchema();
+        hss.add("Age");
+        FreqKSketch fk = new FreqKSketch(t.getSchema().project(hss), 5);
+        String s = "10: (3-4)\n20: (3-4)\n30: (2-3)\n40: (1-2)\nError bound: 1\n";
+        //Assert.assertEquals(fk.create(t).toString(), s);
     }
 }

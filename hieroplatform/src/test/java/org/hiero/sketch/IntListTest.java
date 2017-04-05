@@ -18,9 +18,9 @@
 
 package org.hiero.sketch;
 
-import org.hiero.sketch.table.ColumnDescription;
-import org.hiero.sketch.table.IntListColumn;
-import org.hiero.sketch.table.api.ContentsKind;
+import org.hiero.table.ColumnDescription;
+import org.hiero.table.IntListColumn;
+import org.hiero.table.api.ContentsKind;
 import org.junit.Test;
 import static org.junit.Assert.*;
 

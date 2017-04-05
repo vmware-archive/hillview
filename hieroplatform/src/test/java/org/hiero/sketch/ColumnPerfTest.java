@@ -18,9 +18,9 @@
 
 package org.hiero.sketch;
 
-import org.hiero.sketch.table.ColumnDescription;
-import org.hiero.sketch.table.api.ContentsKind;
-import org.hiero.sketch.table.IntArrayColumn;
+import org.hiero.table.ColumnDescription;
+import org.hiero.table.api.ContentsKind;
+import org.hiero.table.IntArrayColumn;
 import org.junit.Test;
 
 import java.util.function.Consumer;

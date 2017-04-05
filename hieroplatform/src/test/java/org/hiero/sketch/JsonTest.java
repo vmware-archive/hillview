@@ -18,11 +18,11 @@
 
 package org.hiero.sketch;
 
-import org.hiero.sketch.dataset.api.IJson;
-import org.hiero.sketch.spreadsheet.NextKList;
-import org.hiero.sketch.table.*;
-import org.hiero.sketch.table.api.ContentsKind;
-import org.hiero.sketch.table.api.IColumn;
+import org.hiero.dataset.api.IJson;
+import org.hiero.sketches.NextKList;
+import org.hiero.table.*;
+import org.hiero.table.api.ContentsKind;
+import org.hiero.table.api.IColumn;
 import org.junit.Assert;
 import org.junit.Test;
 

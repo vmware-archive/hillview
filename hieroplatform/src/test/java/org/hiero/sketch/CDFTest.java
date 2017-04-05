@@ -1,9 +1,9 @@
 package org.hiero.sketch;
 
-import org.hiero.sketch.dataset.LocalDataSet;
-import org.hiero.sketch.spreadsheet.*;
-import org.hiero.sketch.table.SmallTable;
-import org.hiero.sketch.table.api.ITable;
+import org.hiero.dataset.LocalDataSet;
+import org.hiero.sketches.*;
+import org.hiero.table.SmallTable;
+import org.hiero.table.api.ITable;
 import org.junit.Test;
 import static org.hiero.utils.TestTables.getIntTable;
 

@@ -18,9 +18,9 @@
 
 package org.hiero.sketch;
 
-import org.hiero.sketch.table.ColumnDescription;
-import org.hiero.sketch.table.DoubleListColumn;
-import org.hiero.sketch.table.api.ContentsKind;
+import org.hiero.table.ColumnDescription;
+import org.hiero.table.DoubleListColumn;
+import org.hiero.table.api.ContentsKind;
 import org.junit.Test;
 import static java.lang.Math.sqrt;
 import static org.junit.Assert.*;

@@ -18,10 +18,10 @@
 
 package org.hiero.sketch;
 
-import org.hiero.sketch.table.*;
-import org.hiero.sketch.table.api.IColumn;
-import org.hiero.sketch.table.api.IMembershipSet;
-import org.hiero.sketch.table.api.ITable;
+import org.hiero.table.*;
+import org.hiero.table.api.IColumn;
+import org.hiero.table.api.IMembershipSet;
+import org.hiero.table.api.ITable;
 import org.hiero.utils.TestTables;
 import org.junit.Test;
 
@@ -35,7 +35,7 @@ import static org.junit.Assert.assertNotNull;
 
 public class TableTest {
     @Test
-    public void getTableTest(){
+    public void getTableTest() {
         final SmallTable leftTable = TestTables.getIntTable(100, 2);
         assertNotNull(leftTable);
     }

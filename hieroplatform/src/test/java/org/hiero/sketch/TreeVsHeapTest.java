@@ -18,8 +18,8 @@
 
 package org.hiero.sketch;
 
-import org.hiero.sketch.spreadsheet.HeapTopK;
-import org.hiero.sketch.spreadsheet.TreeTopK;
+import org.hiero.sketches.HeapTopK;
+import org.hiero.sketches.TreeTopK;
 import org.hiero.utils.Randomness;
 import org.junit.Test;
 

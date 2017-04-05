@@ -47,6 +47,7 @@ public class Randomness {
     /**
      * @return a new instance of Randomness, whether one existed before or not.
      */
+    @SuppressWarnings("UnusedReturnValue")
     public static Randomness createInstance(long seed) {
         prg = new Randomness(seed);
         return prg;

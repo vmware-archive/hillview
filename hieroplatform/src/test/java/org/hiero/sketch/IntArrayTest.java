@@ -19,8 +19,8 @@
 package org.hiero.sketch;
 
 import org.hiero.utils.IntArrayGenerator;
-import org.hiero.sketch.table.IntArrayColumn;
-import org.hiero.sketch.table.api.IndexComparator;
+import org.hiero.table.IntArrayColumn;
+import org.hiero.table.api.IndexComparator;
 import org.junit.Test;
 
 import java.util.Arrays;

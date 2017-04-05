@@ -17,9 +17,9 @@
 
 package org.hiero;
 
-import org.hiero.sketch.dataset.api.IDataSet;
-import org.hiero.sketch.dataset.api.IMap;
-import org.hiero.sketch.table.api.ITable;
+import org.hiero.dataset.api.IDataSet;
+import org.hiero.dataset.api.IMap;
+import org.hiero.table.api.ITable;
 
 import javax.websocket.Session;
 import java.io.IOException;

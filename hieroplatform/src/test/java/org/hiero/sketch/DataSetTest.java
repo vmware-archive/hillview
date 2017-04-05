@@ -18,9 +18,9 @@
 
 package org.hiero.sketch;
 
-import org.hiero.sketch.dataset.LocalDataSet;
-import org.hiero.sketch.dataset.ParallelDataSet;
-import org.hiero.sketch.dataset.api.*;
+import org.hiero.dataset.LocalDataSet;
+import org.hiero.dataset.ParallelDataSet;
+import org.hiero.dataset.api.*;
 import org.hiero.utils.Converters;
 import org.junit.Assert;
 import org.junit.Test;

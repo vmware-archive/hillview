@@ -18,8 +18,8 @@
 
 package org.hiero.sketch;
 
-import org.hiero.sketch.spreadsheet.MonoidTopK;
-import org.hiero.sketch.spreadsheet.TreeTopK;
+import org.hiero.sketches.MonoidTopK;
+import org.hiero.sketches.TreeTopK;
 import org.hiero.utils.Converters;
 import org.hiero.utils.Randomness;
 import org.junit.Test;

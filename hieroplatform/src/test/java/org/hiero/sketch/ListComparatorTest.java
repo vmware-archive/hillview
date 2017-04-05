@@ -18,13 +18,13 @@
 
 package org.hiero.sketch;
 
-import org.hiero.sketch.table.ColumnDescription;
-import org.hiero.sketch.table.IntArrayColumn;
-import org.hiero.sketch.table.ListComparator;
-import org.hiero.sketch.table.StringArrayColumn;
-import org.hiero.sketch.table.api.ContentsKind;
-import org.hiero.sketch.table.api.IColumn;
-import org.hiero.sketch.table.api.IndexComparator;
+import org.hiero.table.ColumnDescription;
+import org.hiero.table.IntArrayColumn;
+import org.hiero.table.ListComparator;
+import org.hiero.table.StringArrayColumn;
+import org.hiero.table.api.ContentsKind;
+import org.hiero.table.api.IColumn;
+import org.hiero.table.api.IndexComparator;
 import org.hiero.utils.Randomness;
 import org.junit.Test;
 import java.util.*;
