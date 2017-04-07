@@ -59,7 +59,8 @@ interface BasicColStats {
     minObject: any;
     maxObject: any;
     moments: Array<number>;
-    rowCount: number;
+    presentCount: number;
+    missingCount: number;
 }
 
 export class Histogram extends RemoteObject
@@ -75,7 +76,7 @@ export class Histogram extends RemoteObject
         top: 30,
         right: 30,
         bottom: 30,
-        left: 50
+        left: 40
     };
     protected page: FullPage;
     protected svg: any;
@@ -83,13 +84,17 @@ export class Histogram extends RemoteObject
     private selectionRectangle: d3.Selection<BaseType, any, BaseType, BaseType>;
     private xLabel: HTMLElement;
     private yLabel: HTMLElement;
-    private yPercentLabel: HTMLElement;
+    private cdfLabel: HTMLElement;
     protected chartDiv: HTMLElement;
     protected summary: HTMLElement;
     private xScale: ScaleLinear<number, number> | ScaleTime<number, number>;
     private yScale: ScaleLinear<number, number>;
-    protected canvas: d3.Selection<BaseType, any, BaseType, BaseType>;
     protected chartResolution: Size;
+    // When plotting integer values we increase the data range by .5 on the left and right.
+    // The adjustment is the number of pixels on screen that we "waste".
+    // I.e., the cdf plot will start adjustment/2 pixels from the chart left margin
+    // and will end adjustment/2 pixels from the right margin.
+    private adjustment: number = 0;
 
     protected currentData: {
         histogram: Histogram1D,
@@ -97,7 +102,11 @@ export class Histogram extends RemoteObject
         description: ColumnDescription,
         stats: BasicColStats
     };
-    private chart: any;  // it is in fact a d3.Selection<>, but I can't make it typecheck
+    private chart: any;  // these are in fact a d3.Selection<>, but I can't make them typecheck
+    protected canvas: any;
+    private xDot: any;
+    private yDot: any;
+    private cdfDot: any;
 
     constructor(id: string, page: FullPage) {
         super(id);
@@ -148,9 +157,9 @@ export class Histogram extends RemoteObject
 
         labelCell = row.insertCell(2);
         labelCell.width = infoWidth;
-        this.yPercentLabel = document.createElement("div");
-        this.yPercentLabel.style.textAlign = "left";
-        labelCell.appendChild(this.yPercentLabel);
+        this.cdfLabel = document.createElement("div");
+        this.cdfLabel.style.textAlign = "left";
+        labelCell.appendChild(this.cdfLabel);
         labelCell.className = "noBorder";
     }
 
@@ -232,13 +241,18 @@ export class Histogram extends RemoteObject
         let counts = h.buckets.map(b => b.count);
         let max = d3.max(counts);
 
+        // prefix sum for cdf
+        let sum = 0;
+        for (let i in cdf.buckets) {
+            sum += cdf.buckets[i];
+            cdf.buckets[i] = sum;
+        }
+
         let cdfData: number[] = [];
-        let current = 0;
         let point = 0;
         for (let i in cdf.buckets) {
             cdfData.push(point);
-            current += cdf.buckets[i];
-            point = current * max / (stats.rowCount - cdf.missingData);
+            point = cdf.buckets[i] * max / stats.presentCount;
             cdfData.push(point);
         }
 
@@ -249,24 +263,27 @@ export class Histogram extends RemoteObject
             .on("start", () => this.dragStart())
             .on("drag", () => this.dragging())
             .on("end", () => this.dragEnd());
+
         // Everything is drawn on top of the canvas.
         // The canvas includes the margins
+        let canvasHeight = chartHeight + Histogram.margin.top + Histogram.margin.bottom;
         this.canvas = d3.select(this.chartDiv)
             .append("svg")
             .attr("id", "canvas")
             .call(drag)
             .attr("width", width)
             .attr("border", 1)
-            .attr("height", height);
+            .attr("height", canvasHeight);
+
+        this.canvas.append("rect")
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("width", width)
+            .attr("height", canvasHeight)
+            .attr("stroke", "black")
+            .attr("fill", "none");
 
         this.canvas.on("mousemove", () => this.onMouseMove());
-
-        this.selectionRectangle = this.canvas
-            .append("rect")
-            .attr("class", "dashed")
-            .attr("stroke", "red")
-            .attr("width", 0)
-            .attr("height", 0);
 
         // The chart uses a fragment of the canvas offset by the margins
         this.chart = this.canvas
@@ -277,15 +294,16 @@ export class Histogram extends RemoteObject
         this.yScale = d3.scaleLinear()
             .domain([0, max])
             .range([chartHeight, 0]);
-        let yAxis = d3.axisLeft(this.yScale);
+        let yAxis = d3.axisLeft(this.yScale)
+            .tickFormat(d3.format(".2s"));
 
         let minRange = stats.min;
         let maxRange = stats.max;
-        let adjustment = 0;
+        this.adjustment = 0;
         if (cd.kind == "Integer" || cd.kind == "Category" || stats.min >= stats.max) {
             minRange -= .5;
             maxRange += .5;
-            adjustment = chartWidth / (maxRange - minRange);
+            this.adjustment = chartWidth / (maxRange - minRange);
         }
         if (cd.kind == "Integer" ||
             cd.kind == "Double") {
@@ -317,7 +335,7 @@ export class Histogram extends RemoteObject
         let cdfLine = d3.line<number>()
             .x((d, i) => {
                 let index = Math.floor(i / 2); // two points for each data point, for a zig-zag
-                return adjustment/2 + index * 2 * (chartWidth - adjustment) / cdfData.length;
+                return this.adjustment/2 + index * 2 * (chartWidth - this.adjustment) / cdfData.length;
             })
             .y(d => this.yScale(d));
 
@@ -359,16 +377,43 @@ export class Histogram extends RemoteObject
             .attr("transform", Histogram.translateString(0, chartHeight))
             .call(xAxis);
 
+        let dotRadius = 3;
+        this.xDot = this.canvas
+            .append("circle")
+            .attr("r", dotRadius)
+            .attr("cy", chartHeight + Histogram.margin.top)
+            .attr("cx", 0)
+            .attr("fill", "blue");
+        this.yDot = this.canvas
+            .append("circle")
+            .attr("r", dotRadius)
+            .attr("cx", Histogram.margin.left)
+            .attr("cy", 0)
+            .attr("fill", "blue");
+        this.cdfDot = this.canvas
+            .append("circle")
+            .attr("r", dotRadius)
+            .attr("fill", "blue");
+
+        this.selectionRectangle = this.canvas
+            .append("rect")
+            .attr("class", "dashed")
+            .attr("stroke", "red")
+            .attr("width", 0)
+            .attr("height", 0);
+
         let summary = "";
         if (h.missingData != 0)
             summary = formatNumber(h.missingData) + " missing, ";
-        summary += formatNumber(stats.rowCount) + " points";
+        summary += formatNumber(stats.presentCount + stats.missingCount) + " points";
         this.summary.textContent = summary;
         console.log(String(counts.length) + " data points");
     }
 
     onMouseMove(): void {
         let position = d3.mouse(this.chart.node());
+        let mouseX = position[0];
+        let mouseY = position[1];
         let x = this.xScale.invert(position[0]);
         // TODO: handle strings
         if (this.currentData.description.kind == "Integer")
@@ -381,36 +426,60 @@ export class Histogram extends RemoteObject
         let ys = significantDigits(y);
         this.xLabel.textContent = "x=" + xs;
         this.yLabel.textContent = "y=" + ys;
-        let perc = percent(1 - position[1] / this.chartResolution.height);
-        this.yPercentLabel.textContent = "cdf=" + perc;
+
+        this.xDot.attr("cx", mouseX + Histogram.margin.left);
+        this.yDot.attr("cy", mouseY + Histogram.margin.top);
+
+        // determine mouse position on cdf curve
+        // we have to take into account the adjustment
+        let cdfX = (mouseX - this.adjustment/2) * this.currentData.cdf.buckets.length /
+            (this.chartResolution.width - this.adjustment);
+        let pos = 0;
+        if (cdfX < 0) {
+            pos = 0;
+        } else if (cdfX >= this.currentData.cdf.buckets.length) {
+            pos = 1;
+        } else {
+            let cdfPosition = this.currentData.cdf.buckets[Math.round(cdfX)];
+            pos = cdfPosition / this.currentData.stats.presentCount;
+        }
+
+        this.cdfDot.attr("cx", mouseX + Histogram.margin.left);
+        this.cdfDot.attr("cy", (1 - pos) * this.chartResolution.height + Histogram.margin.top);
+        let perc = percent(pos);
+        this.cdfLabel.textContent = "cdf=" + perc;
     }
 
     dragStart(): void {
+        let position = d3.mouse(this.canvas.node());
         this.selectionOrigin = {
-            x: d3.event.x,
-            y: d3.event.y };
+            x: position[0],
+            y: position[1] };
     }
 
     dragging(): void {
-        let x = this.selectionOrigin.x;
-        let y = this.selectionOrigin.y;
-        let width = d3.event.x - x;
-        let height = d3.event.y - y;
+        let ox = this.selectionOrigin.x;
+        let oy = this.selectionOrigin.y;
+        let position = d3.mouse(this.canvas.node());
+        let x = position[0];
+        let y = position[1];
+        let width = x - ox;
+        let height = y - oy;
 
         if (width < 0) {
-            x = d3.event.x;
+            ox = x;
             width = -width;
         }
         if (height < 0) {
-            y = d3.event.y;
+            oy = y;
             height = -height;
         }
 
         this.onMouseMove();
 
         this.selectionRectangle
-            .attr("x", x)
-            .attr("y", y)
+            .attr("x", ox)
+            .attr("y", oy)
             .attr("width", width)
             .attr("height", height);
     }
@@ -420,9 +489,10 @@ export class Histogram extends RemoteObject
             .attr("width", 0)
             .attr("height", 0);
 
-        let x = this.selectionOrigin.x;
-        let y = this.selectionOrigin.y;
-        this.selectionCompleted(x, y, d3.event.x, d3.event.y);
+        let position = d3.mouse(this.canvas.node());
+        let x = position[0];
+        let y = position[1];
+        this.selectionCompleted(this.selectionOrigin.x, this.selectionOrigin.y, x, y);
     }
 
     selectionCompleted(xl: number, yl: number, xr: number, yr: number): void {
@@ -521,7 +591,7 @@ export class RangeCollector extends Renderer<BasicColStats> {
         if (this.stats == null)
             // probably some error occurred
             return;
-        if (this.stats.rowCount == 0) {
+        if (this.stats.presentCount == 0) {
             this.page.reportError("No data in range");
             return;
         }

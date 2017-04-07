@@ -29,7 +29,7 @@ public class CDFTest {
         BucketsDescriptionEqSize bDec  =
                 new BucketsDescriptionEqSize(this.colStat.getMin(), this.colStat.getMax(), width);
         double sampleSize  =  2 * height * height * width;
-        double rate = sampleSize / this.colStat.getRowCount();
+        double rate = sampleSize / this.colStat.getPresentCount();
         if ((rate > 0.1) || (!useSampling))
             rate = 1.0; // no performance gains in sampling
         final Histogram1DLight tmpHist =
@@ -43,7 +43,7 @@ public class CDFTest {
                 new BucketsDescriptionEqSize(this.colStat.getMin(), this.colStat.getMax(), bucketNum);
         // approximately what is needed to have error smaller than a single pixel
         double sampleSize  =  2 * height * height * bucketNum;
-        double rate = sampleSize / this.colStat.getRowCount();
+        double rate = sampleSize / this.colStat.getPresentCount();
         if ((rate > 0.1) || (!useSampling))
             rate = 1.0; //no use in sampling
         return this.dataSet.blockingSketch(new Hist1DSketch(bDec, this.colName, null, rate));

@@ -14,14 +14,15 @@ import javax.annotation.Nullable;
 public class BasicColStats implements IJson {
     private final int momentCount;
     // Number of values that have been used to compute the stats.
-    private long rowCount;
-    // The following values are meaningful only if rowCount > 0.
+    private long presentCount;
+    // Number of missing elements
+    private long missingCount;
+    // The following values are meaningful only if presentCount > 0.
     private double min;
     @Nullable private Object minObject;
     private double max;
     @Nullable private Object maxObject;
     private final double moments[];
-
 
     public BasicColStats(int momentCount) {
         if (momentCount < 0)
@@ -30,7 +31,7 @@ public class BasicColStats implements IJson {
         this.moments = new double[this.momentCount];
         this.min = 0;  // we cannot use infinity, since that cannot be serialized as JSON
         this.max = 0;
-        this.rowCount = 0;
+        this.presentCount = 0;
     }
 
     public double getMin() { return this.min; }
@@ -50,9 +51,10 @@ public class BasicColStats implements IJson {
     }
 
     /**
-     * @return the number of non-empty rows in a column
+     * @return the number of non-missing rows in a column
      */
-    public long getRowCount() { return this.rowCount; }
+    public long getPresentCount() { return this.presentCount; }
+    public long getRowCount() { return this.presentCount + this.missingCount; }
 
     public void createStats(final IColumn column, final IMembershipSet membershipSet,
                             @Nullable final IStringConverter converter) {
@@ -61,7 +63,7 @@ public class BasicColStats implements IJson {
         while (currRow >= 0) {
             if (!column.isMissing(currRow)) {
                 double val = column.asDouble(currRow, converter);
-                if (this.rowCount == 0) {
+                if (this.presentCount == 0) {
                     this.min = val;
                     this.max = val;
                     this.minObject = column.getObject(currRow);
@@ -75,7 +77,7 @@ public class BasicColStats implements IJson {
                 }
                 if (this.momentCount > 0) {
                     double tmpMoment = val;
-                    double alpha = (double) this.rowCount / (double) (this.rowCount + 1);
+                    double alpha = (double) this.presentCount / (double) (this.presentCount + 1);
                     double beta = 1.0 - alpha;
                     this.moments[0] = (alpha * this.moments[0]) + (beta * val);
                     for (int i = 1; i < this.momentCount; i++) {
@@ -83,7 +85,9 @@ public class BasicColStats implements IJson {
                         this.moments[i] = (alpha * this.moments[i]) + (beta * tmpMoment);
                     }
                 }
-                this.rowCount++;
+                this.presentCount++;
+            } else {
+                this.missingCount++;
             }
             currRow = myIter.getNextRow();
         }
@@ -91,9 +95,9 @@ public class BasicColStats implements IJson {
 
     public BasicColStats union(final BasicColStats otherStat) {
         BasicColStats result = new BasicColStats(this.momentCount);
-        if (this.rowCount == 0)
+        if (this.presentCount == 0)
             return otherStat;
-        if (otherStat.rowCount == 0)
+        if (otherStat.presentCount == 0)
             return this;
 
         if (this.min < otherStat.min) {
@@ -111,9 +115,10 @@ public class BasicColStats implements IJson {
             result.max = otherStat.max;
             result.maxObject = otherStat.maxObject;
         }
-        result.rowCount = this.rowCount + otherStat.rowCount;
-        if (result.rowCount > 0) {
-            double alpha = (double) this.rowCount / ((double) result.rowCount);
+        result.presentCount = this.presentCount + otherStat.presentCount;
+        result.missingCount = this.missingCount + otherStat.missingCount;
+        if (result.presentCount > 0) {
+            double alpha = (double) this.presentCount / ((double) result.presentCount);
             double beta = 1.0 - alpha;
             for (int i = 0; i < this.momentCount; i++)
                 result.moments[i] = (alpha * this.moments[i]) + (beta * otherStat.moments[i]);

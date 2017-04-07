@@ -27,6 +27,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * A column of Dates that can grow in size.
@@ -86,11 +88,36 @@ public class DateListColumn
         this.append(null);
     }
 
+    private static final Map<String, String> DATE_FORMAT_REGEXPS = new HashMap<String, String>() {{
+        put("^\\d{8}$", "yyyyMMdd");
+        put("^\\d{1,2}-\\d{1,2}-\\d{4}$", "dd-MM-yyyy");
+        put("^\\d{4}-\\d{1,2}-\\d{1,2}$", "yyyy-MM-dd");
+        put("^\\d{1,2}/\\d{1,2}/\\d{4}$", "MM/dd/yyyy");
+        put("^\\d{4}/\\d{1,2}/\\d{1,2}$", "yyyy/MM/dd");
+        put("^\\d{1,2}\\s[a-z]{3}\\s\\d{4}$", "dd MMM yyyy");
+        put("^\\d{1,2}\\s[a-z]{4,}\\s\\d{4}$", "dd MMMM yyyy");
+        put("^\\d{12}$", "yyyyMMddHHmm");
+        put("^\\d{8}\\s\\d{4}$", "yyyyMMdd HHmm");
+        put("^\\d{1,2}-\\d{1,2}-\\d{4}\\s\\d{1,2}:\\d{2}$", "dd-MM-yyyy HH:mm");
+        put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s\\d{1,2}:\\d{2}$", "yyyy-MM-dd HH:mm");
+        put("^\\d{1,2}/\\d{1,2}/\\d{4}\\s\\d{1,2}:\\d{2}$", "MM/dd/yyyy HH:mm");
+        put("^\\d{4}/\\d{1,2}/\\d{1,2}\\s\\d{1,2}:\\d{2}$", "yyyy/MM/dd HH:mm");
+        put("^\\d{1,2}\\s[a-z]{3}\\s\\d{4}\\s\\d{1,2}:\\d{2}$", "dd MMM yyyy HH:mm");
+        put("^\\d{1,2}\\s[a-z]{4,}\\s\\d{4}\\s\\d{1,2}:\\d{2}$", "dd MMMM yyyy HH:mm");
+        put("^\\d{14}$", "yyyyMMddHHmmss");
+        put("^\\d{8}\\s\\d{6}$", "yyyyMMdd HHmmss");
+        put("^\\d{1,2}-\\d{1,2}-\\d{4}\\s\\d{1,2}:\\d{2}:\\d{2}$", "dd-MM-yyyy HH:mm:ss");
+        put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s\\d{1,2}:\\d{2}:\\d{2}$", "yyyy-MM-dd HH:mm:ss");
+        put("^\\d{1,2}/\\d{1,2}/\\d{4}\\s\\d{1,2}:\\d{2}:\\d{2}$", "MM/dd/yyyy HH:mm:ss");
+        put("^\\d{4}/\\d{1,2}/\\d{1,2}\\s\\d{1,2}:\\d{2}:\\d{2}$", "yyyy/MM/dd HH:mm:ss");
+        put("^\\d{1,2}\\s[a-z]{3}\\s\\d{4}\\s\\d{1,2}:\\d{2}:\\d{2}$", "dd MMM yyyy HH:mm:ss");
+        put("^\\d{1,2}\\s[a-z]{4,}\\s\\d{4}\\s\\d{1,2}:\\d{2}:\\d{2}$", "dd MMMM yyyy HH:mm:ss");
+    }};
+
     static final DateTimeFormatter[] toTry = {
             DateTimeFormatter.BASIC_ISO_DATE,
             DateTimeFormatter.ISO_LOCAL_DATE,
             DateTimeFormatter.ISO_OFFSET_DATE,
-
             DateTimeFormatter.ISO_DATE,
             DateTimeFormatter.ISO_LOCAL_TIME,
             DateTimeFormatter.ISO_OFFSET_TIME,
@@ -123,6 +150,15 @@ public class DateListColumn
                 }
             }
         }
+        // none of the standard formats worked, let's try some custom ones
+        for (String regexp : DATE_FORMAT_REGEXPS.keySet()) {
+            if (s.toLowerCase().matches(regexp)) {
+                String format = DATE_FORMAT_REGEXPS.get(regexp);
+                this.parserFormatter = DateTimeFormatter.ofPattern(format);
+                return;
+            }
+        }
+
         throw new RuntimeException("Could not guess parsing format for date " + s);
     }
 
