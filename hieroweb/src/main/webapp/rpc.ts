@@ -57,6 +57,7 @@ export interface ICancellable {
     // return 'true' if cancellation succeeds.
     // Cancellation may fail if the computation is terminated.
     cancel(): boolean;
+    startTime(): Date;
 }
 
 // A streaming RPC request: for each request made
@@ -69,8 +70,11 @@ export class RpcRequest implements ICancellable {
     cancelled: boolean;
     closed:    boolean;  // i.e., not opened
     socket:    any; // result of Rx.DOM.fromWebSocket.
-    // Should be Rx.Subject<MessageEvent>, but this does not typecheck
-    // the this.socket.onNext method with a String argument.
+                    // Should be Rx.Subject<MessageEvent>, but this does not typecheck
+                    // the this.socket.onNext method with a String argument.
+    rpcTime: Date; /* Time when RPC was initiated.  It may be set explicitly
+                      by users, and then it can be used to measured operations
+                      that span multiple RPCs */
 
     static requestCounter : number = 0;
 
@@ -81,6 +85,7 @@ export class RpcRequest implements ICancellable {
         this.socket = null;
         this.cancelled = false;
         this.closed = true;
+        this.rpcTime = null;
     }
 
     serialize() : string {
@@ -99,6 +104,14 @@ export class RpcRequest implements ICancellable {
             "protoVersion": this.protoVersion
         };
         return JSON.stringify(result);
+    }
+
+    public startTime(): Date {
+        return this.rpcTime;
+    }
+
+    public setStartTime(start: Date): void{
+        this.rpcTime = start;
     }
 
     private onOpen() : void {
@@ -166,6 +179,8 @@ export class RpcRequest implements ICancellable {
 
         try {
             // Create a web socked and send the request
+            if (this.rpcTime == null)
+                this.rpcTime = new Date();
             this.socket = RxDOM.DOM.fromWebSocket(RpcRequestUrl, null, openObserver, closeObserver);
             this.socket.onclose =
             console.log('socket created');

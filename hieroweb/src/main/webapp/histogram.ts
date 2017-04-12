@@ -216,12 +216,14 @@ export class Histogram extends RemoteObject
             this.currentData.cdf,
             this.currentData.histogram,
             this.currentData.description,
-            this.currentData.stats);
+            this.currentData.stats,
+            0);
     }
 
     public updateView(cdf: Histogram1DLight, h: Histogram1D,
-                      cd: ColumnDescription, stats: BasicColStats) : void {
+                      cd: ColumnDescription, stats: BasicColStats, elapsedMs: number) : void {
         this.currentData = { cdf: cdf, histogram: h, description: cd, stats: stats };
+        this.page.reportError("Operation took " + significantDigits(elapsedMs/1000) + " seconds");
 
         let ws = this.page.getSize();
         let width = ws.width;
@@ -617,6 +619,7 @@ export class RangeCollector extends Renderer<BasicColStats> {
             width: width,
             height: height
         });
+        rr.setStartTime(this.operation.startTime());
         let renderer = new HistogramRenderer(
             this.page, this.remoteObject.remoteObjectId, this.cd, this.stats, rr);
         rr.invoke(renderer);
@@ -639,6 +642,6 @@ export class HistogramRenderer extends Renderer<Pair<Histogram1DLight, Histogram
 
     onNext(value: PartialResult<Pair<Histogram1DLight, Histogram1D>>): void {
         super.onNext(value);
-        this.histogram.updateView(value.data.first, value.data.second, this.cd, this.stats);
+        this.histogram.updateView(value.data.first, value.data.second, this.cd, this.stats, this.elapsedMilliseconds());
     }
 }

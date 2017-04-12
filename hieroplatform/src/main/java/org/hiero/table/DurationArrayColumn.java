@@ -19,10 +19,11 @@
 package org.hiero.table;
 
 import org.hiero.table.api.ContentsKind;
+import org.hiero.table.api.IColumn;
 import org.hiero.table.api.IDurationColumn;
+import org.hiero.table.api.IStringConverter;
 
 import javax.annotation.Nullable;
-import java.security.InvalidParameterException;
 import java.time.Duration;
 
 /*
@@ -32,25 +33,28 @@ import java.time.Duration;
 public final class DurationArrayColumn extends BaseArrayColumn implements IDurationColumn {
     private final Duration[] data;
 
-    private void validate() {
-        if (this.description.kind != ContentsKind.Duration)
-            throw new InvalidParameterException("Kind should be Time Duration"
-                    + this.description.kind);
+    protected DurationArrayColumn(final DurationArrayColumn other, @Nullable IStringConverter converter) {
+        super(other, converter);
+        this.data = other.data;
     }
 
     public DurationArrayColumn(final ColumnDescription description, final int size) {
         super(description, size);
-        this.validate();
+        this.checkKind(ContentsKind.Duration);
         this.data = new Duration[size];
     }
 
     public DurationArrayColumn(final ColumnDescription description,
                                final Duration[] data) {
         super(description, data.length);
-        this.validate();
+        this.checkKind(ContentsKind.Duration);
         this.data = data;
     }
 
+    @Override
+    public IColumn setDefaultConverter(@Nullable IStringConverter converter) {
+        return new DurationArrayColumn(this, converter);
+    }
 
     @Override
     public int sizeInRows() {

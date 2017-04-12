@@ -18,6 +18,7 @@
 
 package org.hiero.table;
 
+import org.hiero.table.api.IColumn;
 import org.hiero.table.api.IStringConverter;
 import org.hiero.table.api.IndexComparator;
 import org.hiero.utils.Converters;
@@ -32,6 +33,11 @@ import java.time.LocalDateTime;
 public final class ObjectArrayColumn extends BaseArrayColumn {
     private final Object[] data;
 
+    protected ObjectArrayColumn(final ObjectArrayColumn other, @Nullable IStringConverter converter) {
+        super(other, converter);
+        this.data = other.data;
+    }
+
     public ObjectArrayColumn(final ColumnDescription description, final int size) {
         super(description, size);
         this.data = new Object[size];
@@ -41,6 +47,11 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
                              final Object[] data) {
         super(description, data.length);
         this.data = data;
+    }
+
+    @Override
+    public IColumn setDefaultConverter(@Nullable IStringConverter converter) {
+        return new ObjectArrayColumn(this, converter);
     }
 
     @Override

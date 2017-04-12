@@ -18,6 +18,7 @@
 
 package org.hiero.table;
 
+import org.hiero.table.api.IStringConverter;
 import org.hiero.utils.Converters;
 
 import javax.annotation.Nullable;
@@ -37,8 +38,14 @@ public abstract class BaseListColumn extends BaseColumn {
     private ArrayList<BitSet> missing = null;
     int size;
 
+    protected BaseListColumn(final BaseListColumn column, @Nullable IStringConverter converter) {
+        super(column.getDescription(), converter);
+        this.missing = column.missing;
+        this.size = column.size;
+    }
+
     BaseListColumn(final ColumnDescription desc) {
-        super(desc);
+        super(desc, null);
         if (desc.allowMissing && !desc.kind.isObject())
             this.missing = new ArrayList<BitSet>();
         this.size = 0;

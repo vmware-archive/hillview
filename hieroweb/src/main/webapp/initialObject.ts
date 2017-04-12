@@ -24,8 +24,9 @@ class FileNames extends RemoteObject {
         super(remoteObjectId);
     }
 
-    public loadTable(page: FullPage): void {
+    public loadTable(page: FullPage, startTime: Date): void {
         let rr = this.createRpcRequest("loadTable", null);
+        rr.setStartTime(startTime);
         let observer = new RemoteTableReceiver(page, rr);
         rr.invoke(observer);
     }
@@ -34,7 +35,7 @@ class FileNames extends RemoteObject {
 class FileNamesReceiver extends RpcReceiver<string> {
     private files: FileNames;
 
-    constructor(protected page: FullPage, operation: ICancellable) {
+    constructor(protected page: FullPage, protected operation: ICancellable) {
         super(page.progressManager.newProgressBar(operation, "Find files"),
             page.getErrorReporter());
     }
@@ -48,7 +49,7 @@ class FileNamesReceiver extends RpcReceiver<string> {
     public onCompleted(): void {
         this.finished();
         if (this.files)
-            this.files.loadTable(this.page);
+            this.files.loadTable(this.page, this.operation.startTime());
     }
 }
 

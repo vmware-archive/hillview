@@ -16,12 +16,26 @@
  *
  */
 
-package org.hiero.table;
+package org.hiero.maps;
 
-public final class ExplicitStringConverter extends BaseExplicitConverter {
-    /* Will throw an exception when string is not known */
+import org.hiero.dataset.api.IMap;
+
+/**
+ * A BroadcastMap is a mapper which broadcasts a value of type S to all
+ * leaves of an IDataSet and creates an IDataSet[S] having the exact
+ * same value in all leaves.
+ * @param <T> Type of original dataset; unused.
+ * @param <S> Type of data broadcast.
+ */
+public class BroadcastMap<T, S> implements IMap<T, S> {
+    protected final S data;
+
+    public BroadcastMap(S data) {
+        this.data = data;
+    }
+
     @Override
-    public double asDouble(final String string) {
-        return this.stringValue.get(string);
+    public S apply(T unused) {
+        return this.data;
     }
 }

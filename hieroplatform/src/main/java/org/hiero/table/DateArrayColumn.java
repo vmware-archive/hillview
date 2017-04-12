@@ -19,10 +19,11 @@
 package org.hiero.table;
 
 import org.hiero.table.api.ContentsKind;
+import org.hiero.table.api.IColumn;
 import org.hiero.table.api.IDateColumn;
+import org.hiero.table.api.IStringConverter;
 
 import javax.annotation.Nullable;
-import java.security.InvalidParameterException;
 import java.time.LocalDateTime;
 
 /*
@@ -33,22 +34,27 @@ public final class DateArrayColumn
         implements IDateColumn {
     private final LocalDateTime[] data;
 
-    private void validate() {
-        if (this.description.kind != ContentsKind.Date)
-            throw new InvalidParameterException("Kind should be Date" + this.description.kind);
+    protected DateArrayColumn(final DateArrayColumn other, @Nullable IStringConverter converter) {
+        super(other, converter);
+        this.data = other.data;
     }
 
     public DateArrayColumn(final ColumnDescription description, final int size) {
         super(description, size);
-        this.validate();
+        this.checkKind(ContentsKind.Date);
         this.data = new LocalDateTime[size];
     }
 
     public DateArrayColumn(final ColumnDescription description,
                            final LocalDateTime[] data) {
         super(description, data.length);
-        this.validate();
+        this.checkKind(ContentsKind.Date);
         this.data = data;
+    }
+
+    @Override
+    public IColumn setDefaultConverter(@Nullable IStringConverter converter) {
+        return new DateArrayColumn(this, converter);
     }
 
     @Override

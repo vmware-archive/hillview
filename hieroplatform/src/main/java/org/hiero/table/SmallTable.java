@@ -22,12 +22,12 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.hiero.dataset.api.IJson;
-import org.hiero.table.api.IColumn;
-import org.hiero.table.api.IMembershipSet;
-import org.hiero.table.api.IRowIterator;
-import org.hiero.table.api.ITable;
+import org.hiero.table.api.*;
 
+import javax.annotation.Nullable;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * A SmallTable is similar to a Table, but it is intended to be shipped over the network.
@@ -63,7 +63,6 @@ public class SmallTable
             throw new RuntimeException("Schemas do not match");
     }
 
-
     public SmallTable(final Iterable<IColumn> columns) {
         super(columns);
         this.rowCount = BaseTable.columnSize(this.columns.values());
@@ -91,6 +90,11 @@ public class SmallTable
     public ITable project(Schema schema) {
         Iterable<IColumn> cols = this.getColumns(schema);
         return new SmallTable(cols, schema);
+    }
+
+    @Override
+    public ITable setDefaultConverter(String colName, @Nullable IStringConverter converter) {
+        return new SmallTable(this.changeConverter(colName, converter), this.schema);
     }
 
     @Override

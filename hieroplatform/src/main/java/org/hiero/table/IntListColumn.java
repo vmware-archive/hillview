@@ -19,8 +19,11 @@
 package org.hiero.table;
 
 import org.hiero.table.api.ContentsKind;
+import org.hiero.table.api.IColumn;
 import org.hiero.table.api.IIntColumn;
+import org.hiero.table.api.IStringConverter;
 
+import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 
@@ -32,11 +35,21 @@ public final class IntListColumn
         implements IIntColumn {
     private final ArrayList<int[]> segments;
 
+    private IntListColumn(IntListColumn other, @Nullable IStringConverter converter) {
+        super(other, converter);
+        this.checkKind(ContentsKind.Double);
+        this.segments = other.segments;
+    }
+
     public IntListColumn(final ColumnDescription desc) {
         super(desc);
         if (this.description.kind != ContentsKind.Integer)
             throw new InvalidParameterException("Kind should be Integer " + this.description.kind);
         this.segments = new ArrayList<int []>();
+    }
+
+    public IColumn setDefaultConverter(@Nullable final IStringConverter converter) {
+        return new IntListColumn(this, converter);
     }
 
     @Override

@@ -20,6 +20,7 @@ package org.hiero.table;
 
 import org.hiero.table.api.*;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -47,7 +48,10 @@ public abstract class BaseTable implements ITable {
             this.columns.put(c.getName(), c);
     }
 
-    public List<IColumn> getColumns(Schema schema) {
+    /**
+     * Returns columns in the order they appear in the schema.
+     */
+    public Iterable<IColumn> getColumns(Schema schema) {
         List<IColumn> cols = new ArrayList<IColumn>();
         for (String col : schema.getColumnNames()) {
             IColumn mycol = this.getColumn(col);
@@ -98,6 +102,22 @@ public abstract class BaseTable implements ITable {
         if (size < 0)
             size = 0;
         return size;
+    }
+
+    protected Iterable<IColumn> changeConverter(String colName, @Nullable IStringConverter converter) {
+        List<IColumn> lc = new ArrayList<IColumn>();
+        boolean found = false;
+        for (IColumn c: this.getColumns()) {
+            if (c.getName().equals(colName)) {
+                lc.add(c.setDefaultConverter(converter));
+                found = true;
+            } else {
+                lc.add(c);
+            }
+        }
+        if (!found)
+            throw new RuntimeException("Column " + colName + " not found");
+        return lc;
     }
 
     @Override public IColumn getColumn(final String colName) {

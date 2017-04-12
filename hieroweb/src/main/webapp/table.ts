@@ -23,6 +23,7 @@ import Rx = require('rx');
 import {RangeCollector} from "./histogram";
 import {DropDownMenu, ContextMenu, PopupMenu} from "./menu";
 import {Converters} from "./util";
+import d3 = require('d3');
 
 // These classes are direct counterparts to server-side Java classes
 // with the same names.  JSON serialization
@@ -90,11 +91,17 @@ export class RecordOrder {
             return;
         this.sortOrientationList.splice(index, 1);
     }
-    public show(cso: ColumnSortOrientation) {
+    public sortFirst(cso: ColumnSortOrientation) {
         let index = this.find(cso.columnDescription.name);
         if (index != -1)
             this.sortOrientationList.splice(index, 1);
         this.sortOrientationList.splice(0, 0, cso);
+    }
+    public show(cso: ColumnSortOrientation) {
+        let index = this.find(cso.columnDescription.name);
+        if (index != -1)
+            this.sortOrientationList.splice(index, 1);
+        this.sortOrientationList.push(cso);
     }
     public showIfNotVisible(cso: ColumnSortOrientation) {
         let index = this.find(cso.columnDescription.name);
@@ -414,7 +421,7 @@ export class TableView extends RemoteObject
         return thd;
     }
 
-    public showColumn(columnName: string, order: number) : void {
+    public showColumn(columnName: string, order: number, first: boolean) : void {
         // order is 0 to hide
         //         -1 to sort descending
         //          1 to sort ascending
@@ -423,7 +430,10 @@ export class TableView extends RemoteObject
             let col = this.findColumn(columnName);
             if (col == null)
                 return;
-            o.show({ columnDescription: col, isAscending: order > 0 });
+            if (first)
+                o.sortFirst({ columnDescription: col, isAscending: order > 0 });
+            else
+                o.show( { columnDescription: col, isAscending: order > 0 });
         } else {
             o.hide(columnName);
         }
@@ -441,10 +451,11 @@ export class TableView extends RemoteObject
             this.page.reportError("Nothing to refresh");
             return;
         }
-        this.updateView(this.currentData, false, this.order);
+        this.updateView(this.currentData, false, this.order, 0);
     }
 
-    public updateView(data: TableDataView, revert: boolean, order: RecordOrder) : void {
+    public updateView(data: TableDataView, revert: boolean,
+                      order: RecordOrder, elapsedMs: number) : void {
         console.log("updateView " + revert + " " + order);
 
         this.currentData = data;
@@ -494,10 +505,14 @@ export class TableView extends RemoteObject
             cds.push(cd);
             let thd = this.addHeaderCell(thr, cd);
             let menu = new PopupMenu([
-                {text: "sort asc", action: () => this.showColumn(cd.name, 1) },
-                {text: "sort desc", action: () => this.showColumn(cd.name, -1) },
-                {text: "hide", action: () => this.showColumn(cd.name, 0)}
-             ]);
+                {text: "sort asc", action: () => this.showColumn(cd.name, 1, true) },
+                {text: "sort desc", action: () => this.showColumn(cd.name, -1, true) }
+            ]);
+            if (this.order.find(cd.name) >= 0) {
+                menu.addItem( {text: "hide", action: () => this.showColumn(cd.name, 0, true) } );
+            } else {
+                menu.addItem({text: "show", action: () => this.showColumn(cd.name, 1, false) });
+            }
             if (cd.kind != "Json" &&
                 cd.kind != "String" &&
                 cd.kind != "Category")  // TODO: delete this
@@ -535,6 +550,7 @@ export class TableView extends RemoteObject
             " of " + formatNumber(this.rowCount) + " rows" + perc;
 
         this.updateScrollBar();
+        this.page.reportError("Operation took " + significantDigits(elapsedMs/1000) + " seconds");
     }
 
     private updateScrollBar(): void {
@@ -611,7 +627,7 @@ export class TableRenderer extends Renderer<TableDataView> {
 
     onNext(value: PartialResult<TableDataView>): void {
         super.onNext(value);
-        this.table.updateView(value.data, this.revert, this.order);
+        this.table.updateView(value.data, this.revert, this.order, this.elapsedMilliseconds());
     }
 }
 
@@ -626,6 +642,7 @@ export class RemoteTableReceiver extends Renderer<string> {
         let table = new TableView(tableId, this.page);
         this.page.setHieroDataView(table);
         let rr = table.createRpcRequest("getSchema", null);
+        rr.setStartTime(this.operation.startTime());
         rr.invoke(new TableRenderer(this.page, table, rr, false, new RecordOrder([])));
     }
 

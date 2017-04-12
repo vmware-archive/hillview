@@ -19,9 +19,11 @@
 package org.hiero.table;
 
 import org.hiero.table.api.ContentsKind;
+import org.hiero.table.api.IColumn;
 import org.hiero.table.api.IIntColumn;
+import org.hiero.table.api.IStringConverter;
 
-import java.security.InvalidParameterException;
+import javax.annotation.Nullable;
 
 /**
  * Column of integers, implemented as an array of integers and a BitSet of missing values.
@@ -31,21 +33,26 @@ public final class IntArrayColumn
         implements IIntColumn {
     private final int[] data;
 
-    private void validate() {
-        if (this.description.kind != ContentsKind.Integer)
-            throw new InvalidParameterException("Kind should be Integer " + this.description.kind);
+    protected IntArrayColumn(final IntArrayColumn other, @Nullable IStringConverter converter) {
+        super(other, converter);
+        this.data = other.data;
     }
 
     public IntArrayColumn(final ColumnDescription description, final int size) {
         super(description, size);
-        this.validate();
+        this.checkKind(ContentsKind.Integer);
         this.data = new int[size];
     }
 
     public IntArrayColumn(final ColumnDescription description, final int[] data) {
         super(description, data.length);
-        this.validate();
+        this.checkKind(ContentsKind.Integer);
         this.data = data;
+    }
+
+    @Override
+    public IColumn setDefaultConverter(@Nullable IStringConverter converter) {
+        return new IntArrayColumn(this, converter);
     }
 
     @Override

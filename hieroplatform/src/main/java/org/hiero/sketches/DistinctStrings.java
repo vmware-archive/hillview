@@ -48,7 +48,6 @@ public class DistinctStrings {
 
     public int size() { return this.mySet.size(); }
 
-
     /**
      * @return the union of two sets. The maxSize is the larger of the two. If one
      * of them allow for unbounded size (maxSize = 0) then so does the union.

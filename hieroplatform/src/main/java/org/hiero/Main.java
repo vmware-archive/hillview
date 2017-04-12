@@ -71,6 +71,7 @@ public class Main {
         files.filter(f -> {
             String filename = f.getFileName().toString();
             if (!filename.endsWith("csv")) return false;
+            //noinspection RedundantIfStatement
             if (!filename.startsWith(prefix)) return false;
             return true;
         }).sorted(Comparator.comparing(Path::toString))

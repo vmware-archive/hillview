@@ -17,6 +17,7 @@
 
 import {RpcReceiver, PartialResult, ICancellable} from "./rpc";
 import {ErrorReporter} from "./errReporter";
+import d3 = require('d3');
 
 export interface IHtmlElement {
     getHTMLRepresentation() : HTMLElement;
@@ -106,6 +107,7 @@ export function removeAllChildren(h: HTMLElement): void {
 }
 
 export class ScrollBar implements IHtmlElement {
+    static readonly minimumSize = 5;
     // Only vertical scroll bars supported
     // Range for start and end is 0-1
     start : number;
@@ -389,5 +391,9 @@ export abstract class Renderer<T> extends RpcReceiver<PartialResult<T>> {
 
     public onNext(value: PartialResult<T>) {
         this.progressBar.setPosition(value.done);
+    }
+
+    public elapsedMilliseconds(): number {
+        return d3.timeMillisecond.count(this.operation.startTime(), new Date());
     }
 }

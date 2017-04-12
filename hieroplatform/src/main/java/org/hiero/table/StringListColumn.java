@@ -19,7 +19,9 @@
 package org.hiero.table;
 
 import org.hiero.table.api.ContentsKind;
+import org.hiero.table.api.IColumn;
 import org.hiero.table.api.IStringColumn;
+import org.hiero.table.api.IStringConverter;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -30,6 +32,11 @@ import java.util.ArrayList;
 public class StringListColumn extends BaseListColumn implements IStringColumn {
     private final ArrayList<String[]> segments;
 
+    private StringListColumn(StringListColumn other, @Nullable IStringConverter converter) {
+        super(other, converter);
+        this.segments = other.segments;
+    }
+
     public StringListColumn(final ColumnDescription desc) {
         super(desc);
         if ((desc.kind != ContentsKind.String) &&
@@ -37,6 +44,10 @@ public class StringListColumn extends BaseListColumn implements IStringColumn {
                 (desc.kind != ContentsKind.Category))
             throw new IllegalArgumentException("Unexpected column kind " + desc.kind);
         this.segments = new ArrayList<String []>();
+    }
+
+    public IColumn setDefaultConverter(@Nullable final IStringConverter converter) {
+        return new StringListColumn(this, converter);
     }
 
     @Nullable

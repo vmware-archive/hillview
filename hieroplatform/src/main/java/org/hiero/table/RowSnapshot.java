@@ -110,8 +110,12 @@ public class RowSnapshot extends BaseRowSnapshot implements Serializable, IJson 
             ColumnDescription cd = schema.getDescription(c);
             Object o = data[i];
             if (cd.kind == ContentsKind.Date)
-                o = Converters.toDate((double)o);
-            converted[i] = o;
+                converted[i] = Converters.toDate((double)o);
+            else if (cd.kind == ContentsKind.Integer)
+                // In JSON everything is a double
+                converted[i] = (int)(double)o;
+            else
+                converted[i] = o;
         }
         return new RowSnapshot(schema, converted);
     }

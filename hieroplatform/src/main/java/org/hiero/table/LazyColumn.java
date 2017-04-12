@@ -50,6 +50,20 @@ public class LazyColumn implements IColumn {
         return this.loadIfNecessary().getDescription();
     }
 
+    @Override
+    public IStringConverter getDefaultConverter() {
+        if (this.actualColumn == null)
+            this.actualColumn = this.loader.load();
+        return this.actualColumn.getDefaultConverter();
+    }
+
+    @Override
+    public IColumn setDefaultConverter(@Nullable IStringConverter converter) {
+        if (this.actualColumn == null)
+            this.actualColumn = this.loader.load();
+        return this.actualColumn.setDefaultConverter(converter);
+    }
+
     @Nullable
     @Override
     public String getString(int rowIndex) {

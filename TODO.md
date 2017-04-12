@@ -2,17 +2,38 @@
 
 Implementation tasks
 
-* TopK sketch (Parikshit)
-* Sketch percentile computation (Parikshit)
-* MembershipSet (Udi)
 * GUI in JavaScript (Mihai)
-
-* Learn how to write performance tests in Java: http://openjdk.java.net/projects/code-tools/jmh/
-* Read/write from various storage media
-* Integrage everything in SpreadSheet
+  * back/forward button
+  * scrollbar manipulation
+  * multi-dimensional histograms
+  * heat maps
+  * short time-series
+  * heavy hitters
+  * multi-window operation
+  * column browser for datasets with lots of columns
+  * search
+  * filtering
+* prune uninteresting columns
+* find correlated columns
+  * regression
+* privacy-preserving sketches?
+* define a programming language for data manipulations in the spreadsheet
+* integration with Spark
+* profile performance and memory use
+* Learn how to write performance tests in Java:
+  http://openjdk.java.net/projects/code-tools/jmh/
+* Read/write from various storage media (Lalith)
+  * Parquet
+  * HDFS
+  * SQL
 * Dynamic code generation for higher perf
-* Implement web server in Java
+* Native data representation
+* Web server
   * authentication
   * session management
   * persistent state management
   * sharing through URLs
+* cluster management (Lalith)
+  * installation, deployment, monitoring
+* fault tolerance
+* customer use-cases

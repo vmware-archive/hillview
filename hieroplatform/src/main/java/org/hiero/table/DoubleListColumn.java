@@ -19,8 +19,11 @@
 package org.hiero.table;
 
 import org.hiero.table.api.ContentsKind;
+import org.hiero.table.api.IColumn;
 import org.hiero.table.api.IDoubleColumn;
+import org.hiero.table.api.IStringConverter;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 
 /**
@@ -30,11 +33,19 @@ public class DoubleListColumn
         extends BaseListColumn implements IDoubleColumn {
     private final ArrayList<double[]> segments;
 
+    private DoubleListColumn(DoubleListColumn other, @Nullable IStringConverter converter) {
+        super(other, converter);
+        this.segments = other.segments;
+    }
+
     public DoubleListColumn(final ColumnDescription desc) {
         super(desc);
-        if (desc.kind != ContentsKind.Double)
-            throw new IllegalArgumentException("Unexpected column kind " + desc.kind);
+        this.checkKind(ContentsKind.Double);
         this.segments = new ArrayList<double []>();
+    }
+
+    public IColumn setDefaultConverter(@Nullable final IStringConverter converter) {
+        return new DoubleListColumn(this, converter);
     }
 
     @Override

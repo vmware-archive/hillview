@@ -18,6 +18,7 @@
 
 package org.hiero.table;
 
+import org.hiero.table.api.IStringConverter;
 import org.hiero.utils.Converters;
 
 import javax.annotation.Nullable;
@@ -32,8 +33,13 @@ public abstract class BaseArrayColumn extends BaseColumn implements Serializable
     @Nullable
     private BitSet missing = null;
 
+    protected BaseArrayColumn(final BaseArrayColumn column, @Nullable IStringConverter converter) {
+        super(column.getDescription(), converter);
+        this.missing = column.missing;
+    }
+
     BaseArrayColumn(final ColumnDescription description, final int size) {
-        super(description);
+        super(description, null);
         if (size < 0)
             throw new InvalidParameterException("Size must be positive: " + size);
         if (this.description.allowMissing && !this.description.kind.isObject())

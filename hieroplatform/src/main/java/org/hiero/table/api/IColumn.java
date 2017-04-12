@@ -32,15 +32,27 @@ import java.time.LocalDateTime;
 public interface IColumn {
     ColumnDescription getDescription();
 
+    /**
+     * A column may have associated with it a default string converter.
+     * (This is only useful for columns of Strings, including Categories.)
+     */
+    @Nullable IStringConverter getDefaultConverter();
+    /**
+     * Set the default string converter for this column, replacing the previous one.
+     * @return A new column, which has the same data, but a different converter.
+     */
+    IColumn setDefaultConverter(@Nullable IStringConverter converter);
+
     /* Only one of the following methods is supposed to work for a column */
-    @Nullable
-    String getString(int rowIndex);
     double getDouble(int rowIndex);
-    @Nullable
-    LocalDateTime getDate(int rowIndex);
     int getInt(int rowIndex);
     @Nullable
+    String getString(int rowIndex);
+    @Nullable
+    LocalDateTime getDate(int rowIndex);
+    @Nullable
     Duration getDuration(int rowIndex);
+
     /* This function is inefficient, it should be used sparingly. It
        will cast the value to an Object, boxing it if necessary. It returns null
        if the row is missing.
@@ -79,6 +91,8 @@ public interface IColumn {
 
     /**
      * Whatever the internal data type, return a double.
+     * The converter is only used for columns that store data as strings.
+     * If the converter supplied is null, the default converter will be used.
      */
     double asDouble(int rowIndex, @Nullable IStringConverter converter);
 
