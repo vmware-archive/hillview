@@ -34,14 +34,16 @@ import java.util.UUID;
 
 public class CsvReaderTest {
     static final String dataFolder = "../data";
-    static final String csvFile = "On_Time_Sample.csv";
-    static final String schemaFile = "On_Time.schema";
+    //static final String csvFile = "On_Time_Sample.csv";
+    static final String csvFile = "ESX_data.csv";
+    //static final String schemaFile = "On_Time.schema";
+    static final String schemaFile = "ESXd.schema";
 
     @Nullable
     ITable readTable(String folder, String file) throws IOException {
         Path path = Paths.get(folder, file);
         CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
-        config.allowFewerColumns = false;
+        config.allowFewerColumns = true;
         config.hasHeaderRow = true;
         config.allowMissingData = false;
         CsvFileReader r = new CsvFileReader(path, config);
@@ -52,22 +54,27 @@ public class CsvReaderTest {
     public void ReadCsvFileTest() throws IOException {
         ITable t = this.readTable(dataFolder, csvFile);
         Assert.assertNotNull(t);
+        Path path_schema = Paths.get(dataFolder, schemaFile);
+        t.getSchema().writeToJsonFile(path_schema);
     }
 
     @Test
     public void ReadCsvFileWithSchemaTest() throws IOException {
         Path path = Paths.get(dataFolder, schemaFile);
         Schema schema = Schema.readFromJsonFile(path);
-
         path = Paths.get(dataFolder, csvFile);
         CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
-        config.allowFewerColumns = false;
+        config.allowFewerColumns = true;
         config.hasHeaderRow = true;
-        config.allowMissingData = false;
+        config.allowMissingData = true;
         config.schema = schema;
         CsvFileReader r = new CsvFileReader(path, config);
         ITable t = r.read();
         Assert.assertNotNull(t);
+        System.gc();
+        long mem = Runtime.getRuntime().totalMemory();
+        long freeMem = Runtime.getRuntime().freeMemory();
+        System.out.printf("Total mememory %d, Free memory %d.", mem, freeMem);
     }
 
     @Test
