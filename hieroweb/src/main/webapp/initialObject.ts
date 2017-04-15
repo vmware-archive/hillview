@@ -61,8 +61,8 @@ export class InitialObject extends RemoteObject {
     // This is a "well-known" name used for bootstrapping the system.
     private constructor() { super("0"); }
 
-    public loadTable(page: FullPage): void {
-        let rr = this.createRpcRequest("prepareFiles", null);
+    public loadTable(page: FullPage, which: number): void {
+        let rr = this.createRpcRequest("prepareFiles", which);
         let observer = new FileNamesReceiver(page, rr);
         rr.invoke(observer);
     }

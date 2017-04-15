@@ -19,11 +19,7 @@
 package org.hiero.table;
 
 import org.hiero.table.api.ContentsKind;
-import org.hiero.table.api.IColumn;
 import org.hiero.table.api.IDoubleColumn;
-import org.hiero.table.api.IStringConverter;
-
-import javax.annotation.Nullable;
 
 /**
  * Column of doubles, implemented as an array of doubles and a BitSet of missing values.
@@ -32,11 +28,6 @@ public final class DoubleArrayColumn
         extends BaseArrayColumn
         implements IDoubleColumn {
     private final double[] data;
-
-    protected DoubleArrayColumn(DoubleArrayColumn other, @Nullable IStringConverter converter) {
-        super(other, converter);
-        this.data = other.data;
-    }
 
     public DoubleArrayColumn(final ColumnDescription description, final int size) {
         super(description, size);
@@ -49,11 +40,6 @@ public final class DoubleArrayColumn
         super(description, data.length);
         this.checkKind(ContentsKind.Double);
         this.data = data;
-    }
-
-    @Override
-    public IColumn setDefaultConverter(@Nullable IStringConverter converter) {
-        return new DoubleArrayColumn(this, converter);
     }
 
     @Override

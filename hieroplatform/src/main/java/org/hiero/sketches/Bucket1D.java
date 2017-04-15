@@ -32,12 +32,13 @@ public class Bucket1D implements IJson {
     private Object maxObject;
     private double minValue;
     private double maxValue;
+    // The other values make sense only if count is not 0.
     private long count;
 
     public Bucket1D() {
         this.minObject = null;
         this.maxObject = null;
-        this.minValue = Double.MAX_VALUE;
+        this.minValue = 0;
         this.maxValue = 0;
         this.count = 0;
     }
@@ -65,7 +66,7 @@ public class Bucket1D implements IJson {
     public long getCount() { return this.count; }
 
     public void add(final double item, @Nullable final Object currObject) {
-        if (this.count == 0) {
+        if (this.isEmpty()) {
             this.minValue = item;
             this.minObject = currObject;
             this.maxValue = item;
@@ -90,6 +91,11 @@ public class Bucket1D implements IJson {
         long ucount = this.count + otherBucket.count;
         double uMinValue, uMaxValue;
         Object uMinObject, uMaxObject;
+        if (this.isEmpty())
+            return otherBucket;
+        else if (otherBucket.isEmpty())
+            return this;
+
         if (this.minValue < otherBucket.minValue) {
             uMinValue = this.minValue;
             uMinObject = this.minObject;

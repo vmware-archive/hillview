@@ -52,7 +52,7 @@ interface Histogram1DLight {
 }
 
 // same as Java class
-interface BasicColStats {
+export interface BasicColStats {
     momentCount: number;
     min: number;
     max: number;
@@ -99,8 +99,10 @@ export class Histogram extends RemoteObject
     protected currentData: {
         histogram: Histogram1D,
         cdf: Histogram1DLight,
+        cdfSum: number[],  // prefix sum of cdf
         description: ColumnDescription,
-        stats: BasicColStats
+        stats: BasicColStats,
+        allStrings: string[]   // used only for categorical histograms
     };
     private chart: any;  // these are in fact a d3.Selection<>, but I can't make them typecheck
     protected canvas: any;
@@ -119,7 +121,7 @@ export class Histogram extends RemoteObject
                 { text: "refresh", action: () => { this.refresh(); } },
                 { text: "table", action: () => this.showTable() },
                 { text: "#buckets", action: () => this.chooseBuckets() },
-                { text: "correlate", action: () => this.chooseSecondColumn() },
+                //{ text: "correlate", action: () => this.chooseSecondColumn() },
             ]) }
         ]);
 
@@ -187,7 +189,8 @@ export class Histogram extends RemoteObject
             height: ws.height
         });
         let renderer = new HistogramRenderer(
-            this.page, this.remoteObjectId, this.currentData.description, this.currentData.stats, rr);
+            this.page, this.remoteObjectId, this.currentData.description,
+            this.currentData.stats, rr, this.currentData.allStrings);
         rr.invoke(renderer);
     }
 
@@ -217,12 +220,20 @@ export class Histogram extends RemoteObject
             this.currentData.histogram,
             this.currentData.description,
             this.currentData.stats,
+            this.currentData.allStrings,
             0);
     }
 
     public updateView(cdf: Histogram1DLight, h: Histogram1D,
-                      cd: ColumnDescription, stats: BasicColStats, elapsedMs: number) : void {
-        this.currentData = { cdf: cdf, histogram: h, description: cd, stats: stats };
+                      cd: ColumnDescription, stats: BasicColStats,
+                      allStrings: string[], elapsedMs: number) : void {
+        this.currentData = {
+            cdf: cdf,
+            cdfSum: null,
+            histogram: h,
+            description: cd,
+            stats: stats,
+            allStrings: allStrings };
         this.page.reportError("Operation took " + significantDigits(elapsedMs/1000) + " seconds");
 
         let ws = this.page.getSize();
@@ -241,21 +252,26 @@ export class Histogram extends RemoteObject
         this.chartResolution = { width: chartWidth, height: chartHeight };
 
         let counts = h.buckets.map(b => b.count);
+        let bucketCount = counts.length;
         let max = d3.max(counts);
 
         // prefix sum for cdf
-        let sum = 0;
-        for (let i in cdf.buckets) {
-            sum += cdf.buckets[i];
-            cdf.buckets[i] = sum;
-        }
-
         let cdfData: number[] = [];
-        let point = 0;
-        for (let i in cdf.buckets) {
-            cdfData.push(point);
-            point = cdf.buckets[i] * max / stats.presentCount;
-            cdfData.push(point);
+        if (cdf != null) {
+            this.currentData.cdfSum = [];
+
+            let sum = 0;
+            for (let i in cdf.buckets) {
+                sum += cdf.buckets[i];
+                this.currentData.cdfSum.push(sum);
+            }
+
+            let point = 0;
+            for (let i in this.currentData.cdfSum) {
+                cdfData.push(point);
+                point = this.currentData.cdfSum[i] * max / stats.presentCount;
+                cdfData.push(point);
+            }
         }
 
         if (this.canvas != null)
@@ -307,11 +323,33 @@ export class Histogram extends RemoteObject
             maxRange += .5;
             this.adjustment = chartWidth / (maxRange - minRange);
         }
+
+        let xAxis = null;
+        this.xScale = null;
         if (cd.kind == "Integer" ||
             cd.kind == "Double") {
             this.xScale = d3.scaleLinear()
                 .domain([minRange, maxRange])
                 .range([0, chartWidth]);
+            xAxis = d3.axisBottom(this.xScale);
+        } else if (cd.kind == "Category") {
+            let ticks: number[] = [];
+            let labels: string[] = [];
+            for (let i = 0; i < bucketCount; i++) {
+                let index = stats.min + i * (maxRange - minRange) / bucketCount;
+                index = Math.round(index);
+                ticks.push(this.adjustment / 2 + index * chartWidth / (maxRange - minRange));
+                labels.push(this.currentData.allStrings[index]);
+            }
+
+            let axisScale = d3.scaleOrdinal()
+                .domain(labels)
+                .range(ticks);
+            this.xScale = d3.scaleLinear()
+                .domain([minRange, maxRange])
+                .range([0, chartWidth]);
+            xAxis = d3.axisBottom(<any>axisScale);
+            // cast needed probably because the d3 typings are incorrect
         } else if (cd.kind == "Date") {
             let minDate: Date = Converters.dateFromDouble(minRange);
             let maxDate: Date = Converters.dateFromDouble(maxRange);
@@ -319,11 +357,11 @@ export class Histogram extends RemoteObject
                 .scaleTime()
                 .domain([minDate, maxDate])
                 .range([0, chartWidth]);
+            xAxis = d3.axisBottom(this.xScale);
         }
-        let xAxis = d3.axisBottom(this.xScale);
 
         // force a tick on x axis for degenerate scales
-        if (stats.min >= stats.max)
+        if (stats.min >= stats.max && xAxis != null)
             xAxis.ticks(1);
 
         this.canvas.append("text")
@@ -350,7 +388,7 @@ export class Histogram extends RemoteObject
             .attr("d", cdfLine)
             .attr("fill", "none");
 
-        let barWidth = chartWidth / counts.length;
+        let barWidth = chartWidth / bucketCount;
         let bars = this.chart.selectAll("g")
             .data(counts)
             .enter().append("g")
@@ -374,10 +412,12 @@ export class Histogram extends RemoteObject
         this.chart.append("g")
             .attr("class", "y-axis")
             .call(yAxis);
-        this.chart.append("g")
-            .attr("class", "x-axis")
-            .attr("transform", Histogram.translateString(0, chartHeight))
-            .call(xAxis);
+        if (xAxis != null) {
+            this.chart.append("g")
+                .attr("class", "x-axis")
+                .attr("transform", Histogram.translateString(0, chartHeight))
+                .call(xAxis);
+        }
 
         let dotRadius = 3;
         this.xDot = this.canvas
@@ -408,20 +448,32 @@ export class Histogram extends RemoteObject
         if (h.missingData != 0)
             summary = formatNumber(h.missingData) + " missing, ";
         summary += formatNumber(stats.presentCount + stats.missingCount) + " points";
+        if (this.currentData.allStrings != null)
+            summary += ", " + this.currentData.allStrings.length + " distinct values";
+        summary += ", " + String(bucketCount) + " buckets";
         this.summary.textContent = summary;
-        console.log(String(counts.length) + " data points");
     }
 
     onMouseMove(): void {
         let position = d3.mouse(this.chart.node());
         let mouseX = position[0];
         let mouseY = position[1];
-        let x = this.xScale.invert(position[0]);
-        // TODO: handle strings
+
+        let x : number | Date = 0;
+        if (this.xScale != null)
+            x = this.xScale.invert(position[0]);
+
         if (this.currentData.description.kind == "Integer")
             x = Math.round(<number>x);
         let xs = String(x);
-        if (this.currentData.description.kind == "Integer" ||
+        if (this.currentData.description.kind == "Category") {
+            let index = Math.round(<number>x);
+            if (index >= 0 && index < this.currentData.allStrings.length)
+                xs = this.currentData.allStrings[index];
+            else
+                xs = "";
+        }
+        else if (this.currentData.description.kind == "Integer" ||
             this.currentData.description.kind == "Double")
             xs = significantDigits(<number>x);
         let y = Math.round(this.yScale.invert(position[1]));
@@ -432,24 +484,26 @@ export class Histogram extends RemoteObject
         this.xDot.attr("cx", mouseX + Histogram.margin.left);
         this.yDot.attr("cy", mouseY + Histogram.margin.top);
 
-        // determine mouse position on cdf curve
-        // we have to take into account the adjustment
-        let cdfX = (mouseX - this.adjustment/2) * this.currentData.cdf.buckets.length /
-            (this.chartResolution.width - this.adjustment);
-        let pos = 0;
-        if (cdfX < 0) {
-            pos = 0;
-        } else if (cdfX >= this.currentData.cdf.buckets.length) {
-            pos = 1;
-        } else {
-            let cdfPosition = this.currentData.cdf.buckets[Math.round(cdfX)];
-            pos = cdfPosition / this.currentData.stats.presentCount;
-        }
+        if (this.currentData.cdfSum != null) {
+            // determine mouse position on cdf curve
+            // we have to take into account the adjustment
+            let cdfX = (mouseX - this.adjustment / 2) * this.currentData.cdfSum.length /
+                (this.chartResolution.width - this.adjustment);
+            let pos = 0;
+            if (cdfX < 0) {
+                pos = 0;
+            } else if (cdfX >= this.currentData.cdfSum.length) {
+                pos = 1;
+            } else {
+                let cdfPosition = this.currentData.cdfSum[Math.floor(cdfX)];
+                pos = cdfPosition / this.currentData.stats.presentCount;
+            }
 
-        this.cdfDot.attr("cx", mouseX + Histogram.margin.left);
-        this.cdfDot.attr("cy", (1 - pos) * this.chartResolution.height + Histogram.margin.top);
-        let perc = percent(pos);
-        this.cdfLabel.textContent = "cdf=" + perc;
+            this.cdfDot.attr("cx", mouseX + Histogram.margin.left);
+            this.cdfDot.attr("cy", (1 - pos) * this.chartResolution.height + Histogram.margin.top);
+            let perc = percent(pos);
+            this.cdfLabel.textContent = "cdf=" + perc;
+        }
     }
 
     dragStart(): void {
@@ -461,27 +515,20 @@ export class Histogram extends RemoteObject
 
     dragging(): void {
         let ox = this.selectionOrigin.x;
-        let oy = this.selectionOrigin.y;
         let position = d3.mouse(this.canvas.node());
         let x = position[0];
-        let y = position[1];
         let width = x - ox;
-        let height = y - oy;
+        let height = this.chartResolution.height;
 
         if (width < 0) {
             ox = x;
             width = -width;
         }
-        if (height < 0) {
-            oy = y;
-            height = -height;
-        }
-
         this.onMouseMove();
 
         this.selectionRectangle
             .attr("x", ox)
-            .attr("y", oy)
+            .attr("y", Histogram.margin.top)
             .attr("width", width)
             .attr("height", height);
     }
@@ -493,16 +540,15 @@ export class Histogram extends RemoteObject
 
         let position = d3.mouse(this.canvas.node());
         let x = position[0];
-        let y = position[1];
-        this.selectionCompleted(this.selectionOrigin.x, this.selectionOrigin.y, x, y);
+        this.selectionCompleted(this.selectionOrigin.x, x);
     }
 
-    selectionCompleted(xl: number, yl: number, xr: number, yr: number): void {
+    selectionCompleted(xl: number, xr: number): void {
+        if (this.xScale == null)
+            return;
+
         let x0 = this.xScale.invert(xl - Histogram.margin.left);
         let x1 = this.xScale.invert(xr - Histogram.margin.left);
-        // TODO: rectangle overlap
-        let y0 = this.yScale.invert(yl - Histogram.margin.top);
-        let y1 = this.yScale.invert(yr - Histogram.margin.top);
 
         let min: number = 0;
         let max: number = 0;
@@ -576,28 +622,30 @@ export class FilterReceiver extends Renderer<string> {
 // rendering.
 export class RangeCollector extends Renderer<BasicColStats> {
     protected stats: BasicColStats;
+    protected allStrings: string[];  // used for categorical columns only
+
     constructor(protected cd: ColumnDescription,
                 page: FullPage,
                 protected remoteObject: RemoteObject,
                 operation: ICancellable) {
         super(page, operation, "histogram");
+        this.allStrings = null;
+    }
+
+    public setAllStrings(str: string[]): void {
+        this.allStrings = str;
+    }
+
+    public setValue(bcs: BasicColStats): void {
+        this.stats = bcs;
     }
 
     onNext(value: PartialResult<BasicColStats>): void {
         super.onNext(value);
-        this.stats = value.data;
+        this.setValue(value.data);
     }
 
-    onCompleted(): void {
-        super.onCompleted();
-        if (this.stats == null)
-            // probably some error occurred
-            return;
-        if (this.stats.presentCount == 0) {
-            this.page.reportError("No data in range");
-            return;
-        }
-
+    public histogram(): void {
         let bucketCount = Histogram.maxBucketCount;
         if (this.stats.min >= this.stats.max)
             bucketCount = 1;
@@ -611,18 +659,44 @@ export class RangeCollector extends Renderer<BasicColStats> {
             bucketCount = Math.min(bucketCount, this.stats.max - this.stats.min + 1);
         }
 
+        let boundaries: string[] = null;
+        if (this.allStrings != null) {
+            if (bucketCount >= this.allStrings.length) {
+                boundaries = this.allStrings;
+            } else {
+                boundaries = [];
+                for (let i = 0; i <= bucketCount; i++) {
+                    let index = Math.round(i * (this.allStrings.length - 1) / bucketCount);
+                    boundaries.push(this.allStrings[index]);
+                }
+            }
+        }
+
         let rr = this.remoteObject.createRpcRequest("histogram", {
             columnName: this.cd.name,
             min: this.stats.min,
             max: this.stats.max,
             bucketCount: bucketCount,
             width: width,
-            height: height
+            height: height,
+            bucketBoundaries: boundaries
         });
         rr.setStartTime(this.operation.startTime());
         let renderer = new HistogramRenderer(
-            this.page, this.remoteObject.remoteObjectId, this.cd, this.stats, rr);
+            this.page, this.remoteObject.remoteObjectId, this.cd, this.stats, rr, this.allStrings);
         rr.invoke(renderer);
+    }
+
+    onCompleted(): void {
+        super.onCompleted();
+        if (this.stats == null)
+            // probably some error occurred
+            return;
+        if (this.stats.presentCount == 0) {
+            this.page.reportError("No data in range");
+            return;
+        }
+        this.histogram();
     }
 }
 
@@ -634,7 +708,8 @@ export class HistogramRenderer extends Renderer<Pair<Histogram1DLight, Histogram
                 remoteTableId: string,
                 protected cd: ColumnDescription,
                 protected stats: BasicColStats,
-                operation: ICancellable) {
+                operation: ICancellable,
+                protected allStrings: string[]) {
         super(page, operation, "histogram");
         this.histogram = new Histogram(remoteTableId, page);
         page.setHieroDataView(this.histogram);
@@ -642,6 +717,7 @@ export class HistogramRenderer extends Renderer<Pair<Histogram1DLight, Histogram
 
     onNext(value: PartialResult<Pair<Histogram1DLight, Histogram1D>>): void {
         super.onNext(value);
-        this.histogram.updateView(value.data.first, value.data.second, this.cd, this.stats, this.elapsedMilliseconds());
+        this.histogram.updateView(value.data.first, value.data.second, this.cd,
+            this.stats, this.allStrings, this.elapsedMilliseconds());
     }
 }

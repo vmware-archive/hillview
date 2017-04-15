@@ -19,9 +19,7 @@
 package org.hiero.table;
 
 import org.hiero.table.api.ContentsKind;
-import org.hiero.table.api.IColumn;
 import org.hiero.table.api.IDateColumn;
-import org.hiero.table.api.IStringConverter;
 
 import javax.annotation.Nullable;
 import java.time.LocalDate;
@@ -53,20 +51,11 @@ public class DateListColumn
      */
     boolean parseAsDate;
 
-    private DateListColumn(DateListColumn other, @Nullable IStringConverter converter) {
-        super(other, converter);
-        this.segments = other.segments;
-    }
-
     public DateListColumn(final ColumnDescription desc) {
         super(desc);
         this.checkKind(ContentsKind.Date);
         this.segments = new ArrayList<LocalDateTime[]>();
         this.parserFormatter = null;
-    }
-
-    public IColumn setDefaultConverter(@Nullable final IStringConverter converter) {
-        return new DateListColumn(this, converter);
     }
 
     @Nullable

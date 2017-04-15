@@ -100,7 +100,8 @@ th, td {
 
 .dashed {
     stroke: red;
-    fill: none;
+    fill: pink;
+    fill-opacity: 0.2;
     stroke-width: 1;
     stroke-dasharray: 5,5
 }

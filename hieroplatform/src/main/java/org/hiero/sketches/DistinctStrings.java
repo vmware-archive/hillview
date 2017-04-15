@@ -1,21 +1,24 @@
 package org.hiero.sketches;
 
-import org.hiero.table.SemiExplicitConverter;
-import org.hiero.table.api.ContentsKind;
+import org.hiero.dataset.api.IJson;
 import org.hiero.table.api.IColumn;
 import org.hiero.table.api.IMembershipSet;
 import org.hiero.table.api.IRowIterator;
 
+import javax.annotation.Nullable;
 import java.util.TreeSet;
 
 /**
  * A class that would hold a the set of distinct strings from a column bounded in size by maxSize.
  * If maxSize == 0 it holds all distinct strings in the column.
  */
-public class DistinctStrings {
+public class DistinctStrings implements IJson {
     private final int maxSize;
     private final TreeSet<String> mySet;
     private final boolean bounded;
+    private boolean truncated;  // if true we are missing some data
+    private long rowCount;
+    private long missingCount;
 
     public DistinctStrings(final int maxSize) {
         if (maxSize < 0)
@@ -23,25 +26,31 @@ public class DistinctStrings {
         this.maxSize = maxSize;
         this.bounded = maxSize != 0;
         this.mySet = new TreeSet<String>();
+        this.rowCount = 0;
+        this.missingCount = 0;
+        this.truncated = false;
     }
 
-    public DistinctStrings(final int maxSize, final TreeSet<String> mySet) {
-        if (maxSize < 0)
-            throw new IllegalArgumentException("size of DistinctString should be positive");
-        this.maxSize = maxSize; // if maxSize == 0 there would be no bound on the size
-        this.bounded = maxSize != 0;
-        this.mySet = mySet;
+    public void add(@Nullable String string) {
+        if (string == null)
+            this.missingCount++;
+        if (this.truncated)
+            return;
+        if ((this.bounded) && (this.mySet.size() == this.maxSize)) {
+            if (!this.mySet.contains(string))
+                this.truncated = true;
+            return;
+        }
+        this.mySet.add(string);
     }
 
     public void addStrings(final IColumn column, final IMembershipSet membershipSet) {
-        if (!column.getDescription().kind.equals(ContentsKind.String))
-            throw new IllegalArgumentException("DistinctStrings requires a String column");
+        this.rowCount = membershipSet.getSize();
         IRowIterator iter = membershipSet.getIterator();
         int row = iter.getNextRow();
         while (row >= 0) {
-            if ((this.bounded) && (this.mySet.size() == this.maxSize))
-                return;
-            this.mySet.add(column.getString(row));
+            String s = column.getString(row);
+            this.add(s);
             row = iter.getNextRow();
         }
     }
@@ -53,29 +62,18 @@ public class DistinctStrings {
      * of them allow for unbounded size (maxSize = 0) then so does the union.
      */
     public DistinctStrings union(final DistinctStrings otherSet) {
-        TreeSet<String> result  = new TreeSet<String>();
-        int newMaxSize;
-        if (Integer.min(this.maxSize, otherSet.maxSize) == 0)
-            newMaxSize = 0;
-        else
-            newMaxSize = Integer.max(this.maxSize, otherSet.maxSize);
-        result.addAll(this.mySet);
-        for (String item : otherSet.mySet) {
-            if ((result.size() == newMaxSize) && (newMaxSize > 0)) {
-                return new DistinctStrings(newMaxSize, result);
-            }
+        DistinctStrings result = new DistinctStrings(Math.max(this.maxSize, otherSet.maxSize));
+        result.rowCount = this.rowCount + otherSet.rowCount;
+        result.missingCount = this.missingCount + otherSet.missingCount;
+
+        for (String item: this.mySet)
             result.add(item);
-        }
-        return new DistinctStrings(newMaxSize, result);
+        for (String item : otherSet.mySet)
+            result.add(item);
+        return result;
     }
 
-    public SemiExplicitConverter  getStringConverter() {
-        SemiExplicitConverter converter = new SemiExplicitConverter();
-        int i = 0;
-        for (String item : this.mySet) {
-            converter.set(item, i);
-            i++;
-        }
-        return converter;
+    public Iterable<String> getStrings() {
+        return this.mySet;
     }
 }

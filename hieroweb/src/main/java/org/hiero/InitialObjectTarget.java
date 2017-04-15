@@ -35,37 +35,41 @@ import java.util.stream.Stream;
 public class InitialObjectTarget extends RpcTarget {
     @HieroRpc
     void prepareFiles(RpcRequest request, Session session) throws IOException {
-        // TODO: look at request.  Now we just supply always the same table
+        int which = request.parseArgs(Integer.class);
+
         String dataFolder = "../data/";
         String smallFileSchema = "On_Time.schema";
         String smallFile = "On_Time_Sample.csv";
         String schemaFile = "short.schema";
         Path schemaPath = Paths.get(dataFolder, schemaFile);
 
-        List<IDataSet<CsvFileObject>> fileNames = new ArrayList<IDataSet<CsvFileObject>>();
-        Path folder = Paths.get(dataFolder);
-        Stream<Path> files = Files.walk(folder, 1);
-        files.filter(f -> {
-            String filename = f.getFileName().toString();
-            if (!filename.endsWith(".csv")) return false;
-            if (!filename.startsWith("2016")) return false;
-            return true;
-        }).sorted(Comparator.comparing(Path::toString))
-                .forEach(f -> {
-            CsvFileObject cfo = new CsvFileObject(f, schemaPath);
-            LocalDataSet<CsvFileObject> local = new LocalDataSet<CsvFileObject>(cfo);
-            fileNames.add(local);
-            logger.log(Level.INFO, "Added " + toString());
-        });
+        IDataSet<CsvFileObject> result = null;
+        if (which >= 0 && which <= 1) {
+            int limit = which == 0 ? 3 : 1;
+            List<IDataSet<CsvFileObject>> fileNames = new ArrayList<IDataSet<CsvFileObject>>();
+            Path folder = Paths.get(dataFolder);
+            Stream<Path> files = Files.walk(folder, 1);
+            files.filter(f -> {
+                String filename = f.getFileName().toString();
+                if (!filename.endsWith(".csv")) return false;
+                if (!filename.startsWith("2016")) return false;
+                return true;
+            }).limit(limit)
+                    .sorted(Comparator.comparing(Path::toString))
+                    .forEach(f -> {
+                        CsvFileObject cfo = new CsvFileObject(f, schemaPath);
+                        LocalDataSet<CsvFileObject> local = new LocalDataSet<CsvFileObject>(cfo);
+                        fileNames.add(local);
+                        logger.log(Level.INFO, "Added " + toString());
+                    });
 
-        IDataSet<CsvFileObject> result = new ParallelDataSet<CsvFileObject>(fileNames);
-        /*
-        CsvFileObject file = new CsvFileObject(
-                Paths.get(dataFolder, smallFile),
-                Paths.get(dataFolder, smallFileSchema));
-        IDataSet<CsvFileObject> result = new LocalDataSet<CsvFileObject>(file);
-        */
-
+            result = new ParallelDataSet<CsvFileObject>(fileNames);
+        } else {
+            CsvFileObject file = new CsvFileObject(
+                    Paths.get(dataFolder, smallFile),
+                    Paths.get(dataFolder, smallFileSchema));
+            result = new LocalDataSet<CsvFileObject>(file);
+        }
         FileNamesTarget target = new FileNamesTarget(result);
         RpcReply reply = request.createReply(target.idToJson());
         reply.send(session);

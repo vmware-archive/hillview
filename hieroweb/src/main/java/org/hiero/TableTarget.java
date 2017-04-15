@@ -22,11 +22,9 @@ import org.hiero.dataset.TripleSketch;
 import org.hiero.dataset.api.IDataSet;
 import org.hiero.maps.FilterMap;
 import org.hiero.sketches.*;
-import org.hiero.table.RecordOrder;
-import org.hiero.table.RowSnapshot;
-import org.hiero.table.Schema;
-import org.hiero.table.TableFilter;
+import org.hiero.table.*;
 import org.hiero.table.api.IColumn;
+import org.hiero.table.api.IStringConverter;
 import org.hiero.table.api.ITable;
 import org.hiero.utils.Converters;
 
@@ -73,8 +71,16 @@ public final class TableTarget extends RpcTarget {
         // view size
         double width;
         double height;
-        // only used for histogram
-        int bucketCount;
+        int bucketCount;  // only used for histogram
+        @Nullable
+        String[] bucketBoundaries;  // only used for Categorical columns histograms
+    }
+
+    @HieroRpc
+    void uniqueStrings(RpcRequest request, Session session) {
+        String columnName = request.parseArgs(String.class);
+        DistinctStringsSketch sk = new DistinctStringsSketch(0, columnName);
+        this.runSketch(this.table, sk, request, session);
     }
 
     @HieroRpc
@@ -84,10 +90,13 @@ public final class TableTarget extends RpcTarget {
         int width = (int)info.width;
         if (info.min >= info.max)
             width = 1;
+        IStringConverter converter = null;
+        if (info.bucketBoundaries != null)
+            converter = new SortedStringsConverter(info.bucketBoundaries, info.min, info.max);
         BucketsDescriptionEqSize cdfBuckets = new BucketsDescriptionEqSize(info.min, info.max, width);
-        Hist1DLightSketch cdf = new Hist1DLightSketch(cdfBuckets, info.columnName, null);
+        Hist1DLightSketch cdf = new Hist1DLightSketch(cdfBuckets, info.columnName, converter);
         BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(info.min, info.max, info.bucketCount);
-        Hist1DSketch sk = new Hist1DSketch(buckets, info.columnName, null);
+        Hist1DSketch sk = new Hist1DSketch(buckets, info.columnName, converter);
         ConcurrentSketch<ITable, Histogram1DLight, Histogram1D> csk =
                 new ConcurrentSketch<ITable, Histogram1DLight, Histogram1D>(cdf, sk);
         this.runSketch(this.table, csk, request, session);

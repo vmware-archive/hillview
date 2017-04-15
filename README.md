@@ -64,7 +64,7 @@ If you run out of memory while doing this try to increase the java
 heap size as follows:
 
 ```
-$ MAVEN_OPTS="-Xmx2048M mvn exec:java
+$ MAVEN_OPTS="-Xmx2048M" mvn exec:java
 ```
 
 * Build the web server and the front-end

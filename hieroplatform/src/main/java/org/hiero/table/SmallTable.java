@@ -24,10 +24,7 @@ import com.google.gson.JsonObject;
 import org.hiero.dataset.api.IJson;
 import org.hiero.table.api.*;
 
-import javax.annotation.Nullable;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * A SmallTable is similar to a Table, but it is intended to be shipped over the network.
@@ -90,11 +87,6 @@ public class SmallTable
     public ITable project(Schema schema) {
         Iterable<IColumn> cols = this.getColumns(schema);
         return new SmallTable(cols, schema);
-    }
-
-    @Override
-    public ITable setDefaultConverter(String colName, @Nullable IStringConverter converter) {
-        return new SmallTable(this.changeConverter(colName, converter), this.schema);
     }
 
     @Override

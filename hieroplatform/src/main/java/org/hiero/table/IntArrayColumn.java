@@ -19,11 +19,7 @@
 package org.hiero.table;
 
 import org.hiero.table.api.ContentsKind;
-import org.hiero.table.api.IColumn;
 import org.hiero.table.api.IIntColumn;
-import org.hiero.table.api.IStringConverter;
-
-import javax.annotation.Nullable;
 
 /**
  * Column of integers, implemented as an array of integers and a BitSet of missing values.
@@ -32,11 +28,6 @@ public final class IntArrayColumn
         extends BaseArrayColumn
         implements IIntColumn {
     private final int[] data;
-
-    protected IntArrayColumn(final IntArrayColumn other, @Nullable IStringConverter converter) {
-        super(other, converter);
-        this.data = other.data;
-    }
 
     public IntArrayColumn(final ColumnDescription description, final int size) {
         super(description, size);
@@ -48,11 +39,6 @@ public final class IntArrayColumn
         super(description, data.length);
         this.checkKind(ContentsKind.Integer);
         this.data = data;
-    }
-
-    @Override
-    public IColumn setDefaultConverter(@Nullable IStringConverter converter) {
-        return new IntArrayColumn(this, converter);
     }
 
     @Override

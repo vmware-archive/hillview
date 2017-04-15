@@ -32,17 +32,6 @@ import java.time.LocalDateTime;
 public interface IColumn {
     ColumnDescription getDescription();
 
-    /**
-     * A column may have associated with it a default string converter.
-     * (This is only useful for columns of Strings, including Categories.)
-     */
-    @Nullable IStringConverter getDefaultConverter();
-    /**
-     * Set the default string converter for this column, replacing the previous one.
-     * @return A new column, which has the same data, but a different converter.
-     */
-    IColumn setDefaultConverter(@Nullable IStringConverter converter);
-
     /* Only one of the following methods is supposed to work for a column */
     double getDouble(int rowIndex);
     int getInt(int rowIndex);

@@ -20,10 +20,6 @@ package org.hiero.table;
 
 import org.hiero.table.api.*;
 
-import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * This is a simple table held entirely in RAM.
  */
@@ -96,11 +92,6 @@ public class Table extends BaseTable {
     @Override
     public ITable selectRowsFromFullTable(IMembershipSet set) {
         return new Table(this.getColumns(), set);
-    }
-
-    @Override
-    public ITable setDefaultConverter(String colName, @Nullable IStringConverter converter) {
-        return new Table(this.changeConverter(colName, converter), this.members, this.schema);
     }
 
     /**

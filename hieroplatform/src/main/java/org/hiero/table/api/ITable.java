@@ -21,8 +21,6 @@ package org.hiero.table.api;
 import org.hiero.table.Schema;
 import org.hiero.table.SmallTable;
 
-import javax.annotation.Nullable;
-
 /**
  * An ITable object has a schema, a set of columns, and a MembershipSet.
  * All columns have the same size.
@@ -79,12 +77,4 @@ public interface ITable {
      * Formats the first rows in the table as a long string.
      */
     String toLongString(int rowsToDisplay);
-
-   /**
-     * Returns a new table, identical with this one, but where
-     * the specified column has the specified default converter.
-     * @param colName    Column whose default converter is set.
-     * @param converter  Converter to set as default for the column.
-     */
-    ITable setDefaultConverter(String colName, @Nullable IStringConverter converter);
 }

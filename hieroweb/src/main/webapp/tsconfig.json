@@ -6,6 +6,9 @@
     "sourceMap": true,
     "target": "es5"
   },
-  "files": [ "hiero.ts" ],
+  "files": [
+    "hiero.ts",
+    "node_modules/rx/ts/core/es6-iterable.d.ts"
+  ],
   "exclude": [ "node_modules" ]
 }

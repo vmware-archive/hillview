@@ -19,9 +19,7 @@
 package org.hiero.table;
 
 import org.hiero.table.api.ContentsKind;
-import org.hiero.table.api.IColumn;
 import org.hiero.table.api.IDurationColumn;
-import org.hiero.table.api.IStringConverter;
 
 import javax.annotation.Nullable;
 import java.time.Duration;
@@ -32,11 +30,6 @@ import java.time.Duration;
 
 public final class DurationArrayColumn extends BaseArrayColumn implements IDurationColumn {
     private final Duration[] data;
-
-    protected DurationArrayColumn(final DurationArrayColumn other, @Nullable IStringConverter converter) {
-        super(other, converter);
-        this.data = other.data;
-    }
 
     public DurationArrayColumn(final ColumnDescription description, final int size) {
         super(description, size);
@@ -49,11 +42,6 @@ public final class DurationArrayColumn extends BaseArrayColumn implements IDurat
         super(description, data.length);
         this.checkKind(ContentsKind.Duration);
         this.data = data;
-    }
-
-    @Override
-    public IColumn setDefaultConverter(@Nullable IStringConverter converter) {
-        return new DurationArrayColumn(this, converter);
     }
 
     @Override

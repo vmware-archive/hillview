@@ -19,9 +19,7 @@
 package org.hiero.table;
 
 import org.hiero.table.api.ContentsKind;
-import org.hiero.table.api.IColumn;
 import org.hiero.table.api.IDateColumn;
-import org.hiero.table.api.IStringConverter;
 
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
@@ -34,11 +32,6 @@ public final class DateArrayColumn
         implements IDateColumn {
     private final LocalDateTime[] data;
 
-    protected DateArrayColumn(final DateArrayColumn other, @Nullable IStringConverter converter) {
-        super(other, converter);
-        this.data = other.data;
-    }
-
     public DateArrayColumn(final ColumnDescription description, final int size) {
         super(description, size);
         this.checkKind(ContentsKind.Date);
@@ -50,11 +43,6 @@ public final class DateArrayColumn
         super(description, data.length);
         this.checkKind(ContentsKind.Date);
         this.data = data;
-    }
-
-    @Override
-    public IColumn setDefaultConverter(@Nullable IStringConverter converter) {
-        return new DateArrayColumn(this, converter);
     }
 
     @Override

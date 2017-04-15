@@ -20,9 +20,6 @@ package org.hiero.table;
 
 import org.hiero.table.api.ContentsKind;
 import org.hiero.table.api.IColumn;
-import org.hiero.table.api.IStringConverter;
-
-import javax.annotation.Nullable;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
@@ -31,22 +28,15 @@ import java.time.LocalDateTime;
  */
 abstract class BaseColumn implements IColumn {
     final ColumnDescription description;
-    @Nullable
-    final IStringConverter defaultConverter;
 
     protected void checkKind(ContentsKind kind) {
         if (this.description.kind != kind)
             throw new RuntimeException("Expected " + kind + " but have " + this.getDescription().kind);
     }
 
-    BaseColumn(final ColumnDescription description, @Nullable final IStringConverter converter) {
+    BaseColumn(final ColumnDescription description) {
         this.description = description;
-        this.defaultConverter = converter;
     }
-
-    @Override
-    @Nullable
-    public IStringConverter getDefaultConverter() { return this.defaultConverter; }
 
     @Override
     public ColumnDescription getDescription() {

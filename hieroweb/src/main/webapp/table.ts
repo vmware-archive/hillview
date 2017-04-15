@@ -20,7 +20,7 @@ import {
 } from "./ui";
 import {RemoteObject, PartialResult, ICancellable} from "./rpc";
 import Rx = require('rx');
-import {RangeCollector} from "./histogram";
+import {RangeCollector, BasicColStats} from "./histogram";
 import {DropDownMenu, ContextMenu, PopupMenu} from "./menu";
 import {Converters} from "./util";
 import d3 = require('d3');
@@ -174,11 +174,13 @@ export class TableView extends RemoteObject
     protected tBody: HTMLTableSectionElement;
     protected page: FullPage;
     protected currentData: TableDataView;
+    protected numberedCategories: Set<string>;
 
     public constructor(id: string, page: FullPage) {
         super(id);
 
         this.order = new RecordOrder([]);
+        this.numberedCategories = new Set<string>();
         this.setPage(page);
         if (TableView.initialTableId == null)
             TableView.initialTableId = id;
@@ -441,9 +443,14 @@ export class TableView extends RemoteObject
     }
 
     public histogram(columnName: string): void {
-        let rr = this.createRpcRequest("range", columnName);
         let cd = this.findColumn(columnName);
-        rr.invoke(new RangeCollector(cd, this.getPage(), this, rr));
+        if (cd.kind == "Category" && !this.numberedCategories.has(columnName)) {
+            let rr = this.createRpcRequest("uniqueStrings", columnName);
+            rr.invoke(new CreateConverter(cd, this.getPage(), this, rr));
+        } else {
+            let rr = this.createRpcRequest("range", columnName);
+            rr.invoke(new RangeCollector(cd, this.getPage(), this, rr));
+        }
     }
 
     public refresh(): void {
@@ -514,8 +521,7 @@ export class TableView extends RemoteObject
                 menu.addItem({text: "show", action: () => this.showColumn(cd.name, 1, false) });
             }
             if (cd.kind != "Json" &&
-                cd.kind != "String" &&
-                cd.kind != "Category")  // TODO: delete this
+                cd.kind != "String")  // TODO: delete this
                 menu.addItem({text: "histogram", action: () => this.histogram(cd.name) });
 
             thd.onclick = () => menu.toggleVisibility();
@@ -657,5 +663,57 @@ export class RemoteTableReceiver extends Renderer<string> {
         if (this.remoteTableId == null)
             return;
         this.getTableSchema(this.remoteTableId);
+    }
+}
+
+class DistinctStrings {
+    mySet: string[];
+    truncated: boolean;
+    rowCount: number;
+    missingCount: number;
+}
+
+// First step of a histogram for a categorical column:
+// create a numbering for the strings
+class CreateConverter extends Renderer<DistinctStrings> {
+    protected contentsInfo: DistinctStrings;
+
+    public constructor(protected cd: ColumnDescription, page: FullPage,
+                       protected obj: RemoteObject, operation: ICancellable) {
+        super(page, operation, "Create converter");
+        this.contentsInfo = null;
+    }
+
+    public onNext(value: PartialResult<DistinctStrings>): void {
+        super.onNext(value);
+        this.contentsInfo = value.data;
+    }
+
+    public onCompleted(): void {
+        if (this.contentsInfo == null)
+            return;
+        super.finished();
+        let strings = this.contentsInfo.mySet;
+        if (strings.length == 0) {
+            this.page.reportError("No data in column");
+            return;
+        }
+        strings.sort();
+
+        let bcs: BasicColStats = {
+            momentCount: 0,
+            min: 0,
+            max: strings.length - 1,
+            minObject: strings[0],
+            maxObject: strings[strings.length - 1],
+            moments: [],
+            presentCount: this.contentsInfo.rowCount - this.contentsInfo.missingCount,
+            missingCount: this.contentsInfo.missingCount
+        };
+
+        let rc = new RangeCollector(this.cd, this.page, this.obj, this.operation);
+        rc.setValue(bcs);
+        rc.setAllStrings(strings);
+        rc.onCompleted();
     }
 }

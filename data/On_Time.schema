@@ -46,12 +46,12 @@
   },
   {
     "allowMissing": true,
-    "kind": "String",
+    "kind": "Category",
     "name": "TailNum"
   },
   {
     "allowMissing": true,
-    "kind": "String",
+    "kind": "Category",
     "name": "FlightNum"
   },
   {

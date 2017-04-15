@@ -19,9 +19,7 @@
 package org.hiero.table;
 
 import org.hiero.table.api.ContentsKind;
-import org.hiero.table.api.IColumn;
 import org.hiero.table.api.IDurationColumn;
-import org.hiero.table.api.IStringConverter;
 
 import javax.annotation.Nullable;
 import java.time.Duration;
@@ -33,19 +31,10 @@ import java.util.ArrayList;
 class DurationListColumn extends BaseListColumn implements IDurationColumn {
     private final ArrayList<Duration[]> segments;
 
-    private DurationListColumn(DurationListColumn other, @Nullable IStringConverter converter) {
-        super(other, converter);
-        this.segments = other.segments;
-    }
-
     public DurationListColumn(final ColumnDescription desc) {
         super(desc);
         this.checkKind(ContentsKind.Duration);
         this.segments = new ArrayList<Duration []>();
-    }
-
-    public IColumn setDefaultConverter(@Nullable final IStringConverter converter) {
-        return new DurationListColumn(this, converter);
     }
 
     @Nullable

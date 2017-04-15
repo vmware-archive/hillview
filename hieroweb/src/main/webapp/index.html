@@ -28,10 +28,11 @@
         var page = new hiero.FullPage();
         window.addEventListener("resize", function() { page.onResize() });
 
-        function loadTable() {
-            initialObject.loadTable(page);
-            var b = document.getElementById("loadButton");
-            b.style.display = "none";
+        function loadTable(arg) {
+            initialObject.loadTable(page, arg);
+            var but = document.getElementsByClassName("button");
+            for (var i = 0; i < but.length; i++)
+                but[i].style.display = "none";
         }
 
         function initialize() {
@@ -42,7 +43,9 @@
 </head>
 <body onload="initialize()">
     <div id="contents">
-        <button id="loadButton" onclick="loadTable()">Load table</button>
+        <button class="button" onclick="loadTable(0)">Big table</button>
+        <button class="button" onclick="loadTable(1)">Small table</button>
+        <button class="button" onclick="loadTable(2)">Tiny table</button>
         <div id="top"></div>
     </div>
 </body>

@@ -19,9 +19,7 @@
 package org.hiero.table;
 
 import org.hiero.table.api.ContentsKind;
-import org.hiero.table.api.IColumn;
 import org.hiero.table.api.IStringColumn;
-import org.hiero.table.api.IStringConverter;
 
 import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
@@ -42,11 +40,6 @@ public final class StringArrayColumn
                     + this.description.kind);
     }
 
-    protected StringArrayColumn(final StringArrayColumn other, @Nullable IStringConverter converter) {
-        super(other, converter);
-        this.data = other.data;
-    }
-
     public StringArrayColumn(final ColumnDescription description, final int size) {
         super(description, size);
         this.validate();
@@ -58,11 +51,6 @@ public final class StringArrayColumn
         super(description, data.length);
         this.validate();
         this.data = data;
-    }
-
-    @Override
-    public IColumn setDefaultConverter(@Nullable IStringConverter converter) {
-        return new StringArrayColumn(this, converter);
     }
 
     @Override
