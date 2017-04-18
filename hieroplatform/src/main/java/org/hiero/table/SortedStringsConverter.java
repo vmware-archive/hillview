@@ -37,10 +37,10 @@ import java.util.Arrays;
 public class SortedStringsConverter implements IStringConverter {
     // Last boundary is inclusive
     protected final String[] boundaries;
-    protected final double min;
-    protected final double max;
+    protected final int min;
+    protected final int max;
 
-    public SortedStringsConverter(String[] boundaries, double min, double max) {
+    public SortedStringsConverter(String[] boundaries, int min, int max) {
         this.min = min;
         this.max = max;
         if (boundaries.length < 1)
@@ -66,6 +66,6 @@ public class SortedStringsConverter implements IStringConverter {
         }
         if (this.boundaries.length == 1)
             return this.min + index;
-        return this.min + ((index * (this.max - this.min)) / (this.boundaries.length - 1));
+        return this.min + ((index * (double)(this.max - this.min)) / (this.boundaries.length - 1));
     }
 }

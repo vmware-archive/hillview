@@ -35,6 +35,10 @@ import java.util.stream.Stream;
 public class InitialObjectTarget extends RpcTarget {
     @HieroRpc
     void prepareFiles(RpcRequest request, Session session) throws IOException {
+        Path currentRelativePath = Paths.get("");
+        String cwd = currentRelativePath.toAbsolutePath().toString();
+        System.out.println("Current directory is: " + cwd);
+
         int which = request.parseArgs(Integer.class);
 
         String dataFolder = "../data/";
@@ -43,7 +47,7 @@ public class InitialObjectTarget extends RpcTarget {
         String schemaFile = "short.schema";
         Path schemaPath = Paths.get(dataFolder, schemaFile);
 
-        IDataSet<CsvFileObject> result = null;
+        IDataSet<CsvFileObject> result;
         if (which >= 0 && which <= 1) {
             int limit = which == 0 ? 3 : 1;
             List<IDataSet<CsvFileObject>> fileNames = new ArrayList<IDataSet<CsvFileObject>>();

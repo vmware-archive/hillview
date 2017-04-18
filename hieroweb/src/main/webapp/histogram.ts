@@ -17,11 +17,11 @@
 
 import {
     IHtmlElement, HieroDataView, FullPage, Renderer, significantDigits,
-    Point, Size, formatNumber, percent
+    Point, Size, formatNumber, percent, KeyCodes
 } from "./ui";
 import d3 = require('d3');
 import {RemoteObject, ICancellable, PartialResult} from "./rpc";
-import {ColumnDescription, TableRenderer, TableView, RecordOrder} from "./table";
+import {ColumnDescription, TableRenderer, TableView, RecordOrder, ContentsKind} from "./table";
 import {histogram} from "d3-array";
 import {BaseType} from "d3-selection";
 import {ScaleLinear, ScaleTime} from "d3-scale";
@@ -63,6 +63,15 @@ export interface BasicColStats {
     missingCount: number;
 }
 
+// Same as Java class
+interface ColumnAndRange {
+    min: number;
+    max: number;
+    columnName: string;
+    cdfBucketCount: number;
+    bucketBoundaries: string[];
+}
+
 export class Histogram extends RemoteObject
     implements IHtmlElement, HieroDataView {
     public static readonly maxBucketCount: number = 40;
@@ -79,6 +88,7 @@ export class Histogram extends RemoteObject
         left: 40
     };
     protected page: FullPage;
+    protected dragging: boolean;
     protected svg: any;
     private selectionOrigin: Point;
     private selectionRectangle: d3.Selection<BaseType, any, BaseType, BaseType>;
@@ -114,6 +124,8 @@ export class Histogram extends RemoteObject
         super(id);
         this.topLevel = document.createElement("div");
         this.topLevel.className = "chart";
+        this.topLevel.onkeydown = e => this.keyDown(e);
+        this.dragging = false;
         this.setPage(page);
         let menu = new DropDownMenu( [
             { text: "View", subMenu: new ContextMenu([
@@ -163,6 +175,18 @@ export class Histogram extends RemoteObject
         this.cdfLabel.style.textAlign = "left";
         labelCell.appendChild(this.cdfLabel);
         labelCell.className = "noBorder";
+    }
+
+    protected keyDown(ev: KeyboardEvent): void {
+        if (ev.keyCode == KeyCodes.escape)
+            this.cancelDrag();
+    }
+
+    protected cancelDrag() {
+        this.dragging = false;
+        this.selectionRectangle
+            .attr("width", 0)
+            .attr("height", 0);
     }
 
     chooseSecondColumn(): void { // TODO
@@ -279,7 +303,7 @@ export class Histogram extends RemoteObject
 
         let drag = d3.drag()
             .on("start", () => this.dragStart())
-            .on("drag", () => this.dragging())
+            .on("drag", () => this.dragMove())
             .on("end", () => this.dragEnd());
 
         // Everything is drawn on top of the canvas.
@@ -336,10 +360,10 @@ export class Histogram extends RemoteObject
             let ticks: number[] = [];
             let labels: string[] = [];
             for (let i = 0; i < bucketCount; i++) {
-                let index = stats.min + i * (maxRange - minRange) / bucketCount;
+                let index = i * (maxRange - minRange) / bucketCount;
                 index = Math.round(index);
                 ticks.push(this.adjustment / 2 + index * chartWidth / (maxRange - minRange));
-                labels.push(this.currentData.allStrings[index]);
+                labels.push(this.currentData.allStrings[stats.min + index]);
             }
 
             let axisScale = d3.scaleOrdinal()
@@ -507,13 +531,17 @@ export class Histogram extends RemoteObject
     }
 
     dragStart(): void {
+        this.dragging = true;
         let position = d3.mouse(this.canvas.node());
         this.selectionOrigin = {
             x: position[0],
             y: position[1] };
     }
 
-    dragging(): void {
+    dragMove(): void {
+        this.onMouseMove();
+        if (!this.dragging)
+            return;
         let ox = this.selectionOrigin.x;
         let position = d3.mouse(this.canvas.node());
         let x = position[0];
@@ -524,7 +552,6 @@ export class Histogram extends RemoteObject
             ox = x;
             width = -width;
         }
-        this.onMouseMove();
 
         this.selectionRectangle
             .attr("x", ox)
@@ -534,6 +561,9 @@ export class Histogram extends RemoteObject
     }
 
     dragEnd(): void {
+        if (!this.dragging)
+            return;
+        this.dragging = false;
         this.selectionRectangle
             .attr("width", 0)
             .attr("height", 0);
@@ -550,27 +580,45 @@ export class Histogram extends RemoteObject
         let x0 = this.xScale.invert(xl - Histogram.margin.left);
         let x1 = this.xScale.invert(xr - Histogram.margin.left);
 
+        // selection could be done in reverse
+        if (x0 > x1) {
+            let tmp = x0;
+            x0 = x1;
+            x1 = tmp;
+        }
+
         let min: number = 0;
         let max: number = 0;
         if (this.currentData.description.kind == "Integer" ||
-            this.currentData.description.kind == "Double") {
-            min = <number>x0;
-            max = <number>x1;
+            this.currentData.description.kind == "Double" ||
+            this.currentData.description.kind == "Category") {
+            min = Math.ceil(<number>x0);
+            max = Math.floor(<number>x1);
+            if (min > max) {
+                this.page.reportError("No data selected");
+                return;
+            }
         } else if (this.currentData.description.kind == "Date") {
             min = Converters.doubleFromDate(<Date>x0);
             max = Converters.doubleFromDate(<Date>x1);
         } // TODO: handle more types
 
+        let boundaries: string[] = null;
+        if (this.currentData.allStrings != null)
+            // it's enough to just send the first and last element for filtering.
+            boundaries = [this.currentData.allStrings[min], this.currentData.allStrings[max]];
         let range = {
-            min: Math.min(min, max),
-            max: Math.max(min, max),
+            min: min,
+            max: max,
             columnName: this.currentData.description.name,
-            width: this.chartResolution.width,
-            height: this.chartResolution.height
+            cdfBucketCount: this.chartResolution.width,
+            bucketBoundaries: boundaries
         };
+
         let rr = this.createRpcRequest("filterRange", range);
-        let filterReceiver = new FilterReceiver(this.currentData.description, this.page, rr);
-        rr.invoke(filterReceiver);
+        let renderer = new FilterReceiver(
+                this.currentData.description, this.currentData.allStrings, range, this.page, rr);
+        rr.invoke(renderer);
     }
 
     setPage(page: FullPage) {
@@ -583,6 +631,47 @@ export class Histogram extends RemoteObject
         if (this.page == null)
             throw("Page not set");
         return this.page;
+    }
+
+    public static getRenderingSize(page: FullPage): Size {
+        let size = page.getSize();
+        let width = size.width - Histogram.margin.left - Histogram.margin.right;
+        let height = size.height - Histogram.margin.top - Histogram.margin.bottom;
+        return { width: width, height: height };
+    }
+
+    public static bucketCount(stats: BasicColStats, page: FullPage, columnKind: ContentsKind): number {
+        let size = Histogram.getRenderingSize(page);
+        let bucketCount = Histogram.maxBucketCount;
+        if (size.width / Histogram.minBarWidth < bucketCount)
+            bucketCount = size.width / Histogram.minBarWidth;
+        if (columnKind == "Integer" ||
+            columnKind == "Category") {
+            bucketCount = Math.min(bucketCount, stats.max - stats.min + 1);
+        }
+        return bucketCount;
+    }
+
+    public static categoriesInRange(stats: BasicColStats, bucketCount: number, allStrings: string[]): string[] {
+        let boundaries: string[] = null;
+        let max = Math.floor(stats.max);
+        let min = Math.ceil(stats.min);
+        let range = max - min;
+        if (range <= 0)
+            bucketCount = 1;
+
+        if (allStrings != null) {
+            if (bucketCount >= range) {
+                boundaries = allStrings.slice(min, max + 1);  // slice end is exclusive
+            } else {
+                boundaries = [];
+                for (let i = 0; i <= bucketCount; i++) {
+                    let index = min + Math.round(i * range / bucketCount);
+                    boundaries.push(allStrings[index]);
+                }
+            }
+        }
+        return boundaries;
     }
 }
 
@@ -597,6 +686,8 @@ export class FilterReceiver extends Renderer<string> {
     private stub: TableStub;
 
     constructor(protected columnDescription: ColumnDescription,
+                protected allStrings: string[],
+                protected car: ColumnAndRange,
                 page: FullPage,
                 operation: ICancellable) {
         super(page, operation, "Filter");
@@ -611,9 +702,22 @@ export class FilterReceiver extends Renderer<string> {
     public onCompleted(): void {
         this.finished();
         if (this.stub != null) {
-            // initiate a histogram on the new table
-            let rr = this.stub.createRpcRequest("range", this.columnDescription.name);
-            rr.invoke(new RangeCollector(this.columnDescription, this.page, this.stub, rr));
+            let fv = null;
+            let sv = null;
+            if (this.car.bucketBoundaries != null) {
+                fv = this.car.bucketBoundaries[0];
+                sv = this.car.bucketBoundaries[1];
+            }
+            let rangeInfo = {
+                columnName: this.columnDescription.name,
+                firstIndex: this.car.min,
+                lastIndex: this.car.max,
+                firstValue: fv,
+                lastValue: sv
+            };
+            let rr = this.stub.createRpcRequest("range", rangeInfo);
+            rr.invoke(new RangeCollector(
+                this.columnDescription, this.allStrings, this.page, this.stub, rr));
         }
     }
 }
@@ -622,22 +726,20 @@ export class FilterReceiver extends Renderer<string> {
 // rendering.
 export class RangeCollector extends Renderer<BasicColStats> {
     protected stats: BasicColStats;
-    protected allStrings: string[];  // used for categorical columns only
-
     constructor(protected cd: ColumnDescription,
+                protected allStrings: string[],  // for categorical columns only
                 page: FullPage,
                 protected remoteObject: RemoteObject,
                 operation: ICancellable) {
         super(page, operation, "histogram");
-        this.allStrings = null;
-    }
-
-    public setAllStrings(str: string[]): void {
-        this.allStrings = str;
     }
 
     public setValue(bcs: BasicColStats): void {
         this.stats = bcs;
+    }
+
+    public setRemoteObject(ro: RemoteObject) {
+        this.remoteObject = ro;
     }
 
     onNext(value: PartialResult<BasicColStats>): void {
@@ -646,39 +748,15 @@ export class RangeCollector extends Renderer<BasicColStats> {
     }
 
     public histogram(): void {
-        let bucketCount = Histogram.maxBucketCount;
-        if (this.stats.min >= this.stats.max)
-            bucketCount = 1;
-        let size = this.page.getSize();
-        let width = size.width - Histogram.margin.left - Histogram.margin.right;
-        let height = size.height - Histogram.margin.top - Histogram.margin.bottom;
-        if (width / Histogram.minBarWidth < bucketCount)
-            bucketCount = width / Histogram.minBarWidth;
-        if (this.cd.kind == "Integer" ||
-            this.cd.kind == "Category") {
-            bucketCount = Math.min(bucketCount, this.stats.max - this.stats.min + 1);
-        }
-
-        let boundaries: string[] = null;
-        if (this.allStrings != null) {
-            if (bucketCount >= this.allStrings.length) {
-                boundaries = this.allStrings;
-            } else {
-                boundaries = [];
-                for (let i = 0; i <= bucketCount; i++) {
-                    let index = Math.round(i * (this.allStrings.length - 1) / bucketCount);
-                    boundaries.push(this.allStrings[index]);
-                }
-            }
-        }
-
+        let size = Histogram.getRenderingSize(this.page);
+        let bucketCount = Histogram.bucketCount(this.stats, this.page, this.cd.kind);
+        let boundaries = Histogram.categoriesInRange(this.stats, bucketCount, this.allStrings);
         let rr = this.remoteObject.createRpcRequest("histogram", {
             columnName: this.cd.name,
             min: this.stats.min,
             max: this.stats.max,
             bucketCount: bucketCount,
-            width: width,
-            height: height,
+            cdfBucketCount: size.width,
             bucketBoundaries: boundaries
         });
         rr.setStartTime(this.operation.startTime());

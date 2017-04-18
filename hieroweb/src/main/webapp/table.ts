@@ -16,7 +16,7 @@
  */
 
 import {
-    IHtmlElement, ScrollBar, Renderer, FullPage, HieroDataView, formatNumber, significantDigits, percent
+    IHtmlElement, ScrollBar, Renderer, FullPage, HieroDataView, formatNumber, significantDigits, percent, KeyCodes
 } from "./ui";
 import {RemoteObject, PartialResult, ICancellable} from "./rpc";
 import Rx = require('rx');
@@ -225,19 +225,14 @@ export class TableView extends RemoteObject
         tblAndBar.appendChild(this.scrollBar.getHTMLRepresentation());
     }
 
-    static readonly pageUpKeyCode = 33;
-    static readonly pageDownKeyCode = 34;
-    static readonly endKeyCode = 35;
-    static readonly homeKeyCode = 36;
-
     protected keyDown(ev: KeyboardEvent): void {
-        if (ev.keyCode == TableView.pageUpKeyCode)
+        if (ev.keyCode == KeyCodes.pageUp)
             this.pageUp();
-        else if (ev.keyCode == TableView.pageDownKeyCode)
+        else if (ev.keyCode == KeyCodes.pageDown)
             this.pageDown();
-        else if (ev.keyCode == TableView.endKeyCode)
+        else if (ev.keyCode == KeyCodes.end)
             this.end();
-        else if (ev.keyCode == TableView.homeKeyCode)
+        else if (ev.keyCode == KeyCodes.home)
             this.begin();
     }
 
@@ -446,10 +441,10 @@ export class TableView extends RemoteObject
         let cd = this.findColumn(columnName);
         if (cd.kind == "Category" && !this.numberedCategories.has(columnName)) {
             let rr = this.createRpcRequest("uniqueStrings", columnName);
-            rr.invoke(new CreateConverter(cd, this.getPage(), this, rr));
+            rr.invoke(new NumberStrings(cd, this.getPage(), this, rr));
         } else {
             let rr = this.createRpcRequest("range", columnName);
-            rr.invoke(new RangeCollector(cd, this.getPage(), this, rr));
+            rr.invoke(new RangeCollector(cd, null, this.getPage(), this, rr));
         }
     }
 
@@ -521,7 +516,7 @@ export class TableView extends RemoteObject
                 menu.addItem({text: "show", action: () => this.showColumn(cd.name, 1, false) });
             }
             if (cd.kind != "Json" &&
-                cd.kind != "String")  // TODO: delete this
+                cd.kind != "String")
                 menu.addItem({text: "histogram", action: () => this.histogram(cd.name) });
 
             thd.onclick = () => menu.toggleVisibility();
@@ -675,7 +670,7 @@ class DistinctStrings {
 
 // First step of a histogram for a categorical column:
 // create a numbering for the strings
-class CreateConverter extends Renderer<DistinctStrings> {
+class NumberStrings extends Renderer<DistinctStrings> {
     protected contentsInfo: DistinctStrings;
 
     public constructor(protected cd: ColumnDescription, page: FullPage,
@@ -711,9 +706,8 @@ class CreateConverter extends Renderer<DistinctStrings> {
             missingCount: this.contentsInfo.missingCount
         };
 
-        let rc = new RangeCollector(this.cd, this.page, this.obj, this.operation);
+        let rc = new RangeCollector(this.cd, strings, this.page, this.obj, this.operation);
         rc.setValue(bcs);
-        rc.setAllStrings(strings);
         rc.onCompleted();
     }
 }

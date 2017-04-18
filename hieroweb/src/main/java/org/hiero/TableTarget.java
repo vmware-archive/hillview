@@ -68,9 +68,7 @@ public final class TableTarget extends RpcTarget {
         String columnName = "";
         double min;
         double max;
-        // view size
-        double width;
-        double height;
+        int cdfBucketCount;
         int bucketCount;  // only used for histogram
         @Nullable
         String[] bucketBoundaries;  // only used for Categorical columns histograms
@@ -87,13 +85,14 @@ public final class TableTarget extends RpcTarget {
     void histogram(RpcRequest request, Session session) {
         ColumnAndRange info = request.parseArgs(ColumnAndRange.class);
         // TODO: use height in histogram computation
-        int width = (int)info.width;
+        int cdfBucketCount = info.cdfBucketCount;
         if (info.min >= info.max)
-            width = 1;
+            cdfBucketCount = 1;
         IStringConverter converter = null;
         if (info.bucketBoundaries != null)
-            converter = new SortedStringsConverter(info.bucketBoundaries, info.min, info.max);
-        BucketsDescriptionEqSize cdfBuckets = new BucketsDescriptionEqSize(info.min, info.max, width);
+            converter = new SortedStringsConverter(
+                    info.bucketBoundaries, (int)Math.ceil(info.min), (int)Math.floor(info.max));
+        BucketsDescriptionEqSize cdfBuckets = new BucketsDescriptionEqSize(info.min, info.max, cdfBucketCount);
         Hist1DLightSketch cdf = new Hist1DLightSketch(cdfBuckets, info.columnName, converter);
         BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(info.min, info.max, info.bucketCount);
         Hist1DSketch sk = new Hist1DSketch(buckets, info.columnName, converter);
@@ -114,7 +113,7 @@ public final class TableTarget extends RpcTarget {
         ColPair info = request.parseArgs(ColPair.class);
         Converters.checkNull(info.first);
         Converters.checkNull(info.second);
-        int width = (int)info.first.width;
+        int width = info.first.cdfBucketCount;
         if (info.first.min >= info.first.max)
             width = 1;
         BucketsDescriptionEqSize cdfBuckets =
@@ -142,7 +141,7 @@ public final class TableTarget extends RpcTarget {
     @HieroRpc
     void range2D(RpcRequest request, Session session) {
         Columns cols = request.parseArgs(Columns.class);
-        // TODO: create a string converter if necessary
+        // TODO: make up range.
         BasicColStatSketch sk1 = new BasicColStatSketch(cols.col1, null, 0, 1.0);
         BasicColStatSketch sk2 = new BasicColStatSketch(cols.col2, null, 0, 1.0);
         ConcurrentSketch<ITable, BasicColStats, BasicColStats> csk =
@@ -150,22 +149,43 @@ public final class TableTarget extends RpcTarget {
         this.runSketch(this.table, csk, request, session);
     }
 
+    static class RangeInfo {
+        String columnName = "";
+        // The following are only used for categorical columns
+        int firstIndex;
+        @Nullable
+        String firstValue;
+        int lastIndex;
+        @Nullable
+        String lastValue;
+    }
+
     @HieroRpc
     void range(RpcRequest request, Session session) {
-        String column = request.parseArgs(String.class);
-        // TODO: create a string converter if necessary
-        BasicColStatSketch sk = new BasicColStatSketch(column, null, 0, 1.0);
+        RangeInfo info = request.parseArgs(RangeInfo.class);
+        IStringConverter converter = null;
+        if (info.firstValue != null)
+            converter = new SortedStringsConverter(
+                    new String[] { info.firstValue, info.lastValue }, info.firstIndex, info.lastIndex);
+        BasicColStatSketch sk = new BasicColStatSketch(info.columnName, converter, 0, 1.0);
         this.runSketch(this.table, sk, request, session);
     }
 
     static class RangeFilter implements TableFilter, Serializable {
         final ColumnAndRange args;
         @Nullable
-        IColumn column;
+        IColumn column;  // not really nullable, but set later.
+        @Nullable
+        final IStringConverter converter;
 
         RangeFilter(ColumnAndRange args) {
             this.args = args;
             this.column = null;
+            if (args.bucketBoundaries != null)
+                this.converter = new SortedStringsConverter(
+                        args.bucketBoundaries, (int)Math.ceil(args.min), (int)Math.floor(args.max));
+            else
+                this.converter = null;
         }
 
         @Override
@@ -177,8 +197,7 @@ public final class TableTarget extends RpcTarget {
         public boolean test(int rowIndex) {
             if (Converters.checkNull(this.column).isMissing(rowIndex))
                 return false;
-            // TODO: use a proper string converter
-            double d = this.column.asDouble(rowIndex, null);
+            double d = this.column.asDouble(rowIndex, this.converter);
             return this.args.min <= d && d <= this.args.max;
         }
     }
