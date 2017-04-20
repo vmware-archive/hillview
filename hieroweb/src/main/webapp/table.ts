@@ -17,7 +17,7 @@
 
 import {
     IHtmlElement, Renderer, FullPage, HieroDataView, formatNumber, significantDigits, percent, KeyCodes,
-    ScrollBar, IScrollCompleted
+    ScrollBar, IScrollTarget
 } from "./ui";
 import {RemoteObject, PartialResult, ICancellable} from "./rpc";
 import Rx = require('rx');
@@ -112,6 +112,7 @@ export class RecordOrder {
     public clone(): RecordOrder {
         return new RecordOrder(this.sortOrientationList.slice(0));
     }
+    // Returns a new object
     public invert(): RecordOrder {
         let result = new Array<ColumnSortOrientation>(this.sortOrientationList.length);
         for (let i in this.sortOrientationList) {
@@ -154,7 +155,7 @@ export class TableDataView {
  */
 
 export class TableView extends RemoteObject
-    implements IHtmlElement, HieroDataView, IScrollCompleted {
+    implements IHtmlElement, HieroDataView, IScrollTarget {
     protected static initialTableId: string = null;
 
     // Data view part: received from remote site
@@ -228,7 +229,19 @@ export class TableView extends RemoteObject
 
     // invoked when scrolling has completed
     scrolledTo(position: number): void {
-        // TODO
+        if (position <= 0) {
+            this.begin();
+        } else if (position >= 1.0) {
+            this.end();
+        } else {
+            let o = this.order.clone();
+            let rr = this.createRpcRequest("quantile", {
+                precision: 100,
+                order: o,
+                position: position
+            });
+            rr.invoke(new QuantileReceiver(this.getPage(), this, rr, o));
+        }
     }
 
     protected keyDown(ev: KeyboardEvent): void {
@@ -245,7 +258,7 @@ export class TableView extends RemoteObject
     // TODO: measure window size somehow
     static readonly rowsOnScreen = 20;
 
-    protected pageUp(): void {
+    public pageUp(): void {
         if (this.currentData == null || this.currentData.rows.length == 0)
             return;
         if (this.startPosition <= 0) {
@@ -269,13 +282,14 @@ export class TableView extends RemoteObject
             this.page.reportError("Already at the top");
             return;
         }
+        let o = this.order.clone();
         let nextKArgs = {
-            order: this.order,
+            order: o,
             firstRow: null,
             rowsOnScreen: TableView.rowsOnScreen
         };
         let rr = this.createRpcRequest("getNextK", nextKArgs);
-        rr.invoke(new TableRenderer(this.getPage(), this, rr, false, this.order));
+        rr.invoke(new TableRenderer(this.getPage(), this, rr, false, o));
     }
 
     protected end(): void {
@@ -295,20 +309,21 @@ export class TableView extends RemoteObject
         rr.invoke(new TableRenderer(this.getPage(), this, rr, true, order));
     }
 
-    protected pageDown(): void {
+    public pageDown(): void {
         if (this.currentData == null || this.currentData.rows.length == 0)
             return;
         if (this.startPosition + this.dataRowsDisplayed >= this.rowCount - 1) {
             this.page.reportError("Already at the bottom");
             return;
         }
+        let o = this.order.clone();
         let nextKArgs = {
-            order: this.order,
+            order: o,
             firstRow: this.currentData.rows[this.currentData.rows.length - 1].values,
             rowsOnScreen: TableView.rowsOnScreen
         };
         let rr = this.createRpcRequest("getNextK", nextKArgs);
-        rr.invoke(new TableRenderer(this.getPage(), this, rr, false, this.order));
+        rr.invoke(new TableRenderer(this.getPage(), this, rr, false, o));
     }
 
     protected setOrder(o: RecordOrder): void {
@@ -449,7 +464,7 @@ export class TableView extends RemoteObject
             let rr = this.createRpcRequest("uniqueStrings", columnName);
             rr.invoke(new NumberStrings(cd, this.getPage(), this, rr));
         } else {
-            let rr = this.createRpcRequest("range", columnName);
+            let rr = this.createRpcRequest("range", { columnName: columnName });
             rr.invoke(new RangeCollector(cd, null, this.getPage(), this, rr));
         }
     }
@@ -717,5 +732,37 @@ class NumberStrings extends Renderer<DistinctStrings> {
         let rc = new RangeCollector(this.cd, strings, this.page, this.obj, this.operation);
         rc.setValue(bcs);
         rc.onCompleted();
+    }
+}
+
+class QuantileReceiver extends Renderer<RowView> {
+    protected firstRow: RowView;
+
+    public constructor(page: FullPage,
+                       protected tv: TableView,
+                       operation: ICancellable,
+                       protected order: RecordOrder) {
+        super(page, operation, "Compute quantiles");
+    }
+
+    onNext(value: PartialResult<RowView>): any {
+        super.onNext(value);
+        if (value.data != null)
+            this.firstRow = value.data;
+    }
+
+    onCompleted(): void {
+        super.finished();
+        if (this.firstRow == null)
+            return;
+
+        let nextKArgs = {
+            order: this.order,
+            firstRow: this.firstRow,
+            rowsOnScreen: TableView.rowsOnScreen
+        };
+        let rr = this.tv.createRpcRequest("getNextK", nextKArgs);
+        rr.setStartTime(this.operation.startTime());
+        rr.invoke(new TableRenderer(this.page, this.tv, rr, false, this.order));
     }
 }

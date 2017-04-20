@@ -29,16 +29,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * QuantileList is the data structure for storing Quantile information. It consists  of
- * - dataSize: the size of the set that the quantiles are calculated over.
- * - quantile: A table containing a sorted list of elements.
- * - approxRank: an array containing approximate ranks for each element in the Table.
- * Each entry has two fields: wins and losses. Wins represents the number of elements that are
- * definitely less than  this element, Losses represents the number that are greater. For the
- * remaining elements, we do not what know the result of the comparison will be. Hence for any element:
- *      Wins + Losses < dataSize.
+ * QuantileList is the data structure for storing Quantile information.
  */
 public class QuantileList implements Serializable {
+    /**
+     * One for each element of the quantiles table.
+     * Wins represents the number of elements that are definitely less than this element.
+     * Losses represents the number that are greater.
+     * For the remaining elements, we do not what know the result of the comparison will be.
+     * Hence for any element: Wins + Losses < totalRowCount.
+     */
     static class WinsAndLosses {
         public final int wins;
         public final int losses;
@@ -53,63 +53,72 @@ public class QuantileList implements Serializable {
         }
     }
 
-    public final SmallTable quantile;
+    /**
+     * The quantiles are stored as rows of this table.
+     */
+    public final SmallTable quantiles;
+    /**
+     * One for each row ot the quantiles table.
+     */
     private final WinsAndLosses[] winsAndLosses;
-    private final int dataSize;
+    /**
+     * The size of the set that the quantiles are calculated over.
+     */
+    private final int totalRowCount;
 
     /**
-     * An empty quantile list for a table with the specified schema.
+     * An empty quantiles list for a table with the specified schema.
      */
     public QuantileList(Schema schema) {
         this.winsAndLosses = new WinsAndLosses[0];
-        this.dataSize = 0;
-        this.quantile = new SmallTable(schema);
+        this.totalRowCount = 0;
+        this.quantiles = new SmallTable(schema);
     }
 
     public QuantileList(final SmallTable quantile, final WinsAndLosses[] winsAndLosses, final int dataSize) {
         this.winsAndLosses = winsAndLosses;
         if (quantile.getNumOfRows() != winsAndLosses.length)
             throw new InvalidParameterException("Two arguments have different lengths");
-        this.quantile = quantile;
-        this.dataSize = dataSize;
+        this.quantiles = quantile;
+        this.totalRowCount = dataSize;
     }
 
     /**
      * @return The number of elements in the list of quantiles
      */
-    public int getQuantileSize() { return this.quantile.getNumOfRows(); }
+    public int getQuantileSize() { return this.quantiles.getNumOfRows(); }
 
     /**
      * @return The number of input rows over which these quantiles have been computed.
      */
-    public int getDataSize() { return this.dataSize; }
+    public int getTotalRowCount() { return this.totalRowCount; }
 
     public IColumn getColumn(final String colName) {
-        return this.quantile.getColumn(colName);
+        return this.quantiles.getColumn(colName);
     }
 
     public Schema getSchema() {
-        return this.quantile.getSchema();
+        return this.quantiles.getSchema();
     }
 
     public RowSnapshot getRow(final int rowIndex) {
-        return new RowSnapshot(this.quantile, rowIndex);
+        return new RowSnapshot(this.quantiles, rowIndex);
     }
 
     /**
-     * @param rowIndex The index of an element in the table quantile (call it x).
+     * @param rowIndex The index of an element in the table quantiles (call it x).
      * @return The number of elements in the dataset that are known to be less than x.
      */
     public int getWins(final int rowIndex) { return this.winsAndLosses[rowIndex].wins; }
 
     /**
-     * @param rowIndex The index of an element in the table quantile (call it x).
+     * @param rowIndex The index of an element in the table quantiles (call it x).
      * @return The number of elements in the dataset that are known to be greater than x.
      */
     public int getLosses(final int rowIndex) { return this.winsAndLosses[rowIndex].losses; }
 
     /**
-     * @param rowIndex The index of an element in the table quantile (call it x).
+     * @param rowIndex The index of an element in the table quantiles (call it x).
      * @return The Win and Loss record for that element.
      */
     private WinsAndLosses getWinsAndLosses(final int rowIndex) { return this.winsAndLosses[rowIndex]; }
@@ -117,12 +126,12 @@ public class QuantileList implements Serializable {
     /**
      * Given an element in the QuantileList (specified as an index in the table), return an estimate
      * for the rank of that element in sorted (ascending) order.
-     * @param rowIndex The index of an element x in the table quantile.
+     * @param rowIndex The index of an element x in the table quantiles.
      * @return A guess for the rank of the element x. We know it lies in
-     * the interval (wins(x), dataSize - losses(x)), so we return the average of the two.
+     * the interval (wins(x), totalRowCount - losses(x)), so we return the average of the two.
      */
     private double getApproxRank(final int rowIndex) {
-        return ((((double) this.getWins(rowIndex) + this.getDataSize()) -
+        return ((((double) this.getWins(rowIndex) + this.getTotalRowCount()) -
                 this.getLosses(rowIndex)) / 2);
     }
 
@@ -142,13 +151,13 @@ public class QuantileList implements Serializable {
             newRank[row] = this.getWinsAndLosses(i);
             row++;
         }
-        return new QuantileList(this.quantile.compress(rowOrder), newRank, this.dataSize);
+        return new QuantileList(this.quantiles.compress(rowOrder), newRank, this.totalRowCount);
     }
 
     /** Given a desired size parameter (newSize), compress down to nearly the desired size.
-     * In detail, we define the average gap to be the dataSize/newSize.
+     * In detail, we define the average gap to be the totalRowCount/newSize.
      * We greedily discard an entry if the gap between the previous and next
-     * entry in the quantile is less than the average gap. This will result in a list whose
+     * entry in the quantiles is less than the average gap. This will result in a list whose
      * size is between newSize and 2*newSize.
      * @param newSize The desired size of the compressed table.
      * @return A QuantileList whose size lies in (newSize, 2*newSize), unless the size of the List
@@ -157,7 +166,7 @@ public class QuantileList implements Serializable {
     public QuantileList compressApprox(int newSize) {
         int oldSize = this.getQuantileSize();
         if (oldSize <= newSize) { return this; }
-        double avgGap = ((double) this.getDataSize()) / (newSize+1);
+        double avgGap = ((double) this.getTotalRowCount()) / (newSize+1);
         List<Integer> newSubset = new ArrayList<>();
         newSubset.add(0);
         double open = this.getApproxRank(0);
@@ -175,7 +184,7 @@ public class QuantileList implements Serializable {
     }
 
     /** Given a desired size parameter (newSize), compress down to exactly that size.
-     *  Let stepSize = dataSize/(newSize +1). The "target" rank for element i is (i +1)* StepSize.
+     *  Let stepSize = totalRowCount/(newSize +1). The "target" rank for element i is (i +1)* StepSize.
      *  We pick the element of the QuantileList whose approxRank is the closest to this.
      * @param newSize The desired size of the compressed table.
      * @return A QuantileList of size newSize, computed as described above.
@@ -184,7 +193,7 @@ public class QuantileList implements Serializable {
         int oldSize = this.getQuantileSize();
         if (oldSize <= newSize) { return this; }
         List<Integer> newSubset = new ArrayList<>();
-        double stepSize = ((double) this.getDataSize()) / (newSize + 1);
+        double stepSize = ((double) this.getTotalRowCount()) / (newSize + 1);
         int j = 0;
         for (int i = 0; i < newSize; i++) {
             double targetRank = (i + 1) * stepSize;
@@ -211,10 +220,10 @@ public class QuantileList implements Serializable {
 
     public String toString() {
         final StringBuilder builder = new StringBuilder();
-        final IRowIterator rowIt = this.quantile.getRowIterator();
+        final IRowIterator rowIt = this.quantiles.getRowIterator();
         int nextRow = rowIt.getNextRow();
         while (nextRow >= 0) {
-            for (final String colName: this.quantile.getSchema().getColumnNames()) {
+            for (final String colName: this.quantiles.getSchema().getColumnNames()) {
                 builder.append(this.getColumn(colName).asString(nextRow));
                 builder.append(", ");
             }

@@ -54,7 +54,7 @@ public class QuantileSketch implements ISketch<ITable, QuantileList> {
      */
     private final int slack = 10;
     /**
-     * a knob to control the sample size taken fromm a table to create a QuantileList
+     * a knob to control the sample size taken from a table to create a QuantileList
      * (the size is perBin*resolution)
      */
     private static final int perBin = 100;
@@ -184,7 +184,7 @@ public class QuantileSketch implements ISketch<ITable, QuantileList> {
             throw new RuntimeException("The schemas do not match.");
         final int width = left.getSchema().getColumnCount();
         final List<IColumn> mergedCol = new ArrayList<IColumn>(width);
-        final boolean[] mergeLeft = this.colSortOrder.getMergeOrder(left.quantile, right.quantile);
+        final boolean[] mergeLeft = this.colSortOrder.getMergeOrder(left.quantiles, right.quantiles);
         for (String colName: left.getSchema().getColumnNames()) {
             IColumn newCol = this.mergeColumns(left.getColumn(colName),
                     right.getColumn(colName), mergeLeft);
@@ -192,7 +192,7 @@ public class QuantileSketch implements ISketch<ITable, QuantileList> {
         }
         final SmallTable mergedTable = new SmallTable(mergedCol);
         final QuantileList.WinsAndLosses[] mergedRank = mergeRanks(left, right, mergeLeft);
-        final int mergedDataSize = left.getDataSize() + right.getDataSize();
+        final int mergedDataSize = left.getTotalRowCount() + right.getTotalRowCount();
         /* The returned quantileList can be of size up to slack* resolution*/
         return new QuantileList(mergedTable, mergedRank, mergedDataSize).
                 compressExact(this.slack*this.resolution);

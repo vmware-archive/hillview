@@ -47,27 +47,27 @@ public class QuantileSketchTest {
         final int resolution = 100;
         final QuantileSketch qSketch = new QuantileSketch(rso, resolution);
         final QuantileList leftQ = qSketch.getQuantile(leftTable);
-        final IndexComparator leftComp = rso.getComparator(leftQ.quantile);
+        final IndexComparator leftComp = rso.getComparator(leftQ.quantiles);
         //System.out.println(leftQ);
         for (int i = 0; i < (leftQ.getQuantileSize() - 1); i++)
             Assert.assertTrue(leftComp.compare(i, i + 1) <= 0);
         final QuantileList rightQ = qSketch.getQuantile(rightTable);
         //System.out.println(rightQ);
-        final IndexComparator rightComp = rso.getComparator(rightQ.quantile);
+        final IndexComparator rightComp = rso.getComparator(rightQ.quantiles);
         for (int i = 0; i < (rightQ.getQuantileSize() - 1); i++)
             Assert.assertTrue(rightComp.compare(i, i + 1) <= 0);
         QuantileList mergedQ = qSketch.add(leftQ, rightQ);
         mergedQ = Converters.checkNull(mergedQ);
-        IndexComparator mComp = rso.getComparator(mergedQ.quantile);
+        IndexComparator mComp = rso.getComparator(mergedQ.quantiles);
         for (int i = 0; i < (mergedQ.getQuantileSize() - 1); i++)
             Assert.assertTrue(mComp.compare(i, i + 1) <= 0);
         int newSize = 20;
         final QuantileList approxQ = mergedQ.compressApprox(newSize);
-        IndexComparator approxComp = rso.getComparator(approxQ.quantile);
+        IndexComparator approxComp = rso.getComparator(approxQ.quantiles);
         for (int i = 0; i < (approxQ.getQuantileSize() - 1); i++)
             Assert.assertTrue(approxComp.compare(i, i + 1) <= 0);
         final QuantileList exactQ = mergedQ.compressExact(newSize);
-        IndexComparator exactComp = rso.getComparator(exactQ.quantile);
+        IndexComparator exactComp = rso.getComparator(exactQ.quantiles);
         for (int i = 0; i < (exactQ.getQuantileSize() - 1); i++)
             Assert.assertTrue(exactComp.compare(i, i + 1) <= 0);
     }
@@ -96,7 +96,7 @@ public class QuantileSketchTest {
         ParallelDataSet<ITable> all = TestTables.makeParallel(bigTable, 10000);
         QuantileList ql = all.blockingSketch(new QuantileSketch(cso, resolution)).
                 compressExact(resolution);
-        IndexComparator mComp = cso.getComparator(ql.quantile);
+        IndexComparator mComp = cso.getComparator(ql.quantiles);
         for (int i = 0; i < (ql.getQuantileSize() - 1); i++)
             Assert.assertTrue(mComp.compare(i, i + 1) <= 0);
         //printTime("Quantile");
@@ -105,7 +105,7 @@ public class QuantileSketchTest {
         printTime("sort");
         Table sortTable = bigTable.compress(order);
         //System.out.println(sortTable.toString(50));
-        //System.out.println(ql.quantile.toString(50));
+        //System.out.println(ql.quantiles.toString(50));
         printTime("Compress");
         int j =0, lastMatch = 0;
         for (int i =0; i < ql.getQuantileSize(); i++) {
@@ -124,7 +124,7 @@ public class QuantileSketchTest {
                 }
                 j++;
                 if (j >= bigSize) {
-                    System.out.printf("Error! No match for %s %n", new RowSnapshot(ql.quantile, i).toString());
+                    System.out.printf("Error! No match for %s %n", new RowSnapshot(ql.quantiles, i).toString());
                     //System.out.println(sortTable.toString(lastMatch,50));
                     j = 0;
                     break;

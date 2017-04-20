@@ -78,7 +78,7 @@ public final class TableTarget extends RpcTarget {
     void uniqueStrings(RpcRequest request, Session session) {
         String columnName = request.parseArgs(String.class);
         DistinctStringsSketch sk = new DistinctStringsSketch(0, columnName);
-        this.runSketch(this.table, sk, request, session);
+        this.runCompleteSketch(this.table, sk, e->e, request, session);
     }
 
     @HieroRpc
@@ -209,6 +209,23 @@ public final class TableTarget extends RpcTarget {
         FilterMap fm = new FilterMap(filter);
         Function<IDataSet<ITable>, RpcTarget> factory = TableTarget::new;
         this.runMap(this.table, fm, factory, request, session);
+    }
+
+    static class QuantileInfo {
+        int precision;
+        double position;
+        RecordOrder order = new RecordOrder();
+    }
+
+    @HieroRpc
+    void quantile(RpcRequest request, Session session) {
+        QuantileInfo info = request.parseArgs(QuantileInfo.class);
+        QuantileSketch sk = new QuantileSketch(info.order, info.precision);
+        Function<QuantileList, RowSnapshot> getRow = ql -> {
+            int index = (int)Math.ceil(info.position * ql.getQuantileSize());
+            return ql.getRow(index);
+        };
+        this.runCompleteSketch(this.table, sk, getRow, request, session);
     }
 
     @Override

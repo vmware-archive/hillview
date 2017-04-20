@@ -48,7 +48,7 @@ public class TableDataSetTest {
         final QuantileSketch qSketch = new QuantileSketch(cso, resolution);
         final LocalDataSet<ITable> ld = new LocalDataSet<ITable>(randTable);
         final QuantileList ql = ld.blockingSketch(qSketch);
-        IndexComparator comp = cso.getComparator(ql.quantile);
+        IndexComparator comp = cso.getComparator(ql.quantiles);
         for (int i = 0; i < (ql.getQuantileSize() - 1); i++)
             assertTrue(comp.compare(i, i + 1) <= 0);
         //System.out.println(ql);
@@ -73,7 +73,7 @@ public class TableDataSetTest {
         final ParallelDataSet<ITable> par = new ParallelDataSet<ITable>(elems);
         final QuantileSketch qSketch = new QuantileSketch(cso, resolution);
         final QuantileList r = par.blockingSketch(qSketch);
-        IndexComparator comp = cso.getComparator(r.quantile);
+        IndexComparator comp = cso.getComparator(r.quantiles);
         for (int i = 0; i < (r.getQuantileSize() - 1); i++)
             assertTrue(comp.compare(i, i + 1) <= 0);
         //System.out.println(r);

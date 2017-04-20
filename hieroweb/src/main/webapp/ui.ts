@@ -109,8 +109,10 @@ export function significantDigits(n: number): string {
     return String(n) + suffix;
 }
 
-export interface IScrollCompleted {
+export interface IScrollTarget {
     scrolledTo(position: number): void;
+    pageDown(): void;
+    pageUp(): void;
 }
 
 export function removeAllChildren(h: HTMLElement): void {
@@ -136,9 +138,9 @@ export class ScrollBar implements IHtmlElement {
     private handle: any;
     private svg: any;
     private height: number;
-    private target: IScrollCompleted;
+    private target: IScrollTarget;
 
-    constructor(target: IScrollCompleted) {
+    constructor(target: IScrollTarget) {
         this.topLevel = document.createElement("div");
         this.target = target;
         this.topLevel.style.visibility = 'hidden';
@@ -159,13 +161,15 @@ export class ScrollBar implements IHtmlElement {
             .attr("height", 0)
             .attr("x", 0)
             .attr("y", 0)
-            .attr("fill", "lightgrey");
+            .attr("fill", "lightgrey")
+            .on("click", () => this.target.pageUp());
         this.after = this.svg.append("rect")
             .attr("width", "100%")
             .attr("height", 0)
             .attr("x", 0)
             .attr("y", 0)
-            .attr("fill", "lightgrey");
+            .attr("fill", "lightgrey")
+            .on("click", () => this.target.pageDown());
         // This is drawn last; it may overlap with the other two
         // if we force its dimension to be minimumSize
         this.bar = this.svg.append("rect")

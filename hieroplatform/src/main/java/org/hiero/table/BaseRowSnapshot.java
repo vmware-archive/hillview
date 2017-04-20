@@ -57,14 +57,14 @@ public abstract class BaseRowSnapshot implements IRow {
     public int compareTo(BaseRowSnapshot other, RecordOrder ro) {
         for (ColumnSortOrientation cso: ro) {
             String cn = cso.columnDescription.name;
+            int c = 0;
             if (this.isMissing(cn) && other.isMissing(cn))
-                continue;
-            if (this.isMissing(cn))
-                return -1;
-            if (other.isMissing(cn))
-                return 1;
-            int c;
-            switch (cso.columnDescription.kind) {
+                c = 0;
+            else if (this.isMissing(cn))
+                c = 1;
+            else if (other.isMissing(cn))
+                c = -1;
+            else switch (cso.columnDescription.kind) {
                 case Category:
                 case String:
                 case Json:

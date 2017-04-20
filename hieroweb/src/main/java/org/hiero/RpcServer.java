@@ -144,8 +144,12 @@ public final class RpcServer {
         RpcTarget target = this.getTarget(session);
         if (target != null)
             target.cancel();
-        logger.log(Level.FINE, "Close connection for client: {0}, {1}",
-                new Object[] { session.getId(), reason.toString() });
+        if (reason.getCloseCode() != CloseReason.CloseCodes.NORMAL_CLOSURE)
+            logger.log(Level.SEVERE, "Close connection for client: {0}, {1}",
+                    new Object[] { session.getId(), reason.toString() });
+        else
+            logger.log(Level.INFO, "Normal connection closing for client: {0}",
+                    new Object[] { session.getId() });
         this.removeSession(session);
     }
 
