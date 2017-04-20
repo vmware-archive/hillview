@@ -109,44 +109,108 @@ export function significantDigits(n: number): string {
     return String(n) + suffix;
 }
 
+export interface IScrollCompleted {
+    scrolledTo(position: number): void;
+}
+
 export function removeAllChildren(h: HTMLElement): void {
     while (h.hasChildNodes())
         h.removeChild(h.lastChild);
 }
 
 export class ScrollBar implements IHtmlElement {
-    static readonly minimumSize = 5;
+    static readonly minimumSize = 10;
+    static readonly barWidth = 16;
+    static readonly handleHeight = 6;
+    static readonly handleWidth = 12;
+
     // Only vertical scroll bars supported
     // Range for start and end is 0-1
     start : number;
     end : number;
 
-    private outer   : HTMLElement;
-    private inner   : HTMLElement;
-    private before  : HTMLElement;
-    private after   : HTMLElement;
     private topLevel: HTMLElement;
+    private before: any;
+    private after: any;
+    private bar: any;
+    private handle: any;
+    private svg: any;
+    private height: number;
+    private target: IScrollCompleted;
 
-    constructor() {
+    constructor(target: IScrollCompleted) {
         this.topLevel = document.createElement("div");
+        this.target = target;
+        this.topLevel.style.visibility = 'hidden';
+        this.height = 0;
 
-        this.outer = document.createElement("div");
-        this.outer.className = "scrollbarOuter";
+        let drag = d3.drag()
+            .on("start", () => this.dragStart())
+            .on("drag", () => this.dragMove())
+            .on("end", () => this.dragEnd());
 
-        this.inner = document.createElement("div");
-        this.inner.className = "scrollBarInner";
+        this.svg = d3.select(this.topLevel)
+            .append("svg")
+            .attr("width", ScrollBar.barWidth)
+            .attr("height", "100%");
 
-        this.before = document.createElement("div");
-        this.before.className = "scrollBarBefore";
+        this.before = this.svg.append("rect")
+            .attr("width", "100%")
+            .attr("height", 0)
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("fill", "lightgrey");
+        this.after = this.svg.append("rect")
+            .attr("width", "100%")
+            .attr("height", 0)
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("fill", "lightgrey");
+        // This is drawn last; it may overlap with the other two
+        // if we force its dimension to be minimumSize
+        this.bar = this.svg.append("rect")
+            .attr("width", "100%")
+            .attr("height", 0)
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("fill", "darkgrey");
 
-        this.after = document.createElement("div");
-        this.after.className = "scrollBarAfter";
+        this.handle = this.svg
+            .append("rect")
+            .attr("width", "80%")
+            .attr("height", 6)
+            .attr("x", (ScrollBar.barWidth - ScrollBar.handleWidth) / 2)
+            .attr("y", 0)
+            .attr("stroke", "black")
+            .attr("stroke-width", 1)
+            .attr("fill", "darkgrey")
+            .attr("cursor", "ns-resize")
+            .call(drag);
+    }
 
-        this.outer.appendChild(this.before);
-        this.outer.appendChild(this.inner);
-        this.outer.appendChild(this.after);
-        this.setPosition(0, 1);
-        this.topLevel.appendChild(this.outer);
+    dragStart(): void {
+        this.bar.attr("height", "0");
+        this.before.attr("height", this.height);
+        this.before.attr("y", 0);
+    }
+
+    dragEnd(): void {
+        let position = this.handle.attr("y");
+        let perc = position / this.height;
+        if (position >= this.height - ScrollBar.handleHeight)
+            perc = 1;
+        if (this.target != null)
+            this.target.scrolledTo(perc);
+    }
+
+    dragMove(): void {
+        let position = d3.mouse(this.svg.node());
+        let y = position[1];
+        if (y < 0)
+            y = 0;
+        if (y > this.height - ScrollBar.handleHeight)
+            y = this.height - ScrollBar.handleHeight;
+        this.handle.attr("y", y);
     }
 
     getHTMLRepresentation() : HTMLElement {
@@ -154,13 +218,32 @@ export class ScrollBar implements IHtmlElement {
     }
 
     computePosition() : void {
-        if (this.start <= 0.0 && this.end >= 1.0)
-            this.outer.style.visibility = 'hidden';
-        else
-            this.outer.style.visibility = 'visible';
-        this.before.style.height = String(this.start * 100) + "%";
-        this.inner.style.height = String((this.end - this.start) * 100) + "%";
-        this.after.style.height = String((1 - this.end) * 100) + "%";
+        if (this.start <= 0.0 && this.end >= 1.0) {
+            this.topLevel.style.visibility = 'hidden';
+            return;
+        } else {
+            this.topLevel.style.visibility = 'visible';
+        }
+
+        this.height = this.topLevel.getBoundingClientRect().height;
+        let barHeight = (this.end - this.start) * this.height;
+        let barY = this.start * this.height;
+        if (barHeight < ScrollBar.minimumSize) {
+            barHeight = ScrollBar.minimumSize;
+            if (barY + barHeight > this.height)
+                barY = this.height - barHeight;
+        }
+        this.before
+            .attr("height", this.start * this.height);
+        this.bar
+            .attr("height", barHeight)
+            .attr("y", barY);
+        this.after
+            .attr("height", (1 - this.end) * this.height)
+            .attr("y", this.end * this.height);
+        // handle in the middle of the bar
+        this.handle
+            .attr("y", barY + ((barHeight - ScrollBar.handleHeight) / 2));
     }
 
     setPosition(start : number, end: number) : void {

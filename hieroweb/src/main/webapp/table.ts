@@ -16,7 +16,8 @@
  */
 
 import {
-    IHtmlElement, ScrollBar, Renderer, FullPage, HieroDataView, formatNumber, significantDigits, percent, KeyCodes
+    IHtmlElement, Renderer, FullPage, HieroDataView, formatNumber, significantDigits, percent, KeyCodes,
+    ScrollBar, IScrollCompleted
 } from "./ui";
 import {RemoteObject, PartialResult, ICancellable} from "./rpc";
 import Rx = require('rx');
@@ -153,7 +154,7 @@ export class TableDataView {
  */
 
 export class TableView extends RemoteObject
-    implements IHtmlElement, HieroDataView {
+    implements IHtmlElement, HieroDataView, IScrollCompleted {
     protected static initialTableId: string = null;
 
     // Data view part: received from remote site
@@ -211,7 +212,7 @@ export class TableView extends RemoteObject
         this.top.appendChild(menu.getHTMLRepresentation());
         this.top.appendChild(document.createElement("hr"));
         this.htmlTable = document.createElement("table");
-        this.scrollBar = new ScrollBar();
+        this.scrollBar = new ScrollBar(this);
 
         // to force the scroll bar next to the table we put them in yet another div
         let tblAndBar = document.createElement("div");
@@ -223,6 +224,11 @@ export class TableView extends RemoteObject
         this.top.appendChild(tblAndBar);
         tblAndBar.appendChild(this.htmlTable);
         tblAndBar.appendChild(this.scrollBar.getHTMLRepresentation());
+    }
+
+    // invoked when scrolling has completed
+    scrolledTo(position: number): void {
+        // TODO
     }
 
     protected keyDown(ev: KeyboardEvent): void {
@@ -557,10 +563,12 @@ export class TableView extends RemoteObject
     private updateScrollBar(): void {
         if (this.startPosition == null || this.rowCount == null)
             return;
-        console.log("Scroll bar ", this.startPosition/this.rowCount,
-            (this.startPosition+this.dataRowsDisplayed)/this.rowCount);
-        this.setScroll(this.startPosition / this.rowCount,
-            (this.startPosition + this.dataRowsDisplayed) / this.rowCount);
+        if (this.rowCount <= 0 || this.dataRowsDisplayed <= 0)
+            // we show everything
+            this.setScroll(0, 1);
+        else
+            this.setScroll(this.startPosition / this.rowCount,
+                (this.startPosition + this.dataRowsDisplayed) / this.rowCount);
     }
 
     public getRowCount() : number {

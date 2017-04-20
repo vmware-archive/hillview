@@ -317,14 +317,6 @@ export class Histogram extends RemoteObject
             .attr("border", 1)
             .attr("height", canvasHeight);
 
-        this.canvas.append("rect")
-            .attr("x", 0)
-            .attr("y", 0)
-            .attr("width", width)
-            .attr("height", canvasHeight)
-            .attr("stroke", "black")
-            .attr("fill", "none");
-
         this.canvas.on("mousemove", () => this.onMouseMove());
 
         // The chart uses a fragment of the canvas offset by the margins
