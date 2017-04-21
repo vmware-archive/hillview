@@ -18,26 +18,14 @@
 
 package org.hiero.sketch;
 
-import org.hiero.storage.CsvFileReader;
-import org.hiero.storage.CsvFileWriter;
-import org.hiero.table.Schema;
-import org.hiero.table.api.ITable;
-import org.junit.Assert;
-import org.junit.Test;
-
-import javax.annotation.Nullable;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.UUID;
-
 public class CsvReaderTest {
+
+    /*
     static final String dataFolder = "../data";
     //static final String csvFile = "On_Time_Sample.csv";
     static final String csvFile = "ESX_data.csv";
     //static final String schemaFile = "On_Time.schema";
-    static final String schemaFile = "ESXd.schema";
+    static final String schemaFile = "ESX.schema";
 
     @Nullable
     ITable readTable(String folder, String file) throws IOException {
@@ -50,7 +38,7 @@ public class CsvReaderTest {
         return r.read();
     }
 
-    @Test
+    //@Test
     public void ReadCsvFileTest() throws IOException {
         ITable t = this.readTable(dataFolder, csvFile);
         Assert.assertNotNull(t);
@@ -58,7 +46,7 @@ public class CsvReaderTest {
         t.getSchema().writeToJsonFile(path_schema);
     }
 
-    @Test
+    //@Test
     public void ReadCsvFileWithSchemaTest() throws IOException {
         Path path = Paths.get(dataFolder, schemaFile);
         Schema schema = Schema.readFromJsonFile(path);
@@ -77,8 +65,8 @@ public class CsvReaderTest {
         System.out.printf("Total mememory %d, Free memory %d.", mem, freeMem);
     }
 
-    @Test
-    public void WriteCsvFileTest() throws IOException {
+    //@Test
+   public void WriteCsvFileTest() throws IOException {
         ITable tbl = this.readTable(dataFolder, csvFile);
         Assert.assertNotNull(tbl);
         UUID uid = UUID.randomUUID();
@@ -107,4 +95,5 @@ public class CsvReaderTest {
                 Files.delete(path);
         }
     }
+    */
 }

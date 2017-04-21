@@ -65,12 +65,13 @@ public class TestTables {
     }
 
     /**
-     * A table of integers that can be used for testing
+     * A table of integers whose rows are typically distinct. Each row is sampled randomly from a
+     * domain of size 5^numCols*size. When numCols is small, some collisions are to be expected, but
+     * generally the elements are distinct (each row in the range has a probability of 5^{-numCols}
+     * of being sampled.)
      * @param size The size of the desired table
      * @param numCols The number of columns
-     * @return Each row is sampled randomly from a domain of size 5^numCols*size. When numCols
-     * is small, some collisions are to be expected, but generally the elements are distinct (each
-     * row in the range has a probability of 5^{-numCols) of being sampled.)
+     * @return A table of random integers.
      */
     public static SmallTable getIntTable(final int size, final int numCols) {
         Randomness rn = new Randomness(2); // we want deterministic random numbers for testing
@@ -85,11 +86,31 @@ public class TestTables {
     }
 
     /**
-     * A table of integers that can be used for testing
+     * A table of integers with some missing values. Each column is the just the identity, but with
+     * every multiple of some integer mo in {0,..,99} missing.
      * @param size The size of the desired table
      * @param numCols The number of columns
-     * @return Each row is sampled randomly from a domain of size size^{4/5}.  Collisions are to be
-     * expected, each elements in the range appears with frequency size^{1/5} in expectation.
+     * @return A table of integers with missing values.
+     */
+    public static SmallTable getMissingIntTable(final int size, final int numCols) {
+        Randomness rn = Randomness.createInstance(2); // we want deterministic random numbers for testing
+        final List<IColumn> columns = new ArrayList<IColumn>(numCols);
+        double exp = 1.0/numCols;
+        final int range =  5*((int)Math.pow(size, exp));
+        for (int i = 0; i < numCols; i++) {
+            int mod = rn.nextInt(9) + 1;
+            final String colName = "Missing" + String.valueOf(mod);
+            columns.add(IntArrayGenerator.getMissingIntArray(colName, size, mod));
+        }
+        return new SmallTable(columns);
+    }
+    /**
+     * A table of integers where each row typically occurs multiple times. Each row is sampled
+     * randomly from a domain of size size^{4/5}.  Collisions are to be expected, each tuple from
+     * the range appears with frequency size^{1/5} in expectation.
+     * @param size The size of the desired table
+     * @param numCols The number of columns
+     * @return A table of integers with repeated rows.
      */
     public static Table getRepIntTable(final int size, final int numCols) {
         Randomness rn = new Randomness(1); // we want deterministic random numbers for testing
@@ -111,7 +132,7 @@ public class TestTables {
      * @param size rows per column
      * @param base base parameter for GetHeavyIntTable
      * @param range range parameter for GetHeavyIntTable
-     * @return A table.
+     * @return A table of integers.
      */
     public static SmallTable getHeavyIntTable(final int numCols, final int size, final double base,
                                               final int range) {
@@ -122,6 +143,46 @@ public class TestTables {
             columns.add(IntArrayGenerator.getHeavyIntArray(size, base, range, colName, rn));
         }
         return new SmallTable(columns);
+    }
+
+
+    /**
+     * Generates a table with a specified number of correlated columns. Each row has the same
+     * absolute value in every column, they only differ in the sign (which is drawn randomly).
+     * - Column 0 contains non-negative integers drawn at random from (0, range).
+     * - The signs in the i^th column are  controlled by a parameter rho[i] in (0,1) which is
+     * drawn at random. The sign of the i^th column is +1 with probability rho[i] and -1 with
+     * probability (1 - rho[i]) independently for every row.
+     * - The normalized correlation between Column 0 and Column i is 2*rho[i] - 1 in [-1,1], in
+     * expectation.
+     * @param size The number of rows.
+     * @param numCols The number of columns.
+     * @param range Each entry lies in {0, ..., range} in absolute value.
+     * @return A table with correlated integer columns.
+     */
+    public static SmallTable getCorrelatedCols(final int size, final int numCols, final int range) {
+        Randomness rn = Randomness.createInstance(100); // predictable randomness for testing
+        double[] rho = new double[numCols];
+        ColumnDescription[] desc = new ColumnDescription[numCols];
+        String[] name = new String[numCols];
+        IntArrayColumn[] intCol = new IntArrayColumn[numCols];
+        for (int i =0; i<  numCols; i++) {
+            name[i] = "Col" + String.valueOf(i);
+            desc[i] = new ColumnDescription(name[i], ContentsKind.Integer, false);
+            intCol[i] = new IntArrayColumn(desc[i], size);
+            rho[i] = ((i==0) ? 1 : rho[i-1]*0.8);
+            System.out.printf("Rho %d = %f\n",i, rho[i]);
+        }
+        for (int i = 0; i < size; i++) {
+            int k = rn.nextInt(range);
+            for (int j = 0; j < numCols; j++) {
+                double x = rn.nextDouble();
+                intCol[j].set(i, ((x > rho[j]) ? -k: k));
+            }
+        }
+        final List<IColumn> col = new ArrayList<IColumn>();
+        for (int i =0; i < numCols; i++) col.add(intCol[i]);
+        return new SmallTable(col);
     }
 
     /**

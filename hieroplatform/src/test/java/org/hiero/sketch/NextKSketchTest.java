@@ -55,6 +55,7 @@ public class NextKSketchTest {
         IndexComparator leftComp = cso.getComparator(leftK.table);
         for (int i = 0; i < (leftK.table.getNumOfRows() - 1); i++)
             Assert.assertTrue(leftComp.compare(i, i + 1) <= 0);
+        System.out.println(leftK.toLongString(maxSize));
         Assert.assertEquals(leftK.toLongString(maxSize), "Table, 2 columns, 5 rows\n" +
                 "14,4: 6\n" +
                 "14,5: 5\n" +
@@ -183,5 +184,25 @@ public class NextKSketchTest {
                     "Smith,3: 1\nDonald,4: 1\nBruce,5: 1\n";
         NextKSketch nks = new NextKSketch(ro, null, 20);
         Assert.assertEquals(sb,nks.create(t).toLongString(5));
+    }
+
+    /**
+     * Test involving some missing values
+     */
+    @Test
+    public void TestTopK6() {
+        final int numCols = 2;
+        final int maxSize = 10;
+        final int rightSize = 100;
+        final int leftSize = 100;
+        final ITable leftTable = TestTables.getMissingIntTable(leftSize, numCols);
+        System.out.println(leftTable.toString());
+        RecordOrder cso = new RecordOrder();
+        for (String colName : leftTable.getSchema().getColumnNames())
+            cso.append(new ColumnSortOrientation(leftTable.getSchema().getDescription(colName), true));
+        final RowSnapshot topRow = new RowSnapshot(leftTable, 80);
+        final NextKSketch nk = new NextKSketch(cso, topRow, maxSize);
+        final NextKList leftK = nk.create(leftTable);
+        System.out.println(leftK.toLongString(100));
     }
 }

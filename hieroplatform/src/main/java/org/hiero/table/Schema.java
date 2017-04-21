@@ -86,7 +86,7 @@ public final class Schema
         return this.columns.size();
     }
 
-    public Iterable<String> getColumnNames() {
+    public Set<String> getColumnNames() {
         return this.columns.keySet();
     }
 

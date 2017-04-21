@@ -28,15 +28,23 @@ import java.security.InvalidParameterException;
  * This class generates random columns of integers for testing.
  */
 public class IntArrayGenerator {
-    public static final ColumnDescription desc = new
-            ColumnDescription("Identity", ContentsKind.Integer, true);
 
-    public static IntArrayColumn generateIntArray(final int size) {
+    /**
+     * Generates a list of integers from {0,..., size -1}, every multiple of a specified modulus is
+     * marked as missing.
+     * @param name The name of the column.
+     * @param size The size of the column.
+     * @param mod Every index that is a multiple of this parameter is marked missing.
+     * @return A column of integers.
+     */
+    public static IntArrayColumn getMissingIntArray(String name, final int size, int mod) {
+        final ColumnDescription desc = new ColumnDescription(name, ContentsKind.Integer, true);
         final IntArrayColumn col = new IntArrayColumn(desc, size);
         for (int i = 0; i < size; i++) {
-            col.set(i, i);
-            if ((i % 5) == 0)
+            if ((i % mod) == 0)
                 col.setMissing(i);
+            else
+                col.set(i, i);
         }
         return col;
     }

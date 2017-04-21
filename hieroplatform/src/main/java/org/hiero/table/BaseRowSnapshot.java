@@ -115,6 +115,8 @@ public abstract class BaseRowSnapshot implements IRow {
                 builder.append(",");
             if (o != null)
                 builder.append(o.toString());
+            else
+                builder.append("NULL");
             first = false;
         }
         return builder.toString();
