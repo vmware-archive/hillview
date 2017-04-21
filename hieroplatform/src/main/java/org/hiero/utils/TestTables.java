@@ -93,7 +93,7 @@ public class TestTables {
      * @return A table of integers with missing values.
      */
     public static SmallTable getMissingIntTable(final int size, final int numCols) {
-        Randomness rn = Randomness.createInstance(2); // we want deterministic random numbers for testing
+        Randomness rn = new Randomness(2); // we want deterministic random numbers for testing
         final List<IColumn> columns = new ArrayList<IColumn>(numCols);
         double exp = 1.0/numCols;
         final int range =  5*((int)Math.pow(size, exp));

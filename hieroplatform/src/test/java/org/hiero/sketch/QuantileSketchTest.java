@@ -46,12 +46,12 @@ public class QuantileSketchTest {
         final SmallTable rightTable = TestTables.getIntTable(rightSize, numCols);
         final int resolution = 100;
         final QuantileSketch qSketch = new QuantileSketch(rso, resolution);
-        final QuantileList leftQ = qSketch.getQuantile(leftTable);
+        final QuantileList leftQ = qSketch.create(leftTable);
         final IndexComparator leftComp = rso.getComparator(leftQ.quantiles);
         //System.out.println(leftQ);
         for (int i = 0; i < (leftQ.getQuantileSize() - 1); i++)
             Assert.assertTrue(leftComp.compare(i, i + 1) <= 0);
-        final QuantileList rightQ = qSketch.getQuantile(rightTable);
+        final QuantileList rightQ = qSketch.create(rightTable);
         //System.out.println(rightQ);
         final IndexComparator rightComp = rso.getComparator(rightQ.quantiles);
         for (int i = 0; i < (rightQ.getQuantileSize() - 1); i++)
@@ -148,7 +148,7 @@ public class QuantileSketchTest {
         for (String colName : bigTable.getSchema().getColumnNames()) {
             cso.append(new ColumnSortOrientation(bigTable.getSchema().getDescription(colName), true));
         }
-        QuantileList ql = new QuantileSketch(cso, resolution).getQuantile(bigTable).compressExact(resolution);
+        QuantileList ql = new QuantileSketch(cso, resolution).create(bigTable).compressExact(resolution);
         //printTime("Quantile");
         IRowOrder order = new ArrayRowOrder(cso.getSortedRowOrder(bigTable));
         //printTime("sort");

@@ -25,7 +25,7 @@ public class JLSketchTest {
         for (int i = 0; i < numCols; i++) {
             cn.add("Col" + String.valueOf(i));
         }
-        JLSketch jls = new JLSketch(cn, 500);
+        JLSketch jls = new JLSketch(cn, 1000);
         JLProjection jlp = jls.create(data);
         System.out.printf("JL Sketch: " + Arrays.toString(jlp.getCorrMatrix()[0]) +"\n");
         ExactIPSketch ip = new ExactIPSketch(cn);
@@ -44,8 +44,11 @@ public class JLSketchTest {
         for (int i = 0; i < numCols; i++) {
             cn.add("Col" + String.valueOf(i));
         }
-        JLSketch jls = new JLSketch(cn, 500);
+        JLSketch jls = new JLSketch(cn, 1000);
         JLProjection jlp = jls.add(jls.create(leftTable), jls.create(rightTable));
         System.out.println(Arrays.toString(jlp.getCorrMatrix()[0]));
+        ExactIPSketch ip = new ExactIPSketch(cn);
+        CorrMatrix cm = ip.add(ip.create(leftTable), ip.create(rightTable));
+        System.out.printf("IP Sketch: " + Arrays.toString(cm.getCorrMatrix()[0]) + "\n");
     }
 }

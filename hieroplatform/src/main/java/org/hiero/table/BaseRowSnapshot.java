@@ -7,8 +7,8 @@ import org.hiero.utils.HashUtil;
 /**
  * An abstract class that implements IRow, which is an interface for accessing rows in a table.
  * Concrete classes that extend it are RowSnapshot and VirtualRowSnapshot. The main methods this
- * class provides is equality testing. This for instance allows easy comparison between the
- * classes mentioned above.
+ * class provides are equality testing and comparison (by some specified record order). This for
+ * instance allows easy comparison between the classes mentioned above.
  */
 public abstract class BaseRowSnapshot implements IRow {
     /**

@@ -72,7 +72,7 @@ public class TableTest {
         int range = 10;
         int numCols = 4;
         SmallTable table = TestTables.getCorrelatedCols(size, numCols, range);
-        System.out.println(table.toLongString(100));
+        assertEquals(table.toString(), "Table, 4 columns, 1000 rows");
     }
 
     @Test
