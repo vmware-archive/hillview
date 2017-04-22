@@ -207,8 +207,7 @@ public final class TableTarget extends RpcTarget {
         ColumnAndRange info = request.parseArgs(ColumnAndRange.class);
         RangeFilter filter = new RangeFilter(info);
         FilterMap fm = new FilterMap(filter);
-        Function<IDataSet<ITable>, RpcTarget> factory = TableTarget::new;
-        this.runMap(this.table, fm, factory, request, session);
+        this.runMap(this.table, fm, TableTarget::new, request, session);
     }
 
     static class QuantileInfo {
@@ -226,6 +225,30 @@ public final class TableTarget extends RpcTarget {
             return ql.getRow(index);
         };
         this.runCompleteSketch(this.table, sk, getRow, request, session);
+    }
+
+    @HieroRpc
+    void heavyHitters(RpcRequest request, Session session) {
+        // TODO: read size from client
+        Schema schema = request.parseArgs(Schema.class);
+        FreqKSketch sk = new FreqKSketch(schema, 100);
+        this.runCompleteSketch(this.table, sk, HeavyHittersTarget::new, request, session);
+    }
+
+    static class HeavyHittersFilterInfo {
+        String hittersId = "";
+        @Nullable
+        Schema schema;
+    }
+
+    @HieroRpc
+    void filterHeavy(RpcRequest request, Session session) {
+        HeavyHittersFilterInfo hhi = request.parseArgs(HeavyHittersFilterInfo.class);
+        RpcTarget target = RpcObjectManager.instance.getObject(hhi.hittersId);
+        HeavyHittersTarget hht = (HeavyHittersTarget)target;
+        TableFilter filter = hht.heavyHitters.heavyFilter(Converters.checkNull(hhi.schema));
+        FilterMap fm = new FilterMap(filter);
+        this.runMap(this.table, fm, TableTarget::new, request, session);
     }
 
     @Override

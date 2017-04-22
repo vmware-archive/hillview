@@ -47,6 +47,10 @@ public final class RpcRequest {
         return "RpcRequest: " + this.objectId + "." + this.method + "()";
     }
 
+    RpcReply createReply(IJson userResult) {
+        return this.createReply(userResult.toJsonTree());
+    }
+
     RpcReply createReply(String json) {
         return new RpcReply(this.requestId, json, false);
     }

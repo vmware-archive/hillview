@@ -17,6 +17,7 @@
 
 package org.hiero;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.hiero.dataset.api.*;
 import org.hiero.dataset.*;
@@ -34,7 +35,7 @@ import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public abstract class RpcTarget {
+public abstract class RpcTarget implements IJson {
     @Nullable // This is null for a very brief time
     String objectId;
     private final HashMap<String, Method> executor;
@@ -212,8 +213,9 @@ public abstract class RpcTarget {
         return "id: " + this.objectId;
     }
 
-    String idToJson() {
-        return IJson.gsonInstance.toJson(this.objectId);
+    @Override
+    public JsonElement toJsonTree() {
+        return IJson.gsonInstance.toJsonTree(this.objectId);
     }
 
     /**

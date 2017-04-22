@@ -52,7 +52,7 @@ public class QuantileSketch implements ISketch<ITable, QuantileList> {
      * a knob to control the size of the QuantileList that is shipped around
      * (the size is slack*resolution)
      */
-    private final int slack = 10;
+    private final int slack = 100;
     /**
      * a knob to control the sample size taken from a table to create a QuantileList
      * (the size is perBin*resolution)

@@ -315,7 +315,8 @@ export class Histogram extends RemoteObject
             .call(drag)
             .attr("width", width)
             .attr("border", 1)
-            .attr("height", canvasHeight);
+            .attr("height", canvasHeight)
+            .attr("cursor", "crosshair");
 
         this.canvas.on("mousemove", () => this.onMouseMove());
 

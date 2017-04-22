@@ -29,6 +29,11 @@ th {
     margin: 0;
     font-weight: bold;
     background: lightgray;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
 
 table {
@@ -38,6 +43,10 @@ table {
 th, td {
     border: 1px solid black;
     padding: 3px;
+}
+
+.missingData {
+    color: red;
 }
 
 .progressBarOuter {
@@ -96,6 +105,10 @@ th, td {
 
 .histogramBoxLabel {
     font: 10px sans-serif;
+}
+
+.selected {
+    background: lightcyan;
 }
 
 .dashed {

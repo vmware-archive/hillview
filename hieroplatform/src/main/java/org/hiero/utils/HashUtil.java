@@ -23,7 +23,7 @@ package org.hiero.utils;
  * static methods.
  * Based on the class HashCommons in http://fastutil.di.unimi.it
  */
-class HashUtil {
+public class HashUtil {
     public static final Object REMOVED = new Object();
     private static final int INT_PHI = -1640531527;
     private static final int INV_INT_PHI = 340573321;
@@ -63,6 +63,11 @@ class HashUtil {
         long h = x * -7046029254386353131L;
         h ^= h >>> 32;
         return h ^ (h >>> 16);
+    }
+
+    public static int combineHashCodes(final int l, final int r) {
+        long h = l << 32 | r;
+        return (int)(mix(h) >>> 32) | (int)h;
     }
 
     public static long invMix(long x) {

@@ -81,7 +81,7 @@ public class InitialObjectTarget extends RpcTarget {
             result = new LocalDataSet<CsvFileObject>(file);
         }
         FileNamesTarget target = new FileNamesTarget(result);
-        RpcReply reply = request.createReply(target.idToJson());
+        RpcReply reply = request.createReply(target);
         reply.send(session);
         request.syncCloseSession(session);
     }

@@ -2,7 +2,7 @@ package org.hiero.sketches;
 
 import org.hiero.dataset.api.IJson;
 import org.hiero.dataset.api.Pair;
-import org.hiero.table.RowSnapshot;
+import org.hiero.table.*;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -37,11 +37,16 @@ public class FreqKList implements Serializable, IJson {
     }
 
     /**
+     * @return Total distinct rows that are heavy hitters.
+     */
+    public int getDistinctRowCount() { return this.hMap.size(); }
+
+    /**
      * This method returns the sum of counts computed by the data structure. This is always less
      * than totalRows, the number of rows in the table.
      * @return The sum of all counts stored in the hash-map.
      */
-    public int GetTotalCount() {
+    public int getTotalCount() {
         return this.hMap.values().stream().reduce(0, Integer::sum);
     }
 
@@ -55,8 +60,8 @@ public class FreqKList implements Serializable, IJson {
      * @return Integer e such that if an element i has a count f(i) in the data
      * structure, then its true frequency in the range [f(i), f(i) +e].
      */
-    public int GetErrBound() {
-        return (int) (this.totalRows - this.GetTotalCount())/(this.maxSize + 1);
+    public int getErrBound() {
+        return (int) (this.totalRows - this.getTotalCount())/(this.maxSize + 1);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -68,10 +73,15 @@ public class FreqKList implements Serializable, IJson {
         pList.sort((p1, p2) -> Integer.compare(p2.second, p1.second));
         final StringBuilder builder = new StringBuilder();
         pList.forEach(p ->  builder.append(p.first.toString()).append(": (").append(p.second)
-                                   .append("-").append(p.second + GetErrBound())
+                                   .append("-").append(p.second + getErrBound())
                                    .append(")").append(System.getProperty("line.separator")));
-        builder.append("Error bound: ").append(this.GetErrBound())
+        builder.append("Error bound: ").append(this.getErrBound())
                .append(System.getProperty("line.separator"));
         return builder.toString();
+    }
+
+    public TableFilter heavyFilter(final Schema schema) {
+        RowSnapshotSet rss = new RowSnapshotSet(schema, this.hMap.keySet());
+        return rss.rowInTable();
     }
 }

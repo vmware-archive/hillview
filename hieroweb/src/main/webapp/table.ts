@@ -26,7 +26,7 @@ import {DropDownMenu, ContextMenu, PopupMenu} from "./menu";
 import {Converters} from "./util";
 import d3 = require('d3');
 
-// These classes are direct counterparts to server-side Java classes
+// The first few classes are direct counterparts to server-side Java classes
 // with the same names.  JSON serialization
 // of the Java classes produces JSON that can be directly cast
 // into these interfaces.
@@ -177,6 +177,8 @@ export class TableView extends RemoteObject
     protected page: FullPage;
     protected currentData: TableDataView;
     protected numberedCategories: Set<string>;
+    protected selectedColumns: Set<string>;
+    protected firstSelectedColumn: string;  // for shift-click
 
     public constructor(id: string, page: FullPage) {
         super(id);
@@ -190,6 +192,8 @@ export class TableView extends RemoteObject
         this.top.id = "tableContainer";
         this.top.tabIndex = 1;  // necessary for keyboard events?
         this.top.onkeydown = e => this.keyDown(e);
+        this.selectedColumns = new Set<string>();
+        this.firstSelectedColumn = null;
 
         this.top.style.flexDirection = "column";
         this.top.style.display = "flex";
@@ -439,21 +443,31 @@ export class TableView extends RemoteObject
         return thd;
     }
 
+    // columnName is ignored if the set of selected columns is non-empty
     public showColumn(columnName: string, order: number, first: boolean) : void {
         // order is 0 to hide
         //         -1 to sort descending
         //          1 to sort ascending
         let o = this.order.clone();
-        if (order != 0) {
-            let col = this.findColumn(columnName);
-            if (col == null)
-                return;
-            if (first)
-                o.sortFirst({ columnDescription: col, isAscending: order > 0 });
-            else
-                o.show( { columnDescription: col, isAscending: order > 0 });
+        // The set iterator did not seem to work correctly...
+        let s: string[] = [];
+        if (this.selectedColumns.size != 0) {
+            this.selectedColumns.forEach(v => s.push(v));
         } else {
-            o.hide(columnName);
+            s.push(columnName);
+        }
+
+        for (let i = 0; i < s.length; i++) {
+            let colName = s[i];
+            let col = this.findColumn(colName);
+            if (order != 0 && col != null) {
+                if (first)
+                    o.sortFirst({columnDescription: col, isAscending: order > 0});
+                else
+                    o.show({columnDescription: col, isAscending: order > 0});
+            } else {
+                o.hide(colName);
+            }
         }
         this.setOrder(o);
     }
@@ -481,6 +495,8 @@ export class TableView extends RemoteObject
                       order: RecordOrder, elapsedMs: number) : void {
         console.log("updateView " + revert + " " + order);
 
+        this.selectedColumns.clear();
+        this.firstSelectedColumn = null;
         this.currentData = data;
         this.dataRowsDisplayed = 0;
         this.startPosition = data.startPosition;
@@ -527,9 +543,11 @@ export class TableView extends RemoteObject
             let cd = new ColumnDescription(this.schema[i]);
             cds.push(cd);
             let thd = this.addHeaderCell(thr, cd);
+            thd.className = this.columnClass(cd.name);
             let menu = new PopupMenu([
                 {text: "sort asc", action: () => this.showColumn(cd.name, 1, true) },
-                {text: "sort desc", action: () => this.showColumn(cd.name, -1, true) }
+                {text: "sort desc", action: () => this.showColumn(cd.name, -1, true) },
+                {text: "heavy hitters", action: () => this.heavyHitters(cd.name) }
             ]);
             if (this.order.find(cd.name) >= 0) {
                 menu.addItem( {text: "hide", action: () => this.showColumn(cd.name, 0, true) } );
@@ -540,7 +558,12 @@ export class TableView extends RemoteObject
                 cd.kind != "String")
                 menu.addItem({text: "histogram", action: () => this.histogram(cd.name) });
 
-            thd.onclick = () => menu.toggleVisibility();
+            thd.onclick = e => this.columnClick(cd.name, e);
+            thd.oncontextmenu = e => {
+                e.preventDefault();
+                this.columnClick(cd.name, e);
+                menu.toggleVisibility();
+            };
             thd.appendChild(menu.getHTMLRepresentation());
         }
         this.tBody = this.htmlTable.createTBody();
@@ -572,7 +595,64 @@ export class TableView extends RemoteObject
             " of " + formatNumber(this.rowCount) + " rows" + perc;
 
         this.updateScrollBar();
+        this.highlightSelectedColumns();
         this.page.reportError("Operation took " + significantDigits(elapsedMs/1000) + " seconds");
+    }
+
+    // mouse click on a column
+    private columnClick(colName: string, e: MouseEvent): void {
+        e.preventDefault();
+        if (e.ctrlKey) {
+            this.firstSelectedColumn = colName;
+            if (this.selectedColumns.has(colName))
+                this.selectedColumns.delete(colName);
+            else
+                this.selectedColumns.add(colName);
+        } else if (e.shiftKey) {
+            if (this.firstSelectedColumn == null)
+                this.firstSelectedColumn = colName;
+            let first = this.columnIndex(this.firstSelectedColumn);
+            let last = this.columnIndex(colName);
+            this.selectedColumns.clear();
+            if (first > last) { let tmp = first; first = last; last = tmp; }
+            for (let i = first; i <= last; i++)
+                this.selectedColumns.add(this.schema[i].name);
+        } else {
+            if ((e.buttons & 2) != 0) {
+                // right button
+                if (this.selectedColumns.has(colName))
+                    // Do nothing if pressed on a selected column
+                    return;
+            }
+
+            this.firstSelectedColumn = colName;
+            this.selectedColumns.clear();
+            this.selectedColumns.add(colName);
+        }
+        this.highlightSelectedColumns();
+    }
+
+    private columnClass(colName: string): string {
+        let index = this.columnIndex(colName);
+        return "col" + String(index);
+    }
+
+    private highlightSelectedColumns(): void {
+        for (let i = 0; i < this.schema.length; i++) {
+            let cd = new ColumnDescription(this.schema[i]);
+            let name = cd.name;
+            let cls = this.columnClass(name);
+            let cells = document.getElementsByClassName(cls);
+            let selected = this.selectedColumns.has(name);
+
+            for (let i = 0; i < cells.length; i++) {
+                let cell = cells[i];
+                if (selected)
+                    cell.classList.add("selected");
+                else
+                    cell.classList.remove("selected");
+            }
+        }
     }
 
     private updateScrollBar(): void {
@@ -598,12 +678,23 @@ export class TableView extends RemoteObject
         return this.top;
     }
 
+    private heavyHitters(colName: string): void {
+        let columns: IColumnDescription[] = [];
+        if (this.selectedColumns.size != 0) {
+            this.selectedColumns.forEach(v => columns.push(this.findColumn(v)));
+        } else {
+            columns.push(this.findColumn(colName));
+        }
+        let rr = this.createRpcRequest("heavyHitters", columns);
+        rr.invoke(new HeavyHittersReceiver(this.getPage(), this, rr, columns, this.order));
+    }
+
     protected static convert(val: any, kind: ContentsKind): string {
         if (kind == "Integer" || kind == "Double")
             return String(val);
         else if (kind == "Date")
             return Converters.dateFromDouble(<number>val).toDateString();
-        else if (kind == "Category" || kind == "String")
+        else if (kind == "Category" || kind == "String" || kind == "Json")
             return <string>val;
         else
             return "?";  // TODO
@@ -623,13 +714,20 @@ export class TableView extends RemoteObject
         for (let i = 0; i < cds.length; i++) {
             let cd = cds[i];
             cell = trow.insertCell(i + 2);
+            cell.classList.add(this.columnClass(cd.name));
+            cell.style.textAlign = "right";
 
             let dataIndex = this.order.find(cd.name);
             if (dataIndex == -1)
                 continue;
             if (this.isVisible(cd.name)) {
-                cell.style.textAlign = "right";
-                cell.textContent = TableView.convert(row.values[dataIndex], cd.kind);
+                let value = row.values[dataIndex];
+                if (value == null) {
+                    cell.classList.add("missingData");
+                    cell.textContent = "missing";
+                } else {
+                    cell.textContent = TableView.convert(row.values[dataIndex], cd.kind);
+                }
             }
         }
         this.dataRowsDisplayed += row.count;
@@ -764,5 +862,67 @@ class QuantileReceiver extends Renderer<RowView> {
         let rr = this.tv.createRpcRequest("getNextK", nextKArgs);
         rr.setStartTime(this.operation.startTime());
         rr.invoke(new TableRenderer(this.page, this.tv, rr, false, this.order));
+    }
+}
+
+// The string received is actually the id of a remote object that stores
+// the heavy hitters information.
+class HeavyHittersReceiver extends Renderer<string> {
+    private hitterObjectsId: string;
+
+    public constructor(page: FullPage,
+                       protected tv: TableView,
+                       operation: ICancellable,
+                       protected schema: IColumnDescription[],
+                       protected order: RecordOrder) {
+        super(page, operation, "Heavy hitters");
+        this.hitterObjectsId = null;
+    }
+
+    onNext(value: PartialResult<string>): any {
+        super.onNext(value);
+        if (value.data != null)
+            this.hitterObjectsId = value.data;
+    }
+
+    onCompleted(): void {
+        super.finished();
+        if (this.hitterObjectsId == null)
+            return;
+        let rr = this.tv.createRpcRequest("filterHeavy", {
+                hittersId: this.hitterObjectsId,
+                schema: this.schema
+            });
+        rr.setStartTime(this.operation.startTime());
+        rr.invoke(new FilterCompleted(this.page, this.tv, rr, this.order));
+    }
+}
+
+// After filtering receives the id of a remote table.
+class FilterCompleted extends Renderer<string> {
+    public remoteTableId: string;
+
+    public constructor(page: FullPage,
+                       protected tv: TableView,
+                       operation: ICancellable,
+                       protected order: RecordOrder) {
+        super(page, operation, "Filter");
+    }
+
+    onNext(value: PartialResult<string>): any {
+        super.onNext(value);
+        if (value.data != null)
+            this.remoteTableId = value.data;
+    }
+
+    onCompleted(): void {
+        super.finished();
+        if (this.remoteTableId == null)
+            return;
+        let table = new TableView(this.remoteTableId, this.page);
+        this.page.setHieroDataView(table);
+        let rr = table.createRpcRequest("getSchema", null);
+        rr.setStartTime(this.operation.startTime());
+        rr.invoke(new TableRenderer(this.page, table, rr, false, this.order));
     }
 }
