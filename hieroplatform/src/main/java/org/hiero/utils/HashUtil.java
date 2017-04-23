@@ -23,7 +23,7 @@ package org.hiero.utils;
  * static methods.
  * Based on the class HashCommons in http://fastutil.di.unimi.it
  */
-class HashUtil {
+public class HashUtil {
     public static final Object REMOVED = new Object();
     private static final int INT_PHI = -1640531527;
     private static final int INV_INT_PHI = 340573321;
@@ -131,5 +131,16 @@ class HashUtil {
 
     public static long bigArraySize(final long expected, final float f) {
         return nextPowerOfTwo((long)Math.ceil((double)((float)expected / f)));
+    }
+
+    public static long murmurHash3(long seed, long data) {
+        long h1 = murmurHash3(data);
+        h1 = h1 ^ seed;
+        return murmurHash3(h1);
+    }
+    public static int murmurHash3(int seed, int data) {
+        int h1 = murmurHash3(data);
+        h1 = h1 ^ seed;
+        return murmurHash3(h1);
     }
 }

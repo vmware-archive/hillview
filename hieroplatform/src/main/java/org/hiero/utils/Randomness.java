@@ -47,14 +47,16 @@ public class Randomness {
     /**
      * @return a new instance of Randomness, whether one existed before or not.
      */
-    @SuppressWarnings("UnusedReturnValue")
-    public static Randomness createInstance(long seed) {
-        prg = new Randomness(seed);
+    public static Randomness createInstance() {
+        prg = new Randomness();
         return prg;
     }
 
-    public static Randomness createInstance() {
-        prg = new Randomness();
+    /**
+     * @return a new instance of Randomness, whether one existed before or not.
+     */
+    public static Randomness createInstance(long seed) {
+        prg = new Randomness(seed);
         return prg;
     }
 
@@ -85,5 +87,5 @@ public class Randomness {
      * Generates random bytes and places them into a user-supplied byte array. The number of
      * random bytes produced is equal to the length of the byte array.
      */
-    public void nextBytes(byte[] bytes) { this.myPrg.nextBytes(); }
+    public void nextBytes(byte[] bytes) { this.myPrg.nextBytes(bytes); }
 }
