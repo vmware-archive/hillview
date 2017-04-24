@@ -30,6 +30,6 @@ class HeavyHittersTarget extends RpcTarget {
 
     HeavyHittersTarget(final FreqKList heavyHitters) {
         this.heavyHitters = heavyHitters;
-        logger.log(Level.INFO, "Heavy hitters " + heavyHitters.getTotalCount());
+        logger.log(Level.INFO, "Heavy hitters " + heavyHitters.getDistinctRowCount());
     }
 }

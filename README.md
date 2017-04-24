@@ -13,8 +13,6 @@ A big data spreadsheet.
 * Some JavaScript libraries: d3 and rxjs
 * IDEA Intellij for development (optional)
 
-See (#installing-the-software) for detailed installation instructions.
-
 ## Project structure
 
 Hiero is currently split into two separate Maven projects.
@@ -30,7 +28,7 @@ but only maven is needed to build.
 ## How to run the demo
 
 * First install all software required as described
-  [below](#installing-the-software).
+  [below](#installing-the-software-needed).
 
 * Download the data for the demo.  The download script will download
   and decompress some CSV files with flights data from FAA.  You can
@@ -41,6 +39,13 @@ but only maven is needed to build.
 $ cd data
 $ ./download.sh
 $ cd ..
+```
+
+If you run out of memory while doing any of the following try to
+increase the java heap size as follows (you can put this in your .bashrc file):
+
+```
+$ export MAVEN_OPTS="-Xmx2048M"
 ```
 
 * Install the Hiero distributed platform library:
@@ -58,13 +63,6 @@ $ mvn install
 ```
 $ mvn exec:java
 $ cd ..
-```
-
-If you run out of memory while doing this try to increase the java
-heap size as follows:
-
-```
-$ MAVEN_OPTS="-Xmx2048M" mvn exec:java
 ```
 
 * Build the web server and the front-end
@@ -141,7 +139,7 @@ In more detail, here is a step-by-step guide to committing your changes:
 Install Maven and node.js:
 
 ```
-$ sudo apt-get install maven node
+$ sudo apt-get install maven nodejs-legacy
 ```
 
 ### Installing Java
@@ -167,7 +165,7 @@ $ export JAVA_HOME="<path-to-jdk-folder>"
 Use version 8.5.8 (other versions may work, but we only tested this
 one).  Download the binaries from
 [http://tomcat.apache.org/download-80.cgi] and untar in the hiero
-toplevel folder.
+toplevel folder.  Afterwards prepare tomcat as follows:
 
 ```
 $ cd hieroweb

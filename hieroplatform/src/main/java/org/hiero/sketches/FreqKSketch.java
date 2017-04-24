@@ -1,5 +1,7 @@
 package org.hiero.sketches;
 
+import org.eclipse.collections.api.block.HashingStrategy;
+import org.eclipse.collections.impl.map.strategy.mutable.UnifiedMapWithHashingStrategy;
 import org.hiero.dataset.api.ISketch;
 import org.hiero.dataset.api.Pair;
 import org.hiero.table.*;
@@ -15,7 +17,7 @@ import java.util.List;
  * table, and k is the number of counters that we maintain. We use the mergeable version of MG, as
  * described in the ACM TODS paper "Mergeable Summaries" by Agarwal et al., which gives a
  * non-trivial error bound. The algorithm ensures that every element of frequency greater than
- * N/(k +1) appears in the list.
+ * N/(k+1) appears in the list.
  */
 public class FreqKSketch implements ISketch<ITable, FreqKList> {
     /**
@@ -48,19 +50,21 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
     @SuppressWarnings("ConstantConditions")
     @Override
     public FreqKList add(@Nullable FreqKList left, @Nullable FreqKList right) {
+        HashMap<RowSnapshot, Integer> resultMap =
+                new HashMap<RowSnapshot, Integer>(left.hMap);
         for (RowSnapshot rs : right.hMap.keySet()) {
-            if (left.hMap.containsKey(rs)) {
-                left.hMap.put(rs, left.hMap.get(rs) + right.hMap.get(rs));
-            } else
-                left.hMap.put(rs, right.hMap.get(rs));
+            if (resultMap.containsKey(rs))
+                resultMap.put(rs, left.hMap.get(rs) + right.hMap.get(rs));
+            else
+                resultMap.put(rs, right.hMap.get(rs));
         }
-        List<Pair<RowSnapshot, Integer>> pList = new ArrayList<>(left.hMap.size());
-        left.hMap.forEach((rs, j) -> pList.add(new Pair<RowSnapshot, Integer>(rs, j)));
+        List<Pair<RowSnapshot, Integer>> pList =
+                new ArrayList<Pair<RowSnapshot, Integer>>(left.hMap.size());
+        resultMap.forEach((rs, j) -> pList.add(new Pair<RowSnapshot, Integer>(rs, j)));
         pList.sort((p1, p2) -> Integer.compare(p2.second, p1.second));
         int k = 0;
-        if (pList.size() >= (this.maxSize + 1)) {
+        if (pList.size() >= (this.maxSize + 1))
             k = pList.get(this.maxSize).second;
-        }
         HashMap<RowSnapshot,Integer> hm = new HashMap<RowSnapshot, Integer>(this.maxSize);
         for (int i = 0; i < Math.min(this.maxSize, pList.size()); i++) {
             if (pList.get(i).second >= (k + 1))
@@ -77,13 +81,28 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
     @Override
     public FreqKList create(ITable data) {
         IRowIterator rowIt = data.getRowIterator();
-        HashMap<Integer, Integer> hMap = new
-                HashMap<Integer, Integer>(this.maxSize);
+        HashingStrategy<Integer> hs = new HashingStrategy<Integer>() {
+            VirtualRowSnapshot vrs = new VirtualRowSnapshot(data, FreqKSketch.this.schema);
+            VirtualRowSnapshot vrs1 = new VirtualRowSnapshot(data, FreqKSketch.this.schema);
+
+            @Override
+            public int computeHashCode(Integer index) {
+                this.vrs.setRow(index);
+                return this.vrs.computeHashCode(FreqKSketch.this.schema);
+            }
+
+            @Override
+            public boolean equals(Integer index, Integer otherIndex) {
+                this.vrs.setRow(index);
+                this.vrs1.setRow(otherIndex);
+                return this.vrs.compareForEquality(this.vrs1, FreqKSketch.this.schema);
+            }
+        };
+        UnifiedMapWithHashingStrategy<Integer, Integer> hMap = new
+                UnifiedMapWithHashingStrategy<Integer, Integer>(hs);
         List<Integer> toRemove = new ArrayList<Integer>(this.maxSize);
         int i = rowIt.getNextRow();
-        VirtualRowSnapshot vrs = new VirtualRowSnapshot(data, this.schema);
         while (i != -1) {
-            vrs.setRow(i);
             if (hMap.containsKey(i)) {
                 hMap.put(i, hMap.get(i) + 1);
             } else if (hMap.size() < this.maxSize)
@@ -91,16 +110,17 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
             else {
                 toRemove.clear();
                 for (Integer vr : hMap.keySet()) {
-                    hMap.put(vr, hMap.get(vr) - 1);
-                    if (hMap.get(vr) == 0)
-                        toRemove.add(i);
+                    int count = hMap.get(vr) - 1;
+                    hMap.put(vr, count);
+                    if (count == 0)
+                        toRemove.add(vr);
                 }
                 toRemove.forEach(hMap::remove);
             }
             i = rowIt.getNextRow();
         }
         HashMap<RowSnapshot,Integer> hm = new HashMap<RowSnapshot, Integer>(this.maxSize);
-        hMap.keySet().forEach(ri -> hm.put(new RowSnapshot(data, ri), hMap.get(ri)));
+        hMap.keySet().forEach(ri -> hm.put(new RowSnapshot(data, ri, this.schema), hMap.get(ri)));
         return new FreqKList(data.getNumOfRows(), this.maxSize, hm);
     }
 }
