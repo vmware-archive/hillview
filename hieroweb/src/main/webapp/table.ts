@@ -244,6 +244,7 @@ export class TableView extends RemoteObject
                 order: o,
                 position: position
             });
+	    console.log("expecting quantile: " + String(position));
             rr.invoke(new QuantileReceiver(this.getPage(), this, rr, o));
         }
     }
