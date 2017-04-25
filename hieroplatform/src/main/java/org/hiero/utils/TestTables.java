@@ -73,13 +73,13 @@ public class TestTables {
      * row in the range has a probability of 5^{-numCols) of being sampled.)
      */
     public static SmallTable getIntTable(final int size, final int numCols) {
-        //Randomness.createInstance(2); // we want deterministic random numbers for testing
+        Randomness rn = new Randomness(2); // we want deterministic random numbers for testing
         final List<IColumn> columns = new ArrayList<IColumn>(numCols);
         double exp = 1.0/numCols;
         final int range =  5*((int)Math.pow(size, exp));
         for (int i = 0; i < numCols; i++) {
             final String colName = "Column" + String.valueOf(i);
-            columns.add(IntArrayGenerator.getRandIntArray(size, range, colName));
+            columns.add(IntArrayGenerator.getRandIntArray(size, range, colName, rn));
         }
         return new SmallTable(columns);
     }
@@ -92,13 +92,13 @@ public class TestTables {
      * expected, each elements in the range appears with frequency size^{1/5} in expectation.
      */
     public static Table getRepIntTable(final int size, final int numCols) {
-        //Randomness.createInstance(1); // we want deterministic random numbers for testing
+        Randomness rn = new Randomness(1); // we want deterministic random numbers for testing
         final List<IColumn> columns = new ArrayList<IColumn>(numCols);
         double exp = 0.8 / numCols;
         final int range =  ((int)Math.pow(size, exp));
         for (int i = 0; i < numCols; i++) {
             final String colName = "Column" + String.valueOf(i);
-            columns.add(IntArrayGenerator.getRandIntArray(size, range, colName));
+            columns.add(IntArrayGenerator.getRandIntArray(size, range, colName, rn));
         }
         final FullMembership full = new FullMembership(size);
         return new Table(columns, full);
@@ -115,10 +115,11 @@ public class TestTables {
      */
     public static SmallTable getHeavyIntTable(final int numCols, final int size, final double base,
                                               final int range) {
+        Randomness rn = new Randomness(3);
         final List<IColumn> columns = new ArrayList<IColumn>(numCols);
         for (int i = 0; i < numCols; i++) {
             final String colName = "Column" + String.valueOf(i);
-            columns.add(IntArrayGenerator.getHeavyIntArray(size, base, range, colName));
+            columns.add(IntArrayGenerator.getHeavyIntArray(size, base, range, colName, rn));
         }
         return new SmallTable(columns);
     }

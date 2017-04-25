@@ -41,12 +41,12 @@ public class IntArrayGenerator {
         return col;
     }
 
-    public static IntArrayColumn getRandIntArray(final int size, final int range, final String name) {
+    public static IntArrayColumn getRandIntArray(int size, int range,
+                                                 String name, Randomness randomness) {
         final ColumnDescription desc = new ColumnDescription(name, ContentsKind.Integer, false);
         final IntArrayColumn col = new IntArrayColumn(desc, size);
-        final Randomness rn = new Randomness();
         for (int i = 0; i < size; i++)
-            col.set(i, rn.nextInt(range));
+            col.set(i, randomness.nextInt(range));
         return col;
     }
 
@@ -57,15 +57,16 @@ public class IntArrayGenerator {
      * @param base the base for the probabilities above.
      * @param range integers in the array lie in the interval (1,range)
      * @param name name of the column
+     * @param rn   random number generator
      * @return An IntArray Column as described above.
      */
     public static IntArrayColumn getHeavyIntArray(final int size, final double base,
-                                                  final int range, final String name) {
+                                                  final int range, final String name,
+                                                  Randomness rn) {
         if(base <= 1)
             throw new InvalidParameterException("Base should be  greater than 1.");
         final ColumnDescription desc = new ColumnDescription(name, ContentsKind.Integer, false);
         final IntArrayColumn col = new IntArrayColumn(desc, size);
-        final Randomness rn = new Randomness();
         final int max = (int) Math.round(Math.pow(base,range));
         for (int i = 0; i < size; i++) {
             int j = rn.nextInt(max);
