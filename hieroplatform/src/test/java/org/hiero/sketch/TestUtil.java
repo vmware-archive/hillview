@@ -79,7 +79,7 @@ public class TestUtil {
     static public IColumn getRandDateArray(int size, String colName) {
         final ColumnDescription desc = new ColumnDescription(colName, ContentsKind.Date, false);
         LocalDateTime[] data = new LocalDateTime[size];
-        final Randomness rn = Randomness.getInstance();
+        final Randomness rn = new Randomness();
         for (int i = 0; i < size; i++) {
             data[i] =  LocalDateTime.of(1940 + rn.nextInt(70),
                     rn.nextInt(11) + 1, rn.nextInt(28) + 1, rn.nextInt(24), rn.nextInt(60));
@@ -92,7 +92,7 @@ public class TestUtil {
         final StringArrayColumn col = new StringArrayColumn(desc, size);
         final String[] firstNames = new String[] {"Emma", "Noah", "Liam", "Olivia", "Mason",
                                             "Sophia", "Yossarian", "Jacob", "Emily", "Charlotte"};
-        Randomness rn = Randomness.getInstance();
+        Randomness rn = new Randomness();
         for (int i = 0; i < size; i++) {
             int index = (rn.nextInt(10) + rn.nextInt(10)) / 2;
             col.set(i, firstNames[index]);
@@ -103,7 +103,7 @@ public class TestUtil {
     public static DoubleArrayColumn generateDoubleArray(final int size, String colName) {
         final ColumnDescription desc = new ColumnDescription(colName, ContentsKind.Double, false);
         final DoubleArrayColumn col = new DoubleArrayColumn(desc, size);
-        Randomness rn = Randomness.getInstance();
+        Randomness rn = new Randomness();
         for (int i = 0; i < size; i++) {
             col.set(i, Math.exp(rn.nextDouble()) * 100000);
         }

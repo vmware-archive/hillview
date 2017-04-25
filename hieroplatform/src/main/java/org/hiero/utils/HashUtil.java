@@ -137,4 +137,15 @@ public class HashUtil {
     public static long bigArraySize(final long expected, final float f) {
         return nextPowerOfTwo((long)Math.ceil((double)((float)expected / f)));
     }
+
+    public static long murmurHash3(long seed, long data) {
+        long h1 = murmurHash3(data);
+        h1 = h1 ^ seed;
+        return murmurHash3(h1);
+    }
+    public static int murmurHash3(int seed, int data) {
+        int h1 = murmurHash3(data);
+        h1 = h1 ^ seed;
+        return murmurHash3(h1);
+    }
 }

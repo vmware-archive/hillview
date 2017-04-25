@@ -178,7 +178,7 @@ public class IntSet {
         if (k >= this.size)
             return this.copy();
         final IntSet sampleSet = new IntSet(k);
-        final Randomness psg = Randomness.getInstance();
+        final Randomness psg = new Randomness();
         int sampleSize;
         if (useSeed)
             psg.setSeed(seed);

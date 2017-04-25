@@ -73,7 +73,7 @@ public class TestTables {
      * row in the range has a probability of 5^{-numCols) of being sampled.)
      */
     public static SmallTable getIntTable(final int size, final int numCols) {
-        Randomness.createInstance(2); // we want deterministic random numbers for testing
+        //Randomness.createInstance(2); // we want deterministic random numbers for testing
         final List<IColumn> columns = new ArrayList<IColumn>(numCols);
         double exp = 1.0/numCols;
         final int range =  5*((int)Math.pow(size, exp));
@@ -92,7 +92,7 @@ public class TestTables {
      * expected, each elements in the range appears with frequency size^{1/5} in expectation.
      */
     public static Table getRepIntTable(final int size, final int numCols) {
-        Randomness.createInstance(1); // we want deterministic random numbers for testing
+        //Randomness.createInstance(1); // we want deterministic random numbers for testing
         final List<IColumn> columns = new ArrayList<IColumn>(numCols);
         double exp = 0.8 / numCols;
         final int range =  ((int)Math.pow(size, exp));

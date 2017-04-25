@@ -44,7 +44,7 @@ public class IntArrayGenerator {
     public static IntArrayColumn getRandIntArray(final int size, final int range, final String name) {
         final ColumnDescription desc = new ColumnDescription(name, ContentsKind.Integer, false);
         final IntArrayColumn col = new IntArrayColumn(desc, size);
-        final Randomness rn = Randomness.getInstance();
+        final Randomness rn = new Randomness();
         for (int i = 0; i < size; i++)
             col.set(i, rn.nextInt(range));
         return col;
@@ -65,7 +65,7 @@ public class IntArrayGenerator {
             throw new InvalidParameterException("Base should be  greater than 1.");
         final ColumnDescription desc = new ColumnDescription(name, ContentsKind.Integer, false);
         final IntArrayColumn col = new IntArrayColumn(desc, size);
-        final Randomness rn = Randomness.getInstance();
+        final Randomness rn = new Randomness();
         final int max = (int) Math.round(Math.pow(base,range));
         for (int i = 0; i < size; i++) {
             int j = rn.nextInt(max);
