@@ -20,12 +20,12 @@ package org.hiero.table;
 import org.hiero.table.api.ITable;
 
 /**
- * Interface implemented a selectRowsFromFullTable over a table.
+ * Interface implemented by filters that run over all rows in a table.
  */
 public interface TableFilter {
     /**
-     * Called before the selectRowsFromFullTable is applied to each row index.
-     * @param table: Table on which the selectRowsFromFullTable operates.
+     * Called before the test is applied to each row index.
+     * @param table: Table on which the test operates.
      */
     void setTable(ITable table);
 

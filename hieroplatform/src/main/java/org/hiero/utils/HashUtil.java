@@ -65,6 +65,11 @@ public class HashUtil {
         return h ^ (h >>> 16);
     }
 
+    public static int combineHashCodes(final int l, final int r) {
+        long h = l << 32 | r;
+        return (int)(mix(h) >>> 32) | (int)h;
+    }
+
     public static long invMix(long x) {
         x ^= x >>> 32;
         x ^= x >>> 16;

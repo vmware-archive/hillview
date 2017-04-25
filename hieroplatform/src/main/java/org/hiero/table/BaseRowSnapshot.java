@@ -2,6 +2,7 @@ package org.hiero.table;
 
 import org.hiero.sketches.ColumnSortOrientation;
 import org.hiero.table.api.IRow;
+import org.hiero.utils.HashUtil;
 
 /**
  * An abstract class that implements IRow, which is an interface for accessing rows in a table.
@@ -49,6 +50,17 @@ public abstract class BaseRowSnapshot implements IRow {
         return true;
     }
 
+    public int computeHashCode(Schema schema) {
+        int hashCode = 31;
+        for (String cn: schema.getColumnNames()) {
+            Object o = this.getObject(cn);
+            if (o == null)
+                continue;
+            hashCode = HashUtil.combineHashCodes(hashCode, o.hashCode());
+        }
+        return hashCode;
+    }
+
     /**
      * Compare this row to the other for ordering.
      * Only the fields in the schema are compared.
@@ -57,14 +69,14 @@ public abstract class BaseRowSnapshot implements IRow {
     public int compareTo(BaseRowSnapshot other, RecordOrder ro) {
         for (ColumnSortOrientation cso: ro) {
             String cn = cso.columnDescription.name;
-            if (this.isMissing(cn) && other.isMissing(cn))
-                continue;
-            if (this.isMissing(cn))
-                return -1;
-            if (other.isMissing(cn))
-                return 1;
             int c;
-            switch (cso.columnDescription.kind) {
+            if (this.isMissing(cn) && other.isMissing(cn))
+                c = 0;
+            else if (this.isMissing(cn))
+                c = 1;
+            else if (other.isMissing(cn))
+                c = -1;
+            else switch (cso.columnDescription.kind) {
                 case Category:
                 case String:
                 case Json:

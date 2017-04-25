@@ -23,6 +23,7 @@ import org.hiero.dataset.api.IDataSet;
 
 import javax.websocket.Session;
 import java.io.IOException;
+import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -52,7 +53,7 @@ public class InitialObjectTarget extends RpcTarget {
             int limit = which == 0 ? 3 : 1;
             List<IDataSet<CsvFileObject>> fileNames = new ArrayList<IDataSet<CsvFileObject>>();
             Path folder = Paths.get(dataFolder);
-            Stream<Path> files = Files.walk(folder, 1);
+            Stream<Path> files = Files.walk(folder, 1, FileVisitOption.FOLLOW_LINKS);
             files.filter(f -> {
                 String filename = f.getFileName().toString();
                 if (!filename.endsWith(".csv")) return false;
@@ -66,7 +67,12 @@ public class InitialObjectTarget extends RpcTarget {
                         fileNames.add(local);
                         logger.log(Level.INFO, "Added " + toString());
                     });
-
+            if (fileNames.size() == 0) {
+                RpcReply reply = request.createReply(new RuntimeException("No such files"));
+                reply.send(session);
+                request.syncCloseSession(session);
+                return;
+            }
             result = new ParallelDataSet<CsvFileObject>(fileNames);
         } else {
             CsvFileObject file = new CsvFileObject(
@@ -75,7 +81,7 @@ public class InitialObjectTarget extends RpcTarget {
             result = new LocalDataSet<CsvFileObject>(file);
         }
         FileNamesTarget target = new FileNamesTarget(result);
-        RpcReply reply = request.createReply(target.idToJson());
+        RpcReply reply = request.createReply(target);
         reply.send(session);
         request.syncCloseSession(session);
     }

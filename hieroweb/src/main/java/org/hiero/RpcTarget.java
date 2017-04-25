@@ -17,6 +17,7 @@
 
 package org.hiero;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.hiero.dataset.api.*;
 import org.hiero.dataset.*;
@@ -34,9 +35,7 @@ import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.hiero.utils.Converters.checkNull;
-
-public abstract class RpcTarget {
+public abstract class RpcTarget implements IJson {
     @Nullable // This is null for a very brief time
     String objectId;
     private final HashMap<String, Method> executor;
@@ -165,8 +164,10 @@ public abstract class RpcTarget {
 
             JsonObject json = new JsonObject();
             json.addProperty("done", pr.deltaDone);
-            T delta = checkNull(pr.deltaValue);
-            json.add("data", delta.toJsonTree());
+            if (pr.deltaValue == null)
+                json.add("data", null);
+            else
+                json.add("data", pr.deltaValue.toJsonTree());
             RpcReply reply = this.request.createReply(json);
             reply.send(this.session);
         }
@@ -212,10 +213,18 @@ public abstract class RpcTarget {
         return "id: " + this.objectId;
     }
 
-    String idToJson() {
-        return IJson.gsonInstance.toJson(this.objectId);
+    @Override
+    public JsonElement toJsonTree() {
+        return IJson.gsonInstance.toJsonTree(this.objectId);
     }
 
+    /**
+     * Runs a sketch and sends the data received directly to the client.
+     * @param data    Dataset to run the sketch on.
+     * @param sketch  Sketch to run.
+     * @param request Web socket request, where replies are send.
+     * @param session Web socket session.
+     */
     <T, R extends IJson> void
     runSketch(IDataSet<T> data, ISketch<T, R> sketch,
               RpcRequest request, Session session) {
@@ -232,6 +241,47 @@ public abstract class RpcTarget {
         this.saveSubscription(sub);
     }
 
+    /**
+     * Runs a sketch and sends the complete sketch result received directly to the client.
+     * Progress updates are sent to the client, but accompanied by null values.
+     * @param data    Dataset to run the sketch on.
+     * @param sketch  Sketch to run.
+     * @param request Web socket request, where replies are send.
+     * @param session Web socket session.
+     * @param postprocessing  This function is applied to the sketch results.
+     */
+    <T, R, S extends IJson> void
+    runCompleteSketch(IDataSet<T> data, ISketch<T, R> sketch, Function<R, S> postprocessing,
+              RpcRequest request, Session session) {
+        // Run the sketch
+        Observable<PartialResult<R>> sketches = data.sketch(sketch);
+        // Knows how to add partial results
+        PartialResultMonoid<R> prm = new PartialResultMonoid<R>(sketch);
+        // Prefix sum of the partial results.
+        // publish().autoConnect(2) ensures that the two consumers
+        // of this stream pull from the *same* stream, and not from
+        // two different copies; the two consumers are lastSketch and progress.
+        Observable<PartialResult<R>> add = sketches.scan(prm::add).publish().autoConnect(2);
+        Observable<PartialResult<S>> lastSketch = add.last()
+                .map(p -> new PartialResult<S>(p.deltaDone, postprocessing.apply(p.deltaValue)));
+        Observable<PartialResult<S>> progress = add.map(p -> new PartialResult<S>(p.deltaDone, null));
+        Observable<PartialResult<S>> result = progress.mergeWith(lastSketch);
+        SketchResultObserver<S> robs = new SketchResultObserver<S>(
+                sketch.toString(), request, session);
+        Subscription sub = result.subscribe(robs);
+        this.saveSubscription(sub);
+    }
+
+    /**
+     * Runs a map and sends the result directly to the client.
+     * @param data    Dataset to run the map on.
+     * @param map     Map to execute.
+     * @param factory Function which knows how to create a new RpcTarget
+     *                out of the resulting IDataSet.  It is the reference
+     *                to this RpcTarget that is returned to the client.
+     * @param request Web socket request, used to send the reply.
+     * @param session Web socket session.
+     */
     <T, S> void
     runMap(IDataSet<T> data, IMap<T, S> map, Function<IDataSet<S>, RpcTarget> factory,
               RpcRequest request, Session session) {

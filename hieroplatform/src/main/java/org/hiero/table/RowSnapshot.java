@@ -131,4 +131,17 @@ public class RowSnapshot extends BaseRowSnapshot implements Serializable, IJson 
             data[index++] = o;
         return IJson.gsonInstance.toJsonTree(data);
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if ((o == null) || (getClass() != o.getClass())) return false;
+        RowSnapshot that = (RowSnapshot) o;
+        return this.fields.equals(that.fields);
+    }
+
+    @Override
+    public int hashCode() {
+        return this.fields.hashCode();
+    }
 }

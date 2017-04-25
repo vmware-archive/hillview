@@ -4,6 +4,7 @@
     <option name="PER_PROJECT_SETTINGS">
       <value>
         <option name="RIGHT_MARGIN" value="100" />
+        <option name="WRAP_COMMENTS" value="true" />
         <codeStyleSettings language="JAVA">
           <option name="ALIGN_MULTILINE_CHAINED_METHODS" value="true" />
           <option name="WRAP_FIRST_METHOD_IN_CALL_CHAIN" value="true" />

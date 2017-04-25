@@ -3,6 +3,7 @@ package org.hiero.sketch;
 import org.hiero.sketches.ExactFreqSketch;
 import org.hiero.sketches.FreqKList;
 import org.hiero.sketches.FreqKSketch;
+import org.hiero.table.BaseRowSnapshot;
 import org.hiero.table.RowSnapshot;
 import org.hiero.table.SmallTable;
 import org.hiero.table.Table;
@@ -16,17 +17,15 @@ import java.util.List;
 
 
 public class ExactFreqSketchTest {
-
     public String getFrequencies(ITable table, int maxSize) {
         FreqKSketch fk = new FreqKSketch(table.getSchema(), maxSize);
         FreqKList fkList = fk.create(table);
         StringBuilder sb = new StringBuilder();
-        List<RowSnapshot> keys = new ArrayList<RowSnapshot>(fkList.hMap.keySet());
-        ExactFreqSketch ef = new ExactFreqSketch(table.getSchema(), keys);
-        HashMap<RowSnapshot, Integer> hMap = ef.create(table);
-        hMap.forEach((r,s) -> sb.append(r.toString()).append(": ").append(s)
+        ExactFreqSketch ef = new ExactFreqSketch(table.getSchema(), fkList.hMap.keySet());
+        ExactFreqSketch.Frequencies hMap = ef.create(table);
+        hMap.count.forEach((r,s) -> sb.append(r.toString()).append(": ").append(s)
                 .append(". (").append(fkList.hMap.get(r)).append("-")
-                                .append(fkList.hMap.get(r) + fkList.GetErrBound())
+                                .append(fkList.hMap.get(r) + fkList.getErrBound())
                                 .append(")").append("\n"));
         return sb.toString();
     }
