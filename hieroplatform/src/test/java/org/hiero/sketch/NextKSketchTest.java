@@ -55,7 +55,7 @@ public class NextKSketchTest {
         IndexComparator leftComp = cso.getComparator(leftK.table);
         for (int i = 0; i < (leftK.table.getNumOfRows() - 1); i++)
             Assert.assertTrue(leftComp.compare(i, i + 1) <= 0);
-        System.out.println(leftK.toLongString(maxSize));
+        //System.out.println(leftK.toLongString(maxSize));
         Assert.assertEquals(leftK.toLongString(maxSize), "Table, 2 columns, 5 rows\n" +
                 "14,4: 6\n" +
                 "14,5: 5\n" +
@@ -129,7 +129,6 @@ public class NextKSketchTest {
         final int bigSize = 100000;
         final SmallTable bigTable = TestTables.getIntTable(bigSize, numCols);
         final RowSnapshot topRow = new RowSnapshot(bigTable, 1000);
-        Assert.assertEquals(topRow.toString(), "44,95,56");
         RecordOrder cso = new RecordOrder();
         for (String colName : bigTable.getSchema().getColumnNames())
             cso.append(new ColumnSortOrientation(bigTable.getSchema().getDescription(colName),
