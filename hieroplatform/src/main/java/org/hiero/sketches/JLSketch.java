@@ -51,7 +51,7 @@ public class JLSketch implements ISketch<ITable, JLProjection>{
         }
         JLProjection jlProj = new JLProjection(this.lowDim, colNames);
         long seed = System.nanoTime();
-        Randomness rn = Randomness.createInstance(seed);
+        Randomness rn = new Randomness(seed);
         int i, bit;
         double val;
         String name;

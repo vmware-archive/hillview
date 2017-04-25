@@ -161,7 +161,7 @@ public class TestTables {
      * @return A table with correlated integer columns.
      */
     public static SmallTable getCorrelatedCols(final int size, final int numCols, final int range) {
-        Randomness rn = Randomness.createInstance(100); // predictable randomness for testing
+        Randomness rn = new Randomness(100); // predictable randomness for testing
         double[] rho = new double[numCols];
         ColumnDescription[] desc = new ColumnDescription[numCols];
         String[] name = new String[numCols];
@@ -170,7 +170,7 @@ public class TestTables {
             name[i] = "Col" + String.valueOf(i);
             desc[i] = new ColumnDescription(name[i], ContentsKind.Integer, false);
             intCol[i] = new IntArrayColumn(desc[i], size);
-            rho[i] = ((i==0) ? 1 : rho[i-1]*0.8);
+            rho[i] = ((i==0) ? 1 : (rho[i-1]*0.8));
             System.out.printf("Rho %d = %f\n",i, rho[i]);
         }
         for (int i = 0; i < size; i++) {
