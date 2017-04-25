@@ -23,43 +23,43 @@ import org.apache.commons.math3.random.MersenneTwister;
 import javax.annotation.Nullable;
 
 public class Randomness {
-    @Nullable
-    private static Randomness prg;
+    //@Nullable
+    //private static Randomness prg;
     final private MersenneTwister myPrg;
 
-    private Randomness() {
+    public Randomness() {
         this.myPrg = new MersenneTwister();
     }
 
-    private Randomness(long seed) {
+    public Randomness(long seed) {
         this.myPrg = new MersenneTwister(seed);
     }
 
     /**
      * @return If existing, the instance. Otherwise a new instance.
-     */
-    public static Randomness getInstance() {
+
+    public Randomness getInstance() {
         if (prg == null)
             prg = new Randomness();
         return prg;
     }
-
+*/
     /**
      * @return a new instance of Randomness, whether one existed before or not.
-     */
-    public static Randomness createInstance() {
+
+    public Randomness createInstance() {
         prg = new Randomness();
         return prg;
     }
-
+*/
     /**
      * @return a new instance of Randomness, whether one existed before or not.
-     */
-    public static Randomness createInstance(long seed) {
+
+    public Randomness createInstance(long seed) {
         prg = new Randomness(seed);
         return prg;
     }
-
+*/
     public int nextInt() { return this.myPrg.nextInt(); }
 
     public int nextInt(int range) { return this.myPrg.nextInt(range); }

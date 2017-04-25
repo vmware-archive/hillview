@@ -31,7 +31,7 @@ public class HeapTopKTest {
 
     @Test
     public void testHeapTopKZero() {
-        final Randomness rn = Randomness.getInstance();
+        final Randomness rn = new Randomness();
         for (int j =1; j <20; j++) {
             for (int i = 1; i < 1000; i++)
                 this.myHeap.push(rn.nextInt(10000));
@@ -41,7 +41,7 @@ public class HeapTopKTest {
 
     @Test
     public void testHeapTopKTimed() {
-        final Randomness rn = Randomness.getInstance();
+        final Randomness rn = new Randomness();
         final int inpSize = 1000000;
         final long startTime = System.nanoTime();
         for (int j = 1; j < inpSize; j++)

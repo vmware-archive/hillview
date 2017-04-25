@@ -26,7 +26,7 @@ import org.junit.Test;
 public class TreeVsHeapTest {
     private final int inpSize = 1000;
     private final int[] randInp = new int[this.inpSize];
-    private final Randomness rn = Randomness.getInstance();
+    private final Randomness rn = new Randomness();
 
     @Test
     public void TreeVsHeapOne() {

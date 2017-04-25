@@ -27,7 +27,7 @@ public class RandomnessTest {
     final Random randomPRG = new Random();
     final MersenneTwister MT_PRG = new MersenneTwister();
 
-    @Test
+ //   @Test
     public void testRandomnessPerf() {
         int iterationnNum = 100; // number of iterations
         int length = 100000; // number of random numbers to generate
@@ -44,5 +44,22 @@ public class RandomnessTest {
     private void totalMT(int k) {
         for (int i = 0; i < k; i++)
             this.MT_PRG.nextInt();
+    }
+
+    @Test
+    public void masking(){
+        long log = 64;
+        long value = Long.parseLong("111111111011111000010101001111010000111101011111111111111111100", 2);
+        value = - value;
+        System.out.println("long is " + value);
+        long logNum = 5;
+
+
+        //value = Long.MIN_VALUE / 64;
+
+        final int j =  (int) ((value >>> (Long.SIZE  - logNum)));
+        //final int r = Long.numberOfLeadingZeros((value << logNum) | (1 << (logNum - 1)) + 1) + 1;
+        int r = Long.numberOfTrailingZeros(value);
+        System.out.println("index is " + j + " zeros are " + r);
     }
 }

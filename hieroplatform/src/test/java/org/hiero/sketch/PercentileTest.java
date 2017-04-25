@@ -35,7 +35,7 @@ public class PercentileTest {
 
         for (runs = 0; runs < 1; runs++) {
             final int[] percentile = new int[resolution];
-            final Randomness rn = Randomness.getInstance();
+            final Randomness rn = new Randomness();
             for (i = 0; i < sampleSize; i++) {
                 j = (int) Math.floor((rn.nextInt(range) * resolution) / range);
                 percentile[j]++;

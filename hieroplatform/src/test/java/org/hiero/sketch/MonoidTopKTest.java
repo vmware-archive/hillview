@@ -52,7 +52,7 @@ public class MonoidTopKTest {
         this.rSize = 100;
         TreeTopK<Integer> leftTree = new TreeTopK<Integer>(this.lSize, Integer::compare);
         TreeTopK<Integer> rightTree = new TreeTopK<Integer>(this.rSize, Integer::compare);
-        final Randomness rn = Randomness.getInstance();
+        final Randomness rn = new Randomness();
         for (int i = 0; i < this.inpSize; i++)
             leftTree.push(rn.nextInt(this.inpSize));
         for (int j = 0; j < this.inpSize; j++)
@@ -69,7 +69,7 @@ public class MonoidTopKTest {
         this.rSize = 50;
         TreeTopK<Integer> leftTree = new TreeTopK<Integer>(this.lSize, Integer::compare);
         TreeTopK<Integer> rightTree = new TreeTopK<Integer>(this.rSize, Integer::compare);
-        final Randomness rn = Randomness.getInstance();
+        final Randomness rn = new Randomness();
         for (int i = 0; i < this.inpSize; i++)
             leftTree.push(rn.nextInt(this.inpSize));
         for (int j = 0; j < this.inpSize; j++)
@@ -86,7 +86,7 @@ public class MonoidTopKTest {
         this.rSize = 1000;
         TreeTopK<Integer> leftTree = new TreeTopK<Integer>(this.lSize, Integer::compare);
         TreeTopK<Integer> rightTree = new TreeTopK<Integer>(this.rSize, Integer::compare);
-        final Randomness rn = Randomness.getInstance();
+        final Randomness rn = new Randomness();
         for (int i = 0; i < this.inpSize; i++)
             leftTree.push(rn.nextInt(this.inpSize));
         for (int j = 0; j < this.inpSize; j++)
