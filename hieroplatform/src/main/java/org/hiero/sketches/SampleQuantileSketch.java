@@ -20,21 +20,23 @@ public class SampleQuantileSketch  implements ISketch<ITable, SampleList>{
     private final RecordOrder colSortOrder;
 
     /**
-     * The rate at which we sample the data. It is set to be (resolution)^2/dataSize,
-     * so we expect a table of size (resolution)^2. This is chosen so that the desired accuracy in
+     * The rate at which we sample the data. It is set to be 5*(resolution)^2/dataSize,
+     * so we expect a table of size 5*(resolution)^2. This is chosen so that the desired accuracy in
      * the quantiles is 1/resolution. It can be tuned by changing the size by a constant factor.
+     * We currently use resolution of 100, so the expected sample size is 50,000.
      */
     private double samplingRate;
 
     /**
      * @param sortOrder The list of column orientations.
      * @param resolution Number of buckets: percentiles correspond to 100 buckets etc.
+     * @param dataSize The size of the input table on which we want to run the quantile computation.
      */
     public SampleQuantileSketch(final RecordOrder sortOrder, final int resolution,
                                 final long dataSize) {
         this.colSortOrder = sortOrder;
         int n = Math.max(resolution, 100);
-        this.samplingRate = (1.0*resolution*resolution)/dataSize;
+        this.samplingRate = (5.0*resolution*resolution)/dataSize;
     }
 
     @Nullable
@@ -43,6 +45,11 @@ public class SampleQuantileSketch  implements ISketch<ITable, SampleList>{
         return new SampleList(new SmallTable(this.colSortOrder.toSchema()));
     }
 
+    /**
+     * Creates a table by sampling with probability samplingRate and then sorting by sortOrder.
+     * @param data  Data to sketch.
+     * @return A table with samples sorted, and columns compressed to the relevant ones.
+     */
     @Override
     public SampleList create(ITable data) {
         final IMembershipSet sampleSet = data.getMembershipSet().sample(this.samplingRate);
@@ -52,6 +59,12 @@ public class SampleQuantileSketch  implements ISketch<ITable, SampleList>{
         return new SampleList(sampleTable.compress(this.colSortOrder.toSubSchema(), rowOrder));
     }
 
+    /**
+     * Merges two sample tables with the ordering specified by sortOrder.
+     * @param left The left table
+     * @param right The right table
+     * @return The merged table
+     */
     @Override
     public SampleList add(@Nullable SampleList left, @Nullable SampleList right) {
         if (!left.table.getSchema().equals(right.table.getSchema()))

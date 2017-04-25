@@ -5,6 +5,7 @@ import org.hiero.sketches.*;
 import org.hiero.table.RecordOrder;
 import org.hiero.table.SmallTable;
 import org.hiero.table.api.ITable;
+import org.hiero.utils.RankInTable;
 import org.hiero.utils.TestTables;
 import org.junit.Test;
 
@@ -16,7 +17,7 @@ public class SampleQuantileSketchTest {
     public void SQSTest1() {
         final int numCols = 2;
         final int leftSize = 200000;
-        final int rightSize = 40000;
+        final int rightSize =200000;
         final int resolution = 100;
         final SmallTable leftTable = TestTables.getIntTable(leftSize, numCols);
         RecordOrder rso = new RecordOrder();
@@ -41,7 +42,7 @@ public class SampleQuantileSketchTest {
     @Test
     public void SQSTest2() {
         final int numCols = 2;
-        final int size = 200000;
+        final int size = 500000;
         final int resolution = 100;
         final ITable Table = TestTables.getIntTable(size, numCols);
         RecordOrder rso = new RecordOrder();
@@ -49,8 +50,12 @@ public class SampleQuantileSketchTest {
             rso.append(
                     new ColumnSortOrientation(Table.getSchema().getDescription(colName), true));
         }
-        ParallelDataSet<ITable> all = TestTables.makeParallel(Table, 10000);
+        ParallelDataSet<ITable> all = TestTables.makeParallel(Table, 200000);
         SampleList sl = all.blockingSketch(new SampleQuantileSketch(rso, resolution, size));
+        /*
+        System.out.printf("Sample of size: %d", sl.table.getNumOfRows());
+        for (int i =0; i < 10; i++)
+            System.out.printf("Element of rank i: %s\n", sl.getRow(0.1*i).toString());*/
         RankInTable rIT = new RankInTable(Table, rso);
         System.out.println(Arrays.toString(rIT.getRank(sl.getQuantiles(19))));
     }

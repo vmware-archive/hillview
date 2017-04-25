@@ -4,9 +4,12 @@ import org.hiero.table.ArrayRowOrder;
 import org.hiero.table.RowSnapshot;
 import org.hiero.table.SmallTable;
 
+/**
+ * A sample of rows from a large table, stored in a small table, sorted according to some order.
+ */
 public class SampleList {
     /**
-     * The quantiles are stored as rows of this table.
+     * The table containing the rows.
      */
     public SmallTable table;
 
@@ -19,10 +22,15 @@ public class SampleList {
      * @param p
      * @return The p^th row in the sample
      */
-    public RowSnapshot getRow(float p) {
-        return new RowSnapshot(table, (int) p*this.table.getNumOfRows());
+    public RowSnapshot getRow(double p) {
+        return new RowSnapshot(table, (int) (p*this.table.getNumOfRows()));
     }
 
+    /** A method that can be sued in testing to estimate the quality of the quantiles sketch.
+     * It returns  a specified number of equally spaced rows from the sample table.
+     * @param resolution The number of rows.
+     * @return
+     */
     public SmallTable getQuantiles(int resolution) {
         if (this.table.getNumOfRows() < resolution + 1)
             return this.table;
