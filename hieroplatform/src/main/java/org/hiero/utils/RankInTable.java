@@ -12,8 +12,8 @@ import org.hiero.table.api.ITable;
  * It computes the rank of a rowSnapshot in a table under a specified ordering.
  **/
 public class RankInTable {
-    private ITable table;
-    private RecordOrder ro;
+    private final ITable table;
+    private final RecordOrder ro;
 
     public RankInTable(ITable table, RecordOrder ro) {
         this.table = table;
@@ -31,7 +31,7 @@ public class RankInTable {
         int i = rowIt.getNextRow();
         while (i!= -1) {
             vrs.setRow(i);
-            rank += ((brs.compareTo(vrs, ro) >= 0) ? 1: 0);
+            rank += ((brs.compareTo(vrs, this.ro) >= 0) ? 1: 0);
             i = rowIt.getNextRow();
         }
         return rank;

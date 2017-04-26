@@ -181,7 +181,7 @@ public class TestTables {
             }
         }
         final List<IColumn> col = new ArrayList<IColumn>();
-        for (int i =0; i < numCols; i++) col.add(intCol[i]);
+        col.addAll(Arrays.asList(intCol).subList(0, numCols));
         return new SmallTable(col);
     }
 

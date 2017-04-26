@@ -8,8 +8,8 @@ import org.hiero.table.api.IStringConverter;
 import javax.annotation.Nullable;
 
 public class NormalizeCol {
-    private double mean;
-    private double stDev;
+    private final double mean;
+    private final double stDev;
 
     public NormalizeCol(double mean, double stDev) {
         this.mean = mean;
@@ -22,7 +22,7 @@ public class NormalizeCol {
         int row = rowIt.getNextRow();
         int count = 0;
         while (row != -1)
-            if (Math.abs(column.asDouble(row, converter) - mean) >= (threshold * stDev)) count++;
+            if (Math.abs(column.asDouble(row, converter) - this.mean) >= (threshold * this.stDev)) count++;
         return count;
     }
 }

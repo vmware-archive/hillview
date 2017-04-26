@@ -95,9 +95,7 @@ public final class Schema
      */
     public Schema project(final ISubSchema subSchema) {
         final Schema projection = new Schema();
-        for (ColumnDescription cd : this.columns.values())
-            if (subSchema.isColumnPresent(cd.name))
-                projection.append(cd);
+        this.columns.values().stream().filter(cd -> subSchema.isColumnPresent(cd.name)).forEach(projection::append);
         return projection;
     }
 

@@ -82,8 +82,8 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
     public FreqKList create(ITable data) {
         IRowIterator rowIt = data.getRowIterator();
         HashingStrategy<Integer> hs = new HashingStrategy<Integer>() {
-            VirtualRowSnapshot vrs = new VirtualRowSnapshot(data, FreqKSketch.this.schema);
-            VirtualRowSnapshot vrs1 = new VirtualRowSnapshot(data, FreqKSketch.this.schema);
+            final VirtualRowSnapshot vrs = new VirtualRowSnapshot(data, FreqKSketch.this.schema);
+            final VirtualRowSnapshot vrs1 = new VirtualRowSnapshot(data, FreqKSketch.this.schema);
 
             @Override
             public int computeHashCode(Integer index) {

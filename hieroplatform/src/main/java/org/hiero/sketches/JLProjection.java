@@ -5,10 +5,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 
 public class JLProjection {
-    private LinkedHashMap<String, double[]> hMap;
-    private int lowDim;
+    private final LinkedHashMap<String, double[]> hMap;
+    private final int lowDim;
     public int highDim;
-    public List<String> colNames;
+    public final List<String> colNames;
 
     public JLProjection(int lowDim, List<String> colNames) {
         this.lowDim = lowDim;
@@ -28,7 +28,7 @@ public class JLProjection {
 
     public void scale(double f) {
         for (String s: this.colNames)
-            for (int i = 0; i < lowDim; i++)
+            for (int i = 0; i < this.lowDim; i++)
                 this.hMap.get(s)[i] *= f;
     }
 
@@ -36,7 +36,7 @@ public class JLProjection {
         if (!this.colNames.contains(s))
             throw new InvalidParameterException("No sketch found for column: " + s);
         double sum = 0;
-        for (int i = 0; i < lowDim; i++) {
+        for (int i = 0; i < this.lowDim; i++) {
             sum += Math.pow(this.get(s, i), 2);
         }
         return Math.sqrt(sum/(this.lowDim * this.highDim));
@@ -48,7 +48,7 @@ public class JLProjection {
         if (!this.colNames.contains(t))
             throw new InvalidParameterException("No sketch found for column: " + t);
         double sum = 0;
-        for (int i = 0; i < lowDim; i++) {
+        for (int i = 0; i < this.lowDim; i++) {
             sum += this.get(s, i)*this.get(t, i);
         }
         return (sum/(this.lowDim * this.highDim));
@@ -60,7 +60,7 @@ public class JLProjection {
         if (!this.colNames.contains(t))
             throw new InvalidParameterException("No sketch found for column: " + t);
         double sum =0, first =0, second =0;
-        for (int i = 0; i < lowDim; i++) {
+        for (int i = 0; i < this.lowDim; i++) {
             sum += this.get(s, i)*this.get(t, i);
             first += Math.pow(this.get(s, i), 2);
             second += Math.pow(this.get(t, i), 2);
@@ -69,11 +69,11 @@ public class JLProjection {
     }
 
     public double[][] getCorrMatrix() {
-        int d = colNames.size();
+        int d = this.colNames.size();
         double[][] corr = new double[d][d];
         for (int i = 0; i < d; i++)
             for (int j = 0; j < d; j++)
-                corr[i][j] = this.getCorrelation(colNames.get(i), colNames.get(j));
+                corr[i][j] = this.getCorrelation(this.colNames.get(i), this.colNames.get(j));
         return corr;
     }
 }

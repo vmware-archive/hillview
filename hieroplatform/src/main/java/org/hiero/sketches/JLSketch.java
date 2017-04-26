@@ -13,8 +13,8 @@ import java.util.List;
 
 public class JLSketch implements ISketch<ITable, JLProjection>{
 
-    private List<String> colNames;
-    private int lowDim;
+    private final List<String> colNames;
+    private final int lowDim;
 
     public JLSketch(List<String> colNames, int lowDim) {
         this.colNames= colNames;
@@ -31,7 +31,7 @@ public class JLSketch implements ISketch<ITable, JLProjection>{
     @Override
     public JLProjection add(@Nullable JLProjection left, @Nullable JLProjection right) {
         for(String s: left.colNames)
-            for (int i = 0; i < lowDim; i++) {
+            for (int i = 0; i < this.lowDim; i++) {
                 double val = left.get(s, i) + right.get(s, i);
                 left.update(s, i, val);
             }
@@ -49,7 +49,7 @@ public class JLSketch implements ISketch<ITable, JLProjection>{
                 throw new InvalidParameterException("Projection Sketch requires columm to be " +
                         "integer or double: " + col);
         }
-        JLProjection jlProj = new JLProjection(this.lowDim, colNames);
+        JLProjection jlProj = new JLProjection(this.lowDim, this.colNames);
         long seed = System.nanoTime();
         Randomness rn = new Randomness(seed);
         int i, bit;
@@ -59,7 +59,7 @@ public class JLSketch implements ISketch<ITable, JLProjection>{
         IRowIterator rowIt = data.getRowIterator();
         i = rowIt.getNextRow();
         while (i != -1) {
-            for (int j = 0; j < lowDim; j++) {
+            for (int j = 0; j < this.lowDim; j++) {
                 bit = ((rn.nextInt(2) == 0) ? 1 : -1);
                 for (String colName: this.colNames) {
                     iCol= data.getColumn(colName);

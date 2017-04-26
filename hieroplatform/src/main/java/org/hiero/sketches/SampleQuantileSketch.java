@@ -25,7 +25,7 @@ public class SampleQuantileSketch  implements ISketch<ITable, SampleList>{
      * the quantiles is 1/resolution. It can be tuned by changing the size by a constant factor.
      * We currently use resolution of 100, so the expected sample size is 50,000.
      */
-    private double samplingRate;
+    private final double samplingRate;
 
     /**
      * @param sortOrder The list of column orientations.

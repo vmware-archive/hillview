@@ -3,8 +3,8 @@ package org.hiero.sketches;
 import java.util.Arrays;
 
 public class CorrMatrix {
-    private int numCols;
-    private double[][] matrix;
+    private final int numCols;
+    private final double[][] matrix;
     public long count;
 
     public CorrMatrix(int numCols) {
@@ -34,10 +34,9 @@ public class CorrMatrix {
     }
 
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Number of columns:  " + String.valueOf(this.numCols) + "\n");
-        sb.append("Total count: " + String.valueOf(this.count) + "\n");
-        sb.append(Arrays.deepToString(this.matrix));
-        return sb.toString();
+        String sb = "Number of columns:  " + String.valueOf(this.numCols) + "\n" +
+                "Total count: " + String.valueOf(this.count) + "\n" +
+                Arrays.deepToString(this.matrix);
+        return sb;
     }
 }

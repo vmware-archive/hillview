@@ -12,8 +12,8 @@ import java.util.List;
 
 public class ExactIPSketch implements ISketch<ITable, CorrMatrix>{
 
-    private List<String> colNames;
-    private int numCols;
+    private final List<String> colNames;
+    private final int numCols;
 
     public ExactIPSketch(List<String> colNames) {
         this.colNames= colNames;
@@ -29,8 +29,8 @@ public class ExactIPSketch implements ISketch<ITable, CorrMatrix>{
     @Nullable
     @Override
     public CorrMatrix add(@Nullable CorrMatrix left, @Nullable CorrMatrix right) {
-        for (int i = 0; i < numCols; i++)
-            for (int j = 0; j < numCols; j++)
+        for (int i = 0; i < this.numCols; i++)
+            for (int j = 0; j < this.numCols; j++)
                 left.update(i, j, right.get(i,j));
         left.count += right.count;
         return left;
