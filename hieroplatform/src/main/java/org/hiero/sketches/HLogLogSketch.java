@@ -43,5 +43,4 @@ public class HLogLogSketch implements ISketch<ITable, HLogLog> {
     public HLogLog zero() {
         return new HLogLog(this.spaceBound, this.seed);
     }
-
 }
