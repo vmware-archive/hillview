@@ -91,11 +91,9 @@ public class HLogLog {
         rawEstimate = 1 / rawEstimate;
         rawEstimate = rawEstimate * alpha * this.regNum * this.regNum;
         if ((rawEstimate >= (2.5 * this.regNum)) || (zeroRegs == 0)) {
-            System.out.println("returning raw estimate");
             return Math.round(rawEstimate);
         }
         else {
-            System.out.println("returning Linear counting");
             return Math.round(this.regNum * (Math.log(this.regNum / (double) zeroRegs)));
         }
     }
