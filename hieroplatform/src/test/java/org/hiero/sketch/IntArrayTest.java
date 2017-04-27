@@ -21,6 +21,7 @@ package org.hiero.sketch;
 import org.hiero.utils.IntArrayGenerator;
 import org.hiero.table.IntArrayColumn;
 import org.hiero.table.api.IndexComparator;
+import org.hiero.utils.Randomness;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -31,13 +32,12 @@ import static org.junit.Assert.*;
  * Test for IntArrayColumn class
  */
 public class IntArrayTest {
-
-
     @Test
     public void testRandArray(){
         final int size = 1000;
         final int range = 1000;
-        final IntArrayColumn col = IntArrayGenerator.getRandIntArray(size, range, "Test");
+        Randomness rn = new Randomness(2);
+        final IntArrayColumn col = IntArrayGenerator.getRandIntArray(size, range, "Test", rn);
         final IndexComparator comp = col.getComparator();
         final Integer[] order = new Integer[size];
         for (int i = 0; i < size; i++) {

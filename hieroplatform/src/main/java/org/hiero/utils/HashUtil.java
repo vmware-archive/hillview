@@ -65,11 +65,6 @@ public class HashUtil {
         return h ^ (h >>> 16);
     }
 
-    public static int combineHashCodes(final int l, final int r) {
-        long h = l << 32 | r;
-        return (int)(mix(h) >>> 32) | (int)h;
-    }
-
     public static long invMix(long x) {
         x ^= x >>> 32;
         x ^= x >>> 16;
@@ -143,6 +138,7 @@ public class HashUtil {
         h1 = h1 ^ seed;
         return murmurHash3(h1);
     }
+
     public static int murmurHash3(int seed, int data) {
         int h1 = murmurHash3(data);
         h1 = h1 ^ seed;

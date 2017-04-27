@@ -56,7 +56,7 @@ public abstract class BaseRowSnapshot implements IRow {
             Object o = this.getObject(cn);
             if (o == null)
                 continue;
-            hashCode = HashUtil.combineHashCodes(hashCode, o.hashCode());
+            hashCode = HashUtil.murmurHash3(hashCode, o.hashCode());
         }
         return hashCode;
     }
