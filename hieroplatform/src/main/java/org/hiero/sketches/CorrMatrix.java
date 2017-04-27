@@ -28,8 +28,10 @@ public class CorrMatrix {
     public double[][] getCorrMatrix() {
         double[][] m = new double[this.numCols][this.numCols];
         for (int i = 0; i < this.numCols; i++)
-            for (int j =0; j < this.numCols; j++)
-                m[i][j] = this.matrix[i][j]/(Math.sqrt(this.matrix[i][i]*this.matrix[j][j]));
+            for (int j = i; j < this.numCols; j++) {
+                m[i][j] = this.matrix[i][j] / (Math.sqrt(this.matrix[i][i] * this.matrix[j][j]));
+                m[j][i] = m[i][j];
+            }
         return m;
     }
 

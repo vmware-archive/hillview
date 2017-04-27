@@ -2,7 +2,6 @@ package org.hiero.sketches;
 
 import org.hiero.dataset.api.ISketch;
 import org.hiero.table.api.ContentsKind;
-import org.hiero.table.api.IColumn;
 import org.hiero.table.api.IRowIterator;
 import org.hiero.table.api.ITable;
 
@@ -10,14 +9,22 @@ import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
 import java.util.List;
 
-public class ExactIPSketch implements ISketch<ITable, CorrMatrix>{
+public class SampleCorrelationSketch implements ISketch<ITable, CorrMatrix>{
 
     private final List<String> colNames;
     private final int numCols;
+    private final double samplingRate;
 
-    public ExactIPSketch(List<String> colNames) {
+    public SampleCorrelationSketch(List<String> colNames, double p) {
         this.colNames= colNames;
         this.numCols = colNames.size();
+        this.samplingRate = p;
+    }
+
+    public SampleCorrelationSketch(List<String> colNames) {
+        this.colNames= colNames;
+        this.numCols = colNames.size();
+        this.samplingRate = 0.1;
     }
 
     @Nullable
@@ -30,7 +37,7 @@ public class ExactIPSketch implements ISketch<ITable, CorrMatrix>{
     @Override
     public CorrMatrix add(@Nullable CorrMatrix left, @Nullable CorrMatrix right) {
         for (int i = 0; i < this.numCols; i++)
-            for (int j = 0; j < this.numCols; j++)
+            for (int j = i; j < this.numCols; j++)
                 left.update(i, j, right.get(i,j));
         left.count += right.count;
         return left;
@@ -47,14 +54,14 @@ public class ExactIPSketch implements ISketch<ITable, CorrMatrix>{
                         "integer or double: " + col);
         }
         CorrMatrix cm = new CorrMatrix(this.numCols);
-        IColumn iCol1, iCol2;
         double valj, valk;
-        IRowIterator rowIt = data.getRowIterator();
+        IRowIterator rowIt = data.getMembershipSet().sample(this.samplingRate).getIterator();
         int i = rowIt.getNextRow();
         while (i != -1) {
             for (int j = 0; j < this.numCols; j++) {
                 valj = data.getColumn(this.colNames.get(j)).asDouble(i, null);
-                for (int k = 0; k < this.numCols; k++) {
+                cm.update(j, j, valj * valj);
+                for (int k = j + 1; k < this.numCols; k++) {
                     valk = data.getColumn(this.colNames.get(k)).asDouble(i, null);
                     cm.update(j, k, valj * valk);
                 }

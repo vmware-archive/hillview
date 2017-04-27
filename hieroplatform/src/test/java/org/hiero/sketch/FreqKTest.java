@@ -25,7 +25,7 @@ public class FreqKTest {
         final int size = 100;
         Table leftTable = TestTables.getRepIntTable(size, numCols);
         FreqKSketch fk = new FreqKSketch(leftTable.getSchema(), maxSize);
-    //    System.out.println(fk.create(leftTable).toString());
+        System.out.println(fk.create(leftTable).toString());
     }
 
     @Test

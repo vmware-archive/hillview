@@ -1,7 +1,7 @@
 package org.hiero.sketch;
 
 import org.hiero.sketches.CorrMatrix;
-import org.hiero.sketches.ExactIPSketch;
+import org.hiero.sketches.SampleCorrelationSketch;
 import org.hiero.sketches.JLProjection;
 import org.hiero.sketches.JLSketch;
 import org.hiero.table.SmallTable;
@@ -28,7 +28,7 @@ public class JLSketchTest {
         JLSketch jls = new JLSketch(cn, 1000);
         JLProjection jlp = jls.create(data);
         System.out.printf("JL Sketch: " + Arrays.toString(jlp.getCorrMatrix()[0]) +"\n");
-        ExactIPSketch ip = new ExactIPSketch(cn);
+        SampleCorrelationSketch ip = new SampleCorrelationSketch(cn);
         CorrMatrix cm = ip.create(data);
         System.out.printf("IP Sketch: " + Arrays.toString(cm.getCorrMatrix()[0]) + "\n");
     }
@@ -47,7 +47,7 @@ public class JLSketchTest {
         JLSketch jls = new JLSketch(cn, 1000);
         JLProjection jlp = jls.add(jls.create(leftTable), jls.create(rightTable));
         System.out.println(Arrays.toString(jlp.getCorrMatrix()[0]));
-        ExactIPSketch ip = new ExactIPSketch(cn);
+        SampleCorrelationSketch ip = new SampleCorrelationSketch(cn);
         CorrMatrix cm = ip.add(ip.create(leftTable), ip.create(rightTable));
         System.out.printf("IP Sketch: " + Arrays.toString(cm.getCorrMatrix()[0]) + "\n");
     }
