@@ -16,8 +16,8 @@ public class HLLTest {
     public void testHLL() {
         final int size = 500000;
         final int range = 50;
-        final IntArrayColumn col = IntArrayGenerator.getRandIntArray(size, range, "Test");
         final Randomness rn = new Randomness();
+        final IntArrayColumn col = IntArrayGenerator.getRandIntArray(size, range, "Test", rn);
         final int accuracy = 16;
         final int seed = rn.nextInt();
         final HLogLog hll = new HLogLog(accuracy, seed);
