@@ -4,6 +4,11 @@ import java.security.InvalidParameterException;
 import java.util.LinkedHashMap;
 import java.util.List;
 
+/** Data structure used to store the results of JL sketch.
+ * It contains a vector fo doubles for each column, and some other information that can be used for
+ * normalization. It implements the ICorrelation interface and can be used for computing norms,
+ * inner products etc, but it is currently rather slow compared to smapling based methods.
+ */
 public class JLProjection implements ICorrelation {
     private final LinkedHashMap<String, double[]> hMap;
     private final int lowDim;
