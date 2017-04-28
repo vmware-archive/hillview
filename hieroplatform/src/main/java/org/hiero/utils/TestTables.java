@@ -171,7 +171,7 @@ public class TestTables {
             desc[i] = new ColumnDescription(name[i], ContentsKind.Integer, false);
             intCol[i] = new IntArrayColumn(desc[i], size);
             rho[i] = ((i==0) ? 1 : (rho[i-1]*0.8));
-            System.out.printf("Rho %d = %f\n",i, rho[i]);
+            //System.out.printf("Rho %d = %f\n",i, rho[i]);
         }
         for (int i = 0; i < size; i++) {
             int k = rn.nextInt(range);

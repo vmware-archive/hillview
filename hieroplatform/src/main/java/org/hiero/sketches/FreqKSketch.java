@@ -131,7 +131,7 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
                             hMap.put(row, count);
                     }
                     toRemove.forEach(hMap::remove);
-                    min = ((hMap.size() > 0) ? Collections.min(hMap.values()) : 0);
+                    min = ((!hMap.isEmpty()) ? Collections.min(hMap.values()) : 0);
                 }
             }
             i = rowIt.getNextRow();

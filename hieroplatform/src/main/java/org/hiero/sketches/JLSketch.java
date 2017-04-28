@@ -11,9 +11,23 @@ import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
 import java.util.List;
 
+/**
+ * Implements the Johnson-Lindenstrauss (JL) sketch. It projects a column of doubles down to low
+ * dimensional vectors, where the projection matrix consists of random +1,-1 entries. Currently,
+ * this sketch can be used to compute approximate inner products. However, it is much slower than
+ * sampling based methods (SampleCorrelationSketch). A potential advantage over that method is that
+ * the JL sketch gives a guarantee even if the entries are not bounded, whereas the sampling based
+ * methods assume boundedness for provable guarantees.
+ */
 public class JLSketch implements ISketch<ITable, JLProjection>{
-
+    /**
+     * The list of columns that we wish to sketch. Currently, every column is assumed to be of type
+     * int or double.
+     */
     private final List<String> colNames;
+    /**
+     * The dimension that we wish to project down to.
+     */
     private final int lowDim;
 
     public JLSketch(List<String> colNames, int lowDim) {
@@ -24,9 +38,12 @@ public class JLSketch implements ISketch<ITable, JLProjection>{
     @Nullable
     @Override
     public JLProjection zero() {
-        return new JLProjection(0, null);
+        return new JLProjection(this.colNames, this.lowDim);
     }
 
+    /**
+     * Since the sketch is linear, we can add sketches computed at different leaves point-wise.
+     */
     @Nullable
     @Override
     public JLProjection add(@Nullable JLProjection left, @Nullable JLProjection right) {
@@ -39,6 +56,14 @@ public class JLSketch implements ISketch<ITable, JLProjection>{
         return left;
     }
 
+    /**
+     * The sketch of a column is the product with a random matrix of {-1,+1} entries. The same
+     * matrix is applied to every column. Currently, we discard the random bits after processing the
+     * relevant row of the Table.
+     * @param data  Data to sketch.
+     * @return A JLprojection which is simple a vector of doubles of dimension lowDim for each
+     * column, together with the number of entries in the table.
+     */
     @Override
     public JLProjection create(ITable data) {
         for(String col : this.colNames) {
@@ -49,7 +74,7 @@ public class JLSketch implements ISketch<ITable, JLProjection>{
                 throw new InvalidParameterException("Projection Sketch requires columm to be " +
                         "integer or double: " + col);
         }
-        JLProjection jlProj = new JLProjection(this.lowDim, this.colNames);
+        JLProjection jlProj = new JLProjection(this.colNames, this.lowDim);
         long seed = System.nanoTime();
         Randomness rn = new Randomness(seed);
         int i, bit;

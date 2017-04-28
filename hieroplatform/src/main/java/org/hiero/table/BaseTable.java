@@ -76,9 +76,8 @@ public abstract class BaseTable implements ITable {
 
     @Override
     public String toString() {
-        String sb = "Table, " + this.getSchema().getColumnCount() + " columns, " +
+        return "Table, " + this.getSchema().getColumnCount() + " columns, " +
                 this.getNumOfRows() + " rows";
-        return sb;
     }
 
     public String toLongString(int rowsToDisplay) {

@@ -4,13 +4,13 @@ import java.security.InvalidParameterException;
 import java.util.LinkedHashMap;
 import java.util.List;
 
-public class JLProjection {
+public class JLProjection implements ICorrelation {
     private final LinkedHashMap<String, double[]> hMap;
     private final int lowDim;
     public int highDim;
     public final List<String> colNames;
 
-    public JLProjection(int lowDim, List<String> colNames) {
+    public JLProjection(List<String> colNames, int lowDim) {
         this.lowDim = lowDim;
         this.colNames = colNames;
         this.hMap = new LinkedHashMap<String, double[]>();
@@ -68,12 +68,24 @@ public class JLProjection {
         return (sum/Math.sqrt(first*second));
     }
 
-    public double[][] getCorrMatrix() {
+    @Override
+    public double[] getCorrelationWith(String s) {
+        int d = this.colNames.size();
+        double[] corrWith = new double[d];
+        for (int i = 0; i < d; i++)
+                corrWith[i] = this.getCorrelation(s, this.colNames.get(i));
+        return corrWith;
+    }
+
+    @Override
+    public double[][] getCorrelationMatrix() {
         int d = this.colNames.size();
         double[][] corr = new double[d][d];
         for (int i = 0; i < d; i++)
-            for (int j = 0; j < d; j++)
+            for (int j = i; j < d; j++) {
                 corr[i][j] = this.getCorrelation(this.colNames.get(i), this.colNames.get(j));
+                corr[j][i] = corr[i][j];
+        }
         return corr;
     }
 }
