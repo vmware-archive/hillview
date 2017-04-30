@@ -18,64 +18,91 @@
 
 package org.hiero.dataset;
 
-import akka.actor.ActorRef;
-import akka.actor.Address;
-import akka.pattern.Patterns;
+import com.google.common.net.HostAndPort;
+import com.google.protobuf.ByteString;
+import io.grpc.netty.NettyChannelBuilder;
+import io.grpc.stub.StreamObserver;
+import org.apache.commons.lang3.SerializationUtils;
 import org.hiero.dataset.api.*;
-import org.hiero.remoting.MapOperation;
-import org.hiero.remoting.SketchOperation;
-import org.hiero.remoting.ZipOperation;
+import org.hiero.pb.Ack;
+import org.hiero.pb.Command;
+import org.hiero.pb.HieroServerGrpc;
+import org.hiero.pb.PartialResponse;
+import org.hiero.remoting.*;
 import rx.Observable;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
+import rx.subjects.PublishSubject;
+
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+
+import static org.hiero.remoting.HieroServer.DEFAULT_IDS_INDEX;
 
 /**
- * An IDataSet that is a proxy for a DataSet on a remote machine.
+ * An IDataSet that is a proxy for a DataSet on a remote machine. The remote IDataSet
+ * is pointed to by (serverEndpoint, remoteHandle). Any RemoteDataSet instantiated
+ * with a wrong value for either entry of the tuple will result in an exception.
  */
 public class RemoteDataSet<T> implements IDataSet<T> {
-    protected final static int TIMEOUT_MS = 1000;  // TODO: import via config file
-    protected static final Duration duration = Duration.create(TIMEOUT_MS, "milliseconds");
-    protected final ActorRef clientActor;
-    protected final ActorRef remoteActor;
+    protected final static int TIMEOUT = 1000;  // TODO: import via config file
+    protected final int remoteHandle;
+    protected final HostAndPort serverEndpoint;
+    private final HieroServerGrpc.HieroServerStub stub;
 
-    public RemoteDataSet(
-            final ActorRef clientActor, final ActorRef remoteActor) {
-        this.clientActor = clientActor;
-        this.remoteActor = remoteActor;
+    public RemoteDataSet(final HostAndPort serverEndpoint) {
+        this(serverEndpoint, DEFAULT_IDS_INDEX);
     }
 
+    public RemoteDataSet(final HostAndPort serverEndpoint, final int remoteHandle) {
+        this.serverEndpoint = serverEndpoint;
+        this.remoteHandle = remoteHandle;
+        this.stub = HieroServerGrpc.newStub(NettyChannelBuilder
+                .forAddress(serverEndpoint.getHost(), serverEndpoint.getPort())
+                .usePlaintext(true)
+                .build());
+    }
+
+    /**
+     * Map operations on a RemoteDataSet result in only one onNext
+     * invocation that will return the final IDataSet.
+     */
     @Override
     public <S> Observable<PartialResult<IDataSet<S>>> map(final IMap<T, S> mapper) {
         final MapOperation<T, S> mapOp = new MapOperation<T, S>(mapper);
-        final Future<Object> future = Patterns.ask(this.clientActor, mapOp, TIMEOUT_MS);
-        try {
-            @SuppressWarnings("unchecked")
-            final Observable<PartialResult<IDataSet<S>>> obs =
-                (Observable<PartialResult<IDataSet<S>>>) Await.result(future, duration);
-            return obs;
-        } catch (final Exception e) {
-            return Observable.error(e);
-        }
+        final byte[] serializedOp = SerializationUtils.serialize(mapOp);
+        final Command command = Command.newBuilder()
+                                       .setIdsIndex(this.remoteHandle)
+                                       .setSerializedOp(ByteString.copyFrom(serializedOp))
+                                       .build();
+        final PublishSubject<PartialResult<IDataSet<S>>> subj = PublishSubject.create();
+        final StreamObserver<PartialResponse> responseObserver = new NewDataSetObserver<S>(subj);
+        return subj.doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
+                                                 .map(command, responseObserver))
+                   .doOnUnsubscribe(() -> unsubscribe(mapOp.id));
     }
 
+    /**
+     * Sketch operation that streams partial results from the server to the caller.
+     */
     @Override
     public <R> Observable<PartialResult<R>> sketch(final ISketch<T, R> sketch) {
-        final SketchOperation<T, R> sketchOp = new SketchOperation<T, R>(sketch);
-        final Future<Object> future = Patterns.ask(this.clientActor, sketchOp, TIMEOUT_MS);
-        try {
-            @SuppressWarnings("unchecked")
-            final Observable<PartialResult<R>> obs =
-                    (Observable<PartialResult<R>>) Await.result(future, duration);
-            return obs;
-        } catch (final Exception e) {
-            return Observable.error(e);
-        }
+        final SketchOperation<T, R> sketchOp = new SketchOperation<>(sketch);
+        final byte[] serializedOp = SerializationUtils.serialize(sketchOp);
+        final Command command = Command.newBuilder()
+                                       .setIdsIndex(this.remoteHandle)
+                                       .setSerializedOp(ByteString.copyFrom(serializedOp))
+                                       .build();
+        final PublishSubject<PartialResult<R>> subj = PublishSubject.create();
+        final StreamObserver<PartialResponse> responseObserver = new SketchObserver<>(subj);
+        return subj.doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
+                                                 .sketch(command, responseObserver))
+                   .doOnUnsubscribe(() -> unsubscribe(sketchOp.id));
     }
 
+    /**
+     * Zip operation on two IDataSet objects that need to reside on the same remote server.
+     */
     @Override
-    public <S> Observable<PartialResult<IDataSet<Pair<T, S>>>> zip(
-            final IDataSet<S> other) {
+    public <S> Observable<PartialResult<IDataSet<Pair<T, S>>>> zip(final IDataSet<S> other) {
         if (!(other instanceof RemoteDataSet<?>)) {
             throw new RuntimeException("Unexpected type in Zip " + other);
         }
@@ -83,22 +110,116 @@ public class RemoteDataSet<T> implements IDataSet<T> {
 
         // zip commands are not valid if the RemoteDataSet instances point to different
         // actor systems or different nodes.
-        final Address leftAddress = this.remoteActor.path().address();
-        final Address rightAddress = rds.remoteActor.path().address();
+        final HostAndPort leftAddress = this.serverEndpoint;
+        final HostAndPort rightAddress = rds.serverEndpoint;
         if (!leftAddress.equals(rightAddress)) {
-            throw new RuntimeException("Zip command invalid for RemoteDataSets across different servers" +
-                    "| left: " + leftAddress + ", right:" + rightAddress);
+            throw new RuntimeException("Zip command invalid for RemoteDataSets " +
+                    "across different servers | left: " + leftAddress + ", right:" + rightAddress);
         }
 
-        final ZipOperation zip = new ZipOperation(rds.remoteActor);
-        final Future<Object> future = Patterns.ask(this.clientActor, zip, TIMEOUT_MS);
-        try {
-            @SuppressWarnings("unchecked")
-            final Observable<PartialResult<IDataSet<Pair<T, S>>>> retval =
-                (Observable<PartialResult<IDataSet<Pair<T, S>>>>) Await.result(future, duration);
-            return retval;
-        } catch (final Exception e) {
-            return Observable.error(e);
+        final ZipOperation zip = new ZipOperation(rds.remoteHandle);
+        final byte[] serializedOp = SerializationUtils.serialize(zip);
+        final Command command = Command.newBuilder()
+                                         .setIdsIndex(this.remoteHandle)
+                                         .setSerializedOp(ByteString.copyFrom(serializedOp))
+                                         .build();
+        final PublishSubject<PartialResult<IDataSet<Pair<T, S>>>> subj = PublishSubject.create();
+        final StreamObserver<PartialResponse> responseObserver =
+                                                        new NewDataSetObserver<Pair<T, S>>(subj);
+        return subj.doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
+                                                 .zip(command, responseObserver))
+                   .doOnUnsubscribe(() -> unsubscribe(zip.id));
+    }
+
+    /**
+     * Unsubscribes an operation. This method is safe to invoke multiple times because the
+     * logic on the remote end is idempotent.
+     */
+    private void unsubscribe(UUID id) {
+        UnsubscribeOperation op = new UnsubscribeOperation(id);
+        final byte[] serializedOp = SerializationUtils.serialize(op);
+        final Command command = Command.newBuilder()
+                                       .setIdsIndex(this.remoteHandle)
+                                       .setSerializedOp(ByteString.copyFrom(serializedOp))
+                                       .build();
+        this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
+                 .unsubscribe(command, new StreamObserver<Ack>() {
+            @Override
+            public void onNext(Ack ack) {
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+            }
+
+            @Override
+            public void onCompleted() {
+            }
+        });
+    }
+
+    /**
+     * A StreamObserver that transfers incoming onNext, onError and onCompleted invocations
+     * from a gRPC streaming call to that of a publish subject.
+     */
+    private abstract static class OperationObserver<T> implements StreamObserver<PartialResponse> {
+        protected final PublishSubject<T> subject;
+
+        public OperationObserver(PublishSubject<T> subject) {
+            this.subject = subject;
+        }
+
+        @Override
+        public void onNext(PartialResponse response) {
+            this.subject.onNext(processResponse(response));
+        }
+
+        @Override
+        public void onError(Throwable throwable) {
+            this.subject.onError(throwable);
+        }
+
+        @Override
+        public void onCompleted() {
+            this.subject.onCompleted();
+        }
+
+        public abstract T processResponse(PartialResponse response);
+    }
+
+    /**
+     * StreamObserver used by map() and zip() implementations above to point to instantiate
+     * a new RemoteDataSet that points to a dataset on a remote server.
+     */
+    private class NewDataSetObserver<S> extends OperationObserver<PartialResult<IDataSet<S>>> {
+        public NewDataSetObserver(PublishSubject<PartialResult<IDataSet<S>>> subject) {
+            super(subject);
+        }
+
+        @Override
+        public PartialResult<IDataSet<S>> processResponse(PartialResponse response) {
+            final OperationResponse op = SerializationUtils.deserialize(response
+                    .getSerializedOp().toByteArray());
+            final IDataSet<S> ids = new RemoteDataSet<S>(RemoteDataSet.this.serverEndpoint,
+                    (int) op.result);
+            return new PartialResult<IDataSet<S>>(ids);
+        }
+    }
+
+    /**
+     * StreamObserver used by sketch() implementation above.
+     */
+    private static class SketchObserver<S> extends OperationObserver<PartialResult<S>> {
+        public SketchObserver(PublishSubject<PartialResult<S>> subject) {
+            super(subject);
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public PartialResult<S> processResponse(PartialResponse response) {
+            final OperationResponse op = SerializationUtils.deserialize(response
+                    .getSerializedOp().toByteArray());
+            return (PartialResult<S>) op.result;
         }
     }
 }

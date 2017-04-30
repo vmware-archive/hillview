@@ -18,17 +18,15 @@
 
 package org.hiero.remoting;
 
-import akka.actor.ActorRef;
-
 import java.io.Serializable;
 
 /**
  * Message type to initiate a zip command against two RemoteDataSets
  */
 public class ZipOperation extends RemoteOperation implements Serializable {
-    public final ActorRef remoteActor;
+    public final int datasetIndex;
 
-    public ZipOperation(final ActorRef remoteActor) {
-        this.remoteActor = remoteActor;
+    public ZipOperation(final int datasetIndex) {
+        this.datasetIndex = datasetIndex;
     }
 }
