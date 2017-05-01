@@ -1,0 +1,5 @@
+language: java
+sudo: true
+jdk:
+        - oraclejdk8
+script: cd hieroplatform; mvn clean verify -Dorg.slf4j.simpleLogger.defaultLogLevel=OFF
