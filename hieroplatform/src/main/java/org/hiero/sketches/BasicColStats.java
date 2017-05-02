@@ -93,6 +93,10 @@ public class BasicColStats implements IJson {
         }
     }
 
+    /**
+     * @param otherStat The other BasicColStats structure to be merged with this.
+     * @return The merge of the two.
+     */
     public BasicColStats union(final BasicColStats otherStat) {
         BasicColStats result = new BasicColStats(this.momentCount);
         if (this.presentCount == 0)

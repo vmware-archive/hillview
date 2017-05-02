@@ -80,12 +80,14 @@ public class CsvFileReader {
     protected int currentColumn;
     @Nullable
     protected BaseListColumn[] columns;
+    protected long currentField;
 
     public CsvFileReader(final Path path, CsvConfiguration configuration) {
         this.filename = path;
         this.configuration = configuration;
         this.currentRow = 0;
         this.currentColumn = 0;
+        this.currentField = 0;
     }
 
     // May return null when an error occurs.
@@ -163,10 +165,17 @@ public class CsvFileReader {
         try {
             Converters.checkNull(this.columns);
             int columnCount = this.columns.length;
+            this.currentColumn = 0;
             if (data.length > columnCount)
                 this.error("Too many columns " + data.length + " vs " + columnCount);
-            for (this.currentColumn = 0; this.currentColumn < data.length; this.currentColumn++)
+            for (this.currentColumn = 0; this.currentColumn < data.length; this.currentColumn++) {
                 this.columns[this.currentColumn].parseAndAppendString(data[this.currentColumn]);
+                this.currentField++;
+                if ((this.currentField % 100000) == 0) {
+                    System.out.print(".");
+                    System.out.flush();
+                }
+            }
             if (data.length < columnCount) {
                 if (!this.configuration.allowFewerColumns)
                     this.error("Too few columns " + data.length + " vs " + columnCount);
@@ -176,10 +185,6 @@ public class CsvFileReader {
                 }
             }
             this.currentRow++;
-            if ((this.currentRow % 10000) == 0) {
-                System.out.print(".");
-                System.out.flush();
-            }
         } catch (Exception ex) {
             this.error(ex);
         }
@@ -187,8 +192,9 @@ public class CsvFileReader {
 
     protected String errorMessage() {
         return "Error while parsing CSV file " + this.filename.toString() +
-                " line " + this.currentRow + " column " +
-                Converters.checkNull(this.columns)[this.currentColumn].getName();
+                " line " + this.currentRow + " column " + this.currentColumn +
+                (this.currentColumn < this.columns.length ?
+                        Converters.checkNull(this.columns)[this.currentColumn].getName() : "");
     }
 
     protected void error(String message) {

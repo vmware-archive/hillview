@@ -18,6 +18,8 @@
 
 package org.hiero.sketch;
 
+import org.hiero.table.ColumnDescription;
+import org.hiero.table.api.ContentsKind;
 import org.hiero.utils.IntArrayGenerator;
 import org.hiero.table.IntArrayColumn;
 import org.hiero.table.api.IndexComparator;
@@ -64,7 +66,7 @@ public class IntArrayTest {
     @Test
     public void testIntArrayZero() {
         final int size = 100;
-        final IntArrayColumn col = IntArrayGenerator.generateIntArray(size);
+        final IntArrayColumn col = IntArrayGenerator.getMissingIntArray("X", size, 5);
         assertEquals(col.sizeInRows(), size);
         checkContents(col);
     }
@@ -77,7 +79,8 @@ public class IntArrayTest {
         final int[] data = new int[size];
         for (int i = 0; i < size; i++)
             data[i] = i;
-        final IntArrayColumn col = new IntArrayColumn(IntArrayGenerator.desc, data);
+        ColumnDescription desc = new ColumnDescription("A", ContentsKind.Integer, true);
+        final IntArrayColumn col = new IntArrayColumn(desc, data);
         for (int i = 0; i < size; i++)
             if ((i % 5) == 0)
                 col.setMissing(i);

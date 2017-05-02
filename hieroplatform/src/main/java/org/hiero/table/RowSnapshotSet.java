@@ -32,7 +32,7 @@ import java.util.function.Consumer;
  */
 public class RowSnapshotSet implements Serializable {
     protected final Schema schema;
-    protected UnifiedSetWithHashingStrategy<BaseRowSnapshot> rowSet;
+    protected final UnifiedSetWithHashingStrategy<BaseRowSnapshot> rowSet;
 
     public RowSnapshotSet(Schema schema) {
         this.schema = schema;

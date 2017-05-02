@@ -20,8 +20,6 @@ package org.hiero.utils;
 
 import org.apache.commons.math3.random.MersenneTwister;
 
-import javax.annotation.Nullable;
-
 public class Randomness {
     final private MersenneTwister myPrg;
 

@@ -36,6 +36,10 @@ public interface IIntColumn extends IColumn {
         return Integer.toString(this.getInt(rowIndex));
     }
 
+    /**
+     * @return Let x and y be values indexed by i and j. Returns sign(x - y) in {-1, 0, 1} where
+     * sign(0) = 0. Missing values are treated as +infinity. Two missing values are equal.
+     */
     default IndexComparator getComparator() {
         return new IndexComparator() {
             @Override

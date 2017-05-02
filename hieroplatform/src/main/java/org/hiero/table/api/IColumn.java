@@ -112,6 +112,8 @@ public interface IColumn {
     }
 
     default String getName() {
-        return getDescription().name;
+        return this.getDescription().name;
     }
+
+    default ContentsKind getKind() { return this.getDescription().kind;}
 }

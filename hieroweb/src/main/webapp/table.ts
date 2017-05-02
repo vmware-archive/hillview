@@ -241,9 +241,11 @@ export class TableView extends RemoteObject
             let o = this.order.clone();
             let rr = this.createRpcRequest("quantile", {
                 precision: 100,
+		tableSize: this.currentData.rowCount,
                 order: o,
                 position: position
             });
+	    console.log("expecting quantile: " + String(position));
             rr.invoke(new QuantileReceiver(this.getPage(), this, rr, o));
         }
     }

@@ -3,17 +3,11 @@ package org.hiero.sketch;
 import org.hiero.sketches.ExactFreqSketch;
 import org.hiero.sketches.FreqKList;
 import org.hiero.sketches.FreqKSketch;
-import org.hiero.table.BaseRowSnapshot;
-import org.hiero.table.RowSnapshot;
 import org.hiero.table.SmallTable;
 import org.hiero.table.Table;
 import org.hiero.table.api.ITable;
 import org.hiero.utils.TestTables;
 import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 
 
 public class ExactFreqSketchTest {

@@ -22,6 +22,7 @@ import org.hiero.table.*;
 import org.hiero.table.api.IColumn;
 import org.hiero.table.api.IMembershipSet;
 import org.hiero.table.api.ITable;
+import org.hiero.utils.IntArrayGenerator;
 import org.hiero.utils.TestTables;
 import org.junit.Test;
 
@@ -29,7 +30,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.hiero.sketch.DoubleArrayTest.generateDoubleArray;
-import static org.hiero.utils.IntArrayGenerator.generateIntArray;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -43,7 +43,8 @@ public class TableTest {
     @Test
     public void columnCompressTest() {
         final int size = 100;
-        final IntArrayColumn col = generateIntArray(size);
+        final int numCols = 3;
+        final IntArrayColumn col = IntArrayGenerator.getMissingIntArray("X", size, 5);
         final FullMembership FM = new FullMembership(size);
         final IMembershipSet PMD = FM.filter(row -> (row % 2) == 0);
         final IColumn smallCol = col.compress(PMD);
@@ -55,7 +56,7 @@ public class TableTest {
         final int size = 100;
         final int numCols =2;
         final List<IColumn> columns = new ArrayList<IColumn>(numCols);
-        columns.add(generateIntArray(size));
+        columns.add(IntArrayGenerator.getMissingIntArray("X", size, 5));
         columns.add(generateDoubleArray(size));
         FullMembership full = new FullMembership(size);
         IMembershipSet partial = full.filter(row -> (row % 2) == 0);
@@ -66,11 +67,20 @@ public class TableTest {
     }
 
     @Test
+    public void corrTableTest() {
+        int size = 1000;
+        int range = 10;
+        int numCols = 4;
+        SmallTable table = TestTables.getCorrelatedCols(size, numCols, range);
+        assertEquals(table.toString(), "Table, 4 columns, 1000 rows");
+    }
+
+    @Test
     public void tableTest1() {
         final int size = 100;
         final int numCols =2;
         final List<IColumn> columns = new ArrayList<IColumn>(numCols);
-        columns.add(generateIntArray(size));
+        columns.add(IntArrayGenerator.getMissingIntArray("A", size, 5));
         columns.add(generateDoubleArray(size));
         final FullMembership full = new FullMembership(size);
         final IMembershipSet partial = full.filter(row -> (row % 2) == 0);
