@@ -18,61 +18,71 @@
 
 package org.hiero.sketch;
 
-public class CsvReaderTest {
+import org.hiero.storage.CsvFileReader;
+import org.hiero.storage.CsvFileWriter;
+import org.hiero.table.Schema;
+import org.hiero.table.api.ITable;
+import org.junit.Assert;
+import org.junit.Test;
 
-    /*
+import javax.annotation.Nullable;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.UUID;
+
+public class CsvReaderTest {
     static final String dataFolder = "../data";
-    //static final String csvFile = "On_Time_Sample.csv";
-    static final String csvFile = "ESX_data.csv";
-    //static final String schemaFile = "On_Time.schema";
-    static final String schemaFile = "ESX.schema";
+    static final String csvFile = "On_Time_Sample.csv";
+    //static final String csvFile = "ESX_data.csv";
+    static final String schemaFile = "On_Time.schema";
+    //static final String schemaFile = "ESX.schema";
 
     @Nullable
     ITable readTable(String folder, String file) throws IOException {
         Path path = Paths.get(folder, file);
         CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
-        config.allowFewerColumns = true;
+        config.allowFewerColumns = false;
         config.hasHeaderRow = true;
         config.allowMissingData = false;
         CsvFileReader r = new CsvFileReader(path, config);
         return r.read();
     }
 
-    //@Test
+    @Test
     public void ReadCsvFileTest() throws IOException {
         ITable t = this.readTable(dataFolder, csvFile);
         Assert.assertNotNull(t);
-        Path path_schema = Paths.get(dataFolder, schemaFile);
-        t.getSchema().writeToJsonFile(path_schema);
     }
 
-    //@Test
+    @Test
     public void ReadCsvFileWithSchemaTest() throws IOException {
         Path path = Paths.get(dataFolder, schemaFile);
         Schema schema = Schema.readFromJsonFile(path);
         path = Paths.get(dataFolder, csvFile);
         CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
-        config.allowFewerColumns = true;
+        config.allowFewerColumns = false;
         config.hasHeaderRow = true;
-        config.allowMissingData = true;
+        config.allowMissingData = false;
         config.schema = schema;
         CsvFileReader r = new CsvFileReader(path, config);
         ITable t = r.read();
         Assert.assertNotNull(t);
+        /*
         System.gc();
         long mem = Runtime.getRuntime().totalMemory();
         long freeMem = Runtime.getRuntime().freeMemory();
-        System.out.printf("Total mememory %d, Free memory %d.", mem, freeMem);
+        System.out.printf("Total memory %d, Free memory %d.", mem, freeMem);*/
     }
 
-    //@Test
-   public void WriteCsvFileTest() throws IOException {
+    @Test
+    public void WriteCsvFileTest() throws IOException {
         ITable tbl = this.readTable(dataFolder, csvFile);
         Assert.assertNotNull(tbl);
         UUID uid = UUID.randomUUID();
         String tmpFileName = uid.toString();
         Path path = Paths.get(".", tmpFileName);
-
         try {
             CsvFileWriter writer = new CsvFileWriter(path);
             writer.setWriteHeaderRow(true);
@@ -95,5 +105,6 @@ public class CsvReaderTest {
                 Files.delete(path);
         }
     }
-    */
 }
+
+
