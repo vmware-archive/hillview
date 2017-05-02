@@ -71,11 +71,13 @@ public class HieroServer extends HieroServerGrpc.HieroServerImplBase {
                 @Override
                 public void onCompleted() {
                     responseObserver.onCompleted();
+                    HieroServer.this.operationToObservable.remove(mapOp.id);
                 }
 
                 @Override
                 public void onError(final Throwable throwable) {
                     responseObserver.onError(throwable);
+                    HieroServer.this.operationToObservable.remove(mapOp.id);
                 }
 
                 @Override
@@ -116,11 +118,13 @@ public class HieroServer extends HieroServerGrpc.HieroServerImplBase {
                 @Override
                 public void onCompleted() {
                     responseObserver.onCompleted();
+                    HieroServer.this.operationToObservable.remove(sketchOp.id);
                 }
 
                 @Override
                 public void onError(final Throwable throwable) {
                     responseObserver.onError(throwable);
+                    HieroServer.this.operationToObservable.remove(sketchOp.id);
                 }
 
                 @Override
@@ -160,11 +164,13 @@ public class HieroServer extends HieroServerGrpc.HieroServerImplBase {
                 @Override
                 public void onCompleted() {
                     responseObserver.onCompleted();
+                    HieroServer.this.operationToObservable.remove(zipOp.id);
                 }
 
                 @Override
                 public void onError(final Throwable throwable) {
                     responseObserver.onError(throwable);
+                    HieroServer.this.operationToObservable.remove(zipOp.id);
                 }
 
                 @Override
