@@ -19,11 +19,12 @@ public class RankInTable {
         this.table = table;
         this.ro = ro;
     }
-/**
- * Given a rowSnapshot, compute its rank in a table order according to a given recordOrder.
- * @param brs The rowSnapshot whose rank we wish to compute.
- * @return The rank of brs in the table, which is the number of elements that are strictly smaller.
- */
+
+    /**
+     * Given a rowSnapshot, compute its rank in a table order according to a given recordOrder.
+     * @param brs The rowSnapshot whose rank we wish to compute.
+     * @return Its rank in the table, which is the number of rows that are strictly smaller.
+     */
     public int getRank(BaseRowSnapshot brs) {
         int rank = 0;
         IRowIterator rowIt = this.table.getRowIterator();
@@ -38,7 +39,7 @@ public class RankInTable {
     }
 
     /**
-     * Given a small table, compute the rank of each rows in a large table order according to
+     * Given a small table, compute the rank of each row in a large table order according to
      * a given recordOrder.
      * @param st The small table.
      * @return An integer array containing the rank of each row.

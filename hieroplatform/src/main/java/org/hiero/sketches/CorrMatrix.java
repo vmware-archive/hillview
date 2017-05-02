@@ -1,80 +1,90 @@
 package org.hiero.sketches;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 /**
- * This matrix is used in computing the inner products between a list of columns. It implements the
- * ICorrelation interface to compute  norms, correlations and inner-products between columns. See
- * ICorrelation for a precise definition of these quantities.
+ * This rawMatrix is used in computing the inner products between a list of columns. It implements
+ * the ICorrelation interface to compute  norms, correlations and inner-products between columns.
+ * See ICorrelation for a precise definition of these quantities.
  */
 public class CorrMatrix implements ICorrelation {
     /**
      * The list of columns whose correlation we wish to compute.
      */
-    private final List<String> colNames;
+    private final HashMap<String, Integer> colNum;
     /**
      * A matrix that records the un-normalized inner products between pairs of columns.
      */
-    private final double[][] matrix;
+    private final double[][] rawMatrix;
+    /**
+    * A matrix that computes correlations between pairs of columns.
+    */
+    public double[][] corrMatrix;
     /**
      * A count of the number of entries processed so far.
      */
     public long count;
 
     public CorrMatrix(List<String> colNames) {
-        this.colNames = colNames;
-        this.matrix = new double[colNames.size()][colNames.size()];
+        this.colNum = new HashMap<>(colNames.size());
+        for (int i=0; i < colNames.size(); i++)
+            this.colNum.put(colNames.get(i), i);
+        this.rawMatrix = new double[colNames.size()][colNames.size()];
         this.count = 0;
+        corrMatrix = null;
     }
 
     public void update(int i, int j, double val) {
-        this.matrix[i][j] += val;
+        this.rawMatrix[i][j] += val;
     }
 
     public double get(int i, int j) {
-        return this.matrix[i][j];
-    }
-
-    @Override
-    public double getCorrelation(String s, String t) {
-        int i = this.colNames.indexOf(s);
-        int j = this.colNames.indexOf(t);
-        double val = (i <= j) ? this.matrix[i][j] : this.matrix[j][i];
-        return val/Math.sqrt(this.matrix[i][i]*this.matrix[j][j]);
+        return this.rawMatrix[i][j];
     }
 
     @Override
     public double[][] getCorrelationMatrix() {
-        double[][] m = new double[this.colNames.size()][this.colNames.size()];
-        for (int i = 0; i < this.colNames.size(); i++)
-            for (int j = i; j < this.colNames.size(); j++) {
-                m[i][j] = this.matrix[i][j] / (Math.sqrt(this.matrix[i][i] * this.matrix[j][j]));
-                m[j][i] = m[i][j];
-            }
-        return m;
-    }
-
-    @Override
-    public double getNorm(String s) {
-        return Math.sqrt(this.matrix[this.colNames.indexOf(s)][this.colNames.indexOf(s)]/this.count);
-    }
-
-    @Override
-    public double getInnerProduct(String s, String t) {
-        int i = this.colNames.indexOf(s);
-        int j = this.colNames.indexOf(t);
-        return (((i <= j) ? this.matrix[i][j] : this.matrix[j][i])/this.count);
+        if (this.corrMatrix == null) {
+            this.corrMatrix = new double[this.colNum.size()][this.colNum.size()];
+            for (int i = 0; i < this.colNum.size(); i++)
+                for (int j = i; j < this.colNum.size(); j++) {
+                    this.corrMatrix[i][j] = this.rawMatrix[i][j] / (Math.sqrt(this.rawMatrix[i][i] * this.rawMatrix[j][j]));
+                    this.corrMatrix[j][i] = this.corrMatrix[i][j];
+                }
+        }
+        return this.corrMatrix;
     }
 
     @Override
     public double[] getCorrelationWith(String s) {
-        return getCorrelationMatrix()[this.colNames.indexOf(s)];
+            return this.getCorrelationMatrix()[this.colNum.get(s)];
     }
 
+    @Override
+    public double getCorrelation(String s, String t) {
+        int i = this.colNum.get(s);
+        int j = this.colNum.get(t);
+        return this.getCorrelationMatrix()[i][j];
+    }
+
+    @Override
+    public double getNorm(String s) {
+        return Math.sqrt(this.rawMatrix[this.colNum.get(s)][this.colNum.get(s)]/this.count);
+    }
+
+    @Override
+    public double getInnerProduct(String s, String t) {
+        int i = this.colNum.get(s);
+        int j = this.colNum.get(t);
+        return (((i <= j) ? this.rawMatrix[i][j] : this.rawMatrix[j][i])/this.count);
+    }
+
+
     public String toString() {
-        return "Number of columns:  " + String.valueOf(this.colNames.size()) + "\n" +
+        return "Number of columns:  " + String.valueOf(this.colNum.size()) + "\n" +
                 "Total count: " + String.valueOf(this.count) + "\n" +
-                Arrays.deepToString(this.matrix);
+                Arrays.deepToString(this.rawMatrix);
     }
 }

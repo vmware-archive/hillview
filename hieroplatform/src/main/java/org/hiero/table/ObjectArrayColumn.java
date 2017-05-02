@@ -157,9 +157,8 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
      * @param mergeLeft The order in which to merge the two columns.
      * @return The merged column.
      */
-    public static ObjectArrayColumn mergeColumns(final IColumn left,
-                                           final IColumn right,
-                                           final boolean[] mergeLeft) {
+    public static ObjectArrayColumn mergeColumns(final IColumn left, final IColumn right,
+                                                 final boolean[] mergeLeft) {
         if (mergeLeft.length != (left.sizeInRows() + right.sizeInRows())) {
             throw new InvalidParameterException("Length of mergeOrder must equal " +
                     "sum of lengths of the columns");

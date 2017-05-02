@@ -80,9 +80,6 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
      * Creates the MG sketch, by the Misra-Gries algorithm.
      * @param data  Data to sketch.
      * @return A FreqKList.
-     * An optimization to speed up the algorithm is that we batch the decrements together in a
-     * variable dec. We only perform an actual decrement when the total decrements equal the minimum
-     * count among the counts we are currently storing.
      */
     @Override
     public FreqKList create(ITable data) {
@@ -108,8 +105,11 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
                 UnifiedMapWithHashingStrategy<Integer, Integer>(hs);
         List<Integer> toRemove = new ArrayList<Integer>(this.maxSize);
         int i = rowIt.getNextRow();
+        /* An optimization to speed up the algorithm is that we batch the decrements together in
+        variable dec. We only perform an actual decrement when the total decrements equal the minimum
+        count among the counts we are currently storing.*/
         int min = 0; // Minimum count currently in the hashMap
-        int dec = 0; // Accumulated decrements. Should always be less than min
+        int dec = 0; // Accumulated decrements. Should always be less than min.
         while (i != -1) {
             if (hMap.containsKey(i)) {
                 int val = hMap.get(i);

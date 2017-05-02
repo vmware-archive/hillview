@@ -41,17 +41,17 @@ public class JLSketch implements ISketch<ITable, JLProjection>{
         return new JLProjection(this.colNames, this.lowDim);
     }
 
-    /**
-     * Since the sketch is linear, we can add sketches computed at different leaves point-wise.
-     */
     @Nullable
     @Override
     public JLProjection add(@Nullable JLProjection left, @Nullable JLProjection right) {
-        for(String s: left.colNames)
-            for (int i = 0; i < this.lowDim; i++) {
-                double val = left.get(s, i) + right.get(s, i);
-                left.update(s, i, val);
-            }
+        for(String s: left.colNames) {
+            double a[] = left.hMap.get(s);
+            double b[] = right.hMap.get(s);
+            double val[] = new double[lowDim];
+            for (int i = 0; i < this.lowDim; i++)
+                val[i] = a[i] + b[i];
+            left.hMap.put(s, val);
+        }
         left.highDim += right.highDim;
         return left;
     }
@@ -61,12 +61,11 @@ public class JLSketch implements ISketch<ITable, JLProjection>{
      * matrix is applied to every column. Currently, we discard the random bits after processing the
      * relevant row of the Table.
      * @param data  Data to sketch.
-     * @return A JLprojection which is simple a vector of doubles of dimension lowDim for each
-     * column, together with the number of entries in the table.
+     * @return A JL projection.
      */
     @Override
     public JLProjection create(ITable data) {
-        for(String col : this.colNames) {
+        for (String col : this.colNames) {
             if (!data.getSchema().getColumnNames().contains(col))
                 throw new InvalidParameterException("No column found with the name: " + col);
             if ((data.getSchema().getKind(col) != ContentsKind.Double) &&

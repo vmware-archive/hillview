@@ -94,7 +94,6 @@ public class BasicColStats implements IJson {
     }
 
     /**
-     * Merges two BasicColStats data structures.
      * @param otherStat The other BasicColStats structure to be merged with this.
      * @return The merge of the two.
      */

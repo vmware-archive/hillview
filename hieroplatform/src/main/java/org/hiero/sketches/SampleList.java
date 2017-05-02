@@ -5,7 +5,8 @@ import org.hiero.table.RowSnapshot;
 import org.hiero.table.SmallTable;
 
 /**
- * A sample of rows from a large table, stored in a small table, sorted according to some order.
+ * A sample of rows from a large table, stored in a small table. The expectation is that the rows
+ * are sorted according to some order (this is needed for the getRow method to be meaningful).
  */
 public class SampleList {
     /**
@@ -18,18 +19,17 @@ public class SampleList {
     }
 
     /**
-     * Returns the empirical p^th quantile
-     * @param p
-     * @return The p^th row in the sample
+     * @param q in (0,1), which is the desired quantile.
+     * @return Assuming the rows are sorted, this method returns the empirical p^th quantile as an
+     * estimator for the p^th quantile in the large table.
      */
-    public RowSnapshot getRow(double p) {
-        return new RowSnapshot(this.table, (int) (p*this.table.getNumOfRows()));
+    public RowSnapshot getRow(double q) {
+        return new RowSnapshot(this.table, (int) (q*this.table.getNumOfRows()));
     }
 
-    /** A method that can be sued in testing to estimate the quality of the quantiles sketch.
-     * It returns  a specified number of equally spaced rows from the sample table.
-     * @param resolution The number of rows.
-     * @return
+    /** A method that can be used in testing to estimate the quality of the quantiles sketch.
+     * @param resolution The desired number of rows.
+     * @return Equally spaced rows from the sample table.
      */
     public SmallTable getQuantiles(int resolution) {
         if (this.table.getNumOfRows() < (resolution + 1))
@@ -42,6 +42,4 @@ public class SampleList {
             return this.table.compress(new ArrayRowOrder(order));
         }
     }
-
-
 }

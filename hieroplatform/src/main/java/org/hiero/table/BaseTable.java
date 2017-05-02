@@ -142,7 +142,7 @@ public abstract class BaseTable implements ITable {
         while ((nextRow < startRow) && (nextRow != -1))
             nextRow = rowIt.getNextRow();
         int count = 0;
-        while ((nextRow !=  -1) && (count < rowsToDisplay)) {
+        while ((nextRow >= 0) && (count < rowsToDisplay)) {
             RowSnapshot rs = new RowSnapshot(this, nextRow);
             builder.append(rs.toString());
             builder.append(System.getProperty("line.separator"));

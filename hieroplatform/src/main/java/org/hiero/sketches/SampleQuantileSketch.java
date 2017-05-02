@@ -15,20 +15,17 @@ import java.util.List;
 
 import static org.hiero.table.ObjectArrayColumn.mergeColumns;
 
-public class SampleQuantileSketch  implements ISketch<ITable, SampleList>{
-
+public class SampleQuantileSketch  implements ISketch<ITable, SampleList> {
     private final RecordOrder colSortOrder;
-
     /**
      * The rate at which we sample the data. It is set to be 5*(resolution)^2/dataSize,
      * so we expect a table of size 5*(resolution)^2. This is chosen so that the desired accuracy in
      * the quantiles is 1/resolution. It can be tuned by changing the size by a constant factor.
-     * We currently use resolution of 100, so the expected sample size is 50,000.
+     * For a resolution of 100, the expected sample size is 50,000.
      */
     private final double samplingRate;
-
     /**
-     * @param sortOrder The list of column orientations.
+     * @param sortOrder The sorting order on the columns.
      * @param resolution Number of buckets: percentiles correspond to 100 buckets etc.
      * @param dataSize The size of the input table on which we want to run the quantile computation.
      */
@@ -61,9 +58,6 @@ public class SampleQuantileSketch  implements ISketch<ITable, SampleList>{
 
     /**
      * Merges two sample tables with the ordering specified by sortOrder.
-     * @param left The left table
-     * @param right The right table
-     * @return The merged table
      */
     @Override
     public SampleList add(@Nullable SampleList left, @Nullable SampleList right) {

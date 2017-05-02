@@ -1,10 +1,7 @@
 package org.hiero.sketches;
 
 import org.hiero.dataset.api.ISketch;
-import org.hiero.table.api.ContentsKind;
-import org.hiero.table.api.IMembershipSet;
-import org.hiero.table.api.IRowIterator;
-import org.hiero.table.api.ITable;
+import org.hiero.table.api.*;
 
 import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
@@ -13,22 +10,22 @@ import java.util.List;
 /**
  * A sketch to compute correlations between columns, using sampling.
  */
-public class SampleCorrelationSketch implements ISketch<ITable, CorrMatrix>{
+public class SampleCorrelationSketch implements ISketch<ITable, CorrMatrix> {
     /**
      * The list of columns whose correlations we wish to compute. The columns are must be of type
      * Int or Double.
      */
     private final List<String> colNames;
-    /**
-     * The probability of a row being included in the sample, default value is 0.1
-     */
     private final double samplingRate;
 
-    public SampleCorrelationSketch(List<String> colNames, double p) {
+    public SampleCorrelationSketch(List<String> colNames, double samplingRate) {
         this.colNames= colNames;
-        this.samplingRate = p;
+        this.samplingRate = samplingRate;
     }
 
+    /**
+     * The default probability of a row being included in the sample is 0.1
+     */
     public SampleCorrelationSketch(List<String> colNames) {
         this.colNames= colNames;
         this.samplingRate = 0.1;
@@ -51,8 +48,8 @@ public class SampleCorrelationSketch implements ISketch<ITable, CorrMatrix>{
     }
 
     /**
-     * We sample from the table with probability given by the sampling rate, and compute with the
-     * sampled Table.
+     * We sample rows from the table with probability given by the sampling rate. We then compute
+     * the exact correlation for the sampled Table.
      * @param data  Data to sketch.
      * @return A correlation matrix computed over the sampled table.
      */
@@ -66,18 +63,22 @@ public class SampleCorrelationSketch implements ISketch<ITable, CorrMatrix>{
                 throw new InvalidParameterException("Projection Sketch requires columm to be " +
                         "integer or double: " + col);
         }
+        IColumn[] iCols = new IColumn[this.colNames.size()];
+        for (int l=0; l < this.colNames.size(); l++)
+            iCols[l] = data.getColumn(this.colNames.get(l));
         CorrMatrix cm = new CorrMatrix(this.colNames);
         IMembershipSet sampleData = data.getMembershipSet().sample(this.samplingRate);
         cm.count = sampleData.getSize();
         IRowIterator rowIt = sampleData.getIterator();
         int i = rowIt.getNextRow();
         double valj, valk;
+        IStringConverter none = null; // not needed for these columns
         while (i != -1) {
             for (int j = 0; j < this.colNames.size(); j++) {
-                valj = data.getColumn(this.colNames.get(j)).asDouble(i, null);
+                valj = iCols[j].asDouble(i, none);
                 cm.update(j, j, valj * valj);
                 for (int k = j + 1; k < this.colNames.size(); k++) {
-                    valk = data.getColumn(this.colNames.get(k)).asDouble(i, null);
+                    valk = iCols[k].asDouble(i, none);
                     cm.update(j, k, valj * valk);
                 }
             }

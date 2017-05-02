@@ -89,10 +89,6 @@ public interface IColumn {
     @Nullable
     String asString(int rowIndex);
 
-    /**
-     * If both values are present, this will just return the comp
-     * @return
-     */
     IndexComparator getComparator();
 
     /**
@@ -116,8 +112,8 @@ public interface IColumn {
     }
 
     default String getName() {
-        return getDescription().name;
+        return this.getDescription().name;
     }
 
-    default ContentsKind getKind() { return getDescription().kind;}
+    default ContentsKind getKind() { return this.getDescription().kind;}
 }
