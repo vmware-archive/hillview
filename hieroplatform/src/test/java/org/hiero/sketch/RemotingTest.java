@@ -18,6 +18,7 @@
 
 package org.hiero.sketch;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.net.HostAndPort;
 import org.hiero.dataset.LocalDataSet;
 import org.hiero.dataset.ParallelDataSet;
@@ -33,6 +34,8 @@ import rx.observers.TestSubscriber;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -78,6 +81,26 @@ public class RemotingTest {
             int sum = 0;
             for (int d : data) sum += d;
             return sum;
+        }
+    }
+
+    private static class ImmutableListSketch implements ISketch<int[], List<Integer>> {
+        @Override @Nullable
+        public List<Integer> zero() {
+            return ImmutableList.of();
+        }
+
+        @Override @Nullable
+        public List<Integer> add(@Nullable final List<Integer> left,
+                                 @Nullable final List<Integer> right) {
+            return ImmutableList.<Integer>builder()
+                                .addAll(Converters.checkNull(left))
+                                .addAll(Converters.checkNull(right)).build();
+        }
+
+        @Override
+        public List<Integer> create(final int[] data) {
+            return ImmutableList.of(1);
         }
     }
 
@@ -150,6 +173,24 @@ public class RemotingTest {
         ts.assertError(RuntimeException.class);
     }
 
+
+    @Test
+    public void testMapSketchThroughClientWithImmutableCollection() {
+        final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(serverAddress);
+        final IDataSet<int[]> remoteIdsNew = remoteIds.map(new IncrementMap())
+                                                      .toBlocking()
+                                                      .last().deltaValue;
+        assertNotNull(remoteIdsNew);
+        final Observable<PartialResult<List<Integer>>> resultObs =
+                remoteIdsNew.sketch(new ImmutableListSketch());
+        final List<Integer> result = resultObs.map(e -> e.deltaValue)
+                                              .toBlocking()
+                                              .last();
+        for (int val: result) {
+            assertEquals(1, val);
+        }
+    }
+
     @Test
     public void testUnsubscribe() {
         final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(serverAddress);
@@ -170,6 +211,31 @@ public class RemotingTest {
         resultObs.toBlocking().subscribe(ts);
         ts.assertValueCount(3);
         ts.assertNotCompleted();
+    }
+
+    @Test
+    public void testDoOnUnsubscribeByCaller() {
+        final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(serverAddress);
+        final AtomicInteger count = new AtomicInteger(0);
+        final Observable<PartialResult<Integer>> resultObs =
+                remoteIds.sketch(new SumSketch()).doOnUnsubscribe(() -> count.incrementAndGet());
+        TestSubscriber<PartialResult<Integer>> ts =
+                new TestSubscriber<PartialResult<Integer>>() {
+                    private int counter = 0;
+
+                    @Override
+                    public void onNext(final PartialResult<Integer> pr) {
+                        this.counter++;
+                        super.onNext(pr);
+                        if (this.counter == 3)
+                            this.unsubscribe();
+                    }
+                };
+
+        resultObs.toBlocking().subscribe(ts);
+        ts.assertValueCount(3);
+        ts.assertNotCompleted();
+        assertEquals(1, count.get());
     }
 
     @Test

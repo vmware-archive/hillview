@@ -29,6 +29,7 @@ import org.hiero.pb.Command;
 import org.hiero.pb.HieroServerGrpc;
 import org.hiero.pb.PartialResponse;
 import org.hiero.remoting.*;
+import org.hiero.utils.Converters;
 import rx.Observable;
 import rx.subjects.PublishSubject;
 
@@ -57,7 +58,7 @@ public class RemoteDataSet<T> implements IDataSet<T> {
         this.remoteHandle = remoteHandle;
         this.stub = HieroServerGrpc.newStub(NettyChannelBuilder
                 .forAddress(serverEndpoint.getHost(), serverEndpoint.getPort())
-                .usePlaintext(true)
+                .usePlaintext(true)   // channel is unencrypted.
                 .build());
     }
 
@@ -77,7 +78,7 @@ public class RemoteDataSet<T> implements IDataSet<T> {
         final StreamObserver<PartialResponse> responseObserver = new NewDataSetObserver<S>(subj);
         return subj.doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
                                                  .map(command, responseObserver))
-                   .doOnUnsubscribe(() -> unsubscribe(mapOp.id));
+                   .doOnUnsubscribe(() -> this.unsubscribe(mapOp.id));
     }
 
     /**
@@ -95,7 +96,7 @@ public class RemoteDataSet<T> implements IDataSet<T> {
         final StreamObserver<PartialResponse> responseObserver = new SketchObserver<>(subj);
         return subj.doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
                                                  .sketch(command, responseObserver))
-                   .doOnUnsubscribe(() -> unsubscribe(sketchOp.id));
+                   .doOnUnsubscribe(() -> this.unsubscribe(sketchOp.id));
     }
 
     /**
@@ -128,15 +129,15 @@ public class RemoteDataSet<T> implements IDataSet<T> {
                                                         new NewDataSetObserver<Pair<T, S>>(subj);
         return subj.doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
                                                  .zip(command, responseObserver))
-                   .doOnUnsubscribe(() -> unsubscribe(zip.id));
+                   .doOnUnsubscribe(() -> this.unsubscribe(zip.id));
     }
 
     /**
      * Unsubscribes an operation. This method is safe to invoke multiple times because the
      * logic on the remote end is idempotent.
      */
-    private void unsubscribe(UUID id) {
-        UnsubscribeOperation op = new UnsubscribeOperation(id);
+    private void unsubscribe(final UUID id) {
+        final UnsubscribeOperation op = new UnsubscribeOperation(id);
         final byte[] serializedOp = SerializationUtils.serialize(op);
         final Command command = Command.newBuilder()
                                        .setIdsIndex(this.remoteHandle)
@@ -145,11 +146,11 @@ public class RemoteDataSet<T> implements IDataSet<T> {
         this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
                  .unsubscribe(command, new StreamObserver<Ack>() {
             @Override
-            public void onNext(Ack ack) {
+            public void onNext(final Ack ack) {
             }
 
             @Override
-            public void onError(Throwable throwable) {
+            public void onError(final Throwable throwable) {
             }
 
             @Override
@@ -165,17 +166,17 @@ public class RemoteDataSet<T> implements IDataSet<T> {
     private abstract static class OperationObserver<T> implements StreamObserver<PartialResponse> {
         protected final PublishSubject<T> subject;
 
-        public OperationObserver(PublishSubject<T> subject) {
+        public OperationObserver(final PublishSubject<T> subject) {
             this.subject = subject;
         }
 
         @Override
-        public void onNext(PartialResponse response) {
+        public void onNext(final PartialResponse response) {
             this.subject.onNext(processResponse(response));
         }
 
         @Override
-        public void onError(Throwable throwable) {
+        public void onError(final Throwable throwable) {
             this.subject.onError(throwable);
         }
 
@@ -184,7 +185,7 @@ public class RemoteDataSet<T> implements IDataSet<T> {
             this.subject.onCompleted();
         }
 
-        public abstract T processResponse(PartialResponse response);
+        public abstract T processResponse(final PartialResponse response);
     }
 
     /**
@@ -197,11 +198,11 @@ public class RemoteDataSet<T> implements IDataSet<T> {
         }
 
         @Override
-        public PartialResult<IDataSet<S>> processResponse(PartialResponse response) {
+        public PartialResult<IDataSet<S>> processResponse(final PartialResponse response) {
             final OperationResponse op = SerializationUtils.deserialize(response
                     .getSerializedOp().toByteArray());
-            final IDataSet<S> ids = new RemoteDataSet<S>(RemoteDataSet.this.serverEndpoint,
-                    (int) op.result);
+            final IDataSet<S> ids = (op.result == null) ? null :
+                    new RemoteDataSet<S>(RemoteDataSet.this.serverEndpoint, (int) op.result);
             return new PartialResult<IDataSet<S>>(ids);
         }
     }
@@ -210,16 +211,16 @@ public class RemoteDataSet<T> implements IDataSet<T> {
      * StreamObserver used by sketch() implementation above.
      */
     private static class SketchObserver<S> extends OperationObserver<PartialResult<S>> {
-        public SketchObserver(PublishSubject<PartialResult<S>> subject) {
+        public SketchObserver(final PublishSubject<PartialResult<S>> subject) {
             super(subject);
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        public PartialResult<S> processResponse(PartialResponse response) {
+        public PartialResult<S> processResponse(final PartialResponse response) {
             final OperationResponse op = SerializationUtils.deserialize(response
                     .getSerializedOp().toByteArray());
-            return (PartialResult<S>) op.result;
+            return (PartialResult<S>) Converters.checkNull(op.result);
         }
     }
 }

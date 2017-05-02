@@ -58,38 +58,43 @@ public class HieroServer extends HieroServerGrpc.HieroServerImplBase {
     @Override
     @SuppressWarnings("unchecked")
     public void map(final Command command, final StreamObserver<PartialResponse> responseObserver) {
-        if (!checkValidIdsIndex(command.getIdsIndex(), responseObserver)) {
-            return;
-        }
-        final byte[] bytes = command.getSerializedOp().toByteArray();
-        final MapOperation mapOp = SerializationUtils.deserialize(bytes);
-        Observable<PartialResult<IDataSet>> observable = this.dataSets.get(command.getIdsIndex())
-                                                                      .map(mapOp.mapper);
-        Subscription sub = observable.subscribe(new Subscriber<PartialResult<IDataSet>>() {
-            @Override
-            public void onCompleted() {
-                responseObserver.onCompleted();
+        try {
+            if (!this.checkValidIdsIndex(command.getIdsIndex(), responseObserver)) {
+                return;
             }
+            final byte[] bytes = command.getSerializedOp().toByteArray();
+            final MapOperation mapOp = SerializationUtils.deserialize(bytes);
+            final Observable<PartialResult<IDataSet>> observable =
+                    this.dataSets.get(command.getIdsIndex())
+                                 .map(mapOp.mapper);
+            final Subscription sub = observable.subscribe(new Subscriber<PartialResult<IDataSet>>() {
+                @Override
+                public void onCompleted() {
+                    responseObserver.onCompleted();
+                }
 
-            @Override
-            public void onError(Throwable throwable) {
-                responseObserver.onError(throwable);
-            }
+                @Override
+                public void onError(final Throwable throwable) {
+                    responseObserver.onError(throwable);
+                }
 
-            @Override
-            public void onNext(PartialResult<IDataSet> pr) {
-                // We only stream back the last entry which is the IDataSet object
-                if (pr.deltaValue != null) {
-                    final int idsIndex = HieroServer.this.dsIndex.incrementAndGet();
-                    HieroServer.this.dataSets.put(idsIndex, Converters.checkNull(pr.deltaValue));
+                @Override
+                public void onNext(final PartialResult<IDataSet> pr) {
+                    Integer idsIndex = null;
+                    if (pr.deltaValue != null) {
+                        idsIndex = HieroServer.this.dsIndex.incrementAndGet();
+                        HieroServer.this.dataSets.put(idsIndex, Converters.checkNull(pr.deltaValue));
+                    }
                     final OperationResponse<Integer> res = new OperationResponse<Integer>(idsIndex);
                     final byte[] bytes = SerializationUtils.serialize(res);
                     responseObserver.onNext(PartialResponse.newBuilder()
-                                              .setSerializedOp(ByteString.copyFrom(bytes)).build());
+                                                           .setSerializedOp(ByteString.copyFrom(bytes)).build());
                 }
-            }
-        });
-        this.operationToObservable.put(mapOp.id, sub);
+            });
+            this.operationToObservable.put(mapOp.id, sub);
+        } catch (final Exception e) {
+            responseObserver.onError(e);
+        }
     }
 
     /**
@@ -99,35 +104,39 @@ public class HieroServer extends HieroServerGrpc.HieroServerImplBase {
     @SuppressWarnings("unchecked")
     public void sketch(final Command command,
                        final StreamObserver<PartialResponse> responseObserver) {
-        if (!checkValidIdsIndex(command.getIdsIndex(), responseObserver)) {
-            return;
-        }
-        final byte[] bytes = command.getSerializedOp().toByteArray();
-        final SketchOperation sketchOp = SerializationUtils.deserialize(bytes);
-        Observable<PartialResult> observable = this.dataSets.get(command.getIdsIndex())
+        try {
+            if (!this.checkValidIdsIndex(command.getIdsIndex(), responseObserver)) {
+                return;
+            }
+            final byte[] bytes = command.getSerializedOp().toByteArray();
+            final SketchOperation sketchOp = SerializationUtils.deserialize(bytes);
+            final Observable<PartialResult> observable = this.dataSets.get(command.getIdsIndex())
                                                                       .sketch(sketchOp.sketch);
-        Subscription sub = observable.subscribe(new Subscriber<PartialResult>() {
-            @Override
-            public void onCompleted() {
-                responseObserver.onCompleted();
-            }
+            final Subscription sub = observable.subscribe(new Subscriber<PartialResult>() {
+                @Override
+                public void onCompleted() {
+                    responseObserver.onCompleted();
+                }
 
-            @Override
-            public void onError(Throwable throwable) {
-                responseObserver.onError(throwable);
-            }
+                @Override
+                public void onError(final Throwable throwable) {
+                    responseObserver.onError(throwable);
+                }
 
-            @Override
-            public void onNext(PartialResult pr) {
-                final OperationResponse<PartialResult> res =
-                        new OperationResponse<PartialResult>(pr);
-                final byte[] bytes = SerializationUtils.serialize(res);
-                responseObserver.onNext(PartialResponse.newBuilder()
-                                                .setSerializedOp(ByteString.copyFrom(bytes))
-                                                .build());
-            }
-        });
-        this.operationToObservable.put(sketchOp.id, sub);
+                @Override
+                public void onNext(final PartialResult pr) {
+                    final OperationResponse<PartialResult> res =
+                            new OperationResponse<PartialResult>(pr);
+                    final byte[] bytes = SerializationUtils.serialize(res);
+                    responseObserver.onNext(PartialResponse.newBuilder()
+                                                           .setSerializedOp(ByteString.copyFrom(bytes))
+                                                           .build());
+                }
+            });
+            this.operationToObservable.put(sketchOp.id, sub);
+        } catch (final Exception e) {
+            responseObserver.onError(e);
+        }
     }
 
     /**
@@ -136,40 +145,45 @@ public class HieroServer extends HieroServerGrpc.HieroServerImplBase {
     @Override
     @SuppressWarnings("unchecked")
     public void zip(final Command command, final StreamObserver<PartialResponse> responseObserver) {
-        final byte[] bytes = command.getSerializedOp().toByteArray();
-        final ZipOperation zipOp = SerializationUtils.deserialize(bytes);
-        if (!checkValidIdsIndex(command.getIdsIndex(), responseObserver)
-            || !checkValidIdsIndex(zipOp.datasetIndex, responseObserver)) {
-            return;
-        }
-        final IDataSet other = this.dataSets.get(zipOp.datasetIndex);
-        Observable<PartialResult<IDataSet>> observable = this.dataSets.get(command.getIdsIndex())
-                                                            .zip(other);
-        Subscription sub = observable.subscribe(new Subscriber<PartialResult<IDataSet>>() {
-            @Override
-            public void onCompleted() {
-                responseObserver.onCompleted();
+        try {
+            final byte[] bytes = command.getSerializedOp().toByteArray();
+            final ZipOperation zipOp = SerializationUtils.deserialize(bytes);
+            if (!this.checkValidIdsIndex(command.getIdsIndex(), responseObserver)
+                    || !this.checkValidIdsIndex(zipOp.datasetIndex, responseObserver)) {
+                return;
             }
-
-            @Override
-            public void onError(Throwable throwable) {
-                responseObserver.onError(throwable);
-            }
-
-            @Override
-            public void onNext(PartialResult<IDataSet> pr) {
-                if (isUnsubscribed()) {
-                    return;
+            final IDataSet other = this.dataSets.get(zipOp.datasetIndex);
+            final Observable<PartialResult<IDataSet>> observable =
+                    this.dataSets.get(command.getIdsIndex())
+                                 .zip(other);
+            final Subscription sub = observable.subscribe(new Subscriber<PartialResult<IDataSet>>() {
+                @Override
+                public void onCompleted() {
+                    responseObserver.onCompleted();
                 }
-                final int idsIndex = HieroServer.this.dsIndex.incrementAndGet();
-                HieroServer.this.dataSets.put(idsIndex, Converters.checkNull(pr.deltaValue));
-                final OperationResponse<Integer> res = new OperationResponse<Integer>(idsIndex);
-                final byte[] bytes = SerializationUtils.serialize(res);
-                responseObserver.onNext(PartialResponse.newBuilder()
-                                              .setSerializedOp(ByteString.copyFrom(bytes)).build());
-            }
-        });
-        this.operationToObservable.put(zipOp.id, sub);
+
+                @Override
+                public void onError(final Throwable throwable) {
+                    responseObserver.onError(throwable);
+                }
+
+                @Override
+                public void onNext(final PartialResult<IDataSet> pr) {
+                    Integer idsIndex = null;
+                    if (pr.deltaValue != null) {
+                        idsIndex = HieroServer.this.dsIndex.incrementAndGet();
+                        HieroServer.this.dataSets.put(idsIndex, Converters.checkNull(pr.deltaValue));
+                    }
+                    final OperationResponse<Integer> res = new OperationResponse<Integer>(idsIndex);
+                    final byte[] bytes = SerializationUtils.serialize(res);
+                    responseObserver.onNext(PartialResponse.newBuilder()
+                                                           .setSerializedOp(ByteString.copyFrom(bytes)).build());
+                }
+            });
+            this.operationToObservable.put(zipOp.id, sub);
+        } catch (final Exception e) {
+            responseObserver.onError(e);
+        }
     }
 
     /**
@@ -177,11 +191,15 @@ public class HieroServer extends HieroServerGrpc.HieroServerImplBase {
      */
     @Override
     public void unsubscribe(final Command command, final StreamObserver<Ack> responseObserver) {
-        final byte[] bytes = command.getSerializedOp().toByteArray();
-        final UnsubscribeOperation unsubscribeOp = SerializationUtils.deserialize(bytes);
-        final Subscription subscription = this.operationToObservable.remove(unsubscribeOp.id);
-        if (subscription != null) {
-            subscription.unsubscribe();
+        try {
+            final byte[] bytes = command.getSerializedOp().toByteArray();
+            final UnsubscribeOperation unsubscribeOp = SerializationUtils.deserialize(bytes);
+            final Subscription subscription = this.operationToObservable.remove(unsubscribeOp.id);
+            if (subscription != null) {
+                subscription.unsubscribe();
+            }
+        } catch (final Exception e) {
+            responseObserver.onError(e);
         }
     }
 

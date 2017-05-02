@@ -18,6 +18,7 @@
 
 package org.hiero.remoting;
 
+import javax.annotation.Nullable;
 import java.io.Serializable;
 
 /**
@@ -25,9 +26,9 @@ import java.io.Serializable;
  * @param <T> Return type of the result
  */
 public class OperationResponse<T> implements Serializable {
-    public final T result;
+    @Nullable public final T result;
 
-    public OperationResponse(final T result) {
+    public OperationResponse(@Nullable final T result) {
         this.result = result;
     }
 }
