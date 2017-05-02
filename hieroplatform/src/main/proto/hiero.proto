@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "org.hiero.pb";
+option java_outer_classname = "Remoting";
+
+package remoting;
+
+service HieroServer {
+  rpc map (Command) returns (stream PartialResponse) {}
+  rpc sketch (Command) returns (stream PartialResponse) {}
+  rpc zip (Command) returns (stream PartialResponse) {}
+  rpc unsubscribe (Command) returns (Ack) {}
+}
+
+message Command
+{
+  int32 idsIndex = 1;
+  bytes serializedOp = 2;
+}
+
+message PartialResponse
+{
+  bytes serializedOp = 1;
+}
+
+message Ack
+{
+}
