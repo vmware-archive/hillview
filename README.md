@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/lalithsuresh/hiero.svg?branch=master)](https://travis-ci.org/lalithsuresh/hiero)
+
 # Hiero
 
 A big data spreadsheet.
