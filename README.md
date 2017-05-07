@@ -109,14 +109,24 @@ https://help.github.com/articles/fork-a-repo/
 
 In more detail, here is a step-by-step guide to committing your changes:
 
-1. `git add <files that changed>`
-2. `git commit -m "Description of commit"`
-3. `git fetch upstream`
-4. `git rebase upstream/master`
-5. Resolve conflicts if any. If so, repeat 1-4.
-6. Test, analyze merged version.
-7. `git push -f origin master`
-8. Create a pull request (using the web ui).
+1. Create a new branch for each fix; give it a nice suggestive name:
+   - `git branch yourBranchName`
+   - `git checkout yourBranchName`
+   - The main benefit of using branches is that you can have multiple branches active at the same time, one for each independent fix.
+2. `git add <files that changed>`
+3. `git commit -m "Description of commit"`
+4. `git fetch upstream`
+5. `git rebase upstream/master`
+6. Resolve conflicts, if any (rebase won't work if you don't; as you find conflicts you will need to `git add` the files you have merged, and then you may need to use `git rebase --continue` or `git rebase --skip`)
+7. Test, analyze merged version.
+8. `git push -f origin yourBranchName`
+9. Create a pull request to merge your new branch into master (using the web ui).
+10. Delete your branch after the merging has been done `git branch -D yourBranchName`
+11. To run the program you should try the master branch:
+  - `git checkout master`
+  - `git fetch upstream`
+  - `git rebase upstream/master`
+  - `git push origin master`
 
 ### Guidance in writing code
 

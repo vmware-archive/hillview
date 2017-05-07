@@ -35,7 +35,9 @@ import java.util.UUID;
 public class CsvReaderTest {
     static final String dataFolder = "../data";
     static final String csvFile = "On_Time_Sample.csv";
+    //static final String csvFile = "ESX_data.csv";
     static final String schemaFile = "On_Time.schema";
+    //static final String schemaFile = "ESX.schema";
 
     @Nullable
     ITable readTable(String folder, String file) throws IOException {
@@ -58,7 +60,6 @@ public class CsvReaderTest {
     public void ReadCsvFileWithSchemaTest() throws IOException {
         Path path = Paths.get(dataFolder, schemaFile);
         Schema schema = Schema.readFromJsonFile(path);
-
         path = Paths.get(dataFolder, csvFile);
         CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
         config.allowFewerColumns = false;
@@ -68,6 +69,11 @@ public class CsvReaderTest {
         CsvFileReader r = new CsvFileReader(path, config);
         ITable t = r.read();
         Assert.assertNotNull(t);
+        /*
+        System.gc();
+        long mem = Runtime.getRuntime().totalMemory();
+        long freeMem = Runtime.getRuntime().freeMemory();
+        System.out.printf("Total memory %d, Free memory %d.", mem, freeMem);*/
     }
 
     @Test
@@ -77,7 +83,6 @@ public class CsvReaderTest {
         UUID uid = UUID.randomUUID();
         String tmpFileName = uid.toString();
         Path path = Paths.get(".", tmpFileName);
-
         try {
             CsvFileWriter writer = new CsvFileWriter(path);
             writer.setWriteHeaderRow(true);
@@ -101,3 +106,5 @@ public class CsvReaderTest {
         }
     }
 }
+
+

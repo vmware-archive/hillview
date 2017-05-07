@@ -213,16 +213,16 @@ public final class TableTarget extends RpcTarget {
     static class QuantileInfo {
         int precision;
         double position;
+        long tableSize;
         RecordOrder order = new RecordOrder();
     }
 
     @HieroRpc
     void quantile(RpcRequest request, Session session) {
         QuantileInfo info = request.parseArgs(QuantileInfo.class);
-        QuantileSketch sk = new QuantileSketch(info.order, info.precision);
-        Function<QuantileList, RowSnapshot> getRow = ql -> {
-            int index = (int)Math.ceil(info.position * ql.getQuantileSize());
-            return ql.getRow(index);
+        SampleQuantileSketch sk = new SampleQuantileSketch(info.order, info.precision, info.tableSize);
+        Function<SampleList, RowSnapshot> getRow = ql -> {
+            return ql.getRow(info.position);
         };
         this.runCompleteSketch(this.table, sk, getRow, request, session);
     }

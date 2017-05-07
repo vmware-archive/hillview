@@ -21,14 +21,12 @@ package org.hiero.sketch;
 import org.hiero.dataset.LocalDataSet;
 import org.hiero.dataset.ParallelDataSet;
 import org.hiero.dataset.api.IDataSet;
-import org.hiero.sketches.ColumnSortOrientation;
-import org.hiero.sketches.QuantileList;
-import org.hiero.sketches.QuantileSketch;
-import org.hiero.utils.TestTables;
-import org.hiero.table.api.ITable;
+import org.hiero.sketches.*;
 import org.hiero.table.RecordOrder;
 import org.hiero.table.SmallTable;
+import org.hiero.table.api.ITable;
 import org.hiero.table.api.IndexComparator;
+import org.hiero.utils.TestTables;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -45,11 +43,11 @@ public class TableDataSetTest {
         for (String colName : randTable.getSchema().getColumnNames()) {
             cso.append(new ColumnSortOrientation(randTable.getSchema().getDescription(colName), true));
         }
-        final QuantileSketch qSketch = new QuantileSketch(cso, resolution);
+        final SampleQuantileSketch sqSketch = new SampleQuantileSketch(cso, resolution, size);
         final LocalDataSet<ITable> ld = new LocalDataSet<ITable>(randTable);
-        final QuantileList ql = ld.blockingSketch(qSketch);
-        IndexComparator comp = cso.getComparator(ql.quantiles);
-        for (int i = 0; i < (ql.getQuantileSize() - 1); i++)
+        final SampleList sl = ld.blockingSketch(sqSketch);
+        IndexComparator comp = cso.getComparator(sl.table);
+        for (int i = 0; i < (sl.table.getNumOfRows()- 1); i++)
             assertTrue(comp.compare(i, i + 1) <= 0);
         //System.out.println(ql);
     }
@@ -64,18 +62,16 @@ public class TableDataSetTest {
         for (String colName : randTable1.getSchema().getColumnNames()) {
             cso.append(new ColumnSortOrientation(randTable1.getSchema().getDescription(colName), true));
         }
-
         final LocalDataSet<ITable> ld1 = new LocalDataSet<ITable>(randTable1);
         final LocalDataSet<ITable> ld2 = new LocalDataSet<ITable>(randTable2);
         final ArrayList<IDataSet<ITable>> elems = new ArrayList<IDataSet<ITable>>(2);
         elems.add(ld1);
         elems.add(ld2);
         final ParallelDataSet<ITable> par = new ParallelDataSet<ITable>(elems);
-        final QuantileSketch qSketch = new QuantileSketch(cso, resolution);
-        final QuantileList r = par.blockingSketch(qSketch);
-        IndexComparator comp = cso.getComparator(r.quantiles);
-        for (int i = 0; i < (r.getQuantileSize() - 1); i++)
+        final SampleQuantileSketch sqSketch = new SampleQuantileSketch(cso, resolution, size);
+        final SampleList sl = par.blockingSketch(sqSketch);
+        IndexComparator comp = cso.getComparator(sl.table);
+        for (int i = 0; i < (sl.table.getNumOfRows() - 1); i++)
             assertTrue(comp.compare(i, i + 1) <= 0);
-        //System.out.println(r);
     }
 }

@@ -25,10 +25,8 @@ public class ExactFreqSketch implements ISketch<ITable, ExactFreqSketch.Frequenc
                 int other = to.count.getOrDefault(rs, 0);
                 result.count.put(rs, this.count.get(rs) + other);
             }
-            for (BaseRowSnapshot rs: to.count.keySet()) {
-                if (!result.count.containsKey(rs))
-                    result.count.put(rs, to.count.get(rs));
-            }
+            to.count.keySet().stream().filter(rs -> !result.count.containsKey(rs))
+                    .forEach(rs -> result.count.put(rs, to.count.get(rs)));
             return result;
         }
         public void addNew(BaseRowSnapshot rs, int count) {

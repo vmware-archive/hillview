@@ -18,11 +18,13 @@
 
 package org.hiero.table;
 
+import org.hiero.table.api.IColumn;
 import org.hiero.table.api.IStringConverter;
 import org.hiero.table.api.IndexComparator;
 import org.hiero.utils.Converters;
 
 import javax.annotation.Nullable;
+import java.security.InvalidParameterException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
@@ -145,4 +147,35 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
 
     @Override
     public void setMissing(final int rowIndex) { this.set(rowIndex, null);}
+
+    /**
+     * Given two Columns left and right, merge them to a single Column, using the Boolean
+     * array mergeLeft which represents the order in which elements merge.
+     * mergeLeft[i] = true means the i^th element comes from the left column.
+     * @param left The left column
+     * @param right The right column
+     * @param mergeLeft The order in which to merge the two columns.
+     * @return The merged column.
+     */
+    public static ObjectArrayColumn mergeColumns(final IColumn left, final IColumn right,
+                                                 final boolean[] mergeLeft) {
+        if (mergeLeft.length != (left.sizeInRows() + right.sizeInRows())) {
+            throw new InvalidParameterException("Length of mergeOrder must equal " +
+                    "sum of lengths of the columns");
+        }
+        final ObjectArrayColumn merged = new
+                ObjectArrayColumn(left.getDescription(), mergeLeft.length);
+        int i = 0, j = 0, k = 0;
+        while (k < mergeLeft.length) {
+            if (mergeLeft[k]) {
+                merged.set(k, left.getObject(i));
+                i++;
+            } else {
+                merged.set(k, right.getObject(j));
+                j++;
+            }
+            k++;
+        }
+        return merged;
+    }
 }

@@ -22,6 +22,9 @@ import java.util.Comparator;
 
 /**
  * A comparator which compares two values given by their integer indexes in an array/column/table.
+ * The default comparator sorts in ascending order, whereas the reverse comparator sorts in
+ * descending order. Missing values are treated as + infinity and appear at the very end of the
+ * ascending order. The default implementations are in IIntColumn etc.
  */
 public abstract class IndexComparator implements Comparator<Integer> {
     /**

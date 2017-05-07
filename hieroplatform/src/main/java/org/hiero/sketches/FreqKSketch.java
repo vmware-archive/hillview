@@ -4,12 +4,15 @@ import org.eclipse.collections.api.block.HashingStrategy;
 import org.eclipse.collections.impl.map.strategy.mutable.UnifiedMapWithHashingStrategy;
 import org.hiero.dataset.api.ISketch;
 import org.hiero.dataset.api.Pair;
-import org.hiero.table.*;
+import org.hiero.table.RowSnapshot;
+import org.hiero.table.Schema;
+import org.hiero.table.VirtualRowSnapshot;
 import org.hiero.table.api.IRowIterator;
 import org.hiero.table.api.ITable;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
@@ -82,8 +85,8 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
     public FreqKList create(ITable data) {
         IRowIterator rowIt = data.getRowIterator();
         HashingStrategy<Integer> hs = new HashingStrategy<Integer>() {
-            VirtualRowSnapshot vrs = new VirtualRowSnapshot(data, FreqKSketch.this.schema);
-            VirtualRowSnapshot vrs1 = new VirtualRowSnapshot(data, FreqKSketch.this.schema);
+            final VirtualRowSnapshot vrs = new VirtualRowSnapshot(data, FreqKSketch.this.schema);
+            final VirtualRowSnapshot vrs1 = new VirtualRowSnapshot(data, FreqKSketch.this.schema);
 
             @Override
             public int computeHashCode(Integer index) {
@@ -102,20 +105,34 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
                 UnifiedMapWithHashingStrategy<Integer, Integer>(hs);
         List<Integer> toRemove = new ArrayList<Integer>(this.maxSize);
         int i = rowIt.getNextRow();
+        /* An optimization to speed up the algorithm is that we batch the decrements together in
+        variable dec. We only perform an actual decrement when the total decrements equal the minimum
+        count among the counts we are currently storing.*/
+        int min = 0; // Minimum count currently in the hashMap
+        int dec = 0; // Accumulated decrements. Should always be less than min.
         while (i != -1) {
             if (hMap.containsKey(i)) {
-                hMap.put(i, hMap.get(i) + 1);
-            } else if (hMap.size() < this.maxSize)
+                int val = hMap.get(i);
+                hMap.put(i, val + 1);
+                if (val == min)
+                    min = Collections.min(hMap.values());
+            } else if (hMap.size() < this.maxSize) {
                 hMap.put(i, 1);
-            else {
-                toRemove.clear();
-                for (Integer vr : hMap.keySet()) {
-                    int count = hMap.get(vr) - 1;
-                    hMap.put(vr, count);
-                    if (count == 0)
-                        toRemove.add(vr);
+                min = 1;
+            } else {
+                dec += 1;
+                if (dec == min) {
+                    toRemove.clear();
+                    for (Integer row : hMap.keySet()) {
+                        int count = hMap.get(row) - dec;
+                        if (count == 0)
+                            toRemove.add(row);
+                        else
+                            hMap.put(row, count);
+                    }
+                    toRemove.forEach(hMap::remove);
+                    min = ((!hMap.isEmpty()) ? Collections.min(hMap.values()) : 0);
                 }
-                toRemove.forEach(hMap::remove);
             }
             i = rowIt.getNextRow();
         }

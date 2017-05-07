@@ -18,35 +18,26 @@
 
 package org.hiero.sketch;
 
-import akka.actor.ActorRef;
-import akka.actor.ActorSystem;
-import akka.actor.Props;
-import akka.util.Timeout;
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
+import com.google.common.collect.ImmutableList;
+import com.google.common.net.HostAndPort;
 import org.hiero.dataset.LocalDataSet;
 import org.hiero.dataset.ParallelDataSet;
 import org.hiero.dataset.RemoteDataSet;
 import org.hiero.dataset.api.*;
-import org.hiero.remoting.SketchClientActor;
-import org.hiero.remoting.SketchOperation;
-import org.hiero.remoting.SketchServerActor;
+import org.hiero.remoting.HieroServer;
 import org.hiero.utils.Converters;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import rx.Observable;
 import rx.observers.TestSubscriber;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
 
 import javax.annotation.Nullable;
-import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import static akka.pattern.Patterns.ask;
-import static org.junit.Assert.assertEquals;
+import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
@@ -54,16 +45,11 @@ import static org.junit.Assert.fail;
  * Remoting tests for Akka.
  */
 public class RemotingTest {
-    @Nullable
-    private static ActorSystem clientActorSystem;
-    @Nullable
-    private static ActorSystem serverActorSystem;
-    @Nullable
-    private static ActorRef clientActor;
-    @Nullable
-    private static ActorRef remoteActor;
+    private final static HostAndPort serverAddress = HostAndPort.fromParts("127.0.0.1",
+                                                                           1234);
+    @Nullable private static HieroServer server;
 
-    private class IncrementMap implements IMap<int[], int[]> {
+    private static class IncrementMap implements IMap<int[], int[]> {
         @Override
         public int[] apply(final int[] data) {
             if (data.length == 0) {
@@ -79,7 +65,7 @@ public class RemotingTest {
         }
     }
 
-    private class SumSketch implements ISketch<int[], Integer> {
+    private static class SumSketch implements ISketch<int[], Integer> {
         @Override @Nullable
         public Integer zero() {
             return 0;
@@ -98,7 +84,27 @@ public class RemotingTest {
         }
     }
 
-    private class ErrorSumSketch implements ISketch<int[], Integer> {
+    private static class ImmutableListSketch implements ISketch<int[], List<Integer>> {
+        @Override @Nullable
+        public List<Integer> zero() {
+            return ImmutableList.of();
+        }
+
+        @Override @Nullable
+        public List<Integer> add(@Nullable final List<Integer> left,
+                                 @Nullable final List<Integer> right) {
+            return ImmutableList.<Integer>builder()
+                                .addAll(Converters.checkNull(left))
+                                .addAll(Converters.checkNull(right)).build();
+        }
+
+        @Override
+        public List<Integer> create(final int[] data) {
+            return ImmutableList.of(1);
+        }
+    }
+
+    private static class ErrorSumSketch implements ISketch<int[], Integer> {
         @Override @Nullable
         public Integer zero() {
             return 0;
@@ -121,13 +127,6 @@ public class RemotingTest {
     @BeforeClass
     public static void initialize() throws Exception {
         // Server
-        final Timeout timeout = new Timeout(Duration.create(1000, "milliseconds"));
-        final String serverConfFileUrl = ClassLoader.getSystemResource("test-server.conf").getFile();
-        final Config serverConfig = ConfigFactory.parseFile(new File(serverConfFileUrl));
-        serverActorSystem = ActorSystem.create("SketchApplication", serverConfig);
-        assertNotNull(serverActorSystem);
-
-        // Create a dataset
         final int parts = 10;
         final int size = 1000;
         ArrayList<IDataSet<int[]>> al = new ArrayList<IDataSet<int[]>>(10);
@@ -140,44 +139,12 @@ public class RemotingTest {
         }
         ParallelDataSet<int[]> pds = new ParallelDataSet<int[]>(al);
         pds.setBundleInterval(0);
-        remoteActor = serverActorSystem.actorOf(Props.create(SketchServerActor.class, pds),
-                                                "ServerActor");
-
-        // Client
-        final String clientConfFileUrl = ClassLoader.getSystemResource("client.conf").getFile();
-        final Config clientConfig = ConfigFactory.parseFile(new File(clientConfFileUrl));
-        clientActorSystem = ActorSystem.create("SketchApplication", clientConfig);
-        final ActorRef remoteActor = Await.result(clientActorSystem.actorSelection(
-                "akka.tcp://SketchApplication@127.0.0.1:2554/user/ServerActor").resolveOne(timeout),
-                timeout.duration());
-        clientActor = clientActorSystem.actorOf(Props.create(SketchClientActor.class, remoteActor), "ClientActor");
-        assertNotNull(clientActor);
-    }
-
-    @Test
-    public void testSketchThroughClient() {
-        final int timeoutDuration = 1000;
-        final Timeout timeout = new Timeout(Duration.create(timeoutDuration, "milliseconds"));
-        final SketchOperation<int[], Integer> sketchOp = new SketchOperation<int[], Integer>(new SumSketch());
-        final Future<Object> future = ask(clientActor, sketchOp, timeoutDuration);
-        try {
-            @SuppressWarnings("unchecked")
-            final Observable<PartialResult<Integer>> obs =
-                    (Observable<PartialResult<Integer>>) Await.result(future, timeout.duration());
-            final int result = obs.map(e -> e.deltaValue)
-                                   .reduce((x, y) -> x + y)
-                                   .toBlocking()
-                                   .last();
-            assertEquals(49995000, result);
-        } catch (final Exception e) {
-            fail("Should not have thrown exception");
-        }
+        server = new HieroServer(serverAddress, pds);
     }
 
     @Test
     public void testMapSketchThroughClient() {
-        final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(
-                Converters.checkNull(clientActor), Converters.checkNull(remoteActor));
+        final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(serverAddress);
         final IDataSet<int[]> remoteIdsNew = remoteIds.map(new IncrementMap())
                                                       .filter(p -> p.deltaValue != null)
                                                       .toBlocking()
@@ -192,10 +159,9 @@ public class RemotingTest {
     }
 
 
-    //@Test: TODO: re-enable this test
+    @Test
     public void testMapSketchThroughClientWithError() {
-        final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(
-                Converters.checkNull(clientActor), Converters.checkNull(remoteActor));
+        final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(serverAddress);
         final IDataSet<int[]> remoteIdsNew = remoteIds.map(new IncrementMap())
                                                       .toBlocking()
                                                       .last().deltaValue;
@@ -207,13 +173,27 @@ public class RemotingTest {
         ts.assertError(RuntimeException.class);
     }
 
-    @Test
-    public void testMapSketchThroughClientUnsubscribe() {
-        final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(
-                Converters.checkNull(clientActor), Converters.checkNull(remoteActor));
-        final IDataSet<int[]> remoteIdsNew = remoteIds.map(new IncrementMap()).toBlocking().last().deltaValue;
-        assertNotNull(remoteIdsNew);
 
+    @Test
+    public void testMapSketchThroughClientWithImmutableCollection() {
+        final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(serverAddress);
+        final IDataSet<int[]> remoteIdsNew = remoteIds.map(new IncrementMap())
+                                                      .toBlocking()
+                                                      .last().deltaValue;
+        assertNotNull(remoteIdsNew);
+        final Observable<PartialResult<List<Integer>>> resultObs =
+                remoteIdsNew.sketch(new ImmutableListSketch());
+        final List<Integer> result = resultObs.map(e -> e.deltaValue)
+                                              .toBlocking()
+                                              .last();
+        for (int val: result) {
+            assertEquals(1, val);
+        }
+    }
+
+    @Test
+    public void testUnsubscribe() {
+        final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(serverAddress);
         final Observable<PartialResult<Integer>> resultObs = remoteIds.sketch(new SumSketch());
         TestSubscriber<PartialResult<Integer>> ts =
                 new TestSubscriber<PartialResult<Integer>>() {
@@ -234,9 +214,33 @@ public class RemotingTest {
     }
 
     @Test
+    public void testDoOnUnsubscribeByCaller() {
+        final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(serverAddress);
+        final AtomicInteger count = new AtomicInteger(0);
+        final Observable<PartialResult<Integer>> resultObs =
+                remoteIds.sketch(new SumSketch()).doOnUnsubscribe(() -> count.incrementAndGet());
+        TestSubscriber<PartialResult<Integer>> ts =
+                new TestSubscriber<PartialResult<Integer>>() {
+                    private int counter = 0;
+
+                    @Override
+                    public void onNext(final PartialResult<Integer> pr) {
+                        this.counter++;
+                        super.onNext(pr);
+                        if (this.counter == 3)
+                            this.unsubscribe();
+                    }
+                };
+
+        resultObs.toBlocking().subscribe(ts);
+        ts.assertValueCount(3);
+        ts.assertNotCompleted();
+        assertEquals(1, count.get());
+    }
+
+    @Test
     public void testZip() {
-        final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(
-                Converters.checkNull(clientActor), Converters.checkNull(remoteActor));
+        final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(serverAddress);
         final IDataSet<int[]> remoteIdsLeft = Converters.checkNull(
                 remoteIds.map(new IncrementMap()).toBlocking().last().deltaValue);
         final IDataSet<int[]> remoteIdsRight = Converters.checkNull(
@@ -247,11 +251,34 @@ public class RemotingTest {
         assertEquals(last.deltaDone, 1.0, 0.001);
     }
 
+    @Test
+    public void testIncorrectRemoteIndex() {
+        try {
+            // Should not succeed because the remote handle does not exist
+            int nonExistentIndex = 99;
+            final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(serverAddress,
+                                                                       nonExistentIndex);
+            final IDataSet<int[]> oneMap = Converters.checkNull(
+                    remoteIds.map(new IncrementMap()).toBlocking().last().deltaValue);
+            fail();
+        }
+        catch (RuntimeException ignored) {
+        }
+        try {
+            // Test with zip
+            final IDataSet<int[]> remoteIdsLeft = new RemoteDataSet<int[]>(serverAddress);
+            final IDataSet<int[]> remoteIdsRight = new RemoteDataSet<int[]>(serverAddress, 99);
+            final PartialResult<IDataSet<Pair<int[], int[]>>> last
+                    = Converters.checkNull(remoteIdsLeft.zip(remoteIdsRight)).toBlocking().last();
+            fail();
+        } catch (RuntimeException ignored) {
+        }
+    }
+
     @AfterClass
     public static void shutdown() {
-        if (clientActorSystem != null)
-            clientActorSystem.terminate();
-        if (serverActorSystem != null)
-            serverActorSystem.terminate();
+        if (server != null) {
+            server.shutdown();
+        }
     }
 }
