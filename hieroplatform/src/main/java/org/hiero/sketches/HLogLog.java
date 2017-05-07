@@ -22,8 +22,7 @@ public class HLogLog {
      *        Setting logRegNum in at 10-12 should give roughly 2% accuracy most of the time
      */
     public HLogLog(int logRegNum, int seed) {
-        if (!spaceValid(logRegNum))
-            throw new IllegalArgumentException("HLogLog initialized with number out of range");
+        HLogLog.checkSpaceValid(logRegNum);
         this.regNum = 1 << logRegNum;
         this.registers = new byte[this.regNum];
         this.logregNum = logRegNum;
@@ -33,18 +32,16 @@ public class HLogLog {
     /**
      * adds the int 'value' to the data structure.
      * Uses the first bits to identify the register and then counts trailing zeros
-     * @param value already assumed to be a random hash of the item
+     * @param itemHash already assumed to be a random hash of the item
      */
-    private void add(int value) {
-        int index =  value >>> (Integer.SIZE - this.logregNum);
-        byte zeros = (byte) (Integer.numberOfTrailingZeros(value) + 1);
+    private void add(int itemHash) {
+        int index =  itemHash >>> (Integer.SIZE - this.logregNum);
+        byte zeros = (byte) (Integer.numberOfTrailingZeros(itemHash) + 1);
         if (zeros > this.registers[index])
             this.registers[index] = zeros;
-
     }
 
     /**
-     *
      * Creates a Hyperloglog data structure from a column and membership set. Uses the hash code
      * of the objects in the column as identifier.
      */
@@ -52,8 +49,10 @@ public class HLogLog {
         final IRowIterator myIter = memSet.getIterator();
         int currRow = myIter.getNextRow();
         while (currRow >= 0) {
-            int value = column.getObject(currRow).hashCode();
-            add(HashUtil.murmurHash3(this.seed, value));
+            if (!column.isMissing(currRow)) {
+                int value = column.getObject(currRow).hashCode();
+                this.add(HashUtil.murmurHash3(this.seed, value));
+            }
             currRow = myIter.getNextRow();
         }
     }
@@ -70,7 +69,7 @@ public class HLogLog {
     /**
      * @return an estimation of the number of distinct items
      */
-    public long appCount() {
+    public long distinctItemsEstimator() {
         double alpha;
         switch (this.logregNum) { //set the parameters for the log log estimator
             case 4: alpha = 0.673;
@@ -90,22 +89,29 @@ public class HLogLog {
         }
         rawEstimate = 1 / rawEstimate;
         rawEstimate = rawEstimate * alpha * this.regNum * this.regNum;
-        if ((rawEstimate >= (2.5 * this.regNum)) || (zeroRegs == 0)) {
-            return Math.round(rawEstimate);
+        long result = Math.round(rawEstimate);
+        if ((zeroRegs > 0) && (rawEstimate < (2.5 * this.regNum)))
+            result = Math.round(this.regNum * (Math.log(this.regNum / (double) zeroRegs)));
+        else if (rawEstimate > (Integer.MAX_VALUE / 30 ))
+            result = (long) (- Math.pow(2,32) * Math.log(1 - (rawEstimate /  Math.pow(2,32))));
+        return result;
+
+        /*if ((rawEstimate >= (2.5 * this.regNum)) || (zeroRegs == 0)) {
+            result =  Math.round(rawEstimate);
         }
-        else {
+        else if (rawEstimate < (Integer.MAX_VALUE / 30 )) {
             return Math.round(this.regNum * (Math.log(this.regNum / (double) zeroRegs)));
         }
+        else return (long) (- Math.pow(2,32) * Math.log(1 - (rawEstimate /  Math.pow(2,32))));*/
     }
 
     /**
-     * @param space the logarithm of the number of registers in the HLL structure.
+     * @param logSpaceSize the logarithm of the number of registers in the HLL structure.
      * @return a boolean on whether it is within range. Going beyond 16 is too big and does not
-     * add accuracy. Going below 4 does not save space.
+     * add accuracy. Going below 4 does not save Space.
      */
-    public static boolean spaceValid(int space) {
-        if ((space > 16) || (space < 4))
-            return false;
-        return true;
+    public static void checkSpaceValid(int logSpaceSize) {
+        if ((logSpaceSize > 16) || (logSpaceSize < 4))
+            throw new IllegalArgumentException("HLogLog initialized with logSpaceSize out of range");
     }
 }

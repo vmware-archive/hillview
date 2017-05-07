@@ -10,21 +10,22 @@ import javax.annotation.Nullable;
 public class HLogLogSketch implements ISketch<ITable, HLogLog> {
     final String colName;
     final int seed; //seed for the hash function of the HLogLog
-    /* the log of the #bytes used by each data structure. Should be in 4...16.
-     * More space means more accuracy. A space of 10-14 is recommended. */
-    final int spaceBound;
+    /**
+     * the log of the #bytes used by each data structure. Should be in 4...16.
+     * More space means more accuracy. A space of 10-14 is recommended.
+     **/
+    final int logSpaceSize;
     public HLogLogSketch(String colName) {
         this.colName = colName;
         this.seed = new Randomness().nextInt();
-        this.spaceBound = 12;
+        this.logSpaceSize = 12;
     }
 
-    public HLogLogSketch(String colName, int spaceBound, int seed) {
+    public HLogLogSketch(String colName, int logSpaceSize, int seed) {
         this.colName = colName;
         this.seed = seed;
-        if (!HLogLog.spaceValid(spaceBound))
-            throw new IllegalArgumentException("HLogLogSketch initialized with number out of range");
-        this.spaceBound = spaceBound;
+        HLogLog.checkSpaceValid(logSpaceSize);
+        this.logSpaceSize = logSpaceSize;
     }
 
     @Override
@@ -41,6 +42,6 @@ public class HLogLogSketch implements ISketch<ITable, HLogLog> {
 
     @Override
     public HLogLog zero() {
-        return new HLogLog(this.spaceBound, this.seed);
+        return new HLogLog(this.logSpaceSize, this.seed);
     }
 }
