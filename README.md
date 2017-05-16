@@ -178,11 +178,9 @@ one).  Download the binaries from
 toplevel folder.  Afterwards prepare tomcat as follows:
 
 ```
-$ cd hieroweb
 $ cd apache-tomcat-8.5.8/webapps
 $ rm -rf ROOT*
 $ ln -s ../../hieroweb/target/hieroweb-1.0-SNAPSHOT.war ROOT.war
-$ cd ..
 ```
 
 ## Install typescript and JavaScript libraries and tools
