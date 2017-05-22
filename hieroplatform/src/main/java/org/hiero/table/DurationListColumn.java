@@ -67,8 +67,8 @@ class DurationListColumn extends BaseListColumn implements IDurationColumn {
     }
 
     @Override
-    public void parseAndAppendString(String s) {
-        if (s.isEmpty())
+    public void parseAndAppendString(@Nullable String s) {
+        if (s == null || s.isEmpty())
             this.parseEmptyOrNull();
         else
             this.append(Duration.parse(s));

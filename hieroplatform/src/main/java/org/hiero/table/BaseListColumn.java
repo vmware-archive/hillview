@@ -72,7 +72,7 @@ public abstract class BaseListColumn extends BaseColumn {
         this.size++;
     }
 
-    public abstract void parseAndAppendString(String s);
+    public abstract void parseAndAppendString(@Nullable String s);
 
     protected void parseEmptyOrNull() {
         if (!this.description.allowMissing)

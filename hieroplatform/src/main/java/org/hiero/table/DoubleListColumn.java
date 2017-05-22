@@ -21,6 +21,7 @@ package org.hiero.table;
 import org.hiero.table.api.ContentsKind;
 import org.hiero.table.api.IDoubleColumn;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 
 /**
@@ -56,8 +57,8 @@ public class DoubleListColumn
     }
 
     @Override
-    public void parseAndAppendString(String s) {
-        if (s.isEmpty())
+    public void parseAndAppendString(@Nullable String s) {
+        if (s == null || s.isEmpty())
             this.parseEmptyOrNull();
         else
             this.append(Double.parseDouble(s));

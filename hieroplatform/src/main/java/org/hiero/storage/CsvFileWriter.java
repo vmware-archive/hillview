@@ -18,11 +18,13 @@
 
 package org.hiero.storage;
 
+import com.univocity.parsers.csv.CsvFormat;
+import com.univocity.parsers.csv.CsvWriter;
+import com.univocity.parsers.csv.CsvWriterSettings;
 import org.hiero.table.Schema;
 import org.hiero.table.api.IColumn;
 import org.hiero.table.api.IRowIterator;
 import org.hiero.table.api.ITable;
-import com.opencsv.CSVWriter;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -42,8 +44,15 @@ public class CsvFileWriter {
 
     public void writeTable(ITable table) throws IOException {
         Schema schema = table.getSchema();
-        try (Writer fw = new FileWriter(this.file.toString());
-            CSVWriter writer = new CSVWriter(fw, this.separator)) {
+        CsvWriterSettings settings = new CsvWriterSettings();
+        CsvFormat format = new CsvFormat();
+        format.setDelimiter(this.separator);
+        settings.setFormat(format);
+        settings.setEmptyValue("\"\"");
+        settings.setNullValue(null);
+        try (Writer fw = new FileWriter(this.file.toString())) {
+            CsvWriter writer = new CsvWriter(fw, settings);
+
             String[] data = new String[schema.getColumnCount()];
             IColumn[] columns = new IColumn[data.length];
             int index = 0;
@@ -53,16 +62,15 @@ public class CsvFileWriter {
                 index++;
             }
             if (this.writeHeaderRow)
-                writer.writeNext(data);
+                writer.writeHeaders(data);
             IRowIterator rowIter = table.getMembershipSet().getIterator();
             int nextRow = rowIter.getNextRow();
             while (nextRow >= 0) {
                 for (index = 0; index < columns.length; index++) {
-                    data[index] = columns[index].asString(nextRow);
-                    if (data[index] == null)
-                        data[index] = "";
+                    String d = columns[index].asString(nextRow);
+                    data[index] = d;
                 }
-                writer.writeNext(data, false);
+                writer.writeRow(data);
                 nextRow = rowIter.getNextRow();
             }
         }

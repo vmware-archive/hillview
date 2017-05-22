@@ -44,7 +44,9 @@ public class StringListColumn extends BaseListColumn implements IStringColumn {
     public String getString(final int rowIndex) {
         final int segmentId = rowIndex >> this.LogSegmentSize;
         final int localIndex = rowIndex & this.SegmentMask;
-        return this.segments.get(segmentId)[localIndex];
+        String[] segment = this.segments.get(segmentId);
+        String result = segment[localIndex];
+        return result;
     }
 
     public void append(@Nullable String value) {
@@ -72,7 +74,7 @@ public class StringListColumn extends BaseListColumn implements IStringColumn {
     }
 
     @Override
-    public void parseAndAppendString(String s) {
+    public void parseAndAppendString(@Nullable String s) {
         this.append(s);
     }
 }

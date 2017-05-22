@@ -86,8 +86,10 @@ public final class TableTarget extends RpcTarget {
         ColumnAndRange info = request.parseArgs(ColumnAndRange.class);
         // TODO: use height in histogram computation
         int cdfBucketCount = info.cdfBucketCount;
-        if (info.min >= info.max)
+        if (info.min >= info.max) {
             cdfBucketCount = 1;
+            info.bucketCount = 1;
+        }
         IStringConverter converter = null;
         if (info.bucketBoundaries != null)
             converter = new SortedStringsConverter(

@@ -18,7 +18,9 @@
 
 package org.hiero.storage;
 
-import com.opencsv.CSVReader;
+import com.univocity.parsers.csv.CsvFormat;
+import com.univocity.parsers.csv.CsvParser;
+import com.univocity.parsers.csv.CsvParserSettings;
 import org.hiero.table.BaseListColumn;
 import org.hiero.table.ColumnDescription;
 import org.hiero.table.Schema;
@@ -34,6 +36,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -96,18 +99,29 @@ public class CsvFileReader {
         if (this.configuration.schema != null)
             this.actualSchema = this.configuration.schema;
 
-        try (Reader file = new FileReader(this.filename.toString());
-             CSVReader reader = new CSVReader(file, this.configuration.separator)) {
+        try (Reader file = new FileReader(this.filename.toString())) {
+            CsvParserSettings settings = new CsvParserSettings();
+            CsvFormat format = new CsvFormat();
+            format.setDelimiter(this.configuration.separator);
+            settings.setFormat(format);
+            settings.setIgnoreTrailingWhitespaces(true);
+            settings.setEmptyValue("");
+            settings.setNullValue(null);
+            CsvParser reader = new CsvParser(settings);
+            reader.beginParsing(file);
+
             if (this.configuration.hasHeaderRow) {
                 @Nullable
-                String[] line = reader.readNext();
+                String[] line = reader.parseNext();
                 if (line == null)
                     throw new RuntimeException("Missing header row " + this.filename.toString());
+                System.out.println(Arrays.toString(line));
                 if (this.configuration.schema == null) {
+                    System.out.println("Creating schema");
                     this.actualSchema = new Schema();
                     int index = 0;
                     for (String col : line) {
-                        if (col.isEmpty())
+                        if (col == null || col.isEmpty())
                             col = this.actualSchema.newColumnName("Column_" + Integer.toString(index));
                         ColumnDescription cd = new ColumnDescription(col,
                                 ContentsKind.String,
@@ -124,7 +138,7 @@ public class CsvFileReader {
             if (this.actualSchema == null) {
                 this.actualSchema = new Schema();
                 if (this.configuration.columnCount == 0) {
-                    firstLine = reader.readNext();
+                    firstLine = reader.parseNext();
                     if (firstLine == null)
                         throw new RuntimeException("Cannot create schema from empty CSV file");
                     this.actualColumnCount = firstLine.length;
@@ -152,11 +166,13 @@ public class CsvFileReader {
             if (firstLine != null)
                 this.append(firstLine);
             while (true) {
-                String[] line = reader.readNext();
+                String[] line = reader.parseNext();
                 if (line == null)
                     break;
                 this.append(line);
             }
+
+            reader.stopParsing();
             return new Table(columns);
         }
     }
@@ -191,10 +207,15 @@ public class CsvFileReader {
     }
 
     protected String errorMessage() {
+        String columnName = "";
+        if (this.columns != null) {
+            columnName = (this.currentColumn < this.columns.length) ?
+                    (" (" + this.columns[this.currentColumn].getName() + ")") : "";
+        }
+
         return "Error while parsing CSV file " + this.filename.toString() +
                 " line " + this.currentRow + " column " + this.currentColumn +
-                (this.currentColumn < this.columns.length ?
-                        Converters.checkNull(this.columns)[this.currentColumn].getName() : "");
+                columnName;
     }
 
     protected void error(String message) {

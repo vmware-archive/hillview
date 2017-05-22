@@ -21,6 +21,7 @@ package org.hiero.table;
 import org.hiero.table.api.ContentsKind;
 import org.hiero.table.api.IIntColumn;
 
+import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 
@@ -59,8 +60,8 @@ public final class IntListColumn
     }
 
     @Override
-    public void parseAndAppendString(String s) {
-        if (s.isEmpty())
+    public void parseAndAppendString(@Nullable String s) {
+        if (s == null || s.isEmpty())
             this.parseEmptyOrNull();
         else
             this.append(Integer.parseInt(s));
