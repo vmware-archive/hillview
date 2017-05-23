@@ -72,7 +72,8 @@ $ cd hieroweb
 $ mvn package
 ```
 
-* Start the tomcat web server
+* Start the tomcat web server; note that the folder where this command is run is important, since
+the path to the data files is relative to this folder.
 
 ```
 $ ../apache-tomcat-8.5.8/bin/catalina.sh run
@@ -172,15 +173,16 @@ $ export JAVA_HOME="<path-to-jdk-folder>"
 
 ## Install Apache Tomcat web application server
 
-Use version 8.5.8 (other versions may work, but we only tested this
-one).  Download the binaries from
-[http://tomcat.apache.org/download-80.cgi] and untar in the hiero
-toplevel folder.  Afterwards prepare tomcat as follows:
+The instructions here use version 8.5.8 (other versions may work, 
+but we only tested this one).
 
 ```
+$ wget http://archive.apache.org/dist/tomcat/tomcat-8/v8.5.8/bin/apache-tomcat-8.5.8.tar.gz
+$ tar xvfz apache-tomcat-8.5.8.tar.gz
 $ cd apache-tomcat-8.5.8/webapps
 $ rm -rf ROOT*
 $ ln -s ../../hieroweb/target/hieroweb-1.0-SNAPSHOT.war ROOT.war
+$ cd ../..
 ```
 
 ## Install typescript and JavaScript libraries and tools
