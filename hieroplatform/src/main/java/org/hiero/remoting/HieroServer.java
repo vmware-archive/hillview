@@ -52,6 +52,36 @@ public class HieroServer extends HieroServerGrpc.HieroServerImplBase {
         this.dataSets.put(this.dsIndex.incrementAndGet(), dataSet);
     }
 
+    private Subscriber<PartialResult<IDataSet>> createSubscriber(
+            UUID id, final StreamObserver<PartialResponse> responseObserver) {
+        return new Subscriber<PartialResult<IDataSet>>() {
+            @Override
+            public void onCompleted() {
+                responseObserver.onCompleted();
+                HieroServer.this.operationToObservable.remove(id);
+            }
+
+            @Override
+            public void onError(final Throwable throwable) {
+                responseObserver.onError(throwable);
+                HieroServer.this.operationToObservable.remove(id);
+            }
+
+            @Override
+            public void onNext(final PartialResult<IDataSet> pr) {
+                Integer idsIndex = null;
+                if (pr.deltaValue != null) {
+                    idsIndex = HieroServer.this.dsIndex.incrementAndGet();
+                    HieroServer.this.dataSets.put(idsIndex, Converters.checkNull(pr.deltaValue));
+                }
+                final OperationResponse<Integer> res = new OperationResponse<Integer>(idsIndex);
+                final byte[] bytes = SerializationUtils.serialize(res);
+                responseObserver.onNext(PartialResponse.newBuilder()
+                                                       .setSerializedOp(ByteString.copyFrom(bytes)).build());
+            }
+        };
+    }
+
     /**
      * Implementation of map() service in hiero.proto.
      */
@@ -67,32 +97,7 @@ public class HieroServer extends HieroServerGrpc.HieroServerImplBase {
             final Observable<PartialResult<IDataSet>> observable =
                     this.dataSets.get(command.getIdsIndex())
                                  .map(mapOp.mapper);
-            final Subscription sub = observable.subscribe(new Subscriber<PartialResult<IDataSet>>() {
-                @Override
-                public void onCompleted() {
-                    responseObserver.onCompleted();
-                    HieroServer.this.operationToObservable.remove(mapOp.id);
-                }
-
-                @Override
-                public void onError(final Throwable throwable) {
-                    responseObserver.onError(throwable);
-                    HieroServer.this.operationToObservable.remove(mapOp.id);
-                }
-
-                @Override
-                public void onNext(final PartialResult<IDataSet> pr) {
-                    Integer idsIndex = null;
-                    if (pr.deltaValue != null) {
-                        idsIndex = HieroServer.this.dsIndex.incrementAndGet();
-                        HieroServer.this.dataSets.put(idsIndex, Converters.checkNull(pr.deltaValue));
-                    }
-                    final OperationResponse<Integer> res = new OperationResponse<Integer>(idsIndex);
-                    final byte[] bytes = SerializationUtils.serialize(res);
-                    responseObserver.onNext(PartialResponse.newBuilder()
-                                                           .setSerializedOp(ByteString.copyFrom(bytes)).build());
-                }
-            });
+            final Subscription sub = observable.subscribe(this.createSubscriber(mapOp.id, responseObserver));
             this.operationToObservable.put(mapOp.id, sub);
         } catch (final Exception e) {
             responseObserver.onError(e);
@@ -160,32 +165,8 @@ public class HieroServer extends HieroServerGrpc.HieroServerImplBase {
             final Observable<PartialResult<IDataSet>> observable =
                     this.dataSets.get(command.getIdsIndex())
                                  .zip(other);
-            final Subscription sub = observable.subscribe(new Subscriber<PartialResult<IDataSet>>() {
-                @Override
-                public void onCompleted() {
-                    responseObserver.onCompleted();
-                    HieroServer.this.operationToObservable.remove(zipOp.id);
-                }
-
-                @Override
-                public void onError(final Throwable throwable) {
-                    responseObserver.onError(throwable);
-                    HieroServer.this.operationToObservable.remove(zipOp.id);
-                }
-
-                @Override
-                public void onNext(final PartialResult<IDataSet> pr) {
-                    Integer idsIndex = null;
-                    if (pr.deltaValue != null) {
-                        idsIndex = HieroServer.this.dsIndex.incrementAndGet();
-                        HieroServer.this.dataSets.put(idsIndex, Converters.checkNull(pr.deltaValue));
-                    }
-                    final OperationResponse<Integer> res = new OperationResponse<Integer>(idsIndex);
-                    final byte[] bytes = SerializationUtils.serialize(res);
-                    responseObserver.onNext(PartialResponse.newBuilder()
-                                                           .setSerializedOp(ByteString.copyFrom(bytes)).build());
-                }
-            });
+            final Subscription sub = observable.subscribe(
+                    this.createSubscriber(zipOp.id, responseObserver));
             this.operationToObservable.put(zipOp.id, sub);
         } catch (final Exception e) {
             responseObserver.onError(e);
@@ -216,6 +197,7 @@ public class HieroServer extends HieroServerGrpc.HieroServerImplBase {
         this.server.shutdown();
     }
 
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     private boolean checkValidIdsIndex(final int index,
                                        final StreamObserver<PartialResponse> observer) {
         if (!this.dataSets.containsKey(index)) {

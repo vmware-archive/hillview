@@ -2,6 +2,7 @@ package org.hiero.sketches;
 
 import org.hiero.dataset.api.ISketch;
 import org.hiero.table.api.*;
+import org.hiero.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
@@ -40,6 +41,8 @@ public class SampleCorrelationSketch implements ISketch<ITable, CorrMatrix> {
     @Nullable
     @Override
     public CorrMatrix add(@Nullable CorrMatrix left, @Nullable CorrMatrix right) {
+        left = Converters.checkNull(left);
+        right = Converters.checkNull(right);
         for (int i = 0; i < this.colNames.size(); i++)
             for (int j = i; j < this.colNames.size(); j++)
                 left.update(i, j, right.get(i,j));
@@ -56,11 +59,9 @@ public class SampleCorrelationSketch implements ISketch<ITable, CorrMatrix> {
     @Override
     public CorrMatrix create(ITable data) {
         for (String col : this.colNames) {
-            if (!data.getSchema().getColumnNames().contains(col))
-                throw new InvalidParameterException("No column found with the name: " + col);
             if ((data.getSchema().getKind(col) != ContentsKind.Double) &&
                     (data.getSchema().getKind(col) != ContentsKind.Integer))
-                throw new InvalidParameterException("Projection Sketch requires columm to be " +
+                throw new InvalidParameterException("Correlation Sketch requires columm to be " +
                         "integer or double: " + col);
         }
         IColumn[] iCols = new IColumn[this.colNames.size()];
@@ -72,13 +73,12 @@ public class SampleCorrelationSketch implements ISketch<ITable, CorrMatrix> {
         IRowIterator rowIt = sampleData.getIterator();
         int i = rowIt.getNextRow();
         double valj, valk;
-        IStringConverter none = null; // not needed for these columns
         while (i != -1) {
             for (int j = 0; j < this.colNames.size(); j++) {
-                valj = iCols[j].asDouble(i, none);
+                valj = iCols[j].asDouble(i, null);
                 cm.update(j, j, valj * valj);
                 for (int k = j + 1; k < this.colNames.size(); k++) {
-                    valk = iCols[k].asDouble(i, none);
+                    valk = iCols[k].asDouble(i, null);
                     cm.update(j, k, valj * valk);
                 }
             }

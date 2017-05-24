@@ -8,6 +8,7 @@ import org.hiero.table.api.IColumn;
 import org.hiero.table.api.IMembershipSet;
 import org.hiero.table.api.IRowOrder;
 import org.hiero.table.api.ITable;
+import org.hiero.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -61,6 +62,8 @@ public class SampleQuantileSketch  implements ISketch<ITable, SampleList> {
      */
     @Override
     public SampleList add(@Nullable SampleList left, @Nullable SampleList right) {
+        left = Converters.checkNull(left);
+        right = Converters.checkNull(right);
         if (!left.table.getSchema().equals(right.table.getSchema()))
             throw new RuntimeException("The schemas do not match.");
         final List<IColumn> mergedCol = new ArrayList<IColumn>(left.table.getSchema().getColumnCount());

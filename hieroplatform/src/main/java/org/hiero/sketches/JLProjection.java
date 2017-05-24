@@ -1,5 +1,6 @@
 package org.hiero.sketches;
 
+import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -32,6 +33,7 @@ public class JLProjection implements ICorrelation {
     /**
      * The matrix of pairwise correlations (see ICorrelation for exact definition of correlation).
      */
+    @Nullable
     private double[][] corrMatrix;
 
     public JLProjection(List<String> colNames, int lowDim) {

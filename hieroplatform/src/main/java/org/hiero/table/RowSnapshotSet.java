@@ -21,6 +21,7 @@ package org.hiero.table;
 import org.eclipse.collections.api.block.HashingStrategy;
 import org.eclipse.collections.impl.set.strategy.mutable.UnifiedSetWithHashingStrategy;
 import org.hiero.table.api.ITable;
+import org.hiero.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.io.Serializable;
@@ -89,7 +90,7 @@ public class RowSnapshotSet implements Serializable {
 
         @Override
         public boolean test(int rowIndex) {
-            this.vrs.setRow(rowIndex);
+            Converters.checkNull(this.vrs).setRow(rowIndex);
             return this.set.contains(this.vrs);
         }
     }

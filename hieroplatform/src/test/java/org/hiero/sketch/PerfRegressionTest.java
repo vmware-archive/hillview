@@ -24,6 +24,7 @@ class PerfRegressionTest {
      */
     @SuppressWarnings("EmptyMethod")
     private static void printPerf(final String testName, final long time) {
+        // TODO
         /*System.out.println(testName + " took " + time/1000 + " us");*/
     }
 

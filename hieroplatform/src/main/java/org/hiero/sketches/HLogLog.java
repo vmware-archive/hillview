@@ -3,6 +3,7 @@ package org.hiero.sketches;
 import org.hiero.table.api.IColumn;
 import org.hiero.table.api.IMembershipSet;
 import org.hiero.table.api.IRowIterator;
+import org.hiero.utils.Converters;
 import org.hiero.utils.HashUtil;
 
 /**
@@ -50,7 +51,7 @@ public class HLogLog {
         int currRow = myIter.getNextRow();
         while (currRow >= 0) {
             if (!column.isMissing(currRow)) {
-                int value = column.getObject(currRow).hashCode();
+                int value = Converters.checkNull(column.getObject(currRow)).hashCode();
                 this.add(HashUtil.murmurHash3(this.seed, value));
             }
             currRow = myIter.getNextRow();
@@ -107,7 +108,7 @@ public class HLogLog {
 
     /**
      * @param logSpaceSize the logarithm of the number of registers in the HLL structure.
-     * @return a boolean on whether it is within range. Going beyond 16 is too big and does not
+     * Going beyond 16 is too big and does not
      * add accuracy. Going below 4 does not save Space.
      */
     public static void checkSpaceValid(int logSpaceSize) {

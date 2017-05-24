@@ -11,16 +11,20 @@ import org.junit.Test;
 
 
 public class ExactFreqSketchTest {
+    @SuppressWarnings("SuspiciousMethodCalls")
+    // Idea is complaining about the hMap.get calls below,
+    // but it also complains if I add explicit casts.
     public String getFrequencies(ITable table, int maxSize) {
         FreqKSketch fk = new FreqKSketch(table.getSchema(), maxSize);
         FreqKList fkList = fk.create(table);
         StringBuilder sb = new StringBuilder();
         ExactFreqSketch ef = new ExactFreqSketch(table.getSchema(), fkList.hMap.keySet());
         ExactFreqSketch.Frequencies hMap = ef.create(table);
-        hMap.count.forEach((r,s) -> sb.append(r.toString()).append(": ").append(s)
-                .append(". (").append(fkList.hMap.get(r)).append("-")
-                                .append(fkList.hMap.get(r) + fkList.getErrBound())
-                                .append(")").append("\n"));
+        hMap.count.forEach(
+                (r,s) -> sb.append(r.toString()).append(": ").append(s)
+                           .append(". (").append(fkList.hMap.get(r)).append("-")
+                           .append(fkList.hMap.get(r) + fkList.getErrBound())
+                           .append(")").append("\n"));
         return sb.toString();
     }
 

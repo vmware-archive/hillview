@@ -34,8 +34,7 @@ public interface IStringColumn extends IColumn {
     @Nullable
     @Override
     default String asString(final int rowIndex) {
-        String result = this.getString(rowIndex);
-        return result;
+        return this.getString(rowIndex);
     }
 
     @Override

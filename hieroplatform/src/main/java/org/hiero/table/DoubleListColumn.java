@@ -58,7 +58,7 @@ public class DoubleListColumn
 
     @Override
     public void parseAndAppendString(@Nullable String s) {
-        if (s == null || s.isEmpty())
+        if ((s == null) || s.isEmpty())
             this.parseEmptyOrNull();
         else
             this.append(Double.parseDouble(s));

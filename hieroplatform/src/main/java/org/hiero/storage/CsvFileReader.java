@@ -121,7 +121,7 @@ public class CsvFileReader {
                     this.actualSchema = new Schema();
                     int index = 0;
                     for (String col : line) {
-                        if (col == null || col.isEmpty())
+                        if ((col == null) || col.isEmpty())
                             col = this.actualSchema.newColumnName("Column_" + Integer.toString(index));
                         ColumnDescription cd = new ColumnDescription(col,
                                 ContentsKind.String,

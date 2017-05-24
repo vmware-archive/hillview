@@ -18,17 +18,23 @@
 
 package org.hiero.sketch;
 
+import com.univocity.parsers.csv.CsvFormat;
+import com.univocity.parsers.csv.CsvWriter;
+import com.univocity.parsers.csv.CsvWriterSettings;
 import org.hiero.storage.CsvFileReader;
 import org.hiero.storage.CsvFileWriter;
 import org.hiero.table.*;
 import org.hiero.table.api.ContentsKind;
 import org.hiero.table.api.IColumn;
 import org.hiero.table.api.ITable;
+import org.hiero.utils.Converters;
 import org.junit.Assert;
 import org.junit.Test;
 
 import javax.annotation.Nullable;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -132,10 +138,26 @@ public class CsvReaderTest {
         writeReadTable(table);
     }
 
+    //@Test
+    public void csvWriterTest() throws IOException {
+        // The Csv writer we are using has a bug, reproduced with this test.
+        String[] data = new String[]{ "", null };
+        CsvWriterSettings settings = new CsvWriterSettings();
+        CsvFormat format = new CsvFormat();
+        settings.setFormat(format);
+        settings.setEmptyValue("\"\"");
+        settings.setNullValue("");
+        Writer fw = new FileWriter("tmp");
+        CsvWriter writer = new CsvWriter(fw, settings);
+        writer.writeRow(data);
+        writer.close();
+        fw.close();
+    }
+
     @Test
     public void writeCsvFileTest() throws IOException {
         ITable tbl = this.readTable(dataFolder, csvFile);
-        writeReadTable(tbl);
+        writeReadTable(Converters.checkNull(tbl));
     }
 }
 
