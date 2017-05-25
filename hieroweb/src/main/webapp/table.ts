@@ -570,8 +570,10 @@ export class TableView extends RemoteObject
         }
         this.tBody = this.htmlTable.createTBody();
 
+        let tableRowCount = 0;
         // Add row data
         if (data.rows != null) {
+            tableRowCount = data.rows.length;
             for (let i = 0; i < data.rows.length; i++)
                 this.addRow(data.rows[i], cds);
         }
@@ -593,8 +595,9 @@ export class TableView extends RemoteObject
         if (perc != "")
             perc = " (" + perc + ")";
 
-        cell.textContent = "Showing " + formatNumber(this.dataRowsDisplayed) +
-            " of " + formatNumber(this.rowCount) + " rows" + perc;
+        cell.textContent = "Showing on " + tableRowCount + " rows " +
+            formatNumber(this.dataRowsDisplayed) +
+            "/" + formatNumber(this.rowCount) + " data rows" + perc;
 
         this.updateScrollBar();
         this.highlightSelectedColumns();

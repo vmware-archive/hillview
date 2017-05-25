@@ -97,9 +97,9 @@ public final class TableTarget extends RpcTarget {
         BucketsDescriptionEqSize cdfBuckets = new BucketsDescriptionEqSize(info.min, info.max, cdfBucketCount);
         Hist1DLightSketch cdf = new Hist1DLightSketch(cdfBuckets, info.columnName, converter);
         BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(info.min, info.max, info.bucketCount);
-        Hist1DSketch sk = new Hist1DSketch(buckets, info.columnName, converter);
-        ConcurrentSketch<ITable, Histogram1DLight, Histogram1D> csk =
-                new ConcurrentSketch<ITable, Histogram1DLight, Histogram1D>(cdf, sk);
+        Hist1DLightSketch sk = new Hist1DLightSketch(buckets, info.columnName, converter);
+        ConcurrentSketch<ITable, Histogram1DLight, Histogram1DLight> csk =
+                new ConcurrentSketch<ITable, Histogram1DLight, Histogram1DLight>(cdf, sk);
         this.runSketch(this.table, csk, request, session);
     }
 

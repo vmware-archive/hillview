@@ -58,18 +58,17 @@ public class SampleCorrTest {
         SampleCorrelationSketch exactIP = new SampleCorrelationSketch(cn, 1);
         ICorrelation exactCorr = all.blockingSketch(exactIP);
         end = System.currentTimeMillis();
-        //System.out.printf("Exact took: %d\n", end -start);
+        PerfRegressionTest.comparePerf("Exact", end - start);
         start = System.currentTimeMillis();
         SampleCorrelationSketch ip = new SampleCorrelationSketch(cn, p);
         ICorrelation cm = all.blockingSketch(ip);
         end = System.currentTimeMillis();
-        //System.out.printf("SampleIP took: %d\n", end -start);
+        PerfRegressionTest.comparePerf("SampleIP", end - start);
         start = System.currentTimeMillis();
         JLSketch jl = new JLSketch(cn, lowdim);
         ICorrelation jlp = all.blockingSketch(jl);
         end = System.currentTimeMillis();
-        //System.out.printf("JL took: %d\n", end -start);
-        //System.out.println("(1, 2): True, Sample, JL\n");
+        PerfRegressionTest.comparePerf("JL", end - start);
         for (int j = 0; j < cn.size(); j++)
             for (int k = 0; k < cn.size(); k++) {
                 String s = cn.get(j);

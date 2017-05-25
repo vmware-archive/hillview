@@ -14,6 +14,8 @@
       <w>heatmap</w>
       <w>hiero</w>
       <w>histogrammed</w>
+      <w>hyperloglog</w>
+      <w>lindenstrauss</w>
       <w>mergeable</w>
       <w>misra</w>
       <w>monoid</w>
@@ -22,9 +24,11 @@
       <w>printf</w>
       <w>quantile</w>
       <w>remoting</w>
+      <w>sqrt</w>
       <w>tods</w>
       <w>unimi</w>
       <w>unsubscribe</w>
+      <w>unsubscribes</w>
       <w>unsubscribing</w>
     </words>
   </dictionary>

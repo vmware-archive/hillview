@@ -191,23 +191,25 @@ public class RemotingTest {
         }
     }
 
+    private static TestSubscriber<PartialResult<Integer>> createUnsubscribeSubscriber(int count) {
+        return new TestSubscriber<PartialResult<Integer>>() {
+            private int counter = 0;
+
+            @Override
+            public void onNext(final PartialResult<Integer> pr) {
+                this.counter++;
+                super.onNext(pr);
+                if (this.counter == count)
+                    this.unsubscribe();
+            }
+        };
+    }
+
     @Test
     public void testUnsubscribe() {
         final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(serverAddress);
         final Observable<PartialResult<Integer>> resultObs = remoteIds.sketch(new SumSketch());
-        TestSubscriber<PartialResult<Integer>> ts =
-                new TestSubscriber<PartialResult<Integer>>() {
-                    private int counter = 0;
-
-                    @Override
-                    public void onNext(final PartialResult<Integer> pr) {
-                        this.counter++;
-                        super.onNext(pr);
-                        if (this.counter == 3)
-                            this.unsubscribe();
-                    }
-                };
-
+        TestSubscriber<PartialResult<Integer>> ts = createUnsubscribeSubscriber(3);
         resultObs.toBlocking().subscribe(ts);
         ts.assertValueCount(3);
         ts.assertNotCompleted();
@@ -218,20 +220,8 @@ public class RemotingTest {
         final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(serverAddress);
         final AtomicInteger count = new AtomicInteger(0);
         final Observable<PartialResult<Integer>> resultObs =
-                remoteIds.sketch(new SumSketch()).doOnUnsubscribe(() -> count.incrementAndGet());
-        TestSubscriber<PartialResult<Integer>> ts =
-                new TestSubscriber<PartialResult<Integer>>() {
-                    private int counter = 0;
-
-                    @Override
-                    public void onNext(final PartialResult<Integer> pr) {
-                        this.counter++;
-                        super.onNext(pr);
-                        if (this.counter == 3)
-                            this.unsubscribe();
-                    }
-                };
-
+                remoteIds.sketch(new SumSketch()).doOnUnsubscribe(count::incrementAndGet);
+        TestSubscriber<PartialResult<Integer>> ts = createUnsubscribeSubscriber(3);
         resultObs.toBlocking().subscribe(ts);
         ts.assertValueCount(3);
         ts.assertNotCompleted();

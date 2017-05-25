@@ -5,6 +5,7 @@ import org.hiero.table.api.ContentsKind;
 import org.hiero.table.api.IColumn;
 import org.hiero.table.api.IRowIterator;
 import org.hiero.table.api.ITable;
+import org.hiero.utils.Converters;
 import org.hiero.utils.Randomness;
 
 import javax.annotation.Nullable;
@@ -44,10 +45,12 @@ public class JLSketch implements ISketch<ITable, JLProjection>{
     @Nullable
     @Override
     public JLProjection add(@Nullable JLProjection left, @Nullable JLProjection right) {
-        for(String s: left.colNames) {
+        left = Converters.checkNull(left);
+        right = Converters.checkNull(right);
+        for (String s: left.colNames) {
             double a[] = left.hMap.get(s);
             double b[] = right.hMap.get(s);
-            double val[] = new double[lowDim];
+            double val[] = new double[this.lowDim];
             for (int i = 0; i < this.lowDim; i++)
                 val[i] = a[i] + b[i];
             left.hMap.put(s, val);
@@ -66,8 +69,6 @@ public class JLSketch implements ISketch<ITable, JLProjection>{
     @Override
     public JLProjection create(ITable data) {
         for (String col : this.colNames) {
-            if (!data.getSchema().getColumnNames().contains(col))
-                throw new InvalidParameterException("No column found with the name: " + col);
             if ((data.getSchema().getKind(col) != ContentsKind.Double) &&
                     (data.getSchema().getKind(col) != ContentsKind.Integer))
                 throw new InvalidParameterException("Projection Sketch requires columm to be " +

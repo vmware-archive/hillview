@@ -1,5 +1,6 @@
 package org.hiero.sketches;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -21,6 +22,7 @@ public class CorrMatrix implements ICorrelation {
     /**
     * A matrix that computes correlations between pairs of columns.
     */
+    @Nullable
     public double[][] corrMatrix;
     /**
      * A count of the number of entries processed so far.
@@ -33,7 +35,7 @@ public class CorrMatrix implements ICorrelation {
             this.colNum.put(colNames.get(i), i);
         this.rawMatrix = new double[colNames.size()][colNames.size()];
         this.count = 0;
-        corrMatrix = null;
+        this.corrMatrix = null;
     }
 
     public void update(int i, int j, double val) {

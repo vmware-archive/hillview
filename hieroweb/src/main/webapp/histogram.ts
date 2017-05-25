@@ -28,6 +28,7 @@ import {ScaleLinear, ScaleTime} from "d3-scale";
 import {ContextMenu, DropDownMenu} from "./menu";
 import {Converters, Pair} from "./util";
 
+/*
 // same as a Java class
 interface Bucket1D {
     minObject: any;
@@ -42,6 +43,16 @@ interface Histogram1D {
     missingData: number;
     outOfRange:  number;
     buckets:     Bucket1D[];
+}
+*/
+
+interface HistogramRpcInfo {
+    columnName: String,
+    min: number,
+    max: number,
+    bucketCount: number,
+    cdfBucketCount: number,
+    bucketBoundaries: string[]
 }
 
 // same as Java class
@@ -107,7 +118,7 @@ export class Histogram extends RemoteObject
     private adjustment: number = 0;
 
     protected currentData: {
-        histogram: Histogram1D,
+        histogram: Histogram1DLight,
         cdf: Histogram1DLight,
         cdfSum: number[],  // prefix sum of cdf
         description: ColumnDescription,
@@ -203,15 +214,18 @@ export class Histogram extends RemoteObject
         if (isNaN(+buckets))
             this.page.reportError(buckets + " is not a number");
 
-        let ws = this.page.getSize();
-        let rr = this.createRpcRequest("histogram", {
+        let cdfBucketCount = this.currentData.cdf.buckets.length;
+        let boundaries = Histogram.categoriesInRange(
+            this.currentData.stats, cdfBucketCount, this.currentData.allStrings);
+        let info: HistogramRpcInfo = {
             columnName: this.currentData.description.name,
             min: this.currentData.stats.min,
             max: this.currentData.stats.max,
             bucketCount: +buckets,
-            width: ws.width,
-            height: ws.height
-        });
+            cdfBucketCount: cdfBucketCount,
+            bucketBoundaries: boundaries
+        };
+        let rr = this.createRpcRequest("histogram", info);
         let renderer = new HistogramRenderer(
             this.page, this.remoteObjectId, this.currentData.description,
             this.currentData.stats, rr, this.currentData.allStrings);
@@ -248,7 +262,7 @@ export class Histogram extends RemoteObject
             0);
     }
 
-    public updateView(cdf: Histogram1DLight, h: Histogram1D,
+    public updateView(cdf: Histogram1DLight, h: Histogram1DLight,
                       cd: ColumnDescription, stats: BasicColStats,
                       allStrings: string[], elapsedMs: number) : void {
         this.currentData = {
@@ -275,7 +289,7 @@ export class Histogram extends RemoteObject
 
         this.chartResolution = { width: chartWidth, height: chartHeight };
 
-        let counts = h.buckets.map(b => b.count);
+        let counts = h.buckets;
         let bucketCount = counts.length;
         let max = d3.max(counts);
 
@@ -466,7 +480,7 @@ export class Histogram extends RemoteObject
             summary = formatNumber(h.missingData) + " missing, ";
         summary += formatNumber(stats.presentCount + stats.missingCount) + " points";
         if (this.currentData.allStrings != null)
-            summary += ", " + this.currentData.allStrings.length + " distinct values";
+            summary += ", " + (this.currentData.stats.max - this.currentData.stats.min + 1) + " distinct values";
         summary += ", " + String(bucketCount) + " buckets";
         this.summary.textContent = summary;
     }
@@ -743,15 +757,17 @@ export class RangeCollector extends Renderer<BasicColStats> {
     public histogram(): void {
         let size = Histogram.getRenderingSize(this.page);
         let bucketCount = Histogram.bucketCount(this.stats, this.page, this.cd.kind);
-        let boundaries = Histogram.categoriesInRange(this.stats, bucketCount, this.allStrings);
-        let rr = this.remoteObject.createRpcRequest("histogram", {
+        let cdfCount = size.width;
+        let boundaries = Histogram.categoriesInRange(this.stats, cdfCount, this.allStrings);
+        let info: HistogramRpcInfo =  {
             columnName: this.cd.name,
             min: this.stats.min,
             max: this.stats.max,
             bucketCount: bucketCount,
-            cdfBucketCount: size.width,
+            cdfBucketCount: cdfCount,
             bucketBoundaries: boundaries
-        });
+        };
+        let rr = this.remoteObject.createRpcRequest("histogram", info);
         rr.setStartTime(this.operation.startTime());
         let renderer = new HistogramRenderer(
             this.page, this.remoteObject.remoteObjectId, this.cd, this.stats, rr, this.allStrings);
@@ -772,7 +788,7 @@ export class RangeCollector extends Renderer<BasicColStats> {
 }
 
 // Renders a column histogram
-export class HistogramRenderer extends Renderer<Pair<Histogram1DLight, Histogram1D>> {
+export class HistogramRenderer extends Renderer<Pair<Histogram1DLight, Histogram1DLight>> {
     protected histogram: Histogram;
 
     constructor(page: FullPage,
@@ -786,7 +802,7 @@ export class HistogramRenderer extends Renderer<Pair<Histogram1DLight, Histogram
         page.setHieroDataView(this.histogram);
     }
 
-    onNext(value: PartialResult<Pair<Histogram1DLight, Histogram1D>>): void {
+    onNext(value: PartialResult<Pair<Histogram1DLight, Histogram1DLight>>): void {
         super.onNext(value);
         this.histogram.updateView(value.data.first, value.data.second, this.cd,
             this.stats, this.allStrings, this.elapsedMilliseconds());
