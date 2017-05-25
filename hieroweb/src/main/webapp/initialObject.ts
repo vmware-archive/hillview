@@ -18,7 +18,6 @@
 import {RemoteObject, ICancellable, RpcReceiver} from "./rpc";
 import {RemoteTableReceiver} from "./table";
 import {FullPage} from "./ui";
-import {Path} from "d3-path";
 
 class FileNames extends RemoteObject {
     constructor(remoteObjectId: string) {

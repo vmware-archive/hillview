@@ -116,7 +116,6 @@ export class RpcRequest implements ICancellable {
 
     private onOpen() : void {
         this.closed = false;
-        console.log('socket open');
         let reqStr : string = this.serialize();
         console.log("Sending message " + reqStr);
         this.socket.onNext(reqStr);
@@ -137,7 +136,10 @@ export class RpcRequest implements ICancellable {
         // Invoked when the socked is opened
         let openObserver = Rx.Observer.create(() => this.onOpen());
         let closeObserver = Rx.Observer.create(
-            function() { this.closed = true; console.log('socket closing'); },
+            function() {
+                this.closed = true;
+                //console.log('socket closing');
+            },
             function(e: CloseEvent) {
                 if (e == null)
                     return;
@@ -183,7 +185,7 @@ export class RpcRequest implements ICancellable {
                 this.rpcTime = new Date();
             this.socket = RxDOM.DOM.fromWebSocket(RpcRequestUrl, null, openObserver, closeObserver);
             this.socket.onclose =
-            console.log('socket created');
+            //console.log('socket created');
             this.socket.subscribe(
                 // onNext -> parse json and invoke onReply.onNext
                 function (r: MessageEvent) {
