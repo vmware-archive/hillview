@@ -61,7 +61,7 @@ public class SampleCorrelationSketch implements ISketch<ITable, CorrMatrix> {
         for (String col : this.colNames) {
             if ((data.getSchema().getKind(col) != ContentsKind.Double) &&
                     (data.getSchema().getKind(col) != ContentsKind.Integer))
-                throw new InvalidParameterException("Correlation Sketch requires columm to be " +
+                throw new InvalidParameterException("Correlation Sketch requires column to be " +
                         "integer or double: " + col);
         }
         IColumn[] iCols = new IColumn[this.colNames.size()];

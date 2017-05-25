@@ -71,7 +71,7 @@ public class JLSketch implements ISketch<ITable, JLProjection>{
         for (String col : this.colNames) {
             if ((data.getSchema().getKind(col) != ContentsKind.Double) &&
                     (data.getSchema().getKind(col) != ContentsKind.Integer))
-                throw new InvalidParameterException("Projection Sketch requires columm to be " +
+                throw new InvalidParameterException("Projection Sketch requires column to be " +
                         "integer or double: " + col);
         }
         JLProjection jlProj = new JLProjection(this.colNames, this.lowDim);

@@ -21,7 +21,7 @@ import {
 } from "./ui";
 import d3 = require('d3');
 import {RemoteObject, ICancellable, PartialResult} from "./rpc";
-import {ColumnDescription, TableRenderer, TableView, RecordOrder, ContentsKind} from "./table";
+import {ColumnDescription, TableRenderer, TableView, RecordOrder, ContentsKind, Schema} from "./table";
 import {histogram} from "d3-array";
 import {BaseType} from "d3-selection";
 import {ScaleLinear, ScaleTime} from "d3-scale";
@@ -131,8 +131,8 @@ export class Histogram extends RemoteObject
     private yDot: any;
     private cdfDot: any;
 
-    constructor(id: string, page: FullPage) {
-        super(id);
+    constructor(remoteObjectId: string, protected tableSchema: Schema, page: FullPage) {
+        super(remoteObjectId);
         this.topLevel = document.createElement("div");
         this.topLevel.className = "chart";
         this.topLevel.onkeydown = e => this.keyDown(e);
@@ -227,7 +227,7 @@ export class Histogram extends RemoteObject
         };
         let rr = this.createRpcRequest("histogram", info);
         let renderer = new HistogramRenderer(
-            this.page, this.remoteObjectId, this.currentData.description,
+            this.page, this.remoteObjectId, this.tableSchema, this.currentData.description,
             this.currentData.stats, rr, this.currentData.allStrings);
         rr.invoke(renderer);
     }
@@ -235,10 +235,15 @@ export class Histogram extends RemoteObject
     // show the table corresponding to the data in the histogram
     showTable(): void {
         let table = new TableView(this.remoteObjectId, this.page);
+        table.setSchema(this.tableSchema);
         this.page.setHieroDataView(table);
-        let rr = table.createRpcRequest("getSchema", null);
-        // TODO: put at least this column in the order
-        rr.invoke(new TableRenderer(this.page, table, rr, false, new RecordOrder([])));
+
+        let order =  new RecordOrder([ {
+            columnDescription: this.currentData.description,
+            isAscending: true
+        } ]);
+        let rr = table.createNextKRequest(order, null);
+        rr.invoke(new TableRenderer(this.page, table, rr, false, order));
     }
 
     getHTMLRepresentation(): HTMLElement {
@@ -624,7 +629,8 @@ export class Histogram extends RemoteObject
 
         let rr = this.createRpcRequest("filterRange", range);
         let renderer = new FilterReceiver(
-                this.currentData.description, this.currentData.allStrings, range, this.page, rr);
+                this.currentData.description, this.tableSchema,
+            this.currentData.allStrings, range, this.page, rr);
         rr.invoke(renderer);
     }
 
@@ -693,6 +699,7 @@ export class FilterReceiver extends Renderer<string> {
     private stub: TableStub;
 
     constructor(protected columnDescription: ColumnDescription,
+                protected tableSchema: Schema,
                 protected allStrings: string[],
                 protected car: ColumnAndRange,
                 page: FullPage,
@@ -723,8 +730,8 @@ export class FilterReceiver extends Renderer<string> {
                 lastValue: sv
             };
             let rr = this.stub.createRpcRequest("range", rangeInfo);
-            rr.invoke(new RangeCollector(
-                this.columnDescription, this.allStrings, this.page, this.stub, rr));
+            rr.invoke(new RangeCollector(this.columnDescription, this.tableSchema,
+                this.allStrings, this.page, this.stub, rr));
         }
     }
 }
@@ -734,6 +741,7 @@ export class FilterReceiver extends Renderer<string> {
 export class RangeCollector extends Renderer<BasicColStats> {
     protected stats: BasicColStats;
     constructor(protected cd: ColumnDescription,
+                protected tableSchema: Schema,
                 protected allStrings: string[],  // for categorical columns only
                 page: FullPage,
                 protected remoteObject: RemoteObject,
@@ -770,7 +778,8 @@ export class RangeCollector extends Renderer<BasicColStats> {
         let rr = this.remoteObject.createRpcRequest("histogram", info);
         rr.setStartTime(this.operation.startTime());
         let renderer = new HistogramRenderer(
-            this.page, this.remoteObject.remoteObjectId, this.cd, this.stats, rr, this.allStrings);
+            this.page, this.remoteObject.remoteObjectId, this.tableSchema,
+            this.cd, this.stats, rr, this.allStrings);
         rr.invoke(renderer);
     }
 
@@ -793,12 +802,13 @@ export class HistogramRenderer extends Renderer<Pair<Histogram1DLight, Histogram
 
     constructor(page: FullPage,
                 remoteTableId: string,
+                protected schema: Schema,
                 protected cd: ColumnDescription,
                 protected stats: BasicColStats,
                 operation: ICancellable,
                 protected allStrings: string[]) {
         super(page, operation, "histogram");
-        this.histogram = new Histogram(remoteTableId, page);
+        this.histogram = new Histogram(remoteTableId, schema, page);
         page.setHieroDataView(this.histogram);
     }
 
