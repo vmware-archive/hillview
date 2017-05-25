@@ -159,7 +159,7 @@ export class TableView extends RemoteObject
     protected static initialTableId: string = null;
 
     // Data view part: received from remote site
-    protected schema?: Schema;
+    public schema?: Schema;
     // Logical position of first row displayed
     protected startPosition?: number;
     // Total rows in the table
@@ -673,13 +673,21 @@ export class TableView extends RemoteObject
 
     private heavyHitters(colName: string): void {
         let columns: IColumnDescription[] = [];
+        let cso : ColumnSortOrientation[] = [];
         if (this.selectedColumns.size != 0) {
-            this.selectedColumns.forEach(v => columns.push(this.findColumn(v)));
+            this.selectedColumns.forEach(v => {
+                let colDesc = this.findColumn(v);
+                columns.push(colDesc);
+                cso.push({ columnDescription: colDesc, isAscending: true });
+            });
         } else {
-            columns.push(this.findColumn(colName));
+            let colDesc = this.findColumn(colName);
+            columns.push(colDesc);
+            cso.push({ columnDescription: colDesc, isAscending: true });
         }
+        let order = new RecordOrder(cso);
         let rr = this.createRpcRequest("heavyHitters", columns);
-        rr.invoke(new HeavyHittersReceiver(this.getPage(), this, rr, columns, this.order));
+        rr.invoke(new HeavyHittersReceiver(this.getPage(), this, rr, columns, order));
     }
 
     protected static convert(val: any, kind: ContentsKind): string {
@@ -908,8 +916,9 @@ class FilterCompleted extends Renderer<string> {
         if (this.remoteTableId == null)
             return;
         let table = new TableView(this.remoteTableId, this.page);
+        table.setSchema(this.tv.schema);
         this.page.setHieroDataView(table);
-        let rr = table.createRpcRequest("getSchema", null);
+        let rr = table.createNextKRequest(this.order, null);
         rr.setStartTime(this.operation.startTime());
         rr.invoke(new TableRenderer(this.page, table, rr, false, this.order));
     }

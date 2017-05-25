@@ -223,9 +223,7 @@ public final class TableTarget extends RpcTarget {
     void quantile(RpcRequest request, Session session) {
         QuantileInfo info = request.parseArgs(QuantileInfo.class);
         SampleQuantileSketch sk = new SampleQuantileSketch(info.order, info.precision, info.tableSize);
-        Function<SampleList, RowSnapshot> getRow = ql -> {
-            return ql.getRow(info.position);
-        };
+        Function<SampleList, RowSnapshot> getRow = ql -> ql.getRow(info.position);
         this.runCompleteSketch(this.table, sk, getRow, request, session);
     }
 
