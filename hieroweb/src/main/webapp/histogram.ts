@@ -140,7 +140,6 @@ export class Histogram extends RemoteObject
         this.setPage(page);
         let menu = new DropDownMenu( [
             { text: "View", subMenu: new ContextMenu([
-                { text: "home", action: () => { TableView.goHome(this.page); } },
                 { text: "refresh", action: () => { this.refresh(); } },
                 { text: "table", action: () => this.showTable() },
                 { text: "#buckets", action: () => this.chooseBuckets() },
@@ -149,7 +148,6 @@ export class Histogram extends RemoteObject
         ]);
 
         this.topLevel.appendChild(menu.getHTMLRepresentation());
-        this.topLevel.appendChild(document.createElement("hr"));
         this.topLevel.tabIndex = 1;
 
         this.chartDiv = document.createElement("div");
@@ -226,8 +224,8 @@ export class Histogram extends RemoteObject
             bucketBoundaries: boundaries
         };
         let rr = this.createRpcRequest("histogram", info);
-        let renderer = new HistogramRenderer(
-            this.page, this.remoteObjectId, this.tableSchema, this.currentData.description,
+        let renderer = new HistogramRenderer(this.page,
+            this.remoteObjectId, this.tableSchema, this.currentData.description,
             this.currentData.stats, rr, this.currentData.allStrings);
         rr.invoke(renderer);
     }
@@ -236,14 +234,16 @@ export class Histogram extends RemoteObject
     showTable(): void {
         let table = new TableView(this.remoteObjectId, this.page);
         table.setSchema(this.tableSchema);
-        this.page.setHieroDataView(table);
 
         let order =  new RecordOrder([ {
             columnDescription: this.currentData.description,
             isAscending: true
         } ]);
         let rr = table.createNextKRequest(order, null);
-        rr.invoke(new TableRenderer(this.page, table, rr, false, order));
+        let page = new FullPage();
+        page.setHieroDataView(table);
+        this.page.insertAfterMe(page);
+        rr.invoke(new TableRenderer(page, table, rr, false, order));
     }
 
     getHTMLRepresentation(): HTMLElement {
@@ -777,8 +777,8 @@ export class RangeCollector extends Renderer<BasicColStats> {
         };
         let rr = this.remoteObject.createRpcRequest("histogram", info);
         rr.setStartTime(this.operation.startTime());
-        let renderer = new HistogramRenderer(
-            this.page, this.remoteObject.remoteObjectId, this.tableSchema,
+        let renderer = new HistogramRenderer(this.page,
+            this.remoteObject.remoteObjectId, this.tableSchema,
             this.cd, this.stats, rr, this.allStrings);
         rr.invoke(renderer);
     }
@@ -807,9 +807,10 @@ export class HistogramRenderer extends Renderer<Pair<Histogram1DLight, Histogram
                 protected stats: BasicColStats,
                 operation: ICancellable,
                 protected allStrings: string[]) {
-        super(page, operation, "histogram");
-        this.histogram = new Histogram(remoteTableId, schema, page);
-        page.setHieroDataView(this.histogram);
+        super(new FullPage(), operation, "histogram");
+        page.insertAfterMe(this.page);
+        this.histogram = new Histogram(remoteTableId, schema, this.page);
+        this.page.setHieroDataView(this.histogram);
     }
 
     onNext(value: PartialResult<Pair<Histogram1DLight, Histogram1DLight>>): void {

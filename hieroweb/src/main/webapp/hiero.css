@@ -62,6 +62,24 @@ th, td {
     display: flex;
 }
 
+.hieroPage {
+    border: 1px solid black;
+    margin: 5px 0;
+    padding: 0;
+}
+
+/* close button */
+.close {
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close :hover {
+    background: red;
+}
+
 .noBorder {
     border: none;
     border-collapse: collapse;
