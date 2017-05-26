@@ -432,28 +432,82 @@ export class FullPage implements IHtmlElement {
     bottomContainer: HTMLElement;
     public progressManager: ProgressManager;
     protected console: ConsoleDisplay;
-    topLevel: HTMLElement;
+    pageTopLevel: HTMLElement;
+    static pageCounter: number = 0;
+    protected pageId: number;
+
+    // All visible pages are children of a div named 'top'.
+    static allPages: FullPage[] = [];  // should be the same as the children of top 'div'
 
     public constructor() {
+        this.pageId = FullPage.pageCounter++;
         this.console = new ConsoleDisplay();
         this.progressManager = new ProgressManager();
         this.dataDisplay = new DataDisplay();
 
-        this.topLevel = document.createElement("div");
+        this.pageTopLevel = document.createElement("div");
+        this.pageTopLevel.className = "hieroPage";
         this.bottomContainer = document.createElement("div");
-        this.topLevel.appendChild(this.dataDisplay.getHTMLRepresentation());
-        this.topLevel.appendChild(this.bottomContainer);
+        let close = document.createElement("span");
+        close.className = "close";
+        close.innerHTML = "&times;";
+        close.onclick = (e) => this.remove();
+        this.pageTopLevel.appendChild(close);
+        this.pageTopLevel.appendChild(this.dataDisplay.getHTMLRepresentation());
+        this.pageTopLevel.appendChild(this.bottomContainer);
 
         this.bottomContainer.appendChild(this.progressManager.getHTMLRepresentation());
         this.bottomContainer.appendChild(this.console.getHTMLRepresentation());
+    }
+
+    protected static getTop(): HTMLElement {
+        return document.getElementById('top');
+    }
+
+    public append(): void {
+        let top = FullPage.getTop();
+        FullPage.allPages.push(this);
+        top.appendChild(this.getHTMLRepresentation());
+    }
+
+    public findIndex(): number {
+        let index = FullPage.allPages.indexOf(this);
+        if (index < 0)
+            throw "Page to insert after not found";
+        return index;
+    }
+
+    public insertAfterMe(page: FullPage): void {
+        let index = this.findIndex();
+        FullPage.allPages.splice(index+1, 0, page);
+        let top = FullPage.getTop();
+        let pageRepresentation = page.getHTMLRepresentation();
+        if (index >= top.children.length - 1)
+            top.appendChild(pageRepresentation);
+        else
+            top.insertBefore(pageRepresentation, top.children[index+1]);
+        pageRepresentation.scrollIntoView( { block: "end", behavior: "smooth" } );
+    }
+
+    public remove(): void {
+        let index = this.findIndex();
+        FullPage.allPages.splice(index, 1);
+        let top = FullPage.getTop();
+        top.removeChild(top.children[index]);
     }
 
     public onResize(): void {
         this.dataDisplay.onResize();
     }
 
+    public static onResize(): void {
+        if (FullPage.allPages != null)
+            for (let p of FullPage.allPages)
+                p.onResize();
+    }
+
     public getHTMLRepresentation(): HTMLElement {
-        return this.topLevel;
+        return this.pageTopLevel;
     }
 
     public getErrorReporter(): ErrorReporter {

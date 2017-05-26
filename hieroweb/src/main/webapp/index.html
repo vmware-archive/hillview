@@ -24,24 +24,18 @@
     <script>
         //noinspection ThisExpressionReferencesGlobalObjectJS
         var hiero = this.hiero;
-        var initialObject = hiero.InitialObject.instance;
-        var page = new hiero.FullPage();
-        window.addEventListener("resize", function() { page.onResize() });
+        window.addEventListener("resize", function() { hiero.FullPage.onResize() });
 
         function loadTable(arg) {
-            initialObject.loadTable(page, arg);
+            var initialObject = hiero.InitialObject.instance;
+            initialObject.loadTable(arg);
             var but = document.getElementsByClassName("button");
             for (var i = 0; i < but.length; i++)
                 but[i].style.display = "none";
         }
-
-        function initialize() {
-            var top = document.getElementById('top');
-            top.appendChild(page.getHTMLRepresentation());
-        }
     </script>
 </head>
-<body onload="initialize()">
+<body>
     <div id="contents">
         <button class="button" onclick="loadTable(0)">Big table</button>
         <button class="button" onclick="loadTable(1)">Small table</button>
