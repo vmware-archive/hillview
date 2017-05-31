@@ -21,9 +21,8 @@ package org.hiero.sketch;
 import org.hiero.table.ColumnDescription;
 import org.hiero.table.StringListColumn;
 import org.hiero.table.api.ContentsKind;
+import org.junit.Assert;
 import org.junit.Test;
-
-import static junit.framework.TestCase.*;
 
 /*
  * Test for StringArrayColumn class.
@@ -42,14 +41,27 @@ public class StringListTest {
                 col.append(String.valueOf(i));
             }
         }
-        assertEquals(col.sizeInRows(), size);
+
+        Assert.assertEquals(col.sizeInRows(), size);
         for (int i = 0; i < size; i++) {
             if ((i % 5) == 0) {
-                assertTrue(col.isMissing(i));
+                Assert.assertTrue(col.isMissing(i));
             } else {
-                assertFalse(col.isMissing(i));
-                assertEquals(String.valueOf(i), col.getString(i));
+                Assert.assertFalse(col.isMissing(i));
+                Assert.assertEquals(String.valueOf(i), col.getString(i));
             }
         }
+    }
+
+    @Test
+    public void testStringColumnSparse() {
+        // exercises a corner case in column growth
+        final StringListColumn col = new StringListColumn(this.desc);
+        int ss = col.SegmentSize;
+        for (int i = 0; i < (2 * ss); i++)
+            col.appendMissing();
+
+        col.append("2.0");
+        Assert.assertNotNull(col);
     }
 }

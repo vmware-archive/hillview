@@ -44,14 +44,17 @@ public class DoubleListColumn
         return this.segments.get(segmentId)[localIndex];
     }
 
+    void grow() {
+        this.segments.add(new double[this.SegmentSize]);
+        this.growMissing();
+    }
+
     @SuppressWarnings("Duplicates")
     public void append(final double value) {
         final int segmentId = this.size >> this.LogSegmentSize;
         final int localIndex = this.size & this.SegmentMask;
-        if (this.segments.size() <= segmentId) {
-            this.segments.add(new double[this.SegmentSize]);
-            this.growMissing();
-        }
+        if (this.segments.size() <= segmentId)
+            this.grow();
         this.segments.get(segmentId)[localIndex] = value;
         this.size++;
     }

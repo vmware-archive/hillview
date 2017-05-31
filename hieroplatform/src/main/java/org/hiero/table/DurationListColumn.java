@@ -45,13 +45,18 @@ class DurationListColumn extends BaseListColumn implements IDurationColumn {
         return this.segments.get(segmentId)[localIndex];
     }
 
+    @Override
+    void grow() {
+        this.segments.add(new Duration[this.SegmentSize]);
+        this.growMissing();
+    }
+
+    @SuppressWarnings("Duplicates")
     private void append(@Nullable final Duration value) {
         final int segmentId = this.size >> this.LogSegmentSize;
         final int localIndex = this.size & this.SegmentMask;
-        if (this.segments.size() <= segmentId) {
-            this.segments.add(new Duration[this.SegmentSize]);
-            this.growMissing();
-        }
+        if (this.segments.size() <= segmentId)
+            this.grow();
         this.segments.get(segmentId)[localIndex] = value;
         this.size++;
     }
