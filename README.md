@@ -27,6 +27,8 @@ but only maven is needed to build.
 
 ## How to run the demo
 
+* If you don't want to run the demo, [here is a short video](https://1drv.ms/v/s!AlywK8G1COQ_jaNkYmIRJyeSuvPeLA) of an early version Hiero:
+
 * First install all software required as described
   [below](#installing-the-software-needed).
 
