@@ -29,6 +29,7 @@ import java.time.LocalDateTime;
  * it is allocated once, and then the row is set multiple times, probably
  * while iterating over a MembershipSet.  It allows accessing the row
  * without actually materializing the data in the row.
+ * This class is NOT serializable.
  */
 public class VirtualRowSnapshot extends BaseRowSnapshot {
     /**

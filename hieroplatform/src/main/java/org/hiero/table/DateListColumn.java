@@ -28,7 +28,10 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * A column of Dates that can grow in size.
@@ -37,6 +40,8 @@ public class DateListColumn
         extends BaseListColumn
         implements IDateColumn {
     private final ArrayList<LocalDateTime[]> segments;
+    static final Logger logger = Logger.getLogger(DateListColumn.class.getName());
+
     /**
      * Used when parsing; this is set the first time when parsing a date
      * and used subsequently.
@@ -66,13 +71,17 @@ public class DateListColumn
         return this.segments.get(segmentId)[localIndex];
     }
 
+    void grow() {
+        this.segments.add(new LocalDateTime[this.SegmentSize]);
+        this.growMissing();
+    }
+
+    @SuppressWarnings("Duplicates")
     private void append(@Nullable final LocalDateTime value) {
         final int segmentId = this.size >> this.LogSegmentSize;
         final int localIndex = this.size & this.SegmentMask;
-        if (this.segments.size() <= segmentId) {
-            this.segments.add(new LocalDateTime[this.SegmentSize]);
-            this.growMissing();
-        }
+        if (this.segments.size() <= segmentId)
+            this.grow();
         this.segments.get(segmentId)[localIndex] = value;
         this.size++;
     }
@@ -87,30 +96,31 @@ public class DateListColumn
         this.append(null);
     }
 
-    private static final Map<String, String> DATE_FORMAT_REGEXPS = new HashMap<String, String>() {{
-        put("^\\d{8}$", "yyyyMMdd");
-        put("^\\d{1,2}-\\d{1,2}-\\d{4}$", "dd-MM-yyyy");
-        put("^\\d{4}-\\d{1,2}-\\d{1,2}$", "yyyy-MM-dd");
-        put("^\\d{1,2}/\\d{1,2}/\\d{4}$", "MM/dd/yyyy");
-        put("^\\d{4}/\\d{1,2}/\\d{1,2}$", "yyyy/MM/dd");
-        put("^\\d{1,2}\\s[a-z]{3}\\s\\d{4}$", "dd MMM yyyy");
-        put("^\\d{1,2}\\s[a-z]{4,}\\s\\d{4}$", "dd MMMM yyyy");
-        put("^\\d{12}$", "yyyyMMddHHmm");
-        put("^\\d{8}\\s\\d{4}$", "yyyyMMdd HHmm");
-        put("^\\d{1,2}-\\d{1,2}-\\d{4}\\s\\d{1,2}:\\d{2}$", "dd-MM-yyyy HH:mm");
-        put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s\\d{1,2}:\\d{2}$", "yyyy-MM-dd HH:mm");
-        put("^\\d{1,2}/\\d{1,2}/\\d{4}\\s\\d{1,2}:\\d{2}$", "MM/dd/yyyy HH:mm");
-        put("^\\d{4}/\\d{1,2}/\\d{1,2}\\s\\d{1,2}:\\d{2}$", "yyyy/MM/dd HH:mm");
-        put("^\\d{1,2}\\s[a-z]{3}\\s\\d{4}\\s\\d{1,2}:\\d{2}$", "dd MMM yyyy HH:mm");
-        put("^\\d{1,2}\\s[a-z]{4,}\\s\\d{4}\\s\\d{1,2}:\\d{2}$", "dd MMMM yyyy HH:mm");
-        put("^\\d{14}$", "yyyyMMddHHmmss");
-        put("^\\d{8}\\s\\d{6}$", "yyyyMMdd HHmmss");
-        put("^\\d{1,2}-\\d{1,2}-\\d{4}\\s\\d{1,2}:\\d{2}:\\d{2}$", "dd-MM-yyyy HH:mm:ss");
-        put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s\\d{1,2}:\\d{2}:\\d{2}$", "yyyy-MM-dd HH:mm:ss");
-        put("^\\d{1,2}/\\d{1,2}/\\d{4}\\s\\d{1,2}:\\d{2}:\\d{2}$", "MM/dd/yyyy HH:mm:ss");
-        put("^\\d{4}/\\d{1,2}/\\d{1,2}\\s\\d{1,2}:\\d{2}:\\d{2}$", "yyyy/MM/dd HH:mm:ss");
-        put("^\\d{1,2}\\s[a-z]{3}\\s\\d{4}\\s\\d{1,2}:\\d{2}:\\d{2}$", "dd MMM yyyy HH:mm:ss");
-        put("^\\d{1,2}\\s[a-z]{4,}\\s\\d{4}\\s\\d{1,2}:\\d{2}:\\d{2}$", "dd MMMM yyyy HH:mm:ss");
+    private static final LinkedHashMap<String, String> DATE_FORMAT_REGEXPS =
+            new LinkedHashMap<String, String>() {{
+                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s\\d{1,2}:\\d{2}:\\d{2}$", "yyyy-MM-dd HH:mm:ss");
+                put("^\\d{8}$", "yyyyMMdd");
+                put("^\\d{1,2}-\\d{1,2}-\\d{4}$", "dd-MM-yyyy");
+                put("^\\d{4}-\\d{1,2}-\\d{1,2}$", "yyyy-MM-dd");
+                put("^\\d{1,2}/\\d{1,2}/\\d{4}$", "MM/dd/yyyy");
+                put("^\\d{4}/\\d{1,2}/\\d{1,2}$", "yyyy/MM/dd");
+                put("^\\d{1,2}\\s[a-z]{3}\\s\\d{4}$", "dd MMM yyyy");
+                put("^\\d{1,2}\\s[a-z]{4,}\\s\\d{4}$", "dd MMMM yyyy");
+                put("^\\d{12}$", "yyyyMMddHHmm");
+                put("^\\d{8}\\s\\d{4}$", "yyyyMMdd HHmm");
+                put("^\\d{1,2}-\\d{1,2}-\\d{4}\\s\\d{1,2}:\\d{2}$", "dd-MM-yyyy HH:mm");
+                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s\\d{1,2}:\\d{2}$", "yyyy-MM-dd HH:mm");
+                put("^\\d{1,2}/\\d{1,2}/\\d{4}\\s\\d{1,2}:\\d{2}$", "MM/dd/yyyy HH:mm");
+                put("^\\d{4}/\\d{1,2}/\\d{1,2}\\s\\d{1,2}:\\d{2}$", "yyyy/MM/dd HH:mm");
+                put("^\\d{1,2}\\s[a-z]{3}\\s\\d{4}\\s\\d{1,2}:\\d{2}$", "dd MMM yyyy HH:mm");
+                put("^\\d{1,2}\\s[a-z]{4,}\\s\\d{4}\\s\\d{1,2}:\\d{2}$", "dd MMMM yyyy HH:mm");
+                put("^\\d{14}$", "yyyyMMddHHmmss");
+                put("^\\d{8}\\s\\d{6}$", "yyyyMMdd HHmmss");
+                put("^\\d{1,2}-\\d{1,2}-\\d{4}\\s\\d{1,2}:\\d{2}:\\d{2}$", "dd-MM-yyyy HH:mm:ss");
+                put("^\\d{1,2}/\\d{1,2}/\\d{4}\\s\\d{1,2}:\\d{2}:\\d{2}$", "MM/dd/yyyy HH:mm:ss");
+                put("^\\d{4}/\\d{1,2}/\\d{1,2}\\s\\d{1,2}:\\d{2}:\\d{2}$", "yyyy/MM/dd HH:mm:ss");
+                put("^\\d{1,2}\\s[a-z]{3}\\s\\d{4}\\s\\d{1,2}:\\d{2}:\\d{2}$", "dd MMM yyyy HH:mm:ss");
+                put("^\\d{1,2}\\s[a-z]{4,}\\s\\d{4}\\s\\d{1,2}:\\d{2}:\\d{2}$", "dd MMMM yyyy HH:mm:ss");
     }};
 
     static final DateTimeFormatter[] toTry = {
@@ -142,6 +152,8 @@ public class DateListColumn
                         LocalDate.parse(s, d);
                     else
                         LocalDateTime.parse(s, d);
+
+                    logger.log(Level.INFO, "Guessed date format " + d.toString());
                     this.parserFormatter = d;
                     return;
                 } catch (DateTimeParseException ex) {
@@ -149,11 +161,14 @@ public class DateListColumn
                 }
             }
         }
+
+        this.parseAsDate = false;
         // none of the standard formats worked, let's try some custom ones
         for (String regexp : DATE_FORMAT_REGEXPS.keySet()) {
             if (s.toLowerCase().matches(regexp)) {
                 String format = DATE_FORMAT_REGEXPS.get(regexp);
                 this.parserFormatter = DateTimeFormatter.ofPattern(format);
+                logger.log(Level.INFO, "Guessed date format " + regexp);
                 return;
             }
         }

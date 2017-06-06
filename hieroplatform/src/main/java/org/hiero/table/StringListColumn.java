@@ -48,16 +48,20 @@ public class StringListColumn extends BaseListColumn implements IStringColumn {
         return segment[localIndex];
     }
 
+    @Override
+    void grow() {
+        this.segments.add(new String[this.SegmentSize]);
+        this.growMissing();
+    }
+
     public void append(@Nullable String value) {
         if (value != null)
             value = value.intern();
 
         final int segmentId = this.size >> this.LogSegmentSize;
         final int localIndex = this.size & this.SegmentMask;
-        if (this.segments.size() <= segmentId) {
-            this.segments.add(new String[this.SegmentSize]);
-            this.growMissing();
-        }
+        if (this.segments.size() <= segmentId)
+            this.grow();
         this.segments.get(segmentId)[localIndex] = value;
         this.size++;
     }

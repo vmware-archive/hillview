@@ -28,10 +28,10 @@ import java.util.BitSet;
  * Base class for a column that can grow in size.
  */
 public abstract class BaseListColumn extends BaseColumn {
-    final int LogSegmentSize = 10;
-    final int SegmentSize = 1 << this.LogSegmentSize;
-    final int SegmentMask = this.SegmentSize - 1;
-    private boolean sealed;  // once sealed it can't grow anymore.
+    // These should not be public, but they are made public for simplifying testing.
+    public final int LogSegmentSize = 10;
+    public final int SegmentSize = 1 << this.LogSegmentSize;
+    public final int SegmentMask = this.SegmentSize - 1;
 
     @Nullable
     private ArrayList<BitSet> missing = null;
@@ -66,7 +66,7 @@ public abstract class BaseListColumn extends BaseColumn {
         final int segmentId = this.size >> this.LogSegmentSize;
         final int localIndex = this.size & this.SegmentMask;
         if (this.missing.size() <= segmentId) {
-            this.growMissing();
+            this.grow();
         }
         this.missing.get(segmentId).set(localIndex);
         this.size++;
@@ -80,15 +80,11 @@ public abstract class BaseListColumn extends BaseColumn {
         this.appendMissing();
     }
 
+    abstract void grow();
+
     void growMissing() {
-        if (this.sealed)
-            throw new RuntimeException("Cannot grow sealed column");
         if (this.missing != null)
             this.missing.add(new BitSet(this.SegmentSize));
-    }
-
-    public void seal() {
-        this.sealed = true;
     }
 
     public static BaseListColumn create(ColumnDescription desc) {

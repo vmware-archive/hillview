@@ -1,5 +1,6 @@
 package org.hiero.sketches;
 
+import org.hiero.dataset.api.IJson;
 import org.hiero.dataset.api.ISketch;
 import org.hiero.table.*;
 import org.hiero.table.api.IRowIterator;
@@ -7,6 +8,7 @@ import org.hiero.table.api.ITable;
 import org.hiero.utils.Converters;
 
 import javax.annotation.Nullable;
+import java.io.Serializable;
 import java.util.HashMap;
 
 /**
@@ -15,7 +17,7 @@ import java.util.HashMap;
  * exact frequencies.
  */
 public class ExactFreqSketch implements ISketch<ITable, ExactFreqSketch.Frequencies> {
-    public static class Frequencies {
+    public static class Frequencies implements Serializable, IJson {
         public final HashMap<BaseRowSnapshot, Integer> count;
 
         public Frequencies() { this.count = new HashMap<BaseRowSnapshot, Integer>(); }

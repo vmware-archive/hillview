@@ -701,7 +701,7 @@ export class FilterReceiver extends Renderer<string> {
     constructor(protected columnDescription: ColumnDescription,
                 protected tableSchema: Schema,
                 protected allStrings: string[],
-                protected car: ColumnAndRange,
+                protected colAndRange: ColumnAndRange,
                 page: FullPage,
                 operation: ICancellable) {
         super(page, operation, "Filter");
@@ -718,14 +718,18 @@ export class FilterReceiver extends Renderer<string> {
         if (this.stub != null) {
             let fv = null;
             let sv = null;
-            if (this.car.bucketBoundaries != null) {
-                fv = this.car.bucketBoundaries[0];
-                sv = this.car.bucketBoundaries[1];
+            let fi = null;
+            let li = null;
+            if (this.colAndRange.bucketBoundaries != null) {
+                fv = this.colAndRange.bucketBoundaries[0];
+                sv = this.colAndRange.bucketBoundaries[1];
+                fi = this.colAndRange.min;
+                li = this.colAndRange.max;
             }
             let rangeInfo = {
                 columnName: this.columnDescription.name,
-                firstIndex: this.car.min,
-                lastIndex: this.car.max,
+                firstIndex: fi,
+                lastIndex: li,
                 firstValue: fv,
                 lastValue: sv
             };

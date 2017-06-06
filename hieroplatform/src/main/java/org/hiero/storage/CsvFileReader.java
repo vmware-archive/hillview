@@ -84,6 +84,8 @@ public class CsvFileReader {
     @Nullable
     protected BaseListColumn[] columns;
     protected long currentField;
+    @Nullable
+    protected String currentToken;
 
     public CsvFileReader(final Path path, CsvConfiguration configuration) {
         this.filename = path;
@@ -91,6 +93,7 @@ public class CsvFileReader {
         this.currentRow = 0;
         this.currentColumn = 0;
         this.currentField = 0;
+        this.currentToken = null;
     }
 
     // May return null when an error occurs.
@@ -185,7 +188,8 @@ public class CsvFileReader {
             if (data.length > columnCount)
                 this.error("Too many columns " + data.length + " vs " + columnCount);
             for (this.currentColumn = 0; this.currentColumn < data.length; this.currentColumn++) {
-                this.columns[this.currentColumn].parseAndAppendString(data[this.currentColumn]);
+                this.currentToken = data[this.currentColumn];
+                this.columns[this.currentColumn].parseAndAppendString(this.currentToken);
                 this.currentField++;
                 if ((this.currentField % 100000) == 0) {
                     System.out.print(".");
@@ -196,8 +200,9 @@ public class CsvFileReader {
                 if (!this.configuration.allowFewerColumns)
                     this.error("Too few columns " + data.length + " vs " + columnCount);
                 else {
+                    this.currentToken = "";
                     for (int i = data.length; i < columnCount; i++)
-                        this.columns[i].parseAndAppendString("");
+                        this.columns[i].parseAndAppendString(this.currentToken);
                 }
             }
             this.currentRow++;
@@ -215,7 +220,7 @@ public class CsvFileReader {
 
         return "Error while parsing CSV file " + this.filename.toString() +
                 " line " + this.currentRow + " column " + this.currentColumn +
-                columnName;
+                columnName + (this.currentToken != null ? " token " + this.currentToken : "");
     }
 
     protected void error(String message) {

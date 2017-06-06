@@ -155,9 +155,9 @@ public final class TableTarget extends RpcTarget {
         String columnName = "";
         // The following are only used for categorical columns
         int firstIndex;
+        int lastIndex;
         @Nullable
         String firstValue;
-        int lastIndex;
         @Nullable
         String lastValue;
     }
