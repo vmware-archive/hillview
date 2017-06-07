@@ -395,7 +395,7 @@ implements IHtmlElement, HieroDataView {
 
         let summary = formatNumber(visible) + " data points";
         if (missingData != 0)
-            summary = ", " + formatNumber(missingData) + " missing";
+            summary += ", " + formatNumber(missingData) + " missing";
         if (xData.stats.missingCount != 0)
             summary += ", " + formatNumber(xData.stats.missingCount) + " missing Y coordinate";
         if (yData.stats.missingCount != 0)
