@@ -25,7 +25,6 @@ import org.hiero.table.api.IStringConverter;
 import javax.annotation.Nullable;
 
 public interface IHistogram1D {
-
     void createSampleHistogram(final IColumn column, final IMembershipSet membershipSet,
                                @Nullable final IStringConverter converter, double sampleRate);
 

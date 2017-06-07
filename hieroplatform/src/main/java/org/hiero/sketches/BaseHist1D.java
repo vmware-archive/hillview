@@ -18,6 +18,7 @@
 
 package org.hiero.sketches;
 
+import org.hiero.dataset.api.IJson;
 import org.hiero.table.api.IColumn;
 import org.hiero.table.api.IMembershipSet;
 import org.hiero.table.api.IStringConverter;
@@ -29,7 +30,7 @@ import javax.annotation.Nullable;
  * implement buckets.
  */
 
-public abstract class BaseHist1D implements IHistogram1D {
+public abstract class BaseHist1D implements IHistogram1D, IJson {
     final protected IBucketsDescription1D bucketDescription;
 
     public BaseHist1D(final IBucketsDescription1D bucketDescription) {

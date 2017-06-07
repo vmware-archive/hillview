@@ -18,7 +18,6 @@
 
 package org.hiero.sketches;
 
-import org.hiero.dataset.api.IJson;
 import org.hiero.table.api.IColumn;
 import org.hiero.table.api.IMembershipSet;
 import org.hiero.table.api.IRowIterator;
@@ -29,7 +28,7 @@ import javax.annotation.Nullable;
 /**
  * One Dimensional histogram.
  */
-public class Histogram1D extends BaseHist1D implements IJson {
+public class Histogram1D extends BaseHist1D {
     private final Bucket1D[] buckets;
     private long missingData;
     private long outOfRange;

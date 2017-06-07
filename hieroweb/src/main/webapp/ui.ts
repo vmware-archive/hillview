@@ -523,8 +523,8 @@ export class FullPage implements IHtmlElement {
         this.getErrorReporter().reportError(error);
     }
 
-    public getSize(): Size {
-        return getWindowSize();
+    public getWidthInPixels(): number {
+        return getWindowSize().width;
     }
 }
 

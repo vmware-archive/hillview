@@ -64,6 +64,20 @@ public final class TableTarget extends RpcTarget {
         this.runSketch(this.table, nk, request, session);
     }
 
+    static class HistogramParts {
+        HistogramParts(BucketsDescriptionEqSize buckets, @Nullable IStringConverter converter,
+                       Hist1DLightSketch sketch) {
+            this.buckets = buckets;
+            this.converter = converter;
+            this.sketch = sketch;
+        }
+
+        final BucketsDescriptionEqSize buckets;
+        @Nullable
+        final IStringConverter converter;
+        final Hist1DLightSketch sketch;
+    }
+
     static class ColumnAndRange implements Serializable {
         String columnName = "";
         double min;
@@ -72,6 +86,16 @@ public final class TableTarget extends RpcTarget {
         int bucketCount;  // only used for histogram
         @Nullable
         String[] bucketBoundaries;  // only used for Categorical columns histograms
+
+        HistogramParts prepare() {
+            IStringConverter converter = null;
+            if (bucketBoundaries != null)
+                converter = new SortedStringsConverter(
+                        bucketBoundaries, (int)Math.ceil(min), (int)Math.floor(max));
+            BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(min, max, bucketCount);
+            Hist1DLightSketch sketch = new Hist1DLightSketch(buckets, columnName, converter);
+            return new HistogramParts(buckets, converter, sketch);
+        }
     }
 
     @HieroRpc
@@ -96,10 +120,9 @@ public final class TableTarget extends RpcTarget {
                     info.bucketBoundaries, (int)Math.ceil(info.min), (int)Math.floor(info.max));
         BucketsDescriptionEqSize cdfBuckets = new BucketsDescriptionEqSize(info.min, info.max, cdfBucketCount);
         Hist1DLightSketch cdf = new Hist1DLightSketch(cdfBuckets, info.columnName, converter);
-        BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(info.min, info.max, info.bucketCount);
-        Hist1DLightSketch sk = new Hist1DLightSketch(buckets, info.columnName, converter);
+        HistogramParts parts = info.prepare();
         ConcurrentSketch<ITable, Histogram1DLight, Histogram1DLight> csk =
-                new ConcurrentSketch<ITable, Histogram1DLight, Histogram1DLight>(cdf, sk);
+                new ConcurrentSketch<ITable, Histogram1DLight, Histogram1DLight>(cdf, parts.sketch);
         this.runSketch(this.table, csk, request, session);
     }
 
@@ -111,10 +134,21 @@ public final class TableTarget extends RpcTarget {
     }
 
     @HieroRpc
+    void heatMap(RpcRequest request, Session session) {
+        ColPair info = request.parseArgs(ColPair.class);
+        HistogramParts h1 = Converters.checkNull(info.first).prepare();
+        HistogramParts h2 = Converters.checkNull(info.second).prepare();
+
+        HeatMapSketch sk = new HeatMapSketch(h1.buckets, h2.buckets, h1.converter, h2.converter,
+                info.first.columnName, info.second.columnName);
+        this.runSketch(this.table, sk, request, session);
+    }
+
+    @HieroRpc
     void histogram2D(RpcRequest request, Session session) {
         ColPair info = request.parseArgs(ColPair.class);
-        Converters.checkNull(info.first);
-        Converters.checkNull(info.second);
+        HistogramParts h1 = Converters.checkNull(info.first).prepare();
+        HistogramParts h2 = Converters.checkNull(info.second).prepare();
         int width = info.first.cdfBucketCount;
         if (info.first.min >= info.first.max)
             width = 1;
@@ -122,32 +156,8 @@ public final class TableTarget extends RpcTarget {
                 new BucketsDescriptionEqSize(info.first.min, info.first.max, width);
         Hist1DLightSketch cdf = new Hist1DLightSketch(cdfBuckets, info.first.columnName, null);
 
-        BucketsDescriptionEqSize buckets1 = new BucketsDescriptionEqSize(
-                info.first.min, info.first.max, info.first.bucketCount);
-        Hist1DSketch sk1 = new Hist1DSketch(buckets1, info.first.columnName, null);
-
-        BucketsDescriptionEqSize buckets2 = new BucketsDescriptionEqSize(
-                info.second.min, info.second.max, info.second.bucketCount);
-        Hist1DSketch sk2 = new Hist1DSketch(buckets2, info.second.columnName, null);
-
-        TripleSketch<ITable, Histogram1DLight, Histogram1D, Histogram1D> csk =
-                new TripleSketch<ITable, Histogram1DLight, Histogram1D, Histogram1D>(cdf, sk1, sk2);
-        this.runSketch(this.table, csk, request, session);
-    }
-
-    static class Columns {
-        String col1 = "";
-        String col2 = "";
-    }
-
-    @HieroRpc
-    void range2D(RpcRequest request, Session session) {
-        Columns cols = request.parseArgs(Columns.class);
-        // TODO: make up range.
-        BasicColStatSketch sk1 = new BasicColStatSketch(cols.col1, null, 0, 1.0);
-        BasicColStatSketch sk2 = new BasicColStatSketch(cols.col2, null, 0, 1.0);
-        ConcurrentSketch<ITable, BasicColStats, BasicColStats> csk =
-                new ConcurrentSketch<>(sk1, sk2);
+        TripleSketch<ITable, Histogram1DLight, Histogram1DLight, Histogram1DLight> csk =
+                new TripleSketch<ITable, Histogram1DLight, Histogram1DLight, Histogram1DLight>(cdf, h1.sketch, h2.sketch);
         this.runSketch(this.table, csk, request, session);
     }
 
@@ -160,17 +170,33 @@ public final class TableTarget extends RpcTarget {
         String firstValue;
         @Nullable
         String lastValue;
+
+        @Nullable
+        IStringConverter getConverter() {
+            if (firstValue == null)
+                return null;
+            return new SortedStringsConverter(
+                        new String[] { this.firstValue, this.lastValue }, this.firstIndex, this.lastIndex);
+        }
     }
 
     @HieroRpc
     void range(RpcRequest request, Session session) {
         RangeInfo info = request.parseArgs(RangeInfo.class);
-        IStringConverter converter = null;
-        if (info.firstValue != null)
-            converter = new SortedStringsConverter(
-                    new String[] { info.firstValue, info.lastValue }, info.firstIndex, info.lastIndex);
-        BasicColStatSketch sk = new BasicColStatSketch(info.columnName, converter, 0, 1.0);
+        BasicColStatSketch sk = new BasicColStatSketch(info.columnName, info.getConverter(), 0, 1.0);
         this.runSketch(this.table, sk, request, session);
+    }
+
+    @HieroRpc
+    void range2D(RpcRequest request, Session session) {
+        RangeInfo[] cols = request.parseArgs(RangeInfo[].class);
+        if (cols.length != 2)
+            throw new RuntimeException("Expected 2 RangeInfo objects, got " + cols.length);
+        BasicColStatSketch sk1 = new BasicColStatSketch(cols[0].columnName, cols[0].getConverter(), 0, 1.0);
+        BasicColStatSketch sk2 = new BasicColStatSketch(cols[1].columnName, cols[1].getConverter(), 0, 1.0);
+        ConcurrentSketch<ITable, BasicColStats, BasicColStats> csk =
+                new ConcurrentSketch<ITable, BasicColStats, BasicColStats>(sk1, sk2);
+        this.runSketch(this.table, csk, request, session);
     }
 
     static class RangeFilter implements TableFilter, Serializable {

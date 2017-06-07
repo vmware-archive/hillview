@@ -32,19 +32,13 @@ public class Histogram1DLight extends BaseHist1D {
     private final long[] buckets;
     private long missingData;
     private long outOfRange;
-    private boolean initialized;
 
     public Histogram1DLight(final IBucketsDescription1D bucketDescription) {
         super(bucketDescription);
-        this.buckets = new long[bucketDescription.getNumOfBuckets()]; //default by java initialized to zero
-        this.initialized = false;
+        this.buckets = new long[bucketDescription.getNumOfBuckets()];
     }
 
-    /**
-     * @param val already as double to be added to the buckets.
-     */
     public void addValue(final double val) {
-        this.initialized = true;
         int index = this.bucketDescription.indexOf(val);
         if (index >= 0)
             this.buckets[index]++;
@@ -57,9 +51,6 @@ public class Histogram1DLight extends BaseHist1D {
     @Override
     public void createHistogram(final IColumn column, final IMembershipSet membershipSet,
                                 @Nullable final IStringConverter converter) {
-        if (this.initialized) //a histogram had already been created
-            throw new IllegalAccessError("A histogram cannot be created twice");
-        this.initialized = true;
         final IRowIterator myIter = membershipSet.getIterator();
         int currRow = myIter.getNextRow();
         while (currRow >= 0) {
@@ -93,7 +84,6 @@ public class Histogram1DLight extends BaseHist1D {
         if (!this.bucketDescription.equals(otherHistogram.bucketDescription))
             throw new IllegalArgumentException("Histogram union without matching buckets");
         Histogram1DLight unionH = new Histogram1DLight(this.bucketDescription);
-        unionH.initialized = true;
         for (int i = 0; i < unionH.bucketDescription.getNumOfBuckets(); i++)
             unionH.buckets[i] = this.buckets[i] + otherHistogram.buckets[i];
         unionH.missingData = this.missingData + otherHistogram.missingData;

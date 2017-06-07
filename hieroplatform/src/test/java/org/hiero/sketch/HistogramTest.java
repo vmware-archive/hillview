@@ -138,7 +138,7 @@ public class HistogramTest {
         DoubleArrayColumn col1 = DoubleArrayTest.generateDoubleArray(colSize, 5);
         DoubleArrayColumn col2 = DoubleArrayTest.generateDoubleArray(colSize, 3);
         FullMembership fmap = new FullMembership(colSize);
-        hm.createHistogram(col1, col2, null, null, fmap);
+        hm.createHeatMap(col1, col2, null, null, fmap);
         basicTestHeatMap(hm, colSize);
         HeatMap hm1 = new HeatMap(buckDes1, buckDes2);
         DoubleArrayColumn col3 = DoubleArrayTest.generateDoubleArray(2 * colSize);
