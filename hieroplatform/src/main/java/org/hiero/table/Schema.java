@@ -41,6 +41,7 @@ import java.util.*;
 public final class Schema
         implements Serializable, IJson {
     private final LinkedHashMap<String, ColumnDescription> columns;
+    private final List<String> colNames;
 
     public static class Serializer implements JsonSerializer<Schema> {
         public JsonElement serialize(Schema schema, Type typeOfSchema,
@@ -69,6 +70,7 @@ public final class Schema
 
     public Schema() {
         this.columns = new LinkedHashMap<String, ColumnDescription>();
+        this.colNames = new ArrayList<>();
     }
 
     public void append(final ColumnDescription desc) {
@@ -76,10 +78,19 @@ public final class Schema
             throw new InvalidParameterException("Column with name " +
                     desc.name + " already exists");
         this.columns.put(desc.name, desc);
+        this.colNames.add(desc.name);
+    }
+
+    public String getColName(int colNum) {
+        return this.colNames.get(colNum);
     }
 
     public ColumnDescription getDescription(final String columnName) {
         return this.columns.get(columnName);
+    }
+
+    public ColumnDescription getDescription(final int colNum) {
+        return this.columns.get(this.getColName(colNum));
     }
 
     public int getColumnCount() {
