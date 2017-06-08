@@ -44,6 +44,7 @@ public class DoubleListColumn
         return this.segments.get(segmentId)[localIndex];
     }
 
+    @Override
     void grow() {
         this.segments.add(new double[this.SegmentSize]);
         this.growMissing();

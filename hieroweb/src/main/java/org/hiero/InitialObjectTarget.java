@@ -46,6 +46,10 @@ public class InitialObjectTarget extends RpcTarget {
         String smallFileSchema = "On_Time.schema";
         String smallFile = "On_Time_Sample.csv";
         String schemaFile = "short.schema";
+
+        String vropsFile = "vrops.csv";
+        String vropsSchema = "vrops.schema";
+
         Path schemaPath = Paths.get(dataFolder, schemaFile);
 
         IDataSet<CsvFileObject> result;
@@ -74,11 +78,18 @@ public class InitialObjectTarget extends RpcTarget {
                 return;
             }
             result = new ParallelDataSet<CsvFileObject>(fileNames);
-        } else {
+        } else if (which == 2) {
             CsvFileObject file = new CsvFileObject(
                     Paths.get(dataFolder, smallFile),
                     Paths.get(dataFolder, smallFileSchema));
             result = new LocalDataSet<CsvFileObject>(file);
+        } else if (which == 3) {
+            CsvFileObject file = new CsvFileObject(
+                    Paths.get(dataFolder, vropsFile),
+                    Paths.get(dataFolder, vropsSchema));
+            result = new LocalDataSet<CsvFileObject>(file);
+        } else {
+            throw new RuntimeException("Unexpected file");
         }
         FileNamesTarget target = new FileNamesTarget(result);
         RpcReply reply = request.createReply(target);

@@ -46,17 +46,8 @@ interface Histogram1D {
 }
 */
 
-interface HistogramRpcInfo {
-    columnName: String,
-    min: number,
-    max: number,
-    bucketCount: number,
-    cdfBucketCount: number,
-    bucketBoundaries: string[]
-}
-
 // same as Java class
-interface Histogram1DLight {
+export interface Histogram1DLight {
     buckets: number[]
     missingData: number;
     outOfRange: number;
@@ -75,21 +66,21 @@ export interface BasicColStats {
 }
 
 // Same as Java class
-interface ColumnAndRange {
+export interface ColumnAndRange {
     min: number;
     max: number;
     columnName: string;
+    bucketCount: number,
     cdfBucketCount: number;
     bucketBoundaries: string[];
 }
 
-export class Histogram extends RemoteObject
+export class HistogramView extends RemoteObject
     implements IHtmlElement, HieroDataView {
     public static readonly maxBucketCount: number = 40;
     public static readonly minBarWidth: number = 5;
     public static readonly minChartWidth = 200;  // pixels
-    public static readonly minChartHeight = 100;  // picles
-    public static readonly maxChartHeight = 400;
+    public static readonly chartHeight = 400;  // pixels
 
     private topLevel: HTMLElement;
     public static readonly margin = {
@@ -206,16 +197,16 @@ export class Histogram extends RemoteObject
             return;
 
         let buckets = window.prompt("Choose number of buckets (between 1 and "
-            + Histogram.maxBucketCount + ")", "10");
+            + HistogramView.maxBucketCount + ")", "10");
         if (buckets == null)
             return;
         if (isNaN(+buckets))
             this.page.reportError(buckets + " is not a number");
 
         let cdfBucketCount = this.currentData.cdf.buckets.length;
-        let boundaries = Histogram.categoriesInRange(
+        let boundaries = HistogramView.categoriesInRange(
             this.currentData.stats, cdfBucketCount, this.currentData.allStrings);
-        let info: HistogramRpcInfo = {
+        let info: ColumnAndRange = {
             columnName: this.currentData.description.name,
             min: this.currentData.stats.min,
             max: this.currentData.stats.max,
@@ -279,20 +270,12 @@ export class Histogram extends RemoteObject
             allStrings: allStrings };
         this.page.reportError("Operation took " + significantDigits(elapsedMs/1000) + " seconds");
 
-        let ws = this.page.getSize();
-        let width = ws.width;
-        let height = ws.height;
+        let width = this.page.getWidthInPixels();
 
-        let chartWidth = width - Histogram.margin.left - Histogram.margin.right;
-        let chartHeight = height - Histogram.margin.top - Histogram.margin.bottom;
-        if (chartWidth < Histogram.minChartWidth)
-            chartWidth = Histogram.minChartWidth;
-        if (chartHeight > Histogram.maxChartHeight)
-            chartHeight = Histogram.maxChartHeight;
-        if (chartHeight < Histogram.minChartHeight)
-            chartHeight = Histogram.minChartHeight;
-
-        this.chartResolution = { width: chartWidth, height: chartHeight };
+        let chartWidth = width - HistogramView.margin.left - HistogramView.margin.right;
+        if (chartWidth < HistogramView.minChartWidth)
+            chartWidth = HistogramView.minChartWidth;
+        this.chartResolution = { width: chartWidth, height: HistogramView.chartHeight };
 
         let counts = h.buckets;
         let bucketCount = counts.length;
@@ -327,7 +310,8 @@ export class Histogram extends RemoteObject
 
         // Everything is drawn on top of the canvas.
         // The canvas includes the margins
-        let canvasHeight = chartHeight + Histogram.margin.top + Histogram.margin.bottom;
+        let canvasHeight = HistogramView.chartHeight +
+            HistogramView.margin.top + HistogramView.margin.bottom;
         this.canvas = d3.select(this.chartDiv)
             .append("svg")
             .attr("id", "canvas")
@@ -342,12 +326,12 @@ export class Histogram extends RemoteObject
         // The chart uses a fragment of the canvas offset by the margins
         this.chart = this.canvas
             .append("g")
-            .attr("transform", Histogram.translateString(
-                Histogram.margin.left, Histogram.margin.top));
+            .attr("transform", HistogramView.translateString(
+                HistogramView.margin.left, HistogramView.margin.top));
 
         this.yScale = d3.scaleLinear()
             .domain([0, max])
-            .range([chartHeight, 0]);
+            .range([HistogramView.chartHeight, 0]);
         let yAxis = d3.axisLeft(this.yScale)
             .tickFormat(d3.format(".2s"));
 
@@ -402,8 +386,8 @@ export class Histogram extends RemoteObject
 
         this.canvas.append("text")
             .text(cd.name)
-            .attr("transform", Histogram.translateString(
-                chartWidth / 2, Histogram.margin.top/2))
+            .attr("transform", HistogramView.translateString(
+                chartWidth / 2, HistogramView.margin.top/2))
             .attr("text-anchor", "middle");
 
         // After resizing the line may not have the exact number of points
@@ -417,8 +401,8 @@ export class Histogram extends RemoteObject
 
         // draw CDF curve
         this.canvas.append("path")
-            .attr("transform", Histogram.translateString(
-                Histogram.margin.left, Histogram.margin.top))
+            .attr("transform", HistogramView.translateString(
+                HistogramView.margin.left, HistogramView.margin.top))
             .datum(cdfData)
             .attr("stroke", "blue")
             .attr("d", cdfLine)
@@ -428,12 +412,12 @@ export class Histogram extends RemoteObject
         let bars = this.chart.selectAll("g")
             .data(counts)
             .enter().append("g")
-            .attr("transform", (d, i) => Histogram.translateString(i * barWidth, 0));
+            .attr("transform", (d, i) => HistogramView.translateString(i * barWidth, 0));
 
         bars.append("rect")
             .attr("y", d => this.yScale(d))
             .attr("fill", "grey")
-            .attr("height", d => chartHeight - this.yScale(d))
+            .attr("height", d => HistogramView.chartHeight - this.yScale(d))
             .attr("width", barWidth - 1);
 
         bars.append("text")
@@ -451,7 +435,7 @@ export class Histogram extends RemoteObject
         if (xAxis != null) {
             this.chart.append("g")
                 .attr("class", "x-axis")
-                .attr("transform", Histogram.translateString(0, chartHeight))
+                .attr("transform", HistogramView.translateString(0, HistogramView.chartHeight))
                 .call(xAxis);
         }
 
@@ -459,13 +443,13 @@ export class Histogram extends RemoteObject
         this.xDot = this.canvas
             .append("circle")
             .attr("r", dotRadius)
-            .attr("cy", chartHeight + Histogram.margin.top)
+            .attr("cy", HistogramView.chartHeight + HistogramView.margin.top)
             .attr("cx", 0)
             .attr("fill", "blue");
         this.yDot = this.canvas
             .append("circle")
             .attr("r", dotRadius)
-            .attr("cx", Histogram.margin.left)
+            .attr("cx", HistogramView.margin.left)
             .attr("cy", 0)
             .attr("fill", "blue");
         this.cdfDot = this.canvas
@@ -517,8 +501,8 @@ export class Histogram extends RemoteObject
         this.xLabel.textContent = "x=" + xs;
         this.yLabel.textContent = "y=" + ys;
 
-        this.xDot.attr("cx", mouseX + Histogram.margin.left);
-        this.yDot.attr("cy", mouseY + Histogram.margin.top);
+        this.xDot.attr("cx", mouseX + HistogramView.margin.left);
+        this.yDot.attr("cy", mouseY + HistogramView.margin.top);
 
         if (this.currentData.cdfSum != null) {
             // determine mouse position on cdf curve
@@ -535,8 +519,8 @@ export class Histogram extends RemoteObject
                 pos = cdfPosition / this.currentData.stats.presentCount;
             }
 
-            this.cdfDot.attr("cx", mouseX + Histogram.margin.left);
-            this.cdfDot.attr("cy", (1 - pos) * this.chartResolution.height + Histogram.margin.top);
+            this.cdfDot.attr("cx", mouseX + HistogramView.margin.left);
+            this.cdfDot.attr("cy", (1 - pos) * this.chartResolution.height + HistogramView.margin.top);
             let perc = percent(pos);
             this.cdfLabel.textContent = "cdf=" + perc;
         }
@@ -567,7 +551,7 @@ export class Histogram extends RemoteObject
 
         this.selectionRectangle
             .attr("x", ox)
-            .attr("y", Histogram.margin.top)
+            .attr("y", HistogramView.margin.top)
             .attr("width", width)
             .attr("height", height);
     }
@@ -589,8 +573,8 @@ export class Histogram extends RemoteObject
         if (this.xScale == null)
             return;
 
-        let x0 = this.xScale.invert(xl - Histogram.margin.left);
-        let x1 = this.xScale.invert(xr - Histogram.margin.left);
+        let x0 = this.xScale.invert(xl - HistogramView.margin.left);
+        let x1 = this.xScale.invert(xr - HistogramView.margin.left);
 
         // selection could be done in reverse
         if (x0 > x1) {
@@ -619,11 +603,12 @@ export class Histogram extends RemoteObject
         if (this.currentData.allStrings != null)
             // it's enough to just send the first and last element for filtering.
             boundaries = [this.currentData.allStrings[min], this.currentData.allStrings[max]];
-        let range = {
+        let range: ColumnAndRange = {
             min: min,
             max: max,
             columnName: this.currentData.description.name,
             cdfBucketCount: this.chartResolution.width,
+            bucketCount: this.currentData.histogram.buckets.length,
             bucketBoundaries: boundaries
         };
 
@@ -647,17 +632,17 @@ export class Histogram extends RemoteObject
     }
 
     public static getRenderingSize(page: FullPage): Size {
-        let size = page.getSize();
-        let width = size.width - Histogram.margin.left - Histogram.margin.right;
-        let height = size.height - Histogram.margin.top - Histogram.margin.bottom;
+        let width = page.getWidthInPixels();
+        width = width - HistogramView.margin.left - HistogramView.margin.right;
+        let height = HistogramView.chartHeight - HistogramView.margin.top - HistogramView.margin.bottom;
         return { width: width, height: height };
     }
 
     public static bucketCount(stats: BasicColStats, page: FullPage, columnKind: ContentsKind): number {
-        let size = Histogram.getRenderingSize(page);
-        let bucketCount = Histogram.maxBucketCount;
-        if (size.width / Histogram.minBarWidth < bucketCount)
-            bucketCount = size.width / Histogram.minBarWidth;
+        let size = HistogramView.getRenderingSize(page);
+        let bucketCount = HistogramView.maxBucketCount;
+        if (size.width / HistogramView.minBarWidth < bucketCount)
+            bucketCount = size.width / HistogramView.minBarWidth;
         if (columnKind == "Integer" ||
             columnKind == "Category") {
             bucketCount = Math.min(bucketCount, stats.max - stats.min + 1);
@@ -767,11 +752,11 @@ export class RangeCollector extends Renderer<BasicColStats> {
     }
 
     public histogram(): void {
-        let size = Histogram.getRenderingSize(this.page);
-        let bucketCount = Histogram.bucketCount(this.stats, this.page, this.cd.kind);
+        let size = HistogramView.getRenderingSize(this.page);
+        let bucketCount = HistogramView.bucketCount(this.stats, this.page, this.cd.kind);
         let cdfCount = size.width;
-        let boundaries = Histogram.categoriesInRange(this.stats, cdfCount, this.allStrings);
-        let info: HistogramRpcInfo =  {
+        let boundaries = HistogramView.categoriesInRange(this.stats, cdfCount, this.allStrings);
+        let info: ColumnAndRange = {
             columnName: this.cd.name,
             min: this.stats.min,
             max: this.stats.max,
@@ -802,7 +787,7 @@ export class RangeCollector extends Renderer<BasicColStats> {
 
 // Renders a column histogram
 export class HistogramRenderer extends Renderer<Pair<Histogram1DLight, Histogram1DLight>> {
-    protected histogram: Histogram;
+    protected histogram: HistogramView;
 
     constructor(page: FullPage,
                 remoteTableId: string,
@@ -813,7 +798,7 @@ export class HistogramRenderer extends Renderer<Pair<Histogram1DLight, Histogram
                 protected allStrings: string[]) {
         super(new FullPage(), operation, "histogram");
         page.insertAfterMe(this.page);
-        this.histogram = new Histogram(remoteTableId, schema, this.page);
+        this.histogram = new HistogramView(remoteTableId, schema, this.page);
         this.page.setHieroDataView(this.histogram);
     }
 

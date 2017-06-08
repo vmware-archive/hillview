@@ -19,7 +19,7 @@ import {TableView, RemoteTableReceiver} from "./table";
 import {ScrollBar, ProgressBar, DataDisplay, FullPage} from "./ui";
 import {InitialObject} from "./initialObject";
 import {ConsoleErrorReporter} from "./errReporter";
-import {Histogram} from "./histogram";
+import {HistogramView} from "./histogram";
 
 // Top-level hiero object: exports all typescript classes
 // that can be used in html.
@@ -35,7 +35,7 @@ let public_symbols = {
     RemoteTableReceiver,
     DataDisplay,
     FullPage,
-    Histogram
+    HistogramView
 };
 
 window["hiero"] = public_symbols;

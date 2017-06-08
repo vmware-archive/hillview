@@ -20,6 +20,12 @@ export interface Pair<T1, T2> {
     second: T2;
 }
 
+export interface Triple<T1, T2, T3> {
+    first: T1;
+    second: T2;
+    third: T3;
+}
+
 // Direct counterpart of corresponding Java class
 export class Converters {
     public static dateFromDouble(value: number): Date {

@@ -22,6 +22,7 @@ import {
 import {RemoteObject, PartialResult, ICancellable, RpcRequest} from "./rpc";
 import Rx = require('rx');
 import {RangeCollector, BasicColStats} from "./histogram";
+import {Range2DCollector} from "./heatMap";
 import {DropDownMenu, ContextMenu, PopupMenu} from "./menu";
 import {Converters} from "./util";
 import d3 = require('d3');
@@ -142,6 +143,15 @@ export class TableDataView {
     public rowCount: number;
     public startPosition?: number;
     public rows?: RowView[];
+}
+
+export class RangeInfo {
+    columnName: string;
+    // The following are only used for categorical columns
+    firstIndex?: number;
+    lastIndex?: number;
+    firstValue?: string;
+    lastValue?: string;
 }
 
 /* Example table view:
@@ -532,7 +542,8 @@ export class TableView extends RemoteObject
             let menu = new PopupMenu([
                 {text: "sort asc", action: () => this.showColumn(cd.name, 1, true) },
                 {text: "sort desc", action: () => this.showColumn(cd.name, -1, true) },
-                {text: "heavy hitters", action: () => this.heavyHitters(cd.name) }
+                {text: "heavy hitters", action: () => this.heavyHitters(cd.name) },
+                {text: "heat map", action: () => this.heatMap() }
             ]);
             if (this.order.find(cd.name) >= 0) {
                 menu.addItem( {text: "hide", action: () => this.showColumn(cd.name, 0, true) } );
@@ -628,6 +639,34 @@ export class TableView extends RemoteObject
     private columnClass(colName: string): string {
         let index = this.columnIndex(colName);
         return "col" + String(index);
+    }
+
+    private heatMap(): void {
+        if (this.selectedColumns.size != 2) {
+            this.page.reportError("Must select exactly 2 columns for heat map");
+            return;
+        }
+
+        let columns: RangeInfo[] = [];
+        let cds: ColumnDescription[] = [];
+        this.selectedColumns.forEach(v => {
+            let colDesc = this.findColumn(v);
+            if (colDesc.kind == "String") {
+                this.page.reportError("Heat maps not supported for string columns " + colDesc.name);
+                return;
+            }
+            if (colDesc.kind == "Category") {
+                this.page.reportError("Heat maps not yet implemented for category columns " + colDesc.name);
+                return;
+            }
+            let ci = new RangeInfo;
+            ci.columnName = colDesc.name;
+            cds.push(colDesc);
+            columns.push(ci);
+        });
+
+        let rr = this.createRpcRequest("range2D", columns);
+        rr.invoke(new Range2DCollector(cds, this.schema, this.getPage(), this, rr));
     }
 
     private highlightSelectedColumns(): void {

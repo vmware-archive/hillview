@@ -47,6 +47,7 @@ public final class IntListColumn
         return this.segments.get(segmentId)[localIndex];
     }
 
+    @Override
     void grow() {
         this.segments.add(new int[this.SegmentSize]);
         this.growMissing();

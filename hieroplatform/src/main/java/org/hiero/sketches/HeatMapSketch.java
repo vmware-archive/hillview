@@ -60,7 +60,7 @@ public class HeatMapSketch implements ISketch<ITable, HeatMap> {
     @Override
     public HeatMap create(final ITable data) {
         HeatMap result = this.getZero();
-        result.createHistogram(data.getColumn(this.colNameD1), data.getColumn(this.colNameD2),
+        result.createHeatMap(data.getColumn(this.colNameD1), data.getColumn(this.colNameD2),
                 this.converterD1, this.converterD2, data.getMembershipSet().sample(this.rate));
         return result;
     }
