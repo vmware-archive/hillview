@@ -24,7 +24,6 @@ import org.hiero.storage.CsvFileReader;
 import org.hiero.table.Schema;
 import org.hiero.table.api.ITable;
 import org.junit.Assert;
-import org.junit.Test;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -32,7 +31,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 
-public class ESXDataTest {
+public class WideTableDataTest {
     static final String dataFolder = "../data";
     static final String csvFile = "ESX_data.csv";
     static final String schemaFile = "ESX.schema";
@@ -48,9 +47,7 @@ public class ESXDataTest {
         return r.read();
     }
 
-
-    @Test
-    public void ESXColCorrelations() throws IOException {
+    public void WideTableColCorrelations() throws IOException {
         Path path = Paths.get(dataFolder, schemaFile);
         Schema schema = Schema.readFromJsonFile(path);
         path = Paths.get(dataFolder, csvFile);
