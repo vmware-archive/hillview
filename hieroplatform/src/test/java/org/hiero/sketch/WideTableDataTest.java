@@ -33,8 +33,8 @@ import java.nio.file.Paths;
 
 public class WideTableDataTest {
     static final String dataFolder = "../data";
-    static final String csvFile = "ESX_data.csv";
-    static final String schemaFile = "ESX.schema";
+    static final String csvFile = "trim_rows.csv";
+    static final String schemaFile = "trim.schema";
 
     @Nullable
     ITable readTable(String folder, String file) throws IOException {

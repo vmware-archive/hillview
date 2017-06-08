@@ -15,7 +15,7 @@ import java.util.List;
 public class WideTableCorrTest {
     static final String dataFolder = "../data";
     static final String csvFile = "trim_rows.csv";
-    static final String schemaFile = "trim_ESX.schema";
+    static final String schemaFile = "trim.schema";
 
     public void WideTableCorrTest() throws IOException {
         Path path = Paths.get(dataFolder, schemaFile);
