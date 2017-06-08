@@ -13,7 +13,7 @@ import java.util.List;
  */
 public class SampleCorrelationSketch implements ISketch<ITable, CorrMatrix> {
     /**
-     * The list of columns whose correlations we wish to compute. The columns are must be of type
+     * The list of columns whose correlations we wish to compute. The columns must be of type
      * Int or Double.
      */
     private final List<String> colNames;

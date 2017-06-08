@@ -48,16 +48,9 @@ public class ESXDataTest {
         return r.read();
     }
 
-    @Test
-    public void ReadCsvFileTest() throws IOException {
-        ITable t = this.readTable(dataFolder, csvFile);
-        Assert.assertNotNull(t);
-        Path path_schema = Paths.get(dataFolder, schemaFile);
-        t.getSchema().writeToJsonFile(path_schema);
-    }
 
     @Test
-    public void ReadCsvFileWithSchemaTest() throws IOException {
+    public void ESXColCorrelations() throws IOException {
         Path path = Paths.get(dataFolder, schemaFile);
         Schema schema = Schema.readFromJsonFile(path);
         path = Paths.get(dataFolder, csvFile);
