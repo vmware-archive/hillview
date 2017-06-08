@@ -20,6 +20,7 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="Maven: com.univocity:univocity-parsers:2.4.1" level="project" />
     <orderEntry type="library" name="Maven: org.eclipse.collections:eclipse-collections-api:8.1.0" level="project" />
     <orderEntry type="library" name="Maven: net.jcip:jcip-annotations:1.0" level="project" />
     <orderEntry type="library" name="Maven: org.eclipse.collections:eclipse-collections:8.1.0" level="project" />
