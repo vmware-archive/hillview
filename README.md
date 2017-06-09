@@ -1,4 +1,4 @@
-# Hiero
+# Hillview
 
 A big data spreadsheet.
 
@@ -15,19 +15,21 @@ A big data spreadsheet.
 
 ## Project structure
 
-Hiero is currently split into two separate Maven projects.
+Hillview is currently split into two separate Maven projects.
 
-* hieroplatform: pure Java, includes the entire back-end.  `hieroplatform` can be
+* platform: pure Java, includes the entire back-end.  `platform` can be
 developed using the free (community edition) of Intellij IDEA.
 
-* hieroweb: the web server, web client and web services; this project links to the
-result produced by the `hieroweb` project.  To develop and debug this we have
+* web: the web server, web client and web services; this project links to the
+result produced by the `web` project.  To develop and debug this we have
 used capabilities available only in the paid version of Intellij, Ultimate,
 but only maven is needed to build.
 
 ## How to run the demo
 
-* If you don't want to run the demo, [here is a short video](https://1drv.ms/v/s!AlywK8G1COQ_jaNkYmIRJyeSuvPeLA) of an early version Hiero:
+* If you don't want to run the demo, [here is a short
+  video](https://1drv.ms/v/s!AlywK8G1COQ_jaNkYmIRJyeSuvPeLA) of an
+  early version of the system
 
 * First install all software required as described
   [below](#installing-the-software-needed).
@@ -50,10 +52,10 @@ increase the java heap size as follows (you can put this in your .bashrc file):
 $ export MAVEN_OPTS="-Xmx2048M"
 ```
 
-* Install the Hiero distributed platform library:
+* Install the distributed platform library:
 
 ```
-$ cd hieroplatform
+$ cd platform
 $ mvn install
 ```
 
@@ -70,7 +72,7 @@ $ cd ..
 * Build the web server and the front-end
 
 ```
-$ cd hieroweb
+$ cd web
 $ mvn package
 ```
 
@@ -89,18 +91,18 @@ $ ../apache-tomcat-8.5.8/bin/catalina.sh run
 
 Download and install Intellij IDEA: https://www.jetbrains.com/idea/.
 You can just untar the linux binary in a place of your choice and run
-the shell script `ideaXXX/bin/idea.sh`.  The hieroweb projects uses
+the shell script `ideaXXX/bin/idea.sh`.  The web projects uses
 capabilities only available in the paid version of Intellij IDEA.
 
 ### Loading into IntelliJ IDEA
 
 To load the project that you want to contribute to, move to the
-corresponding folder: `cd hieroplatform` or `cd hieroweb` and start
+corresponding folder: `cd platform` or `cd web` and start
 intellij there.
 
 The first time you start Intellij you must import the project: on the
 welcome screen, select the "import project" option, point to the
-"pom.xml" file inside the hiero folder, click "next" a few times and
+"pom.xml" file inside the hillview folder, click "next" a few times and
 you're good to go.
 
 ### Using git to contribute
@@ -175,7 +177,7 @@ $ export JAVA_HOME="<path-to-jdk-folder>"
 
 ## Install Apache Tomcat web application server
 
-The instructions here use version 8.5.8 (other versions may work, 
+The instructions here use version 8.5.8 (other versions may work,
 but we only tested this one).
 
 ```
@@ -183,7 +185,7 @@ $ wget http://archive.apache.org/dist/tomcat/tomcat-8/v8.5.8/bin/apache-tomcat-8
 $ tar xvfz apache-tomcat-8.5.8.tar.gz
 $ cd apache-tomcat-8.5.8/webapps
 $ rm -rf ROOT*
-$ ln -s ../../hieroweb/target/hieroweb-1.0-SNAPSHOT.war ROOT.war
+$ ln -s ../../web/target/web-1.0-SNAPSHOT.war ROOT.war
 $ cd ../..
 ```
 
@@ -206,7 +208,7 @@ Then install various JavaScript libraries: `rx`, `rx-dom` and `d3`,
 together with the typescript type definitions for these libraries:
 
 ```
-$ cd hieroweb/src/main/webapp
+$ cd web/src/main/webapp
 $ npm install rx rx-dom d3
 $ npm install @types/d3 --save
 $ typings install dt~rx-dom --save

@@ -1,0 +1,51 @@
+<component name="ArtifactManager">
+  <artifact type="war" name="web:Web exploded">
+    <output-path>$PROJECT_DIR$/classes/artifacts/web_Web_exploded</output-path>
+    <root id="archive" name="web_Web exploded.war">
+      <element id="javaee-facet-resources" facet="web/web/Web" />
+      <element id="directory" name="WEB-INF">
+        <element id="directory" name="classes">
+          <element id="module-output" name="web" />
+        </element>
+        <element id="directory" name="lib">
+          <element id="library" level="project" name="Maven: io.reactivex:rxjava:1.2.9" />
+          <element id="library" level="project" name="Maven: org.apache.tomcat:tomcat-websocket:8.5.8" />
+          <element id="library" level="project" name="Maven: org.apache.tomcat:tomcat-servlet-api:8.5.8" />
+          <element id="library" level="project" name="Maven: org.apache.tomcat:tomcat-websocket-api:8.5.8" />
+          <element id="library" level="project" name="Maven: org.apache.tomcat:tomcat-juli:8.5.8" />
+          <element id="library" level="project" name="Maven: org.apache.tomcat:tomcat-util:8.5.8" />
+          <element id="library" level="project" name="Maven: com.google.code.gson:gson:2.8.0" />
+          <element id="library" level="project" name="Maven: org.hillview:platform:1.0-SNAPSHOT" />
+          <element id="library" level="project" name="Maven: com.google.guava:guava:20.0" />
+          <element id="library" level="project" name="Maven: io.grpc:grpc-netty:1.2.0" />
+          <element id="library" level="project" name="Maven: io.grpc:grpc-core:1.2.0" />
+          <element id="library" level="project" name="Maven: com.google.errorprone:error_prone_annotations:2.0.11" />
+          <element id="library" level="project" name="Maven: io.grpc:grpc-context:1.2.0" />
+          <element id="library" level="project" name="Maven: com.google.instrumentation:instrumentation-api:0.3.0" />
+          <element id="library" level="project" name="Maven: io.netty:netty-codec-http2:4.1.8.Final" />
+          <element id="library" level="project" name="Maven: io.netty:netty-codec-http:4.1.8.Final" />
+          <element id="library" level="project" name="Maven: io.netty:netty-codec:4.1.8.Final" />
+          <element id="library" level="project" name="Maven: io.netty:netty-handler:4.1.8.Final" />
+          <element id="library" level="project" name="Maven: io.netty:netty-buffer:4.1.8.Final" />
+          <element id="library" level="project" name="Maven: io.netty:netty-common:4.1.8.Final" />
+          <element id="library" level="project" name="Maven: io.netty:netty-handler-proxy:4.1.8.Final" />
+          <element id="library" level="project" name="Maven: io.netty:netty-transport:4.1.8.Final" />
+          <element id="library" level="project" name="Maven: io.netty:netty-resolver:4.1.8.Final" />
+          <element id="library" level="project" name="Maven: io.netty:netty-codec-socks:4.1.8.Final" />
+          <element id="library" level="project" name="Maven: io.grpc:grpc-protobuf:1.2.0" />
+          <element id="library" level="project" name="Maven: com.google.protobuf:protobuf-java:3.2.0" />
+          <element id="library" level="project" name="Maven: com.google.protobuf:protobuf-java-util:3.2.0" />
+          <element id="library" level="project" name="Maven: io.grpc:grpc-protobuf-lite:1.2.0" />
+          <element id="library" level="project" name="Maven: io.grpc:grpc-stub:1.2.0" />
+          <element id="library" level="project" name="Maven: org.apache.commons:commons-lang3:3.5" />
+          <element id="library" level="project" name="Maven: org.apache.commons:commons-math3:3.6.1" />
+          <element id="library" level="project" name="Maven: com.google.code.findbugs:jsr305:2.0.1" />
+          <element id="library" level="project" name="Maven: org.eclipse.collections:eclipse-collections-api:8.1.0" />
+          <element id="library" level="project" name="Maven: net.jcip:jcip-annotations:1.0" />
+          <element id="library" level="project" name="Maven: org.eclipse.collections:eclipse-collections:8.1.0" />
+          <element id="library" level="project" name="Maven: com.univocity:univocity-parsers:2.4.1" />
+        </element>
+      </element>
+    </root>
+  </artifact>
+</component>

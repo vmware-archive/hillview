@@ -1,0 +1,9 @@
+{
+  "name": "web",
+  "globalDependencies": {
+    "rx-dom": "registry:dt/rx-dom#2.5.3+20160921164505"
+  },
+  "dependencies": {
+    "rx-dom": "registry:dt/rx-dom#7.0.0+20170119172950"
+  }
+}
