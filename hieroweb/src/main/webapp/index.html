@@ -19,15 +19,15 @@
 <meta charset="utf-8">
 <html>
 <head>
-    <link rel="stylesheet" href="hiero.css">
+    <link rel="stylesheet" href="hillview.css">
     <script type="text/javascript" src="./bundle.js" charset="utf-8"></script>
     <script>
         //noinspection ThisExpressionReferencesGlobalObjectJS
-        var hiero = this.hiero;
-        window.addEventListener("resize", function() { hiero.FullPage.onResize() });
+        var hillview = this.hillview;
+        window.addEventListener("resize", function() { hillview.FullPage.onResize() });
 
         function loadTable(arg) {
-            var initialObject = hiero.InitialObject.instance;
+            var initialObject = hillview.InitialObject.instance;
             initialObject.loadTable(arg);
             var but = document.getElementsByClassName("button");
             for (var i = 0; i < but.length; i++)
@@ -40,7 +40,9 @@
         <button class="button" onclick="loadTable(0)">Big table</button>
         <button class="button" onclick="loadTable(1)">Small table</button>
         <button class="button" onclick="loadTable(2)">First 10 rows</button>
+        <!--
         <button class="button" onclick="loadTable(3)">vrOps data</button>
+        -->
         <div id="top"></div>
     </div>
 </body>

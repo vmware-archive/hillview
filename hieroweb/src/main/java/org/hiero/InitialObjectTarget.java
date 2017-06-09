@@ -34,7 +34,7 @@ import java.util.logging.Level;
 import java.util.stream.Stream;
 
 public class InitialObjectTarget extends RpcTarget {
-    @HieroRpc
+    @HillviewRpc
     void prepareFiles(RpcRequest request, Session session) throws IOException {
         Path currentRelativePath = Paths.get("");
         String cwd = currentRelativePath.toAbsolutePath().toString();

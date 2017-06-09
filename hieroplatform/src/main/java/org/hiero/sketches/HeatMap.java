@@ -64,16 +64,15 @@ public class HeatMap implements Serializable, IJson {
             boolean isMissingD1 = columnD1.isMissing(currRow);
             boolean isMissingD2 = columnD2.isMissing(currRow);
             if (isMissingD1 || isMissingD2) {
-                if (!isMissingD1)  //only column 2 is missing
-                    this.histogramMissingD1.addValue(columnD1.asDouble(currRow, converterD1));
+                if (!isMissingD1)  // only column 2 is missing
+                    this.histogramMissingD2.addValue(columnD1.asDouble(currRow, converterD1));
                 else if (!isMissingD2) // only column 1 is missing
-                    this.histogramMissingD2.addValue(columnD2.asDouble(currRow, converterD2));
+                    this.histogramMissingD1.addValue(columnD2.asDouble(currRow, converterD2));
                 else
                     this.missingData++; // both are missing
-                }
-            else {
-                double val1 = columnD1.asDouble(currRow,converterD1);
-                double val2 = columnD2.asDouble(currRow,converterD2);
+            } else {
+                double val1 = columnD1.asDouble(currRow, converterD1);
+                double val2 = columnD2.asDouble(currRow, converterD2);
                 int index1 = this.bucketDescDim1.indexOf(val1);
                 int index2 = this.bucketDescDim2.indexOf(val2);
                 if ((index1 >= 0) && (index2 >= 0)) {

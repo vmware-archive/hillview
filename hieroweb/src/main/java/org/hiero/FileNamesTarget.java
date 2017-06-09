@@ -45,7 +45,7 @@ public class FileNamesTarget extends RpcTarget {
         this.files = files;
     }
 
-    @HieroRpc
+    @HillviewRpc
     public void loadTable(RpcRequest request, Session session) {
         LoadFileMapper mapper = new LoadFileMapper();
         Function<IDataSet<ITable>, RpcTarget> factory = TableTarget::new;

@@ -39,7 +39,7 @@ public final class TableTarget extends RpcTarget {
         this.table = table;
     }
 
-    @HieroRpc
+    @HillviewRpc
     void getSchema(RpcRequest request, Session session) {
         SummarySketch ss = new SummarySketch();
         this.runSketch(this.table, ss, request, session);
@@ -52,7 +52,7 @@ public final class TableTarget extends RpcTarget {
         int rowsOnScreen;
     }
 
-    @HieroRpc
+    @HillviewRpc
     void getNextK(RpcRequest request, Session session) {
         NextKArgs nextKArgs = request.parseArgs(NextKArgs.class);
         RowSnapshot rs = null;
@@ -98,14 +98,14 @@ public final class TableTarget extends RpcTarget {
         }
     }
 
-    @HieroRpc
+    @HillviewRpc
     void uniqueStrings(RpcRequest request, Session session) {
         String columnName = request.parseArgs(String.class);
         DistinctStringsSketch sk = new DistinctStringsSketch(0, columnName);
         this.runCompleteSketch(this.table, sk, e->e, request, session);
     }
 
-    @HieroRpc
+    @HillviewRpc
     void histogram(RpcRequest request, Session session) {
         ColumnAndRange info = request.parseArgs(ColumnAndRange.class);
         // TODO: use height in histogram computation
@@ -133,7 +133,7 @@ public final class TableTarget extends RpcTarget {
         ColumnAndRange second;
     }
 
-    @HieroRpc
+    @HillviewRpc
     void heatMap(RpcRequest request, Session session) {
         ColPair info = request.parseArgs(ColPair.class);
         HistogramParts h1 = Converters.checkNull(info.first).prepare();
@@ -144,7 +144,7 @@ public final class TableTarget extends RpcTarget {
         this.runSketch(this.table, sk, request, session);
     }
 
-    @HieroRpc
+    @HillviewRpc
     void histogram2D(RpcRequest request, Session session) {
         ColPair info = request.parseArgs(ColPair.class);
         HistogramParts h1 = Converters.checkNull(info.first).prepare();
@@ -180,14 +180,14 @@ public final class TableTarget extends RpcTarget {
         }
     }
 
-    @HieroRpc
+    @HillviewRpc
     void range(RpcRequest request, Session session) {
         RangeInfo info = request.parseArgs(RangeInfo.class);
         BasicColStatSketch sk = new BasicColStatSketch(info.columnName, info.getConverter(), 0, 1.0);
         this.runSketch(this.table, sk, request, session);
     }
 
-    @HieroRpc
+    @HillviewRpc
     void range2D(RpcRequest request, Session session) {
         RangeInfo[] cols = request.parseArgs(RangeInfo[].class);
         if (cols.length != 2)
@@ -230,7 +230,7 @@ public final class TableTarget extends RpcTarget {
         }
     }
 
-    @HieroRpc
+    @HillviewRpc
     void filterRange(RpcRequest request, Session session) {
         ColumnAndRange info = request.parseArgs(ColumnAndRange.class);
         RangeFilter filter = new RangeFilter(info);
@@ -245,7 +245,7 @@ public final class TableTarget extends RpcTarget {
         RecordOrder order = new RecordOrder();
     }
 
-    @HieroRpc
+    @HillviewRpc
     void quantile(RpcRequest request, Session session) {
         QuantileInfo info = request.parseArgs(QuantileInfo.class);
         SampleQuantileSketch sk = new SampleQuantileSketch(info.order, info.precision, info.tableSize);
@@ -253,7 +253,7 @@ public final class TableTarget extends RpcTarget {
         this.runCompleteSketch(this.table, sk, getRow, request, session);
     }
 
-    @HieroRpc
+    @HillviewRpc
     void heavyHitters(RpcRequest request, Session session) {
         // TODO: read size from client
         Schema schema = request.parseArgs(Schema.class);
@@ -267,7 +267,7 @@ public final class TableTarget extends RpcTarget {
         Schema schema;
     }
 
-    @HieroRpc
+    @HillviewRpc
     void filterHeavy(RpcRequest request, Session session) {
         HeavyHittersFilterInfo hhi = request.parseArgs(HeavyHittersFilterInfo.class);
         RpcTarget target = RpcObjectManager.instance.getObject(hhi.hittersId);

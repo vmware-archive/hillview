@@ -48,8 +48,7 @@ class AxisData {
         if (this.description.kind == "Double" ||
             this.description.kind == "Integer") {
             scale = d3.scaleLinear()
-                .domain([this.stats.min, this.stats.max])
-                .range([0, length]);
+                .domain([this.stats.min, this.stats.max]);
         } else if (this.description.kind == "Category") {
             let ticks: number[] = [];
             let labels: string[] = [];
@@ -64,21 +63,22 @@ class AxisData {
                 .domain(labels)
                 .range(ticks);
             let mouseScale = d3.scaleLinear()
-                .domain([this.stats.min, this.stats.max])
-                .range([0, length]);
+                .domain([this.stats.min, this.stats.max]);
             // cast needed probably because the d3 typings are incorrect
         } else if (this.description.kind == "Date") {
             let minDate: Date = Converters.dateFromDouble(this.stats.min);
             let maxDate: Date = Converters.dateFromDouble(this.stats.max);
             scale = d3
                 .scaleTime()
-                .domain([minDate, maxDate])
-                .range([0, length]);
+                .domain([minDate, maxDate]);
         }
-        if (bottom)
+        if (bottom) {
+            scale.range([0, length]);
             return d3.axisBottom(scale);
-        else
+        } else {
+            scale.range([length, 0]);
             return d3.axisLeft(scale);
+        }
     }
 }
 
@@ -231,12 +231,18 @@ implements IHtmlElement, HieroDataView {
             missingData: missingData
         };
         this.page.reportError("Operation took " + significantDigits(elapsedMs/1000) + " seconds");
-        if (data == null || data.length == 0)
+        if (data == null || data.length == 0) {
+            this.page.reportError("No data to display");
             return;
+        }
         let xPoints = data.length;
         let yPoints = data[0].length;
-        if (yPoints == 0)
+        if (yPoints == 0) {
+            this.page.reportError("No data to display");
             return;
+        }
+
+        // if xPoints or yPoints is 1 the display should degenerate into a histogram...
 
         let width = this.page.getWidthInPixels();
         let height = HistogramView.chartHeight;
@@ -246,8 +252,8 @@ implements IHtmlElement, HieroDataView {
         if (chartWidth < HeatMapView.minChartWidth)
             chartWidth = HeatMapView.minChartWidth;
 
-        let pointWidth = chartWidth / xPoints;
-        let pointHeight = chartHeight / yPoints;
+        let pointWidth = chartWidth / (xPoints - 1);
+        let pointHeight = chartHeight / (yPoints - 1);
 
         this.chartResolution = { width: chartWidth, height: chartHeight };
         if (this.canvas != null)
@@ -298,8 +304,8 @@ implements IHtmlElement, HieroDataView {
                     max = v;
                 if (v != 0) {
                     let rec = {
-                        x: x * pointWidth,
-                        y: y * pointHeight,
+                        x: (x - .5) * pointWidth,
+                        y: chartHeight - (y + .5) * pointHeight,
                         v: v
                     };
                     visible += v;
@@ -396,11 +402,11 @@ implements IHtmlElement, HieroDataView {
         let summary = formatNumber(visible) + " data points";
         if (missingData != 0)
             summary += ", " + formatNumber(missingData) + " missing";
-        if (xData.stats.missingCount != 0)
-            summary += ", " + formatNumber(xData.stats.missingCount) + " missing Y coordinate";
-        if (yData.stats.missingCount != 0)
-            summary += ", " + formatNumber(yData.stats.missingCount) + " missing X coordinate";
-        summary += ", " + formatNumber(distinct) + " distinct values";
+        if (xData.missing.missingData != 0)
+            summary += ", " + formatNumber(xData.missing.missingData) + " missing Y coordinate";
+        if (yData.missing.missingData != 0)
+            summary += ", " + formatNumber(yData.missing.missingData) + " missing X coordinate";
+        summary += ", " + formatNumber(distinct) + " distinct dots";
         this.summary.textContent = summary;
     }
 

@@ -22,7 +22,7 @@ var nodepath = path.resolve("/usr/local/lib/node_modules");
 // var webpack = require(nodepath + '/' + 'webpack');
 
 module.exports = {
-    entry: "./hiero.ts",
+    entry: "./hillview.ts",
     output: {
         filename: "./bundle.js"
     },

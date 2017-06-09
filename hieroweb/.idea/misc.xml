@@ -2,7 +2,7 @@
 <project version="4">
   <component name="EntryPointsManager">
     <list size="1">
-      <item index="0" class="java.lang.String" itemvalue="org.hiero.HieroRpc" />
+      <item index="0" class="java.lang.String" itemvalue="org.hiero.HillviewRpc" />
     </list>
   </component>
   <component name="MavenProjectsManager">
@@ -37,7 +37,6 @@
     </option>
   </component>
   <component name="ProjectPlainTextFileTypeManager">
-    <file url="file://$PROJECT_DIR$/src/main/webapp/bundle.js" />
     <file url="file://$PROJECT_DIR$/src/main/webapp/bundle.js" />
   </component>
   <component name="ProjectRootManager" version="2" languageLevel="JDK_1_8" default="true" project-jdk-name="1.8" project-jdk-type="JavaSDK">

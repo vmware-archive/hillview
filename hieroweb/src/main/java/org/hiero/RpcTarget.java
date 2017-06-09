@@ -95,7 +95,7 @@ public abstract class RpcTarget implements IJson {
     private void registerExecutors() {
         Class<?> type = this.getClass();
         for (Method m : type.getDeclaredMethods()) {
-            if (m.isAnnotationPresent(HieroRpc.class)) {
+            if (m.isAnnotationPresent(HillviewRpc.class)) {
                 logger.log(Level.INFO, "Registered RPC method " + m.getName());
                 this.executor.put(m.getName(), m);
             }

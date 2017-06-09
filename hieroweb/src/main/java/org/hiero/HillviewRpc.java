@@ -15,27 +15,14 @@
  *  limitations under the License.
  */
 
-import {TableView, RemoteTableReceiver} from "./table";
-import {ScrollBar, ProgressBar, DataDisplay, FullPage} from "./ui";
-import {InitialObject} from "./initialObject";
-import {ConsoleErrorReporter} from "./errReporter";
-import {HistogramView} from "./histogram";
+package org.hiero;
 
-// Top-level hiero object: exports all typescript classes
-// that can be used in html.
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-// Workaround webpack: export symbols
-// by making them fields of the window object.
-let public_symbols = {
-    TableView,
-    ScrollBar,
-    ProgressBar,
-    InitialObject,
-    ConsoleErrorReporter,
-    RemoteTableReceiver,
-    DataDisplay,
-    FullPage,
-    HistogramView
-};
-
-window["hiero"] = public_symbols;
+// This annotation is used on methods that are invoked by the RPC layer.
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+@interface HillviewRpc {}
