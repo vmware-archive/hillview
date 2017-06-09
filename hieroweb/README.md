@@ -1,0 +1,1 @@
+This folder contains the web part of the Hillview project.
