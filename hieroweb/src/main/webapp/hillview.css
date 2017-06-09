@@ -1,0 +1,216 @@
+/*
+ * Copyright (c) 2017 VMWare Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+#container {
+    font-family: monospace;
+    overflow: hidden;
+}
+
+.console {
+    font-family: monospace;
+}
+
+th {
+    border: 1px solid black;
+    margin: 0;
+    font-weight: bold;
+    background: lightgray;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+table {
+    border-collapse: collapse;
+}
+
+th, td {
+    border: 1px solid black;
+    padding: 3px;
+}
+
+.missingData {
+    color: red;
+}
+
+.progressBarOuter {
+    margin: 0;
+    padding: 0;
+    background: white;
+    height: 10px;
+    border: solid black 1px;
+    width: 250px;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    display: flex;
+}
+
+.hieroPage {
+    border: 1px solid black;
+    margin: 5px 0;
+    padding: 0;
+}
+
+/* close button */
+.close {
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close :hover {
+    background: red;
+}
+
+.noBorder {
+    border: none;
+    border-collapse: collapse;
+    margin: 0;
+    padding: 0;
+    text-align: left;
+}
+
+.progressBarInner {
+    background: green;
+    height: 100%;
+}
+
+.scrollbarOuter {
+    margin: 0;
+    padding: 0;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    width: 15px;
+    height: 100%;
+}
+
+.scrollBarBefore, .scrollBarAfter {
+    background: lightgray;
+    width: 100%;
+}
+
+.label {
+    display: flex;
+    justify-content: center;
+    align-content: center;
+}
+
+.scrollBarInner {
+    background: darkslategrey;
+    width: 100%;
+}
+
+.histogramBoxLabel {
+    font: 10px sans-serif;
+}
+
+.selected {
+    background: lightcyan;
+}
+
+.dashed {
+    stroke: red;
+    fill: pink;
+    fill-opacity: 0.2;
+    stroke-width: 1;
+    stroke-dasharray: 5,5
+}
+
+/* menus in CSS; from http://codepen.io/philhoyt/pen/ujHzd */
+
+.menu {
+    margin-top:15px
+}
+
+.menu ul {
+    list-style: none;
+    position: relative;
+    float: left;
+    margin: 0;
+    padding: 0;
+    background: #efefef;
+    background: linear-gradient(top, #efefef 0%, #bbbbbb 100%);
+    box-shadow: 0 0 9px rgba(0,0,0,0.15);
+}
+
+.menu ul span {
+    display:block;
+    text-decoration: none;
+    text-align: left;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 24px;
+    padding:0 5px;
+}
+
+.menu ul li  {
+    position: relative;
+    float: left;
+    margin: 0;
+    padding: 0;
+    transition: all 0.2s;
+    background: #efefef;
+    background: linear-gradient(top, #efefef 0%, #bbbbbb 100%);
+    box-shadow: 0 0 9px rgba(0,0,0,0.15);
+}
+
+.menu ul li:hover  {
+    background: #4b545f;
+    background: linear-gradient(top, #4f5964 0%, #5f6975 40%);
+}
+
+.menu ul ul {
+    display:none;
+    position:absolute;
+    top:100%;
+    left:0;
+    padding:0;
+}
+
+.menu ul ul li {
+    float:none;
+    width:200px
+}
+
+.menu ul ul span {
+    line-height:120%;
+    padding:10px 15px;
+}
+
+.menu ul li:hover > ul {
+    display:block;
+}
+
+.dropdown {
+    display: none;
+    position: absolute;
+    background-color: lightgray;
+    z-index: 1;
+    text-align: right;
+}
+
+/* for pop-up menu */
+.menuItem:hover {
+    background-color: gray;
+}
