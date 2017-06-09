@@ -241,12 +241,6 @@ implements IHtmlElement, HillviewDataView {
             this.page.reportError("No data to display");
             return;
         }
-<<<<<<< 65562a66a3997718aa6f1cf428741671ac962255:web/src/main/webapp/heatMap.ts
-=======
-
-        // if xPoints or yPoints is 1 the display should degenerate into a histogram...
->>>>>>> Improvements in heatmap drawing:hieroweb/src/main/webapp/heatMap.ts
-
         let width = this.page.getWidthInPixels();
         let height = HistogramView.chartHeight;
 
@@ -255,8 +249,8 @@ implements IHtmlElement, HillviewDataView {
         if (chartWidth < HeatMapView.minChartWidth)
             chartWidth = HeatMapView.minChartWidth;
 
-        let pointWidth = chartWidth / (xPoints - 1);
-        let pointHeight = chartHeight / (yPoints - 1);
+        let pointWidth = chartWidth / xPoints;
+        let pointHeight = chartHeight / yPoints;
 
         this.chartResolution = { width: chartWidth, height: chartHeight };
         if (this.canvas != null)
@@ -307,13 +301,8 @@ implements IHtmlElement, HillviewDataView {
                     max = v;
                 if (v != 0) {
                     let rec = {
-<<<<<<< 65562a66a3997718aa6f1cf428741671ac962255:web/src/main/webapp/heatMap.ts
                         x: x * pointWidth,
                         y: chartHeight - (y + 1) * pointHeight,  // +1 because it's the upper corner
-=======
-                        x: (x - .5) * pointWidth,
-                        y: chartHeight - (y + .5) * pointHeight,
->>>>>>> Improvements in heatmap drawing:hieroweb/src/main/webapp/heatMap.ts
                         v: v
                     };
                     visible += v;
