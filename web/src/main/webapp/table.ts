@@ -659,7 +659,7 @@ export class TableView extends RemoteObject
                 this.page.reportError("Heat maps not yet implemented for category columns " + colDesc.name);
                 return;
             }
-            let ci = new RangeInfo;
+            let ci = new RangeInfo();
             ci.columnName = colDesc.name;
             cds.push(colDesc);
             columns.push(ci);
