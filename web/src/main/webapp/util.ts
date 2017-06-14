@@ -36,3 +36,11 @@ export class Converters {
         return value.getTime();
     }
 }
+
+export function reorder(m: number, n: number): [number, number] {
+    if (m < n)
+        return [m, n];
+    else
+        return [n, m];
+}
+

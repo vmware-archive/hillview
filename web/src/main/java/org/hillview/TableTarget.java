@@ -238,6 +238,33 @@ public final class TableTarget extends RpcTarget {
         this.runMap(this.table, fm, TableTarget::new, request, session);
     }
 
+    static class Range2DFilter implements TableFilter, Serializable {
+        final RangeFilter first;
+        final RangeFilter second;
+
+        Range2DFilter(ColPair args) {
+            this.first = new RangeFilter(Converters.checkNull(args.first));
+            this.second = new RangeFilter(Converters.checkNull(args.second));
+        }
+
+        public void setTable(ITable table) {
+            this.first.setTable(table);
+            this.second.setTable(table);
+        }
+
+        public boolean test(int rowIndex) {
+            return first.test(rowIndex) && second.test(rowIndex);
+        }
+    }
+
+    @HillviewRpc
+    void filter2DRange(RpcRequest request, Session session) {
+        ColPair info = request.parseArgs(ColPair.class);
+        Range2DFilter filter = new Range2DFilter(info);
+        FilterMap fm = new FilterMap(filter);
+        this.runMap(this.table, fm, TableTarget::new, request, session);
+    }
+
     static class QuantileInfo {
         int precision;
         double position;

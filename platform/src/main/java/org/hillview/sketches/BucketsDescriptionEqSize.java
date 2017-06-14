@@ -28,15 +28,15 @@ public class BucketsDescriptionEqSize implements IBucketsDescription1D {
     private final double range;
 
     public BucketsDescriptionEqSize(final double minValue, final double maxValue, final int numOfBuckets) {
-        if (maxValue < minValue)
-            throw new IllegalArgumentException("Negative range");
+        if (maxValue < minValue || numOfBuckets <= 0)
+            throw new IllegalArgumentException("Negative range or number of buckets");
         this.minValue = minValue;
         this.maxValue = maxValue;
-        this.numOfBuckets = numOfBuckets;
-        this.range = this.maxValue - this.minValue;  // could be 0
-        if ((this.range <= 0) && (this.numOfBuckets != 1))
-            throw new IllegalArgumentException("Zero range must have exactly 1 bucket, not "
-                    + this.numOfBuckets);
+        this.range = this.maxValue - this.minValue;
+        if (this.range <= 0)
+            this.numOfBuckets = 1;  // ignore specified number of buckets
+        else
+            this.numOfBuckets = numOfBuckets;
     }
 
     @Override
