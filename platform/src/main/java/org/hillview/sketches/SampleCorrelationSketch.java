@@ -72,14 +72,14 @@ public class SampleCorrelationSketch implements ISketch<ITable, CorrMatrix> {
         cm.count = sampleData.getSize();
         IRowIterator rowIt = sampleData.getIterator();
         int i = rowIt.getNextRow();
-        double valj, valk;
+        double valJ, valK;
         while (i != -1) {
             for (int j = 0; j < this.colNames.size(); j++) {
-                valj = iCols[j].asDouble(i, null);
-                cm.update(j, j, valj * valj);
+                valJ = iCols[j].asDouble(i, null);
+                cm.update(j, j, valJ * valJ);
                 for (int k = j + 1; k < this.colNames.size(); k++) {
-                    valk = iCols[k].asDouble(i, null);
-                    cm.update(j, k, valj * valk);
+                    valK = iCols[k].asDouble(i, null);
+                    cm.update(j, k, valJ * valK);
                 }
             }
             i = rowIt.getNextRow();

@@ -23,7 +23,7 @@ public class CorrMatrix implements ICorrelation {
     * A matrix that computes correlations between pairs of columns.
     */
     @Nullable
-    public double[][] corrMatrix;
+    private double[][] corrMatrix;
     /**
      * A count of the number of entries processed so far.
      */

@@ -7,11 +7,11 @@ import org.hillview.utils.Converters;
 import javax.annotation.Nullable;
 
 public class BasicColStatSketch implements ISketch<ITable, BasicColStats> {
-    final String colName;
+    private final String colName;
     @Nullable
-    final IStringConverter converter;
-    final double rate;
-    final int momentNum;
+    private final IStringConverter converter;
+    private final double rate;
+    private final int momentNum;
 
     public BasicColStatSketch(String colName, @Nullable IStringConverter converter) {
         this.colName = colName;

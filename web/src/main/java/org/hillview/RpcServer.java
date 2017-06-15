@@ -44,7 +44,7 @@ public final class RpcServer {
             Logger.getLogger(RpcServer.class.getName());
 
     // Map the session to the target object that is replying, if any
-    private static HashMap<Session, RpcTarget> sessionRequest =
+    private static final HashMap<Session, RpcTarget> sessionRequest =
             new HashMap<Session, RpcTarget>(10);
 
     synchronized private void addSession(Session session, @Nullable RpcTarget target) {

@@ -25,11 +25,11 @@ import org.hillview.utils.Converters;
 import javax.annotation.Nullable;
 
 public class Hist1DLightSketch implements ISketch<ITable, Histogram1DLight> {
-    final IBucketsDescription1D bucketDesc;
-    final String colName;
+    private final IBucketsDescription1D bucketDesc;
+    private final String colName;
     @Nullable
-    final IStringConverter converter;
-    final double rate;
+    private final IStringConverter converter;
+    private final double rate;
 
     public Hist1DLightSketch(IBucketsDescription1D bucketDesc, String colName,
                              @Nullable IStringConverter converter) {

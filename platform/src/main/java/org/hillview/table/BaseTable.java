@@ -31,7 +31,7 @@ public abstract class BaseTable implements ITable {
     /**
      * Maps columns name to an IColumn.
      */
-    protected final HashMap<String, IColumn> columns;
+    final HashMap<String, IColumn> columns;
 
     /**
      * @return An iterator over the rows in the table.
@@ -40,7 +40,7 @@ public abstract class BaseTable implements ITable {
         return this.getMembershipSet().getIterator();
     }
 
-    protected BaseTable(Iterable<IColumn> columns) {
+    BaseTable(Iterable<IColumn> columns) {
         BaseTable.columnSize(columns);  // validate column sizes
         this.columns = new HashMap<String, IColumn>();
         for (final IColumn c : columns)
@@ -53,8 +53,8 @@ public abstract class BaseTable implements ITable {
     public Iterable<IColumn> getColumns(Schema schema) {
         List<IColumn> cols = new ArrayList<IColumn>();
         for (String col : schema.getColumnNames()) {
-            IColumn mycol = this.getColumn(col);
-            cols.add(mycol);
+            IColumn myCol = this.getColumn(col);
+            cols.add(myCol);
         }
         return cols;
     }
@@ -66,7 +66,7 @@ public abstract class BaseTable implements ITable {
         return this.getColumns(this.getSchema());
     }
 
-    protected BaseTable(Schema schema) {
+    BaseTable(Schema schema) {
         this.columns = new HashMap<String, IColumn>();
         for (final String c : schema.getColumnNames()) {
             ColumnDescription cd = schema.getDescription(c);
@@ -90,7 +90,7 @@ public abstract class BaseTable implements ITable {
      * @return The common size, or 0 if the set is empty.
      * Throws if the columns do not all have the same size.
      */
-    protected static int columnSize(Iterable<IColumn> columns) {
+    static int columnSize(Iterable<IColumn> columns) {
         int size = -1;
         for (IColumn c : columns) {
             if (size < 0)
@@ -133,7 +133,7 @@ public abstract class BaseTable implements ITable {
         return this.compress(subSchema, rowOrder);
     }
 
-    public String toLongString(int startRow, int rowsToDisplay) {
+    private String toLongString(int startRow, int rowsToDisplay) {
         final StringBuilder builder = new StringBuilder();
         builder.append(this.toString());
         builder.append(System.getProperty("line.separator"));

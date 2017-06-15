@@ -31,7 +31,7 @@ public class DistinctStrings implements IJson {
         this.truncated = false;
     }
 
-    public void add(@Nullable String string) {
+    private void add(@Nullable String string) {
         if (string == null)
             this.missingCount++;
         if (this.truncated)

@@ -46,28 +46,28 @@ public class ParallelDataSet<T> implements IDataSet<T> {
      * If this is set to zero no aggregation is performed.
      * If this is set to a value too large then progress reporting to the user may be impacted.
      */
-    protected int bundleInterval = 250;
+    private int bundleInterval = 250;
     /**
      * The bundleInterval specifies a time in milliseconds.
      */
-    protected static final TimeUnit bundleTimeUnit = TimeUnit.MILLISECONDS;
+    private static final TimeUnit bundleTimeUnit = TimeUnit.MILLISECONDS;
     /**
      * If this is set to true there is some additional logging inserted.
      */
-    protected static final boolean useLogging = false;
+    private static final boolean useLogging = false;
 
     /**
      * Children of the data set.
      */
 
-    protected final List<IDataSet<T>> children;
-    protected static final Logger logger = Logger.getLogger(ParallelDataSet.class.getName());
+    private final List<IDataSet<T>> children;
+    private static final Logger logger = Logger.getLogger(ParallelDataSet.class.getName());
 
     /**
      * Create a ParallelDataSet from a map that indicates the index of each child.
      * @param elements  Children, presented as a map indexed by child position.
      */
-    protected ParallelDataSet(final Map<Integer, IDataSet<T>> elements) {
+    private ParallelDataSet(final Map<Integer, IDataSet<T>> elements) {
         this.children = new ArrayList<IDataSet<T>>(elements.size());
         for (final Map.Entry<Integer, IDataSet<T>> e : elements.entrySet())
             this.children.add(e.getKey(), e.getValue());
@@ -81,7 +81,7 @@ public class ParallelDataSet<T> implements IDataSet<T> {
         this.children = children;
     }
 
-    protected int size() { return this.children.size(); }
+    int size() { return this.children.size(); }
 
     /**
      * Can be used to change the time interval in which partial results are aggregated.
@@ -111,7 +111,7 @@ public class ParallelDataSet<T> implements IDataSet<T> {
      * added together.
      */
 
-    public <R> Observable<R> bundle(final Observable<R> data, IMonoid<R> adder) {
+    <R> Observable<R> bundle(final Observable<R> data, IMonoid<R> adder) {
         if (this.bundleInterval > 0) {
             Observable<List<R>> bundled = data.buffer(this.bundleInterval, bundleTimeUnit)
                        .filter(e -> !e.isEmpty());
@@ -166,6 +166,50 @@ public class ParallelDataSet<T> implements IDataSet<T> {
                       .single()
                       // Finally, create a ParallelDataSet from the map; these have 0 'done' progress
                       .map(m -> new PartialResult<IDataSet<S>>(0.0, new ParallelDataSet<S>(m)));
+        final Observable<PartialResult<IDataSet<S>>> dones =
+                // Each child produces a 1/this.size() fraction of the result.
+                merged.map(p -> Converters.checkNull(p.second).deltaDone / this.size())
+                        .map(e -> new PartialResult<IDataSet<S>>(e, null));
+        Observable<PartialResult<IDataSet<S>>> result = dones.mergeWith(mapResult);
+        result = bundle(result, new PRDataSetMonoid<S>());
+        return result;
+    }
+
+    @Override
+    public <S> Observable<PartialResult<IDataSet<S>>> flatMap(IMap<T, List<S>> mapper) {
+        final List<Observable<Pair<Integer, PartialResult<IDataSet<S>>>>> obs =
+                new ArrayList<Observable<Pair<Integer, PartialResult<IDataSet<S>>>>>(this.size());
+        // We run the mapper over each child, and then we tag the results produced by
+        // the child with the child index.
+        for (int i = 0; i < this.size(); i++) {
+            int finalI = i;
+            final Observable<Pair<Integer, PartialResult<IDataSet<S>>>> ci =
+                    this.children.get(i)
+                            .flatMap(mapper)
+                            .map(e -> new Pair<Integer, PartialResult<IDataSet<S>>>(finalI, e));
+            obs.add(i, ci);
+        }
+        // Merge the streams from all children
+        final Observable<Pair<Integer, PartialResult<IDataSet<S>>>> merged =
+                // publish().autoConnect(2) ensures that the two consumers
+                // of this stream pull from the *same* stream, and not from
+                // two different copies.
+                Observable.merge(obs).publish().autoConnect(2);
+        // We split the merged stream of PartialResults into two separate streams
+        // - mapResult for the actual PartialResult.deltaValue
+        // - dones for the PartialResult.doneValue
+        // The dones we "send" out immediately to indicate progress,
+        // whereas the mapResult part we process locally
+        final Observable<PartialResult<IDataSet<S>>> mapResult =
+                // drop partial results which have no value
+                merged.filter(p -> Converters.checkNull(p.second).deltaValue != null)
+                        // Create a java.Util.Map with all the non-null results;
+                        // there should be exactly one per child
+                        .toMap(p -> p.first, p -> Converters.checkNull(p.second).deltaValue)
+                        // We expect to produce a single map
+                        .single()
+                        // Finally, create a ParallelDataSet from the map; these have 0 'done' progress
+                        .map(m -> new PartialResult<IDataSet<S>>(0.0, new ParallelDataSet<S>(m)));
         final Observable<PartialResult<IDataSet<S>>> dones =
                 // Each child produces a 1/this.size() fraction of the result.
                 merged.map(p -> Converters.checkNull(p.second).deltaDone / this.size())

@@ -35,12 +35,12 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
     /**
      * Table where the virtual row resides.
      */
-    protected final ITable table;
+    private final ITable table;
     /**
      * Index of the row in the table.
      */
-    protected int rowIndex = -1;
-    protected final Schema schema;
+    private int rowIndex = -1;
+    private final Schema schema;
 
     public VirtualRowSnapshot(final ITable table) {
         this.table = table;

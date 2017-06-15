@@ -50,7 +50,7 @@ public class RowSnapshot extends BaseRowSnapshot implements Serializable, IJson 
         this(data, rowIndex, data.getSchema());
     }
 
-    public RowSnapshot(final Schema schema, final Object[] data) {
+    private RowSnapshot(final Schema schema, final Object[] data) {
         if (schema.getColumnCount() != data.length)
             throw new RuntimeException("Mismatched schema");
         int index = 0;

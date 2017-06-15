@@ -33,6 +33,7 @@ import org.hillview.utils.Converters;
 import rx.Observable;
 import rx.subjects.PublishSubject;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -44,9 +45,9 @@ import static org.hillview.remoting.HillviewServer.DEFAULT_IDS_INDEX;
  * with a wrong value for either entry of the tuple will result in an exception.
  */
 public class RemoteDataSet<T> implements IDataSet<T> {
-    protected final static int TIMEOUT = 1000;  // TODO: import via config file
-    protected final int remoteHandle;
-    protected final HostAndPort serverEndpoint;
+    private final static int TIMEOUT = 1000;  // TODO: import via config file
+    private final int remoteHandle;
+    private final HostAndPort serverEndpoint;
     private final HillviewServerGrpc.HillviewServerStub stub;
 
     public RemoteDataSet(final HostAndPort serverEndpoint) {
@@ -79,6 +80,21 @@ public class RemoteDataSet<T> implements IDataSet<T> {
         return subj.doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
                                                  .map(command, responseObserver))
                    .doOnUnsubscribe(() -> this.unsubscribe(mapOp.id));
+    }
+
+    @Override
+    public <S> Observable<PartialResult<IDataSet<S>>> flatMap(IMap<T, List<S>> mapper) {
+        final FlatMapOperation<T, S> mapOp = new FlatMapOperation<T, S>(mapper);
+        final byte[] serializedOp = SerializationUtils.serialize(mapOp);
+        final Command command = Command.newBuilder()
+                .setIdsIndex(this.remoteHandle)
+                .setSerializedOp(ByteString.copyFrom(serializedOp))
+                .build();
+        final PublishSubject<PartialResult<IDataSet<S>>> subj = PublishSubject.create();
+        final StreamObserver<PartialResponse> responseObserver = new NewDataSetObserver<S>(subj);
+        return subj.doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
+                .map(command, responseObserver))
+                .doOnUnsubscribe(() -> this.unsubscribe(mapOp.id));
     }
 
     /**
@@ -164,7 +180,7 @@ public class RemoteDataSet<T> implements IDataSet<T> {
      * from a gRPC streaming call to that of a publish subject.
      */
     private abstract static class OperationObserver<T> implements StreamObserver<PartialResponse> {
-        protected final PublishSubject<T> subject;
+        final PublishSubject<T> subject;
 
         public OperationObserver(final PublishSubject<T> subject) {
             this.subject = subject;

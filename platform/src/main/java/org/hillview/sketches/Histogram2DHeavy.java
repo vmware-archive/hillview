@@ -40,7 +40,7 @@ public class Histogram2DHeavy {
     private boolean initialized;
     private Histogram1D histogramMissingD1; // hist of items that are missing in D2
     private Histogram1D histogramMissingD2; // hist of items that are missing in D1
-    private long totalsize;
+    private long totalSize;
 
     public Histogram2DHeavy(final IBucketsDescription1D buckets1, final IBucketsDescription1D buckets2) {
         this.bucketDescDim1 = buckets1;
@@ -52,7 +52,7 @@ public class Histogram2DHeavy {
             for (int j = 0; j < this.bucketDescDim2.getNumOfBuckets(); j++)
                 this.buckets[i][j] = new Bucket2D();
         this.initialized = false;
-        this.totalsize = 0;
+        this.totalSize = 0;
     }
 
     public void createSampleHistogram(final IColumn columnD1, final IColumn columnD2,
@@ -71,7 +71,7 @@ public class Histogram2DHeavy {
 
     public Histogram1D getMissingHistogramD1() { return this.histogramMissingD1; }
 
-    public long getSize() { return this.totalsize; }
+    public long getSize() { return this.totalSize; }
 
     public Histogram1D getMissingHistogramD2() { return this.histogramMissingD2; }
 
@@ -108,7 +108,7 @@ public class Histogram2DHeavy {
                 if ((index1 >= 0) && (index2 >= 0)) {
                     this.buckets[index1][index2].add(val1, columnD1.getObject(currRow),
                             val2, columnD2.getObject(currRow));
-                    this.totalsize++;
+                    this.totalSize++;
                 }
                 else this.outOfRange++;
             }
@@ -144,7 +144,7 @@ public class Histogram2DHeavy {
         unionH.missingData= this.missingData + otherHistogram.missingData;
         unionH.outOfRange = this.outOfRange + otherHistogram.outOfRange;
         unionH.initialized = true;
-        unionH.totalsize = this.totalsize + otherHistogram.totalsize;
+        unionH.totalSize = this.totalSize + otherHistogram.totalSize;
         unionH.histogramMissingD1 = this.histogramMissingD1.union(otherHistogram.histogramMissingD1);
         unionH.histogramMissingD2 = this.histogramMissingD2.union(otherHistogram.histogramMissingD2);
         return unionH;

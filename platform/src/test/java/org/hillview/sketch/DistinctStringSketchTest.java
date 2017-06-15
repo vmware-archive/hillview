@@ -11,7 +11,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class DistinctStringSketchTest {
-    SemiExplicitConverter getStringConverter(DistinctStrings ds) {
+    private SemiExplicitConverter getStringConverter(DistinctStrings ds) {
         SemiExplicitConverter converter = new SemiExplicitConverter();
         int i = 0;
         for (String item : ds.getStrings()) {

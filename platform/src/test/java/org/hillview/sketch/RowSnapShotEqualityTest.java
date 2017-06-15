@@ -10,7 +10,7 @@ import org.junit.Test;
 
 public class RowSnapShotEqualityTest {
     @Test
-    public void RowSnapShotEquailtyTest() {
+    public void rowSnapShotEqualityTest() {
         Table t = TestTables.testRepTable();
         int j = 9;
         VirtualRowSnapshot vrs = new VirtualRowSnapshot(t);

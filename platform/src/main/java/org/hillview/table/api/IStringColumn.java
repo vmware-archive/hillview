@@ -24,11 +24,11 @@ import javax.annotation.Nullable;
 
 public interface IStringColumn extends IColumn {
     @Override
-    default double asDouble(final int rowIndex, @Nullable final IStringConverter conv) {
+    default double asDouble(final int rowIndex, @Nullable final IStringConverter converter) {
         if (isMissing(rowIndex))
             throw new MissingException(this, rowIndex);
         final String tmp = this.getString(rowIndex);
-        return Converters.checkNull(conv).asDouble(Converters.checkNull(tmp));
+        return Converters.checkNull(converter).asDouble(Converters.checkNull(tmp));
     }
 
     @Nullable

@@ -25,7 +25,7 @@ import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class RpcReply {
+class RpcReply {
     private final int requestId;
     private final String result;
     private final boolean isError;

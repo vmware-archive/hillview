@@ -18,9 +18,11 @@
 package org.hillview;
 
 import org.hillview.dataset.LocalDataSet;
-import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.api.IDataSet;
+import org.hillview.dataset.api.IMap;
+import org.hillview.utils.Converters;
 
+import javax.annotation.Nullable;
 import javax.websocket.Session;
 import java.io.IOException;
 import java.nio.file.FileVisitOption;
@@ -34,67 +36,76 @@ import java.util.logging.Level;
 import java.util.stream.Stream;
 
 public class InitialObjectTarget extends RpcTarget {
-    @HillviewRpc
-    void prepareFiles(RpcRequest request, Session session) throws IOException {
-        Path currentRelativePath = Paths.get("");
-        String cwd = currentRelativePath.toAbsolutePath().toString();
-        System.out.println("Current directory is: " + cwd);
+    @Nullable
+    private final IDataSet<Empty> emptyDataset;
 
+    InitialObjectTarget() {
+        Empty empty = new Empty();
+        this.emptyDataset = new LocalDataSet<Empty>(empty);
+    }
+
+    @SuppressWarnings("RedundantIfStatement")
+    @HillviewRpc
+    void prepareFiles(RpcRequest request, Session session) {
         int which = request.parseArgs(Integer.class);
 
-        String dataFolder = "../data/";
-        String smallFileSchema = "On_Time.schema";
-        String smallFile = "On_Time_Sample.csv";
-        String schemaFile = "short.schema";
+        IMap<Empty, List<CsvFileObject>> mapper = (IMap<Empty, List<CsvFileObject>>) unused -> {
+            Path currentRelativePath = Paths.get("");
+            String cwd = currentRelativePath.toAbsolutePath().toString();
+            System.out.println("Current directory is: " + cwd);
 
-        String vropsFile = "vrops.csv";
-        String vropsSchema = "vrops.schema";
+            String dataFolder = "../data/";
+            String smallFileSchema = "On_Time.schema";
+            String smallFile = "On_Time_Sample.csv";
+            String schemaFile = "short.schema";
 
-        Path schemaPath = Paths.get(dataFolder, schemaFile);
+            String vropsFile = "vrops.csv";
+            String vropsSchema = "vrops.schema";
 
-        IDataSet<CsvFileObject> result;
-        if (which >= 0 && which <= 1) {
-            int limit = which == 0 ? 3 : 1;
-            List<IDataSet<CsvFileObject>> fileNames = new ArrayList<IDataSet<CsvFileObject>>();
-            Path folder = Paths.get(dataFolder);
-            Stream<Path> files = Files.walk(folder, 1, FileVisitOption.FOLLOW_LINKS);
-            files.filter(f -> {
-                String filename = f.getFileName().toString();
-                if (!filename.endsWith(".csv")) return false;
-                if (!filename.startsWith("2016")) return false;
-                return true;
-            }).limit(limit)
-                    .sorted(Comparator.comparing(Path::toString))
-                    .forEach(f -> {
-                        CsvFileObject cfo = new CsvFileObject(f, schemaPath);
-                        LocalDataSet<CsvFileObject> local = new LocalDataSet<CsvFileObject>(cfo);
-                        fileNames.add(local);
-                        logger.log(Level.INFO, "Added " + toString());
-                    });
-            if (fileNames.size() == 0) {
-                RpcReply reply = request.createReply(new RuntimeException("No such files"));
-                reply.send(session);
-                request.syncCloseSession(session);
-                return;
+            Path schemaPath = Paths.get(dataFolder, schemaFile);
+
+            final List<CsvFileObject> result = new ArrayList<CsvFileObject>();
+            if (which >= 0 && which <= 1) {
+                int limit = which == 0 ? 3 : 1;
+                Path folder = Paths.get(dataFolder);
+                Stream<Path> files;
+                try {
+                    files = Files.walk(folder, 1, FileVisitOption.FOLLOW_LINKS);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                files.filter(f -> {
+                    String filename = f.getFileName().toString();
+                    if (!filename.endsWith(".csv")) return false;
+                    if (!filename.startsWith("2016")) return false;
+                    return true;
+                }).limit(limit)
+                        .sorted(Comparator.comparing(Path::toString))
+                        .forEach(f -> {
+                            CsvFileObject cfo = new CsvFileObject(f, schemaPath);
+                            result.add(cfo);
+                            logger.log(Level.INFO, "Added " + toString());
+                        });
+                if (result.size() == 0)
+                    throw new RuntimeException("No such files");
+            } else if (which == 2) {
+                CsvFileObject file = new CsvFileObject(
+                        Paths.get(dataFolder, smallFile),
+                        Paths.get(dataFolder, smallFileSchema));
+                result.add(file);
+            } else if (which == 3) {
+                CsvFileObject file = new CsvFileObject(
+                        Paths.get(dataFolder, vropsFile),
+                        Paths.get(dataFolder, vropsSchema));
+                result.add(file);
+            } else {
+                throw new RuntimeException("Unexpected file");
             }
-            result = new ParallelDataSet<CsvFileObject>(fileNames);
-        } else if (which == 2) {
-            CsvFileObject file = new CsvFileObject(
-                    Paths.get(dataFolder, smallFile),
-                    Paths.get(dataFolder, smallFileSchema));
-            result = new LocalDataSet<CsvFileObject>(file);
-        } else if (which == 3) {
-            CsvFileObject file = new CsvFileObject(
-                    Paths.get(dataFolder, vropsFile),
-                    Paths.get(dataFolder, vropsSchema));
-            result = new LocalDataSet<CsvFileObject>(file);
-        } else {
-            throw new RuntimeException("Unexpected file");
-        }
-        FileNamesTarget target = new FileNamesTarget(result);
-        RpcReply reply = request.createReply(target);
-        reply.send(session);
-        request.syncCloseSession(session);
+            return result;
+        };
+
+        Converters.checkNull(this.emptyDataset);
+        this.runFlatMap(this.emptyDataset, mapper, FileNamesTarget::new, request, session);
     }
 
     @Override

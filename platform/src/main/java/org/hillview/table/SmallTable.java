@@ -33,8 +33,8 @@ import java.io.Serializable;
 public class SmallTable
         extends BaseTable
         implements Serializable, IJson {
-    protected final Schema schema;
-    protected final int rowCount;
+    final Schema schema;
+    private final int rowCount;
 
     @Override
     public Schema getSchema() {
@@ -46,7 +46,7 @@ public class SmallTable
      * @param columns  List of columns.
      * @param schema   The schema of the result; it must match the list of columns.
      */
-    protected SmallTable(final Iterable<IColumn> columns, final Schema schema) {
+    SmallTable(final Iterable<IColumn> columns, final Schema schema) {
         super(columns);
         this.rowCount = BaseTable.columnSize(this.columns.values());
         final Schema s = new Schema();
@@ -117,10 +117,10 @@ public class SmallTable
         result.add("schema", this.schema.toJsonTree());
         result.addProperty("rowCount", this.rowCount);
         RowSnapshot[] rows = this.getRows();
-        JsonArray jrows = new JsonArray();
+        JsonArray jRows = new JsonArray();
         for (RowSnapshot rs : rows)
-            jrows.add(rs.toJsonTree());
-        result.add("rows", jrows);
+            jRows.add(rs.toJsonTree());
+        result.add("rows", jRows);
         return result;
     }
 }

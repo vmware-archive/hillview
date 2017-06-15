@@ -365,7 +365,7 @@ implements IHtmlElement, HillviewDataView {
             for (let i = 0; i <= 100; i += 4) {
                 gradient.append("stop")
                     .attr("offset", i + "%")
-                    .attr("stop-color", d3.interpolatePlasma(i / 100))
+                    .attr("stop-color", HeatMapView.colorMap(i / 100))
                     .attr("stop-opacity", 1)
             }
 
@@ -459,15 +459,19 @@ implements IHtmlElement, HillviewDataView {
         this.summary.textContent = summary;
     }
 
+    static colorMap(d: number): string {
+        return d3.interpolatePlasma(d);
+    }
+
     color(d: number, max: number): string {
         if (max == 1)
             return "black";
         if (d == 0)
             throw "Zero should not have a color";
         if (this.logScale)
-            return d3.interpolatePlasma(Math.log(d) / Math.log(max));
+            return HeatMapView.colorMap(Math.log(d) / Math.log(max));
         else
-            return d3.interpolatePlasma(d / max);
+            return HeatMapView.colorMap(d / max);
     }
 
     static invert(v: number, scale: AnyScale, kind: ContentsKind, allStrings: string[]): string {

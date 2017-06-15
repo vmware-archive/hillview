@@ -36,9 +36,9 @@ import java.util.Arrays;
  */
 public class SortedStringsConverter implements IStringConverter {
     // Last boundary is inclusive
-    protected final String[] boundaries;
-    protected final int min;
-    protected final int max;
+    private final String[] boundaries;
+    private final int min;
+    private final int max;
 
     public SortedStringsConverter(String[] boundaries, int min, int max) {
         this.min = min;

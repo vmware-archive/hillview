@@ -24,16 +24,16 @@ import java.util.Random;
 
 
 public class RandomnessTest {
-    final Random randomPRG = new Random();
-    final MersenneTwister MT_PRG = new MersenneTwister();
+    private final Random randomPRG = new Random();
+    private final MersenneTwister MT_PRG = new MersenneTwister();
 
     @Test
     public void testRandomnessPerf() {
-        int iterationnNum = 100; // number of iterations
+        int iterationNum = 100; // number of iterations
         int length = 100000; // number of random numbers to generate
 
-        TestUtil.runPerfTest((k) -> totalRandom(length), iterationnNum);
-        TestUtil.runPerfTest((k) -> totalMT(length), iterationnNum);
+        TestUtil.runPerfTest((k) -> totalRandom(length), iterationNum);
+        TestUtil.runPerfTest((k) -> totalMT(length), iterationNum);
     }
 
     private void totalRandom(int k) {
