@@ -37,18 +37,18 @@ public class Issue46Test {
         // Grabbing the Column
         String colName = bigTable.getSchema().getColumnNames().iterator().next();
         IColumn column  = bigTable.getColumn(colName);
-        IMembershipSet memset = bigTable.getMembershipSet();
-        IRowIterator iter = memset.getIterator();
+        IMembershipSet memSet = bigTable.getMembershipSet();
+        IRowIterator iter = memSet.getIterator();
         // All seem to work fine
         System.out.println(" printing the double " + column.asDouble(iter.getNextRow(), null));
         System.out.println(" printing the double " + column.asDouble(iter.getNextRow(), null));
         // Splitting the table
         List<ITable> tabList = TestTables.splitTable(bigTable, 10000);
         // Grabbing the column from  the sub-tables
-        ITable subtable = tabList.iterator().next();
-        IColumn column1 = subtable.getColumn(colName);
-        IMembershipSet memset1 = subtable.getMembershipSet();
-        IRowIterator iter1 = memset1.getIterator();
+        ITable subTable = tabList.iterator().next();
+        IColumn column1 = subTable.getColumn(colName);
+        IMembershipSet memSet1 = subTable.getMembershipSet();
+        IRowIterator iter1 = memSet1.getIterator();
         //Null Exception!!!
         Assert.assertNotNull(column1.asDouble(iter1.getNextRow(), null));
         Assert.assertNotNull(column1.asDouble(iter1.getNextRow(), null));

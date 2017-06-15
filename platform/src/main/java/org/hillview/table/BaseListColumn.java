@@ -29,9 +29,9 @@ import java.util.BitSet;
  */
 public abstract class BaseListColumn extends BaseColumn {
     // These should not be public, but they are made public for simplifying testing.
-    public final int LogSegmentSize = 10;
+    final int LogSegmentSize = 10;
     public final int SegmentSize = 1 << this.LogSegmentSize;
-    public final int SegmentMask = this.SegmentSize - 1;
+    final int SegmentMask = this.SegmentSize - 1;
 
     @Nullable
     private ArrayList<BitSet> missing = null;
@@ -74,7 +74,7 @@ public abstract class BaseListColumn extends BaseColumn {
 
     public abstract void parseAndAppendString(@Nullable String s);
 
-    protected void parseEmptyOrNull() {
+    void parseEmptyOrNull() {
         if (!this.description.allowMissing)
             throw new RuntimeException("Appending missing data to column " + this.toString());
         this.appendMissing();

@@ -55,7 +55,7 @@ public class DoubleArrayTest {
         return col;
     }
 
-    void checkContents(DoubleArrayColumn col) {
+    private void checkContents(DoubleArrayColumn col) {
         for (int i = 0; i < col.sizeInRows(); i++) {
             assertEquals(Math.sqrt(i+1), col.getDouble(i), 1e-3);
             if ((i % 5) == 0)

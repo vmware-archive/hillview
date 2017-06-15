@@ -21,8 +21,8 @@ package org.hillview.dataset;
 import org.hillview.dataset.api.IMap;
 
 public class CompositeMap<T, S, V> implements IMap<T, V> {
-    final IMap<T, S> first;
-    final IMap<S, V> second;
+    private final IMap<T, S> first;
+    private final IMap<S, V> second;
 
     public CompositeMap(IMap<T, S> first, IMap<S, V> second) {
         this.first = first;

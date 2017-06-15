@@ -169,27 +169,27 @@ public class SparseMembership implements IMembershipSet {
         final IMembershipSet sampleSet = baseMap.sample(sizeEstimationSampleSize);
         if (sampleSet.getSize() == 0)
             return 0;
-        int esize = 0;
+        int eSize = 0;
         final IRowIterator iter = sampleSet.getIterator();
         int curr = iter.getNextRow();
         while (curr >= 0) {
             if (filter.test(curr))
-                esize++;
+                eSize++;
             curr = iter.getNextRow();
         }
-        return (baseMap.getSize() * esize) / sampleSet.getSize();
+        return (baseMap.getSize() * eSize) / sampleSet.getSize();
     }
 
     private class SparseIterator implements IRowIterator {
-        final private IntSet.IntSetIterator mysetIterator;
+        final private IntSet.IntSetIterator mySetIterator;
 
         private SparseIterator(final IntSet mySet) {
-            this.mysetIterator = mySet.getIterator();
+            this.mySetIterator = mySet.getIterator();
         }
 
         @Override
         public int getNextRow() {
-            return this.mysetIterator.getNext();
+            return this.mySetIterator.getNext();
         }
     }
 }

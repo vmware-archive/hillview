@@ -32,7 +32,7 @@ public class StringArrayTest {
     private final int size = 100;
     private final ColumnDescription desc = new ColumnDescription("test", ContentsKind.String, true);
 
-    void checkContents(StringArrayColumn col) {
+    private void checkContents(StringArrayColumn col) {
         for (int i = 0; i < col.sizeInRows(); i++) {
             if ((i % 5) == 0) {
                 assertTrue(col.isMissing(i));

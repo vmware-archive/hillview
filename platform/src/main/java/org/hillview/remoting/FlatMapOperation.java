@@ -16,17 +16,22 @@
  *
  */
 
-package org.hillview.table.api;
+package org.hillview.remoting;
+
+import org.hillview.dataset.api.IMap;
+
+import java.io.Serializable;
+import java.util.List;
 
 /**
- * Exception signalling an illegal access to a missing item.
+ * Wrap an IMap object to be sent to a remote node for a flatMap operation.
+ * @param <T> Input type of the map function
+ * @param <S> Output type of the map function
  */
-class MissingException extends RuntimeException {
-    public MissingException(final String message) {
-        super(message);
-    }
+public class FlatMapOperation<T, S> extends RemoteOperation implements Serializable {
+    public final IMap<T, List<S>> mapper;
 
-    public MissingException(final IColumn column, final int rowIndex) {
-        super("Accessing missing item in " + column.getDescription().name + ", row " + rowIndex);
+    public FlatMapOperation(final IMap<T, List<S>> mapper) {
+        this.mapper = mapper;
     }
 }

@@ -68,7 +68,7 @@ public class DataSetTest {
     }
 
     @Test
-    public void IdempotenceTest() {
+    public void idempotenceTest() {
         int[] count = new int[1];
         count[0] = 0;
 
@@ -113,10 +113,10 @@ public class DataSetTest {
     public void parallelDataSetTest() {
         final LocalDataSet<Integer> ld1 = new LocalDataSet<Integer>(4);
         final LocalDataSet<Integer> ld2 = new LocalDataSet<Integer>(5);
-        final ArrayList<IDataSet<Integer>> elems = new ArrayList<IDataSet<Integer>>(2);
-        elems.add(ld1);
-        elems.add(ld2);
-        final ParallelDataSet<Integer> par = new ParallelDataSet<>(elems);
+        final ArrayList<IDataSet<Integer>> elements = new ArrayList<IDataSet<Integer>>(2);
+        elements.add(ld1);
+        elements.add(ld2);
+        final ParallelDataSet<Integer> par = new ParallelDataSet<>(elements);
         final Increment increment = new Increment();
 
         final IDataSet<Integer> r1 = par.blockingMap(increment);

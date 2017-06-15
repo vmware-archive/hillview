@@ -31,9 +31,9 @@ import javax.annotation.Nullable;
  */
 
 public abstract class BaseHist1D implements IHistogram1D, IJson {
-    final protected IBucketsDescription1D bucketDescription;
+    final IBucketsDescription1D bucketDescription;
 
-    public BaseHist1D(final IBucketsDescription1D bucketDescription) {
+    BaseHist1D(final IBucketsDescription1D bucketDescription) {
         this.bucketDescription = bucketDescription;
     }
 

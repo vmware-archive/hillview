@@ -25,7 +25,7 @@ public class RankInTable {
      * @param brs The rowSnapshot whose rank we wish to compute.
      * @return Its rank in the table, which is the number of rows that are strictly smaller.
      */
-    public int getRank(BaseRowSnapshot brs) {
+    private int getRank(BaseRowSnapshot brs) {
         int rank = 0;
         IRowIterator rowIt = this.table.getRowIterator();
         VirtualRowSnapshot vrs = new VirtualRowSnapshot(this.table);

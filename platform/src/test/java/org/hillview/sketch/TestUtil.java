@@ -27,7 +27,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class TestUtil {
+class TestUtil {
 
     private static void Percentiles(final long[] R1) {
         Arrays.sort(R1);
@@ -76,7 +76,7 @@ public class TestUtil {
         return new SmallTable(columns);
     }
 
-    static public IColumn getRandDateArray(int size, String colName) {
+    private static IColumn getRandDateArray(int size, String colName) {
         final ColumnDescription desc = new ColumnDescription(colName, ContentsKind.Date, false);
         LocalDateTime[] data = new LocalDateTime[size];
         final Randomness rn = new Randomness();
@@ -87,7 +87,7 @@ public class TestUtil {
         return new DateArrayColumn(desc, data);
     }
 
-    static public IColumn getStringArray(int size, String colName) {
+    private static IColumn getStringArray(int size, String colName) {
         final ColumnDescription desc = new ColumnDescription(colName, ContentsKind.String, false);
         final StringArrayColumn col = new StringArrayColumn(desc, size);
         final String[] firstNames = new String[] {"Emma", "Noah", "Liam", "Olivia", "Mason",
@@ -100,7 +100,7 @@ public class TestUtil {
         return col;
     }
 
-    public static DoubleArrayColumn generateDoubleArray(final int size, String colName) {
+    private static DoubleArrayColumn generateDoubleArray(final int size, String colName) {
         final ColumnDescription desc = new ColumnDescription(colName, ContentsKind.Double, false);
         final DoubleArrayColumn col = new DoubleArrayColumn(desc, size);
         Randomness rn = new Randomness();

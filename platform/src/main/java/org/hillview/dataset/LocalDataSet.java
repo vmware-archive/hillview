@@ -22,6 +22,8 @@ import org.hillview.dataset.api.*;
 import rx.Observable;
 import rx.schedulers.Schedulers;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Callable;
 
 /**
@@ -85,7 +87,26 @@ public class LocalDataSet<T> implements IDataSet<T> {
         final Observable<IDataSet<S>> mapped = Observable.fromCallable(callable);
         // Wrap the produced data in a PartialResult
         Observable<PartialResult<IDataSet<S>>> data = mapped.map(PartialResult::new);
-        // Concatenate the zero with the actual data produced
+        if (this.separateThread)
+            data = data.observeOn(Schedulers.computation());
+        return data;
+    }
+
+    @Override
+    public <S> Observable<PartialResult<IDataSet<S>>> flatMap(IMap<T, List<S>> mapper) {
+        // Actual map computation performed lazily when observable is subscribed to.
+        final Callable<IDataSet<S>> callable = () -> {
+            List<S> list = mapper.apply(LocalDataSet.this.data);
+            List<IDataSet<S>> locals = new ArrayList<IDataSet<S>>();
+            for (S s: list) {
+                IDataSet<S> ds = new LocalDataSet<S>(s);
+                locals.add(ds);
+            }
+            return (IDataSet<S>) new ParallelDataSet<S>(locals);
+        };
+        final Observable<IDataSet<S>> mapped = Observable.fromCallable(callable);
+        // Wrap the produced data in a PartialResult
+        Observable<PartialResult<IDataSet<S>>> data = mapped.map(PartialResult::new);
         if (this.separateThread)
             data = data.observeOn(Schedulers.computation());
         return data;

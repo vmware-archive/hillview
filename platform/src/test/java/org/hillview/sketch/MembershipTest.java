@@ -85,10 +85,10 @@ public class MembershipTest {
         }
         assertTrue(IS.size() == IS1.size());
         final IMembershipSet mySample = MS.sample(20);
-        final IRowIterator siter = mySample.getIterator();
-        int curr = siter.getNextRow();
+        final IRowIterator sIter = mySample.getIterator();
+        int curr = sIter.getNextRow();
         while (curr >= 0) {
-            curr = siter.getNextRow();
+            curr = sIter.getNextRow();
         }
     }
 }

@@ -27,7 +27,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public class CsvFileObject {
+class CsvFileObject {
     private final Path dataPath;
     @Nullable
     private final Path schemaPath;

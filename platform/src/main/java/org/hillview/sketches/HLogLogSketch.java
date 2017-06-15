@@ -8,13 +8,13 @@ import org.hillview.utils.Randomness;
 import javax.annotation.Nullable;
 
 public class HLogLogSketch implements ISketch<ITable, HLogLog> {
-    final String colName;
-    final int seed; //seed for the hash function of the HLogLog
+    private final String colName;
+    private final int seed; //seed for the hash function of the HLogLog
     /**
      * the log of the #bytes used by each data structure. Should be in 4...16.
      * More space means more accuracy. A space of 10-14 is recommended.
      **/
-    final int logSpaceSize;
+    private final int logSpaceSize;
     public HLogLogSketch(String colName) {
         this.colName = colName;
         this.seed = new Randomness().nextInt();

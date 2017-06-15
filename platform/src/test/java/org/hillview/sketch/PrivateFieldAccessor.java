@@ -25,7 +25,7 @@ import java.lang.reflect.Field;
 /**
  * Provides access to private members in classes for testing.
  */
-public class PrivateFieldAccessor {
+class PrivateFieldAccessor {
     public static Object getPrivateField (Object o, String fieldName) {
         final Field fields[] = o.getClass().getDeclaredFields();
         for (Field field : fields) {

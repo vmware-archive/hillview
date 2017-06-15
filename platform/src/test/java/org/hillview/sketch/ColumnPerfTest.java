@@ -30,24 +30,24 @@ public class ColumnPerfTest {
     public void testColumnGetInt() {
         final IntArrayColumn col;
         final int size = 1000000;
-        final int testnum = 10;
+        final int testNum = 10;
         final ColumnDescription desc = new ColumnDescription("test", ContentsKind.Integer, false);
 
         col = new IntArrayColumn(desc, size);
         for (int i=0; i < size; i++)
             col.set(i, i);
-        final Consumer<Integer>  fcall = tmp -> {
+        final Consumer<Integer>  fCall = tmp -> {
             for (int i = 0; i < size; i++)
                 tmp += col.getInt(i);
         };
-        TestUtil.runPerfTest(fcall,testnum);
-        final int[] Rcol = new int[size];
+        TestUtil.runPerfTest(fCall,testNum);
+        final int[] rCol = new int[size];
         for (int i=0; i < size; i++)
-            Rcol[i]=i;
-        final Consumer<Integer> dcall = tmp -> {
+            rCol[i]=i;
+        final Consumer<Integer> dCall = tmp -> {
             for (int i = 0; i < size; i++)
-                tmp += Rcol[i];
+                tmp += rCol[i];
         };
-        TestUtil.runPerfTest(dcall, testnum);
+        TestUtil.runPerfTest(dCall, testNum);
     }
 }

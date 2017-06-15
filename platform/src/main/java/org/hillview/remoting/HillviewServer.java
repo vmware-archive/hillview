@@ -105,6 +105,29 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     }
 
     /**
+     * Implementation of flatMap() service in hillview.proto.
+     */
+    @Override
+    @SuppressWarnings("unchecked")
+    public void flatMap(final Command command, final StreamObserver<PartialResponse>
+            responseObserver) {
+        try {
+            if (!this.checkValidIdsIndex(command.getIdsIndex(), responseObserver)) {
+                return;
+            }
+            final byte[] bytes = command.getSerializedOp().toByteArray();
+            final FlatMapOperation mapOp = SerializationUtils.deserialize(bytes);
+            final Observable<PartialResult<IDataSet>> observable =
+                    this.dataSets.get(command.getIdsIndex())
+                            .flatMap(mapOp.mapper);
+            final Subscription sub = observable.subscribe(this.createSubscriber(mapOp.id, responseObserver));
+            this.operationToObservable.put(mapOp.id, sub);
+        } catch (final Exception e) {
+            responseObserver.onError(e);
+        }
+    }
+
+    /**
      * Implementation of sketch() service in hillview.proto.
      */
     @Override

@@ -45,7 +45,7 @@ public class SampleCorrTest {
         int size = 20000;
         int range = 5000;
         int numCols = 4;
-        int lowdim = 100;
+        int lowDim = 100;
         double p = 0.01;
         ITable data = TestTables.getCorrelatedCols(size, numCols, range);
         ParallelDataSet<ITable> all = TestTables.makeParallel(data, 100);
@@ -65,7 +65,7 @@ public class SampleCorrTest {
         end = System.currentTimeMillis();
         PerfRegressionTest.comparePerf("SampleIP", end - start);
         start = System.currentTimeMillis();
-        JLSketch jl = new JLSketch(cn, lowdim);
+        JLSketch jl = new JLSketch(cn, lowDim);
         ICorrelation jlp = all.blockingSketch(jl);
         end = System.currentTimeMillis();
         PerfRegressionTest.comparePerf("JL", end - start);

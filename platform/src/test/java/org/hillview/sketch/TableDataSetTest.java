@@ -64,10 +64,10 @@ public class TableDataSetTest {
         }
         final LocalDataSet<ITable> ld1 = new LocalDataSet<ITable>(randTable1);
         final LocalDataSet<ITable> ld2 = new LocalDataSet<ITable>(randTable2);
-        final ArrayList<IDataSet<ITable>> elems = new ArrayList<IDataSet<ITable>>(2);
-        elems.add(ld1);
-        elems.add(ld2);
-        final ParallelDataSet<ITable> par = new ParallelDataSet<ITable>(elems);
+        final ArrayList<IDataSet<ITable>> elements = new ArrayList<IDataSet<ITable>>(2);
+        elements.add(ld1);
+        elements.add(ld2);
+        final ParallelDataSet<ITable> par = new ParallelDataSet<ITable>(elements);
         final SampleQuantileSketch sqSketch = new SampleQuantileSketch(cso, resolution, size);
         final SampleList sl = par.blockingSketch(sqSketch);
         IndexComparator comp = cso.getComparator(sl.table);

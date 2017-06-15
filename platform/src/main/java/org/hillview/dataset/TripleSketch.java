@@ -25,9 +25,9 @@ import org.hillview.utils.Converters;
 import javax.annotation.Nullable;
 
 public class TripleSketch<T, R1, R2, R3> implements ISketch<T, Triple<R1, R2, R3>> {
-    final ISketch<T, R1> first;
-    final ISketch<T, R2> second;
-    final ISketch<T, R3> third;
+    private final ISketch<T, R1> first;
+    private final ISketch<T, R2> second;
+    private final ISketch<T, R3> third;
 
     public TripleSketch(ISketch<T, R1> first, ISketch<T, R2> second, ISketch<T, R3> third) {
         this.first = first;

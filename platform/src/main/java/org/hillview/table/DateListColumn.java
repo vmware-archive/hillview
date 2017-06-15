@@ -38,7 +38,7 @@ public class DateListColumn
         extends BaseListColumn
         implements IDateColumn {
     private final ArrayList<LocalDateTime[]> segments;
-    static final Logger logger = Logger.getLogger(DateListColumn.class.getName());
+    private static final Logger logger = Logger.getLogger(DateListColumn.class.getName());
 
     /**
      * Used when parsing; this is set the first time when parsing a date
@@ -52,7 +52,7 @@ public class DateListColumn
      * and the spec is unclear about this.
      * @see <a href="http://stackoverflow.com/questions/27454025/unable-to-obtain-localdatetime-from-temporalaccessor-when-parsing-localdatetime">Parsing LocalDateTime</a>
      */
-    boolean parseAsDate;
+    private boolean parseAsDate;
 
     public DateListColumn(final ColumnDescription desc) {
         super(desc);
@@ -122,7 +122,7 @@ public class DateListColumn
                 put("^\\d{8}\\s\\d{6}$", "yyyyMMdd HHmmss");
     }};
 
-    static final DateTimeFormatter[] toTry = {
+    private static final DateTimeFormatter[] toTry = {
             DateTimeFormatter.BASIC_ISO_DATE,
             DateTimeFormatter.ISO_LOCAL_DATE,
             DateTimeFormatter.ISO_OFFSET_DATE,
@@ -140,7 +140,7 @@ public class DateListColumn
     };
 
     @SuppressWarnings("UnnecessaryContinue")
-    protected void guessParseFormat(String s) {
+    private void guessParseFormat(String s) {
         boolean[] asDate = {false, true};
 
         for (boolean b : asDate) {

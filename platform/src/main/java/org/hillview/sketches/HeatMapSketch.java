@@ -25,13 +25,15 @@ import org.hillview.utils.Converters;
 import javax.annotation.Nullable;
 
 public class HeatMapSketch implements ISketch<ITable, HeatMap> {
-    final IBucketsDescription1D bucketDescD1;
-    final IBucketsDescription1D bucketDescD2;
-    final String colNameD1;
-    final String colNameD2;
-    @Nullable final IStringConverter converterD1;
-    @Nullable final IStringConverter converterD2;
-    final double rate;
+    private final IBucketsDescription1D bucketDescD1;
+    private final IBucketsDescription1D bucketDescD2;
+    private final String colNameD1;
+    private final String colNameD2;
+    @Nullable
+    private final IStringConverter converterD1;
+    @Nullable
+    private final IStringConverter converterD2;
+    private final double rate;
 
     public HeatMapSketch(IBucketsDescription1D bucketDesc1, IBucketsDescription1D bucketDesc2,
                          @Nullable IStringConverter converter1, @Nullable IStringConverter converter2,

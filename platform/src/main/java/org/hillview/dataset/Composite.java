@@ -24,8 +24,8 @@ import org.hillview.dataset.api.ISketch;
 import javax.annotation.Nullable;
 
 public class Composite<T, S, R> implements ISketch<T, R> {
-    final IMap<T, S> map;
-    final ISketch<S, R> sketch;
+    private final IMap<T, S> map;
+    private final ISketch<S, R> sketch;
 
     public Composite(IMap<T, S> map, ISketch<S, R> sketch) {
         this.map = map;

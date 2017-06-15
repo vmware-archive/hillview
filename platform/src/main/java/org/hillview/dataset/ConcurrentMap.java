@@ -22,8 +22,8 @@ import org.hillview.dataset.api.IMap;
 import org.hillview.dataset.api.Pair;
 
 public class ConcurrentMap<T, S1, S2> implements IMap<T, Pair<S1, S2>> {
-    final IMap<T, S1> first;
-    final IMap<T, S2> second;
+    private final IMap<T, S1> first;
+    private final IMap<T, S2> second;
 
     public ConcurrentMap(IMap<T, S1> first, IMap<T, S2> second) {
         this.first = first;
