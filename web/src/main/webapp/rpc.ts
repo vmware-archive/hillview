@@ -19,7 +19,7 @@
  */
 
 import Rx = require('rx');
-import RxDOM = require('rx-dom');
+//import RxDOM = require('rx-dom');
 import Observer = Rx.Observer;
 import Observable = Rx.Observable;
 import {ErrorReporter, ConsoleErrorReporter} from "./errReporter";
@@ -69,9 +69,7 @@ export class RpcRequest implements ICancellable {
     readonly requestId: number;
     cancelled: boolean;
     closed:    boolean;  // i.e., not opened
-    socket:    any; // result of Rx.DOM.fromWebSocket.
-                    // Should be Rx.Subject<MessageEvent>, but this does not typecheck
-                    // the this.socket.onNext method with a String argument.
+    socket:    WebSocket;
     rpcTime: Date; /* Time when RPC was initiated.  It may be set explicitly
                       by users, and then it can be used to measured operations
                       that span multiple RPCs */
@@ -114,16 +112,10 @@ export class RpcRequest implements ICancellable {
         this.rpcTime = start;
     }
 
-    private onOpen() : void {
-        this.closed = false;
-        let reqStr : string = this.serialize();
-        console.log("Sending message " + reqStr);
-        this.socket.onNext(reqStr);
-    }
-
     public cancel(): boolean {
         if (!this.closed) {
-            this.socket.onCompleted();
+            this.closed = true;
+            this.socket.close();
             return true;
         }
         return false;
@@ -133,26 +125,52 @@ export class RpcRequest implements ICancellable {
     // onReply is an observer which is invoked for
     // each result received by the streaming RPC.
     public invoke<T>(onReply : Observer<T>) : void {
-        // Invoked when the socked is opened
-        let openObserver = Rx.Observer.create(() => this.onOpen());
-        let closeObserver = Rx.Observer.create(
-            function() {
-                this.closed = true;
-                //console.log('socket closing');
-            },
-            function(e: CloseEvent) {
-                if (e == null)
-                    return;
-
-                // TODO: the onError method does not seem to be ever called.
-                let reason = "Unknown reason";
-                // See http://tools.ietf.org/html/rfc6455#section-7.4.1
-                if (e.code == 1000)
+        try {
+            // Create a web socked and send the request
+            if (this.rpcTime == null)
+                this.rpcTime = new Date();
+            this.socket = new WebSocket(RpcRequestUrl);
+            this.socket.onerror = function (ev: ErrorEvent) {
+                console.log("socket error " + ev);
+                let msg = ev.message;
+                if (msg == null)
+                    msg = "Error communicating to server.";
+                onReply.onError(msg);
+            };
+            this.socket.onmessage = function (r: MessageEvent) {
+                // parse json and invoke onReply.onNext
+                console.log('reply received: ' + r.data);
+                let reply = <RpcReply>JSON.parse(r.data);
+                if (reply.isError) {
+                    onReply.onError(reply.result);
+                } else {
+                    try {
+                        let response = <T>JSON.parse(reply.result);
+                        onReply.onNext(response);
+                    } catch (e) {
+                        onReply.onError(e);
+                    }
+                }
+            };
+            this.socket.onopen = () => {
+                this.closed = false;
+                let reqStr: string = this.serialize();
+                console.log("Sending message " + reqStr);
+                this.socket.send(reqStr);
+            }
+            this.socket.onclose = (e: CloseEvent) => {
+                console.log("Socket closed");
+                if (e.code == 1000) {
+                    onReply.onCompleted();
                     return; // normal
-                else if (e.code == 1001)
+                }
+
+                let reason = "Unknown reason.";
+                // See http://tools.ietf.org/html/rfc6455#section-7.4.1
+                if (e.code == 1001)
                     reason = "Endpoint disconnected.";
                 else if (e.code == 1002)
-                    reason = "Protocol error";
+                    reason = "Protocol error.";
                 else if (e.code == 1003)
                     reason = "Incorrect data.";
                 else if (e.code == 1004)
@@ -175,38 +193,8 @@ export class RpcRequest implements ICancellable {
                     reason = "Cannot verify server TLS certificate.";
                 // else unknown
                 onReply.onError(reason);
-            },
-            function() {}
-        );
-
-        try {
-            // Create a web socked and send the request
-            if (this.rpcTime == null)
-                this.rpcTime = new Date();
-            this.socket = RxDOM.DOM.fromWebSocket(RpcRequestUrl, null, openObserver, closeObserver);
-            this.socket.onclose =
-            //console.log('socket created');
-            this.socket.subscribe(
-                // onNext -> parse json and invoke onReply.onNext
-                function (r: MessageEvent) {
-                    console.log('reply received: ' + r.data);
-                    let reply = <RpcReply>JSON.parse(r.data);
-                    if (reply.isError) {
-                        onReply.onError(reply.result);
-                    } else {
-                        try {
-                            let response = <T>JSON.parse(reply.result);
-                            onReply.onNext(response);
-                        } catch (e) {
-                            onReply.onError(e);
-                        }
-                    }
-                },
-                // onError -> invoke onReply.onError
-                function (e: MessageEvent) { onReply.onError(e.type); },
-                // onCompleted -> invoke onReply.onCompleted
-                function () { onReply.onCompleted(); }
-            );
+                onReply.onCompleted();
+            }
         } catch (e) {
             onReply.onError(e);
         }
