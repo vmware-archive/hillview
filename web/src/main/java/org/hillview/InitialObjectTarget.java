@@ -17,9 +17,14 @@
 
 package org.hillview;
 
+import com.google.common.net.HostAndPort;
 import org.hillview.dataset.LocalDataSet;
+import org.hillview.dataset.ParallelDataSet;
+import org.hillview.dataset.RemoteDataSet;
+import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IMap;
+import org.hillview.remoting.ClusterDescription;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
@@ -30,18 +35,47 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.stream.Stream;
 
 public class InitialObjectTarget extends RpcTarget {
+    private static final int HILLVIEW_DEFAULT_PORT = 3569;
+    private static final String LOCALHOST = "127.0.0.1";
+
     @Nullable
-    private final IDataSet<Empty> emptyDataset;
+    private IDataSet<Empty> emptyDataset = null;
 
     InitialObjectTarget() {
         Empty empty = new Empty();
-        this.emptyDataset = new LocalDataSet<Empty>(empty);
+        final List<HostAndPort> hostAndPorts = Collections.singletonList(
+            HostAndPort.fromParts(LOCALHOST, HILLVIEW_DEFAULT_PORT)
+        );
+        final ClusterDescription desc = new ClusterDescription(hostAndPorts);
+        this.initialize(desc);
+    }
+
+    private void initialize(final ClusterDescription description) {
+        final int numServers = description.getServerList().size();
+        assert numServers > 0;
+        if (numServers > 1) {
+            System.out.println("Creating PDS");
+            final ArrayList<IDataSet<Empty>> emptyDatasets = new ArrayList<>(numServers);
+            description.getServerList().forEach(server -> emptyDatasets.add(new RemoteDataSet<>(server)));
+            this.emptyDataset = new ParallelDataSet<>(emptyDatasets);
+        }
+        else {
+            System.out.println("Creating LDS");
+            this.emptyDataset = new LocalDataSet<>(Empty.getInstance());
+        }
+    }
+
+    @HillviewRpc
+    void initializeCluster(RpcRequest request, Session session) {
+        ClusterDescription description = request.parseArgs(ClusterDescription.class);
+        this.initialize(description);
     }
 
     @SuppressWarnings("RedundantIfStatement")
