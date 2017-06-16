@@ -18,7 +18,10 @@
 
 package org.hillview.table.api;
 
+import net.openhft.hashing.LongHashFunction;
 import org.hillview.utils.Converters;
+import org.hillview.utils.HashUtil;
+
 import javax.annotation.Nullable;
 import java.time.Duration;
 
@@ -58,5 +61,13 @@ public interface IDurationColumn extends IColumn {
                 }
             }
         };
+    }
+
+    @Override
+    default long hashCode64(int rowIndex, long seed) {
+        if (isMissing(rowIndex))
+            throw new MissingException(this, rowIndex);
+        final Duration tmp = this.getDuration(rowIndex);
+        return LongHashFunction.xx(seed).hashLong(tmp.toMillis());
     }
 }

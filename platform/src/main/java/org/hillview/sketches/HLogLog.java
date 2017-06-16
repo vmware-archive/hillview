@@ -15,14 +15,14 @@ public class HLogLog {
     private final int regNum; //number of registers
     private final int logregNum;
     private final byte[] registers;
-    private final int seed;
+    private final long seed;
 
     /**
      * @param logRegNum the logarithm of the number of registers. should be in 4...16
      *        Going beyond 16 would make the data structure big for no good reason.
      *        Setting logRegNum in at 10-12 should give roughly 2% accuracy most of the time
      */
-    public HLogLog(int logRegNum, int seed) {
+    public HLogLog(int logRegNum, long seed) {
         HLogLog.checkSpaceValid(logRegNum);
         this.regNum = 1 << logRegNum;
         this.registers = new byte[this.regNum];
@@ -31,13 +31,13 @@ public class HLogLog {
     }
 
     /**
-     * adds the int 'value' to the data structure.
+     * adds the long 'itemHash' to the data structure.
      * Uses the first bits to identify the register and then counts trailing zeros
      * @param itemHash already assumed to be a random hash of the item
      */
-    private void add(int itemHash) {
-        int index =  itemHash >>> (Integer.SIZE - this.logregNum);
-        byte zeros = (byte) (Integer.numberOfTrailingZeros(itemHash) + 1);
+    private void add(long itemHash) {
+        int index =  (int) itemHash >>> (Long.SIZE - this.logregNum);
+        byte zeros = (byte) (Long.numberOfTrailingZeros(itemHash) + 1);
         if (zeros > this.registers[index])
             this.registers[index] = zeros;
     }
@@ -51,9 +51,9 @@ public class HLogLog {
         int currRow = myIter.getNextRow();
         while (currRow >= 0) {
             if (!column.isMissing(currRow)) {
-                int value = Converters.checkNull(column.getObject(currRow)).hashCode();
-                this.add(HashUtil.murmurHash3(this.seed, value));
-            }
+                long value = column.hashCode64(currRow, seed);
+                this.add(value);
+             }
             currRow = myIter.getNextRow();
         }
     }
@@ -96,14 +96,6 @@ public class HLogLog {
         else if (rawEstimate > (Integer.MAX_VALUE / 30 ))
             result = (long) (- Math.pow(2,32) * Math.log(1 - (rawEstimate /  Math.pow(2,32))));
         return result;
-
-        /*if ((rawEstimate >= (2.5 * this.regNum)) || (zeroRegs == 0)) {
-            result =  Math.round(rawEstimate);
-        }
-        else if (rawEstimate < (Integer.MAX_VALUE / 30 )) {
-            return Math.round(this.regNum * (Math.log(this.regNum / (double) zeroRegs)));
-        }
-        else return (long) (- Math.pow(2,32) * Math.log(1 - (rawEstimate /  Math.pow(2,32))));*/
     }
 
     /**

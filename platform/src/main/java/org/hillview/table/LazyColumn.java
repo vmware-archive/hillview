@@ -103,4 +103,9 @@ public class LazyColumn implements IColumn {
     public IndexComparator getComparator() {
         return this.loadIfNecessary().getComparator();
     }
+
+    @Override
+    public long hashCode64(int rowIndex, long seed) {
+        return this.loadIfNecessary().hashCode64(rowIndex, seed);
+    }
 }

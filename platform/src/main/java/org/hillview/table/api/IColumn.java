@@ -116,4 +116,9 @@ public interface IColumn {
     }
 
     default ContentsKind getKind() { return this.getDescription().kind;}
+
+    /**
+     * @return A hash code for the item in the rowIndex. Exception if it is missing.
+     */
+    long hashCode64(int rowIndex, long seed);
 }

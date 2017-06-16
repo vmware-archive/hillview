@@ -18,6 +18,7 @@
 
 package org.hillview.table;
 
+import net.openhft.hashing.LongHashFunction;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IStringConverter;
 import org.hillview.table.api.IndexComparator;
@@ -177,5 +178,10 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
             k++;
         }
         return merged;
+    }
+
+    @Override
+    public long hashCode64(int rowIndex, long seed) {
+        return LongHashFunction.xx(seed).hashLong((long) this.asDouble(rowIndex,null));
     }
 }
