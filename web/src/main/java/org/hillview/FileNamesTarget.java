@@ -19,7 +19,9 @@ package org.hillview;
 
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IMap;
+import org.hillview.maps.LoadFileMapper;
 import org.hillview.table.api.ITable;
+import org.hillview.utils.CsvFileObject;
 
 import javax.websocket.Session;
 import java.io.IOException;
@@ -27,18 +29,6 @@ import java.util.logging.Level;
 
 public class FileNamesTarget extends RpcTarget {
     private final IDataSet<CsvFileObject> files;
-
-    class LoadFileMapper implements IMap<CsvFileObject, ITable> {
-        @Override
-        public ITable apply(CsvFileObject csvFileObject) {
-            try {
-                logger.log(Level.INFO, "Loading " + csvFileObject);
-                return csvFileObject.loadTable();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
 
     FileNamesTarget(IDataSet<CsvFileObject> files) {
         this.files = files;

@@ -45,7 +45,7 @@ import static org.hillview.remoting.HillviewServer.DEFAULT_IDS_INDEX;
  * with a wrong value for either entry of the tuple will result in an exception.
  */
 public class RemoteDataSet<T> implements IDataSet<T> {
-    private final static int TIMEOUT = 1000;  // TODO: import via config file
+    private final static int TIMEOUT = 10000;  // TODO: import via config file
     private final int remoteHandle;
     private final HostAndPort serverEndpoint;
     private final HillviewServerGrpc.HillviewServerStub stub;
@@ -84,6 +84,7 @@ public class RemoteDataSet<T> implements IDataSet<T> {
 
     @Override
     public <S> Observable<PartialResult<IDataSet<S>>> flatMap(IMap<T, List<S>> mapper) {
+        System.out.println("Flat map called");
         final FlatMapOperation<T, S> mapOp = new FlatMapOperation<T, S>(mapper);
         final byte[] serializedOp = SerializationUtils.serialize(mapOp);
         final Command command = Command.newBuilder()
@@ -93,7 +94,7 @@ public class RemoteDataSet<T> implements IDataSet<T> {
         final PublishSubject<PartialResult<IDataSet<S>>> subj = PublishSubject.create();
         final StreamObserver<PartialResponse> responseObserver = new NewDataSetObserver<S>(subj);
         return subj.doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
-                .map(command, responseObserver))
+                .flatMap(command, responseObserver))
                 .doOnUnsubscribe(() -> this.unsubscribe(mapOp.id));
     }
 

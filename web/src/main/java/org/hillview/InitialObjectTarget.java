@@ -18,28 +18,18 @@
 package org.hillview;
 
 import com.google.common.net.HostAndPort;
-import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IDataSet;
-import org.hillview.dataset.api.IMap;
+import org.hillview.maps.LoadCsvFileMapper;
 import org.hillview.remoting.ClusterDescription;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
-import java.io.IOException;
-import java.nio.file.FileVisitOption;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.stream.Stream;
 
 public class InitialObjectTarget extends RpcTarget {
     private static final int HILLVIEW_DEFAULT_PORT = 3569;
@@ -50,9 +40,9 @@ public class InitialObjectTarget extends RpcTarget {
 
     InitialObjectTarget() {
         Empty empty = new Empty();
-        final List<HostAndPort> hostAndPorts = Collections.singletonList(
-            HostAndPort.fromParts(LOCALHOST, HILLVIEW_DEFAULT_PORT)
-        );
+        final List<HostAndPort> hostAndPorts = new ArrayList<>();
+        hostAndPorts.add(HostAndPort.fromParts(LOCALHOST, HILLVIEW_DEFAULT_PORT));
+//        hostAndPorts.add(HostAndPort.fromParts(LOCALHOST, HILLVIEW_DEFAULT_PORT + 1));
         final ClusterDescription desc = new ClusterDescription(hostAndPorts);
         this.initialize(desc);
     }
@@ -67,8 +57,8 @@ public class InitialObjectTarget extends RpcTarget {
             this.emptyDataset = new ParallelDataSet<>(emptyDatasets);
         }
         else {
-            System.out.println("Creating LDS");
-            this.emptyDataset = new LocalDataSet<>(Empty.getInstance());
+            System.out.println("Creating RDS");
+            this.emptyDataset = new RemoteDataSet<Empty>(description.getServerList().get(0));
         }
     }
 
@@ -78,68 +68,12 @@ public class InitialObjectTarget extends RpcTarget {
         this.initialize(description);
     }
 
-    @SuppressWarnings("RedundantIfStatement")
     @HillviewRpc
     void prepareFiles(RpcRequest request, Session session) {
         int which = request.parseArgs(Integer.class);
 
-        IMap<Empty, List<CsvFileObject>> mapper = (IMap<Empty, List<CsvFileObject>>) unused -> {
-            Path currentRelativePath = Paths.get("");
-            String cwd = currentRelativePath.toAbsolutePath().toString();
-            System.out.println("Current directory is: " + cwd);
-
-            String dataFolder = "../data/";
-            String smallFileSchema = "On_Time.schema";
-            String smallFile = "On_Time_Sample.csv";
-            String schemaFile = "short.schema";
-
-            String vropsFile = "vrops.csv";
-            String vropsSchema = "vrops.schema";
-
-            Path schemaPath = Paths.get(dataFolder, schemaFile);
-
-            final List<CsvFileObject> result = new ArrayList<CsvFileObject>();
-            if (which >= 0 && which <= 1) {
-                int limit = which == 0 ? 3 : 1;
-                Path folder = Paths.get(dataFolder);
-                Stream<Path> files;
-                try {
-                    files = Files.walk(folder, 1, FileVisitOption.FOLLOW_LINKS);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-                files.filter(f -> {
-                    String filename = f.getFileName().toString();
-                    if (!filename.endsWith(".csv")) return false;
-                    if (!filename.startsWith("2016")) return false;
-                    return true;
-                }).limit(limit)
-                        .sorted(Comparator.comparing(Path::toString))
-                        .forEach(f -> {
-                            CsvFileObject cfo = new CsvFileObject(f, schemaPath);
-                            result.add(cfo);
-                            logger.log(Level.INFO, "Added " + toString());
-                        });
-                if (result.size() == 0)
-                    throw new RuntimeException("No such files");
-            } else if (which == 2) {
-                CsvFileObject file = new CsvFileObject(
-                        Paths.get(dataFolder, smallFile),
-                        Paths.get(dataFolder, smallFileSchema));
-                result.add(file);
-            } else if (which == 3) {
-                CsvFileObject file = new CsvFileObject(
-                        Paths.get(dataFolder, vropsFile),
-                        Paths.get(dataFolder, vropsSchema));
-                result.add(file);
-            } else {
-                throw new RuntimeException("Unexpected file");
-            }
-            return result;
-        };
-
         Converters.checkNull(this.emptyDataset);
-        this.runFlatMap(this.emptyDataset, mapper, FileNamesTarget::new, request, session);
+        this.runFlatMap(this.emptyDataset, new LoadCsvFileMapper(which), FileNamesTarget::new, request, session);
     }
 
     @Override
