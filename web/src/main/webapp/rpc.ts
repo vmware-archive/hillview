@@ -19,7 +19,6 @@
  */
 
 import Rx = require('rx');
-//import RxDOM = require('rx-dom');
 import Observer = Rx.Observer;
 import Observable = Rx.Observable;
 import {ErrorReporter, ConsoleErrorReporter} from "./errReporter";
