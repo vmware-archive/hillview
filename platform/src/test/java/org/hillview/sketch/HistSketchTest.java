@@ -43,8 +43,8 @@ public class HistSketchTest {
                 myTable.getSchema().getColumnNames().iterator().next(), null);
         Histogram1DLight result = mySketch.create(myTable);
         int size = 0;
-        int bucketnum = result.getNumOfBuckets();
-        for (int i = 0; i < bucketnum; i++)
+        int bucketNum = result.getNumOfBuckets();
+        for (int i = 0; i < bucketNum; i++)
             size += result.getCount(i);
         assertEquals(size + result.getMissingData() + result.getOutOfRange(),
                 myTable.getMembershipSet().getSize());
@@ -62,8 +62,8 @@ public class HistSketchTest {
         final Histogram1DLight hdl = all.blockingSketch(new Hist1DLightSketch(buckets, colName,
                 null, 0.5));
         int size = 0;
-        int bucketnum = hdl.getNumOfBuckets();
-        for (int i = 0; i < bucketnum; i++)
+        int bucketNum = hdl.getNumOfBuckets();
+        for (int i = 0; i < bucketNum; i++)
             size += hdl.getCount(i);
         assertEquals(size + hdl.getMissingData() + hdl.getOutOfRange(), (int)
                 (bigTable.getMembershipSet().getSize() * 0.5));

@@ -15,7 +15,7 @@ public class CDFTest {
     private final LocalDataSet<ITable> dataSet;
     private final String colName;
 
-    public CDFTest () {
+    public CDFTest() {
         final int bigSize = 30000000;
         final int numCols = 1;
         final SmallTable bigTable = getIntTable(bigSize, numCols);
@@ -25,7 +25,7 @@ public class CDFTest {
                this.dataSet.blockingSketch(new BasicColStatSketch(this.colName, null));
     }
 
-    Histogram1DLight prepareCDF(int width, int height, boolean useSampling) {
+    private Histogram1DLight prepareCDF(int width, int height, boolean useSampling) {
         BucketsDescriptionEqSize bDec  =
                 new BucketsDescriptionEqSize(this.colStat.getMin(), this.colStat.getMax(), width);
         double sampleSize  =  2 * height * height * width;
@@ -37,7 +37,7 @@ public class CDFTest {
         return tmpHist.createCDF();
     }
 
-    Histogram1D prepareHist(int width, int height, int barWidth, boolean useSampling) {
+    private Histogram1D prepareHist(int width, int height, int barWidth, boolean useSampling) {
         int bucketNum = width / barWidth;
         BucketsDescriptionEqSize bDec  =
                 new BucketsDescriptionEqSize(this.colStat.getMin(), this.colStat.getMax(), bucketNum);

@@ -24,8 +24,8 @@ import org.hillview.table.api.*;
  * This is a simple table held entirely in RAM.
  */
 public class Table extends BaseTable {
-    protected final Schema schema;
-    protected final IMembershipSet members;
+    private final Schema schema;
+    private final IMembershipSet members;
 
     /**
      * Create an empty table with the specified schema.

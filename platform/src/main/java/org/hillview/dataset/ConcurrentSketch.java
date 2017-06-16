@@ -25,8 +25,8 @@ import org.hillview.utils.Converters;
 import javax.annotation.Nullable;
 
 public class ConcurrentSketch<T, R1, R2> implements ISketch<T, Pair<R1, R2>> {
-    final ISketch<T, R1> first;
-    final ISketch<T, R2> second;
+    private final ISketch<T, R1> first;
+    private final ISketch<T, R2> second;
 
     public ConcurrentSketch(ISketch<T, R1> first, ISketch<T, R2> second) {
         this.first = first;

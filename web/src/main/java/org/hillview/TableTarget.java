@@ -46,7 +46,7 @@ public final class TableTarget extends RpcTarget {
     }
 
     static class NextKArgs {
-        RecordOrder order = new RecordOrder();
+        final RecordOrder order = new RecordOrder();
         @Nullable
         Object[] firstRow;
         int rowsOnScreen;
@@ -89,11 +89,11 @@ public final class TableTarget extends RpcTarget {
 
         HistogramParts prepare() {
             IStringConverter converter = null;
-            if (bucketBoundaries != null)
+            if (this.bucketBoundaries != null)
                 converter = new SortedStringsConverter(
-                        bucketBoundaries, (int)Math.ceil(min), (int)Math.floor(max));
-            BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(min, max, bucketCount);
-            Hist1DLightSketch sketch = new Hist1DLightSketch(buckets, columnName, converter);
+                        this.bucketBoundaries, (int)Math.ceil(this.min), (int)Math.floor(this.max));
+            BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(this.min, this.max, this.bucketCount);
+            Hist1DLightSketch sketch = new Hist1DLightSketch(buckets, this.columnName, converter);
             return new HistogramParts(buckets, converter, sketch);
         }
     }
@@ -173,7 +173,7 @@ public final class TableTarget extends RpcTarget {
 
         @Nullable
         IStringConverter getConverter() {
-            if (firstValue == null)
+            if (this.firstValue == null)
                 return null;
             return new SortedStringsConverter(
                         new String[] { this.firstValue, this.lastValue }, this.firstIndex, this.lastIndex);
@@ -234,6 +234,33 @@ public final class TableTarget extends RpcTarget {
     void filterRange(RpcRequest request, Session session) {
         ColumnAndRange info = request.parseArgs(ColumnAndRange.class);
         RangeFilter filter = new RangeFilter(info);
+        FilterMap fm = new FilterMap(filter);
+        this.runMap(this.table, fm, TableTarget::new, request, session);
+    }
+
+    static class Range2DFilter implements TableFilter, Serializable {
+        final RangeFilter first;
+        final RangeFilter second;
+
+        Range2DFilter(ColPair args) {
+            this.first = new RangeFilter(Converters.checkNull(args.first));
+            this.second = new RangeFilter(Converters.checkNull(args.second));
+        }
+
+        public void setTable(ITable table) {
+            this.first.setTable(table);
+            this.second.setTable(table);
+        }
+
+        public boolean test(int rowIndex) {
+            return this.first.test(rowIndex) && this.second.test(rowIndex);
+        }
+    }
+
+    @HillviewRpc
+    void filter2DRange(RpcRequest request, Session session) {
+        ColPair info = request.parseArgs(ColPair.class);
+        Range2DFilter filter = new Range2DFilter(info);
         FilterMap fm = new FilterMap(filter);
         this.runMap(this.table, fm, TableTarget::new, request, session);
     }

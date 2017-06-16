@@ -20,9 +20,6 @@ package org.hillview.table;
 
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IDateColumn;
-import org.hillview.table.api.MissingException;
-import org.hillview.utils.HashUtil;
-
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 

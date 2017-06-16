@@ -29,7 +29,7 @@ import java.time.LocalDateTime;
 abstract class BaseColumn implements IColumn {
     final ColumnDescription description;
 
-    protected void checkKind(ContentsKind kind) {
+    void checkKind(ContentsKind kind) {
         if (this.description.kind != kind)
             throw new RuntimeException("Expected " + kind + " but have " + this.getDescription().kind);
     }

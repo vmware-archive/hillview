@@ -14,7 +14,7 @@ public class ExactFreqSketchTest {
     @SuppressWarnings("SuspiciousMethodCalls")
     // Idea is complaining about the hMap.get calls below,
     // but it also complains if I add explicit casts.
-    public String getFrequencies(ITable table, int maxSize) {
+    private String getFrequencies(ITable table, int maxSize) {
         FreqKSketch fk = new FreqKSketch(table.getSchema(), maxSize);
         FreqKList fkList = fk.create(table);
         StringBuilder sb = new StringBuilder();

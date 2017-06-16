@@ -88,7 +88,7 @@ public class Bucket1D implements IJson {
      * both buckets to have objects of different types.
      */
     public Bucket1D union(final Bucket1D otherBucket) {
-        long ucount = this.count + otherBucket.count;
+        long uCount = this.count + otherBucket.count;
         double uMinValue, uMaxValue;
         Object uMinObject, uMaxObject;
         if (this.isEmpty())
@@ -110,6 +110,6 @@ public class Bucket1D implements IJson {
             uMaxValue = otherBucket.maxValue;
             uMaxObject = otherBucket.maxObject;
         }
-        return new Bucket1D(ucount, uMinValue, uMaxValue, uMinObject, uMaxObject);
+        return new Bucket1D(uCount, uMinValue, uMaxValue, uMinObject, uMaxObject);
     }
 }

@@ -32,9 +32,9 @@ import java.io.Writer;
 import java.nio.file.Path;
 
 public class CsvFileWriter {
-    protected char separator = ',';
-    protected boolean writeHeaderRow = true;
-    protected final Path file;
+    private char separator = ',';
+    private boolean writeHeaderRow = true;
+    private final Path file;
 
     public CsvFileWriter(Path file) { this.file = file; }
 

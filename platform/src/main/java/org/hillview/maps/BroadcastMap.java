@@ -28,7 +28,7 @@ import org.hillview.dataset.api.IMap;
  * @param <S> Type of data broadcast.
  */
 public class BroadcastMap<T, S> implements IMap<T, S> {
-    protected final S data;
+    private final S data;
 
     public BroadcastMap(S data) {
         this.data = data;

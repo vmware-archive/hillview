@@ -25,14 +25,14 @@ import javax.websocket.Session;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public final class RpcRequest {
+final class RpcRequest {
     private static final Logger LOGGER =
             Logger.getLogger(RpcRequest.class.getName());
 
     private final int requestId;
     final String objectId;
     public final String method;
-    public final String arguments;  // A JSON string
+    private final String arguments;  // A JSON string
 
     public RpcRequest(JsonElement element) {
         final JsonObject obj = element.getAsJsonObject();
@@ -51,7 +51,7 @@ public final class RpcRequest {
         return this.createReply(userResult.toJsonTree());
     }
 
-    RpcReply createReply(String json) {
+    private RpcReply createReply(String json) {
         return new RpcReply(this.requestId, json, false);
     }
 

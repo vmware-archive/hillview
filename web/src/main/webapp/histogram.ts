@@ -17,7 +17,7 @@
 
 import {
     IHtmlElement, HillviewDataView, FullPage, Renderer, significantDigits,
-    Point, Size, formatNumber, percent, KeyCodes
+    Point, Size, formatNumber, percent, KeyCodes, translateString
 } from "./ui";
 import d3 = require('d3');
 import {RemoteObject, ICancellable, PartialResult} from "./rpc";
@@ -26,7 +26,7 @@ import {histogram} from "d3-array";
 import {BaseType} from "d3-selection";
 import {ScaleLinear, ScaleTime} from "d3-scale";
 import {ContextMenu, DropDownMenu} from "./menu";
-import {Converters, Pair} from "./util";
+import {Converters, Pair, reorder} from "./util";
 
 /*
 // same as a Java class
@@ -75,12 +75,14 @@ export interface ColumnAndRange {
     bucketBoundaries: string[];
 }
 
+export type AnyScale = ScaleLinear<number, number> | ScaleTime<number, number>;
+
 export class HistogramView extends RemoteObject
     implements IHtmlElement, HillviewDataView {
     public static readonly maxBucketCount: number = 40;
     public static readonly minBarWidth: number = 5;
     public static readonly minChartWidth = 200;  // pixels
-    public static readonly chartHeight = 400;  // pixels
+    public static readonly canvasHeight = 400;  // pixels
 
     private topLevel: HTMLElement;
     public static readonly margin = {
@@ -99,7 +101,7 @@ export class HistogramView extends RemoteObject
     private cdfLabel: HTMLElement;
     protected chartDiv: HTMLElement;
     protected summary: HTMLElement;
-    private xScale: ScaleLinear<number, number> | ScaleTime<number, number>;
+    private xScale: AnyScale;
     private yScale: ScaleLinear<number, number>;
     protected chartResolution: Size;
     // When plotting integer values we increase the data range by .5 on the left and right.
@@ -241,11 +243,6 @@ export class HistogramView extends RemoteObject
         return this.topLevel;
     }
 
-    // Generates a string that encodes a call to the SVG translate method
-    static translateString(x: number, y: number): string {
-        return "translate(" + String(x) + ", " + String(y) + ")";
-    }
-
     public refresh(): void {
         if (this.currentData == null)
             return;
@@ -275,7 +272,7 @@ export class HistogramView extends RemoteObject
         let chartWidth = width - HistogramView.margin.left - HistogramView.margin.right;
         if (chartWidth < HistogramView.minChartWidth)
             chartWidth = HistogramView.minChartWidth;
-        this.chartResolution = { width: chartWidth, height: HistogramView.chartHeight };
+        this.chartResolution = { width: chartWidth, height: HistogramView.canvasHeight };
 
         let counts = h.buckets;
         let bucketCount = counts.length;
@@ -310,7 +307,7 @@ export class HistogramView extends RemoteObject
 
         // Everything is drawn on top of the canvas.
         // The canvas includes the margins
-        let canvasHeight = HistogramView.chartHeight +
+        let canvasHeight = HistogramView.canvasHeight +
             HistogramView.margin.top + HistogramView.margin.bottom;
         this.canvas = d3.select(this.chartDiv)
             .append("svg")
@@ -326,12 +323,12 @@ export class HistogramView extends RemoteObject
         // The chart uses a fragment of the canvas offset by the margins
         this.chart = this.canvas
             .append("g")
-            .attr("transform", HistogramView.translateString(
+            .attr("transform", translateString(
                 HistogramView.margin.left, HistogramView.margin.top));
 
         this.yScale = d3.scaleLinear()
             .domain([0, max])
-            .range([HistogramView.chartHeight, 0]);
+            .range([HistogramView.canvasHeight, 0]);
         let yAxis = d3.axisLeft(this.yScale)
             .tickFormat(d3.format(".2s"));
 
@@ -386,7 +383,7 @@ export class HistogramView extends RemoteObject
 
         this.canvas.append("text")
             .text(cd.name)
-            .attr("transform", HistogramView.translateString(
+            .attr("transform", translateString(
                 chartWidth / 2, HistogramView.margin.top/2))
             .attr("text-anchor", "middle");
 
@@ -401,7 +398,7 @@ export class HistogramView extends RemoteObject
 
         // draw CDF curve
         this.canvas.append("path")
-            .attr("transform", HistogramView.translateString(
+            .attr("transform", translateString(
                 HistogramView.margin.left, HistogramView.margin.top))
             .datum(cdfData)
             .attr("stroke", "blue")
@@ -412,12 +409,12 @@ export class HistogramView extends RemoteObject
         let bars = this.chart.selectAll("g")
             .data(counts)
             .enter().append("g")
-            .attr("transform", (d, i) => HistogramView.translateString(i * barWidth, 0));
+            .attr("transform", (d, i) => translateString(i * barWidth, 0));
 
         bars.append("rect")
             .attr("y", d => this.yScale(d))
             .attr("fill", "grey")
-            .attr("height", d => HistogramView.chartHeight - this.yScale(d))
+            .attr("height", d => HistogramView.canvasHeight - this.yScale(d))
             .attr("width", barWidth - 1);
 
         bars.append("text")
@@ -435,7 +432,7 @@ export class HistogramView extends RemoteObject
         if (xAxis != null) {
             this.chart.append("g")
                 .attr("class", "x-axis")
-                .attr("transform", HistogramView.translateString(0, HistogramView.chartHeight))
+                .attr("transform", translateString(0, HistogramView.canvasHeight))
                 .call(xAxis);
         }
 
@@ -443,7 +440,7 @@ export class HistogramView extends RemoteObject
         this.xDot = this.canvas
             .append("circle")
             .attr("r", dotRadius)
-            .attr("cy", HistogramView.chartHeight + HistogramView.margin.top)
+            .attr("cy", HistogramView.canvasHeight + HistogramView.margin.top)
             .attr("cx", 0)
             .attr("fill", "blue");
         this.yDot = this.canvas
@@ -569,46 +566,46 @@ export class HistogramView extends RemoteObject
         this.selectionCompleted(this.selectionOrigin.x, x);
     }
 
+    public static invertToNumber(v: number, scale: AnyScale, kind: ContentsKind): number {
+        let inv = scale.invert(v);
+        let result: number = 0;
+        if (kind == "Integer" || kind == "Double" || kind == "Category") {
+            result = <number>inv;
+        } else if (kind == "Date") {
+            result = Converters.doubleFromDate(<Date>inv);
+        }
+        return result;
+    }
+
     selectionCompleted(xl: number, xr: number): void {
         if (this.xScale == null)
             return;
 
-        let x0 = this.xScale.invert(xl - HistogramView.margin.left);
-        let x1 = this.xScale.invert(xr - HistogramView.margin.left);
+        let kind = this.currentData.description.kind;
+        let x0 = HistogramView.invertToNumber(xl - HistogramView.margin.left, this.xScale, kind);
+        let x1 = HistogramView.invertToNumber(xr - HistogramView.margin.left, this.xScale, kind);
 
         // selection could be done in reverse
-        if (x0 > x1) {
-            let tmp = x0;
-            x0 = x1;
-            x1 = tmp;
+        let min: number;
+        let max: number;
+        [min, max] = reorder(x0, x1);
+        if (min > max) {
+            this.page.reportError("No data selected");
+            return;
         }
 
-        let min: number = 0;
-        let max: number = 0;
-        if (this.currentData.description.kind == "Integer" ||
-            this.currentData.description.kind == "Double" ||
-            this.currentData.description.kind == "Category") {
-            min = Math.ceil(<number>x0);
-            max = Math.floor(<number>x1);
-            if (min > max) {
-                this.page.reportError("No data selected");
-                return;
-            }
-        } else if (this.currentData.description.kind == "Date") {
-            min = Converters.doubleFromDate(<Date>x0);
-            max = Converters.doubleFromDate(<Date>x1);
-        } // TODO: handle more types
-
         let boundaries: string[] = null;
-        if (this.currentData.allStrings != null)
+        if (this.currentData.allStrings != null) {
             // it's enough to just send the first and last element for filtering.
-            boundaries = [this.currentData.allStrings[min], this.currentData.allStrings[max]];
+            boundaries = [this.currentData.allStrings[Math.ceil(min)],
+                this.currentData.allStrings[Math.floor(max)]];
+        }
         let range: ColumnAndRange = {
             min: min,
             max: max,
             columnName: this.currentData.description.name,
-            cdfBucketCount: this.chartResolution.width,
-            bucketCount: this.currentData.histogram.buckets.length,
+            cdfBucketCount: null,  // unused for this call
+            bucketCount: null,  // unused for this call
             bucketBoundaries: boundaries
         };
 
@@ -634,7 +631,7 @@ export class HistogramView extends RemoteObject
     public static getRenderingSize(page: FullPage): Size {
         let width = page.getWidthInPixels();
         width = width - HistogramView.margin.left - HistogramView.margin.right;
-        let height = HistogramView.chartHeight - HistogramView.margin.top - HistogramView.margin.bottom;
+        let height = HistogramView.canvasHeight - HistogramView.margin.top - HistogramView.margin.bottom;
         return { width: width, height: height };
     }
 
@@ -673,15 +670,9 @@ export class HistogramView extends RemoteObject
     }
 }
 
-class TableStub extends RemoteObject {
-    constructor(remoteObjectId: string) {
-        super(remoteObjectId);
-    }
-}
-
 // After filtering we obtain a handle to a new table
 export class FilterReceiver extends Renderer<string> {
-    private stub: TableStub;
+    private stub: RemoteObject;
 
     constructor(protected columnDescription: ColumnDescription,
                 protected tableSchema: Schema,
@@ -695,7 +686,7 @@ export class FilterReceiver extends Renderer<string> {
     public onNext(value: PartialResult<string>): void {
         super.onNext(value);
         if (value.data != null)
-            this.stub = new TableStub(value.data);
+            this.stub = new RemoteObject(value.data);
     }
 
     public onCompleted(): void {

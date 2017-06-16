@@ -23,6 +23,6 @@ import org.hillview.table.api.IColumn;
 /**
  * A column loader is a class which knows how to load a column.
  */
-public interface IColumnLoader {
+interface IColumnLoader {
     IColumn load();
 }

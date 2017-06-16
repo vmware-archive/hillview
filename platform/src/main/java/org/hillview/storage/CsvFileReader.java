@@ -74,18 +74,19 @@ public class CsvFileReader {
         public Schema schema;
     }
 
-    protected final Path filename;
-    protected final CsvConfiguration configuration;
-    protected int actualColumnCount;
+    private final Path filename;
+    private final CsvConfiguration configuration;
     @Nullable
-    protected Schema actualSchema;
-    protected int currentRow;
-    protected int currentColumn;
+    private Schema actualSchema;
+    private int currentRow;
+    private int currentColumn;
     @Nullable
-    protected BaseListColumn[] columns;
-    protected long currentField;
+    private BaseListColumn[] columns;
+    private long currentField;
     @Nullable
-    protected String currentToken;
+    private String currentToken;
+    @SuppressWarnings("FieldCanBeLocal")
+    private int actualColumnCount;
 
     public CsvFileReader(final Path path, CsvConfiguration configuration) {
         this.filename = path;
@@ -180,7 +181,7 @@ public class CsvFileReader {
         }
     }
 
-    protected void append(String[] data) {
+    private void append(String[] data) {
         try {
             Converters.checkNull(this.columns);
             int columnCount = this.columns.length;
@@ -211,7 +212,7 @@ public class CsvFileReader {
         }
     }
 
-    protected String errorMessage() {
+    private String errorMessage() {
         String columnName = "";
         if (this.columns != null) {
             columnName = (this.currentColumn < this.columns.length) ?
@@ -223,11 +224,11 @@ public class CsvFileReader {
                 columnName + (this.currentToken != null ? " token " + this.currentToken : "");
     }
 
-    protected void error(String message) {
+    private void error(String message) {
         throw new RuntimeException(this.errorMessage() + ": " + message);
     }
 
-    protected void error(Exception ex) {
+    private void error(Exception ex) {
         throw new RuntimeException(this.errorMessage(), ex);
     }
 }

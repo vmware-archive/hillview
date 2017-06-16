@@ -35,7 +35,7 @@ public class MonoidTopKTest {
     private final int inpSize = 10000;
     private final MonoidTopK<Integer> myTopK = new MonoidTopK<Integer>(this.maxSize, Integer::compare);
 
-    void checkSorted(SortedMap<Integer, Integer> t) {
+    private void checkSorted(SortedMap<Integer, Integer> t) {
         boolean first = true;
         int previous = 0;
         for (int k : t.keySet()) {

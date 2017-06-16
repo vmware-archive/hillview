@@ -43,12 +43,12 @@ import java.util.List;
 import java.util.UUID;
 
 public class CsvReaderTest {
-    static final String dataFolder = "../data";
-    static final String csvFile = "On_Time_Sample.csv";
-    static final String schemaFile = "On_Time.schema";
+    private static final String dataFolder = "../data";
+    private static final String csvFile = "On_Time_Sample.csv";
+    private static final String schemaFile = "On_Time.schema";
 
     @Nullable
-    ITable readTable(String folder, String file) throws IOException {
+    private ITable readTable(String folder, String file) throws IOException {
         Path path = Paths.get(folder, file);
         CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
         config.allowFewerColumns = false;
@@ -84,7 +84,7 @@ public class CsvReaderTest {
         System.out.printf("Total memory %d, Free memory %d.", mem, freeMem);*/
     }
 
-    void writeReadTable(ITable table) throws IOException {
+    private void writeReadTable(ITable table) throws IOException {
         UUID uid = UUID.randomUUID();
         String tmpFileName = uid.toString();
         Path path = Paths.get(".", tmpFileName);

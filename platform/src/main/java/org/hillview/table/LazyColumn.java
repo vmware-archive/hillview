@@ -32,14 +32,14 @@ import java.time.LocalDateTime;
  */
 public class LazyColumn implements IColumn {
     @Nullable
-    protected IColumn actualColumn;
-    protected final IColumnLoader loader;
+    private IColumn actualColumn;
+    private final IColumnLoader loader;
 
     public LazyColumn(IColumnLoader loader) {
         this.loader = loader;
     }
 
-    protected IColumn loadIfNecessary() {
+    private IColumn loadIfNecessary() {
         if (this.actualColumn == null)
             this.actualColumn = this.loader.load();
         return Converters.checkNull(this.actualColumn);

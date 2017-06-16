@@ -73,9 +73,9 @@ public class Bucket2D {
      * both buckets to have objects of different types.
      */
     public Bucket2D union(final Bucket2D otherBucket) {
-        long ucount = this.count + otherBucket.count;
+        long uCount = this.count + otherBucket.count;
         Bucket1D uBucket1 = this.bucket1.union(otherBucket.bucket1);
         Bucket1D uBucket2 = this.bucket2.union(otherBucket.bucket2);
-        return new Bucket2D(ucount, uBucket1, uBucket2);
+        return new Bucket2D(uCount, uBucket1, uBucket2);
     }
 }

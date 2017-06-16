@@ -9,7 +9,7 @@ import javax.annotation.Nullable;
 
 public class HLogLogSketch implements ISketch<ITable, HLogLog> {
     private final String colName;
-    private final int seed; //seed for the hash function of the HLogLog
+    private final long seed; //seed for the hash function of the HLogLog
     /**
      * the log of the #bytes used by each data structure. Should be in 4...16.
      * More space means more accuracy. A space of 10-14 is recommended.
@@ -18,11 +18,11 @@ public class HLogLogSketch implements ISketch<ITable, HLogLog> {
 
     public HLogLogSketch(String colName) {
         this.colName = colName;
-        this.seed = new Randomness().nextInt();
+        this.seed = new Randomness().nextLong();
         this.logSpaceSize = 12;
     }
 
-    public HLogLogSketch(String colName, int logSpaceSize, int seed) {
+    public HLogLogSketch(String colName, int logSpaceSize, long seed) {
         this.colName = colName;
         this.seed = seed;
         HLogLog.checkSpaceValid(logSpaceSize);

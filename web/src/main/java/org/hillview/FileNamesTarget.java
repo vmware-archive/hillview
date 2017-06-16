@@ -23,7 +23,6 @@ import org.hillview.table.api.ITable;
 
 import javax.websocket.Session;
 import java.io.IOException;
-import java.util.function.Function;
 import java.util.logging.Level;
 
 public class FileNamesTarget extends RpcTarget {
@@ -47,9 +46,7 @@ public class FileNamesTarget extends RpcTarget {
 
     @HillviewRpc
     public void loadTable(RpcRequest request, Session session) {
-        LoadFileMapper mapper = new LoadFileMapper();
-        Function<IDataSet<ITable>, RpcTarget> factory = TableTarget::new;
-        this.runMap(this.files, mapper, factory, request, session);
+        this.runMap(this.files, new LoadFileMapper(), TableTarget::new, request, session);
     }
 
     @Override

@@ -77,6 +77,11 @@ export function percent(n: number): string {
     return significantDigits(n) + "%";
 }
 
+// Generates a string that encodes a call to the SVG translate method
+export function translateString(x: number, y: number): string {
+    return "translate(" + String(x) + ", " + String(y) + ")";
+}
+
 export function significantDigits(n: number): string {
     let suffix = "";
     let absn = Math.abs(n);
@@ -268,9 +273,7 @@ export class ProgressBar implements IHtmlElement {
 
     constructor(private manager: ProgressManager,
                 public readonly description: string,
-                private readonly operation: ICancellable) {
-        if (operation == null)
-            throw "Null operation";
+                private readonly operation: ICancellable) {  // may be null
         if (description == null)
             throw "Null label";
         if (manager == null)
@@ -347,7 +350,8 @@ export class ProgressBar implements IHtmlElement {
     }
 
     cancel(): void {
-        this.operation.cancel();
+        if (this.operation != null)
+            this.operation.cancel();
         this.setFinished();
     }
 }

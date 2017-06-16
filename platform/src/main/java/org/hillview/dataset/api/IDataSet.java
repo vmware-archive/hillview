@@ -21,6 +21,8 @@ package org.hillview.dataset.api;
 import org.hillview.dataset.PRDataSetMonoid;
 import rx.Observable;
 
+import java.util.List;
+
 /**
  * A distributed dataset with elements of type T in the leaves.
  * All operations on datasets return observables, which are streams of partial results.
@@ -37,6 +39,15 @@ public interface IDataSet<T> {
      *                be the actual result.  All the other ones should be null.
      */
     <S> Observable<PartialResult<IDataSet<S>>> map(IMap<T, S> mapper);
+
+    /**
+     * Run a computation on the dataset, return another dataset.
+     * @param mapper  Computation to run on the dataset.
+     * @param <S>     Type of result in the result dataset.
+     * @return        A stream of partial results (all IDataSet[S]), only one of which should really
+     *                be the actual result.  All the other ones should be null.
+     */
+    <S> Observable<PartialResult<IDataSet<S>>> flatMap(IMap<T, List<S>> mapper);
 
     /**
      * Run a sketch on a dataset, returning a value.

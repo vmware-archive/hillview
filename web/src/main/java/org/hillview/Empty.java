@@ -15,32 +15,10 @@
  *  limitations under the License.
  */
 
-export interface Pair<T1, T2> {
-    first: T1;
-    second: T2;
-}
+package org.hillview;
 
-export interface Triple<T1, T2, T3> {
-    first: T1;
-    second: T2;
-    third: T3;
-}
-
-// Direct counterpart of corresponding Java class
-export class Converters {
-    public static dateFromDouble(value: number): Date {
-        return new Date(value);
-    }
-
-    public static doubleFromDate(value: Date): number {
-        return value.getTime();
-    }
-}
-
-export function reorder(m: number, n: number): [number, number] {
-    if (m < n)
-        return [m, n];
-    else
-        return [n, m];
-}
-
+/**
+ * This class has no methods.  It is used to bootstrap the initial dataset by creating
+ * an IDataSet[Empty].
+ */
+class Empty {}

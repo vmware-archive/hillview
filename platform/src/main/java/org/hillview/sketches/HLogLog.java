@@ -13,7 +13,7 @@ import org.hillview.utils.HashUtil;
  */
 public class HLogLog {
     private final int regNum; //number of registers
-    private final int logregNum;
+    private final int logRegNum;
     private final byte[] registers;
     private final long seed;
 
@@ -26,7 +26,7 @@ public class HLogLog {
         HLogLog.checkSpaceValid(logRegNum);
         this.regNum = 1 << logRegNum;
         this.registers = new byte[this.regNum];
-        this.logregNum = logRegNum;
+        this.logRegNum = logRegNum;
         this.seed = seed;
     }
 
@@ -36,7 +36,7 @@ public class HLogLog {
      * @param itemHash already assumed to be a random hash of the item
      */
     private void add(long itemHash) {
-        int index =  (int) itemHash >>> (Long.SIZE - this.logregNum);
+        int index =  (int) itemHash >>> (Long.SIZE - this.logRegNum);
         byte zeros = (byte) (Long.numberOfTrailingZeros(itemHash) + 1);
         if (zeros > this.registers[index])
             this.registers[index] = zeros;
@@ -61,7 +61,7 @@ public class HLogLog {
     public HLogLog union(HLogLog otherHLL) {
         if ((otherHLL.regNum != this.regNum) || (otherHLL.seed != this.seed))
             throw new IllegalArgumentException("attempted union of non matching HLogLog classes");
-        HLogLog result = new HLogLog(this.logregNum, this.seed);
+        HLogLog result = new HLogLog(this.logRegNum, this.seed);
         for (int i = 0; i < this.regNum; i++)
             result.registers[i] = (byte) Integer.max(this.registers[i], otherHLL.registers[i]);
         return result;
@@ -72,7 +72,7 @@ public class HLogLog {
      */
     public long distinctItemsEstimator() {
         double alpha;
-        switch (this.logregNum) { //set the parameters for the log log estimator
+        switch (this.logRegNum) { //set the parameters for the log log estimator
             case 4: alpha = 0.673;
                 break;
             case 5: alpha = 0.697;

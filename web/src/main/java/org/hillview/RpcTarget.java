@@ -31,18 +31,19 @@ import javax.websocket.Session;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.List;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public abstract class RpcTarget implements IJson {
+abstract class RpcTarget implements IJson {
     @Nullable // This is null for a very brief time
     String objectId;
     private final HashMap<String, Method> executor;
     static final Logger logger = Logger.getLogger(RpcTarget.class.getName());
 
     @Nullable
-    protected Subscription subscription;
+    private Subscription subscription;
 
     RpcTarget() {
         this.executor = new HashMap<String, Method>();
@@ -142,7 +143,7 @@ public abstract class RpcTarget implements IJson {
         public void onError(Throwable throwable) {
             if (!this.session.isOpen()) return;
 
-            RpcTarget.logger.log(Level.SEVERE, name + " onError");
+            RpcTarget.logger.log(Level.SEVERE, this.name + " onError");
             RpcTarget.logger.log(Level.SEVERE, throwable.toString());
             RpcReply reply = this.request.createReply(throwable);
             reply.send(this.session);
@@ -285,8 +286,34 @@ public abstract class RpcTarget implements IJson {
     <T, S> void
     runMap(IDataSet<T> data, IMap<T, S> map, Function<IDataSet<S>, RpcTarget> factory,
               RpcRequest request, Session session) {
-        // Run the sketch
+        // Run the map
         Observable<PartialResult<IDataSet<S>>> stream = data.map(map);
+        // Knows how to add partial results
+        PRDataSetMonoid<S> monoid = new PRDataSetMonoid<S>();
+        // Prefix sum of the partial results
+        Observable<PartialResult<IDataSet<S>>> add = stream.scan(monoid::add);
+        // Send the partial results back
+        MapResultObserver<S> robs = new MapResultObserver<S>(
+                map.toString(), request, session, factory);
+        Subscription sub = add.subscribe(robs);
+        this.saveSubscription(sub);
+    }
+
+    /**
+     * Runs a flatmap and sends the result directly to the client.
+     * @param data    Dataset to run the map on.
+     * @param map     Map to execute.
+     * @param factory Function which knows how to create a new RpcTarget
+     *                out of the resulting IDataSet.  It is the reference
+     *                to this RpcTarget that is returned to the client.
+     * @param request Web socket request, used to send the reply.
+     * @param session Web socket session.
+     */
+    <T, S> void
+    runFlatMap(IDataSet<T> data, IMap<T, List<S>> map, Function<IDataSet<S>, RpcTarget> factory,
+               RpcRequest request, Session session) {
+        // Run the flatMap
+        Observable<PartialResult<IDataSet<S>>> stream = data.flatMap(map);
         // Knows how to add partial results
         PRDataSetMonoid<S> monoid = new PRDataSetMonoid<S>();
         // Prefix sum of the partial results

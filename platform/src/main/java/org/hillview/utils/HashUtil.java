@@ -41,7 +41,7 @@ public class HashUtil {
         return x;
     }
 
-    public static long murmurHash3(long x) {
+    private static long murmurHash3(long x) {
         x ^= x >>> 33;
         x *= -49064778989728563L;
         x ^= x >>> 33;

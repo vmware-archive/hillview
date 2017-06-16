@@ -40,7 +40,7 @@ public class HeatMap implements Serializable, IJson {
     private final IBucketsDescription1D bucketDescDim2;
     private Histogram1DLight histogramMissingD1; // hist of items that are missing in D2
     private Histogram1DLight histogramMissingD2; // hist of items that are missing in D1
-    private long totalsize;
+    private long totalSize;
 
     public HeatMap(final IBucketsDescription1D buckets1,
                    final IBucketsDescription1D buckets2) {
@@ -77,7 +77,7 @@ public class HeatMap implements Serializable, IJson {
                 int index2 = this.bucketDescDim2.indexOf(val2);
                 if ((index1 >= 0) && (index2 >= 0)) {
                     this.buckets[index1][index2]++;
-                    this.totalsize++;
+                    this.totalSize++;
                 }
                 else this.outOfRange++;
             }
@@ -87,7 +87,7 @@ public class HeatMap implements Serializable, IJson {
 
     public Histogram1DLight getMissingHistogramD1() { return this.histogramMissingD1; }
 
-    public long getSize() { return this.totalsize; }
+    public long getSize() { return this.totalSize; }
 
     public Histogram1DLight getMissingHistogramD2() { return this.histogramMissingD2; }
 
@@ -133,7 +133,7 @@ public class HeatMap implements Serializable, IJson {
                 unionH.buckets[i][j] = this.buckets[i][j] + otherHeatmap.buckets[i][j];
         unionH.missingData = this.missingData + otherHeatmap.missingData;
         unionH.outOfRange = this.outOfRange + otherHeatmap.outOfRange;
-        unionH.totalsize = this.totalsize + otherHeatmap.totalsize;
+        unionH.totalSize = this.totalSize + otherHeatmap.totalSize;
         unionH.histogramMissingD1 = this.histogramMissingD1.union(otherHeatmap.histogramMissingD1);
         unionH.histogramMissingD2 = this.histogramMissingD2.union(otherHeatmap.histogramMissingD2);
         return unionH;

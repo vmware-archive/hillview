@@ -32,10 +32,10 @@ import java.util.function.Consumer;
  * we are using custom equality and hashcode functions.
  */
 public class RowSnapshotSet implements Serializable {
-    protected final Schema schema;
-    protected final UnifiedSetWithHashingStrategy<BaseRowSnapshot> rowSet;
+    private final Schema schema;
+    private final UnifiedSetWithHashingStrategy<BaseRowSnapshot> rowSet;
 
-    public RowSnapshotSet(Schema schema) {
+    private RowSnapshotSet(Schema schema) {
         this.schema = schema;
         HashingStrategy<BaseRowSnapshot> strategy = new HashingStrategy<BaseRowSnapshot>() {
             @Override
@@ -57,7 +57,7 @@ public class RowSnapshotSet implements Serializable {
             this.add(row);
     }
 
-    public void add(final BaseRowSnapshot row) {
+    private void add(final BaseRowSnapshot row) {
         this.rowSet.add(row);
     }
 

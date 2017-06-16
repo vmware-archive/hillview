@@ -16,13 +16,14 @@
  */
 
 import {
-    FullPage, Renderer, IHtmlElement, HillviewDataView, Point, Size, KeyCodes, significantDigits, formatNumber
+    FullPage, Renderer, IHtmlElement, HillviewDataView, Point, Size, KeyCodes,
+    significantDigits, formatNumber, translateString
 } from "./ui";
 import d3 = require('d3');
 import {RemoteObject, ICancellable, PartialResult} from "./rpc";
-import {ColumnDescription, Schema} from "./table";
-import {Pair, Converters} from "./util";
-import {BasicColStats, HistogramView, Histogram1DLight, ColumnAndRange} from "./histogram";
+import {ColumnDescription, Schema, ContentsKind, TableView, RecordOrder, TableRenderer, RangeInfo} from "./table";
+import {Pair, Converters, reorder} from "./util";
+import {BasicColStats, HistogramView, Histogram1DLight, ColumnAndRange, AnyScale} from "./histogram";
 import {BaseType} from "d3-selection";
 import {ScaleLinear, ScaleTime} from "d3-scale";
 import {DropDownMenu, ContextMenu} from "./menu";
@@ -43,12 +44,15 @@ class AxisData {
                        public allStrings: string[])   // used only for categorical histograms
     {}
 
-    public getAxis(length: number, bottom: boolean): any {
+    public getAxis(length: number, bottom: boolean): [any, AnyScale] {
+        // returns a pair scale/axis
         let scale: any = null;
+        let resultScale: AnyScale = null;
         if (this.description.kind == "Double" ||
             this.description.kind == "Integer") {
             scale = d3.scaleLinear()
                 .domain([this.stats.min, this.stats.max]);
+            resultScale = scale;
         } else if (this.description.kind == "Category") {
             let ticks: number[] = [];
             let labels: string[] = [];
@@ -62,7 +66,7 @@ class AxisData {
             scale = d3.scaleOrdinal()
                 .domain(labels)
                 .range(ticks);
-            let mouseScale = d3.scaleLinear()
+            resultScale = d3.scaleLinear()
                 .domain([this.stats.min, this.stats.max]);
             // cast needed probably because the d3 typings are incorrect
         } else if (this.description.kind == "Date") {
@@ -71,13 +75,14 @@ class AxisData {
             scale = d3
                 .scaleTime()
                 .domain([minDate, maxDate]);
+            resultScale = scale;
         }
         if (bottom) {
             scale.range([0, length]);
-            return d3.axisBottom(scale);
+            return [d3.axisBottom(scale), resultScale];
         } else {
             scale.range([length, 0]);
-            return d3.axisLeft(scale);
+            return [d3.axisLeft(scale), resultScale];
         }
     }
 }
@@ -91,7 +96,7 @@ implements IHtmlElement, HillviewDataView {
     public static readonly margin = {
         top: 30,
         right: 30,
-        bottom: 30,
+        bottom: 50,
         left: 40
     };
     protected page: FullPage;
@@ -101,23 +106,28 @@ implements IHtmlElement, HillviewDataView {
     private selectionRectangle: d3.Selection<BaseType, any, BaseType, BaseType>;
     private xLabel: HTMLElement;
     private yLabel: HTMLElement;
-    private cdfLabel: HTMLElement;
+    private valueLabel: HTMLElement;
     protected chartDiv: HTMLElement;
     protected summary: HTMLElement;
     private xScale: ScaleLinear<number, number> | ScaleTime<number, number>;
     private yScale: ScaleLinear<number, number> | ScaleTime<number, number>;
     protected chartResolution: Size;
+    protected pointWidth: number;
+    protected pointHeight: number;
 
     protected currentData: {
         xData: AxisData;
         yData: AxisData;
         missingData: number;
         data: number[][];
+        xPoints: number;
+        yPoints: number;
     };
     private chart: any;  // these are in fact a d3.Selection<>, but I can't make them typecheck
     protected canvas: any;
     private xDot: any;
     private yDot: any;
+    private logScale: boolean;
 
     constructor(remoteObjectId: string, protected tableSchema: Schema, page: FullPage) {
         super(remoteObjectId);
@@ -125,11 +135,14 @@ implements IHtmlElement, HillviewDataView {
         this.topLevel.className = "chart";
         this.topLevel.onkeydown = e => this.keyDown(e);
         this.dragging = false;
+        this.logScale = false;
         this.setPage(page);
         let menu = new DropDownMenu( [
             { text: "View", subMenu: new ContextMenu([
                 { text: "refresh", action: () => { this.refresh(); } },
                 { text: "swap axes", action: () => { this.swapAxes(); } },
+                { text: "table", action: () => { this.showTable(); } },
+                { text: "log/linear scale", action: () => { this.changeScale(); }}
             ]) }
         ]);
 
@@ -166,10 +179,34 @@ implements IHtmlElement, HillviewDataView {
 
         labelCell = row.insertCell(2);
         labelCell.width = infoWidth;
-        this.cdfLabel = document.createElement("div");
-        this.cdfLabel.style.textAlign = "left";
-        labelCell.appendChild(this.cdfLabel);
+        this.valueLabel = document.createElement("div");
+        this.valueLabel.style.textAlign = "left";
+        labelCell.appendChild(this.valueLabel);
         labelCell.className = "noBorder";
+    }
+
+    changeScale(): void {
+        this.logScale = !this.logScale;
+        this.refresh();
+    }
+
+    // show the table corresponding to the data in the heatmap
+    showTable(): void {
+        let table = new TableView(this.remoteObjectId, this.page);
+        table.setSchema(this.tableSchema);
+
+        let order =  new RecordOrder([ {
+            columnDescription: this.currentData.xData.description,
+            isAscending: true
+        }, {
+            columnDescription: this.currentData.yData.description,
+            isAscending: true
+        }]);
+        let rr = table.createNextKRequest(order, null);
+        let page = new FullPage();
+        page.setHillviewDataView(table);
+        this.page.insertAfterMe(page);
+        rr.invoke(new TableRenderer(page, table, rr, false, order));
     }
 
     protected keyDown(ev: KeyboardEvent): void {
@@ -194,7 +231,16 @@ implements IHtmlElement, HillviewDataView {
     }
 
     public swapAxes(): void {
-        // TODO
+        let collector = new Range2DCollector(
+            [this.currentData.yData.description, this.currentData.xData.description],
+            this.tableSchema,
+            this.page,
+            this,
+            null);
+        collector.setValue( {
+            first: this.currentData.yData.stats,
+            second: this.currentData.xData.stats });
+        collector.onCompleted();
     }
 
     public refresh(): void {
@@ -208,28 +254,8 @@ implements IHtmlElement, HillviewDataView {
             0);
     }
 
-    private linspace(start: number, end: number, n: number): number[] {
-        let out = [];
-        let delta = (end - start) / (n - 1);
-
-        let i = 0;
-        while (i < (n - 1)) {
-            out.push(start + (i * delta));
-            i++;
-        }
-
-        out.push(end);
-        return out;
-    }
-
     public updateView(data: number[][], xData: AxisData, yData: AxisData,
                       missingData: number, elapsedMs: number) : void {
-        this.currentData = {
-            data: data,
-            xData: xData,
-            yData: yData,
-            missingData: missingData
-        };
         this.page.reportError("Operation took " + significantDigits(elapsedMs/1000) + " seconds");
         if (data == null || data.length == 0) {
             this.page.reportError("No data to display");
@@ -241,17 +267,25 @@ implements IHtmlElement, HillviewDataView {
             this.page.reportError("No data to display");
             return;
         }
+        this.currentData = {
+            data: data,
+            xData: xData,
+            yData: yData,
+            missingData: missingData,
+            xPoints: xPoints,
+            yPoints: yPoints
+        };
 
         let width = this.page.getWidthInPixels();
-        let height = HistogramView.chartHeight;
+        let canvasHeight = HistogramView.canvasHeight;
 
         let chartWidth = width - HeatMapView.margin.left - HeatMapView.margin.right;
-        let chartHeight = height - HeatMapView.margin.top - HeatMapView.margin.bottom;
+        let chartHeight = canvasHeight - HeatMapView.margin.top - HeatMapView.margin.bottom;
         if (chartWidth < HeatMapView.minChartWidth)
             chartWidth = HeatMapView.minChartWidth;
 
-        let pointWidth = chartWidth / xPoints;
-        let pointHeight = chartHeight / yPoints;
+        this.pointWidth = chartWidth / xPoints;
+        this.pointHeight = chartHeight / yPoints;
 
         this.chartResolution = { width: chartWidth, height: chartHeight };
         if (this.canvas != null)
@@ -264,7 +298,6 @@ implements IHtmlElement, HillviewDataView {
 
         // Everything is drawn on top of the canvas.
         // The canvas includes the margins
-        let canvasHeight = chartHeight + HeatMapView.margin.top + HeatMapView.margin.bottom;
         this.canvas = d3.select(this.chartDiv)
             .append("svg")
             .attr("id", "canvas")
@@ -282,8 +315,9 @@ implements IHtmlElement, HillviewDataView {
             .attr("transform", HeatMapView.translateString(
                 HeatMapView.margin.left, HeatMapView.margin.top));
 
-        let xAxis = this.currentData.xData.getAxis(chartWidth, true);
-        let yAxis = this.currentData.yData.getAxis(chartHeight, false);
+        let xAxis, yAxis;
+        [xAxis, this.xScale] = this.currentData.xData.getAxis(chartWidth, true);
+        [yAxis, this.yScale] = this.currentData.yData.getAxis(chartHeight, false);
 
         interface Dot {
             x: number,
@@ -302,8 +336,8 @@ implements IHtmlElement, HillviewDataView {
                     max = v;
                 if (v != 0) {
                     let rec = {
-                        x: x * pointWidth,
-                        y: chartHeight - (y + 1) * pointHeight,  // +1 because it's the upper corner
+                        x: x * this.pointWidth,
+                        y: chartHeight - (y + 1) * this.pointHeight,  // +1 because it's the upper corner
                         v: v
                     };
                     visible += v;
@@ -311,7 +345,7 @@ implements IHtmlElement, HillviewDataView {
                     dots.push(rec);
                 }
             }
-        if (max == 0) {
+        if (max <= 1) {
             max = 1;
         } else {
             let legendWidth = 300;
@@ -328,14 +362,14 @@ implements IHtmlElement, HillviewDataView {
                 .attr('y2', '0%')
                 .attr('spreadMethod', 'pad');
 
-            for (let i = 0; i <= 100; i++) {
+            for (let i = 0; i <= 100; i += 4) {
                 gradient.append("stop")
                     .attr("offset", i + "%")
-                    .attr("stop-color", d3.interpolatePlasma(i / 100))
+                    .attr("stop-color", HeatMapView.colorMap(i / 100))
                     .attr("stop-opacity", 1)
             }
 
-            let legendRect = legendSvg.append("rect")
+            legendSvg.append("rect")
                 .attr("width", legendWidth)
                 .attr("height", legendHeight)
                 .style("fill", "url(#gradient)")
@@ -343,18 +377,35 @@ implements IHtmlElement, HillviewDataView {
                 .attr("y", 0);
 
             // create a scale and axis for the legend
-            var legendScale = d3.scaleLinear()
-                .domain([0, max])
-                .range([0, legendWidth]);
+            let legendScale;
+            if (this.logScale)
+                legendScale = d3.scaleLog()
+                    .base(2);
+            else
+                legendScale = d3.scaleLinear();
+            legendScale
+                .domain([1, max])
+                .range([0, legendWidth])
+                .ticks(10);
 
-            var legendAxis = d3.axisBottom(legendScale);
+            let legendAxis = d3.axisBottom(legendScale);
             legendSvg.append("g")
-                .attr("transform", HistogramView.translateString(
+                .attr("transform", translateString(
                     (chartWidth - legendWidth) / 2, legendHeight))
                 .call(legendAxis);
         }
 
-        let row = this.chart.selectAll()
+        this.canvas.append("text")
+            .text(yData.description.name)
+            .attr("dominant-baseline", "hanging");
+        this.canvas.append("text")
+            .text(xData.description.name)
+            .attr("transform", translateString(
+                chartWidth / 2, HistogramView.canvasHeight - HistogramView.margin.bottom))
+            .attr("text-anchor", "middle")
+            .attr("dominant-baseline", "hanging");
+
+        this.chart.selectAll()
             .data(dots)
             .enter()
             .append("g")
@@ -362,14 +413,14 @@ implements IHtmlElement, HillviewDataView {
             .attr("class", "heatMapCell")
             .attr("x", d => d.x)
             .attr("y", d => d.y)
-            .attr("width", pointWidth)
-            .attr("height", pointHeight)
+            .attr("width", this.pointWidth)
+            .attr("height", this.pointHeight)
             .style("stroke-width", 0)
-            .style("fill", d => d3.interpolatePlasma(d.v / max));
+            .style("fill", d => this.color(d.v, max));
 
         this.chart.append("g")
             .attr("class", "x-axis")
-            .attr("transform", HistogramView.translateString(0, chartHeight))
+            .attr("transform", translateString(0, chartHeight))
             .call(xAxis);
 
         this.chart.append("g")
@@ -408,32 +459,66 @@ implements IHtmlElement, HillviewDataView {
         this.summary.textContent = summary;
     }
 
+    static colorMap(d: number): string {
+        return d3.interpolatePlasma(d);
+    }
+
+    color(d: number, max: number): string {
+        if (max == 1)
+            return "black";
+        if (d == 0)
+            throw "Zero should not have a color";
+        if (this.logScale)
+            return HeatMapView.colorMap(Math.log(d) / Math.log(max));
+        else
+            return HeatMapView.colorMap(d / max);
+    }
+
+    static invert(v: number, scale: AnyScale, kind: ContentsKind, allStrings: string[]): string {
+        let inv = scale.invert(v);
+        if (kind == "Integer")
+            inv = Math.round(<number>inv);
+        let result = String(inv);
+        if (kind == "Category") {
+            let index = Math.round(<number>inv);
+            if (index >= 0 && index < allStrings.length)
+                result = allStrings[index];
+            else
+                result = "";
+        }
+        else if (kind == "Integer" || kind == "Double")
+            result = significantDigits(<number>inv);
+        // For Date do nothing
+        return result;
+    }
+
     onMouseMove(): void {
         let position = d3.mouse(this.chart.node());
         let mouseX = position[0];
         let mouseY = position[1];
 
-        /*
-         let x = this.xScale.invert(position[0]);
-        if (this.currentData.description.kind == "Integer")
-            x = Math.round(<number>x);
-        let xs = String(x);
-        if (this.currentData.description.kind == "Category") {
-            let index = Math.round(<number>x);
-            if (index >= 0 && index < this.currentData.allStrings.length)
-                xs = this.currentData.allStrings[index];
-            else
-                xs = "";
-        }
-        else if (this.currentData.description.kind == "Integer" ||
-            this.currentData.description.kind == "Double")
-            xs = significantDigits(<number>x);
-        let xs = significantDigits(x);
-        let y = this.yScale.invert(position[1]);
-        let ys = significantDigits(y);
+        let xs = HeatMapView.invert(position[0], this.xScale,
+            this.currentData.xData.description.kind, this.currentData.xData.allStrings);
+        let ys = HeatMapView.invert(position[1], this.yScale,
+            this.currentData.yData.description.kind, this.currentData.yData.allStrings);
+
         this.xLabel.textContent = "x=" + xs;
         this.yLabel.textContent = "y=" + ys;
-         */
+
+        let canvasHeight = HistogramView.canvasHeight;
+        let chartHeight = canvasHeight - HeatMapView.margin.top - HeatMapView.margin.bottom;
+
+        let xi = position[0] / this.pointWidth;
+        let yi = (chartHeight - position[1]) / this.pointHeight;
+        xi = Math.floor(xi);
+        yi = Math.floor(yi);
+        if (xi >= 0 && xi < this.currentData.xPoints &&
+            yi >= 0 && yi < this.currentData.yPoints) {
+            let v = this.currentData.data[xi][yi];
+            this.valueLabel.textContent = "value=" + v;
+        } else {
+            this.valueLabel.textContent = "";
+        }
 
         this.xDot.attr("cx", mouseX + HeatMapView.margin.left);
         this.yDot.attr("cy", mouseY + HeatMapView.margin.top);
@@ -484,59 +569,56 @@ implements IHtmlElement, HillviewDataView {
             .attr("height", 0);
         let position = d3.mouse(this.canvas.node());
         let x = position[0];
-        this.selectionCompleted(this.selectionOrigin.x, x);
+        let y = position[1];
+        this.selectionCompleted(this.selectionOrigin.x, x, this.selectionOrigin.y, y);
     }
 
-    selectionCompleted(xl: number, xr: number): void {
-        // TODO
-        /*
-        if (this.xScale == null)
+    selectionCompleted(xl: number, xr: number, yl: number, yr: number): void {
+        if (this.xScale == null || this.yScale == null)
             return;
 
-        let x0 = this.xScale.invert(xl - Histogram.margin.left);
-        let x1 = this.xScale.invert(xr - Histogram.margin.left);
+        let xMin = HistogramView.invertToNumber(xl, this.xScale, this.currentData.xData.description.kind);
+        let xMax = HistogramView.invertToNumber(xr, this.xScale, this.currentData.xData.description.kind);
+        let yMin = HistogramView.invertToNumber(yl, this.yScale, this.currentData.yData.description.kind);
+        let yMax = HistogramView.invertToNumber(yr, this.yScale, this.currentData.yData.description.kind);
+        [xMin, xMax] = reorder(xMin, xMax);
+        [yMin, yMax] = reorder(yMin, yMax);
 
-        // selection could be done in reverse
-        if (x0 > x1) {
-            let tmp = x0;
-            x0 = x1;
-            x1 = tmp;
+        let xBoundaries: string[] = null;
+        let yBoundaries: string[] = null;
+        if (this.currentData.xData.allStrings != null) {
+            // it's enough to just send the first and last element for filtering.
+            xBoundaries = [this.currentData.xData.allStrings[Math.floor(xMin)],
+                this.currentData.xData.allStrings[Math.ceil(xMax)]];
         }
-
-        let min: number = 0;
-        let max: number = 0;
-        if (this.currentData.description.kind == "Integer" ||
-            this.currentData.description.kind == "Double" ||
-            this.currentData.description.kind == "Category") {
-            min = Math.ceil(<number>x0);
-            max = Math.floor(<number>x1);
-            if (min > max) {
-                this.page.reportError("No data selected");
-                return;
-            }
-        } else if (this.currentData.description.kind == "Date") {
-            min = Converters.doubleFromDate(<Date>x0);
-            max = Converters.doubleFromDate(<Date>x1);
+        if (this.currentData.yData.allStrings != null) {
+            // it's enough to just send the first and last element for filtering.
+            yBoundaries = [this.currentData.yData.allStrings[Math.floor(yMin)],
+                this.currentData.xData.allStrings[Math.ceil(yMax)]];
         }
-
-        let boundaries: string[] = null;
-        if (this.currentData.allStrings != null)
-        // it's enough to just send the first and last element for filtering.
-            boundaries = [this.currentData.allStrings[min], this.currentData.allStrings[max]];
-        let range = {
-            min: min,
-            max: max,
-            columnName: this.currentData.description.name,
-            cdfBucketCount: this.chartResolution.width,
-            bucketBoundaries: boundaries
+        let xRange : ColumnAndRange = {
+            min: xMin,
+            max: xMax,
+            cdfBucketCount: null,  // unused
+            bucketCount: null,  // unused
+            columnName: this.currentData.xData.description.name,
+            bucketBoundaries: xBoundaries
         };
-
-        let rr = this.createRpcRequest("filterRange", range);
-        let renderer = new FilterReceiver(
-            this.currentData.description, this.tableSchema,
-            this.currentData.allStrings, range, this.page, rr);
+        let yRange : ColumnAndRange = {
+            min: yMin,
+            max: yMax,
+            cdfBucketCount: null,  // unused
+            bucketCount: null,  // unused
+            columnName: this.currentData.yData.description.name,
+            bucketBoundaries: yBoundaries
+        };
+        let rr = this.createRpcRequest("filter2DRange", { first: xRange, second: yRange });
+        let renderer = new Filter2DReceiver(
+            [this.currentData.xData.description, this.currentData.yData.description],
+            this.tableSchema,
+            this.page,
+            this, rr);
         rr.invoke(renderer);
-        */
     }
 
     setPage(page: FullPage) {
@@ -556,6 +638,42 @@ implements IHtmlElement, HillviewDataView {
         width = width - HeatMapView.margin.left - HeatMapView.margin.right;
         let height = HeatMapView.chartHeight - HeatMapView.margin.top - HeatMapView.margin.bottom;
         return { width: width, height: height };
+    }
+}
+
+// After filtering we obtain a handle to a new table
+export class Filter2DReceiver extends Renderer<string> {
+    private stub: RemoteObject;
+
+    constructor(protected cds: ColumnDescription[],
+                protected tableSchema: Schema,
+                page: FullPage,
+                protected remoteObject: RemoteObject,
+                operation: ICancellable) {
+        super(page, operation, "Filter");
+    }
+
+    public onNext(value: PartialResult<string>): void {
+        super.onNext(value);
+        if (value.data != null)
+            this.stub = new RemoteObject(value.data);
+    }
+
+    public onCompleted(): void {
+        this.finished();
+        if (this.stub != null) {
+            let first = new RangeInfo();
+            first.columnName = this.cds[0].name;
+            let second = new RangeInfo();
+            second.columnName = this.cds[1].name;
+            let cols: RangeInfo[] = [first, second];
+            let rr = this.stub.createRpcRequest("range2D", cols);
+            rr.invoke(new Range2DCollector(
+                this.cds,
+                this.tableSchema,
+                this.page,
+                this.stub, rr));
+        }
     }
 }
 
@@ -608,7 +726,8 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
             second: arg1
         };
         let rr = this.remoteObject.createRpcRequest("heatMap", args);
-        rr.setStartTime(this.operation.startTime());
+        if (this.operation != null)
+            rr.setStartTime(this.operation.startTime());
         let renderer = new HeatMapRenderer(this.page,
             this.remoteObject.remoteObjectId, this.tableSchema,
             this.cds, [this.stats.first, this.stats.second], rr);

@@ -1,7 +1,7 @@
 package org.hillview.table;
 
 public class SemiExplicitConverter extends BaseExplicitConverter {
-    final double defaultValue;
+    private final double defaultValue;
     public SemiExplicitConverter () {
         super();
         this.defaultValue = -1;

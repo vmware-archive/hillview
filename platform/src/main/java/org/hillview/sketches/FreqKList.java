@@ -24,7 +24,7 @@ public class FreqKList implements Serializable, IJson {
     /**
      * The number of counters we store: the K in top-K heavy hitters.
      */
-    public final int maxSize;
+    private final int maxSize;
     /**
      * Estimate for the number of times each row in the above table occurs in the original DataSet.
      */
@@ -46,7 +46,7 @@ public class FreqKList implements Serializable, IJson {
      * than totalRows, the number of rows in the table.
      * @return The sum of all counts stored in the hash-map.
      */
-    public int getTotalCount() {
+    private int getTotalCount() {
         return this.hMap.values().stream().reduce(0, Integer::sum);
     }
 

@@ -42,10 +42,10 @@ import org.hillview.utils.TestTables;
  * removes some columns from them.  Optionally, it can also split these into
  * smaller files each.
  */
-public class Main {
-    static final String dataFolder = "../data";
+class Main {
+    private static final String dataFolder = "../data";
     static final String csvFile = "On_Time_Sample.csv";
-    static final String schemaFile = "On_Time.schema";
+    private static final String schemaFile = "On_Time.schema";
 
     public static void main(String[] args) throws IOException {
         String[] columns = {
@@ -58,8 +58,8 @@ public class Main {
         System.out.println("Splitting files in folder " + dataFolder);
         Path path = Paths.get(dataFolder, schemaFile);
         Schema schema = Schema.readFromJsonFile(path);
-        HashSubSchema subschema = new HashSubSchema(columns);
-        Schema proj = schema.project(subschema);
+        HashSubSchema subSchema = new HashSubSchema(columns);
+        Schema proj = schema.project(subSchema);
         proj.writeToJsonFile(Paths.get(dataFolder, "short.schema"));
 
         // If non-zero, split each table into parts of this size.
@@ -104,10 +104,10 @@ public class Main {
                      for (ITable t : pieces) {
                          String baseName = end.substring(0, end.lastIndexOf("."));
                          String name = baseName + "-" + Integer.toString(index) + ".csv";
-                         Path outpath = Paths.get(dataFolder, name);
-                         CsvFileWriter writer = new CsvFileWriter(outpath);
+                         Path outPath = Paths.get(dataFolder, name);
+                         CsvFileWriter writer = new CsvFileWriter(outPath);
                          try {
-                             System.out.println("Writing " + outpath);
+                             System.out.println("Writing " + outPath);
                              writer.writeTable(t);
                          } catch (IOException e) {
                              e.printStackTrace();

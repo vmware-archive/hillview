@@ -15,9 +15,9 @@
  *  limitations under the License.
  */
 
-import {RemoteObject, ICancellable, RpcReceiver} from "./rpc";
+import {RemoteObject, ICancellable, RpcReceiver, PartialResult} from "./rpc";
 import {RemoteTableReceiver} from "./table";
-import {FullPage} from "./ui";
+import {FullPage, Renderer} from "./ui";
 
 class FileNames extends RemoteObject {
     constructor(remoteObjectId: string) {
@@ -32,18 +32,18 @@ class FileNames extends RemoteObject {
     }
 }
 
-class FileNamesReceiver extends RpcReceiver<string> {
+class FileNamesReceiver extends Renderer<string> {
     private files: FileNames;
 
-    constructor(protected page: FullPage, protected operation: ICancellable) {
-        super(page.progressManager.newProgressBar(operation, "Find files"),
-            page.getErrorReporter());
+    constructor(page: FullPage, operation: ICancellable) {
+        super(page, operation, "Find files");
     }
 
     // only one reply expected
-    public onNext(value: string): void {
-        if (value != null)
-            this.files = new FileNames(value);
+    public onNext(value: PartialResult<string>): void {
+        super.onNext(value);
+        if (value.data != null)
+            this.files = new FileNames(value.data);
     }
 
     public onCompleted(): void {

@@ -51,7 +51,7 @@ public class IntArrayTest {
         }
     }
 
-    void checkContents(IntArrayColumn col) {
+    private void checkContents(IntArrayColumn col) {
         for (int i = 0; i < col.sizeInRows(); i++) {
             if ((i % 5) == 0)
                 assertTrue(col.isMissing(i));
