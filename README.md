@@ -65,11 +65,16 @@ $ mvn install
   downloaded data:
 
 ```
-$ mvn exec:java
-$ cd ..
+$ java -jar target/platform-datacleaner-jar-with-dependencies.jar
 ```
 
-* Build the web server and the front-end
+* Next, start an instance of a HillviewServer that listens on port 3569.
+
+```
+$ java -jar target/platform-jar-with-dependencies.jar 127.0.0.1:3569
+```
+
+* Now, from another terminal, build the web server and the front-end
 
 ```
 $ cd web
