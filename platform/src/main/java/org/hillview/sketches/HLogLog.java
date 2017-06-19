@@ -51,8 +51,7 @@ public class HLogLog {
         int currRow = myIter.getNextRow();
         while (currRow >= 0) {
             if (!column.isMissing(currRow)) {
-                long value = column.hashCode64(currRow, seed);
-                this.add(value);
+                this.add(column.hashCode64(currRow, seed));
              }
             currRow = myIter.getNextRow();
         }

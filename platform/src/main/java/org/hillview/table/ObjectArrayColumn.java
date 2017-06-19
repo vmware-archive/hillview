@@ -23,6 +23,7 @@ import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IStringConverter;
 import org.hillview.table.api.IndexComparator;
 import org.hillview.utils.Converters;
+import org.hillview.utils.XXHashSingleton;
 
 import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
@@ -182,6 +183,7 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
 
     @Override
     public long hashCode64(int rowIndex, long seed) {
-        return LongHashFunction.xx(seed).hashLong((long) this.asDouble(rowIndex,null));
+        XXHashSingleton hashF = XXHashSingleton.getInstance();
+        return hashF.getHash().hashLong(seed ^ Double.doubleToRawLongBits(this.asDouble(rowIndex,null)));
     }
 }
