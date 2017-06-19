@@ -419,7 +419,7 @@ export class ConsoleDisplay implements IHtmlElement, ErrorReporter {
     }
 
     public reportError(message: string): void {
-        this.topLevel.textContent += message;
+        this.topLevel.textContent += message + "\r\n";
     }
 
     public clear(): void {

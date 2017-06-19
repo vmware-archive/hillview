@@ -194,23 +194,20 @@ $ cd ../..
 On Mac the following command seems to work correctly only without `sudo`.
 
 ```
-$ sudo npm install -g typescript ts-loader webpack@1.14.0 typings
+$ sudo npm install -g typescript ts-loader webpack@1.14.0 
 ```
 
 This installs the typescript compiler, the `webpack` tool, used to
 bundle multiple JavaScript files together, the `ts-loader` tool for
 webpack, which allows it to compile directly typescript into
-javascript, and the `typings` tool, which can be used to install
-typescript type definition files for some of the JavaScript libraries
-that we are using.
+javascript.
 
-Then install various JavaScript libraries: `rx`, `rx-dom` and `d3`,
-together with the typescript type definitions for these libraries:
+Then install JavaScript libraries `rx` and `d3`, together with the
+typescript type definitions for these libraries:
 
 ```
 $ cd web/src/main/webapp
-$ npm install rx rx-dom d3
+$ npm install rx d3
 $ npm install @types/d3 --save
-$ typings install dt~rx-dom --save
 $ cd ../../../..
 ```
