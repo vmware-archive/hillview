@@ -91,10 +91,14 @@ public class TableDataSetTest {
         final SampleQuantileSketch sqSketch = new SampleQuantileSketch(cso, resolution, size);
         final HostAndPort h1 = HostAndPort.fromParts("127.0.0.1", 1234);
         final HillviewServer server1 = new HillviewServer(h1, new LocalDataSet<ITable>(randTable));
-        final RemoteDataSet<ITable> rds1 = new RemoteDataSet<>(h1);
-        final SampleList sl = rds1.blockingSketch(sqSketch);
-        IndexComparator comp = cso.getComparator(sl.table);
-        for (int i = 0; i < (sl.table.getNumOfRows()- 1); i++)
-            assertTrue(comp.compare(i, i + 1) <= 0);
+        try {
+            final RemoteDataSet<ITable> rds1 = new RemoteDataSet<>(h1);
+            final SampleList sl = rds1.blockingSketch(sqSketch);
+            IndexComparator comp = cso.getComparator(sl.table);
+            for (int i = 0; i < (sl.table.getNumOfRows() - 1); i++)
+                assertTrue(comp.compare(i, i + 1) <= 0);
+        } finally {
+            server1.shutdown();
+        }
     }
 }
