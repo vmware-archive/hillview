@@ -32,23 +32,23 @@ public class HistogramTest {
         BucketsDescriptionEqSize buckDes = new BucketsDescriptionEqSize(0, 100, bucketNum);
         Histogram hist = new Histogram(buckDes);
         DoubleArrayColumn col = DoubleArrayTest.generateDoubleArray(colSize);
-        FullMembership fmap = new FullMembership(colSize);
-        hist.createHistogram(col, fmap, null);
+        FullMembership fMap = new FullMembership(colSize);
+        hist.createHistogram(col, fMap, null);
         int size = 0;
         for (int i = 0; i < bucketNum; i++)
             size += hist.getCount(i);
         assertEquals(size + hist.getMissingData() + hist.getOutOfRange(), colSize);
         Histogram hist1 = new Histogram(buckDes);
         DoubleArrayColumn col1 = DoubleArrayTest.generateDoubleArray(2 * colSize);
-        FullMembership fmap1 = new FullMembership(2 * colSize);
-        hist1.createHistogram(col1, fmap1, null);
+        FullMembership fMap1 = new FullMembership(2 * colSize);
+        hist1.createHistogram(col1, fMap1, null);
         Histogram hist2 = hist1.union(hist);
         size = 0;
         for (int i = 0; i < bucketNum; i++)
             size += hist2.getCount(i);
         assertEquals(size + hist2.getMissingData() + hist2.getOutOfRange(), 3 * colSize);
         Histogram hist3 = new Histogram(buckDes);
-        hist3.createSampleHistogram(col, fmap, null, 0.1);
+        hist3.createSampleHistogram(col, fMap, null, 0.1);
         size = 0;
         for (int i = 0; i < bucketNum; i++)
             size += hist3.getCount(i);
@@ -64,8 +64,8 @@ public class HistogramTest {
         HeatMap hm = new HeatMap(buckDes1, buckDes2);
         DoubleArrayColumn col1 = DoubleArrayTest.generateDoubleArray(colSize, 5);
         DoubleArrayColumn col2 = DoubleArrayTest.generateDoubleArray(colSize, 3);
-        FullMembership fmap = new FullMembership(colSize);
-        hm.createHeatMap(col1, col2, null, null, fmap);
+        FullMembership fMap = new FullMembership(colSize);
+        hm.createHeatMap(col1, col2, null, null, fMap);
         basicTestHeatMap(hm, colSize);
         HeatMap hm1 = new HeatMap(buckDes1, buckDes2);
         DoubleArrayColumn col3 = DoubleArrayTest.generateDoubleArray(2 * colSize);

@@ -59,36 +59,44 @@ $ cd platform
 $ mvn install
 ```
 
-* The dataset has 110 columns; we can use them all, but for the demo
-  we have stripped the dataset to 15 columns to better fit on the
-  screen.  The following command creates the smaller files from the
-  downloaded data:
-
-```
-$ cd bin; ./demo-data-cleaner.sh
-```
-
-* Next, from the bin folder, start an instance of a HillviewServer.
-
-```
-$ ./demo-backend-start.sh
-```
-
-* Now, from another terminal, build the web server and the front-end
+* Build the web server and the front-end
 
 ```
 $ cd web
 $ mvn package
 ```
 
-* Start the tomcat web server; note that the folder where this command is run is important, since
-the path to the data files is relative to this folder.
+* The dataset has 110 columns; we can use them all, but for the demo
+  we have stripped the dataset to 15 columns to better fit on the
+  screen.  The following command creates the smaller files from the
+  downloaded data; this has to be done only once, after downloading
+  the data.
 
 ```
-$ cd ../bin; ./demo-frontend-start.sh
+$ cd bin
+$ ./demo-data-cleaner.sh
+```
+
+* Next, from the bin folder, start an instance of a HillviewServer;
+  this starts the back-end service which performs all the data
+  processing.
+
+```
+$ ./demo-backend-start.sh
+```
+
+* Start the web server which receives requests from clients and
+dispatches them to the back-end servers; note that the folder where
+this command is run is important, since the path to the data files is
+relative to this folder.
+
+```
+$ ./demo-frontend-start.sh
 ```
 
 * start a web browser at http://localhost:8080 and browse the data!
+
+* when you are done stop the two services by killing the scripts.
 
 ## Contributing code
 
@@ -199,7 +207,7 @@ $ cd ../..
 On Mac the following command seems to work correctly only without `sudo`.
 
 ```
-$ sudo npm install -g typescript ts-loader webpack@1.14.0 
+$ sudo npm install -g typescript ts-loader webpack@1.14.0
 ```
 
 This installs the typescript compiler, the `webpack` tool, used to

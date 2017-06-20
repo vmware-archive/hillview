@@ -34,14 +34,14 @@ public class HeatMap implements Serializable, IJson {
     private final long[][] buckets;
     private long missingData; // number of items missing on both columns
     private long outOfRange;
-    private final IBucketsDescription1D bucketDescDim1;
-    private final IBucketsDescription1D bucketDescDim2;
+    private final IBucketsDescription bucketDescDim1;
+    private final IBucketsDescription bucketDescDim2;
     private Histogram histogramMissingD1; // hist of items that are missing in D2
     private Histogram histogramMissingD2; // hist of items that are missing in D1
     private long totalSize;
 
-    public HeatMap(final IBucketsDescription1D buckets1,
-                   final IBucketsDescription1D buckets2) {
+    public HeatMap(final IBucketsDescription buckets1,
+                   final IBucketsDescription buckets2) {
         this.bucketDescDim1 = buckets1;
         this.bucketDescDim2 = buckets2;
         this.buckets = new long[buckets1.getNumOfBuckets()][buckets2.getNumOfBuckets()]; // Automatically initialized to 0

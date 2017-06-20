@@ -200,6 +200,7 @@ export abstract class RpcReceiver<T> implements Rx.Observer<T> {
             this.reporter = ConsoleErrorReporter.instance;
     }
 
+    //noinspection JSUnusedLocalSymbols
     public makeSafe(disposable: Rx.IDisposable): Rx.Observer<T> {
         return null;
     }

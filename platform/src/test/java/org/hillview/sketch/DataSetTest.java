@@ -78,7 +78,6 @@ public class DataSetTest {
         ParallelDataSet<Integer> pds = new ParallelDataSet<Integer>(l);
         IMap<Integer, Integer> map = (IMap<Integer, Integer>) data -> {
             count[0]++;
-            System.out.println("Map executed on " + data);
             return data+1;
         };
         IDataSet<Integer> r = local.blockingMap(map);
@@ -106,7 +105,6 @@ public class DataSetTest {
         Observable<String> o2 = o.map(s -> s + "1");
         Observable<String> m = o1.mergeWith(o2);
         m.subscribe(s -> System.out.println("Sub1 got: " + s));
-        //m.subscribe(s -> System.out.println("Sub2 got: " + s));
     }
 
     @Test

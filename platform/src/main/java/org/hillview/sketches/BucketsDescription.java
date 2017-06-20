@@ -21,7 +21,7 @@ package org.hillview.sketches;
 /**
  * MetaData for one dimensional buckets held by a histogram
  */
-public class BucketsDescription1D implements IBucketsDescription1D {
+public class BucketsDescription implements IBucketsDescription {
     private final double minValue;
     private final double maxValue;
     private final int numOfBuckets;
@@ -31,7 +31,7 @@ public class BucketsDescription1D implements IBucketsDescription1D {
      * The assumption is that the all buckets are only left inclusive except the right one which
      * is right inclusive. Boundaries has to be strongly sorted.
      */
-    public BucketsDescription1D(final double[] boundaries) {
+    public BucketsDescription(final double[] boundaries) {
         if (boundaries.length == 0)
             throw new IllegalArgumentException("Boundaries of buckets can't be empty");
         if (!isSorted(boundaries))

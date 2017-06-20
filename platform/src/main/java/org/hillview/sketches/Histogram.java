@@ -24,18 +24,19 @@ import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.IStringConverter;
 
 import javax.annotation.Nullable;
+import java.io.Serializable;
 
 /**
  * One dimensional histogram where buckets are just longs and not a full object.
  */
-public class Histogram {
+public class Histogram implements Serializable {
     private final long[] buckets;
     private long missingData;
     private long outOfRange;
     private final double rate;
-    private final IBucketsDescription1D bucketDescription;
+    private final IBucketsDescription bucketDescription;
 
-    public Histogram(final IBucketsDescription1D bucketDescription) {
+    public Histogram(final IBucketsDescription bucketDescription) {
         this.bucketDescription = bucketDescription;
         this.buckets = new long[bucketDescription.getNumOfBuckets()];
         this.rate = 1.0;

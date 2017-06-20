@@ -84,7 +84,6 @@ public class RemoteDataSet<T> implements IDataSet<T> {
 
     @Override
     public <S> Observable<PartialResult<IDataSet<S>>> flatMap(IMap<T, List<S>> mapper) {
-        System.out.println("Flat map called");
         final FlatMapOperation<T, S> mapOp = new FlatMapOperation<T, S>(mapper);
         final byte[] serializedOp = SerializationUtils.serialize(mapOp);
         final Command command = Command.newBuilder()

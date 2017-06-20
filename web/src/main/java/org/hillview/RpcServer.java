@@ -35,7 +35,7 @@ import java.util.logging.Logger;
  * instance of this class for each request.  The client should
  * send exactly one request for each session; the server may send zero, one
  * or more replies for each session.  The client or server can both
- * choose to close the connection at any time.
+ * choose to close the connection at any time.  This class must be public.
  */
 @ServerEndpoint(value = "/rpc")
 public final class RpcServer {

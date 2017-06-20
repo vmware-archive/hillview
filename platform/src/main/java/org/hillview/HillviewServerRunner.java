@@ -30,11 +30,15 @@ import java.io.IOException;
  * Brings up a single instance of a HillviewServer
  */
 public class HillviewServerRunner {
+    static void usage() {
+        System.out.println("Invalid number of arguments.\n" +
+                "Usage: java -jar <jarname> <HillviewServer listen address>");
+    }
+
     public static void main(String[] args) throws IOException, InterruptedException {
         final IDataSet<Empty> dataSet = new LocalDataSet<>(Empty.getInstance());
         if (args.length != 1) {
-            System.out.println("Invalid number of arguments.\n" +
-                               "Usage: java -jar <jarname> <HillviewServer listen address>");
+            usage();
             System.exit(1);
         }
         final String hostnameAndPort = args[0];

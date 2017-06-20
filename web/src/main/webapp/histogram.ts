@@ -569,7 +569,9 @@ export class HistogramView extends RemoteObject
     public static invertToNumber(v: number, scale: AnyScale, kind: ContentsKind): number {
         let inv = scale.invert(v);
         let result: number = 0;
-        if (kind == "Integer" || kind == "Double" || kind == "Category") {
+        if (kind == "Integer" || kind == "Category") {
+            result = Math.round(<number>inv);
+        } else if (kind == "Double") {
             result = <number>inv;
         } else if (kind == "Date") {
             result = Converters.doubleFromDate(<Date>inv);

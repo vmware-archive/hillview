@@ -25,13 +25,13 @@ import org.hillview.utils.Converters;
 import javax.annotation.Nullable;
 
 public class HistogramSketch implements ISketch<ITable, Histogram> {
-    private final IBucketsDescription1D bucketDesc;
+    private final IBucketsDescription bucketDesc;
     private final String colName;
     @Nullable
     private final IStringConverter converter;
     private final double rate;
 
-    public HistogramSketch(IBucketsDescription1D bucketDesc, String colName,
+    public HistogramSketch(IBucketsDescription bucketDesc, String colName,
                            @Nullable IStringConverter converter) {
         this.bucketDesc = bucketDesc;
         this.colName = colName;
@@ -39,7 +39,7 @@ public class HistogramSketch implements ISketch<ITable, Histogram> {
         this.rate = 1;
     }
 
-    public HistogramSketch(IBucketsDescription1D bucketDesc, String colName,
+    public HistogramSketch(IBucketsDescription bucketDesc, String colName,
                            @Nullable IStringConverter converter, double rate) {
         this.bucketDesc = bucketDesc;
         this.colName = colName;

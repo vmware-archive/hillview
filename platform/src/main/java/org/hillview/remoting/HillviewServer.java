@@ -64,9 +64,9 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             }
 
             @Override
-            public void onError(final Throwable throwable) {
-                throwable.printStackTrace();
-                responseObserver.onError(throwable);
+            public void onError(final Throwable e) {
+                e.printStackTrace();
+                responseObserver.onError(e);
                 HillviewServer.this.operationToObservable.remove(id);
             }
 
@@ -91,7 +91,6 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     @Override
     @SuppressWarnings("unchecked")
     public void map(final Command command, final StreamObserver<PartialResponse> responseObserver) {
-        System.out.println("Received command map");
         try {
             if (!this.checkValidIdsIndex(command.getIdsIndex(), responseObserver)) {
                 return;
@@ -116,7 +115,6 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     @SuppressWarnings("unchecked")
     public void flatMap(final Command command, final StreamObserver<PartialResponse>
             responseObserver) {
-        System.out.println("Received command flatmap");
         try {
             if (!this.checkValidIdsIndex(command.getIdsIndex(), responseObserver)) {
                 return;
@@ -157,9 +155,9 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                 }
 
                 @Override
-                public void onError(final Throwable throwable) {
-                    throwable.printStackTrace();
-                    responseObserver.onError(throwable);
+                public void onError(final Throwable e) {
+                    e.printStackTrace();
+                    responseObserver.onError(e);
                     HillviewServer.this.operationToObservable.remove(sketchOp.id);
                 }
 
@@ -219,6 +217,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                 subscription.unsubscribe();
             }
         } catch (final Exception e) {
+            // TODO: use logging
             e.printStackTrace();
             responseObserver.onError(e);
         }

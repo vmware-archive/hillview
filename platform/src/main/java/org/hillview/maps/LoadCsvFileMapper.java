@@ -64,7 +64,6 @@ public class LoadCsvFileMapper implements IMap<Empty, List<CsvFileObject>> {
                         System.out.println("Added " + this.toString());
                     });
             if (result.size() == 0) {
-                System.out.println("About to throw no such file");
                 throw new RuntimeException("No such files");
             }
         } else if (this.which == 2) {
