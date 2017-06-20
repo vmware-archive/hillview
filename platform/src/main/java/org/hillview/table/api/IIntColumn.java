@@ -18,6 +18,8 @@
 
 package org.hillview.table.api;
 
+import net.openhft.hashing.LongHashFunction;
+
 import javax.annotation.Nullable;
 
 public interface IIntColumn extends IColumn {
@@ -57,5 +59,12 @@ public interface IIntColumn extends IColumn {
                 }
             }
         };
+    }
+
+    @Override
+    default long hashCode64(int rowIndex, LongHashFunction hash) {
+        if (this.isMissing(rowIndex))
+            return MISSING_HASH_VALUE;
+        return hash.hashInt(this.getInt(rowIndex));
     }
 }

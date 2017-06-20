@@ -42,7 +42,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 /**
- * Remoting tests for Akka.
+ * Remoting tests for Hillview.
  */
 public class RemotingTest {
     private final static HostAndPort serverAddress = HostAndPort.fromParts("127.0.0.1",

@@ -26,106 +26,33 @@ import static org.junit.Assert.assertEquals;
 
 public class HistogramTest {
     @Test
-    public void testHistogram1D() throws Exception {
+    public void testHistogram1DLight() throws Exception {
         final int bucketNum = 110;
         final int colSize = 10000;
         BucketsDescriptionEqSize buckDes = new BucketsDescriptionEqSize(0, 100, bucketNum);
-        Histogram1D hist = new Histogram1D(buckDes);
+        Histogram hist = new Histogram(buckDes);
         DoubleArrayColumn col = DoubleArrayTest.generateDoubleArray(colSize);
         FullMembership fMap = new FullMembership(colSize);
         hist.createHistogram(col, fMap, null);
         int size = 0;
         for (int i = 0; i < bucketNum; i++)
-            size += hist.getBucket(i).getCount();
+            size += hist.getCount(i);
         assertEquals(size + hist.getMissingData() + hist.getOutOfRange(), colSize);
-        Histogram1D hist1 = new Histogram1D(buckDes);
+        Histogram hist1 = new Histogram(buckDes);
         DoubleArrayColumn col1 = DoubleArrayTest.generateDoubleArray(2 * colSize);
         FullMembership fMap1 = new FullMembership(2 * colSize);
         hist1.createHistogram(col1, fMap1, null);
-        Histogram1D hist2 = hist1.union(hist);
-        size = 0;
-        for (int i = 0; i < bucketNum; i++)
-            size += hist2.getBucket(i).getCount();
-        assertEquals(size + hist2.getMissingData() + hist2.getOutOfRange(), 3 * colSize);
-        Histogram1D hist3 = new Histogram1D(buckDes);
-        hist3.createSampleHistogram(col, fMap, null, 0.1);
-        size = 0;
-        for (int i = 0; i < bucketNum; i++)
-            size += hist3.getBucket(i).getCount();
-        assertEquals(size + hist3.getMissingData() + hist3.getOutOfRange(), (int) (colSize * 0.1));
-    }
-
-    @Test
-    public void testHistogram1DLight() throws Exception {
-        final int bucketNum = 110;
-        final int colSize = 10000;
-        BucketsDescriptionEqSize buckDes = new BucketsDescriptionEqSize(0, 100, bucketNum);
-        Histogram1DLight hist = new Histogram1DLight(buckDes);
-        DoubleArrayColumn col = DoubleArrayTest.generateDoubleArray(colSize);
-        FullMembership fmap = new FullMembership(colSize);
-        hist.createHistogram(col, fmap, null);
-        int size = 0;
-        for (int i = 0; i < bucketNum; i++)
-            size += hist.getCount(i);
-        assertEquals(size + hist.getMissingData() + hist.getOutOfRange(), colSize);
-        Histogram1DLight hist1 = new Histogram1DLight(buckDes);
-        DoubleArrayColumn col1 = DoubleArrayTest.generateDoubleArray(2 * colSize);
-        FullMembership fmap1 = new FullMembership(2 * colSize);
-        hist1.createHistogram(col1, fmap1, null);
-        Histogram1DLight hist2 = hist1.union(hist);
+        Histogram hist2 = hist1.union(hist);
         size = 0;
         for (int i = 0; i < bucketNum; i++)
             size += hist2.getCount(i);
         assertEquals(size + hist2.getMissingData() + hist2.getOutOfRange(), 3 * colSize);
-        Histogram1DLight hist3 = new Histogram1DLight(buckDes);
-        hist3.createSampleHistogram(col, fmap, null, 0.1);
+        Histogram hist3 = new Histogram(buckDes);
+        hist3.createSampleHistogram(col, fMap, null, 0.1);
         size = 0;
         for (int i = 0; i < bucketNum; i++)
             size += hist3.getCount(i);
         assertEquals(size + hist3.getMissingData() + hist3.getOutOfRange(), (int) (colSize * 0.1));
-    }
-
-    @Test
-    public void testHistogram2DHeavy() throws Exception {
-        final int bucketnum = 110;
-        final int colSize = 10000;
-        BucketsDescriptionEqSize buckDes1 = new BucketsDescriptionEqSize(0, 100, bucketnum);
-        BucketsDescriptionEqSize buckDes2 = new BucketsDescriptionEqSize(0, 100, bucketnum);
-        Histogram2DHeavy hist = new Histogram2DHeavy(buckDes1, buckDes2);
-        DoubleArrayColumn col1 = DoubleArrayTest.generateDoubleArray(colSize);
-        DoubleArrayColumn col2 = DoubleArrayTest.generateDoubleArray(colSize);
-        FullMembership fmap = new FullMembership(colSize);
-        hist.createHistogram(col1, col2, null, null, fmap);
-        basicTest2DHeavy(hist, colSize);
-        Histogram2DHeavy hist1 = new Histogram2DHeavy(buckDes1, buckDes2);
-        DoubleArrayColumn col3 = DoubleArrayTest.generateDoubleArray(2 * colSize);
-        DoubleArrayColumn col4 = DoubleArrayTest.generateDoubleArray(2 * colSize);
-        FullMembership fmap1 = new FullMembership(2 * colSize);
-        hist1.createHistogram(col3, col4, null, null, fmap1);
-        basicTest2DHeavy(hist1, 2 * colSize);
-        Histogram2DHeavy hist2 = hist1.union(hist);
-        basicTest2DHeavy(hist2, 3 * colSize);
-        Histogram2DHeavy hist3 = new Histogram2DHeavy(buckDes1, buckDes2);
-        hist3.createSampleHistogram(col3, col4, null, null, fmap1, 0.1);
-        basicTest2DHeavy(hist3, (int) (colSize * 0.2));
-    }
-
-    public static void basicTest2DHeavy(Histogram2DHeavy hist, long expectedSize){
-        long size = 0;
-        long size1 = 0;
-        long size2 = 0;
-        for (int i = 0; i < hist.getNumOfBucketsD1(); i++)
-            for (int j = 0; j< hist.getNumOfBucketsD2(); j++)
-                size += hist.getBucket(i,j).getCount();
-        size += hist.getMissingData();
-        size += hist.getOutOfRange();
-        for (int i = 0; i < hist.getNumOfBucketsD1(); i++)
-            size1 += hist.getMissingHistogramD1().getBucket(i).getCount();
-        size1 += hist.getMissingHistogramD1().getOutOfRange();
-        for (int i = 0; i < hist.getNumOfBucketsD2(); i++)
-            size2 += hist.getMissingHistogramD2().getBucket(i).getCount();
-        size2 += hist.getMissingHistogramD2().getOutOfRange();
-        assertEquals(size + size1 + size2, expectedSize);
     }
 
     @Test
@@ -137,8 +64,8 @@ public class HistogramTest {
         HeatMap hm = new HeatMap(buckDes1, buckDes2);
         DoubleArrayColumn col1 = DoubleArrayTest.generateDoubleArray(colSize, 5);
         DoubleArrayColumn col2 = DoubleArrayTest.generateDoubleArray(colSize, 3);
-        FullMembership fmap = new FullMembership(colSize);
-        hm.createHeatMap(col1, col2, null, null, fmap);
+        FullMembership fMap = new FullMembership(colSize);
+        hm.createHeatMap(col1, col2, null, null, fMap);
         basicTestHeatMap(hm, colSize);
         HeatMap hm1 = new HeatMap(buckDes1, buckDes2);
         DoubleArrayColumn col3 = DoubleArrayTest.generateDoubleArray(2 * colSize);
@@ -150,7 +77,7 @@ public class HistogramTest {
         basicTestHeatMap(hm2, (long) (1.2 * colSize));
     }
 
-    public static void basicTestHeatMap(HeatMap hist, long expectedSize) {
+    static void basicTestHeatMap(HeatMap hist, long expectedSize) {
         long size = 0;
         long size1 = 0;
         long size2 = 0;

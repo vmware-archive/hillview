@@ -39,9 +39,9 @@ public class HistSketchTest {
         final int tableSize = 1000;
         final Table myTable = TestTables.getRepIntTable(tableSize, numCols);
         final BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(1, 50, 10);
-        final Hist1DLightSketch mySketch = new Hist1DLightSketch(buckets,
+        final HistogramSketch mySketch = new HistogramSketch(buckets,
                 myTable.getSchema().getColumnNames().iterator().next(), null);
-        Histogram1DLight result = mySketch.create(myTable);
+        Histogram result = mySketch.create(myTable);
         int size = 0;
         int bucketNum = result.getNumOfBuckets();
         for (int i = 0; i < bucketNum; i++)
@@ -59,7 +59,7 @@ public class HistSketchTest {
         final SmallTable bigTable = TestTables.getIntTable(bigSize, numCols);
         final String colName = bigTable.getSchema().getColumnNames().iterator().next();
         final ParallelDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize / 10);
-        final Histogram1DLight hdl = all.blockingSketch(new Hist1DLightSketch(buckets, colName,
+        final Histogram hdl = all.blockingSketch(new HistogramSketch(buckets, colName,
                 null, 0.5));
         int size = 0;
         int bucketNum = hdl.getNumOfBuckets();
@@ -69,26 +69,7 @@ public class HistSketchTest {
                 (bigTable.getMembershipSet().getSize() * 0.5));
     }
 
-    @Test
-    public void Hist1DTest2() {
-        final int numCols = 1;
-        final int maxSize = 50;
-        final int bigSize = 100000;
-        final double rate = 0.1;
-        final BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(1, 50, 10);
-        final SmallTable bigTable = TestTables.getIntTable(bigSize, numCols);
-        final String colName = bigTable.getSchema().getColumnNames().iterator().next();
-        final ParallelDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize / 10);
-        final Histogram1D hd = all.blockingSketch(new Hist1DSketch(buckets, colName, null, rate));
-        int size = 0;
-        int bucketnum = hd.getNumOfBuckets();
-        for (int i = 0; i < bucketnum; i++)
-            size += hd.getBucket(i).getCount();
-        assertEquals(size + hd.getMissingData() + hd.getOutOfRange(), (int)
-                (bigTable.getMembershipSet().getSize() * rate));
-    }
-
-    @Test
+   @Test
     public void HeatMapSketchTest() {
         final int numCols = 2;
         final int maxSize = 50;
@@ -104,23 +85,5 @@ public class HistSketchTest {
         final HeatMap hm = all.blockingSketch(new HeatMapSketch(buckets1, buckets2, null, null,
                                                             colName1, colName2, rate));
         HistogramTest.basicTestHeatMap(hm, (long) (bigSize * rate));
-    }
-
-    @Test
-    public void Hist2DSketchTest() {
-        final int numCols = 2;
-        final int maxSize = 50;
-        final int bigSize = 100000;
-        final double rate = 0.5;
-        final BucketsDescriptionEqSize buckets1 = new BucketsDescriptionEqSize(1, 50, 10);
-        final BucketsDescriptionEqSize buckets2 = new BucketsDescriptionEqSize(1, 50, 15);
-        final SmallTable bigTable = TestTables.getIntTable(bigSize, numCols);
-        final Iterator<String> iter = bigTable.getSchema().getColumnNames().iterator();
-        final String colName1 = iter.next();
-        final String colName2 = iter.next();
-        final ParallelDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize/10);
-        final Histogram2DHeavy hm = all.blockingSketch(new Hist2DSketch(buckets1, buckets2,
-                null, null, colName1, colName2, rate));
-        HistogramTest.basicTest2DHeavy(hm, (long) (bigSize * rate));
     }
 }

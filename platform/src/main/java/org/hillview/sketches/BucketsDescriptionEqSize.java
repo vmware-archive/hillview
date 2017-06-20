@@ -21,7 +21,7 @@ package org.hillview.sketches;
 /**
  * MetaData for one dimensional buckets of equal size
  */
-public class BucketsDescriptionEqSize implements IBucketsDescription1D {
+public class BucketsDescriptionEqSize implements IBucketsDescription {
     private final double minValue;
     private final double maxValue;
     private final int numOfBuckets;

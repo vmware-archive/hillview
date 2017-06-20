@@ -2,6 +2,7 @@
   <dictionary name="mbudiu">
     <words>
       <w>classname</w>
+      <w>grpc</w>
       <w>gson</w>
       <w>hillview</w>
       <w>idempotence</w>
@@ -10,8 +11,12 @@
       <w>ltest</w>
       <w>perf</w>
       <w>proj</w>
+      <w>protobuf</w>
+      <w>protoc</w>
+      <w>repr</w>
       <w>retval</w>
       <w>unsubscription</w>
+      <w>vrops</w>
       <w>yossarian</w>
     </words>
   </dictionary>

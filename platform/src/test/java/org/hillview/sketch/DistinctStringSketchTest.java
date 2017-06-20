@@ -31,9 +31,10 @@ public class DistinctStringSketchTest {
         Assert.assertTrue(size <= 10);
         SemiExplicitConverter converter = getStringConverter(result);
         BucketsDescriptionEqSize desc = new BucketsDescriptionEqSize(1, size + 1, size);
-        Hist1DSketch histSketch = new Hist1DSketch(desc, "Name", converter);
-        Histogram1D hist = histSketch.create(myTable);
+        HistogramSketch histSketch = new HistogramSketch(desc, "Name", converter);
+        Histogram hist = histSketch.create(myTable);
     }
+
     @Test
     public void DistinctSketchTest2() {
         final int tableSize = 1000;
@@ -42,6 +43,6 @@ public class DistinctStringSketchTest {
         final DistinctStrings ds = all.blockingSketch(new DistinctStringsSketch(tableSize, "Name"));
         SemiExplicitConverter converter = getStringConverter(ds);
         BucketsDescriptionEqSize desc = new BucketsDescriptionEqSize(-1, ds.size(), ds.size() + 1);
-        Histogram1D hist = all.blockingSketch(new Hist1DSketch(desc, "Name", converter));
+        Histogram hist = all.blockingSketch(new HistogramSketch(desc, "Name", converter));
     }
 }
