@@ -18,8 +18,9 @@
 
 package org.hillview.table.api;
 
+import net.openhft.hashing.LongHashFunction;
 import org.hillview.utils.Converters;
-import org.hillview.utils.XXHashSingleton;
+
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 
@@ -62,10 +63,9 @@ public interface IDateColumn extends IColumn {
     }
 
     @Override
-    default long hashCode64(int rowIndex, long seed) {
+    default long hashCode64(int rowIndex, LongHashFunction hash) {
         if (isMissing(rowIndex))
-            return DEFAULT_HASH_VALUE;
-        XXHashSingleton hashF = XXHashSingleton.getInstance();
-        return hashF.getHash().hashLong(Double.doubleToRawLongBits(asDouble(rowIndex, null)) ^ seed);
+            return MISSING_HASH_VALUE;
+        return hash.hashLong(Double.doubleToRawLongBits(this.asDouble(rowIndex, null)));
     }
  }

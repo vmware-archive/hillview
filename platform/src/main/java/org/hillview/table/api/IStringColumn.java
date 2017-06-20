@@ -18,8 +18,8 @@
 
 package org.hillview.table.api;
 
+import net.openhft.hashing.LongHashFunction;
 import org.hillview.utils.Converters;
-import org.hillview.utils.XXHashSingleton;
 
 import javax.annotation.Nullable;
 
@@ -60,10 +60,9 @@ public interface IStringColumn extends IColumn {
     }
 
     @Override
-    default long hashCode64(int rowIndex, long seed) {
+    default long hashCode64(int rowIndex, LongHashFunction hash) {
         if (isMissing(rowIndex))
-            return DEFAULT_HASH_VALUE;
-        XXHashSingleton hashF = XXHashSingleton.getInstance();
-        return hashF.getHash().hashChars(Long.toString(seed).concat(this.getString(rowIndex)));
+            return MISSING_HASH_VALUE;
+        return hash.hashChars(this.getString(rowIndex));
     }
 }

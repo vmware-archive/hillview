@@ -9,11 +9,7 @@ import org.hillview.table.api.ITable;
 import org.hillview.utils.IntArrayGenerator;
 import org.hillview.utils.Randomness;
 import org.hillview.utils.TestTables;
-import org.hillview.utils.XXHashSingleton;
 import org.junit.Test;
-
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 
 import static org.junit.Assert.*;
 

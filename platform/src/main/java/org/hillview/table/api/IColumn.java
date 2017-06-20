@@ -18,6 +18,7 @@
 
 package org.hillview.table.api;
 
+import net.openhft.hashing.LongHashFunction;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.ObjectArrayColumn;
 
@@ -119,12 +120,10 @@ public interface IColumn extends Serializable {
     default ContentsKind getKind() { return this.getDescription().kind;}
 
     /**
-     * @return A 64 bit hash code for the item in the rowIndex.  xors the item with the seed and then runs xxhashing
-     * returns DEFAULT_HASH_VALUE if item is missing.
+     * @return A 64 bit hash code for the item in the rowIndex.
+     * returns MISSING_HASH_VALUE if item is missing.
      */
-    long hashCode64(int rowIndex, long seed);
+    long hashCode64(int rowIndex, LongHashFunction hash);
 
-    default long hashCode64(int rowIndex) { return hashCode64(rowIndex, 0); }
-
-    long DEFAULT_HASH_VALUE = 0;
+    static final long MISSING_HASH_VALUE = 0;
 }

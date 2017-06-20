@@ -23,7 +23,6 @@ import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IStringConverter;
 import org.hillview.table.api.IndexComparator;
 import org.hillview.utils.Converters;
-import org.hillview.utils.XXHashSingleton;
 
 import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
@@ -182,8 +181,26 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
     }
 
     @Override
-    public long hashCode64(int rowIndex, long seed) {
-        XXHashSingleton hashF = XXHashSingleton.getInstance();
-        return hashF.getHash().hashLong(seed ^ Double.doubleToRawLongBits(this.asDouble(rowIndex,null)));
+    public long hashCode64(int rowIndex, LongHashFunction hash) {
+        if (this.isMissing(rowIndex))
+            return MISSING_HASH_VALUE;
+        switch (ObjectArrayColumn.this.description.kind) {
+            case Category:
+            case Json:
+            case String:
+                return hash.hashChars(Converters.checkNull(this.getString(rowIndex)));
+            case Date:
+                return hash.hashLong(Double.doubleToLongBits(Converters.toDouble(
+                        Converters.checkNull(this.getDate(rowIndex)))));
+            case Integer:
+                return hash.hashInt(this.getInt(rowIndex));
+            case Double:
+                return hash.hashLong(Double.doubleToLongBits(this.getDouble(rowIndex)));
+            case Duration:
+                return hash.hashLong(Double.doubleToLongBits(Converters.toDouble(
+                        Converters.checkNull(this.getDuration(rowIndex)))));
+            default:
+                throw new RuntimeException("Unexpected data type");
+        }
     }
 }

@@ -19,7 +19,6 @@
 package org.hillview.table.api;
 
 import net.openhft.hashing.LongHashFunction;
-import org.hillview.utils.XXHashSingleton;
 
 import javax.annotation.Nullable;
 
@@ -63,10 +62,9 @@ public interface IIntColumn extends IColumn {
     }
 
     @Override
-    default long hashCode64(int rowIndex, long seed) {
-        if (isMissing(rowIndex))
-            return DEFAULT_HASH_VALUE;
-        XXHashSingleton hashF = XXHashSingleton.getInstance();
-        return hashF.getHash().hashInt(this.getInt(rowIndex) ^ (int) seed);
+    default long hashCode64(int rowIndex, LongHashFunction hash) {
+        if (this.isMissing(rowIndex))
+            return MISSING_HASH_VALUE;
+        return hash.hashInt(this.getInt(rowIndex));
     }
 }

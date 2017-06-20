@@ -1,10 +1,9 @@
 package org.hillview.sketches;
 
+import net.openhft.hashing.LongHashFunction;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.IRowIterator;
-import org.hillview.utils.Converters;
-import org.hillview.utils.HashUtil;
 
 /**
  * A class that computes an approximation of the number of distinct elements in a column. Elements
@@ -48,10 +47,11 @@ public class HLogLog {
      */
     public void createHLL(IColumn column, IMembershipSet memSet) {
         final IRowIterator myIter = memSet.getIterator();
+        LongHashFunction hash = LongHashFunction.xx(this.seed);
         int currRow = myIter.getNextRow();
         while (currRow >= 0) {
             if (!column.isMissing(currRow)) {
-                this.add(column.hashCode64(currRow, seed));
+                this.add(column.hashCode64(currRow, hash));
              }
             currRow = myIter.getNextRow();
         }

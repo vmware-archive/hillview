@@ -18,8 +18,8 @@
 
 package org.hillview.table.api;
 
+import net.openhft.hashing.LongHashFunction;
 import org.hillview.utils.Converters;
-import org.hillview.utils.XXHashSingleton;
 
 import javax.annotation.Nullable;
 import java.time.Duration;
@@ -63,10 +63,8 @@ public interface IDurationColumn extends IColumn {
     }
 
     @Override
-    default long hashCode64(int rowIndex, long seed) {
-        if (isMissing(rowIndex)) return DEFAULT_HASH_VALUE;
-        final Duration tmp = this.getDuration(rowIndex);
-        XXHashSingleton hashF = XXHashSingleton.getInstance();
-        return hashF.getHash().hashLong(seed ^ Double.doubleToRawLongBits(Converters.toDouble(tmp)));
+    default long hashCode64(int rowIndex, LongHashFunction hash) {
+        if (isMissing(rowIndex)) return MISSING_HASH_VALUE;
+        return hash.hashLong(Double.doubleToRawLongBits(this.asDouble(rowIndex, null)));
     }
 }

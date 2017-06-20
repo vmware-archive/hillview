@@ -18,6 +18,7 @@
 
 package org.hillview.table;
 
+import net.openhft.hashing.LongHashFunction;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IStringConverter;
 import org.hillview.table.api.IndexComparator;
@@ -105,7 +106,7 @@ public class LazyColumn implements IColumn {
     }
 
     @Override
-    public long hashCode64(int rowIndex, long seed) {
-        return this.loadIfNecessary().hashCode64(rowIndex, seed);
+    public long hashCode64(int rowIndex, LongHashFunction hash) {
+        return this.loadIfNecessary().hashCode64(rowIndex, hash);
     }
 }
