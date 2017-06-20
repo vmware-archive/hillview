@@ -9,9 +9,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-/**
- * Created by lsuresh on 6/16/17.
- */
+
 public class CsvFileObject {
     private final Path dataPath;
     @Nullable

@@ -6,9 +6,7 @@ import org.hillview.table.api.IStringConverter;
 
 import javax.annotation.Nullable;
 
-/**
- * Created by lsuresh on 6/20/17.
- */
+
 public class HistogramParts {
     public HistogramParts(BucketsDescriptionEqSize buckets, @Nullable IStringConverter converter,
                    Hist1DLightSketch sketch) {

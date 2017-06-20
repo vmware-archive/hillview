@@ -2,9 +2,7 @@ package org.hillview.table;
 
 import org.hillview.table.api.ITable;
 
-/**
- * Created by lsuresh on 6/16/17.
- */
+
 public class FalseTableFilter implements TableFilter {
     @Override
     public void setTable(final ITable table) {

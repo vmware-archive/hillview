@@ -1,9 +1,5 @@
 package org.hillview.maps;
 
-/**
- * Created by lsuresh on 6/16/17.
- */
-
 import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IMap;
 import org.hillview.utils.CsvFileObject;
