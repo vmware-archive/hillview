@@ -41,6 +41,12 @@ public class SmallTable
         return this.schema;
     }
 
+    public SmallTable() {
+        super(new Schema());
+        this.schema = new Schema();
+        this.rowCount = 0;
+    }
+
     /**
      * Create a small table from a list of columns and a precomputed schema.
      * @param columns  List of columns.

@@ -28,6 +28,7 @@ import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
+import java.io.Serializable;
 
 /**
  * A sketch which retrieves the Schema and size of a distributed table.

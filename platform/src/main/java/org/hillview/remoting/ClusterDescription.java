@@ -14,7 +14,11 @@ import java.lang.reflect.Type;
 import java.util.List;
 
 /**
- * Describes the list of hosts that comprise a cluster
+ * Describes the list of hosts that comprise a cluster. The corresponding Json representation
+ * would be:
+ *          {
+ *              "serverList": ["127.0.0.1:1234", "127.0.0.1:1235"]
+ *          }
  */
 public final class ClusterDescription implements IJson {
     private final List<HostAndPort> serverList;

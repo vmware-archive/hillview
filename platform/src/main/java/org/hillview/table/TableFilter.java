@@ -19,10 +19,12 @@
 package org.hillview.table;
 import org.hillview.table.api.ITable;
 
+import java.io.Serializable;
+
 /**
  * Interface implemented by filters that run over all rows in a table.
  */
-public interface TableFilter {
+public interface TableFilter extends Serializable {
     /**
      * Called before the test is applied to each row index.
      * @param table: Table on which the test operates.

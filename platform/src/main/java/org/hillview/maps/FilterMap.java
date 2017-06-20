@@ -19,6 +19,7 @@
 package org.hillview.maps;
 
 import org.hillview.dataset.api.IMap;
+import org.hillview.table.FalseTableFilter;
 import org.hillview.table.TableFilter;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.ITable;
@@ -33,6 +34,10 @@ public class FilterMap implements IMap<ITable, ITable> {
      * Returns true if a row has to be preserved
      */
     private final TableFilter rowFilterPredicate;
+
+    public FilterMap() {
+        rowFilterPredicate = new FalseTableFilter();
+    }
 
     public FilterMap(TableFilter rowFilterPredicate) {
         this.rowFilterPredicate = rowFilterPredicate;

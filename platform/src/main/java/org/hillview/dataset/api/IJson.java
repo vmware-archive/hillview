@@ -24,13 +24,14 @@ import org.hillview.remoting.ClusterDescription;
 import org.hillview.table.Schema;
 import org.hillview.utils.Converters;
 
+import java.io.Serializable;
 import java.lang.reflect.Type;
 import java.time.LocalDateTime;
 
 // Unfortunately this module introduces many circular dependences, because it has
 // to register various type adaptors.
 
-public interface IJson {
+public interface IJson extends Serializable {
     class DateSerializer implements JsonSerializer<LocalDateTime> {
         public JsonElement serialize(LocalDateTime data, Type typeOfSchema, JsonSerializationContext unused) {
             double d = Converters.toDouble(data);

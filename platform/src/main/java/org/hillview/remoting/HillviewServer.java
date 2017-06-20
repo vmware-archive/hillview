@@ -31,6 +31,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     public static final int DEFAULT_IDS_INDEX = 1;
+    public static final int DEFAULT_PORT = 3569;
+    private static final String LOCALHOST = "127.0.0.1";
     private static final int NUM_THREADS = 5;
     private static final Executor EXECUTOR = Executors.newFixedThreadPool(NUM_THREADS);
     private final Server server;

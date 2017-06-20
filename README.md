@@ -65,13 +65,13 @@ $ mvn install
   downloaded data:
 
 ```
-$ java -jar target/platform-datacleaner-jar-with-dependencies.jar
+$ cd bin; ./demo-data-cleaner.sh
 ```
 
-* Next, start an instance of a HillviewServer that listens on port 3569.
+* Next, from the bin folder, start an instance of a HillviewServer.
 
 ```
-$ java -jar target/platform-jar-with-dependencies.jar 127.0.0.1:3569
+$ ./demo-backend-start.sh
 ```
 
 * Now, from another terminal, build the web server and the front-end
@@ -85,7 +85,7 @@ $ mvn package
 the path to the data files is relative to this folder.
 
 ```
-$ ../apache-tomcat-8.5.8/bin/catalina.sh run
+$ cd ../bin; ./demo-frontend-start.sh
 ```
 
 * start a web browser at http://localhost:8080 and browse the data!

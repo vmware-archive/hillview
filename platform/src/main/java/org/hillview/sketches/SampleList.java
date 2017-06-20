@@ -4,11 +4,13 @@ import org.hillview.table.ArrayRowOrder;
 import org.hillview.table.RowSnapshot;
 import org.hillview.table.SmallTable;
 
+import java.io.Serializable;
+
 /**
  * A sample of rows from a large table, stored in a small table. The expectation is that the rows
  * are sorted according to some order (this is needed for the getRow method to be meaningful).
  */
-public class SampleList {
+public class SampleList implements Serializable {
     /**
      * The table containing the rows.
      */

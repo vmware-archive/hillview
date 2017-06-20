@@ -18,12 +18,14 @@
 
 package org.hillview.sketches;
 
+import java.io.Serializable;
+
 /**
  * Description of a one dimensional bucket set for computing histograms.
  * All buckets are left-inclusive and right-exclusive,
  * except the right most bucket which is right-inclusive.
  */
-interface IBucketsDescription1D {
+interface IBucketsDescription1D extends Serializable {
     /**
      * Number of buckets; must be greater than 0.
      */

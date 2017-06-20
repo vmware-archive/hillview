@@ -34,6 +34,12 @@ public class ColumnDescription implements Serializable, IJson {
      */
     public final boolean allowMissing;
 
+    public ColumnDescription() {
+        this.name = "";
+        this.kind = ContentsKind.Category;
+        this.allowMissing = false;
+    }
+
     public ColumnDescription(final String name, final ContentsKind kind,
                              final boolean allowMissing) {
         this.name = name;

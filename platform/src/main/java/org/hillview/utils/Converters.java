@@ -66,7 +66,7 @@ public class Converters {
      */
     public static <T> T checkNull(@Nullable T data) {
         if (data == null)
-            throw new NullPointerException();
+            throw new NullPointerException("Converters.checkNull() failed");
         return data;
     }
 }

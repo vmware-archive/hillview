@@ -24,16 +24,18 @@ import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.maps.LoadCsvFileMapper;
 import org.hillview.remoting.ClusterDescription;
+import org.hillview.remoting.HillviewServer;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 public class InitialObjectTarget extends RpcTarget {
-    private static final int HILLVIEW_DEFAULT_PORT = 3569;
     private static final String LOCALHOST = "127.0.0.1";
+    private static final Logger logger = Logger.getLogger(InitialObjectTarget.class.getName());
 
     @Nullable
     private IDataSet<Empty> emptyDataset = null;
@@ -41,23 +43,24 @@ public class InitialObjectTarget extends RpcTarget {
     InitialObjectTarget() {
         Empty empty = new Empty();
         final List<HostAndPort> hostAndPorts = new ArrayList<>();
-        hostAndPorts.add(HostAndPort.fromParts(LOCALHOST, HILLVIEW_DEFAULT_PORT));
-//        hostAndPorts.add(HostAndPort.fromParts(LOCALHOST, HILLVIEW_DEFAULT_PORT + 1));
+        hostAndPorts.add(HostAndPort.fromParts(LOCALHOST, HillviewServer.DEFAULT_PORT));
         final ClusterDescription desc = new ClusterDescription(hostAndPorts);
         this.initialize(desc);
     }
 
     private void initialize(final ClusterDescription description) {
         final int numServers = description.getServerList().size();
-        assert numServers > 0;
+        if (numServers <= 0) {
+            throw new IllegalArgumentException("ClusterDescription must contain one or more servers");
+        }
         if (numServers > 1) {
-            System.out.println("Creating PDS");
-            final ArrayList<IDataSet<Empty>> emptyDatasets = new ArrayList<>(numServers);
+            logger.info("Creating PDS");
+            final ArrayList<IDataSet<Empty>> emptyDatasets = new ArrayList<IDataSet<Empty>>(numServers);
             description.getServerList().forEach(server -> emptyDatasets.add(new RemoteDataSet<>(server)));
             this.emptyDataset = new ParallelDataSet<>(emptyDatasets);
         }
         else {
-            System.out.println("Creating RDS");
+            logger.info("Creating RDS");
             this.emptyDataset = new RemoteDataSet<Empty>(description.getServerList().get(0));
         }
     }

@@ -159,7 +159,6 @@
                     <execution>
                         <id>build-hillview-server</id>
                         <configuration>
-                            <!--<appendAssemblyId>true</appendAssemblyId>-->
                             <archive>
                                 <manifest>
                                     <mainClass>org.hillview.HillviewServerRunner</mainClass>
@@ -168,7 +167,7 @@
                             <descriptorRefs>
                                 <descriptorRef>jar-with-dependencies</descriptorRef>
                             </descriptorRefs>
-                            <finalName>${project.artifactId}</finalName>
+                            <finalName>hillview-server</finalName>
                         </configuration>
                         <phase>package</phase>
                         <goals>
@@ -178,7 +177,6 @@
                     <execution>
                         <id>build-data-cleaner</id>
                         <configuration>
-                            <!--<appendAssemblyId>true</appendAssemblyId>-->
                             <archive>
                                 <manifest>
                                     <mainClass>org.hillview.DemoDataCleaner</mainClass>
@@ -187,7 +185,7 @@
                             <descriptorRefs>
                                 <descriptorRef>jar-with-dependencies</descriptorRef>
                             </descriptorRefs>
-                            <finalName>${project.artifactId}-datacleaner</finalName>
+                            <finalName>data-cleaner</finalName>
                         </configuration>
                         <phase>package</phase>
                         <goals>

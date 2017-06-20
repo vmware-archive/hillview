@@ -20,6 +20,7 @@ package org.hillview.table;
 
 import org.hillview.table.api.*;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -27,7 +28,7 @@ import java.util.List;
 /**
  * Base class for in-memory tables.
  */
-public abstract class BaseTable implements ITable {
+public abstract class BaseTable implements ITable, Serializable {
     /**
      * Maps columns name to an IColumn.
      */
@@ -72,6 +73,10 @@ public abstract class BaseTable implements ITable {
             ColumnDescription cd = schema.getDescription(c);
             this.columns.put(c, BaseArrayColumn.create(cd));
         }
+    }
+
+    BaseTable() {
+        this.columns = new HashMap<>();
     }
 
     @Override
