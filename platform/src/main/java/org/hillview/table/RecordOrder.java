@@ -24,6 +24,7 @@ import org.hillview.table.api.ISubSchema;
 import org.hillview.table.api.ITable;
 import org.hillview.table.api.IndexComparator;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -36,7 +37,7 @@ import java.util.List;
  * As long as a record contains all these columns, we can project onto just these columns and order
  * the record.
  */
-public class RecordOrder implements Iterable<ColumnSortOrientation> {
+public class RecordOrder implements Iterable<ColumnSortOrientation>, Serializable {
     private final List<ColumnSortOrientation> sortOrientationList;
 
     public RecordOrder() {

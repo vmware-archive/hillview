@@ -4,13 +4,15 @@ import org.hillview.sketches.ColumnSortOrientation;
 import org.hillview.table.api.IRow;
 import org.hillview.utils.HashUtil;
 
+import java.io.Serializable;
+
 /**
  * An abstract class that implements IRow, which is an interface for accessing rows in a table.
  * Concrete classes that extend it are RowSnapshot and VirtualRowSnapshot. The main methods this
  * class provides are equality testing and comparison (by some specified record order). This for
  * instance allows easy comparison between the classes mentioned above.
  */
-public abstract class BaseRowSnapshot implements IRow {
+public abstract class BaseRowSnapshot implements IRow, Serializable {
     /**
      * Compare this row to the other for equality.
      * Only the fields in the schema are compared.

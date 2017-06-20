@@ -31,6 +31,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     public static final int DEFAULT_IDS_INDEX = 1;
+    public static final int DEFAULT_PORT = 3569;
+    private static final String LOCALHOST = "127.0.0.1";
     private static final int NUM_THREADS = 5;
     private static final Executor EXECUTOR = Executors.newFixedThreadPool(NUM_THREADS);
     private final Server server;
@@ -63,6 +65,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
 
             @Override
             public void onError(final Throwable throwable) {
+                throwable.printStackTrace();
                 responseObserver.onError(throwable);
                 HillviewServer.this.operationToObservable.remove(id);
             }
@@ -88,6 +91,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     @Override
     @SuppressWarnings("unchecked")
     public void map(final Command command, final StreamObserver<PartialResponse> responseObserver) {
+        System.out.println("Received command map");
         try {
             if (!this.checkValidIdsIndex(command.getIdsIndex(), responseObserver)) {
                 return;
@@ -100,6 +104,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             final Subscription sub = observable.subscribe(this.createSubscriber(mapOp.id, responseObserver));
             this.operationToObservable.put(mapOp.id, sub);
         } catch (final Exception e) {
+            e.printStackTrace();
             responseObserver.onError(e);
         }
     }
@@ -111,6 +116,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     @SuppressWarnings("unchecked")
     public void flatMap(final Command command, final StreamObserver<PartialResponse>
             responseObserver) {
+        System.out.println("Received command flatmap");
         try {
             if (!this.checkValidIdsIndex(command.getIdsIndex(), responseObserver)) {
                 return;
@@ -123,6 +129,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             final Subscription sub = observable.subscribe(this.createSubscriber(mapOp.id, responseObserver));
             this.operationToObservable.put(mapOp.id, sub);
         } catch (final Exception e) {
+            e.printStackTrace();
             responseObserver.onError(e);
         }
     }
@@ -151,6 +158,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
 
                 @Override
                 public void onError(final Throwable throwable) {
+                    throwable.printStackTrace();
                     responseObserver.onError(throwable);
                     HillviewServer.this.operationToObservable.remove(sketchOp.id);
                 }
@@ -167,6 +175,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             });
             this.operationToObservable.put(sketchOp.id, sub);
         } catch (final Exception e) {
+            e.printStackTrace();
             responseObserver.onError(e);
         }
     }
@@ -192,6 +201,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                     this.createSubscriber(zipOp.id, responseObserver));
             this.operationToObservable.put(zipOp.id, sub);
         } catch (final Exception e) {
+            e.printStackTrace();
             responseObserver.onError(e);
         }
     }
@@ -209,6 +219,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                 subscription.unsubscribe();
             }
         } catch (final Exception e) {
+            e.printStackTrace();
             responseObserver.onError(e);
         }
     }

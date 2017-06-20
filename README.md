@@ -65,11 +65,16 @@ $ mvn install
   downloaded data:
 
 ```
-$ mvn exec:java
-$ cd ..
+$ cd bin; ./demo-data-cleaner.sh
 ```
 
-* Build the web server and the front-end
+* Next, from the bin folder, start an instance of a HillviewServer.
+
+```
+$ ./demo-backend-start.sh
+```
+
+* Now, from another terminal, build the web server and the front-end
 
 ```
 $ cd web
@@ -80,7 +85,7 @@ $ mvn package
 the path to the data files is relative to this folder.
 
 ```
-$ ../apache-tomcat-8.5.8/bin/catalina.sh run
+$ cd ../bin; ./demo-frontend-start.sh
 ```
 
 * start a web browser at http://localhost:8080 and browse the data!

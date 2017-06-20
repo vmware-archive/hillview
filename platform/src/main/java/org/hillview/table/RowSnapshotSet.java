@@ -35,20 +35,15 @@ public class RowSnapshotSet implements Serializable {
     private final Schema schema;
     private final UnifiedSetWithHashingStrategy<BaseRowSnapshot> rowSet;
 
-    private RowSnapshotSet(Schema schema) {
-        this.schema = schema;
-        HashingStrategy<BaseRowSnapshot> strategy = new HashingStrategy<BaseRowSnapshot>() {
-            @Override
-            public int computeHashCode(BaseRowSnapshot row) {
-                return row.computeHashCode(RowSnapshotSet.this.schema);
-            }
+    public RowSnapshotSet() {
+        this(new Schema());
+    }
 
-            @Override
-            public boolean equals(BaseRowSnapshot left, BaseRowSnapshot right) {
-                return left.compareForEquality(right, RowSnapshotSet.this.schema);
-            }
-        };
-        this.rowSet = new UnifiedSetWithHashingStrategy<BaseRowSnapshot>(strategy);
+    public RowSnapshotSet(Schema schema) {
+        Converters.checkNull(schema);
+        this.schema = schema;
+        this.rowSet = new UnifiedSetWithHashingStrategy<BaseRowSnapshot>(
+                          new BaseRowSnapshotHashingStrategy(schema));
     }
 
     public <T extends BaseRowSnapshot> RowSnapshotSet(Schema schema, Iterable<T> data) {
@@ -92,6 +87,25 @@ public class RowSnapshotSet implements Serializable {
         public boolean test(int rowIndex) {
             Converters.checkNull(this.vrs).setRow(rowIndex);
             return this.set.contains(this.vrs);
+        }
+    }
+
+    static class BaseRowSnapshotHashingStrategy implements HashingStrategy<BaseRowSnapshot>, Serializable {
+        private final Schema schema;
+
+        public BaseRowSnapshotHashingStrategy(final Schema schema) {
+            this.schema = schema;
+        }
+
+        @Override
+        public int computeHashCode(BaseRowSnapshot row) {
+            Converters.checkNull(this.schema);
+            return row.computeHashCode(this.schema);
+        }
+
+        @Override
+        public boolean equals(BaseRowSnapshot left, BaseRowSnapshot right) {
+            return left.compareForEquality(right, this.schema);
         }
     }
 

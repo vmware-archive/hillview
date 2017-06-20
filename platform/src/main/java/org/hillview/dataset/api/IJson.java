@@ -18,17 +18,20 @@
 
 package org.hillview.dataset.api;
 
+import com.google.common.net.HostAndPort;
 import com.google.gson.*;
+import org.hillview.remoting.ClusterDescription;
 import org.hillview.table.Schema;
 import org.hillview.utils.Converters;
 
+import java.io.Serializable;
 import java.lang.reflect.Type;
 import java.time.LocalDateTime;
 
 // Unfortunately this module introduces many circular dependences, because it has
 // to register various type adaptors.
 
-public interface IJson {
+public interface IJson extends Serializable {
     class DateSerializer implements JsonSerializer<LocalDateTime> {
         public JsonElement serialize(LocalDateTime data, Type typeOfSchema, JsonSerializationContext unused) {
             double d = Converters.toDouble(data);
@@ -47,7 +50,9 @@ public interface IJson {
     GsonBuilder builder = new GsonBuilder()
         .registerTypeAdapter(Schema.class, new Schema.Serializer())
         .registerTypeAdapter(Schema.class, new Schema.Deserializer())
-        .registerTypeAdapter(LocalDateTime.class, new DateSerializer());
+        .registerTypeAdapter(LocalDateTime.class, new DateSerializer())
+        .registerTypeAdapter(HostAndPort.class, new ClusterDescription.HostAndPortSerializer())
+        .registerTypeAdapter(HostAndPort.class, new ClusterDescription.HostAndPortDeserializer());
     Gson gsonInstance = builder.serializeNulls().create();
 
     /**

@@ -18,9 +18,11 @@
 
 package org.hillview.table.api;
 
+import java.io.Serializable;
+
 /**
  * Knows how to convert a string to a double.
  */
-public interface IStringConverter {
+public interface IStringConverter extends Serializable {
     double asDouble(String string);
 }

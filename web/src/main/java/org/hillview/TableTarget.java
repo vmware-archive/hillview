@@ -64,40 +64,6 @@ public final class TableTarget extends RpcTarget {
         this.runSketch(this.table, nk, request, session);
     }
 
-    static class HistogramParts {
-        HistogramParts(BucketsDescriptionEqSize buckets, @Nullable IStringConverter converter,
-                       Hist1DLightSketch sketch) {
-            this.buckets = buckets;
-            this.converter = converter;
-            this.sketch = sketch;
-        }
-
-        final BucketsDescriptionEqSize buckets;
-        @Nullable
-        final IStringConverter converter;
-        final Hist1DLightSketch sketch;
-    }
-
-    static class ColumnAndRange implements Serializable {
-        String columnName = "";
-        double min;
-        double max;
-        int cdfBucketCount;
-        int bucketCount;  // only used for histogram
-        @Nullable
-        String[] bucketBoundaries;  // only used for Categorical columns histograms
-
-        HistogramParts prepare() {
-            IStringConverter converter = null;
-            if (this.bucketBoundaries != null)
-                converter = new SortedStringsConverter(
-                        this.bucketBoundaries, (int)Math.ceil(this.min), (int)Math.floor(this.max));
-            BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(this.min, this.max, this.bucketCount);
-            Hist1DLightSketch sketch = new Hist1DLightSketch(buckets, this.columnName, converter);
-            return new HistogramParts(buckets, converter, sketch);
-        }
-    }
-
     @HillviewRpc
     void uniqueStrings(RpcRequest request, Session session) {
         String columnName = request.parseArgs(String.class);
@@ -124,13 +90,6 @@ public final class TableTarget extends RpcTarget {
         ConcurrentSketch<ITable, Histogram1DLight, Histogram1DLight> csk =
                 new ConcurrentSketch<ITable, Histogram1DLight, Histogram1DLight>(cdf, parts.sketch);
         this.runSketch(this.table, csk, request, session);
-    }
-
-    static class ColPair {
-        @Nullable
-        ColumnAndRange first;
-        @Nullable
-        ColumnAndRange second;
     }
 
     @HillviewRpc
@@ -199,62 +158,12 @@ public final class TableTarget extends RpcTarget {
         this.runSketch(this.table, csk, request, session);
     }
 
-    static class RangeFilter implements TableFilter, Serializable {
-        final ColumnAndRange args;
-        @Nullable
-        IColumn column;  // not really nullable, but set later.
-        @Nullable
-        final IStringConverter converter;
-
-        RangeFilter(ColumnAndRange args) {
-            this.args = args;
-            this.column = null;
-            if (args.bucketBoundaries != null)
-                this.converter = new SortedStringsConverter(
-                        args.bucketBoundaries, (int)Math.ceil(args.min), (int)Math.floor(args.max));
-            else
-                this.converter = null;
-        }
-
-        @Override
-        public void setTable(ITable table) {
-            IColumn col = table.getColumn(this.args.columnName);
-            this.column = Converters.checkNull(col);
-        }
-
-        public boolean test(int rowIndex) {
-            if (Converters.checkNull(this.column).isMissing(rowIndex))
-                return false;
-            double d = this.column.asDouble(rowIndex, this.converter);
-            return this.args.min <= d && d <= this.args.max;
-        }
-    }
-
     @HillviewRpc
     void filterRange(RpcRequest request, Session session) {
         ColumnAndRange info = request.parseArgs(ColumnAndRange.class);
         RangeFilter filter = new RangeFilter(info);
         FilterMap fm = new FilterMap(filter);
         this.runMap(this.table, fm, TableTarget::new, request, session);
-    }
-
-    static class Range2DFilter implements TableFilter, Serializable {
-        final RangeFilter first;
-        final RangeFilter second;
-
-        Range2DFilter(ColPair args) {
-            this.first = new RangeFilter(Converters.checkNull(args.first));
-            this.second = new RangeFilter(Converters.checkNull(args.second));
-        }
-
-        public void setTable(ITable table) {
-            this.first.setTable(table);
-            this.second.setTable(table);
-        }
-
-        public boolean test(int rowIndex) {
-            return this.first.test(rowIndex) && this.second.test(rowIndex);
-        }
     }
 
     @HillviewRpc
@@ -284,6 +193,7 @@ public final class TableTarget extends RpcTarget {
     void heavyHitters(RpcRequest request, Session session) {
         // TODO: read size from client
         Schema schema = request.parseArgs(Schema.class);
+        Converters.checkNull(schema);
         FreqKSketch sk = new FreqKSketch(schema, 100);
         this.runCompleteSketch(this.table, sk, HeavyHittersTarget::new, request, session);
     }

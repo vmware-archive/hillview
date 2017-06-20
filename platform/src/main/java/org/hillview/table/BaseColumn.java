@@ -34,7 +34,7 @@ abstract class BaseColumn implements IColumn {
             throw new RuntimeException("Expected " + kind + " but have " + this.getDescription().kind);
     }
 
-    BaseColumn(final ColumnDescription description) {
+    public BaseColumn(final ColumnDescription description) {
         this.description = description;
     }
 

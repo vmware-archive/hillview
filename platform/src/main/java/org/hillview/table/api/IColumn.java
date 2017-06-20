@@ -22,6 +22,7 @@ import org.hillview.table.ColumnDescription;
 import org.hillview.table.ObjectArrayColumn;
 
 import javax.annotation.Nullable;
+import java.io.Serializable;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
@@ -29,7 +30,7 @@ import java.time.LocalDateTime;
  * Interface describing operations on a column.
  * A column is just a big vector of values.
  */
-public interface IColumn {
+public interface IColumn extends Serializable {
     ColumnDescription getDescription();
 
     /* Only one of the following methods is supposed to work for a column */

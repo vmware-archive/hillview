@@ -21,13 +21,20 @@ package org.hillview.table;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IIntColumn;
 
+import java.io.Serializable;
+
 /**
  * Column of integers, implemented as an array of integers and a BitSet of missing values.
  */
 public final class IntArrayColumn
         extends BaseArrayColumn
-        implements IIntColumn {
+        implements IIntColumn, Serializable {
     private final int[] data;
+
+    public IntArrayColumn() {
+        super(new ColumnDescription(), 0);
+        this.data = new int[0];
+    }
 
     public IntArrayColumn(final ColumnDescription description, final int size) {
         super(description, size);
