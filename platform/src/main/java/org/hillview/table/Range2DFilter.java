@@ -5,7 +5,9 @@ import org.hillview.utils.Converters;
 
 import java.io.Serializable;
 
-
+/**
+ * Filter applied to two columns.
+ */
 public class Range2DFilter implements TableFilter, Serializable {
     final RangeFilter first;
     final RangeFilter second;

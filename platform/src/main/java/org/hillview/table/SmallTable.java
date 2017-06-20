@@ -56,11 +56,8 @@ public class SmallTable
         super(columns);
         this.rowCount = BaseTable.columnSize(this.columns.values());
         final Schema s = new Schema();
-        for (final IColumn c : columns) {
+        for (final IColumn c : columns)
             s.append(c.getDescription());
-            if (!(c instanceof Serializable))
-                throw new RuntimeException("Column for SmallTable is not serializable");
-        }
         this.schema = schema;
         if (!schema.equals(s))
             throw new RuntimeException("Schemas do not match");
@@ -70,11 +67,8 @@ public class SmallTable
         super(columns);
         this.rowCount = BaseTable.columnSize(this.columns.values());
         final Schema s = new Schema();
-        for (final IColumn c : columns) {
+        for (final IColumn c : columns)
             s.append(c.getDescription());
-            if (!(c instanceof Serializable))
-                throw new RuntimeException("Column for SmallTable is not serializable");
-        }
         this.schema = s;
     }
 

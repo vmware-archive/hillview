@@ -39,8 +39,8 @@ public class DemoDataCleaner {
         System.out.println("Splitting files in folder " + dataFolder);
         Path path = Paths.get(dataFolder, schemaFile);
         Schema schema = Schema.readFromJsonFile(path);
-        HashSubSchema subschema = new HashSubSchema(columns);
-        Schema proj = schema.project(subschema);
+        HashSubSchema subSchema = new HashSubSchema(columns);
+        Schema proj = schema.project(subSchema);
         proj.writeToJsonFile(Paths.get(dataFolder, "short.schema"));
 
         // If non-zero, split each table into parts of this size.
@@ -85,10 +85,10 @@ public class DemoDataCleaner {
                         for (ITable t : pieces) {
                             String baseName = end.substring(0, end.lastIndexOf("."));
                             String name = baseName + "-" + Integer.toString(index) + ".csv";
-                            Path outpath = Paths.get(dataFolder, name);
-                            CsvFileWriter writer = new CsvFileWriter(outpath);
+                            Path outPath = Paths.get(dataFolder, name);
+                            CsvFileWriter writer = new CsvFileWriter(outPath);
                             try {
-                                System.out.println("Writing " + outpath);
+                                System.out.println("Writing " + outPath);
                                 writer.writeTable(t);
                             } catch (IOException e) {
                                 e.printStackTrace();

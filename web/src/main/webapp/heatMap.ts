@@ -142,7 +142,7 @@ implements IHtmlElement, HillviewDataView {
                 { text: "refresh", action: () => { this.refresh(); } },
                 { text: "swap axes", action: () => { this.swapAxes(); } },
                 { text: "table", action: () => { this.showTable(); } },
-                { text: "log/linear scale", action: () => { this.changeScale(); }}
+                //{ text: "log/linear scale", action: () => { this.changeScale(); }}
             ]) }
         ]);
 
@@ -233,10 +233,7 @@ implements IHtmlElement, HillviewDataView {
     public swapAxes(): void {
         let collector = new Range2DCollector(
             [this.currentData.yData.description, this.currentData.xData.description],
-            this.tableSchema,
-            this.page,
-            this,
-            null);
+            this.tableSchema, this.page, this, null, true);
         collector.setValue( {
             first: this.currentData.yData.stats,
             second: this.currentData.xData.stats });
@@ -329,7 +326,7 @@ implements IHtmlElement, HillviewDataView {
         let max: number = 0;
         let visible: number = 0;
         let distinct: number = 0;
-        for (let x = 0; x < data.length; x++)
+        for (let x = 0; x < data.length; x++) {
             for (let y = 0; y < data[x].length; y++) {
                 let v = data[x][y];
                 if (v > max)
@@ -345,6 +342,10 @@ implements IHtmlElement, HillviewDataView {
                     dots.push(rec);
                 }
             }
+        }
+
+        this.logScale = max > 20;
+
         if (max <= 1) {
             max = 1;
         } else {
@@ -378,15 +379,19 @@ implements IHtmlElement, HillviewDataView {
 
             // create a scale and axis for the legend
             let legendScale;
-            if (this.logScale)
+            if (this.logScale) {
+                let base = (max > 10000) ? 10 : 2;
                 legendScale = d3.scaleLog()
-                    .base(2);
-            else
+                    .base(base);
+            } else {
                 legendScale = d3.scaleLinear();
+            }
+
+            let tickCount = max > 10 ? 10 : max - 1;
             legendScale
                 .domain([1, max])
                 .range([0, legendWidth])
-                .ticks(10);
+                .ticks(tickCount);
 
             let legendAxis = d3.axisBottom(legendScale);
             legendSvg.append("g")
@@ -460,7 +465,7 @@ implements IHtmlElement, HillviewDataView {
     }
 
     static colorMap(d: number): string {
-        return d3.interpolatePlasma(d);
+        return d3.interpolateWarm(d);
     }
 
     color(d: number, max: number): string {
@@ -471,7 +476,7 @@ implements IHtmlElement, HillviewDataView {
         if (this.logScale)
             return HeatMapView.colorMap(Math.log(d) / Math.log(max));
         else
-            return HeatMapView.colorMap(d / max);
+            return HeatMapView.colorMap((d - 1) / (max - 1));
     }
 
     static invert(v: number, scale: AnyScale, kind: ContentsKind, allStrings: string[]): string {
@@ -526,7 +531,7 @@ implements IHtmlElement, HillviewDataView {
 
     dragStart(): void {
         this.dragging = true;
-        let position = d3.mouse(this.canvas.node());
+        let position = d3.mouse(this.chart.node());
         this.selectionOrigin = {
             x: position[0],
             y: position[1] };
@@ -538,7 +543,7 @@ implements IHtmlElement, HillviewDataView {
             return;
         let ox = this.selectionOrigin.x;
         let oy = this.selectionOrigin.y;
-        let position = d3.mouse(this.canvas.node());
+        let position = d3.mouse(this.chart.node());
         let x = position[0];
         let y = position[1];
         let width = x - ox;
@@ -554,8 +559,8 @@ implements IHtmlElement, HillviewDataView {
         }
 
         this.selectionRectangle
-            .attr("x", ox)
-            .attr("y", oy)
+            .attr("x", ox + HeatMapView.margin.left)
+            .attr("y", oy + HeatMapView.margin.top)
             .attr("width", width)
             .attr("height", height);
     }
@@ -567,7 +572,7 @@ implements IHtmlElement, HillviewDataView {
         this.selectionRectangle
             .attr("width", 0)
             .attr("height", 0);
-        let position = d3.mouse(this.canvas.node());
+        let position = d3.mouse(this.chart.node());
         let x = position[0];
         let y = position[1];
         this.selectionCompleted(this.selectionOrigin.x, x, this.selectionOrigin.y, y);
@@ -669,22 +674,21 @@ export class Filter2DReceiver extends Renderer<string> {
             let cols: RangeInfo[] = [first, second];
             let rr = this.stub.createRpcRequest("range2D", cols);
             rr.invoke(new Range2DCollector(
-                this.cds,
-                this.tableSchema,
-                this.page,
-                this.stub, rr));
+                this.cds, this.tableSchema, this.page, this.stub, rr, true));
         }
     }
 }
 
-// Waits for all column stats to be received and then initiates a heatmap.
+// Waits for all column stats to be received and then initiates a heatmap or 2Dhistogram.
 export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats>> {
     protected stats: Pair<BasicColStats, BasicColStats>;
     constructor(protected cds: ColumnDescription[],
                 protected tableSchema: Schema,
                 page: FullPage,
                 protected remoteObject: RemoteObject,
-                operation: ICancellable) {
+                operation: ICancellable,
+                protected drawHeatMap: boolean  // true - heatMap, false - histogram
+    ) {
         super(page, operation, "range2d");
     }
 
@@ -701,10 +705,17 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
         this.setValue(value.data);
     }
 
-    public heatmap(): void {
+    public draw(): void {
         let size = HeatMapView.getRenderingSize(this.page);
-        let xBucketCount = Math.floor(size.width / HeatMapView.minDotSize);
-        let yBucketCount = Math.floor(size.height / HeatMapView.minDotSize);
+        let xBucketCount: number;
+        let yBucketCount: number;
+        if (this.drawHeatMap) {
+            xBucketCount = Math.floor(size.width / HeatMapView.minDotSize);
+            yBucketCount = Math.floor(size.height / HeatMapView.minDotSize);
+        } else {
+            xBucketCount = HistogramView.bucketCount(this.stats.first, this.page, this.cds[0].kind);
+            yBucketCount = HistogramView.bucketCount(this.stats.second, this.page, this.cds[1].kind);
+        }
         let arg0: ColumnAndRange = {
             columnName: this.cds[0].name,
             min: this.stats.first.min,
@@ -725,13 +736,31 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
             first: arg0,
             second: arg1
         };
-        let rr = this.remoteObject.createRpcRequest("heatMap", args);
-        if (this.operation != null)
-            rr.setStartTime(this.operation.startTime());
-        let renderer = new HeatMapRenderer(this.page,
-            this.remoteObject.remoteObjectId, this.tableSchema,
-            this.cds, [this.stats.first, this.stats.second], rr);
-        rr.invoke(renderer);
+
+        if (this.drawHeatMap) {
+            let rr = this.remoteObject.createRpcRequest("heatMap", args);
+            if (this.operation != null)
+                rr.setStartTime(this.operation.startTime());
+            let renderer = new HeatMapRenderer(this.page,
+                this.remoteObject.remoteObjectId, this.tableSchema,
+                this.cds, [this.stats.first, this.stats.second], rr);
+            rr.invoke(renderer);
+        } else {
+            let rr = this.remoteObject.createRpcRequest("histogram2d", args);
+            if (this.operation != null)
+                rr.setStartTime(this.operation.startTime());
+            // TODO
+            /*
+            let renderer = new Histogram2DRenderer(this.page,
+                this.remoteObject.remoteObjectId, this.tableSchema,
+                this.cds, [this.stats.first, this.stats.second], rr);
+            rr.invoke(renderer);
+            */
+        }
+    }
+
+    public histogram2D(): void {
+        // TODO
     }
 
     onCompleted(): void {
@@ -739,7 +768,7 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
         if (this.stats == null)
         // probably some error occurred
             return;
-        this.heatmap();
+        this.draw();
     }
 }
 

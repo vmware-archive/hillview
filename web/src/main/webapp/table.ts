@@ -460,13 +460,39 @@ export class TableView extends RemoteObject
     }
 
     public histogram(columnName: string): void {
-        let cd = this.findColumn(columnName);
-        if (cd.kind == "Category" && !this.numberedCategories.has(columnName)) {
-            let rr = this.createRpcRequest("uniqueStrings", columnName);
-            rr.invoke(new NumberStrings(cd, this.schema, this.getPage(), this, rr));
+        if (this.selectedColumns.size <= 1) {
+            let cd = this.findColumn(columnName);
+            if (cd.kind == "Category" && !this.numberedCategories.has(columnName)) {
+                let rr = this.createRpcRequest("uniqueStrings", columnName);
+                rr.invoke(new NumberStrings(cd, this.schema, this.getPage(), this, rr));
+            } else {
+                let rr = this.createRpcRequest("range", {columnName: columnName});
+                rr.invoke(new RangeCollector(cd, this.schema, null, this.getPage(), this, rr));
+            }
+        } else if (this.selectedColumns.size == 2) {
+            let columns: RangeInfo[] = [];
+            let cds: ColumnDescription[] = [];
+            this.selectedColumns.forEach(v => {
+                let colDesc = this.findColumn(v);
+                if (colDesc.kind == "String") {
+                    this.page.reportError("2D Histograms not supported for string columns " + colDesc.name);
+                    return;
+                }
+                if (colDesc.kind == "Category") {
+                    this.page.reportError("2D histograms not yet implemented for category columns " + colDesc.name);
+                    return;
+                }
+                let ci = new RangeInfo();
+                ci.columnName = colDesc.name;
+                cds.push(colDesc);
+                columns.push(ci);
+            });
+
+            let rr = this.createRpcRequest("range2D", columns);
+            rr.invoke(new Range2DCollector(cds, this.schema, this.getPage(), this, rr, false));
         } else {
-            let rr = this.createRpcRequest("range", { columnName: columnName });
-            rr.invoke(new RangeCollector(cd, this.schema, null, this.getPage(), this, rr));
+            this.page.reportError("Must select 1 or 2 columns for histogram");
+            return;
         }
     }
 
@@ -665,8 +691,11 @@ export class TableView extends RemoteObject
             columns.push(ci);
         });
 
+        if (columns.length != 2)
+            // some error has occurred
+            return;
         let rr = this.createRpcRequest("range2D", columns);
-        rr.invoke(new Range2DCollector(cds, this.schema, this.getPage(), this, rr));
+        rr.invoke(new Range2DCollector(cds, this.schema, this.getPage(), this, rr, true));
     }
 
     private highlightSelectedColumns(): void {

@@ -96,5 +96,6 @@ public class TableDataSetTest {
         IndexComparator comp = cso.getComparator(sl.table);
         for (int i = 0; i < (sl.table.getNumOfRows()- 1); i++)
             assertTrue(comp.compare(i, i + 1) <= 0);
+        server1.shutdown();
     }
 }

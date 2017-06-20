@@ -15,7 +15,7 @@
  *  limitations under the License.
  */
 
-import {RemoteObject, ICancellable, RpcReceiver, PartialResult} from "./rpc";
+import {RemoteObject, ICancellable, PartialResult} from "./rpc";
 import {RemoteTableReceiver} from "./table";
 import {FullPage, Renderer} from "./ui";
 

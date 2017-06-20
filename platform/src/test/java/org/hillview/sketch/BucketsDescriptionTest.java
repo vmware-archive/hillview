@@ -18,7 +18,7 @@
 
 package org.hillview.sketch;
 
-import org.hillview.sketches.BucketsDescription1D;
+import org.hillview.sketches.BucketsDescription;
 import org.hillview.sketches.BucketsDescriptionEqSize;
 import org.junit.Test;
 
@@ -26,7 +26,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 
-public class BucketsDescription1DTest {
+public class BucketsDescriptionTest {
     @Test
     public void testEqSize() throws Exception {
         BucketsDescriptionEqSize bdEqSize = new BucketsDescriptionEqSize(0.5, 100.5, 100);
@@ -47,7 +47,7 @@ public class BucketsDescription1DTest {
         double[] boundaries = new double[101];
         for (int i = 0; i < 101; i++)
             boundaries[i] = i + 0.5;
-        BucketsDescription1D bdEq = new BucketsDescription1D(boundaries);
+        BucketsDescription bdEq = new BucketsDescription(boundaries);
         assertEquals(bdEq.getNumOfBuckets(), 100);
         assertEquals(bdEq.indexOf(0.5), 0);
         assertEquals(bdEq.indexOf(0.6), 0);
@@ -61,7 +61,7 @@ public class BucketsDescription1DTest {
         double[] boundaries1 = new double[101];
         for (int i = 0; i < 101; i++)
             boundaries1[i] = i + 0.4;
-        BucketsDescription1D bdEq1 = new BucketsDescription1D(boundaries1);
+        BucketsDescription bdEq1 = new BucketsDescription(boundaries1);
         assertFalse(bdEq.equals(bdEq1));
     }
 }

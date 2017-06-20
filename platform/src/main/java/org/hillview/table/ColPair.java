@@ -2,8 +2,8 @@ package org.hillview.table;
 
 import javax.annotation.Nullable;
 
-
-public class ColPair {
+@SuppressWarnings("CanBeFinal")
+public class ColPair implements IJsonRepr {
     @Nullable
     public ColumnAndRange first;
     @Nullable

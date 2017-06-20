@@ -25,8 +25,8 @@ import org.hillview.utils.Converters;
 import javax.annotation.Nullable;
 
 public class HeatMapSketch implements ISketch<ITable, HeatMap> {
-    private final IBucketsDescription1D bucketDescD1;
-    private final IBucketsDescription1D bucketDescD2;
+    private final IBucketsDescription bucketDescD1;
+    private final IBucketsDescription bucketDescD2;
     private final String colNameD1;
     private final String colNameD2;
     @Nullable
@@ -35,7 +35,7 @@ public class HeatMapSketch implements ISketch<ITable, HeatMap> {
     private final IStringConverter converterD2;
     private final double rate;
 
-    public HeatMapSketch(IBucketsDescription1D bucketDesc1, IBucketsDescription1D bucketDesc2,
+    public HeatMapSketch(IBucketsDescription bucketDesc1, IBucketsDescription bucketDesc2,
                          @Nullable IStringConverter converter1, @Nullable IStringConverter converter2,
                          String colName1, String colName2) {
         this.bucketDescD1 = bucketDesc1;
@@ -47,7 +47,7 @@ public class HeatMapSketch implements ISketch<ITable, HeatMap> {
         this.rate = 1;
     }
 
-    public HeatMapSketch(IBucketsDescription1D bucketDesc1, IBucketsDescription1D bucketDesc2,
+    public HeatMapSketch(IBucketsDescription bucketDesc1, IBucketsDescription bucketDesc2,
                          @Nullable IStringConverter converter1, @Nullable IStringConverter converter2,
                          String colName1, String colName2, double rate) {
         this.bucketDescD1 = bucketDesc1;

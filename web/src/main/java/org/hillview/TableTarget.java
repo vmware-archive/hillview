@@ -18,21 +18,19 @@
 package org.hillview;
 
 import org.hillview.dataset.ConcurrentSketch;
-import org.hillview.dataset.TripleSketch;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.maps.FilterMap;
 import org.hillview.sketches.*;
 import org.hillview.table.*;
-import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IStringConverter;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
-import java.io.Serializable;
 import java.util.function.Function;
 
+@SuppressWarnings("CanBeFinal")
 public final class TableTarget extends RpcTarget {
     private final IDataSet<ITable> table;
     TableTarget(IDataSet<ITable> table) {
@@ -85,18 +83,18 @@ public final class TableTarget extends RpcTarget {
             converter = new SortedStringsConverter(
                     info.bucketBoundaries, (int)Math.ceil(info.min), (int)Math.floor(info.max));
         BucketsDescriptionEqSize cdfBuckets = new BucketsDescriptionEqSize(info.min, info.max, cdfBucketCount);
-        Hist1DLightSketch cdf = new Hist1DLightSketch(cdfBuckets, info.columnName, converter);
-        HistogramParts parts = info.prepare();
-        ConcurrentSketch<ITable, Histogram1DLight, Histogram1DLight> csk =
-                new ConcurrentSketch<ITable, Histogram1DLight, Histogram1DLight>(cdf, parts.sketch);
+        HistogramSketch cdf = new HistogramSketch(cdfBuckets, info.columnName, converter);
+        ColumnAndRange.HistogramParts parts = info.prepare();
+        ConcurrentSketch<ITable, Histogram, Histogram> csk =
+                new ConcurrentSketch<ITable, Histogram, Histogram>(cdf, parts.sketch);
         this.runSketch(this.table, csk, request, session);
     }
 
     @HillviewRpc
     void heatMap(RpcRequest request, Session session) {
         ColPair info = request.parseArgs(ColPair.class);
-        HistogramParts h1 = Converters.checkNull(info.first).prepare();
-        HistogramParts h2 = Converters.checkNull(info.second).prepare();
+        ColumnAndRange.HistogramParts h1 = Converters.checkNull(info.first).prepare();
+        ColumnAndRange.HistogramParts h2 = Converters.checkNull(info.second).prepare();
 
         HeatMapSketch sk = new HeatMapSketch(h1.buckets, h2.buckets, h1.converter, h2.converter,
                 info.first.columnName, info.second.columnName);
@@ -106,17 +104,20 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     void histogram2D(RpcRequest request, Session session) {
         ColPair info = request.parseArgs(ColPair.class);
-        HistogramParts h1 = Converters.checkNull(info.first).prepare();
-        HistogramParts h2 = Converters.checkNull(info.second).prepare();
+        ColumnAndRange.HistogramParts h1 = Converters.checkNull(info.first).prepare();
+        ColumnAndRange.HistogramParts h2 = Converters.checkNull(info.second).prepare();
+        HeatMapSketch sketch = new HeatMapSketch(h1.buckets, h2.buckets, h1.converter, h2.converter,
+                info.first.columnName, info.second.columnName);
+
         int width = info.first.cdfBucketCount;
         if (info.first.min >= info.first.max)
             width = 1;
         BucketsDescriptionEqSize cdfBuckets =
                 new BucketsDescriptionEqSize(info.first.min, info.first.max, width);
-        Hist1DLightSketch cdf = new Hist1DLightSketch(cdfBuckets, info.first.columnName, null);
+        HistogramSketch cdf = new HistogramSketch(cdfBuckets, info.first.columnName, null);
 
-        TripleSketch<ITable, Histogram1DLight, Histogram1DLight, Histogram1DLight> csk =
-                new TripleSketch<ITable, Histogram1DLight, Histogram1DLight, Histogram1DLight>(cdf, h1.sketch, h2.sketch);
+        ConcurrentSketch<ITable, Histogram, HeatMap> csk =
+                new ConcurrentSketch<ITable, Histogram, HeatMap>(cdf, sketch);
         this.runSketch(this.table, csk, request, session);
     }
 
