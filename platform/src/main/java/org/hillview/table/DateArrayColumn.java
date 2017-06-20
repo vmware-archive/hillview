@@ -20,7 +20,6 @@ package org.hillview.table;
 
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IDateColumn;
-
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 

@@ -18,10 +18,12 @@
 
 package org.hillview.table;
 
+import net.openhft.hashing.LongHashFunction;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IStringConverter;
 import org.hillview.table.api.IndexComparator;
 import org.hillview.utils.Converters;
+import org.hillview.utils.XXHashSingleton;
 
 import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
@@ -177,5 +179,11 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
             k++;
         }
         return merged;
+    }
+
+    @Override
+    public long hashCode64(int rowIndex, long seed) {
+        XXHashSingleton hashF = XXHashSingleton.getInstance();
+        return hashF.getHash().hashLong(seed ^ Double.doubleToRawLongBits(this.asDouble(rowIndex,null)));
     }
 }
