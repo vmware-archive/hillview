@@ -25,19 +25,19 @@ public class CDFTest {
                this.dataSet.blockingSketch(new BasicColStatSketch(this.colName, null));
     }
 
-    private Histogram1DLight prepareCDF(int width, int height, boolean useSampling) {
+    private Histogram prepareCDF(int width, int height, boolean useSampling) {
         BucketsDescriptionEqSize bDec  =
                 new BucketsDescriptionEqSize(this.colStat.getMin(), this.colStat.getMax(), width);
         double sampleSize  =  2 * height * height * width;
         double rate = sampleSize / this.colStat.getPresentCount();
         if ((rate > 0.1) || (!useSampling))
             rate = 1.0; // no performance gains in sampling
-        final Histogram1DLight tmpHist =
-                this.dataSet.blockingSketch(new Hist1DLightSketch(bDec, this.colName, null, rate));
+        final Histogram tmpHist =
+                this.dataSet.blockingSketch(new HistogramSketch(bDec, this.colName, null, rate));
         return tmpHist.createCDF();
     }
 
-    private Histogram1D prepareHist(int width, int height, int barWidth, boolean useSampling) {
+    private Histogram prepareHist(int width, int height, int barWidth, boolean useSampling) {
         int bucketNum = width / barWidth;
         BucketsDescriptionEqSize bDec  =
                 new BucketsDescriptionEqSize(this.colStat.getMin(), this.colStat.getMax(), bucketNum);
@@ -46,7 +46,7 @@ public class CDFTest {
         double rate = sampleSize / this.colStat.getPresentCount();
         if ((rate > 0.1) || (!useSampling))
             rate = 1.0; //no use in sampling
-        return this.dataSet.blockingSketch(new Hist1DSketch(bDec, this.colName, null, rate));
+        return this.dataSet.blockingSketch(new HistogramSketch(bDec, this.colName, null, rate));
     }
 
     @Test

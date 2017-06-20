@@ -525,7 +525,7 @@ export class HistogramView extends RemoteObject
 
     dragStart(): void {
         this.dragging = true;
-        let position = d3.mouse(this.canvas.node());
+        let position = d3.mouse(this.chart.node());
         this.selectionOrigin = {
             x: position[0],
             y: position[1] };
@@ -536,7 +536,7 @@ export class HistogramView extends RemoteObject
         if (!this.dragging)
             return;
         let ox = this.selectionOrigin.x;
-        let position = d3.mouse(this.canvas.node());
+        let position = d3.mouse(this.chart.node());
         let x = position[0];
         let width = x - ox;
         let height = this.chartResolution.height;
@@ -547,7 +547,7 @@ export class HistogramView extends RemoteObject
         }
 
         this.selectionRectangle
-            .attr("x", ox)
+            .attr("x", ox + HistogramView.margin.left)
             .attr("y", HistogramView.margin.top)
             .attr("width", width)
             .attr("height", height);
@@ -561,7 +561,7 @@ export class HistogramView extends RemoteObject
             .attr("width", 0)
             .attr("height", 0);
 
-        let position = d3.mouse(this.canvas.node());
+        let position = d3.mouse(this.chart.node());
         let x = position[0];
         this.selectionCompleted(this.selectionOrigin.x, x);
     }
@@ -582,8 +582,8 @@ export class HistogramView extends RemoteObject
             return;
 
         let kind = this.currentData.description.kind;
-        let x0 = HistogramView.invertToNumber(xl - HistogramView.margin.left, this.xScale, kind);
-        let x1 = HistogramView.invertToNumber(xr - HistogramView.margin.left, this.xScale, kind);
+        let x0 = HistogramView.invertToNumber(xl, this.xScale, kind);
+        let x1 = HistogramView.invertToNumber(xr, this.xScale, kind);
 
         // selection could be done in reverse
         let min: number;

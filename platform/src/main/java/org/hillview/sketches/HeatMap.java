@@ -28,9 +28,7 @@ import javax.annotation.Nullable;
 import java.io.Serializable;
 
 /**
- * An implementation of a 2 dimension histogram. It is designed assuming the number of buckets is very large, so there
- * are no bucket objects, nor min and max items per bucket, the only thing stored is counts.
- * The buckets are assumed to have equal sizes.
+ * A 2-dimensional histogram.
  */
 public class HeatMap implements Serializable, IJson {
     private final long[][] buckets;
@@ -38,8 +36,8 @@ public class HeatMap implements Serializable, IJson {
     private long outOfRange;
     private final IBucketsDescription1D bucketDescDim1;
     private final IBucketsDescription1D bucketDescDim2;
-    private Histogram1DLight histogramMissingD1; // hist of items that are missing in D2
-    private Histogram1DLight histogramMissingD2; // hist of items that are missing in D1
+    private Histogram histogramMissingD1; // hist of items that are missing in D2
+    private Histogram histogramMissingD2; // hist of items that are missing in D1
     private long totalSize;
 
     public HeatMap(final IBucketsDescription1D buckets1,
@@ -47,8 +45,8 @@ public class HeatMap implements Serializable, IJson {
         this.bucketDescDim1 = buckets1;
         this.bucketDescDim2 = buckets2;
         this.buckets = new long[buckets1.getNumOfBuckets()][buckets2.getNumOfBuckets()]; // Automatically initialized to 0
-        this.histogramMissingD1 = new Histogram1DLight(this.bucketDescDim1);
-        this.histogramMissingD2 = new Histogram1DLight(this.bucketDescDim2);
+        this.histogramMissingD1 = new Histogram(this.bucketDescDim1);
+        this.histogramMissingD2 = new Histogram(this.bucketDescDim2);
     }
 
     /**
@@ -85,11 +83,11 @@ public class HeatMap implements Serializable, IJson {
         }
     }
 
-    public Histogram1DLight getMissingHistogramD1() { return this.histogramMissingD1; }
+    public Histogram getMissingHistogramD1() { return this.histogramMissingD1; }
 
     public long getSize() { return this.totalSize; }
 
-    public Histogram1DLight getMissingHistogramD2() { return this.histogramMissingD2; }
+    public Histogram getMissingHistogramD2() { return this.histogramMissingD2; }
 
     public void createSampleHistogram(final IColumn columnD1, final IColumn columnD2,
                                       @Nullable final IStringConverter converterD1,

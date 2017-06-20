@@ -26,26 +26,32 @@ import org.hillview.table.api.IStringConverter;
 import javax.annotation.Nullable;
 
 /**
- * One Dimensional histogram.
+ * One dimensional histogram where buckets are just longs and not a full object.
  */
-public class Histogram1D extends BaseHist1D {
-    private final Bucket1D[] buckets;
+public class Histogram {
+    private final long[] buckets;
     private long missingData;
     private long outOfRange;
+    private final double rate;
+    private final IBucketsDescription1D bucketDescription;
 
-    public Histogram1D(final IBucketsDescription1D bucketDescription) {
-        super(bucketDescription);
-        this.buckets = new Bucket1D[bucketDescription.getNumOfBuckets()];
-        for (int i = 0; i < this.bucketDescription.getNumOfBuckets(); i++)
-            this.buckets[i] = new Bucket1D();
+    public Histogram(final IBucketsDescription1D bucketDescription) {
+        this.bucketDescription = bucketDescription;
+        this.buckets = new long[bucketDescription.getNumOfBuckets()];
+        this.rate = 1.0;
     }
 
-    /**
-     * Creates the histogram explicitly and in full. Should be called at most once.
-     */
-    @Override
-    public void createHistogram(final IColumn column, final IMembershipSet membershipSet,
+    void addValue(final double val) {
+        int index = this.bucketDescription.indexOf(val);
+        if (index >= 0)
+            this.buckets[index]++;
+        else this.outOfRange++;
+    }
+
+    public void createHistogram(final IColumn column, IMembershipSet membershipSet,
                                 @Nullable final IStringConverter converter) {
+        if (this.rate < 1)
+            membershipSet = membershipSet.sample(this.rate);
         final IRowIterator myIter = membershipSet.getIterator();
         int currRow = myIter.getNextRow();
         while (currRow >= 0) {
@@ -55,18 +61,11 @@ public class Histogram1D extends BaseHist1D {
                 double val = column.asDouble(currRow, converter);
                 int index = this.bucketDescription.indexOf(val);
                 if (index >= 0)
-                    this.buckets[index].add(val, column.getObject(currRow));
+                    this.buckets[index]++;
                 else this.outOfRange++;
             }
             currRow = myIter.getNextRow();
         }
-    }
-
-    public void addItem(final double value, @Nullable final Object item) {
-        int index = this.bucketDescription.indexOf(value);
-        if (index >= 0)
-            this.buckets[index].add(value,item);
-        else this.outOfRange++;
     }
 
     public long getMissingData() { return this.missingData; }
@@ -74,22 +73,42 @@ public class Histogram1D extends BaseHist1D {
     public long getOutOfRange() { return this.outOfRange; }
 
     /**
-     * @return the index's bucket or exception if doesn't exist.
+     * @return the index's bucket count
      */
-    public Bucket1D getBucket(final int index) { return this.buckets[index]; }
+    public long getCount(final int index) { return this.buckets[index]; }
 
     /**
      * @param  otherHistogram with the same bucketDescription
      * @return a new Histogram which is the union of this and otherHistogram
      */
-    public Histogram1D union( Histogram1D otherHistogram) {
+    public Histogram union(Histogram otherHistogram) {
         if (!this.bucketDescription.equals(otherHistogram.bucketDescription))
             throw new IllegalArgumentException("Histogram union without matching buckets");
-        Histogram1D unionH = new Histogram1D(this.bucketDescription);
+        Histogram unionH = new Histogram(this.bucketDescription);
         for (int i = 0; i < unionH.bucketDescription.getNumOfBuckets(); i++)
-            unionH.buckets[i] = this.buckets[i].union(otherHistogram.buckets[i]);
+            unionH.buckets[i] = this.buckets[i] + otherHistogram.buckets[i];
         unionH.missingData = this.missingData + otherHistogram.missingData;
         unionH.outOfRange = this.outOfRange + otherHistogram.outOfRange;
         return unionH;
+    }
+
+    public Histogram createCDF() {
+        Histogram cdf = new Histogram(this.bucketDescription);
+        cdf.buckets[0] = this.buckets[0];
+        for (int i = 1; i < this.bucketDescription.getNumOfBuckets(); i++)
+            cdf.buckets[i] = cdf.buckets[i - 1] + this.buckets[i];
+        return cdf;
+    }
+
+    public int getNumOfBuckets() { return this.bucketDescription.getNumOfBuckets(); }
+
+    public void createSampleHistogram(final IColumn column, final IMembershipSet membershipSet,
+                                      @Nullable final IStringConverter converter, double sampleRate) {
+        this.createHistogram(column, membershipSet.sample(sampleRate), converter);
+    }
+
+    public void createSampleHistogram(final IColumn column, final IMembershipSet membershipSet,
+                                      @Nullable final IStringConverter converter, double sampleRate, long seed) {
+        this.createHistogram(column, membershipSet.sample(sampleRate, seed), converter);
     }
 }

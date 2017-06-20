@@ -27,13 +27,6 @@ import {ProgressBar} from "./ui";
 const HillviewServiceUrl : string = "ws://localhost:8080";
 const RpcRequestUrl = HillviewServiceUrl + "/rpc";
 
-/*
-export interface IJSON {
-    // Convert object to JSON
-    toJSON(): string;
-}
-*/
-
 export class RemoteObject {
     constructor(public readonly remoteObjectId : string) {}
 
@@ -156,7 +149,7 @@ export class RpcRequest implements ICancellable {
                 let reqStr: string = this.serialize();
                 console.log("Sending message " + reqStr);
                 this.socket.send(reqStr);
-            }
+            };
             this.socket.onclose = (e: CloseEvent) => {
                 console.log("Socket closed");
                 if (e.code == 1000) {
