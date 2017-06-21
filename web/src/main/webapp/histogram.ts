@@ -16,100 +16,17 @@
  */
 
 import {
-    IHtmlElement, HillviewDataView, FullPage, Renderer, significantDigits,
-    Point, Size, formatNumber, percent, KeyCodes, translateString
+    FullPage, Renderer, significantDigits, formatNumber, percent, translateString
 } from "./ui";
 import d3 = require('d3');
 import {RemoteObject, ICancellable, PartialResult} from "./rpc";
-import {ColumnDescription, TableRenderer, TableView, RecordOrder, ContentsKind, Schema} from "./table";
+import {ColumnDescription, TableRenderer, TableView, RecordOrder, Schema} from "./table";
 import {histogram} from "d3-array";
-import {BaseType} from "d3-selection";
-import {ScaleLinear, ScaleTime} from "d3-scale";
 import {ContextMenu, DropDownMenu} from "./menu";
 import {Converters, Pair, reorder} from "./util";
+import {Histogram1DLight, HistogramViewBase, BasicColStats, ColumnAndRange} from "./histogramBase";
 
-/*
-// same as a Java class
-interface Bucket1D {
-    minObject: any;
-    maxObject: any;
-    minValue:  number;
-    maxValue:  number;
-    count:     number;
-}
-
-// same as a Java class
-interface Histogram1D {
-    missingData: number;
-    outOfRange:  number;
-    buckets:     Bucket1D[];
-}
-*/
-
-// same as Java class
-export interface Histogram1DLight {
-    buckets: number[]
-    missingData: number;
-    outOfRange: number;
-}
-
-// same as Java class
-export interface BasicColStats {
-    momentCount: number;
-    min: number;
-    max: number;
-    minObject: any;
-    maxObject: any;
-    moments: Array<number>;
-    presentCount: number;
-    missingCount: number;
-}
-
-// Same as Java class
-export interface ColumnAndRange {
-    min: number;
-    max: number;
-    columnName: string;
-    bucketCount: number,
-    cdfBucketCount: number;
-    bucketBoundaries: string[];
-}
-
-export type AnyScale = ScaleLinear<number, number> | ScaleTime<number, number>;
-
-export class HistogramView extends RemoteObject
-    implements IHtmlElement, HillviewDataView {
-    public static readonly maxBucketCount: number = 40;
-    public static readonly minBarWidth: number = 5;
-    public static readonly minChartWidth = 200;  // pixels
-    public static readonly canvasHeight = 400;  // pixels
-
-    private topLevel: HTMLElement;
-    public static readonly margin = {
-        top: 30,
-        right: 30,
-        bottom: 30,
-        left: 40
-    };
-    protected page: FullPage;
-    protected dragging: boolean;
-    protected svg: any;
-    private selectionOrigin: Point;
-    private selectionRectangle: d3.Selection<BaseType, any, BaseType, BaseType>;
-    private xLabel: HTMLElement;
-    private yLabel: HTMLElement;
-    private cdfLabel: HTMLElement;
-    protected chartDiv: HTMLElement;
-    protected summary: HTMLElement;
-    private xScale: AnyScale;
-    private yScale: ScaleLinear<number, number>;
-    protected chartResolution: Size;
-    // When plotting integer values we increase the data range by .5 on the left and right.
-    // The adjustment is the number of pixels on screen that we "waste".
-    // I.e., the cdf plot will start adjustment/2 pixels from the chart left margin
-    // and will end adjustment/2 pixels from the right margin.
-    private adjustment: number = 0;
-
+export class HistogramView extends HistogramViewBase {
     protected currentData: {
         histogram: Histogram1DLight,
         cdf: Histogram1DLight,
@@ -118,19 +35,9 @@ export class HistogramView extends RemoteObject
         stats: BasicColStats,
         allStrings: string[]   // used only for categorical histograms
     };
-    private chart: any;  // these are in fact a d3.Selection<>, but I can't make them typecheck
-    protected canvas: any;
-    private xDot: any;
-    private yDot: any;
-    private cdfDot: any;
 
     constructor(remoteObjectId: string, protected tableSchema: Schema, page: FullPage) {
-        super(remoteObjectId);
-        this.topLevel = document.createElement("div");
-        this.topLevel.className = "chart";
-        this.topLevel.onkeydown = e => this.keyDown(e);
-        this.dragging = false;
-        this.setPage(page);
+        super(remoteObjectId, tableSchema, page);
         let menu = new DropDownMenu( [
             { text: "View", subMenu: new ContextMenu([
                 { text: "refresh", action: () => { this.refresh(); } },
@@ -141,54 +48,6 @@ export class HistogramView extends RemoteObject
         ]);
 
         this.topLevel.appendChild(menu.getHTMLRepresentation());
-        this.topLevel.tabIndex = 1;
-
-        this.chartDiv = document.createElement("div");
-        this.topLevel.appendChild(this.chartDiv);
-
-        this.summary = document.createElement("div");
-        this.topLevel.appendChild(this.summary);
-
-        let position = document.createElement("table");
-        this.topLevel.appendChild(position);
-        position.className = "noBorder";
-        let body = position.createTBody();
-        let row = body.insertRow();
-        row.className = "noBorder";
-
-        let infoWidth = "150px";
-        let labelCell = row.insertCell(0);
-        labelCell.width = infoWidth;
-        this.xLabel = document.createElement("div");
-        this.xLabel.style.textAlign = "left";
-        labelCell.appendChild(this.xLabel);
-        labelCell.className = "noBorder";
-
-        labelCell = row.insertCell(1);
-        labelCell.width = infoWidth;
-        this.yLabel = document.createElement("div");
-        this.yLabel.style.textAlign = "left";
-        labelCell.appendChild(this.yLabel);
-        labelCell.className = "noBorder";
-
-        labelCell = row.insertCell(2);
-        labelCell.width = infoWidth;
-        this.cdfLabel = document.createElement("div");
-        this.cdfLabel.style.textAlign = "left";
-        labelCell.appendChild(this.cdfLabel);
-        labelCell.className = "noBorder";
-    }
-
-    protected keyDown(ev: KeyboardEvent): void {
-        if (ev.keyCode == KeyCodes.escape)
-            this.cancelDrag();
-    }
-
-    protected cancelDrag() {
-        this.dragging = false;
-        this.selectionRectangle
-            .attr("width", 0)
-            .attr("height", 0);
     }
 
     chooseSecondColumn(): void { // TODO
@@ -223,26 +82,6 @@ export class HistogramView extends RemoteObject
         rr.invoke(renderer);
     }
 
-    // show the table corresponding to the data in the histogram
-    showTable(): void {
-        let table = new TableView(this.remoteObjectId, this.page);
-        table.setSchema(this.tableSchema);
-
-        let order =  new RecordOrder([ {
-            columnDescription: this.currentData.description,
-            isAscending: true
-        } ]);
-        let rr = table.createNextKRequest(order, null);
-        let page = new FullPage();
-        page.setHillviewDataView(table);
-        this.page.insertAfterMe(page);
-        rr.invoke(new TableRenderer(page, table, rr, false, order));
-    }
-
-    getHTMLRepresentation(): HTMLElement {
-        return this.topLevel;
-    }
-
     public refresh(): void {
         if (this.currentData == null)
             return;
@@ -253,6 +92,58 @@ export class HistogramView extends RemoteObject
             this.currentData.stats,
             this.currentData.allStrings,
             0);
+    }
+
+    protected onMouseMove(): void {
+        let position = d3.mouse(this.chart.node());
+        let mouseX = position[0];
+        let mouseY = position[1];
+
+        let x : number | Date = 0;
+        if (this.xScale != null)
+            x = this.xScale.invert(position[0]);
+
+        if (this.currentData.description.kind == "Integer")
+            x = Math.round(<number>x);
+        let xs = String(x);
+        if (this.currentData.description.kind == "Category") {
+            let index = Math.round(<number>x);
+            if (index >= 0 && index < this.currentData.allStrings.length)
+                xs = this.currentData.allStrings[index];
+            else
+                xs = "";
+        }
+        else if (this.currentData.description.kind == "Integer" ||
+            this.currentData.description.kind == "Double")
+            xs = significantDigits(<number>x);
+        let y = Math.round(this.yScale.invert(position[1]));
+        let ys = significantDigits(y);
+        this.xLabel.textContent = "x=" + xs;
+        this.yLabel.textContent = "y=" + ys;
+
+        this.xDot.attr("cx", mouseX + HistogramViewBase.margin.left);
+        this.yDot.attr("cy", mouseY + HistogramViewBase.margin.top);
+
+        if (this.currentData.cdfSum != null) {
+            // determine mouse position on cdf curve
+            // we have to take into account the adjustment
+            let cdfX = (mouseX - this.adjustment / 2) * this.currentData.cdfSum.length /
+                (this.chartResolution.width - this.adjustment);
+            let pos = 0;
+            if (cdfX < 0) {
+                pos = 0;
+            } else if (cdfX >= this.currentData.cdfSum.length) {
+                pos = 1;
+            } else {
+                let cdfPosition = this.currentData.cdfSum[Math.floor(cdfX)];
+                pos = cdfPosition / this.currentData.stats.presentCount;
+            }
+
+            this.cdfDot.attr("cx", mouseX + HistogramViewBase.margin.left);
+            this.cdfDot.attr("cy", (1 - pos) * this.chartResolution.height + HistogramViewBase.margin.top);
+            let perc = percent(pos);
+            this.cdfLabel.textContent = "cdf=" + perc;
+        }
     }
 
     public updateView(cdf: Histogram1DLight, h: Histogram1DLight,
@@ -471,115 +362,23 @@ export class HistogramView extends RemoteObject
         this.summary.textContent = summary;
     }
 
-    onMouseMove(): void {
-        let position = d3.mouse(this.chart.node());
-        let mouseX = position[0];
-        let mouseY = position[1];
+    // show the table corresponding to the data in the histogram
+    protected showTable(): void {
+        let table = new TableView(this.remoteObjectId, this.page);
+        table.setSchema(this.tableSchema);
 
-        let x : number | Date = 0;
-        if (this.xScale != null)
-            x = this.xScale.invert(position[0]);
-
-        if (this.currentData.description.kind == "Integer")
-            x = Math.round(<number>x);
-        let xs = String(x);
-        if (this.currentData.description.kind == "Category") {
-            let index = Math.round(<number>x);
-            if (index >= 0 && index < this.currentData.allStrings.length)
-                xs = this.currentData.allStrings[index];
-            else
-                xs = "";
-        }
-        else if (this.currentData.description.kind == "Integer" ||
-            this.currentData.description.kind == "Double")
-            xs = significantDigits(<number>x);
-        let y = Math.round(this.yScale.invert(position[1]));
-        let ys = significantDigits(y);
-        this.xLabel.textContent = "x=" + xs;
-        this.yLabel.textContent = "y=" + ys;
-
-        this.xDot.attr("cx", mouseX + HistogramView.margin.left);
-        this.yDot.attr("cy", mouseY + HistogramView.margin.top);
-
-        if (this.currentData.cdfSum != null) {
-            // determine mouse position on cdf curve
-            // we have to take into account the adjustment
-            let cdfX = (mouseX - this.adjustment / 2) * this.currentData.cdfSum.length /
-                (this.chartResolution.width - this.adjustment);
-            let pos = 0;
-            if (cdfX < 0) {
-                pos = 0;
-            } else if (cdfX >= this.currentData.cdfSum.length) {
-                pos = 1;
-            } else {
-                let cdfPosition = this.currentData.cdfSum[Math.floor(cdfX)];
-                pos = cdfPosition / this.currentData.stats.presentCount;
-            }
-
-            this.cdfDot.attr("cx", mouseX + HistogramView.margin.left);
-            this.cdfDot.attr("cy", (1 - pos) * this.chartResolution.height + HistogramView.margin.top);
-            let perc = percent(pos);
-            this.cdfLabel.textContent = "cdf=" + perc;
-        }
+        let order =  new RecordOrder([ {
+            columnDescription: this.currentData.description,
+            isAscending: true
+        } ]);
+        let rr = table.createNextKRequest(order, null);
+        let page = new FullPage();
+        page.setHillviewDataView(table);
+        this.page.insertAfterMe(page);
+        rr.invoke(new TableRenderer(page, table, rr, false, order));
     }
 
-    dragStart(): void {
-        this.dragging = true;
-        let position = d3.mouse(this.chart.node());
-        this.selectionOrigin = {
-            x: position[0],
-            y: position[1] };
-    }
-
-    dragMove(): void {
-        this.onMouseMove();
-        if (!this.dragging)
-            return;
-        let ox = this.selectionOrigin.x;
-        let position = d3.mouse(this.chart.node());
-        let x = position[0];
-        let width = x - ox;
-        let height = this.chartResolution.height;
-
-        if (width < 0) {
-            ox = x;
-            width = -width;
-        }
-
-        this.selectionRectangle
-            .attr("x", ox + HistogramView.margin.left)
-            .attr("y", HistogramView.margin.top)
-            .attr("width", width)
-            .attr("height", height);
-    }
-
-    dragEnd(): void {
-        if (!this.dragging)
-            return;
-        this.dragging = false;
-        this.selectionRectangle
-            .attr("width", 0)
-            .attr("height", 0);
-
-        let position = d3.mouse(this.chart.node());
-        let x = position[0];
-        this.selectionCompleted(this.selectionOrigin.x, x);
-    }
-
-    public static invertToNumber(v: number, scale: AnyScale, kind: ContentsKind): number {
-        let inv = scale.invert(v);
-        let result: number = 0;
-        if (kind == "Integer" || kind == "Category") {
-            result = Math.round(<number>inv);
-        } else if (kind == "Double") {
-            result = <number>inv;
-        } else if (kind == "Date") {
-            result = Converters.doubleFromDate(<Date>inv);
-        }
-        return result;
-    }
-
-    selectionCompleted(xl: number, xr: number): void {
+    protected selectionCompleted(xl: number, xr: number): void {
         if (this.xScale == null)
             return;
 
@@ -616,59 +415,6 @@ export class HistogramView extends RemoteObject
                 this.currentData.description, this.tableSchema,
             this.currentData.allStrings, range, this.page, rr);
         rr.invoke(renderer);
-    }
-
-    setPage(page: FullPage) {
-        if (page == null)
-            throw("null FullPage");
-        this.page = page;
-    }
-
-    getPage() : FullPage {
-        if (this.page == null)
-            throw("Page not set");
-        return this.page;
-    }
-
-    public static getRenderingSize(page: FullPage): Size {
-        let width = page.getWidthInPixels();
-        width = width - HistogramView.margin.left - HistogramView.margin.right;
-        let height = HistogramView.canvasHeight - HistogramView.margin.top - HistogramView.margin.bottom;
-        return { width: width, height: height };
-    }
-
-    public static bucketCount(stats: BasicColStats, page: FullPage, columnKind: ContentsKind): number {
-        let size = HistogramView.getRenderingSize(page);
-        let bucketCount = HistogramView.maxBucketCount;
-        if (size.width / HistogramView.minBarWidth < bucketCount)
-            bucketCount = size.width / HistogramView.minBarWidth;
-        if (columnKind == "Integer" ||
-            columnKind == "Category") {
-            bucketCount = Math.min(bucketCount, stats.max - stats.min + 1);
-        }
-        return bucketCount;
-    }
-
-    public static categoriesInRange(stats: BasicColStats, bucketCount: number, allStrings: string[]): string[] {
-        let boundaries: string[] = null;
-        let max = Math.floor(stats.max);
-        let min = Math.ceil(stats.min);
-        let range = max - min;
-        if (range <= 0)
-            bucketCount = 1;
-
-        if (allStrings != null) {
-            if (bucketCount >= range) {
-                boundaries = allStrings.slice(min, max + 1);  // slice end is exclusive
-            } else {
-                boundaries = [];
-                for (let i = 0; i <= bucketCount; i++) {
-                    let index = min + Math.round(i * range / bucketCount);
-                    boundaries.push(allStrings[index]);
-                }
-            }
-        }
-        return boundaries;
     }
 }
 

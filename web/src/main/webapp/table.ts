@@ -21,7 +21,8 @@ import {
 } from "./ui";
 import {RemoteObject, PartialResult, ICancellable, RpcRequest} from "./rpc";
 import Rx = require('rx');
-import {RangeCollector, BasicColStats} from "./histogram";
+import {BasicColStats} from "./histogramBase";
+import {RangeCollector} from "./histogram";
 import {Range2DCollector} from "./heatMap";
 import {DropDownMenu, ContextMenu, PopupMenu} from "./menu";
 import {Converters} from "./util";
