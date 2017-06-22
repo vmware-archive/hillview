@@ -398,8 +398,9 @@ export class HistogramView extends HistogramViewBase {
         let boundaries: string[] = null;
         if (this.currentData.allStrings != null) {
             // it's enough to just send the first and last element for filtering.
-            boundaries = [this.currentData.allStrings[Math.ceil(min)],
-                this.currentData.allStrings[Math.floor(max)]];
+            boundaries = [this.currentData.allStrings[Math.ceil(min)]];
+            if (Math.floor(max) != Math.ceil(min))
+                boundaries.push(this.currentData.allStrings[Math.floor(max)]);
         }
         let range: ColumnAndRange = {
             min: min,
