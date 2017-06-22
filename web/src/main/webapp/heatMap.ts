@@ -275,10 +275,9 @@ implements IHtmlElement, HillviewDataView {
         };
 
         let width = this.page.getWidthInPixels();
-        let canvasHeight = HistogramViewBase.chartHeight;
-
         let chartWidth = width - HeatMapView.margin.left - HeatMapView.margin.right;
-        let chartHeight = canvasHeight - HeatMapView.margin.top - HeatMapView.margin.bottom;
+        let chartHeight = HeatMapView.chartHeight;
+        let canvasHeight = chartHeight + HeatMapView.margin.top + HeatMapView.margin.bottom;
         if (chartWidth < HeatMapView.minChartWidth)
             chartWidth = HeatMapView.minChartWidth;
 
@@ -407,7 +406,7 @@ implements IHtmlElement, HillviewDataView {
         this.canvas.append("text")
             .text(xData.description.name)
             .attr("transform", translateString(
-                chartWidth / 2, HistogramViewBase.chartHeight - HistogramViewBase.margin.bottom))
+                chartWidth / 2, HeatMapView.chartHeight + HeatMapView.margin.top + HeatMapView.margin.bottom / 2))
             .attr("text-anchor", "middle")
             .attr("dominant-baseline", "hanging");
 
@@ -511,9 +510,7 @@ implements IHtmlElement, HillviewDataView {
         this.xLabel.textContent = "x=" + xs;
         this.yLabel.textContent = "y=" + ys;
 
-        let canvasHeight = HistogramViewBase.chartHeight;
-        let chartHeight = canvasHeight - HeatMapView.margin.top - HeatMapView.margin.bottom;
-
+        let chartHeight = HeatMapView.chartHeight;
         let xi = position[0] / this.pointWidth;
         let yi = (chartHeight - position[1]) / this.pointHeight;
         xi = Math.floor(xi);

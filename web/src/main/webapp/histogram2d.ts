@@ -329,7 +329,8 @@ export class Histogram2DView extends HistogramViewBase {
 
         let barWidth = chartWidth / bucketCount;
         let scale = chartHeight / max;
-        let bars = this.chart.selectAll("g")
+        this.chart.selectAll("g")
+            // bars
             .data(rects)
             .enter().append("g")
             .append("svg:rect")
@@ -338,16 +339,15 @@ export class Histogram2DView extends HistogramViewBase {
             .attr("height", d => this.rectHeight(d, counts, scale))
             .attr("width", barWidth - 1)
             .attr("fill", d => this.color(d.index, yRectangles - 1))
-            .exit();
-
-        this.chart.selectAll("g")
+            .exit()
+            // label bars
             .data(counts)
             .enter()
             .append("g")
             .append("text")
             .attr("class", "histogramBoxLabel")
-            .attr("x", barWidth / 2)
-            .attr("y", d => d * scale)
+            .attr("x", (c, i) => (i + .5) * barWidth)
+            .attr("y", d => chartHeight - (d * scale))
             .attr("text-anchor", "middle")
             .attr("dy", d => d <= (9 * max / 10) ? "-.25em" : ".75em")
             .text(d => (d == 0) ? "" : significantDigits(d))
@@ -421,7 +421,7 @@ export class Histogram2DView extends HistogramViewBase {
         // create a scale and axis for the legend
         let legendScale = d3.scaleLinear();
         legendScale
-            .domain([1, max])
+            .domain([this.currentData.yData.stats.min, this.currentData.yData.stats.max])
             .range([0, legendWidth]);
 
         let legendAxis = d3.axisBottom(legendScale);
@@ -463,7 +463,7 @@ export class Histogram2DView extends HistogramViewBase {
     }
 
     static colorMap(d: number): string {
-        return d3.interpolateSpectral(d);
+        return d3.interpolateRainbow(d);
     }
 
     color(d: number, max: number): string {
