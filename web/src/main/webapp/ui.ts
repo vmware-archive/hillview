@@ -24,6 +24,7 @@ export interface IHtmlElement {
 }
 
 export enum KeyCodes {
+    ctrl = 17,
     escape = 27,
     pageUp = 33,
     pageDown = 34,

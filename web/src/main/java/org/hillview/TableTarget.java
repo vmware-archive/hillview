@@ -161,7 +161,7 @@ public final class TableTarget extends RpcTarget {
 
     @HillviewRpc
     void filterRange(RpcRequest request, Session session) {
-        ColumnAndRange info = request.parseArgs(ColumnAndRange.class);
+        FilterDescription info = request.parseArgs(FilterDescription.class);
         RangeFilter filter = new RangeFilter(info);
         FilterMap fm = new FilterMap(filter);
         this.runMap(this.table, fm, TableTarget::new, request, session);
@@ -169,7 +169,7 @@ public final class TableTarget extends RpcTarget {
 
     @HillviewRpc
     void filter2DRange(RpcRequest request, Session session) {
-        ColPair info = request.parseArgs(ColPair.class);
+        FilterPair info = request.parseArgs(FilterPair.class);
         Range2DFilter filter = new Range2DFilter(info);
         FilterMap fm = new FilterMap(filter);
         this.runMap(this.table, fm, TableTarget::new, request, session);

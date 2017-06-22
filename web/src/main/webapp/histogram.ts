@@ -24,7 +24,7 @@ import {ColumnDescription, TableRenderer, TableView, RecordOrder, Schema} from "
 import {histogram} from "d3-array";
 import {ContextMenu, DropDownMenu} from "./menu";
 import {Converters, Pair, reorder} from "./util";
-import {Histogram, HistogramViewBase, BasicColStats, ColumnAndRange} from "./histogramBase";
+import {Histogram, HistogramViewBase, BasicColStats, ColumnAndRange, FilterDescription} from "./histogramBase";
 
 export class HistogramView extends HistogramViewBase {
     protected currentData: {
@@ -402,19 +402,18 @@ export class HistogramView extends HistogramViewBase {
             if (Math.floor(max) != Math.ceil(min))
                 boundaries.push(this.currentData.allStrings[Math.floor(max)]);
         }
-        let range: ColumnAndRange = {
+        let filter: FilterDescription = {
             min: min,
             max: max,
             columnName: this.currentData.description.name,
-            cdfBucketCount: null,  // unused for this call
-            bucketCount: null,  // unused for this call
+            complement: d3.event.sourceEvent.ctrlKey,
             bucketBoundaries: boundaries
         };
 
-        let rr = this.createRpcRequest("filterRange", range);
+        let rr = this.createRpcRequest("filterRange", filter);
         let renderer = new FilterReceiver(
                 this.currentData.description, this.tableSchema,
-            this.currentData.allStrings, range, this.page, rr);
+            this.currentData.allStrings, filter, this.page, rr);
         rr.invoke(renderer);
     }
 }
@@ -426,7 +425,7 @@ export class FilterReceiver extends Renderer<string> {
     constructor(protected columnDescription: ColumnDescription,
                 protected tableSchema: Schema,
                 protected allStrings: string[],
-                protected colAndRange: ColumnAndRange,
+                protected filter: FilterDescription,
                 page: FullPage,
                 operation: ICancellable) {
         super(page, operation, "Filter");
@@ -445,11 +444,11 @@ export class FilterReceiver extends Renderer<string> {
             let sv = null;
             let fi = null;
             let li = null;
-            if (this.colAndRange.bucketBoundaries != null) {
-                fv = this.colAndRange.bucketBoundaries[0];
-                sv = this.colAndRange.bucketBoundaries[1];
-                fi = this.colAndRange.min;
-                li = this.colAndRange.max;
+            if (this.filter.bucketBoundaries != null) {
+                fv = this.filter.bucketBoundaries[0];
+                sv = this.filter.bucketBoundaries[1];
+                fi = this.filter.min;
+                li = this.filter.max;
             }
             let rangeInfo = {
                 columnName: this.columnDescription.name,
