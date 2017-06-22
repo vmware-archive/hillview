@@ -5,9 +5,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
- *
+ *  
  *       http://www.apache.org/licenses/LICENSE-2.0
- *
+ *  
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS,
  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,26 +15,33 @@
  *  limitations under the License.
  */
 
-import {
-    FullPage, Renderer, significantDigits, formatNumber, percent, translateString
-} from "./ui";
+import {HistogramViewBase, ColumnAndRange, BasicColStats} from "./histogramBase";
+import {Schema, TableView, RecordOrder, TableRenderer, ColumnDescription} from "./table";
+import {FullPage, significantDigits, percent, formatNumber, translateString, Renderer} from "./ui";
+import {DropDownMenu, ContextMenu} from "./menu";
 import d3 = require('d3');
-import {RemoteObject, ICancellable, PartialResult} from "./rpc";
-import {ColumnDescription, TableRenderer, TableView, RecordOrder, Schema} from "./table";
-import {histogram} from "d3-array";
-import {ContextMenu, DropDownMenu} from "./menu";
-import {Converters, Pair, reorder} from "./util";
-import {Histogram, HistogramViewBase, BasicColStats, ColumnAndRange} from "./histogramBase";
+import {reorder, Converters} from "./util";
+import {FilterReceiver} from "./histogram";
+import {AxisData, HeatMapData} from "./heatMap";
+import {ICancellable, PartialResult} from "./rpc";
 
-export class HistogramView extends HistogramViewBase {
+interface Rect {
+    x: number;
+    y: number;
+    index: number;
+    height: number;
+}
+
+export class Histogram2DView extends HistogramViewBase {
     protected currentData: {
-        histogram: Histogram,
-        cdf: Histogram,
-        cdfSum: number[],  // prefix sum of cdf
-        description: ColumnDescription,
-        stats: BasicColStats,
-        allStrings: string[]   // used only for categorical histograms
+        xData: AxisData;
+        yData: AxisData;
+        missingData: number;
+        data: number[][];
+        xPoints: number;
+        yPoints: number;
     };
+    protected normalized: boolean;
 
     constructor(remoteObjectId: string, protected tableSchema: Schema, page: FullPage) {
         super(remoteObjectId, tableSchema, page);
@@ -42,55 +49,22 @@ export class HistogramView extends HistogramViewBase {
             { text: "View", subMenu: new ContextMenu([
                 { text: "refresh", action: () => { this.refresh(); } },
                 { text: "table", action: () => this.showTable() },
-                { text: "#buckets", action: () => this.chooseBuckets() },
-                //{ text: "correlate", action: () => this.chooseSecondColumn() },
+                { text: "percent/value", action: () => { this.normalized = !this.normalized; this.refresh(); } },
             ]) }
         ]);
 
+        this.normalized = false;
         this.topLevel.insertBefore(menu.getHTMLRepresentation(), this.topLevel.children[0]);
-    }
-
-    chooseSecondColumn(): void { // TODO
-    }
-
-    chooseBuckets(): void {
-        if (this.currentData == null)
-            return;
-
-        let buckets = window.prompt("Choose number of buckets (between 1 and "
-            + HistogramViewBase.maxBucketCount + ")", "10");
-        if (buckets == null)
-            return;
-        if (isNaN(+buckets))
-            this.page.reportError(buckets + " is not a number");
-
-        let cdfBucketCount = this.currentData.cdf.buckets.length;
-        let boundaries = HistogramViewBase.categoriesInRange(
-            this.currentData.stats, cdfBucketCount, this.currentData.allStrings);
-        let info: ColumnAndRange = {
-            columnName: this.currentData.description.name,
-            min: this.currentData.stats.min,
-            max: this.currentData.stats.max,
-            bucketCount: +buckets,
-            cdfBucketCount: cdfBucketCount,
-            bucketBoundaries: boundaries
-        };
-        let rr = this.createRpcRequest("histogram", info);
-        let renderer = new HistogramRenderer(this.page,
-            this.remoteObjectId, this.tableSchema, this.currentData.description,
-            this.currentData.stats, rr, this.currentData.allStrings);
-        rr.invoke(renderer);
     }
 
     public refresh(): void {
         if (this.currentData == null)
             return;
         this.updateView(
-            this.currentData.cdf,
-            this.currentData.histogram,
-            this.currentData.description,
-            this.currentData.stats,
-            this.currentData.allStrings,
+            this.currentData.data,
+            this.currentData.xData,
+            this.currentData.yData,
+            this.currentData.missingData,
             0);
     }
 
@@ -103,18 +77,18 @@ export class HistogramView extends HistogramViewBase {
         if (this.xScale != null)
             x = this.xScale.invert(position[0]);
 
-        if (this.currentData.description.kind == "Integer")
+        if (this.currentData.xData.description.kind == "Integer")
             x = Math.round(<number>x);
         let xs = String(x);
-        if (this.currentData.description.kind == "Category") {
+        if (this.currentData.xData.description.kind == "Category") {
             let index = Math.round(<number>x);
-            if (index >= 0 && index < this.currentData.allStrings.length)
-                xs = this.currentData.allStrings[index];
+            if (index >= 0 && index < this.currentData.xData.allStrings.length)
+                xs = this.currentData.xData.allStrings[index];
             else
                 xs = "";
         }
-        else if (this.currentData.description.kind == "Integer" ||
-            this.currentData.description.kind == "Double")
+        else if (this.currentData.xData.description.kind == "Integer" ||
+            this.currentData.xData.description.kind == "Double")
             xs = significantDigits(<number>x);
         let y = Math.round(this.yScale.invert(position[1]));
         let ys = significantDigits(y);
@@ -124,6 +98,7 @@ export class HistogramView extends HistogramViewBase {
         this.xDot.attr("cx", mouseX + HistogramViewBase.margin.left);
         this.yDot.attr("cy", mouseY + HistogramViewBase.margin.top);
 
+        /*
         if (this.currentData.cdfSum != null) {
             // determine mouse position on cdf curve
             // we have to take into account the adjustment
@@ -144,27 +119,43 @@ export class HistogramView extends HistogramViewBase {
             let perc = percent(pos);
             this.cdfLabel.textContent = "cdf=" + perc;
         }
+        */
     }
 
-    public updateView(cdf: Histogram, h: Histogram,
-                      cd: ColumnDescription, stats: BasicColStats,
-                      allStrings: string[], elapsedMs: number) : void {
-        this.currentData = {
-            cdf: cdf,
-            cdfSum: null,
-            histogram: h,
-            description: cd,
-            stats: stats,
-            allStrings: allStrings };
+    public updateView(data: number[][], xData: AxisData, yData: AxisData,
+                      missingData: number, elapsedMs: number) : void {
         this.page.reportError("Operation took " + significantDigits(elapsedMs/1000) + " seconds");
+        if (data == null || data.length == 0) {
+            this.page.reportError("No data to display");
+            return;
+        }
+        let xPoints = data.length;
+        let yRectangles = data[0].length;
+        if (yRectangles == 0) {
+            this.page.reportError("No data to display");
+            return;
+        }
+        this.currentData = {
+            data: data,
+            xData: xData,
+            yData: yData,
+            missingData: missingData,
+            xPoints: xPoints,
+            yPoints: yRectangles
+        };
 
         let width = this.page.getWidthInPixels();
+        // Everything is drawn on top of the canvas.
+        // The canvas includes the margins
 
         let chartWidth = width - HistogramViewBase.margin.left - HistogramViewBase.margin.right;
         if (chartWidth < HistogramViewBase.minChartWidth)
             chartWidth = HistogramViewBase.minChartWidth;
+        let chartHeight = HistogramViewBase.chartHeight;
+        let canvasHeight = chartHeight + HistogramViewBase.margin.top + HistogramViewBase.margin.bottom;
         this.chartResolution = { width: chartWidth, height: HistogramViewBase.chartHeight };
 
+        /*
         let counts = h.buckets;
         let bucketCount = counts.length;
         let max = d3.max(counts);
@@ -187,19 +178,47 @@ export class HistogramView extends HistogramViewBase {
                 cdfData.push(point);
             }
         }
+        */
 
         if (this.canvas != null)
             this.canvas.remove();
+
+        let counts: number[] = [];
+
+        let max: number = 0;
+        let rects : Rect[] = [];
+        let total = 0;
+        for (let x = 0; x < data.length; x++) {
+            let yTotal = 0;
+            for (let y = 0; y < data[x].length; y++) {
+                let v = data[x][y];
+                total += v;
+                if (v != 0) {
+                    let rec: Rect = {
+                        x: x,
+                        y: yTotal,
+                        index: y,
+                        height: v
+                    };
+                    rects.push(rec);
+                }
+                yTotal += v;
+            }
+            if (yTotal > max)
+                max = yTotal;
+            counts.push(yTotal);
+        }
+
+        if (max <= 0) {
+            this.page.reportError("No data");
+            return;
+        }
 
         let drag = d3.drag()
             .on("start", () => this.dragStart())
             .on("drag", () => this.dragMove())
             .on("end", () => this.dragEnd());
 
-        // Everything is drawn on top of the canvas.
-        // The canvas includes the margins
-        let canvasHeight = HistogramViewBase.chartHeight +
-            HistogramViewBase.margin.top + HistogramViewBase.margin.bottom;
         this.canvas = d3.select(this.chartDiv)
             .append("svg")
             .attr("id", "canvas")
@@ -218,15 +237,20 @@ export class HistogramView extends HistogramViewBase {
                 HistogramViewBase.margin.left, HistogramViewBase.margin.top));
 
         this.yScale = d3.scaleLinear()
-            .domain([0, max])
             .range([HistogramViewBase.chartHeight, 0]);
+        if (this.normalized)
+            this.yScale.domain([0, 100]);
+        else
+            this.yScale.domain([0, max]);
         let yAxis = d3.axisLeft(this.yScale)
             .tickFormat(d3.format(".2s"));
 
-        let minRange = stats.min;
-        let maxRange = stats.max;
+        let cd = xData.description;
+        let bucketCount = xPoints;
+        let minRange = xData.stats.min;
+        let maxRange = xData.stats.max;
         this.adjustment = 0;
-        if (cd.kind == "Integer" || cd.kind == "Category" || stats.min >= stats.max) {
+        if (cd.kind == "Integer" || cd.kind == "Category" || xData.stats.min >= xData.stats.max) {
             minRange -= .5;
             maxRange += .5;
             this.adjustment = chartWidth / (maxRange - minRange);
@@ -247,7 +271,7 @@ export class HistogramView extends HistogramViewBase {
                 let index = i * (maxRange - minRange) / bucketCount;
                 index = Math.round(index);
                 ticks.push(this.adjustment / 2 + index * chartWidth / (maxRange - minRange));
-                labels.push(this.currentData.allStrings[stats.min + index]);
+                labels.push(this.currentData.xData.allStrings[xData.stats.min + index]);
             }
 
             let axisScale = d3.scaleOrdinal()
@@ -269,15 +293,21 @@ export class HistogramView extends HistogramViewBase {
         }
 
         // force a tick on x axis for degenerate scales
-        if (stats.min >= stats.max && xAxis != null)
+        if (xData.stats.min >= xData.stats.max && xAxis != null)
             xAxis.ticks(1);
 
         this.canvas.append("text")
-            .text(cd.name)
-            .attr("transform", translateString(
-                chartWidth / 2, HistogramViewBase.margin.top/2))
+            .text(xData.description.name)
+            .attr("transform", translateString(chartWidth / 2, chartHeight +
+                HistogramViewBase.margin.top + HistogramViewBase.margin.bottom / 2))
             .attr("text-anchor", "middle");
+        this.canvas.append("text")
+            .text(yData.description.name)
+            .attr("transform", translateString(chartWidth / 2, 0))
+            .attr("text-anchor", "middle")
+            .attr("dominant-baseline", "hanging");
 
+        /*
         // After resizing the line may not have the exact number of points
         // as the screen width.
         let cdfLine = d3.line<number>()
@@ -295,23 +325,29 @@ export class HistogramView extends HistogramViewBase {
             .attr("stroke", "blue")
             .attr("d", cdfLine)
             .attr("fill", "none");
+            */
 
         let barWidth = chartWidth / bucketCount;
-        let bars = this.chart.selectAll("g")
-            .data(counts)
+        let scale = chartHeight / max;
+        this.chart.selectAll("g")
+            // bars
+            .data(rects)
             .enter().append("g")
-            .attr("transform", (d, i) => translateString(i * barWidth, 0));
-
-        bars.append("rect")
-            .attr("y", d => this.yScale(d))
-            .attr("fill", "grey")
-            .attr("height", d => HistogramViewBase.chartHeight - this.yScale(d))
-            .attr("width", barWidth - 1);
-
-        bars.append("text")
+            .append("svg:rect")
+            .attr("x", d => d.x * barWidth)
+            .attr("y", d => this.rectPosition(d, counts, scale))
+            .attr("height", d => this.rectHeight(d, counts, scale))
+            .attr("width", barWidth - 1)
+            .attr("fill", d => this.color(d.index, yRectangles - 1))
+            .exit()
+            // label bars
+            .data(counts)
+            .enter()
+            .append("g")
+            .append("text")
             .attr("class", "histogramBoxLabel")
-            .attr("x", barWidth / 2)
-            .attr("y", d => this.yScale(d))
+            .attr("x", (c, i) => (i + .5) * barWidth)
+            .attr("y", d => chartHeight - (d * scale))
             .attr("text-anchor", "middle")
             .attr("dy", d => d <= (9 * max / 10) ? "-.25em" : ".75em")
             .text(d => (d == 0) ? "" : significantDigits(d))
@@ -352,14 +388,86 @@ export class HistogramView extends HistogramViewBase {
             .attr("width", 0)
             .attr("height", 0);
 
-        let summary = "";
-        if (h.missingData != 0)
-            summary = formatNumber(h.missingData) + " missing, ";
-        summary += formatNumber(stats.presentCount + stats.missingCount) + " points";
-        if (this.currentData.allStrings != null)
-            summary += ", " + (this.currentData.stats.max - this.currentData.stats.min + 1) + " distinct values";
+        let legendWidth = 500;
+        if (legendWidth > chartWidth)
+            legendWidth = chartWidth;
+        let legendHeight = 15;
+        let legendSvg = this.canvas
+            .append("svg");
+
+        let gradient = legendSvg.append('defs')
+            .append('linearGradient')
+            .attr('id', 'gradient')
+            .attr('x1', '0%')
+            .attr('y1', '0%')
+            .attr('x2', '100%')
+            .attr('y2', '0%')
+            .attr('spreadMethod', 'pad');
+
+        for (let i = 0; i <= 100; i += 4) {
+            gradient.append("stop")
+                .attr("offset", i + "%")
+                .attr("stop-color", Histogram2DView.colorMap(i / 100))
+                .attr("stop-opacity", 1)
+        }
+
+        legendSvg.append("rect")
+            .attr("width", legendWidth)
+            .attr("height", legendHeight)
+            .style("fill", "url(#gradient)")
+            .attr("x", (chartWidth - legendWidth) / 2)
+            .attr("y", HistogramViewBase.margin.top / 3);
+
+        // create a scale and axis for the legend
+        let legendScale = d3.scaleLinear();
+        legendScale
+            .domain([this.currentData.yData.stats.min, this.currentData.yData.stats.max])
+            .range([0, legendWidth]);
+
+        let legendAxis = d3.axisBottom(legendScale);
+        legendSvg.append("g")
+            .attr("transform", translateString(
+                (chartWidth - legendWidth) / 2, legendHeight + HistogramViewBase.margin.top / 3))
+            .call(legendAxis);
+
+        let summary = formatNumber(total) + " data points";
+        if (missingData != 0)
+            summary += ", " + formatNumber(missingData) + " missing";
+        if (xData.missing.missingData != 0)
+            summary += ", " + formatNumber(xData.missing.missingData) + " missing Y coordinate";
+        if (yData.missing.missingData != 0)
+            summary += ", " + formatNumber(yData.missing.missingData) + " missing X coordinate";
         summary += ", " + String(bucketCount) + " buckets";
         this.summary.textContent = summary;
+    }
+
+    protected rectHeight(d: Rect, counts: number[], scale: number): number {
+        if (this.normalized) {
+            let c = counts[d.x];
+            if (c <= 0)
+                return 0;
+            return HistogramViewBase.chartHeight * d.height / c;
+        }
+        return d.height * scale;
+    }
+
+    protected rectPosition(d: Rect, counts: number[], scale: number): number {
+        let y = d.y + d.height;
+        if (this.normalized) {
+            let c = counts[d.x];
+            if (c <= 0)
+                return 0;
+            return HistogramViewBase.chartHeight * (1 - y / c);
+        }
+        return HistogramViewBase.chartHeight - y * scale;
+    }
+
+    static colorMap(d: number): string {
+        return d3.interpolateRainbow(d);
+    }
+
+    color(d: number, max: number): string {
+        return Histogram2DView.colorMap(d / max);
     }
 
     // show the table corresponding to the data in the histogram
@@ -368,7 +476,10 @@ export class HistogramView extends HistogramViewBase {
         table.setSchema(this.tableSchema);
 
         let order =  new RecordOrder([ {
-            columnDescription: this.currentData.description,
+            columnDescription: this.currentData.xData.description,
+            isAscending: true
+        }, {
+            columnDescription: this.currentData.yData.description,
             isAscending: true
         } ]);
         let rr = table.createNextKRequest(order, null);
@@ -382,7 +493,7 @@ export class HistogramView extends HistogramViewBase {
         if (this.xScale == null)
             return;
 
-        let kind = this.currentData.description.kind;
+        let kind = this.currentData.xData.description.kind;
         let x0 = HistogramViewBase.invertToNumber(xl, this.xScale, kind);
         let x1 = HistogramViewBase.invertToNumber(xr, this.xScale, kind);
 
@@ -396,154 +507,54 @@ export class HistogramView extends HistogramViewBase {
         }
 
         let boundaries: string[] = null;
-        if (this.currentData.allStrings != null) {
+        if (this.currentData.xData.allStrings != null) {
             // it's enough to just send the first and last element for filtering.
-            boundaries = [this.currentData.allStrings[Math.ceil(min)],
-                this.currentData.allStrings[Math.floor(max)]];
+            boundaries = [this.currentData.xData.allStrings[Math.ceil(min)],
+                this.currentData.xData.allStrings[Math.floor(max)]];
         }
         let range: ColumnAndRange = {
             min: min,
             max: max,
-            columnName: this.currentData.description.name,
+            columnName: this.currentData.xData.description.name,
             cdfBucketCount: null,  // unused for this call
             bucketCount: null,  // unused for this call
             bucketBoundaries: boundaries
         };
 
+        /*
         let rr = this.createRpcRequest("filterRange", range);
         let renderer = new FilterReceiver(
-                this.currentData.description, this.tableSchema,
-            this.currentData.allStrings, range, this.page, rr);
+            this.currentData.xData.description, this.tableSchema,
+            this.currentData.xData.allStrings, range, this.page, rr);
         rr.invoke(renderer);
+        */
     }
 }
 
-// After filtering we obtain a handle to a new table
-export class FilterReceiver extends Renderer<string> {
-    private stub: RemoteObject;
-
-    constructor(protected columnDescription: ColumnDescription,
-                protected tableSchema: Schema,
-                protected allStrings: string[],
-                protected colAndRange: ColumnAndRange,
-                page: FullPage,
-                operation: ICancellable) {
-        super(page, operation, "Filter");
-    }
-
-    public onNext(value: PartialResult<string>): void {
-        super.onNext(value);
-        if (value.data != null)
-            this.stub = new RemoteObject(value.data);
-    }
-
-    public onCompleted(): void {
-        this.finished();
-        if (this.stub != null) {
-            let fv = null;
-            let sv = null;
-            let fi = null;
-            let li = null;
-            if (this.colAndRange.bucketBoundaries != null) {
-                fv = this.colAndRange.bucketBoundaries[0];
-                sv = this.colAndRange.bucketBoundaries[1];
-                fi = this.colAndRange.min;
-                li = this.colAndRange.max;
-            }
-            let rangeInfo = {
-                columnName: this.columnDescription.name,
-                firstIndex: fi,
-                lastIndex: li,
-                firstValue: fv,
-                lastValue: sv
-            };
-            let rr = this.stub.createRpcRequest("range", rangeInfo);
-            rr.invoke(new RangeCollector(this.columnDescription, this.tableSchema,
-                this.allStrings, this.page, this.stub, rr));
-        }
-    }
-}
-
-// Waits for all column stats to be received and then initiates a histogram
-// rendering.
-export class RangeCollector extends Renderer<BasicColStats> {
-    protected stats: BasicColStats;
-    constructor(protected cd: ColumnDescription,
-                protected tableSchema: Schema,
-                protected allStrings: string[],  // for categorical columns only
-                page: FullPage,
-                protected remoteObject: RemoteObject,
-                operation: ICancellable) {
-        super(page, operation, "histogram");
-    }
-
-    public setValue(bcs: BasicColStats): void {
-        this.stats = bcs;
-    }
-
-    public setRemoteObject(ro: RemoteObject) {
-        this.remoteObject = ro;
-    }
-
-    onNext(value: PartialResult<BasicColStats>): void {
-        super.onNext(value);
-        this.setValue(value.data);
-    }
-
-    public histogram(): void {
-        let size = HistogramViewBase.getRenderingSize(this.page);
-        let bucketCount = HistogramViewBase.bucketCount(this.stats, this.page, this.cd.kind);
-        let cdfCount = size.width;
-        let boundaries = HistogramViewBase.categoriesInRange(this.stats, cdfCount, this.allStrings);
-        let info: ColumnAndRange = {
-            columnName: this.cd.name,
-            min: this.stats.min,
-            max: this.stats.max,
-            bucketCount: bucketCount,
-            cdfBucketCount: cdfCount,
-            bucketBoundaries: boundaries
-        };
-        let rr = this.remoteObject.createRpcRequest("histogram", info);
-        rr.setStartTime(this.operation.startTime());
-        let renderer = new HistogramRenderer(this.page,
-            this.remoteObject.remoteObjectId, this.tableSchema,
-            this.cd, this.stats, rr, this.allStrings);
-        rr.invoke(renderer);
-    }
-
-    onCompleted(): void {
-        super.onCompleted();
-        if (this.stats == null)
-            // probably some error occurred
-            return;
-        if (this.stats.presentCount == 0) {
-            this.page.reportError("No data in range");
-            return;
-        }
-        this.histogram();
-    }
-}
-
-// Renders a column histogram
-export class HistogramRenderer extends Renderer<Pair<Histogram, Histogram>> {
-    protected histogram: HistogramView;
+export class Histogram2DRenderer extends Renderer<HeatMapData> {
+    protected histogram: Histogram2DView;
 
     constructor(page: FullPage,
                 remoteTableId: string,
                 protected schema: Schema,
-                protected cd: ColumnDescription,
-                protected stats: BasicColStats,
-                operation: ICancellable,
-                protected allStrings: string[]) {
+                protected cds: ColumnDescription[],
+                protected stats: BasicColStats[],
+                operation: ICancellable) {
         super(new FullPage(), operation, "histogram");
         page.insertAfterMe(this.page);
-        this.histogram = new HistogramView(remoteTableId, schema, this.page);
+        this.histogram = new Histogram2DView(remoteTableId, schema, this.page);
         this.page.setHillviewDataView(this.histogram);
+        if (cds.length != 2)
+            throw "Expected 2 columns, got " + cds.length;
     }
 
-    onNext(value: PartialResult<Pair<Histogram, Histogram>>): void {
+    onNext(value: PartialResult<HeatMapData>): void {
         super.onNext(value);
-        this.histogram.updateView(value.data.first, value.data.second, this.cd,
-            this.stats, this.allStrings, this.elapsedMilliseconds());
+        if (value == null)
+            return;
+        let xAxisData = new AxisData(value.data.histogramMissingD1, this.cds[0], this.stats[0], null);
+        let yAxisData = new AxisData(value.data.histogramMissingD2, this.cds[1], this.stats[1], null);
+        this.histogram.updateView(value.data.buckets, xAxisData, yAxisData,
+            value.data.missingData, this.elapsedMilliseconds());
     }
 }

@@ -23,22 +23,23 @@ import d3 = require('d3');
 import {RemoteObject, ICancellable, PartialResult} from "./rpc";
 import {ColumnDescription, Schema, ContentsKind, TableView, RecordOrder, TableRenderer, RangeInfo} from "./table";
 import {Pair, Converters, reorder} from "./util";
-import {BasicColStats, HistogramView, Histogram1DLight, ColumnAndRange, AnyScale} from "./histogram";
+import {BasicColStats, Histogram, ColumnAndRange, AnyScale, HistogramViewBase} from "./histogramBase";
 import {BaseType} from "d3-selection";
 import {ScaleLinear, ScaleTime} from "d3-scale";
 import {DropDownMenu, ContextMenu} from "./menu";
+import {Histogram2DRenderer} from "./histogram2d";
 
-// counterpart of Java class
-class HeatMap {
+// counterpart of Java class 'HeatMap'
+export class HeatMapData {
     buckets: number[][];
     missingData: number;
-    histogramMissingD1: Histogram1DLight;
-    histogramMissingD2: Histogram1DLight;
+    histogramMissingD1: Histogram;
+    histogramMissingD2: Histogram;
     totalsize: number;
 }
 
-class AxisData {
-    public constructor(public missing: Histogram1DLight,
+export class AxisData {
+    public constructor(public missing: Histogram,
                        public description: ColumnDescription,
                        public stats: BasicColStats,
                        public allStrings: string[])   // used only for categorical histograms
@@ -274,10 +275,9 @@ implements IHtmlElement, HillviewDataView {
         };
 
         let width = this.page.getWidthInPixels();
-        let canvasHeight = HistogramView.canvasHeight;
-
         let chartWidth = width - HeatMapView.margin.left - HeatMapView.margin.right;
-        let chartHeight = canvasHeight - HeatMapView.margin.top - HeatMapView.margin.bottom;
+        let chartHeight = HeatMapView.chartHeight;
+        let canvasHeight = chartHeight + HeatMapView.margin.top + HeatMapView.margin.bottom;
         if (chartWidth < HeatMapView.minChartWidth)
             chartWidth = HeatMapView.minChartWidth;
 
@@ -406,7 +406,7 @@ implements IHtmlElement, HillviewDataView {
         this.canvas.append("text")
             .text(xData.description.name)
             .attr("transform", translateString(
-                chartWidth / 2, HistogramView.canvasHeight - HistogramView.margin.bottom))
+                chartWidth / 2, HeatMapView.chartHeight + HeatMapView.margin.top + HeatMapView.margin.bottom / 2))
             .attr("text-anchor", "middle")
             .attr("dominant-baseline", "hanging");
 
@@ -510,9 +510,7 @@ implements IHtmlElement, HillviewDataView {
         this.xLabel.textContent = "x=" + xs;
         this.yLabel.textContent = "y=" + ys;
 
-        let canvasHeight = HistogramView.canvasHeight;
-        let chartHeight = canvasHeight - HeatMapView.margin.top - HeatMapView.margin.bottom;
-
+        let chartHeight = HeatMapView.chartHeight;
         let xi = position[0] / this.pointWidth;
         let yi = (chartHeight - position[1]) / this.pointHeight;
         xi = Math.floor(xi);
@@ -582,10 +580,10 @@ implements IHtmlElement, HillviewDataView {
         if (this.xScale == null || this.yScale == null)
             return;
 
-        let xMin = HistogramView.invertToNumber(xl, this.xScale, this.currentData.xData.description.kind);
-        let xMax = HistogramView.invertToNumber(xr, this.xScale, this.currentData.xData.description.kind);
-        let yMin = HistogramView.invertToNumber(yl, this.yScale, this.currentData.yData.description.kind);
-        let yMax = HistogramView.invertToNumber(yr, this.yScale, this.currentData.yData.description.kind);
+        let xMin = HistogramViewBase.invertToNumber(xl, this.xScale, this.currentData.xData.description.kind);
+        let xMax = HistogramViewBase.invertToNumber(xr, this.xScale, this.currentData.xData.description.kind);
+        let yMin = HistogramViewBase.invertToNumber(yl, this.yScale, this.currentData.yData.description.kind);
+        let yMax = HistogramViewBase.invertToNumber(yr, this.yScale, this.currentData.yData.description.kind);
         [xMin, xMax] = reorder(xMin, xMax);
         [yMin, yMax] = reorder(yMin, yMax);
 
@@ -713,8 +711,8 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
             xBucketCount = Math.floor(size.width / HeatMapView.minDotSize);
             yBucketCount = Math.floor(size.height / HeatMapView.minDotSize);
         } else {
-            xBucketCount = HistogramView.bucketCount(this.stats.first, this.page, this.cds[0].kind);
-            yBucketCount = HistogramView.bucketCount(this.stats.second, this.page, this.cds[1].kind);
+            xBucketCount = HistogramViewBase.bucketCount(this.stats.first, this.page, this.cds[0].kind);
+            yBucketCount = HistogramViewBase.bucketCount(this.stats.second, this.page, this.cds[1].kind);
         }
         let arg0: ColumnAndRange = {
             columnName: this.cds[0].name,
@@ -737,30 +735,20 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
             second: arg1
         };
 
+        let rr = this.remoteObject.createRpcRequest("heatMap", args);
+        if (this.operation != null)
+            rr.setStartTime(this.operation.startTime());
+        let renderer: Renderer<HeatMapData> = null;
         if (this.drawHeatMap) {
-            let rr = this.remoteObject.createRpcRequest("heatMap", args);
-            if (this.operation != null)
-                rr.setStartTime(this.operation.startTime());
-            let renderer = new HeatMapRenderer(this.page,
+            renderer = new HeatMapRenderer(this.page,
                 this.remoteObject.remoteObjectId, this.tableSchema,
                 this.cds, [this.stats.first, this.stats.second], rr);
-            rr.invoke(renderer);
         } else {
-            let rr = this.remoteObject.createRpcRequest("histogram2d", args);
-            if (this.operation != null)
-                rr.setStartTime(this.operation.startTime());
-            // TODO
-            /*
-            let renderer = new Histogram2DRenderer(this.page,
+            renderer = new Histogram2DRenderer(this.page,
                 this.remoteObject.remoteObjectId, this.tableSchema,
                 this.cds, [this.stats.first, this.stats.second], rr);
-            rr.invoke(renderer);
-            */
         }
-    }
-
-    public histogram2D(): void {
-        // TODO
+        rr.invoke(renderer);
     }
 
     onCompleted(): void {
@@ -772,8 +760,8 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
     }
 }
 
-// Renders a column histogram
-export class HeatMapRenderer extends Renderer<HeatMap> {
+// Renders a heatmap
+export class HeatMapRenderer extends Renderer<HeatMapData> {
     protected heatMap: HeatMapView;
 
     constructor(page: FullPage,
@@ -790,7 +778,7 @@ export class HeatMapRenderer extends Renderer<HeatMap> {
             throw "Expected 2 columns, got " + cds.length;
     }
 
-    onNext(value: PartialResult<HeatMap>): void {
+    onNext(value: PartialResult<HeatMapData>): void {
         super.onNext(value);
         if (value == null)
             return;

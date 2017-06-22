@@ -21,7 +21,8 @@ import {
 } from "./ui";
 import {RemoteObject, PartialResult, ICancellable, RpcRequest} from "./rpc";
 import Rx = require('rx');
-import {RangeCollector, BasicColStats} from "./histogram";
+import {BasicColStats} from "./histogramBase";
+import {RangeCollector} from "./histogram";
 import {Range2DCollector} from "./heatMap";
 import {DropDownMenu, ContextMenu, PopupMenu} from "./menu";
 import {Converters} from "./util";
@@ -488,6 +489,8 @@ export class TableView extends RemoteObject
                 columns.push(ci);
             });
 
+            if (columns.length != 2)
+                return;
             let rr = this.createRpcRequest("range2D", columns);
             rr.invoke(new Range2DCollector(cds, this.schema, this.getPage(), this, rr, false));
         } else {
