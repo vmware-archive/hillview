@@ -614,7 +614,7 @@ implements IHtmlElement, HillviewDataView {
             max: yMax,
             columnName: this.currentData.yData.description.name,
             bucketBoundaries: yBoundaries,
-            complement: d3.event.ctrlKey
+            complement: d3.event.sourceEvent.ctrlKey
         };
         let rr = this.createRpcRequest("filter2DRange", { first: xRange, second: yRange });
         let renderer = new Filter2DReceiver(
