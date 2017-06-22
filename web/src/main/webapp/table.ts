@@ -489,6 +489,8 @@ export class TableView extends RemoteObject
                 columns.push(ci);
             });
 
+            if (columns.length != 2)
+                return;
             let rr = this.createRpcRequest("range2D", columns);
             rr.invoke(new Range2DCollector(cds, this.schema, this.getPage(), this, rr, false));
         } else {

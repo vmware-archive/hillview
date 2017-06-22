@@ -26,7 +26,7 @@ import {ScaleLinear, ScaleTime} from "d3-scale";
 import {Converters} from "./util";
 
 // same as Java class
-export interface Histogram1DLight {
+export interface Histogram {
     buckets: number[]
     missingData: number;
     outOfRange: number;
@@ -61,13 +61,13 @@ implements IHtmlElement, HillviewDataView {
     public static readonly maxBucketCount: number = 40;
     public static readonly minBarWidth: number = 5;
     public static readonly minChartWidth = 200;  // pixels
-    public static readonly canvasHeight = 400;  // pixels
+    public static readonly chartHeight = 400;  // pixels
 
     protected topLevel: HTMLElement;
     public static readonly margin = {
-        top: 30,
+        top: 50,
         right: 30,
-        bottom: 30,
+        bottom: 40,
         left: 40
     };
     protected page: FullPage;
@@ -219,7 +219,7 @@ implements IHtmlElement, HillviewDataView {
     public static getRenderingSize(page: FullPage): Size {
         let width = page.getWidthInPixels();
         width = width - HistogramViewBase.margin.left - HistogramViewBase.margin.right;
-        let height = HistogramViewBase.canvasHeight - HistogramViewBase.margin.top - HistogramViewBase.margin.bottom;
+        let height = HistogramViewBase.chartHeight - HistogramViewBase.margin.top - HistogramViewBase.margin.bottom;
         return { width: width, height: height };
     }
 

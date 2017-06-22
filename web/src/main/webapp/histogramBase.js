@@ -134,7 +134,7 @@ var HistogramViewBase = (function (_super) {
     HistogramViewBase.getRenderingSize = function (page) {
         var width = page.getWidthInPixels();
         width = width - HistogramViewBase.margin.left - HistogramViewBase.margin.right;
-        var height = HistogramViewBase.canvasHeight - HistogramViewBase.margin.top - HistogramViewBase.margin.bottom;
+        var height = HistogramViewBase.chartHeight - HistogramViewBase.margin.top - HistogramViewBase.margin.bottom;
         return { width: width, height: height };
     };
     HistogramViewBase.bucketCount = function (stats, page, columnKind) {
@@ -186,11 +186,11 @@ var HistogramViewBase = (function (_super) {
     HistogramViewBase.maxBucketCount = 40;
     HistogramViewBase.minBarWidth = 5;
     HistogramViewBase.minChartWidth = 200; // pixels
-    HistogramViewBase.canvasHeight = 400; // pixels
+    HistogramViewBase.chartHeight = 400; // pixels
     HistogramViewBase.margin = {
-        top: 30,
+        top: 50,
         right: 30,
-        bottom: 30,
+        bottom: 40,
         left: 40
     };
     return HistogramViewBase;
