@@ -16,7 +16,7 @@
  */
 
 import {
-    IHtmlElement, Renderer, FullPage, HillviewDataView, formatNumber, significantDigits, percent, KeyCodes,
+    IHtmlElement, Renderer, FullPage, DataView, formatNumber, significantDigits, percent, KeyCodes,
     ScrollBar, IScrollTarget
 } from "./ui";
 import {RemoteObject, PartialResult, ICancellable, RpcRequest} from "./rpc";
@@ -166,7 +166,7 @@ export class RangeInfo {
  */
 
 export class TableView extends RemoteObject
-    implements IHtmlElement, HillviewDataView, IScrollTarget {
+    implements IHtmlElement, DataView, IScrollTarget {
     protected static initialTableId: string = null;
 
     // Data view part: received from remote site
@@ -348,7 +348,7 @@ export class TableView extends RemoteObject
             return;
 
         let table = new TableView(TableView.initialTableId, page);
-        page.setHillviewDataView(table);
+        page.setDataView(table);
         let rr = table.createRpcRequest("getSchema", null);
         rr.invoke(new TableRenderer(page, table, rr, false, new RecordOrder([])));
     }
@@ -834,7 +834,7 @@ export class RemoteTableReceiver extends Renderer<string> {
 
     protected getTableSchema(tableId: string) {
         let table = new TableView(tableId, this.page);
-        this.page.setHillviewDataView(table);
+        this.page.setDataView(table);
         let rr = table.createRpcRequest("getSchema", null);
         rr.setStartTime(this.operation.startTime());
         rr.invoke(new TableRenderer(this.page, table, rr, false, new RecordOrder([])));
@@ -988,7 +988,7 @@ class FilterCompleted extends Renderer<string> {
             return;
         let table = new TableView(this.remoteTableId, this.page);
         table.setSchema(this.tv.schema);
-        this.page.setHillviewDataView(table);
+        this.page.setDataView(table);
         let rr = table.createNextKRequest(this.order, null);
         rr.setStartTime(this.operation.startTime());
         rr.invoke(new TableRenderer(this.page, table, rr, false, this.order));

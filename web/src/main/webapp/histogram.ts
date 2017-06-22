@@ -364,7 +364,10 @@ export class HistogramView extends HistogramViewBase {
 
     // show the table corresponding to the data in the histogram
     protected showTable(): void {
-        let table = new TableView(this.remoteObjectId, this.page);
+        let newPage = new FullPage();
+        let table = new TableView(this.remoteObjectId, newPage);
+        newPage.setDataView(table);
+        this.page.insertAfterMe(newPage);
         table.setSchema(this.tableSchema);
 
         let order =  new RecordOrder([ {
@@ -372,10 +375,7 @@ export class HistogramView extends HistogramViewBase {
             isAscending: true
         } ]);
         let rr = table.createNextKRequest(order, null);
-        let page = new FullPage();
-        page.setHillviewDataView(table);
-        this.page.insertAfterMe(page);
-        rr.invoke(new TableRenderer(page, table, rr, false, order));
+        rr.invoke(new TableRenderer(newPage, table, rr, false, order));
     }
 
     protected selectionCompleted(xl: number, xr: number): void {
@@ -539,7 +539,7 @@ export class HistogramRenderer extends Renderer<Pair<Histogram, Histogram>> {
         super(new FullPage(), operation, "histogram");
         page.insertAfterMe(this.page);
         this.histogram = new HistogramView(remoteTableId, schema, this.page);
-        this.page.setHillviewDataView(this.histogram);
+        this.page.setDataView(this.histogram);
     }
 
     onNext(value: PartialResult<Pair<Histogram, Histogram>>): void {

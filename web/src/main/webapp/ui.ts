@@ -55,7 +55,7 @@ export class Rectangle {
         y: this.origin.y + this.size.height }; }
 }
 
-export interface HillviewDataView extends IHtmlElement {
+export interface DataView extends IHtmlElement {
     setPage(page: FullPage): void;
     getPage(): FullPage;
     refresh(): void;
@@ -383,7 +383,7 @@ export class ProgressManager implements IHtmlElement {
 // Here we display the main visualization
 export class DataDisplay implements IHtmlElement {
     topLevel: HTMLElement;
-    element: HillviewDataView;
+    element: DataView;
 
     constructor() {
         this.topLevel = document.createElement("div");
@@ -399,7 +399,7 @@ export class DataDisplay implements IHtmlElement {
         return this.topLevel;
     }
 
-    public setHillviewDataView(element: HillviewDataView): void {
+    public setDataView(element: DataView): void {
         this.element = element;
         removeAllChildren(this.topLevel);
         this.topLevel.appendChild(element.getHTMLRepresentation());
@@ -454,7 +454,7 @@ export class FullPage implements IHtmlElement {
         this.bottomContainer = document.createElement("div");
         let close = document.createElement("span");
         close.className = "close";
-        close.innerHTML = "&times;";
+        close.innerHTML = this.pageId + " &times;";
         close.onclick = (e) => this.remove();
         this.pageTopLevel.appendChild(close);
         this.pageTopLevel.appendChild(this.dataDisplay.getHTMLRepresentation());
@@ -518,8 +518,8 @@ export class FullPage implements IHtmlElement {
         return this.console;
     }
 
-    public setHillviewDataView(hdv: HillviewDataView): void {
-        this.dataDisplay.setHillviewDataView(hdv);
+    public setDataView(hdv: DataView): void {
+        this.dataDisplay.setDataView(hdv);
     }
 
     public reportError(error: string) {
