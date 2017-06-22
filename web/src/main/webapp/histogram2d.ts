@@ -484,7 +484,7 @@ export class Histogram2DView extends HistogramViewBase {
         } ]);
         let rr = table.createNextKRequest(order, null);
         let page = new FullPage();
-        page.setHillviewDataView(table);
+        page.setDataView(table);
         this.page.insertAfterMe(page);
         rr.invoke(new TableRenderer(page, table, rr, false, order));
     }
@@ -543,7 +543,7 @@ export class Histogram2DRenderer extends Renderer<HeatMapData> {
         super(new FullPage(), operation, "histogram");
         page.insertAfterMe(this.page);
         this.histogram = new Histogram2DView(remoteTableId, schema, this.page);
-        this.page.setHillviewDataView(this.histogram);
+        this.page.setDataView(this.histogram);
         if (cds.length != 2)
             throw "Expected 2 columns, got " + cds.length;
     }

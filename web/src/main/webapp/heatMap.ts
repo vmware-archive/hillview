@@ -16,7 +16,7 @@
  */
 
 import {
-    FullPage, Renderer, IHtmlElement, HillviewDataView, Point, Size, KeyCodes,
+    FullPage, Renderer, IHtmlElement, DataView, Point, Size, KeyCodes,
     significantDigits, formatNumber, translateString
 } from "./ui";
 import d3 = require('d3');
@@ -92,7 +92,7 @@ export class AxisData {
 }
 
 export class HeatMapView extends RemoteObject
-implements IHtmlElement, HillviewDataView {
+implements IHtmlElement, DataView {
     private topLevel: HTMLElement;
     public static readonly minChartWidth = 200;  // pixels
     public static readonly chartHeight = 400;  // pixels
@@ -208,7 +208,7 @@ implements IHtmlElement, HillviewDataView {
         }]);
         let rr = table.createNextKRequest(order, null);
         let page = new FullPage();
-        page.setHillviewDataView(table);
+        page.setDataView(table);
         this.page.insertAfterMe(page);
         rr.invoke(new TableRenderer(page, table, rr, false, order));
     }
@@ -774,7 +774,7 @@ export class HeatMapRenderer extends Renderer<HeatMapData> {
         super(new FullPage(), operation, "histogram");
         page.insertAfterMe(this.page);
         this.heatMap = new HeatMapView(remoteTableId, schema, this.page);
-        this.page.setHillviewDataView(this.heatMap);
+        this.page.setDataView(this.heatMap);
         if (cds.length != 2)
             throw "Expected 2 columns, got " + cds.length;
     }

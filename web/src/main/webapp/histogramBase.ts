@@ -16,7 +16,7 @@
  */
 
 import {
-    IHtmlElement, HillviewDataView, FullPage, Point, Size, KeyCodes
+    IHtmlElement, DataView, FullPage, Point, Size, KeyCodes
 } from "./ui";
 import d3 = require('d3');
 import {RemoteObject} from "./rpc";
@@ -65,7 +65,7 @@ export interface FilterDescription {
 export type AnyScale = ScaleLinear<number, number> | ScaleTime<number, number>;
 
 export abstract class HistogramViewBase extends RemoteObject
-implements IHtmlElement, HillviewDataView {
+implements IHtmlElement, DataView {
     public static readonly maxBucketCount: number = 40;
     public static readonly minBarWidth: number = 5;
     public static readonly minChartWidth = 200;  // pixels
