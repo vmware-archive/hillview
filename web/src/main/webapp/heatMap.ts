@@ -23,7 +23,10 @@ import d3 = require('d3');
 import {RemoteObject, ICancellable, PartialResult} from "./rpc";
 import {ColumnDescription, Schema, ContentsKind, TableView, RecordOrder, TableRenderer, RangeInfo} from "./table";
 import {Pair, Converters, reorder} from "./util";
-import {BasicColStats, Histogram, ColumnAndRange, AnyScale, HistogramViewBase} from "./histogramBase";
+import {
+    BasicColStats, Histogram, ColumnAndRange, AnyScale, HistogramViewBase,
+    FilterDescription
+} from "./histogramBase";
 import {BaseType} from "d3-selection";
 import {ScaleLinear, ScaleTime} from "d3-scale";
 import {DropDownMenu, ContextMenu} from "./menu";
@@ -599,21 +602,19 @@ implements IHtmlElement, HillviewDataView {
             yBoundaries = [this.currentData.yData.allStrings[Math.floor(yMin)],
                 this.currentData.xData.allStrings[Math.ceil(yMax)]];
         }
-        let xRange : ColumnAndRange = {
+        let xRange : FilterDescription = {
             min: xMin,
             max: xMax,
-            cdfBucketCount: null,  // unused
-            bucketCount: null,  // unused
             columnName: this.currentData.xData.description.name,
-            bucketBoundaries: xBoundaries
+            bucketBoundaries: xBoundaries,
+            complement: d3.event.sourceEvent.ctrlKey
         };
-        let yRange : ColumnAndRange = {
+        let yRange : FilterDescription = {
             min: yMin,
             max: yMax,
-            cdfBucketCount: null,  // unused
-            bucketCount: null,  // unused
             columnName: this.currentData.yData.description.name,
-            bucketBoundaries: yBoundaries
+            bucketBoundaries: yBoundaries,
+            complement: d3.event.sourceEvent.ctrlKey
         };
         let rr = this.createRpcRequest("filter2DRange", { first: xRange, second: yRange });
         let renderer = new Filter2DReceiver(

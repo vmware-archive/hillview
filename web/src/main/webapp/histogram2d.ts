@@ -15,7 +15,7 @@
  *  limitations under the License.
  */
 
-import {HistogramViewBase, ColumnAndRange, BasicColStats} from "./histogramBase";
+import {HistogramViewBase, ColumnAndRange, BasicColStats, FilterDescription} from "./histogramBase";
 import {Schema, TableView, RecordOrder, TableRenderer, ColumnDescription} from "./table";
 import {FullPage, significantDigits, percent, formatNumber, translateString, Renderer} from "./ui";
 import {DropDownMenu, ContextMenu} from "./menu";
@@ -513,17 +513,16 @@ export class Histogram2DView extends HistogramViewBase {
             if (Math.floor(max) != Math.ceil(min))
                 boundaries.push(this.currentData.xData.allStrings[Math.floor(max)]);
         }
-        let range: ColumnAndRange = {
+        let filter: FilterDescription = {
             min: min,
             max: max,
             columnName: this.currentData.xData.description.name,
-            cdfBucketCount: null,  // unused for this call
-            bucketCount: null,  // unused for this call
-            bucketBoundaries: boundaries
+            bucketBoundaries: boundaries,
+            complement: d3.event.sourceEvent.ctrlKey
         };
 
         /*
-        let rr = this.createRpcRequest("filterRange", range);
+        let rr = this.createRpcRequest("filterRange", filter);
         let renderer = new FilterReceiver(
             this.currentData.xData.description, this.tableSchema,
             this.currentData.xData.allStrings, range, this.page, rr);

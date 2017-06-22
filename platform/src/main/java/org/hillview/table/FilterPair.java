@@ -2,11 +2,10 @@ package org.hillview.table;
 
 import javax.annotation.Nullable;
 
-@SuppressWarnings("CanBeFinal")
-public class ColPair implements IJsonRepr {
+public class FilterPair implements IJsonRepr {
     // fields are never really null, but we have no default initializer
     @Nullable
-    public ColumnAndRange first;
+    public FilterDescription first;
     @Nullable
-    public ColumnAndRange second;
+    public FilterDescription second;
 }

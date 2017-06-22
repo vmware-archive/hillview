@@ -54,6 +54,14 @@ export interface ColumnAndRange {
     bucketBoundaries: string[];
 }
 
+export interface FilterDescription {
+    min: number;
+    max: number;
+    columnName: string;
+    complement: boolean;
+    bucketBoundaries: string[];
+}
+
 export type AnyScale = ScaleLinear<number, number> | ScaleTime<number, number>;
 
 export abstract class HistogramViewBase extends RemoteObject
@@ -93,6 +101,7 @@ implements IHtmlElement, HillviewDataView {
     protected xDot: any;
     protected yDot: any;
     protected cdfDot: any;
+    protected moved: boolean;  // to detect trivial empty drags
 
     constructor(remoteObjectId: string, protected tableSchema: Schema, page: FullPage) {
         super(remoteObjectId);
@@ -100,6 +109,7 @@ implements IHtmlElement, HillviewDataView {
         this.topLevel.className = "chart";
         this.topLevel.onkeydown = e => this.keyDown(e);
         this.dragging = false;
+        this.moved = false;
         this.setPage(page);
 
         this.topLevel.tabIndex = 1;
@@ -163,6 +173,7 @@ implements IHtmlElement, HillviewDataView {
 
     protected dragStart(): void {
         this.dragging = true;
+        this.moved = false;
         let position = d3.mouse(this.chart.node());
         this.selectionOrigin = {
             x: position[0],
@@ -173,6 +184,7 @@ implements IHtmlElement, HillviewDataView {
         this.onMouseMove();
         if (!this.dragging)
             return;
+        this.moved = true;
         let ox = this.selectionOrigin.x;
         let position = d3.mouse(this.chart.node());
         let x = position[0];
@@ -192,7 +204,7 @@ implements IHtmlElement, HillviewDataView {
     }
 
     protected dragEnd(): void {
-        if (!this.dragging)
+        if (!this.dragging || !this.moved)
             return;
         this.dragging = false;
         this.selectionRectangle
