@@ -49,12 +49,52 @@ export class Histogram2DView extends HistogramViewBase {
             { text: "View", subMenu: new ContextMenu([
                 { text: "refresh", action: () => { this.refresh(); } },
                 { text: "table", action: () => this.showTable() },
+                { text: "#buckets", action: () => this.chooseBuckets() },
                 { text: "percent/value", action: () => { this.normalized = !this.normalized; this.refresh(); } },
             ]) }
         ]);
 
         this.normalized = false;
         this.topLevel.insertBefore(menu.getHTMLRepresentation(), this.topLevel.children[0]);
+    }
+
+    chooseBuckets(): void {
+        if (this.currentData == null)
+            return;
+
+        let buckets = window.prompt("Choose number of buckets (between 1 and "
+            + HistogramViewBase.maxBucketCount + ")", "10");
+        if (buckets == null)
+            return;
+        if (isNaN(+buckets))
+            this.page.reportError(buckets + " is not a number");
+
+        let arg0: ColumnAndRange = {
+            columnName: this.currentData.xData.description.name,
+            min: this.currentData.xData.stats.min,
+            max: this.currentData.xData.stats.max,
+            bucketCount: +buckets,
+            cdfBucketCount: 0,
+            bucketBoundaries: null // TODO
+        };
+        let arg1: ColumnAndRange = {
+            columnName: this.currentData.yData.description.name,
+            min: this.currentData.yData.stats.min,
+            max: this.currentData.yData.stats.max,
+            bucketCount: this.currentData.yPoints,
+            cdfBucketCount: 0,
+            bucketBoundaries: null // TODO
+        };
+        let args = {
+            first: arg0,
+            second: arg1
+        };
+        let rr = this.createRpcRequest("heatMap", args);
+        let renderer = new Histogram2DRenderer(this.page,
+            this.remoteObjectId, this.tableSchema,
+            [this.currentData.xData.description, this.currentData.yData.description],
+            [this.currentData.xData.stats, this.currentData.yData.stats], rr);
+        rr.invoke(renderer);
     }
 
     public refresh(): void {
