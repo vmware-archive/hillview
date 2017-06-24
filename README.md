@@ -207,7 +207,7 @@ $ cd ../..
 On Mac the following command seems to work correctly only without `sudo`.
 
 ```
-$ sudo npm install -g typescript ts-loader webpack@1.14.0
+$ sudo npm install -g typescript ts-loader webpack
 ```
 
 This installs the typescript compiler, the `webpack` tool, used to

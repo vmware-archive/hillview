@@ -16,10 +16,9 @@
   "dependencies": {
     "@types/d3": "^4.9.0",
     "d3": "^4.0.5",
-    "rx": "^4.1.0",
-    "rx-dom": "^7.0.3"
+    "rx": "^4.1.0"
   },
   "devDependencies": {
-    "webpack": "^1.14.0"
+    "webpack": "^3.0.0"
   }
 }

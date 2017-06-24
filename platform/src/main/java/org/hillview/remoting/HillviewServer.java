@@ -234,7 +234,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     private boolean checkValidIdsIndex(final int index,
                                        final StreamObserver<PartialResponse> observer) {
         if (!this.dataSets.containsKey(index)) {
-            observer.onError(new RuntimeException("Table index does not exist: "
+            observer.onError(new RuntimeException("Object with index does not exist: "
                     + index + " " + this.listenAddress));
             return false;
         }
