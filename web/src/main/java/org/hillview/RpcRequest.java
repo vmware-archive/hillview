@@ -21,6 +21,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.hillview.dataset.api.IJson;
 
+import javax.annotation.Nullable;
 import javax.websocket.Session;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -32,6 +33,7 @@ final class RpcRequest {
     private final int requestId;
     final String objectId;
     public final String method;
+    @Nullable
     private final String arguments;  // A JSON string
 
     public RpcRequest(JsonElement element) {
@@ -77,5 +79,26 @@ final class RpcRequest {
         } catch (Exception ex) {
             LOGGER.log(Level.SEVERE, "Error closing session");
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || this.getClass() != o.getClass()) return false;
+
+        RpcRequest that = (RpcRequest) o;
+        if (this.requestId != that.requestId) return false;
+        if (!this.objectId.equals(that.objectId)) return false;
+        if (!this.method.equals(that.method)) return false;
+        return this.arguments != null ? this.arguments.equals(that.arguments) : that.arguments == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = this.requestId;
+        result = 31 * result + this.objectId.hashCode();
+        result = 31 * result + this.method.hashCode();
+        result = 31 * result + (this.arguments != null ? this.arguments.hashCode() : 0);
+        return result;
     }
 }

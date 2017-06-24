@@ -152,7 +152,7 @@ th, td {
     padding: 0;
     background: #efefef;
     background: linear-gradient(top, #efefef 0%, #bbbbbb 100%);
-    box-shadow: 0 0 9px rgba(0,0,0,0.15);
+    box-shadow: 0 0 5px rgba(0,0,0,0.15);
 }
 
 .menu ul span {
@@ -173,7 +173,7 @@ th, td {
     transition: all 0.2s;
     background: #efefef;
     background: linear-gradient(top, #efefef 0%, #bbbbbb 100%);
-    box-shadow: 0 0 9px rgba(0,0,0,0.15);
+    box-shadow: 0 0 5px rgba(0,0,0,0.15);
 }
 
 .menu ul li:hover  {
