@@ -1,5 +1,4 @@
 /// <reference path="node_modules/rx/ts/rx.d.ts" />
-/// <reference path="typings/index.d.ts" />
 
 /*
  * Copyright (c) 2017 VMWare Inc. All Rights Reserved.
