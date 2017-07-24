@@ -14,8 +14,8 @@
     "url": "git://github.com/mbudiu-vmw/hiero.git"
   },
   "dependencies": {
-    "@types/d3": "^4.9.0",
-    "d3": "^4.0.5",
+    "@types/d3": "^4.10.0",
+    "d3": "^4.10.0",
     "rx": "^4.1.0"
   },
   "devDependencies": {
