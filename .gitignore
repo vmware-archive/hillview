@@ -49,3 +49,4 @@ hs_err_pid*
 # data which is too big to put into git
 data/On_Time_On_Time*
 data/2016_*.csv
+data/readme.html
