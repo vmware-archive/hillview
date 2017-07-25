@@ -138,6 +138,21 @@ th, td {
     stroke-dasharray: 5,5
 }
 
+.dataRange > svg {
+    width: 80px;
+    height: 10px;
+    display: inline-block;
+    background: rgb(220, 220, 220);
+}
+
+.dataRange > svg > g {
+    transform: scale(80, 10);
+}
+
+.dataRange > div {
+    display: inline-block;
+}
+
 /* menus in CSS; from http://codepen.io/philhoyt/pen/ujHzd */
 
 .menu {

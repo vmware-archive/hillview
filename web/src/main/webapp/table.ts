@@ -772,27 +772,20 @@ export class TableView extends RemoteObject
             return "?";  // TODO
     }
 
-    public drawDataRange(canvas: HTMLCanvasElement, position: number, count: number) : void {
-        var ctx = canvas.getContext('2d');
+    private drawDataRange(cell: HTMLElement, position: number, count: number) : void {
+        cell.classList.add('dataRange');
 
-        // A little hack to make canvas look prettier on retina displays.
-        // (Source: https://coderwall.com/p/vmkk6a/how-to-make-the-canvas-not-look-like-crap-on-retina)
-        ctx.scale(2, 2);
-        canvas.style.width = '100px';
-        canvas.style.height = '20px';
-        canvas.width = 2 * 100;
-        canvas.height = 2 * 20;
+        d3.select(cell).append('svg')
+            .append("g").append("rect")
+            .attr("x", position / this.rowCount)
+            .attr("y", 0)
+            .attr("width", count / this.rowCount)
+            .attr("height", 1)
+            .attr("fill", "grey")
 
-        let x = canvas.width * position / this.rowCount;
-        let width = Math.max(1, canvas.width * count / this.rowCount);
-        ctx.fillStyle = 'rgb(200, 200, 200)';
-        ctx.fillRect(x, 0, width, canvas.height);
-
-        ctx.textBaseline = "middle";
-        ctx.textAlign = "right";
-        ctx.font = '36px sans';
-        ctx.fillStyle = 'black';
-        ctx.fillText(significantDigits(position), canvas.width, canvas.height / 2);
+        let text = cell.appendChild(document.createElement("div"));
+        text.textContent = significantDigits(position);
+        text.style.textAlign = "right";
     }
 
     public addRow(row : RowView, cds: ColumnDescription[]) : void {
@@ -801,9 +794,7 @@ export class TableView extends RemoteObject
         let position = this.startPosition + this.dataRowsDisplayed;
 
         let cell = trow.insertCell(0);
-        let canvas = document.createElement("canvas");
-        cell.appendChild(canvas);
-        this.drawDataRange(canvas, position, row.count);
+        this.drawDataRange(cell, position, row.count);
 
         cell = trow.insertCell(1);
         cell.style.textAlign = "right";
