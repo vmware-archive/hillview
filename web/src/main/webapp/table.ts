@@ -772,38 +772,42 @@ export class TableView extends RemoteObject
             return "?";  // TODO
     }
 
+    public drawDataRange(canvas: HTMLCanvasElement, position: number, count: number) : void {
+        var ctx = canvas.getContext('2d');
+
+        // A little hack to make canvas look prettier on retina displays.
+        // (Source: https://coderwall.com/p/vmkk6a/how-to-make-the-canvas-not-look-like-crap-on-retina)
+        ctx.scale(2, 2);
+        canvas.style.width = '100px';
+        canvas.style.height = '20px';
+        canvas.width = 2 * 100;
+        canvas.height = 2 * 20;
+
+        let x = canvas.width * position / this.rowCount;
+        let width = Math.max(1, canvas.width * count / this.rowCount);
+        ctx.fillStyle = 'rgb(200, 200, 200)';
+        ctx.fillRect(x, 0, width, canvas.height);
+
+        ctx.textBaseline = "middle";
+        ctx.textAlign = "right";
+        ctx.font = '36px sans';
+        ctx.fillStyle = 'black';
+        ctx.fillText(significantDigits(position), canvas.width, canvas.height / 2);
+    }
+
     public addRow(row : RowView, cds: ColumnDescription[]) : void {
         let trow = this.tBody.insertRow();
 
         let position = this.startPosition + this.dataRowsDisplayed;
 
         let cell = trow.insertCell(0);
-        cell.style.textAlign = "right";
-        // cell.textContent = significantDigits(position);
         let canvas = document.createElement("canvas");
         cell.appendChild(canvas);
-        canvas.width = 100;
-        canvas.height = 20;
-        var ctx = canvas.getContext('2d');
-
-        let x = canvas.width * position / this.rowCount;
-        let width = Math.max(1, canvas.width * row.count / this.rowCount);
-        ctx.fillStyle = 'gray';
-        ctx.fillRect(x, 0, width, canvas.height);
-        ctx.textBaseline = "top";
-        ctx.textAlign = "left";
-        //ctx.direction = "rtl"; // Only works with experimental canvas features.
-        ctx.fillStyle = 'black';
-        ctx.fillText(significantDigits(position), 0, 10);
+        this.drawDataRange(canvas, position, row.count);
 
         cell = trow.insertCell(1);
         cell.style.textAlign = "right";
         cell.textContent = significantDigits(row.count);
-
-        console.log("\tPosition:" + position + "(" + 100 * position / this.rowCount + " %)");
-        console.log("\tCount:" + row.count + "(" + 100 * row.count / this.rowCount + " %)");
-        console.log("\tTotal number of rows:" + this.rowCount + "(100 %)");
-
 
         for (let i = 0; i < cds.length; i++) {
             let cd = cds[i];
