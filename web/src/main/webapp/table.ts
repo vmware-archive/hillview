@@ -775,13 +775,35 @@ export class TableView extends RemoteObject
     public addRow(row : RowView, cds: ColumnDescription[]) : void {
         let trow = this.tBody.insertRow();
 
+        let position = this.startPosition + this.dataRowsDisplayed;
+
         let cell = trow.insertCell(0);
         cell.style.textAlign = "right";
-        cell.textContent = significantDigits(this.startPosition + this.dataRowsDisplayed);
+        // cell.textContent = significantDigits(position);
+        let canvas = document.createElement("canvas");
+        cell.appendChild(canvas);
+        canvas.width = 100;
+        canvas.height = 20;
+        var ctx = canvas.getContext('2d');
+
+        let x = canvas.width * position / this.rowCount;
+        let width = Math.max(1, canvas.width * row.count / this.rowCount);
+        ctx.fillStyle = 'gray';
+        ctx.fillRect(x, 0, width, canvas.height);
+        ctx.textBaseline = "top";
+        ctx.textAlign = "left";
+        //ctx.direction = "rtl"; // Only works with experimental canvas features.
+        ctx.fillStyle = 'black';
+        ctx.fillText(significantDigits(position), 0, 10);
 
         cell = trow.insertCell(1);
         cell.style.textAlign = "right";
         cell.textContent = significantDigits(row.count);
+
+        console.log("\tPosition:" + position + "(" + 100 * position / this.rowCount + " %)");
+        console.log("\tCount:" + row.count + "(" + 100 * row.count / this.rowCount + " %)");
+        console.log("\tTotal number of rows:" + this.rowCount + "(100 %)");
+
 
         for (let i = 0; i < cds.length; i++) {
             let cd = cds[i];
