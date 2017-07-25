@@ -774,18 +774,12 @@ export class TableView extends RemoteObject
 
     private drawDataRange(cell: HTMLElement, position: number, count: number) : void {
         cell.classList.add('dataRange');
-
         d3.select(cell).append('svg')
             .append("g").append("rect")
             .attr("x", position / this.rowCount)
             .attr("y", 0)
-            .attr("width", count / this.rowCount)
-            .attr("height", 1)
-            .attr("fill", "grey")
-
-        let text = cell.appendChild(document.createElement("div"));
-        text.textContent = significantDigits(position);
-        text.style.textAlign = "right";
+            .attr("width", Math.max(0.01, count / this.rowCount)) // 0.01 corresponds to 1 pixel
+            .attr("height", 1);
     }
 
     public addRow(row : RowView, cds: ColumnDescription[]) : void {

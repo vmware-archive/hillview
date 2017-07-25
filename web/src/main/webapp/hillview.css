@@ -139,14 +139,18 @@ th, td {
 }
 
 .dataRange > svg {
-    width: 80px;
+    width: 100px;
     height: 10px;
     display: inline-block;
     background: rgb(220, 220, 220);
 }
 
 .dataRange > svg > g {
-    transform: scale(80, 10);
+    transform: scale(100, 10);
+}
+
+.dataRange > svg > g > rect {
+    fill: black;
 }
 
 .dataRange > div {
