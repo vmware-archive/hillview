@@ -798,6 +798,11 @@ export class TableView extends RemoteObject
         cell.style.textAlign = "right";
         cell.textContent = significantDigits(row.count);
 
+        console.log("\tPosition:" + position + "(" + 100 * position / this.rowCount + " %)");
+        console.log("\tCount:" + row.count + "(" + 100 * row.count / this.rowCount + " %)");
+        console.log("\tTotal number of rows:" + this.rowCount + "(100 %)");
+
+
         for (let i = 0; i < cds.length; i++) {
             let cd = cds[i];
             cell = trow.insertCell(i + 2);
