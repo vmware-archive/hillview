@@ -16,12 +16,13 @@
  */
 
 import {
-    IHtmlElement, Renderer, FullPage, HillviewDataView, formatNumber, significantDigits, percent, KeyCodes,
+    IHtmlElement, Renderer, FullPage, DataView, formatNumber, significantDigits, percent, KeyCodes,
     ScrollBar, IScrollTarget
 } from "./ui";
 import {RemoteObject, PartialResult, ICancellable, RpcRequest} from "./rpc";
 import Rx = require('rx');
-import {RangeCollector, BasicColStats} from "./histogram";
+import {BasicColStats} from "./histogramBase";
+import {RangeCollector} from "./histogram";
 import {Range2DCollector} from "./heatMap";
 import {DropDownMenu, ContextMenu, PopupMenu} from "./menu";
 import {Converters} from "./util";
@@ -165,7 +166,7 @@ export class RangeInfo {
  */
 
 export class TableView extends RemoteObject
-    implements IHtmlElement, HillviewDataView, IScrollTarget {
+    implements IHtmlElement, DataView, IScrollTarget {
     protected static initialTableId: string = null;
 
     // Data view part: received from remote site
@@ -347,7 +348,7 @@ export class TableView extends RemoteObject
             return;
 
         let table = new TableView(TableView.initialTableId, page);
-        page.setHillviewDataView(table);
+        page.setDataView(table);
         let rr = table.createRpcRequest("getSchema", null);
         rr.invoke(new TableRenderer(page, table, rr, false, new RecordOrder([])));
     }
@@ -488,6 +489,8 @@ export class TableView extends RemoteObject
                 columns.push(ci);
             });
 
+            if (columns.length != 2)
+                return;
             let rr = this.createRpcRequest("range2D", columns);
             rr.invoke(new Range2DCollector(cds, this.schema, this.getPage(), this, rr, false));
         } else {
@@ -831,7 +834,7 @@ export class RemoteTableReceiver extends Renderer<string> {
 
     protected getTableSchema(tableId: string) {
         let table = new TableView(tableId, this.page);
-        this.page.setHillviewDataView(table);
+        this.page.setDataView(table);
         let rr = table.createRpcRequest("getSchema", null);
         rr.setStartTime(this.operation.startTime());
         rr.invoke(new TableRenderer(this.page, table, rr, false, new RecordOrder([])));
@@ -985,7 +988,7 @@ class FilterCompleted extends Renderer<string> {
             return;
         let table = new TableView(this.remoteTableId, this.page);
         table.setSchema(this.tv.schema);
-        this.page.setHillviewDataView(table);
+        this.page.setDataView(table);
         let rr = table.createNextKRequest(this.order, null);
         rr.setStartTime(this.operation.startTime());
         rr.invoke(new TableRenderer(this.page, table, rr, false, this.order));

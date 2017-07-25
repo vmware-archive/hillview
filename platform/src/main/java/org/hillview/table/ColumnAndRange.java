@@ -13,9 +13,9 @@ public class ColumnAndRange implements Serializable, IJsonRepr{
     public double min;
     public double max;
     public int cdfBucketCount;
-    public  int bucketCount;  // only used for histogram
+    public int bucketCount;
     @Nullable
-    public String[] bucketBoundaries;  // only used for Categorical columns histograms
+    public String[] bucketBoundaries;  // only used for Categorical columns
 
     public HistogramParts prepare() {
         IStringConverter converter = null;

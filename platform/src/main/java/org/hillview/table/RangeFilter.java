@@ -10,13 +10,13 @@ import java.io.Serializable;
 
 
 public class RangeFilter implements TableFilter, Serializable {
-    final ColumnAndRange args;
+    final FilterDescription args;
     @Nullable
     IColumn column;  // not really nullable, but set later.
     @Nullable
     final IStringConverter converter;
 
-    public RangeFilter(ColumnAndRange args) {
+    public RangeFilter(FilterDescription args) {
         this.args = args;
         this.column = null;
         if (args.bucketBoundaries != null)
@@ -33,9 +33,15 @@ public class RangeFilter implements TableFilter, Serializable {
     }
 
     public boolean test(int rowIndex) {
+        boolean result;
         if (Converters.checkNull(this.column).isMissing(rowIndex))
-            return false;
-        double d = this.column.asDouble(rowIndex, this.converter);
-        return this.args.min <= d && d <= this.args.max;
+            result = false;
+        else {
+            double d = this.column.asDouble(rowIndex, this.converter);
+            result = this.args.min <= d && d <= this.args.max;
+        }
+        if (this.args.complement)
+            result = !result;
+        return result;
     }
 }

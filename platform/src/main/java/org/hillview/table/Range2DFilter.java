@@ -12,7 +12,7 @@ public class Range2DFilter implements TableFilter, Serializable {
     final RangeFilter first;
     final RangeFilter second;
 
-    public Range2DFilter(ColPair args) {
+    public Range2DFilter(FilterPair args) {
         this.first = new RangeFilter(Converters.checkNull(args.first));
         this.second = new RangeFilter(Converters.checkNull(args.second));
     }

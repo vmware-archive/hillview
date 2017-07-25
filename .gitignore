@@ -32,6 +32,8 @@ web/src/main/webapp/heatMap.js
 web/src/main/webapp/hillview.js
 web/src/main/webapp/histogram.js
 web/src/main/webapp/initialObject.js
+web/src/main/webapp/histogram2d.js
+web/src/main/webapp/histogramBase.js
 web/src/main/webapp/menu.js
 web/src/main/webapp/rpc.js
 web/src/main/webapp/table.js
