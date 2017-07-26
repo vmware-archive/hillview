@@ -122,9 +122,6 @@ public class HeatMap implements Serializable, IJson {
      * @return a new Histogram which is the union of this and otherHeatmap
      */
     public HeatMap union(HeatMap otherHeatmap) {
-        if ((!this.bucketDescDim1.equals(otherHeatmap.bucketDescDim1))
-            || (!this.bucketDescDim2.equals(otherHeatmap.bucketDescDim2)))
-            throw new IllegalArgumentException("Histogram union without matching buckets");
         HeatMap unionH = new HeatMap(this.bucketDescDim1, this.bucketDescDim2);
         for (int i = 0; i < unionH.bucketDescDim1.getNumOfBuckets(); i++)
             for (int j = 0; j < unionH.bucketDescDim2.getNumOfBuckets(); j++)

@@ -28,13 +28,23 @@ import org.hillview.remoting.HillviewServer;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
 import javax.websocket.Session;
+import java.io.*;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class InitialObjectTarget extends RpcTarget {
     private static final String LOCALHOST = "127.0.0.1";
+    private static final String ENV_VARIABLE = "WEB_CLUSTER_DESCRIPTOR";
     private static final Logger logger = Logger.getLogger(InitialObjectTarget.class.getName());
 
     @Nullable
@@ -42,10 +52,29 @@ public class InitialObjectTarget extends RpcTarget {
 
     InitialObjectTarget() {
         Empty empty = new Empty();
-        final List<HostAndPort> hostAndPorts = new ArrayList<>();
-        hostAndPorts.add(HostAndPort.fromParts(LOCALHOST, HillviewServer.DEFAULT_PORT));
-        final ClusterDescription desc = new ClusterDescription(hostAndPorts);
-        this.initialize(desc);
+        // Get the base naming context
+        final String value = System.getenv(ENV_VARIABLE);
+        final ClusterDescription desc;
+        if (value == null) {
+            desc = new ClusterDescription(Collections.singletonList(HostAndPort.fromParts(LOCALHOST,
+                                                                    HillviewServer.DEFAULT_PORT)));
+            this.initialize(desc);
+        }
+        else {
+            try {
+                logger.info("Initializing cluster descriptor from file");
+                final List<String> lines = Files.readAllLines(Paths.get(value), Charset.defaultCharset());
+                final List<HostAndPort> hostAndPorts = lines.stream()
+                                                            .map(HostAndPort::fromString)
+                                                            .collect(Collectors.toList());
+                desc = new ClusterDescription(hostAndPorts);
+                logger.info("Backend servers: " + lines);
+                this.initialize(desc);
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.exit(-1);
+            }
+        }
     }
 
     private void initialize(final ClusterDescription description) {

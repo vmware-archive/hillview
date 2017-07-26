@@ -23,8 +23,7 @@ import Observable = Rx.Observable;
 import {ErrorReporter, ConsoleErrorReporter} from "./errReporter";
 import {ProgressBar} from "./ui";
 
-const HillviewServiceUrl : string = "ws://localhost:8080";
-const RpcRequestUrl = HillviewServiceUrl + "/rpc";
+const RpcRequestPath = "rpc";
 
 export class RemoteObject {
     constructor(public readonly remoteObjectId : string) {}
@@ -120,7 +119,8 @@ export class RpcRequest implements ICancellable {
             // Create a web socked and send the request
             if (this.rpcTime == null)
                 this.rpcTime = new Date();
-            this.socket = new WebSocket(RpcRequestUrl);
+            let rpcRequestUrl = window.location.href + "/" + RpcRequestPath;
+            this.socket = new WebSocket(rpcRequestUrl);
             this.socket.onerror = function (ev: ErrorEvent) {
                 console.log("socket error " + ev);
                 let msg = ev.message;

@@ -1,16 +1,20 @@
+![Hillview project logo](hillview-logo.png)
+
 # Hillview
 
 A big data spreadsheet.
 
+Here is a [short video](https://1drv.ms/v/s!AlywK8G1COQ_jaNkYmIRJyeSuvPeLA) of an
+  early version of the system.
+
 ## Dependences
 
-* Back-end: Ubuntu Linux (Technically we don't depend on Linux, it's
-  just that we have only tested this on Linux and Mac; the
-  instructions here are just for Linux)
-* Java 8, Maven build system, various Java libraries, in particular RxJava
-  (Maven will manage the libraries for you)
-* Front-end: typescript, webpack, Tomcat app server, node.js
-* Some JavaScript libraries: d3 and rxjs
+* Back-end: Ubuntu Linux or MacOS
+* Java 8, Maven build system, various Java libraries
+  (Maven will manage the libraries)
+* Front-end: Typescript, webpack, Tomcat app server, node.js;
+  some JavaScript libraries: d3 and rx-js
+* Cloud service management: Ansible
 * IDEA Intellij for development (optional)
 
 ## Project structure
@@ -20,16 +24,14 @@ Hillview is currently split into two separate Maven projects.
 * platform: pure Java, includes the entire back-end.  `platform` can be
 developed using the free (community edition) of Intellij IDEA.
 
-* web: the web server, web client and web services; this project links to the
-result produced by the `web` project.  To develop and debug this we have
-used capabilities available only in the paid version of Intellij, Ultimate,
-but only maven is needed to build.
+* web: the web server, web client and web services; this project links
+to the result produced by the `platform` project.  To develop and
+debug this we have used capabilities available only in the paid
+version of Intellij, Ultimate, but only Maven is needed to build.
 
 ## How to run the demo
 
-* If you don't want to run the demo, [here is a short
-  video](https://1drv.ms/v/s!AlywK8G1COQ_jaNkYmIRJyeSuvPeLA) of an
-  early version of the system
+These instructions describe how to run the demo on a single machine.
 
 * First install all software required as described
   [below](#installing-the-software-needed).
@@ -97,6 +99,11 @@ $ ./demo-frontend-start.sh
 * start a web browser at http://localhost:8080 and browse the data!
 
 * when you are done stop the two services by killing the scripts.
+
+## Deploying the Hillview service
+
+Instructions for managing the Hillview cloud service are given
+[here](deployment/README.md)
 
 ## Contributing code
 
@@ -167,7 +174,7 @@ In more detail, here is a step-by-step guide to committing your changes:
 Install Maven and node.js:
 
 ```
-$ sudo apt-get install maven nodejs-legacy
+$ sudo apt-get install maven nodejs-legacy ansible
 ```
 
 ### Installing Java
