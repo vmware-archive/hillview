@@ -3,7 +3,8 @@
 The following steps require `ansible` to be installed on the host running the following
 commands, as well as the servers you are trying to deploy to. Ansible must be able
 to run commands on the servers. Before you run these commands, make sure you've built
-both `platform` and `web` projects.
+both `platform` and `web` projects. We assume there is a user named 'hillview' on the
+servers in the following commands.
 
 The servers also require `java` to be installed.
 
@@ -31,19 +32,19 @@ The port used for the backend servers is specified in `config.yaml`.
 Verify that ansible is able to run commands on these servers:
 
 ```
-$: ansible all -a "ls" -i hosts
+$: ansible all -a "ls" -i hosts -u hillview
 ```
 
 Next, run the following command to prepare both servers:
 
 ```
-$: ansible-playbook prepare.yaml -i hosts
+$: ansible-playbook prepare.yaml -i hosts -u hillview
 ```
 
 Next, start the services with:
 
 ```
-$: ansible-playbook start.yaml -i hosts
+$: ansible-playbook start.yaml -i hosts -u hillview
 ```
 
 To verify if the services are up and running, login to `http://<ip-address-of-web-node>:3569`.
@@ -51,5 +52,5 @@ To verify if the services are up and running, login to `http://<ip-address-of-we
 Stop all services with:
 
 ```
-$: ansible-playbook stop.yaml -i hosts
+$: ansible-playbook stop.yaml -i hosts -u hillview
 ```
