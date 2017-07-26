@@ -568,28 +568,27 @@ export class TableView extends RemoteObject
             cds.push(cd);
             let thd = this.addHeaderCell(thr, cd);
             thd.className = this.columnClass(cd.name);
-            let menu = new PopupMenu([
-                {text: "sort asc", action: () => this.showColumn(cd.name, 1, true) },
-                {text: "sort desc", action: () => this.showColumn(cd.name, -1, true) },
-                {text: "heavy hitters", action: () => this.heavyHitters(cd.name) },
-                {text: "heat map", action: () => this.heatMap() }
-            ]);
-            if (this.order.find(cd.name) >= 0) {
-                menu.addItem( {text: "hide", action: () => this.showColumn(cd.name, 0, true) } );
-            } else {
-                menu.addItem({text: "show", action: () => this.showColumn(cd.name, 1, false) });
-            }
-            if (cd.kind != "Json" &&
-                cd.kind != "String")
-                menu.addItem({text: "histogram", action: () => this.histogram(cd.name) });
-
             thd.onclick = e => this.columnClick(cd.name, e);
             thd.oncontextmenu = e => {
                 e.preventDefault();
-                this.columnClick(cd.name, e);
-                menu.toggleVisibility();
+                let menu = new PopupMenu([
+                    {text: "sort asc", action: () => this.showColumn(cd.name, 1, true) },
+                    {text: "sort desc", action: () => this.showColumn(cd.name, -1, true) },
+                    {text: "heavy hitters", action: () => this.heavyHitters(cd.name) },
+                    {text: "heat map", action: () => this.heatMap() }
+                ]);
+                if (this.order.find(cd.name) >= 0) {
+                    menu.addItem( {text: "hide", action: () => this.showColumn(cd.name, 0, true) } );
+                } else {
+                    menu.addItem({text: "show", action: () => this.showColumn(cd.name, 1, false) });
+                }
+                if (cd.kind != "Json" &&
+                    cd.kind != "String")
+                    menu.addItem({text: "histogram", action: () => this.histogram(cd.name) });
+
+                document.body.appendChild(menu.getHTMLRepresentation());
+                menu.getHTMLRepresentation().style.transform = "translate(" + e.pageX + "px , " + e.pageY + "px)"
             };
-            thd.appendChild(menu.getHTMLRepresentation());
         }
         this.tBody = this.htmlTable.createTBody();
 
@@ -652,6 +651,7 @@ export class TableView extends RemoteObject
                 this.selectedColumns.add(this.schema[i].name);
         } else {
             if ((e.buttons & 2) != 0) {
+                console.log('right click');
                 // right button
                 if (this.selectedColumns.has(colName))
                     // Do nothing if pressed on a selected column
