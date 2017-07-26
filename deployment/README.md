@@ -7,14 +7,18 @@ both `platform` and `web` projects.
 
 The servers also require `java` to be installed.
 
-
 ```
 $: cd deployment
 ```
 
-First, prepare a file named `hosts` and populate it with the hostnames or IP addresses
-of the servers. You need two groups of servers: 1) a `web` group with one server, and
-2) a `backends` group with all the backend servers. For instance:
+The fixed configuration of the Hillview service is obtained from the
+file `config.yaml`.  Currently this file only stores the service port.
+
+A deployment of the service is described by a file named `hosts`;
+create this file and populate it with the hostnames or IP addresses of
+the servers. You need two groups of servers: 1) a `web` group with one
+server, and 2) a `backends` group with all the backend servers. For
+instance:
 
 
 ```
@@ -25,8 +29,6 @@ of the servers. You need two groups of servers: 1) a `web` group with one server
 192.168.1.3
 192.168.1.4
 ```
-
-The port used for the backend servers is specified in `config.yaml`.
 
 Verify that ansible is able to run commands on these servers:
 
