@@ -1,0 +1,3 @@
+---
+# Configuration parameters shared across playbooks
+  backend_port: 3569
