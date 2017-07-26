@@ -571,6 +571,12 @@ export class TableView extends RemoteObject
             thd.onclick = e => this.columnClick(cd.name, e);
             thd.oncontextmenu = e => {
                 e.preventDefault();
+                if (e.ctrlKey && (e.buttons & 1) != 0) {
+                    // Ctrl + click is interpreted as a left-click on some macOS systems.
+                    // This prevents this.
+                    this.columnClick(cd.name, e);
+                    return;
+                }
                 let menu = new PopupMenu([
                     {text: "sort asc", action: () => this.showColumn(cd.name, 1, true) },
                     {text: "sort desc", action: () => this.showColumn(cd.name, -1, true) },
@@ -651,7 +657,6 @@ export class TableView extends RemoteObject
                 this.selectedColumns.add(this.schema[i].name);
         } else {
             if ((e.buttons & 2) != 0) {
-                console.log('right click');
                 // right button
                 if (this.selectedColumns.has(colName))
                     // Do nothing if pressed on a selected column
