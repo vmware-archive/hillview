@@ -30,7 +30,7 @@ export class PopupMenu implements IHtmlElement {
     constructor(mis: MenuItem[]) {
         this.outer = document.createElement("div");
         this.outer.className = "dropdown";
-        this.outer.onmouseenter = () => {console.log('removing because onmouseleave'); this.remove()};
+        this.outer.onmouseleave = () => this.remove();
         this.htmlTable = document.createElement("table");
         this.outer.appendChild(this.htmlTable);
         this.tableBody = this.htmlTable.createTBody();
