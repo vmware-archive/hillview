@@ -10,6 +10,7 @@ for year in `seq 2016 2016`; do
             wget $url
             unzip -o $filename
             rm $filename
+            mv readme.html "On_Time_On_Time_Performance_readme.html"
         fi
     done
 done
