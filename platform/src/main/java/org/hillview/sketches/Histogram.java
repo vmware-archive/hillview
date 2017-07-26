@@ -83,8 +83,6 @@ public class Histogram implements Serializable {
      * @return a new Histogram which is the union of this and otherHistogram
      */
     public Histogram union(Histogram otherHistogram) {
-        if (!this.bucketDescription.equals(otherHistogram.bucketDescription))
-            throw new IllegalArgumentException("Histogram union without matching buckets");
         Histogram unionH = new Histogram(this.bucketDescription);
         for (int i = 0; i < unionH.bucketDescription.getNumOfBuckets(); i++)
             unionH.buckets[i] = this.buckets[i] + otherHistogram.buckets[i];

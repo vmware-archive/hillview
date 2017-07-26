@@ -1,0 +1,10 @@
+---
+- hosts: backends
+  tasks:
+   - name: Stop backends
+     shell: pkill java
+
+- hosts: web
+  tasks:
+   - name: Stop web server
+     shell: pkill java

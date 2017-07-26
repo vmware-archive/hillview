@@ -1,0 +1,5 @@
+---
+- hosts: backends
+  tasks:
+   - name: Start backends
+     shell: cd hillview; nohup java -jar data-cleaner-jar-with-dependencies.jar 0.0.0.0:3569 &
