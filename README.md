@@ -1,4 +1,4 @@
-![Hillview project logo](hillview-logo.pgn)
+![Hillview project logo](hillview-logo.png)
 
 # Hillview
 
@@ -10,11 +10,11 @@ Here is a [short video](https://1drv.ms/v/s!AlywK8G1COQ_jaNkYmIRJyeSuvPeLA) of a
 ## Dependences
 
 * Back-end: Ubuntu Linux or MacOS
-* Java 8, Maven build system, various Java libraries, in particular RxJava
-  (Maven will manage the libraries for you)
-* Front-end: typescript, webpack, Tomcat app server, node.js
-* Management: Ansible
-* Some JavaScript libraries: d3 and rxjs
+* Java 8, Maven build system, various Java libraries
+  (Maven will manage the libraries)
+* Front-end: Typescript, webpack, Tomcat app server, node.js;
+  some JavaScript libraries: d3 and rx-js
+* Cloud service management: Ansible
 * IDEA Intellij for development (optional)
 
 ## Project structure
@@ -103,7 +103,7 @@ $ ./demo-frontend-start.sh
 ## Deploying the Hillview service
 
 Instructions for managing the Hillview cloud service are given
-[here](#deployment/README.md)
+[here](deployment/README.md)
 
 ## Contributing code
 
