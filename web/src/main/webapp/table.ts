@@ -773,12 +773,16 @@ export class TableView extends RemoteObject
     }
 
     private drawDataRange(cell: HTMLElement, position: number, count: number) : void {
+        let w = Math.max(0.01, count / this.rowCount);
+        let x = position / this.rowCount;
+        if (x + w > 1)
+            x = 1 - w;
         cell.classList.add('dataRange');
         d3.select(cell).append('svg')
             .append("g").append("rect")
-            .attr("x", position / this.rowCount)
+            .attr("x", x)
             .attr("y", 0)
-            .attr("width", Math.max(0.01, count / this.rowCount)) // 0.01 corresponds to 1 pixel
+            .attr("width", w) // 0.01 corresponds to 1 pixel
             .attr("height", 1);
     }
 
