@@ -119,7 +119,7 @@ export class RpcRequest implements ICancellable {
             // Create a web socked and send the request
             if (this.rpcTime == null)
                 this.rpcTime = new Date();
-            let rpcRequestUrl = window.location.href + "/" + RpcRequestPath;
+            let rpcRequestUrl = "ws://" + window.location.hostname + ":" + window.location.port + "/" + RpcRequestPath;
             this.socket = new WebSocket(rpcRequestUrl);
             this.socket.onerror = function (ev: ErrorEvent) {
                 console.log("socket error " + ev);
