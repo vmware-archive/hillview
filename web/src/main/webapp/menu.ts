@@ -30,7 +30,7 @@ export class PopupMenu implements IHtmlElement {
     constructor(mis: MenuItem[]) {
         this.outer = document.createElement("div");
         this.outer.className = "dropdown";
-        this.outer.onmouseout = () => this.toggleVisibility();
+        this.outer.onmouseenter = () => {console.log('removing because onmouseleave'); this.remove()};
         this.htmlTable = document.createElement("table");
         this.outer.appendChild(this.htmlTable);
         this.tableBody = this.htmlTable.createTBody();
@@ -41,11 +41,8 @@ export class PopupMenu implements IHtmlElement {
         }
     }
 
-    public toggleVisibility(): void {
-        if (this.outer.style.display != "block")
-            this.outer.style.display = "block";
-        else
-            this.outer.style.display = "none";
+    public remove(): void {
+        this.getHTMLRepresentation().remove();
     }
 
     addItem(mi: MenuItem): void {
@@ -55,7 +52,7 @@ export class PopupMenu implements IHtmlElement {
         cell.innerHTML = mi.text;
         cell.style.textAlign = "right";
         cell.className = "menuItem";
-        cell.onclick = () => { this.toggleVisibility(); mi.action(); }
+        cell.onclick = () => { this.remove(); mi.action(); }
     }
 
     getHTMLRepresentation(): HTMLElement {
