@@ -16,6 +16,9 @@
 # Sets up the web server by first downloading tomcat, and updating the ROOT war with the Hillview Web server war.
 - hosts: web
   tasks:
+    - name: Load variables from configuration file
+      include_vars: config.yaml
+
     - stat:
         path: apache-tomcat-8.5.8
       register: p
@@ -48,5 +51,5 @@
         mode: 0755
 
     - name: Create backend file list
-      lineinfile: dest=serverlist line="{{item}}:3569"
+      lineinfile: dest=serverlist line="{{item}}:{{ backend_port }}"
       with_items: "{{ groups.backends }}"

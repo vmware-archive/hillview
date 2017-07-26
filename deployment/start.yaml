@@ -1,8 +1,11 @@
 ---
 - hosts: backends
   tasks:
+   - name: Load variables from configuration file
+     include_vars: config.yaml
+
    - name: Start backends
-     shell: pkill java; cd hillview; nohup java -jar hillview-server-jar-with-dependencies.jar 0.0.0.0:3569 &
+     shell: pkill java; cd hillview; nohup java -jar hillview-server-jar-with-dependencies.jar 0.0.0.0:{{backend_port}} &
 
 - hosts: web
   tasks:
