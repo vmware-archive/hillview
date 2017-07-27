@@ -1,11 +1,11 @@
 ![Hillview project logo](hillview-logo.png)
 
-# Hillview
-
-A big data spreadsheet.
+Hillview: a big data spreadsheet.
 
 Here is a [short video](https://1drv.ms/v/s!AlywK8G1COQ_jaNkYmIRJyeSuvPeLA) of an
   early version of the system.
+
+
 
 ## Dependences
 
@@ -79,12 +79,11 @@ $ cd bin
 $ ./demo-data-cleaner.sh
 ```
 
-* Next, from the bin folder, start an instance of a HillviewServer;
-  this starts the back-end service which performs all the data
-  processing.
+* Next start the back-end service which performs all the data
+  processing:
 
 ```
-$ ./demo-backend-start.sh
+$ ./demo-backend-start.sh &
 ```
 
 * Start the web server which receives requests from clients and
@@ -103,15 +102,9 @@ $ ./demo-frontend-start.sh
 ## Deploying the Hillview service
 
 Instructions for managing the Hillview cloud service are given
-[here](deployment/README.md)
+[here](deployment/README.md).
 
 ## Contributing code
-
-### Contributor License Agreement
-
-The Hillview project team welcomes contributions from the community. If you wish to contribute code and you have not
-signed our contributor license agreement (CLA), our bot will update the issue when you open a Pull Request. For any
-questions about the CLA process, please refer to our [FAQ](https://cla.vmware.com/faq).
 
 ### Setup IntelliJ IDEA
 
@@ -177,7 +170,7 @@ In more detail, here is a step-by-step guide to committing your changes:
 
 ## Installing the software needed
 
-Install Maven and node.js:
+Install Maven, node.js and ansible:
 
 ```
 $ sudo apt-get install maven nodejs-legacy ansible

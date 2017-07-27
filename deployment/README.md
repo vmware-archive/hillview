@@ -37,7 +37,7 @@ Verify that ansible is able to run commands on these servers:
 $: ansible all -a "ls" -i hosts -u hillview
 ```
 
-Next, run the following command to prepare both servers:
+Next, run the following command to prepare both kinds of servers:
 
 ```
 $: ansible-playbook prepare.yaml -i hosts -u hillview
@@ -49,7 +49,8 @@ Next, start the services with:
 $: ansible-playbook start.yaml -i hosts -u hillview
 ```
 
-To verify if the services are up and running, login to `http://<ip-address-of-web-node>:3569`.
+To verify if the services are up and running, open
+`http://<ip-address-of-web-node>:8080` in your web browser.
 
 Stop all services with:
 
