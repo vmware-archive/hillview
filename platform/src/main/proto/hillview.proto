@@ -17,7 +17,9 @@ service HillviewServer {
 message Command
 {
   int32 idsIndex = 1;
-  bytes serializedOp = 2;
+  int64 highId = 2;
+  int64 lowId = 3;
+  bytes serializedOp = 4;
 }
 
 message PartialResponse

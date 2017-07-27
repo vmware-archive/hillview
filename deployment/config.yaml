@@ -1,3 +1,4 @@
 ---
 # Configuration parameters shared across playbooks
   backend_port: 3569
+  heap_size: "5000m"

@@ -186,12 +186,12 @@
   },
   {
     "allowMissing": true,
-    "kind": "Integer",
+    "kind": "String",
     "name": "WheelsOff"
   },
   {
     "allowMissing": true,
-    "kind": "Integer",
+    "kind": "String",
     "name": "WheelsOn"
   },
   {

@@ -23,10 +23,6 @@
         path: apache-tomcat-8.5.8
       register: p
 
-    - debug:
-         msg: "Path exists and isn't a symlink"
-      when: p.stat.isdir is not defined and p.stat.isdir == False
-
     - name: Download Tomcat
       shell: wget http://archive.apache.org/dist/tomcat/tomcat-8/v8.5.8/bin/apache-tomcat-8.5.8.tar.gz
       when: p.stat.isdir is not defined and p.stat.isdir == False

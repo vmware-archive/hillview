@@ -5,7 +5,7 @@
      include_vars: config.yaml
 
    - name: Start backends
-     shell: pkill java; cd hillview; nohup java -jar hillview-server-jar-with-dependencies.jar 0.0.0.0:{{backend_port}} &
+     shell: pkill java; cd hillview; nohup java -jar -server -Xmx{{heap_size}} hillview-server-jar-with-dependencies.jar 0.0.0.0:{{backend_port}} &
 
 - hosts: web
   tasks:

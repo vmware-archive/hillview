@@ -28,11 +28,8 @@ import org.hillview.remoting.HillviewServer;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
-import javax.naming.Context;
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
 import javax.websocket.Session;
-import java.io.*;
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
