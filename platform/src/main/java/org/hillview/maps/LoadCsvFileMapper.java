@@ -43,7 +43,7 @@ public class LoadCsvFileMapper implements IMap<Empty, List<CsvFileObject>> {
 
         final List<CsvFileObject> result = new ArrayList<CsvFileObject>();
         if (this.which >= 0 && this.which <= 1) {
-            int limit = this.which == 0 ? 3 : 1;
+            int limit = this.which == 0 ? 12 : 1;
             Path folder = Paths.get(dataFolder);
             Stream<Path> files;
             try {
@@ -53,9 +53,8 @@ public class LoadCsvFileMapper implements IMap<Empty, List<CsvFileObject>> {
             }
             files.filter(f -> {
                 String filename = f.getFileName().toString();
-                if (!filename.endsWith(".csv")) return false;
-                if (!filename.startsWith("2016")) return false;
-                return true;
+                if (filename.endsWith(".csv") && (filename.startsWith("19") || filename.startsWith("20"))) return true;
+                return false;
             }).limit(limit)
                     .sorted(Comparator.comparing(Path::toString))
                     .forEach(f -> {

@@ -158,6 +158,33 @@ public class RemotingTest {
         assertEquals(50005000, result);
     }
 
+    @Test
+    public void testMapSketchThroughClientUsingMemoization() {
+        final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(serverAddress);
+        final IDataSet<int[]> remoteIdsNew = remoteIds.map(new IncrementMap())
+                .filter(p -> p.deltaValue != null)
+                .toBlocking()
+                .last().deltaValue;
+        assertNotNull(remoteIdsNew);
+        final int result = remoteIdsNew.sketch(new SumSketch())
+                .map(e -> e.deltaValue)
+                .reduce((x, y) -> x + y)
+                .toBlocking()
+                .last();
+        assertEquals(50005000, result);
+
+        final IDataSet<int[]> remoteIdsNewMem = remoteIds.map(new IncrementMap())
+                .filter(p -> p.deltaValue != null)
+                .toBlocking()
+                .last().deltaValue;
+        assertNotNull(remoteIdsNew);
+        final int memoizedResult = remoteIdsNew.sketch(new SumSketch())
+                .map(e -> e.deltaValue)
+                .reduce((x, y) -> x + y)
+                .toBlocking()
+                .last();
+        assertEquals(50005000, result);
+    }
 
     @Test
     public void testMapSketchThroughClientWithError() {
@@ -209,9 +236,9 @@ public class RemotingTest {
     public void testUnsubscribe() {
         final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(serverAddress);
         final Observable<PartialResult<Integer>> resultObs = remoteIds.sketch(new SumSketch());
-        TestSubscriber<PartialResult<Integer>> ts = createUnsubscribeSubscriber(3);
+        TestSubscriber<PartialResult<Integer>> ts = createUnsubscribeSubscriber(1);
         resultObs.toBlocking().subscribe(ts);
-        ts.assertValueCount(3);
+        ts.assertValueCount(1);
         ts.assertNotCompleted();
     }
 

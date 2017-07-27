@@ -45,7 +45,7 @@ import static org.hillview.remoting.HillviewServer.DEFAULT_IDS_INDEX;
  * with a wrong value for either entry of the tuple will result in an exception.
  */
 public class RemoteDataSet<T> implements IDataSet<T> {
-    private final static int TIMEOUT = 10000;  // TODO: import via config file
+    private final static int TIMEOUT = 60000 * 5;  // TODO: import via config file
     private final int remoteHandle;
     private final HostAndPort serverEndpoint;
     private final HillviewServerGrpc.HillviewServerStub stub;
@@ -71,30 +71,36 @@ public class RemoteDataSet<T> implements IDataSet<T> {
     public <S> Observable<PartialResult<IDataSet<S>>> map(final IMap<T, S> mapper) {
         final MapOperation<T, S> mapOp = new MapOperation<T, S>(mapper);
         final byte[] serializedOp = SerializationUtils.serialize(mapOp);
+        final UUID operationId = UUID.randomUUID();
         final Command command = Command.newBuilder()
                                        .setIdsIndex(this.remoteHandle)
                                        .setSerializedOp(ByteString.copyFrom(serializedOp))
+                                       .setHighId(operationId.getMostSignificantBits())
+                                       .setLowId(operationId.getLeastSignificantBits())
                                        .build();
         final PublishSubject<PartialResult<IDataSet<S>>> subj = PublishSubject.create();
         final StreamObserver<PartialResponse> responseObserver = new NewDataSetObserver<S>(subj);
         return subj.doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
                                                  .map(command, responseObserver))
-                   .doOnUnsubscribe(() -> this.unsubscribe(mapOp.id));
+                   .doOnUnsubscribe(() -> this.unsubscribe(operationId));
     }
 
     @Override
     public <S> Observable<PartialResult<IDataSet<S>>> flatMap(IMap<T, List<S>> mapper) {
         final FlatMapOperation<T, S> mapOp = new FlatMapOperation<T, S>(mapper);
         final byte[] serializedOp = SerializationUtils.serialize(mapOp);
+        final UUID operationId = UUID.randomUUID();
         final Command command = Command.newBuilder()
                 .setIdsIndex(this.remoteHandle)
                 .setSerializedOp(ByteString.copyFrom(serializedOp))
+                .setHighId(operationId.getMostSignificantBits())
+                .setLowId(operationId.getLeastSignificantBits())
                 .build();
         final PublishSubject<PartialResult<IDataSet<S>>> subj = PublishSubject.create();
         final StreamObserver<PartialResponse> responseObserver = new NewDataSetObserver<S>(subj);
         return subj.doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
                 .flatMap(command, responseObserver))
-                .doOnUnsubscribe(() -> this.unsubscribe(mapOp.id));
+                .doOnUnsubscribe(() -> this.unsubscribe(operationId));
     }
 
     /**
@@ -104,15 +110,18 @@ public class RemoteDataSet<T> implements IDataSet<T> {
     public <R> Observable<PartialResult<R>> sketch(final ISketch<T, R> sketch) {
         final SketchOperation<T, R> sketchOp = new SketchOperation<>(sketch);
         final byte[] serializedOp = SerializationUtils.serialize(sketchOp);
+        final UUID operationId = UUID.randomUUID();
         final Command command = Command.newBuilder()
                                        .setIdsIndex(this.remoteHandle)
                                        .setSerializedOp(ByteString.copyFrom(serializedOp))
+                                       .setHighId(operationId.getMostSignificantBits())
+                                       .setLowId(operationId.getLeastSignificantBits())
                                        .build();
         final PublishSubject<PartialResult<R>> subj = PublishSubject.create();
         final StreamObserver<PartialResponse> responseObserver = new SketchObserver<>(subj);
         return subj.doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
                                                  .sketch(command, responseObserver))
-                   .doOnUnsubscribe(() -> this.unsubscribe(sketchOp.id));
+                   .doOnUnsubscribe(() -> this.unsubscribe(operationId));
     }
 
     /**
@@ -136,16 +145,19 @@ public class RemoteDataSet<T> implements IDataSet<T> {
 
         final ZipOperation zip = new ZipOperation(rds.remoteHandle);
         final byte[] serializedOp = SerializationUtils.serialize(zip);
+        final UUID operationId = UUID.randomUUID();
         final Command command = Command.newBuilder()
                                          .setIdsIndex(this.remoteHandle)
                                          .setSerializedOp(ByteString.copyFrom(serializedOp))
+                                         .setHighId(operationId.getMostSignificantBits())
+                                         .setLowId(operationId.getLeastSignificantBits())
                                          .build();
         final PublishSubject<PartialResult<IDataSet<Pair<T, S>>>> subj = PublishSubject.create();
         final StreamObserver<PartialResponse> responseObserver =
                                                         new NewDataSetObserver<Pair<T, S>>(subj);
         return subj.doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
                                                  .zip(command, responseObserver))
-                   .doOnUnsubscribe(() -> this.unsubscribe(zip.id));
+                   .doOnUnsubscribe(() -> this.unsubscribe(operationId));
     }
 
     /**
@@ -158,6 +170,8 @@ public class RemoteDataSet<T> implements IDataSet<T> {
         final Command command = Command.newBuilder()
                                        .setIdsIndex(this.remoteHandle)
                                        .setSerializedOp(ByteString.copyFrom(serializedOp))
+                                       .setHighId(id.getMostSignificantBits())
+                                       .setLowId(id.getLeastSignificantBits())
                                        .build();
         this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
                  .unsubscribe(command, new StreamObserver<Ack>() {

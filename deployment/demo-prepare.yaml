@@ -6,10 +6,17 @@
           path: hillview
           state: directory
           mode: 0755
+
+    - name: Create directory
+      file:
+          path: data
+          state: directory
+          mode: 0755
+
     - name: Copy files
       copy: src={{ item.src }} dest={{ item.dest }}
       with_items:
               - {src: '../platform/target/data-cleaner-jar-with-dependencies.jar', dest: 'hillview'}
               - {src: '../data/On_Time.schema', dest: 'data'}
-    - name: Prepare datasets
-      shell: cd hillview; java -jar data-cleaner-jar-with-dependencies.jar
+              - {src: '../data/download.sh', dest: 'data'}
+              - {src: '.bashrc', dest: '.bashrc'}
