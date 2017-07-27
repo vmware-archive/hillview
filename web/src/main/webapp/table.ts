@@ -190,6 +190,7 @@ export class TableView extends RemoteObject
     protected numberedCategories: Set<string>;
     protected selectedColumns: Set<string>;
     protected firstSelectedColumn: string;  // for shift-click
+    protected contextMenu: PopupMenu;
 
     public constructor(remoteObjectId: string, page: FullPage) {
         super(remoteObjectId);
@@ -577,23 +578,26 @@ export class TableView extends RemoteObject
                     this.columnClick(cd.name, e);
                     return;
                 }
-                let menu = new PopupMenu([
+                if (this.contextMenu != null) {
+                    this.contextMenu.remove();
+                }
+                this.contextMenu = new PopupMenu([
                     {text: "sort asc", action: () => this.showColumn(cd.name, 1, true) },
                     {text: "sort desc", action: () => this.showColumn(cd.name, -1, true) },
                     {text: "heavy hitters", action: () => this.heavyHitters(cd.name) },
                     {text: "heat map", action: () => this.heatMap() }
                 ]);
                 if (this.order.find(cd.name) >= 0) {
-                    menu.addItem( {text: "hide", action: () => this.showColumn(cd.name, 0, true) } );
+                    this.contextMenu.addItem({text: "hide", action: () => this.showColumn(cd.name, 0, true)});
                 } else {
-                    menu.addItem({text: "show", action: () => this.showColumn(cd.name, 1, false) });
+                    this.contextMenu.addItem({text: "show", action: () => this.showColumn(cd.name, 1, false)});
                 }
                 if (cd.kind != "Json" &&
                     cd.kind != "String")
-                    menu.addItem({text: "histogram", action: () => this.histogram(cd.name) });
+                    this.contextMenu.addItem({text: "histogram", action: () => this.histogram(cd.name) });
 
-                document.body.appendChild(menu.getHTMLRepresentation());
-                menu.getHTMLRepresentation().style.transform = "translate(" + e.pageX + "px , " + e.pageY + "px)"
+                document.body.appendChild(this.contextMenu.getHTMLRepresentation());
+                this.contextMenu.getHTMLRepresentation().style.transform = "translate(" + e.pageX + "px , " + e.pageY + "px)"
             };
         }
         this.tBody = this.htmlTable.createTBody();
