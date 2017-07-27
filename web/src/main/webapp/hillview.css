@@ -39,6 +39,7 @@ th {
 
 table {
     border-collapse: collapse;
+    font-family: sans-serif;
 }
 
 th, td {
@@ -160,7 +161,8 @@ th, td {
 /* menus in CSS; from http://codepen.io/philhoyt/pen/ujHzd */
 
 .menu {
-    margin-top:15px
+    margin-top: 15px;
+    font-family: sans-serif;
 }
 
 .menu ul {

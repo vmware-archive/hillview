@@ -18,7 +18,7 @@
 import {HistogramViewBase, ColumnAndRange, BasicColStats, FilterDescription} from "./histogramBase";
 import {Schema, TableView, RecordOrder, TableRenderer, ColumnDescription} from "./table";
 import {FullPage, significantDigits, percent, formatNumber, translateString, Renderer} from "./ui";
-import {DropDownMenu, ContextMenu} from "./menu";
+import {TopMenu, TopSubMenu} from "./menu";
 import d3 = require('d3');
 import {reorder, Converters} from "./util";
 import {FilterReceiver} from "./histogram";
@@ -45,8 +45,8 @@ export class Histogram2DView extends HistogramViewBase {
 
     constructor(remoteObjectId: string, protected tableSchema: Schema, page: FullPage) {
         super(remoteObjectId, tableSchema, page);
-        let menu = new DropDownMenu( [
-            { text: "View", subMenu: new ContextMenu([
+        let menu = new TopMenu( [
+            { text: "View", subMenu: new TopSubMenu([
                 { text: "refresh", action: () => { this.refresh(); } },
                 { text: "table", action: () => this.showTable() },
                 { text: "#buckets", action: () => this.chooseBuckets() },

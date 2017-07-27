@@ -22,7 +22,7 @@ import d3 = require('d3');
 import {RemoteObject, ICancellable, PartialResult} from "./rpc";
 import {ColumnDescription, TableRenderer, TableView, RecordOrder, Schema} from "./table";
 import {histogram} from "d3-array";
-import {ContextMenu, DropDownMenu} from "./menu";
+import {TopMenu, TopSubMenu} from "./menu";
 import {Converters, Pair, reorder} from "./util";
 import {Histogram, HistogramViewBase, BasicColStats, ColumnAndRange, FilterDescription} from "./histogramBase";
 
@@ -38,8 +38,8 @@ export class HistogramView extends HistogramViewBase {
 
     constructor(remoteObjectId: string, protected tableSchema: Schema, page: FullPage) {
         super(remoteObjectId, tableSchema, page);
-        let menu = new DropDownMenu( [
-            { text: "View", subMenu: new ContextMenu([
+        let menu = new TopMenu( [
+            { text: "View", subMenu: new TopSubMenu([
                 { text: "refresh", action: () => { this.refresh(); } },
                 { text: "table", action: () => this.showTable() },
                 { text: "#buckets", action: () => this.chooseBuckets() },
