@@ -24,7 +24,7 @@ import Rx = require('rx');
 import {BasicColStats} from "./histogramBase";
 import {RangeCollector} from "./histogram";
 import {Range2DCollector} from "./heatMap";
-import {DropDownMenu, ContextMenu, PopupMenu} from "./menu";
+import {TopMenu, TopSubMenu, ContextMenu} from "./menu";
 import {Converters} from "./util";
 import d3 = require('d3');
 
@@ -190,6 +190,8 @@ export class TableView extends RemoteObject
     protected numberedCategories: Set<string>;
     protected selectedColumns: Set<string>;
     protected firstSelectedColumn: string;  // for shift-click
+    // The right-click menu for columns, it is created and removed dynamically.
+    protected contextMenu: ContextMenu; 
 
     public constructor(remoteObjectId: string, page: FullPage) {
         super(remoteObjectId);
@@ -211,17 +213,17 @@ export class TableView extends RemoteObject
         this.top.style.flexWrap = "nowrap";
         this.top.style.justifyContent = "flex-start";
         this.top.style.alignItems = "stretch";
-        let menu = new DropDownMenu([
-            { text: "View", subMenu: new ContextMenu([
-                { text: "home", action: () => { TableView.goHome(this.page); } },
-                { text: "refresh", action: () => { this.refresh(); } },
-                { text: "all rows", action: () => { this.showAllRows(); } },
-                { text: "no rows", action: () => { this.setOrder(new RecordOrder([])); } }
+        let menu = new TopMenu([
+            { text: "View", subMenu: new TopSubMenu([
+                { text: "Home", action: () => { TableView.goHome(this.page); } },
+                { text: "Refresh", action: () => { this.refresh(); } },
+                { text: "All rows", action: () => { this.showAllRows(); } },
+                { text: "No rows", action: () => { this.setOrder(new RecordOrder([])); } }
             ])},
             /*
-            { text: "Data", subMenu: new ContextMenu([
-                { text: "find", action: () => {} },
-                { text: "filter", action: () => {} }
+            { text: "Data", subMenu: new TopSubMenu([
+                { text: "Find", action: () => {} },
+                { text: "Filter", action: () => {} }
             ]),
             } */
         ]);
@@ -568,28 +570,42 @@ export class TableView extends RemoteObject
             cds.push(cd);
             let thd = this.addHeaderCell(thr, cd);
             thd.className = this.columnClass(cd.name);
-            let menu = new PopupMenu([
-                {text: "sort asc", action: () => this.showColumn(cd.name, 1, true) },
-                {text: "sort desc", action: () => this.showColumn(cd.name, -1, true) },
-                {text: "heavy hitters", action: () => this.heavyHitters(cd.name) },
-                {text: "heat map", action: () => this.heatMap() }
-            ]);
-            if (this.order.find(cd.name) >= 0) {
-                menu.addItem( {text: "hide", action: () => this.showColumn(cd.name, 0, true) } );
-            } else {
-                menu.addItem({text: "show", action: () => this.showColumn(cd.name, 1, false) });
-            }
-            if (cd.kind != "Json" &&
-                cd.kind != "String")
-                menu.addItem({text: "histogram", action: () => this.histogram(cd.name) });
-
             thd.onclick = e => this.columnClick(cd.name, e);
             thd.oncontextmenu = e => {
                 e.preventDefault();
                 this.columnClick(cd.name, e);
-                menu.toggleVisibility();
+                if (e.ctrlKey && (e.buttons & 1) != 0) {
+                    // Ctrl + click is interpreted as a right-click on macOS.
+                    // This makes sure it's interpreted as a column click with Ctrl.
+                    return;
+                }
+
+                if (this.contextMenu != null) {
+                    this.contextMenu.remove();
+                }
+                this.contextMenu = new ContextMenu([
+                    {text: "Sort ascending", action: () => this.showColumn(cd.name, 1, true) },
+                    {text: "Sort descending", action: () => this.showColumn(cd.name, -1, true) },
+                    {text: "Heavy hitters", action: () => this.heavyHitters(cd.name) },
+                    {text: "Heat map", action: () => this.heatMap() }
+                ]);
+                if (this.order.find(cd.name) >= 0) {
+                    this.contextMenu.addItem({text: "Hide", action: () => this.showColumn(cd.name, 0, true)});
+                } else {
+                    this.contextMenu.addItem({text: "Show", action: () => this.showColumn(cd.name, 1, false)});
+                }
+                if (cd.kind != "Json" &&
+                    cd.kind != "String")
+                    this.contextMenu.addItem({text: "Histogram", action: () => this.histogram(cd.name) });
+
+                document.body.appendChild(this.contextMenu.getHTMLRepresentation());
+                // Spawn the menu at the mouse's location
+                this.contextMenu.getHTMLRepresentation().style.transform =
+                    "translate("
+                        + (e.pageX - 1) + "px , "
+                        + (e.pageY - 1) + "px"
+                    + ")";
             };
-            thd.appendChild(menu.getHTMLRepresentation());
         }
         this.tBody = this.htmlTable.createTBody();
 
@@ -635,7 +651,7 @@ export class TableView extends RemoteObject
     // mouse click on a column
     private columnClick(colName: string, e: MouseEvent): void {
         e.preventDefault();
-        if (e.ctrlKey) {
+        if (e.ctrlKey || e.metaKey) {
             this.firstSelectedColumn = colName;
             if (this.selectedColumns.has(colName))
                 this.selectedColumns.delete(colName);

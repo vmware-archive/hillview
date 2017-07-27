@@ -21,7 +21,7 @@ export interface MenuItem {
     action: () => void;
 }
 
-export class PopupMenu implements IHtmlElement {
+export class ContextMenu implements IHtmlElement {
     items: MenuItem[];
     private outer: HTMLElement;
     private htmlTable: HTMLTableElement;
@@ -30,7 +30,7 @@ export class PopupMenu implements IHtmlElement {
     constructor(mis: MenuItem[]) {
         this.outer = document.createElement("div");
         this.outer.className = "dropdown";
-        this.outer.onmouseout = () => this.toggleVisibility();
+        this.outer.onmouseleave = () => this.remove();
         this.htmlTable = document.createElement("table");
         this.outer.appendChild(this.htmlTable);
         this.tableBody = this.htmlTable.createTBody();
@@ -41,11 +41,8 @@ export class PopupMenu implements IHtmlElement {
         }
     }
 
-    public toggleVisibility(): void {
-        if (this.outer.style.display != "block")
-            this.outer.style.display = "block";
-        else
-            this.outer.style.display = "none";
+    public remove(): void {
+        this.getHTMLRepresentation().remove();
     }
 
     addItem(mi: MenuItem): void {
@@ -53,9 +50,9 @@ export class PopupMenu implements IHtmlElement {
         let trow = this.tableBody.insertRow();
         let cell = trow.insertCell(0);
         cell.innerHTML = mi.text;
-        cell.style.textAlign = "right";
+        cell.style.textAlign = "left";
         cell.className = "menuItem";
-        cell.onclick = () => { this.toggleVisibility(); mi.action(); }
+        cell.onclick = () => { this.remove(); mi.action(); }
     }
 
     getHTMLRepresentation(): HTMLElement {
@@ -64,7 +61,7 @@ export class PopupMenu implements IHtmlElement {
 }
 
 
-export class ContextMenu implements IHtmlElement {
+export class TopSubMenu implements IHtmlElement {
     items: MenuItem[];
     private outer: HTMLElement;
     public list: HTMLUListElement;
@@ -98,17 +95,17 @@ export class ContextMenu implements IHtmlElement {
     }
 }
 
-interface SubMenu {
+interface TopMenuItem {
     readonly text: string;
-    readonly subMenu: ContextMenu;
+    readonly subMenu: TopSubMenu;
 }
 
-export class DropDownMenu implements IHtmlElement {
-    items: SubMenu[];
+export class TopMenu implements IHtmlElement {
+    items: TopMenuItem[];
     private outer: HTMLElement;
     private list: HTMLUListElement;
 
-    constructor(mis: SubMenu[]) {
+    constructor(mis: TopMenuItem[]) {
         this.outer = document.createElement("nav");
         this.outer.className = "menu";
         this.outer.style.pageBreakAfter = "always";
@@ -121,7 +118,7 @@ export class DropDownMenu implements IHtmlElement {
         }
     }
 
-    addItem(mi: SubMenu): void {
+    addItem(mi: TopMenuItem): void {
         this.items.push(mi);
         let li = document.createElement("li");
         let span = document.createElement("span");
