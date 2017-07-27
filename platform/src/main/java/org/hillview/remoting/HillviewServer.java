@@ -39,7 +39,6 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     private static final Logger LOG = Logger.getLogger(HillviewServer.class.getName());
     public static final int DEFAULT_IDS_INDEX = 1;
     public static final int DEFAULT_PORT = 3569;
-    private static final boolean MEMOIZE = true;
     private static final String LOCALHOST = "127.0.0.1";
     private static final int NUM_THREADS = 5;
     private static final Executor EXECUTOR = Executors.newFixedThreadPool(NUM_THREADS);
@@ -51,6 +50,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     private final HostAndPort listenAddress;
     private final ConcurrentHashMap<ByteString, Map<Integer, PartialResponse>> memoizedCommands
             = new ConcurrentHashMap<>();
+    private boolean MEMOIZE = true;
 
     public HillviewServer(final HostAndPort listenAddress, final IDataSet dataSet) throws IOException {
         this.listenAddress = listenAddress;
@@ -73,10 +73,10 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             public void onCompleted() {
                 responseObserver.onCompleted();
                 HillviewServer.this.operationToObservable.remove(id);
-                if (MEMOIZE && memoizedResult != null) {
-                    memoizedCommands.computeIfAbsent(command.getSerializedOp(),
+                if (MEMOIZE && this.memoizedResult != null) {
+                    HillviewServer.this.memoizedCommands.computeIfAbsent(command.getSerializedOp(),
                                                      (k) -> new ConcurrentHashMap<>())
-                                    .put(command.getIdsIndex(), memoizedResult);
+                                    .put(command.getIdsIndex(), this.memoizedResult);
                 }
             }
 
@@ -100,7 +100,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                         .setSerializedOp(ByteString.copyFrom(bytes)).build();
                 responseObserver.onNext(result);
                 if (MEMOIZE) {
-                    memoizedResult = result;
+                    this.memoizedResult = result;
                 }
             }
         };
@@ -186,21 +186,21 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                                                                       .sketch(sketchOp.sketch);
             final UUID commandId = new UUID(command.getHighId(), command.getLowId());
             final Subscription sub = observable.subscribe(new Subscriber<PartialResult>() {
-                @Nullable private Object result = sketchOp.sketch.getZero();
+                @Nullable private Object sketchResultAccumulator = sketchOp.sketch.getZero();
 
                 @Override
                 public void onCompleted() {
                     responseObserver.onCompleted();
                     HillviewServer.this.operationToObservable.remove(commandId);
 
-                    if (MEMOIZE && result != null) {
+                    if (MEMOIZE && this.sketchResultAccumulator != null) {
                         final OperationResponse<PartialResult> res =
-                                new OperationResponse<PartialResult>(new PartialResult(1.0, result));
+                                new OperationResponse<PartialResult>(new PartialResult(1.0, this.sketchResultAccumulator));
                         final byte[] bytes = SerializationUtils.serialize(res);
                         final PartialResponse memoizedResult = PartialResponse.newBuilder()
                                 .setSerializedOp(ByteString.copyFrom(bytes))
                                 .build();
-                        memoizedCommands.computeIfAbsent(command.getSerializedOp(),
+                        HillviewServer.this.memoizedCommands.computeIfAbsent(command.getSerializedOp(),
                                 (k) -> new ConcurrentHashMap<>())
                                 .put(command.getIdsIndex(), memoizedResult);
                     }
@@ -214,7 +214,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
 
                 @Override
                 public void onNext(final PartialResult pr) {
-                    result = sketchOp.sketch.add(result, pr.deltaValue);
+                    this.sketchResultAccumulator = sketchOp.sketch.add(this.sketchResultAccumulator, pr.deltaValue);
                     final OperationResponse<PartialResult> res =
                             new OperationResponse<PartialResult>(pr);
                     final byte[] bytes = SerializationUtils.serialize(res);
@@ -281,6 +281,13 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     }
 
     /**
+     * Purges all memoized results
+     */
+    public void purgeCache() {
+        this.memoizedCommands.clear();
+    }
+
+    /**
      * shutdown RPC server
      */
     public void shutdown() {
@@ -303,9 +310,9 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
      */
     private boolean respondIfReplyIsMemoized(final Command command,
                                              final StreamObserver<PartialResponse> responseObserver) {
-        if (MEMOIZE && memoizedCommands.containsKey(command.getSerializedOp())
-             && memoizedCommands.get(command.getSerializedOp()).containsKey(command.getIdsIndex())) {
-            responseObserver.onNext(memoizedCommands.get(command.getSerializedOp()).get(command.getIdsIndex()));
+        if (MEMOIZE && this.memoizedCommands.containsKey(command.getSerializedOp())
+             && this.memoizedCommands.get(command.getSerializedOp()).containsKey(command.getIdsIndex())) {
+            responseObserver.onNext(this.memoizedCommands.get(command.getSerializedOp()).get(command.getIdsIndex()));
             responseObserver.onCompleted();
             return true;
         }
