@@ -53,6 +53,5 @@ data/readme.html
 
 *.DS_Store
 
-
 # Hosts file for ansible
 deployment/hosts
