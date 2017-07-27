@@ -29,7 +29,7 @@ import {
 } from "./histogramBase";
 import {BaseType} from "d3-selection";
 import {ScaleLinear, ScaleTime} from "d3-scale";
-import {DropDownMenu, ContextMenu} from "./menu";
+import {TopMenu, TopSubMenu} from "./menu";
 import {Histogram2DRenderer} from "./histogram2d";
 
 // counterpart of Java class 'HeatMap'
@@ -141,8 +141,8 @@ implements IHtmlElement, DataView {
         this.dragging = false;
         this.logScale = false;
         this.setPage(page);
-        let menu = new DropDownMenu( [
-            { text: "View", subMenu: new ContextMenu([
+        let menu = new TopMenu( [
+            { text: "View", subMenu: new TopSubMenu([
                 { text: "refresh", action: () => { this.refresh(); } },
                 { text: "swap axes", action: () => { this.swapAxes(); } },
                 { text: "table", action: () => { this.showTable(); } },
