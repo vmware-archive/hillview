@@ -1,13 +1,55 @@
 ![Hillview project logo](hillview-logo.png)
 
-Hillview: a big data spreadsheet.
+# Introduction
 
-Here is a [short video](https://1drv.ms/v/s!AlywK8G1COQ_jaNkYmIRJyeSuvPeLA) of an
+Hillview: a big data spreadsheet.  Hillview is a cloud-based
+application for browsing large datasets.  It is under active
+development.  Currently the software is in pre-alpha version.
+
+The hillview user interface executes in a browser.  The browser can
+display multiple views of the data, as in the following screenshots.
+These screenshots were obtained by browsing a dataset containing more
+than 800,000 rows representing airline flights in the United States in
+January and February 2016.
+
+The first image shows a tabular display of the data; the user can
+choose a subset of the columns to display, and can sort on any
+combination of columns.  In this image the data is sorted in
+decreasing order on the flight distance.
+
+![A table view](hillview-table.png)
+
+The second image shows a histogram of the data in one column, in this
+case the flight delay.
+
+![A one dimensional histogram](hillview-histogram.png)
+
+The third image shows a two-dimensional histogram, where the X axis is
+the duration of a flight and where each bar is color-coded according
+to the distance travelled.
+
+![A two-dimensional histogram](hillview-histogram2d.png)
+
+The fourth image shows another display of a two-dimensional histogram,
+where the X axis is the flight date and where each bar is color-coded
+according to its delay.
+
+![A normalized two-dimensional histogram](hillview-histogram-normalized.png)
+
+The fift image shows a heatmap, where the X axis is the departure
+delay, the Y axis is the arrival delay, and the color shows the number
+of flights that fall into each pixel, with hotter colors showing more
+flights.
+
+![A heatmap](hillview-heatmap.png)
+
+Here is a [short
+  video](https://1drv.ms/v/s!AlywK8G1COQ_jaNkYmIRJyeSuvPeLA) of an
   early version of the system.
 
+# Developing Hillview
 
-
-## Dependences
+## Software Dependences
 
 * Back-end: Ubuntu Linux or MacOS
 * Java 8, Maven build system, various Java libraries
@@ -29,17 +71,18 @@ to the result produced by the `platform` project.  To develop and
 debug this we have used capabilities available only in the paid
 version of Intellij, Ultimate, but only Maven is needed to build.
 
-## How to run the demo
+## Single-machine development and testing
 
-These instructions describe how to run the demo on a single machine.
+These instructions describe how to run hillview on a single machine
+using a sample dataset.
 
 * First install all software required as described
   [below](#installing-the-software-needed).
 
-* Download the data for the demo.  The download script will download
-  and decompress some CSV files with flights data from FAA.  You can
-  edit the script to change the range of data that will be downloaded;
-  the default is to download 2 months of data.
+* Download the sample data.  The download script will download and
+  decompress some CSV files with flights data from FAA.  You can edit
+  the script to change the range of data that will be downloaded; the
+  default is to download 2 months of data.
 
 ```
 $ cd data
@@ -173,7 +216,7 @@ In more detail, here is a step-by-step guide to committing your changes:
 Install Maven, node.js and ansible:
 
 ```
-$ sudo apt-get install maven nodejs-legacy ansible
+$ sudo apt-get install maven nodejs-legacy ansible npm
 ```
 
 ### Installing Java
