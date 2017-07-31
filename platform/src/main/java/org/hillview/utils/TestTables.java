@@ -18,6 +18,7 @@
 
 package org.hillview.utils;
 
+import com.sun.tools.javac.util.Assert;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.api.IDataSet;
@@ -64,18 +65,17 @@ public class TestTables {
 
     /**
      * Can be used for testing large tables with strings.
-     * @param size
-     * @param others
-     * @param count
-     * @param test
+     * @param size Number of rows in the table
+     * @param others Array of options in the "Name" column
+     * @param count Number of occurrences of the 'test' string.
+     * @param test The
      * @return A table with an arbitrary number of rows. It contains 'count' rows that have 'test' in the Name column.
      */
     public static Table testLargeStringTable(int size, String[] others, int count, String test) {
         ColumnDescription c0 = new ColumnDescription("Name", ContentsKind.Category, false);
         ColumnDescription c1 = new ColumnDescription("Age", ContentsKind.Integer, false);
 
-        assert(!Arrays.asList(others).contains(test));
-
+        Assert.check(!Arrays.asList(others).contains(test));
         Random random = new Random();
         ArrayList<String> names = new ArrayList<String>();
         ArrayList<Integer> ages = new ArrayList<Integer>();

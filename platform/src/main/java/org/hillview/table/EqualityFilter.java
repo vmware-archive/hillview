@@ -4,16 +4,19 @@ import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
 
+import javax.annotation.Nonnull;
+
+
 /**
  * This filter maps a given Table to a Table that only contains the given value in the specified column.
- * @param <T>
  */
-public class EqualityFilter<T> implements TableFilter {
+public class EqualityFilter implements TableFilter {
+    @Nonnull
     private String columnName;
-    private T compareValue;
+    private Object compareValue;
     private IColumn column;
 
-    public EqualityFilter(String columnName, T value) {
+    public EqualityFilter(String columnName, Object value) {
         this.columnName = columnName;
         this.compareValue = value;
     }
@@ -41,12 +44,12 @@ public class EqualityFilter<T> implements TableFilter {
         if (Converters.checkNull(this.column).isMissing(rowIndex))
             return false;
         switch (column.getDescription().kind) {
-            case Category:
-                return column.getString(rowIndex) == this.compareValue;
             case Integer:
                 return column.getInt(rowIndex) == (Integer) this.compareValue;
+            case Category:
+            default:
+                 return column.getString(rowIndex).equals(this.compareValue);
         }
-        return column.getString(rowIndex) == this.compareValue;
     }
 
 }

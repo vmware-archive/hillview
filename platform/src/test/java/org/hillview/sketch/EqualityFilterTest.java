@@ -12,14 +12,13 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class EqualityFilterTest {
-
     @Test
     public void testFilterSmallTable() {
         // Make a small table
         Table table = TestTables.testRepTable();
 
         // Make a filter and apply it
-        EqualityFilter<String> equalityFilter = new EqualityFilter<>("Name", "Ed");
+        EqualityFilter equalityFilter = new EqualityFilter("Name", "Ed");
         FilterMap filterMap = new FilterMap(equalityFilter);
         ITable result = filterMap.apply(table);
 
@@ -35,7 +34,7 @@ public class EqualityFilterTest {
         }
 
         // Same process for Mike.
-        equalityFilter = new EqualityFilter<>("Name", "Mike");
+        equalityFilter = new EqualityFilter("Name", "Mike");
         filterMap = new FilterMap(equalityFilter);
         result = filterMap.apply(table);
 
@@ -55,7 +54,7 @@ public class EqualityFilterTest {
         Table table = TestTables.testRepTable();
 
         // Make a filter and apply it
-        EqualityFilter<Integer> equalityFilter = new EqualityFilter<Integer>("Age", 10);
+        EqualityFilter equalityFilter = new EqualityFilter("Age", 10);
         FilterMap filterMap = new FilterMap(equalityFilter);
         ITable result = filterMap.apply(table);
 
@@ -63,7 +62,7 @@ public class EqualityFilterTest {
         Assert.assertEquals(4, result.getNumOfRows());
 
         // Make a filter and apply it
-        equalityFilter = new EqualityFilter<Integer>("Age", 40);
+        equalityFilter = new EqualityFilter("Age", 40);
         filterMap = new FilterMap(equalityFilter);
         result = filterMap.apply(table);
 
@@ -81,7 +80,7 @@ public class EqualityFilterTest {
         ITable table = TestTables.testLargeStringTable(size, possibleNames, count, name);
 
         // Make the filter map
-        EqualityFilter<String> equalityFilter = new EqualityFilter<String>("Name", name);
+        EqualityFilter equalityFilter = new EqualityFilter("Name", name);
         FilterMap filterMap = new FilterMap(equalityFilter);
 
         // Apply the filter map
@@ -112,7 +111,7 @@ public class EqualityFilterTest {
         IDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize / 10);
 
         // Make the filter map
-        EqualityFilter<String> equalityFilter = new EqualityFilter<String>("Name", name);
+        EqualityFilter equalityFilter = new EqualityFilter("Name", name);
         FilterMap filterMap = new FilterMap(equalityFilter);
 
         // Apply the map to the IDataset.
@@ -126,5 +125,4 @@ public class EqualityFilterTest {
         // The sketch should have counted 'count' 'name's in the IDataset.
         Assert.assertEquals(count, bcs.getRowCount());
     }
-
 }
