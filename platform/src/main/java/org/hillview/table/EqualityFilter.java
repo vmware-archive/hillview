@@ -1,9 +1,9 @@
 package org.hillview.table;
 
-import com.sun.tools.javac.util.Assert;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
+import org.junit.Assert;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
@@ -29,10 +29,13 @@ public class EqualityFilter implements TableFilter {
         // Check the types. Just Strings and Integers for now.
         switch (column.getDescription().kind) {
             case Category:
-                Assert.check(compareValue instanceof String);
+            case String:
+            case Json:
+            case Date:
+                Assert.assertTrue(compareValue instanceof String);
                 break;
             case Integer:
-                Assert.check(compareValue instanceof Integer);
+                Assert.assertTrue(compareValue instanceof Integer);
                 break;
         }
     }
