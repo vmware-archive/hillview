@@ -18,7 +18,6 @@
 
 package org.hillview.utils;
 
-import com.sun.tools.javac.util.Assert;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.api.IDataSet;
@@ -27,6 +26,7 @@ import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.ITable;
+import org.junit.Assert;
 
 import java.util.*;
 
@@ -75,7 +75,7 @@ public class TestTables {
         ColumnDescription c0 = new ColumnDescription("Name", ContentsKind.Category, false);
         ColumnDescription c1 = new ColumnDescription("Age", ContentsKind.Integer, false);
 
-        Assert.check(!Arrays.asList(others).contains(test));
+        Assert.assertTrue(!Arrays.asList(others).contains(test));
         Random random = new Random();
         ArrayList<String> names = new ArrayList<String>();
         ArrayList<Integer> ages = new ArrayList<Integer>();
