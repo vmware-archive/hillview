@@ -68,7 +68,7 @@ public class TestTables {
      * @param size Number of rows in the table
      * @param others Array of options in the "Name" column
      * @param count Number of occurrences of the 'test' string.
-     * @param test The
+     * @param test The string that should occur 'count' times.
      * @return A table with an arbitrary number of rows. It contains 'count' rows that have 'test' in the Name column.
      */
     public static Table testLargeStringTable(int size, String[] others, int count, String test) {
