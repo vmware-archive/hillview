@@ -79,7 +79,7 @@ public class TestTables {
         Random random = new Random();
         ArrayList<String> names = new ArrayList<String>();
         ArrayList<Integer> ages = new ArrayList<Integer>();
-        for (int i = 0; i < size - count; i++){
+        for (int i = 0; i < size - count; i++) {
             String name = others[random.nextInt(others.length)];
             names.add(name);
             ages.add(random.nextInt(60) + 20);
