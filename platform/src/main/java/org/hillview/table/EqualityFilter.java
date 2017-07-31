@@ -5,7 +5,6 @@ import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Objects;
 
@@ -13,7 +12,6 @@ import java.util.Objects;
  * This filter maps a given Table to a Table that only contains the given value in the specified column.
  */
 public class EqualityFilter implements TableFilter {
-    @Nonnull
     private final String columnName;
     private final Object compareValue;
     @Nullable
