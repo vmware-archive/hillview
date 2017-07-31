@@ -1,19 +1,22 @@
 package org.hillview.table;
 
+import com.sun.tools.javac.util.Assert;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nonnull;
-
+import javax.annotation.Nullable;
+import java.util.Objects;
 
 /**
  * This filter maps a given Table to a Table that only contains the given value in the specified column.
  */
 public class EqualityFilter implements TableFilter {
     @Nonnull
-    private String columnName;
-    private Object compareValue;
+    private final String columnName;
+    private final Object compareValue;
+    @Nullable
     private IColumn column;
 
     public EqualityFilter(String columnName, Object value) {
@@ -28,10 +31,10 @@ public class EqualityFilter implements TableFilter {
         // Check the types. Just Strings and Integers for now.
         switch (column.getDescription().kind) {
             case Category:
-                assert(compareValue instanceof String);
+                Assert.check(compareValue instanceof String);
                 break;
             case Integer:
-                assert(compareValue instanceof Integer);
+                Assert.check(compareValue instanceof Integer);
                 break;
         }
     }
@@ -48,7 +51,7 @@ public class EqualityFilter implements TableFilter {
                 return column.getInt(rowIndex) == (Integer) this.compareValue;
             case Category:
             default:
-                 return column.getString(rowIndex).equals(this.compareValue);
+                 return Objects.equals(column.getString(rowIndex), this.compareValue);
         }
     }
 
