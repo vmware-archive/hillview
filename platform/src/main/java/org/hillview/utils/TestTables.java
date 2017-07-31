@@ -26,10 +26,9 @@ import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.ITable;
+import org.junit.Assert;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 /**
  * This class generates some constant tables for testing purposes.
@@ -61,6 +60,45 @@ public class TestTables {
                         "Bob", "Frank", "Richard", "Steve", "Dave", "Mike", "Ed" });
         IntArrayColumn iac = new IntArrayColumn(c1, new int[] { 20, 30, 10, 10, 20, 30, 20, 30, 10,
                 40, 40, 20, 10, 50, 60 });
+        return new Table(Arrays.asList(sac, iac));
+    }
+
+    /**
+     * Can be used for testing large tables with strings.
+     * @param size Number of rows in the table
+     * @param others Array of options in the "Name" column
+     * @param count Number of occurrences of the 'test' string.
+     * @param test The string that should occur 'count' times.
+     * @return A table with an arbitrary number of rows. It contains 'count' rows that have 'test' in the Name column.
+     */
+    public static Table testLargeStringTable(int size, String[] others, int count, String test) {
+        ColumnDescription c0 = new ColumnDescription("Name", ContentsKind.Category, false);
+        ColumnDescription c1 = new ColumnDescription("Age", ContentsKind.Integer, false);
+
+        Assert.assertTrue(!Arrays.asList(others).contains(test));
+        Random random = new Random();
+        ArrayList<String> names = new ArrayList<String>();
+        ArrayList<Integer> ages = new ArrayList<Integer>();
+        for (int i = 0; i < size - count; i++) {
+            String name = others[random.nextInt(others.length)];
+            names.add(name);
+            ages.add(random.nextInt(60) + 20);
+        }
+
+        // Add 'count' test names.
+        for (int i = 0; i < count; i++) {
+            names.add(test);
+            ages.add(random.nextInt(60) + 20);
+        }
+
+        // Shuffle the lists, just to be sure.
+        long seed = System.nanoTime();
+        Collections.shuffle(names, new Random(seed));
+        Collections.shuffle(ages, new Random(seed));
+
+        StringArrayColumn sac = new StringArrayColumn(c0, names.toArray(new String[0]));
+        IntArrayColumn iac = new IntArrayColumn(c1, ages.stream().mapToInt(i -> i).toArray());
+
         return new Table(Arrays.asList(sac, iac));
     }
 
