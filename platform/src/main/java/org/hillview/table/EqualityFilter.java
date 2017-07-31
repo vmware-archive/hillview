@@ -55,5 +55,4 @@ public class EqualityFilter implements TableFilter {
                  return Objects.equals(column.getString(rowIndex), this.compareValue);
         }
     }
-
 }
