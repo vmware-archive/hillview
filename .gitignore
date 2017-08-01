@@ -20,6 +20,9 @@ target/
 */.idea/copyright
 */.idea/libraries
 */.idea/uiDesigner.xml
+platform/platform.iml
+web/web.iml
+
 
 out
 apache-tomcat-*
@@ -55,3 +58,4 @@ data/readme.html
 
 # Hosts file for ansible
 deployment/hosts
+
