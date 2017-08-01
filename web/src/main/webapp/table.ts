@@ -26,6 +26,7 @@ import {RangeCollector} from "./histogram";
 import {Range2DCollector} from "./heatMap";
 import {TopMenu, TopSubMenu, ContextMenu} from "./menu";
 import {Converters} from "./util";
+import {EqualityFilterDialog} from "./equalityFilter";
 import d3 = require('d3');
 
 // The first few classes are direct counterparts to server-side Java classes
@@ -594,9 +595,10 @@ export class TableView extends RemoteObject
                 } else {
                     this.contextMenu.addItem({text: "Show", action: () => this.showColumn(cd.name, 1, false)});
                 }
-                if (cd.kind != "Json" &&
-                    cd.kind != "String")
+                if (cd.kind != "Json" && cd.kind != "String")
                     this.contextMenu.addItem({text: "Histogram", action: () => this.histogram(cd.name) });
+                if (cd.kind == "Json" || cd.kind == "String" || cd.kind == "Category" || cd.kind == "Integer")
+                    this.contextMenu.addItem({text: "Equality filter", action: () => this.equalityFilter(cd.name)});
 
                 document.body.appendChild(this.contextMenu.getHTMLRepresentation());
                 // Spawn the menu at the mouse's location
@@ -684,6 +686,13 @@ export class TableView extends RemoteObject
     private columnClass(colName: string): string {
         let index = this.columnIndex(colName);
         return "col" + String(index);
+    }
+
+    private equalityFilter(colname: string): void {
+        let ef = new EqualityFilterDialog(colname, filter => {
+            let rr = this.createRpcRequest("filterEquality", filter);
+            rr.invoke(new FilterCompleted(this.page, this, rr, this.order));
+        });
     }
 
     private heatMap(): void {

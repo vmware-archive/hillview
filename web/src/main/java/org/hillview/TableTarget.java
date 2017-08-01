@@ -160,6 +160,14 @@ public final class TableTarget extends RpcTarget {
     }
 
     @HillviewRpc
+    void filterEquality(RpcRequest request, Session session) {
+        EqualityFilterDescription info = request.parseArgs(EqualityFilterDescription.class);
+        EqualityFilter equalityFilter = new EqualityFilter(info.columnName, info.compareValue);
+        FilterMap filterMap = new FilterMap(equalityFilter);
+        this.runMap(this.table, filterMap, TableTarget::new, request, session);
+    }
+
+    @HillviewRpc
     void filterRange(RpcRequest request, Session session) {
         FilterDescription info = request.parseArgs(FilterDescription.class);
         RangeFilter filter = new RangeFilter(info);
