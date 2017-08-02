@@ -1,5 +1,6 @@
 package org.hillview.table;
 
+import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
@@ -14,24 +15,43 @@ import java.util.Objects;
 public class EqualityFilter implements TableFilter {
     private final String columnName;
     private final Object compareValue;
+    private final boolean complement;
     @Nullable
     private IColumn column;
+    @Nullable
+    private ContentsKind compareKind;
 
-    public EqualityFilter(String columnName, Object value) {
+    /**
+     * Make a filter that accepts rows that (do not) have a specified value in the specified column.
+     * @param columnName Name of the column that is compared.
+     * @param value Value that is compared for (in)equality in the column.
+     * @param complement If true, invert the filter such that it checks for inequality.
+     */
+    public EqualityFilter(String columnName, Object value, boolean complement) {
         this.columnName = columnName;
         this.compareValue = value;
+        this.complement = complement;
+    }
+
+    /**
+     * Make a filter that accepts rows that have a specified value in the specified column.
+     * @param columnName Name of the column that is compared.
+     * @param value Value that is compared for equality in the column.
+     */
+    public EqualityFilter(String columnName, Object value) {
+        this(columnName, value, false);
     }
 
     @Override
     public void setTable(ITable table) {
         this.column = table.getColumn(this.columnName);
+        this.compareKind = column.getDescription().kind;
 
         // Check the types. Just Strings and Integers for now.
-        switch (column.getDescription().kind) {
+        switch (this.compareKind) {
             case Category:
             case String:
             case Json:
-            case Date:
                 Assert.assertTrue(compareValue instanceof String);
                 break;
             case Integer:
@@ -45,15 +65,25 @@ public class EqualityFilter implements TableFilter {
      */
     @Override
     public boolean test(int rowIndex) {
-        if (Converters.checkNull(this.column).isMissing(rowIndex))
-            return false;
-        switch (column.getDescription().kind) {
-            case Integer:
-                return column.getInt(rowIndex) == (Integer) this.compareValue;
-            case Category:
-            default:
-                 return Objects.equals(column.getString(rowIndex), this.compareValue);
-        }
-    }
+        IColumn column = Converters.checkNull(this.column);
+        ContentsKind compareKind = Converters.checkNull(this.compareKind);
 
+        boolean result;
+        if (column.isMissing(rowIndex)) {
+            result = false;
+        } else {
+            switch (compareKind) {
+                case Integer:
+                    result = column.getInt(rowIndex) == (Integer) this.compareValue;
+                    break;
+                case Category:
+                case String:
+                case Json:
+                default:
+                    result = Objects.equals(column.getString(rowIndex), this.compareValue);
+            }
+        }
+
+        return this.complement != result;
+    }
 }
