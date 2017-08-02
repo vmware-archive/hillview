@@ -24,7 +24,7 @@ import {ColumnDescription, TableRenderer, TableView, RecordOrder, Schema} from "
 import {histogram} from "d3-array";
 import {TopMenu, TopSubMenu} from "./menu";
 import {Converters, Pair, reorder} from "./util";
-import {Histogram, HistogramViewBase, BasicColStats, ColumnAndRange, FilterDescription} from "./histogramBase";
+import {Histogram, HistogramViewBase, BasicColStats, ColumnAndRange, FilterDescription, BucketDialog} from "./histogramBase";
 import {Dialog} from "./dialog"
 
 export class HistogramView extends HistogramViewBase {
@@ -416,20 +416,6 @@ export class HistogramView extends HistogramViewBase {
                 this.currentData.description, this.tableSchema,
             this.currentData.allStrings, filter, this.page, rr);
         rr.invoke(renderer);
-    }
-}
-
-class BucketDialog extends Dialog {
-    constructor(private callback: (number) => void) {
-        super("Number of buckets");
-        this.callback = callback
-        this.addTextField("n_buckets", "Number of buckets", "Integer");
-    }
-
-    confirm(): void {
-        let textValue: string = this.fields["n_buckets"].html.value;
-        this.callback(parseInt(textValue));
-        this.getHTMLRepresentation().remove();
     }
 }
 

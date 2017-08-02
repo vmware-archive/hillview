@@ -18,6 +18,7 @@
 import {
     IHtmlElement, DataView, FullPage, Point, Size, KeyCodes
 } from "./ui";
+import {Dialog} from "./dialog";
 import d3 = require('d3');
 import {RemoteObject} from "./rpc";
 import {ContentsKind, Schema} from "./table";
@@ -283,3 +284,16 @@ implements IHtmlElement, DataView {
     }
 }
 
+export class BucketDialog extends Dialog {
+    constructor(private callback: (number) => void) {
+        super("Set buckets");
+        this.callback = callback
+        this.addTextField("n_buckets", "Number of buckets:", "Integer");
+    }
+
+    confirmAction(): void {
+        let textValue: string = this.fields["n_buckets"].html.value;
+        this.callback(parseInt(textValue));
+        this.getHTMLRepresentation().remove();
+    }
+}

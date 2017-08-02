@@ -598,7 +598,7 @@ export class TableView extends RemoteObject
                 if (cd.kind != "Json" && cd.kind != "String")
                     this.contextMenu.addItem({text: "Histogram", action: () => this.histogram(cd.name) });
                 if (cd.kind == "Json" || cd.kind == "String" || cd.kind == "Category" || cd.kind == "Integer")
-                    this.contextMenu.addItem({text: "Equality filter", action: () => this.equalityFilter(cd.name)});
+                    this.contextMenu.addItem({text: "Search", action: () => this.equalityFilter(cd.name)});
 
                 document.body.appendChild(this.contextMenu.getHTMLRepresentation());
                 // Spawn the menu at the mouse's location

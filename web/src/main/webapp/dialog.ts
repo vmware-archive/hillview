@@ -30,13 +30,13 @@ export abstract class Dialog implements IHtmlElement {
 		buttonsDiv.classList.add('cancelconfirm');
 
 		let cancelButton = document.createElement("button");
-		cancelButton.onclick = () => this.cancel();
+		cancelButton.onclick = () => this.cancelAction();
 		cancelButton.textContent = "Cancel";
 		cancelButton.classList.add("cancel");
 		buttonsDiv.appendChild(cancelButton);
 
 		let confirmButton = document.createElement("button");
-		confirmButton.onclick = () => this.confirm();
+		confirmButton.onclick = () => this.confirmAction();
 		confirmButton.textContent = "Confirm";
 		confirmButton.classList.add("confirm");
 		buttonsDiv.appendChild(confirmButton);
