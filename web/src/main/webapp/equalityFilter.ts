@@ -1,28 +1,35 @@
-import {TableView} from "./table";
+import {TableView, ColumnDescription} from "./table";
+import {Dialog} from "./dialog"
 
 export class EqualityFilterDescription {
-    columnName: string;
+    columnDescription: ColumnDescription;
     compareValue: string;
     complement: boolean;
 }
 
-export class EqualityFilterDialog {
-	private filter: EqualityFilterDescription;
-
+export class EqualityFilterDialog extends Dialog {
 	constructor(
-		private columnName: string,
-		private callback: (filter: EqualityFilterDescription) => void
+		private columnDescription: ColumnDescription,
+		private rrCallback: (filter: EqualityFilterDescription) => void,
 	) {
-		// Create a hand-coded filter and apply it for now.
-		this.filter = {
-            columnName: this.columnName,
-            compareValue: "CA",
-            complement: false,
-        };
-		this.apply();
+		super("Equality filter");
+		this.addTextField("query", "Query for:", columnDescription.kind);
+		this.addSelectField("complement", "Check for:", ["Equality", "Inequality"]);
 	}
 
-	private apply(): void {
-        this.callback(this.filter);
+	protected confirm(): void {
+		let textQuery: string = this.fields["query"].html.value;
+		let complement = this.fields["complement"].html.value == "Inequality";
+
+		let filter: EqualityFilterDescription = {
+            columnDescription: this.columnDescription,
+            compareValue: textQuery,
+            complement: complement,
+        };
+
+        // Call the function that invokes the RPC.
+        this.rrCallback(filter);
+        
+        this.container.remove();
 	}
 }

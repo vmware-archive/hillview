@@ -15,9 +15,17 @@
  *  limitations under the License.
  */
 
+body {
+    font-family: sans-serif;
+}
+
 #container {
     font-family: monospace;
     overflow: hidden;
+}
+
+h1 {
+    margin: 5px;
 }
 
 .console {
@@ -110,6 +118,56 @@ th, td {
 .scrollBarBefore, .scrollBarAfter {
     background: lightgray;
     width: 100%;
+}
+
+.dialog {
+    position: absolute;
+    top:0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: auto;
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid black;
+    width: 250px;
+    height: 150px;
+    background: lightgray;
+}
+
+.dialog h1 {
+    text-align: center;
+}
+
+.dialog label{
+    float: left;
+    width: 40%;
+    text-align: left;
+}
+.dialog input, .dialog select {
+    float: right;
+    width: 40%;
+}
+
+.dialog div {
+    overflow: hidden;
+    margin: 10px 10px;
+}
+
+.dialog .cancelconfirm {
+    position: absolute;
+    bottom: 0px;
+    right: 0px;
+}
+
+.dialog .confirm {
+    display: inline-block;
+    float: right;
+}
+
+.dialog .cancel {
+    display: inline-block;
+    float: left;
 }
 
 .label {

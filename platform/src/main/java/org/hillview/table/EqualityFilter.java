@@ -14,12 +14,18 @@ import java.util.Objects;
 public class EqualityFilter implements TableFilter {
     private final String columnName;
     private final Object compareValue;
+    private final boolean complement;
     @Nullable
     private IColumn column;
 
-    public EqualityFilter(String columnName, Object value) {
+    public EqualityFilter(String columnName, Object value, boolean complement) {
         this.columnName = columnName;
         this.compareValue = value;
+        this.complement = complement;
+    }
+
+    public EqualityFilter(String columnName, Object value) {
+        this(columnName, value, false);
     }
 
     @Override
@@ -31,7 +37,6 @@ public class EqualityFilter implements TableFilter {
             case Category:
             case String:
             case Json:
-            case Date:
                 Assert.assertTrue(compareValue instanceof String);
                 break;
             case Integer:
@@ -45,14 +50,22 @@ public class EqualityFilter implements TableFilter {
      */
     @Override
     public boolean test(int rowIndex) {
-        if (Converters.checkNull(this.column).isMissing(rowIndex))
-            return false;
-        switch (column.getDescription().kind) {
-            case Integer:
-                return column.getInt(rowIndex) == (Integer) this.compareValue;
-            case Category:
-            default:
-                 return Objects.equals(column.getString(rowIndex), this.compareValue);
+        boolean result;
+        if (Converters.checkNull(this.column).isMissing(rowIndex)) {
+            result = false;
+        } else {
+            switch (column.getDescription().kind) {
+                case Integer:
+                    result = column.getInt(rowIndex) == (Integer) this.compareValue;
+                    break;
+                case Category:
+                case String:
+                case Json:
+                default:
+                    result = Objects.equals(column.getString(rowIndex), this.compareValue);
+            }
         }
+
+        return this.complement ? !result : result;
     }
 }

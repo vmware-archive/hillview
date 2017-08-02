@@ -162,7 +162,21 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     void filterEquality(RpcRequest request, Session session) {
         EqualityFilterDescription info = request.parseArgs(EqualityFilterDescription.class);
-        EqualityFilter equalityFilter = new EqualityFilter(info.columnName, info.compareValue);
+        String colName = info.columnDescription.name;
+        EqualityFilter equalityFilter;
+        switch (info.columnDescription.kind) {
+            case String:
+            case Json:
+            case Category:
+                equalityFilter = new EqualityFilter(colName, info.compareValue, info.complement);
+                break;
+            case Integer:
+                equalityFilter = new EqualityFilter(colName, new Integer(Integer.parseInt(info.compareValue)), info.complement);
+                break;
+            default:
+                throw new RuntimeException("Equality filter only supports 'String', 'Json', 'Category' and 'Integer'.");
+        }
+
         FilterMap filterMap = new FilterMap(equalityFilter);
         this.runMap(this.table, filterMap, TableTarget::new, request, session);
     }

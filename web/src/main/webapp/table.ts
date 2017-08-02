@@ -689,7 +689,7 @@ export class TableView extends RemoteObject
     }
 
     private equalityFilter(colname: string): void {
-        let ef = new EqualityFilterDialog(colname, filter => {
+        let ef = new EqualityFilterDialog(this.findColumn(colname), filter => {
             let rr = this.createRpcRequest("filterEquality", filter);
             rr.invoke(new FilterCompleted(this.page, this, rr, this.order));
         });
