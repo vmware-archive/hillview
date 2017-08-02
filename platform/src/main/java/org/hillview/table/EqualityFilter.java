@@ -1,5 +1,6 @@
 package org.hillview.table;
 
+import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
@@ -17,13 +18,26 @@ public class EqualityFilter implements TableFilter {
     private final boolean complement;
     @Nullable
     private IColumn column;
+    @Nullable
+    private ContentsKind compareKind;
 
+    /**
+     * Make a filter that accepts rows that (do not) have a specified value in the specified column.
+     * @param columnName Name of the column that is compared.
+     * @param value Value that is compared for (in)equality in the column.
+     * @param complement If true, invert the filter such that it checks for inequality.
+     */
     public EqualityFilter(String columnName, Object value, boolean complement) {
         this.columnName = columnName;
         this.compareValue = value;
         this.complement = complement;
     }
 
+    /**
+     * Make a filter that accepts rows that have a specified value in the specified column.
+     * @param columnName Name of the column that is compared.
+     * @param value Value that is compared for equality in the column.
+     */
     public EqualityFilter(String columnName, Object value) {
         this(columnName, value, false);
     }
@@ -31,9 +45,10 @@ public class EqualityFilter implements TableFilter {
     @Override
     public void setTable(ITable table) {
         this.column = table.getColumn(this.columnName);
+        this.compareKind = column.getDescription().kind;
 
         // Check the types. Just Strings and Integers for now.
-        switch (column.getDescription().kind) {
+        switch (this.compareKind) {
             case Category:
             case String:
             case Json:
@@ -50,11 +65,14 @@ public class EqualityFilter implements TableFilter {
      */
     @Override
     public boolean test(int rowIndex) {
+        IColumn column = Converters.checkNull(this.column);
+        ContentsKind compareKind = Converters.checkNull(this.compareKind);
+
         boolean result;
-        if (Converters.checkNull(this.column).isMissing(rowIndex)) {
+        if (column.isMissing(rowIndex)) {
             result = false;
         } else {
-            switch (column.getDescription().kind) {
+            switch (compareKind) {
                 case Integer:
                     result = column.getInt(rowIndex) == (Integer) this.compareValue;
                     break;
@@ -66,6 +84,6 @@ public class EqualityFilter implements TableFilter {
             }
         }
 
-        return this.complement ? !result : result;
+        return this.complement != result;
     }
 }

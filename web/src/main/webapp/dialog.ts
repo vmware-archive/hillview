@@ -2,17 +2,20 @@ import {IHtmlElement} from "./ui"
 import {ContentsKind, ColumnDescription} from "./table"
 import {Pair} from "./util"
 
+// Represents a field in the dialog. It is just the HTML element, and an optional type.
 export class DialogField {
 	html: HTMLSelectElement | HTMLInputElement;
 	type?: ContentsKind;
 }
 
+// Class that can be extended for making dialogs.
 export abstract class Dialog implements IHtmlElement {
 	protected container: HTMLDivElement;
 
 	// Stores the input elements and (optionally) their types.
 	protected fields: {[fieldName: string]: DialogField} = {};
 
+	// Create a dialog with the given name.
 	constructor(title: string) {
 		this.container = document.createElement("div");
 		this.container.classList.add('dialog');
@@ -43,6 +46,10 @@ export abstract class Dialog implements IHtmlElement {
 		return this.container;
 	}
 
+	// Add a text field with the given internal name, label, and data type.
+	// @param fieldName: Internal name. Has to be used when parsing the input.
+	// @param labelText: Text in the dialog for this field.
+	// @param type: Data type of this field. For now, only Integer is special.
 	protected addTextField(fieldName: string, labelText: string, type: ContentsKind): void {
 		let fieldDiv = document.createElement("div");
 		this.container.appendChild(fieldDiv);
@@ -59,6 +66,10 @@ export abstract class Dialog implements IHtmlElement {
 		this.fields[fieldName] = {html: input, type: type};
 	}
 
+	// Add a selection field with the given options.
+	// @param fieldName: Internal name. Has to be used when parsing the input.
+	// @param labelText: Text in the dialog for this field.
+	// @param options: List of strings that are the options in the selection box.
 	protected addSelectField(fieldName: string, labelText: string, options: string[]): void {
 		let fieldDiv = document.createElement("div");
 		this.container.appendChild(fieldDiv);
@@ -78,9 +89,12 @@ export abstract class Dialog implements IHtmlElement {
 		this.fields[fieldName] = {html: select}
 	}
 
-	private cancel(): void {
+	// Remove this element from the DOM.
+	private cancelAction(): void {
 		this.container.remove();
 	}
 
-	protected abstract confirm(): void;
+	// Has to be overridden, and should read the input from the 'this.fields' dict, in addition 
+	// to the action that should be done with the input.
+	protected abstract confirmAction(): void;
 }

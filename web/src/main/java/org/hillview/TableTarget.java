@@ -171,7 +171,7 @@ public final class TableTarget extends RpcTarget {
                 equalityFilter = new EqualityFilter(colName, info.compareValue, info.complement);
                 break;
             case Integer:
-                equalityFilter = new EqualityFilter(colName, new Integer(Integer.parseInt(info.compareValue)), info.complement);
+                equalityFilter = new EqualityFilter(colName, Integer.parseInt(info.compareValue), info.complement);
                 break;
             default:
                 throw new RuntimeException("Equality filter only supports 'String', 'Json', 'Category' and 'Integer'.");
