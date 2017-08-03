@@ -255,6 +255,37 @@ implements IHtmlElement, DataView {
             0);
     }
 
+    // given a set of values in a heat map this computes two coefficients for a
+    // linear regression from X to Y.  The result is an array with two numbers, the
+    // two coefficients.  If the regression is undefined, the coefficients array is empty.
+    private regression(data: number[][]) : number[] {
+        let width = data.length;
+        let height = data[0].length;
+        let sumt = 0;
+        let sumt2 = 0;
+        let sumb = 0;
+        let sumtb = 0;
+        let size = 0;
+        for (let i = 0; i < width; i++) {
+            for (let j = 0; j < height; j++) {
+                sumt += i * data[i][j];
+                sumt2 += i * i * data[i][j];
+                sumb += j * data[i][j];
+                sumtb += i * j * data [i][j];
+                size += data[i][j];
+            }
+        }
+        let denom = ((size * sumt2) - (sumt * sumt));
+        if (denom == 0)
+            // TODO: should we use here some epsilon?
+            return [];
+        let a = 1 / denom;
+        let  alpha = a * ((sumt2 * sumb) - (sumt * sumtb));
+        let beta = a * ((size * sumtb) - (sumt * sumb));
+        // estimation is alpha + beta * i
+        return [alpha, beta];
+    }
+
     public updateView(data: number[][], xData: AxisData, yData: AxisData,
                       missingData: number, elapsedMs: number) : void {
         this.page.reportError("Operation took " + significantDigits(elapsedMs/1000) + " seconds");
@@ -436,16 +467,16 @@ implements IHtmlElement, DataView {
             .call(yAxis);
 
         let dotRadius = 3;
-        this.xDot = this.canvas
+        this.xDot = this.chart
             .append("circle")
             .attr("r", dotRadius)
-            .attr("cy", chartHeight + HeatMapView.margin.top)
+            .attr("cy", chartHeight)
             .attr("cx", 0)
             .attr("fill", "blue");
-        this.yDot = this.canvas
+        this.yDot = this.chart
             .append("circle")
             .attr("r", dotRadius)
-            .attr("cx", HeatMapView.margin.left)
+            .attr("cx", 0)
             .attr("cy", 0)
             .attr("fill", "blue");
 
@@ -455,6 +486,21 @@ implements IHtmlElement, DataView {
             .attr("stroke", "red")
             .attr("width", 0)
             .attr("height", 0);
+
+        let regr = this.regression(data);
+        if (regr.length == 2) {
+            let b = regr[0];
+            let a = regr[1];
+            let y1 = chartHeight - b * this.pointHeight;
+            let y2 = chartHeight - (a * data.length + b) * this.pointHeight;
+            this.chart
+                .append("line")
+                .attr("x1", 0)
+                .attr("y1", y1)
+                .attr("x2", this.pointWidth * data.length)
+                .attr("y2", y2)
+                .attr("stroke", "black");
+        }
 
         let summary = formatNumber(visible) + " data points";
         if (missingData != 0)
@@ -526,8 +572,8 @@ implements IHtmlElement, DataView {
             this.valueLabel.textContent = "";
         }
 
-        this.xDot.attr("cx", mouseX + HeatMapView.margin.left);
-        this.yDot.attr("cy", mouseY + HeatMapView.margin.top);
+        this.xDot.attr("cx", mouseX);
+        this.yDot.attr("cy", mouseY);
     }
 
     dragStart(): void {

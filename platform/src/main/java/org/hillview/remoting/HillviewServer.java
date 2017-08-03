@@ -20,7 +20,6 @@ import rx.Subscription;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;

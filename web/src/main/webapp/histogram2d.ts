@@ -17,7 +17,7 @@
 
 import {HistogramViewBase, ColumnAndRange, BasicColStats, FilterDescription} from "./histogramBase";
 import {Schema, TableView, RecordOrder, TableRenderer, ColumnDescription} from "./table";
-import {FullPage, significantDigits, percent, formatNumber, translateString, Renderer} from "./ui";
+import {FullPage, significantDigits, formatNumber, translateString, Renderer} from "./ui";
 import {TopMenu, TopSubMenu} from "./menu";
 import d3 = require('d3');
 import {reorder, Converters} from "./util";
@@ -50,12 +50,40 @@ export class Histogram2DView extends HistogramViewBase {
                 { text: "refresh", action: () => { this.refresh(); } },
                 { text: "table", action: () => this.showTable() },
                 { text: "#buckets", action: () => this.chooseBuckets() },
+                { text: "swap axes", action: () => { this.swapAxes(); } },
                 { text: "percent/value", action: () => { this.normalized = !this.normalized; this.refresh(); } },
             ]) }
         ]);
 
         this.normalized = false;
         this.topLevel.insertBefore(menu.getHTMLRepresentation(), this.topLevel.children[0]);
+    }
+
+    private static transpose<D>(m: D[][]): D[][] {
+        let w = m.length;
+        if (w == 0)
+            return m;
+        let h = m[0].length;
+
+        let result: D[][] = [];
+        for (let i=0; i < h; i++) {
+            let v = [];
+            for (let j=0; j < w; j++)
+                v.push(m[j][i]);
+            result.push(v);
+        }
+        return result;
+    }
+
+    public swapAxes(): void {
+        if (this.currentData == null)
+            return;
+        this.updateView(
+            Histogram2DView.transpose(this.currentData.data),
+            this.currentData.yData,
+            this.currentData.xData,
+            this.currentData.missingData,
+            0);
     }
 
     chooseBuckets(): void {
