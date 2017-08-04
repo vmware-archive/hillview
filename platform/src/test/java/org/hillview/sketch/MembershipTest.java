@@ -54,8 +54,8 @@ public class MembershipTest {
 
     @Test
     public void TestSparseMembership() {
-        final FullMembership FM = new FullMembership(this.size);
-        final SparseMembership PMS = new SparseMembership(FM, row -> (row % 2) == 0);
+        final FullMembership fm = new FullMembership(this.size);
+        final SparseMembership PMS = new SparseMembership(fm, row -> (row % 2) == 0);
         assertTrue(PMS.isMember(6));
         assertFalse(PMS.isMember(7));
         assertEquals(PMS.getSize(), 5);
@@ -66,7 +66,7 @@ public class MembershipTest {
             testSet.add(tmp);
             tmp = IT.getNextRow();
         }
-        final SparseMembership PMS1 = new SparseMembership(testSet);
+        final SparseMembership PMS1 = new SparseMembership(testSet, fm.getMax());
         assertEquals(PMS.getSize(), PMS1.getSize());
     }
 
@@ -75,7 +75,7 @@ public class MembershipTest {
         final IntSet IS = new IntSet(10);
         for (int i = 5; i < 100; i += 2)
             IS.add(i);
-        final SparseMembership MS = new SparseMembership(IS);
+        final SparseMembership MS = new SparseMembership(IS, 100);
         final IRowIterator iter = MS.getIterator();
         int tmp = iter.getNextRow();
         final IntSet IS1 = new IntSet();

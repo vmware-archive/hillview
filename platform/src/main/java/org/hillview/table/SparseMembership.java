@@ -34,6 +34,7 @@ import java.util.function.Predicate;
 public class SparseMembership implements IMembershipSet {
     private final IntSet membershipMap;
     private static final int sizeEstimationSampleSize = 20;
+    private final int max;
 
     /**
      * Standard way to construct this map is by supplying a membershipSet (perhaps the full one),
@@ -43,6 +44,7 @@ public class SparseMembership implements IMembershipSet {
      */
     public SparseMembership(final IMembershipSet baseMap,
                             final Predicate<Integer> filter) {
+        this.max = baseMap.getMax();
         final IRowIterator baseIterator = baseMap.getIterator();
         this.membershipMap = new IntSet(this.estimateSize(baseMap, filter));
         int tmp = baseIterator.getNextRow();
@@ -59,6 +61,7 @@ public class SparseMembership implements IMembershipSet {
      * @param baseMap of type IMembershipSet
      */
     public SparseMembership(final IMembershipSet baseMap) {
+        this.max = baseMap.getMax();
         final IRowIterator baseIterator = baseMap.getIterator();
         final int expectedSize = baseMap.getSize();
         this.membershipMap = new IntSet(expectedSize);
@@ -69,12 +72,16 @@ public class SparseMembership implements IMembershipSet {
         }
     }
 
+    @Override
+    public int getMax() { return this.max; }
+
     /**
      * Essentially wraps a Set interface by IMembershipSet
      * @param baseSet of type Set
      */
-    public SparseMembership(final IntSet baseSet) {
+    public SparseMembership(final IntSet baseSet, int max) {
         this.membershipMap = baseSet;
+        this.max = max;
     }
 
     /**
@@ -82,10 +89,11 @@ public class SparseMembership implements IMembershipSet {
      * @param start The first integer in the set.
      * @param size The number of integers in the set.
      */
-    public SparseMembership(int start, int size) {
+    public SparseMembership(int start, int size, int max) {
         this.membershipMap = new IntSet(size);
         for (int i = 0; i < size; i++)
             this.membershipMap.add(start + i);
+        this.max = max;
     }
 
     @Override
@@ -112,7 +120,7 @@ public class SparseMembership implements IMembershipSet {
      */
     @Override
     public IMembershipSet sample(final int k) {
-        return new SparseMembership(this.membershipMap.sample(k, 0, false));
+        return new SparseMembership(this.membershipMap.sample(k, 0, false), this.getMax());
     }
 
     /**
@@ -125,7 +133,7 @@ public class SparseMembership implements IMembershipSet {
      */
     @Override
     public IMembershipSet sample(final int k, final long seed) {
-        return new SparseMembership(this.membershipMap.sample(k, seed, true));
+        return new SparseMembership(this.membershipMap.sample(k, seed, true), this.getMax());
     }
 
     @Override
@@ -142,7 +150,7 @@ public class SparseMembership implements IMembershipSet {
             unionSet.add(curr);
             curr = iter.getNextRow();
         }
-        return new SparseMembership(unionSet);
+        return new SparseMembership(unionSet, this.getMax());
     }
 
     @Override
@@ -155,7 +163,7 @@ public class SparseMembership implements IMembershipSet {
                 intersectSet.add(curr);
             curr = iter.getNextRow();
         }
-        return new SparseMembership(intersectSet);
+        return new SparseMembership(intersectSet, this.getMax());
     }
 
     /**

@@ -25,11 +25,16 @@ import org.hillview.utils.IntSet;
 import java.util.function.Predicate;
 
 /**
- * A IMembershipSet is a representation of a set of integers.
+ * A IMembershipSet is a representation of a set of integers between 0 and max.
  * These integers represent row indexes in a table.  If an integer
  * is in an IMembershipSet, then it is present in the table.
  */
 public interface IMembershipSet extends IRowOrder {
+    /**
+     * @return The size of the original set that this membership set is a part of.
+     */
+    int getMax();
+
     /**
      * @param rowIndex A non-negative row index.
      * @return True if the given rowIndex is a member of the set.
@@ -88,7 +93,7 @@ public interface IMembershipSet extends IRowOrder {
                 setMinusSet.add(curr);
             curr = iter.getNextRow();
         }
-        return new SparseMembership(setMinusSet);
+        return new SparseMembership(setMinusSet, this.getMax());
     }
 
     default int getSampleSize(double rate, long seed, boolean useSeed) {
