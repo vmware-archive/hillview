@@ -1,9 +1,13 @@
 package org.hillview.sketch;
 
+import org.hillview.dataset.api.IDataSet;
 import org.hillview.maps.LinearProjectionMap;
+import org.hillview.sketches.BasicColStatSketch;
+import org.hillview.sketches.BasicColStats;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.TestTables;
 import org.jblas.DoubleMatrix;
+import org.jblas.ranges.AllRange;
 import org.jblas.util.Random;
 import org.junit.Assert;
 import org.junit.Test;
@@ -41,5 +45,30 @@ public class LinearProjectionTest {
         DoubleMatrix projectedData = result.getNumericMatrix(newColNames, null);
         DoubleMatrix projectedDataCheck = matrix.mmul(projectionMatrix.transpose());
         Assert.assertEquals(rows * numProjections, projectedData.eq(projectedDataCheck).sum(), Math.ulp(rows * cols));
+    }
+
+    @Test
+    public void testDatasetProjection() {
+        int rows = 10000;
+        int cols = 20;
+        int numProjections = 2;
+        DoubleMatrix dataMatrix = DoubleMatrix.rand(rows, cols);
+        DoubleMatrix projectionMatrix = DoubleMatrix.rand(numProjections, cols);
+        DoubleMatrix projectionCheck = dataMatrix.mmul(projectionMatrix.transpose());
+
+        ITable bigTable = TestTables.fromDoubleMatrix(dataMatrix);
+        String[] colNames = bigTable.getSchema().getColumnNames().toArray(new String[]{});
+        // Convert it to an IDataset
+        IDataSet<ITable> all = TestTables.makeParallel(bigTable, rows / 10);
+
+        LinearProjectionMap lpm = new LinearProjectionMap(colNames, projectionMatrix);
+        IDataSet<ITable> result = all.blockingMap(lpm);
+
+        for (int i = 0; i < numProjections; i++) {
+            BasicColStatSketch bcss = new BasicColStatSketch(String.format("LinearProjection%d", i), null);
+            BasicColStats bcs = result.blockingSketch(bcss);
+            double expectedMean = projectionCheck.get(new AllRange(), i).mean();
+            Assert.assertEquals(expectedMean, bcs.getMoment(0), Math.ulp(expectedMean));
+        }
     }
 }

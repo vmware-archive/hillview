@@ -88,8 +88,8 @@ public interface ITable {
      * @return The matrix with the numeric data from the specified column.
      */
     default DoubleMatrix getNumericColumn(String colName, IStringConverter converter) {
-        DoubleMatrix mat = new DoubleMatrix(this.getNumOfRows());
-        IRowIterator iter = this.getRowIterator();
+        DoubleMatrix mat = new DoubleMatrix(this.getMembershipSet().getSize());
+        IRowIterator iter = this.getMembershipSet().getIterator();
         int row = iter.getNextRow();
         int i = 0;
         while (row >= 0) {
@@ -109,8 +109,8 @@ public interface ITable {
      * @return The matrix with the numeric data from the specified columns.
      */
     default DoubleMatrix getNumericMatrix(String colNames[], IStringConverter converter) {
-        DoubleMatrix mat = new DoubleMatrix(this.getNumOfRows(), colNames.length);
-        IRowIterator iter = this.getRowIterator();
+        DoubleMatrix mat = new DoubleMatrix(this.getMembershipSet().getSize(), colNames.length);
+        IRowIterator iter = this.getMembershipSet().getIterator();
         int row = iter.getNextRow();
         int i = 0;
         while (row >= 0) {

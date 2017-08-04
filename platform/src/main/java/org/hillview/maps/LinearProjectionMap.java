@@ -4,6 +4,7 @@ import org.hillview.dataset.api.IMap;
 import org.hillview.table.*;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
+import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ITable;
 import org.jblas.DoubleMatrix;
 import org.jblas.ranges.AllRange;
@@ -45,14 +46,24 @@ public class LinearProjectionMap implements IMap<ITable, ITable> {
 
         // Copy all existing columns to the column list for the new table.
         List<IColumn> columns = new ArrayList<IColumn>();
-        Iterable<IColumn> inColumns = data.getColumns();
-        inColumns.forEach(columns::add);
+        Iterable<IColumn> inputColumns = data.getColumns();
+        for (IColumn inputColumn : inputColumns) {
+            columns.add(inputColumn);
+        }
 
         // Add all the projections to the columns.
-        for (int i = 0; i < this.numLowDims; i++) {
-            String colName = String.format("LinearProjection%d", i);
+        for (int j = 0; j < this.numLowDims; j++) {
+            String colName = String.format("LinearProjection%d", j);
             ColumnDescription colDesc = new ColumnDescription(colName, ContentsKind.Double, false);
-            IColumn column = new DoubleArrayColumn(colDesc, proj.get(new AllRange(), new PointRange(i)).data);
+            DoubleArrayColumn column = new DoubleArrayColumn(colDesc, data.getMembershipSet().getSize());
+            IRowIterator it = data.getMembershipSet().getIterator();
+            int row = it.getNextRow();
+            int i = 0;
+            while (row >= 0) {
+                column.set(row, proj.get(i, j));
+                row = it.getNextRow();
+                i++;
+            }
             columns.add(column);
         }
 
