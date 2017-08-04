@@ -102,7 +102,7 @@ public interface ITable {
 
     /**
      * Returns a DoubleMatrix that is a tiling of column vectors corresponding to the given column names.
-     * This copies the all data into the new matrix.
+     * This copies all data into the new matrix.
      *
      * @param colNames Names of the columns that are desired.
      * @param converter String converter to use for string data.

@@ -26,6 +26,9 @@ import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.ITable;
+import org.jblas.DoubleMatrix;
+import org.jblas.ranges.AllRange;
+import org.jblas.ranges.PointRange;
 import org.junit.Assert;
 
 import java.util.*;
@@ -183,6 +186,32 @@ public class TestTables {
         return new SmallTable(columns);
     }
 
+    /**
+     * Returns a new Table that has only numeric columns with the contents from the given matrix.
+     * @param mat The matrix with the numeric data.
+     * @return A table with the same numeric data.
+     */
+    public static Table fromDoubleMatrix(DoubleMatrix mat) {
+        IColumn[] columns = new IColumn[mat.columns];
+        for (int i = 0; i < mat.columns; i++) {
+            ColumnDescription cd = new ColumnDescription(String.format("Column%d", i), ContentsKind.Double, false);
+            DoubleMatrix vector = mat.get(new AllRange(), new PointRange(i));
+            IColumn column = new DoubleArrayColumn(cd, vector.data);
+            columns[i] = column;
+        }
+        return new Table(Arrays.asList(columns));
+    }
+
+    /**
+     * Assumes that all columns are numeric, and returns the matrix corresponding to the data in the table.
+     * @param table The table that we want to convert.
+     * @return The DoubleMatrix with the same data as in the table.
+     */
+    @SuppressWarnings("ConstantConditions")
+    public static DoubleMatrix toDoubleMatrix(ITable table) {
+        String[] colNames = table.getSchema().getColumnNames().toArray(new String[]{});
+        return table.getNumericMatrix(colNames, null);
+    }
 
     /**
      * Generates a table with a specified number of correlated columns. Each row has the same
