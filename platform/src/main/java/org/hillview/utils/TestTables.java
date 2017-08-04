@@ -236,7 +236,7 @@ public class TestTables {
         int start = 0;
         while (start < tableSize) {
             int thisFragSize = Math.min(fragmentSize, tableSize - start);
-            IMembershipSet members = new SparseMembership(start, thisFragSize);
+            IMembershipSet members = new SparseMembership(start, thisFragSize, tableSize);
             tableList.add(bigTable.selectRowsFromFullTable(members));
             start += fragmentSize;
         }

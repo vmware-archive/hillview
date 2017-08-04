@@ -40,6 +40,11 @@ public class FullMembership implements IMembershipSet {
     }
 
     @Override
+    public int getMax() {
+        return this.rowCount;
+    }
+
+    @Override
     public boolean isMember(final int rowIndex) {
         return rowIndex < this.rowCount;
     }
@@ -111,13 +116,13 @@ public class FullMembership implements IMembershipSet {
             final IntSet baseMap = new IntSet(Integer.max(0, this.getSize()-otherSet.getSize()));
             for (int i = otherSet.getSize(); i < this.rowCount; i++)
                 baseMap.add(i);
-            return new SparseMembership(baseMap);
+            return new SparseMembership(baseMap, this.getMax());
         }
         final IntSet baseMap = new IntSet();
         for (int i = 0; i < this.getSize(); i++)
             if (!otherSet.isMember(i))
                 baseMap.add(i);
-        return new SparseMembership(baseMap);
+        return new SparseMembership(baseMap, this.getMax());
     }
 
     private IMembershipSet sampleUtil(final Randomness randomGenerator, final int k) {
@@ -130,9 +135,9 @@ public class FullMembership implements IMembershipSet {
         while (s.size() < l)
             s.add(randomGenerator.nextInt(this.rowCount));
         if (l == k)
-            return new SparseMembership(s);
+            return new SparseMembership(s, this.getMax());
         else
-            return this.setMinus(new SparseMembership(s));
+            return this.setMinus(new SparseMembership(s, this.getMax()));
     }
 
     public static class FullMembershipIterator implements IRowIterator {
