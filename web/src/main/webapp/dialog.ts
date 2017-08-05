@@ -1,6 +1,5 @@
 import {IHtmlElement} from "./ui"
-import {ContentsKind, ColumnDescription} from "./table"
-import {Pair} from "./util"
+import {ContentsKind} from "./table"
 
 // Represents a field in the dialog. It is just the HTML element, and an optional type.
 export class DialogField {
@@ -8,20 +7,21 @@ export class DialogField {
 	type?: ContentsKind;
 }
 
-// Class that can be extended for making dialogs.
-export abstract class Dialog implements IHtmlElement {
-	protected container: HTMLDivElement;
-
+// Base class for dialog implementations
+export class Dialog implements IHtmlElement {
+	private container: HTMLDivElement;
+    public onConfirm: () => void;  // method to be invoked when dialog is closed successfully
 	// Stores the input elements and (optionally) their types.
-	protected fields: {[fieldName: string]: DialogField} = {};
+	private fields: {[fieldName: string]: DialogField} = {};
+	private confirmButton: HTMLButtonElement;
 
 	// Create a dialog with the given name.
-	constructor(title: string) {
-		this.container = document.createElement("div");
-		this.container.classList.add('dialog');
-		document.body.appendChild(this.container);
+	constructor(title: string, ) {
+	    this.onConfirm = null;
+        this.container = document.createElement("div");
+        this.container.classList.add('dialog');
 
-		let titleElement = document.createElement("h1");
+        let titleElement = document.createElement("h1");
 		titleElement.textContent = title;
 		this.container.appendChild(titleElement); 
 
@@ -35,12 +35,27 @@ export abstract class Dialog implements IHtmlElement {
 		cancelButton.classList.add("cancel");
 		buttonsDiv.appendChild(cancelButton);
 
-		let confirmButton = document.createElement("button");
-		confirmButton.onclick = () => this.confirmAction();
-		confirmButton.textContent = "Confirm";
-		confirmButton.classList.add("confirm");
-		buttonsDiv.appendChild(confirmButton);
+		this.confirmButton = document.createElement("button");
+		this.confirmButton.textContent = "Confirm";
+		this.confirmButton.classList.add("confirm");
+		buttonsDiv.appendChild(this.confirmButton);
 	}
+
+	public setAction(onConfirm: () => void): void {
+	    this.onConfirm = onConfirm;
+	    if (onConfirm != null)
+            this.confirmButton.onclick = () => { this.hide(); this.onConfirm(); };
+    }
+
+	// display the menu
+	public show(): void {
+		document.body.appendChild(this.container);
+	}
+
+	// Removes the menu from the DOM
+	public hide(): void {
+	    this.container.remove();
+    }
 
 	public getHTMLRepresentation(): HTMLDivElement {
 		return this.container;
@@ -50,7 +65,7 @@ export abstract class Dialog implements IHtmlElement {
 	// @param fieldName: Internal name. Has to be used when parsing the input.
 	// @param labelText: Text in the dialog for this field.
 	// @param type: Data type of this field. For now, only Integer is special.
-	protected addTextField(fieldName: string, labelText: string, type: ContentsKind): void {
+	public addTextField(fieldName: string, labelText: string, type: ContentsKind): void {
 		let fieldDiv = document.createElement("div");
 		this.container.appendChild(fieldDiv);
 
@@ -85,16 +100,26 @@ export abstract class Dialog implements IHtmlElement {
 			optionElement.value = option;
 			optionElement.text = option;
 			select.add(optionElement);
-		})
+		});
 		this.fields[fieldName] = {html: select}
 	}
 
+	public getFieldValue(field: string): string {
+	    return this.fields[field].html.value;
+    }
+
+    public getFieldValueAsInt(field: string): number {
+	    let s = this.getFieldValue(field);
+	    return parseInt(s);
+    }
+
+    public getFieldValueAsNumber(field: string): number {
+        let s = this.getFieldValue(field);
+        return parseFloat(s);
+    }
+
 	// Remove this element from the DOM.
 	private cancelAction(): void {
-		this.container.remove();
+		this.hide();
 	}
-
-	// Has to be overridden, and should read the input from the 'this.fields' dict, in addition 
-	// to the action that should be done with the input.
-	protected abstract confirmAction(): void;
 }

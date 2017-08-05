@@ -25,7 +25,6 @@ import {histogram} from "d3-array";
 import {TopMenu, TopSubMenu} from "./menu";
 import {Converters, Pair, reorder} from "./util";
 import {Histogram, HistogramViewBase, BasicColStats, ColumnAndRange, FilterDescription, BucketDialog} from "./histogramBase";
-import {Dialog} from "./dialog"
 
 export class HistogramView extends HistogramViewBase {
     protected currentData: {
@@ -54,33 +53,32 @@ export class HistogramView extends HistogramViewBase {
     chooseSecondColumn(): void { // TODO
     }
 
+    changeBuckets(bucketCount: number): void {
+        let cdfBucketCount = this.currentData.cdf.buckets.length;
+        let boundaries = HistogramViewBase.categoriesInRange(
+            this.currentData.stats, cdfBucketCount, this.currentData.allStrings);
+        let info: ColumnAndRange = {
+            columnName: this.currentData.description.name,
+            min: this.currentData.stats.min,
+            max: this.currentData.stats.max,
+            bucketCount: +bucketCount,
+            cdfBucketCount: cdfBucketCount,
+            bucketBoundaries: boundaries
+        };
+        let rr = this.createRpcRequest("histogram", info);
+        let renderer = new HistogramRenderer(this.page,
+            this.remoteObjectId, this.tableSchema, this.currentData.description,
+            this.currentData.stats, rr, this.currentData.allStrings);
+        rr.invoke(renderer);
+    }
+
     chooseBuckets(): void {
         if (this.currentData == null)
             return;
 
-        let bucket_dialog = new BucketDialog((buckets: number) => {
-            if (buckets == null)
-                return;
-            if (isNaN(+buckets))
-                this.page.reportError(buckets + " is not a number");
-
-            let cdfBucketCount = this.currentData.cdf.buckets.length;
-            let boundaries = HistogramViewBase.categoriesInRange(
-                this.currentData.stats, cdfBucketCount, this.currentData.allStrings);
-            let info: ColumnAndRange = {
-                columnName: this.currentData.description.name,
-                min: this.currentData.stats.min,
-                max: this.currentData.stats.max,
-                bucketCount: +buckets,
-                cdfBucketCount: cdfBucketCount,
-                bucketBoundaries: boundaries
-            };
-            let rr = this.createRpcRequest("histogram", info);
-            let renderer = new HistogramRenderer(this.page,
-                this.remoteObjectId, this.tableSchema, this.currentData.description,
-                this.currentData.stats, rr, this.currentData.allStrings);
-            rr.invoke(renderer);
-            });        
+        let bucket_dialog = new BucketDialog();
+        bucket_dialog.setAction(() => this.changeBuckets(bucket_dialog.getBucketCount()));
+        bucket_dialog.show();
     }
 
     public refresh(): void {

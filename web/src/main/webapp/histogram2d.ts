@@ -86,43 +86,42 @@ export class Histogram2DView extends HistogramViewBase {
             0);
     }
 
+    changeBuckets(bucketCount: number): void {
+        let arg0: ColumnAndRange = {
+            columnName: this.currentData.xData.description.name,
+            min: this.currentData.xData.stats.min,
+            max: this.currentData.xData.stats.max,
+            bucketCount: bucketCount,
+            cdfBucketCount: 0,
+            bucketBoundaries: null // TODO
+        };
+        let arg1: ColumnAndRange = {
+            columnName: this.currentData.yData.description.name,
+            min: this.currentData.yData.stats.min,
+            max: this.currentData.yData.stats.max,
+            bucketCount: this.currentData.yPoints,
+            cdfBucketCount: 0,
+            bucketBoundaries: null // TODO
+        };
+        let args = {
+            first: arg0,
+            second: arg1
+        };
+        let rr = this.createRpcRequest("heatMap", args);
+        let renderer = new Histogram2DRenderer(this.page,
+            this.remoteObjectId, this.tableSchema,
+            [this.currentData.xData.description, this.currentData.yData.description],
+            [this.currentData.xData.stats, this.currentData.yData.stats], rr);
+        rr.invoke(renderer);
+    }
+
     chooseBuckets(): void {
         if (this.currentData == null)
             return;
 
-        let bucketDialog = new BucketDialog((buckets: number) => {
-            if (buckets == null)
-                return;
-            if (isNaN(+buckets))
-                this.page.reportError(buckets + " is not a number");
-
-            let arg0: ColumnAndRange = {
-                columnName: this.currentData.xData.description.name,
-                min: this.currentData.xData.stats.min,
-                max: this.currentData.xData.stats.max,
-                bucketCount: +buckets,
-                cdfBucketCount: 0,
-                bucketBoundaries: null // TODO
-            };
-            let arg1: ColumnAndRange = {
-                columnName: this.currentData.yData.description.name,
-                min: this.currentData.yData.stats.min,
-                max: this.currentData.yData.stats.max,
-                bucketCount: this.currentData.yPoints,
-                cdfBucketCount: 0,
-                bucketBoundaries: null // TODO
-            };
-            let args = {
-                first: arg0,
-                second: arg1
-            };
-            let rr = this.createRpcRequest("heatMap", args);
-            let renderer = new Histogram2DRenderer(this.page,
-                this.remoteObjectId, this.tableSchema,
-                [this.currentData.xData.description, this.currentData.yData.description],
-                [this.currentData.xData.stats, this.currentData.yData.stats], rr);
-            rr.invoke(renderer);
-        });
+        let bucketDialog = new BucketDialog();
+        bucketDialog.setAction(() => this.changeBuckets(bucketDialog.getBucketCount()));
+        bucketDialog.show();
     }
 
     public refresh(): void {

@@ -44,3 +44,22 @@ export function reorder(m: number, n: number): [number, number] {
         return [n, m];
 }
 
+// This class builds some useful iterators over typescript enums.
+// In all these methods e is an enum *type*
+export class EnumIterators {
+    static getNamesAndValues<T extends number>(e: any) {
+        return EnumIterators.getNames(e).map(n => ({ name: n, value: e[n] as T }));
+    }
+
+    static getNames(e: any) {
+        return EnumIterators.getObjValues(e).filter(v => typeof v === "string") as string[];
+    }
+
+    static getValues<T extends number>(e: any) {
+        return EnumIterators.getObjValues(e).filter(v => typeof v === "number") as T[];
+    }
+
+    private static getObjValues(e: any): (number | string)[] {
+        return Object.keys(e).map(k => e[k]);
+    }
+}

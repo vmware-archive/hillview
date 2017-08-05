@@ -25,9 +25,10 @@ import {BasicColStats} from "./histogramBase";
 import {RangeCollector} from "./histogram";
 import {Range2DCollector} from "./heatMap";
 import {TopMenu, TopSubMenu, ContextMenu} from "./menu";
-import {Converters} from "./util";
-import {EqualityFilterDialog} from "./equalityFilter";
+import {Converters, EnumIterators} from "./util";
+import {EqualityFilterDialog, EqualityFilterDescription} from "./equalityFilter";
 import d3 = require('d3');
+import {Dialog} from "./dialog";
 
 // The first few classes are direct counterparts to server-side Java classes
 // with the same names.  JSON serialization
@@ -36,8 +37,11 @@ import d3 = require('d3');
 
 // I can't use an enum for ContentsKind because JSON deserialization does not
 // return an enum from a string.
-
 export type ContentsKind = "Category" | "Json" | "String" | "Integer" | "Double" | "Date" | "Interval";
+
+enum CombineOperators {
+    Union, Intersection, Exclude, Replace
+}
 
 export interface IColumnDescription {
     readonly kind: ContentsKind;
@@ -214,6 +218,13 @@ export class TableView extends RemoteObject
         this.top.style.flexWrap = "nowrap";
         this.top.style.justifyContent = "flex-start";
         this.top.style.alignItems = "stretch";
+
+        let combineMenu = [];
+        combineMenu.push({ text: "Select current", action: () => { this.selectCurrent(); }});
+        EnumIterators.getNamesAndValues(CombineOperators)
+            .forEach(c => combineMenu.push(
+                { text: c.name, action: () => { this.combine(c.value); } }));
+
         let menu = new TopMenu([
             { text: "View", subMenu: new TopSubMenu([
                 { text: "Home", action: () => { TableView.goHome(this.page); } },
@@ -221,12 +232,9 @@ export class TableView extends RemoteObject
                 { text: "All rows", action: () => { this.showAllRows(); } },
                 { text: "No rows", action: () => { this.setOrder(new RecordOrder([])); } }
             ])},
-            /*
-            { text: "Data", subMenu: new TopSubMenu([
-                { text: "Find", action: () => {} },
-                { text: "Filter", action: () => {} }
-            ]),
-            } */
+            {
+                text: "Combine", subMenu: new TopSubMenu(combineMenu)
+            }
         ]);
         this.top.appendChild(menu.getHTMLRepresentation());
         this.top.appendChild(document.createElement("hr"));
@@ -243,6 +251,15 @@ export class TableView extends RemoteObject
         this.top.appendChild(tblAndBar);
         tblAndBar.appendChild(this.htmlTable);
         tblAndBar.appendChild(this.scrollBar.getHTMLRepresentation());
+    }
+
+    // combine two views according to some operation
+    combine(how: CombineOperators): void {
+        // TODO
+    }
+
+    selectCurrent(): void {
+        // TODO
     }
 
     // invoked when scrolling has completed
@@ -587,7 +604,7 @@ export class TableView extends RemoteObject
                 this.contextMenu = new ContextMenu([
                     {text: "Sort ascending", action: () => this.showColumn(cd.name, 1, true) },
                     {text: "Sort descending", action: () => this.showColumn(cd.name, -1, true) },
-                    {text: "Heavy hitters", action: () => this.heavyHitters(cd.name) },
+                    {text: "Heavy hitters...", action: () => this.heavyHitters(cd.name) },
                     {text: "Heat map", action: () => this.heatMap() }
                 ]);
                 if (this.order.find(cd.name) >= 0) {
@@ -598,7 +615,7 @@ export class TableView extends RemoteObject
                 if (cd.kind != "Json" && cd.kind != "String")
                     this.contextMenu.addItem({text: "Histogram", action: () => this.histogram(cd.name) });
                 if (cd.kind == "Json" || cd.kind == "String" || cd.kind == "Category" || cd.kind == "Integer")
-                    this.contextMenu.addItem({text: "Search", action: () => this.equalityFilter(cd.name)});
+                    this.contextMenu.addItem({text: "Filter...", action: () => this.equalityFilter(cd.name)});
 
                 document.body.appendChild(this.contextMenu.getHTMLRepresentation());
                 // Spawn the menu at the mouse's location
@@ -688,11 +705,15 @@ export class TableView extends RemoteObject
         return "col" + String(index);
     }
 
+    private runFilter(filter: EqualityFilterDescription): void {
+        let rr = this.createRpcRequest("filterEquality", filter);
+        rr.invoke(new FilterCompleted(this.page, this, rr, this.order));
+    }
+
     private equalityFilter(colname: string): void {
-        let ef = new EqualityFilterDialog(this.findColumn(colname), filter => {
-            let rr = this.createRpcRequest("filterEquality", filter);
-            rr.invoke(new FilterCompleted(this.page, this, rr, this.order));
-        });
+        let ef = new EqualityFilterDialog(this.findColumn(colname));
+        ef.setAction(() => this.runFilter(ef.getFilter()));
+        ef.show();
     }
 
     private heatMap(): void {
@@ -767,7 +788,11 @@ export class TableView extends RemoteObject
         return this.top;
     }
 
-    private heavyHitters(colName: string): void {
+    private runHeavyHitters(colName: string, percent: number) {
+        if (percent < .01 || percent > 100) {
+            this.page.reportError("Percentage must be between .01 and 100");
+            return;
+        }
         let columns: IColumnDescription[] = [];
         let cso : ColumnSortOrientation[] = [];
         if (this.selectedColumns.size != 0) {
@@ -782,8 +807,15 @@ export class TableView extends RemoteObject
             cso.push({ columnDescription: colDesc, isAscending: true });
         }
         let order = new RecordOrder(cso);
-        let rr = this.createRpcRequest("heavyHitters", columns);
+        let rr = this.createRpcRequest("heavyHitters", { columns: columns, amount: percent });
         rr.invoke(new HeavyHittersReceiver(this.getPage(), this, rr, columns, order));
+    }
+
+    private heavyHitters(colName: string): void {
+        let d = new Dialog("Heavy hitters");
+        d.addTextField("percent", "Threshold (%)", "Double");
+        d.setAction(() => this.runHeavyHitters(colName, d.getFieldValueAsNumber("percent")));
+        d.show();
     }
 
     protected static convert(val: any, kind: ContentsKind): string {

@@ -212,12 +212,16 @@ public final class TableTarget extends RpcTarget {
         this.runCompleteSketch(this.table, sk, getRow, request, session);
     }
 
+    static class HeavyHittersInfo {
+        Schema columns;
+        double amount;
+    }
+
     @HillviewRpc
     void heavyHitters(RpcRequest request, Session session) {
-        // TODO: read size from client
-        Schema schema = request.parseArgs(Schema.class);
-        Converters.checkNull(schema);
-        FreqKSketch sk = new FreqKSketch(schema, 100);
+        HeavyHittersInfo info = request.parseArgs(HeavyHittersInfo.class);
+        Converters.checkNull(info);
+        FreqKSketch sk = new FreqKSketch(info.columns, (int)Math.ceil(100 / info.amount));
         this.runCompleteSketch(this.table, sk, HeavyHittersTarget::new, request, session);
     }
 

@@ -42,9 +42,10 @@ web/src/main/webapp/rpc.js
 web/src/main/webapp/table.js
 web/src/main/webapp/ui.js
 web/src/main/webapp/util.js
+web/src/main/webapp/dialog.js
+web/src/main/webapp/equalityFilter.js
 web/src/main/webapp/*.js.map
 web/src/main/webapp/node_modules/
-web/src/main/webapp/typings/*
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
@@ -58,4 +59,3 @@ data/readme.html
 
 # Hosts file for ansible
 deployment/hosts
-

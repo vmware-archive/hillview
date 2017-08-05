@@ -285,15 +285,12 @@ implements IHtmlElement, DataView {
 }
 
 export class BucketDialog extends Dialog {
-    constructor(private callback: (number) => void) {
+    constructor() {
         super("Set buckets");
-        this.callback = callback
         this.addTextField("n_buckets", "Number of buckets:", "Integer");
     }
 
-    confirmAction(): void {
-        let textValue: string = this.fields["n_buckets"].html.value;
-        this.callback(parseInt(textValue));
-        this.getHTMLRepresentation().remove();
+    getBucketCount(): number {
+        return this.getFieldValueAsInt("n_buckets");
     }
 }
