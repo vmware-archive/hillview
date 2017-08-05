@@ -71,6 +71,16 @@ public class LinearProjectionTest {
             double actualMean = bcs.getMoment(1);
             double eps = actualMean * 1e-6;
             Assert.assertTrue("Mean is too far from actual mean", Math.abs(actualMean - expectedMean) < eps);
+
+            double expectedMin = projectionCheck.get(new AllRange(), i).min();
+            double actualMin = bcs.getMin();
+            eps = actualMin * 1e-6;
+            Assert.assertTrue("Min is too far from actual min", Math.abs(actualMin - expectedMin) < eps);
+
+            double expectedMax = projectionCheck.get(new AllRange(), i).max();
+            double actualMax = bcs.getMax();
+            eps = actualMax* 1e-6;
+            Assert.assertTrue("Max is too far from actual min", Math.abs(actualMax - expectedMax) < eps);
         }
     }
 }
