@@ -68,7 +68,9 @@ public class LinearProjectionTest {
             BasicColStatSketch bcss = new BasicColStatSketch(String.format("LinearProjection%d", i), null);
             BasicColStats bcs = result.blockingSketch(bcss);
             double expectedMean = projectionCheck.get(new AllRange(), i).mean();
-            Assert.assertEquals(expectedMean, bcs.getMoment(0), Math.ulp(expectedMean));
+            double actualMean = bcs.getMoment(1);
+            double eps = actualMean * 1e-6;
+            Assert.assertTrue("Mean is too far from actual mean", Math.abs(actualMean - expectedMean) < eps);
         }
     }
 }

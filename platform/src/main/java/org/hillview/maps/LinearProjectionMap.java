@@ -55,7 +55,7 @@ public class LinearProjectionMap implements IMap<ITable, ITable> {
         for (int j = 0; j < this.numLowDims; j++) {
             String colName = String.format("LinearProjection%d", j);
             ColumnDescription colDesc = new ColumnDescription(colName, ContentsKind.Double, false);
-            DoubleArrayColumn column = new DoubleArrayColumn(colDesc, data.getMembershipSet().getSize());
+            DoubleArrayColumn column = new DoubleArrayColumn(colDesc, data.getMembershipSet().getMax());
             IRowIterator it = data.getMembershipSet().getIterator();
             int row = it.getNextRow();
             int i = 0;
