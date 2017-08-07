@@ -10,6 +10,10 @@ import org.jblas.ranges.PointRange;
 
 import java.util.Arrays;
 
+/**
+ * This class contains methods that convert from/to Tables to/from DoubleMatrices. These methods copy all data, so they
+ * should only be used as a last resort, and preferably only when it is known that the Table is reasonably small.
+ */
 public class BlasConversions {
     /**
      * Convert from an ITable to a DoubleMatrix. This copies all data from the table, so it should only be used as a
