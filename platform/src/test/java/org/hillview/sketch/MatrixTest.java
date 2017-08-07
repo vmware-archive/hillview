@@ -3,6 +3,7 @@ package org.hillview.sketch;
 import org.hillview.table.ExplicitStringConverter;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ITable;
+import org.hillview.utils.BlasConversions;
 import org.hillview.utils.TestTables;
 import org.jblas.DoubleMatrix;
 import org.junit.Assert;
@@ -32,30 +33,11 @@ public class MatrixTest {
     }
 
     @Test
-    public void testColumnFetch() {
-        ITable table = TestTables.testRepTable();
-        DoubleMatrix mat = table.getNumericColumn("Age", new ExplicitStringConverter());
-        IRowIterator it = table.getRowIterator();
-        int row = it.getNextRow();
-        int i = 0;
-        while (row >= 0) {
-            Assert.assertEquals(
-                    mat.get(i),
-                    table.getColumn("Age").asDouble(row, new ExplicitStringConverter()),
-                    Math.ulp(mat.get(i))
-            );
-            row = it.getNextRow();
-            i++;
-        }
-        Assert.assertEquals(i, mat.rows);
-    }
-
-    @Test
     public void testMatrixFetch() {
         ITable table = TestTables.getIntTable(100, 3);
         String[] colNames = {"Column0", "Column1"};
 
-        DoubleMatrix mat = table.getNumericMatrix(colNames, new ExplicitStringConverter());
+        DoubleMatrix mat = BlasConversions.toDoubleMatrix(table, colNames, null);
         IRowIterator it = table.getRowIterator();
         int row = it.getNextRow();
         int i = 0;
@@ -63,7 +45,7 @@ public class MatrixTest {
             for (int j = 0; j < colNames.length; j++) {
                 Assert.assertEquals(
                         mat.get(i, j),
-                        table.getColumn(colNames[j]).asDouble(row, new ExplicitStringConverter()),
+                        table.getColumn(colNames[j]).asDouble(row, null),
                         Math.ulp(mat.get(i, j))
                 );
             }

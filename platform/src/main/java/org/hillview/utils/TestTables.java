@@ -187,33 +187,6 @@ public class TestTables {
     }
 
     /**
-     * Returns a new Table that has only numeric columns with the contents from the given matrix.
-     * @param mat The matrix with the numeric data.
-     * @return A table with the same numeric data.
-     */
-    public static Table fromDoubleMatrix(DoubleMatrix mat) {
-        IColumn[] columns = new IColumn[mat.columns];
-        for (int i = 0; i < mat.columns; i++) {
-            ColumnDescription cd = new ColumnDescription(String.format("Column%d", i), ContentsKind.Double, false);
-            DoubleMatrix vector = mat.get(new AllRange(), new PointRange(i));
-            IColumn column = new DoubleArrayColumn(cd, vector.data);
-            columns[i] = column;
-        }
-        return new Table(Arrays.asList(columns));
-    }
-
-    /**
-     * Assumes that all columns are numeric, and returns the matrix corresponding to the data in the table.
-     * @param table The table that we want to convert.
-     * @return The DoubleMatrix with the same data as in the table.
-     */
-    @SuppressWarnings("ConstantConditions")
-    public static DoubleMatrix toDoubleMatrix(ITable table) {
-        String[] colNames = table.getSchema().getColumnNames().toArray(new String[]{});
-        return table.getNumericMatrix(colNames, null);
-    }
-
-    /**
      * Generates a table with a specified number of correlated columns. Each row has the same
      * absolute value in every column, they only differ in the sign (which is drawn randomly).
      * - Column 0 contains non-negative integers drawn at random from (0, range).

@@ -5,6 +5,7 @@ import org.hillview.maps.LinearProjectionMap;
 import org.hillview.sketches.BasicColStatSketch;
 import org.hillview.sketches.BasicColStats;
 import org.hillview.table.api.ITable;
+import org.hillview.utils.BlasConversions;
 import org.hillview.utils.TestTables;
 import org.jblas.DoubleMatrix;
 import org.jblas.ranges.AllRange;
@@ -21,8 +22,8 @@ public class LinearProjectionTest {
         int rows = 2000;
         Random.seed(42);
         DoubleMatrix matrix = DoubleMatrix.rand(rows, cols);
-        ITable table = TestTables.fromDoubleMatrix(matrix);
-        DoubleMatrix matrix2 = TestTables.toDoubleMatrix(table);
+        ITable table = BlasConversions.toTable(matrix);
+        DoubleMatrix matrix2 = BlasConversions.toDoubleMatrix(table, table.getSchema().getColumnNames().toArray(new String[]{}), null);
         Assert.assertEquals(rows * cols, matrix.eq(matrix2).sum(), Math.ulp(rows * rows));
     }
 
@@ -34,7 +35,7 @@ public class LinearProjectionTest {
         Random.seed(42);
         DoubleMatrix matrix = DoubleMatrix.rand(rows, cols);
         DoubleMatrix projectionMatrix = DoubleMatrix.rand(numProjections, cols);
-        ITable table = TestTables.fromDoubleMatrix(matrix);
+        ITable table = BlasConversions.toTable(matrix);
         LinearProjectionMap lpm = new LinearProjectionMap(table.getSchema().getColumnNames().toArray(new String[]{}), projectionMatrix, null);
         ITable result = lpm.apply(table);
 
@@ -43,7 +44,7 @@ public class LinearProjectionTest {
             newColNames[i] = String.format("LinearProjection%d", i);
         }
 
-        DoubleMatrix projectedData = result.getNumericMatrix(newColNames, null);
+        DoubleMatrix projectedData = BlasConversions.toDoubleMatrix(result, newColNames, null);
         DoubleMatrix projectedDataCheck = matrix.mmul(projectionMatrix.transpose());
         Assert.assertEquals(rows * numProjections, projectedData.eq(projectedDataCheck).sum(), Math.ulp(rows * cols));
     }
@@ -57,7 +58,7 @@ public class LinearProjectionTest {
         DoubleMatrix projectionMatrix = DoubleMatrix.rand(numProjections, cols);
         DoubleMatrix projectionCheck = dataMatrix.mmul(projectionMatrix.transpose());
 
-        ITable bigTable = TestTables.fromDoubleMatrix(dataMatrix);
+        ITable bigTable = BlasConversions.toTable(dataMatrix);
         String[] colNames = bigTable.getSchema().getColumnNames().toArray(new String[]{});
         // Convert it to an IDataset
         IDataSet<ITable> all = TestTables.makeParallel(bigTable, rows / 10);

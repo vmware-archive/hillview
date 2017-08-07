@@ -9,17 +9,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * This map takes a list of column names and a projection matrix,
- * and applies the projection matrix to the matrix that is
- * constructed from the table by horizontally stacking the
- * specified columns. The resulting table is a copy of the old
- * table, with the additional projected columns added to it.
+ * This map takes a list of column names and a projection matrix and applies the projection matrix to the matrix that is
+ * constructed from the table by horizontally stacking the specified columns. The resulting table is a copy of the old
+ * table, with the additional projected columns added to it. The new columns are named 'LinearProjection{i}'.
  */
 public class LinearProjectionMap implements IMap<ITable, ITable> {
-
+    /**
+     * The projection matrix is structured as follows: Every row is a vector
+     * that is projected on. The ordering of the columns is the same as the order
+     * of the column names in colNames.
+     */
     private final DoubleMatrix projectionMatrix;
     private final String[] colNames;
-    private final int numLowDims;
+    private final int numProjections;
     private final IStringConverter converter;
 
     public LinearProjectionMap(String[] colNames, DoubleMatrix projectionMatrix, IStringConverter converter) {
@@ -28,42 +30,38 @@ public class LinearProjectionMap implements IMap<ITable, ITable> {
 
         this.projectionMatrix = projectionMatrix;
         this.colNames = colNames;
-        this.numLowDims = projectionMatrix.rows;
+        this.numProjections = projectionMatrix.rows;
         this.converter = converter;
     }
 
     @Override
-    public ITable apply(ITable data) {
-        // The data matrix that has the observations as rows
-        DoubleMatrix mat = data.getNumericMatrix(this.colNames, this.converter);
-
-        // The projection along the directions in this.projectionMatrix.
-        // The projected rows are rows in this matrix too.
-        DoubleMatrix proj = mat.mmul(this.projectionMatrix.transpose());
-
+    public ITable apply(ITable table) {
         // Copy all existing columns to the column list for the new table.
         List<IColumn> columns = new ArrayList<IColumn>();
-        Iterable<IColumn> inputColumns = data.getColumns();
+        Iterable<IColumn> inputColumns = table.getColumns();
         for (IColumn inputColumn : inputColumns) {
             columns.add(inputColumn);
         }
 
-        // Add all the projections to the columns.
-        for (int j = 0; j < this.numLowDims; j++) {
+        // Compute and add all the projections to the columns.
+        for (int j = 0; j < this.numProjections; j++) {
             String colName = String.format("LinearProjection%d", j);
-            ColumnDescription colDesc = new ColumnDescription(colName, ContentsKind.Double, false);
-            DoubleArrayColumn column = new DoubleArrayColumn(colDesc, data.getMembershipSet().getMax());
-            IRowIterator it = data.getMembershipSet().getIterator();
+            ColumnDescription colDesc = new ColumnDescription(colName, ContentsKind.Double, true);
+            DoubleArrayColumn column = new DoubleArrayColumn(colDesc, table.getMembershipSet().getMax());
+            IRowIterator it = table.getMembershipSet().getIterator();
             int row = it.getNextRow();
-            int i = 0;
             while (row >= 0) {
-                column.set(row, proj.get(i, j));
+                // Compute the dot product between the row from the table and the j'th projection vector.
+                double x = 0.0;
+                for (int k = 0; k < this.projectionMatrix.columns; k++) {
+                    x += table.getColumn(this.colNames[k]).asDouble(row, this.converter) * this.projectionMatrix.get(j, k);
+                }
+                column.set(row, x);
                 row = it.getNextRow();
-                i++;
             }
             columns.add(column);
         }
 
-        return new Table(columns, data.getMembershipSet());
+        return new Table(columns, table.getMembershipSet());
     }
 }
