@@ -8,4 +8,10 @@ public class EqualityFilterDescription implements Serializable, IJson {
     public ColumnDescription columnDescription;
     public String compareValue;
     public boolean complement;
+
+    public EqualityFilterDescription(ColumnDescription columnDescription, String compareValue, boolean complement) {
+        this.columnDescription = columnDescription;
+        this.compareValue = compareValue;
+        this.complement = complement;
+    }
 }

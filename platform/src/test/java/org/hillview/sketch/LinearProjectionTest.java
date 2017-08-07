@@ -12,6 +12,7 @@ import org.jblas.util.Random;
 import org.junit.Assert;
 import org.junit.Test;
 
+@SuppressWarnings("ConstantConditions")
 public class LinearProjectionTest {
 
     @Test
@@ -34,7 +35,7 @@ public class LinearProjectionTest {
         DoubleMatrix matrix = DoubleMatrix.rand(rows, cols);
         DoubleMatrix projectionMatrix = DoubleMatrix.rand(numProjections, cols);
         ITable table = TestTables.fromDoubleMatrix(matrix);
-        LinearProjectionMap lpm = new LinearProjectionMap(table.getSchema().getColumnNames().toArray(new String[]{}), projectionMatrix);
+        LinearProjectionMap lpm = new LinearProjectionMap(table.getSchema().getColumnNames().toArray(new String[]{}), projectionMatrix, null);
         ITable result = lpm.apply(table);
 
         String[] newColNames = new String[numProjections];
@@ -61,7 +62,7 @@ public class LinearProjectionTest {
         // Convert it to an IDataset
         IDataSet<ITable> all = TestTables.makeParallel(bigTable, rows / 10);
 
-        LinearProjectionMap lpm = new LinearProjectionMap(colNames, projectionMatrix);
+        LinearProjectionMap lpm = new LinearProjectionMap(colNames, projectionMatrix, null);
         IDataSet<ITable> result = all.blockingMap(lpm);
 
         for (int i = 0; i < numProjections; i++) {

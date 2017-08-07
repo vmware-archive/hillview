@@ -2,13 +2,8 @@ package org.hillview.maps;
 
 import org.hillview.dataset.api.IMap;
 import org.hillview.table.*;
-import org.hillview.table.api.ContentsKind;
-import org.hillview.table.api.IColumn;
-import org.hillview.table.api.IRowIterator;
-import org.hillview.table.api.ITable;
+import org.hillview.table.api.*;
 import org.jblas.DoubleMatrix;
-import org.jblas.ranges.AllRange;
-import org.jblas.ranges.PointRange;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,20 +20,22 @@ public class LinearProjectionMap implements IMap<ITable, ITable> {
     private final DoubleMatrix projectionMatrix;
     private final String[] colNames;
     private final int numLowDims;
+    private final IStringConverter converter;
 
-    public LinearProjectionMap(String[] colNames, DoubleMatrix projectionMatrix) {
+    public LinearProjectionMap(String[] colNames, DoubleMatrix projectionMatrix, IStringConverter converter) {
         if (colNames.length != projectionMatrix.columns)
             throw new RuntimeException("Number of columns in projectionMatrix should be eq. to number of names in colNames.");
 
         this.projectionMatrix = projectionMatrix;
         this.colNames = colNames;
         this.numLowDims = projectionMatrix.rows;
+        this.converter = converter;
     }
 
     @Override
     public ITable apply(ITable data) {
         // The data matrix that has the observations as rows
-        DoubleMatrix mat = data.getNumericMatrix(this.colNames, null);
+        DoubleMatrix mat = data.getNumericMatrix(this.colNames, this.converter);
 
         // The projection along the directions in this.projectionMatrix.
         // The projected rows are rows in this matrix too.
