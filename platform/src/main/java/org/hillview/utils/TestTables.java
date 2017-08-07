@@ -183,7 +183,6 @@ public class TestTables {
         return new SmallTable(columns);
     }
 
-
     /**
      * Generates a table with a specified number of correlated columns. Each row has the same
      * absolute value in every column, they only differ in the sign (which is drawn randomly).

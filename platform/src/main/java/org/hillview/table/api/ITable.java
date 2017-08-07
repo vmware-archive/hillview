@@ -42,6 +42,7 @@ public interface ITable {
     /**
      * Creates a small table by keeping only the rows in the IRowOrder and
      * the columns in the subSchema.
+     *
      * @param subSchema Indicates columns to keep.
      * @param rowOrder  Indicates rows to keep.
      */
@@ -53,12 +54,14 @@ public interface ITable {
      * Creates a new table which has the same data with this one except the
      * provided membership set.  Note that the result can have more rows
      * than the original table - the original membership set is ignored.
+     *
      * @param set: Membership set of the resulting table.
      */
     ITable selectRowsFromFullTable(IMembershipSet set);
 
     /**
      * Return a new table which only contains the specified columns.
+     *
      * @param schema: Schema of the resulting table.
      */
     ITable project(Schema schema);
