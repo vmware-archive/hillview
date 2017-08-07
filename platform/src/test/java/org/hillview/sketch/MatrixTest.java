@@ -1,6 +1,5 @@
 package org.hillview.sketch;
 
-import org.hillview.table.ExplicitStringConverter;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.BlasConversions;
@@ -9,6 +8,7 @@ import org.jblas.DoubleMatrix;
 import org.junit.Assert;
 import org.junit.Test;
 
+@SuppressWarnings("ConstantConditions")
 public class MatrixTest {
     @Test
     public void testSimpleMatrix() {

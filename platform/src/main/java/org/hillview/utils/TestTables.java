@@ -26,9 +26,6 @@ import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.ITable;
-import org.jblas.DoubleMatrix;
-import org.jblas.ranges.AllRange;
-import org.jblas.ranges.PointRange;
 import org.junit.Assert;
 
 import java.util.*;
