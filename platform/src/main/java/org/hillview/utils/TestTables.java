@@ -249,8 +249,7 @@ public class TestTables {
             }
         }
 
-        ITable table = BlasConversions.toTable(mat);
-        return table;
+        return BlasConversions.toTable(mat);
     }
 
     /**
