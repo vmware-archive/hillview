@@ -35,6 +35,24 @@ import {Dialog} from "./dialog";
 // of the Java classes produces JSON that can be directly cast
 // into these interfaces.
 
+export class SelectedObject {
+    private selected: RemoteObject;
+
+    private constructor() {
+        this.selected = null;
+    }
+
+    select(object: RemoteObject) {
+        this.selected = object;
+    }
+
+    getSelected(): RemoteObject {
+        return this.selected;
+    }
+
+    static current: SelectedObject = new SelectedObject();
+}
+
 // I can't use an enum for ContentsKind because JSON deserialization does not
 // return an enum from a string.
 export type ContentsKind = "Category" | "Json" | "String" | "Integer" | "Double" | "Date" | "Interval";
@@ -253,13 +271,25 @@ export class TableView extends RemoteObject
         tblAndBar.appendChild(this.scrollBar.getHTMLRepresentation());
     }
 
+    reportError(s: string) {
+        this.page.reportError(s);
+    }
+
     // combine two views according to some operation
     combine(how: CombineOperators): void {
-        // TODO
+        let r = SelectedObject.current.getSelected();
+        if (r == null) {
+            this.reportError("No view selected");
+            return;
+        }
+
+        let rr = this.createRpcRequest("zip", r.remoteObjectId);
+        let o = this.order.clone();
+        rr.invoke(new ZipReceiver(this.getPage(), this, rr, how, o));
     }
 
     selectCurrent(): void {
-        // TODO
+        SelectedObject.current.select(this);
     }
 
     // invoked when scrolling has completed
@@ -276,7 +306,7 @@ export class TableView extends RemoteObject
                 order: o,
                 position: position
             });
-	    console.log("expecting quantile: " + String(position));
+	        console.log("expecting quantile: " + String(position));
             rr.invoke(new QuantileReceiver(this.getPage(), this, rr, o));
         }
     }
@@ -299,7 +329,7 @@ export class TableView extends RemoteObject
         if (this.currentData == null || this.currentData.rows.length == 0)
             return;
         if (this.startPosition <= 0) {
-            this.page.reportError("Already at the top");
+            this.reportError("Already at the top");
             return;
         }
         let order = this.order.invert();
@@ -311,7 +341,7 @@ export class TableView extends RemoteObject
         if (this.currentData == null || this.currentData.rows.length == 0)
             return;
         if (this.startPosition <= 0) {
-            this.page.reportError("Already at the top");
+            this.reportError("Already at the top");
             return;
         }
         let o = this.order.clone();
@@ -323,7 +353,7 @@ export class TableView extends RemoteObject
         if (this.currentData == null || this.currentData.rows.length == 0)
             return;
         if (this.startPosition + this.dataRowsDisplayed >= this.rowCount - 1) {
-            this.page.reportError("Already at the bottom");
+            this.reportError("Already at the bottom");
             return;
         }
         let order = this.order.invert();
@@ -335,7 +365,7 @@ export class TableView extends RemoteObject
         if (this.currentData == null || this.currentData.rows.length == 0)
             return;
         if (this.startPosition + this.dataRowsDisplayed >= this.rowCount - 1) {
-            this.page.reportError("Already at the bottom");
+            this.reportError("Already at the bottom");
             return;
         }
         let o = this.order.clone();
@@ -350,7 +380,7 @@ export class TableView extends RemoteObject
 
     protected showAllRows(): void {
         if (this.schema == null) {
-            this.page.reportError("No data loaded");
+            this.reportError("No data loaded");
             return;
         }
 
@@ -496,11 +526,11 @@ export class TableView extends RemoteObject
             this.selectedColumns.forEach(v => {
                 let colDesc = this.findColumn(v);
                 if (colDesc.kind == "String") {
-                    this.page.reportError("2D Histograms not supported for string columns " + colDesc.name);
+                    this.reportError("2D Histograms not supported for string columns " + colDesc.name);
                     return;
                 }
                 if (colDesc.kind == "Category") {
-                    this.page.reportError("2D histograms not yet implemented for category columns " + colDesc.name);
+                    this.reportError("2D histograms not yet implemented for category columns " + colDesc.name);
                     return;
                 }
                 let ci = new RangeInfo();
@@ -514,7 +544,7 @@ export class TableView extends RemoteObject
             let rr = this.createRpcRequest("range2D", columns);
             rr.invoke(new Range2DCollector(cds, this.schema, this.getPage(), this, rr, false));
         } else {
-            this.page.reportError("Must select 1 or 2 columns for histogram");
+            this.reportError("Must select 1 or 2 columns for histogram");
             return;
         }
     }
@@ -530,7 +560,7 @@ export class TableView extends RemoteObject
 
     public refresh(): void {
         if (this.currentData == null) {
-            this.page.reportError("Nothing to refresh");
+            this.reportError("Nothing to refresh");
             return;
         }
         this.updateView(this.currentData, false, this.order, 0);
@@ -659,7 +689,7 @@ export class TableView extends RemoteObject
 
         this.updateScrollBar();
         this.highlightSelectedColumns();
-        this.page.reportError("Operation took " + significantDigits(elapsedMs/1000) + " seconds");
+        this.reportError("Operation took " + significantDigits(elapsedMs/1000) + " seconds");
     }
 
     public setSchema(schema: Schema): void {
@@ -718,7 +748,7 @@ export class TableView extends RemoteObject
 
     private heatMap(): void {
         if (this.selectedColumns.size != 2) {
-            this.page.reportError("Must select exactly 2 columns for heat map");
+            this.reportError("Must select exactly 2 columns for heat map");
             return;
         }
 
@@ -727,11 +757,11 @@ export class TableView extends RemoteObject
         this.selectedColumns.forEach(v => {
             let colDesc = this.findColumn(v);
             if (colDesc.kind == "String") {
-                this.page.reportError("Heat maps not supported for string columns " + colDesc.name);
+                this.reportError("Heat maps not supported for string columns " + colDesc.name);
                 return;
             }
             if (colDesc.kind == "Category") {
-                this.page.reportError("Heat maps not yet implemented for category columns " + colDesc.name);
+                this.reportError("Heat maps not yet implemented for category columns " + colDesc.name);
                 return;
             }
             let ci = new RangeInfo();
@@ -790,7 +820,7 @@ export class TableView extends RemoteObject
 
     private runHeavyHitters(colName: string, percent: number) {
         if (percent < .01 || percent > 100) {
-            this.page.reportError("Percentage must be between .01 and 100");
+            this.reportError("Percentage must be between .01 and 100");
             return;
         }
         let columns: IColumnDescription[] = [];
@@ -1064,5 +1094,34 @@ class FilterCompleted extends Renderer<string> {
         let rr = table.createNextKRequest(this.order, null);
         rr.setStartTime(this.operation.startTime());
         rr.invoke(new TableRenderer(this.page, table, rr, false, this.order));
+    }
+}
+
+class ZipReceiver extends Renderer<string> {
+    public remoteTablePairId: string;
+
+    public constructor(page: FullPage,
+                       protected tv: TableView,
+                       operation: ICancellable,
+                       protected setOp: CombineOperators,
+                       protected order: RecordOrder) {
+        super(page, operation, "zip");
+    }
+
+    onNext(value: PartialResult<string>): any {
+        super.onNext(value);
+        if (value.data != null)
+            this.remoteTablePairId = value.data;
+    }
+
+    onCompleted(): void {
+        super.finished();
+        if (this.remoteTablePairId == null)
+            return;
+
+        let remoteObj = new RemoteObject(this.remoteTablePairId);
+        let rr = remoteObj.createRpcRequest("setOperation", CombineOperators[this.setOp]);
+        // Reuse the table filter
+        rr.invoke(new FilterCompleted(this.page, this.tv, rr, this.order));
     }
 }

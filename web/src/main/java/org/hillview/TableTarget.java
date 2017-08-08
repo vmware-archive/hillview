@@ -213,6 +213,7 @@ public final class TableTarget extends RpcTarget {
     }
 
     static class HeavyHittersInfo {
+        @Nullable
         Schema columns;
         double amount;
     }
@@ -221,7 +222,8 @@ public final class TableTarget extends RpcTarget {
     void heavyHitters(RpcRequest request, Session session) {
         HeavyHittersInfo info = request.parseArgs(HeavyHittersInfo.class);
         Converters.checkNull(info);
-        FreqKSketch sk = new FreqKSketch(info.columns, (int)Math.ceil(100 / info.amount));
+        FreqKSketch sk = new FreqKSketch(
+                Converters.checkNull(info.columns), (int)Math.ceil(100 / info.amount));
         this.runCompleteSketch(this.table, sk, HeavyHittersTarget::new, request, session);
     }
 
@@ -244,5 +246,13 @@ public final class TableTarget extends RpcTarget {
     @Override
     public String toString() {
         return "TableTarget object, " + super.toString();
+    }
+
+    @HillviewRpc
+    void zip(RpcRequest request, Session session) {
+        String otherId = request.parseArgs(String.class);
+        RpcTarget otherObj = RpcObjectManager.instance.getObject(otherId);
+        TableTarget otherTable = (TableTarget)otherObj;
+        this.runZip(this.table, otherTable.table, TablePairTarget::new, request, session);
     }
 }
