@@ -11,6 +11,7 @@ import org.hillview.utils.BlasConversions;
 import org.hillview.utils.LinAlg;
 import org.hillview.utils.TestTables;
 import org.jblas.DoubleMatrix;
+import org.jblas.util.Random;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -38,13 +39,15 @@ public class CorrelationTest {
 
     @Test
     public void testBigCorrelation() {
-        ITable table = TestTables.getLinearTable(10000, 30);
-        List<String> colNames = new ArrayList<String>(table.getSchema().getColumnNames());
+        Random.seed(43);
+        DoubleMatrix mat = DoubleMatrix.rand(10000, 30);
+        ITable bigTable = BlasConversions.toTable(mat);
+        List<String> colNames = new ArrayList<String>(bigTable.getSchema().getColumnNames());
+        IDataSet<ITable> dataset = TestTables.makeParallel(bigTable, 100);
 
-        IDataSet<ITable> dataset = TestTables.makeParallel(table, 1000);
 
-        Map<String, BasicColStats> bcsMap = new HashMap<String, BasicColStats>(table.getSchema().getColumnCount());
-        for (IColumn col : table.getColumns()) {
+        Map<String, BasicColStats> bcsMap = new HashMap<String, BasicColStats>(bigTable.getSchema().getColumnCount());
+        for (IColumn col : bigTable.getColumns()) {
             BasicColStatSketch statSketch = new BasicColStatSketch(col.getName(), null);
             BasicColStats bcs = dataset.blockingSketch(statSketch);
             bcsMap.put(col.getName(), bcs);
@@ -52,24 +55,17 @@ public class CorrelationTest {
 
         FullCorrelationSketch fcs = new FullCorrelationSketch(colNames, bcsMap);
         CorrMatrix cm = dataset.blockingSketch(fcs);
-
-        DoubleMatrix corrMatrix = new DoubleMatrix(cm.getCorrelationMatrix());
-        // Get just the eigenvector corresponding to the largest eigenvalue (because we know the data is approximately
-        // linear).
-        DoubleMatrix eigenVectors = LinAlg.eigenVectors(corrMatrix, 1);
-        eigenVectors.print();
-
-        for (int i = 2; i < eigenVectors.columns; i++) {
-            // The eigenvector should have reasonably large components in the first two columns, compared to the
-            // other components in the eigenvector.
-            Assert.assertTrue(
-                    "First component of eigenvector not large enough.",
-                    Math.abs(eigenVectors.get(0, 0)) > 3 * Math.abs(eigenVectors.get(0, i))
-            );
-            Assert.assertTrue(
-                    "Second component of eigenvector not large enough.",
-                    Math.abs(eigenVectors.get(0, 1)) > 3 * Math.abs(eigenVectors.get(0, i))
-            );
+        CorrMatrix cmCheck = fcs.create(bigTable);
+        for (int i = 0; i < cm.getCorrelationMatrix().length; i++) {
+            double[] row = cm.getCorrelationMatrix()[i];
+            for (int j = 0; j < row.length; j++) {
+                double actual = cm.getCorrelationMatrix()[i][j];
+                double expected = cmCheck.getCorrelationMatrix()[i][j];
+                Assert.assertTrue(
+                        "Correlation differs too much from check.",
+                        Math.abs(actual - expected) / Math.abs(expected) < 1e-10
+                );
+            }
         }
     }
 }

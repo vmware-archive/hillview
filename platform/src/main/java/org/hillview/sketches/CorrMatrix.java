@@ -42,6 +42,17 @@ public class CorrMatrix implements ICorrelation {
         this.rawMatrix[i][j] += val;
     }
 
+    /**
+     * Sets a new value at (i, j) that is a weighted sum of this matrix's value and the other one, weighted by the
+     * number of elements processed for both matrices.
+     */
+    public void updateWeighted(int i, int j, double val, long otherCount) {
+        long countSum = this.count + otherCount;
+        double thisWeight = ((double) this.count) / countSum;
+        double otherWeight = ((double) otherCount) / countSum;
+        this.rawMatrix[i][j] = thisWeight * this.rawMatrix[i][j] + otherWeight * val;
+    }
+
     public double get(int i, int j) {
         return this.rawMatrix[i][j];
     }

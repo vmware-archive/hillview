@@ -57,6 +57,7 @@ public class FullCorrelationSketch implements ISketch<ITable, CorrMatrix> {
             }
             i = rowIt.getNextRow();
         }
+        cm.count = table.getNumOfRows();
         return cm;
     }
 
@@ -73,7 +74,7 @@ public class FullCorrelationSketch implements ISketch<ITable, CorrMatrix> {
         right = Converters.checkNull(right);
         for (int i = 0; i < this.colNames.size(); i++)
             for (int j = i; j < this.colNames.size(); j++)
-                left.update(i, j, right.get(i,j));
+                left.updateWeighted(i, j, right.get(i, j), right.count);
         left.count += right.count;
         return left;
     }
