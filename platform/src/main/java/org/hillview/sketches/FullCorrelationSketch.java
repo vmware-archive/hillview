@@ -9,13 +9,18 @@ import java.security.InvalidParameterException;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * This class is very similar to the SampleCorrelationSketch, apart from two important differences. First, it uses
+ * the full data (it doesn't sample). Second, it rescales the columns by using the mean and standard deviation from
+ * the BasicColStats's.
+ */
 public class FullCorrelationSketch implements ISketch<ITable, CorrMatrix> {
-    private final Map<String, BasicColStats> bcss;
+    private final Map<String, BasicColStats> basicColStatsMap;
     private final List<String> colNames;
 
     public FullCorrelationSketch(List<String> colNames, Map<String, BasicColStats> bcss) {
         this.colNames = colNames;
-        this.bcss = bcss;
+        this.basicColStatsMap = bcss;
     }
 
     @Override
@@ -37,12 +42,16 @@ public class FullCorrelationSketch implements ISketch<ITable, CorrMatrix> {
             for (int j = 0; j < this.colNames.size(); j++) {
                 valJ = iCols[j].asDouble(i, null);
                 // Remove the mean to center the data in the column.
-                valJ -= this.bcss.get(this.colNames.get(j)).getMoment(1);
+                valJ -= this.basicColStatsMap.get(this.colNames.get(j)).getMoment(1);
+                // Divide by the standard deviation to make the column have unit variance.
+                valJ /= Math.sqrt(this.basicColStatsMap.get(this.colNames.get(j)).getMoment(2));
                 cm.update(j, j, valJ * valJ);
                 for (int k = j + 1; k < this.colNames.size(); k++) {
                     valK = iCols[k].asDouble(i, null);
                     // Remove the mean to center the data.
-                    valK -= this.bcss.get(this.colNames.get(k)).getMoment(1);
+                    valK -= this.basicColStatsMap.get(this.colNames.get(k)).getMoment(1);
+                    // Divide by the standard deviation to make the column have unit variance.
+                    valK /= Math.sqrt(this.basicColStatsMap.get(this.colNames.get(k)).getMoment(2));
                     cm.update(j, k, valJ * valK);
                 }
             }
