@@ -218,12 +218,9 @@ th, td {
 
 /* menus in CSS; from http://codepen.io/philhoyt/pen/ujHzd */
 
-.menu {
-    margin-top: 15px;
-    font-family: sans-serif;
-}
 
-.menu ul {
+
+/*.menu ul {
     list-style: none;
     position: relative;
     float: left;
@@ -280,7 +277,41 @@ th, td {
 
 .menu ul li:hover > ul {
     display:block;
+}*/
+
+.menu ul li {
+    border: 1px solid black;
 }
+
+.menu ul {
+    list-style: none;
+    display: inline-block;
+    background-color: lightgray;
+}
+
+.menu ul ul {
+    /*display: none;*/
+    position: absolute;
+    top: 100%;
+    left: 0px;
+    padding-left: 0px;
+}
+
+.menu ul li  {
+    position: relative;
+    float: left;
+    margin: 0;
+    padding: 0;
+}
+
+.menu ul li:hover > ul {
+    display: block;
+}
+
+.menu ul li:hover {
+    background-color: gray;
+}
+
 
 .dropdown {
     display: block;
