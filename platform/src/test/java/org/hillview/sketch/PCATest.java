@@ -1,11 +1,8 @@
 package org.hillview.sketch;
 
 import org.hillview.dataset.api.IDataSet;
-import org.hillview.sketches.BasicColStatSketch;
-import org.hillview.sketches.BasicColStats;
 import org.hillview.sketches.CorrMatrix;
 import org.hillview.sketches.FullCorrelationSketch;
-import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.LinAlg;
 import org.hillview.utils.TestTables;
@@ -14,9 +11,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class PCATest {
     @Test
@@ -26,14 +21,7 @@ public class PCATest {
 
         IDataSet<ITable> dataset = TestTables.makeParallel(table, 1000);
 
-        Map<String, BasicColStats> bcsMap = new HashMap<String, BasicColStats>(table.getSchema().getColumnCount());
-        for (IColumn col : table.getColumns()) {
-            BasicColStatSketch statSketch = new BasicColStatSketch(col.getName(), null);
-            BasicColStats bcs = dataset.blockingSketch(statSketch);
-            bcsMap.put(col.getName(), bcs);
-        }
-
-        FullCorrelationSketch fcs = new FullCorrelationSketch(colNames, bcsMap);
+        FullCorrelationSketch fcs = new FullCorrelationSketch(colNames);
         CorrMatrix cm = dataset.blockingSketch(fcs);
 
         DoubleMatrix corrMatrix = new DoubleMatrix(cm.getCorrelationMatrix());

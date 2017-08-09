@@ -7,7 +7,6 @@ import org.hillview.utils.Converters;
 import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
 import java.util.List;
-import java.util.Map;
 
 /**
  * This class is very similar to the SampleCorrelationSketch, apart from two important differences. First, it uses
@@ -15,12 +14,10 @@ import java.util.Map;
  * the BasicColStats's.
  */
 public class FullCorrelationSketch implements ISketch<ITable, CorrMatrix> {
-    private final Map<String, BasicColStats> basicColStatsMap;
     private final List<String> colNames;
 
-    public FullCorrelationSketch(List<String> colNames, Map<String, BasicColStats> bcss) {
+    public FullCorrelationSketch(List<String> colNames) {
         this.colNames = colNames;
-        this.basicColStatsMap = bcss;
     }
 
     @Override
@@ -32,7 +29,7 @@ public class FullCorrelationSketch implements ISketch<ITable, CorrMatrix> {
                         "integer or double: " + col);
         }
         IColumn[] iCols = new IColumn[this.colNames.size()];
-        for (int l=0; l < this.colNames.size(); l++)
+        for (int l = 0; l < this.colNames.size(); l++)
             iCols[l] = table.getColumn(this.colNames.get(l));
         CorrMatrix cm = new CorrMatrix(this.colNames);
         IRowIterator rowIt = table.getRowIterator();
@@ -41,23 +38,16 @@ public class FullCorrelationSketch implements ISketch<ITable, CorrMatrix> {
         while (i != -1) {
             for (int j = 0; j < this.colNames.size(); j++) {
                 valJ = iCols[j].asDouble(i, null);
-                // Remove the mean to center the data in the column.
-                valJ -= this.basicColStatsMap.get(this.colNames.get(j)).getMoment(1);
-                // Divide by the standard deviation to make the column have unit variance.
-                valJ /= Math.sqrt(this.basicColStatsMap.get(this.colNames.get(j)).getMoment(2));
-                cm.update(j, j, valJ * valJ);
+                cm.updateWeighted(j, j, valJ * valJ, 1);
                 for (int k = j + 1; k < this.colNames.size(); k++) {
                     valK = iCols[k].asDouble(i, null);
-                    // Remove the mean to center the data.
-                    valK -= this.basicColStatsMap.get(this.colNames.get(k)).getMoment(1);
-                    // Divide by the standard deviation to make the column have unit variance.
-                    valK /= Math.sqrt(this.basicColStatsMap.get(this.colNames.get(k)).getMoment(2));
-                    cm.update(j, k, valJ * valK);
+                    cm.updateWeighted(j, k, valJ * valK, 1);
                 }
+                cm.updateMean(valJ, j, 1);
             }
+            cm.count++;
             i = rowIt.getNextRow();
         }
-        cm.count = table.getNumOfRows();
         return cm;
     }
 
@@ -72,9 +62,11 @@ public class FullCorrelationSketch implements ISketch<ITable, CorrMatrix> {
     public CorrMatrix add(@Nullable CorrMatrix left, @Nullable CorrMatrix right) {
         left = Converters.checkNull(left);
         right = Converters.checkNull(right);
-        for (int i = 0; i < this.colNames.size(); i++)
+        for (int i = 0; i < this.colNames.size(); i++) {
             for (int j = i; j < this.colNames.size(); j++)
                 left.updateWeighted(i, j, right.get(i, j), right.count);
+            left.updateMean(right.means[i], i, right.count);
+        }
         left.count += right.count;
         return left;
     }
