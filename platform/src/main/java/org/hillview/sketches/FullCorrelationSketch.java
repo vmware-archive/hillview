@@ -29,26 +29,31 @@ public class FullCorrelationSketch implements ISketch<ITable, CorrMatrix> {
                 throw new InvalidParameterException("Correlation Sketch requires column to be " +
                         "integer or double: " + col);
         }
-        IColumn[] iCols = new IColumn[this.colNames.size()];
+        IColumn[] cols = new IColumn[this.colNames.size()];
         for (int l = 0; l < this.colNames.size(); l++)
-            iCols[l] = table.getColumn(this.colNames.get(l));
+            cols[l] = table.getColumn(this.colNames.get(l));
         CorrMatrix cm = new CorrMatrix(this.colNames);
-        IRowIterator rowIt = table.getRowIterator();
-        int i = rowIt.getNextRow();
-        double valJ, valK;
-        while (i >= 0) {
-            for (int j = 0; j < this.colNames.size(); j++) {
-                valJ = iCols[j].asDouble(i, null);
-                cm.updateWeighted(j, j, valJ * valJ, 1);
-                for (int k = j + 1; k < this.colNames.size(); k++) {
-                    valK = iCols[k].asDouble(i, null);
-                    cm.updateWeighted(j, k, valJ * valK, 1);
+
+        int nRows = table.getNumOfRows();
+        for (int i = 0; i < this.colNames.size(); i++) {
+            double colSum = 0;
+            for (int j = i; j < this.colNames.size(); j++) {
+                IRowIterator rowIt = table.getRowIterator();
+                int row = rowIt.getNextRow();
+                double dotProduct = 0;
+                while (row >= 0) {
+                    double valI = cols[i].asDouble(row, null);
+                    double valJ = cols[j].asDouble(row, null);
+                    if (j == i)
+                        colSum += valI;
+                    dotProduct += valI * valJ;
+                    row = rowIt.getNextRow();
                 }
-                cm.updateMean(valJ, j, 1);
+                cm.put(i, j, dotProduct / nRows);
             }
-            cm.count++;
-            i = rowIt.getNextRow();
+            cm.means[i] = colSum / nRows;
         }
+        cm.count = nRows;
         return cm;
     }
 
@@ -68,9 +73,9 @@ public class FullCorrelationSketch implements ISketch<ITable, CorrMatrix> {
         double alpha = (double) left.count / (left.count + right.count);
 
         for (int i = 0; i < this.colNames.size(); i++) {
-            result.means[i] = alpha * left.means[i] + (1.0 - alpha) * right.means[i];
+            result.means[i] = alpha * left.means[i] + (1 - alpha) * right.means[i];
             for (int j = i; j < this.colNames.size(); j++) {
-                result.update(i, j, alpha * left.get(i, j) + (1.0 - alpha) * right.get(i, j));
+                result.put(i, j, alpha * left.get(i, j) + (1 - alpha) * right.get(i, j));
             }
         }
         result.count = left.count + right.count;

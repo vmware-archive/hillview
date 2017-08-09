@@ -16,7 +16,7 @@ public class CorrMatrix implements ICorrelation {
      */
     private final HashMap<String, Integer> colNum;
     /**
-     * A matrix that records the un-normalized inner products between pairs of columns.
+     * A matrix that records the (un)-normalized inner products between pairs of columns.
      */
     private final double[][] rawMatrix;
     /**
@@ -47,14 +47,8 @@ public class CorrMatrix implements ICorrelation {
         this.rawMatrix[i][j] += val;
     }
 
-    /**
-     * Sets a new value at (i, j) that is a weighted sum of this matrix's value and the one that is added. newCount
-     * is zero when creating the matrix, but can be larger when adding two matrices.
-     */
-    public void updateWeighted(int i, int j, double val, long newCount) {
-        double alpha = ((double) this.count) / (this.count + newCount);
-        double beta = 1.0 - alpha;
-        this.rawMatrix[i][j] = alpha * this.rawMatrix[i][j] + beta * val;
+    public void put(int i, int j, double val) {
+        this.rawMatrix[i][j] = val;
     }
 
     public double get(int i, int j) {
@@ -66,13 +60,13 @@ public class CorrMatrix implements ICorrelation {
         if (this.corrMatrix == null) {
             this.corrMatrix = new double[this.colNum.size()][this.colNum.size()];
             for (int i = 0; i < this.colNum.size(); i++) {
-                double sigma_i = Math.sqrt(this.rawMatrix[i][i] - this.means[i] * this.means[i]);
+                double sigmaI = Math.sqrt(this.rawMatrix[i][i] - this.means[i] * this.means[i]);
                 for (int j = i; j < this.colNum.size(); j++) {
                     double val = this.rawMatrix[i][j];
                     // Centering and scaling
                     val -= this.means[i] * this.means[j];
-                    double sigma_j = Math.sqrt(this.rawMatrix[j][j] - this.means[j] * this.means[j]);
-                    val /= sigma_i * sigma_j;
+                    double sigmaJ = Math.sqrt(this.rawMatrix[j][j] - this.means[j] * this.means[j]);
+                    val /= sigmaI * sigmaJ;
                     this.corrMatrix[i][j] = val;
                     this.corrMatrix[j][i] = val;
                 }
@@ -105,15 +99,9 @@ public class CorrMatrix implements ICorrelation {
         return (((i <= j) ? this.rawMatrix[i][j] : this.rawMatrix[j][i])/this.count);
     }
 
-
     public String toString() {
         return "Number of columns:  " + String.valueOf(this.colNum.size()) + "\n" +
                 "Total count: " + String.valueOf(this.count) + "\n" +
                 Arrays.deepToString(this.rawMatrix);
-    }
-
-    public void updateMean(double val, int i, long newCount) {
-        double alpha = ((double) this.count) / (this.count + newCount);
-        this.means[i] = alpha * this.means[i] + (1 - alpha) * val;
     }
 }
