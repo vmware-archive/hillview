@@ -64,16 +64,13 @@ export class ContextMenu implements IHtmlElement {
 
 export class TopSubMenu implements IHtmlElement {
     items: MenuItem[];
-    private outer: HTMLElement;
-    private htmlTable: HTMLTableElement;
+    private outer: HTMLTableElement;
     private tableBody: HTMLTableSectionElement;
 
     constructor(mis: MenuItem[]) {
-        this.outer = document.createElement("div");
+        this.outer = document.createElement("table");
         this.outer.className = "menu";
-        this.htmlTable = document.createElement("table");
-        this.tableBody = this.htmlTable.createTBody();
-        this.outer.appendChild(this.htmlTable);
+        this.tableBody = this.outer.createTBody();
         
         this.items = [];
         if (mis != null) {
@@ -90,14 +87,6 @@ export class TopSubMenu implements IHtmlElement {
         cell.style.textAlign = "left";
         cell.className = "menuItem";
         cell.onclick = () => { mi.action(); }
-        // this.items.push(mi);
-        // let li = document.createElement("cell");
-        // this.list.appendChild(li);
-        // let cell = document.createElement("span");
-        // li.appendChild(cell);
-        // cell.innerHTML = mi.text;
-        // cell.style.width = "100%";
-        // cell.onclick = () => { mi.action(); }
     }
 
     getHTMLRepresentation(): HTMLElement {
@@ -112,17 +101,13 @@ export interface TopMenuItem {
 
 export class TopMenu implements IHtmlElement {
     items: TopMenuItem[];
-    private outer: HTMLElement;
-    private htmlTable: HTMLTableElement;
+    private outer: HTMLTableElement;
     private tableBody: HTMLTableSectionElement;
 
     constructor(mis: TopMenuItem[]) {
-        this.outer = document.createElement("div");
+        this.outer = document.createElement("table");
         this.outer.className = "menu";
-        // this.outer.style.pageBreakAfter = "always";
-        this.htmlTable = document.createElement("table");
-        this.outer.appendChild(this.htmlTable);
-        this.tableBody = this.htmlTable.createTBody();
+        this.tableBody = this.outer.createTBody();
         this.tableBody.insertRow();
         this.items = [];
         if (mis != null) {

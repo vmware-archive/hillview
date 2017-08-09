@@ -216,102 +216,15 @@ th, td {
     display: inline-block;
 }
 
-/* menus in CSS; from http://codepen.io/philhoyt/pen/ujHzd */
-
-
-
-/*.menu ul {
-    list-style: none;
-    position: relative;
-    float: left;
-    margin: 0;
-    padding: 0;
-    background: #efefef;
-    background: linear-gradient(top, #efefef 0%, #bbbbbb 100%);
-    box-shadow: 0 0 5px rgba(0,0,0,0.15);
+table.menu table.menu {
+    display: none;
 }
 
-.menu ul span {
-    display:block;
-    text-decoration: none;
-    text-align: left;
-    font-weight: 700;
-    font-size: 16px;
-    line-height: 24px;
-    padding:0 5px;
+
+
+.menu > .menu div {
+    display: none;
 }
-
-.menu ul li  {
-    position: relative;
-    float: left;
-    margin: 0;
-    padding: 0;
-    transition: all 0.2s;
-    background: #efefef;
-    background: linear-gradient(top, #efefef 0%, #bbbbbb 100%);
-    box-shadow: 0 0 5px rgba(0,0,0,0.15);
-}
-
-.menu ul li:hover  {
-    background: #4b545f;
-    background: linear-gradient(top, #4f5964 0%, #5f6975 40%);
-}
-
-.menu ul ul {
-    display:none;
-    position:absolute;
-    top:100%;
-    left:0;
-    padding:0;
-}
-
-.menu ul ul li {
-    float:none;
-    width:200px
-}
-
-.menu ul ul span {
-    line-height:120%;
-    padding:10px 15px;
-}
-
-.menu ul li:hover > ul {
-    display:block;
-}*/
-
-.menu ul li {
-    border: 1px solid black;
-}
-
-.menu ul {
-    list-style: none;
-    display: inline-block;
-    background-color: lightgray;
-}
-
-.menu ul ul {
-    /*display: none;*/
-    position: absolute;
-    top: 100%;
-    left: 0px;
-    padding-left: 0px;
-}
-
-.menu ul li  {
-    position: relative;
-    float: left;
-    margin: 0;
-    padding: 0;
-}
-
-.menu ul li:hover > ul {
-    display: block;
-}
-
-.menu ul li:hover {
-    background-color: gray;
-}
-
 
 .dropdown {
     display: block;
