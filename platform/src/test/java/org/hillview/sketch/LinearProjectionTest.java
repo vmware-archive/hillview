@@ -36,12 +36,14 @@ public class LinearProjectionTest {
         DoubleMatrix matrix = DoubleMatrix.rand(rows, cols);
         DoubleMatrix projectionMatrix = DoubleMatrix.rand(numProjections, cols);
         ITable table = BlasConversions.toTable(matrix);
-        LinearProjectionMap lpm = new LinearProjectionMap(table.getSchema().getColumnNames().toArray(new String[]{}), projectionMatrix, null);
+        LinearProjectionMap lpm = new LinearProjectionMap(
+                table.getSchema().getColumnNames().toArray(new String[]{}), projectionMatrix, "LP", null
+        );
         ITable result = lpm.apply(table);
 
         String[] newColNames = new String[numProjections];
         for (int i = 0; i < numProjections; i++) {
-            newColNames[i] = String.format("LinearProjection%d", i);
+            newColNames[i] = String.format("LP%d", i);
         }
 
         DoubleMatrix projectedData = BlasConversions.toDoubleMatrix(result, newColNames, null);
@@ -63,11 +65,11 @@ public class LinearProjectionTest {
         // Convert it to an IDataset
         IDataSet<ITable> all = TestTables.makeParallel(bigTable, rows / 10);
 
-        LinearProjectionMap lpm = new LinearProjectionMap(colNames, projectionMatrix, null);
+        LinearProjectionMap lpm = new LinearProjectionMap(colNames, projectionMatrix, "LP", null);
         IDataSet<ITable> result = all.blockingMap(lpm);
 
         for (int i = 0; i < numProjections; i++) {
-            BasicColStatSketch bcss = new BasicColStatSketch(String.format("LinearProjection%d", i), null);
+            BasicColStatSketch bcss = new BasicColStatSketch(String.format("LP%d", i), null);
             BasicColStats bcs = result.blockingSketch(bcss);
             double expectedMean = projectionCheck.get(new AllRange(), i).mean();
             double actualMean = bcs.getMoment(1);

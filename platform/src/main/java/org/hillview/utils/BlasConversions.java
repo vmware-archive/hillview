@@ -8,22 +8,22 @@ import org.jblas.DoubleMatrix;
 import org.jblas.ranges.AllRange;
 import org.jblas.ranges.PointRange;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 
 /**
  * This class contains methods that convert from/to Tables to/from DoubleMatrices. These methods copy all data, so they
- * should only be used as a last resort, and preferably only when it is known that the Table is reasonably small.
+ * should only be used when it is known that the Table is reasonably small.
  */
 public class BlasConversions {
     /**
-     * Convert from an ITable to a DoubleMatrix. This copies all data from the table, so it should only be used as a
-     * last resort.
+     * Convert from an ITable to a DoubleMatrix. This copies all data from the table.
      * @param table Table that is to be converted.
-     * @param colNames Names of the table that have to be converted.
+     * @param colNames Names of columns in the table that have to be converted.
      * @param converter String converter for converting string data to numeric data.
      * @return DoubleMatrix with the table's columns interpreted as doubles.
      */
-    public static DoubleMatrix toDoubleMatrix(ITable table, String[] colNames, IStringConverter converter) {
+    public static DoubleMatrix toDoubleMatrix(ITable table, String[] colNames, @Nullable IStringConverter converter) {
         DoubleMatrix mat = new DoubleMatrix(table.getNumOfRows(), colNames.length);
         IRowIterator iter = table.getRowIterator();
         int row = iter.getNextRow();
@@ -39,7 +39,7 @@ public class BlasConversions {
     }
 
     /**
-     * Convert from a DoubleMatrix to a Table. This copies all the data, so it should be used as a last resort.
+     * Convert from a DoubleMatrix to a Table. This copies all the data.
      * @param mat Matrix with numeric data that has to be in the table.
      * @return Table with the numeric data from mat. Column names are set to 'Column{i}'.
      */

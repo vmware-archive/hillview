@@ -20,6 +20,7 @@ public class CorrelationTest {
     @Test
     public void testCorrelation() {
         DoubleMatrix mat = new DoubleMatrix(new double[][]{{9, 8, 4, 1, 6}, {5, 8, 2, 10, 1}, {6, 4, 1, 6, 5}});
+//        [[9, 8, 4, 1, 6], [5, 8, 2, 10, 1], [6, 4, 1, 6, 5]]
         ITable table = BlasConversions.toTable(mat);
         List<String> colNames = new ArrayList<String>(table.getSchema().getColumnNames());
 
@@ -28,6 +29,18 @@ public class CorrelationTest {
 
         DoubleMatrix corrMatrix = new DoubleMatrix(cm.getCorrelationMatrix());
         DoubleMatrix eigenVectors = LinAlg.eigenVectors(corrMatrix, 2);
+        DoubleMatrix actualCorrMatrix = new DoubleMatrix(new double[][]{
+                {1        ,  0.2773501 ,  0.83862787, -0.97655363,  0.81705717},
+                {0.2773501 ,  1        ,  0.75592895, -0.06401844, -0.32732684},
+                {0.83862787,  0.75592895,  1        , -0.70170418,  0.37115374},
+                {-0.97655363, -0.06401844, -0.70170418,  1        , -0.92201795},
+                {0.81705717, -0.32732684,  0.37115374, -0.92201795,  1}
+        });
+        for (int i = 0; i < corrMatrix.rows; i++) {
+            for (int j = 0; j < corrMatrix.columns; j++) {
+                Assert.assertEquals(actualCorrMatrix.get(i, j), corrMatrix.get(i, j), 1e-6);
+            }
+        }
     }
 
     @Test

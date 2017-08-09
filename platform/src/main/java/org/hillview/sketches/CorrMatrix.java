@@ -48,8 +48,8 @@ public class CorrMatrix implements ICorrelation {
     }
 
     /**
-     * Sets a new value at (i, j) that is a weighted sum of this matrix's value and the other one, weighted by the
-     * number of elements processed for both matrices.
+     * Sets a new value at (i, j) that is a weighted sum of this matrix's value and the one that is added. newCount
+     * is zero when creating the matrix, but can be larger when adding two matrices.
      */
     public void updateWeighted(int i, int j, double val, long newCount) {
         double alpha = ((double) this.count) / (this.count + newCount);
@@ -66,11 +66,11 @@ public class CorrMatrix implements ICorrelation {
         if (this.corrMatrix == null) {
             this.corrMatrix = new double[this.colNum.size()][this.colNum.size()];
             for (int i = 0; i < this.colNum.size(); i++) {
+                double sigma_i = Math.sqrt(this.rawMatrix[i][i] - this.means[i] * this.means[i]);
                 for (int j = i; j < this.colNum.size(); j++) {
                     double val = this.rawMatrix[i][j];
                     // Centering and scaling
                     val -= this.means[i] * this.means[j];
-                    double sigma_i = Math.sqrt(this.rawMatrix[i][i] - this.means[i] * this.means[i]);
                     double sigma_j = Math.sqrt(this.rawMatrix[j][j] - this.means[j] * this.means[j]);
                     val /= sigma_i * sigma_j;
                     this.corrMatrix[i][j] = val;

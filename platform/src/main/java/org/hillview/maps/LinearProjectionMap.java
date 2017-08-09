@@ -5,6 +5,7 @@ import org.hillview.table.*;
 import org.hillview.table.api.*;
 import org.jblas.DoubleMatrix;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,15 +22,19 @@ public class LinearProjectionMap implements IMap<ITable, ITable> {
      */
     private final DoubleMatrix projectionMatrix;
     private final String[] colNames;
+    private final String newColName;
     private final int numProjections;
+    @Nullable
     private final IStringConverter converter;
 
-    public LinearProjectionMap(String[] colNames, DoubleMatrix projectionMatrix, IStringConverter converter) {
+    public LinearProjectionMap(String[] colNames, DoubleMatrix projectionMatrix, String projectionName,
+                               @Nullable IStringConverter converter) {
         if (colNames.length != projectionMatrix.columns)
             throw new RuntimeException("Number of columns in projectionMatrix should be eq. to number of names in colNames.");
 
         this.projectionMatrix = projectionMatrix;
         this.colNames = colNames;
+        this.newColName = projectionName;
         this.numProjections = projectionMatrix.rows;
         this.converter = converter;
     }
@@ -45,8 +50,9 @@ public class LinearProjectionMap implements IMap<ITable, ITable> {
 
         // Compute and add all the projections to the columns.
         for (int j = 0; j < this.numProjections; j++) {
-            String colName = String.format("LinearProjection%d", j);
+            String colName = String.format("%s%d", this.newColName, j);
             ColumnDescription colDesc = new ColumnDescription(colName, ContentsKind.Double, true);
+            // TODO: create and use a SparseColumn
             DoubleArrayColumn column = new DoubleArrayColumn(colDesc, table.getMembershipSet().getMax());
             IRowIterator it = table.getMembershipSet().getIterator();
             int row = it.getNextRow();
