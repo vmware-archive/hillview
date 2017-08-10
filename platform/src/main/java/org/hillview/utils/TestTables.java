@@ -26,6 +26,7 @@ import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.ITable;
+import org.jblas.DoubleMatrix;
 import org.junit.Assert;
 
 import java.util.*;
@@ -183,7 +184,6 @@ public class TestTables {
         return new SmallTable(columns);
     }
 
-
     /**
      * Generates a table with a specified number of correlated columns. Each row has the same
      * absolute value in every column, they only differ in the sign (which is drawn randomly).
@@ -221,6 +221,35 @@ public class TestTables {
         final List<IColumn> col = new ArrayList<IColumn>();
         col.addAll(Arrays.asList(intCol).subList(0, numCols));
         return new SmallTable(col);
+    }
+
+    /**
+     * @param size Number of rows in the table.
+     * @param numCols Number of columns in the table. Has to be >= 2.
+     * @return A table where the 2nd column is a linear function of the 1st (with some noise). The rest of the columns
+     * contains just small noise from a Gaussian distribution.
+     */
+    public static ITable getLinearTable(final int size, final int numCols) {
+        Random rnd = new Random(42);
+        double noise = 0.01;
+        double a = 1.2;
+
+        DoubleMatrix mat = new DoubleMatrix(size, numCols);
+        for (int i = 0; i < size; i++) {
+            // Make the first two columns linearly correlated.
+            double x = rnd.nextDouble();
+            mat.put(i, 0, x);
+            double y = a * x + rnd.nextGaussian() * noise;
+            mat.put(i, 1, y);
+
+            // Fill the rest of the columns with noise.
+            for (int j = 2; j < numCols; j++) {
+                double z = noise * rnd.nextGaussian();
+                mat.put(i, j, z);
+            }
+        }
+
+        return BlasConversions.toTable(mat);
     }
 
     /**

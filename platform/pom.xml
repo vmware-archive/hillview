@@ -108,6 +108,12 @@
             <artifactId>zero-allocation-hashing</artifactId>
             <version>0.8</version>
         </dependency>
+        <!-- JBlas for linear algebra -->
+        <dependency>
+            <groupId>org.jblas</groupId>
+            <artifactId>jblas</artifactId>
+            <version>1.2.4</version>
+        </dependency>
 
     </dependencies>
 
