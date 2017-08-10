@@ -16,14 +16,13 @@
  */
 
 import {HistogramViewBase, ColumnAndRange, BasicColStats, FilterDescription, BucketDialog} from "./histogramBase";
-import {Schema, TableView, RecordOrder, TableRenderer, ColumnDescription} from "./table";
-import {FullPage, significantDigits, formatNumber, translateString, Renderer} from "./ui";
+import {Schema, TableView, RecordOrder, TableRenderer, ColumnDescription, RangeInfo} from "./table";
+import {FullPage, significantDigits, formatNumber, translateString} from "./ui";
 import {TopMenu, TopSubMenu} from "./menu";
 import d3 = require('d3');
-import {reorder, Converters} from "./util";
-import {FilterReceiver} from "./histogram";
-import {AxisData, HeatMapData} from "./heatMap";
-import {ICancellable, PartialResult} from "./rpc";
+import {reorder, Converters, transpose, ICancellable, PartialResult} from "./util";
+import {AxisData, HeatMapData, Range2DCollector} from "./heatMap";
+import {combineMenu, CombineOperators, SelectedObject, Renderer, RemoteObject, ZipReceiver} from "./rpc";
 
 interface Rect {
     x: number;
@@ -52,34 +51,39 @@ export class Histogram2DView extends HistogramViewBase {
                 { text: "#buckets", action: () => this.chooseBuckets() },
                 { text: "swap axes", action: () => { this.swapAxes(); } },
                 { text: "percent/value", action: () => { this.normalized = !this.normalized; this.refresh(); } },
-            ]) }
+            ]) },
+            {
+                text: "Combine", subMenu: combineMenu(this)
+            }
         ]);
 
         this.normalized = false;
         this.topLevel.insertBefore(menu.getHTMLRepresentation(), this.topLevel.children[0]);
     }
 
-    private static transpose<D>(m: D[][]): D[][] {
-        let w = m.length;
-        if (w == 0)
-            return m;
-        let h = m[0].length;
-
-        let result: D[][] = [];
-        for (let i=0; i < h; i++) {
-            let v = [];
-            for (let j=0; j < w; j++)
-                v.push(m[j][i]);
-            result.push(v);
+    // combine two views according to some operation
+    combine(how: CombineOperators): void {
+        let r = SelectedObject.current.getSelected();
+        if (r == null) {
+            this.page.reportError("No view selected");
+            return;
         }
-        return result;
+
+        let rr = this.createRpcRequest("zip", r.remoteObjectId);
+        let renderer = (page: FullPage, operation: ICancellable) => {
+            return new Make2DHistogram(
+                page, operation,
+                [this.currentData.xData.description, this.currentData.yData.description],
+                this.tableSchema, false);
+        };
+        rr.invoke(new ZipReceiver(this.getPage(), rr, how, renderer));
     }
 
     public swapAxes(): void {
         if (this.currentData == null)
             return;
         this.updateView(
-            Histogram2DView.transpose(this.currentData.data),
+            transpose(this.currentData.data),
             this.currentData.yData,
             this.currentData.xData,
             this.currentData.missingData,
@@ -595,6 +599,40 @@ export class Histogram2DView extends HistogramViewBase {
             this.currentData.xData.allStrings, range, this.page, rr);
         rr.invoke(renderer);
         */
+    }
+}
+
+// This class is invoked by the ZipReceiver after a set operation to create a new histogram
+export class Make2DHistogram extends Renderer<string> {
+    public remoteObjectId: string;
+
+    public constructor(page: FullPage,
+                       operation: ICancellable,
+                       private colDesc: ColumnDescription[],
+                       private schema: Schema,
+                       private heatMap: boolean) {
+        super(page, operation, "Reload");
+    }
+
+    onNext(value: PartialResult<string>): any {
+        super.onNext(value);
+        if (value.data != null)
+            this.remoteObjectId = value.data;
+    }
+
+    onCompleted(): void {
+        super.finished();
+        if (this.remoteObjectId == null)
+            return;
+        let remoteObj = new RemoteObject(this.remoteObjectId);
+        let columns: RangeInfo[] = [
+            { columnName: this.colDesc[0].name },
+            { columnName: this.colDesc[1].name }
+        ];
+        let rr = remoteObj.createRpcRequest("range2d", columns);
+        rr.setStartTime(this.operation.startTime());
+        rr.invoke(new Range2DCollector(
+            this.colDesc, this.schema, this.page, remoteObj, rr, this.heatMap));
     }
 }
 

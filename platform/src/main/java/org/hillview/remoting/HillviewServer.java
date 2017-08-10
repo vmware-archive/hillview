@@ -207,6 +207,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
 
                 @Override
                 public void onError(final Throwable e) {
+                    e.printStackTrace();
                     responseObserver.onError(e);
                     HillviewServer.this.operationToObservable.remove(commandId);
                 }

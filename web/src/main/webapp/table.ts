@@ -16,16 +16,16 @@
  */
 
 import {
-    IHtmlElement, Renderer, FullPage, DataView, formatNumber, significantDigits, percent, KeyCodes,
+    IHtmlElement, FullPage, DataView, formatNumber, significantDigits, percent, KeyCodes,
     ScrollBar, IScrollTarget
 } from "./ui";
-import {RemoteObject, PartialResult, ICancellable, RpcRequest} from "./rpc";
+import {RemoteObject, RpcRequest, Renderer, combineMenu, SelectedObject, CombineOperators, ZipReceiver} from "./rpc";
 import Rx = require('rx');
 import {BasicColStats} from "./histogramBase";
 import {RangeCollector} from "./histogram";
 import {Range2DCollector} from "./heatMap";
 import {TopMenu, TopSubMenu, ContextMenu} from "./menu";
-import {Converters, EnumIterators} from "./util";
+import {Converters, PartialResult, ICancellable} from "./util";
 import {EqualityFilterDialog, EqualityFilterDescription} from "./equalityFilter";
 import d3 = require('d3');
 import {Dialog} from "./dialog";
@@ -38,10 +38,6 @@ import {Dialog} from "./dialog";
 // I can't use an enum for ContentsKind because JSON deserialization does not
 // return an enum from a string.
 export type ContentsKind = "Category" | "Json" | "String" | "Integer" | "Double" | "Date" | "Interval";
-
-enum CombineOperators {
-    Union, Intersection, Exclude, Replace
-}
 
 export interface IColumnDescription {
     readonly kind: ContentsKind;
@@ -219,12 +215,6 @@ export class TableView extends RemoteObject
         this.top.style.justifyContent = "flex-start";
         this.top.style.alignItems = "stretch";
 
-        let combineMenu = [];
-        combineMenu.push({ text: "Select current", action: () => { this.selectCurrent(); }});
-        EnumIterators.getNamesAndValues(CombineOperators)
-            .forEach(c => combineMenu.push(
-                { text: c.name, action: () => { this.combine(c.value); } }));
-
         let menu = new TopMenu([
             { text: "View", subMenu: new TopSubMenu([
                 { text: "Home", action: () => { TableView.goHome(this.page); } },
@@ -233,7 +223,7 @@ export class TableView extends RemoteObject
                 { text: "No rows", action: () => { this.setOrder(new RecordOrder([])); } }
             ])},
             {
-                text: "Combine", subMenu: new TopSubMenu(combineMenu)
+                text: "Combine", subMenu: combineMenu(this)
             }
         ]);
         this.top.appendChild(menu.getHTMLRepresentation());
@@ -253,13 +243,23 @@ export class TableView extends RemoteObject
         tblAndBar.appendChild(this.scrollBar.getHTMLRepresentation());
     }
 
-    // combine two views according to some operation
-    combine(how: CombineOperators): void {
-        // TODO
+    reportError(s: string) {
+        this.page.reportError(s);
     }
 
-    selectCurrent(): void {
-        // TODO
+    // combine two views according to some operation
+    combine(how: CombineOperators): void {
+        let r = SelectedObject.current.getSelected();
+        if (r == null) {
+            this.reportError("No view selected");
+            return;
+        }
+
+        let rr = this.createRpcRequest("zip", r.remoteObjectId);
+        let o = this.order.clone();
+        let finalRenderer = (page: FullPage, operation: ICancellable) =>
+            { return new FilterCompleted(page, this, operation, o); };
+        rr.invoke(new ZipReceiver(this.getPage(), rr, how, finalRenderer));
     }
 
     // invoked when scrolling has completed
@@ -276,7 +276,7 @@ export class TableView extends RemoteObject
                 order: o,
                 position: position
             });
-	    console.log("expecting quantile: " + String(position));
+	        console.log("expecting quantile: " + String(position));
             rr.invoke(new QuantileReceiver(this.getPage(), this, rr, o));
         }
     }
@@ -299,7 +299,7 @@ export class TableView extends RemoteObject
         if (this.currentData == null || this.currentData.rows.length == 0)
             return;
         if (this.startPosition <= 0) {
-            this.page.reportError("Already at the top");
+            this.reportError("Already at the top");
             return;
         }
         let order = this.order.invert();
@@ -311,7 +311,7 @@ export class TableView extends RemoteObject
         if (this.currentData == null || this.currentData.rows.length == 0)
             return;
         if (this.startPosition <= 0) {
-            this.page.reportError("Already at the top");
+            this.reportError("Already at the top");
             return;
         }
         let o = this.order.clone();
@@ -323,7 +323,7 @@ export class TableView extends RemoteObject
         if (this.currentData == null || this.currentData.rows.length == 0)
             return;
         if (this.startPosition + this.dataRowsDisplayed >= this.rowCount - 1) {
-            this.page.reportError("Already at the bottom");
+            this.reportError("Already at the bottom");
             return;
         }
         let order = this.order.invert();
@@ -335,7 +335,7 @@ export class TableView extends RemoteObject
         if (this.currentData == null || this.currentData.rows.length == 0)
             return;
         if (this.startPosition + this.dataRowsDisplayed >= this.rowCount - 1) {
-            this.page.reportError("Already at the bottom");
+            this.reportError("Already at the bottom");
             return;
         }
         let o = this.order.clone();
@@ -350,7 +350,7 @@ export class TableView extends RemoteObject
 
     protected showAllRows(): void {
         if (this.schema == null) {
-            this.page.reportError("No data loaded");
+            this.reportError("No data loaded");
             return;
         }
 
@@ -496,11 +496,11 @@ export class TableView extends RemoteObject
             this.selectedColumns.forEach(v => {
                 let colDesc = this.findColumn(v);
                 if (colDesc.kind == "String") {
-                    this.page.reportError("2D Histograms not supported for string columns " + colDesc.name);
+                    this.reportError("2D Histograms not supported for string columns " + colDesc.name);
                     return;
                 }
                 if (colDesc.kind == "Category") {
-                    this.page.reportError("2D histograms not yet implemented for category columns " + colDesc.name);
+                    this.reportError("2D histograms not yet implemented for category columns " + colDesc.name);
                     return;
                 }
                 let ci = new RangeInfo();
@@ -514,7 +514,7 @@ export class TableView extends RemoteObject
             let rr = this.createRpcRequest("range2D", columns);
             rr.invoke(new Range2DCollector(cds, this.schema, this.getPage(), this, rr, false));
         } else {
-            this.page.reportError("Must select 1 or 2 columns for histogram");
+            this.reportError("Must select 1 or 2 columns for histogram");
             return;
         }
     }
@@ -530,7 +530,7 @@ export class TableView extends RemoteObject
 
     public refresh(): void {
         if (this.currentData == null) {
-            this.page.reportError("Nothing to refresh");
+            this.reportError("Nothing to refresh");
             return;
         }
         this.updateView(this.currentData, false, this.order, 0);
@@ -659,7 +659,7 @@ export class TableView extends RemoteObject
 
         this.updateScrollBar();
         this.highlightSelectedColumns();
-        this.page.reportError("Operation took " + significantDigits(elapsedMs/1000) + " seconds");
+        this.reportError("Operation took " + significantDigits(elapsedMs/1000) + " seconds");
     }
 
     public setSchema(schema: Schema): void {
@@ -718,7 +718,7 @@ export class TableView extends RemoteObject
 
     private heatMap(): void {
         if (this.selectedColumns.size != 2) {
-            this.page.reportError("Must select exactly 2 columns for heat map");
+            this.reportError("Must select exactly 2 columns for heat map");
             return;
         }
 
@@ -727,11 +727,11 @@ export class TableView extends RemoteObject
         this.selectedColumns.forEach(v => {
             let colDesc = this.findColumn(v);
             if (colDesc.kind == "String") {
-                this.page.reportError("Heat maps not supported for string columns " + colDesc.name);
+                this.reportError("Heat maps not supported for string columns " + colDesc.name);
                 return;
             }
             if (colDesc.kind == "Category") {
-                this.page.reportError("Heat maps not yet implemented for category columns " + colDesc.name);
+                this.reportError("Heat maps not yet implemented for category columns " + colDesc.name);
                 return;
             }
             let ci = new RangeInfo();
@@ -790,7 +790,7 @@ export class TableView extends RemoteObject
 
     private runHeavyHitters(colName: string, percent: number) {
         if (percent < .01 || percent > 100) {
-            this.page.reportError("Percentage must be between .01 and 100");
+            this.reportError("Percentage must be between .01 and 100");
             return;
         }
         let columns: IColumnDescription[] = [];

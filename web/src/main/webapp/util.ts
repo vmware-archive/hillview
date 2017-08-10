@@ -63,3 +63,68 @@ export class EnumIterators {
         return Object.keys(e).map(k => e[k]);
     }
 }
+
+export function transpose<D>(m: D[][]): D[][] {
+    let w = m.length;
+    if (w == 0)
+        return m;
+    let h = m[0].length;
+
+    let result: D[][] = [];
+    for (let i=0; i < h; i++) {
+        let v = [];
+        for (let j=0; j < w; j++)
+            v.push(m[j][i]);
+        result.push(v);
+    }
+    return result;
+}
+
+// given a set of values in a heat map this computes two coefficients for a
+// linear regression from X to Y.  The result is an array with two numbers, the
+// two coefficients.  If the regression is undefined, the coefficients array is empty.
+export function regression(data: number[][]) : number[] {
+    let width = data.length;
+    let height = data[0].length;
+    let sumt = 0;
+    let sumt2 = 0;
+    let sumb = 0;
+    let sumtb = 0;
+    let size = 0;
+    for (let i = 0; i < width; i++) {
+        for (let j = 0; j < height; j++) {
+            sumt += i * data[i][j];
+            sumt2 += i * i * data[i][j];
+            sumb += j * data[i][j];
+            sumtb += i * j * data [i][j];
+            size += data[i][j];
+        }
+    }
+    let denom = ((size * sumt2) - (sumt * sumt));
+    if (denom == 0)
+    // TODO: should we use here some epsilon?
+        return [];
+    let a = 1 / denom;
+    let  alpha = a * ((sumt2 * sumb) - (sumt * sumtb));
+    let beta = a * ((size * sumtb) - (sumt * sumb));
+    // estimation is alpha + beta * i
+    return [alpha, beta];
+}
+
+export class PartialResult<T> {
+    constructor(public done: number, public data: T) {}
+}
+
+export interface RpcReply {
+    result: string;     // JSON or error message
+    requestId: number;  // request that is being replied
+    isError: boolean;
+}
+
+export interface ICancellable {
+    // return 'true' if cancellation succeeds.
+    // Cancellation may fail if the computation is terminated.
+    cancel(): boolean;
+    startTime(): Date;
+}
+

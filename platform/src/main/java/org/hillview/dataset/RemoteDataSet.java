@@ -207,6 +207,7 @@ public class RemoteDataSet<T> implements IDataSet<T> {
 
         @Override
         public void onError(final Throwable throwable) {
+            throwable.printStackTrace();
             this.subject.onError(throwable);
         }
 

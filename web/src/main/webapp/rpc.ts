@@ -21,7 +21,10 @@ import Rx = require('rx');
 import Observer = Rx.Observer;
 import Observable = Rx.Observable;
 import {ErrorReporter, ConsoleErrorReporter} from "./errReporter";
-import {ProgressBar} from "./ui";
+import {ProgressBar, FullPage} from "./ui";
+import {PartialResult, ICancellable, EnumIterators, RpcReply} from "./util";
+import {TopSubMenu} from "./menu";
+import d3 = require('d3');
 
 const RpcRequestPath = "rpc";
 
@@ -31,23 +34,16 @@ export class RemoteObject {
     createRpcRequest(method: string, args: any) : RpcRequest {
         return new RpcRequest(this.remoteObjectId, method, args);
     }
-}
 
-export class PartialResult<T> {
-    constructor(public done: number, public data: T) {}
-}
+    selectCurrent(): void {
+        SelectedObject.current.select(this);
+    }
 
-export interface RpcReply {
-    result: string;  // JSON or error message
-    requestId: number;  // request that is being replied
-    isError: boolean;
-}
-
-export interface ICancellable {
-    // return 'true' if cancellation succeeds.
-    // Cancellation may fail if the computation is terminated.
-    cancel(): boolean;
-    startTime(): Date;
+    // Combines the current RemoteObject with the currently
+    // selected object (SelectedObject.current.getSelected)
+    // according to the specified operation.  SHould be overridden
+    // in subclasses.
+    combine(how: CombineOperators): void {}
 }
 
 // A streaming RPC request: for each request made
@@ -216,4 +212,93 @@ export abstract class RpcReceiver<T> implements Rx.Observer<T> {
     }
 
     public onCompleted(): void { this.finished(); }
+}
+
+// Used for operations between multiple objects: the selected object
+// is a RemoteObject which can be combined with another one.
+export class SelectedObject {
+    private selected: RemoteObject;
+
+    private constructor() {
+        this.selected = null;
+    }
+
+    select(object: RemoteObject) {
+        this.selected = object;
+    }
+
+    getSelected(): RemoteObject {
+        return this.selected;
+    }
+
+    static current: SelectedObject = new SelectedObject();
+}
+
+export enum CombineOperators {
+    Union, Intersection, Exclude, Replace
+}
+
+export function combineMenu(ro: RemoteObject): TopSubMenu {
+    let combineMenu = [];
+    combineMenu.push({
+        text: "Select current",
+        action: () => { SelectedObject.current.select(ro); }});
+    EnumIterators.getNamesAndValues(CombineOperators)
+        .forEach(c => combineMenu.push({
+            text: c.name,
+            action: () => { ro.combine(c.value); } }));
+    return new TopSubMenu(combineMenu);
+}
+
+export abstract class Renderer<T> extends RpcReceiver<PartialResult<T>> {
+    public constructor(public page: FullPage,
+                       public operation: ICancellable,
+                       public description: string) {
+        super(page.progressManager.newProgressBar(operation, description),
+            page.getErrorReporter());
+        // TODO: This may be too eager.
+        page.getErrorReporter().clear();
+    }
+
+    public onNext(value: PartialResult<T>) {
+        this.progressBar.setPosition(value.done);
+        this.page.getHTMLRepresentation().scrollIntoView( { block: "end", behavior: "smooth" } );
+    }
+
+    public elapsedMilliseconds(): number {
+        return d3.timeMillisecond.count(this.operation.startTime(), new Date());
+    }
+}
+
+// A zip receiver receives the result of a Zip operation on
+// two IDataSet<ITable> objects (an IDataSet<Pair<ITable, ITable>>,
+// and applies to the pair the specified set operation setOp.
+export class ZipReceiver extends Renderer<string> {
+    public remoteTablePairId: string;
+
+    public constructor(page: FullPage,
+                       operation: ICancellable,
+                       protected setOp: CombineOperators,
+                       // receiver constructs the renderer that is used to display
+                       // the result after combining
+                       protected receiver: (page: FullPage, operation: ICancellable) => Renderer<string>) {
+        super(page, operation, "zip");
+    }
+
+    onNext(value: PartialResult<string>): any {
+        super.onNext(value);
+        if (value.data != null)
+            this.remoteTablePairId = value.data;
+    }
+
+    onCompleted(): void {
+        super.finished();
+        if (this.remoteTablePairId == null)
+            return;
+
+        let remoteObj = new RemoteObject(this.remoteTablePairId);
+        let rr = remoteObj.createRpcRequest("setOperation", CombineOperators[this.setOp]);
+        let rec = this.receiver(this.page, rr);
+        rr.invoke(rec);
+    }
 }

@@ -324,4 +324,28 @@ abstract class RpcTarget implements IJson {
         Subscription sub = add.subscribe(robs);
         this.saveSubscription(sub);
     }
+
+    /**
+     * Runs a zip between two datasets.
+     * @param data    Left dataset.
+     * @param other   Right dataset.
+     * @param factory Function which knows how to create a new RpcTarget
+     *                out of the resulting IDataSet.  It is the reference
+     *                to this RpcTarget that is returned to the client.
+     * @param request Web socket request, used to send the reply.
+     * @param session Web socket session.
+     */
+    <T, S> void
+    runZip(IDataSet<T> data, IDataSet<S> other,
+           Function<IDataSet<Pair<T, S>>, RpcTarget> factory,
+           RpcRequest request, Session session) {
+        Observable<PartialResult<IDataSet<Pair<T, S>>>> stream = data.zip(other);
+        PRDataSetMonoid<Pair<T, S>> monoid = new PRDataSetMonoid<Pair<T, S>>();
+        Observable<PartialResult<IDataSet<Pair<T, S>>>> add = stream.scan(monoid::add);
+        // We can actually reuse the MapResultObserver
+        MapResultObserver<Pair<T, S>> robs = new MapResultObserver<Pair<T, S>>(
+                                "zip", request, session, factory);
+        Subscription sub = add.subscribe(robs);
+        this.saveSubscription(sub);
+    }
 }
