@@ -69,6 +69,10 @@ public class FullCorrelationSketch implements ISketch<ITable, CorrMatrix> {
         left = Converters.checkNull(left);
         right = Converters.checkNull(right);
 
+        // Return a zero when adding two zeros.
+        if (left.count == 0 && right.count == 0)
+            return this.zero();
+
         CorrMatrix result = new CorrMatrix(this.colNames);
         double alpha = (double) left.count / (left.count + right.count);
 
