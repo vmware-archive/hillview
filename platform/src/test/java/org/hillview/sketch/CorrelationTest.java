@@ -17,6 +17,8 @@ import org.junit.Test;
 import java.util.*;
 
 public class CorrelationTest {
+    public CorrelationTest() {}
+
     @Test
     public void testCorrelation() {
         DoubleMatrix mat = new DoubleMatrix(new double[][]{{9, 8, 4, 1, 6}, {5, 8, 2, 10, 1}, {6, 4, 1, 6, 5}});
@@ -43,7 +45,7 @@ public class CorrelationTest {
         }
     }
 
-    @Test
+    //@Test
     public void testBigCorrelation() {
         Random.seed(43);
         DoubleMatrix mat = DoubleMatrix.rand(20000, 5);
