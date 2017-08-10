@@ -16,16 +16,16 @@
  */
 
 import {
-    IHtmlElement, Renderer, FullPage, DataView, formatNumber, significantDigits, percent, KeyCodes,
+    IHtmlElement, FullPage, DataView, formatNumber, significantDigits, percent, KeyCodes,
     ScrollBar, IScrollTarget
 } from "./ui";
-import {RemoteObject, PartialResult, ICancellable, RpcRequest} from "./rpc";
+import {RemoteObject, RpcRequest, Renderer, combineMenu, SelectedObject, CombineOperators, ZipReceiver} from "./rpc";
 import Rx = require('rx');
 import {BasicColStats} from "./histogramBase";
 import {RangeCollector} from "./histogram";
 import {Range2DCollector} from "./heatMap";
 import {TopMenu, TopSubMenu, ContextMenu} from "./menu";
-import {Converters, EnumIterators} from "./util";
+import {Converters, PartialResult, ICancellable} from "./util";
 import {EqualityFilterDialog, EqualityFilterDescription} from "./equalityFilter";
 import d3 = require('d3');
 import {Dialog} from "./dialog";
@@ -35,31 +35,9 @@ import {Dialog} from "./dialog";
 // of the Java classes produces JSON that can be directly cast
 // into these interfaces.
 
-export class SelectedObject {
-    private selected: RemoteObject;
-
-    private constructor() {
-        this.selected = null;
-    }
-
-    select(object: RemoteObject) {
-        this.selected = object;
-    }
-
-    getSelected(): RemoteObject {
-        return this.selected;
-    }
-
-    static current: SelectedObject = new SelectedObject();
-}
-
 // I can't use an enum for ContentsKind because JSON deserialization does not
 // return an enum from a string.
 export type ContentsKind = "Category" | "Json" | "String" | "Integer" | "Double" | "Date" | "Interval";
-
-enum CombineOperators {
-    Union, Intersection, Exclude, Replace
-}
 
 export interface IColumnDescription {
     readonly kind: ContentsKind;
@@ -237,12 +215,6 @@ export class TableView extends RemoteObject
         this.top.style.justifyContent = "flex-start";
         this.top.style.alignItems = "stretch";
 
-        let combineMenu = [];
-        combineMenu.push({ text: "Select current", action: () => { this.selectCurrent(); }});
-        EnumIterators.getNamesAndValues(CombineOperators)
-            .forEach(c => combineMenu.push(
-                { text: c.name, action: () => { this.combine(c.value); } }));
-
         let menu = new TopMenu([
             { text: "View", subMenu: new TopSubMenu([
                 { text: "Home", action: () => { TableView.goHome(this.page); } },
@@ -251,7 +223,7 @@ export class TableView extends RemoteObject
                 { text: "No rows", action: () => { this.setOrder(new RecordOrder([])); } }
             ])},
             {
-                text: "Combine", subMenu: new TopSubMenu(combineMenu)
+                text: "Combine", subMenu: combineMenu(this)
             }
         ]);
         this.top.appendChild(menu.getHTMLRepresentation());
@@ -285,11 +257,9 @@ export class TableView extends RemoteObject
 
         let rr = this.createRpcRequest("zip", r.remoteObjectId);
         let o = this.order.clone();
-        rr.invoke(new ZipReceiver(this.getPage(), this, rr, how, o));
-    }
-
-    selectCurrent(): void {
-        SelectedObject.current.select(this);
+        let finalRenderer = (page: FullPage, operation: ICancellable) =>
+            { return new FilterCompleted(page, this, operation, o); };
+        rr.invoke(new ZipReceiver(this.getPage(), rr, how, finalRenderer));
     }
 
     // invoked when scrolling has completed
@@ -1094,34 +1064,5 @@ class FilterCompleted extends Renderer<string> {
         let rr = table.createNextKRequest(this.order, null);
         rr.setStartTime(this.operation.startTime());
         rr.invoke(new TableRenderer(this.page, table, rr, false, this.order));
-    }
-}
-
-class ZipReceiver extends Renderer<string> {
-    public remoteTablePairId: string;
-
-    public constructor(page: FullPage,
-                       protected tv: TableView,
-                       operation: ICancellable,
-                       protected setOp: CombineOperators,
-                       protected order: RecordOrder) {
-        super(page, operation, "zip");
-    }
-
-    onNext(value: PartialResult<string>): any {
-        super.onNext(value);
-        if (value.data != null)
-            this.remoteTablePairId = value.data;
-    }
-
-    onCompleted(): void {
-        super.finished();
-        if (this.remoteTablePairId == null)
-            return;
-
-        let remoteObj = new RemoteObject(this.remoteTablePairId);
-        let rr = remoteObj.createRpcRequest("setOperation", CombineOperators[this.setOp]);
-        // Reuse the table filter
-        rr.invoke(new FilterCompleted(this.page, this.tv, rr, this.order));
     }
 }

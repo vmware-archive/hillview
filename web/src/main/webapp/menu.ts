@@ -95,7 +95,7 @@ export class TopSubMenu implements IHtmlElement {
     }
 }
 
-interface TopMenuItem {
+export interface TopMenuItem {
     readonly text: string;
     readonly subMenu: TopSubMenu;
 }

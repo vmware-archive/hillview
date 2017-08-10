@@ -15,9 +15,9 @@
  *  limitations under the License.
  */
 
-import {RpcReceiver, PartialResult, ICancellable} from "./rpc";
 import {ErrorReporter} from "./errReporter";
 import d3 = require('d3');
+import {ICancellable} from "./util";
 
 export interface IHtmlElement {
     getHTMLRepresentation() : HTMLElement;
@@ -491,7 +491,6 @@ export class FullPage implements IHtmlElement {
             top.appendChild(pageRepresentation);
         else
             top.insertBefore(pageRepresentation, top.children[index+1]);
-        pageRepresentation.scrollIntoView( { block: "end", behavior: "smooth" } );
     }
 
     public remove(): void {
@@ -530,24 +529,5 @@ export class FullPage implements IHtmlElement {
 
     public getWidthInPixels(): number {
         return getWindowSize().width;
-    }
-}
-
-export abstract class Renderer<T> extends RpcReceiver<PartialResult<T>> {
-    public constructor(public page: FullPage,
-                       public operation: ICancellable,
-                       public description: string) {
-        super(page.progressManager.newProgressBar(operation, description),
-              page.getErrorReporter());
-        // TODO: This may be too eager.
-        page.getErrorReporter().clear();
-    }
-
-    public onNext(value: PartialResult<T>) {
-        this.progressBar.setPosition(value.done);
-    }
-
-    public elapsedMilliseconds(): number {
-        return d3.timeMillisecond.count(this.operation.startTime(), new Date());
     }
 }

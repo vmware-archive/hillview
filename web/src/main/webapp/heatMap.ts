@@ -16,13 +16,13 @@
  */
 
 import {
-    FullPage, Renderer, IHtmlElement, DataView, Point, Size, KeyCodes,
+    FullPage, IHtmlElement, DataView, Point, Size, KeyCodes,
     significantDigits, formatNumber, translateString
 } from "./ui";
 import d3 = require('d3');
-import {RemoteObject, ICancellable, PartialResult} from "./rpc";
+import {RemoteObject, Renderer, combineMenu, CombineOperators, SelectedObject, ZipReceiver} from "./rpc";
 import {ColumnDescription, Schema, ContentsKind, TableView, RecordOrder, TableRenderer, RangeInfo} from "./table";
-import {Pair, Converters, reorder} from "./util";
+import {Pair, Converters, reorder, regression, ICancellable, PartialResult} from "./util";
 import {
     BasicColStats, Histogram, ColumnAndRange, AnyScale, HistogramViewBase,
     FilterDescription
@@ -30,7 +30,7 @@ import {
 import {BaseType} from "d3-selection";
 import {ScaleLinear, ScaleTime} from "d3-scale";
 import {TopMenu, TopSubMenu} from "./menu";
-import {Histogram2DRenderer} from "./histogram2d";
+import {Histogram2DRenderer, Make2DHistogram} from "./histogram2d";
 
 // counterpart of Java class 'HeatMap'
 export class HeatMapData {
@@ -146,8 +146,10 @@ implements IHtmlElement, DataView {
                 { text: "refresh", action: () => { this.refresh(); } },
                 { text: "swap axes", action: () => { this.swapAxes(); } },
                 { text: "table", action: () => { this.showTable(); } },
-                //{ text: "log/linear scale", action: () => { this.changeScale(); }}
-            ]) }
+            ]) },
+            {
+                text: "Combine", subMenu: combineMenu(this)
+            }
         ]);
 
         this.topLevel.appendChild(menu.getHTMLRepresentation());
@@ -187,6 +189,24 @@ implements IHtmlElement, DataView {
         this.valueLabel.style.textAlign = "left";
         labelCell.appendChild(this.valueLabel);
         labelCell.className = "noBorder";
+    }
+
+    // combine two views according to some operation
+    combine(how: CombineOperators): void {
+        let r = SelectedObject.current.getSelected();
+        if (r == null) {
+            this.page.reportError("No view selected");
+            return;
+        }
+
+        let rr = this.createRpcRequest("zip", r.remoteObjectId);
+        let renderer = (page: FullPage, operation: ICancellable) => {
+            return new Make2DHistogram(
+                page, operation,
+                [this.currentData.xData.description, this.currentData.yData.description],
+                this.tableSchema, true);
+        };
+        rr.invoke(new ZipReceiver(this.getPage(), rr, how, renderer));
     }
 
     changeScale(): void {
@@ -253,37 +273,6 @@ implements IHtmlElement, DataView {
             this.currentData.yData,
             this.currentData.missingData,
             0);
-    }
-
-    // given a set of values in a heat map this computes two coefficients for a
-    // linear regression from X to Y.  The result is an array with two numbers, the
-    // two coefficients.  If the regression is undefined, the coefficients array is empty.
-    private regression(data: number[][]) : number[] {
-        let width = data.length;
-        let height = data[0].length;
-        let sumt = 0;
-        let sumt2 = 0;
-        let sumb = 0;
-        let sumtb = 0;
-        let size = 0;
-        for (let i = 0; i < width; i++) {
-            for (let j = 0; j < height; j++) {
-                sumt += i * data[i][j];
-                sumt2 += i * i * data[i][j];
-                sumb += j * data[i][j];
-                sumtb += i * j * data [i][j];
-                size += data[i][j];
-            }
-        }
-        let denom = ((size * sumt2) - (sumt * sumt));
-        if (denom == 0)
-            // TODO: should we use here some epsilon?
-            return [];
-        let a = 1 / denom;
-        let  alpha = a * ((sumt2 * sumb) - (sumt * sumtb));
-        let beta = a * ((size * sumtb) - (sumt * sumb));
-        // estimation is alpha + beta * i
-        return [alpha, beta];
     }
 
     public updateView(data: number[][], xData: AxisData, yData: AxisData,
@@ -487,7 +476,7 @@ implements IHtmlElement, DataView {
             .attr("width", 0)
             .attr("height", 0);
 
-        let regr = this.regression(data);
+        let regr = regression(data);
         if (regr.length == 2) {
             let b = regr[0];
             let a = regr[1];

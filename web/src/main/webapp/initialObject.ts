@@ -15,9 +15,10 @@
  *  limitations under the License.
  */
 
-import {RemoteObject, ICancellable, PartialResult} from "./rpc";
+import {RemoteObject, Renderer} from "./rpc";
 import {RemoteTableReceiver} from "./table";
-import {FullPage, Renderer} from "./ui";
+import {FullPage} from "./ui";
+import {ICancellable, PartialResult} from "./util";
 
 class FileNames extends RemoteObject {
     constructor(remoteObjectId: string) {

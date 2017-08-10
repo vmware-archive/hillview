@@ -16,15 +16,44 @@
  */
 
 import {
-    FullPage, Renderer, significantDigits, formatNumber, percent, translateString
+    FullPage, significantDigits, formatNumber, percent, translateString
 } from "./ui";
 import d3 = require('d3');
-import {RemoteObject, ICancellable, PartialResult} from "./rpc";
+import {RemoteObject, combineMenu, CombineOperators, SelectedObject, ZipReceiver, Renderer} from "./rpc";
 import {ColumnDescription, TableRenderer, TableView, RecordOrder, Schema} from "./table";
 import {histogram} from "d3-array";
 import {TopMenu, TopSubMenu} from "./menu";
-import {Converters, Pair, reorder} from "./util";
+import {Converters, Pair, reorder, ICancellable, PartialResult} from "./util";
 import {Histogram, HistogramViewBase, BasicColStats, ColumnAndRange, FilterDescription, BucketDialog} from "./histogramBase";
+
+// This class is invoked by the ZipReceiver after a set operation to create a new histogram
+class MakeHistogram extends Renderer<string> {
+    public remoteObjectId: string;
+
+    public constructor(page: FullPage,
+                       operation: ICancellable,
+                       private colDesc: ColumnDescription,
+                       private schema: Schema,
+                       private allStrings: string[]) {
+        super(page, operation, "Reload");
+    }
+
+    onNext(value: PartialResult<string>): any {
+        super.onNext(value);
+        if (value.data != null)
+            this.remoteObjectId = value.data;
+    }
+
+    onCompleted(): void {
+        super.finished();
+        if (this.remoteObjectId == null)
+            return;
+        let remoteObj = new RemoteObject(this.remoteObjectId);
+        let rr = remoteObj.createRpcRequest("range", { columnName: this.colDesc.name });
+        rr.setStartTime(this.operation.startTime());
+        rr.invoke(new RangeCollector(this.colDesc, this.schema, this.allStrings, this.page, remoteObj, rr));
+    }
+}
 
 export class HistogramView extends HistogramViewBase {
     protected currentData: {
@@ -44,10 +73,29 @@ export class HistogramView extends HistogramViewBase {
                 { text: "table", action: () => this.showTable() },
                 { text: "#buckets", action: () => this.chooseBuckets() },
                 //{ text: "correlate", action: () => this.chooseSecondColumn() },
-            ]) }
+            ]) },
+            {
+                text: "Combine", subMenu: combineMenu(this)
+            }
         ]);
 
         this.topLevel.insertBefore(menu.getHTMLRepresentation(), this.topLevel.children[0]);
+    }
+
+    // combine two views according to some operation
+    combine(how: CombineOperators): void {
+        let r = SelectedObject.current.getSelected();
+        if (r == null) {
+            this.page.reportError("No view selected");
+            return;
+        }
+
+        let rr = this.createRpcRequest("zip", r.remoteObjectId);
+        let finalRenderer = (page: FullPage, operation: ICancellable) => {
+            return new MakeHistogram(page, operation, this.currentData.description,
+                this.tableSchema, this.currentData.allStrings);
+        };
+        rr.invoke(new ZipReceiver(this.getPage(), rr, how, finalRenderer));
     }
 
     chooseSecondColumn(): void { // TODO
