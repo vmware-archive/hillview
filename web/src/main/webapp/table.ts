@@ -226,6 +226,11 @@ export class TableView extends RemoteObject
             },
             {
                 text: "Combine", subMenu: combineMenu(this)
+            },
+            {
+                text: "Operation", subMenu: new TopSubMenu([
+                    {text: "PCA on all numeric columns", action: () => this.pca(true)}
+                ])
             }
         ]);
         this.top.appendChild(menu.getHTMLRepresentation());
@@ -736,7 +741,6 @@ export class TableView extends RemoteObject
     }
 
     private pca(): void {
-<<<<<<< HEAD
         let colNames: string[] = [];
         this.selectedColumns.forEach(col => colNames.push(col));
 
@@ -764,12 +768,6 @@ export class TableView extends RemoteObject
         } else {
             this.reportError("Only numeric columns are supported for PCA:" + message);
         }
-=======
-        let pcaRequest = new PCAProjectionRequest(this.selectedColumns);
-        let rr = this.createRpcRequest("pca", pcaRequest);
-        rr.invoke(new RemoteTableReceiver(this.page, rr));
-        console.log('Doing PCA.');
->>>>>>> WIP commit. It seems like everything's working, but the new columns do not show up.
     }
 
     private heatMap(): void {
