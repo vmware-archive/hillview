@@ -620,7 +620,7 @@ export class TableView extends RemoteObject
                     this.contextMenu.addItem({text: "Histogram", action: () => this.histogram(cd.name) });
                 if (cd.kind == "Json" || cd.kind == "String" || cd.kind == "Category" || cd.kind == "Integer")
                     this.contextMenu.addItem({text: "Filter...", action: () => this.equalityFilter(cd.name)});
-
+                
                 // Spawn the menu at the mouse's location
                 this.contextMenu.move(e.pageX - 1, e.pageY - 1);
                 this.contextMenu.show();
@@ -736,6 +736,7 @@ export class TableView extends RemoteObject
     }
 
     private pca(): void {
+<<<<<<< HEAD
         let colNames: string[] = [];
         this.selectedColumns.forEach(col => colNames.push(col));
 
@@ -763,6 +764,12 @@ export class TableView extends RemoteObject
         } else {
             this.reportError("Only numeric columns are supported for PCA:" + message);
         }
+=======
+        let pcaRequest = new PCAProjectionRequest(this.selectedColumns);
+        let rr = this.createRpcRequest("pca", pcaRequest);
+        rr.invoke(new TableOperationCompleted(this.page, this, rr, this.order));
+        console.log('Doing PCA.');
+>>>>>>> WIP commit. It seems like everything's working, but the new columns do not show up.
     }
 
     private heatMap(): void {
