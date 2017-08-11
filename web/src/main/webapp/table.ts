@@ -216,14 +216,21 @@ export class TableView extends RemoteObject
         this.top.style.alignItems = "stretch";
 
         let menu = new TopMenu([
-            { text: "View", subMenu: new TopSubMenu([
-                { text: "Home", action: () => { TableView.goHome(this.page); } },
-                { text: "Refresh", action: () => { this.refresh(); } },
-                { text: "All rows", action: () => { this.showAllRows(); } },
-                { text: "No rows", action: () => { this.setOrder(new RecordOrder([])); } }
-            ])},
+            {
+                text: "View", subMenu: new TopSubMenu([
+                    { text: "Home", action: () => { TableView.goHome(this.page); } },
+                    { text: "Refresh", action: () => { this.refresh(); } },
+                    { text: "All columns", action: () => { this.showAllRows(); } },
+                    { text: "No columns", action: () => { this.setOrder(new RecordOrder([])); } }
+                ])
+            },
             {
                 text: "Combine", subMenu: combineMenu(this)
+            },
+            {
+                text: "Operation", subMenu: new TopSubMenu([
+                    {text: "PCA on all numeric columns", action: () => this.pca(true)}
+                ])
             }
         ]);
         this.top.appendChild(menu.getHTMLRepresentation());
@@ -721,8 +728,18 @@ export class TableView extends RemoteObject
         }
     }
 
-    private pca(): void {
-        let pcaRequest = new PCAProjectionRequest(this.selectedColumns);
+    private pca(allColumns?: boolean): void {
+        let colNames: Set<string>;
+        if (allColumns) {
+            colNames = new Set<string>();
+            for (let i = 0; i <this.schema.length; i++) {
+                if (this.schema[i].kind == "Double" || this.schema[i].kind == "Integer")
+                    colNames.add(this.schema[i].name);
+            }
+        } else {
+            colNames = this.selectedColumns;
+        }
+        let pcaRequest = new PCAProjectionRequest(colNames);
         let rr = this.createRpcRequest("pca", pcaRequest);
         rr.invoke(new RemoteTableReceiver(this.page, rr));
         console.log('Doing PCA.');
