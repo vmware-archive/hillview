@@ -724,7 +724,7 @@ export class TableView extends RemoteObject
     private pca(): void {
         let pcaRequest = new PCAProjectionRequest(this.selectedColumns);
         let rr = this.createRpcRequest("pca", pcaRequest);
-        rr.invoke(new TableOperationCompleted(this.page, this, rr, this.order));
+        rr.invoke(new RemoteTableReceiver(this.page, rr));
         console.log('Doing PCA.');
     }
 
