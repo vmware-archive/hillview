@@ -32,7 +32,7 @@ if __name__ == "__main__":
     # Generate the schema file.
     n_pixels = 28**2
     with open('mnist.schema', 'w') as f:
-        column = "{\"name\": \"label\", \"kind\": \"Integer\", \"allowMissing\": false}"
+        column = "{\"name\": \"label\", \"kind\": \"Category\", \"allowMissing\": false}"
         print("[" + column, end="", file=f)
         for i in range(n_pixels):
             column = "{\"name\": \"pixel%d\", \"kind\": \"Integer\", \"allowMissing\": false}" % i
