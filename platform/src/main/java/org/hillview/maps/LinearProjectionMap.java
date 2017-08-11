@@ -66,7 +66,6 @@ public class LinearProjectionMap implements IMap<ITable, ITable> {
                     }
                     column.set(row, x);
                 } catch (MissingException e) {
-                    System.out.println("Handling MissingException in LinearProjectionMap.");
                     column.setMissing(row);
                 }
                 row = it.getNextRow();

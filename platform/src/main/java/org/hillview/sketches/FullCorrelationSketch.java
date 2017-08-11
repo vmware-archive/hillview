@@ -49,7 +49,7 @@ public class FullCorrelationSketch implements ISketch<ITable, CorrMatrix> {
                             colSum += valI;
                         dotProduct += valI * valJ;
                     } catch (MissingException e) {
-                        System.out.println("There was something missing.");
+                        /* Disregard missing entries, TODO: count them for correct normalization.  */
                     }
                     row = rowIt.getNextRow();
                 }
