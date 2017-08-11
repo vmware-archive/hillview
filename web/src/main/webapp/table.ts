@@ -23,6 +23,7 @@ import {RemoteObject, RpcRequest, Renderer, combineMenu, SelectedObject, Combine
 import Rx = require('rx');
 import {BasicColStats} from "./histogramBase";
 import {RangeCollector} from "./histogram";
+import {PCAProjectionRequest} from "./pca";
 import {Range2DCollector} from "./heatMap";
 import {TopMenu, TopSubMenu, ContextMenu} from "./menu";
 import {Converters, PartialResult, ICancellable} from "./util";
@@ -260,7 +261,7 @@ export class TableView extends RemoteObject
         let rr = this.createRpcRequest("zip", r.remoteObjectId);
         let o = this.order.clone();
         let finalRenderer = (page: FullPage, operation: ICancellable) =>
-            { return new FilterCompleted(page, this, operation, o); };
+            { return new TableOperationCompleted(page, this, operation, o); };
         rr.invoke(new ZipReceiver(this.getPage(), rr, how, finalRenderer));
     }
 
@@ -615,7 +616,7 @@ export class TableView extends RemoteObject
                     this.contextMenu.addItem({text: "Histogram", action: () => this.histogram(cd.name) });
                 if (cd.kind == "Json" || cd.kind == "String" || cd.kind == "Category" || cd.kind == "Integer")
                     this.contextMenu.addItem({text: "Filter...", action: () => this.equalityFilter(cd.name)});
-
+                
                 // Spawn the menu at the mouse's location
                 this.contextMenu.move(e.pageX - 1, e.pageY - 1);
                 this.contextMenu.show();
@@ -702,7 +703,7 @@ export class TableView extends RemoteObject
 
     private runFilter(filter: EqualityFilterDescription): void {
         let rr = this.createRpcRequest("filterEquality", filter);
-        rr.invoke(new FilterCompleted(this.page, this, rr, this.order));
+        rr.invoke(new TableOperationCompleted(this.page, this, rr, this.order));
     }
 
     private equalityFilter(colname: string, value?: string, complement?: boolean): void {
@@ -718,6 +719,13 @@ export class TableView extends RemoteObject
             }
             this.runFilter(efd);
         }
+    }
+
+    private pca(): void {
+        let pcaRequest = new PCAProjectionRequest(this.selectedColumns);
+        let rr = this.createRpcRequest("pca", pcaRequest);
+        rr.invoke(new TableOperationCompleted(this.page, this, rr, this.order));
+        console.log('Doing PCA.');
     }
 
     private heatMap(): void {
@@ -1049,19 +1057,19 @@ class HeavyHittersReceiver extends Renderer<string> {
                 schema: this.schema
             });
         rr.setStartTime(this.operation.startTime());
-        rr.invoke(new FilterCompleted(this.page, this.tv, rr, this.order));
+        rr.invoke(new TableOperationCompleted(this.page, this.tv, rr, this.order));
     }
 }
 
-// After filtering receives the id of a remote table.
-class FilterCompleted extends Renderer<string> {
+// After operating on a table receives the id of a new remote table.
+class TableOperationCompleted extends Renderer<string> {
     public remoteTableId: string;
 
     public constructor(page: FullPage,
                        protected tv: TableView,
                        operation: ICancellable,
                        protected order: RecordOrder) {
-        super(page, operation, "Filter");
+        super(page, operation, "Table operation");
     }
 
     onNext(value: PartialResult<string>): any {

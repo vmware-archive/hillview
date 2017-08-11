@@ -1,5 +1,7 @@
 package org.hillview.sketches;
 
+import org.hillview.dataset.api.IJson;
+
 import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.util.Arrays;
@@ -11,7 +13,7 @@ import java.util.List;
  * the ICorrelation interface to compute  norms, correlations and inner-products between columns.
  * See ICorrelation for a precise definition of these quantities.
  */
-public class CorrMatrix implements ICorrelation, Serializable {
+public class CorrMatrix implements ICorrelation, Serializable, IJson {
     /**
      * The list of columns whose correlation we wish to compute.
      */

@@ -21,7 +21,7 @@ package org.hillview.table.api;
 /**
  * Exception signalling an illegal access to a missing item.
  */
-class MissingException extends RuntimeException {
+public class MissingException extends RuntimeException {
     public MissingException(final String message) {
         super(message);
     }

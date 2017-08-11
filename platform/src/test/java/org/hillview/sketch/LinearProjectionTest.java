@@ -13,6 +13,10 @@ import org.jblas.util.Random;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 @SuppressWarnings("ConstantConditions")
 public class LinearProjectionTest {
 
@@ -37,7 +41,8 @@ public class LinearProjectionTest {
         DoubleMatrix projectionMatrix = DoubleMatrix.rand(numProjections, cols);
         ITable table = BlasConversions.toTable(matrix);
         LinearProjectionMap lpm = new LinearProjectionMap(
-                table.getSchema().getColumnNames().toArray(new String[]{}), projectionMatrix, "LP", null
+                new ArrayList<String>(table.getSchema().getColumnNames()), projectionMatrix,
+                "LP", null
         );
         ITable result = lpm.apply(table);
 
@@ -61,7 +66,7 @@ public class LinearProjectionTest {
         DoubleMatrix projectionCheck = dataMatrix.mmul(projectionMatrix.transpose());
 
         ITable bigTable = BlasConversions.toTable(dataMatrix);
-        String[] colNames = bigTable.getSchema().getColumnNames().toArray(new String[]{});
+        List<String> colNames = new ArrayList<String>(bigTable.getSchema().getColumnNames());
         // Convert it to an IDataset
         IDataSet<ITable> all = TestTables.makeParallel(bigTable, rows / 10);
 

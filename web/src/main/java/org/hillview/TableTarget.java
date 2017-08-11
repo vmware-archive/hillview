@@ -19,15 +19,24 @@ package org.hillview;
 
 import org.hillview.dataset.ConcurrentSketch;
 import org.hillview.dataset.api.IDataSet;
+import org.hillview.dataset.api.IMap;
+import org.hillview.dataset.api.ISketch;
 import org.hillview.maps.FilterMap;
+import org.hillview.maps.LinearProjectionMap;
+import org.hillview.maps.PCAProjectionMap;
 import org.hillview.sketches.*;
 import org.hillview.table.*;
 import org.hillview.table.api.IStringConverter;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
+import org.hillview.utils.LinAlg;
+import org.jblas.DoubleMatrix;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 
 @SuppressWarnings("CanBeFinal")
@@ -195,6 +204,20 @@ public final class TableTarget extends RpcTarget {
         Range2DFilter filter = new Range2DFilter(info);
         FilterMap fm = new FilterMap(filter);
         this.runMap(this.table, fm, TableTarget::new, request, session);
+    }
+
+    @HillviewRpc
+    void pca(RpcRequest request, Session session) {
+        PCAProjectionRequest pcaReq = request.parseArgs(PCAProjectionRequest.class);
+        List<String> colNames = Arrays.asList(pcaReq.columnNames);
+        IMap<ITable, ITable> corrSketch = new PCAProjectionMap(pcaReq.columnNames, 2);
+
+        this.runMap(this.table, corrSketch, TableTarget::new, request, session);
+        System.out.println(Arrays.toString(pcaReq.columnNames));
+    }
+
+    void projectResults() {
+
     }
 
     static class QuantileInfo {

@@ -21,15 +21,15 @@ public class LinearProjectionMap implements IMap<ITable, ITable> {
      * of the column names in colNames.
      */
     private final DoubleMatrix projectionMatrix;
-    private final String[] colNames;
+    private final List<String> colNames;
     private final String newColName;
     private final int numProjections;
     @Nullable
     private final IStringConverter converter;
 
-    public LinearProjectionMap(String[] colNames, DoubleMatrix projectionMatrix, String projectionName,
+    public LinearProjectionMap(List<String> colNames, DoubleMatrix projectionMatrix, String projectionName,
                                @Nullable IStringConverter converter) {
-        if (colNames.length != projectionMatrix.columns)
+        if (colNames.size() != projectionMatrix.columns)
             throw new RuntimeException("Number of columns in projectionMatrix should be eq. to number of names in colNames.");
 
         this.projectionMatrix = projectionMatrix;
@@ -58,11 +58,17 @@ public class LinearProjectionMap implements IMap<ITable, ITable> {
             int row = it.getNextRow();
             while (row >= 0) {
                 // Compute the dot product between the row from the table and the j'th projection vector.
-                double x = 0.0;
-                for (int k = 0; k < this.projectionMatrix.columns; k++) {
-                    x += table.getColumn(this.colNames[k]).asDouble(row, this.converter) * this.projectionMatrix.get(j, k);
+                try {
+                    double x = 0.0;
+                    for (int k = 0; k < this.projectionMatrix.columns; k++) {
+                        x += table.getColumn(this.colNames.get(k)).asDouble(row, this.converter) * this.projectionMatrix
+                                .get(j, k);
+                    }
+                    column.set(row, x);
+                } catch (MissingException e) {
+                    System.out.println("Handling MissingException in LinearProjectionMap.");
+                    column.setMissing(row);
                 }
-                column.set(row, x);
                 row = it.getNextRow();
             }
             columns.add(column);

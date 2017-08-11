@@ -42,11 +42,15 @@ public class FullCorrelationSketch implements ISketch<ITable, CorrMatrix> {
                 int row = rowIt.getNextRow();
                 double dotProduct = 0;
                 while (row >= 0) {
-                    double valI = cols[i].asDouble(row, null);
-                    double valJ = cols[j].asDouble(row, null);
-                    if (j == i)
-                        colSum += valI;
-                    dotProduct += valI * valJ;
+                    try {
+                        double valI = cols[i].asDouble(row, null);
+                        double valJ = cols[j].asDouble(row, null);
+                        if (j == i)
+                            colSum += valI;
+                        dotProduct += valI * valJ;
+                    } catch (MissingException e) {
+                        System.out.println("There was something missing.");
+                    }
                     row = rowIt.getNextRow();
                 }
                 cm.put(i, j, dotProduct / nRows);
