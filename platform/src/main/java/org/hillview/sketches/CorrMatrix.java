@@ -60,6 +60,7 @@ public class CorrMatrix implements ICorrelation, Serializable, IJson {
 
     @Override
     public double[][] getCorrelationMatrix() {
+        double eps = 1e-6;
         if (this.corrMatrix == null) {
             this.corrMatrix = new double[this.colNum.size()][this.colNum.size()];
             for (int i = 0; i < this.colNum.size(); i++) {
@@ -69,7 +70,10 @@ public class CorrMatrix implements ICorrelation, Serializable, IJson {
                     // Centering and scaling
                     val -= this.means[i] * this.means[j];
                     double sigmaJ = Math.sqrt(this.rawMatrix[j][j] - this.means[j] * this.means[j]);
-                    val /= sigmaI * sigmaJ;
+                    if (sigmaI < eps || sigmaJ < eps)
+                        val = 0.0;
+                    else
+                        val /= sigmaI * sigmaJ;
                     this.corrMatrix[i][j] = val;
                     this.corrMatrix[j][i] = val;
                 }

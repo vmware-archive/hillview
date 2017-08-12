@@ -781,7 +781,7 @@ export class TableView extends RemoteObject
             let cd = new ColumnDescription(this.schema[i]);
             let name = cd.name;
             let cls = this.columnClass(name);
-            let cells = document.getElementsByClassName(cls);
+            let cells = this.tHead.getElementsByClassName(cls);
             let selected = this.selectedColumns.has(name);
 
             for (let i = 0; i < cells.length; i++) {

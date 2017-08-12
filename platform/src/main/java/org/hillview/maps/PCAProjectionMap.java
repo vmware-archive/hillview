@@ -1,6 +1,7 @@
 package org.hillview.maps;
 
 import org.hillview.dataset.api.IMap;
+import org.hillview.sketches.CorrMatrix;
 import org.hillview.sketches.FullCorrelationSketch;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.LinAlg;
@@ -24,7 +25,8 @@ public class PCAProjectionMap implements IMap<ITable, ITable> {
     public ITable apply(ITable table) {
         FullCorrelationSketch fcs = new FullCorrelationSketch(this.colNames);
         LOG.info("Computing correlation matrix");
-        DoubleMatrix cm = new DoubleMatrix(fcs.create(table).getCorrelationMatrix());
+        CorrMatrix corrMatrix = fcs.create(table);
+        DoubleMatrix cm = new DoubleMatrix(corrMatrix.getCorrelationMatrix());
         LOG.info("Computing eigenvalues");
         DoubleMatrix eigs = LinAlg.eigenVectors(cm, this.numProjections);
         LinearProjectionMap lpm = new LinearProjectionMap(this.colNames, eigs, "PCA", null);

@@ -7,6 +7,7 @@ import org.hillview.utils.Converters;
 import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
 import java.util.List;
+import java.util.logging.Logger;
 
 /**
  * This class computes the correlations between different columns in the table.
@@ -15,6 +16,7 @@ import java.util.List;
  * the BasicColStats's.
  */
 public class FullCorrelationSketch implements ISketch<ITable, CorrMatrix> {
+    private static final Logger LOG = Logger.getLogger(FullCorrelationSketch.class.getName());
     private final List<String> colNames;
 
     public FullCorrelationSketch(List<String> colNames) {
@@ -53,8 +55,11 @@ public class FullCorrelationSketch implements ISketch<ITable, CorrMatrix> {
                     }
                     row = rowIt.getNextRow();
                 }
-                cm.put(i, j, dotProduct / nRows);
+                double val = dotProduct / nRows;
+                cm.put(i, j, val);
             }
+            if (i + 1 % 100 == 0)
+                LOG.info(String.format("%d/%d", i + 1, this.colNames.size()));
             cm.means[i] = colSum / nRows;
         }
         cm.count = nRows;
@@ -83,7 +88,8 @@ public class FullCorrelationSketch implements ISketch<ITable, CorrMatrix> {
         for (int i = 0; i < this.colNames.size(); i++) {
             result.means[i] = alpha * left.means[i] + (1 - alpha) * right.means[i];
             for (int j = i; j < this.colNames.size(); j++) {
-                result.put(i, j, alpha * left.get(i, j) + (1 - alpha) * right.get(i, j));
+                double val = alpha * left.get(i, j) + (1 - alpha) * right.get(i, j);
+                result.put(i, j, val);
             }
         }
         result.count = left.count + right.count;
