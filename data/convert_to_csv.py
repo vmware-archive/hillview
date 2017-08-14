@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# convert function by: http://pjreddie.com/projects/mnist-in-csv/
+# convert adapted from: http://pjreddie.com/projects/mnist-in-csv/
 
 
 def convert(imgf, labelf, outf, n):
@@ -13,10 +13,11 @@ def convert(imgf, labelf, outf, n):
 
     for i in range(n):
         image = [ord(label.read(1))]
-        for j in range(2 * 28):
+        for j in range(28 * 28):
             image.append(ord(f.read(1)))
         images.append(image)
 
+    o.write(",".join(["label"] + ["pixel{}".format(i) for i in range(28 * 28)]) + "\n")
     for image in images:
         o.write(",".join(str(pix) for pix in image) + "\n")
     f.close()
