@@ -57,6 +57,8 @@ data/readme.html
 data/mnist_test.csv
 data/mnist_train.csv
 data/mnist.schema
+data/segmentation.csv
+data/segmentation.readme
 
 *.DS_Store
 
