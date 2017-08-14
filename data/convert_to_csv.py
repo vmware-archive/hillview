@@ -2,6 +2,7 @@
 # convert adapted from: http://pjreddie.com/projects/mnist-in-csv/
 
 
+
 def convert(imgf, labelf, outf, n):
     f = open(imgf, "rb")
     o = open(outf, "w")
