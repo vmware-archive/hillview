@@ -1,7 +1,11 @@
 package org.hillview.sketch;
 
 import org.hillview.dataset.api.IDataSet;
+<<<<<<< HEAD
 import org.hillview.maps.LinearProjectionMap;
+=======
+import org.hillview.maps.PCAProjectionMap;
+>>>>>>> Returned to using BLAS for the linear algebra, because it's a lot faster. Also added a test for MNIST.
 import org.hillview.sketches.CorrMatrix;
 import org.hillview.sketches.FullCorrelationSketch;
 import org.hillview.storage.CsvFileReader;
@@ -15,7 +19,10 @@ import org.jblas.DoubleMatrix;
 import org.junit.Assert;
 import org.junit.Test;
 
+<<<<<<< HEAD
 import java.io.FileNotFoundException;
+=======
+>>>>>>> Returned to using BLAS for the linear algebra, because it's a lot faster. Also added a test for MNIST.
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
