@@ -216,14 +216,23 @@ th, td {
     display: inline-block;
 }
 
-table.menu table.menu {
-    display: none;
+table.menu td {
+    background-color: lightgrey;
 }
 
-
-
-.menu > .menu div {
+table.menu table.menu {
     display: none;
+    box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.5);
+}
+
+table.menu td:hover {
+    background-color: lightcyan;
+}
+
+table.menu td:hover table.menu {
+    display: block;
+    position: absolute;
+    background-color: lightgrey;
 }
 
 .dropdown {
@@ -234,9 +243,5 @@ table.menu table.menu {
     background-color: lightgray;
     z-index: 1;
     text-align: right;
-}
-
-/* for pop-up menu */
-.menuItem:hover {
-    background-color: gray;
+    box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.5);
 }

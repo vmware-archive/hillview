@@ -23,17 +23,15 @@ export interface MenuItem {
 
 export class ContextMenu implements IHtmlElement {
     items: MenuItem[];
-    private outer: HTMLElement;
-    private htmlTable: HTMLTableElement;
+    private outer: HTMLTableElement;
     private tableBody: HTMLTableSectionElement;
 
     constructor(mis: MenuItem[]) {
-        this.outer = document.createElement("div");
-        this.outer.className = "dropdown";
+        this.outer = document.createElement("table");
+        this.outer.classList.add("dropdown");
+        this.outer.classList.add("menu");
         this.outer.onmouseleave = () => this.remove();
-        this.htmlTable = document.createElement("table");
-        this.outer.appendChild(this.htmlTable);
-        this.tableBody = this.htmlTable.createTBody();
+        this.tableBody = this.outer.createTBody();
 
         this.items = [];
         if (mis != null) {
