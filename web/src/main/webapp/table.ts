@@ -733,8 +733,12 @@ export class TableView extends RemoteObject
         if (allColumns) {
             colNames = new Set<string>();
             for (let i = 0; i <this.schema.length; i++) {
-                if (this.schema[i].kind == "Double" || this.schema[i].kind == "Integer")
+                if ((this.schema[i].kind == "Double" || this.schema[i].kind == "Integer") && !this.schema[i].allowMissing)
                     colNames.add(this.schema[i].name);
+            }
+            if (colNames.size == 0) {
+                this.reportError("Not enough numeric columns that don't allow missing values.");
+                return;
             }
         } else {
             colNames = this.selectedColumns;

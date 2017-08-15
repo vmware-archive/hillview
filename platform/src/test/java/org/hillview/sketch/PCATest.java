@@ -1,17 +1,26 @@
 package org.hillview.sketch;
 
 import org.hillview.dataset.api.IDataSet;
+import org.hillview.maps.PCAProjectionMap;
 import org.hillview.sketches.CorrMatrix;
 import org.hillview.sketches.FullCorrelationSketch;
+import org.hillview.storage.CsvFileReader;
+import org.hillview.table.Schema;
+import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.ITable;
+import org.hillview.utils.Converters;
 import org.hillview.utils.LinAlg;
 import org.hillview.utils.TestTables;
 import org.jblas.DoubleMatrix;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class PCATest {
     @Test
@@ -42,5 +51,40 @@ public class PCATest {
                     Math.abs(eigenVectors.get(0, 1)) > 3 * Math.abs(eigenVectors.get(0, i))
             );
         }
+    }
+
+    @Test
+    public void testMNIST() throws IOException {
+        // Read the data from file
+        String dataFolder = "../data";
+        String csvFile = "mnist_train.csv";
+        String schemaFile = "mnist.schema";
+        Path path = Paths.get(dataFolder, schemaFile);
+        Schema schema = Schema.readFromJsonFile(path);
+        path = Paths.get(dataFolder, csvFile);
+        CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
+        config.allowFewerColumns = false;
+        config.hasHeaderRow = true;
+        config.allowMissingData = false;
+        config.schema = schema;
+        CsvFileReader r = new CsvFileReader(path, config);
+        ITable table = r.read();
+        table = Converters.checkNull(table);
+
+        // List the numeric columns
+        List<String> numericColNames = new ArrayList<String>();
+        Set<String> colNames = table.getSchema().getColumnNames();
+        for (String colName : colNames) {
+            ContentsKind kind = table.getSchema().getDescription(colName).kind;
+            if (kind == ContentsKind.Double || kind == ContentsKind.Integer) {
+                numericColNames.add(colName);
+            }
+        }
+
+        // Project
+        PCAProjectionMap pcaMap = new PCAProjectionMap(numericColNames, 2);
+        ITable result = pcaMap.apply(table);
+
+        Assert.assertEquals(table.getSchema().getColumnCount() + 2, result.getSchema().getColumnCount());
     }
 }

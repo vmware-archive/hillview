@@ -2,7 +2,9 @@ package org.hillview.sketches;
 
 import org.hillview.dataset.api.ISketch;
 import org.hillview.table.api.*;
+import org.hillview.utils.BlasConversions;
 import org.hillview.utils.Converters;
+import org.jblas.DoubleMatrix;
 
 import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
@@ -30,40 +32,27 @@ public class FullCorrelationSketch implements ISketch<ITable, CorrMatrix> {
                     (table.getSchema().getKind(col) != ContentsKind.Integer))
                 throw new InvalidParameterException("Correlation Sketch requires column to be " +
                         "integer or double: " + col);
-        }
-        IColumn[] cols = new IColumn[this.colNames.size()];
-        for (int l = 0; l < this.colNames.size(); l++)
-            cols[l] = table.getColumn(this.colNames.get(l));
-        CorrMatrix cm = new CorrMatrix(this.colNames);
-
-        int nRows = table.getNumOfRows();
-        for (int i = 0; i < this.colNames.size(); i++) {
-            double colSum = 0;
-            for (int j = i; j < this.colNames.size(); j++) {
-                IRowIterator rowIt = table.getRowIterator();
-                int row = rowIt.getNextRow();
-                double dotProduct = 0;
-                while (row >= 0) {
-                    try {
-                        double valI = cols[i].asDouble(row, null);
-                        double valJ = cols[j].asDouble(row, null);
-                        if (j == i)
-                            colSum += valI;
-                        dotProduct += valI * valJ;
-                    } catch (MissingException e) {
-                        /* Disregard missing entries, TODO: count them for correct normalization.  */
-                    }
-                    row = rowIt.getNextRow();
-                }
-                double val = dotProduct / nRows;
-                cm.put(i, j, val);
+            if (table.getSchema().getDescription(col).allowMissing) {
+                throw new InvalidParameterException("Correlation Sketch requires column to not allow missing data: " +
+                        col);
             }
-            if (i + 1 % 100 == 0)
-                LOG.info(String.format("%d/%d", i + 1, this.colNames.size()));
-            cm.means[i] = colSum / nRows;
         }
-        cm.count = nRows;
-        return cm;
+        CorrMatrix corrMatrix = new CorrMatrix(this.colNames);
+        int nRows = table.getNumOfRows();
+
+        // Convert the columns to a DoubleMatrix.
+        DoubleMatrix mat = BlasConversions.toDoubleMatrix(table, this.colNames.toArray(new String[]{}), null);
+        DoubleMatrix covMat = mat.transpose().mmul(mat).div(nRows);
+        DoubleMatrix means = mat.columnMeans();
+
+        for (int i = 0; i < this.colNames.size(); i++) {
+            for (int j = i; j < this.colNames.size(); j++) {
+                corrMatrix.put(i, j,  covMat.get(i, j));
+            }
+            corrMatrix.means[i] = means.get(i);
+        }
+        corrMatrix.count = nRows;
+        return corrMatrix;
     }
 
     @Nullable

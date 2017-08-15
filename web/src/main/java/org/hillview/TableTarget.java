@@ -210,14 +210,10 @@ public final class TableTarget extends RpcTarget {
     void pca(RpcRequest request, Session session) {
         PCAProjectionRequest pcaReq = request.parseArgs(PCAProjectionRequest.class);
         List<String> colNames = Arrays.asList(pcaReq.columnNames);
-        IMap<ITable, ITable> corrSketch = new PCAProjectionMap(pcaReq.columnNames, 2);
+        IMap<ITable, ITable> corrSketch = new PCAProjectionMap(colNames, 2);
 
         this.runMap(this.table, corrSketch, TableTarget::new, request, session);
         System.out.println(Arrays.toString(pcaReq.columnNames));
-    }
-
-    void projectResults() {
-
     }
 
     static class QuantileInfo {

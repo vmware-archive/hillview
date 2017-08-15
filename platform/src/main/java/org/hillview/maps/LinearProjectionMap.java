@@ -3,18 +3,21 @@ package org.hillview.maps;
 import org.hillview.dataset.api.IMap;
 import org.hillview.table.*;
 import org.hillview.table.api.*;
+import org.hillview.utils.BlasConversions;
 import org.jblas.DoubleMatrix;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 /**
  * This map takes a list of column names and a projection matrix and applies the projection matrix to the matrix that is
  * constructed from the table by horizontally stacking the specified columns. The resulting table is a copy of the old
- * table, with the additional projected columns added to it. The new columns are named 'LinearProjection{i}'.
+ * table, with the additional projected columns added to it. The new columns are named '{newColName}{i}'.
  */
 public class LinearProjectionMap implements IMap<ITable, ITable> {
+    private static final Logger LOG = Logger.getLogger(LinearProjectionMap.class.getName());
     /**
      * The projection matrix is structured as follows: Every row is a vector
      * that is projected on. The ordering of the columns is the same as the order
@@ -48,27 +51,22 @@ public class LinearProjectionMap implements IMap<ITable, ITable> {
             columns.add(inputColumn);
         }
 
-        // Compute and add all the projections to the columns.
+        // Compute the projection with BLAS
+        DoubleMatrix mat = BlasConversions.toDoubleMatrix(table, this.colNames.toArray(new String[]{}), this.converter);
+        DoubleMatrix resultMat = mat.mmul(this.projectionMatrix.transpose());
+
+        // Copy the result to new columns with the same membershipset size. (Can't use BlasConversions here.)
         for (int j = 0; j < this.numProjections; j++) {
-            String colName = String.format("%s%d", this.newColName, j);
-            ColumnDescription colDesc = new ColumnDescription(colName, ContentsKind.Double, true);
+            ColumnDescription colDesc = new ColumnDescription(this.newColName + j, ContentsKind.Double, true);
             // TODO: create and use a SparseColumn
             DoubleArrayColumn column = new DoubleArrayColumn(colDesc, table.getMembershipSet().getMax());
             IRowIterator it = table.getMembershipSet().getIterator();
             int row = it.getNextRow();
+            int i = 0;
             while (row >= 0) {
-                // Compute the dot product between the row from the table and the j'th projection vector.
-                try {
-                    double x = 0.0;
-                    for (int k = 0; k < this.projectionMatrix.columns; k++) {
-                        x += table.getColumn(this.colNames.get(k)).asDouble(row, this.converter) * this.projectionMatrix
-                                .get(j, k);
-                    }
-                    column.set(row, x);
-                } catch (MissingException e) {
-                    column.setMissing(row);
-                }
+                column.set(row, resultMat.get(i, j));
                 row = it.getNextRow();
+                i++;
             }
             columns.add(column);
         }
