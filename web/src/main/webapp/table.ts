@@ -613,6 +613,7 @@ export class TableView extends RemoteObject
                 this.contextMenu.addItem({text: "Sort descending", action: () => this.showColumn(cd.name, -1, true) });
                 this.contextMenu.addItem({text: "Heavy hitters...", action: () => this.heavyHitters(cd.name) });
                 this.contextMenu.addItem({text: "Heat map", action: () => this.heatMap() });
+                this.contextMenu.addItem({text: "PCA", action: () => this.pca() });
 
                 if (this.order.find(cd.name) >= 0) {
                     this.contextMenu.addItem({text: "Hide", action: () => this.showColumn(cd.name, 0, true)});
@@ -623,7 +624,7 @@ export class TableView extends RemoteObject
                     this.contextMenu.addItem({text: "Histogram", action: () => this.histogram(cd.name) });
                 if (cd.kind == "Json" || cd.kind == "String" || cd.kind == "Category" || cd.kind == "Integer")
                     this.contextMenu.addItem({text: "Filter...", action: () => this.equalityFilter(cd.name)});
-                
+
                 // Spawn the menu at the mouse's location
                 this.contextMenu.move(e.pageX - 1, e.pageY - 1);
                 this.contextMenu.show();
@@ -732,21 +733,40 @@ export class TableView extends RemoteObject
         let colNames: Set<string>;
         if (allColumns) {
             colNames = new Set<string>();
-            for (let i = 0; i <this.schema.length; i++) {
+            for (let i = 0; i < this.schema.length; i++) {
                 if ((this.schema[i].kind == "Double" || this.schema[i].kind == "Integer") && !this.schema[i].allowMissing)
                     colNames.add(this.schema[i].name);
             }
             if (colNames.size == 0) {
-                this.reportError("Not enough numeric columns that don't allow missing values.");
+                this.reportError("Not enough numeric columns that don't have missing values.");
                 return;
             }
         } else {
             colNames = this.selectedColumns;
         }
-        let pcaRequest = new PCAProjectionRequest(colNames);
-        let rr = this.createRpcRequest("pca", pcaRequest);
-        rr.invoke(new RemoteTableReceiver(this.page, rr));
-        console.log('Doing PCA.');
+
+        let valid = true;
+        let message = "";
+        colNames.forEach((colName) => {
+            let kind = this.findColumn(colName).kind;
+            let allowMissing = this.findColumn(colName).allowMissing
+            if (kind != "Double" && kind != "Integer") {
+                valid = false;
+                message += "\n  * Column '" + colName  + "' is not numeric.";
+            }
+            if (allowMissing) {
+                valid = false;
+                message += "\n  * Column '" + colName + "' has missing values.";
+            }
+        });
+
+        if (valid) {
+            let pcaRequest = new PCAProjectionRequest(colNames);
+            let rr = this.createRpcRequest("pca", pcaRequest);
+            rr.invoke(new RemoteTableReceiver(this.page, rr));
+        } else {
+            this.reportError("Only numeric columns without missing values are supported for PCA:" + message);
+        }
     }
 
     private heatMap(): void {
