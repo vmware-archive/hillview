@@ -60,7 +60,7 @@ public class BlasConversions {
 
     /**
      * Calls the above toTable method with column names 'Column{i}'.
-     * @param mat
+     * @param mat Matrix that has to be converted to a table.
      * @return Table with the numeric data from mat. Column names are set to 'Column{i}'.
      */
     public static Table toTable(DoubleMatrix mat) {
