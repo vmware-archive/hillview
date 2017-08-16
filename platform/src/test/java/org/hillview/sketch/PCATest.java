@@ -15,6 +15,7 @@ import org.jblas.DoubleMatrix;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -68,7 +69,14 @@ public class PCATest {
         config.allowMissingData = false;
         config.schema = schema;
         CsvFileReader r = new CsvFileReader(path, config);
-        ITable table = r.read();
+
+        ITable table;
+        try {
+            table = r.read();
+        } catch (FileNotFoundException e) {
+            System.out.println("Skipped test because " + csvFile + " is not present.");
+            return;
+        }
         table = Converters.checkNull(table);
 
         // List the numeric columns
