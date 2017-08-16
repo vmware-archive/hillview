@@ -16,13 +16,10 @@ rm train-images-idx3-ubyte
 rm train-labels-idx1-ubyte
 rm t10k-images-idx3-ubyte
 rm t10k-labels-idx1-ubyte
-<<<<<<< HEAD
 echo 'Done!'
 
 echo 'Concatenating test and train data to one file...'
 tail -n +2 mnist_test.csv >> mnist_train.csv
 rm mnist_test.csv
 mv mnist_train.csv mnist.csv
-=======
->>>>>>> Make schema in same script.
 echo 'Done!'
