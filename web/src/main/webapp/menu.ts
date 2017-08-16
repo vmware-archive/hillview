@@ -23,17 +23,16 @@ export interface MenuItem {
 
 export class ContextMenu implements IHtmlElement {
     items: MenuItem[];
-    private outer: HTMLElement;
-    private htmlTable: HTMLTableElement;
+    private outer: HTMLTableElement;
     private tableBody: HTMLTableSectionElement;
 
     constructor(mis: MenuItem[]) {
-        this.outer = document.createElement("div");
-        this.outer.className = "dropdown";
+        this.outer = document.createElement("table");
+        this.outer.classList.add("dropdown");
+        this.outer.classList.add("menu");
         this.outer.onmouseleave = () => this.remove();
-        this.htmlTable = document.createElement("table");
-        this.outer.appendChild(this.htmlTable);
-        this.tableBody = this.htmlTable.createTBody();
+        this.tableBody = this.outer.createTBody();
+
         this.items = [];
         if (mis != null) {
             for (let mi of mis)
@@ -63,16 +62,16 @@ export class ContextMenu implements IHtmlElement {
 
 export class TopSubMenu implements IHtmlElement {
     items: MenuItem[];
-    private outer: HTMLElement;
-    public list: HTMLUListElement;
+    private outer: HTMLTableElement;
+    private tableBody: HTMLTableSectionElement;
 
     constructor(mis: MenuItem[]) {
-        this.outer = document.createElement("div");
-        this.outer.className = "menu";
+        this.outer = document.createElement("table");
+        this.outer.classList.add("menu");
+        
+        this.tableBody = this.outer.createTBody();
+        
         this.items = [];
-        this.list = document.createElement("ul");
-        this.outer.appendChild(this.list);
-
         if (mis != null) {
             for (let mi of mis)
                 this.addItem(mi);
@@ -81,12 +80,11 @@ export class TopSubMenu implements IHtmlElement {
 
     addItem(mi: MenuItem): void {
         this.items.push(mi);
-        let li = document.createElement("li");
-        this.list.appendChild(li);
-        let cell = document.createElement("span");
-        li.appendChild(cell);
+        let trow = this.tableBody.insertRow();
+        let cell = trow.insertCell(0);
         cell.innerHTML = mi.text;
-        cell.style.width = "100%";
+        cell.style.textAlign = "left";
+        cell.className = "menuItem";
         cell.onclick = () => { mi.action(); }
     }
 
@@ -102,15 +100,15 @@ export interface TopMenuItem {
 
 export class TopMenu implements IHtmlElement {
     items: TopMenuItem[];
-    private outer: HTMLElement;
-    private list: HTMLUListElement;
+    private outer: HTMLTableElement;
+    private tableBody: HTMLTableSectionElement;
 
     constructor(mis: TopMenuItem[]) {
-        this.outer = document.createElement("nav");
-        this.outer.className = "menu";
-        this.outer.style.pageBreakAfter = "always";
-        this.list = document.createElement("ul");
-        this.outer.appendChild(this.list);
+        this.outer = document.createElement("table");
+        this.outer.classList.add("menu");
+        this.outer.classList.add("topMenu");
+        this.tableBody = this.outer.createTBody();
+        this.tableBody.insertRow();
         this.items = [];
         if (mis != null) {
             for (let mi of mis)
@@ -119,14 +117,9 @@ export class TopMenu implements IHtmlElement {
     }
 
     addItem(mi: TopMenuItem): void {
-        this.items.push(mi);
-        let li = document.createElement("li");
-        let span = document.createElement("span");
-        span.textContent = mi.text;
-        span.style.width = "100%";
-        li.appendChild(span);
-        this.list.appendChild(li);
-        li.appendChild(mi.subMenu.list);
+        let cell = this.tableBody.rows.item(0).insertCell();
+        cell.textContent = mi.text;
+        cell.appendChild(mi.subMenu.getHTMLRepresentation());
     }
 
     getHTMLRepresentation(): HTMLElement {
