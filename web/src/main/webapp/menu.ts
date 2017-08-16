@@ -67,7 +67,8 @@ export class TopSubMenu implements IHtmlElement {
 
     constructor(mis: MenuItem[]) {
         this.outer = document.createElement("table");
-        this.outer.className = "menu";
+        this.outer.classList.add("menu");
+        
         this.tableBody = this.outer.createTBody();
         
         this.items = [];
@@ -104,7 +105,8 @@ export class TopMenu implements IHtmlElement {
 
     constructor(mis: TopMenuItem[]) {
         this.outer = document.createElement("table");
-        this.outer.className = "menu";
+        this.outer.classList.add("menu");
+        this.outer.classList.add("topMenu");
         this.tableBody = this.outer.createTBody();
         this.tableBody.insertRow();
         this.items = [];

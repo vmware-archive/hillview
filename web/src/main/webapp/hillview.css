@@ -216,32 +216,40 @@ th, td {
     display: inline-block;
 }
 
+table.menu {
+    box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.5);
+    border: 1px solid grey;
+    font-size:small
+}
+
+table.menu.topMenu {
+    box-shadow: none;
+}
+
 table.menu td {
-    background-color: lightgrey;
+    background-color: rgb(239, 239, 239);
+    color: rgb(0, 0, 0);
+    border: 0;
+    padding: 5px 10px;
 }
 
 table.menu table.menu {
     display: none;
-    box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.5);
+    position: absolute;
 }
 
 table.menu td:hover {
-    background-color: lightcyan;
+    background-color: rgb(126, 126, 126);
+    color: rgb(255, 255, 255);
 }
 
 table.menu td:hover table.menu {
     display: block;
-    position: absolute;
-    background-color: lightgrey;
 }
 
-.dropdown {
-    display: block;
+table.dropdown {
     position: absolute;
     top: 0;
     left: 0;
-    background-color: lightgray;
     z-index: 1;
-    text-align: right;
-    box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.5);
 }
