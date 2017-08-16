@@ -17,3 +17,9 @@ rm train-labels-idx1-ubyte
 rm t10k-images-idx3-ubyte
 rm t10k-labels-idx1-ubyte
 echo 'Done!'
+
+echo 'Concatenating test and train data to one file...'
+tail -n +2 mnist_test.csv >> mnist_train.csv
+rm mnist_test.csv
+mv mnist_train.csv mnist.csv
+echo 'Done!'

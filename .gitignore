@@ -54,8 +54,7 @@ hs_err_pid*
 data/On_Time_On_Time*
 data/2016_*.csv
 data/readme.html
-data/mnist_test.csv
-data/mnist_train.csv
+data/mnist.csv
 data/mnist.schema
 data/segmentation.csv
 data/segmentation.readme

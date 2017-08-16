@@ -39,7 +39,7 @@ public class LoadCsvFileMapper implements IMap<Empty, List<CsvFileObject>> {
         String vropsFile = "vrops.csv";
         String vropsSchema = "vrops.schema";
 
-        String mnistTrainFile = "mnist_train.csv";
+        String mnistTrainFile = "mnist.csv";
         String mnistSchema = "mnist.schema";
 
         String segmentationFile = "segmentation.csv";

@@ -57,7 +57,7 @@ public class PCATest {
     public void testMNIST() throws IOException {
         // Read the data from file
         String dataFolder = "../data";
-        String csvFile = "mnist_train.csv";
+        String csvFile = "mnist.csv";
         String schemaFile = "mnist.schema";
         Path path = Paths.get(dataFolder, schemaFile);
         Schema schema = Schema.readFromJsonFile(path);
