@@ -10,6 +10,7 @@ import org.jblas.DoubleMatrix;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.logging.Logger;
 
 /**
  * This map computes the {numProjections} principal components of the data specified by the column names.
@@ -17,6 +18,7 @@ import java.util.List;
  * The result is the concatenation of the original table and the result.
  */
 public class PCAProjectionMap implements IMap<ITable, ITable>, Serializable, IJson {
+    private static final Logger LOG = Logger.getLogger(PCAProjectionMap.class.getName());
     private final int numProjections;
     private final List<String> colNames;
 
