@@ -25,15 +25,47 @@ public class BlasConversions {
      * @param converter String converter for converting string data to numeric data.
      * @return DoubleMatrix with the table's columns interpreted as doubles.
      */
-    public static DoubleMatrix toDoubleMatrix(ITable table, String[] colNames, @Nullable IStringConverter converter) {
-        DoubleMatrix mat = new DoubleMatrix(table.getNumOfRows(), colNames.length);
-        for (int j = 0; j < colNames.length; j++) {
-            IColumn col = table.getColumn(colNames[j]);
+    public static DoubleMatrix toDoubleMatrix(ITable table, List<String> colNames, @Nullable IStringConverter
+            converter) {
+        DoubleMatrix mat = new DoubleMatrix(table.getNumOfRows(), colNames.size());
+        for (int j = 0; j < colNames.size(); j++) {
+            IColumn col = table.getColumn(colNames.get(j));
             IRowIterator iter = table.getRowIterator();
             int row = iter.getNextRow();
             int i = 0;
             while (row >= 0) {
                 mat.put(i, j, col.asDouble(row, converter));
+                row = iter.getNextRow();
+                i++;
+            }
+        }
+        return mat;
+    }
+
+    /**
+     * Convert from an ITable to a DoubleMatrix. This copies all data from the table.
+     * @param table Table that is to be converted.
+     * @param colNames Names of columns in the table that have to be converted.
+     * @param converter String converter for converting string data to numeric data.
+     * @param missingValue Value to put in the matrix where missing values occur.
+     * @return Array of DoubleMatrices. The first one is
+     */
+    public static DoubleMatrix toDoubleMatrixMissing(ITable table, List<String> colNames, @Nullable IStringConverter
+            converter, double missingValue) {
+        DoubleMatrix mat = new DoubleMatrix(table.getNumOfRows(), colNames.size());
+        DoubleMatrix missing = DoubleMatrix.zeros(colNames.size());
+        for (int j = 0; j < colNames.size(); j++) {
+            IColumn col = table.getColumn(colNames.get(j));
+            IRowIterator iter = table.getRowIterator();
+            int row = iter.getNextRow();
+            int i = 0;
+            while (row >= 0) {
+                try {
+                    mat.put(i, j, col.asDouble(row, converter));
+                } catch (MissingException e) {
+                    missing.put(j, missing.get(j) + 1);
+                    mat.put(i, j, missingValue);
+                }
                 row = iter.getNextRow();
                 i++;
             }

@@ -734,12 +734,8 @@ export class TableView extends RemoteObject
         if (allColumns) {
             colNames = new Set<string>();
             for (let i = 0; i < this.schema.length; i++) {
-                if ((this.schema[i].kind == "Double" || this.schema[i].kind == "Integer") && !this.schema[i].allowMissing)
+                if (this.schema[i].kind == "Double" || this.schema[i].kind == "Integer")
                     colNames.add(this.schema[i].name);
-            }
-            if (colNames.size == 0) {
-                this.reportError("Not enough numeric columns that don't have missing values.");
-                return;
             }
         } else {
             colNames = this.selectedColumns;
@@ -749,23 +745,28 @@ export class TableView extends RemoteObject
         let message = "";
         colNames.forEach((colName) => {
             let kind = this.findColumn(colName).kind;
-            let allowMissing = this.findColumn(colName).allowMissing
+            // let allowMissing = this.findColumn(colName).allowMissing
             if (kind != "Double" && kind != "Integer") {
                 valid = false;
                 message += "\n  * Column '" + colName  + "' is not numeric.";
             }
-            if (allowMissing) {
-                valid = false;
-                message += "\n  * Column '" + colName + "' has missing values.";
-            }
+            // if (allowMissing) {
+            //     valid = false;
+            //     message += "\n  * Column '" + colName + "' has missing values.";
+            // }
         });
+
+        if (colNames.size < 3) {
+            this.reportError("Not enough numeric columns. Need at least 3. There are " + colNames.size);
+            return;
+        }
 
         if (valid) {
             let pcaRequest = new PCAProjectionRequest(colNames);
             let rr = this.createRpcRequest("pca", pcaRequest);
             rr.invoke(new RemoteTableReceiver(this.page, rr));
         } else {
-            this.reportError("Only numeric columns without missing values are supported for PCA:" + message);
+            this.reportError("Only numeric columns are supported for PCA:" + message);
         }
     }
 

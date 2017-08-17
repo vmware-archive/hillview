@@ -1,6 +1,7 @@
 package org.hillview.sketches;
 
 import org.hillview.dataset.api.IJson;
+import org.jblas.DoubleMatrix;
 
 import javax.annotation.Nullable;
 import java.io.Serializable;
@@ -36,12 +37,17 @@ public class CorrMatrix implements ICorrelation, Serializable, IJson {
      */
     public final double[] means;
 
+    /**
+     * Holds the number of processed entries per column pair
+     */
+    public DoubleMatrix nonMissing;
+
     public CorrMatrix(List<String> colNames) {
         this.colNum = new HashMap<>(colNames.size());
         for (int i=0; i < colNames.size(); i++)
             this.colNum.put(colNames.get(i), i);
         this.rawMatrix = new double[colNames.size()][colNames.size()];
-        this.count = 0;
+        this.nonMissing = DoubleMatrix.zeros(colNames.size(), colNames.size());
         this.means = new double[colNames.size()];
         this.corrMatrix = null;
     }
@@ -96,19 +102,18 @@ public class CorrMatrix implements ICorrelation, Serializable, IJson {
 
     @Override
     public double getNorm(String s) {
-        return Math.sqrt(this.rawMatrix[this.colNum.get(s)][this.colNum.get(s)]/this.count);
+        return Math.sqrt(this.rawMatrix[this.colNum.get(s)][this.colNum.get(s)]);
     }
 
     @Override
     public double getInnerProduct(String s, String t) {
         int i = this.colNum.get(s);
         int j = this.colNum.get(t);
-        return (((i <= j) ? this.rawMatrix[i][j] : this.rawMatrix[j][i])/this.count);
+        return (((i <= j) ? this.rawMatrix[i][j] : this.rawMatrix[j][i]));
     }
 
     public String toString() {
         return "Number of columns:  " + String.valueOf(this.colNum.size()) + "\n" +
-                "Total count: " + String.valueOf(this.count) + "\n" +
                 Arrays.deepToString(this.rawMatrix);
     }
 }

@@ -26,7 +26,7 @@ public class LinearProjectionTest {
         Random.seed(42);
         DoubleMatrix matrix = DoubleMatrix.rand(rows, cols);
         ITable table = BlasConversions.toTable(matrix);
-        DoubleMatrix matrix2 = BlasConversions.toDoubleMatrix(table, table.getSchema().getColumnNames().toArray(new String[]{}), null);
+        DoubleMatrix matrix2 = BlasConversions.toDoubleMatrix(table, new ArrayList<String>(table.getSchema().getColumnNames()), null);
         Assert.assertEquals(rows * cols, matrix.eq(matrix2).sum(), Math.ulp(rows * rows));
     }
 
@@ -45,9 +45,9 @@ public class LinearProjectionTest {
         );
         ITable result = lpm.apply(table);
 
-        String[] newColNames = new String[numProjections];
+        List<String> newColNames = new ArrayList<String>();
         for (int i = 0; i < numProjections; i++) {
-            newColNames[i] = String.format("LP%d", i);
+            newColNames.add(String.format("LP%d", i));
         }
 
         DoubleMatrix projectedData = BlasConversions.toDoubleMatrix(result, newColNames, null);

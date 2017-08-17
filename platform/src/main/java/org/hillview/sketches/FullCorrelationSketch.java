@@ -32,18 +32,37 @@ public class FullCorrelationSketch implements ISketch<ITable, CorrMatrix> {
                     (table.getSchema().getKind(col) != ContentsKind.Integer))
                 throw new InvalidParameterException("Correlation Sketch requires column to be " +
                         "integer or double: " + col);
-            if (table.getSchema().getDescription(col).allowMissing) {
-                throw new InvalidParameterException("Correlation Sketch requires column to not allow missing data: " +
-                        col);
-            }
         }
         CorrMatrix corrMatrix = new CorrMatrix(this.colNames);
         int nRows = table.getNumOfRows();
+        int nCols = this.colNames.size();
 
         // Convert the columns to a DoubleMatrix.
-        DoubleMatrix mat = BlasConversions.toDoubleMatrix(table, this.colNames.toArray(new String[]{}), null);
-        DoubleMatrix covMat = mat.transpose().mmul(mat).div(nRows);
-        DoubleMatrix means = mat.columnMeans();
+        DoubleMatrix mat = BlasConversions.toDoubleMatrixMissing(table, this.colNames, null, Double.NaN);
+
+        // The number of nonmissing values per column pair
+        corrMatrix.nonMissing = DoubleMatrix.ones(nCols, nCols).mul(nRows);
+        for (int row = 0; row < mat.rows; row++) {
+            for (int i = 0; i < mat.columns; i++) {
+                if (Double.isNaN(mat.get(row, i))) {
+                    mat.put(row, i, 0); // Set the value to 0 so it doesn't contribute.
+                    corrMatrix.nonMissing.put(i, i, corrMatrix.nonMissing.get(i, i) - 1);
+                    for (int j = i; j < mat.columns; j++) {
+                        if (Double.isNaN(mat.get(row, j))) {
+                            corrMatrix.nonMissing.put(i, j, corrMatrix.nonMissing.get(i, j) - 1);
+                            corrMatrix.nonMissing.put(j, i, corrMatrix.nonMissing.get(j, i) - 1);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Since the missing values are set to 0, they don't contribute to the covariance matrix.
+        DoubleMatrix covMat = mat.transpose().mmul(mat);
+
+        // Normalize by the number of *actual* values processed. (Also for the mean!)
+        covMat.divi(corrMatrix.nonMissing);
+        DoubleMatrix means = mat.columnSums().divRowVector(corrMatrix.nonMissing.diag());
 
         for (int i = 0; i < this.colNames.size(); i++) {
             for (int j = i; j < this.colNames.size(); j++) {
@@ -51,7 +70,6 @@ public class FullCorrelationSketch implements ISketch<ITable, CorrMatrix> {
             }
             corrMatrix.means[i] = means.get(i);
         }
-        corrMatrix.count = nRows;
         return corrMatrix;
     }
 
@@ -67,21 +85,27 @@ public class FullCorrelationSketch implements ISketch<ITable, CorrMatrix> {
         left = Converters.checkNull(left);
         right = Converters.checkNull(right);
 
-        // Return a zero when adding two zeros.
-        if (left.count == 0 && right.count == 0)
-            return this.zero();
-
         CorrMatrix result = new CorrMatrix(this.colNames);
-        double alpha = (double) left.count / (left.count + right.count);
 
         for (int i = 0; i < this.colNames.size(); i++) {
-            result.means[i] = alpha * left.means[i] + (1 - alpha) * right.means[i];
+            if (left.nonMissing.get(i, i) + right.nonMissing.get(i, i) == 0)
+                result.means[i] = 0;
+            else {
+                double meanAlpha = left.nonMissing.get(i, i) / (left.nonMissing.get(i, i) + right.nonMissing.get(i, i));
+                result.means[i] = meanAlpha * left.means[i] + (1 - meanAlpha) * right.means[i];
+            }
             for (int j = i; j < this.colNames.size(); j++) {
-                double val = alpha * left.get(i, j) + (1 - alpha) * right.get(i, j);
-                result.put(i, j, val);
+                if (left.nonMissing.get(i, j) + right.nonMissing.get(i, j) == 0) {
+                    result.put(i, j, 0);
+                } else {
+                    double alpha = left.nonMissing.get(i, j) / (left.nonMissing.get(i, j) + right.nonMissing.get(i, j));
+                    double val = alpha * left.get(i, j) + (1 - alpha) * right.get(i, j);
+                    result.put(i, j, val);
+                }
             }
         }
-        result.count = left.count + right.count;
+        result.nonMissing = left.nonMissing.add(right.nonMissing);
+
         return result;
     }
 }

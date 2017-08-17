@@ -92,7 +92,6 @@ public class PCATest {
         // Project
         PCAProjectionMap pcaMap = new PCAProjectionMap(numericColNames, 2);
         ITable result = pcaMap.apply(table);
-
         Assert.assertEquals(table.getSchema().getColumnCount() + 2, result.getSchema().getColumnCount());
     }
 }

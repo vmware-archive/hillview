@@ -52,7 +52,8 @@ public class LinearProjectionMap implements IMap<ITable, ITable> {
         }
 
         // Compute the projection with BLAS
-        DoubleMatrix mat = BlasConversions.toDoubleMatrix(table, this.colNames.toArray(new String[]{}), this.converter);
+        DoubleMatrix mat = BlasConversions.toDoubleMatrixMissing(table, this.colNames, this
+                .converter, Double.NaN);
         DoubleMatrix resultMat = mat.mmul(this.projectionMatrix.transpose());
 
         // Copy the result to new columns with the same membershipset size. (Can't use BlasConversions here.)
@@ -64,7 +65,11 @@ public class LinearProjectionMap implements IMap<ITable, ITable> {
             int row = it.getNextRow();
             int i = 0;
             while (row >= 0) {
-                column.set(row, resultMat.get(i, j));
+                if (Double.isNaN(resultMat.get(i, j))) {
+                    column.setMissing(row);
+                } else {
+                    column.set(row, resultMat.get(i, j));
+                }
                 row = it.getNextRow();
                 i++;
             }
