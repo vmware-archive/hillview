@@ -226,11 +226,6 @@ export class TableView extends RemoteObject
             },
             {
                 text: "Combine", subMenu: combineMenu(this)
-            },
-            {
-                text: "Operation", subMenu: new TopSubMenu([
-                    {text: "PCA on all numeric columns", action: () => this.pca(true)}
-                ])
             }
         ]);
         this.top.appendChild(menu.getHTMLRepresentation());
@@ -704,6 +699,16 @@ export class TableView extends RemoteObject
         this.highlightSelectedColumns();
     }
 
+    private selectNumericColumns(): void {
+        this.selectedColumns.clear();
+        for (let i = 0; i < this.schema.length; i++) {
+            let kind = this.schema[i].kind;
+            if (kind == "Integer" || kind == "Double")
+                this.selectedColumns.add(this.schema[i].name);
+        }
+        this.highlightSelectedColumns();
+    }
+
     private columnClass(colName: string): string {
         let index = this.columnIndex(colName);
         return "col" + String(index);
@@ -745,15 +750,10 @@ export class TableView extends RemoteObject
         let message = "";
         colNames.forEach((colName) => {
             let kind = this.findColumn(colName).kind;
-            // let allowMissing = this.findColumn(colName).allowMissing
             if (kind != "Double" && kind != "Integer") {
                 valid = false;
                 message += "\n  * Column '" + colName  + "' is not numeric.";
             }
-            // if (allowMissing) {
-            //     valid = false;
-            //     message += "\n  * Column '" + colName + "' has missing values.";
-            // }
         });
 
         if (colNames.size < 3) {
