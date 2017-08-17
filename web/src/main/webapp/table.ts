@@ -226,11 +226,6 @@ export class TableView extends RemoteObject
             },
             {
                 text: "Combine", subMenu: combineMenu(this)
-            },
-            {
-                text: "Operation", subMenu: new TopSubMenu([
-                    {text: "PCA on all numeric columns", action: () => this.pca(true)}
-                ])
             }
         ]);
         this.top.appendChild(menu.getHTMLRepresentation());
