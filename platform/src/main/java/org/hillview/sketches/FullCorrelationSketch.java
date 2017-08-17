@@ -32,10 +32,6 @@ public class FullCorrelationSketch implements ISketch<ITable, CorrMatrix> {
                     (table.getSchema().getKind(col) != ContentsKind.Integer))
                 throw new InvalidParameterException("Correlation Sketch requires column to be " +
                         "integer or double: " + col);
-            if (table.getSchema().getDescription(col).allowMissing) {
-                throw new InvalidParameterException("Correlation Sketch requires column to not allow missing data: " +
-                        col);
-            }
         }
         CorrMatrix corrMatrix = new CorrMatrix(this.colNames);
         int nRows = table.getNumOfRows();
