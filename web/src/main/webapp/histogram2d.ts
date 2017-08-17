@@ -592,13 +592,46 @@ export class Histogram2DView extends HistogramViewBase {
             complement: d3.event.sourceEvent.ctrlKey
         };
 
-        /*
         let rr = this.createRpcRequest("filterRange", filter);
-        let renderer = new FilterReceiver(
-            this.currentData.xData.description, this.tableSchema,
-            this.currentData.xData.allStrings, range, this.page, rr);
+        let renderer = new Histogram2DFilterReceiver(
+            this.currentData.xData.description,
+            this.currentData.yData.description, this.tableSchema,
+            this.page, rr);
         rr.invoke(renderer);
-        */
+    }
+}
+
+class Histogram2DFilterReceiver extends Renderer<string> {
+    private stub: RemoteObject;
+
+    constructor(protected xColumn: ColumnDescription,
+                protected yColumn: ColumnDescription,
+                protected tableSchema: Schema,
+                page: FullPage,
+                operation: ICancellable) {
+        super(page, operation, "Filter");
+    }
+
+    public onNext(value: PartialResult<string>): void {
+        super.onNext(value);
+        if (value.data != null)
+            this.stub = new RemoteObject(value.data);
+    }
+
+    public onCompleted(): void {
+        this.finished();
+        if (this.stub != null) {
+            let columns: RangeInfo[] = [];
+            let cds: ColumnDescription[] = [this.xColumn, this.yColumn];
+            cds.forEach(v => {
+                let ci = new RangeInfo();
+                ci.columnName = v.name;
+                columns.push(ci);
+            });
+
+            let rr = this.stub.createRpcRequest("range2D", columns);
+            rr.invoke(new Range2DCollector(cds, this.tableSchema, this.page, this.stub, rr, false));
+        }
     }
 }
 
