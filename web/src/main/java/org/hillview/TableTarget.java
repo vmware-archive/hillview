@@ -19,11 +19,8 @@ package org.hillview;
 
 import org.hillview.dataset.ConcurrentSketch;
 import org.hillview.dataset.api.IDataSet;
-import org.hillview.dataset.api.IMap;
-import org.hillview.dataset.api.ISketch;
 import org.hillview.maps.FilterMap;
 import org.hillview.maps.LinearProjectionMap;
-import org.hillview.maps.PCAProjectionMap;
 import org.hillview.sketches.*;
 import org.hillview.table.*;
 import org.hillview.table.api.IStringConverter;
@@ -36,7 +33,7 @@ import javax.annotation.Nullable;
 import javax.websocket.Session;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 @SuppressWarnings("CanBeFinal")
@@ -210,9 +207,14 @@ public final class TableTarget extends RpcTarget {
     void pca(RpcRequest request, Session session) {
         PCAProjectionRequest pcaReq = request.parseArgs(PCAProjectionRequest.class);
         List<String> colNames = Arrays.asList(pcaReq.columnNames);
-        IMap<ITable, ITable> corrSketch = new PCAProjectionMap(colNames, 2);
-
-        this.runMap(this.table, corrSketch, TableTarget::new, request, session);
+        FullCorrelationSketch sketch = new FullCorrelationSketch(colNames);
+        Consumer<CorrMatrix> consumer = cm -> {
+            DoubleMatrix corrMatrix = new DoubleMatrix(cm.getCorrelationMatrix());
+            DoubleMatrix eigenVectors = LinAlg.eigenVectors(corrMatrix, 2);
+            LinearProjectionMap lpm = new LinearProjectionMap(colNames, eigenVectors, "PCA", null);
+            this.runMap(this.table, lpm, TableTarget::new, request, session);
+        };
+        this.runChainedSketch(this.table, sketch, consumer, request, session);
         System.out.println(Arrays.toString(pcaReq.columnNames));
     }
 

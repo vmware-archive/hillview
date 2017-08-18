@@ -32,6 +32,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -270,6 +271,26 @@ abstract class RpcTarget implements IJson {
         SketchResultObserver<S> robs = new SketchResultObserver<S>(
                 sketch.toString(), request, session);
         Subscription sub = result.subscribe(robs);
+        this.saveSubscription(sub);
+    }
+
+    /**
+     * Runs a sketch, and consumes the sketch result in a consumer that can apply additional sketches/maps.
+     * @param data    Dataset to run the sketch on.
+     * @param sketch  Sketch to run.
+     * @param postprocessing Consumer to run after the sketch is done. It consumes the sketch and should communicate its results to the request.
+     * @param request Web socket request, where replies are send.
+     * @param session Web socket session.
+     */
+    <T, R extends IJson>
+    void runChainedSketch(IDataSet<T> data, ISketch<T, R> sketch, Consumer<R> postprocessing, RpcRequest request, Session session) {
+        Observable<PartialResult<R>> sketches = data.sketch(sketch);
+        PartialResultMonoid<R> prm = new PartialResultMonoid<R>(sketch);
+        Observable<PartialResult<R>> add = sketches.scan(prm::add).publish().autoConnect(2);
+        add.last().forEach(p -> postprocessing.accept(p.deltaValue));
+        SketchResultObserver robs = new SketchResultObserver(
+                sketch.toString(), request, session);
+        Subscription sub = add.subscribe(robs);
         this.saveSubscription(sub);
     }
 
