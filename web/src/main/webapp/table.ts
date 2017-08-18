@@ -710,7 +710,7 @@ export class TableView extends RemoteObject
         rr.invoke(new FilterCompleted(this.page, this, rr, this.order));
     }
 
-    private equalityFilter(colname: string, value?: string): void {
+    private equalityFilter(colname: string, value?: string, complement?: boolean): void {
         if (value == null) {
             let ef = new EqualityFilterDialog(this.findColumn(colname));
             ef.setAction(() => this.runFilter(ef.getFilter()));
@@ -719,7 +719,7 @@ export class TableView extends RemoteObject
             let efd: EqualityFilterDescription = {
                 columnDescription: this.findColumn(colname),
                 compareValue: value,
-                complement: false,
+                complement: (complement == null ? false : complement)
             }
             this.runFilter(efd);
         }
@@ -888,7 +888,8 @@ export class TableView extends RemoteObject
                                 this.contextMenu.remove();
                             }
                             this.contextMenu = new ContextMenu([
-                                {text: "Filter for " + cellValue, action: () => this.equalityFilter(cd.name, cellValue) }
+                                {text: "Filter for " + cellValue, action: () => this.equalityFilter(cd.name, cellValue) },
+                                {text: "Filter for not " + cellValue, action: () => this.equalityFilter(cd.name, cellValue, true) }
                             ]);
 
                             document.body.appendChild(this.contextMenu.getHTMLRepresentation());
