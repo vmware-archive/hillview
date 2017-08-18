@@ -710,10 +710,19 @@ export class TableView extends RemoteObject
         rr.invoke(new FilterCompleted(this.page, this, rr, this.order));
     }
 
-    private equalityFilter(colname: string): void {
-        let ef = new EqualityFilterDialog(this.findColumn(colname));
-        ef.setAction(() => this.runFilter(ef.getFilter()));
-        ef.show();
+    private equalityFilter(colname: string, value?: string): void {
+        if (value == null) {
+            let ef = new EqualityFilterDialog(this.findColumn(colname));
+            ef.setAction(() => this.runFilter(ef.getFilter()));
+            ef.show();
+        } else {
+            let efd: EqualityFilterDescription = {
+                columnDescription: this.findColumn(colname),
+                compareValue: value,
+                complement: false,
+            }
+            this.runFilter(efd);
+        }
     }
 
     private heatMap(): void {
@@ -870,9 +879,30 @@ export class TableView extends RemoteObject
                     cell.classList.add("missingData");
                     cell.textContent = "missing";
                 } else {
-                    cell.textContent = TableView.convert(row.values[dataIndex], cd.kind);
+                    let cellValue : string = TableView.convert(row.values[dataIndex], cd.kind);
+                    cell.textContent = cellValue;
+                    if (cd.kind == "String" || cd.kind == "Json" || cd.kind == "Category" || cd.kind == "Integer") {
+                        cell.oncontextmenu = e => {
+                            e.preventDefault();
+                            if (this.contextMenu != null) {
+                                this.contextMenu.remove();
+                            }
+                            this.contextMenu = new ContextMenu([
+                                {text: "Filter for " + cellValue, action: () => this.equalityFilter(cd.name, cellValue) }
+                            ]);
+
+                            document.body.appendChild(this.contextMenu.getHTMLRepresentation());
+                            // Spawn the menu at the mouse's location
+                            this.contextMenu.getHTMLRepresentation().style.transform =
+                                "translate("
+                                    + (e.pageX - 1) + "px , "
+                                    + (e.pageY - 1) + "px"
+                                + ")";
+                        };
+                    }
                 }
             }
+            
         }
         this.dataRowsDisplayed += row.count;
     }
