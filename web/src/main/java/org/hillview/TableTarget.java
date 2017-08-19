@@ -33,7 +33,6 @@ import javax.annotation.Nullable;
 import javax.websocket.Session;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 @SuppressWarnings("CanBeFinal")
@@ -203,19 +202,31 @@ public final class TableTarget extends RpcTarget {
         this.runMap(this.table, fm, TableTarget::new, request, session);
     }
 
+    static class CorrelationMatrixRequest {
+        String[] columnNames;
+    }
+
     @HillviewRpc
-    void pca(RpcRequest request, Session session) {
-        PCAProjectionRequest pcaReq = request.parseArgs(PCAProjectionRequest.class);
+    void correlationMatrix(RpcRequest request, Session session) {
+        CorrelationMatrixRequest pcaReq = request.parseArgs(CorrelationMatrixRequest.class);
         List<String> colNames = Arrays.asList(pcaReq.columnNames);
         FullCorrelationSketch sketch = new FullCorrelationSketch(colNames);
-        Consumer<CorrMatrix> consumer = cm -> {
-            DoubleMatrix corrMatrix = new DoubleMatrix(cm.getCorrelationMatrix());
-            DoubleMatrix eigenVectors = LinAlg.eigenVectors(corrMatrix, 2);
-            LinearProjectionMap lpm = new LinearProjectionMap(colNames, eigenVectors, "PCA", null);
-            this.runMap(this.table, lpm, TableTarget::new, request, session);
-        };
-        this.runChainedSketch(this.table, sketch, consumer, request, session);
-        System.out.println(Arrays.toString(pcaReq.columnNames));
+        this.runCompleteSketch(this.table, sketch, CorrelationMatrixTarget::new, request, session);
+    }
+
+    static class ProjectToEigenVectorsInfo {
+        String id = "";
+    }
+
+    @HillviewRpc
+    void projectToEigenVectors(RpcRequest request, Session session) {
+        ProjectToEigenVectorsInfo info = request.parseArgs(ProjectToEigenVectorsInfo.class);
+        RpcTarget target = RpcObjectManager.instance.getObject(info.id);
+        CorrelationMatrixTarget cmt = (CorrelationMatrixTarget) target;
+        CorrMatrix cm = cmt.corrMatrix;
+        DoubleMatrix projectionMatrix = LinAlg.eigenVectors(new DoubleMatrix(cm.getCorrelationMatrix()), 2);
+        LinearProjectionMap lpm = new LinearProjectionMap(cm.columnNames, projectionMatrix, "PCA", null);
+        this.runMap(this.table, lpm, TableTarget::new, request, session);
     }
 
     static class QuantileInfo {

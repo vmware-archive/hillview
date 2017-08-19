@@ -1,10 +1,13 @@
 package org.hillview.sketches;
 
 import org.hillview.dataset.api.IJson;
+import org.hillview.maps.LinearProjectionMap;
+import org.hillview.utils.LinAlg;
 import org.jblas.DoubleMatrix;
 
 import javax.annotation.Nullable;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -19,6 +22,10 @@ public class CorrMatrix implements ICorrelation, Serializable, IJson {
      * The list of columns whose correlation we wish to compute.
      */
     private final HashMap<String, Integer> colNum;
+    /**
+     * List of column names needs to be public, as the order is needed for the projection.
+     */
+    public final List<String> columnNames;
     /**
      * A matrix that records the (un)-normalized inner products between pairs of columns.
      */
@@ -43,6 +50,7 @@ public class CorrMatrix implements ICorrelation, Serializable, IJson {
     public DoubleMatrix nonMissing;
 
     public CorrMatrix(List<String> colNames) {
+        this.columnNames = new ArrayList<String>(colNames);
         this.colNum = new HashMap<>(colNames.size());
         for (int i=0; i < colNames.size(); i++)
             this.colNum.put(colNames.get(i), i);
@@ -115,5 +123,10 @@ public class CorrMatrix implements ICorrelation, Serializable, IJson {
     public String toString() {
         return "Number of columns:  " + String.valueOf(this.colNum.size()) + "\n" +
                 Arrays.deepToString(this.rawMatrix);
+    }
+
+    public LinearProjectionMap eigenVectorProjection(int nComponents) {
+        DoubleMatrix eigenVectors = LinAlg.eigenVectors(new DoubleMatrix(this.getCorrelationMatrix()), nComponents);
+        return new LinearProjectionMap(new ArrayList<String>(this.columnNames), eigenVectors, "PCA", null);
     }
 }

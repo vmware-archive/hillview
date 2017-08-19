@@ -734,17 +734,9 @@ export class TableView extends RemoteObject
         }
     }
 
-    private pca(allColumns?: boolean): void {
-        let colNames: Set<string>;
-        if (allColumns) {
-            colNames = new Set<string>();
-            for (let i = 0; i < this.schema.length; i++) {
-                if (this.schema[i].kind == "Double" || this.schema[i].kind == "Integer")
-                    colNames.add(this.schema[i].name);
-            }
-        } else {
-            colNames = this.selectedColumns;
-        }
+    private pca(): void {
+        let colNames: string[] = [];
+        this.selectedColumns.forEach(col => colNames.push(col));
 
         let valid = true;
         let message = "";
@@ -756,15 +748,17 @@ export class TableView extends RemoteObject
             }
         });
 
-        if (colNames.size < 3) {
-            this.reportError("Not enough numeric columns. Need at least 3. There are " + colNames.size);
+        if (colNames.length < 3) {
+            this.reportError("Not enough numeric columns. Need at least 3. There are " + colNames.length);
             return;
         }
 
         if (valid) {
-            let pcaRequest = new PCAProjectionRequest(colNames);
-            let rr = this.createRpcRequest("pca", pcaRequest);
-            rr.invoke(new RemoteTableReceiver(this.page, rr));
+            let correlationMatrixRequest = {
+                columnNames: colNames
+            };
+            let rr = this.createRpcRequest("correlationMatrix", correlationMatrixRequest);
+            rr.invoke(new CorrelationMatrixReceiver(this.getPage(), this, rr, this.order));
         } else {
             this.reportError("Only numeric columns are supported for PCA:" + message);
         }
@@ -1100,6 +1094,37 @@ class HeavyHittersReceiver extends Renderer<string> {
             });
         rr.setStartTime(this.operation.startTime());
         rr.invoke(new TableOperationCompleted(this.page, this.tv, rr, this.order));
+    }
+}
+
+// The string received is actually the id of a remote object that stores
+// the correlation matrix information
+class CorrelationMatrixReceiver extends Renderer<string> {
+    private correlationMatrixObjectsId: string;
+
+    public constructor(page: FullPage,
+                       protected tv: TableView,
+                       operation: ICancellable,
+                       protected order: RecordOrder) {
+        super(page, operation, "Correlation matrix");
+        this.correlationMatrixObjectsId = null;
+    }
+
+    onNext(value: PartialResult<string>): any {
+        super.onNext(value);
+        if (value.data != null)
+            this.correlationMatrixObjectsId = value.data;
+    }
+
+    onCompleted(): void {
+        super.finished();
+        if (this.correlationMatrixObjectsId == null)
+            return;
+        let rr = this.tv.createRpcRequest("projectToEigenVectors", {
+                id: this.correlationMatrixObjectsId
+        });
+        rr.setStartTime(this.operation.startTime());
+        rr.invoke(new RemoteTableReceiver(this.page, rr));
     }
 }
 

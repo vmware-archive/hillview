@@ -1,7 +1,7 @@
 package org.hillview.sketch;
 
 import org.hillview.dataset.api.IDataSet;
-import org.hillview.maps.PCAProjectionMap;
+import org.hillview.maps.LinearProjectionMap;
 import org.hillview.sketches.CorrMatrix;
 import org.hillview.sketches.FullCorrelationSketch;
 import org.hillview.storage.CsvFileReader;
@@ -89,9 +89,11 @@ public class PCATest {
             }
         }
 
-        // Project
-        PCAProjectionMap pcaMap = new PCAProjectionMap(numericColNames, 2);
-        ITable result = pcaMap.apply(table);
-        Assert.assertEquals(table.getSchema().getColumnCount() + 2, result.getSchema().getColumnCount());
+        FullCorrelationSketch fcs = new FullCorrelationSketch(numericColNames);
+        CorrMatrix cm = fcs.create(table);
+        DoubleMatrix corrMatrix = new DoubleMatrix(cm.getCorrelationMatrix());
+        DoubleMatrix eigenVectors = LinAlg.eigenVectors(corrMatrix, 2);
+        LinearProjectionMap lpm = new LinearProjectionMap(numericColNames, eigenVectors, "PCA", null);
+        ITable result = lpm.apply(table);
     }
 }
