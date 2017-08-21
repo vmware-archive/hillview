@@ -217,6 +217,7 @@ public final class TableTarget extends RpcTarget {
 
     static class ProjectToEigenVectorsInfo {
         String id = "";
+        int numComponents;
     }
 
     @HillviewRpc
@@ -225,7 +226,7 @@ public final class TableTarget extends RpcTarget {
         RpcTarget target = RpcObjectManager.instance.getObject(info.id);
         CorrelationMatrixTarget cmt = (CorrelationMatrixTarget) target;
         CorrMatrix cm = cmt.corrMatrix;
-        DoubleMatrix[] mats = LinAlg.eigenVectorsVarianceExplained(new DoubleMatrix(cm.getCorrelationMatrix()), 2);
+        DoubleMatrix[] mats = LinAlg.eigenVectorsVarianceExplained(new DoubleMatrix(cm.getCorrelationMatrix()), info.numComponents);
         DoubleMatrix projectionMatrix = mats[0];
         DoubleMatrix varianceExplained = mats[1];
         List<String> newColNames = new ArrayList<String>();

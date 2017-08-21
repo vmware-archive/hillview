@@ -736,6 +736,7 @@ export class TableView extends RemoteObject
     }
 
     private pca(): void {
+        
         let colNames: string[] = [];
         this.selectedColumns.forEach(col => colNames.push(col));
 
@@ -755,11 +756,23 @@ export class TableView extends RemoteObject
         }
 
         if (valid) {
-            let correlationMatrixRequest = {
-                columnNames: colNames
-            };
-            let rr = this.createRpcRequest("correlationMatrix", correlationMatrixRequest);
-            rr.invoke(new CorrelationMatrixReceiver(this.getPage(), this, rr, this.order));
+            let pcaDialog = new Dialog("PCA");
+            pcaDialog.addTextField("numComponents", "Number of components", "Integer");
+            pcaDialog.setAction(() => {
+                let numComponents: number = pcaDialog.getFieldValueAsInt("numComponents");
+                if (numComponents < 1 || numComponents > colNames.length) {
+                    this.reportError("Number of components for PCA must be between 1 (incl.) " +
+                        "and the number of selected columns, " + colNames.length + " (incl.). (" +
+                        numComponents + " does not satisfy this.)");
+                    return;
+                }
+                let correlationMatrixRequest = {
+                    columnNames: colNames
+                };
+                let rr = this.createRpcRequest("correlationMatrix", correlationMatrixRequest);
+                rr.invoke(new CorrelationMatrixReceiver(this.getPage(), this, rr, this.order, numComponents));
+            });
+            pcaDialog.show();
         } else {
             this.reportError("Only numeric columns are supported for PCA:" + message);
         }
@@ -1106,7 +1119,8 @@ class CorrelationMatrixReceiver extends Renderer<string> {
     public constructor(page: FullPage,
                        protected tv: TableView,
                        operation: ICancellable,
-                       protected order: RecordOrder) {
+                       protected order: RecordOrder,
+                       private numComponents: number) {
         super(page, operation, "Correlation matrix");
         this.correlationMatrixObjectsId = null;
     }
@@ -1122,7 +1136,8 @@ class CorrelationMatrixReceiver extends Renderer<string> {
         if (this.correlationMatrixObjectsId == null)
             return;
         let rr = this.tv.createRpcRequest("projectToEigenVectors", {
-                id: this.correlationMatrixObjectsId
+                id: this.correlationMatrixObjectsId,
+                numComponents: this.numComponents
         });
         rr.setStartTime(this.operation.startTime());
         rr.invoke(new RemoteTableReceiver(this.page, rr));
