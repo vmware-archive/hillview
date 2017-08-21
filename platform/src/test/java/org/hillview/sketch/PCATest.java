@@ -17,6 +17,7 @@ import org.junit.Test;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -56,44 +57,44 @@ public class PCATest {
 
     @Test
     public void testMNIST() throws IOException {
-        // Read the data from file
         String dataFolder = "../data";
         String csvFile = "mnist.csv";
         String schemaFile = "mnist.schema";
         Path path = Paths.get(dataFolder, schemaFile);
-        Schema schema = Schema.readFromJsonFile(path);
-        path = Paths.get(dataFolder, csvFile);
-        CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
-        config.allowFewerColumns = false;
-        config.hasHeaderRow = true;
-        config.allowMissingData = false;
-        config.schema = schema;
-        CsvFileReader r = new CsvFileReader(path, config);
-
-        ITable table;
         try {
+            Schema schema = Schema.readFromJsonFile(path);
+            path = Paths.get(dataFolder, csvFile);
+            CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
+            config.allowFewerColumns = false;
+            config.hasHeaderRow = true;
+            config.allowMissingData = false;
+            config.schema = schema;
+            CsvFileReader r = new CsvFileReader(path, config);
+
+            ITable table;
             table = r.read();
-        } catch (FileNotFoundException e) {
+            table = Converters.checkNull(table);
+
+            // List the numeric columns
+            List<String> numericColNames = new ArrayList<String>();
+            Set<String> colNames = table.getSchema().getColumnNames();
+            for (String colName : colNames) {
+                ContentsKind kind = table.getSchema().getDescription(colName).kind;
+                if (kind == ContentsKind.Double || kind == ContentsKind.Integer) {
+                    numericColNames.add(colName);
+                }
+            }
+
+            FullCorrelationSketch fcs = new FullCorrelationSketch(numericColNames);
+            CorrMatrix cm = fcs.create(table);
+            DoubleMatrix corrMatrix = new DoubleMatrix(cm.getCorrelationMatrix());
+            DoubleMatrix eigenVectors = LinAlg.eigenVectors(corrMatrix, 2);
+            LinearProjectionMap lpm = new LinearProjectionMap(numericColNames, eigenVectors, "PCA", null);
+            ITable result = lpm.apply(table);
+        } catch (FileNotFoundException|NoSuchFileException e) {
             System.out.println("Skipped test because " + csvFile + " is not present.");
             return;
         }
-        table = Converters.checkNull(table);
 
-        // List the numeric columns
-        List<String> numericColNames = new ArrayList<String>();
-        Set<String> colNames = table.getSchema().getColumnNames();
-        for (String colName : colNames) {
-            ContentsKind kind = table.getSchema().getDescription(colName).kind;
-            if (kind == ContentsKind.Double || kind == ContentsKind.Integer) {
-                numericColNames.add(colName);
-            }
-        }
-
-        FullCorrelationSketch fcs = new FullCorrelationSketch(numericColNames);
-        CorrMatrix cm = fcs.create(table);
-        DoubleMatrix corrMatrix = new DoubleMatrix(cm.getCorrelationMatrix());
-        DoubleMatrix eigenVectors = LinAlg.eigenVectors(corrMatrix, 2);
-        LinearProjectionMap lpm = new LinearProjectionMap(numericColNames, eigenVectors, "PCA", null);
-        ITable result = lpm.apply(table);
     }
 }
