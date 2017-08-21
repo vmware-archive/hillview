@@ -608,6 +608,7 @@ export class TableView extends RemoteObject
                 this.contextMenu.addItem({text: "Sort descending", action: () => this.showColumn(cd.name, -1, true) });
                 this.contextMenu.addItem({text: "Heavy hitters...", action: () => this.heavyHitters(cd.name) });
                 this.contextMenu.addItem({text: "Heat map", action: () => this.heatMap() });
+                this.contextMenu.addItem({text: "Select numeric columns", action: () => this.selectNumericColumns()});
                 this.contextMenu.addItem({text: "PCA", action: () => this.pca() });
 
                 if (this.order.find(cd.name) >= 0) {
