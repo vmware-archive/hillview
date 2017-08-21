@@ -32,15 +32,15 @@ public class LinAlg {
     /**
      * @param symmetricMat The (symmetric!) matrix of which the eigenvalues have to be computed.
      * @param n The number of eigenvectors to return.
-     * @return A DoubleMatrix whose *rows* are the n eigenvectors of symmetricMat corresponding to the n largest eigenvalues
-     * of symmetricMat.
+     * @return An array of DoubleMatrices. The first one is the matrix whose rows are the n eigenvectors of
+     * symmetricMat. The second matrix is a column vector that contains the fraction of the variance explained by the
+     * eigenvectors, in the same order.
      */
     public static DoubleMatrix[] eigenVectorsVarianceExplained(DoubleMatrix symmetricMat, int n) {
         // Compute eigen{vectors/values} and unpack the result.
         DoubleMatrix[] eigenVecVals = Eigen.symmetricEigenvectors(symmetricMat);
         DoubleMatrix eigenVectors = eigenVecVals[0];
         DoubleMatrix eigenValues = eigenVecVals[1].diag();
-        System.out.println("Vals is " + eigenValues.rows + " by " + eigenValues.columns);
 
         // Sort them by the eigenvalues and get the indices of the largest n.
         int[] order = eigenValues.sortingPermutation();

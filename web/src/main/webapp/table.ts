@@ -736,7 +736,6 @@ export class TableView extends RemoteObject
     }
 
     private pca(): void {
-        
         let colNames: string[] = [];
         this.selectedColumns.forEach(col => colNames.push(col));
 
