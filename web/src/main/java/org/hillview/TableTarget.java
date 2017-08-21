@@ -31,6 +31,7 @@ import org.jblas.DoubleMatrix;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
@@ -224,8 +225,14 @@ public final class TableTarget extends RpcTarget {
         RpcTarget target = RpcObjectManager.instance.getObject(info.id);
         CorrelationMatrixTarget cmt = (CorrelationMatrixTarget) target;
         CorrMatrix cm = cmt.corrMatrix;
-        DoubleMatrix projectionMatrix = LinAlg.eigenVectors(new DoubleMatrix(cm.getCorrelationMatrix()), 2);
-        LinearProjectionMap lpm = new LinearProjectionMap(cm.columnNames, projectionMatrix, "PCA", null);
+        DoubleMatrix[] mats = LinAlg.eigenVectorsVarianceExplained(new DoubleMatrix(cm.getCorrelationMatrix()), 2);
+        DoubleMatrix projectionMatrix = mats[0];
+        DoubleMatrix varianceExplained = mats[1];
+        List<String> newColNames = new ArrayList<String>();
+        for (int i = 0; i < projectionMatrix.rows; i++) {
+            newColNames.add(String.format("PCA%d (%.2f)", i, varianceExplained.get(i)));
+        }
+        LinearProjectionMap lpm = new LinearProjectionMap(cm.columnNames, projectionMatrix, newColNames, null);
         this.runMap(this.table, lpm, TableTarget::new, request, session);
     }
 
