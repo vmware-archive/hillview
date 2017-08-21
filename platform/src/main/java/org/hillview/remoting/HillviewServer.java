@@ -40,7 +40,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     public static final int DEFAULT_PORT = 3569;
     private static final String LOCALHOST = "127.0.0.1";
     private static final int NUM_THREADS = 5;
-    private static final int MAX_MESSAGE_SIZE = 20971520;
+    public static final int MAX_MESSAGE_SIZE = 20971520;
     private static final Executor EXECUTOR = Executors.newFixedThreadPool(NUM_THREADS);
     private final Server server;
     private final AtomicInteger dsIndex = new AtomicInteger(0);
