@@ -23,6 +23,7 @@ import {RemoteObject, RpcRequest, Renderer, combineMenu, SelectedObject, Combine
 import Rx = require('rx');
 import {BasicColStats} from "./histogramBase";
 import {RangeCollector} from "./histogram";
+import {PCAProjectionRequest} from "./pca";
 import {Range2DCollector} from "./heatMap";
 import {TopMenu, TopSubMenu, ContextMenu} from "./menu";
 import {Converters, PartialResult, ICancellable} from "./util";
@@ -215,12 +216,14 @@ export class TableView extends RemoteObject
         this.top.style.alignItems = "stretch";
 
         let menu = new TopMenu([
-            { text: "View", subMenu: new TopSubMenu([
-                { text: "Home", action: () => { TableView.goHome(this.page); } },
-                { text: "Refresh", action: () => { this.refresh(); } },
-                { text: "All rows", action: () => { this.showAllRows(); } },
-                { text: "No rows", action: () => { this.setOrder(new RecordOrder([])); } }
-            ])},
+            {
+                text: "View", subMenu: new TopSubMenu([
+                    { text: "Home", action: () => { TableView.goHome(this.page); } },
+                    { text: "Refresh", action: () => { this.refresh(); } },
+                    { text: "All columns", action: () => { this.showAllRows(); } },
+                    { text: "No columns", action: () => { this.setOrder(new RecordOrder([])); } }
+                ])
+            },
             {
                 text: "Combine", subMenu: combineMenu(this)
             }
@@ -260,7 +263,7 @@ export class TableView extends RemoteObject
         let rr = this.createRpcRequest("zip", r.remoteObjectId);
         let o = this.order.clone();
         let finalRenderer = (page: FullPage, operation: ICancellable) =>
-            { return new FilterCompleted(page, this, operation, o); };
+            { return new TableOperationCompleted(page, this, operation, o); };
         rr.invoke(new ZipReceiver(this.getPage(), rr, how, finalRenderer));
     }
 
@@ -605,6 +608,8 @@ export class TableView extends RemoteObject
                 this.contextMenu.addItem({text: "Sort descending", action: () => this.showColumn(cd.name, -1, true) });
                 this.contextMenu.addItem({text: "Heavy hitters...", action: () => this.heavyHitters(cd.name) });
                 this.contextMenu.addItem({text: "Heat map", action: () => this.heatMap() });
+                this.contextMenu.addItem({text: "Select numeric columns", action: () => this.selectNumericColumns()});
+                this.contextMenu.addItem({text: "PCA", action: () => this.pca() });
 
                 if (this.order.find(cd.name) >= 0) {
                     this.contextMenu.addItem({text: "Hide", action: () => this.showColumn(cd.name, 0, true)});
@@ -695,6 +700,16 @@ export class TableView extends RemoteObject
         this.highlightSelectedColumns();
     }
 
+    private selectNumericColumns(): void {
+        this.selectedColumns.clear();
+        for (let i = 0; i < this.schema.length; i++) {
+            let kind = this.schema[i].kind;
+            if (kind == "Integer" || kind == "Double")
+                this.selectedColumns.add(this.schema[i].name);
+        }
+        this.highlightSelectedColumns();
+    }
+
     private columnClass(colName: string): string {
         let index = this.columnIndex(colName);
         return "col" + String(index);
@@ -702,7 +717,7 @@ export class TableView extends RemoteObject
 
     private runFilter(filter: EqualityFilterDescription): void {
         let rr = this.createRpcRequest("filterEquality", filter);
-        rr.invoke(new FilterCompleted(this.page, this, rr, this.order));
+        rr.invoke(new TableOperationCompleted(this.page, this, rr, this.order));
     }
 
     private equalityFilter(colname: string, value?: string, complement?: boolean): void {
@@ -717,6 +732,36 @@ export class TableView extends RemoteObject
                 complement: (complement == null ? false : complement)
             }
             this.runFilter(efd);
+        }
+    }
+
+    private pca(): void {
+        let colNames: string[] = [];
+        this.selectedColumns.forEach(col => colNames.push(col));
+
+        let valid = true;
+        let message = "";
+        colNames.forEach((colName) => {
+            let kind = this.findColumn(colName).kind;
+            if (kind != "Double" && kind != "Integer") {
+                valid = false;
+                message += "\n  * Column '" + colName  + "' is not numeric.";
+            }
+        });
+
+        if (colNames.length < 3) {
+            this.reportError("Not enough numeric columns. Need at least 3. There are " + colNames.length);
+            return;
+        }
+
+        if (valid) {
+            let correlationMatrixRequest = {
+                columnNames: colNames
+            };
+            let rr = this.createRpcRequest("correlationMatrix", correlationMatrixRequest);
+            rr.invoke(new CorrelationMatrixReceiver(this.getPage(), this, rr, this.order));
+        } else {
+            this.reportError("Only numeric columns are supported for PCA:" + message);
         }
     }
 
@@ -756,7 +801,7 @@ export class TableView extends RemoteObject
             let cd = new ColumnDescription(this.schema[i]);
             let name = cd.name;
             let cls = this.columnClass(name);
-            let cells = document.getElementsByClassName(cls);
+            let cells = this.tHead.getElementsByClassName(cls);
             let selected = this.selectedColumns.has(name);
 
             for (let i = 0; i < cells.length; i++) {
@@ -1049,19 +1094,50 @@ class HeavyHittersReceiver extends Renderer<string> {
                 schema: this.schema
             });
         rr.setStartTime(this.operation.startTime());
-        rr.invoke(new FilterCompleted(this.page, this.tv, rr, this.order));
+        rr.invoke(new TableOperationCompleted(this.page, this.tv, rr, this.order));
     }
 }
 
-// After filtering receives the id of a remote table.
-class FilterCompleted extends Renderer<string> {
+// The string received is actually the id of a remote object that stores
+// the correlation matrix information
+class CorrelationMatrixReceiver extends Renderer<string> {
+    private correlationMatrixObjectsId: string;
+
+    public constructor(page: FullPage,
+                       protected tv: TableView,
+                       operation: ICancellable,
+                       protected order: RecordOrder) {
+        super(page, operation, "Correlation matrix");
+        this.correlationMatrixObjectsId = null;
+    }
+
+    onNext(value: PartialResult<string>): any {
+        super.onNext(value);
+        if (value.data != null)
+            this.correlationMatrixObjectsId = value.data;
+    }
+
+    onCompleted(): void {
+        super.finished();
+        if (this.correlationMatrixObjectsId == null)
+            return;
+        let rr = this.tv.createRpcRequest("projectToEigenVectors", {
+                id: this.correlationMatrixObjectsId
+        });
+        rr.setStartTime(this.operation.startTime());
+        rr.invoke(new RemoteTableReceiver(this.page, rr));
+    }
+}
+
+// After operating on a table receives the id of a new remote table.
+class TableOperationCompleted extends Renderer<string> {
     public remoteTableId: string;
 
     public constructor(page: FullPage,
                        protected tv: TableView,
                        operation: ICancellable,
                        protected order: RecordOrder) {
-        super(page, operation, "Filter");
+        super(page, operation, "Table operation");
     }
 
     onNext(value: PartialResult<string>): any {

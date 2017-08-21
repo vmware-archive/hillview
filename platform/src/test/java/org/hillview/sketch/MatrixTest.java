@@ -1,5 +1,10 @@
 package org.hillview.sketch;
 
+import org.hillview.table.ColumnDescription;
+import org.hillview.table.DoubleArrayColumn;
+import org.hillview.table.Table;
+import org.hillview.table.api.ContentsKind;
+import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.BlasConversions;
@@ -7,6 +12,8 @@ import org.hillview.utils.TestTables;
 import org.jblas.DoubleMatrix;
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.util.*;
 
 @SuppressWarnings("ConstantConditions")
 public class MatrixTest {
@@ -35,17 +42,17 @@ public class MatrixTest {
     @Test
     public void testMatrixFetch() {
         ITable table = TestTables.getIntTable(100, 3);
-        String[] colNames = {"Column0", "Column1"};
+        List<String> colNames = new ArrayList<String>(Arrays.asList("Column0", "Column1"));
 
         DoubleMatrix mat = BlasConversions.toDoubleMatrix(table, colNames, null);
         IRowIterator it = table.getRowIterator();
         int row = it.getNextRow();
         int i = 0;
         while (row >= 0) {
-            for (int j = 0; j < colNames.length; j++) {
+            for (int j = 0; j < colNames.size(); j++) {
                 Assert.assertEquals(
                         mat.get(i, j),
-                        table.getColumn(colNames[j]).asDouble(row, null),
+                        table.getColumn(colNames.get(j)).asDouble(row, null),
                         Math.ulp(mat.get(i, j))
                 );
             }
@@ -53,5 +60,30 @@ public class MatrixTest {
             i++;
         }
         Assert.assertEquals(i, mat.rows);
+    }
+
+    @Test
+    public void testMissingConversion() {
+        int numCols = 5;
+        int[] missing = {3, 5, 12, 20, 0};
+        int numRows = 30;
+
+        List<IColumn> columns = new ArrayList<IColumn>();
+        for (int i = 0; i < numCols; i++) {
+            ColumnDescription description = new ColumnDescription("Column" + i, ContentsKind.Double, true);
+            DoubleArrayColumn column = new DoubleArrayColumn(description, numRows);
+            for (int j = 0; j < missing[i]; j++) {
+                column.setMissing(j);
+            }
+            columns.add(column);
+        }
+
+        ITable table = new Table(columns);
+        List<String> colNames = new ArrayList<String>(table.getSchema().getColumnNames());
+        DoubleMatrix mat = BlasConversions.toDoubleMatrixMissing(table, colNames, null, Double.NaN);
+        DoubleMatrix missingCount = mat.isNaN().columnSums();
+        for (int i = 0; i < numCols; i++) {
+            Assert.assertEquals(missing[i], Math.round(missingCount.get(i)));
+        }
     }
 }

@@ -61,6 +61,15 @@ public abstract class BaseListColumn extends BaseColumn {
             return false;
     }
 
+    public void setMissing(final int rowIndex) {
+        if (this.description.allowMissing) {
+            Converters.checkNull(this.missing);
+            final int segmentId = rowIndex >> this.LogSegmentSize;
+            final int localIndex = rowIndex & this.SegmentMask;
+            this.missing.get(segmentId).set(localIndex);
+        }
+    }
+
     public void appendMissing() {
         Converters.checkNull(this.missing);
         final int segmentId = this.size >> this.LogSegmentSize;

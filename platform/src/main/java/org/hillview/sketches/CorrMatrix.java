@@ -1,7 +1,13 @@
 package org.hillview.sketches;
 
+import org.hillview.dataset.api.IJson;
+import org.hillview.maps.LinearProjectionMap;
+import org.hillview.utils.LinAlg;
+import org.jblas.DoubleMatrix;
+
 import javax.annotation.Nullable;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -11,11 +17,15 @@ import java.util.List;
  * the ICorrelation interface to compute  norms, correlations and inner-products between columns.
  * See ICorrelation for a precise definition of these quantities.
  */
-public class CorrMatrix implements ICorrelation, Serializable {
+public class CorrMatrix implements ICorrelation, Serializable, IJson {
     /**
      * The list of columns whose correlation we wish to compute.
      */
     private final HashMap<String, Integer> colNum;
+    /**
+     * List of column names needs to be public, as the order is needed for the projection.
+     */
+    public final List<String> columnNames;
     /**
      * A matrix that records the (un)-normalized inner products between pairs of columns.
      */
@@ -34,12 +44,18 @@ public class CorrMatrix implements ICorrelation, Serializable {
      */
     public final double[] means;
 
+    /**
+     * Holds the number of processed entries per column pair
+     */
+    public DoubleMatrix nonMissing;
+
     public CorrMatrix(List<String> colNames) {
+        this.columnNames = new ArrayList<String>(colNames);
         this.colNum = new HashMap<>(colNames.size());
         for (int i=0; i < colNames.size(); i++)
             this.colNum.put(colNames.get(i), i);
         this.rawMatrix = new double[colNames.size()][colNames.size()];
-        this.count = 0;
+        this.nonMissing = DoubleMatrix.zeros(colNames.size(), colNames.size());
         this.means = new double[colNames.size()];
         this.corrMatrix = null;
     }
@@ -58,6 +74,7 @@ public class CorrMatrix implements ICorrelation, Serializable {
 
     @Override
     public double[][] getCorrelationMatrix() {
+        double eps = 1e-6;
         if (this.corrMatrix == null) {
             this.corrMatrix = new double[this.colNum.size()][this.colNum.size()];
             for (int i = 0; i < this.colNum.size(); i++) {
@@ -67,7 +84,10 @@ public class CorrMatrix implements ICorrelation, Serializable {
                     // Centering and scaling
                     val -= this.means[i] * this.means[j];
                     double sigmaJ = Math.sqrt(this.rawMatrix[j][j] - this.means[j] * this.means[j]);
-                    val /= sigmaI * sigmaJ;
+                    if (sigmaI < eps || sigmaJ < eps)
+                        val = 0.0;
+                    else
+                        val /= sigmaI * sigmaJ;
                     this.corrMatrix[i][j] = val;
                     this.corrMatrix[j][i] = val;
                 }
@@ -90,19 +110,23 @@ public class CorrMatrix implements ICorrelation, Serializable {
 
     @Override
     public double getNorm(String s) {
-        return Math.sqrt(this.rawMatrix[this.colNum.get(s)][this.colNum.get(s)]/this.count);
+        return Math.sqrt(this.rawMatrix[this.colNum.get(s)][this.colNum.get(s)]);
     }
 
     @Override
     public double getInnerProduct(String s, String t) {
         int i = this.colNum.get(s);
         int j = this.colNum.get(t);
-        return (((i <= j) ? this.rawMatrix[i][j] : this.rawMatrix[j][i])/this.count);
+        return (((i <= j) ? this.rawMatrix[i][j] : this.rawMatrix[j][i]));
     }
 
     public String toString() {
         return "Number of columns:  " + String.valueOf(this.colNum.size()) + "\n" +
-                "Total count: " + String.valueOf(this.count) + "\n" +
                 Arrays.deepToString(this.rawMatrix);
+    }
+
+    public LinearProjectionMap eigenVectorProjection(int nComponents) {
+        DoubleMatrix eigenVectors = LinAlg.eigenVectors(new DoubleMatrix(this.getCorrelationMatrix()), nComponents);
+        return new LinearProjectionMap(new ArrayList<String>(this.columnNames), eigenVectors, "PCA", null);
     }
 }

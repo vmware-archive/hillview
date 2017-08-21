@@ -39,6 +39,12 @@ public class LoadCsvFileMapper implements IMap<Empty, List<CsvFileObject>> {
         String vropsFile = "vrops.csv";
         String vropsSchema = "vrops.schema";
 
+        String mnistTrainFile = "mnist.csv";
+        String mnistSchema = "mnist.schema";
+
+        String segmentationFile = "segmentation.csv";
+        String segmentationSchema = "segmentation.schema";
+
         Path schemaPath = Paths.get(dataFolder, schemaFile);
 
         final List<CsvFileObject> result = new ArrayList<CsvFileObject>();
@@ -74,6 +80,16 @@ public class LoadCsvFileMapper implements IMap<Empty, List<CsvFileObject>> {
             CsvFileObject file = new CsvFileObject(
                     Paths.get(dataFolder, vropsFile),
                     Paths.get(dataFolder, vropsSchema));
+            result.add(file);
+        } else if (this.which == 4) {
+            CsvFileObject file = new CsvFileObject(
+                    Paths.get(dataFolder, mnistTrainFile),
+                    Paths.get(dataFolder, mnistSchema));
+            result.add(file);
+        } else if (this.which == 5) {
+            CsvFileObject file = new CsvFileObject(
+                    Paths.get(dataFolder, segmentationFile),
+                    Paths.get(dataFolder, segmentationSchema));
             result.add(file);
         } else {
             System.out.println("About to throw unexepcted file");

@@ -111,6 +111,10 @@ public class CsvFileReader {
             settings.setIgnoreTrailingWhitespaces(true);
             settings.setEmptyValue("");
             settings.setNullValue(null);
+            if (this.actualSchema != null)
+                settings.setMaxColumns(this.actualSchema.getColumnCount());
+            else
+                settings.setMaxColumns(1024);
             CsvParser reader = new CsvParser(settings);
             reader.beginParsing(file);
 

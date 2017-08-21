@@ -20,14 +20,19 @@ package org.hillview;
 import org.hillview.dataset.ConcurrentSketch;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.maps.FilterMap;
+import org.hillview.maps.LinearProjectionMap;
 import org.hillview.sketches.*;
 import org.hillview.table.*;
 import org.hillview.table.api.IStringConverter;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
+import org.hillview.utils.LinAlg;
+import org.jblas.DoubleMatrix;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Function;
 
 @SuppressWarnings("CanBeFinal")
@@ -195,6 +200,33 @@ public final class TableTarget extends RpcTarget {
         Range2DFilter filter = new Range2DFilter(info);
         FilterMap fm = new FilterMap(filter);
         this.runMap(this.table, fm, TableTarget::new, request, session);
+    }
+
+    static class CorrelationMatrixRequest {
+        String[] columnNames;
+    }
+
+    @HillviewRpc
+    void correlationMatrix(RpcRequest request, Session session) {
+        CorrelationMatrixRequest pcaReq = request.parseArgs(CorrelationMatrixRequest.class);
+        List<String> colNames = Arrays.asList(pcaReq.columnNames);
+        FullCorrelationSketch sketch = new FullCorrelationSketch(colNames);
+        this.runCompleteSketch(this.table, sketch, CorrelationMatrixTarget::new, request, session);
+    }
+
+    static class ProjectToEigenVectorsInfo {
+        String id = "";
+    }
+
+    @HillviewRpc
+    void projectToEigenVectors(RpcRequest request, Session session) {
+        ProjectToEigenVectorsInfo info = request.parseArgs(ProjectToEigenVectorsInfo.class);
+        RpcTarget target = RpcObjectManager.instance.getObject(info.id);
+        CorrelationMatrixTarget cmt = (CorrelationMatrixTarget) target;
+        CorrMatrix cm = cmt.corrMatrix;
+        DoubleMatrix projectionMatrix = LinAlg.eigenVectors(new DoubleMatrix(cm.getCorrelationMatrix()), 2);
+        LinearProjectionMap lpm = new LinearProjectionMap(cm.columnNames, projectionMatrix, "PCA", null);
+        this.runMap(this.table, lpm, TableTarget::new, request, session);
     }
 
     static class QuantileInfo {
