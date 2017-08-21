@@ -10,6 +10,7 @@ export class DialogField {
 // Base class for dialog implementations
 export class Dialog implements IHtmlElement {
     private container: HTMLDivElement;
+    private fieldsDiv: HTMLDivElement;
     public onConfirm: () => void;  // method to be invoked when dialog is closed successfully
     // Stores the input elements and (optionally) their types.
     private fields: {[fieldName: string]: DialogField} = {};
@@ -24,6 +25,9 @@ export class Dialog implements IHtmlElement {
         let titleElement = document.createElement("h1");
         titleElement.textContent = title;
         this.container.appendChild(titleElement);
+
+        this.fieldsDiv = document.createElement("div");
+        this.container.appendChild(this.fieldsDiv);
 
         let buttonsDiv = document.createElement("div");
         this.container.appendChild(buttonsDiv);
@@ -70,7 +74,7 @@ export class Dialog implements IHtmlElement {
     // @param type: Data type of this field. For now, only Integer is special.
     public addTextField(fieldName: string, labelText: string, type: ContentsKind): void {
         let fieldDiv = document.createElement("div");
-        this.container.appendChild(fieldDiv);
+        this.fieldsDiv.appendChild(fieldDiv);
 
         let label = document.createElement("label");
         label.textContent = labelText;
@@ -90,7 +94,7 @@ export class Dialog implements IHtmlElement {
     // @param options: List of strings that are the options in the selection box.
     protected addSelectField(fieldName: string, labelText: string, options: string[]): void {
         let fieldDiv = document.createElement("div");
-        this.container.appendChild(fieldDiv);
+        this.fieldsDiv.appendChild(fieldDiv);
 
         let label = document.createElement("label");
         label.textContent = labelText;

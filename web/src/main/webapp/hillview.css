@@ -122,17 +122,16 @@ th, td {
 
 .dialog {
     position: fixed;
-    top:0;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
     margin: auto;
-    padding: 20px;
+    padding: 8px;
     border-radius: 10px;
     border: 1px solid black;
-    width: 250px;
-    height: 150px;
-    background: lightgray;
+    width: auto;
+    height: auto;
+    background: #f1f1f1;,
 }
 
 .dialog h1 {
@@ -141,23 +140,18 @@ th, td {
 
 .dialog label{
     float: left;
-    width: 40%;
+    width: 45%;
     text-align: left;
+    white-space: nowrap
 }
 .dialog input, .dialog select {
     float: right;
-    width: 40%;
+    width: 45%;
 }
 
 .dialog div {
     overflow: hidden;
-    margin: 10px 10px;
-}
-
-.dialog .cancelconfirm {
-    position: absolute;
-    bottom: 0px;
-    right: 0px;
+    margin: 5px 5px;
 }
 
 .dialog .confirm {
@@ -170,10 +164,8 @@ th, td {
     float: left;
 }
 
-.label {
-    display: flex;
-    justify-content: center;
-    align-content: center;
+.dialog label {
+    font-size:small;
 }
 
 .scrollBarInner {
