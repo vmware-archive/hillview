@@ -191,7 +191,6 @@ export class TableView extends RemoteObject
     protected numberedCategories: Set<string>;
     protected selectedColumns: Set<string>;
     protected firstSelectedColumn: string;  // for shift-click
-    // The right-click menu for columns, it is created and removed dynamically.
     protected contextMenu: ContextMenu; 
 
     public constructor(remoteObjectId: string, page: FullPage) {
@@ -227,6 +226,9 @@ export class TableView extends RemoteObject
             }
         ]);
         this.top.appendChild(menu.getHTMLRepresentation());
+        this.contextMenu = new ContextMenu();
+        this.contextMenu.hide();
+        this.top.appendChild(this.contextMenu.getHTMLRepresentation());
         this.top.appendChild(document.createElement("hr"));
         this.htmlTable = document.createElement("table");
         this.scrollBar = new ScrollBar(this);
@@ -598,15 +600,12 @@ export class TableView extends RemoteObject
                     return;
                 }
 
-                if (this.contextMenu != null) {
-                    this.contextMenu.remove();
-                }
-                this.contextMenu = new ContextMenu([
-                    {text: "Sort ascending", action: () => this.showColumn(cd.name, 1, true) },
-                    {text: "Sort descending", action: () => this.showColumn(cd.name, -1, true) },
-                    {text: "Heavy hitters...", action: () => this.heavyHitters(cd.name) },
-                    {text: "Heat map", action: () => this.heatMap() }
-                ]);
+                this.contextMenu.clear();
+                this.contextMenu.addItem({text: "Sort ascending", action: () => this.showColumn(cd.name, 1, true) });
+                this.contextMenu.addItem({text: "Sort descending", action: () => this.showColumn(cd.name, -1, true) });
+                this.contextMenu.addItem({text: "Heavy hitters...", action: () => this.heavyHitters(cd.name) });
+                this.contextMenu.addItem({text: "Heat map", action: () => this.heatMap() });
+
                 if (this.order.find(cd.name) >= 0) {
                     this.contextMenu.addItem({text: "Hide", action: () => this.showColumn(cd.name, 0, true)});
                 } else {
@@ -617,13 +616,9 @@ export class TableView extends RemoteObject
                 if (cd.kind == "Json" || cd.kind == "String" || cd.kind == "Category" || cd.kind == "Integer")
                     this.contextMenu.addItem({text: "Filter...", action: () => this.equalityFilter(cd.name)});
 
-                document.body.appendChild(this.contextMenu.getHTMLRepresentation());
                 // Spawn the menu at the mouse's location
-                this.contextMenu.getHTMLRepresentation().style.transform =
-                    "translate("
-                        + (e.pageX - 1) + "px , "
-                        + (e.pageY - 1) + "px"
-                    + ")";
+                this.contextMenu.move(e.pageX - 1, e.pageY - 1);
+                this.contextMenu.show();
             };
         }
         this.tBody = this.htmlTable.createTBody();
@@ -710,10 +705,19 @@ export class TableView extends RemoteObject
         rr.invoke(new FilterCompleted(this.page, this, rr, this.order));
     }
 
-    private equalityFilter(colname: string): void {
-        let ef = new EqualityFilterDialog(this.findColumn(colname));
-        ef.setAction(() => this.runFilter(ef.getFilter()));
-        ef.show();
+    private equalityFilter(colname: string, value?: string, complement?: boolean): void {
+        if (value == null) {
+            let ef = new EqualityFilterDialog(this.findColumn(colname));
+            ef.setAction(() => this.runFilter(ef.getFilter()));
+            ef.show();
+        } else {
+            let efd: EqualityFilterDescription = {
+                columnDescription: this.findColumn(colname),
+                compareValue: value,
+                complement: (complement == null ? false : complement)
+            }
+            this.runFilter(efd);
+        }
     }
 
     private heatMap(): void {
@@ -870,9 +874,21 @@ export class TableView extends RemoteObject
                     cell.classList.add("missingData");
                     cell.textContent = "missing";
                 } else {
-                    cell.textContent = TableView.convert(row.values[dataIndex], cd.kind);
+                    let cellValue : string = TableView.convert(row.values[dataIndex], cd.kind);
+                    cell.textContent = cellValue;
+                    if (cd.kind == "String" || cd.kind == "Json" || cd.kind == "Category" || cd.kind == "Integer") {
+                        cell.oncontextmenu = e => {
+                            e.preventDefault();
+                            this.contextMenu.clear();
+                            this.contextMenu.addItem({text: "Filter for " + cellValue, action: () => this.equalityFilter(cd.name, cellValue)});
+                            this.contextMenu.addItem({text: "Filter for not " + cellValue, action: () => this.equalityFilter(cd.name, cellValue, true)});
+                            this.contextMenu.move(e.pageX - 1, e.pageY - 1);
+                            this.contextMenu.show();
+                        };
+                    }
                 }
             }
+            
         }
         this.dataRowsDisplayed += row.count;
     }

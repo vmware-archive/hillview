@@ -26,11 +26,11 @@ export class ContextMenu implements IHtmlElement {
     private outer: HTMLTableElement;
     private tableBody: HTMLTableSectionElement;
 
-    constructor(mis: MenuItem[]) {
+    constructor(mis?: MenuItem[]) {
         this.outer = document.createElement("table");
         this.outer.classList.add("dropdown");
         this.outer.classList.add("menu");
-        this.outer.onmouseleave = () => this.remove();
+        this.outer.onmouseleave = () => {this.clear(); this.hide()};
         this.tableBody = this.outer.createTBody();
 
         this.items = [];
@@ -40,21 +40,42 @@ export class ContextMenu implements IHtmlElement {
         }
     }
 
-    public remove(): void {
+    private remove(): void {
         this.getHTMLRepresentation().remove();
     }
 
-    addItem(mi: MenuItem): void {
+    public show(): void {
+        this.outer.hidden = false;
+    }
+
+    public hide(): void {
+        this.outer.hidden = true;
+    }
+
+    public clear(): void {
+        this.tableBody.remove();
+        this.tableBody = this.outer.createTBody();
+    }
+
+    public move(x: number, y: number): void {
+        this.outer.style.transform =
+            "translate("
+                + x + "px , "
+                + y + "px"
+            + ")";
+    }
+
+    public addItem(mi: MenuItem): void {
         this.items.push(mi);
         let trow = this.tableBody.insertRow();
         let cell = trow.insertCell(0);
         cell.innerHTML = mi.text;
         cell.style.textAlign = "left";
         cell.className = "menuItem";
-        cell.onclick = () => { this.remove(); mi.action(); }
+        cell.onclick = () => { this.hide(); mi.action(); }
     }
 
-    getHTMLRepresentation(): HTMLElement {
+    public getHTMLRepresentation(): HTMLElement {
         return this.outer;
     }
 }
