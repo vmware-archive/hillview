@@ -25,7 +25,7 @@ public class LinearProjectionMap implements IMap<ITable, ITable> {
      */
     private final DoubleMatrix projectionMatrix;
     private final List<String> colNames;
-    private final String newColName;
+    private final List<String> newColNames;
     private final int numProjections;
     @Nullable
     private final IStringConverter converter;
@@ -37,7 +37,21 @@ public class LinearProjectionMap implements IMap<ITable, ITable> {
 
         this.projectionMatrix = projectionMatrix;
         this.colNames = colNames;
-        this.newColName = projectionName;
+        this.newColNames = new ArrayList<String>();
+        for (int i = 0; i < projectionMatrix.rows; i++) {
+            newColNames.add(projectionName + i);
+        }
+        this.numProjections = projectionMatrix.rows;
+        this.converter = converter;
+    }
+    public LinearProjectionMap(List<String> colNames, DoubleMatrix projectionMatrix, List<String> newColNames,
+                               @Nullable IStringConverter converter) {
+        if (colNames.size() != projectionMatrix.columns)
+            throw new RuntimeException("Number of columns in projectionMatrix should be eq. to number of names in colNames.");
+
+        this.projectionMatrix = projectionMatrix;
+        this.colNames = colNames;
+        this.newColNames = newColNames;
         this.numProjections = projectionMatrix.rows;
         this.converter = converter;
     }
@@ -58,7 +72,7 @@ public class LinearProjectionMap implements IMap<ITable, ITable> {
 
         // Copy the result to new columns with the same membershipset size. (Can't use BlasConversions here.)
         for (int j = 0; j < this.numProjections; j++) {
-            ColumnDescription colDesc = new ColumnDescription(this.newColName + j, ContentsKind.Double, true);
+            ColumnDescription colDesc = new ColumnDescription(this.newColNames.get(j), ContentsKind.Double, true);
             // TODO: create and use a SparseColumn
             DoubleArrayColumn column = new DoubleArrayColumn(colDesc, table.getMembershipSet().getMax());
             IRowIterator it = table.getMembershipSet().getIterator();
