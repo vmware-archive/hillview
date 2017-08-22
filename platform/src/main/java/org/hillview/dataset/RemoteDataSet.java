@@ -59,6 +59,7 @@ public class RemoteDataSet<T> implements IDataSet<T> {
         this.remoteHandle = remoteHandle;
         this.stub = HillviewServerGrpc.newStub(NettyChannelBuilder
                 .forAddress(serverEndpoint.getHost(), serverEndpoint.getPort())
+                .maxInboundMessageSize(HillviewServer.MAX_MESSAGE_SIZE)
                 .usePlaintext(true)   // channel is unencrypted.
                 .build());
     }
