@@ -665,7 +665,7 @@ export class Make2DHistogram extends Renderer<string> {
             { columnName: this.colDesc[0].name },
             { columnName: this.colDesc[1].name }
         ];
-        let rr = remoteObj.createRpcRequest("range2d", columns);
+        let rr = remoteObj.createRpcRequest("range2D", columns);
         rr.setStartTime(this.operation.startTime());
         rr.invoke(new Range2DCollector(
             this.colDesc, this.schema, this.page, remoteObj, rr, this.heatMap));

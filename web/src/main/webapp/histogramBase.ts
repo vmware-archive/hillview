@@ -235,7 +235,10 @@ implements IHtmlElement, DataView {
     }
 
     public static samplingRate(bucketCount: number, pointCount: number): number {
-        return Math.min(bucketCount * HistogramViewBase.chartHeight * Math.log(bucketCount) * 5 / pointCount, 1);
+        return 1.0;
+        // TODO: if we sample we lose outliers; we should use the sampling to
+        // compute a fast result first.
+        // return Math.min(bucketCount * HistogramViewBase.chartHeight * Math.log(bucketCount + 2) * 5 / pointCount, 1);
     }
 
     public static getRenderingSize(page: FullPage): Size {

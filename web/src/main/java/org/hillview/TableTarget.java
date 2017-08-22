@@ -77,7 +77,6 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     void histogram(RpcRequest request, Session session) {
         ColumnAndRange info = request.parseArgs(ColumnAndRange.class);
-        // TODO: use height in histogram computation
         int cdfBucketCount = info.cdfBucketCount;
         if (info.min >= info.max) {
             cdfBucketCount = 1;
@@ -203,13 +202,14 @@ public final class TableTarget extends RpcTarget {
     }
 
     static class CorrelationMatrixRequest {
+        @Nullable
         String[] columnNames;
     }
 
     @HillviewRpc
     void correlationMatrix(RpcRequest request, Session session) {
         CorrelationMatrixRequest pcaReq = request.parseArgs(CorrelationMatrixRequest.class);
-        List<String> colNames = Arrays.asList(pcaReq.columnNames);
+        List<String> colNames = Arrays.asList(Converters.checkNull(pcaReq.columnNames));
         FullCorrelationSketch sketch = new FullCorrelationSketch(colNames);
         this.runCompleteSketch(this.table, sketch, CorrelationMatrixTarget::new, request, session);
     }
