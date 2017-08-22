@@ -80,7 +80,6 @@ export class ContextMenu implements IHtmlElement {
     }
 }
 
-
 export class TopSubMenu implements IHtmlElement {
     items: MenuItem[];
     private outer: HTMLTableElement;

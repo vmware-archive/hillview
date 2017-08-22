@@ -1,4 +1,4 @@
-import {IHtmlElement} from "./ui"
+import {IHtmlElement, KeyCodes} from "./ui"
 import {ContentsKind} from "./table"
 
 // Represents a field in the dialog. It is just the HTML element, and an optional type.
@@ -43,6 +43,17 @@ export class Dialog implements IHtmlElement {
         this.confirmButton.textContent = "Confirm";
         this.confirmButton.classList.add("confirm");
         buttonsDiv.appendChild(this.confirmButton);
+
+        this.container.onkeypress = () => this.handleKeypress;
+    }
+
+    protected handleKeypress(ev: KeyboardEvent): void {
+        if (ev.keyCode == KeyCodes.enter) {
+            this.hide();
+            this.onConfirm();
+        } else if (ev.keyCode == KeyCodes.escape) {
+            this.hide();
+        }
     }
 
     public setAction(onConfirm: () => void): void {
@@ -92,7 +103,7 @@ export class Dialog implements IHtmlElement {
     // @param fieldName: Internal name. Has to be used when parsing the input.
     // @param labelText: Text in the dialog for this field.
     // @param options: List of strings that are the options in the selection box.
-    protected addSelectField(fieldName: string, labelText: string, options: string[]): void {
+    public addSelectField(fieldName: string, labelText: string, options: string[]): void {
         let fieldDiv = document.createElement("div");
         this.fieldsDiv.appendChild(fieldDiv);
 

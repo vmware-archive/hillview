@@ -205,6 +205,10 @@ implements IHtmlElement, DataView {
             .attr("height", height);
     }
 
+    public scrollIntoView() {
+        this.getHTMLRepresentation().scrollIntoView( { block: "end", behavior: "smooth" } );
+    }
+
     protected dragEnd(): void {
         if (!this.dragging || !this.moved)
             return;

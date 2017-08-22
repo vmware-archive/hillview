@@ -502,6 +502,10 @@ implements IHtmlElement, DataView {
         this.summary.textContent = summary;
     }
 
+    public scrollIntoView() {
+        this.getHTMLRepresentation().scrollIntoView( { block: "end", behavior: "smooth" } );
+    }
+
     static colorMap(d: number): string {
         return d3.interpolateWarm(d);
     }
@@ -824,5 +828,6 @@ export class HeatMapRenderer extends Renderer<HeatMapData> {
         let yAxisData = new AxisData(value.data.histogramMissingD2, this.cds[1], this.stats[1], null);
         this.heatMap.updateView(value.data.buckets, xAxisData, yAxisData,
             value.data.missingData, this.elapsedMilliseconds());
+        this.heatMap.scrollIntoView();
     }
 }

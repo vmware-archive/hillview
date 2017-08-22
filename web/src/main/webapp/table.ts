@@ -23,7 +23,6 @@ import {RemoteObject, RpcRequest, Renderer, combineMenu, SelectedObject, Combine
 import Rx = require('rx');
 import {BasicColStats} from "./histogramBase";
 import {RangeCollector} from "./histogram";
-import {PCAProjectionRequest} from "./pca";
 import {Range2DCollector} from "./heatMap";
 import {TopMenu, TopSubMenu, ContextMenu} from "./menu";
 import {Converters, PartialResult, ICancellable} from "./util";
@@ -192,7 +191,9 @@ export class TableView extends RemoteObject
     protected numberedCategories: Set<string>;
     protected selectedColumns: Set<string>;
     protected firstSelectedColumn: string;  // for shift-click
-    protected contextMenu: ContextMenu; 
+    protected contextMenu: ContextMenu;
+
+    static readonly rowsOnScreen = 20;
 
     public constructor(remoteObjectId: string, page: FullPage) {
         super(remoteObjectId);
@@ -297,9 +298,6 @@ export class TableView extends RemoteObject
             this.begin();
     }
 
-    // TODO: measure window size somehow
-    static readonly rowsOnScreen = 20;
-
     public pageUp(): void {
         if (this.currentData == null || this.currentData.rows.length == 0)
             return;
@@ -378,19 +376,19 @@ export class TableView extends RemoteObject
         rr.invoke(new TableRenderer(page, table, rr, false, new RecordOrder([])));
     }
 
-    columnIndex(colName: string): number {
-        if (this.schema == null)
+    public static columnIndex(schema: Schema, colName: string): number {
+        if (schema == null)
             return null;
-        for (let i = 0; i < this.schema.length; i++)
-            if (this.schema[i].name == colName)
+        for (let i = 0; i < schema.length; i++)
+            if (schema[i].name == colName)
                 return i;
         return null;
     }
 
-    findColumn(colName: string): IColumnDescription {
-        let colIndex = this.columnIndex(colName);
+    public static findColumn(schema: Schema, colName: string): IColumnDescription {
+        let colIndex = TableView.columnIndex(schema, colName);
         if (colIndex != null)
-            return this.schema[colIndex];
+            return schema[colIndex];
         return null;
     }
 
@@ -472,7 +470,7 @@ export class TableView extends RemoteObject
 
         for (let i = 0; i < s.length; i++) {
             let colName = s[i];
-            let col = this.findColumn(colName);
+            let col = TableView.findColumn(this.schema, colName);
             if (order != 0 && col != null) {
                 if (first)
                     o.sortFirst({columnDescription: col, isAscending: order > 0});
@@ -487,7 +485,7 @@ export class TableView extends RemoteObject
 
     public histogram(columnName: string): void {
         if (this.selectedColumns.size <= 1) {
-            let cd = this.findColumn(columnName);
+            let cd = TableView.findColumn(this.schema, columnName);
             if (cd.kind == "Category" && !this.numberedCategories.has(columnName)) {
                 let rr = this.createRpcRequest("uniqueStrings", columnName);
                 rr.invoke(new NumberStrings(cd, this.schema, this.getPage(), this, rr));
@@ -499,7 +497,7 @@ export class TableView extends RemoteObject
             let columns: RangeInfo[] = [];
             let cds: ColumnDescription[] = [];
             this.selectedColumns.forEach(v => {
-                let colDesc = this.findColumn(v);
+                let colDesc = TableView.findColumn(this.schema, v);
                 if (colDesc.kind == "String") {
                     this.reportError("2D Histograms not supported for string columns " + colDesc.name);
                     return;
@@ -660,6 +658,7 @@ export class TableView extends RemoteObject
         this.updateScrollBar();
         this.highlightSelectedColumns();
         this.reportError("Operation took " + significantDigits(elapsedMs/1000) + " seconds");
+        this.scrollIntoView();
     }
 
     public setSchema(schema: Schema): void {
@@ -679,8 +678,8 @@ export class TableView extends RemoteObject
         } else if (e.shiftKey) {
             if (this.firstSelectedColumn == null)
                 this.firstSelectedColumn = colName;
-            let first = this.columnIndex(this.firstSelectedColumn);
-            let last = this.columnIndex(colName);
+            let first = TableView.columnIndex(this.schema, this.firstSelectedColumn);
+            let last = TableView.columnIndex(this.schema, colName);
             this.selectedColumns.clear();
             if (first > last) { let tmp = first; first = last; last = tmp; }
             for (let i = first; i <= last; i++)
@@ -711,7 +710,7 @@ export class TableView extends RemoteObject
     }
 
     private columnClass(colName: string): string {
-        let index = this.columnIndex(colName);
+        let index = TableView.columnIndex(this.schema, colName);
         return "col" + String(index);
     }
 
@@ -722,17 +721,21 @@ export class TableView extends RemoteObject
 
     private equalityFilter(colname: string, value?: string, complement?: boolean): void {
         if (value == null) {
-            let ef = new EqualityFilterDialog(this.findColumn(colname));
+            let ef = new EqualityFilterDialog(TableView.findColumn(this.schema, colname));
             ef.setAction(() => this.runFilter(ef.getFilter()));
             ef.show();
         } else {
             let efd: EqualityFilterDescription = {
-                columnDescription: this.findColumn(colname),
+                columnDescription: TableView.findColumn(this.schema, colname),
                 compareValue: value,
                 complement: (complement == null ? false : complement)
-            }
+            };
             this.runFilter(efd);
         }
+    }
+
+    public scrollIntoView() {
+        this.getHTMLRepresentation().scrollIntoView( { block: "end", behavior: "smooth" } );
     }
 
     private pca(): void {
@@ -742,7 +745,7 @@ export class TableView extends RemoteObject
         let valid = true;
         let message = "";
         colNames.forEach((colName) => {
-            let kind = this.findColumn(colName).kind;
+            let kind = TableView.findColumn(this.schema, colName).kind;
             if (kind != "Double" && kind != "Integer") {
                 valid = false;
                 message += "\n  * Column '" + colName  + "' is not numeric.";
@@ -774,7 +777,7 @@ export class TableView extends RemoteObject
         let columns: RangeInfo[] = [];
         let cds: ColumnDescription[] = [];
         this.selectedColumns.forEach(v => {
-            let colDesc = this.findColumn(v);
+            let colDesc = TableView.findColumn(this.schema, v);
             if (colDesc.kind == "String") {
                 this.reportError("Heat maps not supported for string columns " + colDesc.name);
                 return;
@@ -846,12 +849,12 @@ export class TableView extends RemoteObject
         let cso : ColumnSortOrientation[] = [];
         if (this.selectedColumns.size != 0) {
             this.selectedColumns.forEach(v => {
-                let colDesc = this.findColumn(v);
+                let colDesc = TableView.findColumn(this.schema, v);
                 columns.push(colDesc);
                 cso.push({ columnDescription: colDesc, isAscending: true });
             });
         } else {
-            let colDesc = this.findColumn(colName);
+            let colDesc = TableView.findColumn(this.schema, colName);
             columns.push(colDesc);
             cso.push({ columnDescription: colDesc, isAscending: true });
         }
@@ -955,6 +958,7 @@ export class TableRenderer extends Renderer<TableDataView> {
     onNext(value: PartialResult<TableDataView>): void {
         super.onNext(value);
         this.table.updateView(value.data, this.revert, this.order, this.elapsedMilliseconds());
+        this.table.scrollIntoView();
     }
 }
 

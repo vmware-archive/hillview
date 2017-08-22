@@ -20,11 +20,13 @@ import {
 } from "./ui";
 import d3 = require('d3');
 import {RemoteObject, combineMenu, CombineOperators, SelectedObject, ZipReceiver, Renderer} from "./rpc";
-import {ColumnDescription, TableRenderer, TableView, RecordOrder, Schema} from "./table";
+import {ColumnDescription, TableRenderer, TableView, RecordOrder, Schema, RangeInfo} from "./table";
 import {histogram} from "d3-array";
 import {TopMenu, TopSubMenu} from "./menu";
 import {Converters, Pair, reorder, ICancellable, PartialResult} from "./util";
 import {Histogram, HistogramViewBase, BasicColStats, ColumnAndRange, FilterDescription, BucketDialog} from "./histogramBase";
+import {Dialog} from "./dialog";
+import {Range2DCollector} from "./heatMap";
 
 // This class is invoked by the ZipReceiver after a set operation to create a new histogram
 class MakeHistogram extends Renderer<string> {
@@ -72,7 +74,7 @@ export class HistogramView extends HistogramViewBase {
                 { text: "refresh", action: () => { this.refresh(); } },
                 { text: "table", action: () => this.showTable() },
                 { text: "#buckets", action: () => this.chooseBuckets() },
-                //{ text: "correlate", action: () => this.chooseSecondColumn() },
+                { text: "correlate", action: () => this.chooseSecondColumn() },
             ]) },
             {
                 text: "Combine", subMenu: combineMenu(this)
@@ -98,10 +100,40 @@ export class HistogramView extends HistogramViewBase {
         rr.invoke(new ZipReceiver(this.getPage(), rr, how, finalRenderer));
     }
 
-    chooseSecondColumn(): void { // TODO
+    chooseSecondColumn(): void {
+        let columns : string[] = [];
+        for (let i = 0; i < this.tableSchema.length; i++) {
+            let col = this.tableSchema[i];
+            if (col.kind == "String" || col.kind == "Json")
+                continue;
+            if (col.name == this.currentData.description.name)
+                continue;
+            columns.push(col.name);
+        }
+        if (columns.length == 0) {
+            this.page.reportError("No other acceptable columns found");
+            return;
+        }
+
+        let dialog = new Dialog("Choose column");
+        dialog.addSelectField("column", "column", columns);
+        dialog.setAction(() => this.showSecondColumn(dialog.getFieldValue("column")));
+        dialog.show();
     }
 
-
+    private showSecondColumn(colName: string) {
+        let r0 =  new RangeInfo();
+        r0.columnName = this.currentData.description.name;
+        let r1 = new RangeInfo();
+        r1.columnName = colName;
+        let columns: RangeInfo[] = [ r0, r1 ];
+        let cds: ColumnDescription[] = [
+            TableView.findColumn(this.tableSchema, r0.columnName),
+            TableView.findColumn(this.tableSchema, colName)
+            ];
+        let rr = this.createRpcRequest("range2D", columns);
+        rr.invoke(new Range2DCollector(cds, this.tableSchema, this.getPage(), this, rr, false));
+    }
 
     changeBuckets(bucketCount: number): void {
         let cdfBucketCount = this.currentData.cdf.buckets.length;
@@ -596,5 +628,6 @@ export class HistogramRenderer extends Renderer<Pair<Histogram, Histogram>> {
         super.onNext(value);
         this.histogram.updateView(value.data.first, value.data.second, this.cd,
             this.stats, this.allStrings, this.elapsedMilliseconds());
+        this.histogram.scrollIntoView();
     }
 }
