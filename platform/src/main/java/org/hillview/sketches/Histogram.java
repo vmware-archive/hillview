@@ -33,13 +33,11 @@ public class Histogram implements Serializable {
     private final long[] buckets;
     private long missingData;
     private long outOfRange;
-    private final double rate;
     private final IBucketsDescription bucketDescription;
 
     public Histogram(final IBucketsDescription bucketDescription) {
         this.bucketDescription = bucketDescription;
         this.buckets = new long[bucketDescription.getNumOfBuckets()];
-        this.rate = 1.0;
     }
 
     void addValue(final double val) {
@@ -49,10 +47,23 @@ public class Histogram implements Serializable {
         else this.outOfRange++;
     }
 
-    public void createHistogram(final IColumn column, IMembershipSet membershipSet,
-                                @Nullable final IStringConverter converter) {
-        if (this.rate < 1)
-            membershipSet = membershipSet.sample(this.rate);
+    public void rescale(double sampleRate) {
+        if (sampleRate >= 1)
+            return;
+        this.outOfRange = (long) ((double) this.outOfRange / sampleRate);
+        this.missingData = (long) ((double) this.missingData / sampleRate);
+        for (int i = 0; i < this.buckets.length; i++)
+            this.buckets[i] = (long) ((double) this.buckets[i] / sampleRate);
+    }
+
+    public void create(final IColumn column, IMembershipSet membershipSet,
+                       double sampleRate, @Nullable final IStringConverter converter) {
+        if (sampleRate <= 0)
+            throw new RuntimeException("Negative sampling rate");
+        if (sampleRate >= 1)
+            sampleRate = 1;
+        if (sampleRate < 1)
+            membershipSet = membershipSet.sample(sampleRate);
         final IRowIterator myIter = membershipSet.getIterator();
         int currRow = myIter.getNextRow();
         while (currRow >= 0) {
@@ -67,6 +78,7 @@ public class Histogram implements Serializable {
             }
             currRow = myIter.getNextRow();
         }
+        this.rescale(sampleRate);
     }
 
     public long getMissingData() { return this.missingData; }
@@ -100,14 +112,4 @@ public class Histogram implements Serializable {
     }
 
     public int getNumOfBuckets() { return this.bucketDescription.getNumOfBuckets(); }
-
-    public void createSampleHistogram(final IColumn column, final IMembershipSet membershipSet,
-                                      @Nullable final IStringConverter converter, double sampleRate) {
-        this.createHistogram(column, membershipSet.sample(sampleRate), converter);
-    }
-
-    public void createSampleHistogram(final IColumn column, final IMembershipSet membershipSet,
-                                      @Nullable final IStringConverter converter, double sampleRate, long seed) {
-        this.createHistogram(column, membershipSet.sample(sampleRate, seed), converter);
-    }
 }

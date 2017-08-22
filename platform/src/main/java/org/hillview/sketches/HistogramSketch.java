@@ -50,8 +50,8 @@ public class HistogramSketch implements ISketch<ITable, Histogram> {
     @Override
     public Histogram create(final ITable data) {
         Histogram result = this.getZero();
-        result.createHistogram(data.getColumn(this.colName),
-                               data.getMembershipSet().sample(this.rate), this.converter);
+        result.create(data.getColumn(this.colName), data.getMembershipSet(),
+                this.rate, this.converter);
         return result;
     }
 

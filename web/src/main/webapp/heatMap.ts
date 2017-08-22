@@ -754,6 +754,7 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
             columnName: this.cds[0].name,
             min: this.stats.first.min,
             max: this.stats.first.max,
+            samplingRate: 1.0,
             bucketCount: xBucketCount,
             cdfBucketCount: 0,
             bucketBoundaries: null // TODO
@@ -762,6 +763,7 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
             columnName: this.cds[1].name,
             min: this.stats.second.min,
             max: this.stats.second.max,
+            samplingRate: 1.0,
             bucketCount: yBucketCount,
             cdfBucketCount: 0,
             bucketBoundaries: null // TODO

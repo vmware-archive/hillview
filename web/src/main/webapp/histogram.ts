@@ -101,6 +101,8 @@ export class HistogramView extends HistogramViewBase {
     chooseSecondColumn(): void { // TODO
     }
 
+
+
     changeBuckets(bucketCount: number): void {
         let cdfBucketCount = this.currentData.cdf.buckets.length;
         let boundaries = HistogramViewBase.categoriesInRange(
@@ -109,6 +111,7 @@ export class HistogramView extends HistogramViewBase {
             columnName: this.currentData.description.name,
             min: this.currentData.stats.min,
             max: this.currentData.stats.max,
+            samplingRate: HistogramViewBase.samplingRate(+bucketCount, this.currentData.stats.presentCount),
             bucketCount: +bucketCount,
             cdfBucketCount: cdfBucketCount,
             bucketBoundaries: boundaries
@@ -546,6 +549,7 @@ export class RangeCollector extends Renderer<BasicColStats> {
             columnName: this.cd.name,
             min: this.stats.min,
             max: this.stats.max,
+            samplingRate: HistogramViewBase.samplingRate(bucketCount, this.stats.presentCount),
             bucketCount: bucketCount,
             cdfBucketCount: cdfCount,
             bucketBoundaries: boundaries

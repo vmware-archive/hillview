@@ -93,8 +93,6 @@ public class PCATest {
             ITable result = lpm.apply(table);
         } catch (FileNotFoundException|NoSuchFileException e) {
             System.out.println("Skipped test because " + csvFile + " is not present.");
-            return;
         }
-
     }
 }

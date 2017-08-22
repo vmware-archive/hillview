@@ -39,6 +39,7 @@ export class Histogram2DView extends HistogramViewBase {
         data: number[][];
         xPoints: number;
         yPoints: number;
+        visiblePoints: number;
     };
     protected normalized: boolean;
 
@@ -96,6 +97,7 @@ export class Histogram2DView extends HistogramViewBase {
             min: this.currentData.xData.stats.min,
             max: this.currentData.xData.stats.max,
             bucketCount: bucketCount,
+            samplingRate: HistogramViewBase.samplingRate(bucketCount, this.currentData.visiblePoints),
             cdfBucketCount: 0,
             bucketBoundaries: null // TODO
         };
@@ -103,6 +105,7 @@ export class Histogram2DView extends HistogramViewBase {
             columnName: this.currentData.yData.description.name,
             min: this.currentData.yData.stats.min,
             max: this.currentData.yData.stats.max,
+            samplingRate: HistogramViewBase.samplingRate(this.currentData.yPoints, this.currentData.visiblePoints),
             bucketCount: this.currentData.yPoints,
             cdfBucketCount: 0,
             bucketBoundaries: null // TODO
@@ -211,6 +214,7 @@ export class Histogram2DView extends HistogramViewBase {
             xData: xData,
             yData: yData,
             missingData: missingData,
+            visiblePoints: 0,
             xPoints: xPoints,
             yPoints: yRectangles
         };
@@ -258,12 +262,11 @@ export class Histogram2DView extends HistogramViewBase {
 
         let max: number = 0;
         let rects : Rect[] = [];
-        let total = 0;
         for (let x = 0; x < data.length; x++) {
             let yTotal = 0;
             for (let y = 0; y < data[x].length; y++) {
                 let v = data[x][y];
-                total += v;
+                this.currentData.visiblePoints += v;
                 if (v != 0) {
                     let rec: Rect = {
                         x: x,
@@ -501,7 +504,7 @@ export class Histogram2DView extends HistogramViewBase {
                 (chartWidth - legendWidth) / 2, legendHeight + HistogramViewBase.margin.top / 3))
             .call(legendAxis);
 
-        let summary = formatNumber(total) + " data points";
+        let summary = formatNumber(this.currentData.visiblePoints) + " data points";
         if (missingData != 0)
             summary += ", " + formatNumber(missingData) + " missing";
         if (xData.missing.missingData != 0)

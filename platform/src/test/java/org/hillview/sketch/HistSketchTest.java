@@ -65,8 +65,8 @@ public class HistSketchTest {
         int bucketNum = hdl.getNumOfBuckets();
         for (int i = 0; i < bucketNum; i++)
             size += hdl.getCount(i);
-        assertEquals(size + hdl.getMissingData() + hdl.getOutOfRange(), (int)
-                (bigTable.getMembershipSet().getSize() * 0.5));
+        assertEquals(size + hdl.getMissingData() + hdl.getOutOfRange(),
+                bigTable.getMembershipSet().getSize());
     }
 
    @Test

@@ -84,6 +84,12 @@
             <version>2.4.1</version>
             <type>jar</type>
         </dependency>
+        <!-- JBlas for linear algebra -->
+        <dependency>
+            <groupId>org.jblas</groupId>
+            <artifactId>jblas</artifactId>
+            <version>1.2.4</version>
+        </dependency>
     </dependencies>
 
     <build>

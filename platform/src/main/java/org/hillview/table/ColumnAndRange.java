@@ -14,6 +14,7 @@ public class ColumnAndRange implements Serializable, IJsonRepr{
     public double max;
     public int cdfBucketCount;
     public int bucketCount;
+    public double samplingRate;
     @Nullable
     public String[] bucketBoundaries;  // only used for Categorical columns
 
@@ -23,7 +24,8 @@ public class ColumnAndRange implements Serializable, IJsonRepr{
             converter = new SortedStringsConverter(
                     this.bucketBoundaries, (int)Math.ceil(this.min), (int)Math.floor(this.max));
         BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(this.min, this.max, this.bucketCount);
-        HistogramSketch sketch = new HistogramSketch(buckets, this.columnName, converter);
+        HistogramSketch sketch = new HistogramSketch(buckets, this.columnName, converter,
+                this.samplingRate);
         return new HistogramParts(buckets, converter, sketch);
     }
 

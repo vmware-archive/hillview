@@ -29,11 +29,11 @@ public class CDFTest {
         BucketsDescriptionEqSize bDec  =
                 new BucketsDescriptionEqSize(this.colStat.getMin(), this.colStat.getMax(), width);
         double sampleSize  =  2 * height * height * width;
-        double rate = sampleSize / this.colStat.getPresentCount();
+        double rate = sampleSize / (double)this.colStat.getPresentCount();
         if ((rate > 0.1) || (!useSampling))
             rate = 1.0; // no performance gains in sampling
-        final Histogram tmpHist =
-                this.dataSet.blockingSketch(new HistogramSketch(bDec, this.colName, null, rate));
+        HistogramSketch sk = new HistogramSketch(bDec, this.colName, null, rate);
+        final Histogram tmpHist = this.dataSet.blockingSketch(sk);
         return tmpHist.createCDF();
     }
 

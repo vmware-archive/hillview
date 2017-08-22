@@ -49,6 +49,7 @@ export interface BasicColStats {
 export interface ColumnAndRange {
     min: number;
     max: number;
+    samplingRate: number;
     columnName: string;
     bucketCount: number,
     cdfBucketCount: number;
@@ -227,6 +228,10 @@ implements IHtmlElement, DataView {
         if (this.page == null)
             throw("Page not set");
         return this.page;
+    }
+
+    public static samplingRate(bucketCount: number, pointCount: number): number {
+        return Math.min(bucketCount * HistogramViewBase.chartHeight * Math.log(bucketCount) * 5 / pointCount, 1);
     }
 
     public static getRenderingSize(page: FullPage): Size {

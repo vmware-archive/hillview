@@ -26,14 +26,14 @@ import static org.junit.Assert.assertEquals;
 
 public class HistogramTest {
     @Test
-    public void testHistogram1DLight() throws Exception {
+    public void testHistogram() throws Exception {
         final int bucketNum = 110;
         final int colSize = 10000;
         BucketsDescriptionEqSize buckDes = new BucketsDescriptionEqSize(0, 100, bucketNum);
         Histogram hist = new Histogram(buckDes);
         DoubleArrayColumn col = DoubleArrayTest.generateDoubleArray(colSize);
         FullMembership fMap = new FullMembership(colSize);
-        hist.createHistogram(col, fMap, null);
+        hist.create(col, fMap, 1.0, null);
         int size = 0;
         for (int i = 0; i < bucketNum; i++)
             size += hist.getCount(i);
@@ -41,18 +41,18 @@ public class HistogramTest {
         Histogram hist1 = new Histogram(buckDes);
         DoubleArrayColumn col1 = DoubleArrayTest.generateDoubleArray(2 * colSize);
         FullMembership fMap1 = new FullMembership(2 * colSize);
-        hist1.createHistogram(col1, fMap1, null);
+        hist1.create(col1, fMap1, 1.0, null);
         Histogram hist2 = hist1.union(hist);
         size = 0;
         for (int i = 0; i < bucketNum; i++)
             size += hist2.getCount(i);
         assertEquals(size + hist2.getMissingData() + hist2.getOutOfRange(), 3 * colSize);
         Histogram hist3 = new Histogram(buckDes);
-        hist3.createSampleHistogram(col, fMap, null, 0.1);
+        hist3.create(col, fMap, 0.1, null);
         size = 0;
         for (int i = 0; i < bucketNum; i++)
             size += hist3.getCount(i);
-        assertEquals(size + hist3.getMissingData() + hist3.getOutOfRange(), (int) (colSize * 0.1));
+        assertEquals(size + hist3.getMissingData() + hist3.getOutOfRange(), colSize);
     }
 
     @Test
@@ -72,9 +72,9 @@ public class HistogramTest {
         DoubleArrayColumn col4 = DoubleArrayTest.generateDoubleArray(2 * colSize);
         FullMembership fMap1 = new FullMembership(2 * colSize);
         hm1.createSampleHistogram(col3, col4, null, null, fMap1, 0.1);
-        basicTestHeatMap(hm1, (long) (0.2 * colSize));
+        basicTestHeatMap(hm1, 2 * colSize);
         HeatMap hm2 = hm.union(hm1);
-        basicTestHeatMap(hm2, (long) (1.2 * colSize));
+        basicTestHeatMap(hm2, 3 * colSize);
     }
 
     static void basicTestHeatMap(HeatMap hist, long expectedSize) {
