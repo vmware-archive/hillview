@@ -262,7 +262,6 @@ export abstract class Renderer<T> extends RpcReceiver<PartialResult<T>> {
 
     public onNext(value: PartialResult<T>) {
         this.progressBar.setPosition(value.done);
-        this.page.getHTMLRepresentation().scrollIntoView( { block: "end", behavior: "smooth" } );
     }
 
     public elapsedMilliseconds(): number {

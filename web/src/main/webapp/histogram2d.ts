@@ -198,7 +198,7 @@ export class Histogram2DView extends HistogramViewBase {
 
     public updateView(data: number[][], xData: AxisData, yData: AxisData,
                       missingData: number, elapsedMs: number) : void {
-        this.page.reportError("Operation took " + significantDigits(elapsedMs/1000) + " seconds");
+        this.page.reportError("Operation took " + significantDigits(elapsedMs / 1000) + " seconds");
         if (data == null || data.length == 0) {
             this.page.reportError("No data to display");
             return;
@@ -228,32 +228,32 @@ export class Histogram2DView extends HistogramViewBase {
             chartWidth = HistogramViewBase.minChartWidth;
         let chartHeight = HistogramViewBase.chartHeight;
         let canvasHeight = chartHeight + HistogramViewBase.margin.top + HistogramViewBase.margin.bottom;
-        this.chartResolution = { width: chartWidth, height: HistogramViewBase.chartHeight };
+        this.chartResolution = {width: chartWidth, height: HistogramViewBase.chartHeight};
 
         /*
-        let counts = h.buckets;
-        let bucketCount = counts.length;
-        let max = d3.max(counts);
+         let counts = h.buckets;
+         let bucketCount = counts.length;
+         let max = d3.max(counts);
 
-        // prefix sum for cdf
-        let cdfData: number[] = [];
-        if (cdf != null) {
-            this.currentData.cdfSum = [];
+         // prefix sum for cdf
+         let cdfData: number[] = [];
+         if (cdf != null) {
+         this.currentData.cdfSum = [];
 
-            let sum = 0;
-            for (let i in cdf.buckets) {
-                sum += cdf.buckets[i];
-                this.currentData.cdfSum.push(sum);
-            }
+         let sum = 0;
+         for (let i in cdf.buckets) {
+         sum += cdf.buckets[i];
+         this.currentData.cdfSum.push(sum);
+         }
 
-            let point = 0;
-            for (let i in this.currentData.cdfSum) {
-                cdfData.push(point);
-                point = this.currentData.cdfSum[i] * max / stats.presentCount;
-                cdfData.push(point);
-            }
-        }
-        */
+         let point = 0;
+         for (let i in this.currentData.cdfSum) {
+         cdfData.push(point);
+         point = this.currentData.cdfSum[i] * max / stats.presentCount;
+         cdfData.push(point);
+         }
+         }
+         */
 
         if (this.canvas != null)
             this.canvas.remove();
@@ -261,7 +261,7 @@ export class Histogram2DView extends HistogramViewBase {
         let counts: number[] = [];
 
         let max: number = 0;
-        let rects : Rect[] = [];
+        let rects: Rect[] = [];
         for (let x = 0; x < data.length; x++) {
             let yTotal = 0;
             for (let y = 0; y < data[x].length; y++) {
@@ -382,29 +382,29 @@ export class Histogram2DView extends HistogramViewBase {
             .attr("dominant-baseline", "hanging");
 
         /*
-        // After resizing the line may not have the exact number of points
-        // as the screen width.
-        let cdfLine = d3.line<number>()
-            .x((d, i) => {
-                let index = Math.floor(i / 2); // two points for each data point, for a zig-zag
-                return this.adjustment/2 + index * 2 * (chartWidth - this.adjustment) / cdfData.length;
-            })
-            .y(d => this.yScale(d));
+         // After resizing the line may not have the exact number of points
+         // as the screen width.
+         let cdfLine = d3.line<number>()
+         .x((d, i) => {
+         let index = Math.floor(i / 2); // two points for each data point, for a zig-zag
+         return this.adjustment/2 + index * 2 * (chartWidth - this.adjustment) / cdfData.length;
+         })
+         .y(d => this.yScale(d));
 
-        // draw CDF curve
-        this.canvas.append("path")
-            .attr("transform", translateString(
-                HistogramViewBase.margin.left, HistogramViewBase.margin.top))
-            .datum(cdfData)
-            .attr("stroke", "blue")
-            .attr("d", cdfLine)
-            .attr("fill", "none");
-            */
+         // draw CDF curve
+         this.canvas.append("path")
+         .attr("transform", translateString(
+         HistogramViewBase.margin.left, HistogramViewBase.margin.top))
+         .datum(cdfData)
+         .attr("stroke", "blue")
+         .attr("d", cdfLine)
+         .attr("fill", "none");
+         */
 
         let barWidth = chartWidth / bucketCount;
         let scale = chartHeight / max;
         this.chart.selectAll("g")
-            // bars
+        // bars
             .data(rects)
             .enter().append("g")
             .append("svg:rect")
@@ -697,5 +697,6 @@ export class Histogram2DRenderer extends Renderer<HeatMapData> {
         let yAxisData = new AxisData(value.data.histogramMissingD2, this.cds[1], this.stats[1], null);
         this.histogram.updateView(value.data.buckets, xAxisData, yAxisData,
             value.data.missingData, this.elapsedMilliseconds());
+        this.histogram.scrollIntoView();
     }
 }
