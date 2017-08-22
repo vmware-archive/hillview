@@ -658,7 +658,6 @@ export class TableView extends RemoteObject
         this.updateScrollBar();
         this.highlightSelectedColumns();
         this.reportError("Operation took " + significantDigits(elapsedMs/1000) + " seconds");
-        this.scrollIntoView();
     }
 
     public setSchema(schema: Schema): void {
@@ -1000,7 +999,7 @@ class DistinctStrings {
 
 // First step of a histogram for a categorical column:
 // create a numbering for the strings
-class NumberStrings extends Renderer<DistinctStrings> {
+export class NumberStrings extends Renderer<DistinctStrings> {
     protected contentsInfo: DistinctStrings;
 
     public constructor(protected cd: ColumnDescription, protected schema: Schema,

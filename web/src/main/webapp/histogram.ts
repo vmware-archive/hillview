@@ -20,7 +20,7 @@ import {
 } from "./ui";
 import d3 = require('d3');
 import {RemoteObject, combineMenu, CombineOperators, SelectedObject, ZipReceiver, Renderer} from "./rpc";
-import {ColumnDescription, TableRenderer, TableView, RecordOrder, Schema, RangeInfo} from "./table";
+import {ColumnDescription, TableRenderer, TableView, RecordOrder, Schema, RangeInfo, NumberStrings} from "./table";
 import {histogram} from "d3-array";
 import {TopMenu, TopSubMenu} from "./menu";
 import {Converters, Pair, reorder, ICancellable, PartialResult} from "./util";
@@ -51,9 +51,17 @@ class MakeHistogram extends Renderer<string> {
         if (this.remoteObjectId == null)
             return;
         let remoteObj = new RemoteObject(this.remoteObjectId);
-        let rr = remoteObj.createRpcRequest("range", { columnName: this.colDesc.name });
-        rr.setStartTime(this.operation.startTime());
-        rr.invoke(new RangeCollector(this.colDesc, this.schema, this.allStrings, this.page, remoteObj, rr));
+        if (this.colDesc.kind == "Category") {
+            // TODO: we know the strings, but we don't know the rowCount.
+            // There should be a more efficient way to do this.
+            let rr = remoteObj.createRpcRequest("uniqueStrings", this.colDesc.name);
+            rr.setStartTime(this.operation.startTime());
+            rr.invoke(new NumberStrings(this.colDesc, this.schema, this.page, remoteObj, rr));
+        } else {
+            let rr = remoteObj.createRpcRequest("range", {columnName: this.colDesc.name});
+            rr.setStartTime(this.operation.startTime());
+            rr.invoke(new RangeCollector(this.colDesc, this.schema, this.allStrings, this.page, remoteObj, rr));
+        }
     }
 }
 
