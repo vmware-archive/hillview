@@ -57,17 +57,10 @@ export class Rectangle {
         y: this.origin.y + this.size.height }; }
 }
 
-export interface DataView extends IHtmlElement {
+export interface IDataView extends IHtmlElement {
     setPage(page: FullPage): void;
     getPage(): FullPage;
     refresh(): void;
-}
-
-export function getWindowSize(): Size {
-    return {
-        width: window.innerWidth,
-        height: window.innerHeight
-    };
 }
 
 export function formatNumber(n: number): string {
@@ -385,7 +378,7 @@ export class ProgressManager implements IHtmlElement {
 // Here we display the main visualization
 export class DataDisplay implements IHtmlElement {
     topLevel: HTMLElement;
-    element: DataView;
+    element: IDataView;
 
     constructor() {
         this.topLevel = document.createElement("div");
@@ -401,7 +394,7 @@ export class DataDisplay implements IHtmlElement {
         return this.topLevel;
     }
 
-    public setDataView(element: DataView): void {
+    public setDataView(element: IDataView): void {
         this.element = element;
         removeAllChildren(this.topLevel);
         this.topLevel.appendChild(element.getHTMLRepresentation());
@@ -519,7 +512,7 @@ export class FullPage implements IHtmlElement {
         return this.console;
     }
 
-    public setDataView(hdv: DataView): void {
+    public setDataView(hdv: IDataView): void {
         this.dataDisplay.setDataView(hdv);
     }
 
@@ -543,7 +536,7 @@ export class Resolution {
     static readonly bottomMargin = 50;    // bottom margin in pixels in a plot
     static readonly leftMargin = 40;      // left margin in pixels in a plot
     static readonly legendWidth = 500;    // default legend width in pixels
-    static readonly minDotSize = 5;       // dots are drawn as rectangles of this size in pixels
+    static readonly minDotSize = 4;       // dots are drawn as rectangles of this size in pixels
 
     // Everything is drawn on top of the canvas.
     // The canvas includes a chart plus margins.

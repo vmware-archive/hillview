@@ -16,10 +16,12 @@
  */
 
 import {
-    IHtmlElement, FullPage, DataView, formatNumber, significantDigits, percent, KeyCodes,
-    ScrollBar, IScrollTarget
+    FullPage, formatNumber, significantDigits, percent, KeyCodes, ScrollBar, IScrollTarget
 } from "./ui";
-import {RemoteObject, RpcRequest, Renderer, combineMenu, SelectedObject, CombineOperators, ZipReceiver} from "./rpc";
+import {
+    RemoteObject, RpcRequest, Renderer, combineMenu, SelectedObject, CombineOperators, ZipReceiver,
+    RemoteObjectView
+} from "./rpc";
 import Rx = require('rx');
 import {BasicColStats} from "./histogramBase";
 import {RangeCollector} from "./histogram";
@@ -166,8 +168,8 @@ export class RangeInfo {
  ------------------------------------------
  */
 
-export class TableView extends RemoteObject
-    implements IHtmlElement, DataView, IScrollTarget {
+export class TableView extends RemoteObjectView
+    implements IScrollTarget {
     protected static initialTableId: string = null;
 
     // Data view part: received from remote site
@@ -177,16 +179,12 @@ export class TableView extends RemoteObject
     // Total rows in the table
     protected rowCount?: number;
     protected order: RecordOrder;
-    // Computed
     // Logical number of data rows displayed; includes count of each data row
     protected dataRowsDisplayed: number;
-    // HTML part
-    protected top : HTMLDivElement;
     protected scrollBar : ScrollBar;
     protected htmlTable : HTMLTableElement;
     protected tHead : HTMLTableSectionElement;
     protected tBody: HTMLTableSectionElement;
-    protected page: FullPage;
     protected currentData: TableDataView;
     protected numberedCategories: Set<string>;
     protected selectedColumns: Set<string>;
@@ -196,25 +194,24 @@ export class TableView extends RemoteObject
     static readonly rowsOnScreen = 20;
 
     public constructor(remoteObjectId: string, page: FullPage) {
-        super(remoteObjectId);
+        super(remoteObjectId, page);
 
         this.order = new RecordOrder([]);
         this.numberedCategories = new Set<string>();
-        this.setPage(page);
         if (TableView.initialTableId == null)
             TableView.initialTableId = remoteObjectId;
-        this.top = document.createElement("div");
-        this.top.id = "tableContainer";
-        this.top.tabIndex = 1;  // necessary for keyboard events?
-        this.top.onkeydown = e => this.keyDown(e);
+        this.topLevel = document.createElement("div");
+        this.topLevel.id = "tableContainer";
+        this.topLevel.tabIndex = 1;  // necessary for keyboard events?
+        this.topLevel.onkeydown = e => this.keyDown(e);
         this.selectedColumns = new Set<string>();
         this.firstSelectedColumn = null;
 
-        this.top.style.flexDirection = "column";
-        this.top.style.display = "flex";
-        this.top.style.flexWrap = "nowrap";
-        this.top.style.justifyContent = "flex-start";
-        this.top.style.alignItems = "stretch";
+        this.topLevel.style.flexDirection = "column";
+        this.topLevel.style.display = "flex";
+        this.topLevel.style.flexWrap = "nowrap";
+        this.topLevel.style.justifyContent = "flex-start";
+        this.topLevel.style.alignItems = "stretch";
 
         let menu = new TopMenu([
             {
@@ -229,11 +226,11 @@ export class TableView extends RemoteObject
                 text: "Combine", subMenu: combineMenu(this)
             }
         ]);
-        this.top.appendChild(menu.getHTMLRepresentation());
+        this.topLevel.appendChild(menu.getHTMLRepresentation());
         this.contextMenu = new ContextMenu();
         this.contextMenu.hide();
-        this.top.appendChild(this.contextMenu.getHTMLRepresentation());
-        this.top.appendChild(document.createElement("hr"));
+        this.topLevel.appendChild(this.contextMenu.getHTMLRepresentation());
+        this.topLevel.appendChild(document.createElement("hr"));
         this.htmlTable = document.createElement("table");
         this.scrollBar = new ScrollBar(this);
 
@@ -244,7 +241,7 @@ export class TableView extends RemoteObject
         tblAndBar.style.flexWrap = "nowrap";
         tblAndBar.style.justifyContent = "flex-start";
         tblAndBar.style.alignItems = "stretch";
-        this.top.appendChild(tblAndBar);
+        this.topLevel.appendChild(tblAndBar);
         tblAndBar.appendChild(this.htmlTable);
         tblAndBar.appendChild(this.scrollBar.getHTMLRepresentation());
     }
@@ -390,18 +387,6 @@ export class TableView extends RemoteObject
         if (colIndex != null)
             return schema[colIndex];
         return null;
-    }
-
-    setPage(page: FullPage) {
-        if (page == null)
-            throw("null FullPage");
-        this.page = page;
-    }
-
-    getPage() : FullPage {
-        if (this.page == null)
-            throw("Page not set");
-        return this.page;
     }
 
     getSortOrder(column: string): [boolean, number] {
@@ -733,10 +718,6 @@ export class TableView extends RemoteObject
         }
     }
 
-    public scrollIntoView() {
-        this.getHTMLRepresentation().scrollIntoView( { block: "end", behavior: "smooth" } );
-    }
-
     private pca(): void {
         let colNames: string[] = [];
         this.selectedColumns.forEach(col => colNames.push(col));
@@ -845,10 +826,6 @@ export class TableView extends RemoteObject
 
     public getColumnCount() : number {
         return this.schema.length;
-    }
-
-    public getHTMLRepresentation() : HTMLElement {
-        return this.top;
     }
 
     private runHeavyHitters(colName: string, percent: number) {

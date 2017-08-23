@@ -21,7 +21,7 @@ import Rx = require('rx');
 import Observer = Rx.Observer;
 import Observable = Rx.Observable;
 import {ErrorReporter, ConsoleErrorReporter} from "./errReporter";
-import {ProgressBar, FullPage} from "./ui";
+import {ProgressBar, FullPage, IDataView} from "./ui";
 import {PartialResult, ICancellable, EnumIterators, RpcReply} from "./util";
 import {TopSubMenu} from "./menu";
 import d3 = require('d3');
@@ -249,6 +249,37 @@ export function combineMenu(ro: RemoteObject): TopSubMenu {
             text: c.name,
             action: () => { ro.combine(c.value); } }));
     return new TopSubMenu(combineMenu);
+}
+
+export abstract class RemoteObjectView extends RemoteObject implements IDataView {
+    protected topLevel: HTMLElement;
+
+    constructor(remoteObjectId: string, protected page: FullPage) {
+        super(remoteObjectId);
+        this.setPage(page);
+    }
+
+    setPage(page: FullPage) {
+        if (page == null)
+            throw("null FullPage");
+        this.page = page;
+    }
+
+    getPage() : FullPage {
+        if (this.page == null)
+            throw("Page not set");
+        return this.page;
+    }
+
+    public abstract refresh(): void;
+
+    public getHTMLRepresentation(): HTMLElement {
+        return this.topLevel;
+    }
+
+    public scrollIntoView() {
+        this.getHTMLRepresentation().scrollIntoView( { block: "end", behavior: "smooth" } );
+    }
 }
 
 export abstract class Renderer<T> extends RpcReceiver<PartialResult<T>> {

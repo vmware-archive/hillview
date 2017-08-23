@@ -16,11 +16,11 @@
  */
 
 import {
-    IHtmlElement, DataView, FullPage, Point, Size, KeyCodes, Resolution
+    FullPage, Point, Size, KeyCodes, Resolution
 } from "./ui";
 import {Dialog} from "./dialog";
 import d3 = require('d3');
-import {RemoteObject} from "./rpc";
+import {RemoteObjectView} from "./rpc";
 import {ContentsKind, Schema} from "./table";
 import {BaseType} from "d3-selection";
 import {ScaleLinear, ScaleTime} from "d3-scale";
@@ -66,11 +66,7 @@ export interface FilterDescription {
 
 export type AnyScale = ScaleLinear<number, number> | ScaleTime<number, number>;
 
-export abstract class HistogramViewBase extends RemoteObject
-implements IHtmlElement, DataView {
-    protected topLevel: HTMLElement;
-
-    protected page: FullPage;
+export abstract class HistogramViewBase extends RemoteObjectView {
     protected dragging: boolean;
     protected svg: any;
     protected selectionOrigin: Point;
@@ -96,13 +92,12 @@ implements IHtmlElement, DataView {
     protected moved: boolean;  // to detect trivial empty drags
 
     constructor(remoteObjectId: string, protected tableSchema: Schema, page: FullPage) {
-        super(remoteObjectId);
+        super(remoteObjectId, page);
         this.topLevel = document.createElement("div");
         this.topLevel.className = "chart";
         this.topLevel.onkeydown = e => this.keyDown(e);
         this.dragging = false;
         this.moved = false;
-        this.setPage(page);
 
         this.topLevel.tabIndex = 1;
 
@@ -159,10 +154,6 @@ implements IHtmlElement, DataView {
     protected abstract onMouseMove(): void;
     protected abstract selectionCompleted(xl: number, xr: number): void;
 
-    public getHTMLRepresentation(): HTMLElement {
-        return this.topLevel;
-    }
-
     protected dragStart(): void {
         this.dragging = true;
         this.moved = false;
@@ -195,10 +186,6 @@ implements IHtmlElement, DataView {
             .attr("height", height);
     }
 
-    public scrollIntoView() {
-        this.getHTMLRepresentation().scrollIntoView( { block: "end", behavior: "smooth" } );
-    }
-
     protected dragEnd(): void {
         if (!this.dragging || !this.moved)
             return;
@@ -210,18 +197,6 @@ implements IHtmlElement, DataView {
         let position = d3.mouse(this.chart.node());
         let x = position[0];
         this.selectionCompleted(this.selectionOrigin.x, x);
-    }
-
-    setPage(page: FullPage) {
-        if (page == null)
-            throw("null FullPage");
-        this.page = page;
-    }
-
-    getPage() : FullPage {
-        if (this.page == null)
-            throw("Page not set");
-        return this.page;
     }
 
     public static samplingRate(bucketCount: number, pointCount: number): number {

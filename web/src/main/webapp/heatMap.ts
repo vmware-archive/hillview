@@ -16,11 +16,14 @@
  */
 
 import {
-    FullPage, IHtmlElement, DataView, Point, Size, KeyCodes,
+    FullPage, Point, Size, KeyCodes,
     significantDigits, formatNumber, translateString, Resolution
 } from "./ui";
 import d3 = require('d3');
-import {RemoteObject, Renderer, combineMenu, CombineOperators, SelectedObject, ZipReceiver} from "./rpc";
+import {
+    RemoteObject, Renderer, combineMenu, CombineOperators, SelectedObject, ZipReceiver,
+    RemoteObjectView
+} from "./rpc";
 import {ColumnDescription, Schema, ContentsKind, TableView, RecordOrder, TableRenderer, RangeInfo} from "./table";
 import {Pair, Converters, reorder, regression, ICancellable, PartialResult} from "./util";
 import {
@@ -91,10 +94,7 @@ export class AxisData {
     }
 }
 
-export class HeatMapView extends RemoteObject
-implements IHtmlElement, DataView {
-    private topLevel: HTMLElement;
-    protected page: FullPage;
+export class HeatMapView extends RemoteObjectView {
     protected dragging: boolean;
     protected svg: any;
     private selectionOrigin: Point;
@@ -109,6 +109,7 @@ implements IHtmlElement, DataView {
     protected chartSize: Size;
     protected pointWidth: number;
     protected pointHeight: number;
+    private moved: boolean;
 
     protected currentData: {
         xData: AxisData;
@@ -125,13 +126,13 @@ implements IHtmlElement, DataView {
     private logScale: boolean;
 
     constructor(remoteObjectId: string, protected tableSchema: Schema, page: FullPage) {
-        super(remoteObjectId);
+        super(remoteObjectId, page);
         this.topLevel = document.createElement("div");
         this.topLevel.className = "chart";
         this.topLevel.onkeydown = e => this.keyDown(e);
         this.dragging = false;
         this.logScale = false;
-        this.setPage(page);
+        this.moved = false;
         let menu = new TopMenu( [
             { text: "View", subMenu: new TopSubMenu([
                 { text: "refresh", action: () => { this.refresh(); } },
@@ -234,10 +235,6 @@ implements IHtmlElement, DataView {
         this.selectionRectangle
             .attr("width", 0)
             .attr("height", 0);
-    }
-
-    getHTMLRepresentation(): HTMLElement {
-        return this.topLevel;
     }
 
     public swapAxes(): void {
@@ -486,10 +483,6 @@ implements IHtmlElement, DataView {
         this.summary.textContent = summary;
     }
 
-    public scrollIntoView() {
-        this.getHTMLRepresentation().scrollIntoView( { block: "end", behavior: "smooth" } );
-    }
-
     static colorMap(d: number): string {
         return d3.interpolateWarm(d);
     }
@@ -554,6 +547,7 @@ implements IHtmlElement, DataView {
 
     dragStart(): void {
         this.dragging = true;
+        this.moved = false;
         let position = d3.mouse(this.chart.node());
         this.selectionOrigin = {
             x: position[0],
@@ -564,6 +558,7 @@ implements IHtmlElement, DataView {
         this.onMouseMove();
         if (!this.dragging)
             return;
+        this.moved = true;
         let ox = this.selectionOrigin.x;
         let oy = this.selectionOrigin.y;
         let position = d3.mouse(this.chart.node());
@@ -589,7 +584,7 @@ implements IHtmlElement, DataView {
     }
 
     dragEnd(): void {
-        if (!this.dragging)
+        if (!this.dragging || !this.moved)
             return;
         this.dragging = false;
         this.selectionRectangle
@@ -645,18 +640,6 @@ implements IHtmlElement, DataView {
             this.page,
             this, rr);
         rr.invoke(renderer);
-    }
-
-    setPage(page: FullPage) {
-        if (page == null)
-            throw("null FullPage");
-        this.page = page;
-    }
-
-    getPage() : FullPage {
-        if (this.page == null)
-            throw("Page not set");
-        return this.page;
     }
 }
 
