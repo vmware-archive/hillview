@@ -16,7 +16,7 @@
  */
 
 import {
-    FullPage, significantDigits, formatNumber, percent, translateString
+    FullPage, significantDigits, formatNumber, percent, translateString, Resolution
 } from "./ui";
 import d3 = require('d3');
 import {RemoteObject, combineMenu, CombineOperators, SelectedObject, ZipReceiver, Renderer} from "./rpc";
@@ -81,8 +81,8 @@ export class HistogramView extends HistogramViewBase {
             { text: "View", subMenu: new TopSubMenu([
                 { text: "refresh", action: () => { this.refresh(); } },
                 { text: "table", action: () => this.showTable() },
-                { text: "#buckets", action: () => this.chooseBuckets() },
-                { text: "correlate", action: () => this.chooseSecondColumn() },
+                { text: "#buckets...", action: () => this.chooseBuckets() },
+                { text: "correlate...", action: () => this.chooseSecondColumn() },
             ]) },
             {
                 text: "Combine", subMenu: combineMenu(this)
@@ -211,14 +211,14 @@ export class HistogramView extends HistogramViewBase {
         this.xLabel.textContent = "x=" + xs;
         this.yLabel.textContent = "y=" + ys;
 
-        this.xDot.attr("cx", mouseX + HistogramViewBase.margin.left);
-        this.yDot.attr("cy", mouseY + HistogramViewBase.margin.top);
+        this.xDot.attr("cx", mouseX + Resolution.leftMargin);
+        this.yDot.attr("cy", mouseY + Resolution.topMargin);
 
         if (this.currentData.cdfSum != null) {
             // determine mouse position on cdf curve
             // we have to take into account the adjustment
             let cdfX = (mouseX - this.adjustment / 2) * this.currentData.cdfSum.length /
-                (this.chartResolution.width - this.adjustment);
+                (this.chartSize.width - this.adjustment);
             let pos = 0;
             if (cdfX < 0) {
                 pos = 0;
@@ -229,8 +229,8 @@ export class HistogramView extends HistogramViewBase {
                 pos = cdfPosition / this.currentData.stats.presentCount;
             }
 
-            this.cdfDot.attr("cx", mouseX + HistogramViewBase.margin.left);
-            this.cdfDot.attr("cy", (1 - pos) * this.chartResolution.height + HistogramViewBase.margin.top);
+            this.cdfDot.attr("cx", mouseX + Resolution.leftMargin);
+            this.cdfDot.attr("cy", (1 - pos) * this.chartSize.height + Resolution.topMargin);
             let perc = percent(pos);
             this.cdfLabel.textContent = "cdf=" + perc;
         }
@@ -248,12 +248,8 @@ export class HistogramView extends HistogramViewBase {
             allStrings: allStrings };
         this.page.reportError("Operation took " + significantDigits(elapsedMs/1000) + " seconds");
 
-        let width = this.page.getWidthInPixels();
-
-        let chartWidth = width - HistogramViewBase.margin.left - HistogramViewBase.margin.right;
-        if (chartWidth < HistogramViewBase.minChartWidth)
-            chartWidth = HistogramViewBase.minChartWidth;
-        this.chartResolution = { width: chartWidth, height: HistogramViewBase.chartHeight };
+        let canvasSize = Resolution.getCanvasSize(this.page);
+        this.chartSize = Resolution.getChartSize(this.page);
 
         let counts = h.buckets;
         let bucketCount = counts.length;
@@ -288,13 +284,12 @@ export class HistogramView extends HistogramViewBase {
 
         // Everything is drawn on top of the canvas.
         // The canvas includes the margins
-        let canvasHeight = HistogramViewBase.chartHeight +
-            HistogramViewBase.margin.top + HistogramViewBase.margin.bottom;
+        let canvasHeight = canvasSize.height;
         this.canvas = d3.select(this.chartDiv)
             .append("svg")
             .attr("id", "canvas")
             .call(drag)
-            .attr("width", width)
+            .attr("width", canvasSize.width)
             .attr("border", 1)
             .attr("height", canvasHeight)
             .attr("cursor", "crosshair");
@@ -304,12 +299,11 @@ export class HistogramView extends HistogramViewBase {
         // The chart uses a fragment of the canvas offset by the margins
         this.chart = this.canvas
             .append("g")
-            .attr("transform", translateString(
-                HistogramViewBase.margin.left, HistogramViewBase.margin.top));
+            .attr("transform", translateString(Resolution.leftMargin, Resolution.topMargin));
 
         this.yScale = d3.scaleLinear()
             .domain([0, max])
-            .range([HistogramViewBase.chartHeight, 0]);
+            .range([this.chartSize.height, 0]);
         let yAxis = d3.axisLeft(this.yScale)
             .tickFormat(d3.format(".2s"));
 
@@ -319,7 +313,7 @@ export class HistogramView extends HistogramViewBase {
         if (cd.kind == "Integer" || cd.kind == "Category" || stats.min >= stats.max) {
             minRange -= .5;
             maxRange += .5;
-            this.adjustment = chartWidth / (maxRange - minRange);
+            this.adjustment = this.chartSize.width / (maxRange - minRange);
         }
 
         let xAxis = null;
@@ -328,7 +322,7 @@ export class HistogramView extends HistogramViewBase {
             cd.kind == "Double") {
             this.xScale = d3.scaleLinear()
                 .domain([minRange, maxRange])
-                .range([0, chartWidth]);
+                .range([0, this.chartSize.width]);
             xAxis = d3.axisBottom(this.xScale);
         } else if (cd.kind == "Category") {
             let ticks: number[] = [];
@@ -336,7 +330,7 @@ export class HistogramView extends HistogramViewBase {
             for (let i = 0; i < bucketCount; i++) {
                 let index = i * (maxRange - minRange) / bucketCount;
                 index = Math.round(index);
-                ticks.push(this.adjustment / 2 + index * chartWidth / (maxRange - minRange));
+                ticks.push(this.adjustment / 2 + index * this.chartSize.width / (maxRange - minRange));
                 labels.push(this.currentData.allStrings[stats.min + index]);
             }
 
@@ -345,7 +339,7 @@ export class HistogramView extends HistogramViewBase {
                 .range(ticks);
             this.xScale = d3.scaleLinear()
                 .domain([minRange, maxRange])
-                .range([0, chartWidth]);
+                .range([0, this.chartSize.width]);
             xAxis = d3.axisBottom(<any>axisScale);
             // cast needed probably because the d3 typings are incorrect
         } else if (cd.kind == "Date") {
@@ -354,7 +348,7 @@ export class HistogramView extends HistogramViewBase {
             this.xScale = d3
                 .scaleTime()
                 .domain([minDate, maxDate])
-                .range([0, chartWidth]);
+                .range([0, this.chartSize.width]);
             xAxis = d3.axisBottom(this.xScale);
         }
 
@@ -365,7 +359,7 @@ export class HistogramView extends HistogramViewBase {
         this.canvas.append("text")
             .text(cd.name)
             .attr("transform", translateString(
-                chartWidth / 2, HistogramViewBase.margin.top/2))
+                canvasSize.width / 2, Resolution.topMargin / 2))
             .attr("text-anchor", "middle");
 
         // After resizing the line may not have the exact number of points
@@ -373,20 +367,19 @@ export class HistogramView extends HistogramViewBase {
         let cdfLine = d3.line<number>()
             .x((d, i) => {
                 let index = Math.floor(i / 2); // two points for each data point, for a zig-zag
-                return this.adjustment/2 + index * 2 * (chartWidth - this.adjustment) / cdfData.length;
+                return this.adjustment/2 + index * 2 * (this.chartSize.width - this.adjustment) / cdfData.length;
             })
             .y(d => this.yScale(d));
 
         // draw CDF curve
         this.canvas.append("path")
-            .attr("transform", translateString(
-                HistogramViewBase.margin.left, HistogramViewBase.margin.top))
+            .attr("transform", translateString(Resolution.leftMargin, Resolution.topMargin))
             .datum(cdfData)
             .attr("stroke", "blue")
             .attr("d", cdfLine)
             .attr("fill", "none");
 
-        let barWidth = chartWidth / bucketCount;
+        let barWidth = this.chartSize.width / bucketCount;
         let bars = this.chart.selectAll("g")
             .data(counts)
             .enter().append("g")
@@ -395,7 +388,7 @@ export class HistogramView extends HistogramViewBase {
         bars.append("rect")
             .attr("y", d => this.yScale(d))
             .attr("fill", "grey")
-            .attr("height", d => HistogramViewBase.chartHeight - this.yScale(d))
+            .attr("height", d => this.chartSize.height - this.yScale(d))
             .attr("width", barWidth - 1);
 
         bars.append("text")
@@ -413,7 +406,7 @@ export class HistogramView extends HistogramViewBase {
         if (xAxis != null) {
             this.chart.append("g")
                 .attr("class", "x-axis")
-                .attr("transform", translateString(0, HistogramViewBase.chartHeight))
+                .attr("transform", translateString(0, this.chartSize.height))
                 .call(xAxis);
         }
 
@@ -421,13 +414,13 @@ export class HistogramView extends HistogramViewBase {
         this.xDot = this.canvas
             .append("circle")
             .attr("r", dotRadius)
-            .attr("cy", HistogramViewBase.chartHeight + HistogramViewBase.margin.top)
+            .attr("cy", this.chartSize.height + Resolution.topMargin)
             .attr("cx", 0)
             .attr("fill", "blue");
         this.yDot = this.canvas
             .append("circle")
             .attr("r", dotRadius)
-            .attr("cx", HistogramViewBase.margin.left)
+            .attr("cx", Resolution.leftMargin)
             .attr("cy", 0)
             .attr("fill", "blue");
         this.cdfDot = this.canvas
@@ -581,7 +574,7 @@ export class RangeCollector extends Renderer<BasicColStats> {
     }
 
     public histogram(): void {
-        let size = HistogramViewBase.getRenderingSize(this.page);
+        let size = Resolution.getChartSize(this.page);
         let bucketCount = HistogramViewBase.bucketCount(this.stats, this.page, this.cd.kind);
         let cdfCount = size.width;
         let boundaries = HistogramViewBase.categoriesInRange(this.stats, cdfCount, this.allStrings);

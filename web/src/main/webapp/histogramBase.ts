@@ -16,7 +16,7 @@
  */
 
 import {
-    IHtmlElement, DataView, FullPage, Point, Size, KeyCodes
+    IHtmlElement, DataView, FullPage, Point, Size, KeyCodes, Resolution
 } from "./ui";
 import {Dialog} from "./dialog";
 import d3 = require('d3');
@@ -68,18 +68,8 @@ export type AnyScale = ScaleLinear<number, number> | ScaleTime<number, number>;
 
 export abstract class HistogramViewBase extends RemoteObject
 implements IHtmlElement, DataView {
-    public static readonly maxBucketCount: number = 40;
-    public static readonly minBarWidth: number = 5;
-    public static readonly minChartWidth = 200;  // pixels
-    public static readonly chartHeight = 400;  // pixels
-
     protected topLevel: HTMLElement;
-    public static readonly margin = {
-        top: 50,
-        right: 30,
-        bottom: 40,
-        left: 40
-    };
+
     protected page: FullPage;
     protected dragging: boolean;
     protected svg: any;
@@ -92,7 +82,7 @@ implements IHtmlElement, DataView {
     protected summary: HTMLElement;
     protected xScale: AnyScale;
     protected yScale: ScaleLinear<number, number>;
-    protected chartResolution: Size;
+    protected chartSize: Size;
     // When plotting integer values we increase the data range by .5 on the left and right.
     // The adjustment is the number of pixels on screen that we "waste".
     // I.e., the cdf plot will start adjustment/2 pixels from the chart left margin
@@ -191,7 +181,7 @@ implements IHtmlElement, DataView {
         let position = d3.mouse(this.chart.node());
         let x = position[0];
         let width = x - ox;
-        let height = this.chartResolution.height;
+        let height = this.chartSize.height;
 
         if (width < 0) {
             ox = x;
@@ -199,8 +189,8 @@ implements IHtmlElement, DataView {
         }
 
         this.selectionRectangle
-            .attr("x", ox + HistogramViewBase.margin.left)
-            .attr("y", HistogramViewBase.margin.top)
+            .attr("x", ox + Resolution.leftMargin)
+            .attr("y", Resolution.topMargin)
             .attr("width", width)
             .attr("height", height);
     }
@@ -241,18 +231,11 @@ implements IHtmlElement, DataView {
         // return Math.min(bucketCount * HistogramViewBase.chartHeight * Math.log(bucketCount + 2) * 5 / pointCount, 1);
     }
 
-    public static getRenderingSize(page: FullPage): Size {
-        let width = page.getWidthInPixels();
-        width = width - HistogramViewBase.margin.left - HistogramViewBase.margin.right;
-        let height = HistogramViewBase.chartHeight - HistogramViewBase.margin.top - HistogramViewBase.margin.bottom;
-        return { width: width, height: height };
-    }
-
     public static bucketCount(stats: BasicColStats, page: FullPage, columnKind: ContentsKind): number {
-        let size = HistogramViewBase.getRenderingSize(page);
-        let bucketCount = HistogramViewBase.maxBucketCount;
-        if (size.width / HistogramViewBase.minBarWidth < bucketCount)
-            bucketCount = size.width / HistogramViewBase.minBarWidth;
+        let size = Resolution.getChartSize(page);
+        let bucketCount = Resolution.maxBucketCount;
+        if (size.width / Resolution.minBarWidth < bucketCount)
+            bucketCount = size.width / Resolution.minBarWidth;
         if (columnKind == "Integer" ||
             columnKind == "Category") {
             bucketCount = Math.min(bucketCount, stats.max - stats.min + 1);
