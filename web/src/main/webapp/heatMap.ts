@@ -17,7 +17,7 @@
 
 import {
     FullPage, IHtmlElement, DataView, Point, Size, KeyCodes,
-    significantDigits, formatNumber, translateString
+    significantDigits, formatNumber, translateString, Resolution
 } from "./ui";
 import d3 = require('d3');
 import {RemoteObject, Renderer, combineMenu, CombineOperators, SelectedObject, ZipReceiver} from "./rpc";
@@ -94,15 +94,6 @@ export class AxisData {
 export class HeatMapView extends RemoteObject
 implements IHtmlElement, DataView {
     private topLevel: HTMLElement;
-    public static readonly minChartWidth = 200;  // pixels
-    public static readonly chartHeight = 400;  // pixels
-    public static readonly minDotSize = 3;  // pixels
-    public static readonly margin = {
-        top: 30,
-        right: 30,
-        bottom: 50,
-        left: 40
-    };
     protected page: FullPage;
     protected dragging: boolean;
     protected svg: any;
@@ -115,7 +106,7 @@ implements IHtmlElement, DataView {
     protected summary: HTMLElement;
     private xScale: ScaleLinear<number, number> | ScaleTime<number, number>;
     private yScale: ScaleLinear<number, number> | ScaleTime<number, number>;
-    protected chartResolution: Size;
+    protected chartSize: Size;
     protected pointWidth: number;
     protected pointHeight: number;
 
@@ -249,11 +240,6 @@ implements IHtmlElement, DataView {
         return this.topLevel;
     }
 
-    // Generates a string that encodes a call to the SVG translate method
-    static translateString(x: number, y: number): string {
-        return "translate(" + String(x) + ", " + String(y) + ")";
-    }
-
     public swapAxes(): void {
         let collector = new Range2DCollector(
             [this.currentData.yData.description, this.currentData.xData.description],
@@ -297,17 +283,11 @@ implements IHtmlElement, DataView {
             yPoints: yPoints
         };
 
-        let width = this.page.getWidthInPixels();
-        let chartWidth = width - HeatMapView.margin.left - HeatMapView.margin.right;
-        let chartHeight = HeatMapView.chartHeight;
-        let canvasHeight = chartHeight + HeatMapView.margin.top + HeatMapView.margin.bottom;
-        if (chartWidth < HeatMapView.minChartWidth)
-            chartWidth = HeatMapView.minChartWidth;
+        let canvasSize = Resolution.getCanvasSize(this.page);
+        this.chartSize = Resolution.getChartSize(this.page);
+        this.pointWidth = this.chartSize.width / xPoints;
+        this.pointHeight = this.chartSize.height / yPoints;
 
-        this.pointWidth = chartWidth / xPoints;
-        this.pointHeight = chartHeight / yPoints;
-
-        this.chartResolution = { width: chartWidth, height: chartHeight };
         if (this.canvas != null)
             this.canvas.remove();
 
@@ -322,9 +302,9 @@ implements IHtmlElement, DataView {
             .append("svg")
             .attr("id", "canvas")
             .call(drag)
-            .attr("width", width)
+            .attr("width", canvasSize.width)
             .attr("border", 1)
-            .attr("height", canvasHeight)
+            .attr("height", canvasSize.height)
             .attr("cursor", "crosshair");
 
         this.canvas.on("mousemove", () => this.onMouseMove());
@@ -332,12 +312,11 @@ implements IHtmlElement, DataView {
         // The chart uses a fragment of the canvas offset by the margins
         this.chart = this.canvas
             .append("g")
-            .attr("transform", HeatMapView.translateString(
-                HeatMapView.margin.left, HeatMapView.margin.top));
+            .attr("transform", translateString(Resolution.leftMargin, Resolution.topMargin));
 
         let xAxis, yAxis;
-        [xAxis, this.xScale] = this.currentData.xData.getAxis(chartWidth, true);
-        [yAxis, this.yScale] = this.currentData.yData.getAxis(chartHeight, false);
+        [xAxis, this.xScale] = this.currentData.xData.getAxis(this.chartSize.width, true);
+        [yAxis, this.yScale] = this.currentData.yData.getAxis(this.chartSize.height, false);
 
         interface Dot {
             x: number,
@@ -357,7 +336,7 @@ implements IHtmlElement, DataView {
                 if (v != 0) {
                     let rec = {
                         x: x * this.pointWidth,
-                        y: chartHeight - (y + 1) * this.pointHeight,  // +1 because it's the upper corner
+                        y: this.chartSize.height - (y + 1) * this.pointHeight,  // +1 because it's the upper corner
                         v: v
                     };
                     visible += v;
@@ -372,14 +351,19 @@ implements IHtmlElement, DataView {
         if (max <= 1) {
             max = 1;
         } else {
-            let legendWidth = 300;
+            let legendWidth = Resolution.legendWidth;
+            if (legendWidth > this.chartSize.width)
+                legendWidth = this.chartSize.width;
             let legendHeight = 15;
             let legendSvg = this.canvas
                 .append("svg");
 
+            // apparently SVG defs are global, even if they are in
+            // different SVG elements.  So we have to assign unique names.
+            let gradientId = 'gradient' + this.getPage().pageId;
             let gradient = legendSvg.append('defs')
                 .append('linearGradient')
-                .attr('id', 'gradient')
+                .attr('id', gradientId)
                 .attr('x1', '0%')
                 .attr('y1', '0%')
                 .attr('x2', '100%')
@@ -396,8 +380,8 @@ implements IHtmlElement, DataView {
             legendSvg.append("rect")
                 .attr("width", legendWidth)
                 .attr("height", legendHeight)
-                .style("fill", "url(#gradient)")
-                .attr("x", (chartWidth - legendWidth) / 2)
+                .style("fill", "url(#" + gradientId + ")")
+                .attr("x", (this.chartSize.width - legendWidth) / 2)
                 .attr("y", 0);
 
             // create a scale and axis for the legend
@@ -419,7 +403,7 @@ implements IHtmlElement, DataView {
             let legendAxis = d3.axisBottom(legendScale);
             legendSvg.append("g")
                 .attr("transform", translateString(
-                    (chartWidth - legendWidth) / 2, legendHeight))
+                    (this.chartSize.width - legendWidth) / 2, legendHeight))
                 .call(legendAxis);
         }
 
@@ -429,7 +413,7 @@ implements IHtmlElement, DataView {
         this.canvas.append("text")
             .text(xData.description.name)
             .attr("transform", translateString(
-                chartWidth / 2, HeatMapView.chartHeight + HeatMapView.margin.top + HeatMapView.margin.bottom / 2))
+                this.chartSize.width / 2, this.chartSize.height + Resolution.topMargin + Resolution.bottomMargin / 2))
             .attr("text-anchor", "middle")
             .attr("dominant-baseline", "hanging");
 
@@ -448,7 +432,7 @@ implements IHtmlElement, DataView {
 
         this.chart.append("g")
             .attr("class", "x-axis")
-            .attr("transform", translateString(0, chartHeight))
+            .attr("transform", translateString(0, this.chartSize.height))
             .call(xAxis);
 
         this.chart.append("g")
@@ -459,7 +443,7 @@ implements IHtmlElement, DataView {
         this.xDot = this.chart
             .append("circle")
             .attr("r", dotRadius)
-            .attr("cy", chartHeight)
+            .attr("cy", this.chartSize.height)
             .attr("cx", 0)
             .attr("fill", "blue");
         this.yDot = this.chart
@@ -480,8 +464,8 @@ implements IHtmlElement, DataView {
         if (regr.length == 2) {
             let b = regr[0];
             let a = regr[1];
-            let y1 = chartHeight - b * this.pointHeight;
-            let y2 = chartHeight - (a * data.length + b) * this.pointHeight;
+            let y1 = this.chartSize.height - b * this.pointHeight;
+            let y2 = this.chartSize.height - (a * data.length + b) * this.pointHeight;
             this.chart
                 .append("line")
                 .attr("x1", 0)
@@ -552,9 +536,8 @@ implements IHtmlElement, DataView {
         this.xLabel.textContent = "x=" + xs;
         this.yLabel.textContent = "y=" + ys;
 
-        let chartHeight = HeatMapView.chartHeight;
         let xi = position[0] / this.pointWidth;
-        let yi = (chartHeight - position[1]) / this.pointHeight;
+        let yi = (this.chartSize.height - position[1]) / this.pointHeight;
         xi = Math.floor(xi);
         yi = Math.floor(yi);
         if (xi >= 0 && xi < this.currentData.xPoints &&
@@ -599,8 +582,8 @@ implements IHtmlElement, DataView {
         }
 
         this.selectionRectangle
-            .attr("x", ox + HeatMapView.margin.left)
-            .attr("y", oy + HeatMapView.margin.top)
+            .attr("x", ox + Resolution.leftMargin)
+            .attr("y", oy + Resolution.topMargin)
             .attr("width", width)
             .attr("height", height);
     }
@@ -675,13 +658,6 @@ implements IHtmlElement, DataView {
             throw("Page not set");
         return this.page;
     }
-
-    public static getRenderingSize(page: FullPage): Size {
-        let width = page.getWidthInPixels();
-        width = width - HeatMapView.margin.left - HeatMapView.margin.right;
-        let height = HeatMapView.chartHeight - HeatMapView.margin.top - HeatMapView.margin.bottom;
-        return { width: width, height: height };
-    }
 }
 
 // After filtering we obtain a handle to a new table
@@ -744,12 +720,12 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
     }
 
     public draw(): void {
-        let size = HeatMapView.getRenderingSize(this.page);
+        let size = Resolution.getChartSize(this.page);
         let xBucketCount: number;
         let yBucketCount: number;
         if (this.drawHeatMap) {
-            xBucketCount = Math.floor(size.width / HeatMapView.minDotSize);
-            yBucketCount = Math.floor(size.height / HeatMapView.minDotSize);
+            xBucketCount = Math.floor(size.width / Resolution.minDotSize);
+            yBucketCount = Math.floor(size.height / Resolution.minDotSize);
         } else {
             xBucketCount = HistogramViewBase.bucketCount(this.stats.first, this.page, this.cds[0].kind);
             yBucketCount = HistogramViewBase.bucketCount(this.stats.second, this.page, this.cds[1].kind);

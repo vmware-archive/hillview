@@ -40,10 +40,6 @@ export class ContextMenu implements IHtmlElement {
         }
     }
 
-    private remove(): void {
-        this.getHTMLRepresentation().remove();
-    }
-
     public show(): void {
         this.outer.hidden = false;
     }
@@ -72,7 +68,10 @@ export class ContextMenu implements IHtmlElement {
         cell.innerHTML = mi.text;
         cell.style.textAlign = "left";
         cell.className = "menuItem";
-        cell.onclick = () => { this.hide(); mi.action(); }
+        if (mi.action != null)
+            cell.onclick = () => { this.hide(); mi.action(); };
+        else
+            cell.onclick = () => this.hide();
     }
 
     public getHTMLRepresentation(): HTMLElement {
@@ -81,7 +80,6 @@ export class ContextMenu implements IHtmlElement {
 }
 
 export class TopSubMenu implements IHtmlElement {
-    items: MenuItem[];
     private outer: HTMLTableElement;
     private tableBody: HTMLTableSectionElement;
 
@@ -91,7 +89,6 @@ export class TopSubMenu implements IHtmlElement {
         
         this.tableBody = this.outer.createTBody();
         
-        this.items = [];
         if (mis != null) {
             for (let mi of mis)
                 this.addItem(mi);
@@ -99,13 +96,16 @@ export class TopSubMenu implements IHtmlElement {
     }
 
     addItem(mi: MenuItem): void {
-        this.items.push(mi);
         let trow = this.tableBody.insertRow();
         let cell = trow.insertCell(0);
-        cell.innerHTML = mi.text;
+        if (mi.text == "---")
+            cell.innerHTML = "<hr>";
+        else
+            cell.innerHTML = mi.text;
         cell.style.textAlign = "left";
         cell.className = "menuItem";
-        cell.onclick = () => { mi.action(); }
+        if (mi.action != null)
+            cell.onclick = () => { mi.action(); }
     }
 
     getHTMLRepresentation(): HTMLElement {

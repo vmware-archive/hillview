@@ -219,7 +219,7 @@ export class TableView extends RemoteObject
         let menu = new TopMenu([
             {
                 text: "View", subMenu: new TopSubMenu([
-                    { text: "Home", action: () => { TableView.goHome(this.page); } },
+                    { text: "Full dataset", action: () => { TableView.fullDataset(this.page); } },
                     { text: "Refresh", action: () => { this.refresh(); } },
                     { text: "All columns", action: () => { this.showAllRows(); } },
                     { text: "No columns", action: () => { this.setOrder(new RecordOrder([])); } }
@@ -366,7 +366,7 @@ export class TableView extends RemoteObject
     }
 
     // Navigate back to the first table known
-    public static goHome(page: FullPage): void {
+    public static fullDataset(page: FullPage): void {
         if (TableView.initialTableId == null)
             return;
 

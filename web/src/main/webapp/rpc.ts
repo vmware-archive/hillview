@@ -243,6 +243,7 @@ export function combineMenu(ro: RemoteObject): TopSubMenu {
     combineMenu.push({
         text: "Select current",
         action: () => { SelectedObject.current.select(ro); }});
+    combineMenu.push({text: "---", action: null});
     EnumIterators.getNamesAndValues(CombineOperators)
         .forEach(c => combineMenu.push({
             text: c.name,

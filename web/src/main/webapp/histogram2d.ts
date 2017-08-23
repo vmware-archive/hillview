@@ -17,7 +17,7 @@
 
 import {HistogramViewBase, ColumnAndRange, BasicColStats, FilterDescription, BucketDialog} from "./histogramBase";
 import {Schema, TableView, RecordOrder, TableRenderer, ColumnDescription, RangeInfo} from "./table";
-import {FullPage, significantDigits, formatNumber, translateString} from "./ui";
+import {FullPage, significantDigits, formatNumber, translateString, Resolution} from "./ui";
 import {TopMenu, TopSubMenu} from "./menu";
 import d3 = require('d3');
 import {reorder, Converters, transpose, ICancellable, PartialResult} from "./util";
@@ -169,8 +169,8 @@ export class Histogram2DView extends HistogramViewBase {
         this.xLabel.textContent = "x=" + xs;
         this.yLabel.textContent = "y=" + ys;
 
-        this.xDot.attr("cx", mouseX + HistogramViewBase.margin.left);
-        this.yDot.attr("cy", mouseY + HistogramViewBase.margin.top);
+        this.xDot.attr("cx", mouseX + Resolution.leftMargin);
+        this.yDot.attr("cy", mouseY + Resolution.topMargin);
 
         /*
         if (this.currentData.cdfSum != null) {
@@ -188,8 +188,8 @@ export class Histogram2DView extends HistogramViewBase {
                 pos = cdfPosition / this.currentData.stats.presentCount;
             }
 
-            this.cdfDot.attr("cx", mouseX + HistogramViewBase.margin.left);
-            this.cdfDot.attr("cy", (1 - pos) * this.chartResolution.height + HistogramViewBase.margin.top);
+            this.cdfDot.attr("cx", mouseX + Resolution.leftMargin);
+            this.cdfDot.attr("cy", (1 - pos) * this.chartResolution.height + Resolution.topMargin);
             let perc = percent(pos);
             this.cdfLabel.textContent = "cdf=" + perc;
         }
@@ -219,16 +219,8 @@ export class Histogram2DView extends HistogramViewBase {
             yPoints: yRectangles
         };
 
-        let width = this.page.getWidthInPixels();
-        // Everything is drawn on top of the canvas.
-        // The canvas includes the margins
-
-        let chartWidth = width - HistogramViewBase.margin.left - HistogramViewBase.margin.right;
-        if (chartWidth < HistogramViewBase.minChartWidth)
-            chartWidth = HistogramViewBase.minChartWidth;
-        let chartHeight = HistogramViewBase.chartHeight;
-        let canvasHeight = chartHeight + HistogramViewBase.margin.top + HistogramViewBase.margin.bottom;
-        this.chartResolution = {width: chartWidth, height: HistogramViewBase.chartHeight};
+        let canvasSize = Resolution.getCanvasSize(this.page);
+        this.chartSize = Resolution.getChartSize(this.page);
 
         /*
          let counts = h.buckets;
@@ -297,9 +289,9 @@ export class Histogram2DView extends HistogramViewBase {
             .append("svg")
             .attr("id", "canvas")
             .call(drag)
-            .attr("width", width)
+            .attr("width", canvasSize.width)
             .attr("border", 1)
-            .attr("height", canvasHeight)
+            .attr("height", canvasSize.height)
             .attr("cursor", "crosshair");
 
         this.canvas.on("mousemove", () => this.onMouseMove());
@@ -308,10 +300,10 @@ export class Histogram2DView extends HistogramViewBase {
         this.chart = this.canvas
             .append("g")
             .attr("transform", translateString(
-                HistogramViewBase.margin.left, HistogramViewBase.margin.top));
+                Resolution.leftMargin, Resolution.topMargin));
 
         this.yScale = d3.scaleLinear()
-            .range([HistogramViewBase.chartHeight, 0]);
+            .range([this.chartSize.height, 0]);
         if (this.normalized)
             this.yScale.domain([0, 100]);
         else
@@ -327,7 +319,7 @@ export class Histogram2DView extends HistogramViewBase {
         if (cd.kind == "Integer" || cd.kind == "Category" || xData.stats.min >= xData.stats.max) {
             minRange -= .5;
             maxRange += .5;
-            this.adjustment = chartWidth / (maxRange - minRange);
+            this.adjustment = this.chartSize.width / (maxRange - minRange);
         }
 
         let xAxis = null;
@@ -336,7 +328,7 @@ export class Histogram2DView extends HistogramViewBase {
             cd.kind == "Double") {
             this.xScale = d3.scaleLinear()
                 .domain([minRange, maxRange])
-                .range([0, chartWidth]);
+                .range([0, this.chartSize.width]);
             xAxis = d3.axisBottom(this.xScale);
         } else if (cd.kind == "Category") {
             let ticks: number[] = [];
@@ -344,7 +336,7 @@ export class Histogram2DView extends HistogramViewBase {
             for (let i = 0; i < bucketCount; i++) {
                 let index = i * (maxRange - minRange) / bucketCount;
                 index = Math.round(index);
-                ticks.push(this.adjustment / 2 + index * chartWidth / (maxRange - minRange));
+                ticks.push(this.adjustment / 2 + index * this.chartSize.width / (maxRange - minRange));
                 labels.push(this.currentData.xData.allStrings[xData.stats.min + index]);
             }
 
@@ -353,7 +345,7 @@ export class Histogram2DView extends HistogramViewBase {
                 .range(ticks);
             this.xScale = d3.scaleLinear()
                 .domain([minRange, maxRange])
-                .range([0, chartWidth]);
+                .range([0, this.chartSize.width]);
             xAxis = d3.axisBottom(<any>axisScale);
             // cast needed probably because the d3 typings are incorrect
         } else if (cd.kind == "Date") {
@@ -362,7 +354,7 @@ export class Histogram2DView extends HistogramViewBase {
             this.xScale = d3
                 .scaleTime()
                 .domain([minDate, maxDate])
-                .range([0, chartWidth]);
+                .range([0, this.chartSize.width]);
             xAxis = d3.axisBottom(this.xScale);
         }
 
@@ -372,12 +364,12 @@ export class Histogram2DView extends HistogramViewBase {
 
         this.canvas.append("text")
             .text(xData.description.name)
-            .attr("transform", translateString(chartWidth / 2, chartHeight +
-                HistogramViewBase.margin.top + HistogramViewBase.margin.bottom / 2))
+            .attr("transform", translateString(this.chartSize.width / 2,
+                this.chartSize.height + Resolution.topMargin + Resolution.bottomMargin / 2))
             .attr("text-anchor", "middle");
         this.canvas.append("text")
             .text(yData.description.name)
-            .attr("transform", translateString(chartWidth / 2, 0))
+            .attr("transform", translateString(this.chartSize.width / 2, 0))
             .attr("text-anchor", "middle")
             .attr("dominant-baseline", "hanging");
 
@@ -394,23 +386,23 @@ export class Histogram2DView extends HistogramViewBase {
          // draw CDF curve
          this.canvas.append("path")
          .attr("transform", translateString(
-         HistogramViewBase.margin.left, HistogramViewBase.margin.top))
+         Resolution.leftMargin, Resolution.topMargin))
          .datum(cdfData)
          .attr("stroke", "blue")
          .attr("d", cdfLine)
          .attr("fill", "none");
          */
 
-        let barWidth = chartWidth / bucketCount;
-        let scale = chartHeight / max;
+        let barWidth = this.chartSize.width / bucketCount;
+        let scale = this.chartSize.height / max;
         this.chart.selectAll("g")
         // bars
             .data(rects)
             .enter().append("g")
             .append("svg:rect")
             .attr("x", d => d.x * barWidth)
-            .attr("y", d => this.rectPosition(d, counts, scale))
-            .attr("height", d => this.rectHeight(d, counts, scale))
+            .attr("y", d => this.rectPosition(d, counts, scale, this.chartSize.height))
+            .attr("height", d => this.rectHeight(d, counts, scale, this.chartSize.height))
             .attr("width", barWidth - 1)
             .attr("fill", d => this.color(d.index, yRectangles - 1))
             .exit()
@@ -421,7 +413,7 @@ export class Histogram2DView extends HistogramViewBase {
             .append("text")
             .attr("class", "histogramBoxLabel")
             .attr("x", (c, i) => (i + .5) * barWidth)
-            .attr("y", d => chartHeight - (d * scale))
+            .attr("y", d => this.chartSize.height - (d * scale))
             .attr("text-anchor", "middle")
             .attr("dy", d => d <= (9 * max / 10) ? "-.25em" : ".75em")
             .text(d => (d == 0) ? "" : significantDigits(d))
@@ -433,7 +425,7 @@ export class Histogram2DView extends HistogramViewBase {
         if (xAxis != null) {
             this.chart.append("g")
                 .attr("class", "x-axis")
-                .attr("transform", translateString(0, HistogramViewBase.chartHeight))
+                .attr("transform", translateString(0, this.chartSize.height))
                 .call(xAxis);
         }
 
@@ -441,13 +433,13 @@ export class Histogram2DView extends HistogramViewBase {
         this.xDot = this.canvas
             .append("circle")
             .attr("r", dotRadius)
-            .attr("cy", HistogramViewBase.chartHeight + HistogramViewBase.margin.top)
+            .attr("cy", this.chartSize.height + Resolution.topMargin)
             .attr("cx", 0)
             .attr("fill", "blue");
         this.yDot = this.canvas
             .append("circle")
             .attr("r", dotRadius)
-            .attr("cx", HistogramViewBase.margin.left)
+            .attr("cx", Resolution.leftMargin)
             .attr("cy", 0)
             .attr("fill", "blue");
         this.cdfDot = this.canvas
@@ -462,16 +454,19 @@ export class Histogram2DView extends HistogramViewBase {
             .attr("width", 0)
             .attr("height", 0);
 
-        let legendWidth = 500;
-        if (legendWidth > chartWidth)
-            legendWidth = chartWidth;
+        let legendWidth = Resolution.legendWidth;
+        if (legendWidth > this.chartSize.width)
+            legendWidth = this.chartSize.width;
         let legendHeight = 15;
         let legendSvg = this.canvas
             .append("svg");
 
+        // apparently SVG defs are global, even if they are in
+        // different SVG elements.  So we have to assign unique names.
+        let gradientId = 'gradient' + this.getPage().pageId;
         let gradient = legendSvg.append('defs')
             .append('linearGradient')
-            .attr('id', 'gradient')
+            .attr('id', gradientId)
             .attr('x1', '0%')
             .attr('y1', '0%')
             .attr('x2', '100%')
@@ -488,9 +483,9 @@ export class Histogram2DView extends HistogramViewBase {
         legendSvg.append("rect")
             .attr("width", legendWidth)
             .attr("height", legendHeight)
-            .style("fill", "url(#gradient)")
-            .attr("x", (chartWidth - legendWidth) / 2)
-            .attr("y", HistogramViewBase.margin.top / 3);
+            .style("fill", "url(#" + gradientId + ")")
+            .attr("x", (this.chartSize.width - legendWidth) / 2)
+            .attr("y", Resolution.topMargin / 3);
 
         // create a scale and axis for the legend
         let legendScale = d3.scaleLinear();
@@ -501,7 +496,7 @@ export class Histogram2DView extends HistogramViewBase {
         let legendAxis = d3.axisBottom(legendScale);
         legendSvg.append("g")
             .attr("transform", translateString(
-                (chartWidth - legendWidth) / 2, legendHeight + HistogramViewBase.margin.top / 3))
+                (this.chartSize.width - legendWidth) / 2, legendHeight + Resolution.topMargin / 3))
             .call(legendAxis);
 
         let summary = formatNumber(this.currentData.visiblePoints) + " data points";
@@ -515,29 +510,29 @@ export class Histogram2DView extends HistogramViewBase {
         this.summary.textContent = summary;
     }
 
-    protected rectHeight(d: Rect, counts: number[], scale: number): number {
+    protected rectHeight(d: Rect, counts: number[], scale: number, chartHeight: number): number {
         if (this.normalized) {
             let c = counts[d.x];
             if (c <= 0)
                 return 0;
-            return HistogramViewBase.chartHeight * d.height / c;
+            return chartHeight * d.height / c;
         }
         return d.height * scale;
     }
 
-    protected rectPosition(d: Rect, counts: number[], scale: number): number {
+    protected rectPosition(d: Rect, counts: number[], scale: number, chartHeight: number): number {
         let y = d.y + d.height;
         if (this.normalized) {
             let c = counts[d.x];
             if (c <= 0)
                 return 0;
-            return HistogramViewBase.chartHeight * (1 - y / c);
+            return chartHeight * (1 - y / c);
         }
-        return HistogramViewBase.chartHeight - y * scale;
+        return chartHeight - y * scale;
     }
 
     static colorMap(d: number): string {
-        return d3.interpolateRainbow(d);
+        return d3.interpolatePlasma(d);
     }
 
     color(d: number, max: number): string {

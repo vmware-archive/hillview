@@ -440,7 +440,7 @@ export class FullPage implements IHtmlElement {
     protected console: ConsoleDisplay;
     pageTopLevel: HTMLElement;
     static pageCounter: number = 0;
-    protected pageId: number;
+    public readonly pageId: number;
 
     // All visible pages are children of a div named 'top'.
     static allPages: FullPage[] = [];  // should be the same as the children of top 'div'
@@ -529,6 +529,36 @@ export class FullPage implements IHtmlElement {
     }
 
     public getWidthInPixels(): number {
-        return getWindowSize().width;
+        return this.pageTopLevel.offsetWidth;
     }
 }
+
+export class Resolution {
+    static readonly maxBucketCount = 40;  // maximum number of buckets in a histogram
+    static readonly minBarWidth = 5;      // minimum number of pixels for a histogram bar
+    static readonly minCanvasWidth = 300; // minimum number of pixels for a plot (including margins)
+    static readonly canvasHeight = 500;   // size of a plot
+    static readonly topMargin = 50;       // top margin in pixels in a plot
+    static readonly rightMargin = 20;     // right margin in pixels in a plot
+    static readonly bottomMargin = 50;    // bottom margin in pixels in a plot
+    static readonly leftMargin = 40;      // left margin in pixels in a plot
+    static readonly legendWidth = 500;    // default legend width in pixels
+    static readonly minDotSize = 5;       // dots are drawn as rectangles of this size in pixels
+
+    // Everything is drawn on top of the canvas.
+    // The canvas includes a chart plus margins.
+    public static getCanvasSize(page: FullPage): Size {
+        let width = page.getWidthInPixels() - 3;
+        if (width < Resolution.minCanvasWidth)
+            width = Resolution.minCanvasWidth;
+        return { width: width, height: Resolution.canvasHeight };
+    }
+
+    public static getChartSize(page: FullPage): Size {
+        let canvasSize = Resolution.getCanvasSize(page);
+        let width = canvasSize.width - Resolution.leftMargin - Resolution.rightMargin;
+        let height = canvasSize.height - Resolution.topMargin - Resolution.bottomMargin;
+        return { width: width, height: height };
+    }
+}
+
