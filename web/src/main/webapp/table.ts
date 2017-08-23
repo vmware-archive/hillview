@@ -1067,6 +1067,37 @@ class HeavyHittersReceiver extends Renderer<string> {
                        operation: ICancellable,
                        protected schema: IColumnDescription[],
                        protected order: RecordOrder) {
+        super(page, operation, "Filter heavy");
+        this.hitterObjectsId = null;
+    }
+
+    onNext(value: PartialResult<string>): any {
+        super.onNext(value);
+        if (value.data != null)
+            this.hitterObjectsId = value.data;
+    }
+
+    onCompleted(): void {
+        super.finished();
+        if (this.hitterObjectsId == null)
+            return;
+        let rr = this.tv.createRpcRequest("checkHeavy", {
+                hittersId: this.hitterObjectsId,
+                schema: this.schema
+            });
+        rr.setStartTime(this.operation.startTime());
+        rr.invoke(new HeavyHittersReceiver2(this.page, this.tv, rr, this.schema, this.order));
+    }
+}
+
+class HeavyHittersReceiver2 extends Renderer<string> {
+    private hitterObjectsId: string;
+
+    public constructor(page: FullPage,
+                       protected tv: TableView,
+                       operation: ICancellable,
+                       protected schema: IColumnDescription[],
+                       protected order: RecordOrder) {
         super(page, operation, "Heavy hitters");
         this.hitterObjectsId = null;
     }

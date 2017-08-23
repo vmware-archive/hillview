@@ -103,6 +103,7 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
         };
         UnifiedMapWithHashingStrategy<Integer, Integer> hMap = new
                 UnifiedMapWithHashingStrategy<Integer, Integer>(hs);
+
         List<Integer> toRemove = new ArrayList<Integer>(this.maxSize);
         int i = rowIt.getNextRow();
         /* An optimization to speed up the algorithm is that we batch the decrements together in
