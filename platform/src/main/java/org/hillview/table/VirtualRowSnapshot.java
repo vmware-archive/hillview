@@ -19,6 +19,7 @@
 package org.hillview.table;
 
 import org.hillview.table.api.ITable;
+import org.hillview.utils.HashUtil;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -64,13 +65,14 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
 
     @Override
     public int hashCode() {
-        int result = this.table.hashCode();
-        for (String s : this.schema.getColumnNames()) {
-            Object o = this.getObject(s);
-            if (o != null)
-                result = (31 * result) + o.hashCode();
+        int hashCode = 31;
+        for (String cn : this.schema.getColumnNames()) {
+            Object o = this.getObject(cn);
+            if (o == null)
+                continue;
+            hashCode = HashUtil.murmurHash3(hashCode, o.hashCode());
         }
-        return result;
+        return hashCode;
     }
 
     public boolean isMissing(String colName) {
