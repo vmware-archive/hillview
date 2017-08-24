@@ -40,7 +40,7 @@ public class FullCorrelationSketch implements ISketch<ITable, CorrMatrix> {
         // Convert the columns to a DoubleMatrix.
         DoubleMatrix mat = BlasConversions.toDoubleMatrixMissing(table, this.colNames, null, Double.NaN);
 
-        // The number of nonmissing values per column pair
+        // The number of non-missing values per column pair
         corrMatrix.nonMissing = DoubleMatrix.ones(nCols, nCols).mul(nRows);
         for (int row = 0; row < mat.rows; row++) {
             for (int i = 0; i < mat.columns; i++) {

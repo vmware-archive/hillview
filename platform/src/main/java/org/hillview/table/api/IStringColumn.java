@@ -63,6 +63,7 @@ public interface IStringColumn extends IColumn {
     default long hashCode64(int rowIndex, LongHashFunction hash) {
         if (isMissing(rowIndex))
             return MISSING_HASH_VALUE;
+        //noinspection ConstantConditions
         return hash.hashChars(this.getString(rowIndex));
     }
 }

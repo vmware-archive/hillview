@@ -14,6 +14,8 @@ import java.util.Objects;
  */
 public class EqualityFilter implements TableFilter {
     private final String columnName;
+    // If the value is null then we look for missing values
+    @Nullable
     private final Object compareValue;
     private final boolean complement;
     @Nullable
@@ -27,7 +29,7 @@ public class EqualityFilter implements TableFilter {
      * @param value Value that is compared for (in)equality in the column.
      * @param complement If true, invert the filter such that it checks for inequality.
      */
-    public EqualityFilter(String columnName, Object value, boolean complement) {
+    public EqualityFilter(String columnName, @Nullable Object value, boolean complement) {
         this.columnName = columnName;
         this.compareValue = value;
         this.complement = complement;
@@ -46,8 +48,9 @@ public class EqualityFilter implements TableFilter {
     public void setTable(ITable table) {
         this.column = table.getColumn(this.columnName);
         this.compareKind = column.getDescription().kind;
+        if (this.compareValue == null)
+            return;
 
-        // Check the types. Just Strings and Integers for now.
         switch (this.compareKind) {
             case Category:
             case String:
@@ -57,11 +60,18 @@ public class EqualityFilter implements TableFilter {
             case Integer:
                 Assert.assertTrue(compareValue instanceof Integer);
                 break;
+            case Double:
+            case Duration:
+            case Date:
+                Assert.assertTrue(compareValue instanceof Double);
+                break;
+            default:
+                throw new RuntimeException("Unexpected kind " + this.compareKind);
         }
     }
 
     /**
-     * @return Whether the value at the specified row index is equal to the compare value.
+     * @return Whether the value at the specified row index matches to the compare value.
      */
     @Override
     public boolean test(int rowIndex) {
@@ -70,17 +80,28 @@ public class EqualityFilter implements TableFilter {
 
         boolean result;
         if (column.isMissing(rowIndex)) {
-            result = false;
+            result = (this.compareValue == null);
         } else {
-            switch (compareKind) {
-                case Integer:
-                    result = column.getInt(rowIndex) == (Integer) this.compareValue;
-                    break;
-                case Category:
-                case String:
-                case Json:
-                default:
-                    result = Objects.equals(column.getString(rowIndex), this.compareValue);
+            if (this.compareValue == null) {
+                result = false;
+            } else {
+                switch (compareKind) {
+                    case Duration:
+                    case Double:
+                    case Date:
+                        result = column.asDouble(rowIndex, null) == (Double) this.compareValue;
+                        break;
+                    case Integer:
+                        result = column.getInt(rowIndex) == (Integer) this.compareValue;
+                        break;
+                    case Category:
+                    case String:
+                    case Json:
+                        result = Objects.equals(column.getString(rowIndex), this.compareValue);
+                        break;
+                    default:
+                        throw new RuntimeException("Unexpected kind " + this.compareKind);
+                }
             }
         }
 

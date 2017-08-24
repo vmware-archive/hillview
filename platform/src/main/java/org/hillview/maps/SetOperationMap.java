@@ -5,6 +5,7 @@ import org.hillview.dataset.api.Pair;
 import org.hillview.table.Table;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.ITable;
+import org.hillview.utils.Converters;
 
 public class SetOperationMap implements IMap<Pair<ITable, ITable>, ITable> {
     private final String operation;
@@ -15,8 +16,8 @@ public class SetOperationMap implements IMap<Pair<ITable, ITable>, ITable> {
 
     @Override
     public ITable apply(Pair<ITable, ITable> data) {
-        IMembershipSet first = data.first.getMembershipSet();
-        IMembershipSet second = data.second.getMembershipSet();
+        IMembershipSet first = Converters.checkNull(data.first).getMembershipSet();
+        IMembershipSet second = Converters.checkNull(data.second).getMembershipSet();
         IMembershipSet rows;
         switch (this.operation) {
             case "Union":
