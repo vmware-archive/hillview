@@ -9,8 +9,8 @@ development.  Currently the software is in pre-alpha version.
 The hillview user interface executes in a browser.  The browser can
 display multiple views of the data, as in the following screenshots.
 These screenshots were obtained by browsing a dataset containing more
-than 800,000 rows representing airline flights in the United States in
-January and February 2016.
+than 120 million rows, representing all passenger airline flights in
+the United States between 1997 and 2016.
 
 The first image shows a tabular display of the data; the user can
 choose a subset of the columns to display, and can sort on any
@@ -20,7 +20,7 @@ decreasing order on the flight distance.
 ![A table view](hillview-table.png)
 
 The second image shows a histogram of the data in one column, in this
-case the flight delay.
+case the flight departure delay.
 
 ![A one dimensional histogram](hillview-histogram.png)
 
@@ -44,8 +44,8 @@ flights.
 ![A heatmap](hillview-heatmap.png)
 
 Here is a [short
-  video](https://1drv.ms/v/s!AlywK8G1COQ_jaNkYmIRJyeSuvPeLA) of an
-  early version of the system.
+  video](https://1drv.ms/v/s!AlywK8G1COQ_jbF-il8AQvIkOdW2dw) of the
+  system in action.
 
 # Developing Hillview
 
