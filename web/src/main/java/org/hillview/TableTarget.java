@@ -273,6 +273,19 @@ public final class TableTarget extends RpcTarget {
         Schema schema;
     }
 
+    HeavyHittersTarget getHHI(FreqKList fkList) {
+        return new HeavyHittersTarget(fkList.filter());
+    }
+
+    @HillviewRpc
+    void checkHeavy(RpcRequest request, Session session) {
+        HeavyHittersFilterInfo hhi = request.parseArgs(HeavyHittersFilterInfo.class);
+        RpcTarget target = RpcObjectManager.instance.getObject(hhi.hittersId);
+        HeavyHittersTarget hht = (HeavyHittersTarget)target;
+        ExactFreqSketch efSketch = new ExactFreqSketch(hhi.schema, hht.heavyHitters);
+        this.runCompleteSketch(this.table, efSketch, this::getHHI, request, session);
+    }
+
     @HillviewRpc
     void filterHeavy(RpcRequest request, Session session) {
         HeavyHittersFilterInfo hhi = request.parseArgs(HeavyHittersFilterInfo.class);
