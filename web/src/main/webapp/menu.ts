@@ -85,10 +85,9 @@ export class TopSubMenu implements IHtmlElement {
 
     constructor(mis: MenuItem[]) {
         this.outer = document.createElement("table");
-        this.outer.classList.add("menu");
-        
+        this.outer.classList.add("menu", "hidden");
         this.tableBody = this.outer.createTBody();
-        
+        this.outer.onmouseleave = () => this.hide();
         if (mis != null) {
             for (let mi of mis)
                 this.addItem(mi);
@@ -103,13 +102,21 @@ export class TopSubMenu implements IHtmlElement {
         else
             cell.innerHTML = mi.text;
         cell.style.textAlign = "left";
-        cell.className = "menuItem";
+        cell.classList.add("menuItem");
         if (mi.action != null)
-            cell.onclick = () => { mi.action(); }
+            cell.onclick = (e: MouseEvent) => { e.stopPropagation(); this.hide(); mi.action(); }
     }
 
     getHTMLRepresentation(): HTMLElement {
         return this.outer;
+    }
+
+    show(): void {
+        this.outer.classList.remove("hidden");
+    }
+
+    hide(): void {
+        this.outer.classList.add("hidden");
     }
 }
 
@@ -136,10 +143,16 @@ export class TopMenu implements IHtmlElement {
         }
     }
 
+    hideSubMenus(): void {
+        this.items.forEach((mi) => mi.subMenu.hide());
+    }
+
     addItem(mi: TopMenuItem): void {
         let cell = this.tableBody.rows.item(0).insertCell();
         cell.textContent = mi.text;
         cell.appendChild(mi.subMenu.getHTMLRepresentation());
+        cell.onclick = () => {this.hideSubMenus(); mi.subMenu.show()};
+        this.items.push(mi);
     }
 
     getHTMLRepresentation(): HTMLElement {
