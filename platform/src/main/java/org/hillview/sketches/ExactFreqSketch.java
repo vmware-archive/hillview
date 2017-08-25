@@ -1,40 +1,26 @@
 package org.hillview.sketches;
 
-import org.hillview.dataset.api.IJson;
+import org.eclipse.collections.api.block.HashingStrategy;
+import org.eclipse.collections.impl.map.strategy.mutable.UnifiedMapWithHashingStrategy;
 import org.hillview.dataset.api.ISketch;
-import org.hillview.table.*;
+import org.hillview.table.BaseRowSnapshot;
+import org.hillview.table.RowSnapshot;
+import org.hillview.table.Schema;
+import org.hillview.table.VirtualRowSnapshot;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
-import java.io.Serializable;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  * This sketch computes the true frequencies of a list of rowSnapshots in a data set. It can
  * be used right after the FreqKSketch which computes the list of heavy hitters, to compute their
  * exact frequencies.
  */
-public class ExactFreqSketch implements ISketch<ITable, ExactFreqSketch.Frequencies> {
-    public static class Frequencies implements Serializable, IJson {
-        public final HashMap<BaseRowSnapshot, Integer> count;
-
-        public Frequencies() { this.count = new HashMap<BaseRowSnapshot, Integer>(); }
-        public Frequencies add(Frequencies to) {
-            Frequencies result = new Frequencies();
-            for (BaseRowSnapshot rs : this.count.keySet()) {
-                int other = to.count.getOrDefault(rs, 0);
-                result.count.put(rs, this.count.get(rs) + other);
-            }
-            to.count.keySet().stream().filter(rs -> !result.count.containsKey(rs))
-                    .forEach(rs -> result.count.put(rs, to.count.get(rs)));
-            return result;
-        }
-        public void addNew(BaseRowSnapshot rs, int count) {
-            this.count.put(rs, count);
-        }
-    }
+public class ExactFreqSketch implements ISketch<ITable, FreqKList> {
 
     /**
      * The schema of the RowSnapshots
@@ -43,44 +29,65 @@ public class ExactFreqSketch implements ISketch<ITable, ExactFreqSketch.Frequenc
     /**
      * The set of RowSnapshots whose frequencies we wish to compute.
      */
-    private final RowSnapshotSet rssList;
+    private final List<RowSnapshot> rssList;
+    /**
+     * The K in top top-K. Is used as a threshold to eliminate items that do not occur with
+     * frequency 1/K.
+     */
+    private int maxSize;
 
-    public <T extends BaseRowSnapshot> ExactFreqSketch(Schema schema, Iterable<T> rssList) {
+    public ExactFreqSketch(Schema schema, FreqKList fk) {
         this.schema = schema;
-        this.rssList = new RowSnapshotSet(schema, rssList);
+        this.rssList = fk.getList();
+        this.maxSize = fk.maxSize;
+    }
+
+    @Nullable
+    @Override
+    public FreqKList zero() {
+        return new FreqKList(this.rssList);
     }
 
     @Override
-    public Frequencies zero() {
-        return new Frequencies();
-    }
-
-    @Override
-    public Frequencies add(@Nullable Frequencies left, @Nullable Frequencies right) {
+    public FreqKList add(@Nullable FreqKList left, @Nullable FreqKList right) {
         Converters.checkNull(left);
         Converters.checkNull(right);
         return left.add(right);
     }
 
     @Override
-    public Frequencies create(ITable data) {
-        HashMap<Integer, Integer> rowCounts = new HashMap<Integer, Integer>();
+    public FreqKList create(ITable data) {
+        HashingStrategy<BaseRowSnapshot> hs = new HashingStrategy<BaseRowSnapshot>() {
+            @Override
+            public int computeHashCode(BaseRowSnapshot brs) {
+                if (brs instanceof VirtualRowSnapshot) {
+                    return brs.hashCode();
+                } else if (brs instanceof RowSnapshot) {
+                    return brs.computeHashCode(ExactFreqSketch.this.schema);
+                } else throw new RuntimeException("Uknown type encountered");
+            }
+
+            @Override
+            public boolean equals(BaseRowSnapshot brs1, BaseRowSnapshot brs2) {
+                return brs1.compareForEquality(brs2, ExactFreqSketch.this.schema);
+            }
+        };
+        UnifiedMapWithHashingStrategy<BaseRowSnapshot, Integer> hMap = new
+                UnifiedMapWithHashingStrategy<BaseRowSnapshot, Integer>(hs);
+        this.rssList.forEach(rss -> hMap.put(rss, 0));
         IRowIterator rowIt = data.getRowIterator();
         int i = rowIt.getNextRow();
         VirtualRowSnapshot vrs = new VirtualRowSnapshot(data, this.schema);
         while (i != -1) {
             vrs.setRow(i);
-            if (this.rssList.contains(vrs)) {
-                int count = rowCounts.getOrDefault(i, 0);
-                rowCounts.put(i, count + 1);
+            if (hMap.containsKey(vrs)) {
+                int count = hMap.get(vrs);
+                hMap.put(vrs, count + 1);
             }
             i = rowIt.getNextRow();
         }
-        Frequencies result = new Frequencies();
-        for (Integer index : rowCounts.keySet()) {
-            RowSnapshot rs = new RowSnapshot(data, index);
-            result.addNew(rs, rowCounts.get(index));
-        }
-        return result;
+        HashMap<RowSnapshot, Integer> hm = new HashMap<RowSnapshot, Integer>(this.rssList.size());
+        this.rssList.forEach(rss -> hm.put(rss, hMap.get(rss)));
+        return new FreqKList(data.getNumOfRows(), this.maxSize, hm);
     }
 }
