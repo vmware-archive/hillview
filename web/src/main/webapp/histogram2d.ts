@@ -15,9 +15,12 @@
  *  limitations under the License.
  */
 
-import {HistogramViewBase, ColumnAndRange, BasicColStats, FilterDescription, BucketDialog} from "./histogramBase";
+import {
+    HistogramViewBase, ColumnAndRange, BasicColStats, FilterDescription, BucketDialog,
+    AnyScale
+} from "./histogramBase";
 import {Schema, TableView, RecordOrder, TableRenderer, ColumnDescription, RangeInfo} from "./table";
-import {FullPage, significantDigits, formatNumber, translateString, Resolution} from "./ui";
+import {FullPage, significantDigits, formatNumber, translateString, Resolution, Rectangle} from "./ui";
 import {TopMenu, TopSubMenu} from "./menu";
 import d3 = require('d3');
 import {reorder, Converters, transpose, ICancellable, PartialResult} from "./util";
@@ -42,6 +45,10 @@ export class Histogram2DView extends HistogramViewBase {
         visiblePoints: number;
     };
     protected normalized: boolean;
+    protected selectingLegend: boolean;
+    protected legendRect: Rectangle;  // legend position on the screen
+    protected legend: any;  // a d3 object
+    protected legendScale: AnyScale;
 
     constructor(remoteObjectId: string, protected tableSchema: Schema, page: FullPage) {
         super(remoteObjectId, tableSchema, page);
@@ -59,6 +66,7 @@ export class Histogram2DView extends HistogramViewBase {
         ]);
 
         this.normalized = false;
+        this.selectingLegend = true;
         this.topLevel.insertBefore(menu.getHTMLRepresentation(), this.topLevel.children[0]);
     }
 
@@ -299,8 +307,7 @@ export class Histogram2DView extends HistogramViewBase {
         // The chart uses a fragment of the canvas offset by the margins
         this.chart = this.canvas
             .append("g")
-            .attr("transform", translateString(
-                Resolution.leftMargin, Resolution.topMargin));
+            .attr("transform", translateString(Resolution.leftMargin, Resolution.topMargin));
 
         this.yScale = d3.scaleLinear()
             .range([this.chartSize.height, 0]);
@@ -447,17 +454,7 @@ export class Histogram2DView extends HistogramViewBase {
             .attr("r", dotRadius)
             .attr("fill", "blue");
 
-        this.selectionRectangle = this.canvas
-            .append("rect")
-            .attr("class", "dashed")
-            .attr("stroke", "red")
-            .attr("width", 0)
-            .attr("height", 0);
-
-        let legendWidth = Resolution.legendWidth;
-        if (legendWidth > this.chartSize.width)
-            legendWidth = this.chartSize.width;
-        let legendHeight = 15;
+        this.legendRect = this.legendRectangle();
         let legendSvg = this.canvas
             .append("svg");
 
@@ -480,24 +477,28 @@ export class Histogram2DView extends HistogramViewBase {
                 .attr("stop-opacity", 1)
         }
 
-        legendSvg.append("rect")
-            .attr("width", legendWidth)
-            .attr("height", legendHeight)
+        this.legend = legendSvg.append("rect")
+            .attr("width", this.legendRect.width())
+            .attr("height", this.legendRect.height())
             .style("fill", "url(#" + gradientId + ")")
-            .attr("x", (this.chartSize.width - legendWidth) / 2)
-            .attr("y", Resolution.topMargin / 3);
+            .attr("x", this.legendRect.upperLeft().x)
+            .attr("y", this.legendRect.upperLeft().y);
 
         // create a scale and axis for the legend
-        let legendScale = d3.scaleLinear();
-        legendScale
+        this.legendScale = d3.scaleLinear()
             .domain([this.currentData.yData.stats.min, this.currentData.yData.stats.max])
-            .range([0, legendWidth]);
+            .range([0, this.legendRect.width()]);
 
-        let legendAxis = d3.axisBottom(legendScale);
+        let legendAxis = d3.axisBottom(this.legendScale);
         legendSvg.append("g")
-            .attr("transform", translateString(
-                (this.chartSize.width - legendWidth) / 2, legendHeight + Resolution.topMargin / 3))
+            .attr("transform", translateString(this.legendRect.lowerLeft().x, this.legendRect.lowerLeft().y))
             .call(legendAxis);
+
+        this.selectionRectangle = this.canvas
+            .append("rect")
+            .attr("class", "dashed")
+            .attr("width", 0)
+            .attr("height", 0);
 
         let summary = formatNumber(this.currentData.visiblePoints) + " data points";
         if (missingData != 0)
@@ -508,6 +509,102 @@ export class Histogram2DView extends HistogramViewBase {
             summary += ", " + formatNumber(yData.missing.missingData) + " missing X coordinate";
         summary += ", " + String(bucketCount) + " buckets";
         this.summary.textContent = summary;
+    }
+
+    protected legendRectangle(): Rectangle {
+        let width = Resolution.legendWidth;
+        if (width > this.chartSize.width)
+            width = this.chartSize.width;
+        let height = 15;
+
+        let x = (this.chartSize.width - width) / 2;
+        let y = Resolution.topMargin / 3;
+        return new Rectangle({ x: x, y: y }, { width: width, height: height });
+    }
+
+    // We support two kinds of selection:
+    // - selection of bars in the histogram area
+    // - selection in the legend area
+    // We distinguish the two by the original mouse position: if the mouse
+    // is above the chart, we are selecting in the legend.
+    protected dragStart() {
+        super.dragStart();
+        if (this.legendRect != null && this.selectionOrigin.y < 0) {
+            // negative selection -> outside chart area.
+            // move the selection into the legend rectangle.
+            this.selectingLegend = true;
+        } else {
+            this.selectingLegend = false;
+        }
+    }
+
+    protected dragMove(): void {
+        super.dragMove();
+        if (!this.dragging)
+            return;
+
+        if (this.selectingLegend) {
+            this.selectionRectangle
+                .attr("y", this.legendRect.upperLeft().y)
+                .attr("height", this.legendRect.height());
+        }
+    }
+
+    protected selectionCompleted(xl: number, xr: number): void {
+        if (this.xScale == null)
+            return;
+
+        let min: number;
+        let max: number;
+        let boundaries: string[] = null;
+        let selectedAxis: AxisData = null;
+        let scale: AnyScale = null;
+
+        if (this.selectingLegend) {
+            // Selecting in legend.  We have to adjust xl and xr, they are relative to the chart.
+            let legendX = this.legendRect.lowerLeft().x;
+            xl -= legendX;
+            xr -= legendX;
+            selectedAxis = this.currentData.yData;
+            scale = this.legendScale;
+        } else {
+            selectedAxis = this.currentData.xData;
+            scale = this.xScale;
+        }
+
+        let kind = selectedAxis.description.kind;
+        let x0 = HistogramViewBase.invertToNumber(xl, scale, kind);
+        let x1 = HistogramViewBase.invertToNumber(xr, scale, kind);
+
+        // selection could be done in reverse
+        [min, max] = reorder(x0, x1);
+        if (min > max) {
+            this.page.reportError("No data selected");
+            return;
+        }
+
+        if (selectedAxis.allStrings != null) {
+            // it's enough to just send the first and last element for filtering.
+            boundaries = [selectedAxis.allStrings[Math.ceil(min)]];
+            if (Math.floor(max) != Math.ceil(min))
+                  boundaries.push(selectedAxis.allStrings[Math.floor(max)]);
+        }
+
+        let columnName = selectedAxis.description.name;
+        let filter: FilterDescription = {
+            min: min,
+            max: max,
+            columnName: columnName,
+            bucketBoundaries: boundaries,
+            complement: d3.event.sourceEvent.ctrlKey
+        };
+
+        let rr = this.createRpcRequest("filterRange", filter);
+        let renderer = new Histogram2DFilterReceiver(
+            this.currentData.xData.description,
+            this.currentData.yData.description, this.tableSchema,
+            this.page, rr);
+        rr.invoke(renderer);
     }
 
     protected rectHeight(d: Rect, counts: number[], scale: number, chartHeight: number): number {
@@ -556,46 +653,6 @@ export class Histogram2DView extends HistogramViewBase {
         page.setDataView(table);
         this.page.insertAfterMe(page);
         rr.invoke(new TableRenderer(page, table, rr, false, order));
-    }
-
-    protected selectionCompleted(xl: number, xr: number): void {
-        if (this.xScale == null)
-            return;
-
-        let kind = this.currentData.xData.description.kind;
-        let x0 = HistogramViewBase.invertToNumber(xl, this.xScale, kind);
-        let x1 = HistogramViewBase.invertToNumber(xr, this.xScale, kind);
-
-        // selection could be done in reverse
-        let min: number;
-        let max: number;
-        [min, max] = reorder(x0, x1);
-        if (min > max) {
-            this.page.reportError("No data selected");
-            return;
-        }
-
-        let boundaries: string[] = null;
-        if (this.currentData.xData.allStrings != null) {
-            // it's enough to just send the first and last element for filtering.
-            boundaries = [this.currentData.xData.allStrings[Math.ceil(min)]];
-            if (Math.floor(max) != Math.ceil(min))
-                boundaries.push(this.currentData.xData.allStrings[Math.floor(max)]);
-        }
-        let filter: FilterDescription = {
-            min: min,
-            max: max,
-            columnName: this.currentData.xData.description.name,
-            bucketBoundaries: boundaries,
-            complement: d3.event.sourceEvent.ctrlKey
-        };
-
-        let rr = this.createRpcRequest("filterRange", filter);
-        let renderer = new Histogram2DFilterReceiver(
-            this.currentData.xData.description,
-            this.currentData.yData.description, this.tableSchema,
-            this.page, rr);
-        rr.invoke(renderer);
     }
 }
 

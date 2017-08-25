@@ -55,6 +55,8 @@ export class Rectangle {
     lowerRight(): Point { return {
         x: this.origin.x + this.size.width,
         y: this.origin.y + this.size.height }; }
+    width(): number { return this.size.width; }
+    height(): number { return this.size.height; }
 }
 
 export interface IDataView extends IHtmlElement {
