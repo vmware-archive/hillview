@@ -1,8 +1,0 @@
-{
-  "resolution": "main",
-  "tree": {
-    "src": "https://raw.githubusercontent.com/DefinitelyTyped/DefinitelyTyped/461eb311875c7525cb3646909a42671964a9ceeb/rx-dom/index.d.ts",
-    "raw": "registry:dt/rx-dom#7.0.0+20170119172950",
-    "typings": "https://raw.githubusercontent.com/DefinitelyTyped/DefinitelyTyped/461eb311875c7525cb3646909a42671964a9ceeb/rx-dom/index.d.ts"
-  }
-}

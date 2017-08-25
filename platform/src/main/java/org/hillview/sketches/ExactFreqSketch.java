@@ -64,10 +64,7 @@ public class ExactFreqSketch implements ISketch<ITable, FreqKList> {
                     return brs.hashCode();
                 } else if (brs instanceof RowSnapshot) {
                     return brs.computeHashCode(ExactFreqSketch.this.schema);
-                } else {
-                    System.out.println("Uknown type encountered");
-                    return -1;
-                }
+                } else throw new RuntimeException("Uknown type encountered");
             }
 
             @Override

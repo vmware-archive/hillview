@@ -98,16 +98,22 @@ public class FreqKList implements Serializable {
     }
 
     /**
-     * @return A hashmap containing only those RowSnapshots that occur with frequency above
-     * 1/maxSize.
+     * Prunes the hashmap to retain only those RowSnapshots that occur with frequency above
+     * 1/maxSize, and their frequencies.
      */
-    public FreqKList filter() {
+    public void filter() {
         List<RowSnapshot> rssList = new ArrayList<RowSnapshot>(this.hMap.keySet());
         for (RowSnapshot rss : rssList) {
-            if (this.hMap.get(rss) <= (this.totalRows/this.maxSize))
+            if (this.hMap.get(rss) < (this.totalRows/this.maxSize))
                 this.hMap.remove(rss);
         }
-        return this;
+    }
+
+    public List<Pair<RowSnapshot, Integer>> getTop(int size) {
+        List<Pair<RowSnapshot, Integer>> pList = new ArrayList<Pair<RowSnapshot, Integer>>(this.hMap.size());
+        this.hMap.forEach((rs, j) -> pList.add(new Pair<RowSnapshot, Integer>(rs, j)));
+        pList.sort((p1, p2) -> Integer.compare(p2.second, p1.second));
+        return pList;
     }
 
     @SuppressWarnings("ConstantConditions")

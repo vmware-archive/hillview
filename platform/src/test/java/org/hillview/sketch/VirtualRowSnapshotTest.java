@@ -49,10 +49,8 @@ public class VirtualRowSnapshotTest {
                     return brs.hashCode();
                 } else if (brs instanceof RowSnapshot) {
                     return brs.computeHashCode(schema);
-                } else {
-                    System.out.println("Uknown type encountered");
-                    return -1;
-                }
+                } else
+                    throw new RuntimeException("Uknown type encountered");
             }
 
             @Override
@@ -77,5 +75,4 @@ public class VirtualRowSnapshotTest {
             throw new RuntimeException("Not found");
         }
     }
-
 }
