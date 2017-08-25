@@ -50,6 +50,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     private final HostAndPort listenAddress;
     private final ConcurrentHashMap<ByteString, Map<Integer, PartialResponse>> memoizedCommands
             = new ConcurrentHashMap<>();
+    @SuppressWarnings("CanBeFinal")
     private boolean MEMOIZE = true;
 
     public HillviewServer(final HostAndPort listenAddress, final IDataSet dataSet) throws IOException {

@@ -73,8 +73,8 @@ public class LinearProjectionTest {
         IDataSet<ITable> result = all.blockingMap(lpm);
 
         for (int i = 0; i < numProjections; i++) {
-            BasicColStatSketch bcss = new BasicColStatSketch(String.format("LP%d", i), null);
-            BasicColStats bcs = result.blockingSketch(bcss);
+            BasicColStatSketch b = new BasicColStatSketch(String.format("LP%d", i), null);
+            BasicColStats bcs = result.blockingSketch(b);
             double expectedMean = projectionCheck.get(new AllRange(), i).mean();
             double actualMean = bcs.getMoment(1);
             double eps = actualMean * 1e-6;

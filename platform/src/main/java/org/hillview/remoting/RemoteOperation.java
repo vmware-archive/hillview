@@ -19,7 +19,6 @@
 package org.hillview.remoting;
 
 import java.io.Serializable;
-import java.util.UUID;
 
 /**
  * Base type for remote operations with a unique ID

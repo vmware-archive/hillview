@@ -20,13 +20,14 @@ package org.hillview.table;
 
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IDoubleColumn;
+import org.hillview.table.api.IMutableColumn;
 
 /**
  * Column of doubles, implemented as an array of doubles and a BitSet of missing values.
  */
 public final class DoubleArrayColumn
         extends BaseArrayColumn
-        implements IDoubleColumn {
+        implements IDoubleColumn, IMutableColumn {
     private final double[] data;
 
     public DoubleArrayColumn(final ColumnDescription description, final int size) {
@@ -48,5 +49,11 @@ public final class DoubleArrayColumn
     @Override
     public double getDouble(final int rowIndex) { return this.data[rowIndex];}
 
+    @Override
+    public void set(int rowIndex, Object value) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void set(final int rowIndex, final double value) {this.data[rowIndex] = value;}
 }

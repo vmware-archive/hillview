@@ -119,8 +119,8 @@ public class EqualityFilterTest {
 
         // Count the number of rows in the resulting IDataset with a BasicColStatsSketch
         SortedStringsConverter converter = new SortedStringsConverter(possibleNames, 0, 50);
-        BasicColStatSketch bcss = new BasicColStatSketch("Name" , converter);
-        BasicColStats bcs = result.blockingSketch(bcss);
+        BasicColStatSketch b = new BasicColStatSketch("Name" , converter);
+        BasicColStats bcs = result.blockingSketch(b);
 
         // The sketch should have counted 'count' 'name's in the IDataset.
         Assert.assertEquals(count, bcs.getRowCount());

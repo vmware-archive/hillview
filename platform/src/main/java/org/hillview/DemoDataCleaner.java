@@ -96,10 +96,10 @@ public class DemoDataCleaner {
                             index++;
                         }
                     } else {
-                        Path outpath = Paths.get(dataFolder, end);
-                        CsvFileWriter writer = new CsvFileWriter(outpath);
+                        Path outPath = Paths.get(dataFolder, end);
+                        CsvFileWriter writer = new CsvFileWriter(outPath);
                         try {
-                            System.out.println("Writing " + outpath);
+                            System.out.println("Writing " + outPath);
                             writer.writeTable(p);
                         } catch (IOException e) {
                             e.printStackTrace();

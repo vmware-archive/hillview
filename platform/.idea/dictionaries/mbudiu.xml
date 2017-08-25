@@ -1,14 +1,21 @@
 <component name="ProjectDictionaryState">
   <dictionary name="mbudiu">
     <words>
+      <w>blas</w>
       <w>classname</w>
+      <w>eigen</w>
+      <w>eigenvector</w>
+      <w>eigenvectors</w>
       <w>grpc</w>
       <w>gson</w>
       <w>hillview</w>
       <w>idempotence</w>
       <w>iter</w>
       <w>iterable</w>
+      <w>jblas</w>
       <w>ltest</w>
+      <w>memoized</w>
+      <w>mnist</w>
       <w>perf</w>
       <w>proj</w>
       <w>protobuf</w>

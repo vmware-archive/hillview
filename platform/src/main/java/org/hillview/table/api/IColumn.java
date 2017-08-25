@@ -125,5 +125,5 @@ public interface IColumn extends Serializable {
      */
     long hashCode64(int rowIndex, LongHashFunction hash);
 
-    static final long MISSING_HASH_VALUE = 0;
+    long MISSING_HASH_VALUE = 0;
 }

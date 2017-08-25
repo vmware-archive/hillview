@@ -14,9 +14,9 @@ public class LinAlg {
      */
     public static DoubleMatrix eigenVectors(DoubleMatrix symmetricMat, int n) {
         // Compute eigen{vectors/values} and unpack the result.
-        DoubleMatrix[] eigenVecVals = Eigen.symmetricEigenvectors(symmetricMat);
-        DoubleMatrix eigenVectors = eigenVecVals[0];
-        DoubleMatrix eigenValues = eigenVecVals[1].diag();
+        DoubleMatrix[] eigenVectorValues = Eigen.symmetricEigenvectors(symmetricMat);
+        DoubleMatrix eigenVectors = eigenVectorValues[0];
+        DoubleMatrix eigenValues = eigenVectorValues[1].diag();
 
         // Sort them by the eigenvalues and get the indices of the largest n.
         int[] order = eigenValues.sortingPermutation();
@@ -38,9 +38,9 @@ public class LinAlg {
      */
     public static DoubleMatrix[] eigenVectorsVarianceExplained(DoubleMatrix symmetricMat, int n) {
         // Compute eigen{vectors/values} and unpack the result.
-        DoubleMatrix[] eigenVecVals = Eigen.symmetricEigenvectors(symmetricMat);
-        DoubleMatrix eigenVectors = eigenVecVals[0];
-        DoubleMatrix eigenValues = eigenVecVals[1].diag();
+        DoubleMatrix[] eigenVecValues = Eigen.symmetricEigenvectors(symmetricMat);
+        DoubleMatrix eigenVectors = eigenVecValues[0];
+        DoubleMatrix eigenValues = eigenVecValues[1].diag();
 
         // Sort them by the eigenvalues and get the indices of the largest n.
         int[] order = eigenValues.sortingPermutation();

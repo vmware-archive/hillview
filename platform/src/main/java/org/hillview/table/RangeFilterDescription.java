@@ -5,7 +5,8 @@ import org.hillview.dataset.api.IJson;
 import javax.annotation.Nullable;
 import java.io.Serializable;
 
-public class FilterDescription implements Serializable, IJson {
+@SuppressWarnings("CanBeFinal")
+public class RangeFilterDescription implements Serializable, IJson {
     public String columnName = "";
     public double min;
     public double max;

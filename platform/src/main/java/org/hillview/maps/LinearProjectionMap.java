@@ -29,6 +29,8 @@ public class LinearProjectionMap implements IMap<ITable, ITable> {
     private final int numProjections;
     @Nullable
     private final IStringConverter converter;
+    private static final double threshold = .3;
+    // For columns sparser than this use sparse storage.
 
     public LinearProjectionMap(List<String> colNames, DoubleMatrix projectionMatrix, String projectionName,
                                @Nullable IStringConverter converter) {
@@ -44,6 +46,7 @@ public class LinearProjectionMap implements IMap<ITable, ITable> {
         this.numProjections = projectionMatrix.rows;
         this.converter = converter;
     }
+
     public LinearProjectionMap(List<String> colNames, DoubleMatrix projectionMatrix, List<String> newColNames,
                                @Nullable IStringConverter converter) {
         if (colNames.size() != projectionMatrix.columns)
@@ -70,11 +73,17 @@ public class LinearProjectionMap implements IMap<ITable, ITable> {
                 .converter, Double.NaN);
         DoubleMatrix resultMat = mat.mmul(this.projectionMatrix.transpose());
 
-        // Copy the result to new columns with the same membershipset size. (Can't use BlasConversions here.)
+        // Copy the result to new columns with the same membershipSet size. (Can't use
+        // BlasConversions here.)
         for (int j = 0; j < this.numProjections; j++) {
             ColumnDescription colDesc = new ColumnDescription(this.newColNames.get(j), ContentsKind.Double, true);
-            // TODO: create and use a SparseColumn
-            DoubleArrayColumn column = new DoubleArrayColumn(colDesc, table.getMembershipSet().getMax());
+            int colSize = table.getMembershipSet().getMax();
+            int colUse = table.getMembershipSet().getSize();
+            IMutableColumn column;
+            if (colUse * threshold < colSize)
+                column = new SparseColumn(colDesc, colSize);
+            else
+                column = new DoubleArrayColumn(colDesc, colSize);
             IRowIterator it = table.getMembershipSet().getIterator();
             int row = it.getNextRow();
             int i = 0;

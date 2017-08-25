@@ -10,13 +10,13 @@ import java.io.Serializable;
 
 
 public class RangeFilter implements TableFilter, Serializable {
-    final FilterDescription args;
+    final RangeFilterDescription args;
     @Nullable
     IColumn column;  // not really nullable, but set later.
     @Nullable
     final IStringConverter converter;
 
-    public RangeFilter(FilterDescription args) {
+    public RangeFilter(RangeFilterDescription args) {
         this.args = args;
         this.column = null;
         if (args.bucketBoundaries != null)
