@@ -387,7 +387,7 @@ export class HistogramView extends HistogramViewBase {
 
         bars.append("rect")
             .attr("y", d => this.yScale(d))
-            .attr("fill", "grey")
+            .attr("fill", "darkcyan")
             .attr("height", d => this.chartSize.height - this.yScale(d))
             .attr("width", barWidth - 1);
 
@@ -431,7 +431,6 @@ export class HistogramView extends HistogramViewBase {
         this.selectionRectangle = this.canvas
             .append("rect")
             .attr("class", "dashed")
-            .attr("stroke", "red")
             .attr("width", 0)
             .attr("height", 0);
 
