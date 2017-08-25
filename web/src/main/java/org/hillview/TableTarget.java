@@ -168,27 +168,34 @@ public final class TableTarget extends RpcTarget {
     void filterEquality(RpcRequest request, Session session) {
         EqualityFilterDescription info = request.parseArgs(EqualityFilterDescription.class);
         String colName = info.columnDescription.name;
-        EqualityFilter equalityFilter;
+        Object compareValue;
+
         switch (info.columnDescription.kind) {
             case String:
             case Json:
             case Category:
-                equalityFilter = new EqualityFilter(colName, info.compareValue, info.complement);
+                compareValue = info.compareValue;
                 break;
             case Integer:
-                equalityFilter = new EqualityFilter(colName, Integer.parseInt(info.compareValue), info.complement);
+                compareValue = Integer.parseInt(info.compareValue);
+                break;
+            case Date:
+            case Double:
+            case Duration:
+                compareValue = Double.parseDouble(info.compareValue);
                 break;
             default:
-                throw new RuntimeException("Equality filter only supports 'String', 'Json', 'Category' and 'Integer'.");
+                throw new RuntimeException("Unhandled column kind " + info.columnDescription.kind);
         }
 
+        EqualityFilter equalityFilter = new EqualityFilter(colName, compareValue, info.complement);
         FilterMap filterMap = new FilterMap(equalityFilter);
         this.runMap(this.table, filterMap, TableTarget::new, request, session);
     }
 
     @HillviewRpc
     void filterRange(RpcRequest request, Session session) {
-        FilterDescription info = request.parseArgs(FilterDescription.class);
+        RangeFilterDescription info = request.parseArgs(RangeFilterDescription.class);
         RangeFilter filter = new RangeFilter(info);
         FilterMap fm = new FilterMap(filter);
         this.runMap(this.table, fm, TableTarget::new, request, session);
@@ -196,7 +203,7 @@ public final class TableTarget extends RpcTarget {
 
     @HillviewRpc
     void filter2DRange(RpcRequest request, Session session) {
-        FilterPair info = request.parseArgs(FilterPair.class);
+        RangeFilterPair info = request.parseArgs(RangeFilterPair.class);
         Range2DFilter filter = new Range2DFilter(info);
         FilterMap fm = new FilterMap(filter);
         this.runMap(this.table, fm, TableTarget::new, request, session);

@@ -54,7 +54,7 @@ public class Converters {
         return baseTime.plus(span);
     }
 
-    private static Duration toDuration(final double d) {
+    public static Duration toDuration(final double d) {
         return Duration.ofMillis((long)d);
     }
 

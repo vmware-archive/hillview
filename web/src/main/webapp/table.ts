@@ -601,8 +601,7 @@ export class TableView extends RemoteObjectView
                 }
                 if (cd.kind != "Json" && cd.kind != "String")
                     this.contextMenu.addItem({text: "Histogram", action: () => this.histogram(cd.name) });
-                if (cd.kind == "Json" || cd.kind == "String" || cd.kind == "Category" || cd.kind == "Integer")
-                    this.contextMenu.addItem({text: "Filter...", action: () => this.equalityFilter(cd.name)});
+                this.contextMenu.addItem({text: "Filter...", action: () => this.equalityFilter(cd.name)});
 
                 // Spawn the menu at the mouse's location
                 this.contextMenu.move(e.pageX - 1, e.pageY - 1);
@@ -704,13 +703,19 @@ export class TableView extends RemoteObjectView
     }
 
     private equalityFilter(colname: string, value?: string, complement?: boolean): void {
+        let cd = TableView.findColumn(this.schema, colname);
         if (value == null) {
-            let ef = new EqualityFilterDialog(TableView.findColumn(this.schema, colname));
+            let ef = new EqualityFilterDialog(cd);
             ef.setAction(() => this.runFilter(ef.getFilter()));
             ef.show();
         } else {
+            if (cd.kind == "Date") {
+                // Parse the date in Javascript; the Java Date parser is very bad
+                let date = new Date(value);
+                value = Converters.doubleFromDate(date).toString();
+            }
             let efd: EqualityFilterDescription = {
-                columnDescription: TableView.findColumn(this.schema, colname),
+                columnDescription: cd,
                 compareValue: value,
                 complement: (complement == null ? false : complement)
             };
@@ -862,7 +867,7 @@ export class TableView extends RemoteObjectView
         if (kind == "Integer" || kind == "Double")
             return String(val);
         else if (kind == "Date")
-            return Converters.dateFromDouble(<number>val).toDateString();
+            return Converters.dateFromDouble(<number>val).toString();
         else if (kind == "Category" || kind == "String" || kind == "Json")
             return <string>val;
         else
@@ -912,16 +917,16 @@ export class TableView extends RemoteObjectView
                 } else {
                     let cellValue : string = TableView.convert(row.values[dataIndex], cd.kind);
                     cell.textContent = cellValue;
-                    if (cd.kind == "String" || cd.kind == "Json" || cd.kind == "Category" || cd.kind == "Integer") {
-                        cell.oncontextmenu = e => {
-                            e.preventDefault();
-                            this.contextMenu.clear();
-                            this.contextMenu.addItem({text: "Filter for " + cellValue, action: () => this.equalityFilter(cd.name, cellValue)});
-                            this.contextMenu.addItem({text: "Filter for not " + cellValue, action: () => this.equalityFilter(cd.name, cellValue, true)});
-                            this.contextMenu.move(e.pageX - 1, e.pageY - 1);
-                            this.contextMenu.show();
-                        };
-                    }
+                    cell.oncontextmenu = e => {
+                        e.preventDefault();
+                        this.contextMenu.clear();
+                        this.contextMenu.addItem({text: "Filter for " + cellValue,
+                            action: () => this.equalityFilter(cd.name, cellValue)});
+                        this.contextMenu.addItem({text: "Filter for not " + cellValue,
+                            action: () => this.equalityFilter(cd.name, cellValue, true)});
+                        this.contextMenu.move(e.pageX - 1, e.pageY - 1);
+                        this.contextMenu.show();
+                    };
                 }
             }
             
