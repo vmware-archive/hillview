@@ -24,6 +24,10 @@ body {
     overflow: hidden;
 }
 
+.chart:focus, #tableContainer:focus {
+    outline: none;
+}
+
 h1 {
     margin: 5px;
 }
