@@ -281,7 +281,8 @@ public final class TableTarget extends RpcTarget {
     }
 
     HeavyHittersTarget getHHI(FreqKList fkList) {
-        return new HeavyHittersTarget(fkList.filter());
+        fkList.filter();
+        return new HeavyHittersTarget(fkList);
     }
 
     @HillviewRpc
