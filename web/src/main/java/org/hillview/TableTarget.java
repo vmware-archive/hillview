@@ -238,7 +238,8 @@ public final class TableTarget extends RpcTarget {
         DoubleMatrix varianceExplained = mats[1];
         List<String> newColNames = new ArrayList<String>();
         for (int i = 0; i < projectionMatrix.rows; i++) {
-            newColNames.add(String.format("PCA%d (%.2f)", i, varianceExplained.get(i)));
+            int perc = (int) Math.round(varianceExplained.get(i) * 100);
+            newColNames.add(String.format("PCA%d (%d%%)", i, perc));
         }
         LinearProjectionMap lpm = new LinearProjectionMap(cm.columnNames, projectionMatrix, newColNames, null);
         this.runMap(this.table, lpm, TableTarget::new, request, session);
