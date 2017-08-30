@@ -24,7 +24,7 @@ body {
     overflow: hidden;
 }
 
-.chart:focus, #tableContainer:focus {
+.chart:focus, #tableContainer:focus, div.dialog:focus {
     outline: none;
 }
 

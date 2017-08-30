@@ -13,11 +13,11 @@ export class Dialog implements IHtmlElement {
     private fieldsDiv: HTMLDivElement;
     public onConfirm: () => void;  // method to be invoked when dialog is closed successfully
     // Stores the input elements and (optionally) their types.
-    private fields: {[fieldName: string]: DialogField} = {};
+    private fields: Map<string, DialogField> = new Map<string, DialogField>();
     private confirmButton: HTMLButtonElement;
 
     // Create a dialog with the given name.
-    constructor(title: string,) {
+    constructor(title: string) {
         this.onConfirm = null;
         this.container = document.createElement("div");
         this.container.classList.add('dialog');
@@ -43,15 +43,13 @@ export class Dialog implements IHtmlElement {
         this.confirmButton.textContent = "Confirm";
         this.confirmButton.classList.add("confirm");
         buttonsDiv.appendChild(this.confirmButton);
-
-        this.container.onkeypress = () => this.handleKeypress;
     }
 
     protected handleKeypress(ev: KeyboardEvent): void {
         if (ev.keyCode == KeyCodes.enter) {
             this.hide();
             this.onConfirm();
-        } else if (ev.keyCode == KeyCodes.escape) {
+        } else if (ev.key == "Escape") {
             this.hide();
         }
     }
@@ -68,6 +66,15 @@ export class Dialog implements IHtmlElement {
     // display the menu
     public show(): void {
         document.body.appendChild(this.container);
+        if (this.fieldsDiv.childElementCount == 0) {
+            // If there are somehow no fields, focus on the container.
+            this.container.setAttribute("tabindex", "0");
+            this.container.focus();
+        } else {
+            // Focus on the first input element.
+            this.fields.values().next().value.html.focus();
+        }
+        this.container.onkeydown = (ev) => this.handleKeypress(ev);
     }
 
     // Removes the menu from the DOM
@@ -96,7 +103,7 @@ export class Dialog implements IHtmlElement {
         if (type == "Integer") {
             input.type = "number";
         }
-        this.fields[fieldName] = {html: input, type: type};
+        this.fields.set(fieldName, {html: input, type: type});
     }
 
     // Add a selection field with the given options.
@@ -119,11 +126,11 @@ export class Dialog implements IHtmlElement {
             optionElement.text = option;
             select.add(optionElement);
         });
-        this.fields[fieldName] = {html: select}
+        this.fields.set(fieldName, {html: select});
     }
 
     public getFieldValue(field: string): string {
-        return this.fields[field].html.value;
+        return this.fields.get(field).html.value;
     }
 
     public getFieldValueAsInt(field: string): number {
