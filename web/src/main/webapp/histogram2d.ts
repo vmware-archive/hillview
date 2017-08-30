@@ -629,7 +629,9 @@ export class Histogram2DView extends HistogramViewBase {
     }
 
     static colorMap(d: number): string {
-        return d3.interpolatePlasma(d);
+        // The rainbow color map starts and ends with a similar hue
+        // so we skip the first 20% of it.
+        return d3.interpolateRainbow(d * .8 + .2);
     }
 
     color(d: number, max: number): string {
