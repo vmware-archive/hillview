@@ -96,8 +96,8 @@ are visible:
 ![Table header](table-header.png)
 
 The data in the table is always sorted lexicographically on a
-combination of the visible columns.  In the figure above the data is
-sorted as follows:
+combination of the visible columns.  In this figure the data is sorted
+as follows:
 
 * Data is sorted first on the Origin column in decreasing order (this
   is shown by the down-arrow next to the column name followed by a
@@ -217,6 +217,13 @@ the current state of the display.
 ![A two-dimensional histogram](hillview-histogram2d.png)
 
 ![A normalized two-dimensional histogram](hillview-histogram-normalized.png)
+*TODO*
+
+### Uni-dimensional histograms views
+
+*TODO*
+
+### Two-dimensional histograms views
 
 *TODO*
 
