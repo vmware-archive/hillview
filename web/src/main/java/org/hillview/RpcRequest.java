@@ -87,10 +87,10 @@ final class RpcRequest {
         if (o == null || this.getClass() != o.getClass()) return false;
 
         RpcRequest that = (RpcRequest) o;
-        if (this.requestId != that.requestId) return false;
-        if (!this.objectId.equals(that.objectId)) return false;
-        if (!this.method.equals(that.method)) return false;
-        return this.arguments != null ? this.arguments.equals(that.arguments) : that.arguments == null;
+        return this.requestId == that.requestId &&
+                this.objectId.equals(that.objectId) &&
+                this.method.equals(that.method) &&
+                (this.arguments != null ? this.arguments.equals(that.arguments) : that.arguments == null);
     }
 
     @Override

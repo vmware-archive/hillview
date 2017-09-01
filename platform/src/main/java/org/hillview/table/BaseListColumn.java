@@ -99,6 +99,7 @@ public abstract class BaseListColumn extends BaseColumn {
     public static BaseListColumn create(ColumnDescription desc) {
         switch (desc.kind) {
             case Category:
+                return new CategoryListColumn(desc);
             case String:
             case Json:
                 return new StringListColumn(desc);

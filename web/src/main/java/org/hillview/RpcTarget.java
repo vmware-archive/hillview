@@ -42,45 +42,18 @@ abstract class RpcTarget implements IJson {
     private final HashMap<String, Method> executor;
     static final Logger logger = Logger.getLogger(RpcTarget.class.getName());
 
-    @Nullable
-    private Subscription subscription;
-
     RpcTarget() {
         this.executor = new HashMap<String, Method>();
         this.registerExecutors();
         RpcObjectManager.instance.addObject(this);
-        this.subscription = null;
     }
 
     public void setId(String objectId) {
         this.objectId = objectId;
     }
 
-    synchronized void cancel() {
-        if (this.subscription != null) {
-            logger.log(Level.INFO, "Unsubscribing " + this.toString());
-            this.subscription.unsubscribe();
-            this.subscription = null;
-        } else {
-            logger.log(Level.WARNING, "Cancellation failed: no subscription " + this.toString());
-        }
-    }
-
-    private synchronized void saveSubscription(Subscription sub) {
-        if (sub.isUnsubscribed())
-            // The computation may have already finished by the time we get here!
-            return;
-        logger.log(Level.INFO, "Saving subscription " + this.toString());
-        if (this.subscription != null)
-            throw new RuntimeException("Subscription already active");
-        this.subscription = sub;
-    }
-
-    private synchronized void removeSubscription() {
-        if (this.subscription == null)
-            return;
-        logger.log(Level.INFO, "Removing subscription " + this.toString());
-        this.subscription = null;
+    private synchronized void saveSubscription(Session session, Subscription sub) {
+        RpcObjectManager.instance.addSubscription(session, sub);
     }
 
     /**
@@ -136,7 +109,7 @@ abstract class RpcTarget implements IJson {
         public void onCompleted() {
             logger.log(Level.INFO, "Computation completed for " + this.name);
             this.request.syncCloseSession(this.session);
-            RpcTarget.this.removeSubscription();
+            RpcObjectManager.instance.removeSubscription(this.session);
         }
 
         @Override
@@ -239,7 +212,7 @@ abstract class RpcTarget implements IJson {
         SketchResultObserver<R> robs = new SketchResultObserver<R>(
                 sketch.toString(), request, session);
         Subscription sub = add.subscribe(robs);
-        this.saveSubscription(sub);
+        this.saveSubscription(session, sub);
     }
 
     /**
@@ -270,7 +243,7 @@ abstract class RpcTarget implements IJson {
         SketchResultObserver<S> robs = new SketchResultObserver<S>(
                 sketch.toString(), request, session);
         Subscription sub = result.subscribe(robs);
-        this.saveSubscription(sub);
+        this.saveSubscription(session, sub);
     }
 
     /**
@@ -296,7 +269,7 @@ abstract class RpcTarget implements IJson {
         MapResultObserver<S> robs = new MapResultObserver<S>(
                 map.toString(), request, session, factory);
         Subscription sub = add.subscribe(robs);
-        this.saveSubscription(sub);
+        this.saveSubscription(session, sub);
     }
 
     /**
@@ -322,7 +295,7 @@ abstract class RpcTarget implements IJson {
         MapResultObserver<S> robs = new MapResultObserver<S>(
                 map.toString(), request, session, factory);
         Subscription sub = add.subscribe(robs);
-        this.saveSubscription(sub);
+        this.saveSubscription(session, sub);
     }
 
     /**
@@ -346,6 +319,6 @@ abstract class RpcTarget implements IJson {
         MapResultObserver<Pair<T, S>> robs = new MapResultObserver<Pair<T, S>>(
                                 "zip", request, session, factory);
         Subscription sub = add.subscribe(robs);
-        this.saveSubscription(sub);
+        this.saveSubscription(session, sub);
     }
 }

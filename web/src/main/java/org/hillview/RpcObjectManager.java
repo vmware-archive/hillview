@@ -17,6 +17,10 @@
 
 package org.hillview;
 
+import rx.Subscription;
+
+import javax.annotation.Nullable;
+import javax.websocket.Session;
 import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -26,6 +30,9 @@ import java.util.logging.Logger;
  * from the clients.  These are RpcTarget objects, and each one has a unique
  * identifier.  This class manages these identifiers and keeps track of the mapping
  * between identifiers and objects.
+ *
+ * The class also keeps track of open sessions and matches sessions to RpcTargets.
+ *
  * This is a singleton pattern.
  */
 public final class RpcObjectManager {
@@ -35,6 +42,44 @@ public final class RpcObjectManager {
     // the unique global instance.
     public static final RpcObjectManager instance;
     private static final Logger LOGGER;
+
+    // Map the session to the target object that is replying, if any
+    private final HashMap<Session, RpcTarget> sessionRequest =
+            new HashMap<Session, RpcTarget>(10);
+    // Mapping sessions to RxJava subscriptions - needed to do cancellations.
+    private final HashMap<Session, Subscription> sessionSubscription =
+            new HashMap<Session, Subscription>(10);
+
+    synchronized void addSession(Session session, @Nullable RpcTarget target) {
+        this.sessionRequest.put(session, target);
+    }
+
+    synchronized void removeSession(Session session) {
+        this.sessionRequest.remove(session);
+    }
+
+    @Nullable synchronized RpcTarget getTarget(Session session) {
+        return this.sessionRequest.get(session);
+    }
+
+    @Nullable synchronized Subscription getSubscription(Session session) {
+        return this.sessionSubscription.get(session);
+    }
+
+    synchronized void addSubscription(Session session, Subscription subscription) {
+        if (subscription.isUnsubscribed())
+            // The computation may have already finished by the time we get here!
+            return;
+        LOGGER.log(Level.INFO, "Saving subscription " + this.toString());
+        if (this.sessionSubscription.get(session) != null)
+            throw new RuntimeException("Subscription already active on this session");
+        this.sessionSubscription.put(session, subscription);
+    }
+
+    synchronized void removeSubscription(Session session) {
+        LOGGER.log(Level.INFO, "Removing subscription " + this.toString());
+        this.sessionSubscription.remove(session);
+    }
 
     static {
         LOGGER = Logger.getLogger(RpcObjectManager.class.getName());

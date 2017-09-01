@@ -20,12 +20,11 @@ package org.hillview;
 import com.google.gson.JsonElement;
 import com.google.gson.internal.Streams;
 import com.google.gson.stream.JsonReader;
+import rx.Subscription;
 
-import javax.annotation.Nullable;
 import javax.websocket.*;
 import javax.websocket.server.ServerEndpoint;
 import java.io.*;
-import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -43,29 +42,13 @@ public final class RpcServer {
     private static final Logger logger =
             Logger.getLogger(RpcServer.class.getName());
 
-    // Map the session to the target object that is replying, if any
-    private static final HashMap<Session, RpcTarget> sessionRequest =
-            new HashMap<Session, RpcTarget>(10);
-
-    synchronized private void addSession(Session session, @Nullable RpcTarget target) {
-        sessionRequest.put(session, target);
-    }
-
-    synchronized private void removeSession(Session session) {
-        sessionRequest.remove(session);
-    }
-
-    @Nullable synchronized private RpcTarget getTarget(Session session) {
-        return sessionRequest.get(session);
-    }
-
     @SuppressWarnings("unused")
     @OnOpen
     public void onOpen(Session session) {
         logger.log(Level.INFO, "Server " + Integer.toString(version) +
                         " new connection with client: {0}",
                 session.getId());
-        this.addSession(session, null);
+        RpcObjectManager.instance.addSession(session, null);
     }
 
     @SuppressWarnings("unused")
@@ -80,7 +63,7 @@ public final class RpcServer {
             JsonReader jReader = new JsonReader(reader);
             JsonElement elem = Streams.parse(jReader);
             req = new RpcRequest(elem);
-            if (sessionRequest.get(session) != null)
+            if (RpcObjectManager.instance.getTarget(session) != null)
                 throw new RuntimeException("Session already associated with a request!");
         } catch (Exception ex) {
             logger.log(Level.SEVERE, "Error processing json: ", ex);
@@ -111,7 +94,7 @@ public final class RpcServer {
         logger.log(Level.INFO, "Executing " + rpcRequest.toString());
         try {
             RpcTarget target = RpcObjectManager.instance.getObject(rpcRequest.objectId);
-            this.addSession(session, target);
+            RpcObjectManager.instance.addSession(session, target);
             // This function is responsible for sending the replies and closing the session.
             target.execute(rpcRequest, session);
         } catch (Exception ex) {
@@ -126,7 +109,7 @@ public final class RpcServer {
         try {
             if (session.isOpen())
                 session.close();
-            this.removeSession(session);
+            RpcObjectManager.instance.removeSession(session);
         } catch (Exception ex) {
             logger.log(Level.SEVERE, "Error closing session");
         }
@@ -141,16 +124,22 @@ public final class RpcServer {
     @SuppressWarnings("unused")
     @OnClose
     public void onClose(final Session session, final CloseReason reason) {
-        RpcTarget target = this.getTarget(session);
-        if (target != null)
-            target.cancel();
+        Subscription sub = RpcObjectManager.instance.getSubscription(session);
+        if (sub == null) {
+            logger.log(Level.WARNING, "Cancellation failed: no subscription " + this.toString());
+        } else {
+            logger.log(Level.INFO, "Unsubscribing " + this.toString());
+            sub.unsubscribe();
+            RpcObjectManager.instance.removeSubscription(session);
+        }
+
         if (reason.getCloseCode() != CloseReason.CloseCodes.NORMAL_CLOSURE)
             logger.log(Level.SEVERE, "Close connection for client: {0}, {1}",
                     new Object[] { session.getId(), reason.toString() });
         else
             logger.log(Level.INFO, "Normal connection closing for client: {0}",
                     new Object[] { session.getId() });
-        this.removeSession(session);
+        RpcObjectManager.instance.removeSession(session);
     }
 
     @SuppressWarnings("unused")
