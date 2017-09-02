@@ -125,7 +125,7 @@ The user can select one or more column using the mouse:
 The following image shows the header of a table with 6 selected
 columns.
 
-![A table header with multiple selected columns](selected-column-headers.png)
+![A table header with multiple selected columns](selected-column-header.png)
 
 #### Operations on columns
 
@@ -150,7 +150,7 @@ the current state of the display.
 * Heat map: this option requires exactly two columns of suitable types
   to be selected; in this case, it will draw a heatmap plot of the
   data in these two columns.  For Heatmaps see [Heat-map
-  views](#heat-map views).
+  views](#heat-map-views).
 
 * Hide: the selected columns will be removed from the sorting order
   and they will be hidden.
@@ -158,11 +158,12 @@ the current state of the display.
 * Histogram: this option requires exactly one or two columns of
   suitable types to be selected.  If one column is selected, this menu
   will draw a histogram of the data in the selected column.  For
-  one-dimensional histograms see [Uni-dimensional histogram
-  views](#uni-dimensional histogram views).  If two columns are
-  selected this menu will draw a two-dimensional histogram of the data
-  in the selected columns.  For two-dimensional histograms see
-  [Two-dimensional histograms](#two-dimensional histograms).
+  one-dimensional histograms see
+  [Uni-dimensional-histogram-views](#uni-dimensional histogram views).
+  If two columns are selected this menu will draw a two-dimensional
+  histogram of the data in the selected columns.  For two-dimensional
+  histograms see [Two-dimensional
+  histograms](#two-dimensional-histograms).
 
 * Filter: this option will pop-up a dialog window that allows the user
   to filter the data.  *TODO*
