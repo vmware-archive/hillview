@@ -26,7 +26,7 @@ import java.io.Serializable;
 public enum ContentsKind implements Serializable {
     Category, /* Categories and strings are the same, but strings cannot be histogrammed */
     String,
-    Date,  /* java.Util.Date values */
+    Date,  /* java.time.LocalDateTime values */
     Integer,
     Json,
     Double,

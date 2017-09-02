@@ -834,7 +834,7 @@ export class TableView extends RemoteObjectView
     }
 
     private runHeavyHitters(colName: string, percent: number) {
-        if (percent < .01 || percent > 100) {
+        if (percent == null || percent < .01 || percent > 100) {
             this.reportError("Percentage must be between .01 and 100");
             return;
         }
@@ -859,7 +859,10 @@ export class TableView extends RemoteObjectView
     private heavyHitters(colName: string): void {
         let d = new Dialog("Heavy hitters");
         d.addTextField("percent", "Threshold (%)", "Double");
-        d.setAction(() => this.runHeavyHitters(colName, d.getFieldValueAsNumber("percent")));
+        d.setAction(() => {
+            let amount = d.getFieldValueAsNumber("percent");
+            this.runHeavyHitters(colName, amount)
+        });
         d.show();
     }
 
