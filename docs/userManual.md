@@ -144,8 +144,22 @@ the current state of the display.
 * Sort descending: The selected columns will be moved to the front of
   the sort order in descending order.
 
-* Heavy hitters...: This will start a heavy hitters computation on the
-  selected columns.  *TODO*
+* Heavy hitters...: This will initiate a heavy hitters computation on
+  the selected columns; this computation finds the most frequent
+  values that appear in the selected columns.  The user is presented
+  with a dialog for describing the parameters of the heavy hitters
+  computation.
+
+![Heavy hitters menu](heavy-hitters-menu.png)
+
+  The user has to specify a percentage, between .01 (1/10000 of the
+  data) and 100 (the whole data).  The computation will return all
+  tuples in the dataset (looking only at the selected columns) that
+  occur at least this many times in the dataset.  E.g., if the user
+  selects the columns "Origin" and "Destination" and then specifies 1
+  for the percentage, the heavy hitters will return all pairs
+  Origin-Destination which appear in more than 1% of all rows in the
+  dataset.
 
 * Heat map: this option requires exactly two columns of suitable types
   to be selected; in this case, it will draw a heatmap plot of the
@@ -166,18 +180,29 @@ the current state of the display.
   histograms](#two-dimensional-histograms).
 
 * Filter: this option will pop-up a dialog window that allows the user
-  to filter the data.  *TODO*
+  to filter the data in the selected column (this option requires only
+  one column to be selected).  The user can specify a value to be
+  sought, and a comparison, indicating whether filtering keeps values
+  identical or different to the specified one.
 
-*TODO*
+![Filter menu](filter-menu.png)
 
 ### Uni-dimensional histogram views
+
+![A one dimensional histogram](hillview-histogram.png)
 
 *TODO*
 
 ### Two-dimensional histogram views
 
+![A two-dimensional histogram](hillview-histogram2d.png)
+
+![A normalized two-dimensional histogram](hillview-histogram-normalized.png)
+
 *TODO*
 
 ### Heat-map views
+
+![A heatmap](hillview-heatmap.png)
 
 *TODO*
