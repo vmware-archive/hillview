@@ -197,11 +197,12 @@ the current state of the display.
 * Histogram: this option requires exactly one or two columns of
   suitable types to be selected.  If one column is selected, this menu
   will draw a histogram of the data in the selected column.  For
-  one-dimensional histograms see [Uni-dimensional histogram
-  views](#uni-dimensional histogram views).  If two columns are
-  selected this menu will draw a two-dimensional histogram of the data
-  in the selected columns.  For two-dimensional histograms see
-  [Two-dimensional histograms](#two-dimensional histograms).
+  one-dimensional histograms see
+  [Uni-dimensional-histogram-views](#uni-dimensional histogram views).
+  If two columns are selected this menu will draw a two-dimensional
+  histogram of the data in the selected columns.  For two-dimensional
+  histograms see [Two-dimensional
+  histograms](#two-dimensional-histograms).
 
 * Filter: this option will pop-up a dialog window that allows the user
   to filter the data.  *TODO*
