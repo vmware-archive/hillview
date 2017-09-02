@@ -109,7 +109,6 @@ sorted as follows:
 * Finally, when two rows have the same value in the Origin and
   UniqueCarrier columns, they are next ordered by their value in the
   Cancelled column, also in decreasing order.
-<<<<<<< 9d95c9ac27ddb6e67443c18ce56cdac3ac017850
 
 Initially a table view displays no columns.  The user can choose which
 columns are displayed or hidden.
@@ -132,11 +131,6 @@ the data.
 #### Scrolling
 
 *TODO*
-=======
-
-Initially a table view displays no columns.  The user can choose which
-columns are displayed or hidden.
->>>>>>> More documentation
 
 #### Selecting columns
 
