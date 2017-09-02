@@ -113,6 +113,25 @@ sorted as follows:
 Initially a table view displays no columns.  The user can choose which
 columns are displayed or hidden.
 
+The first two columns in the table are special: they do not show data,
+but they show information about the displayed data.
+
+![Position information columns](table-position.png)
+
+The first column, labeled (position) indicates with a horizontal
+scroll-bar where in the sorted order the current row resides.  In this
+figure the first row is at the beginning of the sorted order (the dark
+bar is at the very left).  The second column, labeled (count)
+indicates how many instances of this row are present in the dataset.
+In this example there are 104,840 instances of this row.  The
+scroll-bar also indicates what percentage of the whole dataset is
+covered by this row; in this case we can see that this is about 9% of
+the data.
+
+#### Scrolling
+
+*TODO*
+
 #### Selecting columns
 
 The user can select one or more column using the mouse:
@@ -125,7 +144,7 @@ The user can select one or more column using the mouse:
 The following image shows the header of a table with 6 selected
 columns.
 
-![A table header with multiple selected columns](selected-column-header.png)
+![A table header with multiple selected columns](selected-columns-header.png)
 
 #### Operations on columns
 
