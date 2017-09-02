@@ -96,8 +96,8 @@ are visible:
 ![Table header](table-header.png)
 
 The data in the table is always sorted lexicographically on a
-combination of the visible columns.  In this figure the data is sorted
-as follows:
+combination of the visible columns.  In the figure above the data is
+sorted as follows:
 
 * Data is sorted first on the Origin column in decreasing order (this
   is shown by the down-arrow next to the column name followed by a
@@ -109,6 +109,7 @@ as follows:
 * Finally, when two rows have the same value in the Origin and
   UniqueCarrier columns, they are next ordered by their value in the
   Cancelled column, also in decreasing order.
+<<<<<<< 9d95c9ac27ddb6e67443c18ce56cdac3ac017850
 
 Initially a table view displays no columns.  The user can choose which
 columns are displayed or hidden.
@@ -131,6 +132,11 @@ the data.
 #### Scrolling
 
 *TODO*
+=======
+
+Initially a table view displays no columns.  The user can choose which
+columns are displayed or hidden.
+>>>>>>> More documentation
 
 #### Selecting columns
 
@@ -191,39 +197,22 @@ the current state of the display.
 * Histogram: this option requires exactly one or two columns of
   suitable types to be selected.  If one column is selected, this menu
   will draw a histogram of the data in the selected column.  For
-  one-dimensional histograms see
-  [Uni-dimensional-histogram-views](#uni-dimensional histogram views).
-  If two columns are selected this menu will draw a two-dimensional
-  histogram of the data in the selected columns.  For two-dimensional
-  histograms see [Two-dimensional
-  histograms](#two-dimensional-histograms).
+  one-dimensional histograms see [Uni-dimensional histogram
+  views](#uni-dimensional histogram views).  If two columns are
+  selected this menu will draw a two-dimensional histogram of the data
+  in the selected columns.  For two-dimensional histograms see
+  [Two-dimensional histograms](#two-dimensional histograms).
 
 * Filter: this option will pop-up a dialog window that allows the user
-  to filter the data in the selected column (this option requires only
-  one column to be selected).  The user can specify a value to be
-  sought, and a comparison, indicating whether filtering keeps values
-  identical or different to the specified one.
+  to filter the data.  *TODO*
 
-![Filter menu](filter-menu.png)
+*TODO*
 
 ### Uni-dimensional histogram views
-
-![A one dimensional histogram](hillview-histogram.png)
 
 *TODO*
 
 ### Two-dimensional histogram views
-
-![A two-dimensional histogram](hillview-histogram2d.png)
-
-![A normalized two-dimensional histogram](hillview-histogram-normalized.png)
-*TODO*
-
-### Uni-dimensional histograms views
-
-*TODO*
-
-### Two-dimensional histograms views
 
 *TODO*
 
