@@ -205,15 +205,24 @@ the current state of the display.
   histograms](#two-dimensional-histograms).
 
 * Filter: this option will pop-up a dialog window that allows the user
-  to filter the data.  *TODO*
+  to filter the data in the selected column (this option requires only
+  one column to be selected).  The user can specify a value to be
+  sought, and a comparison, indicating whether filtering keeps values
+  identical or different to the specified one.
 
-*TODO*
+![Filter menu](filter-menu.png)
 
 ### Uni-dimensional histogram views
+
+![A one dimensional histogram](hillview-histogram.png)
 
 *TODO*
 
 ### Two-dimensional histogram views
+
+![A two-dimensional histogram](hillview-histogram2d.png)
+
+![A normalized two-dimensional histogram](hillview-histogram-normalized.png)
 
 *TODO*
 
