@@ -27,7 +27,7 @@ import javax.annotation.Nullable;
 import java.io.Serializable;
 
 /**
- * One dimensional histogram where buckets are just longs and not a full object.
+ * One dimensional histogram.
  */
 public class Histogram implements Serializable {
     private final long[] buckets;

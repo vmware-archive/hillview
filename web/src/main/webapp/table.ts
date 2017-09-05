@@ -580,27 +580,26 @@ export class TableView extends RemoteObjectView
             thd.oncontextmenu = e => {
                 e.preventDefault();
                 this.columnClick(cd.name, e);
-                if (e.ctrlKey && (e.buttons & 1) != 0) {
+                if (e.ctrlKey && (e.button == 1)) {
                     // Ctrl + click is interpreted as a right-click on macOS.
                     // This makes sure it's interpreted as a column click with Ctrl.
                     return;
                 }
 
                 this.contextMenu.clear();
-                this.contextMenu.addItem({text: "Sort ascending", action: () => this.showColumn(cd.name, 1, true) });
-                this.contextMenu.addItem({text: "Sort descending", action: () => this.showColumn(cd.name, -1, true) });
-                this.contextMenu.addItem({text: "Heavy hitters...", action: () => this.heavyHitters(cd.name) });
-                this.contextMenu.addItem({text: "Heat map", action: () => this.heatMap() });
-                this.contextMenu.addItem({text: "Select numeric columns", action: () => this.selectNumericColumns()});
-                this.contextMenu.addItem({text: "PCA", action: () => this.pca() });
-
                 if (this.order.find(cd.name) >= 0) {
                     this.contextMenu.addItem({text: "Hide", action: () => this.showColumn(cd.name, 0, true)});
                 } else {
                     this.contextMenu.addItem({text: "Show", action: () => this.showColumn(cd.name, 1, false)});
                 }
+                this.contextMenu.addItem({text: "Sort ascending", action: () => this.showColumn(cd.name, 1, true) });
+                this.contextMenu.addItem({text: "Sort descending", action: () => this.showColumn(cd.name, -1, true) });
+                this.contextMenu.addItem({text: "Heat map", action: () => this.heatMap() });
                 if (cd.kind != "Json" && cd.kind != "String")
                     this.contextMenu.addItem({text: "Histogram", action: () => this.histogram(cd.name) });
+                this.contextMenu.addItem({text: "Heavy hitters...", action: () => this.heavyHitters(cd.name) });
+                this.contextMenu.addItem({text: "Select numeric columns", action: () => this.selectNumericColumns()});
+                this.contextMenu.addItem({text: "PCA...", action: () => this.pca() });
                 this.contextMenu.addItem({text: "Filter...", action: () => this.equalityFilter(cd.name)});
 
                 // Spawn the menu at the mouse's location
@@ -668,7 +667,7 @@ export class TableView extends RemoteObjectView
             for (let i = first; i <= last; i++)
                 this.selectedColumns.add(this.schema[i].name);
         } else {
-            if ((e.buttons & 2) != 0) {
+            if (e.button == 2) {
                 // right button
                 if (this.selectedColumns.has(colName))
                     // Do nothing if pressed on a selected column
@@ -743,8 +742,8 @@ export class TableView extends RemoteObjectView
         }
 
         if (valid) {
-            let pcaDialog = new Dialog("PCA");
-            pcaDialog.addTextField("numComponents", "Number of components", "Integer");
+            let pcaDialog = new Dialog("Principal Component Analysis");
+            pcaDialog.addTextField("numComponents", "Number of components", "Integer", "2");
             pcaDialog.setAction(() => {
                 let numComponents: number = pcaDialog.getFieldValueAsInt("numComponents");
                 if (numComponents < 1 || numComponents > colNames.length) {

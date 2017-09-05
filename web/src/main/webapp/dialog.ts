@@ -90,7 +90,8 @@ export class Dialog implements IHtmlElement {
     // @param fieldName: Internal name. Has to be used when parsing the input.
     // @param labelText: Text in the dialog for this field.
     // @param type: Data type of this field. For now, only Integer is special.
-    public addTextField(fieldName: string, labelText: string, type: ContentsKind): void {
+    // @param value: Initial default value.
+    public addTextField(fieldName: string, labelText: string, type: ContentsKind, value?: string): void {
         let fieldDiv = document.createElement("div");
         this.fieldsDiv.appendChild(fieldDiv);
 
@@ -104,13 +105,16 @@ export class Dialog implements IHtmlElement {
             input.type = "number";
         }
         this.fields.set(fieldName, {html: input, type: type});
+        if (value != null)
+            this.fields.get(fieldName).html.value = value;
     }
 
     // Add a selection field with the given options.
     // @param fieldName: Internal name. Has to be used when parsing the input.
     // @param labelText: Text in the dialog for this field.
     // @param options: List of strings that are the options in the selection box.
-    public addSelectField(fieldName: string, labelText: string, options: string[]): void {
+    // @param value: Initial default value.
+    public addSelectField(fieldName: string, labelText: string, options: string[], value?: string): void {
         let fieldDiv = document.createElement("div");
         this.fieldsDiv.appendChild(fieldDiv);
 
@@ -127,6 +131,8 @@ export class Dialog implements IHtmlElement {
             select.add(optionElement);
         });
         this.fields.set(fieldName, {html: select});
+        if (value != null)
+            this.fields.get(fieldName).html.value = value;
     }
 
     public getFieldValue(field: string): string {

@@ -51,9 +51,6 @@ public class HeatMap implements Serializable, IJson {
         rate = 1.0;
     }
 
-    /**
-     * Creates the histogram explicitly and in full. Should be called at most once.
-     */
     public void createHeatMap(final IColumn columnD1, final IColumn columnD2,
                               @Nullable final IStringConverter converterD1,
                               @Nullable final IStringConverter converterD2,
@@ -140,7 +137,7 @@ public class HeatMap implements Serializable, IJson {
 
     /**
      * @param  otherHeatmap with the same bucketDescriptions
-     * @return a new Histogram which is the union of this and otherHeatmap
+     * @return a new HeatMap which is the union of this and otherHeatmap
      */
     public HeatMap union(HeatMap otherHeatmap) {
         HeatMap unionH = new HeatMap(this.bucketDescDim1, this.bucketDescDim2);

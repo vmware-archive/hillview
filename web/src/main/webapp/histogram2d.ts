@@ -550,6 +550,7 @@ export class Histogram2DView extends HistogramViewBase {
         }
     }
 
+    // xl and xr are coordinates of the mouse position within the chart
     protected selectionCompleted(xl: number, xr: number): void {
         if (this.xScale == null)
             return;
@@ -562,9 +563,10 @@ export class Histogram2DView extends HistogramViewBase {
 
         if (this.selectingLegend) {
             // Selecting in legend.  We have to adjust xl and xr, they are relative to the chart.
+            // The legend rectangle coordinates are relative to the canvas.
             let legendX = this.legendRect.lowerLeft().x;
-            xl -= legendX;
-            xr -= legendX;
+            xl -= legendX - Resolution.leftMargin;
+            xr -= legendX - Resolution.leftMargin;
             selectedAxis = this.currentData.yData;
             scale = this.legendScale;
         } else {
