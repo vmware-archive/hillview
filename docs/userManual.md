@@ -130,6 +130,8 @@ the data.
 
 #### Scrolling
 
+![Scrollbar](scrollbar.png)
+
 *TODO*
 
 #### Selecting columns
@@ -146,7 +148,7 @@ columns.
 
 ![A table header with multiple selected columns](selected-columns-header.png)
 
-#### Operations on columns
+#### Operations on selected columns
 
 Clicking on a column header pops up a menu that offers a set of
 operations on the currently selected columns, as shown in the
@@ -157,36 +159,22 @@ following figure:
 The contents of this menu may depend on the type of the column and on
 the current state of the display.
 
+* Hide: the selected columns will be added to end of the current
+  sorting order and the columns will become visible.
+
+* Hide: the selected columns will be removed from the sorting order
+  and they will be hidden.
+
 * Sort ascending: The selected columns will be moved to the front of
   the sort order in ascending order.
 
 * Sort descending: The selected columns will be moved to the front of
   the sort order in descending order.
 
-* Heavy hitters...: This will initiate a heavy hitters computation on
-  the selected columns; this computation finds the most frequent
-  values that appear in the selected columns.  The user is presented
-  with a dialog for describing the parameters of the heavy hitters
-  computation.
-
-![Heavy hitters menu](heavy-hitters-menu.png)
-
-  The user has to specify a percentage, between .01 (1/10000 of the
-  data) and 100 (the whole data).  The computation will return all
-  tuples in the dataset (looking only at the selected columns) that
-  occur at least this many times in the dataset.  E.g., if the user
-  selects the columns "Origin" and "Destination" and then specifies 1
-  for the percentage, the heavy hitters will return all pairs
-  Origin-Destination which appear in more than 1% of all rows in the
-  dataset.
-
 * Heat map: this option requires exactly two columns of suitable types
   to be selected; in this case, it will draw a heatmap plot of the
   data in these two columns.  For Heatmaps see [Heat-map
   views](#heat-map-views).
-
-* Hide: the selected columns will be removed from the sorting order
-  and they will be hidden.
 
 * Histogram: this option requires exactly one or two columns of
   suitable types to be selected.  If one column is selected, this menu
@@ -198,17 +186,59 @@ the current state of the display.
   histograms see [Two-dimensional
   histograms](#two-dimensional-histograms).
 
-* Filter: this option will pop-up a dialog window that allows the user
+* Heavy hitters...: This will initiate a heavy hitters computation on
+  the selected columns; this computation finds the most frequent
+  values that appear in the selected columns.  The user is presented
+  with a dialog for describing the parameters of the heavy hitters
+  computation.
+
+  ![Heavy hitters menu](heavy-hitters-menu.png)
+
+  The user has to specify a percentage, between .01 (1/10000 of the
+  data) and 100 (the whole data).  The computation will return all
+  tuples in the dataset (looking only at the selected columns) that
+  occur at least this many times in the dataset.  E.g., if the user
+  selects the columns "Origin" and "Destination" and then specifies 1
+  for the percentage, the heavy hitters will return a table where the
+  Origin-Destination pairs contains only values which appear in more
+  than 1% of all rows in the input dataset.
+
+* Filter...: this option will pop-up a dialog window that allows the user
   to filter the data in the selected column (this option requires only
   one column to be selected).  The user can specify a value to be
   sought, and a comparison, indicating whether filtering keeps values
   identical or different to the specified one.
 
-![Filter menu](filter-menu.png)
+  ![Filter menu](filter-menu.png)
+
+* PCA...: principal component analysis.  [Principal Component
+  Analysis](https://en.wikipedia.org/wiki/Principal_component_analysis)
+  is a method to project data in a high-dimensional space to a
+  lower-dimensional space while preserving as much of the "shape" of
+  the data.  Initially the user selects a set of columns containing
+  numerical data.  The number of columns is the original dimension of
+  the data.
+
+  ![PCA menu](pca-menu.png)
+
+  The user must indicate the number of dimensions for the projection,
+  which has to be smaller than the original number of columns.  The
+  PCA analysis will append a set of numeric columns to the dataset,
+  containing the result of the PCA analysis.  The name of each
+  appended column will indicate the amount of variance in the original
+  data that is captured by the column (0-100%).
+
+#### Operations on tables
+
+![View menu](table-view-menu.png)
+
+*TODO*
 
 ### Uni-dimensional histogram views
 
 ![A one dimensional histogram](hillview-histogram.png)
+
+![View menu](histogram-view-menu.png)
 
 *TODO*
 
@@ -218,10 +248,18 @@ the current state of the display.
 
 ![A normalized two-dimensional histogram](hillview-histogram-normalized.png)
 
+![View menu](2d-histogram-view-menu.png)
+
 *TODO*
 
 ### Heat-map views
 
 ![A heatmap](hillview-heatmap.png)
 
+![View menu](heatmap-view-menu.png)
+
 *TODO*
+
+### Combining two views
+
+![Combining two views](combine-menu.png)

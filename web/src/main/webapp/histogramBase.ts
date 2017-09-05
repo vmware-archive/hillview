@@ -51,7 +51,7 @@ export interface ColumnAndRange {
     max: number;
     samplingRate: number;
     columnName: string;
-    bucketCount: number,
+    bucketCount: number;
     cdfBucketCount: number;
     bucketBoundaries: string[];
 }
@@ -152,6 +152,7 @@ export abstract class HistogramViewBase extends RemoteObjectView {
     protected abstract showTable(): void;
     public abstract refresh(): void;
     protected abstract onMouseMove(): void;
+    // xl and xr are coordinates of the mouse position within the chart
     protected abstract selectionCompleted(xl: number, xr: number): void;
 
     protected dragStart(): void {
