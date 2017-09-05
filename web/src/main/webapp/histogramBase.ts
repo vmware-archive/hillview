@@ -51,7 +51,7 @@ export interface ColumnAndRange {
     max: number;
     samplingRate: number;
     columnName: string;
-    bucketCount: number,
+    bucketCount: number;
     cdfBucketCount: number;
     bucketBoundaries: string[];
 }

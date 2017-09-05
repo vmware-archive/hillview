@@ -15,6 +15,12 @@
  *  limitations under the License.
  */
 
+/* Always show the scrollbar, to prevent page sizes from being 
+   decreased (in width) when more content is added. */
+html {
+    overflow-y: scroll;
+}
+
 body {
     font-family: sans-serif;
 }
@@ -144,13 +150,12 @@ th, td {
 
 .dialog label{
     float: left;
-    width: 45%;
     text-align: left;
-    white-space: nowrap
+    white-space: nowrap;
+    margin: auto 10px;
 }
 .dialog input, .dialog select {
     float: right;
-    width: 45%;
 }
 
 .dialog div {
@@ -248,3 +253,81 @@ table.dropdown {
 .hidden {
     display: none;
 }
+
+.heatMapArray div.array {
+    line-height: 0;
+    text-align: center;
+    margin: 0;
+}
+
+.heatMapArray div.array > svg {
+    display: inline-block;
+    margin: auto;
+    border: 1px solid black;
+}
+
+.overlay > svg {
+    position: fixed;
+    background-color: rgba(255, 255, 255, 0.8);
+}
+
+.overlay > .bottomright {
+    bottom: 0px;
+    right: 0px;
+}
+
+.overlay > .bottomleft {
+    bottom: 0px;
+    left: 0px;
+}
+
+.overlay > .bottommiddle {
+    bottom: 0px;
+    left: 50%;
+    transform: translate(-50%, 0);
+}
+
+.overlay > .topmiddle {
+    top: 0px;
+    left: 50%;
+    transform: translate(-50%, 0);
+}
+
+.hillviewPage:hover .overlay {
+    display: block;
+}
+
+.hillviewPage .overlay {
+    display: none;
+}
+
+div.heatMapArrayView {
+    display: inline-block;
+    margin-top: 40px; 
+    overflow: hidden;
+}
+
+div.heatMapArray {
+    text-align: center;
+    line-height: 0;
+    overflow: hidden;
+}
+
+div.heatMapArrayView {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: stretch;
+}
+
+div.heatMapArray > div {
+    display: inline-block;
+    border: 1px solid black;
+}
+
+/*         tblAndBar.style.flexDirection = "row";
+        tblAndBar.style.display = "flex";
+        tblAndBar.style.flexWrap = "nowrap";
+        tblAndBar.style.justifyContent = "flex-start";
+        tblAndBar.style.alignItems = "stretch"; */

@@ -110,7 +110,8 @@ export class Dialog implements IHtmlElement {
     // @param fieldName: Internal name. Has to be used when parsing the input.
     // @param labelText: Text in the dialog for this field.
     // @param options: List of strings that are the options in the selection box.
-    public addSelectField(fieldName: string, labelText: string, options: string[]): void {
+    // @param defaultValue: Value that will be selected by default.
+    public addSelectField(fieldName: string, labelText: string, options: string[], defaultValue?: string): void {
         let fieldDiv = document.createElement("div");
         this.fieldsDiv.appendChild(fieldDiv);
 
@@ -126,6 +127,15 @@ export class Dialog implements IHtmlElement {
             optionElement.text = option;
             select.add(optionElement);
         });
+
+        if (defaultValue != null) {
+            for (let i = 0; i < options.length; i++) {
+                if (options[i] == defaultValue) {
+                    select.selectedIndex = i;
+                    break;
+                }
+            }
+        }
         this.fields.set(fieldName, {html: select});
     }
 
