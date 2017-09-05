@@ -26,7 +26,6 @@ import Rx = require('rx');
 import {BasicColStats} from "./histogramBase";
 import {RangeCollector} from "./histogram";
 import {Range2DCollector} from "./heatMap";
-import {Range3DCollector, NumberStringsHeatMap} from "./heatMap3d";
 import {TopMenu, TopSubMenu, ContextMenu} from "./menu";
 import {Converters, PartialResult, ICancellable} from "./util";
 import {EqualityFilterDialog, EqualityFilterDescription} from "./equalityFilter";
