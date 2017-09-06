@@ -20,53 +20,16 @@ import {
 } from "./ui";
 import {Dialog} from "./dialog";
 import d3 = require('d3');
-import {RemoteObjectView} from "./rpc";
-import {ContentsKind, Schema, DistinctStrings} from "./tableData";
+import {ContentsKind, Schema, RemoteTableObjectView, BasicColStats} from "./tableData";
 import {BaseType} from "d3-selection";
 import {ScaleLinear, ScaleTime} from "d3-scale";
 import {Converters} from "./util";
 
-// same as Java class
-export interface Histogram {
-    buckets: number[]
-    missingData: number;
-    outOfRange: number;
-}
 
-// same as Java class
-export interface BasicColStats {
-    momentCount: number;
-    min: number;
-    max: number;
-    minObject: any;
-    maxObject: any;
-    moments: Array<number>;
-    presentCount: number;
-    missingCount: number;
-}
-
-// Same as Java class
-export interface ColumnAndRange {
-    min: number;
-    max: number;
-    samplingRate: number;
-    columnName: string;
-    bucketCount: number;
-    cdfBucketCount: number;
-    bucketBoundaries: string[];
-}
-
-export interface FilterDescription {
-    min: number;
-    max: number;
-    columnName: string;
-    complement: boolean;
-    bucketBoundaries: string[];
-}
 
 export type AnyScale = ScaleLinear<number, number> | ScaleTime<number, number>;
 
-export abstract class HistogramViewBase extends RemoteObjectView {
+export abstract class HistogramViewBase extends RemoteTableObjectView {
     protected dragging: boolean;
     protected svg: any;
     protected selectionOrigin: Point;

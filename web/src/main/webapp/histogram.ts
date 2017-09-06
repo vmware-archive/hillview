@@ -15,24 +15,25 @@
  *  limitations under the License.
  */
 
+import d3 = require('d3');
 import {
     FullPage, significantDigits, formatNumber, percent, translateString, Resolution
 } from "./ui";
-import d3 = require('d3');
-import {RemoteObject, combineMenu, CombineOperators, SelectedObject, ZipReceiver, Renderer} from "./rpc";
-import {ColumnDescription, Schema, RecordOrder, DistinctStrings} from "./tableData";
-import {TableRenderer, TableView, RangeInfo} from "./table";
-import {histogram} from "d3-array";
+import { combineMenu, CombineOperators, SelectedObject, Renderer } from "./rpc";
+import {
+    ColumnDescription, Schema, RecordOrder, DistinctStrings, RangeInfo, Histogram,
+    BasicColStats, ColumnAndRange, FilterDescription, RemoteTableObject,
+    ZipReceiver, RemoteTableRenderer
+} from "./tableData";
+import {TableRenderer, TableView} from "./table";
 import {TopMenu, TopSubMenu} from "./menu";
 import {Converters, Pair, reorder, ICancellable, PartialResult} from "./util";
-import {Histogram, HistogramViewBase, BasicColStats, ColumnAndRange, FilterDescription, BucketDialog} from "./histogramBase";
+import {HistogramViewBase, BucketDialog} from "./histogramBase";
 import {Dialog} from "./dialog";
 import {Range2DCollector} from "./heatMap";
 
 // This class is invoked by the ZipReceiver after a set operation to create a new histogram
-class MakeHistogram extends Renderer<string> {
-    public remoteObjectId: string;
-
+class MakeHistogram extends RemoteTableRenderer {
     public constructor(page: FullPage,
                        operation: ICancellable,
                        private colDesc: ColumnDescription,
@@ -41,27 +42,27 @@ class MakeHistogram extends Renderer<string> {
         super(page, operation, "Reload");
     }
 
-    onNext(value: PartialResult<string>): any {
-        super.onNext(value);
-        if (value.data != null)
-            this.remoteObjectId = value.data;
-    }
-
     onCompleted(): void {
         super.finished();
-        if (this.remoteObjectId == null)
+        if (this.remoteObject == null)
             return;
-        let remoteObj = new RemoteObject(this.remoteObjectId);
         if (this.colDesc.kind == "Category") {
-            // TODO: we know the strings, but we don't know the rowCount.
-            // There should be a more efficient way to do this.
-            let rr = remoteObj.createRpcRequest("uniqueStrings", this.colDesc.name);
-            rr.setStartTime(this.operation.startTime());
-            //rr.invoke(new NumberStrings(this.colDesc, this.schema, this.page, remoteObj, rr));
+            // Continuation invoked after the distinct strings have been obtained
+            let cont = (operation: ICancellable) => {
+                let ds = TableView.initialDataset.getDistinctStrings(this.colDesc.name);
+                if (ds == null)
+                // Probably an error has occurred
+                    return;
+                let rr = this.remoteObject.createRangeRequest(ds.getRangeInfo(this.colDesc.name));
+                rr.setStartTime(operation.startTime());
+                rr.invoke(new RangeCollector(this.colDesc, this.schema, ds, this.page, this.remoteObject, rr));
+            };
+            // Get the categorical data and invoke the continuation
+            TableView.initialDataset.retrieveCategoryValues([this.colDesc.name], this.page, cont);
         } else {
-            let rr = remoteObj.createRpcRequest("range", {columnName: this.colDesc.name});
+            let rr = this.remoteObject.createRangeRequest({columnName: this.colDesc.name});
             rr.setStartTime(this.operation.startTime());
-            rr.invoke(new RangeCollector(this.colDesc, this.schema, this.allStrings, this.page, remoteObj, rr));
+            rr.invoke(new RangeCollector(this.colDesc, this.schema, this.allStrings, this.page, this.remoteObject, rr));
         }
     }
 }
@@ -101,7 +102,7 @@ export class HistogramView extends HistogramViewBase {
             return;
         }
 
-        let rr = this.createRpcRequest("zip", r.remoteObjectId);
+        let rr = this.createZipRequest(r);
         let finalRenderer = (page: FullPage, operation: ICancellable) => {
             return new MakeHistogram(page, operation, this.currentData.description,
                 this.tableSchema, this.currentData.allStrings);
@@ -135,12 +136,11 @@ export class HistogramView extends HistogramViewBase {
         r0.columnName = this.currentData.description.name;
         let r1 = new RangeInfo();
         r1.columnName = colName;
-        let columns: RangeInfo[] = [ r0, r1 ];
         let cds: ColumnDescription[] = [
             TableView.findColumn(this.tableSchema, r0.columnName),
             TableView.findColumn(this.tableSchema, colName)
             ];
-        let rr = this.createRpcRequest("range2D", columns);
+        let rr = this.createRange2DRequest(r0, r1);
         rr.invoke(new Range2DCollector(cds, this.tableSchema, this.getPage(), this, rr, false));
     }
 
@@ -158,7 +158,7 @@ export class HistogramView extends HistogramViewBase {
             cdfBucketCount: cdfBucketCount,
             bucketBoundaries: boundaries
         };
-        let rr = this.createRpcRequest("histogram", info);
+        let rr = this.createHistogramRequest(info);
         let renderer = new HistogramRenderer(this.page,
             this.remoteObjectId, this.tableSchema, this.currentData.description,
             this.currentData.stats, rr, this.currentData.allStrings);
@@ -328,7 +328,7 @@ export class HistogramView extends HistogramViewBase {
                 let index = i * (maxRange - minRange) / bucketCount;
                 index = Math.round(index);
                 ticks.push(this.adjustment / 2 + index * this.chartSize.width / (maxRange - minRange));
-                labels.push(this.currentData.allStrings[stats.min + index]);
+                labels.push(this.currentData.allStrings.get(stats.min + index));
             }
 
             let axisScale = d3.scaleOrdinal()
@@ -475,12 +475,8 @@ export class HistogramView extends HistogramViewBase {
         }
 
         let boundaries: string[] = null;
-        if (this.currentData.allStrings != null) {
-            // it's enough to just send the first and last element for filtering.
-            boundaries = [this.currentData.allStrings[Math.ceil(min)]];
-            if (Math.floor(max) != Math.ceil(min))
-                boundaries.push(this.currentData.allStrings[Math.floor(max)]);
-        }
+        if (this.currentData.allStrings != null)
+            boundaries = this.currentData.allStrings.categoriesInRange(min, max, this.currentData.cdf.buckets.length);
         let filter: FilterDescription = {
             min: min,
             max: max,
@@ -489,7 +485,7 @@ export class HistogramView extends HistogramViewBase {
             bucketBoundaries: boundaries
         };
 
-        let rr = this.createRpcRequest("filterRange", filter);
+        let rr = this.createFilterRequest(filter);
         let renderer = new FilterReceiver(
                 this.currentData.description, this.tableSchema,
             this.currentData.allStrings, filter, this.page, rr);
@@ -498,9 +494,7 @@ export class HistogramView extends HistogramViewBase {
 }
 
 // After filtering we obtain a handle to a new table
-export class FilterReceiver extends Renderer<string> {
-    private stub: RemoteObject;
-
+export class FilterReceiver extends RemoteTableRenderer {
     constructor(protected columnDescription: ColumnDescription,
                 protected tableSchema: Schema,
                 protected allStrings: DistinctStrings,
@@ -510,36 +504,31 @@ export class FilterReceiver extends Renderer<string> {
         super(page, operation, "Filter");
     }
 
-    public onNext(value: PartialResult<string>): void {
-        super.onNext(value);
-        if (value.data != null)
-            this.stub = new RemoteObject(value.data);
-    }
-
     public onCompleted(): void {
         this.finished();
-        if (this.stub != null) {
-            let fv = null;
-            let sv = null;
-            let fi = null;
-            let li = null;
-            if (this.filter.bucketBoundaries != null) {
-                fv = this.filter.bucketBoundaries[0];
-                sv = this.filter.bucketBoundaries[1];
-                fi = this.filter.min;
-                li = this.filter.max;
-            }
-            let rangeInfo = {
-                columnName: this.columnDescription.name,
-                firstIndex: fi,
-                lastIndex: li,
-                firstValue: fv,
-                lastValue: sv
-            };
-            let rr = this.stub.createRpcRequest("range", rangeInfo);
-            rr.invoke(new RangeCollector(this.columnDescription, this.tableSchema,
-                this.allStrings, this.page, this.stub, rr));
+        if (this.remoteObject == null)
+            return;
+
+        let fv = null;
+        let sv = null;
+        let fi = null;
+        let li = null;
+        if (this.filter.bucketBoundaries != null) {
+            fv = this.filter.bucketBoundaries[0];
+            sv = this.filter.bucketBoundaries[this.filter.bucketBoundaries.length - 1];
+            fi = this.filter.min;
+            li = this.filter.max;
         }
+        let rangeInfo = {
+            columnName: this.columnDescription.name,
+            firstIndex: fi,
+            lastIndex: li,
+            firstValue: fv,
+            lastValue: sv
+        };
+        let rr = this.remoteObject.createRangeRequest(rangeInfo);
+        rr.invoke(new RangeCollector(this.columnDescription, this.tableSchema,
+            this.allStrings, this.page, this.remoteObject, rr));
     }
 }
 
@@ -551,7 +540,7 @@ export class RangeCollector extends Renderer<BasicColStats> {
                 protected tableSchema: Schema,
                 protected allStrings: DistinctStrings,  // for categorical columns only
                 page: FullPage,
-                protected remoteObject: RemoteObject,
+                protected remoteObject: RemoteTableObject,
                 operation: ICancellable) {
         super(page, operation, "histogram");
     }
@@ -560,7 +549,7 @@ export class RangeCollector extends Renderer<BasicColStats> {
         this.stats = bcs;
     }
 
-    public setRemoteObject(ro: RemoteObject) {
+    public setRemoteObject(ro: RemoteTableObject) {
         this.remoteObject = ro;
     }
 
@@ -584,7 +573,7 @@ export class RangeCollector extends Renderer<BasicColStats> {
             cdfBucketCount: cdfCount,
             bucketBoundaries: boundaries
         };
-        let rr = this.remoteObject.createRpcRequest("histogram", info);
+        let rr = this.remoteObject.createHistogramRequest(info);
         rr.setStartTime(this.operation.startTime());
         let renderer = new HistogramRenderer(this.page,
             this.remoteObject.remoteObjectId, this.tableSchema,

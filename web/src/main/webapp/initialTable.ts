@@ -22,7 +22,7 @@ import {FullPage} from "./ui";
 
 /// This is an abstraction for the toplevel dataset, which represents
 // the full table that was loaded initially.
-export class TableDataSet extends RemoteObject {
+export class InitialTable extends RemoteObject {
     columnValues: Map<string, DistinctStrings>;
     // TODO: handle errors that can occur while retrieving DistinctStrings
 
@@ -68,7 +68,7 @@ class ReceiveCategory extends Renderer<IDistinctStrings[]> {
     /// Output produced: one set of distinct strings for each columns.
     protected values: IDistinctStrings[];
 
-    public constructor(protected tds: TableDataSet,
+    public constructor(protected tds: InitialTable,
                        protected continuation: (operation: ICancellable) => void,
                        page: FullPage,
                        operation: ICancellable) {

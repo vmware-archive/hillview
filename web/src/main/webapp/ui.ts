@@ -539,6 +539,7 @@ export class Resolution {
     static readonly leftMargin = 40;      // left margin in pixels in a plot
     static readonly legendWidth = 500;    // default legend width in pixels
     static readonly minDotSize = 4;       // dots are drawn as rectangles of this size in pixels
+    static readonly tableRowsOnScreen = 20; // table rows displayed
 
     // Everything is drawn on top of the canvas.
     // The canvas includes a chart plus margins.

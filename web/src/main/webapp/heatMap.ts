@@ -15,23 +15,19 @@
  *  limitations under the License.
  */
 
-import {
-    FullPage, Point, Size, KeyCodes,
-    significantDigits, formatNumber, translateString, Resolution
-} from "./ui";
 import d3 = require('d3');
 import {
-    RemoteObject, Renderer, combineMenu, CombineOperators, SelectedObject, ZipReceiver,
-    RemoteObjectView
-} from "./rpc";
-
-import {ColumnDescription, Schema, ContentsKind, RecordOrder, DistinctStrings} from "./tableData";
-import {TableView, TableRenderer, RangeInfo} from "./table";
-import {Pair, Converters, reorder, regression, ICancellable, PartialResult} from "./util";
+    FullPage, Point, Size, KeyCodes, significantDigits, formatNumber, translateString, Resolution
+} from "./ui";
+import { Renderer, combineMenu, CombineOperators, SelectedObject } from "./rpc";
 import {
-    BasicColStats, Histogram, ColumnAndRange, AnyScale, HistogramViewBase,
-    FilterDescription
-} from "./histogramBase";
+    ColumnDescription, Schema, ContentsKind, RecordOrder, DistinctStrings, RangeInfo,
+    RemoteTableObjectView, RemoteTableObject, Histogram, BasicColStats, FilterDescription,
+    ColumnAndRange, ZipReceiver, RemoteTableRenderer
+} from "./tableData";
+import {TableView, TableRenderer} from "./table";
+import {Pair, Converters, reorder, regression, ICancellable, PartialResult} from "./util";
+import { AnyScale, HistogramViewBase } from "./histogramBase";
 import {BaseType} from "d3-selection";
 import {ScaleLinear, ScaleTime} from "d3-scale";
 import {TopMenu, TopSubMenu} from "./menu";
@@ -96,7 +92,7 @@ export class AxisData {
     }
 }
 
-export class HeatMapView extends RemoteObjectView {
+export class HeatMapView extends RemoteTableObjectView {
     protected dragging: boolean;
     protected svg: any;
     private selectionOrigin: Point;
@@ -193,7 +189,7 @@ export class HeatMapView extends RemoteObjectView {
             return;
         }
 
-        let rr = this.createRpcRequest("zip", r.remoteObjectId);
+        let rr = this.createZipRequest(r);
         let renderer = (page: FullPage, operation: ICancellable) => {
             return new Make2DHistogram(
                 page, operation,
@@ -630,7 +626,7 @@ export class HeatMapView extends RemoteObjectView {
             bucketBoundaries: yBoundaries,
             complement: d3.event.sourceEvent.ctrlKey
         };
-        let rr = this.createRpcRequest("filter2DRange", { first: xRange, second: yRange });
+        let rr = this.createFilter2DRequest(xRange, yRange);
         let renderer = new Filter2DReceiver(
             [this.currentData.xData.description, this.currentData.yData.description],
             this.tableSchema,
@@ -641,35 +637,27 @@ export class HeatMapView extends RemoteObjectView {
 }
 
 // After filtering we obtain a handle to a new table
-export class Filter2DReceiver extends Renderer<string> {
-    private stub: RemoteObject;
-
+export class Filter2DReceiver extends RemoteTableRenderer {
     constructor(protected cds: ColumnDescription[],
                 protected tableSchema: Schema,
                 page: FullPage,
-                protected remoteObject: RemoteObject,
+                protected sourceObject: RemoteTableObject,
                 operation: ICancellable) {
         super(page, operation, "Filter");
     }
 
-    public onNext(value: PartialResult<string>): void {
-        super.onNext(value);
-        if (value.data != null)
-            this.stub = new RemoteObject(value.data);
-    }
-
     public onCompleted(): void {
         this.finished();
-        if (this.stub != null) {
-            let first = new RangeInfo();
-            first.columnName = this.cds[0].name;
-            let second = new RangeInfo();
-            second.columnName = this.cds[1].name;
-            let cols: RangeInfo[] = [first, second];
-            let rr = this.stub.createRpcRequest("range2D", cols);
-            rr.invoke(new Range2DCollector(
-                this.cds, this.tableSchema, this.page, this.stub, rr, true));
-        }
+        if (this.remoteObject == null)
+            return;
+
+        let first = new RangeInfo();
+        first.columnName = this.cds[0].name;
+        let second = new RangeInfo();
+        second.columnName = this.cds[1].name;
+        let rr = this.sourceObject.createRange2DRequest(first, second);
+        rr.invoke(new Range2DCollector(
+            this.cds, this.tableSchema, this.page, this.remoteObject, rr, true));
     }
 }
 
@@ -679,7 +667,7 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
     constructor(protected cds: ColumnDescription[],
                 protected tableSchema: Schema,
                 page: FullPage,
-                protected remoteObject: RemoteObject,
+                protected remoteObject: RemoteTableObject,
                 operation: ICancellable,
                 protected drawHeatMap: boolean  // true - heatMap, false - histogram
     ) {
@@ -690,7 +678,7 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
         this.stats = bcs;
     }
 
-    public setRemoteObject(ro: RemoteObject) {
+    public setRemoteObject(ro: RemoteTableObject) {
         this.remoteObject = ro;
     }
 
@@ -728,12 +716,7 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
             cdfBucketCount: 0,
             bucketBoundaries: null // TODO
         };
-        let args = {
-            first: arg0,
-            second: arg1
-        };
-
-        let rr = this.remoteObject.createRpcRequest("heatMap", args);
+        let rr = this.remoteObject.createHeatMapRequest(arg0, arg1);
         if (this.operation != null)
             rr.setStartTime(this.operation.startTime());
         let renderer: Renderer<HeatMapData> = null;

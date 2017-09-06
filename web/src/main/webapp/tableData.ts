@@ -15,9 +15,16 @@
  *  limitations under the License.
  */
 
+/*
+ * This file contains lots of classes for accessing the remote TableTarget.java class.
+ */
+
 // I can't use an enum for ContentsKind because JSON deserialization does not
 // return an enum from a string.
-import {BasicColStats} from "./histogramBase";
+import {RpcRequest, RemoteObject, CombineOperators, Renderer} from "./rpc";
+import {FullPage, IDataView, Resolution} from "./ui";
+import {EqualityFilterDescription} from "./equalityFilter";
+import {ICancellable, PartialResult} from "./util";
 export type ContentsKind = "Category" | "Json" | "String" | "Integer" | "Double" | "Date" | "Interval";
 
 export interface IColumnDescription {
@@ -64,6 +71,186 @@ export interface IDistinctStrings {
     columnSize: number;
 }
 
+export class RangeInfo {
+    columnName: string;
+    // The following are only used for categorical columns
+    firstIndex?: number;
+    lastIndex?: number;
+    firstValue?: string;
+    lastValue?: string;
+}
+
+// same as Java class
+export interface Histogram {
+    buckets: number[]
+    missingData: number;
+    outOfRange: number;
+}
+
+// same as Java class
+export interface BasicColStats {
+    momentCount: number;
+    min: number;
+    max: number;
+    minObject: any;
+    maxObject: any;
+    moments: Array<number>;
+    presentCount: number;
+    missingCount: number;
+}
+
+// Same as Java class
+export interface ColumnAndRange {
+    min: number;
+    max: number;
+    samplingRate: number;
+    columnName: string;
+    bucketCount: number;
+    cdfBucketCount: number;
+    bucketBoundaries: string[];
+}
+
+export interface FilterDescription {
+    min: number;
+    max: number;
+    columnName: string;
+    complement: boolean;
+    bucketBoundaries: string[];
+}
+
+/**
+ * This class methods that correspond directly to TableTarget.java methods.
+ */
+export class RemoteTableObject extends RemoteObject {
+    constructor(remoteObjectId: string) {
+        super(remoteObjectId);
+    }
+
+    public createRangeRequest(r: RangeInfo): RpcRequest {
+        return this.createRpcRequest("range", r);
+    }
+
+    public createZipRequest(r: RemoteObject): RpcRequest {
+        return this.createRpcRequest("zip", r.remoteObjectId);
+    }
+
+    public createQuantileRequest(rowCount: number, o: RecordOrder, position: number): RpcRequest {
+        return this.createRpcRequest("quantile", {
+            precision: 100,
+            tableSize: rowCount,
+            order: o,
+            position: position
+        });
+    }
+
+    public createNextKRequest(order: RecordOrder, firstRow: any[]): RpcRequest {
+        let nextKArgs = {
+            order: order,
+            firstRow: firstRow,
+            rowsOnScreen: Resolution.tableRowsOnScreen
+        };
+        return this.createRpcRequest("getNextK", nextKArgs);
+    }
+
+    public createGetSchemaRequest(): RpcRequest {
+        return this.createRpcRequest("getSchema", null);
+    }
+
+    public createRange2DRequest(r1: RangeInfo, r2: RangeInfo): RpcRequest {
+        return this.createRpcRequest("range2D", [r1, r2]);
+    }
+
+    public createRange2DColsRequest(c1: string, c2: string): RpcRequest {
+        let r1: RangeInfo = { columnName: c1 };
+        let r2: RangeInfo = { columnName: c2 };
+        return this.createRange2DRequest(r1, r2);
+    }
+
+    public createHeavyHittersRequest(columns: IColumnDescription[], percent: number): RpcRequest {
+        return this.createRpcRequest("heavyHitters", {columns: columns, amount: percent});
+    }
+
+    public createCheckHeavyRequest(r: RemoteObject, schema: Schema): RpcRequest {
+        return this.createRpcRequest("checkHeavy", {
+            hittersId: r.remoteObjectId,
+            schema: schema
+        });
+    }
+
+    public createFilterHeavyRequest(r: RemoteObject, schema: Schema): RpcRequest {
+        return this.createRpcRequest("filterHeavy", {
+            hittersId: r.remoteObjectId,
+            schema: schema
+        });
+    }
+
+    public createProjectToEigenVectorsRequest(r: RemoteObject, dimension: number): RpcRequest {
+        return this.createRpcRequest("projectToEigenVectors", {
+            id: r.remoteObjectId,
+            numComponents: dimension
+        });
+    }
+
+    public createFilterEqualityRequest(filter: EqualityFilterDescription): RpcRequest {
+        return this.createRpcRequest("filterEquality", filter);
+    }
+
+    public createCorrelationMatrixRequest(columnNames: string[]): RpcRequest {
+        return this.createRpcRequest("correlationMatrix", {columnNames: columnNames});
+    }
+
+    public createFilterRequest(f: FilterDescription): RpcRequest {
+        return this.createRpcRequest("filterRange", f);
+    }
+
+    public createFilter2DRequest(xRange: FilterDescription, yRange: FilterDescription): RpcRequest {
+        return this.createRpcRequest("filter2DRange", {first: xRange, second: yRange});
+    }
+
+    public createHeatMapRequest(x: ColumnAndRange, y: ColumnAndRange): RpcRequest {
+        return this.createRpcRequest("heatMap", { first: x, second: y });
+    }
+
+    public createHistogramRequest(info: ColumnAndRange): RpcRequest {
+        return this.createRpcRequest("histogram", info);
+    }
+
+    public createSetOperationRequest(setOp: CombineOperators): RpcRequest {
+        return this.createRpcRequest("setOperation", CombineOperators[setOp]);
+    }
+}
+
+export abstract class RemoteTableObjectView extends RemoteTableObject implements IDataView {
+    protected topLevel: HTMLElement;
+
+    constructor(remoteObjectId: string, protected page: FullPage) {
+        super(remoteObjectId);
+        this.setPage(page);
+    }
+
+    setPage(page: FullPage) {
+        if (page == null)
+            throw("null FullPage");
+        this.page = page;
+    }
+
+    getPage() : FullPage {
+        if (this.page == null)
+            throw("Page not set");
+        return this.page;
+    }
+
+    public abstract refresh(): void;
+
+    public getHTMLRepresentation(): HTMLElement {
+        return this.topLevel;
+    }
+
+    public scrollIntoView() {
+        this.getHTMLRepresentation().scrollIntoView( { block: "end", behavior: "smooth" } );
+    }
+}
+
 /**
  * All strings that can appear in a categorical column.
  */
@@ -81,16 +268,15 @@ export class DistinctStrings implements IDistinctStrings {
         this.uniqueStrings.sort();
     }
 
-    public getStats(): BasicColStats {
+    public size(): number { return this.uniqueStrings.length; }
+
+    public getRangeInfo(colName: string): RangeInfo {
         return {
-            momentCount: 0,
-            min: 0,
-            max: this.uniqueStrings.length - 1,
-            minObject: this.uniqueStrings[0],
-            maxObject: this.uniqueStrings[this.uniqueStrings.length - 1],
-            moments: [],
-            presentCount: this.columnSize,
-            missingCount: 0
+            columnName: colName,
+            firstIndex: 0,
+            lastIndex: this.uniqueStrings.length - 1,
+            firstValue: this.uniqueStrings[0],
+            lastValue: this.uniqueStrings[this.uniqueStrings.length - 1],
         };
     }
 
@@ -192,5 +378,50 @@ export class RecordOrder {
         for (let i = 0; i < this.sortOrientationList.length; i++)
             result += RecordOrder.coToString(this.sortOrientationList[i]);
         return result;
+    }
+}
+
+/// A renderer that receives a remoteObjectId for a RemoteTableObject.
+export abstract class RemoteTableRenderer extends Renderer<string> {
+    protected remoteObject: RemoteTableObject;
+
+    public constructor(public page: FullPage,
+                       public operation: ICancellable,
+                       public description: string) {
+        super(page, operation, description);
+        this.remoteObject = null;
+    }
+
+    public onNext(value: PartialResult<string>) {
+        super.onNext(value);
+        if (value.data != null) {
+            if (value.data != null)
+                throw "Remote object already set " + this.remoteObject.remoteObjectId;
+            this.remoteObject = new RemoteTableObject(value.data);
+        }
+    }
+}
+
+// A zip receiver receives the result of a Zip operation on
+// two IDataSet<ITable> objects (an IDataSet<Pair<ITable, ITable>>,
+// and applies to the pair the specified set operation setOp.
+export class ZipReceiver extends RemoteTableRenderer {
+    public constructor(page: FullPage,
+                       operation: ICancellable,
+                       protected setOp: CombineOperators,
+                       // receiver constructs the renderer that is used to display
+                       // the result after combining
+                       protected receiver: (page: FullPage, operation: ICancellable) => RemoteTableRenderer) {
+        super(page, operation, "zip");
+    }
+
+    onCompleted(): void {
+        super.finished();
+        if (this.remoteObject == null)
+            return;
+
+        let rr = this.remoteObject.createSetOperationRequest(this.setOp);
+        let rec = this.receiver(this.page, rr);
+        rr.invoke(rec);
     }
 }
