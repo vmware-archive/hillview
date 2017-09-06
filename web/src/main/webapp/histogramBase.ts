@@ -21,7 +21,7 @@ import {
 import {Dialog} from "./dialog";
 import d3 = require('d3');
 import {RemoteObjectView} from "./rpc";
-import {ContentsKind, Schema} from "./table";
+import {ContentsKind, Schema, DistinctStrings} from "./tableData";
 import {BaseType} from "d3-selection";
 import {ScaleLinear, ScaleTime} from "d3-scale";
 import {Converters} from "./util";
@@ -217,28 +217,6 @@ export abstract class HistogramViewBase extends RemoteObjectView {
             bucketCount = Math.min(bucketCount, stats.max - stats.min + 1);
         }
         return bucketCount;
-    }
-
-    public static categoriesInRange(stats: BasicColStats, bucketCount: number, allStrings: string[]): string[] {
-        let boundaries: string[] = null;
-        let max = Math.floor(stats.max);
-        let min = Math.ceil(stats.min);
-        let range = max - min;
-        if (range <= 0)
-            bucketCount = 1;
-
-        if (allStrings != null) {
-            if (bucketCount >= range) {
-                boundaries = allStrings.slice(min, max + 1);  // slice end is exclusive
-            } else {
-                boundaries = [];
-                for (let i = 0; i <= bucketCount; i++) {
-                    let index = min + Math.round(i * range / bucketCount);
-                    boundaries.push(allStrings[index]);
-                }
-            }
-        }
-        return boundaries;
     }
 
     public static invertToNumber(v: number, scale: AnyScale, kind: ContentsKind): number {

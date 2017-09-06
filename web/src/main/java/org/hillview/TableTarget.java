@@ -70,8 +70,8 @@ public final class TableTarget extends RpcTarget {
 
     @HillviewRpc
     void uniqueStrings(RpcRequest request, Session session) {
-        String columnName = request.parseArgs(String.class);
-        DistinctStringsSketch sk = new DistinctStringsSketch(0, columnName);
+        String[] columnNames = request.parseArgs(String[].class);
+        DistinctStringsSketch sk = new DistinctStringsSketch(0, columnNames);
         this.runCompleteSketch(this.table, sk, e->e, request, session);
     }
 

@@ -20,7 +20,8 @@ import {
 } from "./ui";
 import d3 = require('d3');
 import {RemoteObject, combineMenu, CombineOperators, SelectedObject, ZipReceiver, Renderer} from "./rpc";
-import {ColumnDescription, TableRenderer, TableView, RecordOrder, Schema, RangeInfo, NumberStrings} from "./table";
+import {ColumnDescription, Schema, RecordOrder, DistinctStrings} from "./tableData";
+import {TableRenderer, TableView, RangeInfo} from "./table";
 import {histogram} from "d3-array";
 import {TopMenu, TopSubMenu} from "./menu";
 import {Converters, Pair, reorder, ICancellable, PartialResult} from "./util";
@@ -36,7 +37,7 @@ class MakeHistogram extends Renderer<string> {
                        operation: ICancellable,
                        private colDesc: ColumnDescription,
                        private schema: Schema,
-                       private allStrings: string[]) {
+                       private allStrings: DistinctStrings) {
         super(page, operation, "Reload");
     }
 
@@ -56,7 +57,7 @@ class MakeHistogram extends Renderer<string> {
             // There should be a more efficient way to do this.
             let rr = remoteObj.createRpcRequest("uniqueStrings", this.colDesc.name);
             rr.setStartTime(this.operation.startTime());
-            rr.invoke(new NumberStrings(this.colDesc, this.schema, this.page, remoteObj, rr));
+            //rr.invoke(new NumberStrings(this.colDesc, this.schema, this.page, remoteObj, rr));
         } else {
             let rr = remoteObj.createRpcRequest("range", {columnName: this.colDesc.name});
             rr.setStartTime(this.operation.startTime());
@@ -72,7 +73,7 @@ export class HistogramView extends HistogramViewBase {
         cdfSum: number[],  // prefix sum of cdf
         description: ColumnDescription,
         stats: BasicColStats,
-        allStrings: string[]   // used only for categorical histograms
+        allStrings: DistinctStrings   // used only for categorical histograms
     };
 
     constructor(remoteObjectId: string, protected tableSchema: Schema, page: FullPage) {
@@ -145,8 +146,9 @@ export class HistogramView extends HistogramViewBase {
 
     changeBuckets(bucketCount: number): void {
         let cdfBucketCount = this.currentData.cdf.buckets.length;
-        let boundaries = HistogramViewBase.categoriesInRange(
-            this.currentData.stats, cdfBucketCount, this.currentData.allStrings);
+        let boundaries = this.currentData.allStrings != null ?
+            this.currentData.allStrings.categoriesInRange(
+                this.currentData.stats.min, this.currentData.stats.max, cdfBucketCount) : null;
         let info: ColumnAndRange = {
             columnName: this.currentData.description.name,
             min: this.currentData.stats.min,
@@ -196,13 +198,8 @@ export class HistogramView extends HistogramViewBase {
         if (this.currentData.description.kind == "Integer")
             x = Math.round(<number>x);
         let xs = String(x);
-        if (this.currentData.description.kind == "Category") {
-            let index = Math.round(<number>x);
-            if (index >= 0 && index < this.currentData.allStrings.length)
-                xs = this.currentData.allStrings[index];
-            else
-                xs = "";
-        }
+        if (this.currentData.description.kind == "Category")
+            xs = this.currentData.allStrings.get(<number>x);
         else if (this.currentData.description.kind == "Integer" ||
             this.currentData.description.kind == "Double")
             xs = significantDigits(<number>x);
@@ -238,7 +235,7 @@ export class HistogramView extends HistogramViewBase {
 
     public updateView(cdf: Histogram, h: Histogram,
                       cd: ColumnDescription, stats: BasicColStats,
-                      allStrings: string[], elapsedMs: number) : void {
+                      allStrings: DistinctStrings, elapsedMs: number) : void {
         this.currentData = {
             cdf: cdf,
             cdfSum: null,
@@ -506,7 +503,7 @@ export class FilterReceiver extends Renderer<string> {
 
     constructor(protected columnDescription: ColumnDescription,
                 protected tableSchema: Schema,
-                protected allStrings: string[],
+                protected allStrings: DistinctStrings,
                 protected filter: FilterDescription,
                 page: FullPage,
                 operation: ICancellable) {
@@ -552,7 +549,7 @@ export class RangeCollector extends Renderer<BasicColStats> {
     protected stats: BasicColStats;
     constructor(protected cd: ColumnDescription,
                 protected tableSchema: Schema,
-                protected allStrings: string[],  // for categorical columns only
+                protected allStrings: DistinctStrings,  // for categorical columns only
                 page: FullPage,
                 protected remoteObject: RemoteObject,
                 operation: ICancellable) {
@@ -576,7 +573,8 @@ export class RangeCollector extends Renderer<BasicColStats> {
         let size = Resolution.getChartSize(this.page);
         let bucketCount = HistogramViewBase.bucketCount(this.stats, this.page, this.cd.kind);
         let cdfCount = size.width;
-        let boundaries = HistogramViewBase.categoriesInRange(this.stats, cdfCount, this.allStrings);
+        let boundaries = this.allStrings != null ?
+            this.allStrings.categoriesInRange(this.stats.min, this.stats.max, cdfCount) : null;
         let info: ColumnAndRange = {
             columnName: this.cd.name,
             min: this.stats.min,
@@ -617,7 +615,7 @@ export class HistogramRenderer extends Renderer<Pair<Histogram, Histogram>> {
                 protected cd: ColumnDescription,
                 protected stats: BasicColStats,
                 operation: ICancellable,
-                protected allStrings: string[]) {
+                protected allStrings: DistinctStrings) {
         super(new FullPage(), operation, "histogram");
         page.insertAfterMe(this.page);
         this.histogram = new HistogramView(remoteTableId, schema, this.page);

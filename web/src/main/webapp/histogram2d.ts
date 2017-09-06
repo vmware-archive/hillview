@@ -19,7 +19,9 @@ import {
     HistogramViewBase, ColumnAndRange, BasicColStats, FilterDescription, BucketDialog,
     AnyScale
 } from "./histogramBase";
-import {Schema, TableView, RecordOrder, TableRenderer, ColumnDescription, RangeInfo} from "./table";
+
+import {ColumnDescription, Schema, RecordOrder} from "./tableData";
+import {TableView, TableRenderer, RangeInfo} from "./table";
 import {FullPage, significantDigits, formatNumber, translateString, Resolution, Rectangle} from "./ui";
 import {TopMenu, TopSubMenu} from "./menu";
 import d3 = require('d3');
@@ -162,13 +164,8 @@ export class Histogram2DView extends HistogramViewBase {
         if (this.currentData.xData.description.kind == "Integer")
             x = Math.round(<number>x);
         let xs = String(x);
-        if (this.currentData.xData.description.kind == "Category") {
-            let index = Math.round(<number>x);
-            if (index >= 0 && index < this.currentData.xData.allStrings.length)
-                xs = this.currentData.xData.allStrings[index];
-            else
-                xs = "";
-        }
+        if (this.currentData.xData.description.kind == "Category")
+            xs = this.currentData.xData.allStrings.get(<number>x);
         else if (this.currentData.xData.description.kind == "Integer" ||
             this.currentData.xData.description.kind == "Double")
             xs = significantDigits(<number>x);

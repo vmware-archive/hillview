@@ -19,11 +19,10 @@ import {
     FullPage, formatNumber, significantDigits, percent, KeyCodes, ScrollBar, IScrollTarget
 } from "./ui";
 import {
-    RemoteObject, RpcRequest, Renderer, combineMenu, SelectedObject, CombineOperators, ZipReceiver,
+    RpcRequest, Renderer, combineMenu, SelectedObject, CombineOperators, ZipReceiver,
     RemoteObjectView
 } from "./rpc";
 import Rx = require('rx');
-import {BasicColStats} from "./histogramBase";
 import {RangeCollector} from "./histogram";
 import {Range2DCollector} from "./heatMap";
 import {TopMenu, TopSubMenu, ContextMenu} from "./menu";
@@ -31,115 +30,11 @@ import {Converters, PartialResult, ICancellable} from "./util";
 import {EqualityFilterDialog, EqualityFilterDescription} from "./equalityFilter";
 import d3 = require('d3');
 import {Dialog} from "./dialog";
-
-// The first few classes are direct counterparts to server-side Java classes
-// with the same names.  JSON serialization
-// of the Java classes produces JSON that can be directly cast
-// into these interfaces.
-
-// I can't use an enum for ContentsKind because JSON deserialization does not
-// return an enum from a string.
-export type ContentsKind = "Category" | "Json" | "String" | "Integer" | "Double" | "Date" | "Interval";
-
-export interface IColumnDescription {
-    readonly kind: ContentsKind;
-    readonly name: string;
-    readonly allowMissing: boolean;
-}
-
-// Direct counterpart to Java class
-export class ColumnDescription implements IColumnDescription {
-    readonly kind: ContentsKind;
-    readonly name: string;
-    readonly allowMissing: boolean;
-
-    constructor(v : IColumnDescription) {
-        this.kind = v.kind;
-        this.name = v.name;
-        this.allowMissing = v.allowMissing;
-    }
-}
-
-// Direct counterpart to Java class
-export interface Schema {
-    [index: number] : IColumnDescription;
-    length: number;
-}
-
-export interface RowView {
-    count: number;
-    values: any[];
-}
-
-// Direct counterpart to Java class
-export interface ColumnSortOrientation {
-    columnDescription: IColumnDescription;
-    isAscending: boolean;
-}
-
-// Direct counterpart to Java class
-export class RecordOrder {
-    constructor(public sortOrientationList: Array<ColumnSortOrientation>) {}
-    public length(): number { return this.sortOrientationList.length; }
-    public get(i: number): ColumnSortOrientation { return this.sortOrientationList[i]; }
-
-    // Find the index of a specific column; return -1 if columns is not in the sort order
-    public find(col: string): number {
-        for (let i = 0; i < this.length(); i++)
-            if (this.sortOrientationList[i].columnDescription.name == col)
-                return i;
-        return -1;
-    }
-    public hide(col: string): void {
-        let index = this.find(col);
-        if (index == -1)
-            // already hidden
-            return;
-        this.sortOrientationList.splice(index, 1);
-    }
-    public sortFirst(cso: ColumnSortOrientation) {
-        let index = this.find(cso.columnDescription.name);
-        if (index != -1)
-            this.sortOrientationList.splice(index, 1);
-        this.sortOrientationList.splice(0, 0, cso);
-    }
-    public show(cso: ColumnSortOrientation) {
-        let index = this.find(cso.columnDescription.name);
-        if (index != -1)
-            this.sortOrientationList.splice(index, 1);
-        this.sortOrientationList.push(cso);
-    }
-    public showIfNotVisible(cso: ColumnSortOrientation) {
-        let index = this.find(cso.columnDescription.name);
-        if (index == -1)
-            this.sortOrientationList.push(cso);
-    }
-    public clone(): RecordOrder {
-        return new RecordOrder(this.sortOrientationList.slice(0));
-    }
-    // Returns a new object
-    public invert(): RecordOrder {
-        let result = new Array<ColumnSortOrientation>(this.sortOrientationList.length);
-        for (let i in this.sortOrientationList) {
-            let cso = this.sortOrientationList[i];
-            result[i] = {
-                isAscending: !cso.isAscending,
-                columnDescription: cso.columnDescription
-            };
-        }
-        return new RecordOrder(result);
-    }
-
-    protected static coToString(cso: ColumnSortOrientation): string {
-        return cso.columnDescription.name + " " + (cso.isAscending ? "up" : "down");
-    }
-    public toString(): string {
-        let result = "";
-        for (let i = 0; i < this.sortOrientationList.length; i++)
-            result += RecordOrder.coToString(this.sortOrientationList[i]);
-        return result;
-    }
-}
+import {
+    Schema, RowView, RecordOrder, IColumnDescription, ColumnDescription, ColumnSortOrientation,
+    ContentsKind,
+} from "./tableData";
+import {TableDataSet} from "./dataset";
 
 export class TableDataView {
     public schema?: Schema;
@@ -158,19 +53,12 @@ export class RangeInfo {
     lastValue?: string;
 }
 
-/* Example table view:
--------------------------------------------
-| pos | count | col0 v1 | col1 ^0 | col2 |
--------------------------------------------
-| 10  |     3 | Mike    |       0 |      |
- ------------------------------------------
- | 13 |     6 | Jon     |       1 |      |
- ------------------------------------------
+/**
+ * Displays a table in the browser.
  */
-
 export class TableView extends RemoteObjectView
     implements IScrollTarget {
-    protected static initialTableId: string = null;
+    protected static initialDataset: TableDataSet = null;
 
     // Data view part: received from remote site
     public schema?: Schema;
@@ -186,7 +74,6 @@ export class TableView extends RemoteObjectView
     protected tHead : HTMLTableSectionElement;
     protected tBody: HTMLTableSectionElement;
     protected currentData: TableDataView;
-    protected numberedCategories: Set<string>;
     protected selectedColumns: Set<string>;
     protected firstSelectedColumn: string;  // for shift-click
     protected contextMenu: ContextMenu;
@@ -197,9 +84,8 @@ export class TableView extends RemoteObjectView
         super(remoteObjectId, page);
 
         this.order = new RecordOrder([]);
-        this.numberedCategories = new Set<string>();
-        if (TableView.initialTableId == null)
-            TableView.initialTableId = remoteObjectId;
+        if (TableView.initialDataset == null)
+            TableView.initialDataset = new TableDataSet(remoteObjectId);
         this.topLevel = document.createElement("div");
         this.topLevel.id = "tableContainer";
         this.topLevel.tabIndex = 1;  // necessary for keyboard events?
@@ -364,10 +250,10 @@ export class TableView extends RemoteObjectView
 
     // Navigate back to the first table known
     public static fullDataset(page: FullPage): void {
-        if (TableView.initialTableId == null)
+        if (TableView.initialDataset == null)
             return;
 
-        let table = new TableView(TableView.initialTableId, page);
+        let table = new TableView(TableView.initialDataset.remoteObjectId, page);
         page.setDataView(table);
         let rr = table.createRpcRequest("getSchema", null);
         rr.invoke(new TableRenderer(page, table, rr, false, new RecordOrder([])));
@@ -471,9 +357,20 @@ export class TableView extends RemoteObjectView
     public histogram(columnName: string): void {
         if (this.selectedColumns.size <= 1) {
             let cd = TableView.findColumn(this.schema, columnName);
-            if (cd.kind == "Category" && !this.numberedCategories.has(columnName)) {
-                let rr = this.createRpcRequest("uniqueStrings", columnName);
-                rr.invoke(new NumberStrings(cd, this.schema, this.getPage(), this, rr));
+            if (cd.kind == "Category") {
+                // Continuation invoked after the distinct strings have been obtained
+                let cont = (operation: ICancellable) => {
+                    let ds = TableView.initialDataset.getDistinctStrings(columnName);
+                    if (ds == null)
+                        // Probably an error has occurred
+                        return;
+
+                    let bcs = ds.getStats();
+                    let rc = new RangeCollector(cd, this.schema, ds, this.page, this, operation);
+                    rc.setValue(bcs);
+                    rc.onCompleted();
+                };
+                TableView.initialDataset.retrieveCategoryValues([columnName], this.getPage(), cont);
             } else {
                 let rr = this.createRpcRequest("range", {columnName: columnName});
                 rr.invoke(new RangeCollector(cd, this.schema, null, this.getPage(), this, rr));
@@ -986,15 +883,9 @@ export class RemoteTableReceiver extends Renderer<string> {
     }
 }
 
-class DistinctStrings {
-    mySet: string[];
-    truncated: boolean;
-    rowCount: number;
-    missingCount: number;
-}
+/*
+First step of a histogram for a categorical column:
 
-// First step of a histogram for a categorical column:
-// create a numbering for the strings
 export class NumberStrings extends Renderer<DistinctStrings> {
     protected contentsInfo: DistinctStrings;
 
@@ -1013,7 +904,7 @@ export class NumberStrings extends Renderer<DistinctStrings> {
         if (this.contentsInfo == null)
             return;
         super.finished();
-        let strings = this.contentsInfo.mySet;
+        let strings = this.contentsInfo.uniqueStrings;
         if (strings.length == 0) {
             this.page.reportError("No data in column");
             return;
@@ -1036,6 +927,7 @@ export class NumberStrings extends Renderer<DistinctStrings> {
         rc.onCompleted();
     }
 }
+*/
 
 class QuantileReceiver extends Renderer<any[]> {
     protected firstRow: any[];

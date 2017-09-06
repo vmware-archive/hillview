@@ -24,7 +24,9 @@ import {
     RemoteObject, Renderer, combineMenu, CombineOperators, SelectedObject, ZipReceiver,
     RemoteObjectView
 } from "./rpc";
-import {ColumnDescription, Schema, ContentsKind, TableView, RecordOrder, TableRenderer, RangeInfo} from "./table";
+
+import {ColumnDescription, Schema, ContentsKind, RecordOrder, DistinctStrings} from "./tableData";
+import {TableView, TableRenderer, RangeInfo} from "./table";
 import {Pair, Converters, reorder, regression, ICancellable, PartialResult} from "./util";
 import {
     BasicColStats, Histogram, ColumnAndRange, AnyScale, HistogramViewBase,
@@ -48,7 +50,7 @@ export class AxisData {
     public constructor(public missing: Histogram,
                        public description: ColumnDescription,
                        public stats: BasicColStats,
-                       public allStrings: string[])   // used only for categorical histograms
+                       public allStrings: DistinctStrings)   // used only for categorical histograms
     {}
 
     public getAxis(length: number, bottom: boolean): [any, AnyScale] {
@@ -498,18 +500,13 @@ export class HeatMapView extends RemoteObjectView {
             return HeatMapView.colorMap((d - 1) / (max - 1));
     }
 
-    static invert(v: number, scale: AnyScale, kind: ContentsKind, allStrings: string[]): string {
+    static invert(v: number, scale: AnyScale, kind: ContentsKind, allStrings: DistinctStrings): string {
         let inv = scale.invert(v);
         if (kind == "Integer")
             inv = Math.round(<number>inv);
         let result = String(inv);
-        if (kind == "Category") {
-            let index = Math.round(<number>inv);
-            if (index >= 0 && index < allStrings.length)
-                result = allStrings[index];
-            else
-                result = "";
-        }
+        if (kind == "Category")
+            result = allStrings.get(<number>inv);
         else if (kind == "Integer" || kind == "Double")
             result = significantDigits(<number>inv);
         // For Date do nothing
