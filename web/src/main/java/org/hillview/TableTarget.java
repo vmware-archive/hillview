@@ -20,6 +20,8 @@ package org.hillview;
 import org.hillview.dataset.ConcurrentSketch;
 import org.hillview.dataset.TripleSketch;
 import org.hillview.dataset.api.IDataSet;
+import org.hillview.dataset.api.IJson;
+import org.hillview.dataset.api.Pair;
 import org.hillview.maps.FilterMap;
 import org.hillview.maps.LinearProjectionMap;
 import org.hillview.sketches.*;
@@ -310,9 +312,18 @@ public final class TableTarget extends RpcTarget {
         Schema schema;
     }
 
-    HeavyHittersTarget getHHI(FreqKList fkList) {
+    public static class TopList implements IJson {
+        NextKList top;
+        String heavyHittersId;
+    }
+
+    public TopList getLists(FreqKList fkList, Schema schema) {
         fkList.filter();
-        return new HeavyHittersTarget(fkList);
+        Pair<List<RowSnapshot>, List<Integer>> pair = fkList.getTop(10);
+        TopList tl = new TopList();
+        tl.top = new NextKList(new SmallTable(schema, pair.first), pair.second, 0, fkList.totalRows);
+        tl.heavyHittersId = new HeavyHittersTarget(fkList).objectId;
+        return tl;
     }
 
     @HillviewRpc
@@ -321,7 +332,7 @@ public final class TableTarget extends RpcTarget {
         RpcTarget target = RpcObjectManager.instance.getObject(hhi.hittersId);
         HeavyHittersTarget hht = (HeavyHittersTarget)target;
         ExactFreqSketch efSketch = new ExactFreqSketch(hhi.schema, hht.heavyHitters);
-        this.runCompleteSketch(this.table, efSketch, this::getHHI, request, session);
+        this.runCompleteSketch(this.table, efSketch, x -> this.getLists(x, hhi.schema), request, session);
     }
 
     @HillviewRpc

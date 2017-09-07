@@ -229,7 +229,6 @@ export class CompactHeatMapView implements IHtmlElement {
     private chart: any; // chart on which the heat map is drawn
     // Actual size of a rectangle on the canvas.
     private dotSize: Size;
-
     private data: Map<number, number>; // 'sparse array' for fast querying of the values.
 
     constructor(private binLabel: string, public xDim: number, public yDim: number) {

@@ -146,6 +146,7 @@ export class RecordOrder {
     }
 }
 
+// This is the serialization of a NextKList Java object
 export class TableDataView {
     public schema?: Schema;
     // Total number of rows in the complete table
@@ -164,16 +165,6 @@ export class RangeInfo {
     // The following is used when all values are known for categorical columns
     values?: string[];
 }
-
-/* Example table view:
--------------------------------------------
-| pos | count | col0 v1 | col1 ^0 | col2 |
--------------------------------------------
-| 10  |     3 | Mike    |       0 |      |
- ------------------------------------------
- | 13 |     6 | Jon     |       1 |      |
- ------------------------------------------
- */
 
 export class TableView extends RemoteObjectView
     implements IScrollTarget {
@@ -1116,8 +1107,14 @@ class HeavyHittersReceiver extends Renderer<string> {
     }
 }
 
-class HeavyHittersReceiver2 extends Renderer<string> {
-    private hitterObjectsId: string;
+interface TopList {
+    top: TableDataView; 
+    heavyHittersId: string;
+}
+
+// This class handles the reply of the "checkHeavy" method.
+class HeavyHittersReceiver2 extends Renderer<TopList> {
+    private data: TopList;
 
     public constructor(page: FullPage,
                        protected tv: TableView,
@@ -1125,21 +1122,22 @@ class HeavyHittersReceiver2 extends Renderer<string> {
                        protected schema: IColumnDescription[],
                        protected order: RecordOrder) {
         super(page, operation, "Heavy hitters");
-        this.hitterObjectsId = null;
+        this.data = null;
     }
 
-    onNext(value: PartialResult<string>): any {
+    onNext(value: PartialResult<TopList>): any {
         super.onNext(value);
         if (value.data != null)
-            this.hitterObjectsId = value.data;
+            this.data = value.data;
     }
 
     onCompleted(): void {
         super.finished();
-        if (this.hitterObjectsId == null)
+        if (this.data == null)
             return;
+	this.page.reportError(this.data.top.toString());
         let rr = this.tv.createRpcRequest("filterHeavy", {
-                hittersId: this.hitterObjectsId,
+                hittersId: this.data.heavyHittersId,
                 schema: this.schema
             });
         rr.setStartTime(this.operation.startTime());
@@ -1149,8 +1147,8 @@ class HeavyHittersReceiver2 extends Renderer<string> {
 
 // The string received is actually the id of a remote object that stores
 // the correlation matrix information
-class CorrelationMatrixReceiver extends Renderer<string> {
-    private correlationMatrixObjectsId: string;
+class CorrelationMatrixReceiver extends Renderer<string> { 
+   private correlationMatrixObjectsId: string;
 
     public constructor(page: FullPage,
                        protected tv: TableView,

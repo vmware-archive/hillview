@@ -5,6 +5,7 @@ import org.hillview.table.RowSnapshot;
 import org.hillview.table.RowSnapshotSet;
 import org.hillview.table.Schema;
 import org.hillview.table.TableFilter;
+import org.hillview.utils.Converters;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -109,11 +110,21 @@ public class FreqKList implements Serializable {
         }
     }
 
-    public List<Pair<RowSnapshot, Integer>> getTop(int size) {
-        List<Pair<RowSnapshot, Integer>> pList = new ArrayList<Pair<RowSnapshot, Integer>>(this.hMap.size());
+    public Pair<List<RowSnapshot>, List<Integer>> getTop(int size) {
+        List<Pair<RowSnapshot, Integer>> pList = new
+                ArrayList<Pair<RowSnapshot, Integer>>(this.hMap.size());
         this.hMap.forEach((rs, j) -> pList.add(new Pair<RowSnapshot, Integer>(rs, j)));
-        pList.sort((p1, p2) -> Integer.compare(p2.second, p1.second));
-        return pList;
+        pList.sort((p1, p2) -> Integer.compare(
+                Converters.checkNull(p2.second),
+                Converters.checkNull(p1.second)));
+        int minSize = Math.min(size, pList.size());
+        List<RowSnapshot> listRows = new ArrayList<RowSnapshot>(minSize);
+        List<Integer> listCounts = new ArrayList<Integer>(minSize);
+        for (int i = 0; i < minSize; i++ ) {
+            listRows.add(pList.get(i).first);
+            listCounts.add(pList.get(i).second);
+        }
+        return new Pair<List<RowSnapshot>, List<Integer>>(listRows, listCounts);
     }
 
     @SuppressWarnings("ConstantConditions")
