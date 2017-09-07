@@ -18,7 +18,7 @@
 
 package org.hillview.sketches;
 import org.hillview.dataset.api.ISketch;
-import org.hillview.table.api.IStringConverter;
+import org.hillview.table.api.ColumnNameAndConverter;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
 
@@ -27,43 +27,33 @@ import javax.annotation.Nullable;
 public class HeatMapSketch implements ISketch<ITable, HeatMap> {
     private final IBucketsDescription bucketDescD1;
     private final IBucketsDescription bucketDescD2;
-    private final String colNameD1;
-    private final String colNameD2;
-    @Nullable
-    private final IStringConverter converterD1;
-    @Nullable
-    private final IStringConverter converterD2;
+    private final ColumnNameAndConverter col1;
+    private final ColumnNameAndConverter col2;
     private final double rate;
 
     public HeatMapSketch(IBucketsDescription bucketDesc1, IBucketsDescription bucketDesc2,
-                         @Nullable IStringConverter converter1, @Nullable IStringConverter converter2,
-                         String colName1, String colName2) {
+                         ColumnNameAndConverter col1, ColumnNameAndConverter col2) {
         this.bucketDescD1 = bucketDesc1;
         this.bucketDescD2 = bucketDesc2;
-        this.colNameD1 = colName1;
-        this.colNameD2 = colName2;
-        this.converterD1 = converter1;
-        this.converterD2 = converter2;
+        this.col1 = col1;
+        this.col2 = col2;
         this.rate = 1;
     }
 
     public HeatMapSketch(IBucketsDescription bucketDesc1, IBucketsDescription bucketDesc2,
-                         @Nullable IStringConverter converter1, @Nullable IStringConverter converter2,
-                         String colName1, String colName2, double rate) {
+                         ColumnNameAndConverter col1, ColumnNameAndConverter col2, double rate) {
         this.bucketDescD1 = bucketDesc1;
         this.bucketDescD2 = bucketDesc2;
-        this.colNameD1 = colName1;
-        this.colNameD2 = colName2;
-        this.converterD1 = converter1;
-        this.converterD2 = converter2;
+        this.col1 = col1;
+        this.col2 = col2;
         this.rate = rate;
     }
 
     @Override
     public HeatMap create(final ITable data) {
         HeatMap result = this.getZero();
-        result.createHeatMap(data.getColumn(this.colNameD1), data.getColumn(this.colNameD2),
-                this.converterD1, this.converterD2, data.getMembershipSet().sample(this.rate));
+        result.createHeatMap(data.getColumn(this.col1), data.getColumn(this.col2),
+                             data.getMembershipSet().sample(this.rate));
         return result;
     }
 

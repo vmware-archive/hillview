@@ -1,10 +1,8 @@
 package org.hillview.sketches;
 
 import org.hillview.dataset.api.IJson;
-import org.hillview.table.api.IColumn;
-import org.hillview.table.api.IMembershipSet;
-import org.hillview.table.api.IRowIterator;
-import org.hillview.table.api.IStringConverter;
+import org.hillview.table.api.*;
+
 import javax.annotation.Nullable;
 
 /**
@@ -56,13 +54,12 @@ public class BasicColStats implements IJson {
     public long getPresentCount() { return this.presentCount; }
     public long getRowCount() { return this.presentCount + this.missingCount; }
 
-    public void createStats(final IColumn column, final IMembershipSet membershipSet,
-                            @Nullable final IStringConverter converter) {
+    public void createStats(final ColumnAndConverter column, final IMembershipSet membershipSet) {
         final IRowIterator myIter = membershipSet.getIterator();
         int currRow = myIter.getNextRow();
         while (currRow >= 0) {
-            if (!column.isMissing(currRow)) {
-                double val = column.asDouble(currRow, converter);
+            if (!column.column.isMissing(currRow)) {
+                double val = column.asDouble(currRow);
                 if (this.presentCount == 0) {
                     this.min = val;
                     this.max = val;

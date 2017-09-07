@@ -76,6 +76,10 @@ public interface ITable {
      */
     Iterable<IColumn> getColumns();
 
+    default ColumnAndConverter getColumn(ColumnNameAndConverter cc) {
+        return new ColumnAndConverter(this.getColumn(cc.columnName), cc.converter);
+    }
+
     /**
      * Formats the first rows in the table as a long string.
      */

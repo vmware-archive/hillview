@@ -26,6 +26,7 @@ import org.hillview.maps.FilterMap;
 import org.hillview.maps.LinearProjectionMap;
 import org.hillview.sketches.*;
 import org.hillview.table.*;
+import org.hillview.table.api.ColumnNameAndConverter;
 import org.hillview.table.api.IStringConverter;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
@@ -86,13 +87,9 @@ public final class TableTarget extends RpcTarget {
             cdfBucketCount = 1;
             info.bucketCount = 1;
         }
-        IStringConverter converter = null;
-        if (info.bucketBoundaries != null)
-            converter = new SortedStringsConverter(
-                    info.bucketBoundaries, (int)Math.ceil(info.min), (int)Math.floor(info.max));
-        BucketsDescriptionEqSize cdfBuckets = new BucketsDescriptionEqSize(info.min, info.max, cdfBucketCount);
-        HistogramSketch cdf = new HistogramSketch(cdfBuckets, info.columnName, converter);
         ColumnAndRange.HistogramParts parts = info.prepare();
+        BucketsDescriptionEqSize cdfBuckets = new BucketsDescriptionEqSize(info.min, info.max, cdfBucketCount);
+        HistogramSketch cdf = new HistogramSketch(cdfBuckets, parts.column);
         ConcurrentSketch<ITable, Histogram, Histogram> csk =
                 new ConcurrentSketch<ITable, Histogram, Histogram>(cdf, parts.sketch);
         this.runSketch(this.table, csk, request, session);
@@ -103,9 +100,7 @@ public final class TableTarget extends RpcTarget {
         ColPair info = request.parseArgs(ColPair.class);
         ColumnAndRange.HistogramParts h1 = Converters.checkNull(info.first).prepare();
         ColumnAndRange.HistogramParts h2 = Converters.checkNull(info.second).prepare();
-
-        HeatMapSketch sk = new HeatMapSketch(h1.buckets, h2.buckets, h1.converter, h2.converter,
-                info.first.columnName, info.second.columnName);
+        HeatMapSketch sk = new HeatMapSketch(h1.buckets, h2.buckets, h1.column, h2.column);
         this.runSketch(this.table, sk, request, session);
     }
 
@@ -115,9 +110,8 @@ public final class TableTarget extends RpcTarget {
         ColumnAndRange.HistogramParts h1 = Converters.checkNull(info.first).prepare();
         ColumnAndRange.HistogramParts h2 = Converters.checkNull(info.second).prepare();
         ColumnAndRange.HistogramParts h3 = Converters.checkNull(info.third).prepare();
-
-        HeatMap3DSketch sk = new HeatMap3DSketch(h1.buckets, h2.buckets, h3.buckets, h1.converter, h2.converter, h3.converter,
-                info.first.columnName, info.second.columnName, info.third.columnName);
+        HeatMap3DSketch sk = new HeatMap3DSketch(h1.buckets, h2.buckets, h3.buckets,
+                h1.column, h2.column, h3.column);
         this.runSketch(this.table, sk, request, session);
     }
 
@@ -126,16 +120,14 @@ public final class TableTarget extends RpcTarget {
         ColPair info = request.parseArgs(ColPair.class);
         ColumnAndRange.HistogramParts h1 = Converters.checkNull(info.first).prepare();
         ColumnAndRange.HistogramParts h2 = Converters.checkNull(info.second).prepare();
-        HeatMapSketch sketch = new HeatMapSketch(h1.buckets, h2.buckets, h1.converter, h2.converter,
-                info.first.columnName, info.second.columnName);
+        HeatMapSketch sketch = new HeatMapSketch(h1.buckets, h2.buckets, h1.column, h2.column);
 
         int width = info.first.cdfBucketCount;
         if (info.first.min >= info.first.max)
             width = 1;
         BucketsDescriptionEqSize cdfBuckets =
                 new BucketsDescriptionEqSize(info.first.min, info.first.max, width);
-        HistogramSketch cdf = new HistogramSketch(cdfBuckets, info.first.columnName, null);
-
+        HistogramSketch cdf = new HistogramSketch(cdfBuckets, h1.column);
         ConcurrentSketch<ITable, Histogram, HeatMap> csk =
                 new ConcurrentSketch<ITable, Histogram, HeatMap>(cdf, sketch);
         this.runSketch(this.table, csk, request, session);
@@ -147,18 +139,22 @@ public final class TableTarget extends RpcTarget {
         @Nullable
         String[] allNames;
 
-        @Nullable
-        IStringConverter getConverter() {
-            if (this.allNames == null)
-                return null;
-            return new SortedStringsConverter(this.allNames);
+        ColumnNameAndConverter getColumn() {
+            IStringConverter converter = null;
+            if (this.allNames != null)
+                converter = new SortedStringsConverter(this.allNames);
+            return new ColumnNameAndConverter(this.columnName, converter);
+        }
+
+        BasicColStatSketch getBasicStatsSketch() {
+            return new BasicColStatSketch(this.getColumn(), 0, 1.0);
         }
     }
 
     @HillviewRpc
     void range(RpcRequest request, Session session) {
         RangeInfo info = request.parseArgs(RangeInfo.class);
-        BasicColStatSketch sk = new BasicColStatSketch(info.columnName, info.getConverter(), 0, 1.0);
+        BasicColStatSketch sk = new BasicColStatSketch(info.getColumn(), 0, 1.0);
         this.runSketch(this.table, sk, request, session);
     }
 
@@ -167,8 +163,8 @@ public final class TableTarget extends RpcTarget {
         RangeInfo[] cols = request.parseArgs(RangeInfo[].class);
         if (cols.length != 2)
             throw new RuntimeException("Expected 2 RangeInfo objects, got " + cols.length);
-        BasicColStatSketch sk1 = new BasicColStatSketch(cols[0].columnName, cols[0].getConverter(), 0, 1.0);
-        BasicColStatSketch sk2 = new BasicColStatSketch(cols[1].columnName, cols[1].getConverter(), 0, 1.0);
+        BasicColStatSketch sk1 = cols[0].getBasicStatsSketch();
+        BasicColStatSketch sk2 = cols[1].getBasicStatsSketch();
         ConcurrentSketch<ITable, BasicColStats, BasicColStats> csk =
                 new ConcurrentSketch<ITable, BasicColStats, BasicColStats>(sk1, sk2);
         this.runSketch(this.table, csk, request, session);
@@ -179,9 +175,9 @@ public final class TableTarget extends RpcTarget {
         RangeInfo[] cols = request.parseArgs(RangeInfo[].class);
         if (cols.length != 3)
             throw new RuntimeException("Expected 3 RangeInfo objects, got " + cols.length);
-        BasicColStatSketch sk1 = new BasicColStatSketch(cols[0].columnName, cols[0].getConverter(), 0, 1.0);
-        BasicColStatSketch sk2 = new BasicColStatSketch(cols[1].columnName, cols[1].getConverter(), 0, 1.0);
-        BasicColStatSketch sk3 = new BasicColStatSketch(cols[2].columnName, cols[2].getConverter(), 0, 1.0);
+        BasicColStatSketch sk1 = cols[0].getBasicStatsSketch();
+        BasicColStatSketch sk2 = cols[1].getBasicStatsSketch();
+        BasicColStatSketch sk3 = cols[2].getBasicStatsSketch();
         TripleSketch<ITable, BasicColStats, BasicColStats, BasicColStats> tsk =
                 new TripleSketch<ITable, BasicColStats, BasicColStats, BasicColStats>(sk1, sk2, sk3);
         this.runSketch(this.table, tsk, request, session);
@@ -264,7 +260,7 @@ public final class TableTarget extends RpcTarget {
             int perc = (int) Math.round(varianceExplained.get(i) * 100);
             newColNames.add(String.format("PCA%d (%d%%)", i, perc));
         }
-        LinearProjectionMap lpm = new LinearProjectionMap(cm.columnNames, projectionMatrix, newColNames, null);
+        LinearProjectionMap lpm = new LinearProjectionMap(cm.columnNames, projectionMatrix, newColNames);
         this.runMap(this.table, lpm, TableTarget::new, request, session);
     }
 

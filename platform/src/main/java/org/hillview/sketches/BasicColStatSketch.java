@@ -1,29 +1,24 @@
 package org.hillview.sketches;
 
 import org.hillview.dataset.api.ISketch;
-import org.hillview.table.api.IStringConverter;
+import org.hillview.table.api.ColumnNameAndConverter;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
 import javax.annotation.Nullable;
 
 public class BasicColStatSketch implements ISketch<ITable, BasicColStats> {
-    private final String colName;
-    @Nullable
-    private final IStringConverter converter;
+    private final ColumnNameAndConverter col;
     private final double rate;
     private final int momentNum;
 
-    public BasicColStatSketch(String colName, @Nullable IStringConverter converter) {
-        this.colName = colName;
-        this.converter = converter;
+    public BasicColStatSketch(ColumnNameAndConverter col) {
+        this.col = col;
         this.rate = 1;
         this.momentNum = 2;
     }
 
-    public BasicColStatSketch(String colName, @Nullable IStringConverter converter,
-                              int momentNum, double rate) {
-        this.colName = colName;
-        this.converter = converter;
+    public BasicColStatSketch(ColumnNameAndConverter col, int momentNum, double rate) {
+        this.col = col;
         this.rate = rate;
         this.momentNum = momentNum;
     }
@@ -31,8 +26,7 @@ public class BasicColStatSketch implements ISketch<ITable, BasicColStats> {
     @Override
     public BasicColStats create(final ITable data) {
         BasicColStats result = this.getZero();
-        result.createStats(data.getColumn(this.colName), data.getMembershipSet().sample(this.rate),
-                this.converter);
+        result.createStats(data.getColumn(this.col), data.getMembershipSet().sample(this.rate));
         return result;
     }
 

@@ -5,6 +5,7 @@ import org.hillview.maps.FilterMap;
 import org.hillview.sketches.BasicColStatSketch;
 import org.hillview.sketches.BasicColStats;
 import org.hillview.table.*;
+import org.hillview.table.api.ColumnNameAndConverter;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.TestTables;
@@ -119,7 +120,8 @@ public class EqualityFilterTest {
 
         // Count the number of rows in the resulting IDataset with a BasicColStatsSketch
         SortedStringsConverter converter = new SortedStringsConverter(possibleNames, 0, 50);
-        BasicColStatSketch b = new BasicColStatSketch("Name" , converter);
+        BasicColStatSketch b = new BasicColStatSketch(
+                new ColumnNameAndConverter("Name", converter));
         BasicColStats bcs = result.blockingSketch(b);
 
         // The sketch should have counted 'count' 'name's in the IDataset.

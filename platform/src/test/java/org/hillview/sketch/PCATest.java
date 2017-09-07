@@ -89,7 +89,7 @@ public class PCATest {
             CorrMatrix cm = fcs.create(table);
             DoubleMatrix corrMatrix = new DoubleMatrix(cm.getCorrelationMatrix());
             DoubleMatrix eigenVectors = LinAlg.eigenVectors(corrMatrix, 2);
-            LinearProjectionMap lpm = new LinearProjectionMap(numericColNames, eigenVectors, "PCA", null);
+            LinearProjectionMap lpm = new LinearProjectionMap(numericColNames, eigenVectors, "PCA");
             ITable result = lpm.apply(table);
         } catch (FileNotFoundException|NoSuchFileException e) {
             System.out.println("Skipped test because " + csvFile + " is not present.");

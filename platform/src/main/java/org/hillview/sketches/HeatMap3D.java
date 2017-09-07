@@ -19,12 +19,7 @@
 package org.hillview.sketches;
 
 import org.hillview.dataset.api.IJson;
-import org.hillview.table.api.IColumn;
-import org.hillview.table.api.IMembershipSet;
-import org.hillview.table.api.IRowIterator;
-import org.hillview.table.api.IStringConverter;
-
-import javax.annotation.Nullable;
+import org.hillview.table.api.*;
 import java.io.Serializable;
 
 /**
@@ -48,11 +43,10 @@ public class HeatMap3D implements Serializable, IJson {
         this.buckets = new long[buckets1.getNumOfBuckets()][buckets2.getNumOfBuckets()][buckets3.getNumOfBuckets()];
     }
 
-    public void createHeatMap(final IColumn columnD1, final IColumn columnD2, final IColumn columnD3,
-                              @Nullable final IStringConverter converterD1,
-                              @Nullable final IStringConverter converterD2,
-                              @Nullable final IStringConverter converterD3,
-                              final IMembershipSet membershipSet) {
+    public void createHeatMap(
+            final ColumnAndConverter columnD1, final ColumnAndConverter columnD2,
+            final ColumnAndConverter columnD3,
+            final IMembershipSet membershipSet) {
         final IRowIterator myIter = membershipSet.getIterator();
         int currRow = myIter.getNextRow();
         while (currRow >= 0) {
@@ -62,9 +56,9 @@ public class HeatMap3D implements Serializable, IJson {
             if (isMissingD1 || isMissingD2 || isMissingD3) {
                 this.eitherMissing++; // At least one of the three is missing.
             } else {
-                double val1 = columnD1.asDouble(currRow, converterD1);
-                double val2 = columnD2.asDouble(currRow, converterD2);
-                double val3 = columnD3.asDouble(currRow, converterD3);
+                double val1 = columnD1.asDouble(currRow);
+                double val2 = columnD2.asDouble(currRow);
+                double val3 = columnD3.asDouble(currRow);
                 int index1 = this.bucketDescDim1.indexOf(val1);
                 int index2 = this.bucketDescDim2.indexOf(val2);
                 int index3 = this.bucketDescDim3.indexOf(val3);
@@ -80,24 +74,21 @@ public class HeatMap3D implements Serializable, IJson {
 
     public long getSize() { return this.totalPresent; }
 
-    public void createSampleHistogram(final IColumn columnD1, final IColumn columnD2, final IColumn columnD3,
-                                      @Nullable final IStringConverter converterD1,
-                                      @Nullable final IStringConverter converterD2,
-                                      @Nullable final IStringConverter converterD3,
-                                      final IMembershipSet membershipSet, double sampleRate) {
+    public void createSampleHistogram(
+            final ColumnAndConverter columnD1, final ColumnAndConverter columnD2,
+            final ColumnAndConverter columnD3,
+            final IMembershipSet membershipSet, double sampleRate) {
         this.createHeatMap(columnD1, columnD2, columnD3,
-                converterD1, converterD2, converterD3,
                 membershipSet.sample(sampleRate));
     }
 
-    public void createSampleHistogram(final IColumn columnD1, final IColumn columnD2, final IColumn columnD3,
-                                      @Nullable final IStringConverter converterD1,
-                                      @Nullable final IStringConverter converterD2,
-                                      @Nullable final IStringConverter converterD3,
-                                      final IMembershipSet membershipSet,
-                                      double sampleRate, long seed) {
+    public void createSampleHistogram(
+            final ColumnAndConverter columnD1, final ColumnAndConverter columnD2,
+            final ColumnAndConverter columnD3,
+            final IMembershipSet membershipSet,
+            double sampleRate, long seed) {
         this.createHeatMap(columnD1, columnD2, columnD3,
-                converterD1, converterD2, converterD3, membershipSet.sample(sampleRate, seed));
+                           membershipSet.sample(sampleRate, seed));
     }
 
     public int getNumOfBucketsD1() { return this.bucketDescDim1.getNumOfBuckets(); }

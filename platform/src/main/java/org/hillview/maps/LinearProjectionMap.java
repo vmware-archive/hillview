@@ -6,7 +6,6 @@ import org.hillview.table.api.*;
 import org.hillview.utils.BlasConversions;
 import org.jblas.DoubleMatrix;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -27,13 +26,10 @@ public class LinearProjectionMap implements IMap<ITable, ITable> {
     private final List<String> colNames;
     private final List<String> newColNames;
     private final int numProjections;
-    @Nullable
-    private final IStringConverter converter;
     private static final double threshold = .3;
     // For columns sparser than this use sparse storage.
 
-    public LinearProjectionMap(List<String> colNames, DoubleMatrix projectionMatrix, String projectionName,
-                               @Nullable IStringConverter converter) {
+    public LinearProjectionMap(List<String> colNames, DoubleMatrix projectionMatrix, String projectionName) {
         if (colNames.size() != projectionMatrix.columns)
             throw new RuntimeException("Number of columns in projectionMatrix should be eq. to number of names in colNames.");
 
@@ -44,11 +40,9 @@ public class LinearProjectionMap implements IMap<ITable, ITable> {
             newColNames.add(projectionName + i);
         }
         this.numProjections = projectionMatrix.rows;
-        this.converter = converter;
     }
 
-    public LinearProjectionMap(List<String> colNames, DoubleMatrix projectionMatrix, List<String> newColNames,
-                               @Nullable IStringConverter converter) {
+    public LinearProjectionMap(List<String> colNames, DoubleMatrix projectionMatrix, List<String> newColNames) {
         if (colNames.size() != projectionMatrix.columns)
             throw new RuntimeException("Number of columns in projectionMatrix should be eq. to number of names in colNames.");
 
@@ -56,7 +50,6 @@ public class LinearProjectionMap implements IMap<ITable, ITable> {
         this.colNames = colNames;
         this.newColNames = newColNames;
         this.numProjections = projectionMatrix.rows;
-        this.converter = converter;
     }
 
     @Override
@@ -69,8 +62,7 @@ public class LinearProjectionMap implements IMap<ITable, ITable> {
         }
 
         // Compute the projection with BLAS
-        DoubleMatrix mat = BlasConversions.toDoubleMatrixMissing(table, this.colNames, this
-                .converter, Double.NaN);
+        DoubleMatrix mat = BlasConversions.toDoubleMatrixMissing(table, this.colNames, Double.NaN);
         DoubleMatrix resultMat = mat.mmul(this.projectionMatrix.transpose());
 
         // Copy the result to new columns with the same membershipSet size. (Can't use
