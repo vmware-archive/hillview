@@ -3,6 +3,7 @@ package org.hillview.sketch;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.sketches.*;
 import org.hillview.table.SmallTable;
+import org.hillview.table.api.ColumnNameAndConverter;
 import org.hillview.table.api.ITable;
 import org.junit.Test;
 import static org.hillview.utils.TestTables.getIntTable;
@@ -21,8 +22,8 @@ public class CDFTest {
         final SmallTable bigTable = getIntTable(bigSize, numCols);
         this.colName = bigTable.getSchema().getColumnNames().iterator().next();
         this.dataSet = new LocalDataSet<ITable>(bigTable);
-        this.colStat =
-               this.dataSet.blockingSketch(new BasicColStatSketch(this.colName, null));
+        this.colStat = this.dataSet.blockingSketch(
+                       new BasicColStatSketch(new ColumnNameAndConverter(this.colName)));
     }
 
     private Histogram prepareCDF(int width, int height, boolean useSampling) {
@@ -32,7 +33,7 @@ public class CDFTest {
         double rate = sampleSize / (double)this.colStat.getPresentCount();
         if ((rate > 0.1) || (!useSampling))
             rate = 1.0; // no performance gains in sampling
-        HistogramSketch sk = new HistogramSketch(bDec, this.colName, null, rate);
+        HistogramSketch sk = new HistogramSketch(bDec, new ColumnNameAndConverter(this.colName), rate);
         final Histogram tmpHist = this.dataSet.blockingSketch(sk);
         return tmpHist.createCDF();
     }
@@ -46,7 +47,8 @@ public class CDFTest {
         double rate = sampleSize / this.colStat.getPresentCount();
         if ((rate > 0.1) || (!useSampling))
             rate = 1.0; //no use in sampling
-        return this.dataSet.blockingSketch(new HistogramSketch(bDec, this.colName, null, rate));
+        return this.dataSet.blockingSketch(
+                new HistogramSketch(bDec, new ColumnNameAndConverter(this.colName), rate));
     }
 
     @Test

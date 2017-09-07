@@ -2,6 +2,7 @@ package org.hillview.sketch;
 
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.sketches.*;
+import org.hillview.table.api.ColumnNameAndConverter;
 import org.hillview.utils.JsonList;
 import org.hillview.utils.TestTables;
 import org.hillview.table.SemiExplicitConverter;
@@ -34,7 +35,8 @@ public class DistinctStringSketchTest {
         Assert.assertTrue(size <= 10);
         SemiExplicitConverter converter = getStringConverter(result.get(0));
         BucketsDescriptionEqSize desc = new BucketsDescriptionEqSize(1, size + 1, size);
-        HistogramSketch histSketch = new HistogramSketch(desc, "Name", converter);
+        HistogramSketch histSketch = new HistogramSketch(
+                desc, new ColumnNameAndConverter("Name", converter));
         Histogram hist = histSketch.create(myTable);
     }
 
@@ -50,6 +52,7 @@ public class DistinctStringSketchTest {
         SemiExplicitConverter converter = getStringConverter(ds.get(0));
         BucketsDescriptionEqSize desc = new BucketsDescriptionEqSize(
                 -1, ds.get(0).size(), ds.get(0).size() + 1);
-        Histogram hist = all.blockingSketch(new HistogramSketch(desc, "Name", converter));
+        Histogram hist = all.blockingSketch(
+                new HistogramSketch(desc, new ColumnNameAndConverter("Name", converter)));
     }
 }

@@ -21,6 +21,7 @@ package org.hillview.sketch;
 import org.hillview.sketches.*;
 import org.hillview.table.DoubleArrayColumn;
 import org.hillview.table.FullMembership;
+import org.hillview.table.api.ColumnAndConverter;
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
@@ -33,7 +34,7 @@ public class HistogramTest {
         Histogram hist = new Histogram(buckDes);
         DoubleArrayColumn col = DoubleArrayTest.generateDoubleArray(colSize);
         FullMembership fMap = new FullMembership(colSize);
-        hist.create(col, fMap, 1.0, null);
+        hist.create(new ColumnAndConverter(col), fMap, 1.0);
         int size = 0;
         for (int i = 0; i < bucketNum; i++)
             size += hist.getCount(i);
@@ -41,14 +42,14 @@ public class HistogramTest {
         Histogram hist1 = new Histogram(buckDes);
         DoubleArrayColumn col1 = DoubleArrayTest.generateDoubleArray(2 * colSize);
         FullMembership fMap1 = new FullMembership(2 * colSize);
-        hist1.create(col1, fMap1, 1.0, null);
+        hist1.create(new ColumnAndConverter(col1), fMap1, 1.0);
         Histogram hist2 = hist1.union(hist);
         size = 0;
         for (int i = 0; i < bucketNum; i++)
             size += hist2.getCount(i);
         assertEquals(size + hist2.getMissingData() + hist2.getOutOfRange(), 3 * colSize);
         Histogram hist3 = new Histogram(buckDes);
-        hist3.create(col, fMap, 0.1, null);
+        hist3.create(new ColumnAndConverter(col), fMap, 0.1);
         size = 0;
         for (int i = 0; i < bucketNum; i++)
             size += hist3.getCount(i);
@@ -65,13 +66,14 @@ public class HistogramTest {
         DoubleArrayColumn col1 = DoubleArrayTest.generateDoubleArray(colSize, 5);
         DoubleArrayColumn col2 = DoubleArrayTest.generateDoubleArray(colSize, 3);
         FullMembership fMap = new FullMembership(colSize);
-        hm.createHeatMap(col1, col2, null, null, fMap);
+        hm.createHeatMap(new ColumnAndConverter(col1), new ColumnAndConverter(col2), fMap);
         basicTestHeatMap(hm, colSize);
         HeatMap hm1 = new HeatMap(buckDes1, buckDes2);
         DoubleArrayColumn col3 = DoubleArrayTest.generateDoubleArray(2 * colSize);
         DoubleArrayColumn col4 = DoubleArrayTest.generateDoubleArray(2 * colSize);
         FullMembership fMap1 = new FullMembership(2 * colSize);
-        hm1.createSampleHistogram(col3, col4, null, null, fMap1, 0.1);
+        hm1.createSampleHistogram(new ColumnAndConverter(col3), new ColumnAndConverter(col4),
+                fMap1, 0.1);
         basicTestHeatMap(hm1, 2 * colSize);
         HeatMap hm2 = hm.union(hm1);
         basicTestHeatMap(hm2, 3 * colSize);

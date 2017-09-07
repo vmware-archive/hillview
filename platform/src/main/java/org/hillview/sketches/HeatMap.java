@@ -17,14 +17,8 @@
  */
 
 package org.hillview.sketches;
-
 import org.hillview.dataset.api.IJson;
-import org.hillview.table.api.IColumn;
-import org.hillview.table.api.IMembershipSet;
-import org.hillview.table.api.IRowIterator;
-import org.hillview.table.api.IStringConverter;
-
-import javax.annotation.Nullable;
+import org.hillview.table.api.*;
 import java.io.Serializable;
 
 /**
@@ -51,9 +45,7 @@ public class HeatMap implements Serializable, IJson {
         rate = 1.0;
     }
 
-    public void createHeatMap(final IColumn columnD1, final IColumn columnD2,
-                              @Nullable final IStringConverter converterD1,
-                              @Nullable final IStringConverter converterD2,
+    public void createHeatMap(final ColumnAndConverter columnD1, final ColumnAndConverter columnD2,
                               final IMembershipSet membershipSet) {
         final IRowIterator myIter = membershipSet.getIterator();
         int currRow = myIter.getNextRow();
@@ -62,14 +54,14 @@ public class HeatMap implements Serializable, IJson {
             boolean isMissingD2 = columnD2.isMissing(currRow);
             if (isMissingD1 || isMissingD2) {
                 if (!isMissingD1)  // only column 2 is missing
-                    this.histogramMissingD2.addValue(columnD1.asDouble(currRow, converterD1));
+                    this.histogramMissingD2.addValue(columnD1.asDouble(currRow));
                 else if (!isMissingD2) // only column 1 is missing
-                    this.histogramMissingD1.addValue(columnD2.asDouble(currRow, converterD2));
+                    this.histogramMissingD1.addValue(columnD2.asDouble(currRow));
                 else
                     this.missingData++; // both are missing
             } else {
-                double val1 = columnD1.asDouble(currRow, converterD1);
-                double val2 = columnD2.asDouble(currRow, converterD2);
+                double val1 = columnD1.asDouble(currRow);
+                double val2 = columnD2.asDouble(currRow);
                 int index1 = this.bucketDescDim1.indexOf(val1);
                 int index2 = this.bucketDescDim2.indexOf(val2);
                 if ((index1 >= 0) && (index2 >= 0)) {
@@ -97,29 +89,26 @@ public class HeatMap implements Serializable, IJson {
 
     public Histogram getMissingHistogramD2() { return this.histogramMissingD2; }
 
-    public void createSampleHistogram(final IColumn columnD1, final IColumn columnD2,
-                                      @Nullable final IStringConverter converterD1,
-                                      @Nullable final IStringConverter converterD2,
-                                      final IMembershipSet membershipSet, double sampleRate) {
+    public void createSampleHistogram(
+            final ColumnAndConverter columnD1, final ColumnAndConverter columnD2,
+            final IMembershipSet membershipSet, double sampleRate) {
         if (sampleRate <= 0)
             throw new RuntimeException("Can't sample with a non positive rate");
         if (sampleRate >= 1)
             sampleRate = 1;
         this.rate = sampleRate;
-        this.createHeatMap(columnD1, columnD2, converterD1, converterD2, membershipSet.sample(sampleRate));
+        this.createHeatMap(columnD1, columnD2, membershipSet.sample(sampleRate));
     }
 
-    public void createSampleHistogram(final IColumn columnD1, final IColumn columnD2,
-                                      @Nullable final IStringConverter converterD1,
-                                      @Nullable final IStringConverter converterD2,
-                                      final IMembershipSet membershipSet,
-                                      double sampleRate, long seed) {
+    public void createSampleHistogram(
+            final ColumnAndConverter columnD1, final ColumnAndConverter columnD2,
+            final IMembershipSet membershipSet, double sampleRate, long seed) {
         if (sampleRate <= 0)
             throw new RuntimeException("Can't sample with a non positive rate");
         if (sampleRate >= 1)
             sampleRate = 1;
         this.rate = sampleRate;
-        this.createHeatMap(columnD1, columnD2, converterD1, converterD2, membershipSet.sample(sampleRate, seed));
+        this.createHeatMap(columnD1, columnD2, membershipSet.sample(sampleRate, seed));
     }
 
     public int getNumOfBucketsD1() { return this.bucketDescDim1.getNumOfBuckets(); }

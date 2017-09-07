@@ -18,12 +18,7 @@
 
 package org.hillview.sketches;
 
-import org.hillview.table.api.IColumn;
-import org.hillview.table.api.IMembershipSet;
-import org.hillview.table.api.IRowIterator;
-import org.hillview.table.api.IStringConverter;
-
-import javax.annotation.Nullable;
+import org.hillview.table.api.*;
 import java.io.Serializable;
 
 /**
@@ -56,8 +51,8 @@ public class Histogram implements Serializable {
             this.buckets[i] = (long) ((double) this.buckets[i] / sampleRate);
     }
 
-    public void create(final IColumn column, IMembershipSet membershipSet,
-                       double sampleRate, @Nullable final IStringConverter converter) {
+    public void create(final ColumnAndConverter column, IMembershipSet membershipSet,
+                       double sampleRate) {
         if (sampleRate <= 0)
             throw new RuntimeException("Negative sampling rate");
         if (sampleRate >= 1)
@@ -70,7 +65,7 @@ public class Histogram implements Serializable {
             if (column.isMissing(currRow))
                 this.missingData++;
             else {
-                double val = column.asDouble(currRow, converter);
+                double val = column.asDouble(currRow);
                 int index = this.bucketDescription.indexOf(val);
                 if (index >= 0)
                     this.buckets[index]++;

@@ -4,6 +4,7 @@ import org.hillview.dataset.api.IDataSet;
 import org.hillview.maps.LinearProjectionMap;
 import org.hillview.sketches.BasicColStatSketch;
 import org.hillview.sketches.BasicColStats;
+import org.hillview.table.api.ColumnNameAndConverter;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.BlasConversions;
 import org.hillview.utils.TestTables;
@@ -26,7 +27,7 @@ public class LinearProjectionTest {
         Random.seed(42);
         DoubleMatrix matrix = DoubleMatrix.rand(rows, cols);
         ITable table = BlasConversions.toTable(matrix);
-        DoubleMatrix matrix2 = BlasConversions.toDoubleMatrix(table, new ArrayList<String>(table.getSchema().getColumnNames()), null);
+        DoubleMatrix matrix2 = BlasConversions.toDoubleMatrix(table, new ArrayList<String>(table.getSchema().getColumnNames()));
         Assert.assertEquals(rows * cols, matrix.eq(matrix2).sum(), Math.ulp(rows * rows));
     }
 
@@ -41,8 +42,7 @@ public class LinearProjectionTest {
         ITable table = BlasConversions.toTable(matrix);
         LinearProjectionMap lpm = new LinearProjectionMap(
                 new ArrayList<String>(table.getSchema().getColumnNames()), projectionMatrix,
-                "LP", null
-        );
+                "LP");
         ITable result = lpm.apply(table);
 
         List<String> newColNames = new ArrayList<String>();
@@ -50,7 +50,7 @@ public class LinearProjectionTest {
             newColNames.add(String.format("LP%d", i));
         }
 
-        DoubleMatrix projectedData = BlasConversions.toDoubleMatrix(result, newColNames, null);
+        DoubleMatrix projectedData = BlasConversions.toDoubleMatrix(result, newColNames);
         DoubleMatrix projectedDataCheck = matrix.mmul(projectionMatrix.transpose());
         Assert.assertEquals(rows * numProjections, projectedData.eq(projectedDataCheck).sum(), Math.ulp(rows * cols));
     }
@@ -69,11 +69,12 @@ public class LinearProjectionTest {
         // Convert it to an IDataset
         IDataSet<ITable> all = TestTables.makeParallel(bigTable, rows / 10);
 
-        LinearProjectionMap lpm = new LinearProjectionMap(colNames, projectionMatrix, "LP", null);
+        LinearProjectionMap lpm = new LinearProjectionMap(colNames, projectionMatrix, "LP");
         IDataSet<ITable> result = all.blockingMap(lpm);
 
         for (int i = 0; i < numProjections; i++) {
-            BasicColStatSketch b = new BasicColStatSketch(String.format("LP%d", i), null);
+            BasicColStatSketch b = new BasicColStatSketch(
+                    new ColumnNameAndConverter(String.format("LP%d", i)));
             BasicColStats bcs = result.blockingSketch(b);
             double expectedMean = projectionCheck.get(new AllRange(), i).mean();
             double actualMean = bcs.getMoment(1);

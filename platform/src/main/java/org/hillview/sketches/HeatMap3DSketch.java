@@ -18,7 +18,7 @@
 
 package org.hillview.sketches;
 import org.hillview.dataset.api.ISketch;
-import org.hillview.table.api.IStringConverter;
+import org.hillview.table.api.ColumnNameAndConverter;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
 
@@ -28,52 +28,41 @@ public class HeatMap3DSketch implements ISketch<ITable, HeatMap3D> {
     private final IBucketsDescription bucketDescD1;
     private final IBucketsDescription bucketDescD2;
     private final IBucketsDescription bucketDescD3;
-    private final String colNameD1;
-    private final String colNameD2;
-    private final String colNameD3;
-    @Nullable
-    private final IStringConverter converterD1;
-    @Nullable
-    private final IStringConverter converterD2;
-    @Nullable
-    private final IStringConverter converterD3;
+    private final ColumnNameAndConverter col1;
+    private final ColumnNameAndConverter col2;
+    private final ColumnNameAndConverter col3;
     private final double rate;
 
-    public HeatMap3DSketch(IBucketsDescription bucketDesc1, IBucketsDescription bucketDesc2, IBucketsDescription
-            bucketDesc3, @Nullable IStringConverter converter1, @Nullable IStringConverter converter2, @Nullable
-            IStringConverter converter3, String colName1, String colName2, String colName3) {
-        this.bucketDescD1 = bucketDesc1;
-        this.bucketDescD2 = bucketDesc2;
-        this.bucketDescD3 = bucketDesc3;
-        this.colNameD1 = colName1;
-        this.colNameD2 = colName2;
-        this.colNameD3 = colName3;
-        this.converterD1 = converter1;
-        this.converterD2 = converter2;
-        this.converterD3 = converter3;
-        this.rate = 1;
+    public HeatMap3DSketch(IBucketsDescription bucketDesc1,
+                           IBucketsDescription bucketDesc2,
+                           IBucketsDescription bucketDesc3,
+                           ColumnNameAndConverter col1,
+                           ColumnNameAndConverter col2,
+                           ColumnNameAndConverter col3) {
+        this(bucketDesc1, bucketDesc2, bucketDesc3, col1, col2, col3, 1.0);
     }
 
-    public HeatMap3DSketch(IBucketsDescription bucketDesc1, IBucketsDescription bucketDesc2, IBucketsDescription
-            bucketDesc3, @Nullable IStringConverter converter1, @Nullable IStringConverter converter2, @Nullable
-            IStringConverter converter3, String colName1, String colName2, String colName3, double rate) {
+    public HeatMap3DSketch(IBucketsDescription bucketDesc1,
+                           IBucketsDescription bucketDesc2,
+                           IBucketsDescription bucketDesc3,
+                           ColumnNameAndConverter col1,
+                           ColumnNameAndConverter col2,
+                           ColumnNameAndConverter col3,
+                           double rate) {
         this.bucketDescD1 = bucketDesc1;
         this.bucketDescD2 = bucketDesc2;
         this.bucketDescD3 = bucketDesc3;
-        this.colNameD1 = colName1;
-        this.colNameD2 = colName2;
-        this.colNameD3 = colName3;
-        this.converterD1 = converter1;
-        this.converterD2 = converter2;
-        this.converterD3 = converter3;
+        this.col1 = col1;
+        this.col2 = col2;
+        this.col3 = col3;
         this.rate = rate;
     }
 
     @Override
     public HeatMap3D create(final ITable data) {
         HeatMap3D result = this.getZero();
-        result.createHeatMap(data.getColumn(this.colNameD1), data.getColumn(this.colNameD2), data.getColumn(this.colNameD3),
-                this.converterD1, this.converterD2, this.converterD3, data.getMembershipSet().sample(this.rate));
+        result.createHeatMap(data.getColumn(this.col1), data.getColumn(this.col2),
+                data.getColumn(this.col3), data.getMembershipSet().sample(this.rate));
         return result;
     }
 

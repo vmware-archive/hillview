@@ -127,6 +127,6 @@ public class CorrMatrix implements ICorrelation, Serializable, IJson {
 
     public LinearProjectionMap eigenVectorProjection(int nComponents) {
         DoubleMatrix eigenVectors = LinAlg.eigenVectors(new DoubleMatrix(this.getCorrelationMatrix()), nComponents);
-        return new LinearProjectionMap(new ArrayList<String>(this.columnNames), eigenVectors, "PCA", null);
+        return new LinearProjectionMap(new ArrayList<String>(this.columnNames), eigenVectors, "PCA");
     }
 }

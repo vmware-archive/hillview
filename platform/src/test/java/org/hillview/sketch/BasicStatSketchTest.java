@@ -2,6 +2,7 @@ package org.hillview.sketch;
 
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.sketches.*;
+import org.hillview.table.api.ColumnNameAndConverter;
 import org.hillview.utils.TestTables;
 import org.hillview.table.SmallTable;
 import org.hillview.table.Table;
@@ -16,7 +17,8 @@ public class BasicStatSketchTest {
         final int tableSize = 1000;
         final Table myTable = TestTables.getRepIntTable(tableSize, numCols);
         final BasicColStatSketch mySketch = new BasicColStatSketch(
-                myTable.getSchema().getColumnNames().iterator().next(), null, 0 , 0.1);
+                new ColumnNameAndConverter(myTable.getSchema().getColumnNames().iterator().next()),
+                0 , 0.1);
         BasicColStats result = mySketch.create(myTable);
         Assert.assertEquals(result.getPresentCount(), 100);
     }
@@ -29,9 +31,11 @@ public class BasicStatSketchTest {
         final String colName = bigTable.getSchema().getColumnNames().iterator().next();
 
         IDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize / 10);
-        final BasicColStats result = all.blockingSketch(new BasicColStatSketch(colName, null));
+        final BasicColStats result = all.blockingSketch(
+                new BasicColStatSketch(new ColumnNameAndConverter(colName, null)));
         final BasicColStatSketch mySketch = new BasicColStatSketch(
-                bigTable.getSchema().getColumnNames().iterator().next(), null);
+                new ColumnNameAndConverter(
+                        bigTable.getSchema().getColumnNames().iterator().next()));
         BasicColStats result1 = mySketch.create(bigTable);
         Assert.assertEquals(result.getMoment(1), result1.getMoment(1), 0.001);
     }

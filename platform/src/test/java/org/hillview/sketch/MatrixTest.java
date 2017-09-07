@@ -44,7 +44,7 @@ public class MatrixTest {
         ITable table = TestTables.getIntTable(100, 3);
         List<String> colNames = new ArrayList<String>(Arrays.asList("Column0", "Column1"));
 
-        DoubleMatrix mat = BlasConversions.toDoubleMatrix(table, colNames, null);
+        DoubleMatrix mat = BlasConversions.toDoubleMatrix(table, colNames);
         IRowIterator it = table.getRowIterator();
         int row = it.getNextRow();
         int i = 0;
@@ -80,7 +80,7 @@ public class MatrixTest {
 
         ITable table = new Table(columns);
         List<String> colNames = new ArrayList<String>(table.getSchema().getColumnNames());
-        DoubleMatrix mat = BlasConversions.toDoubleMatrixMissing(table, colNames, null, Double.NaN);
+        DoubleMatrix mat = BlasConversions.toDoubleMatrixMissing(table, colNames, Double.NaN);
         DoubleMatrix missingCount = mat.isNaN().columnSums();
         for (int i = 0; i < numCols; i++) {
             Assert.assertEquals(missing[i], Math.round(missingCount.get(i)));

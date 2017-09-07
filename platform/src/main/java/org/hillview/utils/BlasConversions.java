@@ -8,7 +8,6 @@ import org.jblas.DoubleMatrix;
 import org.jblas.ranges.AllRange;
 import org.jblas.ranges.PointRange;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -22,11 +21,9 @@ public class BlasConversions {
      * Convert from an ITable to a DoubleMatrix. This copies all data from the table.
      * @param table Table that is to be converted.
      * @param colNames Names of columns in the table that have to be converted.
-     * @param converter String converter for converting string data to numeric data.
      * @return DoubleMatrix with the table's columns interpreted as doubles.
      */
-    public static DoubleMatrix toDoubleMatrix(ITable table, List<String> colNames, @Nullable IStringConverter
-            converter) {
+    public static DoubleMatrix toDoubleMatrix(ITable table, List<String> colNames) {
         DoubleMatrix mat = new DoubleMatrix(table.getNumOfRows(), colNames.size());
         for (int j = 0; j < colNames.size(); j++) {
             IColumn col = table.getColumn(colNames.get(j));
@@ -34,7 +31,7 @@ public class BlasConversions {
             int row = iter.getNextRow();
             int i = 0;
             while (row >= 0) {
-                mat.put(i, j, col.asDouble(row, converter));
+                mat.put(i, j, col.asDouble(row, null));
                 row = iter.getNextRow();
                 i++;
             }
@@ -46,12 +43,11 @@ public class BlasConversions {
      * Convert from an ITable to a DoubleMatrix. This copies all data from the table.
      * @param table Table that is to be converted.
      * @param colNames Names of columns in the table that have to be converted.
-     * @param converter String converter for converting string data to numeric data.
      * @param missingValue Value to put in the matrix where missing values occur.
      * @return Array of DoubleMatrices. The first one is
      */
-    public static DoubleMatrix toDoubleMatrixMissing(ITable table, List<String> colNames, @Nullable IStringConverter
-            converter, double missingValue) {
+    public static DoubleMatrix toDoubleMatrixMissing(ITable table, List<String> colNames, double
+            missingValue) {
         DoubleMatrix mat = new DoubleMatrix(table.getNumOfRows(), colNames.size());
         DoubleMatrix missing = DoubleMatrix.zeros(colNames.size());
         for (int j = 0; j < colNames.size(); j++) {
@@ -61,7 +57,7 @@ public class BlasConversions {
             int i = 0;
             while (row >= 0) {
                 try {
-                    mat.put(i, j, col.asDouble(row, converter));
+                    mat.put(i, j, col.asDouble(row, null));
                 } catch (MissingException e) {
                     missing.put(j, missing.get(j) + 1);
                     mat.put(i, j, missingValue);
