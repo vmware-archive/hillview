@@ -26,9 +26,9 @@ public class ExactFreqSketchTest {
         ExactFreqSketch ef = new ExactFreqSketch(table.getSchema(), fkList);
         FreqKList exactList = ef.create(table);
         int size = 10;
-        List<Pair<RowSnapshot, Integer>> topList = exactList.getTop(size);
-        for (int i =1; i < topList.size(); i++)
-            assertTrue(topList.get(i-1).second >= topList.get(i).second);
+        Pair<List<RowSnapshot>, List<Integer>> pair = exactList.getTop(size);
+        for (int i =1; i < pair.first.size(); i++)
+            assertTrue(pair.second.get(i-1) >= pair.second.get(i));
         exactList.filter();
         exactList.getList().forEach(rss ->
                 assertTrue(exactList.hMap.get(rss) >= fkList.totalRows/fkList.maxSize ));
