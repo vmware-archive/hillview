@@ -27,10 +27,11 @@ import {BasicColStats} from "./histogramBase";
 import {RangeCollector} from "./histogram";
 import {Range2DCollector} from "./heatMap";
 import {TopMenu, TopSubMenu, ContextMenu} from "./menu";
-import {Converters, PartialResult, ICancellable} from "./util";
+import {Converters, PartialResult, ICancellable, cloneSet} from "./util";
 import {EqualityFilterDialog, EqualityFilterDescription} from "./equalityFilter";
 import d3 = require('d3');
 import {Dialog} from "./dialog";
+import {HeatMapArrayDialog} from "./heatMapArray";
 
 // The first few classes are direct counterparts to server-side Java classes
 // with the same names.  JSON serialization
@@ -40,6 +41,10 @@ import {Dialog} from "./dialog";
 // I can't use an enum for ContentsKind because JSON deserialization does not
 // return an enum from a string.
 export type ContentsKind = "Category" | "Json" | "String" | "Integer" | "Double" | "Date" | "Interval";
+
+export function isNumeric(kind: ContentsKind): boolean {
+    return kind == "Integer" || kind == "Double";
+}
 
 export interface IColumnDescription {
     readonly kind: ContentsKind;
@@ -156,6 +161,8 @@ export class RangeInfo {
     lastIndex?: number;
     firstValue?: string;
     lastValue?: string;
+    // The following is used when all values are known for categorical columns
+    values?: string[];
 }
 
 /* Example table view:
@@ -764,7 +771,19 @@ export class TableView extends RemoteObjectView
         }
     }
 
+    private heatMapArray(): void {
+        let selectedColumns: string[] = cloneSet(this.selectedColumns);
+        let newPage = new FullPage();
+        this.getPage().insertAfterMe(newPage);
+        let dialog = new HeatMapArrayDialog(selectedColumns, newPage, this.schema, this.remoteObjectId);
+        dialog.show();
+    }
+
     private heatMap(): void {
+        if (this.selectedColumns.size == 3) {
+            this.heatMapArray();
+            return;
+        }
         if (this.selectedColumns.size != 2) {
             this.reportError("Must select exactly 2 columns for heat map");
             return;
@@ -931,7 +950,7 @@ export class TableView extends RemoteObjectView
                     };
                 }
             }
-            
+
         }
         this.dataRowsDisplayed += row.count;
     }
@@ -986,7 +1005,7 @@ export class RemoteTableReceiver extends Renderer<string> {
     }
 }
 
-class DistinctStrings {
+export class DistinctStrings {
     mySet: string[];
     truncated: boolean;
     rowCount: number;

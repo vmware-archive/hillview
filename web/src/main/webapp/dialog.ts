@@ -130,6 +130,18 @@ export class Dialog implements IHtmlElement {
             optionElement.text = option;
             select.add(optionElement);
         });
+
+        if (value != null) {
+            let i;
+            for (i = 0; i < options.length; i++) {
+                if (options[i] == value) {
+                    select.selectedIndex = i;
+                    break;
+                }
+            }
+            if (i == options.length)
+                throw new Error(`Given default value ${value} not found in options.`);
+        }
         this.fields.set(fieldName, {html: select});
         if (value != null)
             this.fields.get(fieldName).html.value = value;
