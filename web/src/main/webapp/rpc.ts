@@ -20,11 +20,11 @@
 import Rx = require('rx');
 import Observer = Rx.Observer;
 import Observable = Rx.Observable;
+import d3 = require('d3');
 import {ErrorReporter, ConsoleErrorReporter} from "./errReporter";
 import {ProgressBar, FullPage} from "./ui";
 import {PartialResult, ICancellable, EnumIterators, RpcReply} from "./util";
 import {TopSubMenu} from "./menu";
-import d3 = require('d3');
 
 // path in server url for rpc web sockets
 const RpcRequestPath = "rpc";

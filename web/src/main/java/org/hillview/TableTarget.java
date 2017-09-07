@@ -18,7 +18,10 @@
 package org.hillview;
 
 import org.hillview.dataset.ConcurrentSketch;
+import org.hillview.dataset.TripleSketch;
 import org.hillview.dataset.api.IDataSet;
+import org.hillview.dataset.api.IJson;
+import org.hillview.dataset.api.Pair;
 import org.hillview.maps.FilterMap;
 import org.hillview.maps.LinearProjectionMap;
 import org.hillview.sketches.*;
@@ -107,6 +110,18 @@ public final class TableTarget extends RpcTarget {
     }
 
     @HillviewRpc
+    void heatMap3D(RpcRequest request, Session session) {
+        ColTriple info = request.parseArgs(ColTriple.class);
+        ColumnAndRange.HistogramParts h1 = Converters.checkNull(info.first).prepare();
+        ColumnAndRange.HistogramParts h2 = Converters.checkNull(info.second).prepare();
+        ColumnAndRange.HistogramParts h3 = Converters.checkNull(info.third).prepare();
+
+        HeatMap3DSketch sk = new HeatMap3DSketch(h1.buckets, h2.buckets, h3.buckets, h1.converter, h2.converter, h3.converter,
+                info.first.columnName, info.second.columnName, info.third.columnName);
+        this.runSketch(this.table, sk, request, session);
+    }
+
+    @HillviewRpc
     void histogram2D(RpcRequest request, Session session) {
         ColPair info = request.parseArgs(ColPair.class);
         ColumnAndRange.HistogramParts h1 = Converters.checkNull(info.first).prepare();
@@ -157,6 +172,19 @@ public final class TableTarget extends RpcTarget {
         ConcurrentSketch<ITable, BasicColStats, BasicColStats> csk =
                 new ConcurrentSketch<ITable, BasicColStats, BasicColStats>(sk1, sk2);
         this.runSketch(this.table, csk, request, session);
+    }
+
+    @HillviewRpc
+    void range3D(RpcRequest request, Session session) {
+        RangeInfo[] cols = request.parseArgs(RangeInfo[].class);
+        if (cols.length != 3)
+            throw new RuntimeException("Expected 3 RangeInfo objects, got " + cols.length);
+        BasicColStatSketch sk1 = new BasicColStatSketch(cols[0].columnName, cols[0].getConverter(), 0, 1.0);
+        BasicColStatSketch sk2 = new BasicColStatSketch(cols[1].columnName, cols[1].getConverter(), 0, 1.0);
+        BasicColStatSketch sk3 = new BasicColStatSketch(cols[2].columnName, cols[2].getConverter(), 0, 1.0);
+        TripleSketch<ITable, BasicColStats, BasicColStats, BasicColStats> tsk =
+                new TripleSketch<ITable, BasicColStats, BasicColStats, BasicColStats>(sk1, sk2, sk3);
+        this.runSketch(this.table, tsk, request, session);
     }
 
     @HillviewRpc
@@ -276,9 +304,20 @@ public final class TableTarget extends RpcTarget {
         Schema schema;
     }
 
-    private HeavyHittersTarget getHHI(FreqKList fkList) {
+    public static class TopList implements IJson {
+        @Nullable
+        NextKList top;
+        String heavyHittersId = "";
+    }
+
+    private TopList getLists(FreqKList fkList, Schema schema) {
         fkList.filter();
-        return new HeavyHittersTarget(fkList);
+        Pair<List<RowSnapshot>, List<Integer>> pair = fkList.getTop(10);
+        TopList tl = new TopList();
+        SmallTable tbl = new SmallTable(schema, Converters.checkNull(pair.first));
+        tl.top = new NextKList(tbl, Converters.checkNull(pair.second), 0, fkList.totalRows);
+        tl.heavyHittersId = Converters.checkNull(new HeavyHittersTarget(fkList).objectId);
+        return tl;
     }
 
     @HillviewRpc
@@ -286,9 +325,8 @@ public final class TableTarget extends RpcTarget {
         HeavyHittersFilterInfo hhi = request.parseArgs(HeavyHittersFilterInfo.class);
         RpcTarget target = RpcObjectManager.instance.getObject(hhi.hittersId);
         HeavyHittersTarget hht = (HeavyHittersTarget)target;
-        ExactFreqSketch efSketch = new ExactFreqSketch(
-                Converters.checkNull(hhi.schema), hht.heavyHitters);
-        this.runCompleteSketch(this.table, efSketch, this::getHHI, request, session);
+        ExactFreqSketch efSketch = new ExactFreqSketch(Converters.checkNull(hhi.schema), hht.heavyHitters);
+        this.runCompleteSketch(this.table, efSketch, x -> this.getLists(x, hhi.schema), request, session);
     }
 
     @HillviewRpc

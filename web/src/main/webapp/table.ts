@@ -23,7 +23,7 @@ import { Renderer, combineMenu, SelectedObject, CombineOperators } from "./rpc";
 import {RangeCollector} from "./histogram";
 import {Range2DCollector} from "./heatMap";
 import {TopMenu, TopSubMenu, ContextMenu} from "./menu";
-import {Converters, PartialResult, ICancellable} from "./util";
+import {Converters, PartialResult, ICancellable, cloneSet} from "./util";
 import {EqualityFilterDialog, EqualityFilterDescription} from "./equalityFilter";
 import d3 = require('d3');
 import {Dialog} from "./dialog";
@@ -32,7 +32,9 @@ import {
     ContentsKind, RangeInfo, RemoteTableObjectView, ZipReceiver, RemoteTableRenderer
 } from "./tableData";
 import {InitialTable} from "./initialTable";
+import {HeatMapArrayDialog} from "./heatMapArray";
 
+// This is the serialization of a NextKList Java object
 export class TableDataView {
     public schema?: Schema;
     // Total number of rows in the complete table
@@ -65,6 +67,7 @@ export class TableView extends RemoteTableObjectView
     protected selectedColumns: Set<string>;
     protected firstSelectedColumn: string;  // for shift-click
     protected contextMenu: ContextMenu;
+    protected cellsPerColumn: Map<string, HTMLElement[]>;
 
     public constructor(remoteObjectId: string, page: FullPage) {
         super(remoteObjectId, page);
@@ -394,8 +397,6 @@ export class TableView extends RemoteTableObjectView
 
     public updateView(data: TableDataView, revert: boolean,
                       order: RecordOrder, elapsedMs: number) : void {
-        console.log("updateView " + revert + " " + order);
-
         this.selectedColumns.clear();
         this.firstSelectedColumn = null;
         this.currentData = data;
@@ -462,9 +463,9 @@ export class TableView extends RemoteTableObjectView
                 }
                 this.contextMenu.addItem({text: "Sort ascending", action: () => this.showColumn(cd.name, 1, true) });
                 this.contextMenu.addItem({text: "Sort descending", action: () => this.showColumn(cd.name, -1, true) });
-                this.contextMenu.addItem({text: "Heat map", action: () => this.heatMap() });
                 if (cd.kind != "Json" && cd.kind != "String")
                     this.contextMenu.addItem({text: "Histogram", action: () => this.histogram(cd.name) });
+                this.contextMenu.addItem({text: "Heat map", action: () => this.heatMap() });
                 this.contextMenu.addItem({text: "Heavy hitters...", action: () => this.heavyHitters(cd.name) });
                 this.contextMenu.addItem({text: "Select numeric columns", action: () => this.selectNumericColumns()});
                 this.contextMenu.addItem({text: "PCA...", action: () => this.pca() });
@@ -477,6 +478,8 @@ export class TableView extends RemoteTableObjectView
         }
         this.tBody = this.htmlTable.createTBody();
 
+        this.cellsPerColumn = new Map<string, HTMLElement[]>();
+        cds.forEach((cd) => this.cellsPerColumn.set(cd.name, []));
         let tableRowCount = 0;
         // Add row data
         if (data.rows != null) {
@@ -629,7 +632,17 @@ export class TableView extends RemoteTableObjectView
         }
     }
 
+    private heatMapArray(): void {
+        let selectedColumns: string[] = cloneSet(this.selectedColumns);
+        let dialog = new HeatMapArrayDialog(selectedColumns, this.getPage(), this.schema, this);
+        dialog.show();
+    }
+
     private heatMap(): void {
+        if (this.selectedColumns.size == 3) {
+            this.heatMapArray();
+            return;
+        }
         if (this.selectedColumns.size != 2) {
             this.reportError("Must select exactly 2 columns for heat map");
             return;
@@ -665,9 +678,16 @@ export class TableView extends RemoteTableObjectView
             let cd = new ColumnDescription(this.schema[i]);
             let name = cd.name;
             let cls = this.columnClass(name);
-            let cells = this.tHead.getElementsByClassName(cls);
+            let headers = this.tHead.getElementsByClassName(cls);
+            let cells = this.cellsPerColumn.get(name);
             let selected = this.selectedColumns.has(name);
-
+            for (let i = 0; i < headers.length; i++) {
+                let header = headers[i];
+                if (selected)
+                    header.classList.add("selected");
+                else
+                    header.classList.remove("selected");
+            }
             for (let i = 0; i < cells.length; i++) {
                 let cell = cells[i];
                 if (selected)
@@ -725,7 +745,8 @@ export class TableView extends RemoteTableObjectView
         d.addTextField("percent", "Threshold (%)", "Double");
         d.setAction(() => {
             let amount = d.getFieldValueAsNumber("percent");
-            this.runHeavyHitters(colName, amount)
+            if (amount != null)
+                this.runHeavyHitters(colName, amount)
         });
         d.show();
     }
@@ -773,6 +794,8 @@ export class TableView extends RemoteTableObjectView
             cell.classList.add(this.columnClass(cd.name));
             cell.style.textAlign = "right";
 
+            this.cellsPerColumn.get(cd.name).push(cell);
+
             let dataIndex = this.order.find(cd.name);
             if (dataIndex == -1)
                 continue;
@@ -796,7 +819,7 @@ export class TableView extends RemoteTableObjectView
                     };
                 }
             }
-            
+
         }
         this.dataRowsDisplayed += row.count;
     }
@@ -810,14 +833,14 @@ export class TableRenderer extends Renderer<TableDataView> {
     constructor(page: FullPage,
                 protected table: TableView,
                 operation: ICancellable,
-                protected revert: boolean,
+                protected reverse: boolean,
                 protected order: RecordOrder) {
         super(page, operation, "Geting table info");
     }
 
     onNext(value: PartialResult<TableDataView>): void {
         super.onNext(value);
-        this.table.updateView(value.data, this.revert, this.order, this.elapsedMilliseconds());
+        this.table.updateView(value.data, this.reverse, this.order, this.elapsedMilliseconds());
         this.table.scrollIntoView();
     }
 }
@@ -850,52 +873,6 @@ export class RemoteTableReceiver extends Renderer<string> {
         this.getTableSchema(this.remoteTableId);
     }
 }
-
-/*
-First step of a histogram for a categorical column:
-
-export class NumberStrings extends Renderer<DistinctStrings> {
-    protected contentsInfo: DistinctStrings;
-
-    public constructor(protected cd: ColumnDescription, protected schema: Schema,
-                       page: FullPage, protected obj: RemoteObject, operation: ICancellable) {
-        super(page, operation, "Create converter");
-        this.contentsInfo = null;
-    }
-
-    public onNext(value: PartialResult<DistinctStrings>): void {
-        super.onNext(value);
-        this.contentsInfo = value.data;
-    }
-
-    public onCompleted(): void {
-        if (this.contentsInfo == null)
-            return;
-        super.finished();
-        let strings = this.contentsInfo.uniqueStrings;
-        if (strings.length == 0) {
-            this.page.reportError("No data in column");
-            return;
-        }
-        strings.sort();
-
-        let bcs: BasicColStats = {
-            momentCount: 0,
-            min: 0,
-            max: strings.length - 1,
-            minObject: strings[0],
-            maxObject: strings[strings.length - 1],
-            moments: [],
-            presentCount: this.contentsInfo.rowCount - this.contentsInfo.missingCount,
-            missingCount: this.contentsInfo.missingCount
-        };
-
-        let rc = new RangeCollector(this.cd, this.schema, strings, this.page, this.obj, this.operation);
-        rc.setValue(bcs);
-        rc.onCompleted();
-    }
-}
-*/
 
 class QuantileReceiver extends Renderer<any[]> {
     protected firstRow: any[];
@@ -945,20 +922,38 @@ class HeavyHittersReceiver extends RemoteTableRenderer {
     }
 }
 
-class HeavyHittersReceiver2 extends RemoteTableRenderer {
+interface TopList {
+    top: TableDataView; 
+    heavyHittersId: string;
+}
+
+// This class handles the reply of the "checkHeavy" method.
+class HeavyHittersReceiver2 extends Renderer<TopList> {
+    private data: TopList;
     public constructor(page: FullPage,
                        protected tv: TableView,
                        operation: ICancellable,
                        protected schema: IColumnDescription[],
                        protected order: RecordOrder) {
         super(page, operation, "Heavy hitters");
+        this.data = null;
+    }
+
+    onNext(value: PartialResult<TopList>): any {
+        super.onNext(value);
+        if (value.data != null)
+            this.data = value.data;
     }
 
     onCompleted(): void {
         super.finished();
-        if (this.remoteObject == null)
+        if (this.data == null)
             return;
-        let rr = this.tv.createFilterHeavyRequest(this.remoteObject, this.schema);
+    	this.page.reportError(this.data.top.toString());
+        let rr = this.tv.createRpcRequest("filterHeavy", {
+                hittersId: this.data.heavyHittersId,
+                schema: this.schema
+            });
         rr.setStartTime(this.operation.startTime());
         rr.invoke(new TableOperationCompleted(this.page, this.tv, rr, this.order));
     }

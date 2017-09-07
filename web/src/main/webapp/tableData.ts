@@ -24,8 +24,12 @@
 import {RpcRequest, RemoteObject, CombineOperators, Renderer} from "./rpc";
 import {FullPage, IDataView, Resolution} from "./ui";
 import {EqualityFilterDescription} from "./equalityFilter";
-import {ICancellable, PartialResult} from "./util";
+import {ICancellable, PartialResult, Triple} from "./util";
 export type ContentsKind = "Category" | "Json" | "String" | "Integer" | "Double" | "Date" | "Interval";
+
+export function isNumeric(kind: ContentsKind): boolean {
+    return kind == "Integer" || kind == "Double";
+}
 
 export interface IColumnDescription {
     readonly kind: ContentsKind;
@@ -206,6 +210,10 @@ export class RemoteTableObject extends RemoteObject {
 
     public createHeatMapRequest(x: ColumnAndRange, y: ColumnAndRange): RpcRequest {
         return this.createRpcRequest("heatMap", { first: x, second: y });
+    }
+
+    public createHeatMap3DRequest(data: Triple<ColumnAndRange, ColumnAndRange, ColumnAndRange>): RpcRequest {
+        return this.createRpcRequest("heatMap3D", data);
     }
 
     public createHistogramRequest(info: ColumnAndRange): RpcRequest {

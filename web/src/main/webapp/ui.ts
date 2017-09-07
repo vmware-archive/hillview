@@ -144,8 +144,9 @@ export class ScrollBar implements IHtmlElement {
 
     constructor(target: IScrollTarget) {
         this.topLevel = document.createElement("div");
+        this.topLevel.classList.add("scrollBar");
         this.target = target;
-        this.topLevel.style.visibility = 'hidden';
+        this.topLevel.classList.add("hidden");
         this.height = 0;
 
         let drag = d3.drag()
@@ -225,10 +226,10 @@ export class ScrollBar implements IHtmlElement {
 
     computePosition() : void {
         if (this.start <= 0.0 && this.end >= 1.0) {
-            this.topLevel.style.visibility = 'hidden';
+            this.topLevel.classList.add("hidden");
             return;
         } else {
-            this.topLevel.style.visibility = 'visible';
+            this.topLevel.classList.remove("hidden");
         }
 
         this.height = this.topLevel.getBoundingClientRect().height;
@@ -524,7 +525,7 @@ export class FullPage implements IHtmlElement {
     }
 
     public getWidthInPixels(): number {
-        return this.pageTopLevel.offsetWidth;
+        return this.pageTopLevel.getBoundingClientRect().width;
     }
 }
 
@@ -557,4 +558,3 @@ export class Resolution {
         return { width: width, height: height };
     }
 }
-
