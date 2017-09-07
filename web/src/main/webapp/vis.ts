@@ -26,6 +26,7 @@ export class ColorMap {
         return this.map(Math.log(x) / Math.log(this.max));
     }
 
+    // Apply the base colormap. x is in the range [0, 1].
     private map(x: number) {
         return d3.interpolateWarm(x);
     }
@@ -54,11 +55,17 @@ export class ColorMap {
             return d3.axisTop(scale).ticks(ticks);
     }
 
-    /*
-    @param element: Element to draw the color legend in.
-    Assumes there are margins outside this element.
-    */
-    public drawLegend(element, ticks: number = Math.max(10, this.max - 1), base?: number, bottom = true, barHeight = 16) {
+    /**
+     * Draw a color legend for this ColorMap with the specified parameters.
+     * @param element: Element to draw the color legend in. The width attribute
+                of this element is used.
+     * @param ticks: (Approximate) number of ticks on the axis below the bar.
+     * @param base: Base of the numbers that should be displayed if a log scale
+                is used. E.g., base = 2 displays all powers of 2 in the range.
+     * @param barHeight: Height of the color bar rectangle.
+     * Assumes there are margins outside this element.
+    **/
+    public drawLegend(element, ticks: number = Math.max(10, this.max - 1), base?: number, barHeight = 16) {
         let size: Size = {width: element.attr("width"), height: element.attr("height")};
 
         let gradient = element.append('defs')
@@ -85,7 +92,7 @@ export class ColorMap {
         let axisG = element.append("g")
             .attr("transform", `translate(0, ${barHeight})`);
 
-        let axis = this.getAxis(size.width, ticks, base, bottom);
+        let axis = this.getAxis(size.width, ticks, base, true);
         axisG.call(axis);
     }
 }

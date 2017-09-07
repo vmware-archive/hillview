@@ -37,17 +37,20 @@ export class LegendOverlay implements IHtmlElement {
     private axesSize: Size;
 
     // -- Elements
-    private axesG: any;
+    private axesG: any; // g element that will contain the axes
     private xAxis: any;
     private yAxis: any;
-    private marker: any;
+    private marker: any; // Marker that will indicate the x, y pair.
+    // Lines that assist the marker.
     private xLine: any;
     private yLine: any;
+    // Text that show the values as numbers on the screen.
     private xText: any;
     private yText: any;
 
     // Fields for color legend
     private colorMap: ColorMap;
+    // g elemeng that will contain the legend.
     private legendG: any;
 
     constructor(private page: FullPage, cds: IColumnDescription[], xStats, yStats) {
@@ -195,19 +198,21 @@ export class LegendOverlay implements IHtmlElement {
 }
 
 export class CompactHeatMapView implements IHtmlElement {
-    // We aim for this size.
+    // We aim for this size. Square, so it natural to tile.
+    // It is assumed that this will fit on the screen.
     public static readonly size: Size = {
         width: 200,
         height: 200
     }
-    // The actual size.
-    public size: Size;
     private static maxTextLabelLength = 10;
+    // The actual size of the canvas.
+    public size: Size;
 
     private topLevel: HTMLElement;
-    private chart: any;
-    private dotSizeX: number;
-    private dotSizeY: number;
+    private chart: any; // chart on which the heat map is drawn
+    // Actual size of a rectangle on the canvas.
+    private dotSize: Size;
+
     private data: Map<number, number>; // 'sparse array' for fast querying of the values.
 
     constructor(private binLabel: string, public xDim: number, public yDim: number) {
@@ -225,26 +230,24 @@ export class CompactHeatMapView implements IHtmlElement {
             .attr("width", this.size.width)
             .attr("height", this.size.height)
 
-        // For now. TODO: Make responsive.
-        this.dotSizeX = this.size.width / this.xDim;
-        this.dotSizeY = this.size.height / this.yDim;
+        this.dotSize = {width: this.size.width / this.xDim, height: this.size.height / this.yDim};
         this.data = new Map<number, number>();
     }
 
     public put(x, y, val) {
         this.chart.append("rect")
-            .attr("x", x * this.dotSizeX)
-            .attr("y", CompactHeatMapView.size.height - (y + 1) * this.dotSizeY)
-            .attr("width", this.dotSizeX)
-            .attr("height", this.dotSizeY)
+            .attr("x", x * this.dotSize.width)
+            .attr("y", CompactHeatMapView.size.height - (y + 1) * this.dotSize.height)
+            .attr("width", this.dotSize.width)
+            .attr("height", this.dotSize.height)
             .attr("data-val", val)
         this.data.set(y * this.xDim + x, val);
     }
 
     // Returns the index of the cell where the given point is in.
     public getValAt(mouse: Point2D): number {
-        let xIndex = Math.floor(mouse.x / this.dotSizeX);
-        let yIndex = Math.floor((this.chart.attr("height") - mouse.y) / this.dotSizeY);
+        let xIndex = Math.floor(mouse.x / this.dotSize.width);
+        let yIndex = Math.floor((this.chart.attr("height") - mouse.y) / this.dotSize.height);
         let val = this.data.get(yIndex * this.xDim + xIndex);
         return val == null ? 0 : val;
     }
@@ -264,8 +267,8 @@ export class CompactHeatMapView implements IHtmlElement {
             // Compute position in [0, 1] x [0, 1] range.
             // Legend will compue the actual values based on the range.
             let pos = {
-                x: mouse.x / (this.dotSizeX * this.xDim),
-                y: mouse.y / (this.dotSizeX * this.xDim)
+                x: mouse.x / (this.dotSize.width * this.xDim),
+                y: mouse.y / (this.dotSize.width * this.xDim)
             }
 
             legend.update(pos, val);
@@ -283,7 +286,7 @@ export class HeatMapArrayView extends RemoteObjectView implements IScrollTarget 
     private scrollBar: ScrollBar;
     private legendOverlay: LegendOverlay;
     private heatMapsDiv: HTMLDivElement;
-    private offset: number;
+    private offset: number; // Offset from the start of the set of unique z-values.
 
     constructor(remoteObjectId: string, page: FullPage, args: HeatMapArrayArgs) {
         super(remoteObjectId, page);
