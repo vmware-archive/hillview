@@ -569,7 +569,9 @@ export class TableView extends RemoteTableObjectView
 
     private runFilter(filter: EqualityFilterDescription): void {
         let rr = this.createFilterEqualityRequest(filter);
-        rr.invoke(new TableOperationCompleted(this.page, this, rr, this.order));
+        let newPage = new FullPage();
+        this.page.insertAfterMe(newPage);
+        rr.invoke(new RemoteTableReceiver(newPage, rr));
     }
 
     private equalityFilter(colname: string, value?: string, complement?: boolean): void {
@@ -923,7 +925,7 @@ class HeavyHittersReceiver extends RemoteTableRenderer {
 }
 
 interface TopList {
-    top: TableDataView; 
+    top: TableDataView;
     heavyHittersId: string;
 }
 
@@ -959,8 +961,6 @@ class HeavyHittersReceiver2 extends Renderer<TopList> {
     }
 }
 
-// The string received is actually the id of a remote object that stores
-// the correlation matrix information
 class CorrelationMatrixReceiver extends RemoteTableRenderer {
     public constructor(page: FullPage,
                        protected tv: TableView,
