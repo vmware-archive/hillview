@@ -22,17 +22,20 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.hillview.dataset.api.IJson;
-import org.hillview.table.api.*;
+import org.hillview.table.api.IColumn;
+import org.hillview.table.api.IMembershipSet;
+import org.hillview.table.api.IRowIterator;
+import org.hillview.table.api.ITable;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * A SmallTable is similar to a Table, but it is intended to be shipped over the network.
  * We expect all columns to be serializable.
  */
-public class SmallTable
-        extends BaseTable
-        implements Serializable, IJson {
+public class SmallTable extends BaseTable implements Serializable, IJson {
     final Schema schema;
     private final int rowCount;
 
@@ -76,6 +79,23 @@ public class SmallTable
         super(schema);
         this.schema = schema;
         this.rowCount = 0;
+    }
+
+    static List<IColumn> colsFromRows(Schema schema, List<RowSnapshot> rows) {
+        List<IColumn> colList = new ArrayList<IColumn>();
+        for (String cn : schema.getColumnNames()) {
+            ObjectArrayColumn col = new ObjectArrayColumn(schema.getDescription(cn), rows.size());
+            for (int i = 0; i < rows.size(); i++)
+                col.set(i, rows.get(i).getObject(cn));
+            colList.add(col);
+        }
+        return colList;
+    }
+
+    public SmallTable(Schema schema, List<RowSnapshot> rowList) {
+        super(colsFromRows(schema, rowList));
+        this.schema = schema;
+        this.rowCount = rowList.size();
     }
 
     @Override
