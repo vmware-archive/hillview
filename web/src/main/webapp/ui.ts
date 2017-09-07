@@ -226,10 +226,10 @@ export class ScrollBar implements IHtmlElement {
 
     computePosition() : void {
         if (this.start <= 0.0 && this.end >= 1.0) {
-            this.topLevel.classList.add("hidden")
+            this.topLevel.classList.add("hidden");
             return;
         } else {
-            this.topLevel.classList.remove("hidden")
+            this.topLevel.classList.remove("hidden");
         }
 
         this.height = this.topLevel.getBoundingClientRect().height;
@@ -540,6 +540,7 @@ export class Resolution {
     static readonly leftMargin = 40;      // left margin in pixels in a plot
     static readonly legendWidth = 500;    // default legend width in pixels
     static readonly minDotSize = 4;       // dots are drawn as rectangles of this size in pixels
+    static readonly tableRowsOnScreen = 20; // table rows displayed
 
     // Everything is drawn on top of the canvas.
     // The canvas includes a chart plus margins.

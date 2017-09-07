@@ -20,12 +20,13 @@
 import Rx = require('rx');
 import Observer = Rx.Observer;
 import Observable = Rx.Observable;
+import d3 = require('d3');
 import {ErrorReporter, ConsoleErrorReporter} from "./errReporter";
-import {ProgressBar, FullPage, IDataView} from "./ui";
+import {ProgressBar, FullPage} from "./ui";
 import {PartialResult, ICancellable, EnumIterators, RpcReply} from "./util";
 import {TopSubMenu} from "./menu";
-import d3 = require('d3');
 
+// path in server url for rpc web sockets
 const RpcRequestPath = "rpc";
 
 export class RemoteObject {
@@ -44,6 +45,10 @@ export class RemoteObject {
     // according to the specified operation.  SHould be overridden
     // in subclasses.
     combine(how: CombineOperators): void {}
+
+    public toString(): string {
+        return this.remoteObjectId;
+    }
 }
 
 // A streaming RPC request: for each request made
@@ -251,37 +256,6 @@ export function combineMenu(ro: RemoteObject): TopSubMenu {
     return new TopSubMenu(combineMenu);
 }
 
-export abstract class RemoteObjectView extends RemoteObject implements IDataView {
-    protected topLevel: HTMLElement;
-
-    constructor(remoteObjectId: string, protected page: FullPage) {
-        super(remoteObjectId);
-        this.setPage(page);
-    }
-
-    setPage(page: FullPage) {
-        if (page == null)
-            throw("null FullPage");
-        this.page = page;
-    }
-
-    getPage() : FullPage {
-        if (this.page == null)
-            throw("Page not set");
-        return this.page;
-    }
-
-    public abstract refresh(): void;
-
-    public getHTMLRepresentation(): HTMLElement {
-        return this.topLevel;
-    }
-
-    public scrollIntoView() {
-        this.getHTMLRepresentation().scrollIntoView( { block: "end", behavior: "smooth" } );
-    }
-}
-
 export abstract class Renderer<T> extends RpcReceiver<PartialResult<T>> {
     public constructor(public page: FullPage,
                        public operation: ICancellable,
@@ -298,67 +272,5 @@ export abstract class Renderer<T> extends RpcReceiver<PartialResult<T>> {
 
     public elapsedMilliseconds(): number {
         return d3.timeMillisecond.count(this.operation.startTime(), new Date());
-    }
-}
-
-// A zip receiver receives the result of a Zip operation on
-// two IDataSet<ITable> objects (an IDataSet<Pair<ITable, ITable>>,
-// and applies to the pair the specified set operation setOp.
-export class ZipReceiver extends Renderer<string> {
-    public remoteTablePairId: string;
-
-    public constructor(page: FullPage,
-                       operation: ICancellable,
-                       protected setOp: CombineOperators,
-                       // receiver constructs the renderer that is used to display
-                       // the result after combining
-                       protected receiver: (page: FullPage, operation: ICancellable) => Renderer<string>) {
-        super(page, operation, "zip");
-    }
-
-    onNext(value: PartialResult<string>): any {
-        super.onNext(value);
-        if (value.data != null)
-            this.remoteTablePairId = value.data;
-    }
-
-    onCompleted(): void {
-        super.finished();
-        if (this.remoteTablePairId == null)
-            return;
-
-        let remoteObj = new RemoteObject(this.remoteTablePairId);
-        let rr = remoteObj.createRpcRequest("setOperation", CombineOperators[this.setOp]);
-        let rec = this.receiver(this.page, rr);
-        rr.invoke(rec);
-    }
-}
-
-// This collector waits for an operation to finish and calls a callback when
-// the operation has completed.
-export class OnCompleteRenderer<T> extends Renderer<T> {
-    public data: T;
-
-    public constructor(
-        page: FullPage,
-        operation: ICancellable,
-        private callback: (data: T) => void,
-        name?: string
-    ) {
-        super(page, operation, name == null ? "CallbackCollector" : name);
-    }
-
-    onNext(value: PartialResult<T>): void {
-        super.onNext(value);
-        this.data = value.data;
-    }
-
-    onCompleted(): void {
-        super.onCompleted();
-        if (this.data == null) {
-            console.log("Did not receive result.");
-            return;
-        }
-        this.callback(this.data);
     }
 }

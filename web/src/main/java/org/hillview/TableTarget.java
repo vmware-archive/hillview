@@ -73,8 +73,8 @@ public final class TableTarget extends RpcTarget {
 
     @HillviewRpc
     void uniqueStrings(RpcRequest request, Session session) {
-        String columnName = request.parseArgs(String.class);
-        DistinctStringsSketch sk = new DistinctStringsSketch(0, columnName);
+        String[] columnNames = request.parseArgs(String[].class);
+        DistinctStringsSketch sk = new DistinctStringsSketch(0, columnNames);
         this.runCompleteSketch(this.table, sk, e->e, request, session);
     }
 
@@ -144,22 +144,14 @@ public final class TableTarget extends RpcTarget {
     static class RangeInfo {
         String columnName = "";
         // The following are only used for categorical columns
-        int firstIndex;
-        int lastIndex;
         @Nullable
-        String firstValue;
-        @Nullable
-        String lastValue;
-        @Nullable
-        String[] values;
+        String[] allNames;
+
         @Nullable
         IStringConverter getConverter() {
-            if (this.values != null)
-                return new SortedStringsConverter(this.values, 0, this.values.length - 1);
-            if (this.firstValue == null)
+            if (this.allNames == null)
                 return null;
-            return new SortedStringsConverter(
-                        new String[] { this.firstValue, this.lastValue }, this.firstIndex, this.lastIndex);
+            return new SortedStringsConverter(this.allNames);
         }
     }
 
@@ -313,16 +305,18 @@ public final class TableTarget extends RpcTarget {
     }
 
     public static class TopList implements IJson {
+        @Nullable
         NextKList top;
-        String heavyHittersId;
+        String heavyHittersId = "";
     }
 
-    public TopList getLists(FreqKList fkList, Schema schema) {
+    private TopList getLists(FreqKList fkList, Schema schema) {
         fkList.filter();
         Pair<List<RowSnapshot>, List<Integer>> pair = fkList.getTop(10);
         TopList tl = new TopList();
-        tl.top = new NextKList(new SmallTable(schema, pair.first), pair.second, 0, fkList.totalRows);
-        tl.heavyHittersId = new HeavyHittersTarget(fkList).objectId;
+        SmallTable tbl = new SmallTable(schema, Converters.checkNull(pair.first));
+        tl.top = new NextKList(tbl, Converters.checkNull(pair.second), 0, fkList.totalRows);
+        tl.heavyHittersId = Converters.checkNull(new HeavyHittersTarget(fkList).objectId);
         return tl;
     }
 
@@ -331,7 +325,7 @@ public final class TableTarget extends RpcTarget {
         HeavyHittersFilterInfo hhi = request.parseArgs(HeavyHittersFilterInfo.class);
         RpcTarget target = RpcObjectManager.instance.getObject(hhi.hittersId);
         HeavyHittersTarget hht = (HeavyHittersTarget)target;
-        ExactFreqSketch efSketch = new ExactFreqSketch(hhi.schema, hht.heavyHitters);
+        ExactFreqSketch efSketch = new ExactFreqSketch(Converters.checkNull(hhi.schema), hht.heavyHitters);
         this.runCompleteSketch(this.table, efSketch, x -> this.getLists(x, hhi.schema), request, session);
     }
 

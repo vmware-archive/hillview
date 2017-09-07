@@ -15,15 +15,11 @@
  *  limitations under the License.
  */
 
+import Rx = require('rx');
 import {
     FullPage, formatNumber, significantDigits, percent, KeyCodes, ScrollBar, IScrollTarget
 } from "./ui";
-import {
-    RemoteObject, RpcRequest, Renderer, combineMenu, SelectedObject, CombineOperators, ZipReceiver,
-    RemoteObjectView
-} from "./rpc";
-import Rx = require('rx');
-import {BasicColStats} from "./histogramBase";
+import { Renderer, combineMenu, SelectedObject, CombineOperators } from "./rpc";
 import {RangeCollector} from "./histogram";
 import {Range2DCollector} from "./heatMap";
 import {TopMenu, TopSubMenu, ContextMenu} from "./menu";
@@ -31,120 +27,12 @@ import {Converters, PartialResult, ICancellable, cloneSet} from "./util";
 import {EqualityFilterDialog, EqualityFilterDescription} from "./equalityFilter";
 import d3 = require('d3');
 import {Dialog} from "./dialog";
+import {
+    Schema, RowView, RecordOrder, IColumnDescription, ColumnDescription, ColumnSortOrientation,
+    ContentsKind, RangeInfo, RemoteTableObjectView, ZipReceiver, RemoteTableRenderer
+} from "./tableData";
+import {InitialTable} from "./initialTable";
 import {HeatMapArrayDialog} from "./heatMapArray";
-
-// The first few classes are direct counterparts to server-side Java classes
-// with the same names.  JSON serialization
-// of the Java classes produces JSON that can be directly cast
-// into these interfaces.
-
-// I can't use an enum for ContentsKind because JSON deserialization does not
-// return an enum from a string.
-export type ContentsKind = "Category" | "Json" | "String" | "Integer" | "Double" | "Date" | "Interval";
-
-export function isNumeric(kind: ContentsKind): boolean {
-    return kind == "Integer" || kind == "Double";
-}
-
-export interface IColumnDescription {
-    readonly kind: ContentsKind;
-    readonly name: string;
-    readonly allowMissing: boolean;
-}
-
-// Direct counterpart to Java class
-export class ColumnDescription implements IColumnDescription {
-    readonly kind: ContentsKind;
-    readonly name: string;
-    readonly allowMissing: boolean;
-
-    constructor(v : IColumnDescription) {
-        this.kind = v.kind;
-        this.name = v.name;
-        this.allowMissing = v.allowMissing;
-    }
-}
-
-// Direct counterpart to Java class
-export interface Schema {
-    [index: number] : IColumnDescription;
-    length: number;
-}
-
-export interface RowView {
-    count: number;
-    values: any[];
-}
-
-// Direct counterpart to Java class
-export interface ColumnSortOrientation {
-    columnDescription: IColumnDescription;
-    isAscending: boolean;
-}
-
-// Direct counterpart to Java class
-export class RecordOrder {
-    constructor(public sortOrientationList: Array<ColumnSortOrientation>) {}
-    public length(): number { return this.sortOrientationList.length; }
-    public get(i: number): ColumnSortOrientation { return this.sortOrientationList[i]; }
-
-    // Find the index of a specific column; return -1 if columns is not in the sort order
-    public find(col: string): number {
-        for (let i = 0; i < this.length(); i++)
-            if (this.sortOrientationList[i].columnDescription.name == col)
-                return i;
-        return -1;
-    }
-    public hide(col: string): void {
-        let index = this.find(col);
-        if (index == -1)
-            // already hidden
-            return;
-        this.sortOrientationList.splice(index, 1);
-    }
-    public sortFirst(cso: ColumnSortOrientation) {
-        let index = this.find(cso.columnDescription.name);
-        if (index != -1)
-            this.sortOrientationList.splice(index, 1);
-        this.sortOrientationList.splice(0, 0, cso);
-    }
-    public show(cso: ColumnSortOrientation) {
-        let index = this.find(cso.columnDescription.name);
-        if (index != -1)
-            this.sortOrientationList.splice(index, 1);
-        this.sortOrientationList.push(cso);
-    }
-    public showIfNotVisible(cso: ColumnSortOrientation) {
-        let index = this.find(cso.columnDescription.name);
-        if (index == -1)
-            this.sortOrientationList.push(cso);
-    }
-    public clone(): RecordOrder {
-        return new RecordOrder(this.sortOrientationList.slice(0));
-    }
-    // Returns a new object
-    public invert(): RecordOrder {
-        let result = new Array<ColumnSortOrientation>(this.sortOrientationList.length);
-        for (let i in this.sortOrientationList) {
-            let cso = this.sortOrientationList[i];
-            result[i] = {
-                isAscending: !cso.isAscending,
-                columnDescription: cso.columnDescription
-            };
-        }
-        return new RecordOrder(result);
-    }
-
-    protected static coToString(cso: ColumnSortOrientation): string {
-        return cso.columnDescription.name + " " + (cso.isAscending ? "up" : "down");
-    }
-    public toString(): string {
-        let result = "";
-        for (let i = 0; i < this.sortOrientationList.length; i++)
-            result += RecordOrder.coToString(this.sortOrientationList[i]);
-        return result;
-    }
-}
 
 // This is the serialization of a NextKList Java object
 export class TableDataView {
@@ -155,20 +43,12 @@ export class TableDataView {
     public rows?: RowView[];
 }
 
-export class RangeInfo {
-    columnName: string;
-    // The following are only used for categorical columns
-    firstIndex?: number;
-    lastIndex?: number;
-    firstValue?: string;
-    lastValue?: string;
-    // The following is used when all values are known for categorical columns
-    values?: string[];
-}
-
-export class TableView extends RemoteObjectView
+/**
+ * Displays a table in the browser.
+ */
+export class TableView extends RemoteTableObjectView
     implements IScrollTarget {
-    protected static initialTableId: string = null;
+    public static initialDataset: InitialTable = null;
 
     // Data view part: received from remote site
     public schema?: Schema;
@@ -184,21 +64,17 @@ export class TableView extends RemoteObjectView
     protected tHead : HTMLTableSectionElement;
     protected tBody: HTMLTableSectionElement;
     protected currentData: TableDataView;
-    protected numberedCategories: Set<string>;
     protected selectedColumns: Set<string>;
     protected firstSelectedColumn: string;  // for shift-click
     protected contextMenu: ContextMenu;
     protected cellsPerColumn: Map<string, HTMLElement[]>;
 
-    static readonly rowsOnScreen = 20;
-
     public constructor(remoteObjectId: string, page: FullPage) {
         super(remoteObjectId, page);
 
         this.order = new RecordOrder([]);
-        this.numberedCategories = new Set<string>();
-        if (TableView.initialTableId == null)
-            TableView.initialTableId = remoteObjectId;
+        if (TableView.initialDataset == null)
+            TableView.initialDataset = new InitialTable(remoteObjectId);
         this.topLevel = document.createElement("div");
         this.topLevel.id = "tableContainer";
         this.topLevel.tabIndex = 1;  // necessary for keyboard events?
@@ -257,7 +133,7 @@ export class TableView extends RemoteObjectView
             return;
         }
 
-        let rr = this.createRpcRequest("zip", r.remoteObjectId);
+        let rr = this.createZipRequest(r);
         let o = this.order.clone();
         let finalRenderer = (page: FullPage, operation: ICancellable) =>
             { return new TableOperationCompleted(page, this, operation, o); };
@@ -272,12 +148,7 @@ export class TableView extends RemoteObjectView
             this.end();
         } else {
             let o = this.order.clone();
-            let rr = this.createRpcRequest("quantile", {
-                precision: 100,
-		        tableSize: this.currentData.rowCount,
-                order: o,
-                position: position
-            });
+            let rr = this.createQuantileRequest(this.currentData.rowCount, o, position);
 	        console.log("expecting quantile: " + String(position));
             rr.invoke(new QuantileReceiver(this.getPage(), this, rr, o));
         }
@@ -363,12 +234,12 @@ export class TableView extends RemoteObjectView
 
     // Navigate back to the first table known
     public static fullDataset(page: FullPage): void {
-        if (TableView.initialTableId == null)
+        if (TableView.initialDataset == null)
             return;
 
-        let table = new TableView(TableView.initialTableId, page);
+        let table = new TableView(TableView.initialDataset.remoteObjectId, page);
         page.setDataView(table);
-        let rr = table.createRpcRequest("getSchema", null);
+        let rr = table.createGetSchemaRequest();
         rr.invoke(new TableRenderer(page, table, rr, false, new RecordOrder([])));
     }
 
@@ -470,11 +341,21 @@ export class TableView extends RemoteObjectView
     public histogram(columnName: string): void {
         if (this.selectedColumns.size <= 1) {
             let cd = TableView.findColumn(this.schema, columnName);
-            if (cd.kind == "Category" && !this.numberedCategories.has(columnName)) {
-                let rr = this.createRpcRequest("uniqueStrings", columnName);
-                rr.invoke(new NumberStrings(cd, this.schema, this.getPage(), this, rr));
+            if (cd.kind == "Category") {
+                // Continuation invoked after the distinct strings have been obtained
+                let cont = (operation: ICancellable) => {
+                    let ds = TableView.initialDataset.getDistinctStrings(columnName);
+                    if (ds == null)
+                        // Probably an error has occurred
+                        return;
+                    let rr = this.createRangeRequest(ds.getRangeInfo(columnName));
+                    rr.setStartTime(operation.startTime());
+                    rr.invoke(new RangeCollector(cd, this.schema, ds, this.getPage(), this, rr));
+                };
+                // Get the categorical data and invoke the continuation
+                TableView.initialDataset.retrieveCategoryValues([columnName], this.getPage(), cont);
             } else {
-                let rr = this.createRpcRequest("range", {columnName: columnName});
+                let rr = this.createRangeRequest({columnName: columnName, allNames: null});
                 rr.invoke(new RangeCollector(cd, this.schema, null, this.getPage(), this, rr));
             }
         } else if (this.selectedColumns.size == 2) {
@@ -498,21 +379,12 @@ export class TableView extends RemoteObjectView
 
             if (columns.length != 2)
                 return;
-            let rr = this.createRpcRequest("range2D", columns);
+            let rr = this.createRange2DRequest(columns[0], columns[1]);
             rr.invoke(new Range2DCollector(cds, this.schema, this.getPage(), this, rr, false));
         } else {
             this.reportError("Must select 1 or 2 columns for histogram");
             return;
         }
-    }
-
-    public createNextKRequest(order: RecordOrder, firstRow: any[]): RpcRequest {
-        let nextKArgs = {
-            order: order,
-            firstRow: firstRow,
-            rowsOnScreen: TableView.rowsOnScreen
-        };
-        return this.createRpcRequest("getNextK", nextKArgs);
     }
 
     public refresh(): void {
@@ -525,8 +397,6 @@ export class TableView extends RemoteObjectView
 
     public updateView(data: TableDataView, revert: boolean,
                       order: RecordOrder, elapsedMs: number) : void {
-        console.log("updateView " + revert + " " + order);
-
         this.selectedColumns.clear();
         this.firstSelectedColumn = null;
         this.currentData = data;
@@ -593,9 +463,9 @@ export class TableView extends RemoteObjectView
                 }
                 this.contextMenu.addItem({text: "Sort ascending", action: () => this.showColumn(cd.name, 1, true) });
                 this.contextMenu.addItem({text: "Sort descending", action: () => this.showColumn(cd.name, -1, true) });
-                this.contextMenu.addItem({text: "Heat map", action: () => this.heatMap() });
                 if (cd.kind != "Json" && cd.kind != "String")
                     this.contextMenu.addItem({text: "Histogram", action: () => this.histogram(cd.name) });
+                this.contextMenu.addItem({text: "Heat map", action: () => this.heatMap() });
                 this.contextMenu.addItem({text: "Heavy hitters...", action: () => this.heavyHitters(cd.name) });
                 this.contextMenu.addItem({text: "Select numeric columns", action: () => this.selectNumericColumns()});
                 this.contextMenu.addItem({text: "PCA...", action: () => this.pca() });
@@ -608,7 +478,7 @@ export class TableView extends RemoteObjectView
         }
         this.tBody = this.htmlTable.createTBody();
 
-        this.cellsPerColumn = new Map<string, HTMLElement[]>()
+        this.cellsPerColumn = new Map<string, HTMLElement[]>();
         cds.forEach((cd) => this.cellsPerColumn.set(cd.name, []));
         let tableRowCount = 0;
         // Add row data
@@ -698,7 +568,7 @@ export class TableView extends RemoteObjectView
     }
 
     private runFilter(filter: EqualityFilterDescription): void {
-        let rr = this.createRpcRequest("filterEquality", filter);
+        let rr = this.createFilterEqualityRequest(filter);
         rr.invoke(new TableOperationCompleted(this.page, this, rr, this.order));
     }
 
@@ -753,10 +623,7 @@ export class TableView extends RemoteObjectView
                         numComponents + " does not satisfy this.)");
                     return;
                 }
-                let correlationMatrixRequest = {
-                    columnNames: colNames
-                };
-                let rr = this.createRpcRequest("correlationMatrix", correlationMatrixRequest);
+                let rr = this.createCorrelationMatrixRequest(colNames);
                 rr.invoke(new CorrelationMatrixReceiver(this.getPage(), this, rr, this.order, numComponents));
             });
             pcaDialog.show();
@@ -767,9 +634,7 @@ export class TableView extends RemoteObjectView
 
     private heatMapArray(): void {
         let selectedColumns: string[] = cloneSet(this.selectedColumns);
-        let newPage = new FullPage();
-        this.getPage().insertAfterMe(newPage);
-        let dialog = new HeatMapArrayDialog(selectedColumns, newPage, this.schema, this.remoteObjectId);
+        let dialog = new HeatMapArrayDialog(selectedColumns, this.getPage(), this.schema, this);
         dialog.show();
     }
 
@@ -804,7 +669,7 @@ export class TableView extends RemoteObjectView
         if (columns.length != 2)
             // some error has occurred
             return;
-        let rr = this.createRpcRequest("range2D", columns);
+        let rr = this.createRange2DRequest(columns[0], columns[1]);
         rr.invoke(new Range2DCollector(cds, this.schema, this.getPage(), this, rr, true));
     }
 
@@ -871,7 +736,7 @@ export class TableView extends RemoteObjectView
             cso.push({ columnDescription: colDesc, isAscending: true });
         }
         let order = new RecordOrder(cso);
-        let rr = this.createRpcRequest("heavyHitters", { columns: columns, amount: percent });
+        let rr = this.createHeavyHittersRequest(columns, percent);
         rr.invoke(new HeavyHittersReceiver(this.getPage(), this, rr, columns, order));
     }
 
@@ -880,7 +745,8 @@ export class TableView extends RemoteObjectView
         d.addTextField("percent", "Threshold (%)", "Double");
         d.setAction(() => {
             let amount = d.getFieldValueAsNumber("percent");
-            this.runHeavyHitters(colName, amount)
+            if (amount != null)
+                this.runHeavyHitters(colName, amount)
         });
         d.show();
     }
@@ -967,14 +833,14 @@ export class TableRenderer extends Renderer<TableDataView> {
     constructor(page: FullPage,
                 protected table: TableView,
                 operation: ICancellable,
-                protected revert: boolean,
+                protected reverse: boolean,
                 protected order: RecordOrder) {
         super(page, operation, "Geting table info");
     }
 
     onNext(value: PartialResult<TableDataView>): void {
         super.onNext(value);
-        this.table.updateView(value.data, this.revert, this.order, this.elapsedMilliseconds());
+        this.table.updateView(value.data, this.reverse, this.order, this.elapsedMilliseconds());
         this.table.scrollIntoView();
     }
 }
@@ -989,7 +855,7 @@ export class RemoteTableReceiver extends Renderer<string> {
     protected getTableSchema(tableId: string) {
         let table = new TableView(tableId, this.page);
         this.page.setDataView(table);
-        let rr = table.createRpcRequest("getSchema", null);
+        let rr = table.createGetSchemaRequest();
         rr.setStartTime(this.operation.startTime());
         rr.invoke(new TableRenderer(this.page, table, rr, false, new RecordOrder([])));
     }
@@ -1005,57 +871,6 @@ export class RemoteTableReceiver extends Renderer<string> {
         if (this.remoteTableId == null)
             return;
         this.getTableSchema(this.remoteTableId);
-    }
-}
-
-export class DistinctStrings {
-    mySet: string[];
-    truncated: boolean;
-    rowCount: number;
-    missingCount: number;
-}
-
-// First step of a histogram for a categorical column:
-// create a numbering for the strings
-export class NumberStrings extends Renderer<DistinctStrings> {
-    protected contentsInfo: DistinctStrings;
-
-    public constructor(protected cd: ColumnDescription, protected schema: Schema,
-                       page: FullPage, protected obj: RemoteObject, operation: ICancellable) {
-        super(page, operation, "Create converter");
-        this.contentsInfo = null;
-    }
-
-    public onNext(value: PartialResult<DistinctStrings>): void {
-        super.onNext(value);
-        this.contentsInfo = value.data;
-    }
-
-    public onCompleted(): void {
-        if (this.contentsInfo == null)
-            return;
-        super.finished();
-        let strings = this.contentsInfo.mySet;
-        if (strings.length == 0) {
-            this.page.reportError("No data in column");
-            return;
-        }
-        strings.sort();
-
-        let bcs: BasicColStats = {
-            momentCount: 0,
-            min: 0,
-            max: strings.length - 1,
-            minObject: strings[0],
-            maxObject: strings[strings.length - 1],
-            moments: [],
-            presentCount: this.contentsInfo.rowCount - this.contentsInfo.missingCount,
-            missingCount: this.contentsInfo.missingCount
-        };
-
-        let rc = new RangeCollector(this.cd, this.schema, strings, this.page, this.obj, this.operation);
-        rc.setValue(bcs);
-        rc.onCompleted();
     }
 }
 
@@ -1088,32 +903,20 @@ class QuantileReceiver extends Renderer<any[]> {
 
 // The string received is actually the id of a remote object that stores
 // the heavy hitters information.
-class HeavyHittersReceiver extends Renderer<string> {
-    private hitterObjectsId: string;
-
+class HeavyHittersReceiver extends RemoteTableRenderer {
     public constructor(page: FullPage,
                        protected tv: TableView,
                        operation: ICancellable,
                        protected schema: IColumnDescription[],
                        protected order: RecordOrder) {
         super(page, operation, "Filter heavy");
-        this.hitterObjectsId = null;
-    }
-
-    onNext(value: PartialResult<string>): any {
-        super.onNext(value);
-        if (value.data != null)
-            this.hitterObjectsId = value.data;
     }
 
     onCompleted(): void {
         super.finished();
-        if (this.hitterObjectsId == null)
+        if (this.remoteObject == null)
             return;
-        let rr = this.tv.createRpcRequest("checkHeavy", {
-                hittersId: this.hitterObjectsId,
-                schema: this.schema
-            });
+        let rr = this.tv.createCheckHeavyRequest(this.remoteObject, this.schema);
         rr.setStartTime(this.operation.startTime());
         rr.invoke(new HeavyHittersReceiver2(this.page, this.tv, rr, this.schema, this.order));
     }
@@ -1127,7 +930,6 @@ interface TopList {
 // This class handles the reply of the "checkHeavy" method.
 class HeavyHittersReceiver2 extends Renderer<TopList> {
     private data: TopList;
-
     public constructor(page: FullPage,
                        protected tv: TableView,
                        operation: ICancellable,
@@ -1147,7 +949,7 @@ class HeavyHittersReceiver2 extends Renderer<TopList> {
         super.finished();
         if (this.data == null)
             return;
-	this.page.reportError(this.data.top.toString());
+    	this.page.reportError(this.data.top.toString());
         let rr = this.tv.createRpcRequest("filterHeavy", {
                 hittersId: this.data.heavyHittersId,
                 schema: this.schema
@@ -1159,41 +961,28 @@ class HeavyHittersReceiver2 extends Renderer<TopList> {
 
 // The string received is actually the id of a remote object that stores
 // the correlation matrix information
-class CorrelationMatrixReceiver extends Renderer<string> { 
-   private correlationMatrixObjectsId: string;
-
+class CorrelationMatrixReceiver extends RemoteTableRenderer {
     public constructor(page: FullPage,
                        protected tv: TableView,
                        operation: ICancellable,
                        protected order: RecordOrder,
                        private numComponents: number) {
         super(page, operation, "Correlation matrix");
-        this.correlationMatrixObjectsId = null;
-    }
-
-    onNext(value: PartialResult<string>): any {
-        super.onNext(value);
-        if (value.data != null)
-            this.correlationMatrixObjectsId = value.data;
     }
 
     onCompleted(): void {
         super.finished();
-        if (this.correlationMatrixObjectsId == null)
+        if (this.remoteObject == null)
             return;
-        let rr = this.tv.createRpcRequest("projectToEigenVectors", {
-                id: this.correlationMatrixObjectsId,
-                numComponents: this.numComponents
-        });
+        let rr = this.tv.createProjectToEigenVectorsRequest(
+                this.remoteObject, this.numComponents);
         rr.setStartTime(this.operation.startTime());
         rr.invoke(new RemoteTableReceiver(this.page, rr));
     }
 }
 
 // After operating on a table receives the id of a new remote table.
-class TableOperationCompleted extends Renderer<string> {
-    public remoteTableId: string;
-
+class TableOperationCompleted extends RemoteTableRenderer {
     public constructor(page: FullPage,
                        protected tv: TableView,
                        operation: ICancellable,
@@ -1201,17 +990,11 @@ class TableOperationCompleted extends Renderer<string> {
         super(page, operation, "Table operation");
     }
 
-    onNext(value: PartialResult<string>): any {
-        super.onNext(value);
-        if (value.data != null)
-            this.remoteTableId = value.data;
-    }
-
     onCompleted(): void {
         super.finished();
-        if (this.remoteTableId == null)
+        if (this.remoteObject == null)
             return;
-        let table = new TableView(this.remoteTableId, this.page);
+        let table = new TableView(this.remoteObject.remoteObjectId, this.page);
         table.setSchema(this.tv.schema);
         this.page.setDataView(table);
         let rr = table.createNextKRequest(this.order, null);

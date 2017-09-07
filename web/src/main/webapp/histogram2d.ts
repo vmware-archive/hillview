@@ -15,17 +15,18 @@
  *  limitations under the License.
  */
 
+import { HistogramViewBase, BucketDialog, AnyScale } from "./histogramBase";
 import {
-    HistogramViewBase, ColumnAndRange, BasicColStats, FilterDescription, BucketDialog,
-    AnyScale
-} from "./histogramBase";
-import {Schema, TableView, RecordOrder, TableRenderer, ColumnDescription, RangeInfo} from "./table";
+    ColumnDescription, Schema, RecordOrder, ColumnAndRange, FilterDescription,
+    ZipReceiver, RemoteTableRenderer, BasicColStats
+} from "./tableData";
+import {TableView, TableRenderer} from "./table";
 import {FullPage, significantDigits, formatNumber, translateString, Resolution, Rectangle} from "./ui";
 import {TopMenu, TopSubMenu} from "./menu";
 import d3 = require('d3');
 import {reorder, Converters, transpose, ICancellable, PartialResult} from "./util";
 import {AxisData, HeatMapData, Range2DCollector} from "./heatMap";
-import {combineMenu, CombineOperators, SelectedObject, Renderer, RemoteObject, ZipReceiver} from "./rpc";
+import {combineMenu, CombineOperators, SelectedObject, Renderer} from "./rpc";
 
 interface Rect {
     x: number;
@@ -78,7 +79,7 @@ export class Histogram2DView extends HistogramViewBase {
             return;
         }
 
-        let rr = this.createRpcRequest("zip", r.remoteObjectId);
+        let rr = this.createZipRequest(r);
         let renderer = (page: FullPage, operation: ICancellable) => {
             return new Make2DHistogram(
                 page, operation,
@@ -118,11 +119,7 @@ export class Histogram2DView extends HistogramViewBase {
             cdfBucketCount: 0,
             bucketBoundaries: null // TODO
         };
-        let args = {
-            first: arg0,
-            second: arg1
-        };
-        let rr = this.createRpcRequest("heatMap", args);
+        let rr = this.createHeatMapRequest(arg0, arg1);
         let renderer = new Histogram2DRenderer(this.page,
             this.remoteObjectId, this.tableSchema,
             [this.currentData.xData.description, this.currentData.yData.description],
@@ -162,13 +159,8 @@ export class Histogram2DView extends HistogramViewBase {
         if (this.currentData.xData.description.kind == "Integer")
             x = Math.round(<number>x);
         let xs = String(x);
-        if (this.currentData.xData.description.kind == "Category") {
-            let index = Math.round(<number>x);
-            if (index >= 0 && index < this.currentData.xData.allStrings.length)
-                xs = this.currentData.xData.allStrings[index];
-            else
-                xs = "";
-        }
+        if (this.currentData.xData.description.kind == "Category")
+            xs = this.currentData.xData.allStrings.get(<number>x);
         else if (this.currentData.xData.description.kind == "Integer" ||
             this.currentData.xData.description.kind == "Double")
             xs = significantDigits(<number>x);
@@ -529,13 +521,7 @@ export class Histogram2DView extends HistogramViewBase {
     // is above the chart, we are selecting in the legend.
     protected dragStart() {
         super.dragStart();
-        if (this.legendRect != null && this.selectionOrigin.y < 0) {
-            // negative selection -> outside chart area.
-            // move the selection into the legend rectangle.
-            this.selectingLegend = true;
-        } else {
-            this.selectingLegend = false;
-        }
+        this.selectingLegend = this.legendRect != null && this.selectionOrigin.y < 0;
     }
 
     protected dragMove(): void {
@@ -601,7 +587,7 @@ export class Histogram2DView extends HistogramViewBase {
             complement: d3.event.sourceEvent.ctrlKey
         };
 
-        let rr = this.createRpcRequest("filterRange", filter);
+        let rr = this.createFilterRequest(filter);
         let renderer = new Histogram2DFilterReceiver(
             this.currentData.xData.description,
             this.currentData.yData.description, this.tableSchema,
@@ -660,9 +646,7 @@ export class Histogram2DView extends HistogramViewBase {
     }
 }
 
-class Histogram2DFilterReceiver extends Renderer<string> {
-    private stub: RemoteObject;
-
+class Histogram2DFilterReceiver extends RemoteTableRenderer {
     constructor(protected xColumn: ColumnDescription,
                 protected yColumn: ColumnDescription,
                 protected tableSchema: Schema,
@@ -671,33 +655,19 @@ class Histogram2DFilterReceiver extends Renderer<string> {
         super(page, operation, "Filter");
     }
 
-    public onNext(value: PartialResult<string>): void {
-        super.onNext(value);
-        if (value.data != null)
-            this.stub = new RemoteObject(value.data);
-    }
-
     public onCompleted(): void {
         this.finished();
-        if (this.stub != null) {
-            let columns: RangeInfo[] = [];
-            let cds: ColumnDescription[] = [this.xColumn, this.yColumn];
-            cds.forEach(v => {
-                let ci = new RangeInfo();
-                ci.columnName = v.name;
-                columns.push(ci);
-            });
+        if (this.remoteObject == null)
+            return;
 
-            let rr = this.stub.createRpcRequest("range2D", columns);
-            rr.invoke(new Range2DCollector(cds, this.tableSchema, this.page, this.stub, rr, false));
-        }
+        let cds: ColumnDescription[] = [this.xColumn, this.yColumn];
+        let rr = this.remoteObject.createRange2DColsRequest(this.xColumn.name, this.yColumn.name);
+        rr.invoke(new Range2DCollector(cds, this.tableSchema, this.page, this.remoteObject, rr, false));
     }
 }
 
 // This class is invoked by the ZipReceiver after a set operation to create a new histogram
-export class Make2DHistogram extends Renderer<string> {
-    public remoteObjectId: string;
-
+export class Make2DHistogram extends RemoteTableRenderer {
     public constructor(page: FullPage,
                        operation: ICancellable,
                        private colDesc: ColumnDescription[],
@@ -706,25 +676,14 @@ export class Make2DHistogram extends Renderer<string> {
         super(page, operation, "Reload");
     }
 
-    onNext(value: PartialResult<string>): any {
-        super.onNext(value);
-        if (value.data != null)
-            this.remoteObjectId = value.data;
-    }
-
     onCompleted(): void {
         super.finished();
-        if (this.remoteObjectId == null)
+        if (this.remoteObject == null)
             return;
-        let remoteObj = new RemoteObject(this.remoteObjectId);
-        let columns: RangeInfo[] = [
-            { columnName: this.colDesc[0].name },
-            { columnName: this.colDesc[1].name }
-        ];
-        let rr = remoteObj.createRpcRequest("range2D", columns);
+        let rr = this.remoteObject.createRange2DColsRequest(this.colDesc[0].name, this.colDesc[1].name);
         rr.setStartTime(this.operation.startTime());
         rr.invoke(new Range2DCollector(
-            this.colDesc, this.schema, this.page, remoteObj, rr, this.heatMap));
+            this.colDesc, this.schema, this.page, this.remoteObject, rr, this.heatMap));
     }
 }
 

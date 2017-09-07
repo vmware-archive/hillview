@@ -2,6 +2,7 @@ package org.hillview.sketch;
 
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.sketches.*;
+import org.hillview.utils.JsonList;
 import org.hillview.utils.TestTables;
 import org.hillview.table.SemiExplicitConverter;
 import org.hillview.table.SmallTable;
@@ -25,11 +26,13 @@ public class DistinctStringSketchTest {
     public void DistinctSketchTest() {
         final int tableSize = 1000;
         final Table myTable = TestUtil.createTable(tableSize);
-        final DistinctStringsSketch mySketch = new DistinctStringsSketch(20, "Name");
-        DistinctStrings result = mySketch.create(myTable);
-        int size = result.size();
+        String[] columns = new String[] { "Name" };
+        final DistinctStringsSketch mySketch = new DistinctStringsSketch(20, columns);
+        JsonList<DistinctStrings> result = mySketch.create(myTable);
+        Assert.assertEquals(result.size(), 1);
+        int size = result.get(0).size();
         Assert.assertTrue(size <= 10);
-        SemiExplicitConverter converter = getStringConverter(result);
+        SemiExplicitConverter converter = getStringConverter(result.get(0));
         BucketsDescriptionEqSize desc = new BucketsDescriptionEqSize(1, size + 1, size);
         HistogramSketch histSketch = new HistogramSketch(desc, "Name", converter);
         Histogram hist = histSketch.create(myTable);
@@ -40,9 +43,13 @@ public class DistinctStringSketchTest {
         final int tableSize = 1000;
         final SmallTable myTable = TestUtil.createSmallTable(tableSize);
         final ParallelDataSet<ITable> all = TestTables.makeParallel(myTable, tableSize/10);
-        final DistinctStrings ds = all.blockingSketch(new DistinctStringsSketch(tableSize, "Name"));
-        SemiExplicitConverter converter = getStringConverter(ds);
-        BucketsDescriptionEqSize desc = new BucketsDescriptionEqSize(-1, ds.size(), ds.size() + 1);
+        String[] columns = new String[] { "Name" };
+        final JsonList<DistinctStrings> ds = all.blockingSketch(
+                new DistinctStringsSketch(tableSize, columns));
+        Assert.assertEquals(ds.size(), 1);
+        SemiExplicitConverter converter = getStringConverter(ds.get(0));
+        BucketsDescriptionEqSize desc = new BucketsDescriptionEqSize(
+                -1, ds.get(0).size(), ds.get(0).size() + 1);
         Histogram hist = all.blockingSketch(new HistogramSketch(desc, "Name", converter));
     }
 }

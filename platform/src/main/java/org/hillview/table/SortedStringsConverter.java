@@ -50,6 +50,10 @@ public class SortedStringsConverter implements IStringConverter {
         this.boundaries = boundaries;
     }
 
+    public SortedStringsConverter(String[] boundaries) {
+        this(boundaries, 0, boundaries.length - 1);
+    }
+
     @Override
     public double asDouble(String string) {
         int index = Arrays.binarySearch(this.boundaries, string);

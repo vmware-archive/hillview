@@ -15,16 +15,21 @@
  *  limitations under the License.
  */
 
-import {RemoteObjectView, OnCompleteRenderer} from "./rpc";
+import {Renderer} from "./rpc";
 import {Dialog} from "./dialog";
-import {RangeInfo, TableView, Schema, IColumnDescription, isNumeric, DistinctStrings} from "./table";
-import {BasicColStats} from "./histogramBase";
-import {FullPage, Size, Resolution, IHtmlElement, ScrollBar, IScrollTarget, significantDigits} from "./ui";
-import {Pair, Triple, truncate, Point2D} from "./util";
-import {ColumnAndRange} from "./histogramBase";
+import {TableView} from "./table";
+import {
+    FullPage, Size, Resolution, IHtmlElement, ScrollBar, significantDigits, IScrollTarget,
+    removeAllChildren
+} from "./ui";
+import {Pair, Triple, truncate, Point2D, ICancellable, PartialResult} from "./util";
 import {ColorMap} from "./vis";
 import d3 = require('d3');
 import {AxisData} from "./heatMap";
+import {
+    RemoteTableObjectView, IColumnDescription, BasicColStats, DistinctStrings,
+    ColumnAndRange, Schema, isNumeric, RemoteTableObject
+} from "./tableData";
 
 export class HeatMapArrayData {
     buckets: number[][][];
@@ -34,7 +39,7 @@ export class HeatMapArrayData {
 
 export interface HeatMapArrayArgs {
     cds: IColumnDescription[];
-    uniqueStrings?: string[];
+    uniqueStrings?: DistinctStrings;
     zBins?: string[];
     subsampled?: boolean;
     xStats?: BasicColStats;
@@ -67,7 +72,7 @@ export class LegendOverlay implements IHtmlElement {
 
     // Fields for color legend
     private colorMap: ColorMap;
-    // g elemeng that will contain the legend.
+    // g element that will contain the legend.
     private legendG: any;
 
     constructor(cds: IColumnDescription[], xStats, yStats) {
@@ -85,7 +90,6 @@ export class LegendOverlay implements IHtmlElement {
         this.yAxis = this.yAxisData.getAxis(this.axesSize.height, false)[0];
         this.xAxis.ticks(LegendOverlay.axesTicks);
         this.yAxis.ticks(LegendOverlay.axesTicks);
-
 
         let axesSvg = d3.select(this.outer)
             .append("svg")
@@ -280,7 +284,7 @@ export class CompactHeatMapView implements IHtmlElement {
             let mouse: Point2D = {x: mousePos[0], y: mousePos[1]};
 
             // Compute position in [0, 1] x [0, 1] range.
-            // Legend will compue the actual values based on the range.
+            // Legend will compute the actual values based on the range.
             let pos = {
                 x: mouse.x / (this.dotSize.width * this.xDim),
                 y: mouse.y / (this.dotSize.width * this.xDim)
@@ -295,7 +299,7 @@ export class CompactHeatMapView implements IHtmlElement {
     }
 }
 
-export class HeatMapArrayView extends RemoteObjectView implements IScrollTarget {
+export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTarget {
     public args: HeatMapArrayArgs;
     private heatMaps: CompactHeatMapView[];
     private scrollBar: ScrollBar;
@@ -307,6 +311,8 @@ export class HeatMapArrayView extends RemoteObjectView implements IScrollTarget 
         super(remoteObjectId, page);
         this.args = args;
         this.offset = 0;
+        if (this.args.cds.length != 3)
+            throw "Expected 3 columns";
 
         this.heatMapsDiv = document.createElement("div");
         this.heatMapsDiv.classList.add("heatMapArray");
@@ -317,18 +323,9 @@ export class HeatMapArrayView extends RemoteObjectView implements IScrollTarget 
         this.topLevel.classList.add("heatMapArrayView");
         this.topLevel.appendChild(this.heatMapsDiv);
         this.topLevel.appendChild(this.scrollBar.getHTMLRepresentation());
-
-        this.getPage().setDataView(this);
-
-        if (isNumeric(args.cds[0].kind) && isNumeric(args.cds[1].kind) && (args.cds[2].kind == "Category" || args.cds[2].kind == "String"))
-            this.initiateNumNumCat();
-        else if (isNumeric(args.cds[0].kind) && isNumeric(args.cds[1].kind) && isNumeric(args.cds[2].kind))
-            page.reportError("Not yet implemented");
-        else
-            page.reportError("Heat map array is only supported for 'numeric + numeric + (numeric or categorical or string)' columns.");
     }
 
-    private maxNumHeatMaps() {
+    public maxNumHeatMaps(): number {
         // Compute the number of heat maps that fits on the page.
         let canvasSize = Resolution.getCanvasSize(this.getPage());
         // +2 to account for 1 pixel of border on each side.
@@ -337,15 +334,14 @@ export class HeatMapArrayView extends RemoteObjectView implements IScrollTarget 
         return numCols * numRows;
     }
 
-    public refresh() {
-        this.updateZBins();
+    public refresh(): void {
         this.initiateHeatMaps();
     }
 
     public scrolledTo(position: number): void {
         this.offset = Math.min(
-            Math.floor(position * this.args.uniqueStrings.length),
-            Math.max(0, this.args.uniqueStrings.length - this.maxNumHeatMaps())
+            Math.floor(position * this.args.uniqueStrings.size()),
+            Math.max(0, this.args.uniqueStrings.size() - this.maxNumHeatMaps())
         );
         this.refresh();
     }
@@ -361,17 +357,14 @@ export class HeatMapArrayView extends RemoteObjectView implements IScrollTarget 
     public pageDown(): void {
         this.offset = Math.min(
             this.offset + this.maxNumHeatMaps(),
-            this.args.uniqueStrings.length - this.maxNumHeatMaps()
+            this.args.uniqueStrings.size() - this.maxNumHeatMaps()
         );
         this.refresh();
     }
 
-    public updateView(heatMapsArray: HeatMapArrayData) {
-        // Clean up before updating.
-        if (this.heatMaps != null) {
-            while (this.heatMapsDiv.hasChildNodes())
-                this.heatMapsDiv.removeChild(this.heatMapsDiv.lastChild);
-        }
+    public updateView(heatMapsArray: HeatMapArrayData): void {
+        if (this.heatMaps != null)
+            removeAllChildren(this.heatMapsDiv);
         if (heatMapsArray == null) {
             this.page.reportError("Did not receive data.");
             return;
@@ -405,54 +398,27 @@ export class HeatMapArrayView extends RemoteObjectView implements IScrollTarget 
             heatMap.setListener(this.legendOverlay);
         });
 
-        this.scrollBar.setPosition(this.offset / this.args.uniqueStrings.length, (this.offset + this.args.zBins.length) / this.args.uniqueStrings.length);
+        this.scrollBar.setPosition(this.offset / this.args.uniqueStrings.size(),
+            (this.offset + this.args.zBins.length) / this.args.uniqueStrings.size());
     }
 
-    private initiateNumNumCat() {
-        this.initiateUniqueStrings();
+   public viewComplete(): void {
+        // invoked when all data has been received
+        this.legendOverlay = new LegendOverlay(this.args.cds, this.args.xStats, this.args.yStats);
+        this.getHTMLRepresentation().appendChild(this.legendOverlay.getHTMLRepresentation());
     }
 
-    private initiateUniqueStrings() {
-        let rr = this.createRpcRequest("uniqueStrings", this.args.cds[2].name);
-        rr.invoke(new OnCompleteRenderer<DistinctStrings>(this.getPage(), rr, (distinctStrings) => {
-            let uniqueStrings = distinctStrings.mySet;
-            uniqueStrings.sort();
-            this.args.uniqueStrings = uniqueStrings;
-            this.initiateRange2D();
-        }));
-    }
-
-    private initiateRange2D() {
-        let rangeArgs: RangeInfo[] = [
-            {columnName: this.args.cds[0].name},
-            {columnName: this.args.cds[1].name}
-        ];
-        let rr = this.createRpcRequest("range2D", rangeArgs);
-        rr.invoke(
-            new OnCompleteRenderer<Pair<BasicColStats, BasicColStats>>(this.getPage(), rr, (stats) => {
-                this.setStats(stats);
-                this.legendOverlay = new LegendOverlay(this.args.cds, this.args.xStats, this.args.yStats);
-                this.getHTMLRepresentation().appendChild(this.legendOverlay.getHTMLRepresentation());
-                this.updateZBins();
-                this.scrolledTo(0); // Triggers initiateHeatMaps.
-            }, "Range 2D")
-        );
-    }
-
-    private setStats(stats) {
+    public setStats(stats: Pair<BasicColStats, BasicColStats>): void {
         this.args.xStats = stats.first;
         this.args.yStats = stats.second;
     }
 
-    // Use the offset to compute the new slice of z bins.
-    private updateZBins() {
+    public initiateHeatMaps(): void {
         // Number of actual bins is bounded by the number of distinct values.
-        let numZBins = Math.min(this.maxNumHeatMaps(), this.args.uniqueStrings.length - this.offset);
+        let numZBins = Math.min(this.maxNumHeatMaps(), this.args.uniqueStrings.size() - this.offset);
+        this.args.zBins = this.args.uniqueStrings.categoriesInRange(
+            this.offset, this.offset + numZBins - 1, numZBins);
 
-        this.args.zBins = this.args.uniqueStrings.slice(this.offset, this.offset + numZBins);
-    }
-
-    private initiateHeatMaps() {
         let numXBuckets = CompactHeatMapView.size.width / Resolution.minDotSize;
         let numYBuckets = CompactHeatMapView.size.height / Resolution.minDotSize;
 
@@ -486,28 +452,74 @@ export class HeatMapArrayView extends RemoteObjectView implements IScrollTarget 
             }
         };
 
-        let rr = this.createRpcRequest("heatMap3D", heatMapArrayArgs);
-        rr.invoke(
-            new OnCompleteRenderer<HeatMapArrayData>(this.getPage(), rr,
-                (heatMapArray) => this.updateView(heatMapArray), "Heat Map Array")
-        );
+        let rr = this.createHeatMap3DRequest(heatMapArrayArgs);
+        rr.invoke(new HeatMap3DRenderer(this.getPage(), this, rr));
+    }
+}
+
+class Range2DRenderer extends Renderer<Pair<BasicColStats, BasicColStats>> {
+    constructor(page: FullPage, protected view: HeatMapArrayView, operation: ICancellable) {
+        super(page, operation, "Get stats");
+    }
+
+    onNext(value: PartialResult<Pair<BasicColStats, BasicColStats>>) {
+        super.onNext(value);
+        this.view.setStats(value.data);
+    }
+
+    onCompleted(): void {
+        super.onCompleted();
+        this.view.initiateHeatMaps();
+        this.view.viewComplete();
+    }
+}
+
+class HeatMap3DRenderer extends Renderer<HeatMapArrayData> {
+    constructor(page: FullPage, protected view: HeatMapArrayView, operation: ICancellable) {
+        super(page, operation, "3D Heat map render");
+    }
+
+    onNext(data: PartialResult<HeatMapArrayData>): void {
+        super.onNext(data);
+        this.view.updateView(data.data);
     }
 }
 
 export class HeatMapArrayDialog extends Dialog {
-    private heatMapArrayView: HeatMapArrayView;
-
-    constructor(selectedColumns: string[], private page: FullPage, private schema: Schema, remoteObjectId: string) {
+    constructor(private selectedColumns: string[], private page: FullPage,
+                private schema: Schema, private remoteObject: RemoteTableObject) {
         super("Heat map array");
-
-        // Fields for the heat map.
         this.addSelectField("col1", "Heat map column 1: ", selectedColumns, selectedColumns[0]);
         this.addSelectField("col2", "Heat map column 2: ", selectedColumns, selectedColumns[1]);
         this.addSelectField("col3", "Array column: ", selectedColumns, selectedColumns[2]);
-        this.setAction(() => {
-            let args = this.parseFields();
-            this.heatMapArrayView = new HeatMapArrayView(remoteObjectId, page, args);
-        });
+        this.setAction(() => this.execute());
+    }
+
+    private execute(): void {
+        let args = this.parseFields();
+        if (!isNumeric(args.cds[0].kind) || !isNumeric(args.cds[1].kind)) {
+            this.page.reportError("First and second colum must be numeric");
+            return;
+        }
+
+        let categCol = args.cds[2];
+        if (categCol.kind != "Category") {
+            this.page.reportError("Last column must be categorical");
+            return;
+        }
+
+        let newPage = new FullPage();
+        this.page.insertAfterMe(newPage);
+
+        let heatMapArrayView = new HeatMapArrayView(this.remoteObject.remoteObjectId, newPage, args);
+        newPage.setDataView(heatMapArrayView);
+        let cont = (operation: ICancellable) => {
+            args.uniqueStrings = TableView.initialDataset.getDistinctStrings(categCol.name);
+            let rr = heatMapArrayView.createRange2DColsRequest(args.cds[0].name, args.cds[1].name);
+            rr.setStartTime(operation.startTime());
+            rr.invoke(new Range2DRenderer(newPage, heatMapArrayView, rr));
+        };
+        TableView.initialDataset.retrieveCategoryValues([categCol.name], this.page, cont);
     }
 
     private parseFields(): HeatMapArrayArgs {

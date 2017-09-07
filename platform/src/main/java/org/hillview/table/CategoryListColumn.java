@@ -19,16 +19,17 @@
 package org.hillview.table;
 
 import org.hillview.table.api.ContentsKind;
-import org.hillview.table.api.IStringColumn;
+import org.hillview.table.api.ICategoryColumn;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.function.Consumer;
 
 /**
  * A column of Categorical values that can grow in size.
  */
-public class CategoryListColumn extends BaseListColumn implements IStringColumn {
+public class CategoryListColumn extends BaseListColumn implements ICategoryColumn {
     // Map categorical value to a small integer
     private final HashMap<String, Integer> encoding;
     // Decode small integer into categorical value
@@ -100,5 +101,10 @@ public class CategoryListColumn extends BaseListColumn implements IStringColumn 
     @Override
     public void parseAndAppendString(@Nullable String s) {
         this.append(s);
+    }
+
+    @Override
+    public void allDistinctStrings(Consumer<String> action) {
+        this.encoding.keySet().forEach(action);
     }
 }
