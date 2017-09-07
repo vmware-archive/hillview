@@ -32,6 +32,8 @@ web/classes
 web/src/main/webapp/bundle.js
 web/src/main/webapp/errReporter.js
 web/src/main/webapp/heatMap.js
+web/src/main/webapp/heatMapArray.js
+web/src/main/webapp/vis.js
 web/src/main/webapp/hillview.js
 web/src/main/webapp/histogram.js
 web/src/main/webapp/initialObject.js

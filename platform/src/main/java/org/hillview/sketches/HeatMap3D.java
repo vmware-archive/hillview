@@ -34,12 +34,12 @@ import java.util.List;
  */
 public class HeatMap3D implements Serializable, IJson {
     private final long[][][] buckets;
-    private long missingData; // number of items missing on both columns
+    private long eitherMissing; // number of items missing in either of the columns
     private long outOfRange;
     private final IBucketsDescription bucketDescDim1;
     private final IBucketsDescription bucketDescDim2;
     private final IBucketsDescription bucketDescDim3;
-    private long totalSize;
+    private long totalPresent; // number of items that have no missing values in either column
 
     public HeatMap3D(final IBucketsDescription buckets1,
                      final IBucketsDescription buckets2,
@@ -47,7 +47,7 @@ public class HeatMap3D implements Serializable, IJson {
         this.bucketDescDim1 = buckets1;
         this.bucketDescDim2 = buckets2;
         this.bucketDescDim3 = buckets3;
-        this.buckets = new long[buckets1.getNumOfBuckets()][buckets2.getNumOfBuckets()][buckets3.getNumOfBuckets()]; //
+        this.buckets = new long[buckets1.getNumOfBuckets()][buckets2.getNumOfBuckets()][buckets3.getNumOfBuckets()];
     }
 
     /**
@@ -65,7 +65,7 @@ public class HeatMap3D implements Serializable, IJson {
             boolean isMissingD2 = columnD2.isMissing(currRow);
             boolean isMissingD3 = columnD3.isMissing(currRow);
             if (isMissingD1 || isMissingD2 || isMissingD3) {
-                this.missingData++; // both are missing
+                this.eitherMissing++; // At least one of the three is missing.
             } else {
                 double val1 = columnD1.asDouble(currRow, converterD1);
                 double val2 = columnD2.asDouble(currRow, converterD2);
@@ -75,7 +75,7 @@ public class HeatMap3D implements Serializable, IJson {
                 int index3 = this.bucketDescDim3.indexOf(val3);
                 if ((index1 >= 0) && (index2 >= 0) && (index3 >= 0)) {
                     this.buckets[index1][index2][index3]++;
-                    this.totalSize++;
+                    this.totalPresent++;
                 }
                 else this.outOfRange++;
             }
@@ -83,8 +83,7 @@ public class HeatMap3D implements Serializable, IJson {
         }
     }
 
-    public long getSize() { return this.totalSize; }
-
+    public long getSize() { return this.totalPresent; }
 
     public void createSampleHistogram(final IColumn columnD1, final IColumn columnD2, final IColumn columnD3,
                                       @Nullable final IStringConverter converterD1,
@@ -110,7 +109,7 @@ public class HeatMap3D implements Serializable, IJson {
 
     public int getNumOfBucketsD3() { return this.bucketDescDim3.getNumOfBuckets(); }
 
-    public long getMissingData() { return this.missingData; }
+    public long getMissingData() { return this.eitherMissing; }
 
     public long getOutOfRange() { return this.outOfRange; }
 
@@ -120,18 +119,18 @@ public class HeatMap3D implements Serializable, IJson {
     public long getCount(final int index1, final int index2, final int index3) { return this.buckets[index1][index2][index3]; }
 
     /**
-     * @param  otherHeatmap with the same bucketDescriptions
-     * @return a new Histogram which is the union of this and otherHeatmap
+     * @param  otherHeatmap3D with the same bucketDescriptions
+     * @return a new HeatMap3D which is the union of this and otherHeatmap3D
      */
-    public HeatMap3D union(HeatMap3D otherHeatmap) {
+    public HeatMap3D union(HeatMap3D otherHeatmap3D) {
         HeatMap3D unionH = new HeatMap3D(this.bucketDescDim1, this.bucketDescDim2, this.bucketDescDim3);
         for (int i = 0; i < unionH.bucketDescDim1.getNumOfBuckets(); i++)
             for (int j = 0; j < unionH.bucketDescDim2.getNumOfBuckets(); j++)
                 for (int k = 0; k < unionH.bucketDescDim3.getNumOfBuckets(); k++)
-                    unionH.buckets[i][j][k] = this.buckets[i][j][k] + otherHeatmap.buckets[i][j][k];
-        unionH.missingData = this.missingData + otherHeatmap.missingData;
-        unionH.outOfRange = this.outOfRange + otherHeatmap.outOfRange;
-        unionH.totalSize = this.totalSize + otherHeatmap.totalSize;
+                    unionH.buckets[i][j][k] = this.buckets[i][j][k] + otherHeatmap3D.buckets[i][j][k];
+        unionH.eitherMissing = this.eitherMissing + otherHeatmap3D.eitherMissing;
+        unionH.outOfRange = this.outOfRange + otherHeatmap3D.outOfRange;
+        unionH.totalPresent = this.totalPresent + otherHeatmap3D.totalPresent;
         return unionH;
     }
 }

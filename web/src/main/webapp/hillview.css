@@ -15,7 +15,7 @@
  *  limitations under the License.
  */
 
-/* Always show the scrollbar, to prevent page sizes from being 
+/* Always show the scrollbar, to prevent page sizes from being
    decreased (in width) when more content is added. */
 html {
     overflow-y: scroll;
@@ -303,7 +303,7 @@ table.dropdown {
 
 div.heatMapArrayView {
     display: inline-block;
-    margin-top: 40px; 
+    margin-top: 40px;
     overflow: hidden;
 }
 
@@ -325,9 +325,3 @@ div.heatMapArray > div {
     display: inline-block;
     border: 1px solid black;
 }
-
-/*         tblAndBar.style.flexDirection = "row";
-        tblAndBar.style.display = "flex";
-        tblAndBar.style.flexWrap = "nowrap";
-        tblAndBar.style.justifyContent = "flex-start";
-        tblAndBar.style.alignItems = "stretch"; */

@@ -27,12 +27,11 @@ import {BasicColStats} from "./histogramBase";
 import {RangeCollector} from "./histogram";
 import {Range2DCollector} from "./heatMap";
 import {TopMenu, TopSubMenu, ContextMenu} from "./menu";
-import {Converters, PartialResult, ICancellable} from "./util";
+import {Converters, PartialResult, ICancellable, cloneSet} from "./util";
 import {EqualityFilterDialog, EqualityFilterDescription} from "./equalityFilter";
 import d3 = require('d3');
 import {Dialog} from "./dialog";
-import {HeatMapArrayDialog} from "./heatMapArray/dialog"
-import {HeatMapArrayView} from "./heatMapArray/view"
+import {HeatMapArrayDialog, HeatMapArrayView} from "./heatMapArray";
 
 // The first few classes are direct counterparts to server-side Java classes
 // with the same names.  JSON serialization
@@ -45,10 +44,6 @@ export type ContentsKind = "Category" | "Json" | "String" | "Integer" | "Double"
 
 export function isNumeric(kind: ContentsKind): boolean {
     return kind == "Integer" || kind == "Double";
-}
-
-export function isCategorical(kind: ContentsKind): boolean {
-    return kind == "Category" || kind == "String"
 }
 
 export interface IColumnDescription {
@@ -778,8 +773,7 @@ export class TableView extends RemoteObjectView
     }
 
     private heatMapArray(): void {
-        let selectedColumns: string[] = [];
-        this.selectedColumns.forEach((col) => selectedColumns.push(col));
+        let selectedColumns: string[] = cloneSet(this.selectedColumns);
         let newPage = new FullPage();
         this.getPage().insertAfterMe(newPage);
         let dialog = new HeatMapArrayDialog(selectedColumns, newPage, this.schema, this.remoteObjectId);
@@ -789,6 +783,7 @@ export class TableView extends RemoteObjectView
     private heatMap(): void {
         if (this.selectedColumns.size == 3) {
             this.heatMapArray();
+            return;
         }
         if (this.selectedColumns.size != 2) {
             this.reportError("Must select exactly 2 columns for heat map");

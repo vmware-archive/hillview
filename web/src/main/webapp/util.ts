@@ -26,6 +26,11 @@ export interface Triple<T1, T2, T3> {
     third: T3;
 }
 
+export interface Point2D {
+    x: number;
+    y: number;
+}
+
 // Direct counterpart of corresponding Java class
 export class Converters {
     public static dateFromDouble(value: number): Date {
@@ -111,6 +116,24 @@ export function regression(data: number[][]) : number[] {
     return [alpha, beta];
 }
 
+export function truncate(str: string, length: number): string {
+    if (str.length > length) {
+        return str.slice(0, length) + "..."
+    } else {
+        return str;
+    }
+}
+
+export function cloneArray<T>(arr: T[]): T[] {
+    return arr.slice(0);
+}
+
+export function cloneSet<T>(set: Set<T>): T[] {
+    let ret: T[] = [];
+    set.forEach((val) => ret.push(val));
+    return ret;
+}
+
 export class PartialResult<T> {
     constructor(public done: number, public data: T) {}
 }
@@ -127,4 +150,3 @@ export interface ICancellable {
     cancel(): boolean;
     startTime(): Date;
 }
-

@@ -336,7 +336,7 @@ export class ZipReceiver extends Renderer<string> {
 
 // This collector waits for an operation to finish and calls a callback when
 // the operation has completed.
-export class CallbackCollector<T> extends Renderer<T> {
+export class OnCompleteRenderer<T> extends Renderer<T> {
     public data: T;
 
     public constructor(

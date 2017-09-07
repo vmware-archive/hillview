@@ -129,18 +129,27 @@ export class Dialog implements IHtmlElement {
         });
 
         if (defaultValue != null) {
-            for (let i = 0; i < options.length; i++) {
+            let i;
+            for (i = 0; i < options.length; i++) {
                 if (options[i] == defaultValue) {
                     select.selectedIndex = i;
                     break;
                 }
+            }
+            if (i == options.length) {
+                throw new Error(`Given default value ${defaultValue} not found in options.`);
             }
         }
         this.fields.set(fieldName, {html: select});
     }
 
     public getFieldValue(field: string): string {
-        return this.fields.get(field).html.value;
+        try {
+            return this.fields.get(field).html.value;
+        } catch (e) {
+            if (e instanceof TypeError)
+                throw new RangeError(`Field '${field}' not found in this dialog.`);
+        }
     }
 
     public getFieldValueAsInt(field: string): number {
