@@ -190,6 +190,7 @@ export class TableView extends RemoteObjectView
     protected selectedColumns: Set<string>;
     protected firstSelectedColumn: string;  // for shift-click
     protected contextMenu: ContextMenu;
+    protected cellsPerColumn: Map<string, HTMLElement[]>;
 
     static readonly rowsOnScreen = 20;
 
@@ -609,6 +610,8 @@ export class TableView extends RemoteObjectView
         }
         this.tBody = this.htmlTable.createTBody();
 
+        this.cellsPerColumn = new Map<string, HTMLElement[]>()
+        cds.forEach((cd) => this.cellsPerColumn.set(cd.name, []));
         let tableRowCount = 0;
         // Add row data
         if (data.rows != null) {
@@ -801,7 +804,7 @@ export class TableView extends RemoteObjectView
             let name = cd.name;
             let cls = this.columnClass(name);
             let headers = this.tHead.getElementsByClassName(cls);
-            let cells = this.tBody.getElementsByClassName(cls);
+            let cells = this.cellsPerColumn.get(name);
             let selected = this.selectedColumns.has(name);
             for (let i = 0; i < headers.length; i++) {
                 let header = headers[i];
@@ -915,6 +918,8 @@ export class TableView extends RemoteObjectView
             cell.classList.add(this.columnClass(cd.name));
             cell.style.textAlign = "right";
 
+            this.cellsPerColumn.get(cd.name).push(cell);
+
             let dataIndex = this.order.find(cd.name);
             if (dataIndex == -1)
                 continue;
@@ -938,7 +943,7 @@ export class TableView extends RemoteObjectView
                     };
                 }
             }
-            
+
         }
         this.dataRowsDisplayed += row.count;
     }
