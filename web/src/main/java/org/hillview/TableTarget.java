@@ -129,19 +129,14 @@ public final class TableTarget extends RpcTarget {
     static class RangeInfo {
         String columnName = "";
         // The following are only used for categorical columns
-        int firstIndex;
-        int lastIndex;
         @Nullable
-        String firstValue;
-        @Nullable
-        String lastValue;
+        String[] allNames;
 
         @Nullable
         IStringConverter getConverter() {
-            if (this.firstValue == null)
+            if (this.allNames == null)
                 return null;
-            return new SortedStringsConverter(
-                        new String[] { this.firstValue, this.lastValue }, this.firstIndex, this.lastIndex);
+            return new SortedStringsConverter(this.allNames);
         }
     }
 
@@ -281,7 +276,7 @@ public final class TableTarget extends RpcTarget {
         Schema schema;
     }
 
-    HeavyHittersTarget getHHI(FreqKList fkList) {
+    private HeavyHittersTarget getHHI(FreqKList fkList) {
         fkList.filter();
         return new HeavyHittersTarget(fkList);
     }
@@ -291,7 +286,8 @@ public final class TableTarget extends RpcTarget {
         HeavyHittersFilterInfo hhi = request.parseArgs(HeavyHittersFilterInfo.class);
         RpcTarget target = RpcObjectManager.instance.getObject(hhi.hittersId);
         HeavyHittersTarget hht = (HeavyHittersTarget)target;
-        ExactFreqSketch efSketch = new ExactFreqSketch(hhi.schema, hht.heavyHitters);
+        ExactFreqSketch efSketch = new ExactFreqSketch(
+                Converters.checkNull(hhi.schema), hht.heavyHitters);
         this.runCompleteSketch(this.table, efSketch, this::getHHI, request, session);
     }
 

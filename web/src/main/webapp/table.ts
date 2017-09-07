@@ -352,7 +352,7 @@ export class TableView extends RemoteTableObjectView
                 // Get the categorical data and invoke the continuation
                 TableView.initialDataset.retrieveCategoryValues([columnName], this.getPage(), cont);
             } else {
-                let rr = this.createRangeRequest({columnName: columnName});
+                let rr = this.createRangeRequest({columnName: columnName, allNames: null});
                 rr.invoke(new RangeCollector(cd, this.schema, null, this.getPage(), this, rr));
             }
         } else if (this.selectedColumns.size == 2) {

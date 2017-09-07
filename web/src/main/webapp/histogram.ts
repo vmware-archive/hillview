@@ -32,41 +32,6 @@ import {HistogramViewBase, BucketDialog} from "./histogramBase";
 import {Dialog} from "./dialog";
 import {Range2DCollector} from "./heatMap";
 
-// This class is invoked by the ZipReceiver after a set operation to create a new histogram
-class MakeHistogram extends RemoteTableRenderer {
-    public constructor(page: FullPage,
-                       operation: ICancellable,
-                       private colDesc: ColumnDescription,
-                       private schema: Schema,
-                       private allStrings: DistinctStrings) {
-        super(page, operation, "Reload");
-    }
-
-    onCompleted(): void {
-        super.finished();
-        if (this.remoteObject == null)
-            return;
-        if (this.colDesc.kind == "Category") {
-            // Continuation invoked after the distinct strings have been obtained
-            let cont = (operation: ICancellable) => {
-                let ds = TableView.initialDataset.getDistinctStrings(this.colDesc.name);
-                if (ds == null)
-                // Probably an error has occurred
-                    return;
-                let rr = this.remoteObject.createRangeRequest(ds.getRangeInfo(this.colDesc.name));
-                rr.setStartTime(operation.startTime());
-                rr.invoke(new RangeCollector(this.colDesc, this.schema, ds, this.page, this.remoteObject, rr));
-            };
-            // Get the categorical data and invoke the continuation
-            TableView.initialDataset.retrieveCategoryValues([this.colDesc.name], this.page, cont);
-        } else {
-            let rr = this.remoteObject.createRangeRequest({columnName: this.colDesc.name});
-            rr.setStartTime(this.operation.startTime());
-            rr.invoke(new RangeCollector(this.colDesc, this.schema, this.allStrings, this.page, this.remoteObject, rr));
-        }
-    }
-}
-
 export class HistogramView extends HistogramViewBase {
     protected currentData: {
         histogram: Histogram,
@@ -83,7 +48,7 @@ export class HistogramView extends HistogramViewBase {
             { text: "View", subMenu: new TopSubMenu([
                 { text: "refresh", action: () => { this.refresh(); } },
                 { text: "table", action: () => this.showTable() },
-                { text: "#buckets...", action: () => this.chooseBuckets() },
+                { text: "# buckets...", action: () => this.chooseBuckets() },
                 { text: "correlate...", action: () => this.chooseSecondColumn() },
             ]) },
             {
@@ -488,17 +453,16 @@ export class HistogramView extends HistogramViewBase {
         let rr = this.createFilterRequest(filter);
         let renderer = new FilterReceiver(
                 this.currentData.description, this.tableSchema,
-            this.currentData.allStrings, filter, this.page, rr);
+                this.currentData.allStrings, this.page, rr);
         rr.invoke(renderer);
     }
 }
 
 // After filtering we obtain a handle to a new table
-export class FilterReceiver extends RemoteTableRenderer {
+class FilterReceiver extends RemoteTableRenderer {
     constructor(protected columnDescription: ColumnDescription,
                 protected tableSchema: Schema,
                 protected allStrings: DistinctStrings,
-                protected filter: FilterDescription,
                 page: FullPage,
                 operation: ICancellable) {
         super(page, operation, "Filter");
@@ -509,30 +473,19 @@ export class FilterReceiver extends RemoteTableRenderer {
         if (this.remoteObject == null)
             return;
 
-        let fv = null;
-        let sv = null;
-        let fi = null;
-        let li = null;
-        if (this.filter.bucketBoundaries != null) {
-            fv = this.filter.bucketBoundaries[0];
-            sv = this.filter.bucketBoundaries[this.filter.bucketBoundaries.length - 1];
-            fi = this.filter.min;
-            li = this.filter.max;
-        }
-        let rangeInfo = {
-            columnName: this.columnDescription.name,
-            firstIndex: fi,
-            lastIndex: li,
-            firstValue: fv,
-            lastValue: sv
-        };
+        let rangeInfo: RangeInfo = new RangeInfo();
+        let colName = this.columnDescription.name;
+        rangeInfo.columnName = colName;
+        if (this.allStrings != null)
+            rangeInfo = this.allStrings.getRangeInfo(colName);
         let rr = this.remoteObject.createRangeRequest(rangeInfo);
+        rr.setStartTime(this.operation.startTime());
         rr.invoke(new RangeCollector(this.columnDescription, this.tableSchema,
-            this.allStrings, this.page, this.remoteObject, rr));
+                  this.allStrings, this.page, this.remoteObject, this.operation));
     }
 }
 
-// Waits for all column stats to be received and then initiates a histogram
+// Waits for column stats to be received and then initiates a histogram
 // rendering.
 export class RangeCollector extends Renderer<BasicColStats> {
     protected stats: BasicColStats;
@@ -618,3 +571,39 @@ export class HistogramRenderer extends Renderer<Pair<Histogram, Histogram>> {
         this.histogram.scrollIntoView();
     }
 }
+
+// This class is invoked by the ZipReceiver after a set operation to create a new histogram
+class MakeHistogram extends RemoteTableRenderer {
+    public constructor(page: FullPage,
+                       operation: ICancellable,
+                       private colDesc: ColumnDescription,
+                       private schema: Schema,
+                       private allStrings: DistinctStrings) {
+        super(page, operation, "Reload");
+    }
+
+    onCompleted(): void {
+        super.finished();
+        if (this.remoteObject == null)
+            return;
+        if (this.colDesc.kind == "Category") {
+            // Continuation invoked after the distinct strings have been obtained
+            let cont = (operation: ICancellable) => {
+                let ds = TableView.initialDataset.getDistinctStrings(this.colDesc.name);
+                if (ds == null)
+                // Probably an error has occurred
+                    return;
+                let rr = this.remoteObject.createRangeRequest(ds.getRangeInfo(this.colDesc.name));
+                rr.setStartTime(operation.startTime());
+                rr.invoke(new RangeCollector(this.colDesc, this.schema, ds, this.page, this.remoteObject, rr));
+            };
+            // Get the categorical data and invoke the continuation
+            TableView.initialDataset.retrieveCategoryValues([this.colDesc.name], this.page, cont);
+        } else {
+            let rr = this.remoteObject.createRangeRequest({columnName: this.colDesc.name, allNames: null});
+            rr.setStartTime(this.operation.startTime());
+            rr.invoke(new RangeCollector(this.colDesc, this.schema, this.allStrings, this.page, this.remoteObject, rr));
+        }
+    }
+}
+

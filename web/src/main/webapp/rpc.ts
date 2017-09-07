@@ -45,6 +45,10 @@ export class RemoteObject {
     // according to the specified operation.  SHould be overridden
     // in subclasses.
     combine(how: CombineOperators): void {}
+
+    public toString(): string {
+        return this.remoteObjectId;
+    }
 }
 
 // A streaming RPC request: for each request made

@@ -73,11 +73,8 @@ export interface IDistinctStrings {
 
 export class RangeInfo {
     columnName: string;
-    // The following are only used for categorical columns
-    firstIndex?: number;
-    lastIndex?: number;
-    firstValue?: string;
-    lastValue?: string;
+    // The following is only used for categorical columns
+    allNames: string[];
 }
 
 // same as Java class
@@ -161,8 +158,8 @@ export class RemoteTableObject extends RemoteObject {
     }
 
     public createRange2DColsRequest(c1: string, c2: string): RpcRequest {
-        let r1: RangeInfo = { columnName: c1 };
-        let r2: RangeInfo = { columnName: c2 };
+        let r1: RangeInfo = { columnName: c1, allNames: null };
+        let r2: RangeInfo = { columnName: c2, allNames: null };
         return this.createRange2DRequest(r1, r2);
     }
 
@@ -273,10 +270,7 @@ export class DistinctStrings implements IDistinctStrings {
     public getRangeInfo(colName: string): RangeInfo {
         return {
             columnName: colName,
-            firstIndex: 0,
-            lastIndex: this.uniqueStrings.length - 1,
-            firstValue: this.uniqueStrings[0],
-            lastValue: this.uniqueStrings[this.uniqueStrings.length - 1],
+            allNames: this.uniqueStrings
         };
     }
 
@@ -395,8 +389,8 @@ export abstract class RemoteTableRenderer extends Renderer<string> {
     public onNext(value: PartialResult<string>) {
         super.onNext(value);
         if (value.data != null) {
-            if (value.data != null)
-                throw "Remote object already set " + this.remoteObject.remoteObjectId;
+            if (this.remoteObject != null)
+                throw "Remote object already set " + this.remoteObject;
             this.remoteObject = new RemoteTableObject(value.data);
         }
     }
