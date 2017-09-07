@@ -333,3 +333,32 @@ export class ZipReceiver extends Renderer<string> {
         rr.invoke(rec);
     }
 }
+
+// This collector waits for an operation to finish and calls a callback when
+// the operation has completed.
+export class OnCompleteRenderer<T> extends Renderer<T> {
+    public data: T;
+
+    public constructor(
+        page: FullPage,
+        operation: ICancellable,
+        private callback: (data: T) => void,
+        name?: string
+    ) {
+        super(page, operation, name == null ? "CallbackCollector" : name);
+    }
+
+    onNext(value: PartialResult<T>): void {
+        super.onNext(value);
+        this.data = value.data;
+    }
+
+    onCompleted(): void {
+        super.onCompleted();
+        if (this.data == null) {
+            console.log("Did not receive result.");
+            return;
+        }
+        this.callback(this.data);
+    }
+}

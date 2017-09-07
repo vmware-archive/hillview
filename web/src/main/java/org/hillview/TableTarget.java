@@ -18,6 +18,7 @@
 package org.hillview;
 
 import org.hillview.dataset.ConcurrentSketch;
+import org.hillview.dataset.TripleSketch;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.maps.FilterMap;
 import org.hillview.maps.LinearProjectionMap;
@@ -107,6 +108,18 @@ public final class TableTarget extends RpcTarget {
     }
 
     @HillviewRpc
+    void heatMap3D(RpcRequest request, Session session) {
+        ColTriple info = request.parseArgs(ColTriple.class);
+        ColumnAndRange.HistogramParts h1 = Converters.checkNull(info.first).prepare();
+        ColumnAndRange.HistogramParts h2 = Converters.checkNull(info.second).prepare();
+        ColumnAndRange.HistogramParts h3 = Converters.checkNull(info.third).prepare();
+
+        HeatMap3DSketch sk = new HeatMap3DSketch(h1.buckets, h2.buckets, h3.buckets, h1.converter, h2.converter, h3.converter,
+                info.first.columnName, info.second.columnName, info.third.columnName);
+        this.runSketch(this.table, sk, request, session);
+    }
+
+    @HillviewRpc
     void histogram2D(RpcRequest request, Session session) {
         ColPair info = request.parseArgs(ColPair.class);
         ColumnAndRange.HistogramParts h1 = Converters.checkNull(info.first).prepare();
@@ -135,9 +148,12 @@ public final class TableTarget extends RpcTarget {
         String firstValue;
         @Nullable
         String lastValue;
-
+        @Nullable
+        String[] values;
         @Nullable
         IStringConverter getConverter() {
+            if (this.values != null)
+                return new SortedStringsConverter(this.values, 0, this.values.length - 1);
             if (this.firstValue == null)
                 return null;
             return new SortedStringsConverter(
@@ -162,6 +178,19 @@ public final class TableTarget extends RpcTarget {
         ConcurrentSketch<ITable, BasicColStats, BasicColStats> csk =
                 new ConcurrentSketch<ITable, BasicColStats, BasicColStats>(sk1, sk2);
         this.runSketch(this.table, csk, request, session);
+    }
+
+    @HillviewRpc
+    void range3D(RpcRequest request, Session session) {
+        RangeInfo[] cols = request.parseArgs(RangeInfo[].class);
+        if (cols.length != 3)
+            throw new RuntimeException("Expected 3 RangeInfo objects, got " + cols.length);
+        BasicColStatSketch sk1 = new BasicColStatSketch(cols[0].columnName, cols[0].getConverter(), 0, 1.0);
+        BasicColStatSketch sk2 = new BasicColStatSketch(cols[1].columnName, cols[1].getConverter(), 0, 1.0);
+        BasicColStatSketch sk3 = new BasicColStatSketch(cols[2].columnName, cols[2].getConverter(), 0, 1.0);
+        TripleSketch<ITable, BasicColStats, BasicColStats, BasicColStats> tsk =
+                new TripleSketch<ITable, BasicColStats, BasicColStats, BasicColStats>(sk1, sk2, sk3);
+        this.runSketch(this.table, tsk, request, session);
     }
 
     @HillviewRpc
