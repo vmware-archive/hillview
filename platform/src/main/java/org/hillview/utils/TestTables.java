@@ -54,7 +54,7 @@ public class TestTables {
      * @return A small table with some repeated content.
      */
     public static Table testRepTable() {
-        ColumnDescription c0 = new ColumnDescription("Name", ContentsKind.Category, false);
+        ColumnDescription c0 = new ColumnDescription("Name", ContentsKind.String, false);
         ColumnDescription c1 = new ColumnDescription("Age", ContentsKind.Integer, false);
         StringArrayColumn sac = new StringArrayColumn(c0,
                 new String[] { "Mike", "John", "Tom", "Bill", "Bill", "Smith", "Donald", "Bruce",
