@@ -1,6 +1,7 @@
 package org.hillview.sketches;
 
 import net.openhft.hashing.LongHashFunction;
+import org.hillview.dataset.api.IJson;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.IRowIterator;
@@ -10,11 +11,12 @@ import org.hillview.table.api.IRowIterator;
  * are identified via their hashcode. The class uses the HyperLogLog algorithm for large estimates
  * and LinearCounting algorithm for small estimates.
  */
-public class HLogLog {
+public class HLogLog implements IJson {
     private final int regNum; //number of registers
     private final int logRegNum;
     private final byte[] registers;
     private final long seed;
+    public long distinctItemCount; // Field so that value is accessible after serializing
 
     /**
      * @param logRegNum the logarithm of the number of registers. should be in 4...16
@@ -55,6 +57,7 @@ public class HLogLog {
              }
             currRow = myIter.getNextRow();
         }
+        this.distinctItemsEstimator();
     }
 
     public HLogLog union(HLogLog otherHLL) {
@@ -63,6 +66,7 @@ public class HLogLog {
         HLogLog result = new HLogLog(this.logRegNum, this.seed);
         for (int i = 0; i < this.regNum; i++)
             result.registers[i] = (byte) Integer.max(this.registers[i], otherHLL.registers[i]);
+        result.distinctItemsEstimator();
         return result;
     }
 
@@ -94,6 +98,7 @@ public class HLogLog {
             result = Math.round(this.regNum * (Math.log(this.regNum / (double) zeroRegs)));
         else if (rawEstimate > (Integer.MAX_VALUE / 30 ))
             result = (long) (- Math.pow(2,32) * Math.log(1 - (rawEstimate /  Math.pow(2,32))));
+        this.distinctItemCount = result;
         return result;
     }
 

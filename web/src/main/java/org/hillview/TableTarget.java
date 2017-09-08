@@ -27,6 +27,7 @@ import org.hillview.maps.LinearProjectionMap;
 import org.hillview.sketches.*;
 import org.hillview.table.*;
 import org.hillview.table.api.ColumnNameAndConverter;
+import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IStringConverter;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
@@ -333,6 +334,25 @@ public final class TableTarget extends RpcTarget {
         TableFilter filter = hht.heavyHitters.heavyFilter(Converters.checkNull(hhi.schema));
         FilterMap fm = new FilterMap(filter);
         this.runMap(this.table, fm, TableTarget::new, request, session);
+    }
+
+    @HillviewRpc
+    void hLogLog(RpcRequest request, Session session) {
+        String colName = request.parseArgs(String.class);
+        HLogLogSketch sketch = new HLogLogSketch(colName);
+        this.runSketch(this.table, sketch, request, session);
+    }
+
+    static class ConvertColumnInfo {
+        String colName;
+        String newColName;
+        ContentsKind newKind;
+    }
+
+    @HillviewRpc
+    void convertColumnMap(RpcRequest request, Session session) {
+        ConvertColumnInfo info = request.parseArgs(ConvertColumnInfo.class);
+        //TODO: Call the ConvertColumnMap after merge.
     }
 
     @Override
