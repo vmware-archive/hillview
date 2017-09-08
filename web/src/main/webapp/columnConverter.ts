@@ -40,13 +40,13 @@ export class ColumnConverter  {
             let rr = this.table.createRpcRequest("hLogLog", this.columnName);
             rr.invoke(new HLogLogReceiver(this.table.getPage(), rr, "HLogLog", (count) => this.checkValidForCategory(count)));
         } else {
-            this.table.getPage().reportError(`Converting to ${this.newKind} is not supported.`);
+            this.table.reportError(`Converting to ${this.newKind} is not supported.`);
         }
     }
 
     private checkValidForCategory(hLogLog: HLogLog) {
         if (hLogLog.distinctItemCount > ColumnConverter.maxCategoricalCount) {
-            this.table.getPage().reportError("Too many values for categorical column");
+            this.table.reportError("Too many values for categorical column");
         } else {
             this.runConversion();
         }
@@ -59,7 +59,7 @@ export class ColumnConverter  {
             newKind: this.newKind
         };
         let rr = this.table.createRpcRequest("convertColumnMap", args);
-        rr.invoke(new RemoteTableReceiver(this.table.getPage(), rr));
+        rr.invoke(new RemoteTableReceiver(this.table.getPage(), rr, true));
     }
 }
 

@@ -861,12 +861,15 @@ export class TableRenderer extends Renderer<TableDataView> {
 export class RemoteTableReceiver extends Renderer<string> {
     public remoteTableId: string;
 
-    constructor(page: FullPage, operation: ICancellable) {
+    constructor(page: FullPage, operation: ICancellable, private replaceInitial = false) {
         super(page, operation, "Get schema");
     }
 
     protected getTableSchema(tableId: string) {
         let table = new TableView(tableId, this.page);
+        if (this.replaceInitial) {
+            TableView.initialDataset = new InitialTable(this.remoteTableId);
+        }
         this.page.setDataView(table);
         let rr = table.createGetSchemaRequest();
         rr.setStartTime(this.operation.startTime());
