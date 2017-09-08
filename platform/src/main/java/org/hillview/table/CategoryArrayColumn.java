@@ -6,16 +6,30 @@ import javax.annotation.Nullable;
 import java.util.HashMap;
 
 public class CategoryArrayColumn extends BaseArrayColumn implements IStringColumn, IMutableColumn {
-
     private final HashMap<String, Integer> encoding;
     private final HashMap<Integer, String> decoding;
     private final int[] data;
 
     public CategoryArrayColumn(ColumnDescription description, final int size) {
         super(description, size);
+        this.checkKind(ContentsKind.Category);
         this.encoding = new HashMap<String, Integer>(100);
         this.decoding = new HashMap<Integer, String>(100);
         this.data = new int[size];
+    }
+
+    public CategoryArrayColumn(ColumnDescription description, String[] values) {
+        super(description, values.length);
+        this.checkKind(ContentsKind.Category);
+        this.encoding = new HashMap<String, Integer>(100);
+        this.decoding = new HashMap<Integer, String>(100);
+        this.data = new int[values.length];
+
+        int i = 0;
+        for (String value : values) {
+            this.set(i, value);
+            i++;
+        }
     }
 
     @Nullable

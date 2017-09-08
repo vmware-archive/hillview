@@ -19,6 +19,7 @@
 package org.hillview.table;
 
 import org.hillview.table.api.ContentsKind;
+import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IStringColumn;
 
 import javax.annotation.Nullable;
@@ -73,4 +74,26 @@ public final class StringArrayColumn
 
     @Override
     public void setMissing(final int rowIndex) { this.set(rowIndex, null);}
+
+    @Override
+    public IColumn convertKind(ContentsKind kind, String newColName) {
+        IColumn newColumn;
+        switch(kind) {
+            case Category:
+                ColumnDescription cd = new ColumnDescription(newColName, ContentsKind.Category, this.description.allowMissing);
+                newColumn = new CategoryArrayColumn(cd, this.data);
+                break;
+            case Json:
+            case String:
+            case Integer:
+            case Double:
+            case Date:
+            case Duration:
+                throw new UnsupportedOperationException("Conversion from " + this.description.kind.toString() + " to " +
+                        "" + kind.toString() + " is not supported.");
+            default:
+                throw new RuntimeException("Unexpected column kind " + description.toString());
+        }
+        return newColumn;
+    }
 }
