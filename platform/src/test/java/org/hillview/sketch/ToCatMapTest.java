@@ -2,7 +2,7 @@ package org.hillview.sketch;
 
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IMap;
-import org.hillview.maps.ToCatMap;
+import org.hillview.maps.ConvertColumnMap;
 import org.hillview.sketches.DistinctStrings;
 import org.hillview.sketches.DistinctStringsSketch;
 import org.hillview.table.*;
@@ -37,7 +37,7 @@ public class ToCatMapTest {
         ITable table = this.tableWithStringColumn();
         System.out.println("Table before conversion:");
         TestUtils.printTable(table);
-        IMap<ITable, ITable> map = new ToCatMap("Name", "Name Categorical");
+        IMap<ITable, ITable> map = new ConvertColumnMap("Name", "Name Categorical", ContentsKind.Category);
         ITable result = map.apply(table);
         System.out.println("Table after conversion:");
         TestUtils.printTable(result);
@@ -58,7 +58,7 @@ public class ToCatMapTest {
     public void testToCatMapBig() {
         ITable table = this.tableWithStringColumn();
         IDataSet<ITable> bigTable = TestTables.makeParallel(table, 3);
-        IMap<ITable, ITable> map = new ToCatMap("Name", "Name Categorical");
+        IMap<ITable, ITable> map = new ConvertColumnMap("Name", "Name Categorical", ContentsKind.Category);
 
         IDataSet<ITable> result = bigTable.blockingMap(map);
 

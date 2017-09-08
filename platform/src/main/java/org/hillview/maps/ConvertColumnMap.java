@@ -11,17 +11,19 @@ import java.util.List;
 
 /**
  * This map receives a column name of the input table, and returns a table with the same column, with additionally
- * that specified column converted to a categorical column.
+ * that specified column converted to different kind.
  */
-public class ToCatMap implements IMap<ITable, ITable> {
+public class ConvertColumnMap implements IMap<ITable, ITable> {
     private final String inputColName;
     private final String newColName;
     private final ContentsKind newKind;
 
     /**
      * @param inputColName The name of the column that has to be converted to a categorical column.
+     * @param newColName Name of the new column. The table cannot have a column with this name already.
+     * @param newKind Kind of the column.
      */
-    public ToCatMap(String inputColName, String newColName, ContentsKind newKind) {
+    public ConvertColumnMap(String inputColName, String newColName, ContentsKind newKind) {
         this.inputColName = inputColName;
         this.newColName = newColName;
         this.newKind = newKind;
