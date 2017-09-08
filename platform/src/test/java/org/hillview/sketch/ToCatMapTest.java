@@ -8,6 +8,7 @@ import org.hillview.sketches.DistinctStringsSketch;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ITable;
+import org.hillview.utils.JsonList;
 import org.hillview.utils.TestTables;
 import org.junit.Assert;
 import org.junit.Test;
@@ -42,16 +43,16 @@ public class ToCatMapTest {
 
         IDataSet<ITable> result = bigTable.blockingMap(map);
 
-        DistinctStringsSketch uss1 = new DistinctStringsSketch(100, "Name");
-        DistinctStringsSketch uss2 = new DistinctStringsSketch(100, "Name (Cat.)");
-        DistinctStrings ds1 = result.blockingSketch(uss1);
-        DistinctStrings ds2 = result.blockingSketch(uss2);
+        DistinctStringsSketch uss1 = new DistinctStringsSketch(100, new String[]{"Name"});
+        DistinctStringsSketch uss2 = new DistinctStringsSketch(100, new String[]{"Name (Cat.)"});
+        JsonList<DistinctStrings> ds1 = result.blockingSketch(uss1);
+        JsonList<DistinctStrings> ds2 = result.blockingSketch(uss2);
         Set<String> strings1 = new HashSet<String>();
-        for (String s : ds1.getStrings()) {
+        for (String s : ds1.get(0).getStrings()) {
             strings1.add(s);
         }
         Set<String> strings2 = new HashSet<String>();
-        for (String s : ds2.getStrings()) {
+        for (String s : ds2.get(0).getStrings()) {
             strings2.add(s);
         }
 
