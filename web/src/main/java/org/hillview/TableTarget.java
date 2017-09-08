@@ -22,6 +22,7 @@ import org.hillview.dataset.TripleSketch;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.Pair;
+import org.hillview.maps.ConvertColumnMap;
 import org.hillview.maps.FilterMap;
 import org.hillview.maps.LinearProjectionMap;
 import org.hillview.sketches.*;
@@ -352,7 +353,8 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     void convertColumnMap(RpcRequest request, Session session) {
         ConvertColumnInfo info = request.parseArgs(ConvertColumnInfo.class);
-        //TODO: Call the ConvertColumnMap after merge.
+        ConvertColumnMap map = new ConvertColumnMap(info.colName, info.newColName, info.newKind);
+        this.runMap(this.table, map, TableTarget::new, request, session);
     }
 
     @Override
