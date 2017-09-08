@@ -26,7 +26,10 @@ public class HLLTest {
         final HLogLog hll = new HLogLog(accuracy, seed);
         final FullMembership memSet = new FullMembership(size);
         hll.createHLL(col, memSet);
+        long alsoResult = hll.distinctItemCount;
         long result = hll.distinctItemsEstimator();
+        assertTrue(alsoResult == result);
+        assertTrue((result > (0.9 * range)) && (result < (1.1 * range)));
         assertTrue((result > (0.9 * range)) && (result < (1.1 * range)));
     }
 

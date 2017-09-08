@@ -26,6 +26,34 @@ import {FullPage, IDataView, Resolution} from "./ui";
 import {EqualityFilterDescription} from "./equalityFilter";
 import {ICancellable, PartialResult, Triple} from "./util";
 export type ContentsKind = "Category" | "Json" | "String" | "Integer" | "Double" | "Date" | "Interval";
+export function asContentsKind(kind: string): ContentsKind {
+    switch (kind) {
+        case "Category": {
+            return "Category";
+        }
+        case "Json": {
+            return "Json";
+        }
+        case "String": {
+            return "String";
+        }
+        case "Integer": {
+            return "Integer";
+        }
+        case "Double": {
+            return "Double";
+        }
+        case "Date": {
+            return "Date";
+        }
+        case "Interval": {
+            return "Interval";
+        }
+        default: {
+            throw new TypeError(`String ${kind} is not a kind.`);
+        }
+    }
+}
 
 export function isNumeric(kind: ContentsKind): boolean {
     return kind == "Integer" || kind == "Double";

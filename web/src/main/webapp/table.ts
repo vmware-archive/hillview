@@ -33,6 +33,7 @@ import {
 } from "./tableData";
 import {InitialTable} from "./initialTable";
 import {HeatMapArrayDialog} from "./heatMapArray";
+import {ColumnConverter} from "./columnConverter";
 
 // This is the serialization of a NextKList Java object
 export class TableDataView {
@@ -241,6 +242,15 @@ export class TableView extends RemoteTableObjectView
         page.setDataView(table);
         let rr = table.createGetSchemaRequest();
         rr.invoke(new TableRenderer(page, table, rr, false, new RecordOrder([])));
+    }
+
+    public static allColumnNames(schema: Schema): string[] {
+        if (schema == null)
+            return null;
+        let colNames = [];
+        for (let i = 0; i < schema.length; i++)
+            colNames.push(schema[i].name)
+        return colNames;
     }
 
     public static columnIndex(schema: Schema, colName: string): number {
@@ -470,6 +480,7 @@ export class TableView extends RemoteTableObjectView
                 this.contextMenu.addItem({text: "Select numeric columns", action: () => this.selectNumericColumns()});
                 this.contextMenu.addItem({text: "PCA...", action: () => this.pca() });
                 this.contextMenu.addItem({text: "Filter...", action: () => this.equalityFilter(cd.name)});
+                this.contextMenu.addItem({text: "Convert...", action: () => ColumnConverter.dialog(cd.name, TableView.allColumnNames(this.schema), this)});
 
                 // Spawn the menu at the mouse's location
                 this.contextMenu.move(e.pageX - 1, e.pageY - 1);
