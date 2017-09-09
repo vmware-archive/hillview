@@ -31,6 +31,7 @@ import {Converters, Pair, reorder, ICancellable, PartialResult} from "./util";
 import {HistogramViewBase, BucketDialog} from "./histogramBase";
 import {Dialog} from "./dialog";
 import {Range2DCollector} from "./heatMap";
+import {CategoryCache} from "./categoryCache";
 
 export class HistogramView extends HistogramViewBase {
     protected currentData: {
@@ -589,7 +590,7 @@ class MakeHistogram extends RemoteTableRenderer {
         if (this.colDesc.kind == "Category") {
             // Continuation invoked after the distinct strings have been obtained
             let cont = (operation: ICancellable) => {
-                let ds = TableView.initialDataset.getDistinctStrings(this.colDesc.name);
+                let ds = CategoryCache.instance.getDistinctStrings(this.colDesc.name);
                 if (ds == null)
                 // Probably an error has occurred
                     return;
@@ -598,7 +599,7 @@ class MakeHistogram extends RemoteTableRenderer {
                 rr.invoke(new RangeCollector(this.colDesc, this.schema, ds, this.page, this.remoteObject, rr));
             };
             // Get the categorical data and invoke the continuation
-            TableView.initialDataset.retrieveCategoryValues([this.colDesc.name], this.page, cont);
+            CategoryCache.instance.retrieveCategoryValues(this.remoteObject, [this.colDesc.name], this.page, cont);
         } else {
             let rr = this.remoteObject.createRangeRequest({columnName: this.colDesc.name, allNames: null});
             rr.setStartTime(this.operation.startTime());
@@ -606,4 +607,3 @@ class MakeHistogram extends RemoteTableRenderer {
         }
     }
 }
-

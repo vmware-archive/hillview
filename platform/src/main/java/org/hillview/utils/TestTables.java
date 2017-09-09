@@ -22,10 +22,7 @@ import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.table.*;
-import org.hillview.table.api.ContentsKind;
-import org.hillview.table.api.IColumn;
-import org.hillview.table.api.IMembershipSet;
-import org.hillview.table.api.ITable;
+import org.hillview.table.api.*;
 import org.jblas.DoubleMatrix;
 import org.junit.Assert;
 
@@ -42,7 +39,7 @@ public class TestTables {
     public static Table testTable() {
         ColumnDescription c0 = new ColumnDescription("Name", ContentsKind.Category, false);
         ColumnDescription c1 = new ColumnDescription("Age", ContentsKind.Integer, false);
-        StringArrayColumn sac = new StringArrayColumn(c0,
+        CategoryArrayColumn sac = new CategoryArrayColumn(c0,
                 new String[] { "Mike", "John", "Tom", "Bill", "Bill", "Smith", "Donald", "Bruce",
                                "Bob", "Frank", "Richard", "Steve", "Dave" });
         IntArrayColumn iac = new IntArrayColumn(c1, new int[] { 20, 30, 10, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
@@ -56,7 +53,7 @@ public class TestTables {
     public static Table testRepTable() {
         ColumnDescription c0 = new ColumnDescription("Name", ContentsKind.Category, false);
         ColumnDescription c1 = new ColumnDescription("Age", ContentsKind.Integer, false);
-        StringArrayColumn sac = new StringArrayColumn(c0,
+        CategoryArrayColumn sac = new CategoryArrayColumn(c0,
                 new String[] { "Mike", "John", "Tom", "Bill", "Bill", "Smith", "Donald", "Bruce",
                         "Bob", "Frank", "Richard", "Steve", "Dave", "Mike", "Ed" });
         IntArrayColumn iac = new IntArrayColumn(c1, new int[] { 20, 30, 10, 10, 20, 30, 20, 30, 10,

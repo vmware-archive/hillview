@@ -113,6 +113,15 @@ public interface IColumn extends Serializable {
         return result;
     }
 
+    /**
+     * Returns a copy of this column, in the specified kind.
+     * @param kind The kind that this column should be converted to.
+     * @param newColName Name of the new column.
+     * @return An IColumn that is a copy of this column, converted to the specified kind.
+     */
+    default IColumn convertKind(ContentsKind kind, String newColName) {throw new UnsupportedOperationException
+            ("Conversion not implemented for this kind.");}
+
     default String getName() {
         return this.getDescription().name;
     }

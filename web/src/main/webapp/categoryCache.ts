@@ -16,31 +16,30 @@
  */
 
 import {RemoteObject, Renderer} from "./rpc";
-import {IDistinctStrings, DistinctStrings} from "./tableData";
+import {IDistinctStrings, DistinctStrings, RemoteTableObject} from "./tableData";
 import {PartialResult, ICancellable} from "./util";
 import {FullPage} from "./ui";
 
-/// This is an abstraction for the toplevel dataset, which represents
-// the full table that was loaded initially.
-export class InitialTable extends RemoteObject {
+export class CategoryCache {
     columnValues: Map<string, DistinctStrings>;
     // TODO: handle errors that can occur while retrieving DistinctStrings
 
-    public constructor(remoteObjectId: string) {
-        super(remoteObjectId);
+    private constructor() {
         this.columnValues = new Map<string, DistinctStrings>();
     }
+
+    public static instance: CategoryCache = new CategoryCache();
 
     /// Retrieves the category values for all specified column names
     /// and stores them internally in columnValues.
     /// Invokes continuation when all values are known.
-    public retrieveCategoryValues(columnNames: string[],
-                           page: FullPage,
-                                  // The operation is the asynchronous operation
-                                  // that may have retrieved the data
-                           continuation: (operation: ICancellable) => void): void {
-        let rr = this.createRpcRequest("uniqueStrings", columnNames);
-        let renderer = new ReceiveCategory(this, continuation, page, rr);
+    public retrieveCategoryValues(remoteTable: RemoteTableObject,
+        columnNames: string[], page: FullPage,
+        // The operation is the asynchronous operation
+        // that may have retrieved the data
+        continuation: (operation: ICancellable) => void): void {
+        let rr = remoteTable.createRpcRequest("uniqueStrings", columnNames);
+        let renderer = new ReceiveCategory(continuation, page, rr);
         for (let c of columnNames) {
             if (!this.columnValues.has(c))
                 renderer.addColumn(c);
@@ -68,8 +67,7 @@ class ReceiveCategory extends Renderer<IDistinctStrings[]> {
     /// Output produced: one set of distinct strings for each columns.
     protected values: IDistinctStrings[];
 
-    public constructor(protected tds: InitialTable,
-                       protected continuation: (operation: ICancellable) => void,
+    public constructor(protected continuation: (operation: ICancellable) => void,
                        page: FullPage,
                        operation: ICancellable) {
         super(page, operation, "Create converter");
@@ -99,7 +97,7 @@ class ReceiveCategory extends Renderer<IDistinctStrings[]> {
                 this.page.reportError("Column " + col + " has too many distinct values; it is not really a category");
             } else {
                 let ds = new DistinctStrings(this.values[i]);
-                this.tds.setDistinctStrings(col, ds);
+                CategoryCache.instance.setDistinctStrings(col, ds);
             }
         }
         super.finished();

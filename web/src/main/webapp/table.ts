@@ -29,10 +29,11 @@ import d3 = require('d3');
 import {Dialog} from "./dialog";
 import {
     Schema, RowView, RecordOrder, IColumnDescription, ColumnDescription, ColumnSortOrientation,
-    ContentsKind, RangeInfo, RemoteTableObjectView, ZipReceiver, RemoteTableRenderer
+    ContentsKind, RangeInfo, RemoteTableObjectView, ZipReceiver, RemoteTableRenderer, RemoteTableObject
 } from "./tableData";
-import {InitialTable} from "./initialTable";
+import {CategoryCache} from "./categoryCache";
 import {HeatMapArrayDialog} from "./heatMapArray";
+import {ColumnConverter} from "./columnConverter";
 
 // This is the serialization of a NextKList Java object
 export class TableDataView {
@@ -48,7 +49,6 @@ export class TableDataView {
  */
 export class TableView extends RemoteTableObjectView
     implements IScrollTarget {
-    public static initialDataset: InitialTable = null;
 
     // Data view part: received from remote site
     public schema?: Schema;
@@ -68,13 +68,14 @@ export class TableView extends RemoteTableObjectView
     protected firstSelectedColumn: string;  // for shift-click
     protected contextMenu: ContextMenu;
     protected cellsPerColumn: Map<string, HTMLElement[]>;
+    static firstTable: RemoteTableObject;
 
     public constructor(remoteObjectId: string, page: FullPage) {
         super(remoteObjectId, page);
 
         this.order = new RecordOrder([]);
-        if (TableView.initialDataset == null)
-            TableView.initialDataset = new InitialTable(remoteObjectId);
+        if (TableView.firstTable == null)
+            TableView.firstTable = this;
         this.topLevel = document.createElement("div");
         this.topLevel.id = "tableContainer";
         this.topLevel.tabIndex = 1;  // necessary for keyboard events?
@@ -234,13 +235,22 @@ export class TableView extends RemoteTableObjectView
 
     // Navigate back to the first table known
     public static fullDataset(page: FullPage): void {
-        if (TableView.initialDataset == null)
+        if (TableView.firstTable == null)
             return;
 
-        let table = new TableView(TableView.initialDataset.remoteObjectId, page);
+        let table = new TableView(TableView.firstTable.remoteObjectId, page);
         page.setDataView(table);
         let rr = table.createGetSchemaRequest();
         rr.invoke(new TableRenderer(page, table, rr, false, new RecordOrder([])));
+    }
+
+    public static allColumnNames(schema: Schema): string[] {
+        if (schema == null)
+            return null;
+        let colNames = [];
+        for (let i = 0; i < schema.length; i++)
+            colNames.push(schema[i].name)
+        return colNames;
     }
 
     public static columnIndex(schema: Schema, colName: string): number {
@@ -344,7 +354,7 @@ export class TableView extends RemoteTableObjectView
             if (cd.kind == "Category") {
                 // Continuation invoked after the distinct strings have been obtained
                 let cont = (operation: ICancellable) => {
-                    let ds = TableView.initialDataset.getDistinctStrings(columnName);
+                    let ds = CategoryCache.instance.getDistinctStrings(columnName);
                     if (ds == null)
                         // Probably an error has occurred
                         return;
@@ -353,7 +363,7 @@ export class TableView extends RemoteTableObjectView
                     rr.invoke(new RangeCollector(cd, this.schema, ds, this.getPage(), this, rr));
                 };
                 // Get the categorical data and invoke the continuation
-                TableView.initialDataset.retrieveCategoryValues([columnName], this.getPage(), cont);
+                CategoryCache.instance.retrieveCategoryValues(this, [columnName], this.getPage(), cont);
             } else {
                 let rr = this.createRangeRequest({columnName: columnName, allNames: null});
                 rr.invoke(new RangeCollector(cd, this.schema, null, this.getPage(), this, rr));
@@ -470,6 +480,7 @@ export class TableView extends RemoteTableObjectView
                 this.contextMenu.addItem({text: "Select numeric columns", action: () => this.selectNumericColumns()});
                 this.contextMenu.addItem({text: "PCA...", action: () => this.pca() });
                 this.contextMenu.addItem({text: "Filter...", action: () => this.equalityFilter(cd.name)});
+                this.contextMenu.addItem({text: "Convert...", action: () => ColumnConverter.dialog(cd.name, TableView.allColumnNames(this.schema), this)});
 
                 // Spawn the menu at the mouse's location
                 this.contextMenu.move(e.pageX - 1, e.pageY - 1);
