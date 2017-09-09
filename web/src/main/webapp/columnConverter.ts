@@ -46,7 +46,7 @@ export class ColumnConverter  {
 
     private checkValidForCategory(hLogLog: HLogLog) {
         if (hLogLog.distinctItemCount > ColumnConverter.maxCategoricalCount) {
-            this.table.reportError("Too many values for categorical column");
+            this.table.reportError(`Too many values for categorical column. There are ${hLogLog.distinctItemCount}, and up to ${ColumnConverter.maxCategoricalCount} are supported.`);
         } else {
             this.runConversion();
         }
@@ -59,7 +59,7 @@ export class ColumnConverter  {
             newKind: this.newKind
         };
         let rr = this.table.createRpcRequest("convertColumnMap", args);
-        rr.invoke(new RemoteTableReceiver(this.table.getPage(), rr, true));
+        rr.invoke(new RemoteTableReceiver(this.table.getPage(), rr));
     }
 }
 

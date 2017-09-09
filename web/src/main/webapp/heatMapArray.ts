@@ -30,6 +30,7 @@ import {
     RemoteTableObjectView, IColumnDescription, BasicColStats, DistinctStrings,
     ColumnAndRange, Schema, isNumeric, RemoteTableObject
 } from "./tableData";
+import {CategoryCache} from "./categoryCache";
 
 export class HeatMapArrayData {
     buckets: number[][][];
@@ -514,12 +515,12 @@ export class HeatMapArrayDialog extends Dialog {
         let heatMapArrayView = new HeatMapArrayView(this.remoteObject.remoteObjectId, newPage, args);
         newPage.setDataView(heatMapArrayView);
         let cont = (operation: ICancellable) => {
-            args.uniqueStrings = TableView.initialDataset.getDistinctStrings(categCol.name);
+            args.uniqueStrings = CategoryCache.instance.getDistinctStrings(categCol.name);
             let rr = heatMapArrayView.createRange2DColsRequest(args.cds[0].name, args.cds[1].name);
             rr.setStartTime(operation.startTime());
             rr.invoke(new Range2DRenderer(newPage, heatMapArrayView, rr));
         };
-        TableView.initialDataset.retrieveCategoryValues([categCol.name], this.page, cont);
+        CategoryCache.instance.retrieveCategoryValues(this.remoteObject, [categCol.name], this.page, cont);
     }
 
     private parseFields(): HeatMapArrayArgs {

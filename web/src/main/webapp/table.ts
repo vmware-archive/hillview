@@ -29,9 +29,9 @@ import d3 = require('d3');
 import {Dialog} from "./dialog";
 import {
     Schema, RowView, RecordOrder, IColumnDescription, ColumnDescription, ColumnSortOrientation,
-    ContentsKind, RangeInfo, RemoteTableObjectView, ZipReceiver, RemoteTableRenderer
+    ContentsKind, RangeInfo, RemoteTableObjectView, ZipReceiver, RemoteTableRenderer, RemoteTableObject
 } from "./tableData";
-import {InitialTable} from "./initialTable";
+import {CategoryCache} from "./categoryCache";
 import {HeatMapArrayDialog} from "./heatMapArray";
 import {ColumnConverter} from "./columnConverter";
 
@@ -49,7 +49,6 @@ export class TableDataView {
  */
 export class TableView extends RemoteTableObjectView
     implements IScrollTarget {
-    public static initialDataset: InitialTable = null;
 
     // Data view part: received from remote site
     public schema?: Schema;
@@ -69,13 +68,14 @@ export class TableView extends RemoteTableObjectView
     protected firstSelectedColumn: string;  // for shift-click
     protected contextMenu: ContextMenu;
     protected cellsPerColumn: Map<string, HTMLElement[]>;
+    static firstTable: RemoteTableObject;
 
     public constructor(remoteObjectId: string, page: FullPage) {
         super(remoteObjectId, page);
 
         this.order = new RecordOrder([]);
-        if (TableView.initialDataset == null)
-            TableView.initialDataset = new InitialTable(remoteObjectId);
+        if (TableView.firstTable == null)
+            TableView.firstTable = this;
         this.topLevel = document.createElement("div");
         this.topLevel.id = "tableContainer";
         this.topLevel.tabIndex = 1;  // necessary for keyboard events?
@@ -235,10 +235,10 @@ export class TableView extends RemoteTableObjectView
 
     // Navigate back to the first table known
     public static fullDataset(page: FullPage): void {
-        if (TableView.initialDataset == null)
+        if (TableView.firstTable == null)
             return;
 
-        let table = new TableView(TableView.initialDataset.remoteObjectId, page);
+        let table = new TableView(TableView.firstTable.remoteObjectId, page);
         page.setDataView(table);
         let rr = table.createGetSchemaRequest();
         rr.invoke(new TableRenderer(page, table, rr, false, new RecordOrder([])));
@@ -354,7 +354,7 @@ export class TableView extends RemoteTableObjectView
             if (cd.kind == "Category") {
                 // Continuation invoked after the distinct strings have been obtained
                 let cont = (operation: ICancellable) => {
-                    let ds = TableView.initialDataset.getDistinctStrings(columnName);
+                    let ds = CategoryCache.instance.getDistinctStrings(columnName);
                     if (ds == null)
                         // Probably an error has occurred
                         return;
@@ -363,7 +363,7 @@ export class TableView extends RemoteTableObjectView
                     rr.invoke(new RangeCollector(cd, this.schema, ds, this.getPage(), this, rr));
                 };
                 // Get the categorical data and invoke the continuation
-                TableView.initialDataset.retrieveCategoryValues([columnName], this.getPage(), cont);
+                CategoryCache.instance.retrieveCategoryValues(this, [columnName], this.getPage(), cont);
             } else {
                 let rr = this.createRangeRequest({columnName: columnName, allNames: null});
                 rr.invoke(new RangeCollector(cd, this.schema, null, this.getPage(), this, rr));
@@ -861,15 +861,12 @@ export class TableRenderer extends Renderer<TableDataView> {
 export class RemoteTableReceiver extends Renderer<string> {
     public remoteTableId: string;
 
-    constructor(page: FullPage, operation: ICancellable, private replaceInitial = false) {
+    constructor(page: FullPage, operation: ICancellable) {
         super(page, operation, "Get schema");
     }
 
     protected getTableSchema(tableId: string) {
         let table = new TableView(tableId, this.page);
-        if (this.replaceInitial) {
-            TableView.initialDataset = new InitialTable(this.remoteTableId);
-        }
         this.page.setDataView(table);
         let rr = table.createGetSchemaRequest();
         rr.setStartTime(this.operation.startTime());
