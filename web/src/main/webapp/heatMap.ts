@@ -46,7 +46,7 @@ export class AxisData {
     public constructor(public missing: Histogram,
                        public description: ColumnDescription,
                        public stats: BasicColStats,
-                       public allStrings: DistinctStrings)   // used only for categorical histograms
+                       public distinctStrings: DistinctStrings)   // used only for categorical histograms
     {}
 
     public getAxis(length: number, bottom: boolean): [any, AnyScale] {
@@ -65,7 +65,7 @@ export class AxisData {
                 let index = i * (this.stats.max - this.stats.min) / length;
                 index = Math.round(index);
                 ticks.push(index * length / (this.stats.max - this.stats.min));
-                labels.push(this.allStrings[this.stats.min + index]);
+                labels.push(this.distinctStrings.get(this.stats.min + index));
             }
 
             scale = d3.scaleOrdinal()
@@ -194,6 +194,7 @@ export class HeatMapView extends RemoteTableObjectView {
             return new Make2DHistogram(
                 page, operation,
                 [this.currentData.xData.description, this.currentData.yData.description],
+                [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
                 this.tableSchema, true);
         };
         rr.invoke(new ZipReceiver(this.getPage(), rr, how, renderer));
@@ -238,7 +239,9 @@ export class HeatMapView extends RemoteTableObjectView {
     public swapAxes(): void {
         let collector = new Range2DCollector(
             [this.currentData.yData.description, this.currentData.xData.description],
-            this.tableSchema, this.page, this, null, true);
+            this.tableSchema,
+            [this.currentData.yData.distinctStrings, this.currentData.xData.distinctStrings],
+            this.page, this, null, true);
         collector.setValue( {
             first: this.currentData.yData.stats,
             second: this.currentData.xData.stats });
@@ -515,9 +518,9 @@ export class HeatMapView extends RemoteTableObjectView {
         let mouseY = position[1];
 
         let xs = HeatMapView.invert(position[0], this.xScale,
-            this.currentData.xData.description.kind, this.currentData.xData.allStrings);
+            this.currentData.xData.description.kind, this.currentData.xData.distinctStrings);
         let ys = HeatMapView.invert(position[1], this.yScale,
-            this.currentData.yData.description.kind, this.currentData.yData.allStrings);
+            this.currentData.yData.description.kind, this.currentData.yData.distinctStrings);
 
         this.xLabel.textContent = "x=" + xs;
         this.yLabel.textContent = "y=" + ys;
@@ -602,15 +605,15 @@ export class HeatMapView extends RemoteTableObjectView {
 
         let xBoundaries: string[] = null;
         let yBoundaries: string[] = null;
-        if (this.currentData.xData.allStrings != null) {
+        if (this.currentData.xData.distinctStrings != null) {
             // it's enough to just send the first and last element for filtering.
-            xBoundaries = [this.currentData.xData.allStrings[Math.floor(xMin)],
-                this.currentData.xData.allStrings[Math.ceil(xMax)]];
+            xBoundaries = [this.currentData.xData.distinctStrings.get(Math.floor(xMin)),
+                this.currentData.xData.distinctStrings.get(Math.ceil(xMax))];
         }
-        if (this.currentData.yData.allStrings != null) {
+        if (this.currentData.yData.distinctStrings != null) {
             // it's enough to just send the first and last element for filtering.
-            yBoundaries = [this.currentData.yData.allStrings[Math.floor(yMin)],
-                this.currentData.xData.allStrings[Math.ceil(yMax)]];
+            yBoundaries = [this.currentData.yData.distinctStrings.get(Math.floor(yMin)),
+                this.currentData.xData.distinctStrings.get(Math.ceil(yMax))];
         }
         let xRange : FilterDescription = {
             min: xMin,
@@ -651,13 +654,12 @@ export class Filter2DReceiver extends RemoteTableRenderer {
         if (this.remoteObject == null)
             return;
 
-        let first = new RangeInfo();
-        first.columnName = this.cds[0].name;
-        let second = new RangeInfo();
-        second.columnName = this.cds[1].name;
+        let first = new RangeInfo(this.cds[0].name);
+        let second = new RangeInfo(this.cds[1].name);
         let rr = this.sourceObject.createRange2DRequest(first, second);
+        // TODO: handle categories
         rr.invoke(new Range2DCollector(
-            this.cds, this.tableSchema, this.page, this.remoteObject, rr, true));
+            this.cds, this.tableSchema, null, this.page, this.remoteObject, rr, true));
     }
 }
 
@@ -666,6 +668,7 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
     protected stats: Pair<BasicColStats, BasicColStats>;
     constructor(protected cds: ColumnDescription[],
                 protected tableSchema: Schema,
+                protected ds: DistinctStrings[],
                 page: FullPage,
                 protected remoteObject: RemoteTableObject,
                 operation: ICancellable,
@@ -698,6 +701,11 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
             xBucketCount = HistogramViewBase.bucketCount(this.stats.first, this.page, this.cds[0].kind);
             yBucketCount = HistogramViewBase.bucketCount(this.stats.second, this.page, this.cds[1].kind);
         }
+
+        let xBoundaries = this.ds != null && this.ds[0] != null ?
+            this.ds[0].categoriesInRange(this.stats.first.min, this.stats.first.max, xBucketCount) : null;
+        let yBoundaries = this.ds != null && this.ds[1] != null ?
+            this.ds[1].categoriesInRange(this.stats.second.min, this.stats.second.max, yBucketCount) : null;
         let arg0: ColumnAndRange = {
             columnName: this.cds[0].name,
             min: this.stats.first.min,
@@ -705,7 +713,7 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
             samplingRate: 1.0,
             bucketCount: xBucketCount,
             cdfBucketCount: 0,
-            bucketBoundaries: null // TODO
+            bucketBoundaries: xBoundaries
         };
         let arg1: ColumnAndRange = {
             columnName: this.cds[1].name,
@@ -714,7 +722,7 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
             samplingRate: 1.0,
             bucketCount: yBucketCount,
             cdfBucketCount: 0,
-            bucketBoundaries: null // TODO
+            bucketBoundaries: yBoundaries
         };
         let rr = this.remoteObject.createHeatMapRequest(arg0, arg1);
         if (this.operation != null)
@@ -727,7 +735,7 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
         } else {
             renderer = new Histogram2DRenderer(this.page,
                 this.remoteObject.remoteObjectId, this.tableSchema,
-                this.cds, [this.stats.first, this.stats.second], rr);
+                this.cds, [this.stats.first, this.stats.second], [this.ds[0], this.ds[1]], rr);
         }
         rr.invoke(renderer);
     }

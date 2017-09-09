@@ -104,9 +104,9 @@ export interface IDistinctStrings {
 }
 
 export class RangeInfo {
-    columnName: string;
-    // The following is only used for categorical columns
-    allNames: string[];
+    constructor(public columnName: string,
+                // The following is only used for categorical columns
+                public allNames?: string[]) {}
 }
 
 // same as Java class

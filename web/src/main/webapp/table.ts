@@ -29,7 +29,8 @@ import d3 = require('d3');
 import {Dialog} from "./dialog";
 import {
     Schema, RowView, RecordOrder, IColumnDescription, ColumnDescription, ColumnSortOrientation,
-    ContentsKind, RangeInfo, RemoteTableObjectView, ZipReceiver, RemoteTableRenderer, RemoteTableObject
+    ContentsKind, RangeInfo, RemoteTableObjectView, ZipReceiver, RemoteTableRenderer, RemoteTableObject,
+    DistinctStrings
 } from "./tableData";
 import {CategoryCache} from "./categoryCache";
 import {HeatMapArrayDialog} from "./heatMapArray";
@@ -319,19 +320,14 @@ export class TableView extends RemoteTableObjectView
         return thd;
     }
 
-    // columnName is ignored if the set of selected columns is non-empty
-    public showColumn(columnName: string, order: number, first: boolean) : void {
+    public showColumns(order: number, first: boolean) : void {
         // order is 0 to hide
         //         -1 to sort descending
         //          1 to sort ascending
         let o = this.order.clone();
         // The set iterator did not seem to work correctly...
         let s: string[] = [];
-        if (this.selectedColumns.size != 0) {
-            this.selectedColumns.forEach(v => s.push(v));
-        } else {
-            s.push(columnName);
-        }
+        this.selectedColumns.forEach(v => s.push(v));
 
         for (let i = 0; i < s.length; i++) {
             let colName = s[i];
@@ -348,53 +344,75 @@ export class TableView extends RemoteTableObjectView
         this.setOrder(o);
     }
 
-    public histogram(columnName: string): void {
-        if (this.selectedColumns.size <= 1) {
-            let cd = TableView.findColumn(this.schema, columnName);
-            if (cd.kind == "Category") {
-                // Continuation invoked after the distinct strings have been obtained
-                let cont = (operation: ICancellable) => {
-                    let ds = CategoryCache.instance.getDistinctStrings(columnName);
-                    if (ds == null)
-                        // Probably an error has occurred
-                        return;
-                    let rr = this.createRangeRequest(ds.getRangeInfo(columnName));
-                    rr.setStartTime(operation.startTime());
-                    rr.invoke(new RangeCollector(cd, this.schema, ds, this.getPage(), this, rr));
-                };
-                // Get the categorical data and invoke the continuation
-                CategoryCache.instance.retrieveCategoryValues(this, [columnName], this.getPage(), cont);
-            } else {
-                let rr = this.createRangeRequest({columnName: columnName, allNames: null});
-                rr.invoke(new RangeCollector(cd, this.schema, null, this.getPage(), this, rr));
-            }
-        } else if (this.selectedColumns.size == 2) {
-            let columns: RangeInfo[] = [];
-            let cds: ColumnDescription[] = [];
-            this.selectedColumns.forEach(v => {
-                let colDesc = TableView.findColumn(this.schema, v);
-                if (colDesc.kind == "String") {
-                    this.reportError("2D Histograms not supported for string columns " + colDesc.name);
-                    return;
-                }
-                if (colDesc.kind == "Category") {
-                    this.reportError("2D histograms not yet implemented for category columns " + colDesc.name);
-                    return;
-                }
-                let ci = new RangeInfo();
-                ci.columnName = colDesc.name;
-                cds.push(colDesc);
-                columns.push(ci);
-            });
-
-            if (columns.length != 2)
-                return;
-            let rr = this.createRange2DRequest(columns[0], columns[1]);
-            rr.invoke(new Range2DCollector(cds, this.schema, this.getPage(), this, rr, false));
-        } else {
+    public histogram(): void {
+        if (this.selectedColumns.size > 2) {
             this.reportError("Must select 1 or 2 columns for histogram");
             return;
         }
+
+        let cds: ColumnDescription[] = [];
+        let catColumns: string[] = [];  // categorical columns
+
+        let index = 0;
+        this.selectedColumns.forEach(v => {
+            let colDesc = TableView.findColumn(this.schema, v);
+            if (colDesc.kind == "String") {
+                this.reportError("Histograms not supported for string columns " + colDesc.name);
+                return;
+            }
+            if (colDesc.kind == "Category")
+                catColumns.push(v);
+
+            index++;
+            cds.push(colDesc);
+        });
+
+        if (cds.length != this.selectedColumns.size)
+            // some error occurred
+            return;
+
+        let twoDimensional = cds.length == 2;
+        // Continuation invoked after the distinct strings have been obtained
+        let cont = (operation: ICancellable) => {
+            let rangeInfo: RangeInfo[] = [];
+            let distinct: DistinctStrings[] = [];
+
+            cds.forEach(v => {
+                let colName = v.name;
+                let ri: RangeInfo;
+                if (v.kind == "Category") {
+                    let ds = CategoryCache.instance.getDistinctStrings(colName);
+                    if (ds == null)
+                    // Probably an error has occurred
+                        return;
+                    distinct.push(ds);
+                    ri = ds.getRangeInfo(colName);
+                } else {
+                    distinct.push(null);
+                    ri = new RangeInfo(colName);
+                }
+                rangeInfo.push(ri);
+            });
+
+            if (rangeInfo.length != cds.length)
+                // some error occurred in loop
+                return;
+
+            if (twoDimensional) {
+                let rr = this.createRange2DRequest(rangeInfo[0], rangeInfo[1]);
+                if (operation != null)
+                    rr.setStartTime(operation.startTime());
+                rr.invoke(new Range2DCollector(cds, this.schema, distinct, this.getPage(), this, rr, false));
+            } else {
+                let rr = this.createRangeRequest(rangeInfo[0]);
+                if (operation != null)
+                    rr.setStartTime(operation.startTime());
+                rr.invoke(new RangeCollector(cds[0], this.schema, distinct[0], this.getPage(), this, rr));
+            }
+        };
+
+        // Get the categorical data and invoke the continuation
+        CategoryCache.instance.retrieveCategoryValues(this, catColumns, this.getPage(), cont);
     }
 
     public refresh(): void {
@@ -467,16 +485,16 @@ export class TableView extends RemoteTableObjectView
 
                 this.contextMenu.clear();
                 if (this.order.find(cd.name) >= 0) {
-                    this.contextMenu.addItem({text: "Hide", action: () => this.showColumn(cd.name, 0, true)});
+                    this.contextMenu.addItem({text: "Hide", action: () => this.showColumns(0, true)});
                 } else {
-                    this.contextMenu.addItem({text: "Show", action: () => this.showColumn(cd.name, 1, false)});
+                    this.contextMenu.addItem({text: "Show", action: () => this.showColumns(1, false)});
                 }
-                this.contextMenu.addItem({text: "Sort ascending", action: () => this.showColumn(cd.name, 1, true) });
-                this.contextMenu.addItem({text: "Sort descending", action: () => this.showColumn(cd.name, -1, true) });
+                this.contextMenu.addItem({text: "Sort ascending", action: () => this.showColumns(1, true) });
+                this.contextMenu.addItem({text: "Sort descending", action: () => this.showColumns(-1, true) });
                 if (cd.kind != "Json" && cd.kind != "String")
-                    this.contextMenu.addItem({text: "Histogram", action: () => this.histogram(cd.name) });
+                    this.contextMenu.addItem({text: "Histogram", action: () => this.histogram() });
                 this.contextMenu.addItem({text: "Heat map", action: () => this.heatMap() });
-                this.contextMenu.addItem({text: "Heavy hitters...", action: () => this.heavyHitters(cd.name) });
+                this.contextMenu.addItem({text: "Heavy hitters...", action: () => this.heavyHitters() });
                 this.contextMenu.addItem({text: "Select numeric columns", action: () => this.selectNumericColumns()});
                 this.contextMenu.addItem({text: "PCA...", action: () => this.pca() });
                 this.contextMenu.addItem({text: "Filter...", action: () => this.equalityFilter(cd.name)});
@@ -585,8 +603,12 @@ export class TableView extends RemoteTableObjectView
         rr.invoke(new RemoteTableReceiver(newPage, rr));
     }
 
-    private equalityFilter(colname: string, value?: string, complement?: boolean): void {
-        let cd = TableView.findColumn(this.schema, colname);
+    private equalityFilter(colName: string, value?: string, complement?: boolean): void {
+        if (this.selectedColumns.size != 1) {
+            this.reportError("Exactly one column must be selected");
+            return;
+        }
+        let cd = TableView.findColumn(this.schema, colName);
         if (value == null) {
             let ef = new EqualityFilterDialog(cd);
             ef.setAction(() => this.runFilter(ef.getFilter()));
@@ -673,8 +695,7 @@ export class TableView extends RemoteTableObjectView
                 this.reportError("Heat maps not yet implemented for category columns " + colDesc.name);
                 return;
             }
-            let ci = new RangeInfo();
-            ci.columnName = colDesc.name;
+            let ci = new RangeInfo(colDesc.name);
             cds.push(colDesc);
             columns.push(ci);
         });
@@ -682,8 +703,9 @@ export class TableView extends RemoteTableObjectView
         if (columns.length != 2)
             // some error has occurred
             return;
+        // TODO: handle categorical columns
         let rr = this.createRange2DRequest(columns[0], columns[1]);
-        rr.invoke(new Range2DCollector(cds, this.schema, this.getPage(), this, rr, true));
+        rr.invoke(new Range2DCollector(cds, this.schema, null, this.getPage(), this, rr, true));
     }
 
     private highlightSelectedColumns(): void {
@@ -730,36 +752,30 @@ export class TableView extends RemoteTableObjectView
         return this.schema.length;
     }
 
-    private runHeavyHitters(colName: string, percent: number) {
+    private runHeavyHitters(percent: number) {
         if (percent == null || percent < .01 || percent > 100) {
             this.reportError("Percentage must be between .01 and 100");
             return;
         }
         let columns: IColumnDescription[] = [];
         let cso : ColumnSortOrientation[] = [];
-        if (this.selectedColumns.size != 0) {
-            this.selectedColumns.forEach(v => {
-                let colDesc = TableView.findColumn(this.schema, v);
-                columns.push(colDesc);
-                cso.push({ columnDescription: colDesc, isAscending: true });
-            });
-        } else {
-            let colDesc = TableView.findColumn(this.schema, colName);
+        this.selectedColumns.forEach(v => {
+            let colDesc = TableView.findColumn(this.schema, v);
             columns.push(colDesc);
             cso.push({ columnDescription: colDesc, isAscending: true });
-        }
+        });
         let order = new RecordOrder(cso);
         let rr = this.createHeavyHittersRequest(columns, percent);
         rr.invoke(new HeavyHittersReceiver(this.getPage(), this, rr, columns, order));
     }
 
-    private heavyHitters(colName: string): void {
+    private heavyHitters(): void {
         let d = new Dialog("Heavy hitters");
         d.addTextField("percent", "Threshold (%)", "Double");
         d.setAction(() => {
             let amount = d.getFieldValueAsNumber("percent");
             if (amount != null)
-                this.runHeavyHitters(colName, amount)
+                this.runHeavyHitters(amount)
         });
         d.show();
     }
@@ -858,32 +874,24 @@ export class TableRenderer extends Renderer<TableDataView> {
     }
 }
 
-export class RemoteTableReceiver extends Renderer<string> {
-    public remoteTableId: string;
-
+export class RemoteTableReceiver extends RemoteTableRenderer {
     constructor(page: FullPage, operation: ICancellable) {
         super(page, operation, "Get schema");
     }
 
-    protected getTableSchema(tableId: string) {
-        let table = new TableView(tableId, this.page);
+    protected getTableSchema() {
+        let table = new TableView(this.remoteObject.remoteObjectId, this.page);
         this.page.setDataView(table);
         let rr = table.createGetSchemaRequest();
         rr.setStartTime(this.operation.startTime());
         rr.invoke(new TableRenderer(this.page, table, rr, false, new RecordOrder([])));
     }
 
-    public onNext(value: PartialResult<string>): void {
-        super.onNext(value);
-        if (value.data != null)
-            this.remoteTableId = value.data;
-    }
-
     public onCompleted(): void {
         this.finished();
-        if (this.remoteTableId == null)
+        if (this.remoteObject == null)
             return;
-        this.getTableSchema(this.remoteTableId);
+        this.getTableSchema();
     }
 }
 

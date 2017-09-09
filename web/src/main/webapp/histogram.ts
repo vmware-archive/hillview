@@ -27,7 +27,7 @@ import {
 } from "./tableData";
 import {TableRenderer, TableView} from "./table";
 import {TopMenu, TopSubMenu} from "./menu";
-import {Converters, Pair, reorder, ICancellable, PartialResult} from "./util";
+import {Pair, reorder, ICancellable, PartialResult} from "./util";
 import {HistogramViewBase, BucketDialog} from "./histogramBase";
 import {Dialog} from "./dialog";
 import {Range2DCollector} from "./heatMap";
@@ -98,16 +98,24 @@ export class HistogramView extends HistogramViewBase {
     }
 
     private showSecondColumn(colName: string) {
-        let r0 =  new RangeInfo();
-        r0.columnName = this.currentData.description.name;
-        let r1 = new RangeInfo();
-        r1.columnName = colName;
-        let cds: ColumnDescription[] = [
-            TableView.findColumn(this.tableSchema, r0.columnName),
-            TableView.findColumn(this.tableSchema, colName)
-            ];
-        let rr = this.createRange2DRequest(r0, r1);
-        rr.invoke(new Range2DCollector(cds, this.tableSchema, this.getPage(), this, rr, false));
+        let oc = TableView.findColumn(this.tableSchema, colName);
+        let cds: ColumnDescription[] = [this.currentData.description, oc];
+        let catColumns: string[] = [];
+        if (oc.kind == "Category")
+            catColumns.push(colName);
+
+        let cont = (operation: ICancellable) => {
+            let r0 = new RangeInfo(this.currentData.description.name,
+                this.currentData.allStrings != null ? this.currentData.allStrings.uniqueStrings : null);
+            let ds = CategoryCache.instance.getDistinctStrings(colName);
+            let r1 = new RangeInfo(colName, ds != null ? ds.uniqueStrings : null);
+            let rangeInfo: RangeInfo[] = [r0, r1];
+            let distinct: DistinctStrings[] = [this.currentData.allStrings, ds];
+
+            let rr = this.createRange2DRequest(r0, r1);
+            rr.invoke(new Range2DCollector(cds, this.tableSchema, distinct, this.getPage(), this, rr, false));
+        };
+        CategoryCache.instance.retrieveCategoryValues(this, catColumns, this.getPage(), cont);
     }
 
     changeBuckets(bucketCount: number): void {
@@ -270,54 +278,12 @@ export class HistogramView extends HistogramViewBase {
         let yAxis = d3.axisLeft(this.yScale)
             .tickFormat(d3.format(".2s"));
 
-        let minRange = stats.min;
-        let maxRange = stats.max;
-        this.adjustment = 0;
-        if (cd.kind == "Integer" || cd.kind == "Category" || stats.min >= stats.max) {
-            minRange -= .5;
-            maxRange += .5;
-            this.adjustment = this.chartSize.width / (maxRange - minRange);
-        }
-
-        let xAxis = null;
-        this.xScale = null;
-        if (cd.kind == "Integer" ||
-            cd.kind == "Double") {
-            this.xScale = d3.scaleLinear()
-                .domain([minRange, maxRange])
-                .range([0, this.chartSize.width]);
-            xAxis = d3.axisBottom(this.xScale);
-        } else if (cd.kind == "Category") {
-            let ticks: number[] = [];
-            let labels: string[] = [];
-            for (let i = 0; i < bucketCount; i++) {
-                let index = i * (maxRange - minRange) / bucketCount;
-                index = Math.round(index);
-                ticks.push(this.adjustment / 2 + index * this.chartSize.width / (maxRange - minRange));
-                labels.push(this.currentData.allStrings.get(stats.min + index));
-            }
-
-            let axisScale = d3.scaleOrdinal()
-                .domain(labels)
-                .range(ticks);
-            this.xScale = d3.scaleLinear()
-                .domain([minRange, maxRange])
-                .range([0, this.chartSize.width]);
-            xAxis = d3.axisBottom(<any>axisScale);
-            // cast needed probably because the d3 typings are incorrect
-        } else if (cd.kind == "Date") {
-            let minDate: Date = Converters.dateFromDouble(minRange);
-            let maxDate: Date = Converters.dateFromDouble(maxRange);
-            this.xScale = d3
-                .scaleTime()
-                .domain([minDate, maxDate])
-                .range([0, this.chartSize.width]);
-            xAxis = d3.axisBottom(this.xScale);
-        }
-
-        // force a tick on x axis for degenerate scales
-        if (stats.min >= stats.max && xAxis != null)
-            xAxis.ticks(1);
+        let scaleAxis = HistogramViewBase.createScaleAndAxis(
+            cd.kind, bucketCount, this.chartSize.width,
+            stats.min, stats.max, this.currentData.allStrings, true);
+        this.xScale = scaleAxis.scale;
+        this.adjustment = scaleAxis.adjustment;
+        let xAxis = scaleAxis.xAxis;
 
         this.canvas.append("text")
             .text(cd.name)
@@ -474,9 +440,8 @@ class FilterReceiver extends RemoteTableRenderer {
         if (this.remoteObject == null)
             return;
 
-        let rangeInfo: RangeInfo = new RangeInfo();
         let colName = this.columnDescription.name;
-        rangeInfo.columnName = colName;
+        let rangeInfo: RangeInfo = new RangeInfo(colName);
         if (this.allStrings != null)
             rangeInfo = this.allStrings.getRangeInfo(colName);
         let rr = this.remoteObject.createRangeRequest(rangeInfo);
