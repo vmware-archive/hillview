@@ -195,8 +195,7 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
 
     protected static createScaleAndAxis(
         kind: ContentsKind, bucketCount: number, width: number,
-        min: number, max: number, strings: DistinctStrings, adjust: boolean):
-    {
+        min: number, max: number, strings: DistinctStrings, adjust: boolean): {
         scale: AnyScale,
         xAxis: any,
         adjustment: number

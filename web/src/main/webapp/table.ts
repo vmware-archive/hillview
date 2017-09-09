@@ -703,6 +703,7 @@ export class TableView extends RemoteTableObjectView
         if (columns.length != 2)
             // some error has occurred
             return;
+        // TODO: handle categorical columns
         let rr = this.createRange2DRequest(columns[0], columns[1]);
         rr.invoke(new Range2DCollector(cds, this.schema, null, this.getPage(), this, rr, true));
     }

@@ -657,6 +657,7 @@ export class Filter2DReceiver extends RemoteTableRenderer {
         let first = new RangeInfo(this.cds[0].name);
         let second = new RangeInfo(this.cds[1].name);
         let rr = this.sourceObject.createRange2DRequest(first, second);
+        // TODO: handle categories
         rr.invoke(new Range2DCollector(
             this.cds, this.tableSchema, null, this.page, this.remoteObject, rr, true));
     }
