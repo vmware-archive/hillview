@@ -20,12 +20,10 @@ import {
 } from "./ui";
 import {Dialog} from "./dialog";
 import d3 = require('d3');
-import {ContentsKind, Schema, RemoteTableObjectView, BasicColStats} from "./tableData";
+import {ContentsKind, Schema, RemoteTableObjectView, BasicColStats, DistinctStrings} from "./tableData";
 import {BaseType} from "d3-selection";
 import {ScaleLinear, ScaleTime} from "d3-scale";
 import {Converters} from "./util";
-
-
 
 export type AnyScale = ScaleLinear<number, number> | ScaleTime<number, number>;
 
@@ -193,6 +191,65 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
             result = Converters.doubleFromDate(<Date>inv);
         }
         return result;
+    }
+
+    protected static createScaleAndAxis(
+        kind: ContentsKind, bucketCount: number, width: number,
+        min: number, max: number, strings: DistinctStrings, adjust: boolean):
+    {
+        scale: AnyScale,
+        xAxis: any,
+        adjustment: number
+    } {
+        let minRange = min;
+        let maxRange = max;
+        let adjustment = 0;
+        let xAxis = null;
+
+        if (adjust && (kind == "Integer" || kind == "Category" || min >= max)) {
+            minRange -= .5;
+            maxRange += .5;
+            adjustment = width / (maxRange - minRange);
+        }
+
+        let scale: AnyScale = null;
+        let ordinalScale = null;
+        if (kind == "Integer" || kind == "Double") {
+            scale = d3.scaleLinear()
+                .domain([minRange, maxRange])
+                .range([0, width]);
+            xAxis = d3.axisBottom(scale);
+        } else if (kind == "Category") {
+            let ticks: number[] = [];
+            let labels: string[] = [];
+            for (let i = 0; i < bucketCount; i++) {
+                let index = i * (maxRange - minRange) / bucketCount;
+                index = Math.round(index);
+                ticks.push(adjustment / 2 + index * width / (maxRange - minRange));
+                labels.push(strings.get(min + index));
+            }
+
+            ordinalScale = d3.scaleOrdinal()
+                .domain(labels)
+                .range(ticks);
+            scale = d3.scaleLinear()
+                .domain([minRange, maxRange])
+                .range([0, width]);
+            xAxis = d3.axisBottom(ordinalScale);
+        } else if (kind == "Date") {
+            let minDate: Date = Converters.dateFromDouble(minRange);
+            let maxDate: Date = Converters.dateFromDouble(maxRange);
+            scale = d3
+                .scaleTime()
+                .domain([minDate, maxDate])
+                .range([0, width]);
+            xAxis = d3.axisBottom(scale);
+        }
+        // force a tick on x axis for degenerate scales
+        if (min >= max && xAxis != null)
+            xAxis.ticks(1);
+
+        return { scale: scale, xAxis: xAxis, adjustment: adjustment };
     }
 }
 

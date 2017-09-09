@@ -15,7 +15,7 @@
  *  limitations under the License.
  */
 
-import {RemoteObject, Renderer} from "./rpc";
+import {Renderer} from "./rpc";
 import {IDistinctStrings, DistinctStrings, RemoteTableObject} from "./tableData";
 import {PartialResult, ICancellable} from "./util";
 import {FullPage} from "./ui";
@@ -38,17 +38,20 @@ export class CategoryCache {
         // The operation is the asynchronous operation
         // that may have retrieved the data
         continuation: (operation: ICancellable) => void): void {
-        let rr = remoteTable.createRpcRequest("uniqueStrings", columnNames);
-        let renderer = new ReceiveCategory(continuation, page, rr);
+
+        let columnsToFetch: string[] = [];
         for (let c of columnNames) {
             if (!this.columnValues.has(c))
-                renderer.addColumn(c);
+                columnsToFetch.push(c);
         }
 
-        if (!renderer.empty())
+        let rr = remoteTable.createRpcRequest("uniqueStrings", columnsToFetch);
+        if (columnsToFetch.length > 0) {
+            let renderer = new ReceiveCategory(this, columnsToFetch, continuation, page, rr);
             rr.invoke(renderer);
-        else
+        } else {
             continuation(rr);
+        }
     }
 
     public setDistinctStrings(columnName: string, values: DistinctStrings): void {
@@ -62,24 +65,18 @@ export class CategoryCache {
 
 // Receives a list of DistinctStrings and stores them into a TableDataSet.
 class ReceiveCategory extends Renderer<IDistinctStrings[]> {
-    /// List of columns whose distinct strings have to be fetched.
-    protected columns: string[];
     /// Output produced: one set of distinct strings for each columns.
     protected values: IDistinctStrings[];
 
-    public constructor(protected continuation: (operation: ICancellable) => void,
-                       page: FullPage,
-                       operation: ICancellable) {
+    public constructor(
+        protected cache: CategoryCache,
+        protected columns: string[],
+        protected continuation: (operation: ICancellable) => void,
+        page: FullPage,
+        operation: ICancellable) {
         super(page, operation, "Create converter");
-        this.columns = [];
         this.values = null;
     }
-
-    public addColumn(columnName: string): void {
-        this.columns.push(columnName);
-    }
-
-    public empty(): boolean { return this.columns.length == 0; }
 
     public onNext(value: PartialResult<IDistinctStrings[]>): void {
         super.onNext(value);
@@ -87,20 +84,20 @@ class ReceiveCategory extends Renderer<IDistinctStrings[]> {
     }
 
     public onCompleted(): void {
+        super.onCompleted();
         if (this.values == null)
             return;
         if (this.columns.length != this.values.length)
-            throw "Asked for " + this.columns.length + " columns, got " + this.values.length;
-        for (let i=0; i < this.columns.length; i++) {
+            throw "Required " + this.columns.length + " got " + this.values.length;
+        for (let i=0; i < this.values.length; i++) {
             let col = this.columns[i];
             if (this.values[i].truncated) {
                 this.page.reportError("Column " + col + " has too many distinct values; it is not really a category");
             } else {
                 let ds = new DistinctStrings(this.values[i]);
-                CategoryCache.instance.setDistinctStrings(col, ds);
+                this.cache.setDistinctStrings(col, ds);
             }
         }
-        super.finished();
         this.continuation(this.operation);
     }
 }
