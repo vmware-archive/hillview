@@ -411,12 +411,8 @@ export class TableView extends RemoteTableObjectView
             }
         };
 
-        if (catColumns.length > 0)
-            // Get the categorical data and invoke the continuation
-            CategoryCache.instance.retrieveCategoryValues(this, catColumns, this.getPage(), cont);
-        else
-            // invoke the continuation directly
-            cont(null);
+        // Get the categorical data and invoke the continuation
+        CategoryCache.instance.retrieveCategoryValues(this, catColumns, this.getPage(), cont);
     }
 
     public refresh(): void {

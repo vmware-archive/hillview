@@ -98,14 +98,24 @@ export class HistogramView extends HistogramViewBase {
     }
 
     private showSecondColumn(colName: string) {
-        let r0 =  new RangeInfo(this.currentData.description.name);
-        let r1 = new RangeInfo(colName);
-        let cds: ColumnDescription[] = [
-            TableView.findColumn(this.tableSchema, r0.columnName),
-            TableView.findColumn(this.tableSchema, colName)
-            ];
-        let rr = this.createRange2DRequest(r0, r1);
-        rr.invoke(new Range2DCollector(cds, this.tableSchema, null, this.getPage(), this, rr, false));
+        let oc = TableView.findColumn(this.tableSchema, colName);
+        let cds: ColumnDescription[] = [this.currentData.description, oc];
+        let catColumns: string[] = [];
+        if (oc.kind == "Category")
+            catColumns.push(colName);
+
+        let cont = (operation: ICancellable) => {
+            let r0 = new RangeInfo(this.currentData.description.name,
+                this.currentData.allStrings != null ? this.currentData.allStrings.uniqueStrings : null);
+            let ds = CategoryCache.instance.getDistinctStrings(colName);
+            let r1 = new RangeInfo(colName, ds != null ? ds.uniqueStrings : null);
+            let rangeInfo: RangeInfo[] = [r0, r1];
+            let distinct: DistinctStrings[] = [this.currentData.allStrings, ds];
+
+            let rr = this.createRange2DRequest(r0, r1);
+            rr.invoke(new Range2DCollector(cds, this.tableSchema, distinct, this.getPage(), this, rr, false));
+        };
+        CategoryCache.instance.retrieveCategoryValues(this, catColumns, this.getPage(), cont);
     }
 
     changeBuckets(bucketCount: number): void {
