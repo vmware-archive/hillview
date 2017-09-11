@@ -76,7 +76,10 @@ export class LegendOverlay implements IHtmlElement {
     // g element that will contain the legend.
     private legendG: any;
 
-    constructor(cds: IColumnDescription[], xStats, yStats) {
+    constructor(cds: IColumnDescription[],
+                xStats: BasicColStats, yStats: BasicColStats,
+                xStrings: DistinctStrings, yStrings: DistinctStrings,
+                xBuckets: number, yBuckets: number) {
         this.outer = document.createElement("div");
         this.outer.classList.add("overlay");
 
@@ -85,10 +88,10 @@ export class LegendOverlay implements IHtmlElement {
             height: CompactHeatMapView.size.height
         };
 
-        this.xAxisData = new AxisData(null, cds[0], xStats, null);
-        this.yAxisData = new AxisData(null, cds[1], yStats, null);
-        this.xAxis = this.xAxisData.getAxis(this.axesSize.width, true)[0];
-        this.yAxis = this.yAxisData.getAxis(this.axesSize.height, false)[0];
+        this.xAxisData = new AxisData(null, cds[0], xStats, xStrings, xBuckets);
+        this.yAxisData = new AxisData(null, cds[1], yStats, yStrings, yBuckets);
+        this.xAxis = this.xAxisData.scaleAndAxis(this.axesSize.width, true).axis;
+        this.yAxis = this.yAxisData.scaleAndAxis(this.axesSize.height, false).axis;
         this.xAxis.ticks(LegendOverlay.axesTicks);
         this.yAxis.ticks(LegendOverlay.axesTicks);
 
@@ -301,6 +304,7 @@ export class CompactHeatMapView implements IHtmlElement {
 }
 
 export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTarget {
+    // TODO: handle categorical values
     public args: HeatMapArrayArgs;
     private heatMaps: CompactHeatMapView[];
     private scrollBar: ScrollBar;
@@ -404,8 +408,11 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
     }
 
    public viewComplete(): void {
-        // invoked when all data has been received
-        this.legendOverlay = new LegendOverlay(this.args.cds, this.args.xStats, this.args.yStats);
+       // TODO: properly compute number of buckets
+       let numXBuckets = CompactHeatMapView.size.width / Resolution.minDotSize;
+       let numYBuckets = CompactHeatMapView.size.height / Resolution.minDotSize;
+       this.legendOverlay = new LegendOverlay(
+            this.args.cds, this.args.xStats, this.args.yStats, null, null, numXBuckets, numYBuckets);
         this.getHTMLRepresentation().appendChild(this.legendOverlay.getHTMLRepresentation());
     }
 
@@ -517,7 +524,7 @@ export class HeatMapArrayDialog extends Dialog {
         let cont = (operation: ICancellable) => {
             args.uniqueStrings = CategoryCache.instance.getDistinctStrings(categCol.name);
             let rr = heatMapArrayView.createRange2DColsRequest(args.cds[0].name, args.cds[1].name);
-            rr.setStartTime(operation.startTime());
+            rr.chain(operation);
             rr.invoke(new Range2DRenderer(newPage, heatMapArrayView, rr));
         };
         CategoryCache.instance.retrieveCategoryValues(this.remoteObject, [categCol.name], this.page, cont);

@@ -267,10 +267,10 @@ export class Histogram2DView extends HistogramViewBase {
         let cd = xData.description;
         let bucketCount = xPoints;
         let scAxis = HistogramViewBase.createScaleAndAxis(cd.kind, bucketCount, this.chartSize.width,
-            xData.stats.min, xData.stats.max, xData.distinctStrings, true);
+            xData.stats.min, xData.stats.max, xData.distinctStrings, true, true);
         this.xScale = scAxis.scale;
         this.adjustment = scAxis.adjustment;
-        let xAxis = scAxis.xAxis;
+        let xAxis = scAxis.axis;
 
         this.canvas.append("text")
             .text(xData.description.name)
@@ -281,7 +281,7 @@ export class Histogram2DView extends HistogramViewBase {
             .text(yData.description.name)
             .attr("transform", translateString(this.chartSize.width / 2, 0))
             .attr("text-anchor", "middle")
-            .attr("dominant-baseline", "hanging");
+            .attr("dominant-baseline", "text-before-edge");
 
         /*
          // After resizing the line may not have the exact number of points
@@ -391,11 +391,11 @@ export class Histogram2DView extends HistogramViewBase {
         let scaleAxis = HistogramViewBase.createScaleAndAxis(
             this.currentData.yData.description.kind, legendBuckets, this.legendRect.width(),
             this.currentData.yData.stats.min, this.currentData.yData.stats.max,
-            this.currentData.yData.distinctStrings, false);
+            this.currentData.yData.distinctStrings, false, true);
 
         // create a scale and axis for the legend
         this.legendScale = scaleAxis.scale;
-        let legendAxis = scaleAxis.xAxis;
+        let legendAxis = scaleAxis.axis;
         legendSvg.append("g")
             .attr("transform", translateString(this.legendRect.lowerLeft().x, this.legendRect.lowerLeft().y))
             .call(legendAxis);
@@ -545,13 +545,13 @@ export class Histogram2DView extends HistogramViewBase {
         };
 
         let rr = this.createFilterRequest(filter);
-        let renderer = new Histogram2DFilterReceiver(
+        let renderer = new Filter2DReceiver(
             this.currentData.xData.description,
             this.currentData.yData.description,
             this.currentData.xData.distinctStrings,
             this.currentData.yData.distinctStrings,
             this.tableSchema,
-            this.page, rr);
+            this.page, rr, true);
         rr.invoke(renderer);
     }
 
@@ -606,14 +606,15 @@ export class Histogram2DView extends HistogramViewBase {
     }
 }
 
-class Histogram2DFilterReceiver extends RemoteTableRenderer {
+export class Filter2DReceiver extends RemoteTableRenderer {
     constructor(protected xColumn: ColumnDescription,
                 protected yColumn: ColumnDescription,
                 protected xDs: DistinctStrings,
                 protected yDs: DistinctStrings,
                 protected tableSchema: Schema,
                 page: FullPage,
-                operation: ICancellable) {
+                operation: ICancellable,
+                protected heatMap: boolean) {
         super(page, operation, "Filter");
     }
 
@@ -627,7 +628,7 @@ class Histogram2DFilterReceiver extends RemoteTableRenderer {
         let rx = new RangeInfo(this.xColumn.name, this.xDs != null ? this.xDs.uniqueStrings : null);
         let ry = new RangeInfo(this.yColumn.name, this.yDs != null ? this.yDs.uniqueStrings : null);
         let rr = this.remoteObject.createRange2DRequest(rx, ry);
-        rr.invoke(new Range2DCollector(cds, this.tableSchema, ds, this.page, this.remoteObject, rr, false));
+        rr.invoke(new Range2DCollector(cds, this.tableSchema, ds, this.page, this.remoteObject, rr, this.heatMap));
     }
 }
 
@@ -650,7 +651,7 @@ export class Make2DHistogram extends RemoteTableRenderer {
         let rx = new RangeInfo(this.colDesc[0].name, this.ds[0] != null ? this.ds[0].uniqueStrings : null);
         let ry = new RangeInfo(this.colDesc[1].name, this.ds[1] != null ? this.ds[1].uniqueStrings : null);
         let rr = this.remoteObject.createRange2DRequest(rx, ry);
-        rr.setStartTime(this.operation.startTime());
+        rr.chain(this.operation);
         rr.invoke(new Range2DCollector(
             this.colDesc, this.schema, this.ds, this.page, this.remoteObject, rr, this.heatMap));
     }
@@ -678,8 +679,16 @@ export class Histogram2DRenderer extends Renderer<HeatMapData> {
         super.onNext(value);
         if (value == null)
             return;
-        let xAxisData = new AxisData(value.data.histogramMissingD1, this.cds[0], this.stats[0], this.uniqueStrings[0]);
-        let yAxisData = new AxisData(value.data.histogramMissingD2, this.cds[1], this.stats[1], this.uniqueStrings[1]);
+        let points = value.data.buckets;
+        let xPoints = 1;
+        let yPoints = 1;
+        if (points != null) {
+            xPoints = points.length;
+            yPoints = points[0] != null ? points[0].length : 1;
+        }
+
+        let xAxisData = new AxisData(value.data.histogramMissingD1, this.cds[0], this.stats[0], this.uniqueStrings[0], xPoints);
+        let yAxisData = new AxisData(value.data.histogramMissingD2, this.cds[1], this.stats[1], this.uniqueStrings[1], yPoints);
         this.histogram.updateView(value.data.buckets, xAxisData, yAxisData,
             value.data.missingData, this.elapsedMilliseconds());
         this.histogram.scrollIntoView();

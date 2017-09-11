@@ -23,9 +23,15 @@ import d3 = require('d3');
 import {ContentsKind, Schema, RemoteTableObjectView, BasicColStats, DistinctStrings} from "./tableData";
 import {BaseType} from "d3-selection";
 import {ScaleLinear, ScaleTime} from "d3-scale";
-import {Converters} from "./util";
+import {Converters, isInteger} from "./util";
 
 export type AnyScale = ScaleLinear<number, number> | ScaleTime<number, number>;
+
+export interface ScaleAndAxis {
+    scale: AnyScale,
+    axis: any,  // a d3 axis, but typing does not work well
+    adjustment: number  // adjustment used for categorical and integral data
+}
 
 export abstract class HistogramViewBase extends RemoteTableObjectView {
     protected dragging: boolean;
@@ -40,10 +46,6 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
     protected xScale: AnyScale;
     protected yScale: ScaleLinear<number, number>;
     protected chartSize: Size;
-    // When plotting integer values we increase the data range by .5 on the left and right.
-    // The adjustment is the number of pixels on screen that we "waste".
-    // I.e., the cdf plot will start adjustment/2 pixels from the chart left margin
-    // and will end adjustment/2 pixels from the right margin.
     protected adjustment: number = 0;
     protected chart: any;  // these are in fact a d3.Selection<>, but I can't make them typecheck
     protected canvas: any;
@@ -168,13 +170,24 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
         // return Math.min(bucketCount * HistogramViewBase.chartHeight * Math.log(bucketCount + 2) * 5 / pointCount, 1);
     }
 
-    public static bucketCount(stats: BasicColStats, page: FullPage, columnKind: ContentsKind): number {
+    public static bucketCount(stats: BasicColStats, page: FullPage, columnKind: ContentsKind,
+                              heatMap: boolean, bottom: boolean): number {
         let size = Resolution.getChartSize(page);
-        let bucketCount = Resolution.maxBucketCount;
-        if (size.width / Resolution.minBarWidth < bucketCount)
-            bucketCount = size.width / Resolution.minBarWidth;
+        let length = Math.floor(bottom ? size.width : size.height);
+        let maxBucketCount = Resolution.maxBucketCount;
+        let minBarWidth = Resolution.minBarWidth;
+        if (heatMap) {
+            maxBucketCount = length;
+            minBarWidth = Resolution.minDotSize;
+        }
+
+        let bucketCount = maxBucketCount;
+        if (length / minBarWidth < bucketCount)
+            bucketCount = Math.floor(length / minBarWidth);
         if (columnKind == "Integer" ||
             columnKind == "Category") {
+            if (!isInteger(stats.min) || !isInteger(stats.max))
+                throw "Expected integer values";
             bucketCount = Math.min(bucketCount, stats.max - stats.min + 1);
         }
         return bucketCount;
@@ -193,31 +206,38 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
         return result;
     }
 
-    protected static createScaleAndAxis(
+    // When plotting integer values we increase the data range by .5 on the left and right.
+    // The adjustment is the number of pixels on screen that we "waste".
+    // I.e., the cdf plot will start adjustment/2 pixels from the chart left margin
+    // and will end adjustment/2 pixels from the right margin.
+    public static createScaleAndAxis(
         kind: ContentsKind, bucketCount: number, width: number,
-        min: number, max: number, strings: DistinctStrings, adjust: boolean): {
-        scale: AnyScale,
-        xAxis: any,
-        adjustment: number
-    } {
+        min: number, max: number, strings: DistinctStrings,
+        adjustIntegral: boolean,  // if true we perform adjustment for integral values
+        bottom: boolean): ScaleAndAxis {
         let minRange = min;
         let maxRange = max;
         let adjustment = 0;
-        let xAxis = null;
+        let axis = null;
 
-        if (adjust && (kind == "Integer" || kind == "Category" || min >= max)) {
+        let scaleCreator = bottom ? d3.axisBottom : d3.axisLeft;
+
+        if (adjustIntegral && (kind == "Integer" || kind == "Category" || min >= max)) {
             minRange -= .5;
             maxRange += .5;
             adjustment = width / (maxRange - minRange);
         }
 
+        // on vertical axis the direction is swapped
+        let domain = bottom ? [minRange, maxRange] : [maxRange, minRange];
+
         let scale: AnyScale = null;
         let ordinalScale = null;
         if (kind == "Integer" || kind == "Double") {
             scale = d3.scaleLinear()
-                .domain([minRange, maxRange])
+                .domain(domain)
                 .range([0, width]);
-            xAxis = d3.axisBottom(scale);
+            axis = scaleCreator(scale);
         } else if (kind == "Category") {
             let ticks: number[] = [];
             let labels: string[] = [];
@@ -227,28 +247,30 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
                 ticks.push(adjustment / 2 + index * width / (maxRange - minRange));
                 labels.push(strings.get(min + index));
             }
+            if (!bottom)
+                labels.reverse();
 
             ordinalScale = d3.scaleOrdinal()
                 .domain(labels)
                 .range(ticks);
             scale = d3.scaleLinear()
-                .domain([minRange, maxRange])
+                .domain(domain)
                 .range([0, width]);
-            xAxis = d3.axisBottom(ordinalScale);
+            axis = scaleCreator(ordinalScale);
         } else if (kind == "Date") {
-            let minDate: Date = Converters.dateFromDouble(minRange);
-            let maxDate: Date = Converters.dateFromDouble(maxRange);
+            let minDate: Date = Converters.dateFromDouble(domain[0]);
+            let maxDate: Date = Converters.dateFromDouble(domain[1]);
             scale = d3
                 .scaleTime()
                 .domain([minDate, maxDate])
                 .range([0, width]);
-            xAxis = d3.axisBottom(scale);
+            axis = scaleCreator(scale);
         }
         // force a tick on x axis for degenerate scales
-        if (min >= max && xAxis != null)
-            xAxis.ticks(1);
+        if (min >= max && axis != null)
+            axis.ticks(1);
 
-        return { scale: scale, xAxis: xAxis, adjustment: adjustment };
+        return { scale: scale, axis: axis, adjustment: adjustment };
     }
 }
 

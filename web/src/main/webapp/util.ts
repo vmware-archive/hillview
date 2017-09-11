@@ -124,6 +124,10 @@ export function truncate(str: string, length: number): string {
     }
 }
 
+export function isInteger(n: number) {
+    return Math.floor(n) === n;
+}
+
 export function cloneArray<T>(arr: T[]): T[] {
     return arr.slice(0);
 }
