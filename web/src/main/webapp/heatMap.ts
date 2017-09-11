@@ -21,17 +21,17 @@ import {
 } from "./ui";
 import { Renderer, combineMenu, CombineOperators, SelectedObject } from "./rpc";
 import {
-    ColumnDescription, Schema, ContentsKind, RecordOrder, DistinctStrings, RangeInfo,
+    ColumnDescription, Schema, ContentsKind, RecordOrder, DistinctStrings,
     RemoteTableObjectView, RemoteTableObject, Histogram, BasicColStats, FilterDescription,
-    ColumnAndRange, ZipReceiver, RemoteTableRenderer
+    ColumnAndRange, ZipReceiver
 } from "./tableData";
 import {TableView, TableRenderer} from "./table";
-import {Pair, Converters, reorder, regression, ICancellable, PartialResult} from "./util";
-import { AnyScale, HistogramViewBase } from "./histogramBase";
+import {Pair, reorder, regression, ICancellable, PartialResult} from "./util";
+import {AnyScale, HistogramViewBase, ScaleAndAxis} from "./histogramBase";
 import {BaseType} from "d3-selection";
 import {ScaleLinear, ScaleTime} from "d3-scale";
 import {TopMenu, TopSubMenu} from "./menu";
-import {Histogram2DRenderer, Make2DHistogram} from "./histogram2d";
+import {Histogram2DRenderer, Make2DHistogram, Filter2DReceiver} from "./histogram2d";
 
 // counterpart of Java class 'HeatMap'
 export class HeatMapData {
@@ -46,49 +46,14 @@ export class AxisData {
     public constructor(public missing: Histogram,
                        public description: ColumnDescription,
                        public stats: BasicColStats,
-                       public distinctStrings: DistinctStrings)   // used only for categorical histograms
+                       public distinctStrings: DistinctStrings,    // used only for categorical histograms
+                       public bucketCount: number)
     {}
 
-    public getAxis(length: number, bottom: boolean): [any, AnyScale] {
-        // returns a pair scale/axis
-        let scale: any = null;
-        let resultScale: AnyScale = null;
-        if (this.description.kind == "Double" ||
-            this.description.kind == "Integer") {
-            scale = d3.scaleLinear()
-                .domain([this.stats.min, this.stats.max]);
-            resultScale = scale;
-        } else if (this.description.kind == "Category") {
-            let ticks: number[] = [];
-            let labels: string[] = [];
-            for (let i = 0; i < length; i++) {
-                let index = i * (this.stats.max - this.stats.min) / length;
-                index = Math.round(index);
-                ticks.push(index * length / (this.stats.max - this.stats.min));
-                labels.push(this.distinctStrings.get(this.stats.min + index));
-            }
-
-            scale = d3.scaleOrdinal()
-                .domain(labels)
-                .range(ticks);
-            resultScale = d3.scaleLinear()
-                .domain([this.stats.min, this.stats.max]);
-            // cast needed probably because the d3 typings are incorrect
-        } else if (this.description.kind == "Date") {
-            let minDate: Date = Converters.dateFromDouble(this.stats.min);
-            let maxDate: Date = Converters.dateFromDouble(this.stats.max);
-            scale = d3
-                .scaleTime()
-                .domain([minDate, maxDate]);
-            resultScale = scale;
-        }
-        if (bottom) {
-            scale.range([0, length]);
-            return [d3.axisBottom(scale), resultScale];
-        } else {
-            scale.range([length, 0]);
-            return [d3.axisLeft(scale), resultScale];
-        }
+    public scaleAndAxis(length: number, bottom: boolean): ScaleAndAxis {
+        return HistogramViewBase.createScaleAndAxis(
+            this.description.kind, this.bucketCount, length,
+            this.stats.min, this.stats.max, this.distinctStrings, true, bottom);
     }
 }
 
@@ -312,9 +277,12 @@ export class HeatMapView extends RemoteTableObjectView {
             .append("g")
             .attr("transform", translateString(Resolution.leftMargin, Resolution.topMargin));
 
-        let xAxis, yAxis;
-        [xAxis, this.xScale] = this.currentData.xData.getAxis(this.chartSize.width, true);
-        [yAxis, this.yScale] = this.currentData.yData.getAxis(this.chartSize.height, false);
+        let xsc = this.currentData.xData.scaleAndAxis(this.chartSize.width, true);
+        let ysc = this.currentData.yData.scaleAndAxis(this.chartSize.height, false);
+        let xAxis = xsc.axis;
+        let yAxis = ysc.axis;
+        this.xScale = xsc.scale;
+        this.yScale = ysc.scale;
 
         interface Dot {
             x: number,
@@ -407,7 +375,7 @@ export class HeatMapView extends RemoteTableObjectView {
 
         this.canvas.append("text")
             .text(yData.description.name)
-            .attr("dominant-baseline", "hanging");
+            .attr("dominant-baseline", "text-before-edge");
         this.canvas.append("text")
             .text(xData.description.name)
             .attr("transform", translateString(
@@ -458,19 +426,22 @@ export class HeatMapView extends RemoteTableObjectView {
             .attr("width", 0)
             .attr("height", 0);
 
-        let regr = regression(data);
-        if (regr.length == 2) {
-            let b = regr[0];
-            let a = regr[1];
-            let y1 = this.chartSize.height - b * this.pointHeight;
-            let y2 = this.chartSize.height - (a * data.length + b) * this.pointHeight;
-            this.chart
-                .append("line")
-                .attr("x1", 0)
-                .attr("y1", y1)
-                .attr("x2", this.pointWidth * data.length)
-                .attr("y2", y2)
-                .attr("stroke", "black");
+        if (this.currentData.yData.description.kind != "Category") {
+            // it makes no sense to do regressions for categorical values
+            let regr = regression(data);
+            if (regr.length == 2) {
+                let b = regr[0];
+                let a = regr[1];
+                let y1 = this.chartSize.height - b * this.pointHeight;
+                let y2 = this.chartSize.height - (a * data.length + b) * this.pointHeight;
+                this.chart
+                    .append("line")
+                    .attr("x1", 0)
+                    .attr("y1", y1)
+                    .attr("x2", this.pointWidth * data.length)
+                    .attr("y2", y2)
+                    .attr("stroke", "black");
+            }
         }
 
         let summary = formatNumber(visible) + " data points";
@@ -513,6 +484,10 @@ export class HeatMapView extends RemoteTableObjectView {
     }
 
     onMouseMove(): void {
+        if (this.xScale == null)
+            // not yet setup
+            return;
+
         let position = d3.mouse(this.chart.node());
         let mouseX = position[0];
         let mouseY = position[1];
@@ -542,6 +517,9 @@ export class HeatMapView extends RemoteTableObjectView {
     }
 
     dragStart(): void {
+        if (this.chart == null)
+            return;
+
         this.dragging = true;
         this.moved = false;
         let position = d3.mouse(this.chart.node());
@@ -551,6 +529,9 @@ export class HeatMapView extends RemoteTableObjectView {
     }
 
     dragMove(): void {
+        if (this.chart == null)
+            return;
+
         this.onMouseMove();
         if (!this.dragging)
             return;
@@ -580,6 +561,8 @@ export class HeatMapView extends RemoteTableObjectView {
     }
 
     dragEnd(): void {
+        if (this.chart == null)
+            return;
         if (!this.dragging || !this.moved)
             return;
         this.dragging = false;
@@ -605,16 +588,10 @@ export class HeatMapView extends RemoteTableObjectView {
 
         let xBoundaries: string[] = null;
         let yBoundaries: string[] = null;
-        if (this.currentData.xData.distinctStrings != null) {
-            // it's enough to just send the first and last element for filtering.
-            xBoundaries = [this.currentData.xData.distinctStrings.get(Math.floor(xMin)),
-                this.currentData.xData.distinctStrings.get(Math.ceil(xMax))];
-        }
-        if (this.currentData.yData.distinctStrings != null) {
-            // it's enough to just send the first and last element for filtering.
-            yBoundaries = [this.currentData.yData.distinctStrings.get(Math.floor(yMin)),
-                this.currentData.xData.distinctStrings.get(Math.ceil(yMax))];
-        }
+        if (this.currentData.xData.distinctStrings != null)
+            xBoundaries = this.currentData.xData.distinctStrings.categoriesInRange(xMin, xMax, xMax - xMin);
+        if (this.currentData.yData.distinctStrings != null)
+            yBoundaries = this.currentData.yData.distinctStrings.categoriesInRange(yMin, yMax, yMax - yMin);
         let xRange : FilterDescription = {
             min: xMin,
             max: xMax,
@@ -631,35 +608,10 @@ export class HeatMapView extends RemoteTableObjectView {
         };
         let rr = this.createFilter2DRequest(xRange, yRange);
         let renderer = new Filter2DReceiver(
-            [this.currentData.xData.description, this.currentData.yData.description],
-            this.tableSchema,
-            this.page,
-            this, rr);
+            this.currentData.xData.description, this.currentData.yData.description,
+            this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings,
+            this.tableSchema, this.page, rr, true);
         rr.invoke(renderer);
-    }
-}
-
-// After filtering we obtain a handle to a new table
-export class Filter2DReceiver extends RemoteTableRenderer {
-    constructor(protected cds: ColumnDescription[],
-                protected tableSchema: Schema,
-                page: FullPage,
-                protected sourceObject: RemoteTableObject,
-                operation: ICancellable) {
-        super(page, operation, "Filter");
-    }
-
-    public onCompleted(): void {
-        this.finished();
-        if (this.remoteObject == null)
-            return;
-
-        let first = new RangeInfo(this.cds[0].name);
-        let second = new RangeInfo(this.cds[1].name);
-        let rr = this.sourceObject.createRange2DRequest(first, second);
-        // TODO: handle categories
-        rr.invoke(new Range2DCollector(
-            this.cds, this.tableSchema, null, this.page, this.remoteObject, rr, true));
     }
 }
 
@@ -691,16 +643,10 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
     }
 
     public draw(): void {
-        let size = Resolution.getChartSize(this.page);
-        let xBucketCount: number;
-        let yBucketCount: number;
-        if (this.drawHeatMap) {
-            xBucketCount = Math.floor(size.width / Resolution.minDotSize);
-            yBucketCount = Math.floor(size.height / Resolution.minDotSize);
-        } else {
-            xBucketCount = HistogramViewBase.bucketCount(this.stats.first, this.page, this.cds[0].kind);
-            yBucketCount = HistogramViewBase.bucketCount(this.stats.second, this.page, this.cds[1].kind);
-        }
+        let xBucketCount = HistogramViewBase.bucketCount(
+            this.stats.first, this.page, this.cds[0].kind, this.drawHeatMap, true);
+        let yBucketCount = HistogramViewBase.bucketCount(
+            this.stats.second, this.page, this.cds[1].kind, this.drawHeatMap, false);
 
         let xBoundaries = this.ds != null && this.ds[0] != null ?
             this.ds[0].categoriesInRange(this.stats.first.min, this.stats.first.max, xBucketCount) : null;
@@ -731,7 +677,7 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
         if (this.drawHeatMap) {
             renderer = new HeatMapRenderer(this.page,
                 this.remoteObject.remoteObjectId, this.tableSchema,
-                this.cds, [this.stats.first, this.stats.second], rr);
+                this.cds, [this.stats.first, this.stats.second], [this.ds[0], this.ds[1]], rr);
         } else {
             renderer = new Histogram2DRenderer(this.page,
                 this.remoteObject.remoteObjectId, this.tableSchema,
@@ -758,6 +704,7 @@ export class HeatMapRenderer extends Renderer<HeatMapData> {
                 protected schema: Schema,
                 protected cds: ColumnDescription[],
                 protected stats: BasicColStats[],
+                protected ds: DistinctStrings[],
                 operation: ICancellable) {
         super(new FullPage(), operation, "histogram");
         page.insertAfterMe(this.page);
@@ -771,8 +718,17 @@ export class HeatMapRenderer extends Renderer<HeatMapData> {
         super.onNext(value);
         if (value == null)
             return;
-        let xAxisData = new AxisData(value.data.histogramMissingD1, this.cds[0], this.stats[0], null);
-        let yAxisData = new AxisData(value.data.histogramMissingD2, this.cds[1], this.stats[1], null);
+
+        let points = value.data.buckets;
+        let xPoints = 1;
+        let yPoints = 1;
+        if (points != null) {
+            xPoints = points.length;
+            yPoints = points[0] != null ? points[0].length : 1;
+        }
+
+        let xAxisData = new AxisData(value.data.histogramMissingD1, this.cds[0], this.stats[0], this.ds[0], xPoints);
+        let yAxisData = new AxisData(value.data.histogramMissingD2, this.cds[1], this.stats[1], this.ds[1], yPoints);
         this.heatMap.updateView(value.data.buckets, xAxisData, yAxisData,
             value.data.missingData, this.elapsedMilliseconds());
         this.heatMap.scrollIntoView();

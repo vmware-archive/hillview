@@ -103,6 +103,13 @@ export class RpcRequest implements ICancellable {
         this.rpcTime = start;
     }
 
+    // Indicates that this rpc request is executed as a continuation of
+    // the specified operation.
+    public chain(after: ICancellable) {
+        if (after != null)
+            this.setStartTime(after.startTime());
+    }
+
     public cancel(): boolean {
         if (!this.closed) {
             this.closed = true;

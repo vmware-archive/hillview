@@ -71,7 +71,7 @@
   },
   {
     "allowMissing": true,
-    "kind": "String",
+    "kind": "Category",
     "name": "Origin"
   },
   {

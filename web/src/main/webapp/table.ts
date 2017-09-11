@@ -344,7 +344,7 @@ export class TableView extends RemoteTableObjectView
         this.setOrder(o);
     }
 
-    public histogram(): void {
+    public histogram(heatMap: boolean): void {
         if (this.selectedColumns.size > 2) {
             this.reportError("Must select 1 or 2 columns for histogram");
             return;
@@ -400,13 +400,11 @@ export class TableView extends RemoteTableObjectView
 
             if (twoDimensional) {
                 let rr = this.createRange2DRequest(rangeInfo[0], rangeInfo[1]);
-                if (operation != null)
-                    rr.setStartTime(operation.startTime());
-                rr.invoke(new Range2DCollector(cds, this.schema, distinct, this.getPage(), this, rr, false));
+                rr.chain(operation);
+                rr.invoke(new Range2DCollector(cds, this.schema, distinct, this.getPage(), this, rr, heatMap));
             } else {
                 let rr = this.createRangeRequest(rangeInfo[0]);
-                if (operation != null)
-                    rr.setStartTime(operation.startTime());
+                rr.chain(operation);
                 rr.invoke(new RangeCollector(cds[0], this.schema, distinct[0], this.getPage(), this, rr));
             }
         };
@@ -492,7 +490,7 @@ export class TableView extends RemoteTableObjectView
                 this.contextMenu.addItem({text: "Sort ascending", action: () => this.showColumns(1, true) });
                 this.contextMenu.addItem({text: "Sort descending", action: () => this.showColumns(-1, true) });
                 if (cd.kind != "Json" && cd.kind != "String")
-                    this.contextMenu.addItem({text: "Histogram", action: () => this.histogram() });
+                    this.contextMenu.addItem({text: "Histogram", action: () => this.histogram(false) });
                 this.contextMenu.addItem({text: "Heat map", action: () => this.heatMap() });
                 this.contextMenu.addItem({text: "Heavy hitters...", action: () => this.heavyHitters() });
                 this.contextMenu.addItem({text: "Select numeric columns", action: () => this.selectNumericColumns()});
@@ -683,29 +681,7 @@ export class TableView extends RemoteTableObjectView
             return;
         }
 
-        let columns: RangeInfo[] = [];
-        let cds: ColumnDescription[] = [];
-        this.selectedColumns.forEach(v => {
-            let colDesc = TableView.findColumn(this.schema, v);
-            if (colDesc.kind == "String") {
-                this.reportError("Heat maps not supported for string columns " + colDesc.name);
-                return;
-            }
-            if (colDesc.kind == "Category") {
-                this.reportError("Heat maps not yet implemented for category columns " + colDesc.name);
-                return;
-            }
-            let ci = new RangeInfo(colDesc.name);
-            cds.push(colDesc);
-            columns.push(ci);
-        });
-
-        if (columns.length != 2)
-            // some error has occurred
-            return;
-        // TODO: handle categorical columns
-        let rr = this.createRange2DRequest(columns[0], columns[1]);
-        rr.invoke(new Range2DCollector(cds, this.schema, null, this.getPage(), this, rr, true));
+        this.histogram(true);
     }
 
     private highlightSelectedColumns(): void {
@@ -883,7 +859,7 @@ export class RemoteTableReceiver extends RemoteTableRenderer {
         let table = new TableView(this.remoteObject.remoteObjectId, this.page);
         this.page.setDataView(table);
         let rr = table.createGetSchemaRequest();
-        rr.setStartTime(this.operation.startTime());
+        rr.chain(this.operation);
         rr.invoke(new TableRenderer(this.page, table, rr, false, new RecordOrder([])));
     }
 
@@ -917,7 +893,7 @@ class QuantileReceiver extends Renderer<any[]> {
             return;
 
         let rr = this.tv.createNextKRequest(this.order, this.firstRow);
-        rr.setStartTime(this.operation.startTime());
+        rr.chain(this.operation);
         rr.invoke(new TableRenderer(this.page, this.tv, rr, false, this.order));
     }
 }
@@ -938,7 +914,7 @@ class HeavyHittersReceiver extends RemoteTableRenderer {
         if (this.remoteObject == null)
             return;
         let rr = this.tv.createCheckHeavyRequest(this.remoteObject, this.schema);
-        rr.setStartTime(this.operation.startTime());
+        rr.chain(this.operation);
         rr.invoke(new HeavyHittersReceiver2(this.page, this.tv, rr, this.schema, this.order));
     }
 }
@@ -975,7 +951,7 @@ class HeavyHittersReceiver2 extends Renderer<TopList> {
                 hittersId: this.data.heavyHittersId,
                 schema: this.schema
             });
-        rr.setStartTime(this.operation.startTime());
+        rr.chain(this.operation);
         rr.invoke(new TableOperationCompleted(this.page, this.tv, rr, this.order));
     }
 }
@@ -995,7 +971,7 @@ class CorrelationMatrixReceiver extends RemoteTableRenderer {
             return;
         let rr = this.tv.createProjectToEigenVectorsRequest(
                 this.remoteObject, this.numComponents);
-        rr.setStartTime(this.operation.startTime());
+        rr.chain(this.operation);
         rr.invoke(new RemoteTableReceiver(this.page, rr));
     }
 }
@@ -1017,7 +993,7 @@ class TableOperationCompleted extends RemoteTableRenderer {
         table.setSchema(this.tv.schema);
         this.page.setDataView(table);
         let rr = table.createNextKRequest(this.order, null);
-        rr.setStartTime(this.operation.startTime());
+        rr.chain(this.operation);
         rr.invoke(new TableRenderer(this.page, table, rr, false, this.order));
     }
 }

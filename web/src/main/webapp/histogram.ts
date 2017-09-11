@@ -109,10 +109,9 @@ export class HistogramView extends HistogramViewBase {
                 this.currentData.allStrings != null ? this.currentData.allStrings.uniqueStrings : null);
             let ds = CategoryCache.instance.getDistinctStrings(colName);
             let r1 = new RangeInfo(colName, ds != null ? ds.uniqueStrings : null);
-            let rangeInfo: RangeInfo[] = [r0, r1];
             let distinct: DistinctStrings[] = [this.currentData.allStrings, ds];
-
             let rr = this.createRange2DRequest(r0, r1);
+            rr.chain(operation);
             rr.invoke(new Range2DCollector(cds, this.tableSchema, distinct, this.getPage(), this, rr, false));
         };
         CategoryCache.instance.retrieveCategoryValues(this, catColumns, this.getPage(), cont);
@@ -280,10 +279,10 @@ export class HistogramView extends HistogramViewBase {
 
         let scaleAxis = HistogramViewBase.createScaleAndAxis(
             cd.kind, bucketCount, this.chartSize.width,
-            stats.min, stats.max, this.currentData.allStrings, true);
+            stats.min, stats.max, this.currentData.allStrings, true, true);
         this.xScale = scaleAxis.scale;
         this.adjustment = scaleAxis.adjustment;
-        let xAxis = scaleAxis.xAxis;
+        let xAxis = scaleAxis.axis;
 
         this.canvas.append("text")
             .text(cd.name)
@@ -445,7 +444,7 @@ class FilterReceiver extends RemoteTableRenderer {
         if (this.allStrings != null)
             rangeInfo = this.allStrings.getRangeInfo(colName);
         let rr = this.remoteObject.createRangeRequest(rangeInfo);
-        rr.setStartTime(this.operation.startTime());
+        rr.chain(this.operation);
         rr.invoke(new RangeCollector(this.columnDescription, this.tableSchema,
                   this.allStrings, this.page, this.remoteObject, this.operation));
     }
@@ -479,7 +478,7 @@ export class RangeCollector extends Renderer<BasicColStats> {
 
     public histogram(): void {
         let size = Resolution.getChartSize(this.page);
-        let bucketCount = HistogramViewBase.bucketCount(this.stats, this.page, this.cd.kind);
+        let bucketCount = HistogramViewBase.bucketCount(this.stats, this.page, this.cd.kind, false, true);
         let cdfCount = size.width;
         let boundaries = this.allStrings != null ?
             this.allStrings.categoriesInRange(this.stats.min, this.stats.max, cdfCount) : null;
@@ -493,7 +492,7 @@ export class RangeCollector extends Renderer<BasicColStats> {
             bucketBoundaries: boundaries
         };
         let rr = this.remoteObject.createHistogramRequest(info);
-        rr.setStartTime(this.operation.startTime());
+        rr.chain(this.operation);
         let renderer = new HistogramRenderer(this.page,
             this.remoteObject.remoteObjectId, this.tableSchema,
             this.cd, this.stats, rr, this.allStrings);
@@ -560,14 +559,14 @@ class MakeHistogram extends RemoteTableRenderer {
                 // Probably an error has occurred
                     return;
                 let rr = this.remoteObject.createRangeRequest(ds.getRangeInfo(this.colDesc.name));
-                rr.setStartTime(operation.startTime());
+                rr.chain(operation);
                 rr.invoke(new RangeCollector(this.colDesc, this.schema, ds, this.page, this.remoteObject, rr));
             };
             // Get the categorical data and invoke the continuation
             CategoryCache.instance.retrieveCategoryValues(this.remoteObject, [this.colDesc.name], this.page, cont);
         } else {
             let rr = this.remoteObject.createRangeRequest({columnName: this.colDesc.name, allNames: null});
-            rr.setStartTime(this.operation.startTime());
+            rr.chain(this.operation);
             rr.invoke(new RangeCollector(this.colDesc, this.schema, this.allStrings, this.page, this.remoteObject, rr));
         }
     }
