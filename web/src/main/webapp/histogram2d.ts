@@ -551,7 +551,7 @@ export class Histogram2DView extends HistogramViewBase {
             this.currentData.xData.distinctStrings,
             this.currentData.yData.distinctStrings,
             this.tableSchema,
-            this.page, rr, true);
+            this.page, rr, false);
         rr.invoke(renderer);
     }
 
