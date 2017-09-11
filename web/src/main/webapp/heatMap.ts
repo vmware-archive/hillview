@@ -681,7 +681,7 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
         } else {
             renderer = new Histogram2DRenderer(this.page,
                 this.remoteObject.remoteObjectId, this.tableSchema,
-                this.cds, [this.stats.first, this.stats.second], [this.ds[0], this.ds[1]], rr);
+                this.cds, [this.stats.first, this.stats.second], this.ds, rr);
         }
         rr.invoke(renderer);
     }
