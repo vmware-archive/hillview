@@ -81,8 +81,12 @@ public class LocalDataSet<T> implements IDataSet<T> {
     public <S> Observable<PartialResult<IDataSet<S>>> map(final IMap<T, S> mapper) {
         // Actual map computation performed lazily when observable is subscribed to.
         final Callable<IDataSet<S>> callable = () -> {
-            S result = mapper.apply(LocalDataSet.this.data);
-            return new LocalDataSet<S>(result);
+            try {
+                S result = mapper.apply(LocalDataSet.this.data);
+                return new LocalDataSet<S>(result);
+            } catch (final Throwable t) {
+                throw new Exception(t);
+            }
         };
         final Observable<IDataSet<S>> mapped = Observable.fromCallable(callable);
         // Wrap the produced data in a PartialResult
@@ -96,13 +100,17 @@ public class LocalDataSet<T> implements IDataSet<T> {
     public <S> Observable<PartialResult<IDataSet<S>>> flatMap(IMap<T, List<S>> mapper) {
         // Actual map computation performed lazily when observable is subscribed to.
         final Callable<IDataSet<S>> callable = () -> {
-            List<S> list = mapper.apply(LocalDataSet.this.data);
-            List<IDataSet<S>> locals = new ArrayList<IDataSet<S>>();
-            for (S s: list) {
-                IDataSet<S> ds = new LocalDataSet<S>(s);
-                locals.add(ds);
+            try {
+                List<S> list = mapper.apply(LocalDataSet.this.data);
+                List<IDataSet<S>> locals = new ArrayList<IDataSet<S>>();
+                for (S s : list) {
+                    IDataSet<S> ds = new LocalDataSet<S>(s);
+                    locals.add(ds);
+                }
+                return (IDataSet<S>) new ParallelDataSet<S>(locals);
+            } catch (final Throwable t) {
+                throw new Exception(t);
             }
-            return (IDataSet<S>) new ParallelDataSet<S>(locals);
         };
         final Observable<IDataSet<S>> mapped = Observable.fromCallable(callable);
         // Wrap the produced data in a PartialResult
@@ -128,7 +136,13 @@ public class LocalDataSet<T> implements IDataSet<T> {
         // Immediately return a zero partial result
         final Observable<PartialResult<R>> zero = this.zero(sketch::zero);
         // Actual sketch computation performed lazily when observable is subscribed to.
-        final Callable<R> callable = () -> sketch.create(this.data);
+        final Callable<R> callable = () -> {
+            try {
+                return sketch.create(this.data);
+            } catch (final Throwable t) {
+                throw new Exception(t);
+            }
+        };
         final Observable<R> sketched = Observable.fromCallable(callable);
         // Wrap sketch results in a stream of PartialResults.
         final Observable<PartialResult<R>> pro = sketched.map(PartialResult::new);
