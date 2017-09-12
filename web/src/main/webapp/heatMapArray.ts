@@ -57,8 +57,8 @@ export class CompactHeatMapView {
     private static maxTextLabelLength = 10;
     private static axesTicks = 3;
 
-    // The size of the chart.
-    public readonly chartSize: Size;
+    // Size of the entire drawing (label + chart)
+    private size: Size;
     // Actual size of a rectangle in the chart.
     private dotSize: Size;
 
@@ -84,9 +84,10 @@ export class CompactHeatMapView {
     private yText: any;
 
     constructor(
-        private parent, // Element where this heat map is appended to.
+        private parent: any, // Element where this heat map is appended to.
         private pos: Point2D, // Position in parent
-        private readonly size: Size, // Size including label
+        private readonly chartSize: Size,
+        private readonly labelSize: Size,
         private binLabel: string,
         public xDim: number,
         public yDim: number,
@@ -94,6 +95,10 @@ export class CompactHeatMapView {
         private xStats: BasicColStats,
         private yStats: BasicColStats
     ) {
+        this.size = {
+            width: Math.max(this.labelSize.width, this.chartSize.width),
+            height: this.labelSize.height + this.chartSize.height
+        };
         this.g = this.parent.append("g")
             .attr("transform", `translate(${pos.x}, ${pos.y})`);
         this.g.append("rect")
@@ -112,10 +117,6 @@ export class CompactHeatMapView {
             .attr("x", this.size.width / 2)
             .attr("y", Resolution.lineHeight / 2)
 
-        this.chartSize = {
-            width: this.size.width,
-            height: this.size.height - Resolution.lineHeight
-        };
 
         this.chart = this.g.append("g")
             .attr("transform", `translate(0, ${Resolution.lineHeight})`)
@@ -133,7 +134,7 @@ export class CompactHeatMapView {
         this.yAxis.ticks(CompactHeatMapView.axesTicks);
     }
 
-    public put(x, y, val) {
+    public put(x: number, y: number, val: number) {
         this.chart.append("rect")
             .attr("x", x * this.dotSize.width)
             .attr("y", this.chartSize.height - (y + 1) * this.dotSize.height)
@@ -143,10 +144,11 @@ export class CompactHeatMapView {
         this.data.set(y * this.xDim + x, val);
     }
 
-    // Returns the index of the cell where the given point is in.
-    public getValAt(mouse: Point2D): number {
-        let xIndex = Math.floor(mouse.x / this.dotSize.width);
-        let yIndex = Math.floor((this.chart.attr("height") - mouse.y) / this.dotSize.height);
+    // Returns the index of the cell where the given point is in. The
+    // coordinates are relative to the origin of this chart.
+    public getValAt(point: Point2D): number {
+        let xIndex = Math.floor(point.x / this.dotSize.width);
+        let yIndex = Math.floor((this.chart.attr("height") - point.y) / this.dotSize.height);
         let val = this.data.get(yIndex * this.xDim + xIndex);
         return val == null ? 0 : val;
     }
@@ -241,7 +243,7 @@ export class CompactHeatMapView {
         let mouse = d3.mouse(this.chart.node());
         if (mouse[1] < 0) {
             this.hideAxes();
-            return;
+            return null;
         }
         if (this.axesG == null)
             this.drawAxes();
@@ -347,7 +349,7 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
         let [numCols, numRows] = this.numHeatMaps();
         return {
             width: numCols * CompactHeatMapView.size.width,
-            height: numRows * CompactHeatMapView.size.height,
+            height: numRows * (CompactHeatMapView.size.height + Resolution.lineHeight),
         }
     }
 
@@ -361,7 +363,7 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
     private numHeatMaps(): [number, number] {
         let size = this.maxDrawingSize();
         let numCols = Math.floor(size.width / CompactHeatMapView.size.width);
-        let numRows = Math.floor(size.height / CompactHeatMapView.size.height);
+        let numRows = Math.floor(size.height / (CompactHeatMapView.size.height + Resolution.lineHeight));
         return [numCols, numRows];
     }
 
@@ -413,9 +415,13 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
 
         let col = 0;
         let row = 0;
-        let heatMapSize: Size = { // Constant, but should be specified by the caller.
+        let chartSize: Size = { // Constant, but should be specified by the caller.
             width: CompactHeatMapView.size.width,
             height: CompactHeatMapView.size.height
+        }
+        let labelSize: Size = {
+            width: CompactHeatMapView.size.width,
+            height: Resolution.lineHeight
         }
         let [numCols, numRows] = this.numHeatMaps();
 
@@ -423,14 +429,14 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
         this.heatMaps = new Array<CompactHeatMapView>(zDim);
         for (let z = 0; z < zDim; z++) {
             // Compute position in svg
-            let pos = {x: col * CompactHeatMapView.size.width, y: row * CompactHeatMapView.size.height};
+            let pos = {x: col * CompactHeatMapView.size.width, y: row * (CompactHeatMapView.size.height + Resolution.lineHeight)};
             if (++col == numCols) {
                 row++;
                 col = 0;
             }
 
             let heatMap = new CompactHeatMapView(
-                this.heatMapsSvg, pos, heatMapSize,
+                this.heatMapsSvg, pos, chartSize, labelSize,
                 this.args.zBins[z], xDim, yDim, this.args.cds, this.args.xStats, this.args.yStats
             );
             for (let x = 0; x < xDim; x++) {
@@ -484,7 +490,7 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
         // Show the new heat map's axes
         if (this.mouseOverHeatMap != null){
             let val = this.mouseOverHeatMap.updateAxes();
-            if (isNaN(val))
+            if (isNaN(val) || val == null)
                 this.colorLegend.select('#text-indicator').text("");
             else
                 this.colorLegend.select('#text-indicator').text(significantDigits(val));
