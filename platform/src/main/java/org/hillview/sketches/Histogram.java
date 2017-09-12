@@ -107,4 +107,12 @@ public class Histogram implements Serializable {
     }
 
     public int getNumOfBuckets() { return this.bucketDescription.getNumOfBuckets(); }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        for (int i=0; i < this.buckets.length; i++)
+            builder.append("[" + i + "]=" + this.buckets[i] + " ");
+        return builder.toString();
+    }
 }

@@ -35,7 +35,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class HistSketchTest {
     @Test
-    public void Hist1DLightTest() {
+    public void Histogram1DTest() {
         final int numCols = 1;
         final int tableSize = 1000;
         final Table myTable = TestTables.getRepIntTable(tableSize, numCols);
@@ -52,7 +52,7 @@ public class HistSketchTest {
     }
 
     @Test
-    public void Hist1DLightTest2() {
+    public void Histogram1DTest2() {
         final int numCols = 1;
         final int maxSize = 50;
         final int bigSize = 100000;

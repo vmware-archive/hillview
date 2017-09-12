@@ -190,7 +190,7 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
                 throw "Expected integer values";
             bucketCount = Math.min(bucketCount, stats.max - stats.min + 1);
         }
-        return bucketCount;
+        return Math.floor(bucketCount);
     }
 
     public static invertToNumber(v: number, scale: AnyScale, kind: ContentsKind): number {
