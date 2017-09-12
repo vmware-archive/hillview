@@ -38,17 +38,18 @@ public class DoubleArrayTest {
     /**
      * Generates a double array with every fifth entry missing
      */
-    public static DoubleArrayColumn generateDoubleArray(final int size) {
-        return DoubleArrayTest.generateDoubleArray(size, 5);
+    public static DoubleArrayColumn generateDoubleArray(final int size, final int max) {
+        return DoubleArrayTest.generateDoubleArray(size, max, 5);
     }
 
     /**
      * Generates a double array with every skip entry missing
      */
-    public static DoubleArrayColumn generateDoubleArray(final int size, int skip) {
+    public static DoubleArrayColumn generateDoubleArray(final int size, final int max, int
+            skip) {
         final DoubleArrayColumn col = new DoubleArrayColumn(desc, size);
         for (int i = 0; i < size; i++) {
-            col.set(i, Math.sqrt(i + 1));
+            col.set(i, Math.sqrt(i + 1) % max);
             if ((i % skip) == 0)
                 col.setMissing(i);
         }
@@ -68,7 +69,7 @@ public class DoubleArrayTest {
     /* Test for constructor using length and no arrays*/
     @Test
     public void testDoubleArrayZero() {
-        final DoubleArrayColumn col = generateDoubleArray(this.size);
+        final DoubleArrayColumn col = generateDoubleArray(this.size, 100);
         assertEquals(col.sizeInRows(), this.size);
         this.checkContents(col);
     }
