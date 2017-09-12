@@ -118,7 +118,9 @@ export class HistogramView extends HistogramViewBase {
     }
 
     changeBuckets(bucketCount: number): void {
-        let cdfBucketCount = this.currentData.cdf.buckets.length;
+        if (bucketCount == null)
+            return;
+        let cdfBucketCount = Math.floor(this.currentData.cdf.buckets.length);
         let boundaries = this.currentData.allStrings != null ?
             this.currentData.allStrings.categoriesInRange(
                 this.currentData.stats.min, this.currentData.stats.max, cdfBucketCount) : null;
@@ -479,7 +481,7 @@ export class RangeCollector extends Renderer<BasicColStats> {
     public histogram(): void {
         let size = Resolution.getChartSize(this.page);
         let bucketCount = HistogramViewBase.bucketCount(this.stats, this.page, this.cd.kind, false, true);
-        let cdfCount = size.width;
+        let cdfCount = Math.floor(size.width);
         let boundaries = this.allStrings != null ?
             this.allStrings.categoriesInRange(this.stats.min, this.stats.max, cdfCount) : null;
         let info: ColumnAndRange = {
