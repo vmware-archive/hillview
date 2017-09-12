@@ -8,6 +8,7 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.netty.NettyServerBuilder;
 import io.grpc.stub.StreamObserver;
 import org.apache.commons.lang3.SerializationUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.PartialResult;
 import org.hillview.pb.Ack;
@@ -328,6 +329,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
      * Helper method to propagate exceptions via gRPC
      */
     private StatusRuntimeException asStatusRuntimeException(final Throwable e) {
-        return Status.INTERNAL.withCause(e).withDescription(e.getMessage()).asRuntimeException();
+        final String stackTrace = ExceptionUtils.getStackTrace(e);
+        return Status.INTERNAL.withDescription(stackTrace).asRuntimeException();
     }
 }
