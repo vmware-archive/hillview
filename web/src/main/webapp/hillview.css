@@ -266,62 +266,32 @@ table.dropdown {
     border: 1px solid black;
 }
 
-.overlay > svg {
-    position: fixed;
-    background-color: rgba(255, 255, 255, 0.8);
-}
-
-.overlay > .bottomright {
-    bottom: 0px;
-    right: 0px;
-}
-
-.overlay > .bottomleft {
-    bottom: 0px;
-    left: 0px;
-}
-
-.overlay > .bottommiddle {
-    bottom: 0px;
-    left: 50%;
-    transform: translate(-50%, 0);
-}
-
-.overlay > .topmiddle {
-    top: 0px;
-    left: 50%;
-    transform: translate(-50%, 0);
-}
-
-.hillviewPage:hover .overlay {
-    display: block;
-}
-
-.hillviewPage .overlay {
-    display: none;
-}
-
-div.heatMapArrayView {
-    display: inline-block;
-    margin-top: 40px;
-    overflow: hidden;
-}
-
-div.heatMapArray {
-    text-align: center;
-    line-height: 0;
-    overflow: hidden;
-}
-
-div.heatMapArrayView {
+.heatMapArrayView {
+    width: 100%;
+    margin: 0px 0px 50px 0px;
     display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    justify-content: flex-start;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.heatMapArrayView > div {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
     align-items: stretch;
 }
 
-div.heatMapArray > div {
-    display: inline-block;
-    border: 1px solid black;
+.heatMapArrayView > h2 {
+    margin: 2px;
+}
+
+.heatMapArrayView > svg {
+    margin: 0px 10px 10px 10px;
+    display: inline;
+    overflow: visible;
+}
+
+.heatMapArrayView > div > svg {
+    overflow: visible;
 }

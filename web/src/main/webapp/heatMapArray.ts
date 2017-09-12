@@ -47,22 +47,34 @@ export interface HeatMapArrayArgs {
     yStats?: BasicColStats;
 }
 
-export class LegendOverlay implements IHtmlElement {
-    private outer: HTMLElement;
-
-    // Fields for the axes.
-    private xAxisData: AxisData;
-    private yAxisData: AxisData;
-
-    // -- UI variables
+export class CompactHeatMapView {
+    // We aim for this size. Square (apart from the label space), so it is
+    // natural to tile. It is assumed that this will fit on the screen.
+    public static readonly size: Size = {
+        width: 200,
+        height: 200 + Resolution.lineHeight
+    };
+    private static maxTextLabelLength = 10;
     private static axesTicks = 3;
-    private static colorLegendHeight = 50;
-    private axesSize: Size;
 
-    // -- Elements
+    // The size of the chart.
+    public readonly chartSize: Size;
+    // Actual size of a rectangle in the chart.
+    private dotSize: Size;
+
+    private data: Map<number, number>; // 'sparse array' for fast querying of the values.
+
+    // Information about the axes (range, ticks)
+    private xAxisData;
+    private yAxisData;
+    // Elements
+    private g: any; // g element with the drawing
+    private chart: any; // chart on which the heat map is drawn
+
     private axesG: any; // g element that will contain the axes
-    private xAxis: any;
-    private yAxis: any;
+    private textRect: any; // rectangle for readability of value indicator.
+    private xAxis;
+    private yAxis;
     private marker: any; // Marker that will indicate the x, y pair.
     // Lines that assist the marker.
     private xLine: any;
@@ -71,197 +83,60 @@ export class LegendOverlay implements IHtmlElement {
     private xText: any;
     private yText: any;
 
-    // Fields for color legend
-    private colorMap: ColorMap;
-    // g element that will contain the legend.
-    private legendG: any;
-
-    constructor(cds: IColumnDescription[],
-                xStats: BasicColStats, yStats: BasicColStats,
-                xStrings: DistinctStrings, yStrings: DistinctStrings,
-                xBuckets: number, yBuckets: number) {
-        this.outer = document.createElement("div");
-        this.outer.classList.add("overlay");
-
-        this.axesSize = {
-            width: CompactHeatMapView.size.width,
-            height: CompactHeatMapView.size.height
-        };
-
-        this.xAxisData = new AxisData(null, cds[0], xStats, xStrings, xBuckets);
-        this.yAxisData = new AxisData(null, cds[1], yStats, yStrings, yBuckets);
-        this.xAxis = this.xAxisData.scaleAndAxis(this.axesSize.width, true).axis;
-        this.yAxis = this.yAxisData.scaleAndAxis(this.axesSize.height, false).axis;
-        this.xAxis.ticks(LegendOverlay.axesTicks);
-        this.yAxis.ticks(LegendOverlay.axesTicks);
-
-        let axesSvg = d3.select(this.outer)
-            .append("svg")
-            .attr("class", "bottomright")
-            .attr("width", this.axesSize.width + Resolution.leftMargin + Resolution.rightMargin)
-            .attr("height", this.axesSize.height + Resolution.topMargin + Resolution.bottomMargin);
-        this.axesG = axesSvg.append("g")
-            .attr("transform", `translate(${Resolution.leftMargin}, ${Resolution.topMargin})`);
-
-        let legendSvg = d3.select(this.outer).append("svg")
-            .attr("class", "bottommiddle")
-            .attr("width", Resolution.legendWidth + Resolution.leftMargin + Resolution.rightMargin)
-            .attr("height", 50);
-        this.legendG = legendSvg.append("g")
-            .attr("transform", `translate(${Resolution.leftMargin}, 0)`)
-            .attr("width", Resolution.legendWidth)
-            .attr("height", LegendOverlay.colorLegendHeight);
-
-        // Make the overlays move over on hover.
-        axesSvg.on("mouseover", () => {
-            if (axesSvg.attr("class") == "bottomright")
-                axesSvg.attr("class", "bottomleft");
-            else
-                axesSvg.attr("class", "bottomright");
-        });
-        legendSvg.on("mouseover", () => {
-            if (legendSvg.attr("class") == "bottommiddle")
-            legendSvg.attr("class", "topmiddle");
-            else
-            legendSvg.attr("class", "bottommiddle");
-        });
-    }
-
-    public draw() {
-        this.drawAxes();
-        this.drawColorLegend();
-    }
-
-    public remove() {
-        this.outer.remove();
-    }
-
-    public setColorMap(colorMap: ColorMap){
-        this.colorMap = colorMap;
-    }
-
-    public getHTMLRepresentation(): HTMLElement {
-        return this.outer;
-    }
-
-    public drawAxes() {
-        this.axesG.selectAll("*").remove();
-        this.axesG.append("g")
-            .attr("class", "x-axis")
-            .attr("transform", `translate(0, ${this.axesSize.height})`)
-            .call(this.xAxis);
-        this.axesG.append("g")
-            .attr("class", "y-axis")
-            .call(this.yAxis);
-        this.axesG.append("text")
-            .text(this.yAxisData.description.name)
-            .attr("transform-origin", "center top")
-            .attr("text-anchor", "middle")
-            .attr("alignment-baseline", "hanging")
-            .attr("transform", `translate(${-Resolution.leftMargin}, ${0.5 * this.axesSize.height})rotate(-90)`);
-        this.axesG.append("text")
-            .text(this.xAxisData.description.name)
-            .attr("text-anchor", "middle")
-            .attr("alignment-baseline", "baseline")
-            .attr("transform", `translate(${0.5 * this.axesSize.width}, ${this.axesSize.height + Resolution.bottomMargin - 5})`);
-        this.marker = this.axesG.append("circle")
-            .attr("r", 4)
-            .attr("cy", 0)
-            .attr("cx", 0)
-            .attr("fill", "blue");
-        this.xLine = this.axesG.append("line")
-            .attr("x1", 0)
-            .attr("x2", 0)
-            .attr("y1", this.axesSize.height)
-            .attr("y2", 0)
-            .attr("stroke", "blue")
-            .attr("stroke-dasharray", "5,5");
-        this.yLine = this.axesG.append("line")
-            .attr("x1", 0)
-            .attr("x2", 0)
-            .attr("y1", this.axesSize.height)
-            .attr("y2", 0)
-            .attr("stroke", "blue")
-            .attr("stroke-dasharray", "5,5");
-        this.xText = this.axesG.append("text")
-            .attr("text-anchor", "left")
-            .attr("alignment-baseline", "hanging")
-            .attr("x", -Resolution.leftMargin + 5)
-            .attr("y", -Resolution.topMargin + 5);
-        this.yText = this.axesG.append("text")
-            .attr("text-anchor", "left")
-            .attr("alignment-baseline", "hanging")
-            .attr("x", -Resolution.leftMargin + 5)
-            .attr("y", -Resolution.topMargin + 25);
-    }
-
-    public drawColorLegend(): void {
-        this.legendG.selectAll("*").remove();
-        this.colorMap.drawLegend(this.legendG);
-    }
-
-    public update(pos: Point2D) {
-        let xVal = this.xAxisData.stats.min + pos.x * (this.xAxisData.stats.max - this.xAxisData.stats.min);
-        let yVal = this.yAxisData.stats.min + (1 - pos.y) * (this.yAxisData.stats.max - this.yAxisData.stats.min);
-
-        // Transform to the coordinate system of the legend axis.
-        pos.x *= this.axesSize.width;
-        pos.y *= this.axesSize.height;
-
-        this.marker.attr("cx", pos.x)
-            .attr("cy", pos.y);
-        this.xLine.attr("x1", pos.x)
-            .attr("x2", pos.x)
-            .attr("y2", pos.y);
-        this.yLine.attr("y1", pos.y)
-            .attr("y2", pos.y)
-            .attr("x2", pos.x);
-
-        this.xText.text(this.xAxisData.description.name + " = " + significantDigits(xVal));
-        this.yText.text(this.yAxisData.description.name + " = " + significantDigits(yVal));
-    }
-}
-
-export class CompactHeatMapView implements IHtmlElement {
-    // We aim for this size. Square, so it natural to tile.
-    // It is assumed that this will fit on the screen.
-    public static readonly size: Size = {
-        width: 200,
-        height: 200
-    };
-    private static maxTextLabelLength = 10;
-    // The actual size of the canvas.
-    public size: Size;
-
-    private topLevel: HTMLElement;
-    private chart: any; // chart on which the heat map is drawn
-    // Actual size of a rectangle on the canvas.
-    private dotSize: Size;
-    private data: Map<number, number>; // 'sparse array' for fast querying of the values.
-
-    constructor(private binLabel: string, public xDim: number, public yDim: number) {
-        this.topLevel = document.createElement("div");
+    constructor(
+        private parent, // Element where this heat map is appended to.
+        private pos: Point2D, // Position in parent
+        private readonly size: Size, // Size including label
+        private binLabel: string,
+        public xDim: number,
+        public yDim: number,
+        private cds: IColumnDescription[],
+        private xStats: BasicColStats,
+        private yStats: BasicColStats
+    ) {
+        this.g = this.parent.append("g")
+            .attr("transform", `translate(${pos.x}, ${pos.y})`);
+        this.g.append("rect")
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("width", this.size.width)
+            .attr("height", this.size.height)
+            .style("fill-opacity", 0)
+            .style("stroke", "black")
 
         binLabel = truncate(binLabel, CompactHeatMapView.maxTextLabelLength);
-        this.topLevel.appendChild(document.createElement("p")).textContent = binLabel;
+        this.g.append("text")
+            .text(binLabel)
+            .attr("text-anchor", "middle")
+            .attr("alignment-baseline", "middle")
+            .attr("x", this.size.width / 2)
+            .attr("y", Resolution.lineHeight / 2)
 
-        this.size = {
-            width: CompactHeatMapView.size.width,
-            height: CompactHeatMapView.size.height
+        this.chartSize = {
+            width: this.size.width,
+            height: this.size.height - Resolution.lineHeight
         };
 
-        this.chart = d3.select(this.topLevel).append("svg")
-            .attr("width", this.size.width)
-            .attr("height", this.size.height);
+        this.chart = this.g.append("g")
+            .attr("transform", `translate(0, ${Resolution.lineHeight})`)
+            .attr("width", this.chartSize.width)
+            .attr("height", this.chartSize.height);
 
-        this.dotSize = {width: this.size.width / this.xDim, height: this.size.height / this.yDim};
+        this.dotSize = {width: this.chartSize.width / this.xDim, height: this.chartSize.height / this.yDim};
         this.data = new Map<number, number>();
+
+        this.xAxisData = new AxisData(null, cds[0], xStats, null, this.xDim);
+        this.yAxisData = new AxisData(null, cds[1], yStats, null, this.yDim);
+        this.xAxis = this.xAxisData.scaleAndAxis(this.chartSize.width, true).axis;
+        this.yAxis = this.yAxisData.scaleAndAxis(this.chartSize.height, false).axis;
+        this.xAxis.ticks(CompactHeatMapView.axesTicks);
+        this.yAxis.ticks(CompactHeatMapView.axesTicks);
     }
 
     public put(x, y, val) {
         this.chart.append("rect")
             .attr("x", x * this.dotSize.width)
-            .attr("y", CompactHeatMapView.size.height - (y + 1) * this.dotSize.height)
+            .attr("y", this.chartSize.height - (y + 1) * this.dotSize.height)
             .attr("width", this.dotSize.width)
             .attr("height", this.dotSize.height)
             .attr("data-val", val);
@@ -279,38 +154,149 @@ export class CompactHeatMapView implements IHtmlElement {
     public setColors(colorMap: ColorMap) {
         this.chart.selectAll("rect")
             .datum(function() {return this.dataset;})
-            .attr("fill", (rect) => colorMap.apply(rect.val));
+            .style("fill", (rect) => colorMap.apply(rect.val));
     }
 
-    public setListener(legend: LegendOverlay) {
-        this.chart.on("mousemove", () => {
-            let mousePos = d3.mouse(this.chart.node());
-            let mouse: Point2D = {x: mousePos[0], y: mousePos[1]};
-
-            // Compute position in [0, 1] x [0, 1] range.
-            // Legend will compute the actual values based on the range.
-            let pos = {
-                x: mouse.x / (this.dotSize.width * this.xDim),
-                y: mouse.y / (this.dotSize.width * this.xDim)
-            };
-
-            legend.update(pos);
-        });
+    public getG() {
+        return this.g;
     }
 
-    public getHTMLRepresentation() {
-        return this.topLevel;
+    private drawAxes() {
+        this.hideAxes();
+        this.axesG = this.parent.append("g")
+            .attr("transform", `translate(${this.pos.x}, ${this.pos.y + Resolution.lineHeight})`);
+        // Draw semi-tranparent rectangles s.t. the axes are readable.
+        this.axesG.append("rect")
+            .attr("x", -Resolution.leftMargin)
+            .attr("y", 0)
+            .attr("width", Resolution.leftMargin)
+            .attr("height", this.chartSize.height)
+            .attr("fill", "rgba(255, 255, 255, 0.9)")
+        this.axesG.append("rect")
+            .attr("x", 0)
+            .attr("y", this.chartSize.height)
+            .attr("width", this.chartSize.width)
+            .attr("height", Resolution.bottomMargin)
+            .attr("fill", "rgba(255, 255, 255, 0.9)")
+
+        // Draw the x and y axes
+        this.axesG.append("g")
+            .attr("class", "x-axis")
+            .attr("transform", `translate(0, ${this.chartSize.height})`)
+            .call(this.xAxis);
+        this.axesG.append("g")
+            .attr("class", "y-axis")
+            .call(this.yAxis);
+
+        // Draw axis labels
+        this.axesG.append("text")
+            .text(this.yAxisData.description.name)
+            .attr("transform-origin", "center top")
+            .attr("text-anchor", "middle")
+            .attr("alignment-baseline", "hanging")
+            .attr("transform", `translate(${-Resolution.leftMargin}, ${0.5 * this.chartSize.height})rotate(-90)`);
+        this.axesG.append("text")
+            .text(this.xAxisData.description.name)
+            .attr("text-anchor", "middle")
+            .attr("alignment-baseline", "baseline")
+            .attr("transform", `translate(${0.5 * this.chartSize.width}, ${this.chartSize.height + Resolution.bottomMargin - 5})`);
+
+        // Draw a visual indicator with a circle and two lines.
+        this.marker = this.axesG.append("circle")
+            .attr("r", 4)
+            .attr("cy", 0)
+            .attr("cx", 0)
+            .attr("fill", "blue");
+        this.xLine = this.axesG.append("line")
+            .attr("x1", 0)
+            .attr("x2", 0)
+            .attr("y1", this.chartSize.height)
+            .attr("y2", 0)
+            .attr("stroke", "blue")
+            .attr("stroke-dasharray", "5,5");
+        this.yLine = this.axesG.append("line")
+            .attr("x1", 0)
+            .attr("x2", 0)
+            .attr("y1", this.chartSize.height)
+            .attr("y2", 0)
+            .attr("stroke", "blue")
+            .attr("stroke-dasharray", "5,5");
+
+        // Draw a rectangle for the text value indicator.
+        this.textRect = this.axesG.append("rect")
+            .attr("width", this.chartSize.width)
+            .attr("height", Resolution.lineHeight * 2)
+            .attr("fill", "rgba(255, 255, 255, 0.9)");
+        // Draw the values as strings.
+        this.xText = this.axesG.append("text")
+            .attr("text-anchor", "left")
+            .attr("alignment-baseline", "baseline")
+        this.yText = this.axesG.append("text")
+            .attr("text-anchor", "left")
+            .attr("alignment-baseline", "baseline")
+    }
+
+    // Returns the value (count in the histogram) under the mouse.
+    public updateAxes(): number {
+        let mouse = d3.mouse(this.chart.node());
+        if (mouse[1] < 0) {
+            this.hideAxes();
+            return;
+        }
+        if (this.axesG == null)
+            this.drawAxes();
+
+        let xVal = this.xAxisData.stats.min + (mouse[0] / this.chartSize.width) * (this.xAxisData.stats.max - this.xAxisData.stats.min);
+        let yVal = this.yAxisData.stats.min + (1 - (mouse[1] / this.chartSize.height)) * (this.yAxisData.stats.max - this.yAxisData.stats.min);
+        let val = this.getValAt({x: mouse[0], y: mouse[1]});
+
+        // Set the visual markers
+        this.marker.attr("cx", mouse[0])
+            .attr("cy", mouse[1]);
+        this.xLine.attr("x1", mouse[0])
+            .attr("x2", mouse[0])
+            .attr("y2", mouse[1]);
+        this.yLine.attr("y1", mouse[1])
+            .attr("y2", mouse[1])
+            .attr("x2", mouse[0]);
+
+        // Set the textual markers
+        this.xText.text(truncate(this.xAxisData.description.name, CompactHeatMapView.maxTextLabelLength) + " = " + significantDigits(xVal))
+            .attr("x", mouse[0] + 5)
+            .attr("y", mouse[1] - 5);
+        this.yText.text(truncate(this.yAxisData.description.name, CompactHeatMapView.maxTextLabelLength) + " = " + significantDigits(yVal))
+            .attr("x", mouse[0] + 5)
+            .attr("y", mouse[1] - 5 - Resolution.lineHeight);
+        this.textRect
+            .attr("x", mouse[0])
+            .attr("y", mouse[1] - this.textRect.attr("height"))
+            .attr("width", Math.max(this.xText.node().getBBox().width, this.yText.node().getBBox().width) + 10);
+
+        return val;
+    }
+
+    public hideAxes() {
+        if (this.axesG != null) {
+            this.axesG.remove();
+            this.axesG = null;
+        }
     }
 }
 
 export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTarget {
     // TODO: handle categorical values
     public args: HeatMapArrayArgs;
+    private offset: number; // Offset from the start of the set of unique z-values.
+
+    // UI elements
     private heatMaps: CompactHeatMapView[];
     private scrollBar: ScrollBar;
-    private legendOverlay: LegendOverlay;
-    private heatMapsDiv: HTMLDivElement;
-    private offset: number; // Offset from the start of the set of unique z-values.
+    private arrayAndScrollBar: HTMLDivElement;
+    private colorLegend: any; // The svg containing the color legend.
+    private heatMapsSvg: any; // svg containing all heatmaps.
+
+    // Holds the state of which heatmap is hovered over.
+    private mouseOverHeatMap: CompactHeatMapView;
 
     constructor(remoteObjectId: string, page: FullPage, args: HeatMapArrayArgs) {
         super(remoteObjectId, page);
@@ -319,24 +305,64 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
         if (this.args.cds.length != 3)
             throw "Expected 3 columns";
 
-        this.heatMapsDiv = document.createElement("div");
-        this.heatMapsDiv.classList.add("heatMapArray");
-
-        this.scrollBar = new ScrollBar(this);
-
         this.topLevel = document.createElement("div");
         this.topLevel.classList.add("heatMapArrayView");
-        this.topLevel.appendChild(this.heatMapsDiv);
-        this.topLevel.appendChild(this.scrollBar.getHTMLRepresentation());
+
+        let title = document.createElement("h2");
+        title.textContent = `Heat maps by ${this.args.cds[2].name}`;
+        this.topLevel.appendChild(title);
+
+        this.colorLegend = d3.select(this.topLevel).append("svg")
+            .attr("width", Resolution.legendWidth)
+            .attr("height", Resolution.legendHeight);
+
+        // Div containing the array and the scrollbar
+        this.arrayAndScrollBar = document.createElement("div");
+        this.topLevel.appendChild(this.arrayAndScrollBar);
+
+        // Elements are added in this order so the scrollbars svg doesn't overlap
+        // the value-indicator. They're drawin from right to left using reverse flex
+        // in css.
+        this.scrollBar = new ScrollBar(this);
+        this.arrayAndScrollBar.appendChild(this.scrollBar.getHTMLRepresentation());
+
+        let svgSize = this.actualDrawingSize();
+        this.heatMapsSvg = d3.select(this.arrayAndScrollBar).append("svg")
+            .attr("width", svgSize.width)
+            .attr("height", svgSize.height);
     }
 
-    public maxNumHeatMaps(): number {
-        // Compute the number of heat maps that fits on the page.
+    // Returns the maximum size that the canvas is allowed to use
+    private maxDrawingSize(): Size {
         let canvasSize = Resolution.getCanvasSize(this.getPage());
-        // +2 to account for 1 pixel of border on each side.
-        let numCols = Math.floor((canvasSize.width - ScrollBar.barWidth) / (CompactHeatMapView.size.width + 2));
-        let numRows = Math.floor(canvasSize.height / (CompactHeatMapView.size.height + 2));
+        return {
+            width: canvasSize.width - ScrollBar.barWidth,
+            height: canvasSize.height
+        }
+    }
+
+    // Returns the size that the canvas actually needs, since it contains
+    // discrete elements.
+    private actualDrawingSize(): Size {
+        let [numCols, numRows] = this.numHeatMaps();
+        return {
+            width: numCols * CompactHeatMapView.size.width,
+            height: numRows * CompactHeatMapView.size.height,
+        }
+    }
+
+    // Returns the number of heatmaps that fit in the canvas
+    private maxNumHeatMaps(): number {
+        let [numRows, numCols] = this.numHeatMaps();
         return numCols * numRows;
+    }
+
+    // Returns the number of heatmaps in x and y directions.
+    private numHeatMaps(): [number, number] {
+        let size = this.maxDrawingSize();
+        let numCols = Math.floor(size.width / CompactHeatMapView.size.width);
+        let numRows = Math.floor(size.height / CompactHeatMapView.size.height);
+        return [numCols, numRows];
     }
 
     public refresh(): void {
@@ -368,24 +394,45 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
     }
 
     public updateView(heatMapsArray: HeatMapArrayData): void {
-        if (this.heatMaps != null)
-            removeAllChildren(this.heatMapsDiv);
         if (heatMapsArray == null) {
             this.page.reportError("Did not receive data.");
             return;
         }
+
+        // Clear the heat map svg, and resize it.
+        this.heatMapsSvg.selectAll("*").remove();
+        let svgSize = this.actualDrawingSize();
+        this.heatMapsSvg
+            .attr("width", svgSize.width)
+            .attr("height", svgSize.height)
 
         let data = heatMapsArray.buckets;
         let xDim = data.length;
         let yDim = data[0].length;
         let zDim = data[0][0].length;
 
+        let col = 0;
+        let row = 0;
+        let heatMapSize: Size = { // Constant, but should be specified by the caller.
+            width: CompactHeatMapView.size.width,
+            height: CompactHeatMapView.size.height
+        }
+        let [numCols, numRows] = this.numHeatMaps();
+
         let max = 0;
         this.heatMaps = new Array<CompactHeatMapView>(zDim);
         for (let z = 0; z < zDim; z++) {
-            let heatMap = new CompactHeatMapView(this.args.zBins[z], xDim, yDim);
-            this.heatMaps.push(heatMap);
-            this.heatMapsDiv.appendChild(heatMap.getHTMLRepresentation());
+            // Compute position in svg
+            let pos = {x: col * CompactHeatMapView.size.width, y: row * CompactHeatMapView.size.height};
+            if (++col == numCols) {
+                row++;
+                col = 0;
+            }
+
+            let heatMap = new CompactHeatMapView(
+                this.heatMapsSvg, pos, heatMapSize,
+                this.args.zBins[z], xDim, yDim, this.args.cds, this.args.xStats, this.args.yStats
+            );
             for (let x = 0; x < xDim; x++) {
                 for (let y = 0; y < yDim; y++) {
                     if (data[x][y][z] > 0) {
@@ -394,26 +441,64 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
                     }
                 }
             }
+
+            // Save it, as we need to set the colormap later.
+            this.heatMaps[z] = heatMap;
         }
         let colorMap = new ColorMap(max);
-        this.legendOverlay.setColorMap(colorMap);
-        this.legendOverlay.draw();
         this.heatMaps.forEach((heatMap) => {
             heatMap.setColors(colorMap);
-            heatMap.setListener(this.legendOverlay);
         });
+        this.colorLegend.selectAll("*").remove();
+        colorMap.drawLegend(this.colorLegend);
 
         this.scrollBar.setPosition(this.offset / this.args.uniqueStrings.size(),
             (this.offset + this.args.zBins.length) / this.args.uniqueStrings.size());
+
+        // Register click listeners only after everything's set up.
+        this.heatMapsSvg
+            .on("mousemove", () => this.mousemove())
+            .on("mouseleave", () => this.mouseleave());
     }
 
-   public viewComplete(): void {
-       // TODO: properly compute number of buckets
-       let numXBuckets = CompactHeatMapView.size.width / Resolution.minDotSize;
-       let numYBuckets = CompactHeatMapView.size.height / Resolution.minDotSize;
-       this.legendOverlay = new LegendOverlay(
-            this.args.cds, this.args.xStats, this.args.yStats, null, null, numXBuckets, numYBuckets);
-        this.getHTMLRepresentation().appendChild(this.legendOverlay.getHTMLRepresentation());
+    private mousemove() {
+        // Calculate which heat map is being moved over.
+        let mouse = d3.mouse(this.heatMapsSvg.node());
+        let [numCols, numRows] = this.numHeatMaps();
+        let i = Math.floor(numCols * mouse[0] / this.heatMapsSvg.attr("width"));
+        let j = Math.floor(numRows * mouse[1] / this.heatMapsSvg.attr("height"));
+        let index = numCols * j + i
+
+        let newMouseOverHeatMap: CompactHeatMapView;
+        if (index >= this.heatMaps.length)
+            newMouseOverHeatMap = null;
+        else
+            newMouseOverHeatMap = this.heatMaps[index];
+
+        // Hide the axes of the previously mouse-over'd heat map
+        if (newMouseOverHeatMap != this.mouseOverHeatMap && this.mouseOverHeatMap != null) {
+            this.mouseOverHeatMap.hideAxes();
+        }
+        this.mouseOverHeatMap = newMouseOverHeatMap
+
+        // Show the new heat map's axes
+        if (this.mouseOverHeatMap != null){
+            let val = this.mouseOverHeatMap.updateAxes();
+            if (isNaN(val))
+                this.colorLegend.select('#text-indicator').text("");
+            else
+                this.colorLegend.select('#text-indicator').text(significantDigits(val));
+        }
+
+    }
+
+    private mouseleave() {
+        // Hide the previously mouse-over'd heat map
+        if (this.mouseOverHeatMap != null){
+            this.mouseOverHeatMap.hideAxes();
+            this.mouseOverHeatMap = null;
+        }
+        this.colorLegend.select('#text-indicator').text("");
     }
 
     public setStats(stats: Pair<BasicColStats, BasicColStats>): void {
@@ -478,7 +563,6 @@ class Range2DRenderer extends Renderer<Pair<BasicColStats, BasicColStats>> {
     onCompleted(): void {
         super.onCompleted();
         this.view.initiateHeatMaps();
-        this.view.viewComplete();
     }
 }
 

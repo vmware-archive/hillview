@@ -57,6 +57,8 @@ export class ColorMap {
 
     /**
      * Draw a color legend for this ColorMap with the specified parameters.
+     * The legend has an element id'ed with #text-indicator, that can be
+     * selected and updated to indicate the value.
      * @param element: Element to draw the color legend in. The width attribute
                 of this element is used.
      * @param ticks: (Approximate) number of ticks on the axis below the bar.
@@ -65,7 +67,7 @@ export class ColorMap {
      * @param barHeight: Height of the color bar rectangle.
      * Assumes there are margins outside this element.
     **/
-    public drawLegend(element, ticks: number = Math.max(10, this.max - 1), base?: number, barHeight = 16) {
+    public drawLegend(element, ticks: number = Math.min(10, this.max - 1), base?: number, barHeight = 16) {
         let size: Size = {width: element.attr("width"), height: element.attr("height")};
 
         let gradient = element.append('defs')
@@ -91,6 +93,12 @@ export class ColorMap {
 
         let axisG = element.append("g")
             .attr("transform", `translate(0, ${barHeight})`);
+
+        let textIndicator = element.append("text").attr("id", "text-indicator")
+            .attr("x", size.width / 2)
+            .attr("y", size.height)
+            .attr("text-anchor", "middle")
+            .attr("alignment-baseline", "bottom");
 
         let axis = this.getAxis(size.width, ticks, base, true);
         axisG.call(axis);
