@@ -57,7 +57,7 @@ public class TableTest {
         final int numCols =2;
         final List<IColumn> columns = new ArrayList<IColumn>(numCols);
         columns.add(IntArrayGenerator.getMissingIntArray("X", size, 5));
-        columns.add(generateDoubleArray(size));
+        columns.add(generateDoubleArray(size, 100));
         FullMembership full = new FullMembership(size);
         IMembershipSet partial = full.filter(row -> (row % 2) == 0);
         Table myTable = new Table(columns, partial);
@@ -81,7 +81,7 @@ public class TableTest {
         final int numCols =2;
         final List<IColumn> columns = new ArrayList<IColumn>(numCols);
         columns.add(IntArrayGenerator.getMissingIntArray("A", size, 5));
-        columns.add(generateDoubleArray(size));
+        columns.add(generateDoubleArray(size, 100));
         final FullMembership full = new FullMembership(size);
         final IMembershipSet partial = full.filter(row -> (row % 2) == 0);
         final Table myTable = new Table(columns, partial);
