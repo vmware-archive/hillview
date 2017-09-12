@@ -3,6 +3,8 @@ package org.hillview.remoting;
 import com.google.common.net.HostAndPort;
 import com.google.protobuf.ByteString;
 import io.grpc.Server;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.netty.NettyServerBuilder;
 import io.grpc.stub.StreamObserver;
 import org.apache.commons.lang3.SerializationUtils;
@@ -85,7 +87,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             @Override
             public void onError(final Throwable e) {
                 e.printStackTrace();
-                responseObserver.onError(e);
+                responseObserver.onError(asStatusRuntimeException(e));
                 HillviewServer.this.operationToObservable.remove(id);
             }
 
@@ -133,7 +135,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             this.operationToObservable.put(commandId, sub);
         } catch (final Exception e) {
             e.printStackTrace();
-            responseObserver.onError(e);
+            responseObserver.onError(asStatusRuntimeException(e));
         }
     }
 
@@ -164,7 +166,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             this.operationToObservable.put(commandId, sub);
         } catch (final Exception e) {
             e.printStackTrace();
-            responseObserver.onError(e);
+            responseObserver.onError(asStatusRuntimeException(e));
         }
     }
 
@@ -211,7 +213,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                 @Override
                 public void onError(final Throwable e) {
                     e.printStackTrace();
-                    responseObserver.onError(e);
+                    responseObserver.onError(asStatusRuntimeException(e));
                     HillviewServer.this.operationToObservable.remove(commandId);
                 }
 
@@ -229,7 +231,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             this.operationToObservable.put(commandId, sub);
         } catch (final Exception e) {
             e.printStackTrace();
-            responseObserver.onError(e);
+            responseObserver.onError(asStatusRuntimeException(e));
         }
     }
 
@@ -261,7 +263,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             this.operationToObservable.put(commandId, sub);
         } catch (final Exception e) {
             e.printStackTrace();
-            responseObserver.onError(e);
+            responseObserver.onError(asStatusRuntimeException(e));
         }
     }
 
@@ -279,7 +281,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             }
         } catch (final Exception e) {
             LOG.warning(e.getMessage());
-            responseObserver.onError(e);
+            responseObserver.onError(asStatusRuntimeException(e));
         }
     }
 
@@ -301,8 +303,8 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     private boolean checkValidIdsIndex(final int index,
                                        final StreamObserver<PartialResponse> observer) {
         if (!this.dataSets.containsKey(index)) {
-            observer.onError(new RuntimeException("Object with index does not exist: "
-                    + index + " " + this.listenAddress));
+            observer.onError(asStatusRuntimeException(new RuntimeException("Object with index does not exist: "
+                    + index + " " + this.listenAddress)));
             return false;
         }
         return true;
@@ -320,5 +322,12 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Helper method to propagate exceptions via gRPC
+     */
+    private StatusRuntimeException asStatusRuntimeException(final Throwable e) {
+        return Status.INTERNAL.withCause(e).withDescription(e.getMessage()).asRuntimeException();
     }
 }
