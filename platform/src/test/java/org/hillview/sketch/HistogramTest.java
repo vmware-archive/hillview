@@ -69,7 +69,7 @@ public class HistogramTest {
         }
     }
 
-    @Test
+    //@Test
     public void testHistogramPerf() throws Exception {
         // Testing the performance of histogram computations
         final int bucketNum = 40;
