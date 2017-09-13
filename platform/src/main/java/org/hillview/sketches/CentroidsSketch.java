@@ -1,50 +1,48 @@
 package org.hillview.sketches;
 
 import org.hillview.dataset.api.ISketch;
-import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 /**
- * Base class for centroid sketches. It computes
- * Classes that extend this class should implement a method for selecting the partitions.
+ * Base class for centroid sketches. It computes the centroids of a set of partitions of the data, in a space defined
+ * by the specified column names.
+ * The partitions are defined by a (bi)function that returns a key indicating the partition.
  */
-public abstract class CentroidsSketch implements ISketch<ITable, Centroids> {
+public class CentroidsSketch<T> implements ISketch<ITable, Centroids<T>> {
     private final List<String> columnNames;
-    private final int numCentroids;
+    private final BiFunction<ITable, Integer, T> keyFunc;
+
     /**
-     * @param numCentroids The number of centroids that will be computed.
+     * @param keyFunc A function that returns the partition key of a row. It defines how the data is partitioned.
      * @param columnNames List of columns that define the space in which we compute the centroids.
      */
-    public CentroidsSketch(int numCentroids, List<String> columnNames) {
-        this.numCentroids = numCentroids;
+    public CentroidsSketch(BiFunction<ITable, Integer, T> keyFunc, List<String> columnNames) {
+        this.keyFunc = keyFunc;
         this.columnNames = columnNames;
     }
 
-    /**
-     * This method returns IMembershipSets that define the partitioning of the table. The list has to be of length
-     * this.numCentroids, as every centroid represents one partition.
-     * @param data Table that is to be partitioned.
-     * @return List of IMembershipSets that are the sets of points represented by the centroids.
-     */
-    abstract List<IMembershipSet> partitionTable(ITable data);
-
     @Override
-    public Centroids create(ITable data) {
-        List<IMembershipSet> partitions = this.partitionTable(data);
-        return new Centroids(data, partitions, columnNames);
+    public Centroids<T> create(ITable data) {
+        return new Centroids<T>(
+                data.getMembershipSet(),
+                i -> this.keyFunc.apply(data, i),
+                this.columnNames.stream().map(data::getColumn).collect(Collectors.toList())
+        );
     }
 
     @Override
-    public Centroids zero() {
-        return new Centroids(this.numCentroids, columnNames.size());
+    public Centroids<T> zero() {
+        return new Centroids<T>();
     }
 
     @Override
-    public Centroids add(@Nullable Centroids left, @Nullable Centroids right) {
+    public Centroids<T> add(@Nullable Centroids<T> left, @Nullable Centroids<T> right) {
         return Converters.checkNull(left).union(Converters.checkNull(right));
     }
 }

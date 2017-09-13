@@ -1,71 +1,60 @@
 package org.hillview.sketches;
 
-import org.hillview.dataset.api.IJson;
+import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMembershipSet;
-import org.hillview.table.api.ITable;
-import org.hillview.utils.BlasConversions;
-import org.jblas.DoubleMatrix;
-import org.jblas.ranges.AllRange;
-import org.jblas.ranges.PointRange;
+import org.hillview.table.api.IRowIterator;
 
-import javax.annotation.Nullable;
+import java.io.Serializable;
+import java.util.HashMap;
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * This class represents a set of centroids of a partitioning of a table. The number of centroids should not be too
- * large, as they are shipped over the network.
+ * large, as they are shipped over the network. Since row/column entries are only counted if the row is present in
+ * the column, it essentially computes the mean of each column over only the non-missing entries.
  */
-public class Centroids implements IJson {
+public class Centroids<T> implements Serializable {
     /**
-     * Encodes the position of the centroids. Every row is a centroid, and the columns are the dimensions.
-     * Each partition has a centroid, which is simply the mean of the nD points in the partition.
-     * Should be computed with computeCentroids() by the head node.
+     * Map from the partition key to the sum of the values in the partition in every column.
      */
-    @Nullable
-    public DoubleMatrix centroids;
+    public HashMap<T, double[]> sums;
     /**
-     * Holds the sum of the values in the partitions. Every row is the sum of all rows belonging to the corresponding
-     * partition.
+     * Map from the partition key to the count of values in every column of that partition.
      */
-    public DoubleMatrix sums;
-    /**
-     * Registers how many rows are represented by every centroid.
-     */
-    public long[] counts;
+    public HashMap<T, long[]> counts;
 
     /**
-     * Constructs a zero-centroids. Needs to know the dimensions.
-     * @param numPartitions Number of partitions.
-     * @param numColumns Number of columns (= number of dimensions in the centroid space).
+     * Constructs a zero-centroids.
      */
-    public Centroids(int numPartitions, int numColumns) {
-        this.counts = new long[numPartitions];
-        this.sums = DoubleMatrix.zeros(numPartitions, numColumns);
+    public Centroids() {
+        this.sums = new HashMap<T, double[]>();
+        this.counts = new HashMap<T, long[]>();
     }
 
     /**
      * Construct a centroids object that has processed the sums of the partitions in 'table'.
      * The final centroids are not computed yet, this should be done after the sketch finishes.
-     * @param table The ITable that holds the data from which to compute the centroids.
-     * @param partitions The list of IMembershipSets that define the partitions.
-     * @param columnNames The list of column names of dimensions that define the nD space.
+     * @param members MembershipSet that has knows which rows to iterate over.
+     * @param keyFunc Function that can determine the partition key of a row entry.
+     * @param columns Column that define the nD space.
      */
-    public Centroids(ITable table, List<IMembershipSet> partitions, List<String> columnNames) {
-        this.counts = new long[partitions.size()];
-        this.sums = DoubleMatrix.zeros(partitions.size(), columnNames.size());
-
-        int i = 0;
-        for (IMembershipSet partition : partitions) {
-            // The count is simply the number of rows that the sum represents.
-            this.counts[i] = partition.getSize();
-            if (this.counts[i] > 0) {
-                // Consider only part of the data that is in the partition.
-                ITable partitionTable = table.selectRowsFromFullTable(partition);
-                // Get the matrix, compute the sum of every column, and put it in the sums matrix.
-                DoubleMatrix tableData = BlasConversions.toDoubleMatrix(partitionTable, columnNames);
-                this.sums.put(new PointRange(i), new AllRange(), tableData.columnSums());
+    public Centroids(IMembershipSet members, Function<Integer, T> keyFunc, List<IColumn> columns) {
+        this();
+        int colIndex = 0;
+        for (IColumn column : columns) {
+            IRowIterator rowIterator = members.getIterator();
+            int row = rowIterator.getNextRow();
+            while (row >= 0) {
+                if (column.isMissing(row))
+                    continue;
+                T key = keyFunc.apply(row);
+                // Update the values. (And first create them if absent.)
+                this.sums.computeIfAbsent(key, k -> new double[columns.size()])[colIndex] += column.getDouble(row);
+                this.counts.computeIfAbsent(key, k -> new long[columns.size()])[colIndex]++;
+                row = rowIterator.getNextRow();
             }
-            i++;
+            colIndex++;
         }
     }
 
@@ -74,28 +63,43 @@ public class Centroids implements IJson {
      * @param other Object that holds information for the other set of centroids.
      * @return Centroid object that represents the aggregate of the rows that both objects represent.
      */
-    public Centroids union(Centroids other) {
-        this.sums.addi(other.sums);
-        for (int i = 0; i < this.sums.rows; i++) {
-            this.counts[i] += other.counts[i];
-        }
+    public Centroids<T> union(Centroids<T> other) {
+        other.sums.keySet().forEach((key) -> {
+            if (this.sums.containsKey(key)) {
+                double[] sum = other.sums.get(key);
+                // other.counts must also contain the key (they share key sets, no need to check or loop twice).
+                long[] count = other.counts.get(key);
+                for (int colIndex = 0; colIndex < sum.length; colIndex++) {
+                    this.sums.get(key)[colIndex] += sum[colIndex];
+                    // this.count must also contain the key as well, as it shares key set with this.sum.
+                    this.counts.get(key)[colIndex] += count[colIndex];
+                }
+            } else {
+                // No need to iterate/sum. Simply use the other's array.
+                this.sums.put(key, other.sums.get(key));
+                this.counts.put(key, other.counts.get(key));
+            }
+        });
         return this;
     }
 
     /**
      * Computes the centroids, based on the information in the 'sums' and 'counts' fields.
      * This only has to be done once: when the sketch has finished.
-     * Sets the centroids in the objects 'centroids' field.
-     * @return The computed centroids.
+     * @return HashMap with the computed centroid for every partition.
      */
-    public DoubleMatrix computeCentroids() {
-        this.centroids = DoubleMatrix.zeros(this.sums.rows, this.sums.columns);
-        for (int i = 0; i < this.counts.length; i++)
-            if (this.counts[i] > 0)
-                this.centroids.put(
-                        new PointRange(i), new AllRange(),
-                        this.sums.get(new PointRange(i), new AllRange()).div(this.counts[i])
-                );
-        return this.centroids;
+    public HashMap<T, double[]> computeCentroids() {
+        HashMap<T, double[]> centroids = new HashMap<T, double[]>();
+        this.sums.forEach((key, sum) -> {
+            long[] count = this.counts.get(key);
+            centroids.put(key, new double[sum.length]);
+            for (int colIndex = 0; colIndex < sum.length; colIndex++) {
+                if (count[colIndex] > 0)
+                    centroids.get(key)[colIndex] = sum[colIndex] / count[colIndex];
+                else
+                    centroids.get(key)[colIndex] = java.lang.Float.NaN;
+            }
+        });
+        return centroids;
     }
 }
