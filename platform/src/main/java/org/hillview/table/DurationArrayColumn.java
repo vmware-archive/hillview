@@ -20,6 +20,7 @@ package org.hillview.table;
 
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IDurationColumn;
+import org.hillview.table.api.IMutableColumn;
 
 import javax.annotation.Nullable;
 import java.time.Duration;
@@ -28,7 +29,8 @@ import java.time.Duration;
  * Column of durations, implemented as an array of Durations and a BitSet of missing values
  */
 
-public final class DurationArrayColumn extends BaseArrayColumn implements IDurationColumn {
+public final class DurationArrayColumn extends BaseArrayColumn
+        implements IDurationColumn, IMutableColumn {
     private final Duration[] data;
 
     public DurationArrayColumn(final ColumnDescription description, final int size) {
@@ -55,13 +57,17 @@ public final class DurationArrayColumn extends BaseArrayColumn implements IDurat
         return this.data[rowIndex];
     }
 
-    private void set(final int rowIndex, @Nullable final Duration value) {
+    public void set(final int rowIndex, @Nullable final Duration value) {
         this.data[rowIndex] = value;
+    }
+
+    public void set(final int rowIndex, @Nullable final Object value) {
+        this.set(rowIndex, (Duration)value);
     }
 
     @Override
     public boolean isMissing(final int rowIndex) {return this.getDuration(rowIndex) == null; }
 
     @Override
-    public void setMissing(final int rowIndex) { this.set(rowIndex, null);}
+    public void setMissing(final int rowIndex) { this.set(rowIndex, (Duration)null);}
 }

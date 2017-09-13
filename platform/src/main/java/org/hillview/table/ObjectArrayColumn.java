@@ -19,9 +19,7 @@
 package org.hillview.table;
 
 import net.openhft.hashing.LongHashFunction;
-import org.hillview.table.api.IColumn;
-import org.hillview.table.api.IStringConverter;
-import org.hillview.table.api.IndexComparator;
+import org.hillview.table.api.*;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
@@ -113,6 +111,11 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
                 }
             }
         };
+    }
+
+    @Override
+    public IColumn convertKind(ContentsKind kind, String newColName, IMembershipSet set) {
+        throw new UnsupportedOperationException("Converting object columns");
     }
 
     @Override

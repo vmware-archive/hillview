@@ -168,14 +168,22 @@ export class Dialog implements IHtmlElement {
         return this.fields.get(field).html.value;
     }
 
+    // Returns either a number or null.
     public getFieldValueAsInt(field: string): number {
         let s = this.getFieldValue(field);
-        return parseInt(s);
+        let result = parseInt(s);
+        if (isNaN(result))
+            return null;
+        return result;
     }
 
+    // Returns either a number or null.
     public getFieldValueAsNumber(field: string): number {
         let s = this.getFieldValue(field);
-        return parseFloat(s);
+        let result = parseFloat(s);
+        if (isNaN(result))
+            return null;
+        return result;
     }
 
     // Remove this element from the DOM.

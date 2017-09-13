@@ -68,4 +68,28 @@ public interface IDateColumn extends IColumn {
             return MISSING_HASH_VALUE;
         return hash.hashLong(Double.doubleToRawLongBits(this.asDouble(rowIndex, null)));
     }
+
+    @Override
+    default IColumn convertKind(ContentsKind kind, String newColName, IMembershipSet set) {
+        IMutableColumn newColumn = this.allocateConvertedColumn(kind, set, newColName);
+        switch(kind) {
+            case Category:
+            case Json:
+            case String:
+                //noinspection ConstantConditions
+                this.convert(newColumn, set, row -> this.getDate(row).toString());
+                break;
+            case Date:
+                this.convert(newColumn, set, this::getDate);
+                break;
+            case Integer:
+            case Double:
+            case Duration:
+                throw new UnsupportedOperationException("Conversion from " + this.getKind()
+                        + " to " + kind + " is not supported.");
+            default:
+                throw new RuntimeException("Unexpected column kind " + this.getKind());
+        }
+        return newColumn;
+    }
  }

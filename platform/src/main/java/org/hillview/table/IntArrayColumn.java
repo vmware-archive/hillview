@@ -20,7 +20,9 @@ package org.hillview.table;
 
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IIntColumn;
+import org.hillview.table.api.IMutableColumn;
 
+import javax.annotation.Nullable;
 import java.io.Serializable;
 
 /**
@@ -28,7 +30,7 @@ import java.io.Serializable;
  */
 public final class IntArrayColumn
         extends BaseArrayColumn
-        implements IIntColumn, Serializable {
+        implements IIntColumn, Serializable, IMutableColumn {
     private final int[] data;
 
     public IntArrayColumn() {
@@ -56,6 +58,14 @@ public final class IntArrayColumn
     @Override
     public int getInt(final int rowIndex) {
         return this.data[rowIndex];
+    }
+
+    @Override
+    public void set(int rowIndex, @Nullable Object value) {
+        if (value == null)
+            this.setMissing(rowIndex);
+        else
+            this.set(rowIndex, (int)value);
     }
 
     public void set(final int rowIndex, final int value) {

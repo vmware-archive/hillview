@@ -18,9 +18,7 @@
 
 package org.hillview.table;
 
-import org.hillview.table.api.ContentsKind;
-import org.hillview.table.api.IColumn;
-import org.hillview.table.api.IStringColumn;
+import org.hillview.table.api.*;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -80,28 +78,5 @@ public class StringListColumn extends BaseListColumn implements IStringColumn {
     @Override
     public void parseAndAppendString(@Nullable String s) {
         this.append(s);
-    }
-
-    @Override
-    public IColumn convertKind(ContentsKind kind, String newColName) {
-        switch(kind) {
-            case Category:
-                ColumnDescription cd = new ColumnDescription(newColName, ContentsKind.Category, this.description.allowMissing);
-                CategoryListColumn newColumn = new CategoryListColumn(cd);
-                for (int rowIndex = 0; rowIndex < this.size; rowIndex++) {
-                    newColumn.append(this.getString(rowIndex));
-                }
-                return newColumn;
-            case Json:
-            case String:
-            case Integer:
-            case Double:
-            case Date:
-            case Duration:
-                throw new UnsupportedOperationException("Conversion from " + this.description.kind.toString() + " to " +
-                        "" + kind.toString() + " is not supported.");
-            default:
-                throw new RuntimeException("Unexpected column kind " + description.toString());
-        }
     }
 }

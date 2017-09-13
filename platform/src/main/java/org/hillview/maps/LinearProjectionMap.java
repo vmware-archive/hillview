@@ -69,10 +69,10 @@ public class LinearProjectionMap implements IMap<ITable, ITable> {
         // BlasConversions here.)
         for (int j = 0; j < this.numProjections; j++) {
             ColumnDescription colDesc = new ColumnDescription(this.newColNames.get(j), ContentsKind.Double, true);
+            IMembershipSet set = table.getMembershipSet();
             int colSize = table.getMembershipSet().getMax();
-            int colUse = table.getMembershipSet().getSize();
             IMutableColumn column;
-            if (colUse * threshold < colSize)
+            if (set.useSparseColumn(set.getSize()))
                 column = new SparseColumn(colDesc, colSize);
             else
                 column = new DoubleArrayColumn(colDesc, colSize);

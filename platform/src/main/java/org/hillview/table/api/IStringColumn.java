@@ -22,6 +22,7 @@ import net.openhft.hashing.LongHashFunction;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
+import java.util.function.Function;
 
 public interface IStringColumn extends IColumn {
     @Override
@@ -65,5 +66,42 @@ public interface IStringColumn extends IColumn {
             return MISSING_HASH_VALUE;
         //noinspection ConstantConditions
         return hash.hashChars(this.getString(rowIndex));
+    }
+
+    @Override
+    default IColumn convertKind(ContentsKind kind, String newColName, IMembershipSet set) {
+        IMutableColumn newColumn = this.allocateConvertedColumn(kind, set, newColName);
+        switch(kind) {
+            case Category:
+            case Json:
+            case String:
+                this.convert(newColumn, set, this::getString);
+                break;
+            case Integer: {
+                Function<Integer, Integer> f = rowIndex -> {
+                    String s = this.getString(rowIndex);
+                    //noinspection ConstantConditions
+                    return Integer.parseInt(s);
+                };
+                this.convert(newColumn, set, f);
+                break;
+            }
+            case Double: {
+                Function<Integer, Double> f = rowIndex -> {
+                    String s = this.getString(rowIndex);
+                    //noinspection ConstantConditions
+                    return Double.parseDouble(s);
+                };
+                this.convert(newColumn, set, f);
+                break;
+            }
+            case Date:
+            case Duration:
+                throw new UnsupportedOperationException("Conversion from " + this.getKind()
+                        + " to " + kind + " is not supported.");
+            default:
+                throw new RuntimeException("Unexpected column kind " + this.getKind());
+        }
+        return newColumn;
     }
 }

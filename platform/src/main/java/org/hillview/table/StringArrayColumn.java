@@ -18,9 +18,7 @@
 
 package org.hillview.table;
 
-import org.hillview.table.api.ContentsKind;
-import org.hillview.table.api.IColumn;
-import org.hillview.table.api.IStringColumn;
+import org.hillview.table.api.*;
 
 import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
@@ -30,7 +28,7 @@ import java.security.InvalidParameterException;
  * Allows ContentsKind String or Json
  */
 public final class StringArrayColumn
-        extends BaseArrayColumn implements IStringColumn {
+        extends BaseArrayColumn implements IStringColumn, IMutableColumn {
     private final String[] data;
 
     private void validate() {
@@ -65,6 +63,11 @@ public final class StringArrayColumn
         return this.data[rowIndex];
     }
 
+    @Override
+    public void set(int rowIndex, @Nullable Object value) {
+        this.set(rowIndex, (String)value);
+    }
+
     public void set(final int rowIndex, @Nullable final String value) {
         this.data[rowIndex] = value;
     }
@@ -73,10 +76,10 @@ public final class StringArrayColumn
     public boolean isMissing(final int rowIndex){ return this.getString(rowIndex) == null;}
 
     @Override
-    public void setMissing(final int rowIndex) { this.set(rowIndex, null);}
+    public void setMissing(final int rowIndex) { this.set(rowIndex, (String)null);}
 
     @Override
-    public IColumn convertKind(ContentsKind kind, String newColName) {
+    public IColumn convertKind(ContentsKind kind, String newColName, IMembershipSet set) {
         IColumn newColumn;
         switch(kind) {
             case Category:

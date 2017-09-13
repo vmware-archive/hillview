@@ -19,9 +19,7 @@
 package org.hillview.table;
 
 import net.openhft.hashing.LongHashFunction;
-import org.hillview.table.api.IColumn;
-import org.hillview.table.api.IStringConverter;
-import org.hillview.table.api.IndexComparator;
+import org.hillview.table.api.*;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
@@ -103,6 +101,11 @@ public class LazyColumn implements IColumn {
     @Override
     public IndexComparator getComparator() {
         return this.loadIfNecessary().getComparator();
+    }
+
+    @Override
+    public IColumn convertKind(ContentsKind kind, String newColName, IMembershipSet set) {
+        return this.loadIfNecessary().convertKind(kind, newColName, set);
     }
 
     @Override

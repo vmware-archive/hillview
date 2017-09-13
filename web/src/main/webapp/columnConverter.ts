@@ -1,9 +1,9 @@
 import {Dialog} from "./dialog";
 import {ContentsKind, asContentsKind} from "./tableData";
 import {TableView, RemoteTableReceiver} from "./table";
-import {FullPage} from "./ui";
 import {Renderer} from "./rpc";
-import {PartialResult} from "./util";
+import {PartialResult, ICancellable} from "./util";
+import {FullPage} from "./ui";
 
 export class ColumnConverter  {
     public static maxCategoricalCount = 1e4;
@@ -22,7 +22,7 @@ export class ColumnConverter  {
                 table
             );
             converter.run();
-        })
+        });
         dialog.show();
     }
 
@@ -38,9 +38,10 @@ export class ColumnConverter  {
         }
         if (this.newKind == "Category") {
             let rr = this.table.createRpcRequest("hLogLog", this.columnName);
-            rr.invoke(new HLogLogReceiver(this.table.getPage(), rr, "HLogLog", (count) => this.checkValidForCategory(count)));
+            rr.invoke(new HLogLogReceiver(this.table.getPage(), rr, "HLogLog",
+                (count) => this.checkValidForCategory(count)));
         } else {
-            this.table.reportError(`Converting to ${this.newKind} is not supported.`);
+            this.runConversion();
         }
     }
 
@@ -68,10 +69,11 @@ interface HLogLog {
 }
 
 class HLogLogReceiver extends Renderer<HLogLog> {
-    private data;
+    private data: HLogLog;
 
-    constructor(page, operation, name, private next) {
+    constructor(page: FullPage, operation: ICancellable, name: string, private next: (number) => void) {
         super(page, operation, name);
+        this.data = null;
     }
 
     onNext(value: PartialResult<HLogLog>) {
@@ -81,6 +83,7 @@ class HLogLogReceiver extends Renderer<HLogLog> {
 
     onCompleted(): void {
         super.onCompleted();
-        this.next(this.data)
+        if (this.data != null)
+            this.next(this.data)
     }
 }
