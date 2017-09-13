@@ -1,10 +1,7 @@
 package org.hillview.table;
 
 import net.openhft.hashing.LongHashFunction;
-import org.hillview.table.api.IMutableColumn;
-import org.hillview.table.api.IStringConverter;
-import org.hillview.table.api.IndexComparator;
-import org.hillview.table.api.MissingException;
+import org.hillview.table.api.*;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
@@ -12,7 +9,8 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 
-public class SparseColumn extends BaseColumn implements IMutableColumn {
+public class SparseColumn extends BaseColumn
+        implements IMutableColumn, IStringColumn, IDoubleColumn, IIntColumn, IDateColumn, IDurationColumn {
     protected HashMap<Integer, Object> data;
     int size;
 
@@ -98,7 +96,7 @@ public class SparseColumn extends BaseColumn implements IMutableColumn {
         };
     }
 
-    @Override
+   @Override
     @SuppressWarnings("ConstantConditions")
     public long hashCode64(int rowIndex, LongHashFunction hash) {
         if (isMissing(rowIndex))
@@ -179,5 +177,25 @@ public class SparseColumn extends BaseColumn implements IMutableColumn {
     public String getString(final int rowIndex) {
         Object o = this.getObject(rowIndex);
         return (String)o;
+    }
+
+    @Override
+    public IColumn convertKind(ContentsKind kind, String newColName, IMembershipSet set) {
+        switch (this.description.kind) {
+            case Category:
+            case String:
+            case Json:
+                return IStringColumn.super.convertKind(kind, newColName, set);
+            case Integer:
+                return IIntColumn.super.convertKind(kind, newColName, set);
+            case Date:
+                return IDateColumn.super.convertKind(kind, newColName, set);
+            case Double:
+                return IDoubleColumn.super.convertKind(kind, newColName, set);
+            case Duration:
+                return IDurationColumn.super.convertKind(kind, newColName, set);
+            default:
+                throw new RuntimeException("Unexpected kind " + this.description.kind);
+        }
     }
 }

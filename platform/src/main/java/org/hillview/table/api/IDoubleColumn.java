@@ -63,4 +63,31 @@ public interface IDoubleColumn extends IColumn {
         if (isMissing(rowIndex)) return MISSING_HASH_VALUE;
         return hash.hashLong(Double.doubleToRawLongBits(this.getDouble(rowIndex)));
     }
+
+    @Override
+    default IColumn convertKind(ContentsKind kind, String newColName, IMembershipSet set) {
+        IMutableColumn newColumn = this.allocateConvertedColumn(kind, set, newColName);
+        switch(kind) {
+            case Category:
+            case Json:
+            case String:
+                this.convert(newColumn, set, row -> Double.toString(this.getDouble(row)));
+                break;
+            case Integer: {
+                this.convert(newColumn, set, row -> (int)this.getDouble(row));
+                break;
+            }
+            case Double: {
+                this.convert(newColumn, set, this::getDouble);
+                break;
+            }
+            case Date:
+            case Duration:
+                throw new UnsupportedOperationException("Conversion from " + this.getKind()
+                        + " to " + kind + " is not supported.");
+            default:
+                throw new RuntimeException("Unexpected column kind " + this.getKind());
+        }
+        return newColumn;
+    }
 }

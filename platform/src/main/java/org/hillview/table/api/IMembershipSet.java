@@ -109,5 +109,18 @@ public interface IMembershipSet extends IRowOrder {
         else sampleSize = (int) Math.ceil(appSampleSize);
         return sampleSize;
     }
+
+    /**
+     * Policy which indicates when to use a sparse column when
+     * storing only `size` elements.
+     * @param size: Expected number of elements in a target column.
+     * @return      True when the target column should be sparse.
+     */
+    default boolean useSparseColumn(int size) {
+        return this.getMax() > 3 * size;
+    }
+
+    default boolean useSparseColumn() {
+        return this.useSparseColumn(this.getSize());
+    }
 }
-//TODO: Add a split membership set method to split a table into smaller tables.

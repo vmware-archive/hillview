@@ -37,12 +37,13 @@ public class ConvertColumnMap implements IMap<ITable, ITable> {
         List<IColumn> columns = new ArrayList<IColumn>();
         table.getColumns().forEach(columns::add);
 
-        IColumn newColumn =  table.getColumn(this.inputColName).convertKind(this.newKind, this.newColName);
+        IColumn newColumn =  table.getColumn(this.inputColName)
+                .convertKind(this.newKind, this.newColName, table.getMembershipSet());
 
         // Insert the new column next to the input column.
         int inputColIndex = columns.indexOf(table.getColumn(this.inputColName));
         columns.add(inputColIndex + 1, newColumn);
 
-        return new Table(columns);
+        return new Table(columns, table.getMembershipSet());
     }
 }

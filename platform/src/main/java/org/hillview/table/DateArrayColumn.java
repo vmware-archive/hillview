@@ -20,6 +20,8 @@ package org.hillview.table;
 
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IDateColumn;
+import org.hillview.table.api.IMutableColumn;
+
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 
@@ -28,7 +30,7 @@ import java.time.LocalDateTime;
  */
 public final class DateArrayColumn
         extends BaseArrayColumn
-        implements IDateColumn {
+        implements IDateColumn, IMutableColumn {
     private final LocalDateTime[] data;
 
     public DateArrayColumn(final ColumnDescription description, final int size) {
@@ -55,7 +57,12 @@ public final class DateArrayColumn
         return this.data[rowIndex];
     }
 
-    private void set(final int rowIndex, @Nullable final LocalDateTime value) {
+    @Override
+    public void set(int rowIndex, @Nullable Object value) {
+        this.set(rowIndex, (LocalDateTime)value);
+    }
+
+    public void set(final int rowIndex, @Nullable final LocalDateTime value) {
         this.data[rowIndex] = value;
     }
 
@@ -63,5 +70,5 @@ public final class DateArrayColumn
     public boolean isMissing(final int rowIndex) { return this.getDate(rowIndex) == null; }
 
     @Override
-    public void setMissing(final int rowIndex) { this.set(rowIndex, null);}
+    public void setMissing(final int rowIndex) { this.set(rowIndex, (LocalDateTime)null);}
 }

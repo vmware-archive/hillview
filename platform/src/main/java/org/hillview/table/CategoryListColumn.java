@@ -30,10 +30,7 @@ import java.util.function.Consumer;
  * A column of Categorical values that can grow in size.
  */
 public class CategoryListColumn extends BaseListColumn implements ICategoryColumn {
-    // Map categorical value to a small integer
-    private final HashMap<String, Integer> encoding;
-    // Decode small integer into categorical value
-    private final HashMap<Integer, String> decoding;
+    private CategoryEncoding encoding;
     private final ArrayList<int[]> segments;
 
     public CategoryListColumn(final ColumnDescription desc) {
@@ -41,8 +38,7 @@ public class CategoryListColumn extends BaseListColumn implements ICategoryColum
         if (desc.kind != ContentsKind.Category)
             throw new IllegalArgumentException("Unexpected column kind " + desc.kind);
         this.segments = new ArrayList<int[]>();
-        this.encoding = new HashMap<String, Integer>(100);
-        this.decoding = new HashMap<Integer, String>(100);
+        this.encoding = new CategoryEncoding();
     }
 
     @Nullable
@@ -52,23 +48,7 @@ public class CategoryListColumn extends BaseListColumn implements ICategoryColum
         final int localIndex = rowIndex & this.SegmentMask;
         int[] segment = this.segments.get(segmentId);
         int index = segment[localIndex];
-        return this.decode(index);
-    }
-
-    @Nullable
-    String decode(int code) {
-        if (this.decoding.containsKey(code))
-            return this.decoding.get(code);
-        return null;
-    }
-
-    int encode(String value) {
-        if (this.encoding.containsKey(value))
-            return this.encoding.get(value);
-        int encoding = this.encoding.size();
-        this.encoding.put(value, encoding);
-        this.decoding.put(encoding, value);
-        return encoding;
+        return this.encoding.decode(index);
     }
 
     @Override
@@ -84,7 +64,7 @@ public class CategoryListColumn extends BaseListColumn implements ICategoryColum
             this.grow();
         if (value == null)
             return;
-        this.segments.get(segmentId)[localIndex] = this.encode(value);
+        this.segments.get(segmentId)[localIndex] = this.encoding.encode(value);
         this.size++;
     }
 
@@ -105,6 +85,6 @@ public class CategoryListColumn extends BaseListColumn implements ICategoryColum
 
     @Override
     public void allDistinctStrings(Consumer<String> action) {
-        this.encoding.keySet().forEach(action);
+        this.encoding.allDistinctStrings(action);
     }
 }

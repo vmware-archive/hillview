@@ -19,13 +19,13 @@
 package org.hillview.table.api;
 
 import net.openhft.hashing.LongHashFunction;
-import org.hillview.table.ColumnDescription;
-import org.hillview.table.ObjectArrayColumn;
+import org.hillview.table.*;
 
 import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.function.Function;
 
 /**
  * Interface describing operations on a column.
@@ -113,14 +113,55 @@ public interface IColumn extends Serializable {
         return result;
     }
 
+    default IMutableColumn allocateConvertedColumn(
+        ContentsKind kind, IMembershipSet set, String newColName) {
+        ColumnDescription cd = new ColumnDescription(
+                newColName, kind, this.getDescription().allowMissing);
+        if (set.useSparseColumn())
+            return new SparseColumn(cd, this.sizeInRows());
+
+        switch (kind) {
+            case Category:
+                return new CategoryArrayColumn(cd, this.sizeInRows());
+            case Json:
+            case String:
+                return new StringArrayColumn(cd, this.sizeInRows());
+            case Integer:
+                return new IntArrayColumn(cd, this.sizeInRows());
+            case Double:
+                return new DoubleArrayColumn(cd, this.sizeInRows());
+            case Date:
+                return new DateArrayColumn(cd, this.sizeInRows());
+            case Duration:
+                return new DurationArrayColumn(cd, this.sizeInRows());
+            default:
+                throw new RuntimeException("Unexpected column kind " + this.getKind());
+        }
+    }
+
+    default <T> void convert(IMutableColumn dest, IMembershipSet set,
+                             Function<Integer, T> conv) {
+        IRowIterator it = set.getIterator();
+        int rowIndex = it.getNextRow();
+        while (rowIndex >= 0) {
+            if (this.isMissing(rowIndex)) {
+                dest.setMissing(rowIndex);
+            } else {
+                T result = conv.apply(rowIndex);
+                dest.set(rowIndex, result);
+            }
+            rowIndex = it.getNextRow();
+        }
+    }
+
     /**
      * Returns a copy of this column, in the specified kind.
-     * @param kind The kind that this column should be converted to.
+     * @param kind       The kind of the destination column.
      * @param newColName Name of the new column.
+     * @param set        Set of elements that have to be converted.
      * @return An IColumn that is a copy of this column, converted to the specified kind.
      */
-    default IColumn convertKind(ContentsKind kind, String newColName) {throw new UnsupportedOperationException
-            ("Conversion not implemented for this kind.");}
+    IColumn convertKind(ContentsKind kind, String newColName, IMembershipSet set);
 
     default String getName() {
         return this.getDescription().name;

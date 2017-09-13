@@ -345,9 +345,9 @@ public final class TableTarget extends RpcTarget {
     }
 
     static class ConvertColumnInfo {
-        String colName;
-        String newColName;
-        ContentsKind newKind;
+        String colName = "";
+        String newColName = "";
+        ContentsKind newKind = ContentsKind.Category;
     }
 
     @HillviewRpc

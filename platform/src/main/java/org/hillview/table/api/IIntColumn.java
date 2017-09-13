@@ -67,4 +67,31 @@ public interface IIntColumn extends IColumn {
             return MISSING_HASH_VALUE;
         return hash.hashInt(this.getInt(rowIndex));
     }
+
+    @Override
+    default IColumn convertKind(ContentsKind kind, String newColName, IMembershipSet set) {
+        IMutableColumn newColumn = this.allocateConvertedColumn(kind, set, newColName);
+        switch(kind) {
+            case Category:
+            case Json:
+            case String:
+                this.convert(newColumn, set, row -> Integer.toString(this.getInt(row)));
+                break;
+            case Integer: {
+                this.convert(newColumn, set, this::getInt);
+                break;
+            }
+            case Double: {
+                this.convert(newColumn, set, row -> (double)this.getInt(row));
+                break;
+            }
+            case Date:
+            case Duration:
+                throw new UnsupportedOperationException("Conversion from " + this.getKind()
+                        + " to " + kind + " is not supported.");
+            default:
+                throw new RuntimeException("Unexpected column kind " + this.getKind());
+        }
+        return newColumn;
+    }
 }
