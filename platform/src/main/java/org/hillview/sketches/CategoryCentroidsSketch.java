@@ -22,7 +22,7 @@ public class CategoryCentroidsSketch extends CentroidsSketch {
      * @param catColumnName The name of the categorical column where we partition by.
      * @param columnNames The names of the columns that define the nD space where the centroids are computed.
      */
-    CategoryCentroidsSketch(List<String> categories, String catColumnName, List<String> columnNames) {
+    public CategoryCentroidsSketch(List<String> categories, String catColumnName, List<String> columnNames) {
         super(categories.size(), columnNames);
         this.categories = categories;
         this.catColumnName = catColumnName;
@@ -37,6 +37,7 @@ public class CategoryCentroidsSketch extends CentroidsSketch {
         List<IMembershipSet> partitions = new ArrayList<IMembershipSet>();
         for (String category : categories) {
             EqualityFilter filter = new EqualityFilter(this.catColumnName, category);
+            filter.setTable(data);
             IMembershipSet partition = data.getMembershipSet().filter(filter::test);
             partitions.add(partition);
         }

@@ -249,6 +249,22 @@ public class TestTables {
         return BlasConversions.toTable(mat);
     }
 
+    public static ITable getCentroidTestTable() {
+        DoubleArrayColumn colX = new DoubleArrayColumn(
+                new ColumnDescription("x", ContentsKind.Double, false),
+                new double[]{1, 2, 2, 3, 4, 5, 5, 6}
+        );
+        DoubleArrayColumn colY = new DoubleArrayColumn(
+                new ColumnDescription("y", ContentsKind.Double, false),
+                new double[]{11, 10, 12, 11, 26, 25, 27, 26}
+        );
+        CategoryArrayColumn fruitType = new CategoryArrayColumn(
+                new ColumnDescription("FruitType", ContentsKind.Category, false),
+                new String[]{"Banana", "Banana", "Banana", "Banana", "Orange", "Orange", "Orange", "Orange"}
+        );
+        return new Table(Arrays.asList(colX, colY, fruitType));
+    }
+
     /**
      * Splits a Big Table into a list of Small Tables.
      * @param bigTable The big table

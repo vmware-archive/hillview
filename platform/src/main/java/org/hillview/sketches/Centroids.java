@@ -46,14 +46,19 @@ public class Centroids implements IJson {
 
         int i = 0;
         for (IMembershipSet partition : partitions) {
-            // Consider only part of the data that is in the partition.
-            ITable partitionTable = table.selectRowsFromFullTable(partition);
-            // Get the matrix and compute the centroid as the mean
-            DoubleMatrix tableData = BlasConversions.toDoubleMatrix(partitionTable, columnNames);
-            DoubleMatrix centroid = tableData.columnMeans();
-            centroids.put(new PointRange(i), new AllRange(), centroid);
             // The support is simply the number of rows that the centroid represents.
             this.support[i] = partition.getSize();
+            DoubleMatrix centroid;
+            if (partition.getSize() == 0) {
+                centroid = DoubleMatrix.zeros(1, columnNames.size());
+            } else {
+                // Consider only part of the data that is in the partition.
+                ITable partitionTable = table.selectRowsFromFullTable(partition);
+                // Get the matrix and compute the centroid as the mean
+                DoubleMatrix tableData = BlasConversions.toDoubleMatrix(partitionTable, columnNames);
+                centroid = tableData.columnMeans();
+            }
+            centroids.put(new PointRange(i), new AllRange(), centroid);
             i++;
         }
     }
@@ -72,8 +77,8 @@ public class Centroids implements IJson {
                 DoubleMatrix myCentroid = this.centroids.get(new PointRange(i), new AllRange());
                 DoubleMatrix otherCentroid = other.centroids.get(new PointRange(i), new AllRange());
                 // Compute weights by using the support for each partition.
-                float myWeight = this.support[i] / (this.support[i] + other.support[i]);
-                float otherWeight = other.support[i] / (this.support[i] + other.support[i]);
+                float myWeight = this.support[i] / ((float) this.support[i] + other.support[i]);
+                float otherWeight = other.support[i] / ((float) this.support[i] + other.support[i]);
                 // New centroid is the weighted sum of the two.
                 newCentroid = myCentroid.mul(myWeight).add(otherCentroid.mul(otherWeight));
             }
