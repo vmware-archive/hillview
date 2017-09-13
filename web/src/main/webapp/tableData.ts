@@ -185,6 +185,10 @@ export class RemoteTableObject extends RemoteObject {
         return this.createRpcRequest("getSchema", null);
     }
 
+    public createHLogLogRequest(colName: string) : RpcRequest {
+    	return this.createRpcRequest("hLogLog", colName);
+    }
+
     public createRange2DRequest(r1: RangeInfo, r2: RangeInfo): RpcRequest {
         return this.createRpcRequest("range2D", [r1, r2]);
     }
@@ -239,6 +243,7 @@ export class RemoteTableObject extends RemoteObject {
     public createHeatMapRequest(x: ColumnAndRange, y: ColumnAndRange): RpcRequest {
         return this.createRpcRequest("heatMap", { first: x, second: y });
     }
+
 
     public createHeatMap3DRequest(data: Triple<ColumnAndRange, ColumnAndRange, ColumnAndRange>): RpcRequest {
         return this.createRpcRequest("heatMap3D", data);

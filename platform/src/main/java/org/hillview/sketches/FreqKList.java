@@ -29,21 +29,34 @@ public class FreqKList implements Serializable {
      */
     public final int maxSize;
     /**
-     * Estimate for the number of times each row in the above table occurs in the original DataSet.
+     * The number of times each row in the above table occurs in the original DataSet
+     * (can be approximate depending on the context).
      */
     public final HashMap<RowSnapshot, Integer> hMap;
+
+    public final double epsilon;
 
     public FreqKList(long totalRows, int maxSize, HashMap<RowSnapshot, Integer> hMap) {
         this.totalRows = totalRows;
         this.maxSize = maxSize;
         this.hMap = hMap;
+        this.epsilon = 1/((double)maxSize +1);
     }
 
-    public FreqKList(List<RowSnapshot> rssList) {
+    public FreqKList(long totalRows, double epsilon, HashMap<RowSnapshot, Integer> hMap) {
+        this.totalRows = totalRows;
+        this.epsilon = epsilon;
+        this.hMap = hMap;
+        this.maxSize= (int) Math.ceil(1/epsilon);
+    }
+
+
+    public FreqKList(List<RowSnapshot> rssList, double epsilon) {
         this.totalRows = 0;
-        this.maxSize = rssList.size();
         this.hMap = new HashMap<RowSnapshot, Integer>();
         rssList.forEach(rss -> this.hMap.put(rss, 0));
+        this.epsilon = epsilon;
+        this.maxSize= (int) Math.ceil(1/epsilon);
     }
 
     /**
@@ -105,9 +118,13 @@ public class FreqKList implements Serializable {
     public void filter() {
         List<RowSnapshot> rssList = new ArrayList<RowSnapshot>(this.hMap.keySet());
         for (RowSnapshot rss : rssList) {
-            if (this.hMap.get(rss) < (this.totalRows/this.maxSize))
-                this.hMap.remove(rss);
+           if (this.hMap.get(rss) < (this.epsilon * this.totalRows))
+               this.hMap.remove(rss);
         }
+    }
+
+    public Pair<List<RowSnapshot>, List<Integer>> getTop() {
+        return getTop(this.hMap.size());
     }
 
     public Pair<List<RowSnapshot>, List<Integer>> getTop(int size) {

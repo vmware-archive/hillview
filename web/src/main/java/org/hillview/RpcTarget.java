@@ -196,7 +196,7 @@ abstract class RpcTarget implements IJson {
      * Runs a sketch and sends the data received directly to the client.
      * @param data    Dataset to run the sketch on.
      * @param sketch  Sketch to run.
-     * @param request Web socket request, where replies are send.
+     * @param request Web socket request, where replies are sent.
      * @param session Web socket session.
      */
     <T, R extends IJson> void

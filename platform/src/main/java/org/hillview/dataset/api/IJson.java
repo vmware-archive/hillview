@@ -21,6 +21,7 @@ package org.hillview.dataset.api;
 import com.google.common.net.HostAndPort;
 import com.google.gson.*;
 import org.hillview.remoting.ClusterDescription;
+import org.hillview.sketches.NextKList;
 import org.hillview.table.Schema;
 import org.hillview.utils.Converters;
 
@@ -46,13 +47,21 @@ public interface IJson extends Serializable {
         }
     }
 
+    class NextKSerializer
+            implements JsonSerializer<NextKList> {
+        public JsonElement serialize(NextKList data, Type typeOfSchema, JsonSerializationContext unused) {
+            return data.toJsonTree();
+        }
+    }
+
     // Use these instances for all your json serialization needs
     GsonBuilder builder = new GsonBuilder()
-        .registerTypeAdapter(Schema.class, new Schema.Serializer())
-        .registerTypeAdapter(Schema.class, new Schema.Deserializer())
-        .registerTypeAdapter(LocalDateTime.class, new DateSerializer())
-        .registerTypeAdapter(HostAndPort.class, new ClusterDescription.HostAndPortSerializer())
-        .registerTypeAdapter(HostAndPort.class, new ClusterDescription.HostAndPortDeserializer());
+            .registerTypeAdapter(Schema.class, new Schema.Serializer())
+            .registerTypeAdapter(Schema.class, new Schema.Deserializer())
+            .registerTypeAdapter(NextKList.class, new NextKSerializer())
+            .registerTypeAdapter(LocalDateTime.class, new DateSerializer())
+            .registerTypeAdapter(HostAndPort.class, new ClusterDescription.HostAndPortSerializer())
+            .registerTypeAdapter(HostAndPort.class, new ClusterDescription.HostAndPortDeserializer());
     Gson gsonInstance = builder.serializeNulls().create();
 
     /**

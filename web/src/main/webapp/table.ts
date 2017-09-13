@@ -34,8 +34,10 @@ import {
 } from "./tableData";
 import {CategoryCache} from "./categoryCache";
 import {HeatMapArrayDialog} from "./heatMapArray";
-import {ColumnConverter} from "./columnConverter";
+import {ColumnConverter, HLogLogReceiver} from "./columnConverter";
 import {DataRange} from "./vis"
+import {HeavyHittersView} from "./heavyhittersview";
+
 
 // This is the serialization of a NextKList Java object
 export class TableDataView {
@@ -151,7 +153,7 @@ export class TableView extends RemoteTableObjectView
         } else {
             let o = this.order.clone();
             let rr = this.createQuantileRequest(this.currentData.rowCount, o, position);
-	        console.log("expecting quantile: " + String(position));
+                console.log("expecting quantile: " + String(position));
             rr.invoke(new QuantileReceiver(this.getPage(), this, rr, o));
         }
     }
@@ -494,6 +496,7 @@ export class TableView extends RemoteTableObjectView
                 this.contextMenu.addItem({text: "Heat map", action: () => this.heatMap() });
                 this.contextMenu.addItem({text: "Heavy hitters...", action: () => this.heavyHitters() });
                 this.contextMenu.addItem({text: "Select numeric columns", action: () => this.selectNumericColumns()});
+                this.contextMenu.addItem({text: "Estimate Distinct Elements", action: () => this.hLogLog(cd.name)});
                 this.contextMenu.addItem({text: "PCA...", action: () => this.pca() });
                 this.contextMenu.addItem({text: "Filter...", action: () => this.equalityFilter(cd.name)});
                 this.contextMenu.addItem({text: "Convert...", action: () => ColumnConverter.dialog(cd.name, TableView.allColumnNames(this.schema), this)});
@@ -626,44 +629,52 @@ export class TableView extends RemoteTableObjectView
         }
     }
 
-    private pca(): void {
-        let colNames: string[] = [];
-        this.selectedColumns.forEach(col => colNames.push(col));
-
-        let valid = true;
-        let message = "";
-        colNames.forEach((colName) => {
-            let kind = TableView.findColumn(this.schema, colName).kind;
-            if (kind != "Double" && kind != "Integer") {
-                valid = false;
-                message += "\n  * Column '" + colName  + "' is not numeric.";
-            }
-        });
-
-        if (colNames.length < 3) {
-            this.reportError("Not enough numeric columns. Need at least 3. There are " + colNames.length);
-            return;
+        private hLogLog(colName: string): void {
+	    let rr = this.createHLogLogRequest(colName);
+            rr.invoke(new HLogLogReceiver(this.getPage(), rr, "HLogLog",
+				          (res) => this.page.reportError("Distinct values in column \'" +
+						                         colName + "\' \u2248 " +
+						                         String(res.distinctItemCount))));
         }
 
-        if (valid) {
-            let pcaDialog = new Dialog("Principal Component Analysis");
-            pcaDialog.addTextField("numComponents", "Number of components", "Integer", "2");
-            pcaDialog.setAction(() => {
-                let numComponents: number = pcaDialog.getFieldValueAsInt("numComponents");
-                if (numComponents < 1 || numComponents > colNames.length) {
-                    this.reportError("Number of components for PCA must be between 1 (incl.) " +
-                        "and the number of selected columns, " + colNames.length + " (incl.). (" +
-                        numComponents + " does not satisfy this.)");
-                    return;
+        private pca(): void {
+            let colNames: string[] = [];
+            this.selectedColumns.forEach(col => colNames.push(col));
+
+            let valid = true;
+            let message = "";
+            colNames.forEach((colName) => {
+                let kind = TableView.findColumn(this.schema, colName).kind;
+                if (kind != "Double" && kind != "Integer") {
+                    valid = false;
+                    message += "\n  * Column '" + colName  + "' is not numeric.";
                 }
-                let rr = this.createCorrelationMatrixRequest(colNames);
-                rr.invoke(new CorrelationMatrixReceiver(this.getPage(), this, rr, this.order, numComponents));
             });
-            pcaDialog.show();
-        } else {
-            this.reportError("Only numeric columns are supported for PCA:" + message);
+
+            if (colNames.length < 3) {
+                this.reportError("Not enough numeric columns. Need at least 3. There are " + colNames.length);
+                return;
+            }
+
+            if (valid) {
+                let pcaDialog = new Dialog("Principal Component Analysis");
+                pcaDialog.addTextField("numComponents", "Number of components", "Integer", "2");
+                pcaDialog.setAction(() => {
+                    let numComponents: number = pcaDialog.getFieldValueAsInt("numComponents");
+                    if (numComponents < 1 || numComponents > colNames.length) {
+                        this.reportError("Number of components for PCA must be between 1 (incl.) " +
+                                         "and the number of selected columns, " + colNames.length + " (incl.). (" +
+                                         numComponents + " does not satisfy this.)");
+                        return;
+                    }
+                    let rr = this.createCorrelationMatrixRequest(colNames);
+                    rr.invoke(new CorrelationMatrixReceiver(this.getPage(), this, rr, this.order, numComponents));
+                });
+                pcaDialog.show();
+            } else {
+                this.reportError("Only numeric columns are supported for PCA:" + message);
+            }
         }
-    }
 
     private heatMapArray(): void {
         let selectedColumns: string[] = cloneSet(this.selectedColumns);
@@ -756,7 +767,7 @@ export class TableView extends RemoteTableObjectView
         d.show();
     }
 
-    protected static convert(val: any, kind: ContentsKind): string {
+    public static convert(val: any, kind: ContentsKind): string {
         if (kind == "Integer" || kind == "Double")
             return String(val);
         else if (kind == "Date")
@@ -906,7 +917,7 @@ class HeavyHittersReceiver extends RemoteTableRenderer {
     }
 }
 
-interface TopList {
+export interface TopList {
     top: TableDataView;
     heavyHittersId: string;
 }
@@ -933,13 +944,11 @@ class HeavyHittersReceiver2 extends Renderer<TopList> {
         super.finished();
         if (this.data == null)
             return;
-    	this.page.reportError(this.data.top.toString());
-        let rr = this.tv.createRpcRequest("filterHeavy", {
-                hittersId: this.data.heavyHittersId,
-                schema: this.schema
-            });
-        rr.chain(this.operation);
-        rr.invoke(new TableOperationCompleted(this.page, this.tv, rr, this.order));
+        let newPage = new FullPage();
+        let hhv = new HeavyHittersView(this.data, newPage, this.tv, this.schema, this.order);
+        newPage.setDataView(hhv);
+        this.page.insertAfterMe(newPage);
+        hhv.fill(this.data.top);
     }
 }
 
@@ -964,7 +973,7 @@ class CorrelationMatrixReceiver extends RemoteTableRenderer {
 }
 
 // After operating on a table receives the id of a new remote table.
-class TableOperationCompleted extends RemoteTableRenderer {
+export class TableOperationCompleted extends RemoteTableRenderer {
     public constructor(page: FullPage,
                        protected tv: TableView,
                        operation: ICancellable,

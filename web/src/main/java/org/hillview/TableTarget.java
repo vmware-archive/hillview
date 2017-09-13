@@ -291,8 +291,7 @@ public final class TableTarget extends RpcTarget {
     void heavyHitters(RpcRequest request, Session session) {
         HeavyHittersInfo info = request.parseArgs(HeavyHittersInfo.class);
         Converters.checkNull(info);
-        FreqKSketch sk = new FreqKSketch(
-                Converters.checkNull(info.columns), (int)Math.ceil(100 / info.amount));
+        FreqKSketch sk = new FreqKSketch(Converters.checkNull(info.columns), info.amount/100);
         this.runCompleteSketch(this.table, sk, HeavyHittersTarget::new, request, session);
     }
 
@@ -309,8 +308,12 @@ public final class TableTarget extends RpcTarget {
     }
 
     private TopList getLists(FreqKList fkList, Schema schema) {
+        System.out.printf("Original size: %d\n", fkList.getList().size());
+        System.out.printf("Table size: %d, Buckets %d, Cutoff %f\n", fkList.totalRows,
+                fkList.maxSize, (double)fkList.totalRows/fkList.maxSize);
         fkList.filter();
-        Pair<List<RowSnapshot>, List<Integer>> pair = fkList.getTop(10);
+        System.out.printf("Filtered size: %d", fkList.getList().size());
+        Pair<List<RowSnapshot>, List<Integer>> pair = fkList.getTop();
         TopList tl = new TopList();
         SmallTable tbl = new SmallTable(schema, Converters.checkNull(pair.first));
         tl.top = new NextKList(tbl, Converters.checkNull(pair.second), 0, fkList.totalRows);

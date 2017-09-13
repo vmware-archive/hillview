@@ -34,18 +34,19 @@ public class ExactFreqSketch implements ISketch<ITable, FreqKList> {
      * The K in top top-K. Is used as a threshold to eliminate items that do not occur with
      * frequency 1/K.
      */
-    private final int maxSize;
+    private int maxSize;
+    private double epsilon;
 
     public ExactFreqSketch(Schema schema, FreqKList fk) {
         this.schema = schema;
         this.rssList = fk.getList();
-        this.maxSize = fk.maxSize;
+        this.epsilon = fk.epsilon;
     }
 
     @Nullable
     @Override
     public FreqKList zero() {
-        return new FreqKList(this.rssList);
+        return new FreqKList(this.rssList, this.epsilon);
     }
 
     @Override
@@ -88,6 +89,6 @@ public class ExactFreqSketch implements ISketch<ITable, FreqKList> {
         }
         HashMap<RowSnapshot, Integer> hm = new HashMap<RowSnapshot, Integer>(this.rssList.size());
         this.rssList.forEach(rss -> hm.put(rss, hMap.get(rss)));
-        return new FreqKList(data.getNumOfRows(), this.maxSize, hm);
+        return new FreqKList(data.getNumOfRows(), this.epsilon, hm);
     }
 }
