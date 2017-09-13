@@ -51,8 +51,7 @@ export class TableDataView {
 /**
  * Displays a table in the browser.
  */
-export class TableView extends RemoteTableObjectView
-    implements IScrollTarget {
+export class TableView extends RemoteTableObjectView implements IScrollTarget {
 
     // Data view part: received from remote site
     public schema?: Schema;
@@ -628,6 +627,7 @@ export class TableView extends RemoteTableObjectView
             this.runFilter(efd);
         }
     }
+
 
         private hLogLog(colName: string): void {
 	    let rr = this.createHLogLogRequest(colName);
