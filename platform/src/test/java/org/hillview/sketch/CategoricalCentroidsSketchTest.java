@@ -7,6 +7,7 @@ import org.hillview.sketches.DistinctStrings;
 import org.hillview.sketches.DistinctStringsSketch;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.TestTables;
+import org.jblas.DoubleMatrix;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -33,16 +34,18 @@ public class CategoricalCentroidsSketchTest {
                 Arrays.asList("x", "y")
         );
         Centroids centroids = sketch.create(table);
-        Assert.assertEquals(2, centroids.centroids.get(0, 0), Math.ulp(2));
-        Assert.assertEquals(11, centroids.centroids.get(0, 1), Math.ulp(11));
-        Assert.assertEquals(5, centroids.centroids.get(1, 0), Math.ulp(5));
-        Assert.assertEquals(26, centroids.centroids.get(1, 1), Math.ulp(26));
+        DoubleMatrix centroidsMat = centroids.computeCentroids();
+        Assert.assertEquals(2, centroidsMat.get(0, 0), Math.ulp(2));
+        Assert.assertEquals(11, centroidsMat.get(0, 1), Math.ulp(11));
+        Assert.assertEquals(5, centroidsMat.get(1, 0), Math.ulp(5));
+        Assert.assertEquals(26, centroidsMat.get(1, 1), Math.ulp(26));
 
         IDataSet<ITable> dataset = TestTables.makeParallel(table, 2);
         centroids = dataset.blockingSketch(sketch);
-        Assert.assertEquals(2, centroids.centroids.get(0, 0), Math.ulp(2));
-        Assert.assertEquals(11, centroids.centroids.get(0, 1), Math.ulp(11));
-        Assert.assertEquals(5, centroids.centroids.get(1, 0), Math.ulp(5));
-        Assert.assertEquals(26, centroids.centroids.get(1, 1), Math.ulp(26));
+        centroidsMat = centroids.computeCentroids();
+        Assert.assertEquals(2, centroidsMat.get(0, 0), Math.ulp(2));
+        Assert.assertEquals(11, centroidsMat.get(0, 1), Math.ulp(11));
+        Assert.assertEquals(5, centroidsMat.get(1, 0), Math.ulp(5));
+        Assert.assertEquals(26, centroidsMat.get(1, 1), Math.ulp(26));
     }
 }
