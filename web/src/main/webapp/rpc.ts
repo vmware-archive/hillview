@@ -143,12 +143,16 @@ export class RpcRequest implements ICancellable {
                 if (reply.isError) {
                     onReply.onError(reply.result);
                 } else {
+                    let success = false;
+                    let response: any;
                     try {
-                        let response = <T>JSON.parse(reply.result);
-                        onReply.onNext(response);
+                        response = <T>JSON.parse(reply.result);
+                        success = true;
                     } catch (e) {
                         onReply.onError(e);
                     }
+                    if (success)
+                        onReply.onNext(response);
                 }
             };
             this.socket.onopen = () => {
