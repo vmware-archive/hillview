@@ -105,13 +105,23 @@ export class ColorMap {
     }
 }
 
+/**
+ * This class displays the relative size of a subsequence within a sequence,
+ * in a bar.
+ */
 export class DataRange implements IElement {
     private topLevel: Element;
 
+    /**
+     * @param position: Index where the subsequence starts.
+     * @param count: Number of items in the subsequence.
+     * @param totalCount: Total number of items in the 'supersequence'.
+     */
     constructor(position: number, count: number, totalCount: number) {
             this.topLevel = document.createElementNS("http://www.w3.org/2000/svg", "svg")
             this.topLevel.classList.add("dataRange");
-            // If the range represents < 1 % of the total count, use 1% of the bar's width.
+            // If the range represents < 1 % of the total count, use 1% of the
+            // bar's width, s.t. it is still visible.
             let w = Math.max(0.01, count / totalCount);
             let x = position / totalCount;
             if (x + w > 1)
