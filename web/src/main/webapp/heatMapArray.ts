@@ -41,8 +41,6 @@ export class HeatMapArrayData {
 export interface HeatMapArrayArgs {
     cds: IColumnDescription[];
     uniqueStrings?: DistinctStrings;
-    zBins?: string[];
-    subsampled?: boolean;
     xStats?: BasicColStats;
     yStats?: BasicColStats;
 }
@@ -395,7 +393,7 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
         this.refresh();
     }
 
-    public updateView(heatMapsArray: HeatMapArrayData): void {
+    public updateView(heatMapsArray: HeatMapArrayData, zBins: string[]): void {
         if (heatMapsArray == null) {
             this.page.reportError("Did not receive data.");
             return;
@@ -437,7 +435,7 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
 
             let heatMap = new CompactHeatMapView(
                 this.heatMapsSvg, pos, chartSize, labelSize,
-                this.args.zBins[z], xDim, yDim, this.args.cds, this.args.xStats, this.args.yStats
+                zBins[z], xDim, yDim, this.args.cds, this.args.xStats, this.args.yStats
             );
             for (let x = 0; x < xDim; x++) {
                 for (let y = 0; y < yDim; y++) {
@@ -459,7 +457,7 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
         colorMap.drawLegend(this.colorLegend);
 
         this.scrollBar.setPosition(this.offset / this.args.uniqueStrings.size(),
-            (this.offset + this.args.zBins.length) / this.args.uniqueStrings.size());
+            (this.offset + zBins.length) / this.args.uniqueStrings.size());
 
         // Register click listeners only after everything's set up.
         this.heatMapsSvg
@@ -515,9 +513,8 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
     public initiateHeatMaps(): void {
         // Number of actual bins is bounded by the number of distinct values.
         let numZBins = Math.min(this.maxNumHeatMaps(), this.args.uniqueStrings.size() - this.offset);
-        this.args.zBins = this.args.uniqueStrings.categoriesInRange(
+        let zBins = this.args.uniqueStrings.categoriesInRange(
             this.offset, this.offset + numZBins - 1, numZBins);
-
         let numXBuckets = CompactHeatMapView.size.width / Resolution.minDotSize;
         let numYBuckets = CompactHeatMapView.size.height / Resolution.minDotSize;
 
@@ -543,16 +540,16 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
             third: {
                 columnName: this.args.cds[2].name,
                 min: this.offset,
-                max: this.offset + this.args.zBins.length - 1,
+                max: this.offset + zBins.length - 1,
                 cdfBucketCount: 0,
-                bucketCount: this.args.zBins.length,
+                bucketCount: zBins.length,
                 samplingRate: 1,
-                bucketBoundaries: this.args.zBins
+                bucketBoundaries: zBins
             }
         };
 
         let rr = this.createHeatMap3DRequest(heatMapArrayArgs);
-        rr.invoke(new HeatMap3DRenderer(this.getPage(), this, rr));
+        rr.invoke(new HeatMap3DRenderer(this.getPage(), this, rr, zBins));
     }
 }
 
@@ -573,13 +570,13 @@ class Range2DRenderer extends Renderer<Pair<BasicColStats, BasicColStats>> {
 }
 
 class HeatMap3DRenderer extends Renderer<HeatMapArrayData> {
-    constructor(page: FullPage, protected view: HeatMapArrayView, operation: ICancellable) {
+    constructor(page: FullPage, protected view: HeatMapArrayView, operation: ICancellable, private zBins: string[]) {
         super(page, operation, "3D Heat map render");
     }
 
     onNext(data: PartialResult<HeatMapArrayData>): void {
         super.onNext(data);
-        this.view.updateView(data.data);
+        this.view.updateView(data.data, this.zBins);
     }
 }
 
