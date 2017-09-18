@@ -21,6 +21,8 @@ public class Centroids<T> implements Serializable {
     public HashMap<T, double[]> sums;
     /**
      * Map from the partition key to the count of values in every column of that partition.
+     * Every value is an array of longs, where the i'th element is the number of non-missing values encountered in
+     * the i'th column, for rows partitioned to the partition specified by the key.
      */
     public HashMap<T, long[]> counts;
 
@@ -46,12 +48,17 @@ public class Centroids<T> implements Serializable {
             IRowIterator rowIterator = members.getIterator();
             int row = rowIterator.getNextRow();
             while (row >= 0) {
+                // Don't add to the sum or count if the value is missing.
                 if (column.isMissing(row))
                     continue;
                 T key = keyFunc.apply(row);
-                // Update the values. (And first create them if absent.)
-                this.sums.computeIfAbsent(key, k -> new double[columns.size()])[colIndex] += column.getDouble(row);
-                this.counts.computeIfAbsent(key, k -> new long[columns.size()])[colIndex]++;
+                // Get the arrays for this partition from the HashMap (or create them if absent).
+                double[] sums = this.sums.computeIfAbsent(key, k -> new double[columns.size()]);
+                long[] counts = this.counts.computeIfAbsent(key, k -> new long[columns.size()]);
+                // Update the sum and count of this partition in this column
+                sums[colIndex] += column.getDouble(row);
+                counts[colIndex]++;
+
                 row = rowIterator.getNextRow();
             }
             colIndex++;
