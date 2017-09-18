@@ -16,13 +16,16 @@ import java.util.function.Function;
  */
 public class Centroids<T> implements Serializable {
     /**
-     * Map from the partition key to the sum of the values in the partition in every column.
+     * Map from the partition key to the sum of the non-missing values in the partition in every column. Every value
+     * is an array of doubles, where the i'th element is the sum of the non-missing values encountered in the i'th
+     * column, for rows partitioned to the partition specified by the key.
      */
     public HashMap<T, double[]> sums;
     /**
      * Map from the partition key to the count of values in every column of that partition.
      * Every value is an array of longs, where the i'th element is the number of non-missing values encountered in
-     * the i'th column, for rows partitioned to the partition specified by the key.
+     * the i'th column, for rows partitioned to the partition specified by the key. As we divide by the count to
+     * compute the final centroid, this means that the missing values do not contribute to the centroids.
      */
     public HashMap<T, long[]> counts;
 
@@ -37,7 +40,7 @@ public class Centroids<T> implements Serializable {
     /**
      * Construct a centroids object that has processed the sums of the partitions in 'table'.
      * The final centroids are not computed yet, this should be done after the sketch finishes.
-     * @param members MembershipSet that has knows which rows to iterate over.
+     * @param members MembershipSet that knows which rows to iterate over.
      * @param keyFunc Function that can determine the partition key of a row entry.
      * @param columns Column that define the nD space.
      */
@@ -71,23 +74,29 @@ public class Centroids<T> implements Serializable {
      * @return Centroid object that represents the aggregate of the rows that both objects represent.
      */
     public Centroids<T> union(Centroids<T> other) {
+        // Make new centroid object, and copy the data from 'this'
+        Centroids<T> result = new Centroids<T>();
+        result.sums.putAll(this.sums);
+        result.counts.putAll(this.counts);
+
+        // Add the other's information into the result.
         other.sums.keySet().forEach((key) -> {
-            if (this.sums.containsKey(key)) {
+            if (result.sums.containsKey(key)) {
+                // If the 'result' centroid already has the key, we have to sum the sums and counts for every column.
                 double[] sum = other.sums.get(key);
-                // other.counts must also contain the key (they share key sets, no need to check or loop twice).
-                long[] count = other.counts.get(key);
+                long[] count = other.counts.get(key); // other.counts must also contain the key (they share key sets, no need to check or loop twice).
                 for (int colIndex = 0; colIndex < sum.length; colIndex++) {
-                    this.sums.get(key)[colIndex] += sum[colIndex];
-                    // this.count must also contain the key as well, as it shares key set with this.sum.
-                    this.counts.get(key)[colIndex] += count[colIndex];
+                    result.sums.get(key)[colIndex] += sum[colIndex];
+                    result.counts.get(key)[colIndex] += count[colIndex]; // Same assumption can be made here.
                 }
             } else {
                 // No need to iterate/sum. Simply use the other's array.
-                this.sums.put(key, other.sums.get(key));
-                this.counts.put(key, other.counts.get(key));
+                result.sums.put(key, other.sums.get(key));
+                result.counts.put(key, other.counts.get(key));
             }
         });
-        return this;
+
+        return result;
     }
 
     /**
