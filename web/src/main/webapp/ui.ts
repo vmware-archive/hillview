@@ -23,6 +23,10 @@ export interface IHtmlElement {
     getHTMLRepresentation() : HTMLElement;
 }
 
+export interface IElement {
+    getDOMRepresentation(): Element;
+}
+
 export enum KeyCodes {
     enter = 13,
     ctrl = 17,

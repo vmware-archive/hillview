@@ -35,6 +35,7 @@ import {
 import {CategoryCache} from "./categoryCache";
 import {HeatMapArrayDialog} from "./heatMapArray";
 import {ColumnConverter} from "./columnConverter";
+import {DataRange} from "./vis"
 
 // This is the serialization of a NextKList Java object
 export class TableDataView {
@@ -767,27 +768,14 @@ export class TableView extends RemoteTableObjectView
             return "?";  // TODO
     }
 
-    private drawDataRange(cell: HTMLElement, position: number, count: number) : void {
-        let w = Math.max(0.01, count / this.rowCount);
-        let x = position / this.rowCount;
-        if (x + w > 1)
-            x = 1 - w;
-        cell.classList.add('dataRange');
-        d3.select(cell).append('svg')
-            .append("g").append("rect")
-            .attr("x", x)
-            .attr("y", 0)
-            .attr("width", w) // 0.01 corresponds to 1 pixel
-            .attr("height", 1);
-    }
-
     public addRow(row : RowView, cds: ColumnDescription[]) : void {
         let trow = this.tBody.insertRow();
 
         let position = this.startPosition + this.dataRowsDisplayed;
 
         let cell = trow.insertCell(0);
-        this.drawDataRange(cell, position, row.count);
+        let dataRange = new DataRange(position, row.count, this.rowCount);
+        cell.appendChild(dataRange.getDOMRepresentation());
 
         cell = trow.insertCell(1);
         cell.style.textAlign = "right";

@@ -198,23 +198,19 @@ th, td {
     stroke-dasharray: 5,5
 }
 
-.dataRange > svg {
+svg.dataRange {
     width: 100px;
     height: 10px;
     display: inline-block;
     background: rgb(220, 220, 220);
 }
 
-.dataRange > svg > g {
+svg.dataRange > g {
     transform: scale(100, 10);
 }
 
-.dataRange > svg > g > rect {
+svg.dataRange > g > rect {
     fill: black;
-}
-
-.dataRange > div {
-    display: inline-block;
 }
 
 table.menu {

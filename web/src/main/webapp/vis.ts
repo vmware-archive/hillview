@@ -1,5 +1,5 @@
 import d3 = require("d3");
-import {Size} from "./ui";
+import {Size, IElement} from "./ui";
 
 export class ColorMap {
     public logScale: boolean;
@@ -102,5 +102,39 @@ export class ColorMap {
 
         let axis = this.getAxis(size.width, ticks, base, true);
         axisG.call(axis);
+    }
+}
+
+/**
+ * This class displays the relative size of a subsequence within a sequence,
+ * in a bar.
+ */
+export class DataRange implements IElement {
+    private topLevel: Element;
+
+    /**
+     * @param position: Index where the subsequence starts.
+     * @param count: Number of items in the subsequence.
+     * @param totalCount: Total number of items in the 'supersequence'.
+     */
+    constructor(position: number, count: number, totalCount: number) {
+            this.topLevel = document.createElementNS("http://www.w3.org/2000/svg", "svg")
+            this.topLevel.classList.add("dataRange");
+            // If the range represents < 1 % of the total count, use 1% of the
+            // bar's width, s.t. it is still visible.
+            let w = Math.max(0.01, count / totalCount);
+            let x = position / totalCount;
+            if (x + w > 1)
+            x = 1 - w;
+            d3.select(this.topLevel)
+                .append("g").append("rect")
+                .attr("x", x)
+                .attr("y", 0)
+                .attr("width", w)
+                .attr("height", 1);
+        }
+
+    public getDOMRepresentation(): Element {
+        return this.topLevel;
     }
 }
