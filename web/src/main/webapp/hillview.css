@@ -291,3 +291,8 @@ table.dropdown {
 .heatMapArrayView > div > svg {
     overflow: visible;
 }
+
+div.colorLegend > svg {
+    width: 100%;
+    overflow: visible
+}

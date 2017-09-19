@@ -317,7 +317,7 @@ export class HeatMapView extends RemoteTableObjectView {
         if (max <= 1) {
             max = 1;
         } else {
-            let legendWidth = Resolution.legendWidth;
+            let legendWidth = Resolution.legendSize.width;
             if (legendWidth > this.chartSize.width)
                 legendWidth = this.chartSize.width;
             let legendHeight = 15;

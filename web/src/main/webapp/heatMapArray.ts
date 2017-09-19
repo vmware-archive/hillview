@@ -23,7 +23,7 @@ import {
     removeAllChildren
 } from "./ui";
 import {Pair, Triple, truncate, Point2D, ICancellable, PartialResult} from "./util";
-import {ColorMap} from "./vis";
+import {ColorMap, ColorLegend} from "./vis";
 import d3 = require('d3');
 import {AxisData} from "./heatMap";
 import {
@@ -292,7 +292,9 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
     private heatMaps: CompactHeatMapView[];
     private scrollBar: ScrollBar;
     private arrayAndScrollBar: HTMLDivElement;
-    private colorLegend: any; // The svg containing the color legend.
+    private colorMap: ColorMap;
+    private colorLegendDiv: HTMLDivElement;
+    private colorLegend: ColorLegend;
     private heatMapsSvg: any; // svg containing all heatmaps.
 
     // Holds the state of which heatmap is hovered over.
@@ -312,9 +314,8 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
         title.textContent = `Heat maps by ${this.args.cds[2].name}`;
         this.topLevel.appendChild(title);
 
-        this.colorLegend = d3.select(this.topLevel).append("svg")
-            .attr("width", Resolution.legendWidth)
-            .attr("height", Resolution.legendHeight);
+        this.colorLegendDiv = document.createElement("div");
+        this.topLevel.appendChild(this.colorLegendDiv);
 
         // Div containing the array and the scrollbar
         this.arrayAndScrollBar = document.createElement("div");
@@ -330,6 +331,8 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
         this.heatMapsSvg = d3.select(this.arrayAndScrollBar).append("svg")
             .attr("width", svgSize.width)
             .attr("height", svgSize.height);
+
+        this.colorMap = new ColorMap();
     }
 
     // Returns the maximum size that the canvas is allowed to use
@@ -449,12 +452,31 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
             // Save it, as we need to set the colormap later.
             this.heatMaps[z] = heatMap;
         }
-        let colorMap = new ColorMap(max);
+        // Update the color map based on the new values
+        this.colorMap.min = 1;
+        this.colorMap.max = max;
+        if (max > ColorMap.logThreshold)
+            this.colorMap.setLogScale(true);
+        else
+            this.colorMap.setLogScale(false);
+        // Use the color map to set the colors in the heat maps
         this.heatMaps.forEach((heatMap) => {
-            heatMap.setColors(colorMap);
+            heatMap.setColors(this.colorMap);
         });
-        this.colorLegend.selectAll("*").remove();
-        colorMap.drawLegend(this.colorLegend);
+
+        // Purge the old color legend div and add a new color legend
+        this.colorLegend = new ColorLegend(this.colorMap);
+        while (this.colorLegendDiv.firstChild) {
+          this.colorLegendDiv.removeChild(this.colorLegendDiv.firstChild);
+        }
+        this.colorLegendDiv.appendChild(this.colorLegend.getHTMLRepresentation());
+
+        // Add a listener that updates the heat maps when the color map changes.
+        this.colorLegend.setColorMapChangeEventListener((newColorMap) => {
+            this.heatMaps.forEach((heatMap) => {
+                heatMap.setColors(newColorMap);
+            });
+        })
 
         this.scrollBar.setPosition(this.offset / this.args.uniqueStrings.size(),
             (this.offset + zBins.length) / this.args.uniqueStrings.size());
@@ -488,10 +510,7 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
         // Show the new heat map's axes
         if (this.mouseOverHeatMap != null){
             let val = this.mouseOverHeatMap.updateAxes();
-            if (isNaN(val) || val == null)
-                this.colorLegend.select('#text-indicator').text("");
-            else
-                this.colorLegend.select('#text-indicator').text(significantDigits(val));
+            this.colorLegend.indicate(val);
         }
 
     }
@@ -502,7 +521,7 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
             this.mouseOverHeatMap.hideAxes();
             this.mouseOverHeatMap = null;
         }
-        this.colorLegend.select('#text-indicator').text("");
+        this.colorLegend.indicate(null);
     }
 
     public setStats(stats: Pair<BasicColStats, BasicColStats>): void {
