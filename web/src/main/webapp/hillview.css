@@ -295,6 +295,7 @@ table.dropdown {
 div.colorLegend {
     display: flex;
     justify-content: center;
+    margin: 5px;
 }
 
 div.colorLegend > svg {

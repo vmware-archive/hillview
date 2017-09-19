@@ -111,9 +111,8 @@ export class CompactHeatMapView {
         this.g.append("text")
             .text(binLabel)
             .attr("text-anchor", "middle")
-            .attr("alignment-baseline", "middle")
             .attr("x", this.size.width / 2)
-            .attr("y", Resolution.lineHeight / 2)
+            .attr("y", Resolution.lineHeight)
 
 
         this.chart = this.g.append("g")
@@ -188,19 +187,6 @@ export class CompactHeatMapView {
             .attr("class", "y-axis")
             .call(this.yAxis);
 
-        // Draw axis labels
-        this.axesG.append("text")
-            .text(this.yAxisData.description.name)
-            .attr("transform-origin", "center top")
-            .attr("text-anchor", "middle")
-            .attr("alignment-baseline", "hanging")
-            .attr("transform", `translate(${-Resolution.leftMargin}, ${0.5 * this.chartSize.height})rotate(-90)`);
-        this.axesG.append("text")
-            .text(this.xAxisData.description.name)
-            .attr("text-anchor", "middle")
-            .attr("alignment-baseline", "baseline")
-            .attr("transform", `translate(${0.5 * this.chartSize.width}, ${this.chartSize.height + Resolution.bottomMargin - 5})`);
-
         // Draw a visual indicator with a circle and two lines.
         this.marker = this.axesG.append("circle")
             .attr("r", 4)
@@ -229,11 +215,9 @@ export class CompactHeatMapView {
             .attr("fill", "rgba(255, 255, 255, 0.9)");
         // Draw the values as strings.
         this.xText = this.axesG.append("text")
-            .attr("text-anchor", "left")
-            .attr("alignment-baseline", "baseline")
+            .attr("text-anchor", "left");
         this.yText = this.axesG.append("text")
-            .attr("text-anchor", "left")
-            .attr("alignment-baseline", "baseline")
+            .attr("text-anchor", "left");
     }
 
     // Returns the value (count in the histogram) under the mouse.
