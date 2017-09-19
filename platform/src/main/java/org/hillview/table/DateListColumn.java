@@ -58,8 +58,9 @@ public class DateListColumn
         this.growMissing();
     }
 
+    @Override
     @SuppressWarnings("Duplicates")
-    private void append(@Nullable final LocalDateTime value) {
+    public void append(@Nullable final LocalDateTime value) {
         final int segmentId = this.size >> this.LogSegmentSize;
         final int localIndex = this.size & this.SegmentMask;
         if (this.segments.size() <= segmentId)
@@ -75,7 +76,7 @@ public class DateListColumn
 
     @Override
     public void appendMissing() {
-        this.append(null);
+        this.append((LocalDateTime)null);
     }
 
     @Override

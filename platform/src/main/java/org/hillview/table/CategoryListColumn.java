@@ -57,6 +57,7 @@ public class CategoryListColumn extends BaseListColumn implements ICategoryColum
         this.growMissing();
     }
 
+    @Override
     public void append(@Nullable String value) {
         final int segmentId = this.size >> this.LogSegmentSize;
         final int localIndex = this.size & this.SegmentMask;
@@ -75,7 +76,7 @@ public class CategoryListColumn extends BaseListColumn implements ICategoryColum
 
     @Override
     public void appendMissing() {
-        this.append(null);
+        this.append((String)null);
     }
 
     @Override

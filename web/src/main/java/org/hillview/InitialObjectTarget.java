@@ -22,10 +22,14 @@ import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IDataSet;
-import org.hillview.maps.LoadCsvFileMapper;
+import org.hillview.dataset.api.IMap;
+import org.hillview.maps.FindCsvFileMapper;
+import org.hillview.maps.LoadDatabaseTableMapper;
 import org.hillview.remoting.ClusterDescription;
 import org.hillview.remoting.HillviewServer;
+import org.hillview.table.JdbcConnectionInformation;
 import org.hillview.utils.Converters;
+import org.hillview.utils.CsvFileObject;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
@@ -98,11 +102,34 @@ public class InitialObjectTarget extends RpcTarget {
     }
 
     @HillviewRpc
+    void loadDBTable(RpcRequest request, Session session) {
+        Converters.checkNull(this.emptyDataset);
+        JdbcConnectionInformation conn = new JdbcConnectionInformation("localhost", "employees", "mbudiu", "password");
+        LoadDatabaseTableMapper mapper = new LoadDatabaseTableMapper("salaries", conn);
+        this.runMap(this.emptyDataset, mapper, TableTarget::new, request, session);
+    }
+
+    @HillviewRpc
     void prepareFiles(RpcRequest request, Session session) {
         int which = request.parseArgs(Integer.class);
-
         Converters.checkNull(this.emptyDataset);
-        this.runFlatMap(this.emptyDataset, new LoadCsvFileMapper(which), FileNamesTarget::new, request, session);
+
+        String dataFolder = "../data/";
+        IMap<Empty, List<CsvFileObject>> finder;
+        if (which >= 0 && which <= 1) {
+            int limit = which == 0 ? 0 : 1;
+            finder = new FindCsvFileMapper(dataFolder, limit, "(\\d)+_(\\d)+\\.csv", "short.schema");
+        } else if (which == 2) {
+            finder = new FindCsvFileMapper(dataFolder, 0, "vrops.csv", "vrops.schema");
+        } else if (which == 3) {
+            finder = new FindCsvFileMapper(dataFolder, 0, "mnist.csv", "mnist.schema");
+        } else if (which == 4) {
+            finder = new FindCsvFileMapper(dataFolder, 0, "segmentation.csv", "segmentation.schema");
+        } else {
+            throw new RuntimeException("Unexpected id");
+        }
+
+        this.runFlatMap(this.emptyDataset, finder, FileNamesTarget::new, request, session);
     }
 
     @Override

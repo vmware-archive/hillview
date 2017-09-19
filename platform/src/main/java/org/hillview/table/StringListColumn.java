@@ -53,6 +53,7 @@ public class StringListColumn extends BaseListColumn implements IStringColumn {
         this.growMissing();
     }
 
+    @Override
     public void append(@Nullable String value) {
         if (value != null)
             value = value.intern();
@@ -72,7 +73,7 @@ public class StringListColumn extends BaseListColumn implements IStringColumn {
 
     @Override
     public void appendMissing() {
-        this.append(null);
+        this.append((String)null);
     }
 
     @Override

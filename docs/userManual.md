@@ -77,10 +77,26 @@ with the data.
 
 ### Loading data sets
 
+Hillview supports reading data from multiple data-sources.
+
 *TODO*
 
 The final UI for loading datasets is not yet implemented.  Currently
 this UI consists in some buttons that load pre-defined datasets.
+
+
+#### Reading CSV files
+
+Hillview can read data from comma- or tab-separated files.
+
+*TODO*
+
+#### Reading data from SQL databases
+
+Hillview can read data from one or many SQL databases (any database
+that supports the JDBC standard for reading).
+
+*TODO*
 
 ### Table views
 
@@ -260,6 +276,14 @@ the current state of the display.
 
 *TODO*
 
+### Arrays of heat-map views
+
+![An array of heatmap views](hillview-heatmap-array.png)
+
+*TODO*
+
 ### Combining two views
 
 ![Combining two views](combine-menu.png)
+
+*TODO*

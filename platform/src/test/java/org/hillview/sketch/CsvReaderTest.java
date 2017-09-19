@@ -120,8 +120,8 @@ public class CsvReaderTest {
     public void writeSmallFileTest() throws IOException {
         ColumnDescription nulls = new ColumnDescription("AllNulls", ContentsKind.String, true);
         StringListColumn first = new StringListColumn(nulls);
-        first.append(null);
-        first.append(null);
+        first.append((String)null);
+        first.append((String)null);
         ColumnDescription empty = new ColumnDescription("AllEmpty", ContentsKind.String, true);
         StringListColumn second = new StringListColumn(empty);
         second.append("");
