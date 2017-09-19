@@ -106,7 +106,6 @@ export class TableView extends RemoteTableObjectView
         ]);
         this.topLevel.appendChild(menu.getHTMLRepresentation());
         this.contextMenu = new ContextMenu();
-        this.contextMenu.hide();
         this.topLevel.appendChild(this.contextMenu.getHTMLRepresentation());
         this.topLevel.appendChild(document.createElement("hr"));
         this.htmlTable = document.createElement("table");

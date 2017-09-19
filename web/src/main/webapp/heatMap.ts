@@ -32,6 +32,7 @@ import {BaseType} from "d3-selection";
 import {ScaleLinear, ScaleTime} from "d3-scale";
 import {TopMenu, TopSubMenu} from "./menu";
 import {Histogram2DRenderer, Make2DHistogram, Filter2DReceiver} from "./histogram2d";
+import {ColorMap, ColorLegend} from "./vis";
 
 // counterpart of Java class 'HeatMap'
 export class HeatMapData {
@@ -66,6 +67,8 @@ export class HeatMapView extends RemoteTableObjectView {
     private yLabel: HTMLElement;
     private valueLabel: HTMLElement;
     protected chartDiv: HTMLElement;
+    protected colorLegend: ColorLegend;
+    protected colorMap: ColorMap;
     protected summary: HTMLElement;
     private xScale: ScaleLinear<number, number> | ScaleTime<number, number>;
     private yScale: ScaleLinear<number, number> | ScaleTime<number, number>;
@@ -86,7 +89,6 @@ export class HeatMapView extends RemoteTableObjectView {
     protected canvas: any;
     private xDot: any;
     private yDot: any;
-    private logScale: boolean;
 
     constructor(remoteObjectId: string, protected tableSchema: Schema, page: FullPage) {
         super(remoteObjectId, page);
@@ -94,7 +96,6 @@ export class HeatMapView extends RemoteTableObjectView {
         this.topLevel.className = "chart";
         this.topLevel.onkeydown = e => this.keyDown(e);
         this.dragging = false;
-        this.logScale = false;
         this.moved = false;
         let menu = new TopMenu( [
             { text: "View", subMenu: new TopSubMenu([
@@ -109,6 +110,13 @@ export class HeatMapView extends RemoteTableObjectView {
 
         this.topLevel.appendChild(menu.getHTMLRepresentation());
         this.topLevel.tabIndex = 1;
+
+        this.colorMap = new ColorMap();
+        this.colorLegend = new ColorLegend(this.colorMap)
+        this.colorLegend.setColorMapChangeEventListener(() => {
+            this.reapplyColorMap();
+        })
+        this.topLevel.appendChild(this.colorLegend.getHTMLRepresentation());
 
         this.chartDiv = document.createElement("div");
         this.topLevel.appendChild(this.chartDiv);
@@ -163,11 +171,6 @@ export class HeatMapView extends RemoteTableObjectView {
                 this.tableSchema, true);
         };
         rr.invoke(new ZipReceiver(this.getPage(), rr, how, renderer));
-    }
-
-    changeScale(): void {
-        this.logScale = !this.logScale;
-        this.refresh();
     }
 
     // show the table corresponding to the data in the heatmap
@@ -311,67 +314,28 @@ export class HeatMapView extends RemoteTableObjectView {
                 }
             }
         }
+        this.colorMap.min = 1;
+        this.colorMap.max = max;
+        if (max > ColorMap.logThreshold)
+            this.colorMap.setLogScale(true)
+        else
+            this.colorMap.setLogScale(false)
 
-        this.logScale = max > 20;
+        this.chart.selectAll()
+            .data(dots)
+            .enter()
+            .append("g")
+            .append("svg:rect")
+            .attr("class", "heatMapCell")
+            .attr("x", d => d.x)
+            .attr("y", d => d.y)
+            .attr("data-val", d => d.v)
+            .attr("width", this.pointWidth)
+            .attr("height", this.pointHeight)
+            .style("stroke-width", 0)
+            .style("fill", d => this.colorMap.apply(d.v));
 
-        if (max <= 1) {
-            max = 1;
-        } else {
-            let legendWidth = Resolution.legendWidth;
-            if (legendWidth > this.chartSize.width)
-                legendWidth = this.chartSize.width;
-            let legendHeight = 15;
-            let legendSvg = this.canvas
-                .append("svg");
-
-            // apparently SVG defs are global, even if they are in
-            // different SVG elements.  So we have to assign unique names.
-            let gradientId = 'gradient' + this.getPage().pageId;
-            let gradient = legendSvg.append('defs')
-                .append('linearGradient')
-                .attr('id', gradientId)
-                .attr('x1', '0%')
-                .attr('y1', '0%')
-                .attr('x2', '100%')
-                .attr('y2', '0%')
-                .attr('spreadMethod', 'pad');
-
-            for (let i = 0; i <= 100; i += 4) {
-                gradient.append("stop")
-                    .attr("offset", i + "%")
-                    .attr("stop-color", HeatMapView.colorMap(i / 100))
-                    .attr("stop-opacity", 1)
-            }
-
-            legendSvg.append("rect")
-                .attr("width", legendWidth)
-                .attr("height", legendHeight)
-                .style("fill", "url(#" + gradientId + ")")
-                .attr("x", (this.chartSize.width - legendWidth) / 2)
-                .attr("y", 0);
-
-            // create a scale and axis for the legend
-            let legendScale;
-            if (this.logScale) {
-                let base = (max > 10000) ? 10 : 2;
-                legendScale = d3.scaleLog()
-                    .base(base);
-            } else {
-                legendScale = d3.scaleLinear();
-            }
-
-            let tickCount = max > 10 ? 10 : max - 1;
-            legendScale
-                .domain([1, max])
-                .range([0, legendWidth])
-                .ticks(tickCount);
-
-            let legendAxis = d3.axisBottom(legendScale);
-            legendSvg.append("g")
-                .attr("transform", translateString(
-                    (this.chartSize.width - legendWidth) / 2, legendHeight))
-                .call(legendAxis);
-        }
+        this.colorLegend.redraw();
 
         this.canvas.append("text")
             .text(yData.description.name)
@@ -382,19 +346,6 @@ export class HeatMapView extends RemoteTableObjectView {
                 this.chartSize.width / 2, this.chartSize.height + Resolution.topMargin + Resolution.bottomMargin / 2))
             .attr("text-anchor", "middle")
             .attr("dominant-baseline", "hanging");
-
-        this.chart.selectAll()
-            .data(dots)
-            .enter()
-            .append("g")
-            .append("svg:rect")
-            .attr("class", "heatMapCell")
-            .attr("x", d => d.x)
-            .attr("y", d => d.y)
-            .attr("width", this.pointWidth)
-            .attr("height", this.pointHeight)
-            .style("stroke-width", 0)
-            .style("fill", d => this.color(d.v, max));
 
         this.chart.append("g")
             .attr("class", "x-axis")
@@ -455,19 +406,10 @@ export class HeatMapView extends RemoteTableObjectView {
         this.summary.textContent = summary;
     }
 
-    static colorMap(d: number): string {
-        return d3.interpolateWarm(d);
-    }
-
-    color(d: number, max: number): string {
-        if (max == 1)
-            return "black";
-        if (d == 0)
-            throw "Zero should not have a color";
-        if (this.logScale)
-            return HeatMapView.colorMap(Math.log(d) / Math.log(max));
-        else
-            return HeatMapView.colorMap((d - 1) / (max - 1));
+    private reapplyColorMap() {
+        this.chart.selectAll(".heatMapCell")
+            .datum(function() {return this.dataset;})
+            .style("fill", d => this.colorMap.apply(d.val))
     }
 
     static invert(v: number, scale: AnyScale, kind: ContentsKind, allStrings: DistinctStrings): string {

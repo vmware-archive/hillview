@@ -1,11 +1,14 @@
 import d3 = require("d3");
-import {Size, IElement} from "./ui";
+import {Size, IElement, IHtmlElement, significantDigits, Resolution} from "./ui";
+import {ContextMenu} from "./menu";
 
 export class ColorMap {
+    public static logThreshold = 50; /* Suggested threshold for when a log-scale should be used. */
     public logScale: boolean;
-    constructor(public max, public min = 1) {
-        this.logScale = max > 20;
-    }
+
+    public map: (x) => string = d3.interpolateWarm;
+
+    constructor(public min = 0, public max = 1) {}
 
     public setLogScale(logScale: boolean) {
         this.logScale = logScale;
@@ -25,52 +28,104 @@ export class ColorMap {
     private applyLog(x) {
         return this.map(Math.log(x) / Math.log(this.max));
     }
+}
 
-    // Apply the base colormap. x is in the range [0, 1].
-    private map(x: number) {
-        return d3.interpolateWarm(x);
+export class ColorLegend implements IHtmlElement {
+    private topLevel: HTMLElement;
+    private gradient: any; // Element that contains the definitions for the colors in the color map
+    private textIndicator: any; // Text indicator for the value.
+
+    private onColorMapChange: (ColorMap) => void; // Function that is called to update other elements when the color map changes.
+    private contextMenu: ContextMenu;
+
+    /**
+     * Make a color legend for the given ColorMap with the specified parameters.
+     * @param colorMap: ColorMap to make this legend for.
+     * @param size: Size of the legend
+     * @param barHeight: Height of the color bar rectangle.
+    **/
+    constructor(private colorMap: ColorMap,
+        private size: Size = Resolution.legendSize,
+        private barHeight = 16
+    ) {
+        this.topLevel = document.createElement("div");
+        this.topLevel.classList.add("colorLegend");
     }
 
-    public getScale(width: number, base: number) {
-        let scale;
-        if (this.logScale) {
-            if (base == null)
-                base = this.max > 10000 ? 10 : 2;
-            scale = d3.scaleLog()
-                .base(base);
-        } else
-            scale = d3.scaleLinear();
-
-        scale
-            .domain([this.min, this.max])
-            .range([0, width]);
-        return scale;
-    }
-
-    public getAxis(width: number, ticks: number, base: number, bottom: boolean) {
-        let scale = this.getScale(width, base);
-        if (bottom)
-            return d3.axisBottom(scale).ticks(ticks);
-        else
-            return d3.axisTop(scale).ticks(ticks);
+    public setColorMapChangeEventListener(listener: (ColorMap) => void) {
+        this.onColorMapChange = listener;
+        if (this.contextMenu == null)
+            this.enableContextMenu();
     }
 
     /**
-     * Draw a color legend for this ColorMap with the specified parameters.
-     * The legend has an element id'ed with #text-indicator, that can be
-     * selected and updated to indicate the value.
-     * @param element: Element to draw the color legend in. The width attribute
-                of this element is used.
-     * @param ticks: (Approximate) number of ticks on the axis below the bar.
-     * @param base: Base of the numbers that should be displayed if a log scale
-                is used. E.g., base = 2 displays all powers of 2 in the range.
-     * @param barHeight: Height of the color bar rectangle.
-     * Assumes there are margins outside this element.
-    **/
-    public drawLegend(element, ticks: number = Math.min(10, this.max - 1), base?: number, barHeight = 16) {
-        let size: Size = {width: element.attr("width"), height: element.attr("height")};
+     * The context menu is added only when a colormap change event listener is set.
+     */
+    private enableContextMenu() {
+        this.contextMenu = new ContextMenu([
+            {
+                text: "Cool",
+                action: () => this.setMap(d3.interpolateCool)
+            }, {
+                text: "Warm",
+                action: () => this.setMap(d3.interpolateWarm)
+            }
+        ])
+        this.topLevel.appendChild(this.contextMenu.getHTMLRepresentation());
+        this.topLevel.oncontextmenu = e => {
+            e.preventDefault();
+            this.contextMenu.move(e.pageX - 1, e.pageY - 1);
+            this.contextMenu.show();
+        };
+    }
 
-        let gradient = element.append('defs')
+    // Set a new (base) color map. Needs to redefine the gradient.
+    private setMap(map: (number) => string) {
+        this.colorMap.map = map;
+        this.gradient.selectAll("*").remove();
+        for (let i = 0; i <= 100; i += 4)
+            this.gradient.append("stop")
+                .attr("offset", i + "%")
+                .attr("stop-color", this.colorMap.map(i / 100))
+                .attr("stop-opacity", 1)
+        // Notify the onColorChange listener (redraw the elements with new colors)
+        if (this.onColorMapChange != null)
+            this.onColorMapChange(this.colorMap);
+    }
+
+    private base(): number {
+        return this.colorMap.max > 10000 ? 10 : 2
+    }
+
+    private ticks(): number {
+        return Math.min(this.colorMap.max, 10);
+    }
+
+    public getScale() {
+        let scale;
+        if (this.colorMap.logScale) {
+            scale = d3.scaleLog()
+                .base(this.base());
+        } else
+            scale = d3.scaleLinear();
+        scale
+            .domain([this.colorMap.min, this.colorMap.max])
+            .range([0, this.size.width]);
+        return scale;
+    }
+
+    public getAxis() {
+        let scale = this.getScale();
+        return d3.axisBottom(scale).ticks(this.ticks());
+    }
+
+    public redraw() {
+        d3.select(this.topLevel).selectAll("svg").remove();
+        let svg = d3.select(this.topLevel).append("svg")
+            .attr("width", this.size.width)
+            .attr("height", this.size.height);
+
+        this.gradient = svg.append('defs')
             .append('linearGradient')
             .attr('id', 'gradient')
             .attr('x1', '0%')
@@ -79,29 +134,41 @@ export class ColorMap {
             .attr('y2', '0%')
             .attr('spreadMethod', 'pad');
         for (let i = 0; i <= 100; i += 4)
-            gradient.append("stop")
+            this.gradient.append("stop")
                 .attr("offset", i + "%")
-                .attr("stop-color", this.map(i / 100))
+                .attr("stop-color", this.colorMap.map(i / 100))
                 .attr("stop-opacity", 1)
 
-        element.append("rect")
+        svg.append("rect")
             .attr("x", 0)
             .attr("y", 0)
-            .attr("width", size.width)
-            .attr("height", barHeight)
+            .attr("width", this.size.width)
+            .attr("height", this.barHeight)
             .style("fill", "url(#gradient)");
 
-        let axisG = element.append("g")
-            .attr("transform", `translate(0, ${barHeight})`);
+        let axisG = svg.append("g")
+            .attr("transform", `translate(0, ${this.barHeight})`);
 
-        let textIndicator = element.append("text").attr("id", "text-indicator")
-            .attr("x", size.width / 2)
-            .attr("y", size.height)
+        this.textIndicator = svg.append("text").attr("id", "text-indicator")
+            .attr("x", "50%")
+            .attr("y", "100%")
             .attr("text-anchor", "middle")
             .attr("alignment-baseline", "bottom");
 
-        let axis = this.getAxis(size.width, ticks, base, true);
+        let axis = this.getAxis();
         axisG.call(axis);
+    }
+
+    /* Indicate the given value in the text indicator. */
+    public indicate(val: number) {
+        if (val == null || isNaN(val))
+            this.textIndicator.text("");
+        else
+            this.textIndicator.text(significantDigits(val));
+    }
+
+    public getHTMLRepresentation() {
+        return this.topLevel;
     }
 }
 
