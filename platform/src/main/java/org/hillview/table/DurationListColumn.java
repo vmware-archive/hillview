@@ -51,8 +51,9 @@ class DurationListColumn extends BaseListColumn implements IDurationColumn {
         this.growMissing();
     }
 
+    @Override
     @SuppressWarnings("Duplicates")
-    private void append(@Nullable final Duration value) {
+    public void append(@Nullable final Duration value) {
         final int segmentId = this.size >> this.LogSegmentSize;
         final int localIndex = this.size & this.SegmentMask;
         if (this.segments.size() <= segmentId)
@@ -68,7 +69,7 @@ class DurationListColumn extends BaseListColumn implements IDurationColumn {
 
     @Override
     public void appendMissing() {
-        this.append(null);
+        this.append((Duration)null);
     }
 
     @Override

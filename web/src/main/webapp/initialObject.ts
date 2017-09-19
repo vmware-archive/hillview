@@ -25,16 +25,16 @@ class FileNames extends RemoteObject {
         super(remoteObjectId);
     }
 
-    public loadTable(page: FullPage, startTime: Date): void {
+    public loadFiles(page: FullPage, operation: ICancellable): void {
         let rr = this.createRpcRequest("loadTable", null);
-        rr.setStartTime(startTime);
+        rr.chain(operation);
         let observer = new RemoteTableReceiver(page, rr);
         rr.invoke(observer);
     }
 }
 
 class FileNamesReceiver extends Renderer<string> {
-    private files: FileNames;
+    private remoteObjId: string;
 
     constructor(page: FullPage, operation: ICancellable) {
         super(page, operation, "Find files");
@@ -44,13 +44,16 @@ class FileNamesReceiver extends Renderer<string> {
     public onNext(value: PartialResult<string>): void {
         super.onNext(value);
         if (value.data != null)
-            this.files = new FileNames(value.data);
+            this.remoteObjId = value.data;
     }
 
     public onCompleted(): void {
         this.finished();
-        if (this.files)
-            this.files.loadTable(this.page, this.operation.startTime());
+        if (this.remoteObjId == null)
+            return;
+
+        let fn = new FileNames(this.remoteObjId);
+        fn.loadFiles(this.page, this.operation);
     }
 }
 
@@ -62,11 +65,19 @@ export class InitialObject extends RemoteObject {
     // This is a "well-known" name used for bootstrapping the system.
     private constructor() { super("0"); }
 
-    public loadTable(which: number): void {
+    public loadFiles(which: number): void {
         let rr = this.createRpcRequest("prepareFiles", which);
         let page = new FullPage();
         page.append();
         let observer = new FileNamesReceiver(page, rr);
+        rr.invoke(observer);
+    }
+
+    public loadDBTable(): void {
+        let rr = this.createRpcRequest("loadDBTable", null);
+        let page = new FullPage();
+        page.append();
+        let observer = new RemoteTableReceiver(page, rr);
         rr.invoke(observer);
     }
 }

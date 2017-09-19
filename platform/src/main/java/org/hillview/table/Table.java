@@ -43,13 +43,16 @@ public class Table extends BaseTable {
      * @param members  Membership set (rows in the table).
      * @param schema   Schema; must match the set of columns.
      */
-    protected Table(final Iterable<IColumn> columns, final IMembershipSet members, Schema schema) {
+    protected <C extends IColumn> Table(final Iterable<C> columns, final
+    IMembershipSet members,
+                     Schema
+            schema) {
         super(columns);
         this.members = members;
         this.schema = schema;
     }
 
-    public Table(final Iterable<IColumn> columns, final IMembershipSet members) {
+    public <C extends IColumn> Table(final Iterable<C> columns, final IMembershipSet members) {
         super(columns);
         final Schema s = new Schema();
         for (final IColumn c : columns)
@@ -80,7 +83,7 @@ public class Table extends BaseTable {
     @Override
     public IMembershipSet getMembershipSet() { return this.members; }
 
-    public Table(final Iterable<IColumn> columns) {
+    public <C extends IColumn> Table(final Iterable<C> columns) {
         this(columns, new FullMembership(columnSize(columns)));
     }
 

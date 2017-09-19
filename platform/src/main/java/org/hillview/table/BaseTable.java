@@ -41,7 +41,7 @@ public abstract class BaseTable implements ITable, Serializable {
         return this.getMembershipSet().getIterator();
     }
 
-    BaseTable(Iterable<IColumn> columns) {
+    <C extends IColumn> BaseTable(Iterable<C> columns) {
         BaseTable.columnSize(columns);  // validate column sizes
         this.columns = new HashMap<String, IColumn>();
         for (final IColumn c : columns)
@@ -95,7 +95,7 @@ public abstract class BaseTable implements ITable, Serializable {
      * @return The common size, or 0 if the set is empty.
      * Throws if the columns do not all have the same size.
      */
-    static int columnSize(Iterable<IColumn> columns) {
+    static <C extends IColumn> int columnSize(Iterable<C> columns) {
         int size = -1;
         for (IColumn c : columns) {
             if (size < 0)

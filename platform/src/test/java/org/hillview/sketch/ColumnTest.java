@@ -52,8 +52,7 @@ public class ColumnTest {
         final ColumnDescription desc = new ColumnDescription("test", ContentsKind.Double, false);
         col = new DoubleListColumn(desc);
         for (int i=0; i < size; i++)
-            col.append(i);
-
+            col.append((double)i);
 
         assertEquals( col.sizeInRows(), size );
         assertEquals( col.getDouble(0), 0.0, 10e-3 );

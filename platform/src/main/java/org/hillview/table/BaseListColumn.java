@@ -18,7 +18,9 @@
 
 package org.hillview.table;
 
+import org.hillview.table.api.IAppendableColumn;
 import org.hillview.utils.Converters;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -27,7 +29,7 @@ import java.util.BitSet;
 /**
  * Base class for a column that can grow in size.
  */
-public abstract class BaseListColumn extends BaseColumn {
+public abstract class BaseListColumn extends BaseColumn implements IAppendableColumn {
     // These should not be public, but they are made public for simplifying testing.
     final int LogSegmentSize = 10;
     public final int SegmentSize = 1 << this.LogSegmentSize;
@@ -61,15 +63,12 @@ public abstract class BaseListColumn extends BaseColumn {
             return false;
     }
 
-    public void setMissing(final int rowIndex) {
-        if (this.description.allowMissing) {
-            Converters.checkNull(this.missing);
-            final int segmentId = rowIndex >> this.LogSegmentSize;
-            final int localIndex = rowIndex & this.SegmentMask;
-            this.missing.get(segmentId).set(localIndex);
-        }
+    @Override
+    public void append(@Nullable Object obj) {
+        throw new NotImplementedException();
     }
 
+    @Override
     public void appendMissing() {
         Converters.checkNull(this.missing);
         final int segmentId = this.size >> this.LogSegmentSize;
