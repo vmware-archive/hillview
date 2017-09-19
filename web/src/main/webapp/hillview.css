@@ -292,7 +292,11 @@ table.dropdown {
     overflow: visible;
 }
 
+div.colorLegend {
+    display: flex;
+    justify-content: center;
+}
+
 div.colorLegend > svg {
-    width: 100%;
     overflow: visible
 }

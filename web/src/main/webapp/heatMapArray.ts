@@ -293,7 +293,6 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
     private scrollBar: ScrollBar;
     private arrayAndScrollBar: HTMLDivElement;
     private colorMap: ColorMap;
-    private colorLegendDiv: HTMLDivElement;
     private colorLegend: ColorLegend;
     private heatMapsSvg: any; // svg containing all heatmaps.
 
@@ -314,8 +313,9 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
         title.textContent = `Heat maps by ${this.args.cds[2].name}`;
         this.topLevel.appendChild(title);
 
-        this.colorLegendDiv = document.createElement("div");
-        this.topLevel.appendChild(this.colorLegendDiv);
+        this.colorMap = new ColorMap();
+        this.colorLegend = new ColorLegend(this.colorMap);
+        this.topLevel.appendChild(this.colorLegend.getHTMLRepresentation());
 
         // Div containing the array and the scrollbar
         this.arrayAndScrollBar = document.createElement("div");
@@ -332,7 +332,7 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
             .attr("width", svgSize.width)
             .attr("height", svgSize.height);
 
-        this.colorMap = new ColorMap();
+
     }
 
     // Returns the maximum size that the canvas is allowed to use
@@ -464,12 +464,7 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
             heatMap.setColors(this.colorMap);
         });
 
-        // Purge the old color legend div and add a new color legend
-        this.colorLegend = new ColorLegend(this.colorMap);
-        while (this.colorLegendDiv.firstChild) {
-          this.colorLegendDiv.removeChild(this.colorLegendDiv.firstChild);
-        }
-        this.colorLegendDiv.appendChild(this.colorLegend.getHTMLRepresentation());
+        this.colorLegend.redraw();
 
         // Add a listener that updates the heat maps when the color map changes.
         this.colorLegend.setColorMapChangeEventListener((newColorMap) => {

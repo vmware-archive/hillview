@@ -42,20 +42,15 @@ export class ColorLegend implements IHtmlElement {
      * Make a color legend for the given ColorMap with the specified parameters.
      * @param colorMap: ColorMap to make this legend for.
      * @param size: Size of the legend
-     * @param ticks: (Approximate) number of ticks on the axis below the bar.
-     * @param base: Base of the numbers that should be displayed if a log scale
-                is used. E.g., base = 2 displays all powers of 2 in the range.
      * @param barHeight: Height of the color bar rectangle.
     **/
     constructor(private colorMap: ColorMap,
-        size: Size = Resolution.legendSize,
-        ticks: number = Math.min(10, colorMap.max - 1),
-        base?: number,
-        barHeight = 16
+        private size: Size = Resolution.legendSize,
+        private barHeight = 16
     ) {
         this.topLevel = document.createElement("div");
         this.topLevel.classList.add("colorLegend");
-        this.drawLegend(size, ticks, base, barHeight);
+        this.redraw();
     }
 
     public setColorMapChangeEventListener(listener: (ColorMap) => void) {
@@ -99,34 +94,37 @@ export class ColorLegend implements IHtmlElement {
             this.onColorMapChange(this.colorMap);
     }
 
-    public getScale(width: number, base: number) {
+    private base(): number {
+        return this.colorMap.max > 10000 ? 10 : 2
+    }
+
+    private ticks(): number {
+        return Math.min(this.colorMap.max, 10);
+    }
+
+    public getScale() {
         let scale;
         if (this.colorMap.logScale) {
-            if (base == null)
-                base = this.colorMap.max > 10000 ? 10 : 2;
             scale = d3.scaleLog()
-                .base(base);
+                .base(this.base());
         } else
             scale = d3.scaleLinear();
-
         scale
             .domain([this.colorMap.min, this.colorMap.max])
-            .range([0, width]);
+            .range([0, this.size.width]);
         return scale;
     }
 
-    public getAxis(width: number, ticks: number, base: number, bottom: boolean) {
-        let scale = this.getScale(width, base);
-        if (bottom)
-            return d3.axisBottom(scale).ticks(ticks);
-        else
-            return d3.axisTop(scale).ticks(ticks);
+    public getAxis() {
+        let scale = this.getScale();
+        return d3.axisBottom(scale).ticks(this.ticks());
     }
 
-    private drawLegend(size: Size, ticks: number, base: number, barHeight: number) {
+    public redraw() {
+        d3.select(this.topLevel).selectAll("svg").remove();
         let svg = d3.select(this.topLevel).append("svg")
-            .attr("width", size.width)
-            .attr("height", size.height);
+            .attr("width", this.size.width)
+            .attr("height", this.size.height);
 
         this.gradient = svg.append('defs')
             .append('linearGradient')
@@ -145,12 +143,12 @@ export class ColorLegend implements IHtmlElement {
         svg.append("rect")
             .attr("x", 0)
             .attr("y", 0)
-            .attr("width", size.width)
-            .attr("height", barHeight)
+            .attr("width", this.size.width)
+            .attr("height", this.barHeight)
             .style("fill", "url(#gradient)");
 
         let axisG = svg.append("g")
-            .attr("transform", `translate(0, ${barHeight})`);
+            .attr("transform", `translate(0, ${this.barHeight})`);
 
         this.textIndicator = svg.append("text").attr("id", "text-indicator")
             .attr("x", "50%")
@@ -158,7 +156,7 @@ export class ColorLegend implements IHtmlElement {
             .attr("text-anchor", "middle")
             .attr("alignment-baseline", "bottom");
 
-        let axis = this.getAxis(size.width, ticks, base, true);
+        let axis = this.getAxis();
         axisG.call(axis);
     }
 
