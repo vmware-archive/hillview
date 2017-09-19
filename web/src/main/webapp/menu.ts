@@ -30,7 +30,6 @@ export class ContextMenu implements IHtmlElement {
         this.outer = document.createElement("table");
         this.outer.classList.add("dropdown");
         this.outer.classList.add("menu");
-        // this.outer.onmouseleave = () => {this.clear(); this.hide()};
         this.outer.onmouseleave = () => {this.hide()};
         this.tableBody = this.outer.createTBody();
 

@@ -315,6 +315,10 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
 
         this.colorMap = new ColorMap();
         this.colorLegend = new ColorLegend(this.colorMap);
+        // Add a listener that updates the heat maps when the color map changes.
+        this.colorLegend.setColorMapChangeEventListener(() => {
+            this.reapplyColorMap();
+        })
         this.topLevel.appendChild(this.colorLegend.getHTMLRepresentation());
 
         // Div containing the array and the scrollbar
@@ -459,19 +463,9 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
             this.colorMap.setLogScale(true);
         else
             this.colorMap.setLogScale(false);
-        // Use the color map to set the colors in the heat maps
-        this.heatMaps.forEach((heatMap) => {
-            heatMap.setColors(this.colorMap);
-        });
 
+        this.reapplyColorMap();
         this.colorLegend.redraw();
-
-        // Add a listener that updates the heat maps when the color map changes.
-        this.colorLegend.setColorMapChangeEventListener((newColorMap) => {
-            this.heatMaps.forEach((heatMap) => {
-                heatMap.setColors(newColorMap);
-            });
-        })
 
         this.scrollBar.setPosition(this.offset / this.args.uniqueStrings.size(),
             (this.offset + zBins.length) / this.args.uniqueStrings.size());
@@ -480,6 +474,13 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
         this.heatMapsSvg
             .on("mousemove", () => this.mousemove())
             .on("mouseleave", () => this.mouseleave());
+    }
+
+    // Use the color map to set the colors in the heat maps
+    private reapplyColorMap() {
+        this.heatMaps.forEach((heatMap) => {
+            heatMap.setColors(this.colorMap);
+        });
     }
 
     private mousemove() {

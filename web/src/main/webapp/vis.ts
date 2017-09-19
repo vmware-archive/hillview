@@ -50,7 +50,6 @@ export class ColorLegend implements IHtmlElement {
     ) {
         this.topLevel = document.createElement("div");
         this.topLevel.classList.add("colorLegend");
-        this.redraw();
     }
 
     public setColorMapChangeEventListener(listener: (ColorMap) => void) {

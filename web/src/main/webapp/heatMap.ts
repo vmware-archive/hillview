@@ -113,6 +113,9 @@ export class HeatMapView extends RemoteTableObjectView {
 
         this.colorMap = new ColorMap();
         this.colorLegend = new ColorLegend(this.colorMap)
+        this.colorLegend.setColorMapChangeEventListener(() => {
+            this.reapplyColorMap();
+        })
         this.topLevel.appendChild(this.colorLegend.getHTMLRepresentation());
 
         this.chartDiv = document.createElement("div");
@@ -333,11 +336,6 @@ export class HeatMapView extends RemoteTableObjectView {
             .style("fill", d => this.colorMap.apply(d.v));
 
         this.colorLegend.redraw();
-        this.colorLegend.setColorMapChangeEventListener((cm) => {
-            this.chart.selectAll(".heatMapCell")
-                .datum(function() {return this.dataset;})
-                .style("fill", d => cm.apply(d.val))
-        })
 
         this.canvas.append("text")
             .text(yData.description.name)
@@ -406,6 +404,12 @@ export class HeatMapView extends RemoteTableObjectView {
             summary += ", " + formatNumber(yData.missing.missingData) + " missing X coordinate";
         summary += ", " + formatNumber(distinct) + " distinct dots";
         this.summary.textContent = summary;
+    }
+
+    private reapplyColorMap() {
+        this.chart.selectAll(".heatMapCell")
+            .datum(function() {return this.dataset;})
+            .style("fill", d => this.colorMap.apply(d.val))
     }
 
     static invert(v: number, scale: AnyScale, kind: ContentsKind, allStrings: DistinctStrings): string {
