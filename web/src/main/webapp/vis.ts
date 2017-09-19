@@ -152,8 +152,7 @@ export class ColorLegend implements IHtmlElement {
         this.textIndicator = svg.append("text").attr("id", "text-indicator")
             .attr("x", "50%")
             .attr("y", "100%")
-            .attr("text-anchor", "middle")
-            .attr("alignment-baseline", "bottom");
+            .attr("text-anchor", "middle");
 
         let axis = this.getAxis();
         axisG.call(axis);
