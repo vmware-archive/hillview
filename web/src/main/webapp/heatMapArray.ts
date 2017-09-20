@@ -15,9 +15,11 @@
  *  limitations under the License.
  */
 
-import {Renderer} from "./rpc";
+import {Renderer, combineMenu, SelectedObject, CombineOperators} from "./rpc";
 import {Dialog} from "./dialog";
-import {TableView} from "./table";
+import {TopMenu, TopSubMenu} from "./menu";
+import {TableView, TableRenderer} from "./table";
+import {RecordOrder, ZipReceiver} from "./tableData";
 import {
     FullPage, Size, Resolution, IHtmlElement, ScrollBar, significantDigits, IScrollTarget,
     removeAllChildren
@@ -113,7 +115,6 @@ export class CompactHeatMapView {
             .attr("text-anchor", "middle")
             .attr("x", this.size.width / 2)
             .attr("y", Resolution.lineHeight)
-
 
         this.chart = this.g.append("g")
             .attr("transform", `translate(0, ${Resolution.lineHeight})`)
@@ -283,7 +284,7 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
     // Holds the state of which heatmap is hovered over.
     private mouseOverHeatMap: CompactHeatMapView;
 
-    constructor(remoteObjectId: string, page: FullPage, args: HeatMapArrayArgs) {
+    constructor(remoteObjectId: string, page: FullPage, args: HeatMapArrayArgs, private tableSchema: Schema) {
         super(remoteObjectId, page);
         this.args = args;
         this.offset = 0;
@@ -291,7 +292,16 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
             throw "Expected 3 columns";
 
         this.topLevel = document.createElement("div");
-        this.topLevel.classList.add("heatMapArrayView");
+        this.topLevel.classList.add("chart");
+
+        let menu = new TopMenu( [
+            { text: "View", subMenu: new TopSubMenu([
+                { text: "refresh", action: () => { this.refresh(); } },
+                { text: "swap axes", action: () => { this.swapAxes(); } },
+                { text: "table", action: () => { this.showTable(); } },
+            ]) }
+        ]);
+        this.topLevel.appendChild(menu.getHTMLRepresentation());
 
         let title = document.createElement("h2");
         title.textContent = `Heat maps by ${this.args.cds[2].name}`;
@@ -307,6 +317,7 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
 
         // Div containing the array and the scrollbar
         this.arrayAndScrollBar = document.createElement("div");
+        this.arrayAndScrollBar.classList.add("heatMapArray");
         this.topLevel.appendChild(this.arrayAndScrollBar);
 
         // Elements are added in this order so the scrollbars svg doesn't overlap
@@ -358,6 +369,37 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
 
     public refresh(): void {
         this.initiateHeatMaps();
+    }
+
+    public swapAxes() {
+        let xStats = this.args.xStats;
+        this.args.xStats = this.args.yStats;
+        this.args.yStats = xStats;
+        let cdX = this.args.cds[0];
+        this.args.cds[0] = this.args.cds[1];
+        this.args.cds[1] = cdX;
+        this.refresh();
+    }
+
+    public showTable() {
+        let table = new TableView(this.remoteObjectId, this.page);
+        table.setSchema(this.tableSchema);
+
+        let order =  new RecordOrder([ {
+            columnDescription: this.args.cds[0],
+            isAscending: true
+        }, {
+            columnDescription: this.args.cds[1],
+            isAscending: true
+        }, {
+            columnDescription: this.args.cds[2],
+            isAscending: true
+        }]);
+        let rr = table.createNextKRequest(order, null);
+        let page = new FullPage();
+        page.setDataView(table);
+        this.page.insertAfterMe(page);
+        rr.invoke(new TableRenderer(page, table, rr, false, order));
     }
 
     public scrolledTo(position: number): void {
@@ -605,7 +647,7 @@ export class HeatMapArrayDialog extends Dialog {
         let newPage = new FullPage();
         this.page.insertAfterMe(newPage);
 
-        let heatMapArrayView = new HeatMapArrayView(this.remoteObject.remoteObjectId, newPage, args);
+        let heatMapArrayView = new HeatMapArrayView(this.remoteObject.remoteObjectId, newPage, args, this.schema);
         newPage.setDataView(heatMapArrayView);
         let cont = (operation: ICancellable) => {
             args.uniqueStrings = CategoryCache.instance.getDistinctStrings(categCol.name);

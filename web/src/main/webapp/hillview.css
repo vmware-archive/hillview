@@ -34,6 +34,11 @@ body {
     outline: none;
 }
 
+.chart > h2 {
+    text-align: center;
+    margin: 5px;
+}
+
 h1 {
     margin: 5px;
 }
@@ -250,45 +255,16 @@ table.dropdown {
     display: none;
 }
 
-.heatMapArray div.array {
-    line-height: 0;
-    text-align: center;
-    margin: 0;
-}
-
-.heatMapArray div.array > svg {
-    display: inline-block;
-    margin: auto;
-    border: 1px solid black;
-}
-
-.heatMapArrayView {
-    width: 100%;
-    margin: 0px 0px 50px 0px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-}
-
-.heatMapArrayView > div {
+.heatMapArray {
     display: flex;
     flex-direction: row-reverse;
-    justify-content: flex-end;
+    justify-content: center;
     align-items: stretch;
+    text-align: center;
 }
 
-.heatMapArrayView > h2 {
-    margin: 2px;
-}
-
-.heatMapArrayView > svg {
-    margin: 0px 10px 10px 10px;
+.heatMapArray > svg {
     display: inline;
-    overflow: visible;
-}
-
-.heatMapArrayView > div > svg {
     overflow: visible;
 }
 
