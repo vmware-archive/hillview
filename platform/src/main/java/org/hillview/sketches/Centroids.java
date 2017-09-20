@@ -20,14 +20,14 @@ public class Centroids<T> implements Serializable {
      * is an array of doubles, where the i'th element is the sum of the non-missing values encountered in the i'th
      * column, for rows partitioned to the partition specified by the key.
      */
-    public HashMap<T, double[]> sums;
+    public final HashMap<T, double[]> sums;
     /**
      * Map from the partition key to the count of values in every column of that partition.
      * Every value is an array of longs, where the i'th element is the number of non-missing values encountered in
      * the i'th column, for rows partitioned to the partition specified by the key. As we divide by the count to
      * compute the final centroid, this means that the missing values do not contribute to the centroids.
      */
-    public HashMap<T, long[]> counts;
+    public final HashMap<T, long[]> counts;
 
     /**
      * Constructs a zero-centroids.

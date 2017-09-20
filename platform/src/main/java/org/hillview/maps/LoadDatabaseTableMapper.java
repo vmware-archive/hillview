@@ -31,7 +31,7 @@ public class LoadDatabaseTableMapper implements IMap<Empty, ITable> {
             ITable result = JdbcDatabase.getTable(rs);
             db.disconnect();
             return result;
-        } catch (SQLException|MalformedURLException e) {
+        } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }

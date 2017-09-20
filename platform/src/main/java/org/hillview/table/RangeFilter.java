@@ -1,7 +1,6 @@
 package org.hillview.table;
 
 import org.hillview.table.api.ColumnAndConverter;
-import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IStringConverter;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;

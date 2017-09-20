@@ -18,7 +18,6 @@
 
 package org.hillview.table;
 
-import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IDoubleColumn;
 
 import javax.annotation.Nullable;
@@ -33,7 +32,6 @@ public class DoubleListColumn
 
     public DoubleListColumn(final ColumnDescription desc) {
         super(desc);
-        this.checkKind(ContentsKind.Double);
         this.segments = new ArrayList<double []>();
     }
 

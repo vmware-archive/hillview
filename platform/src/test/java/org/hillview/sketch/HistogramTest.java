@@ -37,7 +37,7 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 
 public class HistogramTest {
-    long time(Runnable runnable) throws Exception {
+    long time(Runnable runnable) {
         //System.gc();
         long start = System.currentTimeMillis();
         runnable.run();
@@ -49,8 +49,7 @@ public class HistogramTest {
         return String.format("%.2f", d);
     }
 
-    void runNTimes(Runnable runnable, int count, String message, int elemCount) throws
-            Exception {
+    void runNTimes(Runnable runnable, int count, String message, int elemCount) {
         long[] times = new long[count];
         for (int i=0; i < count; i++) {
             long t = time(runnable);

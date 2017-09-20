@@ -73,14 +73,12 @@ public interface IDoubleColumn extends IColumn {
             case String:
                 this.convert(newColumn, set, row -> Double.toString(this.getDouble(row)));
                 break;
-            case Integer: {
+            case Integer:
                 this.convert(newColumn, set, row -> (int)this.getDouble(row));
                 break;
-            }
-            case Double: {
+            case Double:
                 this.convert(newColumn, set, this::getDouble);
                 break;
-            }
             case Date:
             case Duration:
                 throw new UnsupportedOperationException("Conversion from " + this.getKind()

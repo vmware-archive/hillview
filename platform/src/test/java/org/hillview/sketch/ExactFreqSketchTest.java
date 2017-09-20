@@ -8,6 +8,7 @@ import org.hillview.table.RowSnapshot;
 import org.hillview.table.SmallTable;
 import org.hillview.table.Table;
 import org.hillview.table.api.ITable;
+import org.hillview.utils.Converters;
 import org.hillview.utils.TestTables;
 import org.junit.Test;
 
@@ -27,8 +28,10 @@ public class ExactFreqSketchTest {
         FreqKList exactList = ef.create(table);
         int size = 10;
         Pair<List<RowSnapshot>, List<Integer>> pair = exactList.getTop(size);
-        for (int i =1; i < pair.first.size(); i++)
-            assertTrue(pair.second.get(i-1) >= pair.second.get(i));
+        for (int i = 1; i < Converters.checkNull(pair.first).size(); i++) {
+            Converters.checkNull(pair.second);
+            assertTrue(pair.second.get(i - 1) >= pair.second.get(i));
+        }
         exactList.filter();
         exactList.getList().forEach(rss ->
                 assertTrue(exactList.hMap.get(rss) >= fkList.totalRows/fkList.maxSize ));

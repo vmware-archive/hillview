@@ -4,7 +4,6 @@ import org.hillview.table.*;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
-import java.net.MalformedURLException;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -23,7 +22,7 @@ public class JdbcDatabase {
         this.connection = null;
     }
 
-    public void connect() throws SQLException, MalformedURLException {
+    public void connect() throws SQLException {
         String url = this.connInfo.getURL();
         System.out.println("Server url=" + url);
         this.connection = DriverManager.getConnection(

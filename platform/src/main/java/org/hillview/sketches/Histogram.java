@@ -111,8 +111,13 @@ public class Histogram implements Serializable {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-        for (int i=0; i < this.buckets.length; i++)
-            builder.append("[" + i + "]=" + this.buckets[i] + " ");
+        for (int i=0; i < this.buckets.length; i++) {
+            builder.append("[");
+            builder.append(i);
+            builder.append("]=");
+            builder.append(this.buckets[i]);
+            builder.append(" ");
+        }
         return builder.toString();
     }
 }
