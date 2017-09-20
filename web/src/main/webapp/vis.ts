@@ -1,6 +1,7 @@
 import d3 = require("d3");
 import {Size, IElement, IHtmlElement, significantDigits, Resolution} from "./ui";
 import {ContextMenu} from "./menu";
+import {Point} from "./ui";
 
 export class ColorMap {
     public static logThreshold = 50; /* Suggested threshold for when a log-scale should be used. */
@@ -72,11 +73,15 @@ export class ColorLegend implements IHtmlElement {
             }
         ])
         this.topLevel.appendChild(this.contextMenu.getHTMLRepresentation());
-        this.topLevel.oncontextmenu = e => {
-            e.preventDefault();
-            this.contextMenu.move(e.pageX - 1, e.pageY - 1);
+    }
+
+    private showContextMenu(pos: Point) {
+        /* Only show context menu if it is enabled. */
+        if (this.contextMenu != null){
+            d3.event.preventDefault();
+            this.contextMenu.move(pos.x - 1, pos.y - 1);
             this.contextMenu.show();
-        };
+        }
     }
 
     // Set a new (base) color map. Needs to redefine the gradient.
@@ -139,12 +144,16 @@ export class ColorLegend implements IHtmlElement {
                 .attr("stop-color", this.colorMap.map(i / 100))
                 .attr("stop-opacity", 1)
 
-        svg.append("rect")
+        let bar = svg.append("rect")
             .attr("x", 0)
             .attr("y", 0)
             .attr("width", this.size.width)
             .attr("height", this.barHeight)
             .style("fill", "url(#gradient)");
+        bar.on("contextmenu", () => {
+            let pos = {x: d3.event.pageX, y: d3.event.pageY};
+            this.showContextMenu(pos);
+        });
 
         let axisG = svg.append("g")
             .attr("transform", `translate(0, ${this.barHeight})`);
