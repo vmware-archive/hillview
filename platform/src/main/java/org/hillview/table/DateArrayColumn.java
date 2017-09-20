@@ -18,9 +18,9 @@
 
 package org.hillview.table;
 
-import org.hillview.table.api.ContentsKind;
-import org.hillview.table.api.IDateColumn;
-import org.hillview.table.api.IMutableColumn;
+import net.openhft.hashing.LongHashFunction;
+import org.hillview.table.api.*;
+import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
@@ -28,33 +28,25 @@ import java.time.LocalDateTime;
 /*
  * Column of dates, implemented as an array of dates and a BitSet of missing values
  */
+@SuppressWarnings("EmptyMethod")
 public final class DateArrayColumn
-        extends BaseArrayColumn
+        extends DoubleArrayColumn
         implements IDateColumn, IMutableColumn {
-    private final LocalDateTime[] data;
-
     public DateArrayColumn(final ColumnDescription description, final int size) {
         super(description, size);
         this.checkKind(ContentsKind.Date);
-        this.data = new LocalDateTime[size];
     }
 
     public DateArrayColumn(final ColumnDescription description,
                            final LocalDateTime[] data) {
         super(description, data.length);
         this.checkKind(ContentsKind.Date);
-        this.data = data;
-    }
-
-    @Override
-    public int sizeInRows() {
-        return this.data.length;
     }
 
     @Nullable
     @Override
     public LocalDateTime getDate(final int rowIndex) {
-        return this.data[rowIndex];
+        return Converters.toDate(this.getDouble(rowIndex));
     }
 
     @Override
@@ -63,12 +55,37 @@ public final class DateArrayColumn
     }
 
     public void set(final int rowIndex, @Nullable final LocalDateTime value) {
-        this.data[rowIndex] = value;
+        if (value == null)
+            this.setMissing(rowIndex);
+        else
+            this.set(rowIndex, Converters.toDouble(value));
     }
 
     @Override
-    public boolean isMissing(final int rowIndex) { return this.getDate(rowIndex) == null; }
+    public double asDouble(int rowIndex, @Nullable IStringConverter unused) {
+        return super.getDouble(rowIndex);
+    }
+
+    @Nullable
+    @Override
+    public String asString(int rowIndex) {
+        if (this.isMissing(rowIndex))
+            return null;
+        return this.getDate(rowIndex).toString();
+    }
 
     @Override
-    public void setMissing(final int rowIndex) { this.set(rowIndex, (LocalDateTime)null);}
+    public IndexComparator getComparator() {
+        return super.getComparator();
+    }
+
+    @Override
+    public long hashCode64(int rowIndex, LongHashFunction hash) {
+        return super.hashCode64(rowIndex, hash);
+    }
+
+    @Override
+    public IColumn convertKind(ContentsKind kind, String newColName, IMembershipSet set) {
+        return IDateColumn.super.convertKind(kind, newColName, set);
+    }
 }

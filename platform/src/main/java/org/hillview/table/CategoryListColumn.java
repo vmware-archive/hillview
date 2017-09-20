@@ -23,7 +23,6 @@ import org.hillview.table.api.ICategoryColumn;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.function.Consumer;
 
 /**

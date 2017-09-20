@@ -91,6 +91,10 @@ public interface IColumn extends Serializable {
     @Nullable
     String asString(int rowIndex);
 
+    /**
+     * @return A comparator which compares two rowIndexes according to the contents
+     * of these rowIndexes in the column.
+     */
     IndexComparator getComparator();
 
     /**
@@ -140,14 +144,14 @@ public interface IColumn extends Serializable {
     }
 
     default <T> void convert(IMutableColumn dest, IMembershipSet set,
-                             Function<Integer, T> conv) {
+                             Function<Integer, T> converter) {
         IRowIterator it = set.getIterator();
         int rowIndex = it.getNextRow();
         while (rowIndex >= 0) {
             if (this.isMissing(rowIndex)) {
                 dest.setMissing(rowIndex);
             } else {
-                T result = conv.apply(rowIndex);
+                T result = converter.apply(rowIndex);
                 dest.set(rowIndex, result);
             }
             rowIndex = it.getNextRow();

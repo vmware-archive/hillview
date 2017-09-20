@@ -13,7 +13,7 @@ public class JdbcConnectionInformation implements Serializable {
     public final int port;
     public final String user;
     public final String password;
-    public final String dbkind;
+    public final String databaseKind;
 
     public JdbcConnectionInformation(String host, String database, String user, String password) {
         this.host = host;
@@ -21,14 +21,14 @@ public class JdbcConnectionInformation implements Serializable {
         this.database = database;
         this.password = password;
         this.port = 3306;
-        this.dbkind = "mysql";
+        this.databaseKind = "mysql";
     }
 
     public String getURL() {
         URIBuilder builder = new URIBuilder();
         builder.setHost(this.host);
         builder.setPort(this.port);
-        builder.setScheme("jdbc:" + this.dbkind);
+        builder.setScheme("jdbc:" + this.databaseKind);
         builder.setPath(this.database);
         builder.addParameter("useSSL", "false");
         builder.addParameter("serverTimeZone", "PDT");

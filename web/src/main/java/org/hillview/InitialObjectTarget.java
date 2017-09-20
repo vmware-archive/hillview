@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+// This file is full of temporary code; it should be cleaned-up.
 public class InitialObjectTarget extends RpcTarget {
     private static final String LOCALHOST = "127.0.0.1";
     private static final String ENV_VARIABLE = "WEB_CLUSTER_DESCRIPTOR";

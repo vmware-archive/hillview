@@ -34,7 +34,7 @@ public class ExactFreqSketch implements ISketch<ITable, FreqKList> {
      * The K in top top-K. Is used as a threshold to eliminate items that do not occur with
      * frequency 1/K.
      */
-    private int maxSize;
+    private final int maxSize;
 
     public ExactFreqSketch(Schema schema, FreqKList fk) {
         this.schema = schema;

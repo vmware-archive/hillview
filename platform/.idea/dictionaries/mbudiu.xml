@@ -3,16 +3,19 @@
     <words>
       <w>blas</w>
       <w>classname</w>
+      <w>dest</w>
       <w>eigen</w>
       <w>eigenvector</w>
       <w>eigenvectors</w>
       <w>grpc</w>
       <w>gson</w>
+      <w>hashmap</w>
       <w>hillview</w>
       <w>idempotence</w>
       <w>iter</w>
       <w>iterable</w>
       <w>jblas</w>
+      <w>jdbc</w>
       <w>ltest</w>
       <w>memoized</w>
       <w>mnist</w>

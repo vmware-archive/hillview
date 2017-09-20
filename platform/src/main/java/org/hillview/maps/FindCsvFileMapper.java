@@ -32,7 +32,7 @@ public class FindCsvFileMapper implements IMap<Empty, List<CsvFileObject>> {
      * Create an object to find and create CsvFileObjects.
      * @param folder   Folder where files are sought.
      * @param maxCount Maximum number of files to find.  If 0 there is no limit.
-     * @param fileNamePattern  Regex for file names to search.  If null all filenames match.
+     * @param fileNamePattern  Regex for file names to search.  If null all file names match.
      * @param schemaFileName   Name of schema file to search.  If null no schema is provided.
      */
     public FindCsvFileMapper(String folder, int maxCount,

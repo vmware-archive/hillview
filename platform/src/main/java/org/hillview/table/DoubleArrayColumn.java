@@ -27,14 +27,13 @@ import javax.annotation.Nullable;
 /**
  * Column of doubles, implemented as an array of doubles and a BitSet of missing values.
  */
-public final class DoubleArrayColumn
+public class DoubleArrayColumn
         extends BaseArrayColumn
         implements IDoubleColumn, IMutableColumn {
     private final double[] data;
 
     public DoubleArrayColumn(final ColumnDescription description, final int size) {
         super(description, size);
-        this.checkKind(ContentsKind.Double);
         this.data = new double[size];
     }
 

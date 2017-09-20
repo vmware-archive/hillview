@@ -18,65 +18,46 @@
 
 package org.hillview.table;
 
-import org.hillview.table.api.ContentsKind;
-import org.hillview.table.api.IDateColumn;
+import net.openhft.hashing.LongHashFunction;
+import org.hillview.table.api.*;
+import org.hillview.utils.Converters;
 import org.hillview.utils.DateParsing;
 
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 
 /**
  * A column of Dates that can grow in size.
  */
+@SuppressWarnings("EmptyMethod")
 public class DateListColumn
-        extends BaseListColumn
+        extends DoubleListColumn
         implements IDateColumn {
-    private final ArrayList<LocalDateTime[]> segments;
-
     @Nullable
     DateParsing dateParser;
 
     public DateListColumn(final ColumnDescription desc) {
         super(desc);
         this.checkKind(ContentsKind.Date);
-        this.segments = new ArrayList<LocalDateTime[]>();
         this.dateParser = null;
     }
 
     @Nullable
     @Override
     public LocalDateTime getDate(final int rowIndex) {
-        final int segmentId = rowIndex >> this.LogSegmentSize;
-        final int localIndex = rowIndex & this.SegmentMask;
-        return this.segments.get(segmentId)[localIndex];
-    }
-
-    @Override
-    void grow() {
-        this.segments.add(new LocalDateTime[this.SegmentSize]);
-        this.growMissing();
+        double d = this.getDouble(rowIndex);
+        return Converters.toDate(d);
     }
 
     @Override
     @SuppressWarnings("Duplicates")
     public void append(@Nullable final LocalDateTime value) {
-        final int segmentId = this.size >> this.LogSegmentSize;
-        final int localIndex = this.size & this.SegmentMask;
-        if (this.segments.size() <= segmentId)
-            this.grow();
-        this.segments.get(segmentId)[localIndex] = value;
-        this.size++;
-    }
-
-    @Override
-    public boolean isMissing(final int rowIndex) {
-        return this.getDate(rowIndex) == null;
-    }
-
-    @Override
-    public void appendMissing() {
-        this.append((LocalDateTime)null);
+        if (value == null) {
+            this.appendMissing();
+        } else {
+            double d = Converters.toDouble(value);
+            this.append(d);
+        }
     }
 
     @Override
@@ -90,6 +71,35 @@ public class DateListColumn
             LocalDateTime dt = this.dateParser.parse(s);
             this.append(dt);
         }
+    }
+
+    @Override
+    public double asDouble(int rowIndex, @Nullable IStringConverter unused) {
+        return this.getDouble(rowIndex);
+    }
+
+    @Nullable
+    @Override
+    public String asString(int rowIndex) {
+        LocalDateTime dt = this.getDate(rowIndex);
+        if (dt == null)
+            return null;
+        return dt.toString();
+    }
+
+    @Override
+    public IndexComparator getComparator() {
+        return super.getComparator();
+    }
+
+    @Override
+    public long hashCode64(int rowIndex, LongHashFunction hash) {
+        return super.hashCode64(rowIndex, hash);
+    }
+
+    @Override
+    public IColumn convertKind(ContentsKind kind, String newColName, IMembershipSet set) {
+        return IDateColumn.super.convertKind(kind, newColName, set);
     }
 }
 

@@ -112,10 +112,10 @@ export class HeatMapView extends RemoteTableObjectView {
         this.topLevel.tabIndex = 1;
 
         this.colorMap = new ColorMap();
-        this.colorLegend = new ColorLegend(this.colorMap)
+        this.colorLegend = new ColorLegend(this.colorMap);
         this.colorLegend.setColorMapChangeEventListener(() => {
             this.reapplyColorMap();
-        })
+        });
         this.topLevel.appendChild(this.colorLegend.getHTMLRepresentation());
 
         this.chartDiv = document.createElement("div");
@@ -317,9 +317,9 @@ export class HeatMapView extends RemoteTableObjectView {
         this.colorMap.min = 1;
         this.colorMap.max = max;
         if (max > ColorMap.logThreshold)
-            this.colorMap.setLogScale(true)
+            this.colorMap.setLogScale(true);
         else
-            this.colorMap.setLogScale(false)
+            this.colorMap.setLogScale(false);
 
         this.chart.selectAll()
             .data(dots)

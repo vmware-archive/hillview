@@ -11,8 +11,8 @@ import java.util.HashMap;
 
 public class SparseColumn extends BaseColumn
         implements IMutableColumn, IStringColumn, IDoubleColumn, IIntColumn, IDateColumn, IDurationColumn {
-    protected HashMap<Integer, Object> data;
-    int size;
+    protected final HashMap<Integer, Object> data;
+    final int size;
 
     public SparseColumn(ColumnDescription desc, int size) {
         super(desc);
