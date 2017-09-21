@@ -6,8 +6,6 @@ to run commands on the servers. Before you run these commands, make sure you've 
 both `platform` and `web` projects. We assume there is a user named 'hillview' on the
 servers in the following commands.
 
-The servers also require `java` to be installed.
-
 ```
 $: cd deployment
 ```
@@ -35,6 +33,12 @@ Verify that ansible is able to run commands on these servers:
 
 ```
 $: ansible all -a "ls" -i hosts -u hillview
+```
+
+To install Java on all servers (only needed once):
+
+```
+$: ansible-playbook install-java.yaml -i hosts -u hillview
 ```
 
 Next, run the following command to prepare both kinds of servers:

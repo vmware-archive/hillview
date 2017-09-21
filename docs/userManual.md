@@ -129,26 +129,54 @@ sorted as follows:
 Initially a table view displays no columns.  The user can choose which
 columns are displayed or hidden.
 
-The first two columns in the table are special: they do not show data,
-but they show information about the displayed data.
+In the tabular display a visible row can correspond to multiple rows
+in the original dataset.  For example, in this figure, the first
+displayed row corresponds to 104,840 different rows in the dataset.
+Otherwise said, if one ignores all columns except the 3 visible ones,
+there are 104,840 rows that have these exact values in the chosen 3
+columns (AA/SFO/0).  This is displayed in the first two columns of the
+table:
 
 ![Position information columns](table-position.png)
 
 The first column, labeled (position) indicates with a horizontal
-scroll-bar where in the sorted order the current row resides.  In this
-figure the first row is at the beginning of the sorted order (the dark
-bar is at the very left).  The second column, labeled (count)
-indicates how many instances of this row are present in the dataset.
-In this example there are 104,840 instances of this row.  The
-scroll-bar also indicates what percentage of the whole dataset is
-covered by this row; in this case we can see that this is about 9% of
-the data.
+scroll-bar where in the sorted order the current displayed row
+resides.  In this figure the first row is at the beginning of the
+sorted order (the dark bar is at the very left).  The second column,
+labeled (count) indicates how many row in the dataset correspond to
+the displayed row.  The scroll-bar also indicates what percentage of
+the whole dataset is covered by this row; in this case we can see that
+this row covers about 9% of the data.  You can see that, although the
+table only has 20 rows, it actually displays information for 292,241
+rows in the original dataset, or 24% of the data!
 
 #### Scrolling
 
+Because each displayed row summarizes information from multiple rows,
+scrolling through a Hillview table is somewhat different from the
+standard scrolling.  The scroll-bar image and interaction reflect
+these differences.  The following image is a blow-up of the scroll bar
+of the table above.
+
 ![Scrollbar](scrollbar.png)
 
-*TODO*
+The "visible region" of the scroll-bar size depicts the amount of
+information displayed.  In the previous figure the visible region is
+about 1/4 of the scroll-bar, this indicates that the data displayed
+covers 1/4 of the rows in the dataset.
+
+The scroll-bar can be moved using the keyboard (page up, page down,
+home and end), or dragged using the mouse.  When moving the scroll-bar
+the size of teh "visible region" can change, sometimes dramatically,
+depending on the distribution of the values in the visible columns.
+
+To drag the scroll-bar with the mouse one has to grab the narrow
+scroll-bar handle which is at the middle of the visible region.
+Dragging the scroll-bar allows the user to specify a *quantile* in the
+sorted data-set.  For example, if the user drags the handle to the
+middle of the scroll-bar, this indicates that the user wants to know
+the rows around the *median* of the distribution.  Hillview will bring
+into view a set of rows that includes the requested quantile.
 
 #### Selecting columns
 

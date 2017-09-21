@@ -27,7 +27,7 @@ import java.io.Serializable;
  * @param <T> Input data type.
  * @param <R> Output data type.
  */
-public interface ISketch<T, R> extends Serializable, IMonoid<R> {
+public interface ISketch<T, R> extends IDataSetComputation, IMonoid<R> {
     /**
      * Sketch computation on some dataset T.
      * @param data  Data to sketch.

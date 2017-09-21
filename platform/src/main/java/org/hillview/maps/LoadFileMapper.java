@@ -6,7 +6,6 @@ import org.hillview.utils.CsvFileObject;
 
 import java.io.IOException;
 
-
 public class LoadFileMapper implements IMap<CsvFileObject, ITable> {
     @Override
     public ITable apply(CsvFileObject csvFileObject) {

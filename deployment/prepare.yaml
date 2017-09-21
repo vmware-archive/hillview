@@ -2,9 +2,14 @@
 # Sets up the backend servers by copying over the hillview server jars
 - hosts: backends
   tasks:
-    - name: Create directory
+    - name: Create code directory
       file:
           path: hillview
+          state: directory
+          mode: 0755
+    - name: Create data directory
+      file:
+          path: data
           state: directory
           mode: 0755
     - name: Copy files
@@ -20,20 +25,19 @@
       include_vars: config.yaml
 
     - stat:
-        path: apache-tomcat-8.5.8
+         path: apache-tomcat-8.5.8
       register: p
 
     - name: Download Tomcat
       shell: wget http://archive.apache.org/dist/tomcat/tomcat-8/v8.5.8/bin/apache-tomcat-8.5.8.tar.gz
-      when: p.stat.isdir is not defined and p.stat.isdir == False
+      when: p.stat.isdir is not defined or p.stat.isdir == False
 
     - name: Untar Tomcat
       shell: tar -xzvf apache-tomcat-8.5.8.tar.gz; rm -rf apache-tomcat-8.5.8.tar.gz;
-      when: p.stat.isdir is not defined and p.stat.isdir == False
+      when: p.stat.isdir is not defined or p.stat.isdir == False
 
     - name: Remove previous ROOT and ROOT.war
       shell: rm -rf apache-tomcat-8.5.8/webapps/ROOT; rm -rf apache-tomcat-8.5.8/webapps/ROOT.war
-      when: p.stat.isdir is not defined and p.stat.isdir == False
 
     - name: Copy files
       copy: src={{ item.src }} dest={{ item.dest }}
@@ -43,7 +47,7 @@
       copy:
         content: ""
         dest: ~/serverlist
-        force: no
+        force: yes
         mode: 0755
 
     - name: Create backend file list
