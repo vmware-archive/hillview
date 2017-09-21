@@ -68,7 +68,7 @@ interface HLogLog {
     distinctItemCount: number
 }
 
-class HLogLogReceiver extends Renderer<HLogLog> {
+export class HLogLogReceiver extends Renderer<HLogLog> {
     private data: HLogLog;
 
     constructor(page: FullPage, operation: ICancellable, name: string, private next: (number) => void) {

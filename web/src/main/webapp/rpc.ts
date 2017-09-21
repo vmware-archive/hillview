@@ -54,7 +54,7 @@ export class RemoteObject {
 // A streaming RPC request: for each request made
 // we expect a stream of replies.  The requests are made
 // over web sockets.  When the last reply has been received
-// the web socked is closed.
+// the web socket is closed.
 export class RpcRequest implements ICancellable {
     readonly protoVersion : number = 6;
     readonly requestId: number;
