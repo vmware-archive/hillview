@@ -308,11 +308,7 @@ public final class TableTarget extends RpcTarget {
     }
 
     private TopList getLists(FreqKList fkList, Schema schema) {
-        System.out.printf("Original size: %d\n", fkList.getList().size());
-        System.out.printf("Table size: %d, Buckets %d, Cutoff %f\n", fkList.totalRows,
-                fkList.maxSize, (double)fkList.totalRows/fkList.maxSize);
         fkList.filter();
-        System.out.printf("Filtered size: %d", fkList.getList().size());
         Pair<List<RowSnapshot>, List<Integer>> pair = fkList.getTop();
         TopList tl = new TopList();
         SmallTable tbl = new SmallTable(schema, Converters.checkNull(pair.first));
