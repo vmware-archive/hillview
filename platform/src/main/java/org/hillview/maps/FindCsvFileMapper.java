@@ -74,9 +74,6 @@ public class FindCsvFileMapper implements IMap<Empty, List<CsvFileObject>> {
                     CsvFileObject cfo = new CsvFileObject(f, schemaPath);
                     result.add(cfo);
                 });
-
-        if (result.size() == 0)
-            throw new RuntimeException("No such files");
         return result;
     }
 }

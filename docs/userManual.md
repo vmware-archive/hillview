@@ -84,7 +84,6 @@ Hillview supports reading data from multiple data-sources.
 The final UI for loading datasets is not yet implemented.  Currently
 this UI consists in some buttons that load pre-defined datasets.
 
-
 #### Reading CSV files
 
 Hillview can read data from comma- or tab-separated files.
@@ -215,9 +214,9 @@ the current state of the display.
 * Sort descending: The selected columns will be moved to the front of
   the sort order in descending order.
 
-* Heat map: this option requires exactly two columns of suitable types
-  to be selected; in this case, it will draw a heatmap plot of the
-  data in these two columns.  For Heatmaps see [Heat-map
+* Heat map: this option requires exactly two or three columns of
+  suitable types to be selected; in this case, it will draw a heatmap
+  plot of the data in these columns.  For Heatmaps see [Heat-map
   views](#heat-map-views).
 
 * Histogram: this option requires exactly one or two columns of
@@ -303,8 +302,6 @@ the current state of the display.
 ![View menu](heatmap-view-menu.png)
 
 *TODO*
-
-### Arrays of heat-map views
 
 ![An array of heatmap views](hillview-heatmap-array.png)
 

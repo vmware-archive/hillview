@@ -1,24 +1,52 @@
-## Deploying Hillview
+# Deploying Hillview
 
-The following steps require `ansible` to be installed on the host running the following
-commands, as well as the servers you are trying to deploy to. Ansible must be able
-to run commands on the servers. Before you run these commands, make sure you've built
-both `platform` and `web` projects. We assume there is a user named 'hillview' on the
-servers in the following commands.
+The Hillview service architecture is shown in the following figure:
+
+![System architecture](../docs/system-architecture.png)
+
+This documentation describes how the Hillview service can be deployed.
+These tools require `ansible` to be installed on the host running the
+following commands, as well as the servers you are trying to deploy
+to.  Ansible must be able to run commands on the servers.
+
+Before you run these commands, make sure you've built both `platform`
+and `web` projects.  The deployment scripts are in the `deployment`
+folder:
 
 ```
 $: cd deployment
 ```
 
+## Service configuration
+
+### Service parameters
+
 The fixed configuration of the Hillview service is obtained from the
-file `config.yaml`.  Currently this file only stores the service port.
+file `config.yaml`.  Currently this file stores the service port for
+the Hillview service and the Java heap size.
 
-A deployment of the service is described by a file named `hosts`;
-create this file and populate it with the hostnames or IP addresses of
-the servers. You need two groups of servers: 1) a `web` group with one
-server, and 2) a `backends` group with all the backend servers. For
-instance:
+Here is an example config.yaml file:
 
+```
+---
+# Hillview service parameters
+  # Network port where the servers listen for requests
+  backend_port: 3569
+  # Java heap size for Hillview service
+  heap_size: "5000m"
+  # Folder where the hillview service is installed on remote machines
+  service_folder: "~"
+  # Version of Apache Tomcat to deploy
+  tomcat_version: "8.5.8"
+  # Tomcat installation folder name
+  tomcat: "apache-tomcat-{{ tomcat_version }}"
+```
+
+### Service machines
+
+The cluster where the Hillview service is deployed is described by a
+file containing the list of machines where the service should be
+deployed.  Here is an example of such a file:
 
 ```
 [web]
@@ -29,7 +57,22 @@ instance:
 192.168.1.4
 ```
 
-Verify that ansible is able to run commands on these servers:
+The `web` group describes the front-end web server.
+
+The `backends` group lists all machines running the `hillview` service.
+
+### Service permissions
+
+In this file we assume that the Hillview service runs under a user
+account named `hillview`.  No special privileges are needed to run the
+Hillview service.
+
+## Deploying the service
+
+In the following commands we assume that the file describing the list
+of machines is named `hosts`.
+
+You can verify that ansible is able to authorized commands on these servers:
 
 ```
 $: ansible all -a "ls" -i hosts -u hillview
@@ -41,13 +84,13 @@ To install Java on all servers (only needed once):
 $: ansible-playbook install-java.yaml -i hosts -u hillview
 ```
 
-Next, run the following command to prepare both kinds of servers:
+The following command installs the software on the machines:
 
 ```
 $: ansible-playbook prepare.yaml -i hosts -u hillview
 ```
 
-Next, start the services with:
+The service is started by running the following command:
 
 ```
 $: ansible-playbook start.yaml -i hosts -u hillview
@@ -56,7 +99,7 @@ $: ansible-playbook start.yaml -i hosts -u hillview
 To verify if the services are up and running, open
 `http://<ip-address-of-web-node>:8080` in your web browser.
 
-Stop all services with:
+To stop the services you can run:
 
 ```
 $: ansible-playbook stop.yaml -i hosts -u hillview
