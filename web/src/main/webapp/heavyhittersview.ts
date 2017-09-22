@@ -176,7 +176,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
         for (let j = 0; j < this.schema.length; j++) {
             let cell = trow.insertCell(j+1);
             cell.style.textAlign = "right";
-            cell.textContent = "everything else";
+            cell.textContent = "Everything Else";
             cell.classList.add("missingData");
         }
         let cell1 = trow.insertCell(this.schema.length + 1);
