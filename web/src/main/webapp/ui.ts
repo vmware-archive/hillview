@@ -37,6 +37,10 @@ export enum KeyCodes {
     home = 36
 }
 
+export class SpecialChars {
+    public static approx = "\u2248";
+}
+
 export interface Size {
     width: number;
     height: number;
@@ -546,7 +550,7 @@ export class Resolution {
     static readonly tableRowsOnScreen = 20; // table rows displayed
     static readonly lineHeight = 20;      // Height of a line of text drawn in svg (including reasonable margin).
     static readonly legendSize: Size = {width: 500, height: 50} // Default legend size in px.
-    
+
     // Everything is drawn on top of the canvas.
     // The canvas includes a chart plus margins.
     public static getCanvasSize(page: FullPage): Size {
