@@ -48,9 +48,9 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
 
     /**
      * The add procedure as specified by Agarwal et al. (Mergeable Summaries, TODS).
-     * @param left The first MG sketch.
-     * @param right The second MG sketch.
-     * @return The merged sketch, where we first add the frequency vectors, and then subtract the
+     * @param left The first MG test.
+     * @param right The second MG test.
+     * @return The merged test, where we first add the frequency vectors, and then subtract the
      * (k+1)^th frequency from the top k. This guarantees a strong error bound.
      */
     @SuppressWarnings("ConstantConditions")
@@ -80,8 +80,8 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
     }
 
     /**
-     * Creates the MG sketch, by the Misra-Gries algorithm.
-     * @param data  Data to sketch.
+     * Creates the MG test, by the Misra-Gries algorithm.
+     * @param data  Data to test.
      * @return A FreqKList.
      */
     @Override

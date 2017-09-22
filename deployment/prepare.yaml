@@ -25,6 +25,7 @@
         path: "{{service_folder}}/data"
         state: directory
         mode: 0755
+
     - name: Copy files
       copy: src={{item.src}} dest={{item.dest}}
       with_items:
@@ -63,7 +64,7 @@
         path: "{{service_folder}}//{{tomcat}}/webapps/ROOT"
         state: absent
 
-    - name: Remov previous ROOT.war
+    - name: Remove previous ROOT.war
       file:
         path: "{{service_folder}}/{{tomcat}}/webapps/ROOT.war"
         state: absent

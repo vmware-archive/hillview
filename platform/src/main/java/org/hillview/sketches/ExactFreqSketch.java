@@ -16,7 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 
 /**
- * This sketch computes the true frequencies of a list of rowSnapshots in a data set. It can
+ * This test computes the true frequencies of a list of rowSnapshots in a data set. It can
  * be used right after the FreqKSketch which computes the list of heavy hitters, to compute their
  * exact frequencies.
  */

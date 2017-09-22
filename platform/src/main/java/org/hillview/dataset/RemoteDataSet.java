@@ -30,12 +30,14 @@ import org.hillview.pb.HillviewServerGrpc;
 import org.hillview.pb.PartialResponse;
 import org.hillview.remoting.*;
 import org.hillview.utils.Converters;
+import org.hillview.utils.HillviewLogManager;
 import rx.Observable;
 import rx.subjects.PublishSubject;
 
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 
 import static org.hillview.remoting.HillviewServer.DEFAULT_IDS_INDEX;
 
@@ -177,16 +179,13 @@ public class RemoteDataSet<T> implements IDataSet<T> {
         this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
                  .unsubscribe(command, new StreamObserver<Ack>() {
             @Override
-            public void onNext(final Ack ack) {
-            }
+            public void onNext(final Ack ack) {}
 
             @Override
-            public void onError(final Throwable throwable) {
-            }
+            public void onError(final Throwable throwable) {}
 
             @Override
-            public void onCompleted() {
-            }
+            public void onCompleted() {}
         });
     }
 
@@ -208,6 +207,8 @@ public class RemoteDataSet<T> implements IDataSet<T> {
 
         @Override
         public void onError(final Throwable throwable) {
+            HillviewLogManager.instance.logger.log(
+                    Level.SEVERE, "OperationObserver onError", throwable);
             throwable.printStackTrace();
             this.subject.onError(throwable);
         }
@@ -240,7 +241,7 @@ public class RemoteDataSet<T> implements IDataSet<T> {
     }
 
     /**
-     * StreamObserver used by sketch() implementation above.
+     * StreamObserver used by test() implementation above.
      */
     private static class SketchObserver<S> extends OperationObserver<PartialResult<S>> {
         public SketchObserver(final PublishSubject<PartialResult<S>> subject) {

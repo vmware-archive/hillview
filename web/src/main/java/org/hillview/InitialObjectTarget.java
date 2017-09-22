@@ -46,6 +46,7 @@ import java.util.stream.Collectors;
 // This file is full of temporary code; it should be cleaned-up.
 public class InitialObjectTarget extends RpcTarget {
     private static final String LOCALHOST = "127.0.0.1";
+    private static final String initialObjectId = "0";
     private static final String ENV_VARIABLE = "WEB_CLUSTER_DESCRIPTOR";
     private static final Logger logger = Logger.getLogger(InitialObjectTarget.class.getName());
 
@@ -53,6 +54,7 @@ public class InitialObjectTarget extends RpcTarget {
     private IDataSet<Empty> emptyDataset = null;
 
     InitialObjectTarget() {
+        super(InitialObjectTarget.initialObjectId);
         Empty empty = new Empty();
         // Get the base naming context
         final String value = System.getenv(ENV_VARIABLE);

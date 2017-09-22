@@ -5,7 +5,7 @@
      include_vars: config.yaml
 
    - name: Stop backends
-     shell: jps -v | grep "hillview-server" | awk '{print $1}' | xargs -r kill
+     shell: ps -ax | grep "hillview-server" | grep -v grep | awk '{print $1}' | xargs -r kill
 
 - hosts: web
   tasks:

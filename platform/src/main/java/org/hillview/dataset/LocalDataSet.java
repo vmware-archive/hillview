@@ -19,12 +19,14 @@
 package org.hillview.dataset;
 
 import org.hillview.dataset.api.*;
+import org.hillview.utils.HillviewLogManager;
 import rx.Observable;
 import rx.schedulers.Schedulers;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.logging.Level;
 
 /**
  * A LocalDataSet is an implementation of IDataSet which contains exactly one
@@ -37,7 +39,7 @@ public class LocalDataSet<T> implements IDataSet<T> {
      */
     private final T data;
     /**
-     * If this is set to 'true' then data processing (i.e., the map and sketch calls)
+     * If this is set to 'true' then data processing (i.e., the map and test calls)
      * are done on a separate thread.  This is the only place where multithreading
      * is used in the whole platform code base.  The effect is that all observers of
      * the results are invoked on a separate thread.
@@ -82,7 +84,9 @@ public class LocalDataSet<T> implements IDataSet<T> {
         // Actual map computation performed lazily when observable is subscribed to.
         final Callable<IDataSet<S>> callable = () -> {
             try {
+                HillviewLogManager.instance.logger.log(Level.INFO, "Starting map operation");
                 S result = mapper.apply(LocalDataSet.this.data);
+                HillviewLogManager.instance.logger.log(Level.INFO, "Map operation completed");
                 return new LocalDataSet<S>(result);
             } catch (final Throwable t) {
                 throw new Exception(t);
@@ -104,7 +108,11 @@ public class LocalDataSet<T> implements IDataSet<T> {
                 List<S> list = mapper.apply(LocalDataSet.this.data);
                 List<IDataSet<S>> locals = new ArrayList<IDataSet<S>>();
                 for (S s : list) {
+                    HillviewLogManager.instance.logger.log(
+                            Level.INFO, "Starting flatMap operation");
                     IDataSet<S> ds = new LocalDataSet<S>(s);
+                    HillviewLogManager.instance.logger.log(
+                            Level.INFO, "FlatMap operation completed");
                     locals.add(ds);
                 }
                 return (IDataSet<S>) new ParallelDataSet<S>(locals);
@@ -135,16 +143,21 @@ public class LocalDataSet<T> implements IDataSet<T> {
     public <R> Observable<PartialResult<R>> sketch(final ISketch<T, R> sketch) {
         // Immediately return a zero partial result
         final Observable<PartialResult<R>> zero = this.zero(sketch::zero);
-        // Actual sketch computation performed lazily when observable is subscribed to.
+        // Actual test computation performed lazily when observable is subscribed to.
         final Callable<R> callable = () -> {
             try {
-                return sketch.create(this.data);
+                HillviewLogManager.instance.logger.log(
+                        Level.INFO, "Starting sketch operation");
+                R result = sketch.create(this.data);
+                HillviewLogManager.instance.logger.log(
+                        Level.INFO, "Sketch operation completed");
+                return result;
             } catch (final Throwable t) {
                 throw new Exception(t);
             }
         };
         final Observable<R> sketched = Observable.fromCallable(callable);
-        // Wrap sketch results in a stream of PartialResults.
+        // Wrap test results in a stream of PartialResults.
         final Observable<PartialResult<R>> pro = sketched.map(PartialResult::new);
         // Concatenate with the zero.
         Observable<PartialResult<R>> result = zero.concatWith(pro);

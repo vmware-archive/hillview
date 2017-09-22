@@ -20,6 +20,7 @@ package org.hillview.dataset;
 
 import org.hillview.dataset.api.*;
 import org.hillview.utils.Converters;
+import org.hillview.utils.HillviewLogManager;
 import rx.Observable;
 
 import java.util.ArrayList;
@@ -27,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * A ParallelDataSet holds together multiple IDataSet objects and invokes operations on them
@@ -61,7 +61,6 @@ public class ParallelDataSet<T> implements IDataSet<T> {
      */
 
     private final List<IDataSet<T>> children;
-    private static final Logger logger = Logger.getLogger(ParallelDataSet.class.getName());
 
     /**
      * Create a ParallelDataSet from a map that indicates the index of each child.
@@ -98,7 +97,7 @@ public class ParallelDataSet<T> implements IDataSet<T> {
      * over each stream element.
      */
     private <S> S log(S data, String message) {
-        logger.log(Level.INFO, message);
+        HillviewLogManager.instance.logger.log(Level.INFO, message);
         return data;
     }
 
@@ -271,17 +270,17 @@ public class ParallelDataSet<T> implements IDataSet<T> {
     public <R> Observable<PartialResult<R>> sketch(final ISketch<T, R> sketch) {
         List<Observable<PartialResult<R>>> obs = new ArrayList<Observable<PartialResult<R>>>();
         final int mySize = this.size();
-        // Run sketch over each child separately
+        // Run test over each child separately
         for (int i = 0; i < mySize; i++) {
             IDataSet<T> child = this.children.get(i);
             final int finalI = i;
             Observable<PartialResult<R>> sk = child.sketch(sketch);
             if (useLogging)
-                    sk = sk.map(e -> log(e, "child " + finalI + " sketch result " + sketch.toString()));
+                    sk = sk.map(e -> log(e, "child " + finalI + " test result " + sketch.toString()));
             sk = sk.map(e -> new PartialResult<R>(e.deltaDone / mySize, e.deltaValue));
             obs.add(sk);
         }
-        // Just merge all sketch results
+        // Just merge all test results
         Observable<PartialResult<R>> result = Observable.merge(obs);
         if (useLogging)
             result = result.map(e -> log(e, "after merge " + sketch.toString()));

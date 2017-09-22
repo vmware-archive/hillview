@@ -21,7 +21,7 @@ import org.hillview.utils.Converters;
 import java.io.Serializable;
 
 /**
- * Describes a sketch computation on a dataset of type T that produces a result of type R.
+ * Describes a test computation on a dataset of type T that produces a result of type R.
  * This class is also a monoid which knows how to combine two values of type R using the add
  * method.
  * @param <T> Input data type.
@@ -30,8 +30,8 @@ import java.io.Serializable;
 public interface ISketch<T, R> extends IDataSetComputation, IMonoid<R> {
     /**
      * Sketch computation on some dataset T.
-     * @param data  Data to sketch.
-     * @return  A sketch of the data.
+     * @param data  Data to test.
+     * @return  A test of the data.
      */
     R create(T data);
 

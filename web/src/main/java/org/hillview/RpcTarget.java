@@ -42,6 +42,15 @@ abstract class RpcTarget implements IJson {
     private final HashMap<String, Method> executor;
     static final Logger logger = Logger.getLogger(RpcTarget.class.getName());
 
+    // This constructor is only called by the InitialObjectTarget, who
+    // must have a fixed object Id.
+    protected RpcTarget(String id) {
+        this.executor = new HashMap<String, Method>();
+        this.registerExecutors();
+        this.objectId = id;
+        RpcObjectManager.instance.addObject(this);
+    }
+
     RpcTarget() {
         this.executor = new HashMap<String, Method>();
         this.registerExecutors();

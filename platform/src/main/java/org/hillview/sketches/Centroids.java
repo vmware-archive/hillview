@@ -39,7 +39,7 @@ public class Centroids<T> implements Serializable {
 
     /**
      * Construct a centroids object that has processed the sums of the partitions in 'table'.
-     * The final centroids are not computed yet, this should be done after the sketch finishes.
+     * The final centroids are not computed yet, this should be done after the test finishes.
      * @param members MembershipSet that knows which rows to iterate over.
      * @param keyFunc Function that can determine the partition key of a row entry.
      * @param columns Column that define the nD space.
@@ -101,7 +101,7 @@ public class Centroids<T> implements Serializable {
 
     /**
      * Computes the centroids, based on the information in the 'sums' and 'counts' fields.
-     * This only has to be done once: when the sketch has finished.
+     * This only has to be done once: when the test has finished.
      * @return HashMap with the computed centroid for every partition.
      */
     public HashMap<T, double[]> computeCentroids() {

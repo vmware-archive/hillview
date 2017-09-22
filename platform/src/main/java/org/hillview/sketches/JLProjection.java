@@ -5,7 +5,7 @@ import java.security.InvalidParameterException;
 import java.util.LinkedHashMap;
 import java.util.List;
 
-/** Data structure used to store the results of a Johnson-Lindenstrauss (JL) sketch.
+/** Data structure used to store the results of a Johnson-Lindenstrauss (JL) test.
  * It contains a vector of doubles for each column, and some other information that can be used for
  * normalization. It implements the ICorrelation interface and can be used for computing norms,
  * inner products etc, but it is currently rather slow compared to sampling based methods.
@@ -13,7 +13,7 @@ import java.util.List;
 public class JLProjection implements ICorrelation {
     /**
      * The JL Sketch stores for every column, a vector of doubles of dimension lowDim, which is the
-     * sketch of that column. The sketch is computed by multiplying th column (viewed as a vector of
+     * test of that column. The test is computed by multiplying th column (viewed as a vector of
      * doubles) by a random matrix of {-1, 1} values.
      */
     public final LinkedHashMap<String, double[]> hMap;
@@ -27,7 +27,7 @@ public class JLProjection implements ICorrelation {
      */
     public int highDim;
     /**
-     * The list of columns we want to sketch. Each column should be of type Int/Double.
+     * The list of columns we want to test. Each column should be of type Int/Double.
      */
     public final List<String> colNames;
     /**
@@ -63,7 +63,7 @@ public class JLProjection implements ICorrelation {
 
     public double getNorm(String s) {
         if (!this.hMap.containsKey(s))
-            throw new InvalidParameterException("No sketch found for column: " + s);
+            throw new InvalidParameterException("No test found for column: " + s);
         if (this.highDim <= 0)
             throw new InvalidParameterException("Dimension must be positive.");
         double sum = 0;
@@ -75,9 +75,9 @@ public class JLProjection implements ICorrelation {
 
     public double getInnerProduct(String s, String t) {
         if (!this.hMap.containsKey(s))
-            throw new InvalidParameterException("No sketch found for column: " + s);
+            throw new InvalidParameterException("No test found for column: " + s);
         if (!this.hMap.containsKey(t))
-            throw new InvalidParameterException("No sketch found for column: " + t);
+            throw new InvalidParameterException("No test found for column: " + t);
         if (this.highDim <= 0)
             throw new InvalidParameterException("Dimension must be positive.");
         double sum = 0;
@@ -116,16 +116,16 @@ public class JLProjection implements ICorrelation {
     @Override
     public double getCorrelation(String s, String t) {
         if (!this.colNames.contains(s))
-            throw new InvalidParameterException("No sketch found for column: " + s);
+            throw new InvalidParameterException("No test found for column: " + s);
         if (!this.colNames.contains(t))
-            throw new InvalidParameterException("No sketch found for column: " + t);
+            throw new InvalidParameterException("No test found for column: " + t);
         return this.getCorrelationMatrix()[this.colNames.indexOf(s)][this.colNames.indexOf(t)];
     }
 
     @Override
     public double[] getCorrelationWith(String s) {
         if (!this.colNames.contains(s))
-            throw new InvalidParameterException("No sketch found for column: " + s);
+            throw new InvalidParameterException("No test found for column: " + s);
         return this.getCorrelationMatrix()[this.colNames.indexOf(s)];
     }
 }

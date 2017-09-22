@@ -5,8 +5,8 @@
    - name: Load variables from configuration file
      include_vars: config.yaml
 
-   - name: Stop back-end service
-     shell: jps -v | grep "hillview-server" | awk '{print $1}' | xargs -r kill
+#   - name: Stop back-end service
+#     shell: ps -ax | grep "hillview-server" | awk '{print $1}' | xargs -r kill
 
    - name: Start back-end service
      shell:
@@ -18,10 +18,10 @@
    - name: Load variables from configuration file
      include_vars: config.yaml
 
-   - name: Stop web server
-     shell:
-       cmd: "{{tomcat}}/bin/shutdown.sh"
-       chdir: "{{service_folder}}"
+#   - name: Stop web server
+#     shell:
+#       cmd: "{{tomcat}}/bin/shutdown.sh"
+#       chdir: "{{service_folder}}"
 
    - name: Start web server
      shell:

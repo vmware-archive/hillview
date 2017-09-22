@@ -8,7 +8,6 @@ import org.jblas.DoubleMatrix;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
 
 /**
  * This map takes a list of column names and a projection matrix and applies the projection matrix to the matrix that is
@@ -16,7 +15,6 @@ import java.util.logging.Logger;
  * table, with the additional projected columns added to it. The new columns are named '{newColName}{i}'.
  */
 public class LinearProjectionMap implements IMap<ITable, ITable> {
-    private static final Logger LOG = Logger.getLogger(LinearProjectionMap.class.getName());
     /**
      * The projection matrix is structured as follows: Every row is a vector
      * that is projected on. The ordering of the columns is the same as the order

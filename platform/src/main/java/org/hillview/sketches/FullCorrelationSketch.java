@@ -18,7 +18,6 @@ import java.util.logging.Logger;
  * the BasicColStats's.
  */
 public class FullCorrelationSketch implements ISketch<ITable, CorrMatrix> {
-    private static final Logger LOG = Logger.getLogger(FullCorrelationSketch.class.getName());
     private final List<String> colNames;
 
     public FullCorrelationSketch(List<String> colNames) {

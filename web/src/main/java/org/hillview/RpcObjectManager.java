@@ -104,8 +104,10 @@ public final class RpcObjectManager {
     }
 
     synchronized void addObject(RpcTarget object) {
-        String id = this.freshId();
-        object.setId(id);
+        if (object.objectId == null) {
+            String id = this.freshId();
+            object.setId(id);
+        }
         if (this.objects.containsKey(object.objectId))
             throw new RuntimeException("Object with id " + object.objectId + " already in map");
         LOGGER.log(Level.INFO, "Inserting target " + object.toString());
