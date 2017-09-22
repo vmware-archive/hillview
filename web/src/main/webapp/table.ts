@@ -532,7 +532,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         // Create table footer
         let footer = this.tBody.insertRow();
         let cell = footer.insertCell(0);
-        cell.colSpan = this.schema.length + 2;
+        cell.colSpan = this.schema.length + 3;
         cell.className = "footer";
 
         let perc = "";
