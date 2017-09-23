@@ -10,8 +10,8 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 /**
- * Base class for centroid sketches. It computes the centroids of a set of partitions of the data, in a space defined
- * by the specified column names.
+ * Base class for centroid sketches. It computes the centroids of a set of partitions of the data,
+ * in a space defined by the specified column names.
  * The partitions are defined by a (bi)function that returns a key indicating the partition.
  */
 public class CentroidsSketch<T> implements ISketch<ITable, Centroids<T>> {

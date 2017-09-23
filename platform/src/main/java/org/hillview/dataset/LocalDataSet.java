@@ -158,7 +158,7 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
     public <R> Observable<PartialResult<R>> sketch(final ISketch<T, R> sketch) {
         // Immediately return a zero partial result
         final Observable<PartialResult<R>> zero = this.zero(sketch::zero);
-        // Actual test computation performed lazily when observable is subscribed to.
+        // Actual computation performed lazily when observable is subscribed to.
         final Callable<R> callable = () -> {
             try {
                 this.log("Starting sketch {}", sketch.asString());
@@ -170,7 +170,7 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
             }
         };
         final Observable<R> sketched = Observable.fromCallable(callable);
-        // Wrap test results in a stream of PartialResults.
+        // Wrap results in a stream of PartialResults.
         final Observable<PartialResult<R>> pro = sketched.map(PartialResult::new);
         // Concatenate with the zero.
         Observable<PartialResult<R>> result = zero.concatWith(pro);

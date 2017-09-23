@@ -78,7 +78,7 @@ public class DateParsing {
                         LocalDateTime.parse(s, d);
 
                     HillviewLogging.logger.info(
-                            "Guessed date format " + d);
+                            "Guessed date format {}", d);
                     this.parserFormatter = d;
                     return;
                 } catch (DateTimeParseException ex) {
@@ -94,7 +94,7 @@ public class DateParsing {
                 String format = DATE_FORMAT_REGEXPS.get(regexp);
                 this.parserFormatter = DateTimeFormatter.ofPattern(format);
                 HillviewLogging.logger.info(
-                        "Guessed date format " + regexp);
+                        "Guessed date format {}", regexp);
                 return;
             }
         }

@@ -22,7 +22,7 @@ import javax.annotation.Nullable;
 import java.io.Serializable;
 
 /**
- * Class used to wrap responses of map and test executions.
+ * Class used to wrap responses of map and sketch executions.
  * @param <T> Return type of the result
  */
 public class OperationResponse<T> implements Serializable {

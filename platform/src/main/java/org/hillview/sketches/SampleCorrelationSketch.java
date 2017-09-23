@@ -9,7 +9,7 @@ import java.security.InvalidParameterException;
 import java.util.List;
 
 /**
- * A test to compute correlations between columns, using sampling.
+ * A sketch to compute correlations between columns, using sampling.
  */
 public class SampleCorrelationSketch implements ISketch<ITable, CorrMatrix> {
     /**
@@ -53,7 +53,7 @@ public class SampleCorrelationSketch implements ISketch<ITable, CorrMatrix> {
     /**
      * We sample rows from the table with probability given by the sampling rate. We then compute
      * the exact correlation for the sampled Table.
-     * @param data  Data to test.
+     * @param data  Data to sketch.
      * @return A correlation matrix computed over the sampled table.
      */
     @Override

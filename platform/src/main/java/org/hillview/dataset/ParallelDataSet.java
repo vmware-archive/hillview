@@ -259,24 +259,24 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
     public <R> Observable<PartialResult<R>> sketch(final ISketch<T, R> sketch) {
         List<Observable<PartialResult<R>>> obs = new ArrayList<Observable<PartialResult<R>>>();
         final int mySize = this.size();
-        // Run test over each child separately
+        // Run sketch over each child separately
         for (int i = 0; i < mySize; i++) {
             IDataSet<T> child = this.children.get(i);
             final int finalI = i;
             Observable<PartialResult<R>> sk = child.sketch(sketch);
             if (useLogging)
-                    sk = sk.map(e -> log(e, "child " + finalI + " test result " + sketch.toString()));
+                sk = sk.map(e -> this.log(e, "child " + finalI + " sketch result " + sketch.toString()));
             sk = sk.map(e -> new PartialResult<R>(e.deltaDone / mySize, e.deltaValue));
             obs.add(sk);
         }
-        // Just merge all test results
+        // Just merge all sketch results
         Observable<PartialResult<R>> result = Observable.merge(obs);
         if (useLogging)
-            result = result.map(e -> log(e, "after merge " + sketch.toString()));
+            result = result.map(e -> this.log(e, "after merge " + sketch.toString()));
         PartialResultMonoid<R> prm = new PartialResultMonoid<R>(sketch);
         result = this.bundle(result, prm);
         if (useLogging)
-            result = result.map(e -> log(e, "after bundle " + sketch.toString()));
+            result = result.map(e -> this.log(e, "after bundle " + sketch.toString()));
         return result;
     }
 

@@ -13,16 +13,16 @@ import java.security.InvalidParameterException;
 import java.util.List;
 
 /**
- * Implements the Johnson-Lindenstrauss (JL) test. It projects a column of doubles down to low
+ * Implements the Johnson-Lindenstrauss (JL) sketch. It projects a column of doubles down to low
  * dimensional vectors, where the projection matrix consists of random +1,-1 entries. Currently,
- * this test can be used to compute approximate inner products. However, it is much slower than
+ * this sketch can be used to compute approximate inner products. However, it is much slower than
  * sampling based methods (SampleCorrelationSketch). A potential advantage over that method is that
- * the JL test gives a guarantee even if the entries are not bounded, whereas the sampling based
+ * the JL sketch gives a guarantee even if the entries are not bounded, whereas the sampling based
  * methods assume boundedness for provable guarantees.
  */
 public class JLSketch implements ISketch<ITable, JLProjection>{
     /**
-     * The list of columns that we wish to test. Currently, every column is assumed to be of type
+     * The list of columns that we wish to sketch. Currently, every column is assumed to be of type
      * int or double.
      */
     private final List<String> colNames;
@@ -60,10 +60,10 @@ public class JLSketch implements ISketch<ITable, JLProjection>{
     }
 
     /**
-     * The test of a column is the product with a random matrix of {-1,+1} entries. The same
+     * The sketch of a column is the product with a random matrix of {-1,+1} entries. The same
      * matrix is applied to every column. Currently, we discard the random bits after processing the
      * relevant row of the Table.
-     * @param data  Data to test.
+     * @param data  Data to sketch.
      * @return A JL projection.
      */
     @Override

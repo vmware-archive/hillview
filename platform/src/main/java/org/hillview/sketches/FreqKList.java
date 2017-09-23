@@ -91,7 +91,7 @@ public class FreqKList implements Serializable {
 
     /**
      * The error bound guaranteed by the "Mergeable Summaries" paper. It holds if a particular
-     * test algorithm is applied to the Misra-Gries map. In particular, if the sum of observed
+     * sketch algorithm is applied to the Misra-Gries map. In particular, if the sum of observed
      * frequencies equals the total length of the table, the error is zero. Two notable properties
      * of this error bound:
      * - The frequency f(i) in the table is always an underestimate

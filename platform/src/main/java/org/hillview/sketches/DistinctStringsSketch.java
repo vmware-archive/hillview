@@ -14,7 +14,7 @@ import javax.annotation.Nullable;
  * all unique strings in the column.  It assumes that there are few
  * distinct strings in each such column; this makes sense when columns
  * are categorical.
- * This test is special, because it ignores the table membership set:
+ * This sketch is special, because it ignores the table membership set:
  * it just gets all strings in the given columns.
  */
 public class DistinctStringsSketch implements ISketch<ITable, JsonList<DistinctStrings>> {

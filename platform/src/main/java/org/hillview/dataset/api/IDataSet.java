@@ -50,11 +50,11 @@ public interface IDataSet<T> {
     <S> Observable<PartialResult<IDataSet<S>>> flatMap(IMap<T, List<S>> mapper);
 
     /**
-     * Run a test on a dataset, returning a value.
+     * Run a sketch on a dataset, returning a value.
      * @param sketch  Sketch computation to run on the dataset.
      * @param <R>     Type of result produced.
      * @return        A stream of partial results, all of type R.  Adding these partial results
-     *                will produce the correct final result.  The test itself has an 'add' method.
+     *                will produce the correct final result.  The sketch itself has an 'add' method.
      */
     <R> Observable<PartialResult<R>> sketch(ISketch<T, R> sketch);
 
@@ -125,7 +125,7 @@ public interface IDataSet<T> {
     }
 
     /**
-     * Applies a test and then reduces the result immediately.
+     * Applies a sketch and then reduces the result immediately.
      * @param sketch  Sketch to apply to the data.
      * @param <R>     Type of data in the result.
      * @return        An observable with a single element.
@@ -155,7 +155,7 @@ public interface IDataSet<T> {
     }
 
     /**
-     * Run a test synchronously.
+     * Run a sketch synchronously.
      * @param sketch  Sketch to run.
      * @param <R>     Type of data produced.
      * @return        An IDataSet containing the final result of the test.

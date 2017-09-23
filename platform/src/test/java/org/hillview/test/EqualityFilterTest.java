@@ -124,7 +124,7 @@ public class EqualityFilterTest {
                 new ColumnNameAndConverter("Name", converter));
         BasicColStats bcs = result.blockingSketch(b);
 
-        // The test should have counted 'count' 'name's in the IDataset.
+        // The sketch should have counted 'count' 'name's in the IDataset.
         Assert.assertEquals(count, bcs.getRowCount());
     }
 }

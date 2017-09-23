@@ -20,7 +20,7 @@ package org.hillview.dataset.api;
 import org.hillview.utils.Converters;
 
 /**
- * Describes a test computation on a dataset of type T that produces a result of type R.
+ * Describes a sketch computation on a dataset of type T that produces a result of type R.
  * This class is also a monoid which knows how to combine two values of type R using the add
  * method.
  * @param <T> Input data type.
@@ -29,8 +29,8 @@ import org.hillview.utils.Converters;
 public interface ISketch<T, R> extends IDataSetComputation, IMonoid<R> {
     /**
      * Sketch computation on some dataset T.
-     * @param data  Data to test.
-     * @return  A test of the data.
+     * @param data  Data to sketch.
+     * @return  A sketch of the data.
      */
     R create(T data);
 

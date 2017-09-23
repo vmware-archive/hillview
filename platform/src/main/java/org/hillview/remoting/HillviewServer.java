@@ -32,7 +32,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Server that transfers map(), test(), zip() and unsubscribe() RPCs from a RemoteDataSet
+ * Server that transfers map(), sketch(), zip() and unsubscribe() RPCs from a RemoteDataSet
  * object to locally managed IDataSet objects, and streams back results.
  *
  * If memoization is enabled, it caches the results of (operation, dataset-index) types.
@@ -124,7 +124,8 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             final byte[] bytes = command.getSerializedOp().toByteArray();
             if (this.respondIfReplyIsMemoized(command, responseObserver)) {
                 HillviewLogging.logger.info(
-                        "Returning memoized result for map operation against IDataSet#" + command.getIdsIndex());
+                        "Returning memoized result for map operation against IDataSet#{}",
+                                command.getIdsIndex());
                 return;
             }
 
@@ -133,7 +134,8 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             final Observable<PartialResult<IDataSet>> observable =
                     this.dataSets.get(command.getIdsIndex())
                                  .map(mapOp.mapper);
-            final Subscription sub = observable.subscribe(this.createSubscriber(command, commandId, responseObserver));
+            final Subscription sub = observable.subscribe(
+                    this.createSubscriber(command, commandId, responseObserver));
             this.operationToObservable.put(commandId, sub);
         } catch (final Exception e) {
             HillviewLogging.logger.warn("Exception in map", e);
@@ -157,7 +159,8 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
 
             if (this.respondIfReplyIsMemoized(command, responseObserver)) {
                 HillviewLogging.logger.info(
-                        "Returning memoized result for flatMap operation against IDataSet#" + command.getIdsIndex());
+                        "Returning memoized result for flatMap operation against IDataSet#{}",
+                                command.getIdsIndex());
                 return;
             }
             final FlatMapOperation mapOp = SerializationUtils.deserialize(bytes);
@@ -165,8 +168,8 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             final Observable<PartialResult<IDataSet>> observable =
                     this.dataSets.get(command.getIdsIndex())
                             .flatMap(mapOp.mapper);
-            final Subscription sub = observable.subscribe(this.createSubscriber(command,
-                                                                                commandId, responseObserver));
+            final Subscription sub = observable.subscribe(
+                    this.createSubscriber(command, commandId, responseObserver));
             this.operationToObservable.put(commandId, sub);
         } catch (final Exception e) {
             HillviewLogging.logger.warn("Exception in flatMap", e);
@@ -176,7 +179,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     }
 
     /**
-     * Implementation of test() service in hillview.proto.
+     * Implementation of sketch() service in hillview.proto.
      */
     @Override
     @SuppressWarnings("unchecked")
@@ -187,7 +190,8 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             }
             if (this.respondIfReplyIsMemoized(command, responseObserver)) {
                 HillviewLogging.logger.info(
-                        "Returning memoized result for test operation against IDataSet#" + command.getIdsIndex());
+                        "Returning memoized result for sketch operation against IDataSet#{}",
+                                command.getIdsIndex());
                 return;
             }
             final byte[] bytes = command.getSerializedOp().toByteArray();
@@ -258,7 +262,8 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             }
             if (this.respondIfReplyIsMemoized(command, responseObserver)) {
                 HillviewLogging.logger.info(
-                        "Returning memoized result for zip operation against IDataSet#" + command.getIdsIndex());
+                        "Returning memoized result for zip operation against IDataSet#{}",
+                        command.getIdsIndex());
                 return;
             }
 
@@ -313,7 +318,8 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     private boolean checkValidIdsIndex(final int index,
                                        final StreamObserver<PartialResponse> observer) {
         if (!this.dataSets.containsKey(index)) {
-            observer.onError(asStatusRuntimeException(new RuntimeException("Object with index does not exist: "
+            observer.onError(asStatusRuntimeException(
+                    new RuntimeException("Object with index does not exist: "
                     + index + " " + this.listenAddress)));
             return false;
         }

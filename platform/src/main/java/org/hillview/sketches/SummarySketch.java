@@ -30,15 +30,15 @@ import org.hillview.utils.Converters;
 import javax.annotation.Nullable;
 
 /**
- * A test which retrieves the Schema and size of a distributed table.
+ * A sketch which retrieves the Schema and size of a distributed table.
  * Two schemas can be added only if they are identical.
  * We use a null to represent a "zero" for the schemas.
  * (This Sketch is logically a ConcurrentSketch combining
- * an OptionMonoid[Schema] test and integer addition).
+ * an OptionMonoid[Schema] sketch and integer addition).
  */
 public class SummarySketch implements ISketch<ITable, SummarySketch.TableSummary> {
     public static class TableSummary implements IJson {
-        // The test zero() element can be produced without looking at the data at all.
+        // The sketch zero() element can be produced without looking at the data at all.
         // So we need a way to represent a "zero" schema.  An empty schema is in principle
         // legal for a table, so we use a null to represent a yet "unknown" schema.
         @Nullable

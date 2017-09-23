@@ -45,7 +45,7 @@ public class SampleQuantileSketch  implements ISketch<ITable, SampleList> {
 
     /**
      * Creates a table by sampling with probability samplingRate and then sorting by sortOrder.
-     * @param data  Data to test.
+     * @param data  Data to sketch.
      * @return A table with samples sorted, and columns compressed to the relevant ones.
      */
     @Override
