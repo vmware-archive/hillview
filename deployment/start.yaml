@@ -1,13 +1,29 @@
 ---
+# Stops and restarts the hillview service and the web server
 - hosts: backends
   tasks:
    - name: Load variables from configuration file
      include_vars: config.yaml
 
-   - name: Start backends
-     shell: pkill java; cd hillview; nohup java -jar -server -Xmx{{heap_size}} hillview-server-jar-with-dependencies.jar 0.0.0.0:{{backend_port}} &
+#   - name: Stop back-end service
+#     shell: ps -ax | grep "hillview-server" | awk '{print $1}' | xargs -r kill
+
+   - name: Start back-end service
+     shell:
+       cmd: nohup java -Dlog4j.configurationFile=./log4j.properties -jar -server -Xmx{{heap_size}} hillview-server-jar-with-dependencies.jar 0.0.0.0:{{backend_port}} &
+       chdir: "{{service_folder}}/hillview"
 
 - hosts: web
   tasks:
+   - name: Load variables from configuration file
+     include_vars: config.yaml
+
+#   - name: Stop web server
+#     shell:
+#       cmd: "{{tomcat}}/bin/shutdown.sh"
+#       chdir: "{{service_folder}}"
+
    - name: Start web server
-     shell: pkill java; WEB_CLUSTER_DESCRIPTOR="serverlist" nohup apache-tomcat-8.5.8/bin/startup.sh
+     shell:
+        cmd: WEB_CLUSTER_DESCRIPTOR="serverlist" nohup "{{tomcat}}/bin/startup.sh"
+        chdir: "{{service_folder}}"

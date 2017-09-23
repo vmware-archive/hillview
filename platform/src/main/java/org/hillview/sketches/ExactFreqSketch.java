@@ -35,7 +35,7 @@ public class ExactFreqSketch implements ISketch<ITable, FreqKList> {
      * frequency 1/K.
      */
     private int maxSize;
-    private double epsilon;
+    private final double epsilon;
 
     public ExactFreqSketch(Schema schema, FreqKList fk) {
         this.schema = schema;

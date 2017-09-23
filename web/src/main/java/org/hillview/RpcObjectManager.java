@@ -22,6 +22,7 @@ import rx.Subscription;
 import javax.annotation.Nullable;
 import javax.websocket.Session;
 import java.util.HashMap;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -87,32 +88,26 @@ public final class RpcObjectManager {
         new InitialObjectTarget();  // indirectly registers this object with the RpcObjectManager
     }
 
-    // Used to generate fresh object ids
-    private int objectIdGenerator;
     // Map object id to object.
     private final HashMap<String, RpcTarget> objects;
 
     // Private constructor
     private RpcObjectManager() {
         this.objects = new HashMap<String, RpcTarget>();
-        this.objectIdGenerator = 0;
     }
 
     /**
      * Allocate a fresh identifier.
      */
     private String freshId() {
-        while (true) {
-            String id = Integer.toString(this.objectIdGenerator);
-            if (!this.objects.containsKey(id))
-                return id;
-            this.objectIdGenerator++;
-        }
+        return UUID.randomUUID().toString();
     }
 
     synchronized void addObject(RpcTarget object) {
-        String id = this.freshId();
-        object.setId(id);
+        if (object.objectId == null) {
+            String id = this.freshId();
+            object.setId(id);
+        }
         if (this.objects.containsKey(object.objectId))
             throw new RuntimeException("Object with id " + object.objectId + " already in map");
         LOGGER.log(Level.INFO, "Inserting target " + object.toString());

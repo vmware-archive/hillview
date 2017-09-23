@@ -10,22 +10,25 @@ import java.util.List;
 import java.util.function.Function;
 
 /**
- * This class represents a set of centroids of a partitioning of a table. The number of centroids should not be too
- * large, as they are shipped over the network. Since row/column entries are only counted if the row is present in
- * the column, it essentially computes the mean of each column over only the non-missing entries.
+ * This class represents a set of centroids of a partitioning of a table. The number of centroids
+ * should not be too large, as they are shipped over the network. Since row/column entries are
+ * only counted if the row is present in the column, it essentially computes the mean of each
+ * column over only the non-missing entries.
  */
 public class Centroids<T> implements Serializable {
     /**
-     * Map from the partition key to the sum of the non-missing values in the partition in every column. Every value
-     * is an array of doubles, where the i'th element is the sum of the non-missing values encountered in the i'th
-     * column, for rows partitioned to the partition specified by the key.
+     * Map from the partition key to the sum of the non-missing values in the partition in every
+     * column. Every value is an array of doubles, where the i'th element is the sum of the
+     * non-missing values encountered in the i'th column, for rows partitioned to the partition
+     * specified by the key.
      */
     public final HashMap<T, double[]> sums;
     /**
      * Map from the partition key to the count of values in every column of that partition.
-     * Every value is an array of longs, where the i'th element is the number of non-missing values encountered in
-     * the i'th column, for rows partitioned to the partition specified by the key. As we divide by the count to
-     * compute the final centroid, this means that the missing values do not contribute to the centroids.
+     * Every value is an array of longs, where the i'th element is the number of non-missing values
+     * encountered in the i'th column, for rows partitioned to the partition specified by the key.
+     * As we divide by the count to compute the final centroid, this means that the missing
+     * values do not contribute to the centroids.
      */
     public final HashMap<T, long[]> counts;
 

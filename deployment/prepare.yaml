@@ -1,51 +1,85 @@
 ---
+
 # Sets up the backend servers by copying over the hillview server jars
 - hosts: backends
   tasks:
-    - name: Create directory
+    - name: Load variables from configuration file
+      include_vars: config.yaml
+
+    - name: Create root service folder
       file:
-          path: hillview
-          state: directory
-          mode: 0755
-    - name: Copy files
-      copy: src={{ item.src }} dest={{ item.dest }}
+        path: "{{service_folder}}"
+        state: directory
+        mode: 0755
+        owner: "{{ansible_user}}"
+      become: yes
+
+    - name: Create code directory
+      file:
+        path: "{{service_folder}}/hillview"
+        state: directory
+        mode: 0755
+
+    - name: Create data directory
+      file:
+        path: "{{service_folder}}/data"
+        state: directory
+        mode: 0755
+
+    - name: Copy hillview jar
+      copy: src={{item.src}} dest={{item.dest}}
       with_items:
-              - {src: '../platform/target/hillview-server-jar-with-dependencies.jar', dest: 'hillview'}
+        - { src: '../platform/target/hillview-server-jar-with-dependencies.jar', dest: "{{service_folder}}/hillview" }
 
-
-# Sets up the web server by first downloading tomcat, and updating the ROOT war with the Hillview Web server war.
+# Sets up the web server by installing Tomcat and updating the ROOT war with the Hillview Web server war.
 - hosts: web
   tasks:
     - name: Load variables from configuration file
       include_vars: config.yaml
 
+    - name: Create root service folder
+      file:
+        path: "{{service_folder}}"
+        state: directory
+        mode: 0755
+        owner: "{{ansible_user}}"
+      become: yes
+
     - stat:
-        path: apache-tomcat-8.5.8
+         path: "{{service_folder}}/{{tomcat_version}}"
       register: p
 
-    - name: Download Tomcat
-      shell: wget http://archive.apache.org/dist/tomcat/tomcat-8/v8.5.8/bin/apache-tomcat-8.5.8.tar.gz
-      when: p.stat.isdir is not defined and p.stat.isdir == False
+    - name: Download and unpack Tomcat
+      unarchive:
+        creates: "{{service_folder}}/{{tomcat}}"
+        src: "http://archive.apache.org/dist/tomcat/tomcat-8/v{{tomcat_version}}/bin/{{tomcat}}.tar.gz"
+        dest: "{{service_folder}}"
+        copy: no
+        remote_src: yes
+      when: p.stat.isdir is not defined or p.stat.isdir == False
 
-    - name: Untar Tomcat
-      shell: tar -xzvf apache-tomcat-8.5.8.tar.gz; rm -rf apache-tomcat-8.5.8.tar.gz;
-      when: p.stat.isdir is not defined and p.stat.isdir == False
+    - name: Remove previous ROOT
+      file:
+        path: "{{service_folder}}//{{tomcat}}/webapps/ROOT"
+        state: absent
 
-    - name: Remove previous ROOT and ROOT.war
-      shell: rm -rf apache-tomcat-8.5.8/webapps/ROOT; rm -rf apache-tomcat-8.5.8/webapps/ROOT.war
-      when: p.stat.isdir is not defined and p.stat.isdir == False
+    - name: Remove previous ROOT.war
+      file:
+        path: "{{service_folder}}/{{tomcat}}/webapps/ROOT.war"
+        state: absent
 
     - name: Copy files
-      copy: src={{ item.src }} dest={{ item.dest }}
+      copy: src={{item.src}} dest={{item.dest}}
       with_items:
-              - {src: '../web/target/web-1.0-SNAPSHOT.war', dest: 'apache-tomcat-8.5.8/webapps/ROOT.war'}
-    - name: ensure file exists
+              - {src: '../web/target/web-1.0-SNAPSHOT.war', dest: "{{service_folder}}/{{tomcat}}/webapps/ROOT.war" }
+
+    - name: Create file with list of servers
       copy:
         content: ""
-        dest: ~/serverlist
-        force: no
+        dest: "{{service_folder}}/serverlist"
+        force: yes
         mode: 0755
 
-    - name: Create backend file list
-      lineinfile: dest=serverlist line="{{item}}:{{ backend_port }}"
-      with_items: "{{ groups.backends }}"
+    - name: Create file with list of backend servers
+      lineinfile: dest="{{service_folder}}/serverlist" line="{{item}}:{{backend_port}}"
+      with_items: "{{groups.backends}}"

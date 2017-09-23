@@ -30,6 +30,7 @@ import org.hillview.pb.HillviewServerGrpc;
 import org.hillview.pb.PartialResponse;
 import org.hillview.remoting.*;
 import org.hillview.utils.Converters;
+import org.hillview.utils.HillviewLogging;
 import rx.Observable;
 import rx.subjects.PublishSubject;
 
@@ -44,7 +45,7 @@ import static org.hillview.remoting.HillviewServer.DEFAULT_IDS_INDEX;
  * is pointed to by (serverEndpoint, remoteHandle). Any RemoteDataSet instantiated
  * with a wrong value for either entry of the tuple will result in an exception.
  */
-public class RemoteDataSet<T> implements IDataSet<T> {
+public class RemoteDataSet<T> extends BaseDataSet<T> {
     private final static int TIMEOUT = 60000 * 5;  // TODO: import via config file
     private final int remoteHandle;
     private final HostAndPort serverEndpoint;
@@ -177,16 +178,13 @@ public class RemoteDataSet<T> implements IDataSet<T> {
         this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
                  .unsubscribe(command, new StreamObserver<Ack>() {
             @Override
-            public void onNext(final Ack ack) {
-            }
+            public void onNext(final Ack ack) {}
 
             @Override
-            public void onError(final Throwable throwable) {
-            }
+            public void onError(final Throwable throwable) {}
 
             @Override
-            public void onCompleted() {
-            }
+            public void onCompleted() {}
         });
     }
 
@@ -208,6 +206,7 @@ public class RemoteDataSet<T> implements IDataSet<T> {
 
         @Override
         public void onError(final Throwable throwable) {
+            HillviewLogging.logger.error("Caught exception", throwable);
             throwable.printStackTrace();
             this.subject.onError(throwable);
         }
@@ -240,7 +239,7 @@ public class RemoteDataSet<T> implements IDataSet<T> {
     }
 
     /**
-     * StreamObserver used by sketch() implementation above.
+     * StreamObserver used by test() implementation above.
      */
     private static class SketchObserver<S> extends OperationObserver<PartialResult<S>> {
         public SketchObserver(final PublishSubject<PartialResult<S>> subject) {

@@ -9,7 +9,6 @@ import org.jblas.DoubleMatrix;
 import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
 import java.util.List;
-import java.util.logging.Logger;
 
 /**
  * This class computes the correlations between different columns in the table.
@@ -18,7 +17,6 @@ import java.util.logging.Logger;
  * the BasicColStats's.
  */
 public class FullCorrelationSketch implements ISketch<ITable, CorrMatrix> {
-    private static final Logger LOG = Logger.getLogger(FullCorrelationSketch.class.getName());
     private final List<String> colNames;
 
     public FullCorrelationSketch(List<String> colNames) {

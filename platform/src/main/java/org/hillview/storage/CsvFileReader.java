@@ -29,6 +29,7 @@ import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
+import org.hillview.utils.HillviewLogging;
 
 import javax.annotation.Nullable;
 import java.io.FileReader;
@@ -36,7 +37,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -123,9 +123,8 @@ public class CsvFileReader {
                 String[] line = reader.parseNext();
                 if (line == null)
                     throw new RuntimeException("Missing header row " + this.filename.toString());
-                System.out.println(Arrays.toString(line));
                 if (this.configuration.schema == null) {
-                    System.out.println("Creating schema");
+                    HillviewLogging.logger.info("Creating schema");
                     this.actualSchema = new Schema();
                     int index = 0;
                     for (String col : line) {

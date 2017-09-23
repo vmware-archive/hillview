@@ -29,7 +29,7 @@ public class SampleList implements Serializable {
         return new RowSnapshot(this.table, (int) (q*this.table.getNumOfRows()));
     }
 
-    /** A method that can be used in testing to estimate the quality of the quantiles sketch.
+    /** A method that can be used in sketching to estimate the quality of the quantiles sketch.
      * @param resolution The desired number of rows.
      * @return Equally spaced rows from the sample table.
      */

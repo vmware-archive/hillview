@@ -1,4 +1,12 @@
 ---
-# Configuration parameters shared across playbooks
+# Hillview service parameters
+  # Network port where the servers listen for requests
   backend_port: 3569
+  # Java heap size for Hillview service
   heap_size: "5000m"
+  # Folder where the hillview service is installed on remote machines
+  service_folder: "/hillview"
+  # Version of Apache Tomcat to deploy
+  tomcat_version: "8.5.8"
+  # Tomcat installation folder name
+  tomcat: "apache-tomcat-{{ tomcat_version }}"

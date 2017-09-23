@@ -158,7 +158,7 @@ public interface IDataSet<T> {
      * Run a sketch synchronously.
      * @param sketch  Sketch to run.
      * @param <R>     Type of data produced.
-     * @return        An IDataSet containing the final result of the sketch.
+     * @return        An IDataSet containing the final result of the test.
      */
     default <R> R blockingSketch(final ISketch<T, R> sketch) {
         return this.singleSketch(sketch).toBlocking().single();

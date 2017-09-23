@@ -23,8 +23,7 @@ import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.remoting.HillviewServer;
-
-import java.io.IOException;
+import org.hillview.utils.HillviewLogging;
 
 /**
  * Brings up a single instance of a HillviewServer
@@ -32,18 +31,27 @@ import java.io.IOException;
 public class HillviewServerRunner {
     static void usage() {
         System.out.println("Invalid number of arguments.\n" +
-                "Usage: java -jar <jarname> <HillviewServer listen address>");
+                "Usage: java -jar <jarname> <port listen address>");
     }
 
-    public static void main(String[] args) throws IOException, InterruptedException {
-        final IDataSet<Empty> dataSet = new LocalDataSet<>(Empty.getInstance());
-        if (args.length != 1) {
-            usage();
-            System.exit(1);
+    public static void main(String[] args) {
+        try {
+            HillviewLogging.logger.trace("Created HillviewServer");
+            HillviewLogging.logger.debug("Created HillviewServer");
+            HillviewLogging.logger.info("Created HillviewServer");
+            HillviewLogging.logger.warn("Created HillviewServer");
+            HillviewLogging.logger.error("Created HillviewServer");
+
+            final IDataSet<Empty> dataSet = new LocalDataSet<>(Empty.getInstance());
+            if (args.length != 1) {
+                usage();
+                throw new RuntimeException("Incorrect arguments");
+            }
+            final String hostnameAndPort = args[0];
+            final HillviewServer server = new HillviewServer(HostAndPort.fromString(hostnameAndPort), dataSet);
+            Thread.currentThread().join();
+        } catch (Exception ex) {
+            HillviewLogging.logger.error("Caught exception", ex);
         }
-        final String hostnameAndPort = args[0];
-        final HillviewServer server = new HillviewServer(HostAndPort.fromString(hostnameAndPort), dataSet);
-        System.out.println("Created HillviewServer");
-        Thread.currentThread().join();
     }
 }

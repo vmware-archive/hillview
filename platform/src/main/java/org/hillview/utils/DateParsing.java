@@ -1,18 +1,12 @@
 package org.hillview.utils;
 
-import org.hillview.table.DateListColumn;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.LinkedHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class DateParsing {
-    private static final Logger logger = Logger.getLogger(DateListColumn.class.getName());
-
     /**
      * Used when parsing; this is set the first time when parsing a date
      * and used subsequently.
@@ -83,7 +77,8 @@ public class DateParsing {
                     else
                         LocalDateTime.parse(s, d);
 
-                    logger.log(Level.INFO, "Guessed date format " + d.toString());
+                    HillviewLogging.logger.info(
+                            "Guessed date format {}", d);
                     this.parserFormatter = d;
                     return;
                 } catch (DateTimeParseException ex) {
@@ -98,7 +93,8 @@ public class DateParsing {
             if (s.toLowerCase().matches(regexp)) {
                 String format = DATE_FORMAT_REGEXPS.get(regexp);
                 this.parserFormatter = DateTimeFormatter.ofPattern(format);
-                logger.log(Level.INFO, "Guessed date format " + regexp);
+                HillviewLogging.logger.info(
+                        "Guessed date format {}", regexp);
                 return;
             }
         }

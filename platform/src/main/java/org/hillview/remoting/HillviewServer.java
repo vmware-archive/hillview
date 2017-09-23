@@ -16,6 +16,7 @@ import org.hillview.pb.Command;
 import org.hillview.pb.HillviewServerGrpc;
 import org.hillview.pb.PartialResponse;
 import org.hillview.utils.Converters;
+import org.hillview.utils.HillviewLogging;
 import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
@@ -29,7 +30,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Logger;
 
 /**
  * Server that transfers map(), sketch(), zip() and unsubscribe() RPCs from a RemoteDataSet
@@ -38,7 +38,6 @@ import java.util.logging.Logger;
  * If memoization is enabled, it caches the results of (operation, dataset-index) types.
  */
 public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
-    private static final Logger LOG = Logger.getLogger(HillviewServer.class.getName());
     public static final int DEFAULT_IDS_INDEX = 1;
     public static final int DEFAULT_PORT = 3569;
     private static final String LOCALHOST = "127.0.0.1";
@@ -87,6 +86,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
 
             @Override
             public void onError(final Throwable e) {
+                HillviewLogging.logger.error("Error when creating subscriber", e);
                 e.printStackTrace();
                 responseObserver.onError(asStatusRuntimeException(e));
                 HillviewServer.this.operationToObservable.remove(id);
@@ -123,7 +123,9 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             }
             final byte[] bytes = command.getSerializedOp().toByteArray();
             if (this.respondIfReplyIsMemoized(command, responseObserver)) {
-                LOG.info("Returning memoized result for map operation against IDataSet#" + command.getIdsIndex());
+                HillviewLogging.logger.info(
+                        "Returning memoized result for map operation against IDataSet#{}",
+                                command.getIdsIndex());
                 return;
             }
 
@@ -132,9 +134,11 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             final Observable<PartialResult<IDataSet>> observable =
                     this.dataSets.get(command.getIdsIndex())
                                  .map(mapOp.mapper);
-            final Subscription sub = observable.subscribe(this.createSubscriber(command, commandId, responseObserver));
+            final Subscription sub = observable.subscribe(
+                    this.createSubscriber(command, commandId, responseObserver));
             this.operationToObservable.put(commandId, sub);
         } catch (final Exception e) {
+            HillviewLogging.logger.warn("Exception in map", e);
             e.printStackTrace();
             responseObserver.onError(asStatusRuntimeException(e));
         }
@@ -154,7 +158,9 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             final byte[] bytes = command.getSerializedOp().toByteArray();
 
             if (this.respondIfReplyIsMemoized(command, responseObserver)) {
-                LOG.info("Returning memoized result for flatMap operation against IDataSet#" + command.getIdsIndex());
+                HillviewLogging.logger.info(
+                        "Returning memoized result for flatMap operation against IDataSet#{}",
+                                command.getIdsIndex());
                 return;
             }
             final FlatMapOperation mapOp = SerializationUtils.deserialize(bytes);
@@ -162,10 +168,11 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             final Observable<PartialResult<IDataSet>> observable =
                     this.dataSets.get(command.getIdsIndex())
                             .flatMap(mapOp.mapper);
-            final Subscription sub = observable.subscribe(this.createSubscriber(command,
-                                                                                commandId, responseObserver));
+            final Subscription sub = observable.subscribe(
+                    this.createSubscriber(command, commandId, responseObserver));
             this.operationToObservable.put(commandId, sub);
         } catch (final Exception e) {
+            HillviewLogging.logger.warn("Exception in flatMap", e);
             e.printStackTrace();
             responseObserver.onError(asStatusRuntimeException(e));
         }
@@ -182,7 +189,9 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                 return;
             }
             if (this.respondIfReplyIsMemoized(command, responseObserver)) {
-                LOG.info("Returning memoized result for sketch operation against IDataSet#" + command.getIdsIndex());
+                HillviewLogging.logger.info(
+                        "Returning memoized result for sketch operation against IDataSet#{}",
+                                command.getIdsIndex());
                 return;
             }
             final byte[] bytes = command.getSerializedOp().toByteArray();
@@ -213,6 +222,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
 
                 @Override
                 public void onError(final Throwable e) {
+                    HillviewLogging.logger.warn("Exception in sketch", e);
                     e.printStackTrace();
                     responseObserver.onError(asStatusRuntimeException(e));
                     HillviewServer.this.operationToObservable.remove(commandId);
@@ -231,6 +241,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             });
             this.operationToObservable.put(commandId, sub);
         } catch (final Exception e) {
+            HillviewLogging.logger.error("Exception in sketch", e);
             e.printStackTrace();
             responseObserver.onError(asStatusRuntimeException(e));
         }
@@ -250,7 +261,9 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                 return;
             }
             if (this.respondIfReplyIsMemoized(command, responseObserver)) {
-                LOG.info("Returning memoized result for zip operation against IDataSet#" + command.getIdsIndex());
+                HillviewLogging.logger.info(
+                        "Returning memoized result for zip operation against IDataSet#{}",
+                        command.getIdsIndex());
                 return;
             }
 
@@ -263,6 +276,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                     this.createSubscriber(command, commandId, responseObserver));
             this.operationToObservable.put(commandId, sub);
         } catch (final Exception e) {
+            HillviewLogging.logger.error("Exception in zip", e);
             e.printStackTrace();
             responseObserver.onError(asStatusRuntimeException(e));
         }
@@ -281,7 +295,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                 subscription.unsubscribe();
             }
         } catch (final Exception e) {
-            LOG.warning(e.getMessage());
+            HillviewLogging.logger.warn("Exception in unsubscribe", e);
             responseObserver.onError(asStatusRuntimeException(e));
         }
     }
@@ -304,7 +318,8 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     private boolean checkValidIdsIndex(final int index,
                                        final StreamObserver<PartialResponse> observer) {
         if (!this.dataSets.containsKey(index)) {
-            observer.onError(asStatusRuntimeException(new RuntimeException("Object with index does not exist: "
+            observer.onError(asStatusRuntimeException(
+                    new RuntimeException("Object with index does not exist: "
                     + index + " " + this.listenAddress)));
             return false;
         }

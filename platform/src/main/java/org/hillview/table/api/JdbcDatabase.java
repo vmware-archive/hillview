@@ -2,6 +2,7 @@ package org.hillview.table.api;
 
 import org.hillview.table.*;
 import org.hillview.utils.Converters;
+import org.hillview.utils.HillviewLogging;
 
 import javax.annotation.Nullable;
 import java.sql.*;
@@ -24,7 +25,7 @@ public class JdbcDatabase {
 
     public void connect() throws SQLException {
         String url = this.connInfo.getURL();
-        System.out.println("Server url=" + url);
+        HillviewLogging.logger.info("Database server url={}", url);
         this.connection = DriverManager.getConnection(
                 url, this.connInfo.user, this.connInfo.password);
     }

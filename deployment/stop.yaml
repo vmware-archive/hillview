@@ -1,10 +1,18 @@
 ---
 - hosts: backends
   tasks:
+   - name: Load variables from configuration file
+     include_vars: config.yaml
+
    - name: Stop backends
-     shell: pkill java
+     shell: ps -ax | grep "hillview-server" | grep -v grep | awk '{print $1}' | xargs -r kill
 
 - hosts: web
   tasks:
+   - name: Load variables from configuration file
+     include_vars: config.yaml
+
    - name: Stop web server
-     shell: pkill java
+     shell:
+        cmd: "{{tomcat}}/bin/shutdown.sh"
+        chdir: "{{service_folder}}"

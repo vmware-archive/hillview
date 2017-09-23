@@ -193,21 +193,21 @@ export class DataRange implements IElement {
      * @param totalCount: Total number of items in the 'supersequence'.
      */
     constructor(position: number, count: number, totalCount: number) {
-            this.topLevel = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-            this.topLevel.classList.add("dataRange");
-            // If the range represents < 1 % of the total count, use 1% of the
-            // bar's width, s.t. it is still visible.
-            let w = Math.max(0.01, count / totalCount);
-            let x = position / totalCount;
-            if (x + w > 1)
-                x = 1 - w;
-            d3.select(this.topLevel)
-                .append("g").append("rect")
-                .attr("x", x)
-                .attr("y", 0)
-                .attr("width", w.toString() + "%")
-                .attr("height", 1);
-        }
+        this.topLevel = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        this.topLevel.classList.add("dataRange");
+        // If the range represents < 1 % of the total count, use 1% of the
+        // bar's width, s.t. it is still visible.
+        let w = Math.max(0.01, count / totalCount);
+        let x = position / totalCount;
+        if (x + w > 1)
+            x = 1 - w;
+        d3.select(this.topLevel)
+            .append("g").append("rect")
+            .attr("x", x)
+            .attr("y", 0)
+            .attr("width", w.toString() + "%")
+            .attr("height", 1);
+    }
 
     public getDOMRepresentation(): Element {
         return this.topLevel;

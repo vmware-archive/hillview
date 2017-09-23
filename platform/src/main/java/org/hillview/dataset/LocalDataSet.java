@@ -19,30 +19,43 @@
 package org.hillview.dataset;
 
 import org.hillview.dataset.api.*;
+import org.hillview.utils.HillviewLogging;
 import rx.Observable;
+import rx.Scheduler;
 import rx.schedulers.Schedulers;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * A LocalDataSet is an implementation of IDataSet which contains exactly one
  * item of type T.
  * @param <T> type of data held in the dataset.
  */
-public class LocalDataSet<T> implements IDataSet<T> {
+public class LocalDataSet<T> extends BaseDataSet<T> {
     /**
      * Actual data held by the LocalDataSet.
      */
     private final T data;
     /**
-     * If this is set to 'true' then data processing (i.e., the map and sketch calls)
+     * If this is set to 'true' then data processing (i.e., the map and test calls)
      * are done on a separate thread.  This is the only place where multithreading
      * is used in the whole platform code base.  The effect is that all observers of
      * the results are invoked on a separate thread.
      */
     private final boolean separateThread;
+
+    private static final Scheduler scheduler;
+
+    static {
+        int cpuCount = Runtime.getRuntime().availableProcessors();
+        HillviewLogging.logger.info("Using {} processors", cpuCount);
+        ExecutorService executor = Executors.newFixedThreadPool(cpuCount);
+        scheduler = Schedulers.from(executor);
+    }
 
     /**
      * Create a LocalDataSet, processing the data on a separate thread by default.
@@ -56,6 +69,16 @@ public class LocalDataSet<T> implements IDataSet<T> {
     public LocalDataSet(final T data, final boolean separateThread) {
         this.data = data;
         this.separateThread = separateThread;
+    }
+
+    /**
+     * Schedule the computation using the LocalDataSet.scheduler.
+     * @param data  Data whose computation is scheduled
+     */
+    <S> Observable<S> schedule(Observable<S> data) {
+        if (this.separateThread)
+            return data.subscribeOn(LocalDataSet.scheduler);
+        return data;
     }
 
     /**
@@ -82,7 +105,9 @@ public class LocalDataSet<T> implements IDataSet<T> {
         // Actual map computation performed lazily when observable is subscribed to.
         final Callable<IDataSet<S>> callable = () -> {
             try {
+                this.log("Starting map {}", mapper.asString());
                 S result = mapper.apply(LocalDataSet.this.data);
+                this.log("Completed map {}", mapper.asString());
                 return new LocalDataSet<S>(result);
             } catch (final Throwable t) {
                 throw new Exception(t);
@@ -91,9 +116,7 @@ public class LocalDataSet<T> implements IDataSet<T> {
         final Observable<IDataSet<S>> mapped = Observable.fromCallable(callable);
         // Wrap the produced data in a PartialResult
         Observable<PartialResult<IDataSet<S>>> data = mapped.map(PartialResult::new);
-        if (this.separateThread)
-            data = data.observeOn(Schedulers.computation());
-        return data;
+        return this.schedule(data);
     }
 
     @Override
@@ -104,7 +127,9 @@ public class LocalDataSet<T> implements IDataSet<T> {
                 List<S> list = mapper.apply(LocalDataSet.this.data);
                 List<IDataSet<S>> locals = new ArrayList<IDataSet<S>>();
                 for (S s : list) {
+                    this.log("Starting flatMap {}", mapper.asString());
                     IDataSet<S> ds = new LocalDataSet<S>(s);
+                    this.log("Completed flatMap {}", mapper.asString());
                     locals.add(ds);
                 }
                 return (IDataSet<S>) new ParallelDataSet<S>(locals);
@@ -115,9 +140,7 @@ public class LocalDataSet<T> implements IDataSet<T> {
         final Observable<IDataSet<S>> mapped = Observable.fromCallable(callable);
         // Wrap the produced data in a PartialResult
         Observable<PartialResult<IDataSet<S>>> data = mapped.map(PartialResult::new);
-        if (this.separateThread)
-            data = data.observeOn(Schedulers.computation());
-        return data;
+        return this.schedule(data);
     }
 
     @Override
@@ -135,26 +158,27 @@ public class LocalDataSet<T> implements IDataSet<T> {
     public <R> Observable<PartialResult<R>> sketch(final ISketch<T, R> sketch) {
         // Immediately return a zero partial result
         final Observable<PartialResult<R>> zero = this.zero(sketch::zero);
-        // Actual sketch computation performed lazily when observable is subscribed to.
+        // Actual computation performed lazily when observable is subscribed to.
         final Callable<R> callable = () -> {
             try {
-                return sketch.create(this.data);
+                this.log("Starting sketch {}", sketch.asString());
+                R result = sketch.create(this.data);
+                this.log("Completed sketch {}", sketch.asString());
+                return result;
             } catch (final Throwable t) {
                 throw new Exception(t);
             }
         };
         final Observable<R> sketched = Observable.fromCallable(callable);
-        // Wrap sketch results in a stream of PartialResults.
+        // Wrap results in a stream of PartialResults.
         final Observable<PartialResult<R>> pro = sketched.map(PartialResult::new);
         // Concatenate with the zero.
         Observable<PartialResult<R>> result = zero.concatWith(pro);
-        if (this.separateThread)
-            result = result.observeOn(Schedulers.computation());
-        return result;
+        return this.schedule(result);
     }
 
     @Override
     public String toString() {
-        return "LocalDataSet " + this.data.toString();
+        return super.toString() + ":" + this.data.toString();
     }
 }
