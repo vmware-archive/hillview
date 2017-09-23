@@ -43,9 +43,9 @@ export class HeavyHittersView extends RemoteTableObjectView {
         rr.invoke(new TableOperationCompleted(newPage2, this.tv, rr, this.order));
     }
 
-    public fill(tdv: TableDataView): void {
+    public fill(tdv: TableDataView, elapsedMS: number): void {
         let scroll_div = document.createElement("div");
-        scroll_div.style.maxHeight = "500px";
+        scroll_div.style.maxHeight = Resolution.canvasHeight.toString() + "px";
         scroll_div.style.overflowY = "auto";
         scroll_div.style.display =  "inline-block";
         this.topLevel.appendChild(scroll_div);
@@ -56,6 +56,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
         let thr = tHead.appendChild(document.createElement("tr"));
         let thd0 = document.createElement("th");
         thd0.innerHTML = "Rank";
+
         thr.appendChild(thd0);
         for (let i = 0; i < this.schema.length; i++) {
             let cd = new ColumnDescription(this.schema[i]);
@@ -67,16 +68,16 @@ export class HeavyHittersView extends RemoteTableObjectView {
         thd1.innerHTML = "Count";
         thr.appendChild(thd1);
         let thd2 = document.createElement("th");
-        thd2.innerHTML = "Percentage %";
+        thd2.innerHTML = "%";
         thr.appendChild(thd2);
         let thd3 = document.createElement("th");
-        thd3.innerHTML = "Position";
+        thd3.innerHTML = "Fraction";
         thr.appendChild(thd3);
 
-        let restCount = this.getCount(tdv);
+        let restCount = this.getRestCount(tdv);
         let restPos: number;
         if(restCount > 0)
-            restPos = this.getPos(tdv, restCount);
+            restPos = this.getRestPos(tdv, restCount);
         else
             restPos = tdv.rows.length;
 
@@ -107,7 +108,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
                 }
                 let cell1 = trow.insertCell(this.schema.length + 1);
                 cell1.style.textAlign = "right";
-                cell1.textContent = String(tdv.rows[i].count);
+                cell1.textContent = significantDigits(tdv.rows[i].count);
                 let cell2 = trow.insertCell(this.schema.length + 2);
                 cell2.style.textAlign = "right";
                 cell2.textContent = significantDigits((tdv.rows[i].count/tdv.rowCount)*100);
@@ -121,9 +122,15 @@ export class HeavyHittersView extends RemoteTableObjectView {
                 this.showRest(k, position, restCount, tdv.rowCount, tBody);
             }
         }
+        let footer = tBody.insertRow();
+        let cell = footer.insertCell(0);
+        cell.colSpan = this.schema.length + 4;
+        cell.className = "footer";
+
+        this.page.reportError("Operation took " + significantDigits(elapsedMS/1000) + " seconds");
     }
 
-    private getCount(tdv:TableDataView): number{
+    private getRestCount(tdv:TableDataView): number{
         if (tdv.rows == null)
             return tdv.rowCount;
         else {
@@ -134,7 +141,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
         }
     }
 
-    private getPos(tdv:TableDataView, restCount: number): number{
+    private getRestPos(tdv:TableDataView, restCount: number): number{
         if (tdv.rows == null)
             return 0;
         else {
@@ -153,11 +160,12 @@ export class HeavyHittersView extends RemoteTableObjectView {
         for (let j = 0; j < this.schema.length; j++) {
             let cell = trow.insertCell(j+1);
             cell.style.textAlign = "right";
-            cell.textContent = "*";
+            cell.textContent = "Everything Else";
+            cell.classList.add("missingData");
         }
         let cell1 = trow.insertCell(this.schema.length + 1);
         cell1.style.textAlign = "right";
-        cell1.textContent = restCount.toString();
+        cell1.textContent = significantDigits(restCount);
         let cell2 = trow.insertCell(this.schema.length + 2);
         cell2.style.textAlign = "right";
         cell2.textContent = significantDigits((restCount/total)*100);

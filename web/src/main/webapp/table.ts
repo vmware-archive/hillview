@@ -17,7 +17,7 @@
 
 import Rx = require('rx');
 import {
-    FullPage, formatNumber, significantDigits, percent, KeyCodes, ScrollBar, IScrollTarget
+    FullPage, formatNumber, significantDigits, percent, KeyCodes, ScrollBar, IScrollTarget, SpecialChars
 } from "./ui";
 import { Renderer, combineMenu, SelectedObject, CombineOperators } from "./rpc";
 import {RangeCollector} from "./histogram";
@@ -633,7 +633,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
 	    let rr = this.createHLogLogRequest(colName);
             rr.invoke(new HLogLogReceiver(this.getPage(), rr, "HLogLog",
 				          (res) => this.page.reportError("Distinct values in column \'" +
-						                         colName + "\' \u2248 " +
+						                         colName + "\' " + SpecialChars.approx + " : " +
 						                         String(res.distinctItemCount))));
         }
 
@@ -913,7 +913,9 @@ class HeavyHittersReceiver extends RemoteTableRenderer {
             return;
         let rr = this.tv.createCheckHeavyRequest(this.remoteObject, this.schema);
         rr.chain(this.operation);
+        this.page.reportError("Operation took " + significantDigits(this.elapsedMilliseconds()/1000) + " seconds");
         rr.invoke(new HeavyHittersReceiver2(this.page, this.tv, rr, this.schema, this.order));
+
     }
 }
 
@@ -948,7 +950,7 @@ class HeavyHittersReceiver2 extends Renderer<TopList> {
         let hhv = new HeavyHittersView(this.data, newPage, this.tv, this.schema, this.order);
         newPage.setDataView(hhv);
         this.page.insertAfterMe(newPage);
-        hhv.fill(this.data.top);
+        hhv.fill(this.data.top, this.elapsedMilliseconds());
     }
 }
 
