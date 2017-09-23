@@ -26,11 +26,10 @@
         state: directory
         mode: 0755
 
-    - name: Copy files
+    - name: Copy hillview jar
       copy: src={{item.src}} dest={{item.dest}}
       with_items:
         - { src: '../platform/target/hillview-server-jar-with-dependencies.jar', dest: "{{service_folder}}/hillview" }
-
 
 # Sets up the web server by installing Tomcat and updating the ROOT war with the Hillview Web server war.
 - hosts: web

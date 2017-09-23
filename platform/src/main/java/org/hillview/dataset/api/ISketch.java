@@ -18,7 +18,6 @@
 
 package org.hillview.dataset.api;
 import org.hillview.utils.Converters;
-import java.io.Serializable;
 
 /**
  * Describes a test computation on a dataset of type T that produces a result of type R.

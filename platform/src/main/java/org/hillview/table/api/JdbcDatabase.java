@@ -2,14 +2,13 @@ package org.hillview.table.api;
 
 import org.hillview.table.*;
 import org.hillview.utils.Converters;
-import org.hillview.utils.HillviewLogManager;
+import org.hillview.utils.HillviewLogging;
 
 import javax.annotation.Nullable;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
 
 /**
  * Conversions between JDBC information and ITable objects.
@@ -26,7 +25,7 @@ public class JdbcDatabase {
 
     public void connect() throws SQLException {
         String url = this.connInfo.getURL();
-        HillviewLogManager.instance.logger.log(Level.INFO, "Database server url=" + url);
+        HillviewLogging.logger.info("Database server url=", url);
         this.connection = DriverManager.getConnection(
                 url, this.connInfo.user, this.connInfo.password);
     }

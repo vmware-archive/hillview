@@ -24,7 +24,7 @@ cpp/main
 platform/platform.iml
 web/web.iml
 
-
+hillview.log
 out
 apache-tomcat-*
 web/classes

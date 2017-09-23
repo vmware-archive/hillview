@@ -9,7 +9,6 @@ import org.jblas.DoubleMatrix;
 import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
 import java.util.List;
-import java.util.logging.Logger;
 
 /**
  * This class computes the correlations between different columns in the table.

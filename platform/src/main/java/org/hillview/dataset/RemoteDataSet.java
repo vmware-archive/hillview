@@ -30,14 +30,13 @@ import org.hillview.pb.HillviewServerGrpc;
 import org.hillview.pb.PartialResponse;
 import org.hillview.remoting.*;
 import org.hillview.utils.Converters;
-import org.hillview.utils.HillviewLogManager;
+import org.hillview.utils.HillviewLogging;
 import rx.Observable;
 import rx.subjects.PublishSubject;
 
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
 
 import static org.hillview.remoting.HillviewServer.DEFAULT_IDS_INDEX;
 
@@ -46,7 +45,7 @@ import static org.hillview.remoting.HillviewServer.DEFAULT_IDS_INDEX;
  * is pointed to by (serverEndpoint, remoteHandle). Any RemoteDataSet instantiated
  * with a wrong value for either entry of the tuple will result in an exception.
  */
-public class RemoteDataSet<T> implements IDataSet<T> {
+public class RemoteDataSet<T> extends BaseDataSet<T> {
     private final static int TIMEOUT = 60000 * 5;  // TODO: import via config file
     private final int remoteHandle;
     private final HostAndPort serverEndpoint;
@@ -207,8 +206,7 @@ public class RemoteDataSet<T> implements IDataSet<T> {
 
         @Override
         public void onError(final Throwable throwable) {
-            HillviewLogManager.instance.logger.log(
-                    Level.SEVERE, "OperationObserver onError", throwable);
+            HillviewLogging.logger.error("Caught exception", throwable);
             throwable.printStackTrace();
             this.subject.onError(throwable);
         }

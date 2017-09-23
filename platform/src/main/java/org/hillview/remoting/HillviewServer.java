@@ -16,7 +16,7 @@ import org.hillview.pb.Command;
 import org.hillview.pb.HillviewServerGrpc;
 import org.hillview.pb.PartialResponse;
 import org.hillview.utils.Converters;
-import org.hillview.utils.HillviewLogManager;
+import org.hillview.utils.HillviewLogging;
 import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
@@ -30,7 +30,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
 
 /**
  * Server that transfers map(), test(), zip() and unsubscribe() RPCs from a RemoteDataSet
@@ -87,8 +86,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
 
             @Override
             public void onError(final Throwable e) {
-                HillviewLogManager.instance.logger.log(
-                        Level.SEVERE, "Error when creating subscriber", e);
+                HillviewLogging.logger.error("Error when creating subscriber", e);
                 e.printStackTrace();
                 responseObserver.onError(asStatusRuntimeException(e));
                 HillviewServer.this.operationToObservable.remove(id);
@@ -125,7 +123,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             }
             final byte[] bytes = command.getSerializedOp().toByteArray();
             if (this.respondIfReplyIsMemoized(command, responseObserver)) {
-                HillviewLogManager.instance.logger.info(
+                HillviewLogging.logger.info(
                         "Returning memoized result for map operation against IDataSet#" + command.getIdsIndex());
                 return;
             }
@@ -138,8 +136,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             final Subscription sub = observable.subscribe(this.createSubscriber(command, commandId, responseObserver));
             this.operationToObservable.put(commandId, sub);
         } catch (final Exception e) {
-            HillviewLogManager.instance.logger.log(
-                    Level.WARNING, "Exception in map", e);
+            HillviewLogging.logger.warn("Exception in map", e);
             e.printStackTrace();
             responseObserver.onError(asStatusRuntimeException(e));
         }
@@ -159,7 +156,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             final byte[] bytes = command.getSerializedOp().toByteArray();
 
             if (this.respondIfReplyIsMemoized(command, responseObserver)) {
-                HillviewLogManager.instance.logger.info(
+                HillviewLogging.logger.info(
                         "Returning memoized result for flatMap operation against IDataSet#" + command.getIdsIndex());
                 return;
             }
@@ -172,8 +169,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                                                                                 commandId, responseObserver));
             this.operationToObservable.put(commandId, sub);
         } catch (final Exception e) {
-            HillviewLogManager.instance.logger.log(
-                    Level.WARNING, "Exception in flatMap", e);
+            HillviewLogging.logger.warn("Exception in flatMap", e);
             e.printStackTrace();
             responseObserver.onError(asStatusRuntimeException(e));
         }
@@ -190,7 +186,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                 return;
             }
             if (this.respondIfReplyIsMemoized(command, responseObserver)) {
-                HillviewLogManager.instance.logger.info(
+                HillviewLogging.logger.info(
                         "Returning memoized result for test operation against IDataSet#" + command.getIdsIndex());
                 return;
             }
@@ -222,8 +218,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
 
                 @Override
                 public void onError(final Throwable e) {
-                    HillviewLogManager.instance.logger.log(
-                            Level.WARNING, "Exception in sketch", e);
+                    HillviewLogging.logger.warn("Exception in sketch", e);
                     e.printStackTrace();
                     responseObserver.onError(asStatusRuntimeException(e));
                     HillviewServer.this.operationToObservable.remove(commandId);
@@ -242,8 +237,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             });
             this.operationToObservable.put(commandId, sub);
         } catch (final Exception e) {
-            HillviewLogManager.instance.logger.log(
-                    Level.SEVERE, "Exception in sketch", e);
+            HillviewLogging.logger.error("Exception in sketch", e);
             e.printStackTrace();
             responseObserver.onError(asStatusRuntimeException(e));
         }
@@ -263,7 +257,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                 return;
             }
             if (this.respondIfReplyIsMemoized(command, responseObserver)) {
-                HillviewLogManager.instance.logger.info(
+                HillviewLogging.logger.info(
                         "Returning memoized result for zip operation against IDataSet#" + command.getIdsIndex());
                 return;
             }
@@ -277,8 +271,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                     this.createSubscriber(command, commandId, responseObserver));
             this.operationToObservable.put(commandId, sub);
         } catch (final Exception e) {
-            HillviewLogManager.instance.logger.log(
-                    Level.SEVERE, "Exception in zip", e);
+            HillviewLogging.logger.error("Exception in zip", e);
             e.printStackTrace();
             responseObserver.onError(asStatusRuntimeException(e));
         }
@@ -297,8 +290,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                 subscription.unsubscribe();
             }
         } catch (final Exception e) {
-            HillviewLogManager.instance.logger.log(
-                    Level.WARNING, "Exception in unsubscribe", e);
+            HillviewLogging.logger.warn("Exception in unsubscribe", e);
             responseObserver.onError(asStatusRuntimeException(e));
         }
     }

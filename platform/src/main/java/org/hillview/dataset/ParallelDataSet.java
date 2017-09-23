@@ -20,21 +20,19 @@ package org.hillview.dataset;
 
 import org.hillview.dataset.api.*;
 import org.hillview.utils.Converters;
-import org.hillview.utils.HillviewLogManager;
 import rx.Observable;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
 
 /**
  * A ParallelDataSet holds together multiple IDataSet objects and invokes operations on them
  * concurrently.  It also implements IDataSet itself.
  * @param <T>  Type of data in the DataSet.
  */
-public class ParallelDataSet<T> implements IDataSet<T> {
+public class ParallelDataSet<T> extends BaseDataSet<T> {
     /*
      * A ParallelDataSet invokes operations on children concurrently.  It then combines the
      * results obtained form its children into a single stream.  It also has the option to
@@ -93,15 +91,6 @@ public class ParallelDataSet<T> implements IDataSet<T> {
     }
 
     /**
-     * Helper function which can be invoked in a map over streams to log the processing
-     * over each stream element.
-     */
-    private <S> S log(S data, String message) {
-        HillviewLogManager.instance.logger.log(Level.INFO, message);
-        return data;
-    }
-
-    /**
      * This function groups R values that come too close in time (within a 'bundleInterval'
      * time interval) and "adds" them up emitting a single value.
      * @param data  A stream of data.
@@ -112,11 +101,11 @@ public class ParallelDataSet<T> implements IDataSet<T> {
 
     <R> Observable<R> bundle(final Observable<R> data, IMonoid<R> adder) {
         if (this.bundleInterval > 0) {
+            // If a time interval has no data we don't want to produce a zero.
             Observable<List<R>> bundled = data.buffer(this.bundleInterval, bundleTimeUnit)
                        .filter(e -> !e.isEmpty());
             if (ParallelDataSet.useLogging)
-                       // If a time interval has no data we don't want to produce a zero.
-                bundled = bundled.map(e -> log(e, "bundling " + e.size() + " values"));
+                bundled = bundled.map(e -> this.log(e, "bundling " + e.size() + " values"));
             return bundled.map(adder::reduce);
         } else {
             return data;

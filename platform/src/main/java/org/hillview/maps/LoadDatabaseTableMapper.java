@@ -6,7 +6,6 @@ import org.hillview.table.JdbcConnectionInformation;
 import org.hillview.table.api.ITable;
 import org.hillview.table.api.JdbcDatabase;
 
-import java.net.MalformedURLException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 

@@ -77,7 +77,7 @@ public class DateParsing {
                     else
                         LocalDateTime.parse(s, d);
 
-                    HillviewLogManager.instance.logger.info(
+                    HillviewLogging.logger.info(
                             "Guessed date format " + d);
                     this.parserFormatter = d;
                     return;
@@ -93,7 +93,7 @@ public class DateParsing {
             if (s.toLowerCase().matches(regexp)) {
                 String format = DATE_FORMAT_REGEXPS.get(regexp);
                 this.parserFormatter = DateTimeFormatter.ofPattern(format);
-                HillviewLogManager.instance.logger.info(
+                HillviewLogging.logger.info(
                         "Guessed date format " + regexp);
                 return;
             }
