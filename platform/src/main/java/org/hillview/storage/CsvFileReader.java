@@ -6,7 +6,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,7 +21,7 @@ package org.hillview.storage;
 import com.univocity.parsers.csv.CsvFormat;
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
-import org.hillview.table.BaseListColumn;
+import org.hillview.table.columns.BaseListColumn;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.Table;
@@ -180,6 +180,8 @@ public class CsvFileReader {
             }
 
             reader.stopParsing();
+            for (BaseListColumn c: this.columns)
+                c.seal();
             return new Table(columns);
         }
     }

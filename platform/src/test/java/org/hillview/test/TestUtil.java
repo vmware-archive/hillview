@@ -6,7 +6,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,6 +20,9 @@ package org.hillview.test;
 import org.hillview.table.*;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
+import org.hillview.table.columns.DateArrayColumn;
+import org.hillview.table.columns.DoubleArrayColumn;
+import org.hillview.table.columns.StringArrayColumn;
 import org.hillview.utils.Randomness;
 import java.time.LocalDateTime;
 import java.util.ArrayList;

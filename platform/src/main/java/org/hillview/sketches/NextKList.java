@@ -6,7 +6,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,7 +21,7 @@ package org.hillview.sketches;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import org.hillview.table.RowSnapshot;
+import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.Schema;
 import org.hillview.table.SmallTable;
 import org.hillview.table.api.IRowIterator;

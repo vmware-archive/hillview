@@ -6,7 +6,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,6 +19,8 @@
 package org.hillview.table;
 
 import org.hillview.table.api.*;
+import org.hillview.table.columns.BaseArrayColumn;
+import org.hillview.table.rows.RowSnapshot;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -43,6 +45,7 @@ public abstract class BaseTable implements ITable, Serializable {
 
     <C extends IColumn> BaseTable(Iterable<C> columns) {
         BaseTable.columnSize(columns);  // validate column sizes
+        sealColumns(columns);
         this.columns = new HashMap<String, IColumn>();
         for (final IColumn c : columns)
             this.columns.put(c.getName(), c);
@@ -155,5 +158,15 @@ public abstract class BaseTable implements ITable, Serializable {
             count++;
         }
         return builder.toString();
+    }
+
+    static <C extends IColumn> void sealColumns(Iterable<C> columns) {
+        for (C c: columns) {
+            if (c instanceof IMutableColumn) {
+                ((IMutableColumn)c).seal();
+            } else if (c instanceof IAppendableColumn) {
+                ((IAppendableColumn)c).seal();
+            }
+        }
     }
 }

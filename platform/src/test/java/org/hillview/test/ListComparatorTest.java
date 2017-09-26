@@ -6,7 +6,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,9 +19,9 @@
 package org.hillview.test;
 
 import org.hillview.table.ColumnDescription;
-import org.hillview.table.IntArrayColumn;
+import org.hillview.table.columns.IntArrayColumn;
 import org.hillview.table.ListComparator;
-import org.hillview.table.StringArrayColumn;
+import org.hillview.table.columns.StringArrayColumn;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IndexComparator;

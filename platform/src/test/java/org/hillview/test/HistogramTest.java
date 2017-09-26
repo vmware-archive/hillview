@@ -6,7 +6,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,7 +22,7 @@ import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.sketches.*;
-import org.hillview.table.DoubleArrayColumn;
+import org.hillview.table.columns.DoubleArrayColumn;
 import org.hillview.table.FullMembership;
 import org.hillview.table.Table;
 import org.hillview.table.api.ColumnAndConverter;
