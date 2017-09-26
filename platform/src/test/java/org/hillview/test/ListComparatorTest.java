@@ -13,15 +13,14 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package org.hillview.test;
 
 import org.hillview.table.ColumnDescription;
-import org.hillview.table.IntArrayColumn;
+import org.hillview.table.columns.IntArrayColumn;
 import org.hillview.table.ListComparator;
-import org.hillview.table.StringArrayColumn;
+import org.hillview.table.columns.StringArrayColumn;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IndexComparator;

@@ -1,8 +1,24 @@
+/*
+ * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import {RemoteTableObjectView} from "./tableData";
 import {significantDigits, FullPage, Resolution} from "./ui";
-import {ColumnDescription, Schema, ContentsKind, RecordOrder} from "./tableData";
+import {ColumnDescription, Schema, RecordOrder} from "./tableData";
 import {TableView, TableDataView, TopList, TableOperationCompleted} from "./table";
-import {Converters} from "./util";
 import {TopMenu, TopSubMenu} from "./menu";
 import {DataRange} from "./vis";
 
@@ -25,7 +41,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
                 {text: "As Table", action: () => {this.showTable();}}
             ])
         }
-        ])
+        ]);
         this.topLevel.appendChild(menu.getHTMLRepresentation());
         this.topLevel.appendChild(document.createElement("br"));
     }
@@ -160,7 +176,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
         for (let j = 0; j < this.schema.length; j++) {
             let cell = trow.insertCell(j+1);
             cell.style.textAlign = "right";
-            cell.textContent = "Everything Else";
+            cell.textContent = "everything else";
             cell.classList.add("missingData");
         }
         let cell1 = trow.insertCell(this.schema.length + 1);

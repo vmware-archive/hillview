@@ -13,13 +13,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package org.hillview.storage;
 
 import org.hillview.table.ColumnDescription;
-import org.hillview.table.StringListColumn;
+import org.hillview.table.columns.StringListColumn;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 

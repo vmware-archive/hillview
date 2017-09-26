@@ -1,18 +1,18 @@
 /*
- * Copyright (c) 2017 VMWare Inc. All Rights Reserved.
+ * Copyright (c) 2017 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.hillview;
@@ -27,10 +27,13 @@ import org.hillview.maps.FilterMap;
 import org.hillview.maps.LinearProjectionMap;
 import org.hillview.sketches.*;
 import org.hillview.table.*;
-import org.hillview.table.api.ColumnNameAndConverter;
-import org.hillview.table.api.ContentsKind;
-import org.hillview.table.api.IStringConverter;
-import org.hillview.table.api.ITable;
+import org.hillview.table.api.*;
+import org.hillview.table.columns.ColPair;
+import org.hillview.table.columns.ColTriple;
+import org.hillview.table.filters.EqualityFilterDescription;
+import org.hillview.table.filters.RangeFilterDescription;
+import org.hillview.table.filters.RangeFilterPair;
+import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.Converters;
 import org.hillview.utils.LinAlg;
 import org.jblas.DoubleMatrix;
@@ -187,45 +190,21 @@ public final class TableTarget extends RpcTarget {
 
     @HillviewRpc
     void filterEquality(RpcRequest request, Session session) {
-        EqualityFilterDescription info = request.parseArgs(EqualityFilterDescription.class);
-        String colName = info.columnDescription.name;
-        Object compareValue;
-
-        switch (info.columnDescription.kind) {
-            case String:
-            case Json:
-            case Category:
-                compareValue = info.compareValue;
-                break;
-            case Integer:
-                compareValue = Integer.parseInt(info.compareValue);
-                break;
-            case Date:
-            case Double:
-            case Duration:
-                compareValue = Double.parseDouble(info.compareValue);
-                break;
-            default:
-                throw new RuntimeException("Unhandled column kind " + info.columnDescription.kind);
-        }
-
-        EqualityFilter equalityFilter = new EqualityFilter(colName, compareValue, info.complement);
-        FilterMap filterMap = new FilterMap(equalityFilter);
+        EqualityFilterDescription filter = request.parseArgs(EqualityFilterDescription.class);
+        FilterMap filterMap = new FilterMap(filter);
         this.runMap(this.table, filterMap, TableTarget::new, request, session);
     }
 
     @HillviewRpc
     void filterRange(RpcRequest request, Session session) {
-        RangeFilterDescription info = request.parseArgs(RangeFilterDescription.class);
-        RangeFilter filter = new RangeFilter(info);
+        RangeFilterDescription filter = request.parseArgs(RangeFilterDescription.class);
         FilterMap fm = new FilterMap(filter);
         this.runMap(this.table, fm, TableTarget::new, request, session);
     }
 
     @HillviewRpc
     void filter2DRange(RpcRequest request, Session session) {
-        RangeFilterPair info = request.parseArgs(RangeFilterPair.class);
-        Range2DFilter filter = new Range2DFilter(info);
+        RangeFilterPair filter = request.parseArgs(RangeFilterPair.class);
         FilterMap fm = new FilterMap(filter);
         this.runMap(this.table, fm, TableTarget::new, request, session);
     }
@@ -331,7 +310,7 @@ public final class TableTarget extends RpcTarget {
         HeavyHittersFilterInfo hhi = request.parseArgs(HeavyHittersFilterInfo.class);
         RpcTarget target = RpcObjectManager.instance.getObject(hhi.hittersId);
         HeavyHittersTarget hht = (HeavyHittersTarget)target;
-        TableFilter filter = hht.heavyHitters.heavyFilter(Converters.checkNull(hhi.schema));
+        ITableFilterDescription filter = hht.heavyHitters.heavyFilter(Converters.checkNull(hhi.schema));
         FilterMap fm = new FilterMap(filter);
         this.runMap(this.table, fm, TableTarget::new, request, session);
     }

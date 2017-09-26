@@ -13,14 +13,13 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package org.hillview.dataset.api;
 
 /**
- * A closure that runs a computation on an object of type T
- * and returns an object of type S.
+ * A closure that runs a computation on an object of type T and returns an object of type S.
+ * IMap objects have to be immutable once created.
  * @param <T> Input type.
  * @param <S> Output type.
  */

@@ -13,7 +13,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package org.hillview.sketches;
@@ -21,6 +20,9 @@ package org.hillview.sketches;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.table.*;
 import org.hillview.table.api.*;
+import org.hillview.table.columns.ObjectArrayColumn;
+import org.hillview.table.rows.RowSnapshot;
+import org.hillview.table.rows.VirtualRowSnapshot;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;

@@ -13,7 +13,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package org.hillview.table;
@@ -43,10 +42,8 @@ public class Table extends BaseTable {
      * @param members  Membership set (rows in the table).
      * @param schema   Schema; must match the set of columns.
      */
-    protected <C extends IColumn> Table(final Iterable<C> columns, final
-    IMembershipSet members,
-                     Schema
-            schema) {
+    protected <C extends IColumn> Table(
+            final Iterable<C> columns, final IMembershipSet members, Schema schema) {
         super(columns);
         this.members = members;
         this.schema = schema;

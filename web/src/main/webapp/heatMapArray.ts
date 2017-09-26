@@ -1,28 +1,27 @@
 /*
- * Copyright (c) 2017 VMWare Inc. All Rights Reserved.
+ * Copyright (c) 2017 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
-import {Renderer, combineMenu, SelectedObject, CombineOperators} from "./rpc";
+import {Renderer} from "./rpc";
 import {Dialog} from "./dialog";
 import {TopMenu, TopSubMenu} from "./menu";
 import {TableView, TableRenderer} from "./table";
-import {RecordOrder, ZipReceiver} from "./tableData";
+import {RecordOrder} from "./tableData";
 import {
-    FullPage, Size, Resolution, IHtmlElement, ScrollBar, significantDigits, IScrollTarget,
-    removeAllChildren
+    FullPage, Size, Resolution, ScrollBar, significantDigits, IScrollTarget
 } from "./ui";
 import {Pair, Triple, truncate, Point2D, ICancellable, PartialResult} from "./util";
 import {ColorMap, ColorLegend} from "./vis";
@@ -107,14 +106,14 @@ export class CompactHeatMapView {
             .attr("width", this.size.width)
             .attr("height", this.size.height)
             .style("fill-opacity", 0)
-            .style("stroke", "black")
+            .style("stroke", "black");
 
         binLabel = truncate(binLabel, CompactHeatMapView.maxTextLabelLength);
         this.g.append("text")
             .text(binLabel)
             .attr("text-anchor", "middle")
             .attr("x", this.size.width / 2)
-            .attr("y", Resolution.lineHeight)
+            .attr("y", Resolution.lineHeight);
 
         this.chart = this.g.append("g")
             .attr("transform", `translate(0, ${Resolution.lineHeight})`)
@@ -171,13 +170,13 @@ export class CompactHeatMapView {
             .attr("y", 0)
             .attr("width", Resolution.leftMargin)
             .attr("height", this.chartSize.height)
-            .attr("fill", "rgba(255, 255, 255, 0.9)")
+            .attr("fill", "rgba(255, 255, 255, 0.9)");
         this.axesG.append("rect")
             .attr("x", 0)
             .attr("y", this.chartSize.height)
             .attr("width", this.chartSize.width)
             .attr("height", Resolution.bottomMargin)
-            .attr("fill", "rgba(255, 255, 255, 0.9)")
+            .attr("fill", "rgba(255, 255, 255, 0.9)");
 
         // Draw the x and y axes
         this.axesG.append("g")
@@ -312,7 +311,7 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
         // Add a listener that updates the heat maps when the color map changes.
         this.colorLegend.setColorMapChangeEventListener(() => {
             this.reapplyColorMap();
-        })
+        });
         this.topLevel.appendChild(this.colorLegend.getHTMLRepresentation());
 
         // Div containing the array and the scrollbar
@@ -437,7 +436,7 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
         let svgSize = this.actualDrawingSize();
         this.heatMapsSvg
             .attr("width", svgSize.width)
-            .attr("height", svgSize.height)
+            .attr("height", svgSize.height);
 
         let data = heatMapsArray.buckets;
         let xDim = data.length;
@@ -449,12 +448,12 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
         let chartSize: Size = { // Constant, but should be specified by the caller.
             width: CompactHeatMapView.size.width,
             height: CompactHeatMapView.size.height
-        }
+        };
         let labelSize: Size = {
             width: CompactHeatMapView.size.width,
             height: Resolution.lineHeight
-        }
-        let [numCols, numRows] = this.numHeatMaps();
+        };
+        let numCols = this.numHeatMaps()[0];
 
         let max = 0;
         this.heatMaps = new Array<CompactHeatMapView>(zDim);
@@ -515,7 +514,7 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
         let [numCols, numRows] = this.numHeatMaps();
         let i = Math.floor(numCols * mouse[0] / this.heatMapsSvg.attr("width"));
         let j = Math.floor(numRows * mouse[1] / this.heatMapsSvg.attr("height"));
-        let index = numCols * j + i
+        let index = numCols * j + i;
 
         let newMouseOverHeatMap: CompactHeatMapView;
         if (index >= this.heatMaps.length)
@@ -527,7 +526,7 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
         if (newMouseOverHeatMap != this.mouseOverHeatMap && this.mouseOverHeatMap != null) {
             this.mouseOverHeatMap.hideAxes();
         }
-        this.mouseOverHeatMap = newMouseOverHeatMap
+        this.mouseOverHeatMap = newMouseOverHeatMap;
 
         // Show the new heat map's axes
         if (this.mouseOverHeatMap != null){

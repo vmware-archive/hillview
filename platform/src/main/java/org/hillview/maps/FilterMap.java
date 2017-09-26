@@ -13,16 +13,18 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package org.hillview.maps;
 
 import org.hillview.dataset.api.IMap;
-import org.hillview.table.FalseTableFilter;
-import org.hillview.table.TableFilter;
+import org.hillview.table.filters.FalseTableFilter;
+import org.hillview.table.api.ITableFilterDescription;
+import org.hillview.table.api.ITableFilter;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.ITable;
+
+import javax.annotation.Nullable;
 
 /**
  * A Map which implements table filtering: given a row index it returns true if the
@@ -30,23 +32,28 @@ import org.hillview.table.api.ITable;
  */
 public class FilterMap implements IMap<ITable, ITable> {
     /**
-     * Argument is a row index.
+     * Argument to the rowFilterPredicate.test method is a row index.
      * Returns true if a row has to be preserved
      */
-    private final TableFilter rowFilterPredicate;
+    @Nullable
+    private final ITableFilterDescription rowFilterPredicate;
 
     public FilterMap() {
-        rowFilterPredicate = new FalseTableFilter();
+        this.rowFilterPredicate = null;
     }
 
-    public FilterMap(TableFilter rowFilterPredicate) {
+    public FilterMap(ITableFilterDescription rowFilterPredicate) {
         this.rowFilterPredicate = rowFilterPredicate;
     }
 
     @Override
     public ITable apply(ITable data) {
-        this.rowFilterPredicate.setTable(data);
-        IMembershipSet result = data.getMembershipSet().filter(this.rowFilterPredicate::test);
+        ITableFilter filter;
+        if (this.rowFilterPredicate == null)
+            filter = new FalseTableFilter();
+        else
+            filter = this.rowFilterPredicate.getFilter(data);
+        IMembershipSet result = data.getMembershipSet().filter(filter::test);
         return data.selectRowsFromFullTable(result);
     }
 }

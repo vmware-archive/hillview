@@ -13,7 +13,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package org.hillview.test;
@@ -22,6 +21,7 @@ import org.hillview.table.*;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.ITable;
+import org.hillview.table.columns.IntArrayColumn;
 import org.hillview.utils.IntArrayGenerator;
 import org.hillview.utils.TestTables;
 import org.junit.Test;

@@ -13,7 +13,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package org.hillview.utils;
@@ -23,6 +22,10 @@ import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.table.*;
 import org.hillview.table.api.*;
+import org.hillview.table.columns.CategoryArrayColumn;
+import org.hillview.table.columns.DoubleArrayColumn;
+import org.hillview.table.columns.IntArrayColumn;
+import org.hillview.table.columns.StringArrayColumn;
 import org.jblas.DoubleMatrix;
 import org.junit.Assert;
 

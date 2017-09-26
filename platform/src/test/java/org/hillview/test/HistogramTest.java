@@ -13,7 +13,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package org.hillview.test;
@@ -22,7 +21,7 @@ import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.sketches.*;
-import org.hillview.table.DoubleArrayColumn;
+import org.hillview.table.columns.DoubleArrayColumn;
 import org.hillview.table.FullMembership;
 import org.hillview.table.Table;
 import org.hillview.table.api.ColumnAndConverter;

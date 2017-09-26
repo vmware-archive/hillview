@@ -13,7 +13,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package org.hillview.dataset.api;
@@ -22,7 +21,7 @@ import org.hillview.utils.Converters;
 /**
  * Describes a sketch computation on a dataset of type T that produces a result of type R.
  * This class is also a monoid which knows how to combine two values of type R using the add
- * method.
+ * method.  Sketch objects have to be immutable once created.
  * @param <T> Input data type.
  * @param <R> Output data type.
  */

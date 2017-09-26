@@ -13,7 +13,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package org.hillview.storage;
@@ -21,7 +20,7 @@ package org.hillview.storage;
 import com.univocity.parsers.csv.CsvFormat;
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
-import org.hillview.table.BaseListColumn;
+import org.hillview.table.columns.BaseListColumn;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.Table;
@@ -180,6 +179,8 @@ public class CsvFileReader {
             }
 
             reader.stopParsing();
+            for (BaseListColumn c: this.columns)
+                c.seal();
             return new Table(columns);
         }
     }

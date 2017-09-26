@@ -13,12 +13,13 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package org.hillview.table;
 
 import org.hillview.table.api.*;
+import org.hillview.table.columns.BaseArrayColumn;
+import org.hillview.table.rows.RowSnapshot;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -43,6 +44,7 @@ public abstract class BaseTable implements ITable, Serializable {
 
     <C extends IColumn> BaseTable(Iterable<C> columns) {
         BaseTable.columnSize(columns);  // validate column sizes
+        sealColumns(columns);
         this.columns = new HashMap<String, IColumn>();
         for (final IColumn c : columns)
             this.columns.put(c.getName(), c);
@@ -155,5 +157,15 @@ public abstract class BaseTable implements ITable, Serializable {
             count++;
         }
         return builder.toString();
+    }
+
+    static <C extends IColumn> void sealColumns(Iterable<C> columns) {
+        for (C c: columns) {
+            if (c instanceof IMutableColumn) {
+                ((IMutableColumn)c).seal();
+            } else if (c instanceof IAppendableColumn) {
+                ((IAppendableColumn)c).seal();
+            }
+        }
     }
 }

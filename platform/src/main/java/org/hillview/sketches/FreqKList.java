@@ -1,10 +1,26 @@
+/*
+ * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.hillview.sketches;
 
 import org.hillview.dataset.api.Pair;
-import org.hillview.table.RowSnapshot;
-import org.hillview.table.RowSnapshotSet;
+import org.hillview.table.rows.RowSnapshot;
+import org.hillview.table.rows.RowSnapshotSet;
 import org.hillview.table.Schema;
-import org.hillview.table.TableFilter;
 import org.hillview.utils.Converters;
 
 import java.io.Serializable;
@@ -157,8 +173,8 @@ public class FreqKList implements Serializable {
         return builder.toString();
     }
 
-    public TableFilter heavyFilter(final Schema schema) {
+    public RowSnapshotSet.SetTableFilterDescription heavyFilter(final Schema schema) {
         RowSnapshotSet rss = new RowSnapshotSet(schema, this.hMap.keySet());
-        return rss.rowInTable();
+        return new RowSnapshotSet.SetTableFilterDescription(rss);
     }
 }

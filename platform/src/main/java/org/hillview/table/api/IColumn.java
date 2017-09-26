@@ -13,13 +13,13 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package org.hillview.table.api;
 
 import net.openhft.hashing.LongHashFunction;
 import org.hillview.table.*;
+import org.hillview.table.columns.*;
 
 import javax.annotation.Nullable;
 import java.io.Serializable;

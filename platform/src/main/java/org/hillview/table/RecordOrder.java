@@ -13,7 +13,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package org.hillview.table;
@@ -23,6 +22,7 @@ import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ISubSchema;
 import org.hillview.table.api.ITable;
 import org.hillview.table.api.IndexComparator;
+import org.hillview.table.rows.VirtualRowSnapshot;
 
 import java.io.Serializable;
 import java.util.ArrayList;

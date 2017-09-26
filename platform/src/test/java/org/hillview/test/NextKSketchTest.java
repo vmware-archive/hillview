@@ -13,7 +13,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package org.hillview.test;
@@ -28,6 +27,7 @@ import org.hillview.table.*;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.ITable;
 import org.hillview.table.api.IndexComparator;
+import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.Converters;
 import org.hillview.utils.TestTables;
 import org.junit.Assert;
