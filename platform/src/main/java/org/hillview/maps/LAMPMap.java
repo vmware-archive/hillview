@@ -2,10 +2,11 @@ package org.hillview.maps;
 
 import org.hillview.dataset.api.IMap;
 import org.hillview.table.ColumnDescription;
-import org.hillview.table.DoubleArrayColumn;
-import org.hillview.table.SparseColumn;
+
 import org.hillview.table.Table;
 import org.hillview.table.api.*;
+import org.hillview.table.columns.DoubleArrayColumn;
+import org.hillview.table.columns.SparseColumn;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
 import org.jblas.Singular;

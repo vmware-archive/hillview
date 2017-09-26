@@ -275,6 +275,12 @@ table.dropdown {
     position: relative;
 }
 
+.lampView circle.controlPoint {
+    fill: lime;
+    stroke: black;
+    stroke-width: 2px;
+}
+
 .heatMapArray > svg {
     display: inline;
     overflow: visible;

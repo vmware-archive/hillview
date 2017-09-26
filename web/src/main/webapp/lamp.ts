@@ -1,12 +1,13 @@
 import {Dialog} from "./dialog";
 import {TopMenu, TopSubMenu} from "./menu";
-import {TableView, TableRenderer} from "./table";
+import {TableDataView, TableView, TableRenderer} from "./table";
 import {ContentsKind, RangeInfo, BasicColStats, Schema, RemoteTableObject, RemoteTableObjectView, RemoteTableRenderer, ColumnAndRange, RecordOrder} from "./tableData";
 import {FullPage, IDataView, Resolution} from "./ui";
 import {Renderer, RpcReceiver, RpcRequest} from "./rpc";
 import {PartialResult, Point2D, clamp, Pair} from "./util";
 import {HeatMapData} from "./heatMap";
-import {ColorMap} from "./vis";
+import {HeatMapArrayDialog} from "./heatMapArray";
+import {ColorMap, ColorLegend} from "./vis";
 import d3 = require('d3');
 
 export class PointSet2D {
@@ -25,6 +26,8 @@ class ControlPointsView extends RemoteTableObjectView {
     public controlPoints: PointSet2D;
     private heatMap: HeatMapData;
     private lampTableObject: RemoteTableObject;
+    private colorMap: ColorMap;
+    private colorLegend: ColorLegend;
 
     constructor(private originalTableObject: RemoteTableObject, page: FullPage, private controlPointsId, private selectedColumns) {
         super(originalTableObject.remoteObjectId, page);
@@ -37,11 +40,18 @@ class ControlPointsView extends RemoteTableObjectView {
                 { text: "refresh", action: () => { this.refresh(); } },
                 { text: "update ranges", action: () => { this.fetchNewRanges(); } },
                 { text: "table", action: () => { this.showTable(); } },
+                { text: "3D heat map", action: () => { this.heatMap3D(); } },
             ]) }
         ]);
 
         this.topLevel.appendChild(menu.getHTMLRepresentation());
 
+        this.colorMap = new ColorMap(0, 1);
+        this.colorLegend = new ColorLegend(this.colorMap);
+        this.colorLegend.setColorMapChangeEventListener(() => {
+            this.refresh();
+        });
+        this.topLevel.appendChild(this.colorLegend.getHTMLRepresentation());
         let chartDiv = document.createElement("div")
         this.topLevel.appendChild(chartDiv);
 
@@ -134,9 +144,9 @@ class ControlPointsView extends RemoteTableObjectView {
                 }
             }
         }
-        let colorMap = new ColorMap(1, max);
-        if (max > ColorMap.logThreshold)
-            colorMap.setLogScale(true);
+        this.colorMap.min = 1;
+        this.colorMap.max = max;
+        this.colorLegend.redraw();
         this.heatMapChart.selectAll()
             .data(dots)
             .enter()
@@ -147,7 +157,7 @@ class ControlPointsView extends RemoteTableObjectView {
             .attr("width", pointWidth)
             .attr("height", pointHeight)
             .style("stroke-width", 0)
-            .style("fill", d => colorMap.apply(d.v));
+            .style("fill", d => this.colorMap.apply(d.v));
     }
 
     public applyLAMP() {
@@ -222,7 +232,7 @@ class ControlPointsView extends RemoteTableObjectView {
                 .attr("cx", p => p.x)
                 .attr("cy", p => p.y)
                 .attr("r", radius / scale)
-                .attr("fill", "white")
+                .attr("class", "controlPoint")
                 .attr("stroke", "black")
                 .attr("vector-effect", "non-scaling-stroke")
                 .call(d3.drag()
@@ -248,6 +258,11 @@ class ControlPointsView extends RemoteTableObjectView {
         page.setDataView(table);
         let rr = this.lampTableObject.createGetSchemaRequest();
         rr.invoke(new TableRenderer(this.page, table, rr, false, new RecordOrder([])));
+    }
+
+    private heatMap3D() {
+        let rr = this.lampTableObject.createGetSchemaRequest();
+        rr.invoke(new SchemaCollector(this.getPage(), rr, this.lampTableObject));
     }
 }
 
@@ -375,5 +390,23 @@ class LAMPRangeCollector extends Renderer<Pair<BasicColStats, BasicColStats>> {
     onNext(result: PartialResult<Pair<BasicColStats, BasicColStats>>) {
         super.onNext(result);
         this.cpView.updateRanges(result.data.first, result.data.second);
+    }
+}
+
+class SchemaCollector extends Renderer<TableDataView> {
+    private schema: Schema;
+    constructor(page, operation, private tableObject) {
+        super(page, operation, "Getting new schema");
+
+    }
+
+    onNext(value: PartialResult<TableDataView>) {
+        this.schema = value.data.schema;
+    }
+
+    onCompleted() {
+        super.onCompleted();
+        let dialog = new HeatMapArrayDialog(["LAMP1", "LAMP2"], this.page, this.schema, this.tableObject);
+        dialog.show();
     }
 }
