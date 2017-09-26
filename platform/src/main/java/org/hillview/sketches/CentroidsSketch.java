@@ -22,6 +22,7 @@ import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
+import java.io.Serializable;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;

@@ -25,6 +25,7 @@ import {RpcRequest, RemoteObject, CombineOperators, Renderer} from "./rpc";
 import {FullPage, IDataView, Resolution} from "./ui";
 import {EqualityFilterDescription} from "./equalityFilter";
 import {ICancellable, PartialResult, Triple} from "./util";
+import {PointSet2D} from "./lamp";
 export type ContentsKind = "Category" | "Json" | "String" | "Integer" | "Double" | "Date" | "Interval";
 export function asContentsKind(kind: string): ContentsKind {
     switch (kind) {
@@ -255,6 +256,22 @@ export class RemoteTableObject extends RemoteObject {
 
     public createSetOperationRequest(setOp: CombineOperators): RpcRequest {
         return this.createRpcRequest("setOperation", CombineOperators[setOp]);
+    }
+
+    public createSampledControlPointsRequest(numSamples: number, columnNames: string[]) {
+        return this.createRpcRequest("sampledControlPoints", {numSamples: numSamples, columnNames: columnNames});
+    }
+
+    public createCategoricalCentroidsControlPointsRequest(categoricalColumnName: string, numericalColumnNames: string[]) {
+        return this.createRpcRequest("categoricalCentroidsControlPoints", {categoricalColumnName: categoricalColumnName, numericalColumnNames: numericalColumnNames});
+    }
+
+    public createMDSProjectionRequest(id: string, seed: number = 1) {
+        return this.createRpcRequest("makeMDSProjection", {id: id, seed: seed});
+    }
+
+    public createLAMPMapRequest(controlPointsId: string, colNames: string[], controlPoints: PointSet2D, newColNames: string[]) {
+        return this.createRpcRequest("lampMap", {controlPointsId: controlPointsId, colNames: colNames, newLowDimControlPoints: controlPoints, newColNames: newColNames});
     }
 }
 

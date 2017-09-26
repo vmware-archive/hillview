@@ -28,6 +28,7 @@ import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
 import org.hillview.utils.LinAlg;
 import org.hillview.utils.TestTables;
+import org.hillview.utils.TestUtils;
 import org.jblas.DoubleMatrix;
 import org.junit.Assert;
 import org.junit.Test;
@@ -73,34 +74,10 @@ public class PCATest {
     }
 
     @Test
-    public void testMNIST() throws IOException {
-        String dataFolder = "../data";
-        String csvFile = "mnist.csv";
-        String schemaFile = "mnist.schema";
-        Path path = Paths.get(dataFolder, schemaFile);
+    public void testMNIST(){
         try {
-            Schema schema = Schema.readFromJsonFile(path);
-            path = Paths.get(dataFolder, csvFile);
-            CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
-            config.allowFewerColumns = false;
-            config.hasHeaderRow = true;
-            config.allowMissingData = false;
-            config.schema = schema;
-            CsvFileReader r = new CsvFileReader(path, config);
-
-            ITable table;
-            table = r.read();
-            table = Converters.checkNull(table);
-
-            // List the numeric columns
-            List<String> numericColNames = new ArrayList<String>();
-            Set<String> colNames = table.getSchema().getColumnNames();
-            for (String colName : colNames) {
-                ContentsKind kind = table.getSchema().getDescription(colName).kind;
-                if (kind == ContentsKind.Double || kind == ContentsKind.Integer) {
-                    numericColNames.add(colName);
-                }
-            }
+            ITable table = TestUtils.loadTableFromCSV("../data", "mnist.csv", "mnist.schema");
+            List<String> numericColNames = TestUtils.getNumericColumnNames(table);
 
             FullCorrelationSketch fcs = new FullCorrelationSketch(numericColNames);
             CorrMatrix cm = fcs.create(table);
@@ -108,8 +85,8 @@ public class PCATest {
             DoubleMatrix eigenVectors = LinAlg.eigenVectors(corrMatrix, 2);
             LinearProjectionMap lpm = new LinearProjectionMap(numericColNames, eigenVectors, "PCA");
             ITable result = lpm.apply(table);
-        } catch (FileNotFoundException|NoSuchFileException e) {
-            System.out.println("Skipped test because " + csvFile + " is not present.");
+        } catch (IOException e) {
+            System.out.println("Skipped test because MNIST data is not present.");
         }
     }
 }

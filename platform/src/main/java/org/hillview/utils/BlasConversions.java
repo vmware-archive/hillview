@@ -48,36 +48,10 @@ public class BlasConversions {
             int row = iter.getNextRow();
             int i = 0;
             while (row >= 0) {
-                mat.put(i, j, col.asDouble(row, null));
-                row = iter.getNextRow();
-                i++;
-            }
-        }
-        return mat;
-    }
-
-    /**
-     * Convert from an ITable to a DoubleMatrix. This copies all data from the table.
-     * @param table Table that is to be converted.
-     * @param colNames Names of columns in the table that have to be converted.
-     * @param missingValue Value to put in the matrix where missing values occur.
-     * @return Array of DoubleMatrices. The first one is
-     */
-    public static DoubleMatrix toDoubleMatrixMissing(ITable table, List<String> colNames, double
-            missingValue) {
-        DoubleMatrix mat = new DoubleMatrix(table.getNumOfRows(), colNames.size());
-        DoubleMatrix missing = DoubleMatrix.zeros(colNames.size());
-        for (int j = 0; j < colNames.size(); j++) {
-            IColumn col = table.getColumn(colNames.get(j));
-            IRowIterator iter = table.getRowIterator();
-            int row = iter.getNextRow();
-            int i = 0;
-            while (row >= 0) {
-                try {
+                if (col.isMissing(row)) {
+                    mat.put(i, j, Double.NaN);
+                } else {
                     mat.put(i, j, col.asDouble(row, null));
-                } catch (MissingException e) {
-                    missing.put(j, missing.get(j) + 1);
-                    mat.put(i, j, missingValue);
                 }
                 row = iter.getNextRow();
                 i++;

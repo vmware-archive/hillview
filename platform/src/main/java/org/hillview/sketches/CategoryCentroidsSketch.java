@@ -17,7 +17,11 @@
 
 package org.hillview.sketches;
 
+import org.hillview.table.api.ITable;
+
+import java.io.Serializable;
 import java.util.List;
+import java.util.function.BiFunction;
 
 /**
  * For every unique category in the given column name, this sketch computes the centroid of all
@@ -30,6 +34,7 @@ public class CategoryCentroidsSketch extends CentroidsSketch<String> {
      * @param columnNames The names of the columns that define the nD space where the centroids are computed.
      */
     public CategoryCentroidsSketch(String catColumnName, List<String> columnNames) {
-        super((table, row) -> table.getColumn(catColumnName).asString(row), columnNames);
+        super((BiFunction<ITable, Integer, String> & Serializable) (table, row) -> table.getColumn(catColumnName).asString(row),
+                columnNames);
     }
 }

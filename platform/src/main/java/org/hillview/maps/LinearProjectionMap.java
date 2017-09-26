@@ -79,7 +79,7 @@ public class LinearProjectionMap implements IMap<ITable, ITable> {
         }
 
         // Compute the projection with BLAS
-        DoubleMatrix mat = BlasConversions.toDoubleMatrixMissing(table, this.colNames, Double.NaN);
+        DoubleMatrix mat = BlasConversions.toDoubleMatrix(table, this.colNames);
         DoubleMatrix resultMat = mat.mmul(this.projectionMatrix.transpose());
 
         // Copy the result to new columns with the same membershipSet size. (Can't use

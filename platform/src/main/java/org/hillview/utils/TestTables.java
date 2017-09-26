@@ -269,6 +269,35 @@ public class TestTables {
     }
 
     /**
+     * Return a numerical table with numBlobs clusters, every cluster containing numPointsPerBlob n-dimensional
+     * points sampled from a Gaussian centered at a random point in the nD unit hyperbox, with a standard deviation
+     * of stdDev.
+     * @param numBlobs
+     * @param numPointsPerBlob
+     * @param n
+     * @param stdDev
+     * @return
+     */
+    public static ITable getNdGaussianBlobs(int numBlobs, int numPointsPerBlob, int n, double stdDev) {
+        DoubleMatrix data = new DoubleMatrix(numBlobs * numPointsPerBlob, n);
+        Random rnd = new Random(42);
+        for (int i = 0; i < numBlobs; i++) {
+            DoubleMatrix center = new DoubleMatrix(1, n);
+            for (int j = 0; j < n; j++) {
+                center.put(j, 20 * rnd.nextDouble());
+            }
+            for (int j = 0; j < numPointsPerBlob; j++) {
+                DoubleMatrix delta = new DoubleMatrix(1, n);
+                for (int k = 0; k < n; k++) {
+                    delta.put(k, rnd.nextGaussian() * stdDev);
+                }
+                data.putRow(i * numPointsPerBlob + j, center.add(delta));
+            }
+        }
+        return BlasConversions.toTable(data);
+    }
+
+    /**
      * Splits a Big Table into a list of Small Tables.
      * @param bigTable The big table
      * @param fragmentSize The size of each small Table

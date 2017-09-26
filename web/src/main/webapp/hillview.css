@@ -263,6 +263,18 @@ table.dropdown {
     text-align: center;
 }
 
+.lampView > div {
+    text-align: center;
+}
+
+.lampView > div > svg.heatMap {
+    position: absolute;
+}
+
+.lampView > div > svg.controlPoints {
+    position: relative;
+}
+
 .heatMapArray > svg {
     display: inline;
     overflow: visible;

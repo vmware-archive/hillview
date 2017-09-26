@@ -79,7 +79,7 @@ public class Centroids<T> implements Serializable {
                 double[] sums = this.sums.computeIfAbsent(key, k -> new double[columns.size()]);
                 long[] counts = this.counts.computeIfAbsent(key, k -> new long[columns.size()]);
                 // Update the sum and count of this partition in this column
-                sums[colIndex] += column.getDouble(row);
+                sums[colIndex] += column.asDouble(row, null);
                 counts[colIndex]++;
 
                 row = rowIterator.getNextRow();
@@ -133,7 +133,7 @@ public class Centroids<T> implements Serializable {
                 if (count[colIndex] > 0)
                     centroids.get(key)[colIndex] = sum[colIndex] / count[colIndex];
                 else
-                    centroids.get(key)[colIndex] = java.lang.Float.NaN;
+                    centroids.get(key)[colIndex] = java.lang.Double.NaN;
             }
         });
         return centroids;
