@@ -88,7 +88,6 @@ export class TopSubMenu implements IHtmlElement {
         this.outer = document.createElement("table");
         this.outer.classList.add("menu", "hidden");
         this.tableBody = this.outer.createTBody();
-        this.outer.onmouseleave = () => this.hide();
         if (mis != null) {
             for (let mi of mis)
                 this.addItem(mi);
@@ -153,6 +152,7 @@ export class TopMenu implements IHtmlElement {
         cell.textContent = mi.text;
         cell.appendChild(mi.subMenu.getHTMLRepresentation());
         cell.onclick = () => {this.hideSubMenus(); mi.subMenu.show()};
+        cell.onmouseleave = () => this.hideSubMenus();
         this.items.push(mi);
     }
 
