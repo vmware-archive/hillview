@@ -46,9 +46,10 @@ public class MetricMDS {
      */
     private final DoubleMatrix distsHighDim;
     /**
-     * Normalization factor for the high-dimensional distances.
+     * Normalization factor for the high-dimensional distances. This is later used to rescale the low-dimensional
+     * points to reflect the original distances.
      */
-    public double scaling;
+    private double scaling;
     /**
      * Same format for the low-dimensional distances, but this matrix is recomputed every epoch.
      */
@@ -62,7 +63,7 @@ public class MetricMDS {
     private boolean verbose = false;
 
     /**
-     * Constructs an object that calculates the RandomSampling projection. Note that the low-dimensional distance metric is
+     * Constructs an object that calculates the metric MDS projection. Note that the low-dimensional distance metric is
      * always the Euclidean distance, as the gradient is calculated for this.
      * @param dataHighDim High-dimensional data with observations/{data points} as rows, and dimensions/features as columns.
      * @param lowDims The target dimensionality of the embedding. Commonly 2.
@@ -189,7 +190,7 @@ public class MetricMDS {
 
         if (Math.abs(magnitude) > MetricMDS.tolerance)
             LOG.warning("Terminated before tolerance was met.");
-        LOG.info(String.format("Optimization took %d iterations.", iterations));
+        LOG.info(String.format("MDS optimization took %d iterations.", iterations));
         LOG.info(String.format("\nCost before optimization: %6.3e\nCost after optimization:  %6.3e", initialCost,
                 cost));
 

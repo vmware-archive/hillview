@@ -3,12 +3,14 @@ package org.hillview;
 import org.hillview.sketches.Centroids;
 import org.hillview.sketches.Point2D;
 import org.hillview.sketches.RandomSampling;
+import org.hillview.utils.BlasConversions;
 import org.hillview.utils.MetricMDS;
 import org.jblas.DoubleMatrix;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 
 public class ControlPointsTarget extends RpcTarget {
@@ -17,8 +19,8 @@ public class ControlPointsTarget extends RpcTarget {
     @Nullable
     public DoubleMatrix lowDimData;
 
-    public ControlPointsTarget(RandomSampling samples) {
-        this.highDimData = samples.data;
+    public ControlPointsTarget(RandomSampling samples, List<String> colNames) {
+        this.highDimData = BlasConversions.toDoubleMatrix(samples.table, colNames);
     }
 
     public ControlPointsTarget(Centroids<String> centroids) {

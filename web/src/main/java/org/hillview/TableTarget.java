@@ -250,22 +250,17 @@ public final class TableTarget extends RpcTarget {
 
     static class SampledControlPoints {
         int numSamples;
+        boolean allowMissing;
         @Nullable
         String[] columnNames;
-    }
-
-    static class ControlPoints2D implements IJson {
-        Point2D[] points;
-        public ControlPoints2D(Point2D[] points) {
-            this.points = points;
-        }
     }
 
     @HillviewRpc
     void sampledControlPoints(RpcRequest request, Session session) {
         SampledControlPoints info = request.parseArgs(SampledControlPoints.class);
-        RandomSamplingSketch sketch = new RandomSamplingSketch(info.numSamples, Arrays.asList(Converters.checkNull(info.columnNames)));
-        this.runCompleteSketch(this.table, sketch, ControlPointsTarget::new, request, session);
+        List<String> columnNamesList = Arrays.asList(Converters.checkNull(info.columnNames));
+        RandomSamplingSketch sketch = new RandomSamplingSketch(info.numSamples, columnNamesList, info.allowMissing);
+        this.runCompleteSketch(this.table, sketch, (r) -> new ControlPointsTarget(r, columnNamesList), request, session);
     }
 
     static class CatCentroidControlPoints {
@@ -284,6 +279,13 @@ public final class TableTarget extends RpcTarget {
     static class MakeMDSProjection {
         String id = "";
         int seed;
+    }
+
+    static class ControlPoints2D implements IJson {
+        Point2D[] points;
+        ControlPoints2D(Point2D[] points) {
+            this.points = points;
+        }
     }
 
     @HillviewRpc
@@ -309,7 +311,7 @@ public final class TableTarget extends RpcTarget {
         LAMPMapInfo info = request.parseArgs(LAMPMapInfo.class);
         ControlPointsTarget controlPointsTarget = (ControlPointsTarget) RpcObjectManager.instance.getObject(info.controlPointsId);
         DoubleMatrix highDimPoints =  controlPointsTarget.highDimData;
-        ControlPoints2D newControlPoints = info.newLowDimControlPoints;
+        ControlPoints2D newControlPoints = Converters.checkNull(info.newLowDimControlPoints);
         DoubleMatrix lowDimPoints = new DoubleMatrix(newControlPoints.points.length, 2);
         for (int i = 0; i < newControlPoints.points.length; i++) {
             lowDimPoints.put(i, 0, newControlPoints.points[i].x);

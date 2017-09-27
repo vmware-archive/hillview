@@ -21,9 +21,10 @@ public class LAMPMapTest {
     private void testLAMPMap(ITable table, int numSamples, int fragmentSize) {
         IDataSet<ITable> dataset = TestTables.makeParallel(table, fragmentSize);
         List<String> colNames = TestUtils.getNumericColumnNames(table);
-        RandomSamplingSketch sketch = new RandomSamplingSketch(numSamples, colNames);
+        RandomSamplingSketch sketch = new RandomSamplingSketch(numSamples, colNames, false);
         RandomSampling sample = dataset.blockingSketch(sketch);
-        MetricMDS mds = new MetricMDS(sample.data);
+        DoubleMatrix ndControlPoints = BlasConversions.toDoubleMatrix(sample.table, colNames);
+        MetricMDS mds = new MetricMDS(ndControlPoints);
         DoubleMatrix proj = mds.computeEmbedding(3);
 
         System.out.println("\nMDS projection:");
@@ -35,7 +36,7 @@ public class LAMPMapTest {
         List<String> newColNames = new ArrayList<String>();
         newColNames.add("LAMP1");
         newColNames.add("LAMP2");
-        LAMPMap map = new LAMPMap(sample.data, proj, colNames, newColNames);
+        LAMPMap map = new LAMPMap(ndControlPoints, proj, colNames, newColNames);
         ITable result = map.apply(table);
         IDataSet<ITable> datasetResult = dataset.blockingMap(map);
 

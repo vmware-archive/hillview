@@ -15,6 +15,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * This map receives a set of high- and low-dimensional control points, and computes a mapping of the rest of the
+ * point in the table. For every row x in the table, a transformation is sought that maps nD control points close x,
+ * also close to each other in low-dimensional space. More details in:
+ *   Joia, Paulo, et al. "Local affine multidimensional projection."
+ *   IEEE Transactions on Visualization and Computer Graphics 17.12 (2011): 2563-2571
+ *   https://doi.org/10.1109/TVCG.2011.220
+ */
 public class LAMPMap implements IMap<ITable, ITable> {
     private static double eps = 1e-9;
     private final List<String> numColNames;
@@ -52,20 +60,27 @@ public class LAMPMap implements IMap<ITable, ITable> {
         IRowIterator rowIt = data.getRowIterator();
         int row = rowIt.getNextRow();
         while (row >= 0) {
-            int finalRow = row;
-            double[] rowData = columns.stream().map((col) -> col.asDouble(finalRow, null)).mapToDouble(v -> v)
-                    .toArray();
-            DoubleMatrix x = new DoubleMatrix(rowData).reshape(1, this.highDims);
-            DoubleMatrix y = computeMapping(x);
-            if (y.isNaN().sum() > 0) {
+            try {
+                int finalRow = row;
+                double[] rowData = columns.stream().map((col) -> col.asDouble(finalRow, null)).mapToDouble(v -> v)
+                        .toArray();
+                DoubleMatrix x = new DoubleMatrix(rowData).reshape(1, this.highDims);
+                DoubleMatrix y = computeMapping(x);
+                if (y.isNaN().sum() > 0) {
+                    for (int i = 0; i < this.lowDims; i++) {
+                        newColumns.get(i).setMissing(row);
+                    }
+                } else {
+                    for (int i = 0; i < this.lowDims; i++) {
+                        newColumns.get(i).set(row, y.get(i));
+                    }
+                }
+            } catch (MissingException e) {
                 for (int i = 0; i < this.lowDims; i++) {
                     newColumns.get(i).setMissing(row);
                 }
-            } else {
-                for (int i = 0; i < this.lowDims; i++) {
-                    newColumns.get(i).set(row, y.get(i));
-                }
             }
+
             row = rowIt.getNextRow();
         }
 

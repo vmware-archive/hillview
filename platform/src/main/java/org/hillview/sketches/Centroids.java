@@ -72,8 +72,10 @@ public class Centroids<T> implements Serializable {
             int row = rowIterator.getNextRow();
             while (row >= 0) {
                 // Don't add to the sum or count if the value is missing.
-                if (column.isMissing(row))
+                if (column.isMissing(row)) {
+                    row = rowIterator.getNextRow();
                     continue;
+                }
                 T key = keyFunc.apply(row);
                 // Get the arrays for this partition from the HashMap (or create them if absent).
                 double[] sums = this.sums.computeIfAbsent(key, k -> new double[columns.size()]);
