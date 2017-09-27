@@ -33,19 +33,20 @@ public class RandomSamplingSketchTest {
         }
     }
 
-//    @Test
-//    public void testMNIST() {
-//        try {
-//            ITable table = TestUtils.loadTableFromCSV("../data", "mnist.csv", "mnist.schema");
-//            List<String> numericColNames = TestUtils.getNumericColumnNames(table);
-//            RandomSamplingSketch sketch = new RandomSamplingSketch(20, numericColNames);
-//            IDataSet<ITable> dataset = TestTables.makeParallel(table, 40);
-//            RandomSampling sample = dataset.blockingSketch(sketch);
-//            MetricMDS mds = new MetricMDS(sample.data);
-//            DoubleMatrix proj = mds.computeEmbedding(1);
-//            proj.print();
-//        } catch (IOException e) {
-//            System.out.println("Skipping test, because MNIST data is not present.");
-//        }
-//    }
+    @Test
+    public void testMNIST() {
+        try {
+            ITable table = TestUtils.loadTableFromCSV("../data", "mnist.csv", "mnist.schema");
+            List<String> numericColNames = TestUtils.getNumericColumnNames(table);
+            RandomSamplingSketch sketch = new RandomSamplingSketch(20, numericColNames, false);
+            IDataSet<ITable> dataset = TestTables.makeParallel(table, 40);
+            RandomSampling sample = dataset.blockingSketch(sketch);
+            DoubleMatrix highDimData = BlasConversions.toDoubleMatrix(sample.table, numericColNames);
+            MetricMDS mds = new MetricMDS(highDimData);
+            DoubleMatrix proj = mds.computeEmbedding(1);
+            proj.print();
+        } catch (IOException e) {
+            System.out.println("Skipping test, because MNIST data is not present.");
+        }
+    }
 }

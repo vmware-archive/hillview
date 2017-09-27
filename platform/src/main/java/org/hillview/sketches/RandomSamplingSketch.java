@@ -13,11 +13,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * This sketch selects random rows from the table, and gives as a result a DoubleMatrix. The rows in the matrix are
+ * This sketch selects random rows from the table, and gives as a result a SmallTable. The rows in the table are
  * the randomly selected rows, and the columns are the numeric columns specified in the constructor. The number of
  * samples is specified in the constructor too.
- *
- * Currently, only non-missing columns are supported.
  */
 public class RandomSamplingSketch implements ISketch<ITable, RandomSampling> {
 
