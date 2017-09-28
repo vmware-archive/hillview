@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import {Dialog} from "./dialog";
 import {TopMenu, TopSubMenu} from "./menu";
 import {TableDataView, TableView, TableRenderer} from "./table";
@@ -28,8 +45,9 @@ class ControlPointsView extends RemoteTableObjectView {
     private lampTableObject: RemoteTableObject;
     private colorMap: ColorMap;
     private colorLegend: ColorLegend;
+    private lampColNames: string[];
 
-    constructor(private originalTableObject: RemoteTableObject, page: FullPage, private controlPointsId, private selectedColumns) {
+    constructor(private originalTableObject: RemoteTableObject, private originalSchema, page: FullPage, private controlPointsId, private selectedColumns) {
         super(originalTableObject.remoteObjectId, page);
         this.topLevel = document.createElement("div");
         this.topLevel.classList.add("chart");
@@ -56,43 +74,48 @@ class ControlPointsView extends RemoteTableObjectView {
         this.topLevel.appendChild(chartDiv);
 
         let canvasSize = Math.min(Resolution.getCanvasSize(this.getPage()).width, Resolution.getCanvasSize(this.getPage()).height);
-        let chartSize = Math.min(Resolution.getChartSize(this.getPage()).width, Resolution.getChartSize(this.getPage()).height)
+        let chartSize = Math.min(Resolution.getChartSize(this.getPage()).width, Resolution.getChartSize(this.getPage()).height);
         this.heatMapCanvas = d3.select(chartDiv).append("svg")
             .attr("width", canvasSize)
             .attr("height", canvasSize)
-            .attr("class", "heatMap")
+            .attr("class", "heatMap");
         this.heatMapChart = this.heatMapCanvas.append("g")
             .attr("transform", `translate(${Resolution.leftMargin}, ${Resolution.topMargin})`)
             .attr("width", chartSize)
-            .attr("height", chartSize)
+            .attr("height", chartSize);
         this.controlPointsCanvas = d3.select(chartDiv).append("svg")
             .attr("width", canvasSize)
             .attr("height", canvasSize)
-            .attr("class", "controlPoints")
+            .attr("class", "controlPoints");
         this.controlPointsChart = this.controlPointsCanvas.append("g")
             .attr("transform", `translate(${Resolution.leftMargin}, ${Resolution.topMargin})`)
             .attr("width", chartSize)
-            .attr("height", chartSize)
+            .attr("height", chartSize);
         page.setDataView(this);
+
+        this.lampColNames = [
+            TableView.uniqueColumnName(this.originalSchema, "LAMP1"),
+            TableView.uniqueColumnName(this.originalSchema, "LAMP2")
+        ];
     }
 
     public refresh() {
         let canvasSize = Math.min(Resolution.getCanvasSize(this.getPage()).width, Resolution.getCanvasSize(this.getPage()).height);
-        let chartSize = Math.min(Resolution.getChartSize(this.getPage()).width, Resolution.getChartSize(this.getPage()).height)
+        let chartSize = Math.min(Resolution.getChartSize(this.getPage()).width, Resolution.getChartSize(this.getPage()).height);
         this.controlPointsCanvas
             .attr("width", canvasSize)
-            .attr("height", canvasSize)
+            .attr("height", canvasSize);
         this.controlPointsChart
             .attr("transform", `translate(${Resolution.leftMargin}, ${Resolution.topMargin})`)
             .attr("width", chartSize)
-            .attr("height", chartSize)
+            .attr("height", chartSize);
         this.heatMapCanvas
             .attr("width", canvasSize)
-            .attr("height", canvasSize)
+            .attr("height", canvasSize);
         this.heatMapChart
             .attr("transform", `translate(${Resolution.leftMargin}, ${Resolution.topMargin})`)
             .attr("width", chartSize)
-            .attr("height", chartSize)
+            .attr("height", chartSize);
         this.updateControlPointsView();
         this.updateHeatMapView();
     }
@@ -118,7 +141,7 @@ class ControlPointsView extends RemoteTableObjectView {
 
     public updateHeatMap(heatMap: HeatMapData) {
         this.heatMap = heatMap;
-        this.updateHeatMapView()
+        this.updateHeatMapView();
     }
     public updateHeatMapView() {
         if (this.heatMap == null)
@@ -167,21 +190,21 @@ class ControlPointsView extends RemoteTableObjectView {
             min: this.minX,
             max: this.maxX,
             samplingRate: 1.0,
-            columnName: "LAMP1",
+            columnName: this.lampColNames[0],
             bucketCount: xBuckets,
             cdfBucketCount: 0,
             bucketBoundaries: null
-        }
+        };
         let yColAndRange = {
             min: this.minY,
             max: this.maxY,
             samplingRate: 1.0,
-            columnName: "LAMP2",
+            columnName: this.lampColNames[1],
             bucketCount: yBuckets,
             cdfBucketCount: 0,
             bucketBoundaries: null
-        }
-        let rr = this.originalTableObject.createLAMPMapRequest(this.controlPointsId, this.selectedColumns, this.controlPoints, ["LAMP1", "LAMP2"]);
+        };
+        let rr = this.originalTableObject.createLAMPMapRequest(this.controlPointsId, this.selectedColumns, this.controlPoints, this.lampColNames);
         rr.invoke(new LAMPMapReceiver(this.page, rr, this, xColAndRange, yColAndRange));
     }
 
@@ -192,7 +215,7 @@ class ControlPointsView extends RemoteTableObjectView {
         this.minY = Math.min(l2.min, cpMinY);
         let maxX = Math.max(l1.max, cpMaxX);
         let maxY = Math.max(l2.max, cpMaxY);
-        let range = Math.max(maxX - this.minX, maxY - this.minY)
+        let range = Math.max(maxX - this.minX, maxY - this.minY);
         this.maxX = this.minX + range;
         this.maxY = this.minY + range;
         this.refresh();
@@ -201,10 +224,10 @@ class ControlPointsView extends RemoteTableObjectView {
     }
 
     private fetchNewRanges() {
-        let l1: RangeInfo = new RangeInfo("LAMP1")
-        let l2: RangeInfo = new RangeInfo("LAMP2")
+        let l1: RangeInfo = new RangeInfo("LAMP1");
+        let l2: RangeInfo = new RangeInfo("LAMP2");
         let rr = this.lampTableObject.createRange2DRequest(l1, l2);
-        rr.invoke(new LAMPRangeCollector(this.page, rr, this))
+        rr.invoke(new LAMPRangeCollector(this.page, rr, this));
     }
 
     private updateControlPointsView() {
@@ -238,13 +261,13 @@ class ControlPointsView extends RemoteTableObjectView {
                 .call(d3.drag()
                     .on("drag", (p: Point2D, i: number, circles: Element[]) => {
                         let mouse = d3.mouse(plot.node());
-                        mouse[0] = clamp(mouse[0], this.minX, this.minX + range)
-                        mouse[1] = clamp(mouse[1], this.minY, this.minY + range)
+                        mouse[0] = clamp(mouse[0], this.minX, this.minX + range);
+                        mouse[1] = clamp(mouse[1], this.minY, this.minY + range);
                         p.x = mouse[0];
                         p.y = mouse[1];
                         d3.select(circles[i])
                             .attr("cx", clamp(mouse[0], this.minX, this.minX + range))
-                            .attr("cy", clamp(mouse[1], this.minY, this.minY + range))
+                            .attr("cy", clamp(mouse[1], this.minY, this.minY + range));
                     })
                     .on("end", (p: Point2D, i: number, circles: Element[]) => {
                         this.applyLAMP();
@@ -262,7 +285,7 @@ class ControlPointsView extends RemoteTableObjectView {
 
     private heatMap3D() {
         let rr = this.lampTableObject.createGetSchemaRequest();
-        rr.invoke(new SchemaCollector(this.getPage(), rr, this.lampTableObject));
+        rr.invoke(new SchemaCollector(this.getPage(), rr, this.lampTableObject, []));
     }
 }
 
@@ -270,7 +293,7 @@ export class LAMPDialog extends Dialog {
     public static maxNumSamples = 100;
 
     constructor(private selectedColumns: string[], private page: FullPage,
-                private schema: Schema, private remoteObject: RemoteTableObject) {
+                private schema: Schema, private remoteObject: TableView) {
         super("LAMP");
         this.addTextField("numSamples", "No. control points", "Integer", "15");
         this.addSelectField("controlPointSelection", "Control point selection", ["Random samples", "Category centroids"], "Random samples");
@@ -296,10 +319,14 @@ export class LAMPDialog extends Dialog {
         let rr: RpcRequest;
         switch (selection) {
             case "Random samples": {
-                rr = this.remoteObject.createSampledControlPointsRequest(numSamples, this.selectedColumns);
+                rr = this.remoteObject.createSampledControlPointsRequest(this.remoteObject.getTotalRowCount(), numSamples, this.selectedColumns);
                 break;
             }
             case "Category centroids": {
+                if (category == "") {
+                    this.page.reportError("No category selected for centroids.");
+                    return;
+                }
                 rr = this.remoteObject.createCategoricalCentroidsControlPointsRequest(category, this.selectedColumns);
                 break;
             }
@@ -313,7 +340,7 @@ export class LAMPDialog extends Dialog {
 
         switch (projection) {
             case "MDS": {
-                rr.invoke(new ControlPointsProjector(newPage, rr, this.remoteObject, this.selectedColumns));
+                rr.invoke(new ControlPointsProjector(newPage, rr, this.remoteObject, this.selectedColumns, this.schema));
                 break;
             }
             default: {
@@ -324,7 +351,7 @@ export class LAMPDialog extends Dialog {
 }
 
 class ControlPointsProjector extends RemoteTableRenderer {
-    constructor(page, operation, private tableObject: RemoteTableObject, private selectedColumns) {
+    constructor(page, operation, private tableObject: RemoteTableObject, private selectedColumns, private schema) {
         super(page, operation, "Sampling control points");
     }
 
@@ -333,23 +360,24 @@ class ControlPointsProjector extends RemoteTableRenderer {
         if (this.remoteObject == null)
             return;
         let rr = this.tableObject.createMDSProjectionRequest(this.remoteObject.remoteObjectId);
-        rr.invoke(new ControlPointsRenderer(this.page, rr, this.tableObject, this.remoteObject.remoteObjectId, this.selectedColumns));
+        rr.invoke(new ControlPointsRenderer(this.page, rr, this.tableObject, this.schema, this.remoteObject.remoteObjectId, this.selectedColumns));
     }
 }
 
-class ControlPointsRenderer extends RpcReceiver<PointSet2D> {
+class ControlPointsRenderer extends Renderer<PointSet2D> {
     private controlPointsView: ControlPointsView;
+    private points: PointSet2D;
 
-    constructor(page, operation, tableObject, controlPointsId, private selectedColumns) {
-        super(page.progressManager.newProgressBar(operation, "Projecting control points"),
-            page.getErrorReporter())
-        this.controlPointsView = new ControlPointsView(tableObject, page, controlPointsId, this.selectedColumns)
+    constructor(page, operation, tableObject, schema, controlPointsId, private selectedColumns) {
+        super(page, operation, "Projecting control points");
+        this.controlPointsView = new ControlPointsView(tableObject, schema, page, controlPointsId, this.selectedColumns);
     }
 
-    public onNext(result: PointSet2D) {
-        super.finished();
-        if (result != null)
-            this.controlPointsView.updateControlPoints(result);
+    public onNext(result: PartialResult<PointSet2D>) {
+        super.onNext(result);
+        this.points = result.data;
+        if (this.points != null)
+            this.controlPointsView.updateControlPoints(this.points);
     }
 }
 
@@ -362,7 +390,7 @@ class LAMPMapReceiver extends RemoteTableRenderer {
         super.finished();
         this.cpView.updateRemoteTable(this.remoteObject);
         let rr = this.remoteObject.createHeatMapRequest(this.xColAndRange, this.yColAndRange);
-        rr.invoke(new LAMPHeatMapReceiver(this.page, rr, this.cpView))
+        rr.invoke(new LAMPHeatMapReceiver(this.page, rr, this.cpView));
     }
 }
 
@@ -376,7 +404,7 @@ class LAMPHeatMapReceiver extends Renderer<HeatMapData> {
         super.onNext(result);
         this.heatMap = result.data;
         if (this.heatMap != null) {
-            this.controlPointsView.updateHeatMap(this.heatMap)
+            this.controlPointsView.updateHeatMap(this.heatMap);
         }
     }
 
@@ -395,7 +423,7 @@ class LAMPRangeCollector extends Renderer<Pair<BasicColStats, BasicColStats>> {
 
 class SchemaCollector extends Renderer<TableDataView> {
     private schema: Schema;
-    constructor(page, operation, private tableObject) {
+    constructor(page, operation, private tableObject, private lampColumnNames: string[]) {
         super(page, operation, "Getting new schema");
 
     }
@@ -406,7 +434,7 @@ class SchemaCollector extends Renderer<TableDataView> {
 
     onCompleted() {
         super.onCompleted();
-        let dialog = new HeatMapArrayDialog(["LAMP1", "LAMP2"], this.page, this.schema, this.tableObject);
+        let dialog = new HeatMapArrayDialog(this.lampColumnNames, this.page, this.schema, this.tableObject);
         dialog.show();
     }
 }

@@ -17,11 +17,13 @@
 
 package org.hillview;
 
+import com.google.gson.JsonObject;
 import org.hillview.dataset.ConcurrentSketch;
 import org.hillview.dataset.TripleSketch;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.Pair;
+import org.hillview.dataset.api.PartialResult;
 import org.hillview.maps.ConvertColumnMap;
 import org.hillview.maps.FilterMap;
 import org.hillview.maps.LAMPMap;
@@ -37,15 +39,14 @@ import org.hillview.table.filters.RangeFilterPair;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.Converters;
 import org.hillview.utils.LinAlg;
+import org.hillview.utils.Point2D;
 import org.jblas.DoubleMatrix;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 @SuppressWarnings("CanBeFinal")
@@ -249,6 +250,7 @@ public final class TableTarget extends RpcTarget {
     }
 
     static class SampledControlPoints {
+        long rowCount;
         int numSamples;
         boolean allowMissing;
         @Nullable
@@ -259,8 +261,12 @@ public final class TableTarget extends RpcTarget {
     void sampledControlPoints(RpcRequest request, Session session) {
         SampledControlPoints info = request.parseArgs(SampledControlPoints.class);
         List<String> columnNamesList = Arrays.asList(Converters.checkNull(info.columnNames));
-        RandomSamplingSketch sketch = new RandomSamplingSketch(info.numSamples, columnNamesList, info.allowMissing);
-        this.runCompleteSketch(this.table, sketch, (r) -> new ControlPointsTarget(r, columnNamesList), request, session);
+        double samplingRate = ((double) info.numSamples) / info.rowCount;
+        RandomSamplingSketch sketch = new RandomSamplingSketch(samplingRate, columnNamesList, info.allowMissing);
+        this.runCompleteSketch(this.table, sketch, (sampled) -> {
+            sampled = sampled.compress(sampled.getMembershipSet().sample(info.numSamples)); // Resample to get the exact number of samples.
+            return new ControlPointsTarget(sampled, columnNamesList);
+        }, request, session);
     }
 
     static class CatCentroidControlPoints {
@@ -292,8 +298,14 @@ public final class TableTarget extends RpcTarget {
     void makeMDSProjection(RpcRequest request, Session session) {
         MakeMDSProjection info = request.parseArgs(MakeMDSProjection.class);
         ControlPointsTarget controlPointsTarget = (ControlPointsTarget) RpcObjectManager.instance.getObject(info.id);
-        RpcReply reply = request.createReply(controlPointsTarget.mds(info.seed));
+        ControlPoints2D controlPoints2D =  controlPointsTarget.mds(info.seed);
+
+        JsonObject json = new JsonObject();
+        json.addProperty("done", 1.0);
+        json.add("data", controlPoints2D.toJsonTree());
+        RpcReply reply = request.createReply(json);
         reply.send(session);
+        request.syncCloseSession(session);
     }
 
     static class LAMPMapInfo {

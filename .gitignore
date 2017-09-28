@@ -51,6 +51,7 @@ web/src/main/webapp/ui.js
 web/src/main/webapp/util.js
 web/src/main/webapp/dialog.js
 web/src/main/webapp/pca.js
+web/src/main/webapp/lamp.js
 web/src/main/webapp/equalityFilter.js
 web/src/main/webapp/*.js.map
 web/src/main/webapp/node_modules/

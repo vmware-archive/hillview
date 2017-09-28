@@ -642,7 +642,7 @@ export class HeatMapArrayDialog extends Dialog {
             if (numColumns.indexOf(selectedColumn) >= 0)
                 selectedNumColumns.push(selectedColumn);
         })
-        if (selectedCatColumn == "") {
+        if (selectedCatColumn == "" && catColumns.length > 0) {
             selectedCatColumn = catColumns[0];
         }
         this.addSelectField("col1", "Heat map column 1: ", numColumns, selectedNumColumns[0]);

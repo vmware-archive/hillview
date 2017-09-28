@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.hillview.utils;
 
 import org.jblas.DoubleMatrix;
@@ -5,20 +22,27 @@ import org.jblas.MatrixFunctions;
 import org.jblas.ranges.PointRange;
 import org.jblas.ranges.AllRange;
 
-import java.util.Random;
 import java.util.function.BiFunction;
 import java.util.logging.Logger;
 
+/**
+ * This class optimizes the squared stress function with respect to a low-dimensional embedding, which is an objective
+ * function that tries to preserve distances from the high-dimensional data set in a low-dimensional embedding.
+ *
+ * It can be used for finding (for example) 2D coordinates for entities in a dataset, if only the distances between
+ * those entities are known (by some distance function).
+ *
+ * For more information: https://en.wikipedia.org/wiki/Multidimensional_scaling
+ */
 public class MetricMDS {
     private static final Logger LOG = Logger.getLogger(MetricMDS.class.getName());
     public static int maxIterations = (int) 1e3;
-    public static double defaultLearningRate = 1;
-    public static double defaultLearningRateDecay = 0.999;
+    public static final double defaultLearningRate = 1;
+    public static final double defaultLearningRateDecay = 0.999;
     public static double tolerance = 1e-5;
-    private static double eps = 1e-9;
-    public static BiFunction<DoubleMatrix, DoubleMatrix, Double> squaredEuclid = (x1, x2) -> MatrixFunctions.pow(x1.sub
-            (x2), 2).sum();
-    public static BiFunction<DoubleMatrix, DoubleMatrix, Double> euclid = (x1, x2) -> Math.sqrt(MetricMDS.squaredEuclid.apply(x1, x2));
+    private static final double eps = 1e-9;
+    public static final BiFunction<DoubleMatrix, DoubleMatrix, Double> squaredEuclid = (x1, x2) -> MatrixFunctions.pow(x1.sub(x2),2).sum();
+    public static final BiFunction<DoubleMatrix, DoubleMatrix, Double> euclid = (x1, x2) -> Math.sqrt(MetricMDS.squaredEuclid.apply(x1, x2));
 
     /**
      * Number of observations in the dataset.
@@ -107,22 +131,6 @@ public class MetricMDS {
         return dists;
     }
 
-    /**
-     * Accessor method of the high-dimensional distances.
-     * @param i Observation index
-     * @param j Observation index
-     * @return The distances between the high-dimensional observations.
-     */
-    private double getHighDimDist(int i, int j) {
-        if (i < j)
-            return this.distsHighDim.get(this.compactIndex(i, j));
-        else if (j < i) {
-            return this.distsHighDim.get(this.compactIndex(j, i));
-        } else {
-            return 0;
-        }
-    }
-
     private DoubleMatrix computeLowDimDistances(DoubleMatrix dataLowDim) {
         DoubleMatrix dists = new DoubleMatrix((dataLowDim.rows * (dataLowDim.rows - 1)) / 2);
         for (int i = 0; i < dataLowDim.rows - 1; i++) {
@@ -137,11 +145,18 @@ public class MetricMDS {
         return dists;
     }
 
-    private double getLowDimDist(int i, int j) {
+    /**
+     * Auxiliary for accessing distances in a compact matrix.
+     * @param compactMatrix Distance matrix, stored compactly, as described in [MetricMds].
+     * @param i Observation index
+     * @param j Observation index
+     * @return The distances between the high-dimensional observations.
+     */
+    private double getDist(DoubleMatrix compactMatrix, int i, int j) {
         if (i < j)
-            return this.distsLowDim.get(this.compactIndex(i, j));
+            return compactMatrix.get(this.compactIndex(i, j));
         else if (j < i) {
-            return this.distsLowDim.get(this.compactIndex(j, i));
+            return compactMatrix.get(this.compactIndex(j, i));
         } else {
             return 0;
         }
@@ -206,7 +221,7 @@ public class MetricMDS {
      */
     public DoubleMatrix computeEmbedding(long seed) {
         DoubleMatrix dataLowDimInit = new DoubleMatrix(this.numObservations, this.lowDims);
-        Random rnd = new Random(seed);
+        Randomness rnd = new Randomness(seed);
         rnd.nextGaussian();
         for (int i = 0; i < this.numObservations; i++) {
             for (int j = 0; j < this.lowDims; j++) {
@@ -234,9 +249,9 @@ public class MetricMDS {
                 /* Vector from (low-dim) point i to point j */
                 DoubleMatrix gradientI = pointJ.sub(pointI);
                 /* Make it a unit vector */
-                gradientI.divi(Math.max(this.getLowDimDist(j, i), MetricMDS.eps));
+                gradientI.divi(Math.max(this.getDist(this.distsLowDim, j, i), MetricMDS.eps));
                 /* Scale by the discrepancy */
-                gradientI.muli(this.getHighDimDist(j, i) - this.getLowDimDist(j, i));
+                gradientI.muli(this.getDist(this.distsHighDim, j, i) - this.getDist(this.distsLowDim, j, i));
 
                 /* Exploit symmetry: The gradient on i caused by j is equal to the inverse gradient on j caused by i. */
                 gradient.putRow(i, gradient.getRow(i).add(gradientI));

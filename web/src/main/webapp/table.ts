@@ -255,6 +255,17 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         return colNames;
     }
 
+    public static uniqueColumnName(schema: Schema, prefix: string): string {
+        let existingNames = TableView.allColumnNames(schema);
+        let name = prefix;
+        let i = 0;
+        while (existingNames.indexOf(name) >= 0) {
+            name = prefix + `_${i}`;
+            i++;
+        }
+        return name;
+    }
+
     public static columnIndex(schema: Schema, colName: string): number {
         if (schema == null)
             return null;
@@ -629,13 +640,13 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         }
     }
 
-        private hLogLog(colName: string): void {
-	    let rr = this.createHLogLogRequest(colName);
-            rr.invoke(new HLogLogReceiver(this.getPage(), rr, "HLogLog",
-				          (res) => this.page.reportError("Distinct values in column \'" +
-						                         colName + "\' " + SpecialChars.approx + " : " +
-						                         String(res.distinctItemCount))));
-        }
+    private hLogLog(colName: string): void {
+        let rr = this.createHLogLogRequest(colName);
+        rr.invoke(new HLogLogReceiver(this.getPage(), rr, "HLogLog",
+            (res) => this.page.reportError("Distinct values in column \'" +
+            colName + "\' " + SpecialChars.approx + " : " +
+            String(res.distinctItemCount))));
+    }
 
     private getSelectedColNames(): string[] {
         let colNames: string[] = [];
@@ -748,6 +759,10 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         else
             this.setScroll(this.startPosition / this.rowCount,
                 (this.startPosition + this.dataRowsDisplayed) / this.rowCount);
+    }
+
+    public getTotalRowCount() : number {
+        return this.rowCount;
     }
 
     public getRowCount() : number {

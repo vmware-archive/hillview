@@ -42,8 +42,7 @@ public class BucketsDescriptionEqSize implements IBucketsDescription {
     public int indexOf(final double item) {
         if ((item < this.minValue) || (item > this.maxValue))
             return -1;
-        if (item >= this.maxValue)
-            return this.numOfBuckets - 1;
+        // As overflow can occur when 'item' is very close to 'this.maxValue', clamp the resulting index.
         return Math.min((int) ((this.numOfBuckets * (item - this.minValue)) / this.range), this.numOfBuckets - 1);
     }
 

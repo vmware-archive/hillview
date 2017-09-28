@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.hillview.maps;
 
 import org.hillview.dataset.api.IMap;
@@ -24,7 +41,7 @@ import java.util.stream.Collectors;
  *   https://doi.org/10.1109/TVCG.2011.220
  */
 public class LAMPMap implements IMap<ITable, ITable> {
-    private static double eps = 1e-9;
+    private final static double eps = 1e-9;
     private final List<String> numColNames;
     private final DoubleMatrix highDimControlPoints;
     private final DoubleMatrix lowDimControlPoints;
@@ -60,27 +77,35 @@ public class LAMPMap implements IMap<ITable, ITable> {
         IRowIterator rowIt = data.getRowIterator();
         int row = rowIt.getNextRow();
         while (row >= 0) {
-            try {
-                int finalRow = row;
-                double[] rowData = columns.stream().map((col) -> col.asDouble(finalRow, null)).mapToDouble(v -> v)
-                        .toArray();
-                DoubleMatrix x = new DoubleMatrix(rowData).reshape(1, this.highDims);
+            DoubleMatrix x = new DoubleMatrix(1, this.highDims);
+            boolean missing = false;
+            for (int i = 0 ; i < this.highDims; i++) {
+                if (columns.get(i).isMissing(row)){
+                    missing = true;
+                    break;
+                }
+                else
+                    x.put(i, columns.get(i).asDouble(row, null));
+            }
+            if (!missing) {
                 DoubleMatrix y = computeMapping(x);
-                if (y.isNaN().sum() > 0) {
-                    for (int i = 0; i < this.lowDims; i++) {
-                        newColumns.get(i).setMissing(row);
+
+                for (int i = 0; i < y.columns; i++) {
+                    if (Double.isNaN(y.get(i))) {
+                        missing = true;
+                        break;
                     }
-                } else {
+                }
+                if (!missing) {
                     for (int i = 0; i < this.lowDims; i++) {
                         newColumns.get(i).set(row, y.get(i));
                     }
-                }
-            } catch (MissingException e) {
-                for (int i = 0; i < this.lowDims; i++) {
-                    newColumns.get(i).setMissing(row);
+                } else {
+                    for (int i = 0; i < this.lowDims; i++) {
+                        newColumns.get(i).setMissing(row);
+                    }
                 }
             }
-
             row = rowIt.getNextRow();
         }
 
