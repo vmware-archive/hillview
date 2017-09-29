@@ -34,21 +34,22 @@ import java.util.HashMap;
 import java.util.List;
 
 /** Computes heavy-hitters using the Misra-Gries algorithm, where N is the length on the input
- * table, and k is the number of counters that we maintain. We use the mergeable version of MG, as
- * described in the ACM TODS paper "Mergeable Summaries" by Agarwal et al., which gives a
- * non-trivial error bound. The algorithm ensures that every element of frequency greater than
- * N/(k+1) appears in the list.
+ * table, and our goal is find all elements of frequency epsilon N. K is the number of counters
+ * that we maintain, we set it to alpha/epsilon. Increasing alpha increases accuracy of the counts.
+ * We use the mergeable version of MG, as described in the ACM TODS paper "Mergeable Summaries" by
+ * Agarwal et al., which gives a non-trivial error bound. The algorithm ensures that every element
+ * of frequency greater than N/(k+1) appears in the list.
  */
 public class FreqKSketch implements ISketch<ITable, FreqKList> {
     /**
      * The schema specifies which columns are relevant in determining equality of records.
      */
     private final Schema schema;
-    /**
-     * The parameter K in top-K heavy hitters.
-     */
-    private final int maxSize;
 
+    /**
+     * epsilon specifies the threshold for the fractional frequency: our goal is to find all elements
+     * that constitute more than an epsilon fraction of the total.
+     */
     private final double epsilon;
 
     /**
@@ -58,10 +59,15 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
      */
     private int alpha = 5;
 
+    /**
+     * The parameter K which controls how many indices we store in MG. We set it to alpha/epsilon.
+     */
+    private final int maxSize;
+
     public FreqKSketch(Schema schema, double epsilon) {
         this.schema = schema;
         this.epsilon = epsilon;
-        this.maxSize = ((int) Math.ceil(1/epsilon))* alpha;
+        this.maxSize = ((int) Math.ceil(alpha/epsilon));
     }
 
     @Nullable
