@@ -31,6 +31,7 @@ import org.junit.Test;
 
 import java.util.List;
 
+import static java.lang.Boolean.FALSE;
 import static org.junit.Assert.assertTrue;
 
 
@@ -49,9 +50,9 @@ public class ExactFreqSketchTest {
             Converters.checkNull(pair.second);
             assertTrue(pair.second.get(i - 1) >= pair.second.get(i));
         }
-        exactList.filter();
+        exactList.filter(FALSE);
         exactList.getList().forEach(rss ->
-                assertTrue(exactList.hMap.get(rss) >= fkList.totalRows/fkList.maxSize ));
+                assertTrue(exactList.hMap.get(rss) >= fkList.totalRows*fkList.epsilon));
     }
 
     @Test

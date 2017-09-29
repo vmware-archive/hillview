@@ -32,7 +32,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
                 public page: FullPage,
                 public tv: TableView,
                 public schema: Schema,
-                public order: RecordOrder ) {
+                public order: RecordOrder) {
         super(data.heavyHittersId, page);
         this.topLevel = document.createElement("div");
         let menu = new TopMenu([

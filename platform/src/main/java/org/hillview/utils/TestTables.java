@@ -103,6 +103,12 @@ public class TestTables {
         return new Table(Arrays.asList(sac, iac));
     }
 
+    public static SmallTable getSqIntTable(final int range) {
+        final List<IColumn> columns = new ArrayList<IColumn>();
+        columns.add(IntArrayGenerator.getSqIntArray(range));
+        return new SmallTable(columns);
+    }
+
     /**
      * A table of integers whose rows are typically distinct. Each row is sampled randomly from a
      * domain of size 5^numCols*size. When numCols is small, some collisions are to be expected, but

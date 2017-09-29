@@ -360,9 +360,10 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     void heavyHitters(RpcRequest request, Session session) {
         HeavyHittersInfo info = request.parseArgs(HeavyHittersInfo.class);
+        System.out.printf(" HH on %s with %f", info.columns, info.amount);
         Converters.checkNull(info);
         FreqKSketch sk = new FreqKSketch(Converters.checkNull(info.columns), info.amount/100);
-        this.runCompleteSketch(this.table, sk, HeavyHittersTarget::new, request, session);
+        this.runCompleteSketch(this.table, sk, x -> this.getLists(x, info.columns, Boolean.TRUE), request, session);
     }
 
     static class HeavyHittersFilterInfo {
@@ -377,8 +378,8 @@ public final class TableTarget extends RpcTarget {
         String heavyHittersId = "";
     }
 
-    private TopList getLists(FreqKList fkList, Schema schema) {
-        fkList.filter();
+    public TopList getLists(FreqKList fkList, Schema schema, Boolean isMG) {
+        fkList.filter(isMG);
         Pair<List<RowSnapshot>, List<Integer>> pair = fkList.getTop();
         TopList tl = new TopList();
         SmallTable tbl = new SmallTable(schema, Converters.checkNull(pair.first));
@@ -393,7 +394,7 @@ public final class TableTarget extends RpcTarget {
         RpcTarget target = RpcObjectManager.instance.getObject(hhi.hittersId);
         HeavyHittersTarget hht = (HeavyHittersTarget)target;
         ExactFreqSketch efSketch = new ExactFreqSketch(Converters.checkNull(hhi.schema), hht.heavyHitters);
-        this.runCompleteSketch(this.table, efSketch, x -> this.getLists(x, hhi.schema), request, session);
+        this.runCompleteSketch(this.table, efSketch, x -> this.getLists(x, hhi.schema, Boolean.FALSE), request, session);
     }
 
     @HillviewRpc

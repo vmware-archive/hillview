@@ -43,7 +43,7 @@ public class FreqKList implements Serializable {
     /**
      * The number of counters we store: the K in top-K heavy hitters.
      */
-    public final int maxSize;
+    private final int maxSize;
     /**
      * The number of times each row in the above table occurs in the original DataSet
      * (can be approximate depending on the context).
@@ -52,20 +52,19 @@ public class FreqKList implements Serializable {
 
     public final double epsilon;
 
-    public FreqKList(long totalRows, int maxSize, HashMap<RowSnapshot, Integer> hMap) {
+    public FreqKList(long totalRows, double epsilon, int maxSize, HashMap<RowSnapshot, Integer> hMap) {
         this.totalRows = totalRows;
-        this.maxSize = maxSize;
+        this.epsilon = epsilon;
         this.hMap = hMap;
-        this.epsilon = 1/((double)maxSize +1);
+        this.maxSize = maxSize;
     }
 
     public FreqKList(long totalRows, double epsilon, HashMap<RowSnapshot, Integer> hMap) {
         this.totalRows = totalRows;
         this.epsilon = epsilon;
         this.hMap = hMap;
-        this.maxSize= (int) Math.ceil(1/epsilon);
+        this.maxSize = (int) Math.ceil(1/epsilon);
     }
-
 
     public FreqKList(List<RowSnapshot> rssList, double epsilon) {
         this.totalRows = 0;
@@ -115,8 +114,8 @@ public class FreqKList implements Serializable {
      * @return Integer e such that if an element i has a count f(i) in the data
      * structure, then its true frequency in the range [f(i), f(i) +e].
      */
-   public int getErrBound() {
-        return (int) (this.totalRows - this.getTotalCount())/(this.maxSize + 1);
+   public double getErrBound() {
+        return  (this.totalRows - this.getTotalCount())/(this.maxSize + 1.0);
     }
 
     /**
@@ -127,16 +126,24 @@ public class FreqKList implements Serializable {
         return new ArrayList<RowSnapshot>(this.hMap.keySet());
     }
 
+
     /**
      * Prunes the hashmap to retain only those RowSnapshots that occur with frequency above
      * 1/maxSize, and their frequencies.
      */
-    public void filter() {
+    public void filter(double threshold) {
         List<RowSnapshot> rssList = new ArrayList<RowSnapshot>(this.hMap.keySet());
         for (RowSnapshot rss : rssList) {
-           if (this.hMap.get(rss) < (this.epsilon * this.totalRows))
-               this.hMap.remove(rss);
+            if (this.hMap.get(rss) < (threshold))
+                this.hMap.remove(rss);
         }
+    }
+
+    public void filter(Boolean isMG) {
+        double threshold = this.epsilon * this.totalRows;
+        if (isMG == Boolean.TRUE)
+            threshold -= this.getErrBound();
+        filter(threshold);
     }
 
     public Pair<List<RowSnapshot>, List<Integer>> getTop() {

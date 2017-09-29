@@ -51,16 +51,28 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
 
     private final double epsilon;
 
+    /**
+     * This controls the relative error in the counts returned by MG.
+     * The relative error is bounded by 1/alpha.
+     */
+    private int alpha = 5;
+
     public FreqKSketch(Schema schema, double epsilon) {
         this.schema = schema;
         this.epsilon = epsilon;
-        this.maxSize = (int) Math.ceil(1/epsilon);
+        this.maxSize = ((int) Math.ceil(1/epsilon))* alpha;
     }
+
+    /*public FreqKSketch(Schema schema, int maxSize) {
+        this.schema = schema;
+        this.maxSize = maxSize;
+        this.epsilon = 1/(maxSize + 1.0);
+    }*/
 
     @Nullable
     @Override
     public FreqKList zero() {
-        return new FreqKList(0, this.epsilon, new HashMap<RowSnapshot, Integer>(0));
+        return new FreqKList(0, this.epsilon, this.maxSize, new HashMap<RowSnapshot, Integer>(0));
     }
 
     /**
@@ -93,7 +105,7 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
             if (pList.get(i).second >= (k + 1))
                 hm.put(pList.get(i).first, pList.get(i).second - k);
         }
-        return new FreqKList(left.totalRows + right.totalRows, this.epsilon, hm);
+        return new FreqKList(left.totalRows + right.totalRows, this.epsilon, this.maxSize, hm);
     }
 
     /**
@@ -159,6 +171,6 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
         }
         HashMap<RowSnapshot,Integer> hm = new HashMap<RowSnapshot, Integer>(this.maxSize);
         hMap.keySet().forEach(ri -> hm.put(new RowSnapshot(data, ri, this.schema), hMap.get(ri)));
-        return new FreqKList(data.getNumOfRows(), this.epsilon, hm);
+        return new FreqKList(data.getNumOfRows(), this.epsilon, this.maxSize, hm);
     }
 }

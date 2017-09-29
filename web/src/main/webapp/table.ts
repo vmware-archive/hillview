@@ -19,7 +19,7 @@ import Rx = require('rx');
 import {
     FullPage, formatNumber, significantDigits, percent, KeyCodes, ScrollBar, IScrollTarget, SpecialChars
 } from "./ui";
-import { Renderer, combineMenu, SelectedObject, CombineOperators } from "./rpc";
+import { Renderer, combineMenu, SelectedObject, CombineOperators, RemoteObject} from "./rpc";
 import {RangeCollector} from "./histogram";
 import {Range2DCollector} from "./heatMap";
 import {TopMenu, TopSubMenu, ContextMenu} from "./menu";
@@ -774,8 +774,8 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
     }
 
     private runHeavyHitters(percent: number) {
-        if (percent == null || percent < .01 || percent > 100) {
-            this.reportError("Percentage must be between .01 and 100");
+        if (percent == null || percent < .1 || percent > 100) {
+            this.reportError("Percentage must be between .1 and 100");
             return;
         }
         let columns: IColumnDescription[] = [];
@@ -930,32 +930,46 @@ class QuantileReceiver extends Renderer<any[]> {
     }
 }
 
+
+
+export interface TopList {
+    top: TableDataView;
+    heavyHittersId: string;
+}
+
 // The string received is actually the id of a remote object that stores
 // the heavy hitters information.
-class HeavyHittersReceiver extends RemoteTableRenderer {
+class HeavyHittersReceiver extends Renderer<TopList> {
+    private data: TopList;
     public constructor(page: FullPage,
                        protected tv: TableView,
                        operation: ICancellable,
                        protected schema: IColumnDescription[],
                        protected order: RecordOrder) {
-        super(page, operation, "Filter heavy");
+        super(page, operation, "Heavy hitters -- approximate counts");
+    }
+
+    onNext(value: PartialResult<TopList>): any {
+        super.onNext(value);
+        if (value.data != null)
+            this.data = value.data;
     }
 
     onCompleted(): void {
         super.finished();
-        if (this.remoteObject == null)
+        if (this.data == null)
             return;
-        let rr = this.tv.createCheckHeavyRequest(this.remoteObject, this.schema);
-        rr.chain(this.operation);
-        this.page.reportError("Operation took " + significantDigits(this.elapsedMilliseconds()/1000) + " seconds");
+        let newPage = new FullPage();
+        let hhv = new HeavyHittersView(this.data, newPage, this.tv, this.schema, this.order);
+        newPage.setDataView(hhv);
+        this.page.insertAfterMe(newPage);
+        hhv.fill(this.data.top, this.elapsedMilliseconds());
+
+        let rr = this.tv.createCheckHeavyRequest(new RemoteObject(this.data.heavyHittersId), this.schema);
+        //rr.chain(this.operation);
+        //this.page.reportError("Operation took " + significantDigits(this.elapsedMilliseconds()/1000) + " seconds");
         rr.invoke(new HeavyHittersReceiver2(this.page, this.tv, rr, this.schema, this.order));
-
     }
-}
-
-export interface TopList {
-    top: TableDataView;
-    heavyHittersId: string;
 }
 
 // This class handles the reply of the "checkHeavy" method.
@@ -966,7 +980,7 @@ class HeavyHittersReceiver2 extends Renderer<TopList> {
                        operation: ICancellable,
                        protected schema: IColumnDescription[],
                        protected order: RecordOrder) {
-        super(page, operation, "Heavy hitters");
+        super(page, operation, "Heavy hitters -- exact counts");
         this.data = null;
     }
 
