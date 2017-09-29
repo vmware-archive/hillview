@@ -53,7 +53,8 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
 
     /**
      * This controls the relative error in the counts returned by MG.
-     * The relative error is bounded by 1/alpha.
+     * The relative error goes down as 1/alpha. More precisely, for every element whose true
+     * fractional frequency is eps, the reported frequency lies between eps and eps(1 - 1/alpha).
      */
     private int alpha = 5;
 
@@ -62,12 +63,6 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
         this.epsilon = epsilon;
         this.maxSize = ((int) Math.ceil(1/epsilon))* alpha;
     }
-
-    /*public FreqKSketch(Schema schema, int maxSize) {
-        this.schema = schema;
-        this.maxSize = maxSize;
-        this.epsilon = 1/(maxSize + 1.0);
-    }*/
 
     @Nullable
     @Override

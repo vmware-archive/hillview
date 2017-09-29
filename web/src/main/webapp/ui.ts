@@ -551,7 +551,6 @@ export class Resolution {
     static readonly lineHeight = 20;      // Height of a line of text drawn in svg (including reasonable margin).
     static readonly legendSize: Size = {width: 500, height: 50}; // Default legend size in px.
 
-
     // Everything is drawn on top of the canvas.
     // The canvas includes a chart plus margins.
     public static getCanvasSize(page: FullPage): Size {
