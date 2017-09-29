@@ -960,20 +960,15 @@ class HeavyHittersReceiver extends Renderer<TopList> {
         if (this.data == null)
             return;
         let newPage = new FullPage();
-        let hhv = new HeavyHittersView(this.data, newPage, this.tv, this.schema, this.order);
+        let hhv = new HeavyHittersView(this.data, newPage, this.tv, this.schema, this.order, true);
         newPage.setDataView(hhv);
         this.page.insertAfterMe(newPage);
         hhv.fill(this.data.top, this.elapsedMilliseconds());
-
-        let rr = this.tv.createCheckHeavyRequest(new RemoteObject(this.data.heavyHittersId), this.schema);
-        //rr.chain(this.operation);
-        //this.page.reportError("Operation took " + significantDigits(this.elapsedMilliseconds()/1000) + " seconds");
-        rr.invoke(new HeavyHittersReceiver2(this.page, this.tv, rr, this.schema, this.order));
     }
 }
 
 // This class handles the reply of the "checkHeavy" method.
-class HeavyHittersReceiver2 extends Renderer<TopList> {
+export class HeavyHittersReceiver2 extends Renderer<TopList> {
     private data: TopList;
     public constructor(page: FullPage,
                        protected tv: TableView,
@@ -995,12 +990,14 @@ class HeavyHittersReceiver2 extends Renderer<TopList> {
         if (this.data == null)
             return;
         let newPage = new FullPage();
-        let hhv = new HeavyHittersView(this.data, newPage, this.tv, this.schema, this.order);
+        let hhv = new HeavyHittersView(this.data, newPage, this.tv, this.schema, this.order, false);
         newPage.setDataView(hhv);
         this.page.insertAfterMe(newPage);
         hhv.fill(this.data.top, this.elapsedMilliseconds());
+        hhv.scrollIntoView();
     }
 }
+
 
 class CorrelationMatrixReceiver extends RemoteTableRenderer {
     public constructor(page: FullPage,

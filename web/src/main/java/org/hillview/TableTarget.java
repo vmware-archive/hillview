@@ -23,7 +23,6 @@ import org.hillview.dataset.TripleSketch;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.Pair;
-import org.hillview.dataset.api.PartialResult;
 import org.hillview.maps.ConvertColumnMap;
 import org.hillview.maps.FilterMap;
 import org.hillview.maps.LAMPMap;
