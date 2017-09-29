@@ -57,6 +57,19 @@ public class IntArrayGenerator {
         return col;
     }
 
+    public static IntArrayColumn getSqIntArray(int range) {
+        final ColumnDescription desc = new ColumnDescription("Squares", ContentsKind.Integer, false);
+        final IntArrayColumn col = new IntArrayColumn(desc, (range * (range + 1)* (2 *range +1)/6));
+        int k = 0;
+        for (int i = 1; i <= range; i++)
+            for (int j = 0; j < i*i; j++) {
+                col.set(k, i);
+                k++;
+            }
+            return col;
+    }
+
+
     /**
      * @param range
      * @return An integer array containing numbers (1,.., range), where i occurs i^2 times.

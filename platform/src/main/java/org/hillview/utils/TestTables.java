@@ -103,6 +103,12 @@ public class TestTables {
         return new Table(Arrays.asList(sac, iac));
     }
 
+    public static SmallTable getSqIntTable(final int range) {
+        final List<IColumn> columns = new ArrayList<IColumn>();
+        columns.add(IntArrayGenerator.getSqIntArray(range));
+        return new SmallTable(columns);
+    }
+
     /**
      * @param range
      * @return A table which contains number from (1,..., range), where i occurs i^2 times.
