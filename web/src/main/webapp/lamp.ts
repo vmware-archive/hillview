@@ -285,7 +285,7 @@ class ControlPointsView extends RemoteTableObjectView {
 
     private heatMap3D() {
         let rr = this.lampTableObject.createGetSchemaRequest();
-        rr.invoke(new SchemaCollector(this.getPage(), rr, this.lampTableObject, []));
+        rr.invoke(new SchemaCollector(this.getPage(), rr, this.lampTableObject, this.lampColNames));
     }
 }
 
