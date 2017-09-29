@@ -49,6 +49,12 @@ export class ColorMap {
 }
 
 export class ColorLegend implements IHtmlElement {
+    /* Static counter that increments to assign every ColorLegend object
+       a unique ID for the gradient element. */
+    private static nextUniqueId: number = 0;
+
+    private uniqueId: number;
+
     private topLevel: HTMLElement;
     private gradient: any; // Element that contains the definitions for the colors in the color map
     private textIndicator: any; // Text indicator for the value.
@@ -66,6 +72,7 @@ export class ColorLegend implements IHtmlElement {
         private size: Size = Resolution.legendSize,
         private barHeight = 16
     ) {
+        this.uniqueId = ColorLegend.nextUniqueId++;
         this.topLevel = document.createElement("div");
         this.topLevel.classList.add("colorLegend");
     }
@@ -161,7 +168,7 @@ export class ColorLegend implements IHtmlElement {
 
         this.gradient = svg.append('defs')
             .append('linearGradient')
-            .attr('id', 'gradient')
+            .attr('id', `gradient${this.uniqueId}`)
             .attr('x1', '0%')
             .attr('y1', '0%')
             .attr('x2', '100%')
@@ -178,7 +185,7 @@ export class ColorLegend implements IHtmlElement {
             .attr("y", 0)
             .attr("width", this.size.width)
             .attr("height", this.barHeight)
-            .style("fill", "url(#gradient)");
+            .style("fill", `url(#gradient${this.uniqueId})`);
         bar.on("contextmenu", () => {
             let pos = {x: d3.event.pageX, y: d3.event.pageY};
             this.showContextMenu(pos);
