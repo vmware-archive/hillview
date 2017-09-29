@@ -17,13 +17,16 @@
 
 package org.hillview;
 
+import com.google.gson.JsonObject;
 import org.hillview.dataset.ConcurrentSketch;
 import org.hillview.dataset.TripleSketch;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.Pair;
+import org.hillview.dataset.api.PartialResult;
 import org.hillview.maps.ConvertColumnMap;
 import org.hillview.maps.FilterMap;
+import org.hillview.maps.LAMPMap;
 import org.hillview.maps.LinearProjectionMap;
 import org.hillview.sketches.*;
 import org.hillview.table.*;
@@ -36,6 +39,7 @@ import org.hillview.table.filters.RangeFilterPair;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.Converters;
 import org.hillview.utils.LinAlg;
+import org.hillview.utils.Point2D;
 import org.jblas.DoubleMatrix;
 
 import javax.annotation.Nullable;
@@ -243,6 +247,93 @@ public final class TableTarget extends RpcTarget {
         }
         LinearProjectionMap lpm = new LinearProjectionMap(cm.columnNames, projectionMatrix, newColNames);
         this.runMap(this.table, lpm, TableTarget::new, request, session);
+    }
+
+    static class SampledControlPoints {
+        long rowCount;
+        int numSamples;
+        boolean allowMissing;
+        @Nullable
+        String[] columnNames;
+    }
+
+    @HillviewRpc
+    void sampledControlPoints(RpcRequest request, Session session) {
+        SampledControlPoints info = request.parseArgs(SampledControlPoints.class);
+        List<String> columnNamesList = Arrays.asList(Converters.checkNull(info.columnNames));
+        double samplingRate = ((double) info.numSamples) / info.rowCount;
+        RandomSamplingSketch sketch = new RandomSamplingSketch(samplingRate, columnNamesList, info.allowMissing);
+        this.runCompleteSketch(this.table, sketch, (sampled) -> {
+            sampled = sampled.compress(sampled.getMembershipSet().sample(info.numSamples)); // Resample to get the exact number of samples.
+            return new ControlPointsTarget(sampled, columnNamesList);
+        }, request, session);
+    }
+
+    static class CatCentroidControlPoints {
+        String categoricalColumnName = "";
+        @Nullable
+        String[] numericalColumnNames;
+    }
+
+    @HillviewRpc
+    void categoricalCentroidsControlPoints(RpcRequest request, Session session) {
+        CatCentroidControlPoints info = request.parseArgs(CatCentroidControlPoints.class);
+        CategoryCentroidsSketch sketch = new CategoryCentroidsSketch(info.categoricalColumnName, Arrays.asList(Converters.checkNull(info.numericalColumnNames)));
+        this.runCompleteSketch(this.table, sketch, ControlPointsTarget::new, request, session);
+    }
+
+    static class MakeMDSProjection {
+        String id = "";
+        int seed;
+    }
+
+    static class ControlPoints2D implements IJson {
+        Point2D[] points;
+        ControlPoints2D(Point2D[] points) {
+            this.points = points;
+        }
+    }
+
+    @HillviewRpc
+    void makeMDSProjection(RpcRequest request, Session session) {
+        MakeMDSProjection info = request.parseArgs(MakeMDSProjection.class);
+        ControlPointsTarget controlPointsTarget = (ControlPointsTarget) RpcObjectManager.instance.getObject(info.id);
+        ControlPoints2D controlPoints2D =  controlPointsTarget.mds(info.seed);
+
+        JsonObject json = new JsonObject();
+        json.addProperty("done", 1.0);
+        json.add("data", controlPoints2D.toJsonTree());
+        RpcReply reply = request.createReply(json);
+        reply.send(session);
+        request.syncCloseSession(session);
+    }
+
+    static class LAMPMapInfo {
+        String controlPointsId = "";
+        @Nullable
+        String[] colNames;
+        @Nullable
+        ControlPoints2D newLowDimControlPoints;
+        @Nullable
+        String[] newColNames;
+    }
+
+    @HillviewRpc
+    void lampMap(RpcRequest request, Session session) {
+        LAMPMapInfo info = request.parseArgs(LAMPMapInfo.class);
+        ControlPointsTarget controlPointsTarget = (ControlPointsTarget) RpcObjectManager.instance.getObject(info.controlPointsId);
+        DoubleMatrix highDimPoints =  controlPointsTarget.highDimData;
+        ControlPoints2D newControlPoints = Converters.checkNull(info.newLowDimControlPoints);
+        DoubleMatrix lowDimPoints = new DoubleMatrix(newControlPoints.points.length, 2);
+        for (int i = 0; i < newControlPoints.points.length; i++) {
+            lowDimPoints.put(i, 0, newControlPoints.points[i].x);
+            lowDimPoints.put(i, 1, newControlPoints.points[i].y);
+        }
+        lowDimPoints.print();
+        List<String> colNames = Arrays.asList(Converters.checkNull(info.colNames));
+        List<String> newColNames = Arrays.asList(Converters.checkNull(info.newColNames));
+        LAMPMap map = new LAMPMap(highDimPoints, lowDimPoints, colNames, newColNames);
+        this.runMap(this.table, map, TableTarget::new, request, session);
     }
 
     static class QuantileInfo {

@@ -30,6 +30,7 @@ import org.hillview.table.rows.RowSnapshot;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -143,5 +144,27 @@ public class SmallTable extends BaseTable implements Serializable, IJson {
             jRows.add(rs.toJsonTree());
         result.add("rows", jRows);
         return result;
+    }
+
+    /**
+     * Returns a concatenation of this table with the given table. The schema of this table is used, and if the given
+     * table is not empty, its schema should be the same as this's schema.
+     *
+     * @param that The other SmallTable. It is concatenated to this table. If nonempty, its schema has to be the same
+     *            as this schema.
+     * @return A new SmallTable that is the concatenation of this schema with that schema.
+     */
+    public SmallTable concatenate(SmallTable that) {
+        List<RowSnapshot> rows = new ArrayList<RowSnapshot>(this.getNumOfRows() + that.getNumOfRows());
+        for (int i = 0; i < this.getNumOfRows(); i++)
+            rows.add(new RowSnapshot(this, i));
+        for (int i = 0; i < that.getNumOfRows(); i++)
+            rows.add(new RowSnapshot(that, i));
+
+        if (this.getSchema().getColumnCount() > 0) {
+            return new SmallTable(this.getSchema(), rows);
+        } else {
+            return new SmallTable();
+        }
     }
 }

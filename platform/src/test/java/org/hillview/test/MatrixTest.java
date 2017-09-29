@@ -97,7 +97,7 @@ public class MatrixTest {
 
         ITable table = new Table(columns);
         List<String> colNames = new ArrayList<String>(table.getSchema().getColumnNames());
-        DoubleMatrix mat = BlasConversions.toDoubleMatrixMissing(table, colNames, Double.NaN);
+        DoubleMatrix mat = BlasConversions.toDoubleMatrix(table, colNames);
         DoubleMatrix missingCount = mat.isNaN().columnSums();
         for (int i = 0; i < numCols; i++) {
             Assert.assertEquals(missing[i], Math.round(missingCount.get(i)));

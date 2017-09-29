@@ -624,9 +624,30 @@ export class HeatMapArrayDialog extends Dialog {
     constructor(private selectedColumns: string[], private page: FullPage,
                 private schema: Schema, private remoteObject: RemoteTableObject) {
         super("Heat map array");
-        this.addSelectField("col1", "Heat map column 1: ", selectedColumns, selectedColumns[0]);
-        this.addSelectField("col2", "Heat map column 2: ", selectedColumns, selectedColumns[1]);
-        this.addSelectField("col3", "Array column: ", selectedColumns, selectedColumns[2]);
+        let selectedNumColumns: string[] = [];
+        let selectedCatColumn: string = "";
+        let catColumns = [];
+        let numColumns = [];
+        for (let i = 0; i < schema.length; i++){
+            if (schema[i].kind == "Category")
+                catColumns.push(schema[i].name);
+            if (schema[i].kind == "Double" || schema[i].kind == "Integer")
+                numColumns.push(schema[i].name)
+        }
+        selectedColumns.forEach((selectedColumn) => {
+            if (catColumns.indexOf(selectedColumn) >= 0)
+                selectedCatColumn = selectedColumn;
+        })
+        selectedColumns.forEach((selectedColumn) => {
+            if (numColumns.indexOf(selectedColumn) >= 0)
+                selectedNumColumns.push(selectedColumn);
+        })
+        if (selectedCatColumn == "" && catColumns.length > 0) {
+            selectedCatColumn = catColumns[0];
+        }
+        this.addSelectField("col1", "Heat map column 1: ", numColumns, selectedNumColumns[0]);
+        this.addSelectField("col2", "Heat map column 2: ", numColumns, selectedNumColumns[1]);
+        this.addSelectField("col3", "Array column: ", catColumns, selectedCatColumn);
         this.setAction(() => this.execute());
     }
 

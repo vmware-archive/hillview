@@ -37,7 +37,7 @@ import {HeatMapArrayDialog} from "./heatMapArray";
 import {ColumnConverter, HLogLogReceiver} from "./columnConverter";
 import {DataRange} from "./vis"
 import {HeavyHittersView} from "./heavyhittersview";
-
+import {LAMPDialog} from "./lamp";
 
 // This is the serialization of a NextKList Java object
 export class TableDataView {
@@ -253,6 +253,17 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         for (let i = 0; i < schema.length; i++)
             colNames.push(schema[i].name)
         return colNames;
+    }
+
+    public static uniqueColumnName(schema: Schema, prefix: string): string {
+        let existingNames = TableView.allColumnNames(schema);
+        let name = prefix;
+        let i = 0;
+        while (existingNames.indexOf(name) >= 0) {
+            name = prefix + `_${i}`;
+            i++;
+        }
+        return name;
     }
 
     public static columnIndex(schema: Schema, colName: string): number {
@@ -497,6 +508,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
                 this.contextMenu.addItem({text: "Select numeric columns", action: () => this.selectNumericColumns()});
                 this.contextMenu.addItem({text: "Estimate Distinct Elements", action: () => this.hLogLog(cd.name)});
                 this.contextMenu.addItem({text: "PCA...", action: () => this.pca() });
+                this.contextMenu.addItem({text: "LAMP...", action: () => this.lamp() });
                 this.contextMenu.addItem({text: "Filter...", action: () => this.equalityFilter(cd.name)});
                 this.contextMenu.addItem({text: "Convert...", action: () => ColumnConverter.dialog(cd.name, TableView.allColumnNames(this.schema), this)});
 
@@ -628,53 +640,71 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         }
     }
 
+    private hLogLog(colName: string): void {
+        let rr = this.createHLogLogRequest(colName);
+        rr.invoke(new HLogLogReceiver(this.getPage(), rr, "HLogLog",
+            (res) => this.page.reportError("Distinct values in column \'" +
+            colName + "\' " + SpecialChars.approx + " : " +
+            String(res.distinctItemCount))));
+    }
 
-        private hLogLog(colName: string): void {
-	    let rr = this.createHLogLogRequest(colName);
-            rr.invoke(new HLogLogReceiver(this.getPage(), rr, "HLogLog",
-				          (res) => this.page.reportError("Distinct values in column \'" +
-						                         colName + "\' " + SpecialChars.approx + " : " +
-						                         String(res.distinctItemCount))));
+    private getSelectedColNames(): string[] {
+        let colNames: string[] = [];
+        this.selectedColumns.forEach(col => colNames.push(col));
+        return colNames;
+    }
+
+    private checkNumericColumns(colNames: string[], atLeast: number = 3): [boolean, string] {
+        if (colNames.length < atLeast) {
+            let message = `\nNot enough columns. Need at least ${atLeast}. There are ${colNames.length}`;
+            return [false, message];
         }
+        let valid = true;
+        let message = "";
+        colNames.forEach((colName) => {
+            let kind = TableView.findColumn(this.schema, colName).kind;
+            if (kind != "Double" && kind != "Integer") {
+                valid = false;
+                message += "\n  * Column '" + colName  + "' is not numeric.";
+            }
+        });
 
-        private pca(): void {
-            let colNames: string[] = [];
-            this.selectedColumns.forEach(col => colNames.push(col));
+        return [valid, message];
+    }
 
-            let valid = true;
-            let message = "";
-            colNames.forEach((colName) => {
-                let kind = TableView.findColumn(this.schema, colName).kind;
-                if (kind != "Double" && kind != "Integer") {
-                    valid = false;
-                    message += "\n  * Column '" + colName  + "' is not numeric.";
+    private pca(): void {
+        let colNames = this.getSelectedColNames();
+        let [valid, message] = this.checkNumericColumns(colNames);
+        if (valid) {
+            let pcaDialog = new Dialog("Principal Component Analysis");
+            pcaDialog.addTextField("numComponents", "Number of components", "Integer", "2");
+            pcaDialog.setAction(() => {
+                let numComponents: number = pcaDialog.getFieldValueAsInt("numComponents");
+                if (numComponents < 1 || numComponents > colNames.length) {
+                    this.reportError("Number of components for PCA must be between 1 (incl.) " +
+                        "and the number of selected columns, " + colNames.length + " (incl.). (" +
+                        numComponents + " does not satisfy this.)");
+                    return;
                 }
+                let rr = this.createCorrelationMatrixRequest(colNames);
+                rr.invoke(new CorrelationMatrixReceiver(this.getPage(), this, rr, this.order, numComponents));
             });
-
-            if (colNames.length < 3) {
-                this.reportError("Not enough numeric columns. Need at least 3. There are " + colNames.length);
-                return;
-            }
-
-            if (valid) {
-                let pcaDialog = new Dialog("Principal Component Analysis");
-                pcaDialog.addTextField("numComponents", "Number of components", "Integer", "2");
-                pcaDialog.setAction(() => {
-                    let numComponents: number = pcaDialog.getFieldValueAsInt("numComponents");
-                    if (numComponents < 1 || numComponents > colNames.length) {
-                        this.reportError("Number of components for PCA must be between 1 (incl.) " +
-                                         "and the number of selected columns, " + colNames.length + " (incl.). (" +
-                                         numComponents + " does not satisfy this.)");
-                        return;
-                    }
-                    let rr = this.createCorrelationMatrixRequest(colNames);
-                    rr.invoke(new CorrelationMatrixReceiver(this.getPage(), this, rr, this.order, numComponents));
-                });
-                pcaDialog.show();
-            } else {
-                this.reportError("Only numeric columns are supported for PCA:" + message);
-            }
+            pcaDialog.show();
+        } else {
+            this.reportError("Not valid for PCA:" + message);
         }
+    }
+
+    private lamp(): void {
+        let colNames = this.getSelectedColNames();
+        let [valid, message] = this.checkNumericColumns(colNames);
+        if (valid) {
+            let dialog = new LAMPDialog(colNames, this.getPage(), this.schema, this);
+            dialog.show();
+        } else {
+            this.reportError("Not valid for LAMP:" + message);
+        }
+    }
 
     private heatMapArray(): void {
         let selectedColumns: string[] = cloneSet(this.selectedColumns);
@@ -729,6 +759,10 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         else
             this.setScroll(this.startPosition / this.rowCount,
                 (this.startPosition + this.dataRowsDisplayed) / this.rowCount);
+    }
+
+    public getTotalRowCount() : number {
+        return this.rowCount;
     }
 
     public getRowCount() : number {

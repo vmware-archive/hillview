@@ -17,9 +17,25 @@
 
 package org.hillview.utils;
 
+import org.hillview.maps.LinearProjectionMap;
+import org.hillview.sketches.CorrMatrix;
+import org.hillview.sketches.FullCorrelationSketch;
+import org.hillview.storage.CsvFileReader;
+import org.hillview.table.Schema;
+import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ITable;
+import org.jblas.DoubleMatrix;
+
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 public class TestUtils {
     /**
@@ -45,4 +61,35 @@ public class TestUtils {
             row = rowIt.getNextRow();
         }
     }
+
+    public static ITable loadTableFromCSV(String dataFolder, String csvFile, String schemaFile) throws IOException {
+        Path path = Paths.get(dataFolder, schemaFile);
+        Schema schema = Schema.readFromJsonFile(path);
+        path = Paths.get(dataFolder, csvFile);
+        CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
+        config.allowFewerColumns = false;
+        config.hasHeaderRow = true;
+        config.allowMissingData = false;
+        config.schema = schema;
+        CsvFileReader r = new CsvFileReader(path, config);
+
+        ITable table;
+        table = r.read();
+        table = Converters.checkNull(table);
+
+        return table;
+    }
+
+    public static List<String> getNumericColumnNames(ITable table) {
+        List<String> numericColNames = new ArrayList<String>();
+        Set<String> colNames = table.getSchema().getColumnNames();
+        for (String colName : colNames) {
+            ContentsKind kind = table.getSchema().getDescription(colName).kind;
+            if (kind == ContentsKind.Double || kind == ContentsKind.Integer) {
+                numericColNames.add(colName);
+            }
+        }
+        return numericColNames;
+    }
+
 }

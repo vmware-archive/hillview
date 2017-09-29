@@ -83,11 +83,29 @@ export class ColorLegend implements IHtmlElement {
         this.contextMenu = new ContextMenu([
             {
                 text: "Cool",
-                action: () => this.setMap(d3.interpolateCool)
+                action: () => {
+                    this.colorMap.map = d3.interpolateCool;
+                    this.mapUpdated();
+                }
             }, {
                 text: "Warm",
-                action: () => this.setMap(d3.interpolateWarm)
-            }
+                action: () => {
+                    this.colorMap.map = d3.interpolateWarm;
+                    this.mapUpdated();
+                }
+            }, {
+                text: "Gray",
+                action: () => {
+                    this.colorMap.map = (x: number) => `rgb(${Math.round(255 * (1 - x))}, ${Math.round(255 * (1 - x))}, ${Math.round(255 * (1 - x))})`;
+                    this.mapUpdated();
+                }
+            }, {
+                text: "Toggle log scale",
+                action: () => {
+                    this.colorMap.setLogScale(!this.colorMap.logScale)
+                    this.mapUpdated();
+                }
+            },
         ]);
         this.topLevel.appendChild(this.contextMenu.getHTMLRepresentation());
     }
@@ -101,15 +119,9 @@ export class ColorLegend implements IHtmlElement {
         }
     }
 
-    // Set a new (base) color map. Needs to redefine the gradient.
-    private setMap(map: (number) => string) {
-        this.colorMap.map = map;
-        this.gradient.selectAll("*").remove();
-        for (let i = 0; i <= 100; i += 4)
-            this.gradient.append("stop")
-                .attr("offset", i + "%")
-                .attr("stop-color", this.colorMap.map(i / 100))
-                .attr("stop-opacity", 1)
+    // Redraw the legend, and notify the listeners.
+    private mapUpdated() {
+        this.redraw();
         // Notify the onColorChange listener (redraw the elements with new colors)
         if (this.onColorMapChange != null)
             this.onColorMapChange(this.colorMap);
