@@ -23,7 +23,6 @@ import org.hillview.dataset.TripleSketch;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.Pair;
-import org.hillview.dataset.api.PartialResult;
 import org.hillview.maps.ConvertColumnMap;
 import org.hillview.maps.FilterMap;
 import org.hillview.maps.LAMPMap;
@@ -44,6 +43,7 @@ import org.jblas.DoubleMatrix;
 import rx.Observer;
 
 import javax.annotation.Nullable;
+import javax.websocket.Session;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -269,15 +269,15 @@ public final class TableTarget extends RpcTarget {
     }
 
     @HillviewRpc
-    void sampledControlPoints(RpcRequest request, Session session) {
+    void sampledControlPoints(RpcRequest request, RpcRequestContext context) {
         SampledControlPoints info = request.parseArgs(SampledControlPoints.class);
         List<String> columnNamesList = Arrays.asList(Converters.checkNull(info.columnNames));
         double samplingRate = ((double) info.numSamples) / info.rowCount;
         RandomSamplingSketch sketch = new RandomSamplingSketch(samplingRate, columnNamesList, info.allowMissing);
-        this.runCompleteSketch(this.table, sketch, (sampled) -> {
+        this.runCompleteSketch(this.table, sketch, (sampled, c) -> {
             sampled = sampled.compress(sampled.getMembershipSet().sample(info.numSamples)); // Resample to get the exact number of samples.
-            return new ControlPointsTarget(sampled, columnNamesList);
-        }, request, session);
+            return new ControlPointsTarget(sampled, columnNamesList, c);
+        }, request, context);
     }
 
     static class CatCentroidControlPoints {
@@ -287,7 +287,7 @@ public final class TableTarget extends RpcTarget {
     }
 
     @HillviewRpc
-    void categoricalCentroidsControlPoints(RpcRequest request, Session session) {
+    void categoricalCentroidsControlPoints(RpcRequest request, RpcRequestContext session) {
         CatCentroidControlPoints info = request.parseArgs(CatCentroidControlPoints.class);
         CategoryCentroidsSketch sketch = new CategoryCentroidsSketch(info.categoricalColumnName, Arrays.asList(Converters.checkNull(info.numericalColumnNames)));
         this.runCompleteSketch(this.table, sketch, ControlPointsTarget::new, request, session);
@@ -306,17 +306,26 @@ public final class TableTarget extends RpcTarget {
     }
 
     @HillviewRpc
-    void makeMDSProjection(RpcRequest request, Session session) {
+    void makeMDSProjection(RpcRequest request, RpcRequestContext context) {
         MakeMDSProjection info = request.parseArgs(MakeMDSProjection.class);
-        ControlPointsTarget controlPointsTarget = (ControlPointsTarget) RpcObjectManager.instance.getObject(info.id);
-        ControlPoints2D controlPoints2D =  controlPointsTarget.mds(info.seed);
+        Observer<RpcTarget> observer = new SingleObserver<RpcTarget>() {
+            @Override
+            public void onSuccess(RpcTarget rpcTarget) {
+                ControlPointsTarget controlPointsTarget = (ControlPointsTarget)rpcTarget;
+                ControlPoints2D controlPoints2D = controlPointsTarget.mds(info.seed);
+                Session session = context.getSessionIfOpen();
+                if (session == null)
+                    return;
 
-        JsonObject json = new JsonObject();
-        json.addProperty("done", 1.0);
-        json.add("data", controlPoints2D.toJsonTree());
-        RpcReply reply = request.createReply(json);
-        reply.send(session);
-        request.syncCloseSession(session);
+                JsonObject json = new JsonObject();
+                json.addProperty("done", 1.0);
+                json.add("data", controlPoints2D.toJsonTree());
+                RpcReply reply = request.createReply(json);
+                reply.send(session);
+                request.syncCloseSession(session);
+            }
+        };
+        RpcObjectManager.instance.retrieveTarget(info.id, true, observer);
     }
 
     static class LAMPMapInfo {
@@ -330,21 +339,27 @@ public final class TableTarget extends RpcTarget {
     }
 
     @HillviewRpc
-    void lampMap(RpcRequest request, Session session) {
+    void lampMap(RpcRequest request, RpcRequestContext context) {
         LAMPMapInfo info = request.parseArgs(LAMPMapInfo.class);
-        ControlPointsTarget controlPointsTarget = (ControlPointsTarget) RpcObjectManager.instance.getObject(info.controlPointsId);
-        DoubleMatrix highDimPoints =  controlPointsTarget.highDimData;
-        ControlPoints2D newControlPoints = Converters.checkNull(info.newLowDimControlPoints);
-        DoubleMatrix lowDimPoints = new DoubleMatrix(newControlPoints.points.length, 2);
-        for (int i = 0; i < newControlPoints.points.length; i++) {
-            lowDimPoints.put(i, 0, newControlPoints.points[i].x);
-            lowDimPoints.put(i, 1, newControlPoints.points[i].y);
-        }
-        lowDimPoints.print();
-        List<String> colNames = Arrays.asList(Converters.checkNull(info.colNames));
-        List<String> newColNames = Arrays.asList(Converters.checkNull(info.newColNames));
-        LAMPMap map = new LAMPMap(highDimPoints, lowDimPoints, colNames, newColNames);
-        this.runMap(this.table, map, TableTarget::new, request, session);
+        Observer<RpcTarget> observer = new SingleObserver<RpcTarget>() {
+            @Override
+            public void onSuccess(RpcTarget rpcTarget) {
+                ControlPointsTarget controlPointsTarget = (ControlPointsTarget)rpcTarget;
+                DoubleMatrix highDimPoints = controlPointsTarget.highDimData;
+                ControlPoints2D newControlPoints = Converters.checkNull(info.newLowDimControlPoints);
+                DoubleMatrix lowDimPoints = new DoubleMatrix(newControlPoints.points.length, 2);
+                for (int i = 0; i < newControlPoints.points.length; i++) {
+                    lowDimPoints.put(i, 0, newControlPoints.points[i].x);
+                    lowDimPoints.put(i, 1, newControlPoints.points[i].y);
+                }
+                lowDimPoints.print();
+                List<String> colNames = Arrays.asList(Converters.checkNull(info.colNames));
+                List<String> newColNames = Arrays.asList(Converters.checkNull(info.newColNames));
+                LAMPMap map = new LAMPMap(highDimPoints, lowDimPoints, colNames, newColNames);
+                TableTarget.this.runMap(TableTarget.this.table, map, TableTarget::new, request, context);
+            }
+        };
+        RpcObjectManager.instance.retrieveTarget(info.controlPointsId, true, observer);
     }
 
     static class QuantileInfo {

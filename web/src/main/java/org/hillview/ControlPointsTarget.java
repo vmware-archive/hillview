@@ -19,6 +19,7 @@ package org.hillview;
 
 import org.hillview.sketches.Centroids;
 import org.hillview.table.SmallTable;
+import org.hillview.utils.Converters;
 import org.hillview.utils.Point2D;
 import org.hillview.utils.BlasConversions;
 import org.hillview.utils.MetricMDS;
@@ -31,16 +32,18 @@ import java.util.List;
 import java.util.Set;
 
 public class ControlPointsTarget extends RpcTarget {
-
-    public final DoubleMatrix highDimData;
+    final DoubleMatrix highDimData;
     @Nullable
-    public DoubleMatrix lowDimData;
+    private DoubleMatrix lowDimData;
 
-    public ControlPointsTarget(SmallTable table, List<String> colNames) {
+    ControlPointsTarget(SmallTable table, List<String> colNames, HillviewComputation computation) {
+        super(computation);
         this.highDimData = BlasConversions.toDoubleMatrix(table, colNames);
+        this.registerObject();
     }
 
-    public ControlPointsTarget(Centroids<String> centroids) {
+    ControlPointsTarget(Centroids<String> centroids, HillviewComputation computation) {
+        super(computation);
         HashMap<String, double[]> map = centroids.computeCentroids();
         Set<String> keys = map.keySet();
         int numCols = map.get(new ArrayList<String>(keys).get(0)).length;
@@ -53,9 +56,10 @@ public class ControlPointsTarget extends RpcTarget {
                 this.highDimData.put(i, j, centroid[j]);
             i++;
         }
+        this.registerObject();
     }
 
-    public TableTarget.ControlPoints2D mds(int seed) {
+    TableTarget.ControlPoints2D mds(int seed) {
         MetricMDS mds = new MetricMDS(this.highDimData);
         this.lowDimData = mds.computeEmbedding(seed);
 
@@ -67,6 +71,7 @@ public class ControlPointsTarget extends RpcTarget {
     }
 
     public void setControlPoints(Point2D[] points) {
+        Converters.checkNull(this.lowDimData);
         for (int i = 0; i < points.length; i++) {
             this.lowDimData.put(i, 0, points[i].x);
             this.lowDimData.put(i, 1, points[i].y);

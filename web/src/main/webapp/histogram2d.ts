@@ -59,6 +59,7 @@ export class Histogram2DView extends HistogramViewBase {
                 { text: "table", action: () => this.showTable() },
                 { text: "#buckets", action: () => this.chooseBuckets() },
                 { text: "swap axes", action: () => { this.swapAxes(); } },
+                { text: "heatmap", action: () => { this.heatmap(); } },
                 { text: "percent/value", action: () => { this.normalized = !this.normalized; this.refresh(); } },
             ]) },
             {
@@ -69,6 +70,16 @@ export class Histogram2DView extends HistogramViewBase {
         this.normalized = false;
         this.selectingLegend = true;
         this.topLevel.insertBefore(menu.getHTMLRepresentation(), this.topLevel.children[0]);
+    }
+
+    heatmap(): void {
+        let newPage = new FullPage();
+        this.page.insertAfterMe(newPage);
+        let rcol = new Range2DCollector([this.currentData.xData.description, this.currentData.yData.description],
+            this.tableSchema, [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
+            newPage, this, null, true);
+        rcol.setValue({ first: this.currentData.xData.stats, second: this.currentData.yData.stats });
+        rcol.onCompleted();
     }
 
     // combine two views according to some operation

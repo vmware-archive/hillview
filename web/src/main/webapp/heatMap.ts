@@ -102,6 +102,7 @@ export class HeatMapView extends RemoteTableObjectView {
                 { text: "refresh", action: () => { this.refresh(); } },
                 { text: "swap axes", action: () => { this.swapAxes(); } },
                 { text: "table", action: () => { this.showTable(); } },
+                { text: "histogram", action: () => { this.histogram(); } },
             ]) },
             {
                 text: "Combine", subMenu: combineMenu(this)
@@ -152,6 +153,16 @@ export class HeatMapView extends RemoteTableObjectView {
         this.valueLabel.style.textAlign = "left";
         labelCell.appendChild(this.valueLabel);
         labelCell.className = "noBorder";
+    }
+
+    histogram(): void {
+        let newPage = new FullPage();
+        this.page.insertAfterMe(newPage);
+        let rcol = new Range2DCollector([this.currentData.xData.description, this.currentData.yData.description],
+                    this.tableSchema, [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
+                     newPage, this, null, false);
+        rcol.setValue({ first: this.currentData.xData.stats, second: this.currentData.yData.stats });
+        rcol.onCompleted();
     }
 
     // combine two views according to some operation
