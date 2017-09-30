@@ -20,7 +20,7 @@ import {ScrollBar, ProgressBar, DataDisplay, FullPage} from "./ui";
 import {InitialObject} from "./initialObject";
 import {ConsoleErrorReporter} from "./errReporter";
 import {HistogramView} from "./histogram";
-import {insertControlMenu} from "./ControlMenu";
+import {insertControlMenu} from "./controlMenu";
 
 // Top-level Hillview object: exports all typescript classes
 // that can be used in html.

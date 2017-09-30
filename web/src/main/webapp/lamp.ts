@@ -18,9 +18,9 @@
 import {Dialog} from "./dialog";
 import {TopMenu, TopSubMenu} from "./menu";
 import {TableDataView, TableView, TableRenderer} from "./table";
-import {ContentsKind, RangeInfo, BasicColStats, Schema, RemoteTableObject, RemoteTableObjectView, RemoteTableRenderer, ColumnAndRange, RecordOrder} from "./tableData";
-import {FullPage, IDataView, Resolution} from "./ui";
-import {Renderer, RpcReceiver, RpcRequest} from "./rpc";
+import {RangeInfo, BasicColStats, Schema, RemoteTableObject, RemoteTableObjectView, RemoteTableRenderer, RecordOrder} from "./tableData";
+import {FullPage, Resolution} from "./ui";
+import {Renderer, RpcRequest} from "./rpc";
 import {PartialResult, Point2D, clamp, Pair} from "./util";
 import {HeatMapData} from "./heatMap";
 import {HeatMapArrayDialog} from "./heatMapArray";
@@ -70,7 +70,7 @@ class ControlPointsView extends RemoteTableObjectView {
             this.refresh();
         });
         this.topLevel.appendChild(this.colorLegend.getHTMLRepresentation());
-        let chartDiv = document.createElement("div")
+        let chartDiv = document.createElement("div");
         this.topLevel.appendChild(chartDiv);
 
         let canvasSize = Math.min(Resolution.getCanvasSize(this.getPage()).width, Resolution.getCanvasSize(this.getPage()).height);

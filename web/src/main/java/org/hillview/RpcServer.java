@@ -34,8 +34,8 @@ import java.io.*;
  * A server which implements RPC calls between a web browser client and
  * a Java-based web server.  The web server may create a different
  * instance of this class for each request.  The client should
- * send exactly one request for each context; the server may send zero, one
- * or more replies for each context.  The client or server can both
+ * send exactly one request for each session; the server may send zero, one
+ * or more replies for each session.  The client or server can both
  * choose to close the connection at any time.  This class must be public.
  */
 @SuppressWarnings("WeakerAccess")

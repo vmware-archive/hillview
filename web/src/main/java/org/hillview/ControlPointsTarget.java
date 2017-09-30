@@ -31,7 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
-public class ControlPointsTarget extends RpcTarget {
+public final class ControlPointsTarget extends RpcTarget {
     final DoubleMatrix highDimData;
     @Nullable
     private DoubleMatrix lowDimData;

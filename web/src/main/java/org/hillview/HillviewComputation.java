@@ -26,7 +26,10 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Base interface for all computations.
+ * Represents information that has led to the creation of an RpcTarget object.
+ * The information stores the inputs and the request that cause the creation of the target.
+ * This allows objects to be reconstructed.  The RpcRequest is essentially the JSON message
+ * coming from the web browser UI.
  */
 public class HillviewComputation implements Serializable {
     /**

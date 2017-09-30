@@ -19,11 +19,12 @@ package org.hillview;
 
 import org.hillview.sketches.CorrMatrix;
 
-class CorrelationMatrixTarget extends RpcTarget {
+final class CorrelationMatrixTarget extends RpcTarget {
     final CorrMatrix corrMatrix;
 
     CorrelationMatrixTarget(final CorrMatrix cm, HillviewComputation computation) {
         super(computation);
         this.corrMatrix = cm;
+        this.registerObject();
     }
 }

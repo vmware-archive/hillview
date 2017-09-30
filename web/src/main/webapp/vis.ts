@@ -109,7 +109,7 @@ export class ColorLegend implements IHtmlElement {
             }, {
                 text: "Toggle log scale",
                 action: () => {
-                    this.colorMap.setLogScale(!this.colorMap.logScale)
+                    this.colorMap.setLogScale(!this.colorMap.logScale);
                     this.mapUpdated();
                 }
             },
