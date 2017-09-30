@@ -34,58 +34,83 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.Assert.assertTrue;
+
 public class FreqKTest {
+
+    private void filterTest(FreqKList fkList) {
+        fkList.filter(Boolean.TRUE);
+        fkList.getList().forEach(rss -> assertTrue(fkList.hMap.get(rss) >=
+                fkList.totalRows*fkList.epsilon - fkList.getErrBound()));
+    }
     @Test
     public void testTopK1() {
         final int numCols = 2;
-        final int maxSize = 10;
-        final int size = 100;
+        final double epsilon = 0.01;
+        final int size = 1000;
         Table leftTable = TestTables.getRepIntTable(size, numCols);
-        FreqKSketch fk = new FreqKSketch(leftTable.getSchema(), maxSize);
-        System.out.println(fk.create(leftTable).toString());
+        FreqKSketch fk = new FreqKSketch(leftTable.getSchema(), epsilon);
+        FreqKList fkList= fk.create(leftTable);
+        filterTest(fkList);
+
     }
+
+    @Test
+    public void testTopKSq() {
+        final int range = 15;
+        double eps = 0.2;
+        SmallTable leftTable = TestTables.getSqIntTable(range);
+        FreqKSketch fk = new FreqKSketch(leftTable.getSchema(), eps);
+        FreqKList fkList= fk.create(leftTable);
+        filterTest(fkList);
+    }
+
+
 
     @Test
     public void testTopK2() {
         final int numCols = 2;
-        final int maxSize = 10;
+        final double epsilon = 0.1;
         final int size = 1000;
         Table leftTable = TestTables.getRepIntTable(size, numCols);
         Table rightTable = TestTables.getRepIntTable(size, numCols);
-        FreqKSketch fk = new FreqKSketch(leftTable.getSchema(), maxSize);
-        fk.add(fk.create(leftTable), fk.create(rightTable));
+        FreqKSketch fk = new FreqKSketch(leftTable.getSchema(), epsilon);
+        FreqKList fkList = fk.add(fk.create(leftTable), fk.create(rightTable));
+        filterTest(fkList);
     }
 
     @Test
     public void testTopK3() {
         final int numCols = 2;
-        final int maxSize = 25;
+        final double epsilon = 0.04;
         final double base = 2.0;
         final int range = 14;
         final int size = 20000;
         SmallTable leftTable = TestTables.getHeavyIntTable(numCols, size, base, range);
-        FreqKSketch fk = new FreqKSketch(leftTable.getSchema(), maxSize);
+        FreqKSketch fk = new FreqKSketch(leftTable.getSchema(), epsilon);
+        FreqKList fkList= fk.create(leftTable);
+        filterTest(fkList);
     }
 
     @Test
     public void testTopK4() {
         final int numCols = 2;
-        final int maxSize = 25;
+        final double epsilon = 0.02;
         final double base = 2.0;
-        final int range = 14;
+        final int range = 10;
         final int size = 20000;
         SmallTable leftTable = TestTables.getHeavyIntTable(numCols, size, base, range);
         SmallTable rightTable = TestTables.getHeavyIntTable(numCols, size, base, range);
-        FreqKSketch fk = new FreqKSketch(leftTable.getSchema(), maxSize);
+        FreqKSketch fk = new FreqKSketch(leftTable.getSchema(), epsilon);
         FreqKList freqKList = Converters.checkNull(fk.add(fk.create(leftTable),
                 fk.create(rightTable)));
-        Assert.assertNotNull(freqKList.toString());
+        filterTest(freqKList);
     }
 
     @Test
     public void testTopK5() {
         final int numCols = 2;
-        final int maxSize = 25;
+        final double epsilon = 0.04;
         final double base = 2.0;
         final int range = 16;
         final int size = 100000;
@@ -94,7 +119,7 @@ public class FreqKTest {
         ArrayList<IDataSet<ITable>> a = new ArrayList<IDataSet<ITable>>();
         tabList.forEach(t -> a.add(new LocalDataSet<ITable>(t)));
         ParallelDataSet<ITable> all = new ParallelDataSet<ITable>(a);
-        FreqKSketch fk = new FreqKSketch(bigTable.getSchema(), maxSize);
+        FreqKSketch fk = new FreqKSketch(bigTable.getSchema(), epsilon);
         Assert.assertNotNull(all.blockingSketch(fk).toString());
     }
 

@@ -104,6 +104,16 @@ public class TestTables {
     }
 
     /**
+     * @param range
+     * @return A table which contains number from (1,..., range), where i occurs i^2 times.
+     */
+    public static SmallTable getSqIntTable(final int range) {
+        final List<IColumn> columns = new ArrayList<IColumn>();
+        columns.add(IntArrayGenerator.getSqIntArray(range));
+        return new SmallTable(columns);
+    }
+
+    /**
      * A table of integers whose rows are typically distinct. Each row is sampled randomly from a
      * domain of size 5^numCols*size. When numCols is small, some collisions are to be expected, but
      * generally the elements are distinct (each row in the range has a probability of 5^{-numCols}

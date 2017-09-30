@@ -17,10 +17,12 @@
 
 import {RemoteTableObjectView} from "./tableData";
 import {significantDigits, FullPage, Resolution} from "./ui";
-import {ColumnDescription, Schema, RecordOrder} from "./tableData";
+import {IColumnDescription, ColumnDescription, Schema, RecordOrder} from "./tableData";
 import {TableView, TableDataView, TopList, TableOperationCompleted} from "./table";
 import {TopMenu, TopSubMenu} from "./menu";
 import {DataRange} from "./vis";
+import {RemoteObject, Renderer} from "./rpc";
+import {PartialResult, ICancellable} from "./util";
 
 // Class that renders a table containing the heavy hitters in sorted
 // order of counts. It also displays a menu that gives the option to
@@ -31,17 +33,15 @@ export class HeavyHittersView extends RemoteTableObjectView {
     constructor(public data: TopList,
                 public page: FullPage,
                 public tv: TableView,
-                public schema: Schema,
-                public order: RecordOrder ) {
+                public schema: IColumnDescription[],
+                public order: RecordOrder,
+                private isMG: boolean) {
         super(data.heavyHittersId, page);
         this.topLevel = document.createElement("div");
-        let menu = new TopMenu([
-            {
-            text: "View", subMenu: new TopSubMenu([
-                {text: "As Table", action: () => {this.showTable();}}
-            ])
-        }
-        ]);
+        let subMenu = new TopSubMenu([ {text: "As Table", action: () => {this.showTable();}}])
+        if(isMG == true)
+            subMenu.addItem({text: "Get exact counts", action: () => {this.exactCounts();}});
+        let menu = new TopMenu([ {text: "View", subMenu} ]);
         this.topLevel.appendChild(menu.getHTMLRepresentation());
         this.topLevel.appendChild(document.createElement("br"));
     }
@@ -57,6 +57,16 @@ export class HeavyHittersView extends RemoteTableObjectView {
                 schema: this.schema
         });
         rr.invoke(new TableOperationCompleted(newPage2, this.tv, rr, this.order));
+    }
+
+    public exactCounts(): void {
+        let rr = this.tv.createCheckHeavyRequest(new RemoteObject(this.data.heavyHittersId), this.schema);
+        rr.invoke(new HeavyHittersReceiver2(this, rr));
+    }
+
+
+    public scrollIntoView() {
+        this.getHTMLRepresentation().scrollIntoView( { block: "end", behavior: "smooth" } );
     }
 
     public fill(tdv: TableDataView, elapsedMS: number): void {
@@ -176,7 +186,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
         for (let j = 0; j < this.schema.length; j++) {
             let cell = trow.insertCell(j+1);
             cell.style.textAlign = "right";
-            cell.textContent = "everything else";
+            cell.textContent = "Everything Else";
             cell.classList.add("missingData");
         }
         let cell1 = trow.insertCell(this.schema.length + 1);
@@ -188,5 +198,33 @@ export class HeavyHittersView extends RemoteTableObjectView {
         let cell3 = trow.insertCell(this.schema.length + 3);
         let dataRange = new DataRange(position, restCount, total);
         cell3.appendChild(dataRange.getDOMRepresentation());
+    }
+}
+
+// This class handles the reply of the "checkHeavy" method.
+export class HeavyHittersReceiver2 extends Renderer<TopList> {
+    private newData: TopList;
+    public constructor(public hhv: HeavyHittersView,
+                       public operation: ICancellable) {
+        super(hhv.page, operation, "Heavy hitters -- exact counts");
+        this.newData = null;
+    }
+
+    onNext(value: PartialResult<TopList>): any {
+        super.onNext(value);
+        if (value.data != null)
+            this.newData = value.data;
+    }
+
+    onCompleted(): void {
+        super.finished();
+        if (this.newData == null)
+            return;
+        let newPage = new FullPage();
+        let newHhv = new HeavyHittersView(this.newData, newPage, this.hhv.tv, this.hhv.schema, this.hhv.order, false);
+        newPage.setDataView(newHhv);
+        this.page.insertAfterMe(newPage);
+        newHhv.fill(this.newData.top, this.elapsedMilliseconds());
+        newHhv.scrollIntoView();
     }
 }
