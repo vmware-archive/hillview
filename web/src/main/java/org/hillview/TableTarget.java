@@ -37,6 +37,7 @@ import org.hillview.table.filters.RangeFilterDescription;
 import org.hillview.table.filters.RangeFilterPair;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.Converters;
+import org.hillview.utils.HillviewLogging;
 import org.hillview.utils.LinAlg;
 import org.hillview.utils.Point2D;
 import org.jblas.DoubleMatrix;
@@ -386,9 +387,10 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     void heavyHitters(RpcRequest request, RpcRequestContext context) {
         HeavyHittersInfo info = request.parseArgs(HeavyHittersInfo.class);
+        HillviewLogging.logger().info("HH on {} with {}", info.columns, info.amount);
         Converters.checkNull(info);
         FreqKSketch sk = new FreqKSketch(Converters.checkNull(info.columns), info.amount/100);
-        this.runCompleteSketch(this.table, sk, HeavyHittersTarget::new, request, context);
+        this.runCompleteSketch(this.table, sk, (x, c) -> TableTarget.getLists(x, info.columns, true, c), request, context);
     }
 
     static class HeavyHittersFilterInfo {
@@ -403,8 +405,8 @@ public final class TableTarget extends RpcTarget {
         String heavyHittersId = "";
     }
 
-    private static TopList getLists(FreqKList fkList, Schema schema, HillviewComputation computation) {
-        fkList.filter();
+    public static TopList getLists(FreqKList fkList, Schema schema, boolean isMG, HillviewComputation computation) {
+        fkList.filter(isMG);
         Pair<List<RowSnapshot>, List<Integer>> pair = fkList.getTop();
         TopList tl = new TopList();
         SmallTable tbl = new SmallTable(schema, Converters.checkNull(pair.first));
@@ -422,7 +424,8 @@ public final class TableTarget extends RpcTarget {
                 HeavyHittersTarget hht = (HeavyHittersTarget)rpcTarget;
                 ExactFreqSketch efSketch = new ExactFreqSketch(Converters.checkNull(hhi.schema), hht.heavyHitters);
                 TableTarget.this.runCompleteSketch(
-                        TableTarget.this.table, efSketch, (x, c) -> getLists(x, hhi.schema, c), request, context);
+                        TableTarget.this.table, efSketch, (x, c) -> TableTarget.getLists(x, hhi.schema, false, c),
+                        request, context);
             }
         };
         RpcObjectManager.instance.retrieveTarget(hhi.hittersId, true, observer);

@@ -34,33 +34,46 @@ import java.util.HashMap;
 import java.util.List;
 
 /** Computes heavy-hitters using the Misra-Gries algorithm, where N is the length on the input
- * table, and k is the number of counters that we maintain. We use the mergeable version of MG, as
- * described in the ACM TODS paper "Mergeable Summaries" by Agarwal et al., which gives a
- * non-trivial error bound. The algorithm ensures that every element of frequency greater than
- * N/(k+1) appears in the list.
+ * table, and our goal is find all elements of frequency epsilon N. K is the number of counters
+ * that we maintain, we set it to alpha/epsilon. Increasing alpha increases accuracy of the counts.
+ * We use the mergeable version of MG, as described in the ACM TODS paper "Mergeable Summaries" by
+ * Agarwal et al., which gives a non-trivial error bound. The algorithm ensures that every element
+ * of frequency greater than N/(k+1) appears in the list.
  */
 public class FreqKSketch implements ISketch<ITable, FreqKList> {
     /**
      * The schema specifies which columns are relevant in determining equality of records.
      */
     private final Schema schema;
+
     /**
-     * The parameter K in top-K heavy hitters.
+     * epsilon specifies the threshold for the fractional frequency: our goal is to find all elements
+     * that constitute more than an epsilon fraction of the total.
+     */
+    private final double epsilon;
+
+    /**
+     * This controls the relative error in the counts returned by MG.
+     * The relative error goes down as 1/alpha. More precisely, for every element whose true
+     * fractional frequency is eps, the reported frequency lies between eps and eps(1 - 1/alpha).
+     */
+    private int alpha = 5;
+
+    /**
+     * The parameter K which controls how many indices we store in MG. We set it to alpha/epsilon.
      */
     private final int maxSize;
-
-    private final double epsilon;
 
     public FreqKSketch(Schema schema, double epsilon) {
         this.schema = schema;
         this.epsilon = epsilon;
-        this.maxSize = (int) Math.ceil(1/epsilon);
+        this.maxSize = ((int) Math.ceil(alpha/epsilon));
     }
 
     @Nullable
     @Override
     public FreqKList zero() {
-        return new FreqKList(0, this.epsilon, new HashMap<RowSnapshot, Integer>(0));
+        return new FreqKList(0, this.epsilon, this.maxSize, new HashMap<RowSnapshot, Integer>(0));
     }
 
     /**
@@ -93,7 +106,7 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
             if (pList.get(i).second >= (k + 1))
                 hm.put(pList.get(i).first, pList.get(i).second - k);
         }
-        return new FreqKList(left.totalRows + right.totalRows, this.epsilon, hm);
+        return new FreqKList(left.totalRows + right.totalRows, this.epsilon, this.maxSize, hm);
     }
 
     /**
@@ -159,6 +172,6 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
         }
         HashMap<RowSnapshot,Integer> hm = new HashMap<RowSnapshot, Integer>(this.maxSize);
         hMap.keySet().forEach(ri -> hm.put(new RowSnapshot(data, ri, this.schema), hMap.get(ri)));
-        return new FreqKList(data.getNumOfRows(), this.epsilon, hm);
+        return new FreqKList(data.getNumOfRows(), this.epsilon, this.maxSize, hm);
     }
 }
