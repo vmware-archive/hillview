@@ -19,11 +19,15 @@ package org.hillview.dataset;
 
 import org.hillview.dataset.api.*;
 import org.hillview.utils.Converters;
+import org.hillview.utils.HillviewLogging;
+import org.hillview.utils.JsonList;
+import org.hillview.utils.JsonListMonoid;
 import rx.Observable;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -104,7 +108,7 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
             Observable<List<R>> bundled = data.buffer(this.bundleInterval, bundleTimeUnit)
                        .filter(e -> !e.isEmpty());
             if (ParallelDataSet.useLogging)
-                bundled = bundled.map(e -> this.log(e, "bundling " + e.size() + " values"));
+                bundled = bundled.map(e -> this.logPipe(e, "bundling " + e.size() + " values"));
             return bundled.map(adder::reduce);
         } else {
             return data;
@@ -120,6 +124,7 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
     @Override
     public <S> Observable<PartialResult<IDataSet<S>>> map(
              final IMap<T, S> mapper) {
+        HillviewLogging.logger().info("Invoked map on {}", this);
         final List<Observable<Pair<Integer, PartialResult<IDataSet<S>>>>> obs =
                 new ArrayList<Observable<Pair<Integer, PartialResult<IDataSet<S>>>>>(this.size());
         // We run the mapper over each child, and then we tag the results produced by
@@ -164,6 +169,7 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
 
     @Override
     public <S> Observable<PartialResult<IDataSet<S>>> flatMap(IMap<T, List<S>> mapper) {
+        HillviewLogging.logger().info("Invoked flatMap on {}", this);
         final List<Observable<Pair<Integer, PartialResult<IDataSet<S>>>>> obs =
                 new ArrayList<Observable<Pair<Integer, PartialResult<IDataSet<S>>>>>(this.size());
         // We run the mapper over each child, and then we tag the results produced by
@@ -209,6 +215,7 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
     @Override
     public <S> Observable<PartialResult<IDataSet<Pair<T, S>>>> zip(
             final IDataSet<S> other) {
+        HillviewLogging.logger().info("Invoked zip on {}", this);
         if (!(other instanceof ParallelDataSet<?>))
             throw new RuntimeException("Expected a ParallelDataSet " + other);
         final ParallelDataSet<S> os = (ParallelDataSet<S>)other;
@@ -255,7 +262,47 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
     }
 
     @Override
+    public Observable<PartialResult<JsonList<ControlMessage.Status>>> manage(ControlMessage message) {
+        HillviewLogging.logger().info("Invoked manage on {}", this);
+        List<Observable<PartialResult<JsonList<ControlMessage.Status>>>> obs =
+                new ArrayList<Observable<PartialResult<JsonList<ControlMessage.Status>>>>();
+        final int mySize = this.size();
+        // Run over each child separately
+        for (int i = 0; i < mySize; i++) {
+            IDataSet<T> child = this.children.get(i);
+            Observable<PartialResult<JsonList<ControlMessage.Status>>> sk = child.manage(message);
+            sk = sk.map(e -> new PartialResult<JsonList<ControlMessage.Status>>(e.deltaDone / mySize, e.deltaValue));
+            obs.add(sk);
+        }
+
+        final Callable<JsonList<ControlMessage.Status>> callable = () -> {
+            this.log("Starting manage {}", message.toString());
+            ControlMessage.Status status;
+            try {
+                status = message.parallelAction(this);
+            } catch (final Throwable t) {
+                status = new ControlMessage.Status("Exception", t);
+            }
+            JsonList<ControlMessage.Status> result = new JsonList<ControlMessage.Status>();
+            if (status != null)
+                result.add(status);
+            this.log("Completed manage {}", message.toString());
+            return result;
+        };
+        final Observable<JsonList<ControlMessage.Status>> executed = Observable.fromCallable(callable);
+        final Observable<PartialResult<JsonList<ControlMessage.Status>>> pr = executed.map
+                (l -> new PartialResult<JsonList<ControlMessage.Status>>(0, l));
+        obs.add(pr);
+
+        Observable<PartialResult<JsonList<ControlMessage.Status>>> merged = Observable.merge(obs);
+        merged = this.bundle(merged, new PartialResultMonoid<JsonList<ControlMessage.Status>>(new
+                JsonListMonoid<ControlMessage.Status>()));
+        return merged;
+    }
+
+    @Override
     public <R> Observable<PartialResult<R>> sketch(final ISketch<T, R> sketch) {
+        HillviewLogging.logger().info("Invoked sketch on {}", this);
         List<Observable<PartialResult<R>>> obs = new ArrayList<Observable<PartialResult<R>>>();
         final int mySize = this.size();
         // Run sketch over each child separately
@@ -264,18 +311,18 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
             final int finalI = i;
             Observable<PartialResult<R>> sk = child.sketch(sketch);
             if (useLogging)
-                sk = sk.map(e -> this.log(e, "child " + finalI + " sketch result " + sketch.toString()));
+                sk = sk.map(e -> this.logPipe(e, "child " + finalI + " sketch result " + sketch));
             sk = sk.map(e -> new PartialResult<R>(e.deltaDone / mySize, e.deltaValue));
             obs.add(sk);
         }
         // Just merge all sketch results
         Observable<PartialResult<R>> result = Observable.merge(obs);
         if (useLogging)
-            result = result.map(e -> this.log(e, "after merge " + sketch.toString()));
+            result = result.map(e -> this.logPipe(e, "after merge " + sketch.toString()));
         PartialResultMonoid<R> prm = new PartialResultMonoid<R>(sketch);
         result = this.bundle(result, prm);
         if (useLogging)
-            result = result.map(e -> this.log(e, "after bundle " + sketch.toString()));
+            result = result.map(e -> this.logPipe(e, "after bundle " + sketch.toString()));
         return result;
     }
 

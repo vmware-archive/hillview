@@ -20,16 +20,13 @@ package org.hillview;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.hillview.dataset.api.IJson;
+import org.hillview.utils.HillviewLogging;
+import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 final class RpcRequest {
-    private static final Logger LOGGER =
-            Logger.getLogger(RpcRequest.class.getName());
-
     private final int requestId;
     final String objectId;
     public final String method;
@@ -62,7 +59,8 @@ final class RpcRequest {
     }
 
     RpcReply createReply(Throwable th) {
-        return new RpcReply(this.requestId, this.toString() + "\n" + RpcServer.asString(th), true);
+        return new RpcReply(this.requestId, this.toString() + "\n" +
+                Utilities.throwableToString(th), true);
     }
 
     <T> T parseArgs(Class<T> classOfT) {
@@ -73,11 +71,14 @@ final class RpcRequest {
      * Initiated by the server.
      * @param session  Session to close.
      */
-    void syncCloseSession(Session session) {
+    void syncCloseSession(@Nullable Session session) {
+        if (session == null)
+            return;
         try {
+            RpcObjectManager.instance.removeSubscription(session);
             session.close();
         } catch (Exception ex) {
-            LOGGER.log(Level.SEVERE, "Error closing session");
+            HillviewLogging.logger().error("Error closing context");
         }
     }
 

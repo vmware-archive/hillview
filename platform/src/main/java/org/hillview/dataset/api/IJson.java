@@ -19,7 +19,7 @@ package org.hillview.dataset.api;
 
 import com.google.common.net.HostAndPort;
 import com.google.gson.*;
-import org.hillview.remoting.ClusterDescription;
+import org.hillview.utils.ClusterDescription;
 import org.hillview.sketches.NextKList;
 import org.hillview.table.Schema;
 import org.hillview.utils.Converters;

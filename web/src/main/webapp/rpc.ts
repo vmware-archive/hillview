@@ -42,7 +42,7 @@ export class RemoteObject {
 
     // Combines the current RemoteObject with the currently
     // selected object (SelectedObject.current.getSelected)
-    // according to the specified operation.  SHould be overridden
+    // according to the specified operation.  Should be overridden
     // in subclasses.
     combine(how: CombineOperators): void {}
 

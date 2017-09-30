@@ -35,20 +35,6 @@ public class RangeFilterPair implements ITableFilterDescription, Serializable {
     public ITableFilter getFilter(ITable table) {
         ITableFilter t1 = this.first.getFilter(table);
         ITableFilter t2 = this.second.getFilter(table);
-        return new Range2DFilter(t2, t2);
-    }
-
-    public static class Range2DFilter implements ITableFilter {
-        final ITableFilter first;
-        final ITableFilter second;
-
-        Range2DFilter(ITableFilter first, ITableFilter second) {
-            this.first = first;
-            this.second = second;
-        }
-
-        public boolean test(int rowIndex) {
-            return this.first.test(rowIndex) && this.second.test(rowIndex);
-        }
+        return new AndFilter(t1, t2);
     }
 }

@@ -83,9 +83,7 @@ public abstract class BaseTable implements ITable, Serializable {
 
     @Override
     public String toString() {
-        return "Table, " + this.getSchema().getColumnCount() + " columns, " +
-                this.getNumOfRows() + " rows";
-    }
+        return "Table[" + this.getSchema().getColumnCount() +"x" + this.getNumOfRows() + "]"; }
 
     public String toLongString(int rowsToDisplay) {
         return this.toLongString(0, rowsToDisplay);

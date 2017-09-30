@@ -15,12 +15,11 @@
  * limitations under the License.
  */
 
-package org.hillview.remoting;
+package org.hillview.dataset.remoting;
 
 import java.io.Serializable;
 
 /**
  * Base type for remote operations with a unique ID
  */
-public class RemoteOperation implements Serializable {
-}
+public class RemoteOperation implements Serializable {}

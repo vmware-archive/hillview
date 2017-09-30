@@ -52,7 +52,6 @@ export class TableDataView {
  * Displays a table in the browser.
  */
 export class TableView extends RemoteTableObjectView implements IScrollTarget {
-
     // Data view part: received from remote site
     public schema?: Schema;
     // Logical position of first row displayed
@@ -417,7 +416,8 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
             } else {
                 let rr = this.createRangeRequest(rangeInfo[0]);
                 rr.chain(operation);
-                rr.invoke(new RangeCollector(cds[0], this.schema, distinct[0], this.getPage(), this, rr));
+                // TODO: add support for approximate histograms
+                rr.invoke(new RangeCollector(cds[0], this.schema, distinct[0], this.getPage(), this, false, rr));
             }
         };
 
@@ -616,10 +616,6 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
     }
 
     private equalityFilter(colName: string, value?: string, complement?: boolean): void {
-        if (this.selectedColumns.size != 1) {
-            this.reportError("Exactly one column must be selected");
-            return;
-        }
         let cd = TableView.findColumn(this.schema, colName);
         if (value == null) {
             let ef = new EqualityFilterDialog(cd);
@@ -644,7 +640,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         let rr = this.createHLogLogRequest(colName);
         rr.invoke(new HLogLogReceiver(this.getPage(), rr, "HLogLog",
             (res) => this.page.reportError("Distinct values in column \'" +
-            colName + "\' " + SpecialChars.approx + " : " +
+            colName + "\' " + SpecialChars.approx +
             String(res.distinctItemCount))));
     }
 

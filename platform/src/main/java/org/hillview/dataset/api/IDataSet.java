@@ -18,6 +18,7 @@
 package org.hillview.dataset.api;
 
 import org.hillview.dataset.PRDataSetMonoid;
+import org.hillview.utils.JsonList;
 import rx.Observable;
 
 import java.util.List;
@@ -66,6 +67,13 @@ public interface IDataSet<T> {
      *               stream will contain exactly one result.
      */
     <S> Observable<PartialResult<IDataSet<Pair<T, S>>>> zip(IDataSet<S> other);
+
+    /**
+     * Execute the indicated control message at all layers of the IDataSet object.
+     * @param message  Message to execute.
+     * @return         A stream of partial results containing the status of all operations executed.
+     */
+    Observable<PartialResult<JsonList<ControlMessage.Status>>> manage(ControlMessage message);
 
     // The following are various helper methods.
 

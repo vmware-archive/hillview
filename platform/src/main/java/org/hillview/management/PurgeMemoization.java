@@ -15,19 +15,18 @@
  * limitations under the License.
  */
 
-package org.hillview.remoting;
+package org.hillview.management;
 
-import javax.annotation.Nullable;
-import java.io.Serializable;
+import org.hillview.dataset.api.ControlMessage;
+import org.hillview.dataset.remoting.HillviewServer;
 
 /**
- * Class used to wrap responses of map and sketch executions.
- * @param <T> Return type of the result
+ * This control message causes the remote servers to remove everything from their
+ * memoization caches.
  */
-public class OperationResponse<T> implements Serializable {
-    @Nullable public final T result;
-
-    public OperationResponse(@Nullable final T result) {
-        this.result = result;
+public class PurgeMemoization extends ControlMessage {
+    public Status remoteServerAction(HillviewServer server) {
+        server.purgeCache();
+        return new Status("caches purged");
     }
 }

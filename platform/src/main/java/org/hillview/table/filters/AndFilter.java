@@ -15,22 +15,27 @@
  * limitations under the License.
  */
 
-package org.hillview.remoting;
+package org.hillview.table.filters;
 
-import org.hillview.dataset.api.IMap;
-
-import java.io.Serializable;
-import java.util.List;
+import org.hillview.table.api.ITableFilter;
 
 /**
- * Wrap an IMap object to be sent to a remote node for a flatMap operation.
- * @param <T> Input type of the map function
- * @param <S> Output type of the map function
+ * This filter execute two other filters and returns true only when both return true.
  */
-public class FlatMapOperation<T, S> extends RemoteOperation implements Serializable {
-    public final IMap<T, List<S>> mapper;
+public class AndFilter implements ITableFilter {
+    final ITableFilter first;
+    final ITableFilter second;
 
-    public FlatMapOperation(final IMap<T, List<S>> mapper) {
-        this.mapper = mapper;
+    AndFilter(ITableFilter first, ITableFilter second) {
+        this.first = first;
+        this.second = second;
+    }
+
+    public boolean test(int rowIndex) {
+        return this.first.test(rowIndex) && this.second.test(rowIndex);
+    }
+
+    public String toString() {
+        return "FilterAnd(" + this.first.toString() + " && " + this.second.toString() + ")";
     }
 }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.hillview.remoting;
+package org.hillview.utils;
 
 import com.google.common.net.HostAndPort;
 import com.google.gson.JsonDeserializationContext;
@@ -47,7 +47,6 @@ public final class ClusterDescription implements IJson {
     public List<HostAndPort> getServerList() {
         return this.serverList;
     }
-
 
     public static class HostAndPortSerializer implements JsonSerializer<HostAndPort> {
         public JsonElement serialize(HostAndPort hostAndPort, Type typeOfSchema,

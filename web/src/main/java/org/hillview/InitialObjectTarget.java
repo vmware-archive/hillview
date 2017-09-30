@@ -20,16 +20,13 @@ package org.hillview;
 import com.google.common.net.HostAndPort;
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.RemoteDataSet;
-import org.hillview.dataset.api.Empty;
-import org.hillview.dataset.api.IDataSet;
-import org.hillview.dataset.api.IMap;
+import org.hillview.dataset.api.*;
+import org.hillview.management.*;
 import org.hillview.maps.FindCsvFileMapper;
 import org.hillview.maps.LoadDatabaseTableMapper;
-import org.hillview.remoting.ClusterDescription;
-import org.hillview.remoting.HillviewServer;
+import org.hillview.utils.*;
+import org.hillview.dataset.remoting.HillviewServer;
 import org.hillview.table.JdbcConnectionInformation;
-import org.hillview.utils.Converters;
-import org.hillview.utils.CsvFileObject;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
@@ -40,21 +37,18 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-// This file is full of temporary code; it should be cleaned-up.
 public class InitialObjectTarget extends RpcTarget {
     private static final String LOCALHOST = "127.0.0.1";
-    private static final String initialObjectId = "0";
     private static final String ENV_VARIABLE = "WEB_CLUSTER_DESCRIPTOR";
-    private static final Logger logger = Logger.getLogger(InitialObjectTarget.class.getName());
 
     @Nullable
     private IDataSet<Empty> emptyDataset = null;
 
     InitialObjectTarget() {
-        super(InitialObjectTarget.initialObjectId);
+        // TODO: setup logging
+        //HillviewLogging.initialize("hillview-head.log");
         Empty empty = new Empty();
         // Get the base naming context
         final String value = System.getenv(ENV_VARIABLE);
@@ -63,22 +57,23 @@ public class InitialObjectTarget extends RpcTarget {
             desc = new ClusterDescription(Collections.singletonList(HostAndPort.fromParts(LOCALHOST,
                                                                     HillviewServer.DEFAULT_PORT)));
             this.initialize(desc);
-        }
-        else {
+        } else {
             try {
-                logger.info("Initializing cluster descriptor from file");
+                HillviewLogging.logger().info("Initializing cluster descriptor from file");
                 final List<String> lines = Files.readAllLines(Paths.get(value), Charset.defaultCharset());
                 final List<HostAndPort> hostAndPorts = lines.stream()
                                                             .map(HostAndPort::fromString)
                                                             .collect(Collectors.toList());
                 desc = new ClusterDescription(hostAndPorts);
-                logger.info("Backend servers: " + lines);
+                HillviewLogging.logger().info("Backend servers: {}", lines);
                 this.initialize(desc);
             } catch (IOException e) {
                 e.printStackTrace();
                 System.exit(-1);
             }
         }
+
+        RpcObjectManager.instance.addObject(this);
     }
 
     private void initialize(final ClusterDescription description) {
@@ -86,34 +81,30 @@ public class InitialObjectTarget extends RpcTarget {
         if (numServers <= 0) {
             throw new IllegalArgumentException("ClusterDescription must contain one or more servers");
         }
-        if (numServers > 1) {
-            logger.info("Creating PDS");
-            final ArrayList<IDataSet<Empty>> emptyDatasets = new ArrayList<IDataSet<Empty>>(numServers);
-            description.getServerList().forEach(server -> emptyDatasets.add(new RemoteDataSet<>(server)));
-            this.emptyDataset = new ParallelDataSet<>(emptyDatasets);
-        }
-        else {
-            logger.info("Creating RDS");
-            this.emptyDataset = new RemoteDataSet<Empty>(description.getServerList().get(0));
-        }
+        HillviewLogging.logger().info("Creating parallel dataset");
+        final ArrayList<IDataSet<Empty>> emptyDatasets = new ArrayList<IDataSet<Empty>>(numServers);
+        description.getServerList().forEach(server -> emptyDatasets.add(new RemoteDataSet<Empty>(server)));
+        this.emptyDataset = new ParallelDataSet<Empty>(emptyDatasets);
     }
 
     @HillviewRpc
-    void initializeCluster(RpcRequest request, Session session) {
+    void initializeCluster(RpcRequest request, RpcRequestContext context) {
         ClusterDescription description = request.parseArgs(ClusterDescription.class);
         this.initialize(description);
     }
 
+    // TODO: cleanup this code
     @HillviewRpc
-    void loadDBTable(RpcRequest request, Session session) {
+    void loadDBTable(RpcRequest request, RpcRequestContext context) {
         Converters.checkNull(this.emptyDataset);
         JdbcConnectionInformation conn = new JdbcConnectionInformation("localhost", "employees", "mbudiu", "password");
         LoadDatabaseTableMapper mapper = new LoadDatabaseTableMapper("salaries", conn);
-        this.runMap(this.emptyDataset, mapper, TableTarget::new, request, session);
+        this.runMap(this.emptyDataset, mapper, TableTarget::new, request, context);
     }
 
+    // TODO: cleanup this code.
     @HillviewRpc
-    void prepareFiles(RpcRequest request, Session session) {
+    void prepareFiles(RpcRequest request, RpcRequestContext context) {
         int which = request.parseArgs(Integer.class);
         Converters.checkNull(this.emptyDataset);
 
@@ -129,14 +120,63 @@ public class InitialObjectTarget extends RpcTarget {
         } else if (which == 4) {
             finder = new FindCsvFileMapper(dataFolder, 0, "segmentation.csv", "segmentation.schema");
         } else {
-            throw new RuntimeException("Unexpected id");
+            throw new RuntimeException("Unexpected operation " + which);
         }
 
-        this.runFlatMap(this.emptyDataset, finder, FileNamesTarget::new, request, session);
+        HillviewLogging.logger().info("Preparing files");
+        this.runFlatMap(this.emptyDataset, finder, FileNamesTarget::new, request, context);
     }
 
     @Override
     public String toString() {
         return "Initial object, " + super.toString();
+    }
+
+    //--------------------------------------------
+    // Management messages
+
+    @HillviewRpc
+    void ping(RpcRequest request, RpcRequestContext context) {
+        PingSketch<Empty> ping = new PingSketch<Empty>();
+        this.runSketch(Converters.checkNull(this.emptyDataset), ping, request, context);
+    }
+
+    @HillviewRpc
+    void toggleMemoization(RpcRequest request, RpcRequestContext context) {
+        ToggleMemoization tm = new ToggleMemoization();
+        this.runManage(Converters.checkNull(this.emptyDataset), tm, request, context);
+    }
+
+    @HillviewRpc
+    void purgeMemoization(RpcRequest request, RpcRequestContext context) {
+        PurgeMemoization tm = new PurgeMemoization();
+        this.runManage(Converters.checkNull(this.emptyDataset), tm, request, context);
+    }
+
+    @HillviewRpc
+    void purgeLeftDatasets(RpcRequest request, RpcRequestContext context) {
+        PurgeLeafDatasets tm = new PurgeLeafDatasets();
+        this.runManage(Converters.checkNull(this.emptyDataset), tm, request, context);
+    }
+
+    @HillviewRpc
+    void memoryUse(RpcRequest request, RpcRequestContext context) {
+        MemoryUse tm = new MemoryUse();
+        this.runManage(Converters.checkNull(this.emptyDataset), tm, request, context);
+    }
+
+    @HillviewRpc
+    void purgeDatasets(RpcRequest request, RpcRequestContext context) {
+        int deleted = RpcObjectManager.instance.removeAllObjects();
+        ControlMessage.Status status = new ControlMessage.Status("Deleted " + deleted + " objects");
+        JsonList<ControlMessage.Status> statusList = new JsonList<ControlMessage.Status>();
+        statusList.add(status);
+        PartialResult<JsonList<ControlMessage.Status>> pr = new PartialResult<JsonList<ControlMessage.Status>>(statusList);
+        RpcReply reply = request.createReply(Utilities.toJsonTree(pr));
+        Session session = context.getSessionIfOpen();
+        if (session == null)
+            return;
+        reply.send(session);
+        request.syncCloseSession(session);
     }
 }

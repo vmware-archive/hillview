@@ -15,17 +15,16 @@
  * limitations under the License.
  */
 
-package org.hillview.remoting;
-
-import java.io.Serializable;
-
 /**
- * Message type to initiate a zip command against two RemoteDataSets
+ * Package that doesn't allow null values as method parameters.
  */
-public class ZipOperation extends RemoteOperation implements Serializable {
-    public final int datasetIndex;
 
-    public ZipOperation(final int datasetIndex) {
-        this.datasetIndex = datasetIndex;
-    }
-}
+@ParametersAreNonnullByDefault
+@FieldsAreNonnullByDefault
+@MethodsAreNonnullByDefault
+package org.hillview.management;
+
+import org.hillview.utils.FieldsAreNonnullByDefault;
+import org.hillview.utils.MethodsAreNonnullByDefault;
+
+import javax.annotation.ParametersAreNonnullByDefault;

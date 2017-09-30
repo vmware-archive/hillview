@@ -17,20 +17,33 @@
 
 package org.hillview;
 
-import org.hillview.sketches.FreqKList;
-import org.hillview.utils.HillviewLogging;
+import rx.Observer;
 
 /**
- * This object has no RPC methods per se, but it can be used
- * as an argument for other RPC methods.
+ * An observer which expects a single item.
  */
-final class HeavyHittersTarget extends RpcTarget {
-    final FreqKList heavyHitters;
+public abstract class SingleObserver<T> implements Observer<T> {
+    private boolean received = false;
 
-    HeavyHittersTarget(final FreqKList heavyHitters, final HillviewComputation computation) {
-        super(computation);
-        this.heavyHitters = heavyHitters;
-        HillviewLogging.logger().info("Heavy hitters " + heavyHitters.getDistinctRowCount());
-        this.registerObject();
+    public void onError(Throwable t) {
+        throw new RuntimeException(t);
+    }
+
+    public abstract void onSuccess(T t);
+
+    @Override
+    public void onCompleted() {
+        if (this.received) return;
+        this.onError(new RuntimeException("No item received"));
+    }
+
+    @Override
+    public void onNext(T t) {
+        if (this.received) {
+            this.onError(new RuntimeException("Multiple items received"));
+            return;
+        }
+        this.onSuccess(t);
+        this.received = true;
     }
 }

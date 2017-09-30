@@ -39,6 +39,7 @@ public class DoubleListColumn
     @Override
     public IColumn seal() {
         this.checkMissingSize(this.segments.size());
+        this.segments.trimToSize();
         return this;
     }
 

@@ -45,7 +45,7 @@ public class JdbcDatabase {
 
     public void connect() throws SQLException {
         String url = this.connInfo.getURL();
-        HillviewLogging.logger.info("Database server url={}", url);
+        HillviewLogging.logger().info("Database server url={}", url);
         this.connection = DriverManager.getConnection(
                 url, this.connInfo.user, this.connInfo.password);
     }

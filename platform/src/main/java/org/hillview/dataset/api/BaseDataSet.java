@@ -18,6 +18,7 @@
 package org.hillview.dataset.api;
 
 import org.hillview.utils.HillviewLogging;
+import org.hillview.utils.Utilities;
 
 /**
  * Base class for all IDataSets.
@@ -33,13 +34,7 @@ public abstract class BaseDataSet<T> implements IDataSet<T> {
 
     @Override
     public String toString() {
-        String host = "?";
-        try {
-            java.net.InetAddress localMachine = java.net.InetAddress.getLocalHost();
-            host = localMachine.getHostName();
-        } catch (java.net.UnknownHostException e) {
-            HillviewLogging.logger.error("Cannot get host name");
-        }
+        String host = Utilities.getHostName();
         return this.getClass().getName() + "(" + this.id + ")@" + host;
     }
 
@@ -47,12 +42,16 @@ public abstract class BaseDataSet<T> implements IDataSet<T> {
      * Helper function which can be invoked in a map over streams to log the processing
      * over each stream element.
      */
-    protected <S> S log(S data, String message) {
+    protected <S> S logPipe(S data, String message) {
         this.log(message);
         return data;
     }
 
     protected void log(String message) {
-        HillviewLogging.logger.info(this.toString() + ":" + message);
+        HillviewLogging.logger().info(this.toString() + ":" + message);
+    }
+
+    protected void log(String format, Object... values) {
+        HillviewLogging.logger().info("{}" + format, this.toString() + ":", values);
     }
 }

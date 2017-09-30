@@ -126,7 +126,6 @@ public class FreqKList implements Serializable {
         return new ArrayList<RowSnapshot>(this.hMap.keySet());
     }
 
-
     /**
      * Prunes the hashmap to retain only those RowSnapshots that occur with frequency above
      * 1/maxSize, and their frequencies.
@@ -139,9 +138,9 @@ public class FreqKList implements Serializable {
         }
     }
 
-    public void filter(Boolean isMG) {
+    public void filter(boolean isMG) {
         double threshold = this.epsilon * this.totalRows;
-        if (isMG == Boolean.TRUE)
+        if (isMG)
             threshold -= this.getErrBound();
         filter(threshold);
     }

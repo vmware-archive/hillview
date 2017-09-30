@@ -27,6 +27,10 @@ import java.util.*;
 public class JsonList<T> implements IJson, List<T> {
     final List<T> data;
 
+    public JsonList() {
+        this.data = new ArrayList<T>();
+    }
+
     public JsonList(int size) {
         this.data = new ArrayList<T>(size);
     }

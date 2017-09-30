@@ -15,18 +15,18 @@
  * limitations under the License.
  */
 
-package org.hillview.remoting;
+package org.hillview.management;
 
-import java.io.Serializable;
-import java.util.UUID;
+import org.hillview.dataset.api.ControlMessage;
+import org.hillview.dataset.remoting.HillviewServer;
 
 /**
- * Unsubscribe to a remote Map/Sketch operation
+ * This control message returns the memory used in a specific HillviewServer process JVM.
  */
-public class UnsubscribeOperation implements Serializable {
-    public final UUID id;
-
-    public UnsubscribeOperation(final UUID id) {
-        this.id = id;
+public class MemoryUse extends ControlMessage {
+    public Status remoteServerAction(HillviewServer server) {
+        Runtime rt = Runtime.getRuntime();
+        long usedMemory = rt.totalMemory() - rt.freeMemory();
+        return new Status(Long.toString(usedMemory));
     }
 }

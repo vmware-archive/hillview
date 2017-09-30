@@ -23,7 +23,7 @@ import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.*;
-import org.hillview.remoting.HillviewServer;
+import org.hillview.dataset.remoting.HillviewServer;
 import org.hillview.utils.Converters;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

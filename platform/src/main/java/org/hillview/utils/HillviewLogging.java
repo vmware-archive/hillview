@@ -20,20 +20,32 @@ package org.hillview.utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Sets up the logging.
- */
-public class HillviewLogging {
-    public static final Logger logger;
-    public static final String logFile = "hillview.log";
+import javax.annotation.Nullable;
 
-    static {
+public class HillviewLogging {
+    // Initialized lazily due to sl4j simpleLogger limitations
+    @Nullable
+    static Logger logger = null;
+
+    public static void initialize(String filename) {
         System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "info");
-        System.setProperty("org.slf4j.simpleLogger.logFile", logFile);
         System.setProperty("org.slf4j.simpleLogger.showDateTime", "true");
         System.setProperty("org.slf4j.simpleLogger.showThreadName", "true");
+        System.setProperty("org.slf4j.simpleLogger.dateTimeFormat", "yyyy-MM-dd HH:mm:ss:SSS Z");
+        System.setProperty("org.slf4j.simpleLogger.logFile", filename);
+    }
 
-        logger = LoggerFactory.getLogger("Hillview");
-        logger.info("Initialized Hillview logging");
+    public static Logger getLogger(String name) {
+        return LoggerFactory.getLogger(name);
+    }
+
+    public static Logger getLogger(Class<?> clazz) {
+        return LoggerFactory.getLogger(clazz);
+    }
+
+    public static Logger logger() {
+        if (logger == null)
+            logger = getLogger("Hillview");
+        return logger;
     }
 }
