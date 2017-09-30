@@ -20,8 +20,10 @@ package org.hillview;
 import com.google.gson.JsonElement;
 import com.google.gson.internal.Streams;
 import com.google.gson.stream.JsonReader;
+import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogging;
 import org.hillview.utils.Utilities;
+import rx.Observer;
 import rx.Subscription;
 
 import javax.websocket.*;
@@ -32,10 +34,11 @@ import java.io.*;
  * A server which implements RPC calls between a web browser client and
  * a Java-based web server.  The web server may create a different
  * instance of this class for each request.  The client should
- * send exactly one request for each session; the server may send zero, one
- * or more replies for each session.  The client or server can both
+ * send exactly one request for each context; the server may send zero, one
+ * or more replies for each context.  The client or server can both
  * choose to close the connection at any time.  This class must be public.
  */
+@SuppressWarnings("WeakerAccess")
 @ServerEndpoint(value = "/rpc")
 public final class RpcServer {
     static private final int version = 2;
@@ -66,7 +69,8 @@ public final class RpcServer {
             return;
         }
 
-        this.execute(req, session);
+        RpcRequestContext context = new RpcRequestContext(session);
+        this.execute(req, context);
     }
 
     private void sendReply(RpcReply reply, Session session) {
@@ -78,19 +82,33 @@ public final class RpcServer {
         }
     }
 
-    private void execute(RpcRequest rpcRequest, Session session) {
+    private void execute(RpcRequest rpcRequest, RpcRequestContext context) {
         HillviewLogging.logger().info("Executing {}", rpcRequest);
-        try {
-            RpcTarget target = RpcObjectManager.instance.retrieveTarget(rpcRequest.objectId, true);
-            RpcObjectManager.instance.addSession(session, target);
-            // This function is responsible for sending the replies and closing the session.
-            target.execute(rpcRequest, session);
-        } catch (Exception ex) {
-            HillviewLogging.logger().error("Return exception", ex);
-            RpcReply reply = rpcRequest.createReply(ex);
-            this.sendReply(reply, session);
-            rpcRequest.syncCloseSession(session);
-        }
+        // Observable invoked when the source object has been obtained.
+        Observer<RpcTarget> obs = new Observer<RpcTarget>() {
+            @Override
+            public void onCompleted() {}
+
+            @Override
+            public void onError(Throwable throwable) {
+                HillviewLogging.logger().error("Return exception", throwable);
+                RpcReply reply = rpcRequest.createReply(throwable);
+                Session session = context.getSessionIfOpen();
+                if (session == null)
+                    return;
+                RpcServer.this.sendReply(reply, session);
+                rpcRequest.syncCloseSession(session);
+            }
+
+            @Override
+            public void onNext(RpcTarget rpcTarget) {
+                if (context.session != null)
+                    RpcObjectManager.instance.addSession(context.session, rpcTarget);
+                // This function is responsible for sending the replies and closing the session.
+                rpcTarget.execute(rpcRequest, context);
+            }
+        };
+        RpcObjectManager.instance.retrieveTarget(rpcRequest.objectId, true, obs);
     }
 
     private void closeSession(final Session session) {
@@ -99,12 +117,13 @@ public final class RpcServer {
                 session.close();
             RpcObjectManager.instance.removeSession(session);
         } catch (Exception ex) {
-            HillviewLogging.logger().error("Error closing session", ex);
+            HillviewLogging.logger().error("Error closing context", ex);
         }
     }
 
     private void replyWithError(final Throwable th, final Session session) {
-        final RpcReply reply = new RpcReply(-1, Utilities.throwableToString(th), true);
+        final RpcReply reply = new RpcReply(
+                -1, Converters.checkNull(Utilities.throwableToString(th)), true);
         this.sendReply(reply, session);
         this.closeSession(session);
     }
@@ -113,9 +132,7 @@ public final class RpcServer {
     @OnClose
     public void onClose(final Session session, final CloseReason reason) {
         Subscription sub = RpcObjectManager.instance.getSubscription(session);
-        if (sub == null) {
-            HillviewLogging.logger().warn("Cancellation failed: no subscription {}", this.toString());
-        } else {
+        if (sub != null) {
             HillviewLogging.logger().info("Unsubscribing {}", this.toString());
             sub.unsubscribe();
             RpcObjectManager.instance.removeSubscription(session);

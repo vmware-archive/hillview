@@ -34,8 +34,10 @@ export class ControlMenu extends RemoteObject implements IDataView {
             text: "Manage", subMenu: new TopSubMenu([
                 { text: "List machines", action: () => { this.ping(); } },
                 { text: "Toggle memoization", action: () => { this.command("toggleMemoization"); } },
+                { text: "Memory use", action: () => { this.command("memoryUse"); } },
                 { text: "Purge memoized", action: () => { this.command("purgeMemoization"); } },
-                { text: "Purge datasets", action: () => { this.command("purgeDatasets"); } }
+                { text: "Purge root datasets", action: () => { this.command("purgeDatasets"); } },
+                { text: "Purge leaf datasets", action: () => { this.command("purgeLeftDatasets"); } }
             ])}
         ]);
 

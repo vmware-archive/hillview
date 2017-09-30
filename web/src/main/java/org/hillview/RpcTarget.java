@@ -28,14 +28,18 @@ import rx.Subscription;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.function.BiFunction;
 
+/**
+ * An RPC target is an object that has methods that are invoked from the UI
+ * through the web server.  All these methods are tagged with @HillviewRpc.
+ * When these objects are serialized as JSON only their String id is send; the
+ * objects always reside on the web server.  They are managed by the RpcObjectManager.
+ */
 abstract class RpcTarget implements IJson {
-    @Nullable // This is null for a very brief time
-    String objectId;
+    public final String objectId;
     /**
      * Computation that has generated this object.  Can only
      * be null for the initial object.
@@ -46,46 +50,37 @@ abstract class RpcTarget implements IJson {
     /**
      * This constructor is only called for the InitialObject.
      */
-    protected RpcTarget() {
+    RpcTarget() {
         this.objectId = RpcObjectManager.initialObjectId;
         this.computation = null;
-        RpcObjectManager.instance.addObject(this);
-    }
-
-    /**
-     * This constructor is called only when we know the id of the resulting object.
-     * This usually happens when replaying a computation.
-     * @param id           Id of the resulting object.
-     * @param computation  computation that generated this object.
-     */
-    protected RpcTarget(String id, HillviewComputation computation) {
-        this.objectId = id;
-        this.computation = computation;
-        RpcObjectManager.instance.addObject(this);
     }
 
     RpcTarget(HillviewComputation computation) {
         this.computation = computation;
+        this.objectId = computation.resultId;
+    }
+
+    /**
+     * Insert object in object manager maps.
+     * Also, notify computations that may be waiting for object to appear.
+     * This method should be called last thing after the construction of the
+     * object has been completed.
+     */
+    void registerObject() {
         RpcObjectManager.instance.addObject(this);
+        if (this.computation != null)
+            this.computation.objectCreated(this);
     }
 
-    public void setId(String objectId) {
-        this.objectId = objectId;
-    }
-
-    private synchronized void saveSubscription(@Nullable Session session, Subscription sub) {
-        if (session != null)
-            RpcObjectManager.instance.addSubscription(session, sub);
+    private synchronized void saveSubscription(RpcRequestContext context, Subscription sub) {
+        if (context.session != null)
+            RpcObjectManager.instance.addSubscription(context.session, sub);
     }
 
     /**
      * Use reflection to fina a method with a given name that has an @HillviewRpc annotation.
      * All these methods should have the following signature:
-     * method(RpcRequest req, Session session).
-     * The method is responsible for:
-     * - parsing the arguments of the RpcCall
-     * - sending the replies, in any number they may be, using the session
-     * - closing the session on termination.
+     * method(RpcRequest req, RpcRequestContext context).
      */
     @Nullable
     private Method getMethod(String method) {
@@ -102,9 +97,12 @@ abstract class RpcTarget implements IJson {
      * Dispatches an RPC request for execution.
      * This will look up the method in the RpcRequest using reflection
      * and invoke it using Java reflection.
+     * The method that is being invoked is responsible for:
+     * - parsing the arguments of the RpcCall
+     * - sending the replies, in any number they may be, using the context
+     * - closing the context session on termination.
      */
-    void execute(RpcRequest request, @Nullable Session session)
-            throws InvocationTargetException, IllegalAccessException {
+    void execute(RpcRequest request, RpcRequestContext context) {
         /*
         HillviewComputation computation = new HillviewComputation(this, request);
         String resultId = RpcObjectManager.instance.checkCache(computation);
@@ -113,11 +111,16 @@ abstract class RpcTarget implements IJson {
         }
         TODO: check if computation has happened and just send result back.
         */
-
-        Method method = this.getMethod(request.method);
-        if (method == null)
-            throw new RuntimeException(this.toString() + ": No such method " + request.method);
-        method.invoke(this, request, session);
+        try {
+            Method method = this.getMethod(request.method);
+            if (method == null)
+                throw new RuntimeException(this.toString() + ": No such method " + request.method);
+            HillviewLogging.logger().info("Executing {}", request);
+            method.invoke(this, request, context);
+        } catch (Exception ex) {
+            HillviewLogging.logger().error("Exception while invoking method on {}", this, ex);
+            throw new RuntimeException(ex);
+        }
     }
 
     @Override
@@ -130,66 +133,61 @@ abstract class RpcTarget implements IJson {
         if (this == o) return true;
         if (o == null || this.getClass() != o.getClass()) return false;
         RpcTarget rpcTarget = (RpcTarget) o;
-        return this.objectId != null ? this.objectId.equals(rpcTarget.objectId) : rpcTarget.objectId == null;
+        return this.objectId.equals(rpcTarget.objectId);
     }
 
     abstract class ResultObserver<T> implements Observer<PartialResult<T>> {
         final RpcRequest request;
-        /**
-         * The session can be null when requests are replayed without a client.
-         */
-        @Nullable
-        final Session session;
+        final RpcRequestContext context;
         final String name;
         final RpcTarget target;
 
-        ResultObserver(String name, RpcRequest request,
-                       RpcTarget target, @Nullable Session session) {
+        ResultObserver(String name, RpcRequest request, RpcTarget target,
+                       RpcRequestContext context) {
             this.name = name;
             this.request = request;
-            this.session = session;
+            this.context = context;
             this.target = target;
         }
 
         @Override
         public void onCompleted() {
             HillviewLogging.logger().info("Computation completed for {}", this.name);
-            this.request.syncCloseSession(this.session);
+            this.request.syncCloseSession(this.context.session);
         }
 
         @Override
         public void onError(Throwable throwable) {
-            if (this.session == null || !this.session.isOpen()) return;
+            if (this.context.session == null || !this.context.session.isOpen()) return;
 
             HillviewLogging.logger().error("{} onError", this.name);
             HillviewLogging.logger().error(throwable.toString());
             RpcReply reply = this.request.createReply(throwable);
-            reply.send(this.session);
+            reply.send(this.context.session);
         }
 
         HillviewComputation getComputation() {
+            if (this.context.computation != null)
+                return this.context.computation;
             return new HillviewComputation(this.target, this.request);
         }
     }
 
     class SketchResultObserver<R extends IJson> extends ResultObserver<R> {
         SketchResultObserver(String name, RpcTarget target, RpcRequest request,
-                             @Nullable Session session) {
-            super(name, request, target, session);
+                             RpcRequestContext context) {
+            super(name, request, target, context);
         }
 
         @Override
         public void onNext(PartialResult<R> pr) {
             HillviewLogging.logger().info("Received partial result from {}", this.name);
-            if (this.session == null)
+            Session session = this.context.getSessionIfOpen();
+            if (session == null)
                 return;
-            if (!this.session.isOpen()) {
-                HillviewLogging.logger().warn("Session closed, ignoring partial result");
-                return;
-            }
 
             RpcReply reply = this.request.createReply(Utilities.toJsonTree(pr));
-            reply.send(this.session);
+            reply.send(session);
         }
     }
 
@@ -204,9 +202,9 @@ abstract class RpcTarget implements IJson {
         private final BiFunction<R, HillviewComputation, S> postprocessing;
 
         CompleteSketchResultObserver(String name, RpcTarget target, RpcRequest request,
-                                     @Nullable Session session,
+                                     RpcRequestContext context,
                                      BiFunction<R, HillviewComputation, S> postprocessing) {
-            super(name, request, target, session);
+            super(name, request, target, context);
             this.last = null;
             this.postprocessing = postprocessing;
         }
@@ -215,19 +213,16 @@ abstract class RpcTarget implements IJson {
         public void onNext(PartialResult<R> pr) {
             HillviewLogging.logger().info("Received partial result from {}", this.name);
             this.last = pr.deltaValue;
-            if (this.session == null)
+            Session session = this.context.getSessionIfOpen();
+            if (session == null)
                 return;
-            if (!this.session.isOpen()) {
-                HillviewLogging.logger().warn("Session closed, ignoring partial result");
-                return;
-            }
 
             JsonObject json = new JsonObject();
             json.addProperty("done", pr.deltaDone);
             // always send null data for partial results
             json.add("data", null);
             RpcReply reply = this.request.createReply(json);
-            reply.send(this.session);
+            reply.send(session);
         }
 
         @Override
@@ -236,11 +231,14 @@ abstract class RpcTarget implements IJson {
             JsonObject json = new JsonObject();
             json.addProperty("done", 1.0);
             S result = this.postprocessing.apply(this.last, this.getComputation());
+
+            Session session = this.context.getSessionIfOpen();
+            if (session == null)
+                return;
             json.add("data", result.toJsonTree());
             RpcReply reply = this.request.createReply(json);
-            reply.send(this.session);
-
-            this.request.syncCloseSession(this.session);
+            reply.send(this.context.session);
+            this.request.syncCloseSession(this.context.session);
         }
     }
 
@@ -249,21 +247,16 @@ abstract class RpcTarget implements IJson {
         IDataSet<T> result;
         final BiFunction<IDataSet<T>, HillviewComputation, RpcTarget> factory;
 
-        MapResultObserver(String name, RpcTarget target, RpcRequest request, Session session,
+        MapResultObserver(String name, RpcTarget target, RpcRequest request,
+                          RpcRequestContext context,
                           BiFunction<IDataSet<T>, HillviewComputation, RpcTarget> factory) {
-            super(name, request, target, session);
+            super(name, request, target, context);
             this.factory = factory;
         }
 
         @Override
         public void onNext(PartialResult<IDataSet<T>> pr) {
             HillviewLogging.logger().info("Received partial result from ", this.name);
-            if (this.session == null)
-                return;
-            if (!this.session.isOpen()) {
-                HillviewLogging.logger().warn("Session closed, ignoring partial result");
-                return;
-            }
 
             JsonObject json = new JsonObject();
             json.addProperty("done", pr.deltaDone);
@@ -271,13 +264,17 @@ abstract class RpcTarget implements IJson {
             // Replace the "data" with the remote object ID
             if (dataSet != null) {
                 this.result = dataSet;
-                RpcTarget target = this.factory.apply(this.result, null);
+                RpcTarget target = this.factory.apply(this.result, this.getComputation());
                 json.addProperty("data", target.objectId);
             } else {
                 json.add("data", null);
             }
+
+            Session session = this.context.getSessionIfOpen();
+            if (session == null)
+                return;
             RpcReply reply = this.request.createReply(json);
-            reply.send(this.session);
+            reply.send(session);
         }
     }
 
@@ -299,11 +296,11 @@ abstract class RpcTarget implements IJson {
      * @param data    Dataset to run the sketch on.
      * @param sketch  Sketch to run.
      * @param request Web socket request, where replies are sent.
-     * @param session Web socket session.
+     * @param context Context for the computation.
      */
     <T, R extends IJson> void
     runSketch(IDataSet<T> data, ISketch<T, R> sketch,
-              RpcRequest request, Session session) {
+              RpcRequest request, RpcRequestContext context) {
         // Run the sketch
         Observable<PartialResult<R>> sketches = data.sketch(sketch);
         // Knows how to add partial results
@@ -312,9 +309,9 @@ abstract class RpcTarget implements IJson {
         Observable<PartialResult<R>> add = sketches.scan(prm::add);
         // Send the partial results back
         SketchResultObserver<R> robs = new SketchResultObserver<R>(
-                sketch.toString(), this, request, session);
+                sketch.asString(), this, request, context);
         Subscription sub = add.subscribe(robs);
-        this.saveSubscription(session, sub);
+        this.saveSubscription(context, sub);
     }
 
     /**
@@ -324,12 +321,12 @@ abstract class RpcTarget implements IJson {
      * @param sketch  Sketch to run.
      * @param postprocessing  This function is applied to the sketch results.
      * @param request Web socket request, where replies are sent.
-     * @param session Web socket session.
+     * @param context Context for the computation.
      */
     <T, R, S extends IJson> void
     runCompleteSketch(IDataSet<T> data, ISketch<T, R> sketch,
                       BiFunction<R, HillviewComputation, S> postprocessing,
-                      RpcRequest request, Session session) {
+                      RpcRequest request, RpcRequestContext context) {
         // Run the sketch
         Observable<PartialResult<R>> sketches = data.sketch(sketch);
         // Knows how to add partial results
@@ -338,9 +335,9 @@ abstract class RpcTarget implements IJson {
         Observable<PartialResult<R>> add = sketches.scan(prm::add);
         // Send the partial results back
         CompleteSketchResultObserver<T, R, S> robs = new CompleteSketchResultObserver<T, R, S>(
-                sketch.toString(), this, request, session, postprocessing);
+                sketch.asString(), this, request, context, postprocessing);
         Subscription sub = add.subscribe(robs);
-        this.saveSubscription(session, sub);
+        this.saveSubscription(context, sub);
     }
 
     /**
@@ -351,12 +348,12 @@ abstract class RpcTarget implements IJson {
      *                out of the resulting IDataSet.  It is the reference
      *                to this RpcTarget that is returned to the client.
      * @param request Web socket request, used to send the reply.
-     * @param session Web socket session.
+     * @param context Context for the computation.
      */
     <T, S> void
     runMap(IDataSet<T> data, IMap<T, S> map,
            BiFunction<IDataSet<S>, HillviewComputation, RpcTarget> factory,
-           RpcRequest request, Session session) {
+           RpcRequest request, RpcRequestContext context) {
         // Run the map
         Observable<PartialResult<IDataSet<S>>> stream = data.map(map);
         // Knows how to add partial results
@@ -365,9 +362,9 @@ abstract class RpcTarget implements IJson {
         Observable<PartialResult<IDataSet<S>>> add = stream.scan(monoid::add);
         // Send the partial results back
         MapResultObserver<S> robs = new MapResultObserver<S>(
-                map.toString(), this, request, session, factory);
+                map.asString(), this, request, context, factory);
         Subscription sub = add.subscribe(robs);
-        this.saveSubscription(session, sub);
+        this.saveSubscription(context, sub);
     }
 
     /**
@@ -378,12 +375,12 @@ abstract class RpcTarget implements IJson {
      *                out of the resulting IDataSet.  It is the reference
      *                to this RpcTarget that is returned to the client.
      * @param request Web socket request, used to send the reply.
-     * @param session Web socket session.
+     * @param context Context for the computation.
      */
     <T, S> void
     runFlatMap(IDataSet<T> data, IMap<T, List<S>> map,
                BiFunction<IDataSet<S>, HillviewComputation, RpcTarget> factory,
-               RpcRequest request, Session session) {
+               RpcRequest request, RpcRequestContext context) {
         // Run the flatMap
         Observable<PartialResult<IDataSet<S>>> stream = data.flatMap(map);
         // Knows how to add partial results
@@ -392,9 +389,10 @@ abstract class RpcTarget implements IJson {
         Observable<PartialResult<IDataSet<S>>> add = stream.scan(monoid::add);
         // Send the partial results back
         MapResultObserver<S> robs = new MapResultObserver<S>(
-                map.toString(), this, request, session, factory);
+                map.asString(), this, request, context, factory);
+        HillviewLogging.logger().info("Subscribing to flatMap");
         Subscription sub = add.subscribe(robs);
-        this.saveSubscription(session, sub);
+        this.saveSubscription(context, sub);
     }
 
     /**
@@ -405,20 +403,20 @@ abstract class RpcTarget implements IJson {
      *                out of the resulting IDataSet.  It is the reference
      *                to this RpcTarget that is returned to the client.
      * @param request Web socket request, used to send the reply.
-     * @param session Web socket session.
+     * @param context Context for the computation.
      */
     <T, S> void
     runZip(IDataSet<T> data, IDataSet<S> other,
            BiFunction<IDataSet<Pair<T, S>>, HillviewComputation, RpcTarget> factory,
-           RpcRequest request, Session session) {
+           RpcRequest request, RpcRequestContext context) {
         Observable<PartialResult<IDataSet<Pair<T, S>>>> stream = data.zip(other);
         PRDataSetMonoid<Pair<T, S>> monoid = new PRDataSetMonoid<Pair<T, S>>();
         Observable<PartialResult<IDataSet<Pair<T, S>>>> add = stream.scan(monoid::add);
         // We can actually reuse the MapResultObserver
         MapResultObserver<Pair<T, S>> robs = new MapResultObserver<Pair<T, S>>(
-                                "zip", this, request, session, factory);
+                                "zip", this, request, context, factory);
         Subscription sub = add.subscribe(robs);
-        this.saveSubscription(session, sub);
+        this.saveSubscription(context, sub);
     }
 
     /**
@@ -426,11 +424,11 @@ abstract class RpcTarget implements IJson {
      * @param data    Dataset to run the manage command on.
      * @param command Command to run.
      * @param request Web socket request, where replies are sent.
-     * @param session Web socket session.
+     * @param context Context for the computation.
      */
     <T, R extends IJson> void
     runManage(IDataSet<T> data, ControlMessage command,
-              RpcRequest request, Session session) {
+              RpcRequest request, RpcRequestContext context) {
         // Run the sketch
         Observable<PartialResult<JsonList<ControlMessage.Status>>> sketches = data.manage(command);
         // Knows how to add partial results
@@ -442,8 +440,8 @@ abstract class RpcTarget implements IJson {
         // Send the partial results back
         SketchResultObserver<JsonList<ControlMessage.Status>> robs =
                 new SketchResultObserver<JsonList<ControlMessage.Status>>(
-                    command.toString(), this, request, session);
+                    command.toString(), this, request, context);
         Subscription sub = add.subscribe(robs);
-        this.saveSubscription(session, sub);
+        this.saveSubscription(context, sub);
     }
 }

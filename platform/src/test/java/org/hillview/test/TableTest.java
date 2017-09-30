@@ -61,9 +61,9 @@ public class TableTest {
         FullMembership full = new FullMembership(size);
         IMembershipSet partial = full.filter(row -> (row % 2) == 0);
         Table myTable = new Table(columns, partial);
-        assertEquals(myTable.toString(), "Table, 2 columns, 50 rows");
+        assertEquals(myTable.toString(), "Table[2x50]");
         ITable smallTable = myTable.compress();
-        assertEquals(smallTable.toString(), "Table, 2 columns, 50 rows");
+        assertEquals(smallTable.toString(), "Table[2x50]");
     }
 
     @Test
@@ -72,7 +72,7 @@ public class TableTest {
         int range = 10;
         int numCols = 4;
         SmallTable table = TestTables.getCorrelatedCols(size, numCols, range);
-        assertEquals(table.toString(), "Table, 4 columns, 1000 rows");
+        assertEquals(table.toString(), "Table[4x1000]");
     }
 
     @Test
@@ -85,10 +85,10 @@ public class TableTest {
         final FullMembership full = new FullMembership(size);
         final IMembershipSet partial = full.filter(row -> (row % 2) == 0);
         final Table myTable = new Table(columns, partial);
-        assertEquals(myTable.toString(), "Table, 2 columns, 50 rows");
+        assertEquals(myTable.toString(), "Table[2x50]");
         HashSubSchema filter = new HashSubSchema();
         filter.add(columns.get(1).getDescription().name);
         ITable smallTable = myTable.compress(filter, partial);
-        assertEquals(smallTable.toString(), "Table, 1 columns, 50 rows");
+        assertEquals(smallTable.toString(), "Table[1x50]");
     }
 }

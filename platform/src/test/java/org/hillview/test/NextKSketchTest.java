@@ -56,7 +56,7 @@ public class NextKSketchTest {
         for (int i = 0; i < (leftK.table.getNumOfRows() - 1); i++)
             Assert.assertTrue(leftComp.compare(i, i + 1) <= 0);
         //System.out.println(leftK.toLongString(maxSize));
-        Assert.assertEquals(leftK.toLongString(maxSize), "Table, 2 columns, 5 rows\n" +
+        Assert.assertEquals(leftK.toLongString(maxSize), "Table[2x5]\n" +
                 "14,4: 6\n" +
                 "14,5: 5\n" +
                 "14,6: 4\n" +
@@ -71,7 +71,7 @@ public class NextKSketchTest {
         IndexComparator leftComp2 = cso.getComparator(leftK2.table);
         for (int i = 0; i < (leftK2.table.getNumOfRows() - 1); i++)
             Assert.assertTrue(leftComp2.compare(i, i + 1) <= 0);
-        Assert.assertEquals(leftK2.toLongString(maxSize), "Table, 2 columns, 5 rows\n" +
+        Assert.assertEquals(leftK2.toLongString(maxSize), "Table[2x5]\n" +
                 "4,4: 12\n" +
                 "4,5: 2\n" +
                 "4,6: 5\n" +
@@ -83,7 +83,7 @@ public class NextKSketchTest {
         for (int i = 0; i < (rightK.table.getNumOfRows() - 1); i++)
             Assert.assertTrue(rightComp.compare(i, i + 1) <= 0);
 
-        Assert.assertEquals(rightK.toLongString(maxSize), "Table, 2 columns, 5 rows\n" +
+        Assert.assertEquals(rightK.toLongString(maxSize), "Table[2x5]\n" +
                 "14,4: 6\n" +
                 "14,5: 5\n" +
                 "14,6: 4\n" +
@@ -95,7 +95,7 @@ public class NextKSketchTest {
         IndexComparator tComp = cso.getComparator(tK.table);
         for (int i = 0; i < (tK.table.getNumOfRows() - 1); i++)
             Assert.assertTrue(tComp.compare(i, i + 1) <= 0);
-        Assert.assertEquals(tK.toLongString(maxSize), "Table, 2 columns, 5 rows\n" +
+        Assert.assertEquals(tK.toLongString(maxSize), "Table[2x5]\n" +
                 "14,4: 12\n" +
                 "14,5: 10\n" +
                 "14,6: 8\n" +
@@ -110,7 +110,7 @@ public class NextKSketchTest {
         final int leftSize = 1000;
         final Table leftTable = TestTables.getRepIntTable(leftSize, numCols);
         final RowSnapshot topRow = new RowSnapshot(leftTable, 10);
-        Assert.assertEquals(leftTable.toLongString(5), "Table, 2 columns, 1000 rows\n" +
+        Assert.assertEquals(leftTable.toLongString(5), "Table[2x1000]\n" +
                 "9,10\n" +
                 "5,4\n" +
                 "8,10\n" +
@@ -138,7 +138,7 @@ public class NextKSketchTest {
         IndexComparator mComp = cso.getComparator(nk.table);
         for (int i = 0; i < (nk.table.getNumOfRows() - 1); i++)
             Assert.assertTrue(mComp.compare(i, i + 1) <= 0);
-        Assert.assertEquals(nk.toLongString(maxSize), "Table, 3 columns, 5 rows\n" +
+        Assert.assertEquals(nk.toLongString(maxSize), "Table[3x5]\n" +
                 "44,95,56: 1\n" +
                 "44,95,119: 1\n" +
                 "44,95,126: 1\n" +
@@ -153,7 +153,7 @@ public class NextKSketchTest {
         schema.append(cd);
         NextKList nkl = new NextKList(schema);
         String s = nkl.toLongString(Integer.MAX_VALUE);
-        Assert.assertEquals(s, "Table, 1 columns, 0 rows" + System.lineSeparator());
+        Assert.assertEquals(s, "Table[1x0]" + System.lineSeparator());
     }
 
     @Test
@@ -170,7 +170,7 @@ public class NextKSketchTest {
         ro.append(new ColumnSortOrientation(t.getSchema().getDescription("Name"), true));
         NextKSketch nk = new NextKSketch(ro, null, 10);
         NextKList nkl = big.blockingSketch(nk);
-        Assert.assertEquals(nkl.table.toString(), "Table, 1 columns, 10 rows");
+        Assert.assertEquals(nkl.table.toString(), "Table[1x10]");
     }
 
     @Test
@@ -179,7 +179,7 @@ public class NextKSketchTest {
         RecordOrder ro = new RecordOrder();
         ro.append(new ColumnSortOrientation(t.getSchema().getDescription("Age"), true));
         ro.append(new ColumnSortOrientation(t.getSchema().getDescription("Name"), true));
-        String sb = "Table, 2 columns, 13 rows\nBill,1: 1\nBill,2: 1\n" +
+        String sb = "Table[2x13]\nBill,1: 1\nBill,2: 1\n" +
                     "Smith,3: 1\nDonald,4: 1\nBruce,5: 1\n";
         NextKSketch nks = new NextKSketch(ro, null, 20);
         Assert.assertEquals(sb,nks.create(t).toLongString(5));

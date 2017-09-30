@@ -25,7 +25,6 @@ import org.hillview.table.api.ITable;
 import org.hillview.table.api.ITableFilterDescription;
 
 import javax.annotation.Nullable;
-import java.io.Serializable;
 
 @SuppressWarnings("CanBeFinal")
 public class RangeFilterDescription implements ITableFilterDescription {
@@ -47,7 +46,7 @@ public class RangeFilterDescription implements ITableFilterDescription {
         return new RangeFilter(column, this);
     }
 
-    public static class RangeFilter implements ITableFilter, Serializable {
+    public static class RangeFilter implements ITableFilter {
         final ColumnAndConverter column;
         final RangeFilterDescription description;
 
@@ -62,11 +61,15 @@ public class RangeFilterDescription implements ITableFilterDescription {
                 result = false;
             else {
                 double d = this.column.asDouble(rowIndex);
-                result = this.description.min <= d && d <= this.description.max;
+                result = (this.description.min <= d) && (d <= this.description.max);
             }
             if (this.description.complement)
                 result = !result;
             return result;
+        }
+
+        public String toString() {
+            return "Rangefilter[" + this.description.min + "," + this.description.max + "]";
         }
     }
 }

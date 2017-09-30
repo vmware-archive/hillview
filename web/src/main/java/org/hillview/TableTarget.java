@@ -41,26 +41,30 @@ import org.hillview.utils.Converters;
 import org.hillview.utils.LinAlg;
 import org.hillview.utils.Point2D;
 import org.jblas.DoubleMatrix;
+import rx.Observer;
 
 import javax.annotation.Nullable;
-import javax.websocket.Session;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiFunction;
 
-@SuppressWarnings("CanBeFinal")
+/**
+ * This is the most important RpcTarget, representing a remote table.
+ * Almost all operations are triggered from this object.
+ */
 public final class TableTarget extends RpcTarget {
     private final IDataSet<ITable> table;
     TableTarget(IDataSet<ITable> table, HillviewComputation computation) {
         super(computation);
         this.table = table;
+        this.registerObject();
     }
 
     @HillviewRpc
-    void getSchema(RpcRequest request, Session session) {
+    void getSchema(RpcRequest request, RpcRequestContext context) {
         SummarySketch ss = new SummarySketch();
-        this.runSketch(this.table, ss, request, session);
+        this.runSketch(this.table, ss, request, context);
     }
 
     static class NextKArgs {
@@ -71,7 +75,7 @@ public final class TableTarget extends RpcTarget {
     }
 
     @HillviewRpc
-    void getNextK(RpcRequest request, Session session) {
+    void getNextK(RpcRequest request, RpcRequestContext context) {
         NextKArgs nextKArgs = request.parseArgs(NextKArgs.class);
         RowSnapshot rs = null;
         if (nextKArgs.firstRow != null) {
@@ -79,18 +83,18 @@ public final class TableTarget extends RpcTarget {
             rs = RowSnapshot.parse(schema, nextKArgs.firstRow);
         }
         NextKSketch nk = new NextKSketch(nextKArgs.order, rs, nextKArgs.rowsOnScreen);
-        this.runSketch(this.table, nk, request, session);
+        this.runSketch(this.table, nk, request, context);
     }
 
     @HillviewRpc
-    void uniqueStrings(RpcRequest request, Session session) {
+    void uniqueStrings(RpcRequest request, RpcRequestContext context) {
         String[] columnNames = request.parseArgs(String[].class);
         DistinctStringsSketch sk = new DistinctStringsSketch(0, columnNames);
-        this.runCompleteSketch(this.table, sk, (e, c)->e, request, session);
+        this.runCompleteSketch(this.table, sk, (e, c)->e, request, context);
     }
 
     @HillviewRpc
-    void histogram(RpcRequest request, Session session) {
+    void histogram(RpcRequest request, RpcRequestContext context) {
         ColumnAndRange info = request.parseArgs(ColumnAndRange.class);
         int cdfBucketCount = info.cdfBucketCount;
         if (info.min >= info.max) {
@@ -102,32 +106,32 @@ public final class TableTarget extends RpcTarget {
         HistogramSketch cdf = new HistogramSketch(cdfBuckets, parts.column);
         ConcurrentSketch<ITable, Histogram, Histogram> csk =
                 new ConcurrentSketch<ITable, Histogram, Histogram>(cdf, parts.sketch);
-        this.runSketch(this.table, csk, request, session);
+        this.runSketch(this.table, csk, request, context);
     }
 
     @HillviewRpc
-    void heatMap(RpcRequest request, Session session) {
+    void heatMap(RpcRequest request, RpcRequestContext context) {
         ColPair info = request.parseArgs(ColPair.class);
         ColumnAndRange.HistogramParts h1 = Converters.checkNull(info.first).prepare();
         ColumnAndRange.HistogramParts h2 = Converters.checkNull(info.second).prepare();
         // We expect the sampling rate to be the same for both columns
         HeatMapSketch sk = new HeatMapSketch(h1.buckets, h2.buckets, h1.column, h2.column, info.first.samplingRate);
-        this.runSketch(this.table, sk, request, session);
+        this.runSketch(this.table, sk, request, context);
     }
 
     @HillviewRpc
-    void heatMap3D(RpcRequest request, Session session) {
+    void heatMap3D(RpcRequest request, RpcRequestContext context) {
         ColTriple info = request.parseArgs(ColTriple.class);
         ColumnAndRange.HistogramParts h1 = Converters.checkNull(info.first).prepare();
         ColumnAndRange.HistogramParts h2 = Converters.checkNull(info.second).prepare();
         ColumnAndRange.HistogramParts h3 = Converters.checkNull(info.third).prepare();
         HeatMap3DSketch sk = new HeatMap3DSketch(h1.buckets, h2.buckets, h3.buckets,
                 h1.column, h2.column, h3.column);
-        this.runSketch(this.table, sk, request, session);
+        this.runSketch(this.table, sk, request, context);
     }
 
     @HillviewRpc
-    void histogram2D(RpcRequest request, Session session) {
+    void histogram2D(RpcRequest request, RpcRequestContext context) {
         ColPair info = request.parseArgs(ColPair.class);
         ColumnAndRange.HistogramParts h1 = Converters.checkNull(info.first).prepare();
         ColumnAndRange.HistogramParts h2 = Converters.checkNull(info.second).prepare();
@@ -141,7 +145,7 @@ public final class TableTarget extends RpcTarget {
         HistogramSketch cdf = new HistogramSketch(cdfBuckets, h1.column);
         ConcurrentSketch<ITable, Histogram, HeatMap> csk =
                 new ConcurrentSketch<ITable, Histogram, HeatMap>(cdf, sketch);
-        this.runSketch(this.table, csk, request, session);
+        this.runSketch(this.table, csk, request, context);
     }
 
     static class RangeInfo {
@@ -163,14 +167,14 @@ public final class TableTarget extends RpcTarget {
     }
 
     @HillviewRpc
-    void range(RpcRequest request, Session session) {
+    void range(RpcRequest request, RpcRequestContext context) {
         RangeInfo info = request.parseArgs(RangeInfo.class);
         BasicColStatSketch sk = new BasicColStatSketch(info.getColumn(), 0, 1.0);
-        this.runSketch(this.table, sk, request, session);
+        this.runSketch(this.table, sk, request, context);
     }
 
     @HillviewRpc
-    void range2D(RpcRequest request, Session session) {
+    void range2D(RpcRequest request, RpcRequestContext context) {
         RangeInfo[] cols = request.parseArgs(RangeInfo[].class);
         if (cols.length != 2)
             throw new RuntimeException("Expected 2 RangeInfo objects, got " + cols.length);
@@ -178,11 +182,11 @@ public final class TableTarget extends RpcTarget {
         BasicColStatSketch sk2 = cols[1].getBasicStatsSketch();
         ConcurrentSketch<ITable, BasicColStats, BasicColStats> csk =
                 new ConcurrentSketch<ITable, BasicColStats, BasicColStats>(sk1, sk2);
-        this.runSketch(this.table, csk, request, session);
+        this.runSketch(this.table, csk, request, context);
     }
 
     @HillviewRpc
-    void range3D(RpcRequest request, Session session) {
+    void range3D(RpcRequest request, RpcRequestContext context) {
         RangeInfo[] cols = request.parseArgs(RangeInfo[].class);
         if (cols.length != 3)
             throw new RuntimeException("Expected 3 RangeInfo objects, got " + cols.length);
@@ -191,28 +195,28 @@ public final class TableTarget extends RpcTarget {
         BasicColStatSketch sk3 = cols[2].getBasicStatsSketch();
         TripleSketch<ITable, BasicColStats, BasicColStats, BasicColStats> tsk =
                 new TripleSketch<ITable, BasicColStats, BasicColStats, BasicColStats>(sk1, sk2, sk3);
-        this.runSketch(this.table, tsk, request, session);
+        this.runSketch(this.table, tsk, request, context);
     }
 
     @HillviewRpc
-    void filterEquality(RpcRequest request, Session session) {
+    void filterEquality(RpcRequest request, RpcRequestContext context) {
         EqualityFilterDescription filter = request.parseArgs(EqualityFilterDescription.class);
         FilterMap filterMap = new FilterMap(filter);
-        this.runMap(this.table, filterMap, TableTarget::new, request, session);
+        this.runMap(this.table, filterMap, TableTarget::new, request, context);
     }
 
     @HillviewRpc
-    void filterRange(RpcRequest request, Session session) {
+    void filterRange(RpcRequest request, RpcRequestContext context) {
         RangeFilterDescription filter = request.parseArgs(RangeFilterDescription.class);
         FilterMap fm = new FilterMap(filter);
-        this.runMap(this.table, fm, TableTarget::new, request, session);
+        this.runMap(this.table, fm, TableTarget::new, request, context);
     }
 
     @HillviewRpc
-    void filter2DRange(RpcRequest request, Session session) {
+    void filter2DRange(RpcRequest request, RpcRequestContext context) {
         RangeFilterPair filter = request.parseArgs(RangeFilterPair.class);
         FilterMap fm = new FilterMap(filter);
-        this.runMap(this.table, fm, TableTarget::new, request, session);
+        this.runMap(this.table, fm, TableTarget::new, request, context);
     }
 
     static class CorrelationMatrixRequest {
@@ -221,11 +225,11 @@ public final class TableTarget extends RpcTarget {
     }
 
     @HillviewRpc
-    void correlationMatrix(RpcRequest request, Session session) {
+    void correlationMatrix(RpcRequest request, RpcRequestContext context) {
         CorrelationMatrixRequest pcaReq = request.parseArgs(CorrelationMatrixRequest.class);
         List<String> colNames = Arrays.asList(Converters.checkNull(pcaReq.columnNames));
         FullCorrelationSketch sketch = new FullCorrelationSketch(colNames);
-        this.runCompleteSketch(this.table, sketch, CorrelationMatrixTarget::new, request, session);
+        this.runCompleteSketch(this.table, sketch, CorrelationMatrixTarget::new, request, context);
     }
 
     static class ProjectToEigenVectorsInfo {
@@ -234,21 +238,26 @@ public final class TableTarget extends RpcTarget {
     }
 
     @HillviewRpc
-    void projectToEigenVectors(RpcRequest request, Session session) {
+    void projectToEigenVectors(RpcRequest request, RpcRequestContext context) {
         ProjectToEigenVectorsInfo info = request.parseArgs(ProjectToEigenVectorsInfo.class);
-        RpcTarget target = RpcObjectManager.instance.retrieveTarget(info.id, true);
-        CorrelationMatrixTarget cmt = (CorrelationMatrixTarget) target;
-        CorrMatrix cm = cmt.corrMatrix;
-        DoubleMatrix[] mats = LinAlg.eigenVectorsVarianceExplained(new DoubleMatrix(cm.getCorrelationMatrix()), info.numComponents);
-        DoubleMatrix projectionMatrix = mats[0];
-        DoubleMatrix varianceExplained = mats[1];
-        List<String> newColNames = new ArrayList<String>();
-        for (int i = 0; i < projectionMatrix.rows; i++) {
-            int perc = (int) Math.round(varianceExplained.get(i) * 100);
-            newColNames.add(String.format("PCA%d (%d%%)", i, perc));
-        }
-        LinearProjectionMap lpm = new LinearProjectionMap(cm.columnNames, projectionMatrix, newColNames);
-        this.runMap(this.table, lpm, TableTarget::new, request, session);
+        Observer<RpcTarget> observer = new SingleObserver<RpcTarget>() {
+            @Override
+            public void onSuccess(RpcTarget rpcTarget) {
+                CorrelationMatrixTarget cmt = (CorrelationMatrixTarget)rpcTarget;
+                CorrMatrix cm = cmt.corrMatrix;
+                DoubleMatrix[] mats = LinAlg.eigenVectorsVarianceExplained(new DoubleMatrix(cm.getCorrelationMatrix()), info.numComponents);
+                DoubleMatrix projectionMatrix = mats[0];
+                DoubleMatrix varianceExplained = mats[1];
+                List<String> newColNames = new ArrayList<String>();
+                for (int i = 0; i < projectionMatrix.rows; i++) {
+                    int perc = (int) Math.round(varianceExplained.get(i) * 100);
+                    newColNames.add(String.format("PCA%d (%d%%)", i, perc));
+                }
+                LinearProjectionMap lpm = new LinearProjectionMap(cm.columnNames, projectionMatrix, newColNames);
+                TableTarget.this.runMap(TableTarget.this.table, lpm, TableTarget::new, request, context);
+            }
+        };
+        RpcObjectManager.instance.retrieveTarget(info.id, true, observer);
     }
 
     static class SampledControlPoints {
@@ -346,11 +355,11 @@ public final class TableTarget extends RpcTarget {
     }
 
     @HillviewRpc
-    void quantile(RpcRequest request, Session session) {
+    void quantile(RpcRequest request, RpcRequestContext context) {
         QuantileInfo info = request.parseArgs(QuantileInfo.class);
         SampleQuantileSketch sk = new SampleQuantileSketch(info.order, info.precision, info.tableSize);
         BiFunction<SampleList, HillviewComputation, RowSnapshot> getRow = (ql, c) -> ql.getRow(info.position);
-        this.runCompleteSketch(this.table, sk, getRow, request, session);
+        this.runCompleteSketch(this.table, sk, getRow, request, context);
     }
 
     static class HeavyHittersInfo {
@@ -360,11 +369,11 @@ public final class TableTarget extends RpcTarget {
     }
 
     @HillviewRpc
-    void heavyHitters(RpcRequest request, Session session) {
+    void heavyHitters(RpcRequest request, RpcRequestContext context) {
         HeavyHittersInfo info = request.parseArgs(HeavyHittersInfo.class);
         Converters.checkNull(info);
         FreqKSketch sk = new FreqKSketch(Converters.checkNull(info.columns), info.amount/100);
-        this.runCompleteSketch(this.table, sk, HeavyHittersTarget::new, request, session);
+        this.runCompleteSketch(this.table, sk, HeavyHittersTarget::new, request, context);
     }
 
     static class HeavyHittersFilterInfo {
@@ -390,29 +399,40 @@ public final class TableTarget extends RpcTarget {
     }
 
     @HillviewRpc
-    void checkHeavy(RpcRequest request, Session session) {
+    void checkHeavy(RpcRequest request, RpcRequestContext context) {
         HeavyHittersFilterInfo hhi = request.parseArgs(HeavyHittersFilterInfo.class);
-        RpcTarget target = RpcObjectManager.instance.retrieveTarget(hhi.hittersId, true);
-        HeavyHittersTarget hht = (HeavyHittersTarget)target;
-        ExactFreqSketch efSketch = new ExactFreqSketch(Converters.checkNull(hhi.schema), hht.heavyHitters);
-        this.runCompleteSketch(this.table, efSketch, (x, c) -> getLists(x, hhi.schema, c), request, session);
+        Observer<RpcTarget> observer = new SingleObserver<RpcTarget>() {
+            @Override
+            public void onSuccess(RpcTarget rpcTarget) {
+                HeavyHittersTarget hht = (HeavyHittersTarget)rpcTarget;
+                ExactFreqSketch efSketch = new ExactFreqSketch(Converters.checkNull(hhi.schema), hht.heavyHitters);
+                TableTarget.this.runCompleteSketch(
+                        TableTarget.this.table, efSketch, (x, c) -> getLists(x, hhi.schema, c), request, context);
+            }
+        };
+        RpcObjectManager.instance.retrieveTarget(hhi.hittersId, true, observer);
     }
 
     @HillviewRpc
-    void filterHeavy(RpcRequest request, Session session) {
+    void filterHeavy(RpcRequest request, RpcRequestContext context) {
         HeavyHittersFilterInfo hhi = request.parseArgs(HeavyHittersFilterInfo.class);
-        RpcTarget target = RpcObjectManager.instance.retrieveTarget(hhi.hittersId, true);
-        HeavyHittersTarget hht = (HeavyHittersTarget)target;
-        ITableFilterDescription filter = hht.heavyHitters.heavyFilter(Converters.checkNull(hhi.schema));
-        FilterMap fm = new FilterMap(filter);
-        this.runMap(this.table, fm, TableTarget::new, request, session);
+        Observer<RpcTarget> observer = new SingleObserver<RpcTarget>() {
+            @Override
+            public void onSuccess(RpcTarget rpcTarget) {
+                HeavyHittersTarget hht = (HeavyHittersTarget)rpcTarget;
+                ITableFilterDescription filter = hht.heavyHitters.heavyFilter(Converters.checkNull(hhi.schema));
+                FilterMap fm = new FilterMap(filter);
+                TableTarget.this.runMap(TableTarget.this.table, fm, TableTarget::new, request, context);
+            }
+        };
+        RpcObjectManager.instance.retrieveTarget(hhi.hittersId, true, observer);
     }
 
     @HillviewRpc
-    void hLogLog(RpcRequest request, Session session) {
+    void hLogLog(RpcRequest request, RpcRequestContext context) {
         String colName = request.parseArgs(String.class);
         HLogLogSketch sketch = new HLogLogSketch(colName);
-        this.runSketch(this.table, sketch, request, session);
+        this.runSketch(this.table, sketch, request, context);
     }
 
     static class ConvertColumnInfo {
@@ -422,10 +442,10 @@ public final class TableTarget extends RpcTarget {
     }
 
     @HillviewRpc
-    void convertColumnMap(RpcRequest request, Session session) {
+    void convertColumnMap(RpcRequest request, RpcRequestContext context) {
         ConvertColumnInfo info = request.parseArgs(ConvertColumnInfo.class);
         ConvertColumnMap map = new ConvertColumnMap(info.colName, info.newColName, info.newKind);
-        this.runMap(this.table, map, TableTarget::new, request, session);
+        this.runMap(this.table, map, TableTarget::new, request, context);
     }
 
     @Override
@@ -434,10 +454,16 @@ public final class TableTarget extends RpcTarget {
     }
 
     @HillviewRpc
-    void zip(RpcRequest request, Session session) {
+    void zip(RpcRequest request, RpcRequestContext context) {
         String otherId = request.parseArgs(String.class);
-        RpcTarget otherObj = RpcObjectManager.instance.retrieveTarget(otherId, true);
-        TableTarget otherTable = (TableTarget)otherObj;
-        this.runZip(this.table, otherTable.table, TablePairTarget::new, request, session);
+        Observer<RpcTarget> observer = new SingleObserver<RpcTarget>() {
+            @Override
+            public void onSuccess(RpcTarget rpcTarget) {
+                TableTarget otherTable = (TableTarget)rpcTarget;
+                TableTarget.this.runZip(
+                        TableTarget.this.table, otherTable.table, TablePairTarget::new, request, context);
+            }
+        };
+        RpcObjectManager.instance.retrieveTarget(otherId, true, observer);
     }
 }

@@ -18,9 +18,12 @@
 package org.hillview;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogging;
+import rx.Observer;
 
 import java.io.Serializable;
-import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 /**
  * Base interface for all computations.
@@ -31,29 +34,74 @@ public class HillviewComputation implements Serializable {
      */
     private final RpcRequest request;
     /**
-     * The id of the targetId on which the request was executed.
+     * The id of the target on which the request was executed.
      */
-    private final String targetId;
+    private final String sourceId;
+    /**
+     * The id of the result produced by the computation.
+     * Today all RpcRequests can produce at most one result.
+     * We will have to revisit this architecture if this changes.
+     */
+    final String resultId;
+    /**
+     * Announce these guys when the object with resultId has been created.
+     * This field should not be serialized.
+     */
+    private List<Observer<RpcTarget>> onCreate;
 
-    HillviewComputation(RpcTarget targetId, RpcRequest request) {
+    HillviewComputation(RpcTarget source, RpcRequest request) {
         this.request = request;
-        this.targetId = Converters.checkNull(targetId.objectId);
+        this.sourceId = Converters.checkNull(source.objectId);
+        this.resultId = this.freshId();
+        this.onCreate = new ArrayList<Observer<RpcTarget>>();
     }
 
-    void replay() {
-        HillviewLogging.logger().info("Attempt to replay {}", this);
-        try {
-            RpcTarget target = RpcObjectManager.instance.retrieveTarget(this.targetId, true);
-            target.execute(this.request, null);
-            HillviewLogging.logger().info("Replay successful {}", this);
-        } catch (InvocationTargetException|IllegalAccessException e) {
-            HillviewLogging.logger().error("Exception while replaying {}", this.toString(), e);
+    synchronized void registerOnCreate(Observer<RpcTarget> toNotify) {
+        // If the object already exists notify right away
+        // Hopefully there is no race which could lose a notification this way.
+        RpcTarget target = RpcObjectManager.instance.getObject(this.resultId);
+        if (target != null) {
+            toNotify.onNext(target);
+            toNotify.onCompleted();
+        } else {
+            this.onCreate.add(toNotify);
         }
+    }
+
+    /**
+     * Allocate a fresh identifier.
+     */
+    private String freshId() {
+        return UUID.randomUUID().toString();
+    }
+
+    void replay(Observer<RpcTarget> toNotify) {
+        HillviewLogging.logger().info("Attempt to replay {}", this);
+        // This observer is notified when the source object has been recreated.
+        Observer<RpcTarget> sourceNotify = new SingleObserver<RpcTarget>() {
+            @Override
+            public void onError(Throwable throwable) {
+                toNotify.onError(throwable);
+            }
+
+            @Override
+            public void onSuccess(RpcTarget source) {
+                // Executing this function will probably create the
+                // target object, but we don't know when exactly.
+                source.execute(HillviewComputation.this.request,
+                        new RpcRequestContext(HillviewComputation.this));
+            }
+        };
+
+        // Tell this guy when the destination is done
+        this.registerOnCreate(toNotify);
+        // Trigger the computation by retrieving the source
+        RpcObjectManager.instance.retrieveTarget(this.sourceId, true, sourceNotify);
     }
 
     @Override
     public String toString() {
-        return "Target: " + this.targetId + ", request: " + this.request.toString();
+        return "Source: " + this.sourceId + ", request: " + this.request.toString();
     }
 
     @Override
@@ -61,13 +109,25 @@ public class HillviewComputation implements Serializable {
         if (this == o) return true;
         if (o == null || this.getClass() != o.getClass()) return false;
         HillviewComputation that = (HillviewComputation) o;
-        return this.request.equals(that.request) && this.targetId.equals(that.targetId);
+        return this.request.equals(that.request) && this.sourceId.equals(that.sourceId);
     }
 
     @Override
     public int hashCode() {
         int result = this.request.hashCode();
-        result = 31 * result + this.targetId.hashCode();
+        result = 31 * result + this.sourceId.hashCode();
         return result;
+    }
+
+    /**
+     * This is invoked when the object with resultId has finally been created
+     * and inserted in the RpcObjectManager.
+     */
+    void objectCreated(RpcTarget target) {
+        for (Observer<RpcTarget> o: this.onCreate) {
+            o.onNext(target);
+            o.onCompleted();
+        }
+        this.onCreate.clear();
     }
 }

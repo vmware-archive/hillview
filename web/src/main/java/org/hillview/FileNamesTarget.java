@@ -21,19 +21,18 @@ import org.hillview.dataset.api.IDataSet;
 import org.hillview.maps.LoadFileMapper;
 import org.hillview.utils.CsvFileObject;
 
-import javax.websocket.Session;
-
-public class FileNamesTarget extends RpcTarget {
+public final class FileNamesTarget extends RpcTarget {
     private final IDataSet<CsvFileObject> files;
 
     FileNamesTarget(IDataSet<CsvFileObject> files, HillviewComputation computation) {
         super(computation);
         this.files = files;
+        this.registerObject();
     }
 
     @HillviewRpc
-    public void loadTable(RpcRequest request, Session session) {
-        this.runMap(this.files, new LoadFileMapper(), TableTarget::new, request, session);
+    public void loadTable(RpcRequest request, RpcRequestContext context) {
+        this.runMap(this.files, new LoadFileMapper(), TableTarget::new, request, context);
     }
 
     @Override

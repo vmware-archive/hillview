@@ -18,11 +18,15 @@
 package org.hillview;
 
 import org.hillview.utils.HillviewLogging;
+import rx.Observer;
 import rx.Subscription;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
-import java.util.*;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 /**
  * The RpcObjectManager manages a pool of objects that are the targets of RPC calls
@@ -49,7 +53,7 @@ public final class RpcObjectManager {
     // Map object id to object.
     private final HashMap<String, RpcTarget> objects;
 
-    // Map the session to the targetId object that is replying, if any
+    // Map the session to the targetId object that is replying to the request, if any.
     private final HashMap<Session, RpcTarget> sessionRequest =
             new HashMap<Session, RpcTarget>(10);
     // Mapping sessions to RxJava subscriptions - needed to do cancellations.
@@ -60,16 +64,9 @@ public final class RpcObjectManager {
     // For each object id the computation that has produced it.
     private final HashMap<String, HillviewComputation> generator =
             new HashMap<String, HillviewComputation>();
-    // For each computation keep its result.
-    private final HashMap<HillviewComputation, String> memoized =
-            new HashMap<HillviewComputation, String>();
 
     synchronized void addSession(Session session, @Nullable RpcTarget target) {
         this.sessionRequest.put(session, target);
-    }
-
-    synchronized String checkCache(HillviewComputation computation) {
-        return this.memoized.get(computation);
     }
 
     synchronized void removeSession(Session session) {
@@ -90,7 +87,7 @@ public final class RpcObjectManager {
             return;
         HillviewLogging.logger().info("Saving subscription {}", this.toString());
         if (this.sessionSubscription.get(session) != null)
-            throw new RuntimeException("Subscription already active on this session");
+            throw new RuntimeException("Subscription already active on this context");
         this.sessionSubscription.put(session, subscription);
     }
 
@@ -109,88 +106,57 @@ public final class RpcObjectManager {
         this.objects = new HashMap<String, RpcTarget>();
     }
 
-    /**
-     * Allocate a fresh identifier.
-     */
-    private String freshId() {
-        return UUID.randomUUID().toString();
-    }
-
     synchronized void addObject(RpcTarget object) {
-        if (object.objectId == null) {
-            String id = this.freshId();
-            object.setId(id);
-        }
         if (this.objects.containsKey(object.objectId))
-            // TODO: attempt to reconstruct missing object
             throw new RuntimeException("Object with id " + object.objectId + " already in map");
+        HillviewLogging.logger().info("Object {} generated from {}", object.objectId, object.computation);
         this.generator.put(object.objectId, object.computation);
-        this.memoized.put(object.computation, object.objectId);
         HillviewLogging.logger().info("Inserting targetId {}", object.toString());
         this.objects.put(object.objectId, object);
-        this.reconstructing.remove(object.objectId);
     }
 
-    private synchronized @Nullable RpcTarget getObject(String id) {
+    synchronized @Nullable RpcTarget getObject(String id) {
         HillviewLogging.logger().info("Getting object {}", id);
         return this.objects.get(id);
     }
 
     /**
-     * Set of targets that are under reconstruction.
-     * Kept here to prevent infinite looks.
-     */
-    private Set<String> reconstructing = new HashSet<String>();
-
-    /**
-     * @return False if the element is already under reconstruction.
-     */
-    synchronized private boolean addReconstructing(String id) {
-        return this.reconstructing.add(id);
-    }
-
-    synchronized private void removeReconstructing(String id) {
-        this.reconstructing.remove(id);
-    }
-
-    /**
      * Attempt to retrieve the object with the specified id.
      * @param id           Object id to retrieve.
-     * @param reconstruct  If true and the object cannot be retrieved attempt
-     *                     to reconstruct the object based on the history.
-     * @return             An object, or throws if the object cannot be obtained.
+     * @param toNotify     An observer notified when the object is retrieved.
+     * @param rebuild      If true attempt to rebuild the object if not found.
      */
-    RpcTarget retrieveTarget(String id, boolean reconstruct) {
+    void retrieveTarget(String id, boolean rebuild, Observer<RpcTarget> toNotify) {
         RpcTarget target = this.getObject(id);
-        if (target != null)
-            return target;
-        if (!reconstruct)
-            throw new RuntimeException("Cannot find object " + id);
-        this.rebuild(id);
-        target = this.getObject(id);
-        if (target == null)
-            throw new RuntimeException("Cannot reconstruct object " + id);
-        return target;
-    }
-
-    private void rebuild(String id) {
-        HillviewLogging.logger().info("Attempt to reconstruct {}", id);
-        boolean working = this.addReconstructing(id);
-        if (working) {
-            // TODO: wait for reconstruction to finish somehow
-            // bailing out here means that we fail.
-            HillviewLogging.logger().warn("Already reconstructing {}; giving up", id);
+        if (target != null) {
+            toNotify.onNext(target);
+            toNotify.onCompleted();
             return;
         }
+        if (rebuild) {
+            this.rebuild(id, toNotify);
+        } else {
+            toNotify.onError(new RuntimeException("Cannot find object " + id));
+        }
+    }
 
-        Set<String> recursive = new HashSet<String>();
+    /**
+     * We have lost the object with the specified id.  Try to reconstruct it
+     * from the history.
+     * @param id  Id of object to reconstruct.
+     * @param toNotify An observert that is notified when the object is available.
+     */
+    private void rebuild(String id, Observer<RpcTarget> toNotify) {
+        HillviewLogging.logger().info("Attempt to reconstruct {}", id);
         HillviewComputation computation = this.generator.get(id);
-        if (computation != null)
+        if (computation != null) {
             // The following may trigger a recursive reconstruction.
-            computation.replay();
-        // The invariant is that only the one who added the object
-        // to the reconstruction list will remove it.
-        this.removeReconstructing(id);
+            HillviewLogging.logger().info("Located computation; replaying {}", computation);
+            computation.replay(toNotify);
+        } else {
+            HillviewLogging.logger().warn("Could not locate computation for {}", id);
+            toNotify.onError(new RuntimeException("Cannot reconstruct " + id));
+        }
     }
 
     @SuppressWarnings("unused")

@@ -21,13 +21,11 @@ import com.google.common.net.HostAndPort;
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.*;
-import org.hillview.management.PurgeMemoization;
-import org.hillview.management.ToggleMemoization;
+import org.hillview.management.*;
 import org.hillview.maps.FindCsvFileMapper;
 import org.hillview.maps.LoadDatabaseTableMapper;
 import org.hillview.utils.*;
 import org.hillview.dataset.remoting.HillviewServer;
-import org.hillview.management.PingSketch;
 import org.hillview.table.JdbcConnectionInformation;
 
 import javax.annotation.Nullable;
@@ -49,7 +47,7 @@ public class InitialObjectTarget extends RpcTarget {
     private IDataSet<Empty> emptyDataset = null;
 
     InitialObjectTarget() {
-        // TODO
+        // TODO: setup logging
         //HillviewLogging.initialize("hillview-head.log");
         Empty empty = new Empty();
         // Get the base naming context
@@ -74,6 +72,8 @@ public class InitialObjectTarget extends RpcTarget {
                 System.exit(-1);
             }
         }
+
+        RpcObjectManager.instance.addObject(this);
     }
 
     private void initialize(final ClusterDescription description) {
@@ -88,23 +88,23 @@ public class InitialObjectTarget extends RpcTarget {
     }
 
     @HillviewRpc
-    void initializeCluster(RpcRequest request, Session session) {
+    void initializeCluster(RpcRequest request, RpcRequestContext context) {
         ClusterDescription description = request.parseArgs(ClusterDescription.class);
         this.initialize(description);
     }
 
     // TODO: cleanup this code
     @HillviewRpc
-    void loadDBTable(RpcRequest request, Session session) {
+    void loadDBTable(RpcRequest request, RpcRequestContext context) {
         Converters.checkNull(this.emptyDataset);
         JdbcConnectionInformation conn = new JdbcConnectionInformation("localhost", "employees", "mbudiu", "password");
         LoadDatabaseTableMapper mapper = new LoadDatabaseTableMapper("salaries", conn);
-        this.runMap(this.emptyDataset, mapper, TableTarget::new, request, session);
+        this.runMap(this.emptyDataset, mapper, TableTarget::new, request, context);
     }
 
     // TODO: cleanup this code.
     @HillviewRpc
-    void prepareFiles(RpcRequest request, Session session) {
+    void prepareFiles(RpcRequest request, RpcRequestContext context) {
         int which = request.parseArgs(Integer.class);
         Converters.checkNull(this.emptyDataset);
 
@@ -120,10 +120,11 @@ public class InitialObjectTarget extends RpcTarget {
         } else if (which == 4) {
             finder = new FindCsvFileMapper(dataFolder, 0, "segmentation.csv", "segmentation.schema");
         } else {
-            throw new RuntimeException("Unexpected id");
+            throw new RuntimeException("Unexpected operation " + which);
         }
 
-        this.runFlatMap(this.emptyDataset, finder, FileNamesTarget::new, request, session);
+        HillviewLogging.logger().info("Preparing files");
+        this.runFlatMap(this.emptyDataset, finder, FileNamesTarget::new, request, context);
     }
 
     @Override
@@ -135,31 +136,46 @@ public class InitialObjectTarget extends RpcTarget {
     // Management messages
 
     @HillviewRpc
-    void ping(RpcRequest request, Session session) {
+    void ping(RpcRequest request, RpcRequestContext context) {
         PingSketch<Empty> ping = new PingSketch<Empty>();
-        this.runSketch(Converters.checkNull(this.emptyDataset), ping, request, session);
+        this.runSketch(Converters.checkNull(this.emptyDataset), ping, request, context);
     }
 
     @HillviewRpc
-    void toggleMemoization(RpcRequest request, Session session) {
+    void toggleMemoization(RpcRequest request, RpcRequestContext context) {
         ToggleMemoization tm = new ToggleMemoization();
-        this.runManage(Converters.checkNull(this.emptyDataset), tm, request, session);
+        this.runManage(Converters.checkNull(this.emptyDataset), tm, request, context);
     }
 
     @HillviewRpc
-    void purgeMemoization(RpcRequest request, Session session) {
+    void purgeMemoization(RpcRequest request, RpcRequestContext context) {
         PurgeMemoization tm = new PurgeMemoization();
-        this.runManage(Converters.checkNull(this.emptyDataset), tm, request, session);
+        this.runManage(Converters.checkNull(this.emptyDataset), tm, request, context);
     }
 
     @HillviewRpc
-    void purgeDatasets(RpcRequest request, Session session) {
+    void purgeLeftDatasets(RpcRequest request, RpcRequestContext context) {
+        PurgeLeafDatasets tm = new PurgeLeafDatasets();
+        this.runManage(Converters.checkNull(this.emptyDataset), tm, request, context);
+    }
+
+    @HillviewRpc
+    void memoryUse(RpcRequest request, RpcRequestContext context) {
+        MemoryUse tm = new MemoryUse();
+        this.runManage(Converters.checkNull(this.emptyDataset), tm, request, context);
+    }
+
+    @HillviewRpc
+    void purgeDatasets(RpcRequest request, RpcRequestContext context) {
         int deleted = RpcObjectManager.instance.removeAllObjects();
         ControlMessage.Status status = new ControlMessage.Status("Deleted " + deleted + " objects");
         JsonList<ControlMessage.Status> statusList = new JsonList<ControlMessage.Status>();
         statusList.add(status);
         PartialResult<JsonList<ControlMessage.Status>> pr = new PartialResult<JsonList<ControlMessage.Status>>(statusList);
         RpcReply reply = request.createReply(Utilities.toJsonTree(pr));
+        Session session = context.getSessionIfOpen();
+        if (session == null)
+            return;
         reply.send(session);
         request.syncCloseSession(session);
     }

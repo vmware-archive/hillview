@@ -45,13 +45,13 @@ class RpcReply {
     }
 
     /**
-     * Send a reply using the specified web sockets session.
-     * @param session If the session is null no reply is sent.
+     * Send a reply using the specified web sockets context.
+     * @param session If the context is null no reply is sent.
      */
     void send(@Nullable Session session) {
         try {
             if (session == null) {
-                HillviewLogging.logger().info("No session; reply skipped.");
+                HillviewLogging.logger().info("No context; reply skipped.");
                 return;
             }
             JsonElement json = this.toJson();

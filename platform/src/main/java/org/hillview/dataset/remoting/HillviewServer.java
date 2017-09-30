@@ -43,6 +43,8 @@ import rx.Subscription;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -68,10 +70,10 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     private final AtomicInteger dsIndex = new AtomicInteger(0);
     private final ConcurrentHashMap<Integer, IDataSet> dataSets;
     private final ConcurrentHashMap<UUID, Subscription> operationToObservable
-            = new ConcurrentHashMap<>();
+            = new ConcurrentHashMap<UUID, Subscription>();
     private final HostAndPort listenAddress;
     private final ConcurrentHashMap<ByteString, Map<Integer, PartialResponse>> memoizedCommands
-            = new ConcurrentHashMap<>();
+            = new ConcurrentHashMap<ByteString, Map<Integer, PartialResponse>>();
     @SuppressWarnings("CanBeFinal")
     private boolean MEMOIZE = true;
 
@@ -84,7 +86,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                                         .maxMessageSize(MAX_MESSAGE_SIZE)
                                         .build()
                                         .start();
-        this.dataSets = new ConcurrentHashMap<>();
+        this.dataSets = new ConcurrentHashMap<Integer, IDataSet>();
         this.put(this.dsIndex.incrementAndGet(), dataSet);
     }
 
@@ -94,13 +96,12 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
 
     synchronized private void put(int index, IDataSet dataSet) {
         HillviewLogging.logger().info("Inserting dataset {}", index);
-        /* failure injection
-        if (index == 5) {
-            HillviewLogging.logger().warn("removing dataset 3");
-            this.dataSets.remove(3);
-        }
-        */
         this.dataSets.put(index, dataSet);
+    }
+
+    synchronized private void remove(int index) {
+        HillviewLogging.logger().info("Removing dataset {}", index);
+        this.dataSets.remove(index);
     }
 
     /**
@@ -417,6 +418,21 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
      */
     public void purgeCache() {
         this.memoizedCommands.clear();
+    }
+
+    /**
+     * Delete all stored datasets (except the one with number 0).
+     * @return The number of deleted datasets.
+     */
+    public int deleteAllDatasets() {
+        // TODO: this will eventually be replaced with a smarter GC policy.
+        List<Integer> list = new ArrayList<Integer>(this.dataSets.keySet());
+        for (int i : list) {
+            if (i == 0)
+                continue;
+            this.remove(i);
+        }
+        return list.size() - 1;
     }
 
     /**

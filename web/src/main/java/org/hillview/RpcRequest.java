@@ -78,7 +78,7 @@ final class RpcRequest {
             RpcObjectManager.instance.removeSubscription(session);
             session.close();
         } catch (Exception ex) {
-            HillviewLogging.logger().error("Error closing session");
+            HillviewLogging.logger().error("Error closing context");
         }
     }
 

@@ -17,24 +17,25 @@
 
 package org.hillview.table.filters;
 
-import org.hillview.table.api.ITable;
 import org.hillview.table.api.ITableFilter;
-import org.hillview.table.api.ITableFilterDescription;
-import java.io.Serializable;
 
-@SuppressWarnings("CanBeFinal")
-public class RangeFilterPair implements ITableFilterDescription, Serializable {
-    public final RangeFilterDescription first;
-    public final RangeFilterDescription second;
+/**
+ * This filter execute two other filters and returns true only when both return true.
+ */
+public class AndFilter implements ITableFilter {
+    final ITableFilter first;
+    final ITableFilter second;
 
-    public RangeFilterPair(RangeFilterDescription first, RangeFilterDescription second) {
+    AndFilter(ITableFilter first, ITableFilter second) {
         this.first = first;
         this.second = second;
     }
 
-    public ITableFilter getFilter(ITable table) {
-        ITableFilter t1 = this.first.getFilter(table);
-        ITableFilter t2 = this.second.getFilter(table);
-        return new AndFilter(t1, t2);
+    public boolean test(int rowIndex) {
+        return this.first.test(rowIndex) && this.second.test(rowIndex);
+    }
+
+    public String toString() {
+        return "FilterAnd(" + this.first.toString() + " && " + this.second.toString() + ")";
     }
 }
