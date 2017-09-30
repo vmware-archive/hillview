@@ -18,8 +18,7 @@
 package org.hillview;
 
 import org.hillview.sketches.FreqKList;
-
-import java.util.logging.Level;
+import org.hillview.utils.HillviewLogging;
 
 /**
  * This object has no RPC methods per se, but it can be used
@@ -28,8 +27,9 @@ import java.util.logging.Level;
 class HeavyHittersTarget extends RpcTarget {
     final FreqKList heavyHitters;
 
-    HeavyHittersTarget(final FreqKList heavyHitters) {
+    HeavyHittersTarget(final FreqKList heavyHitters, final HillviewComputation computation) {
+        super(computation);
         this.heavyHitters = heavyHitters;
-        logger.log(Level.INFO, "Heavy hitters " + heavyHitters.getDistinctRowCount());
+        HillviewLogging.logger().info("Heavy hitters " + heavyHitters.getDistinctRowCount());
     }
 }

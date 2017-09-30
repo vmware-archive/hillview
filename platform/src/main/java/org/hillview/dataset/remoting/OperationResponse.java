@@ -15,23 +15,19 @@
  * limitations under the License.
  */
 
-package org.hillview.maps;
+package org.hillview.dataset.remoting;
 
-import org.hillview.dataset.api.IMap;
-import org.hillview.table.api.ITable;
-import org.hillview.utils.CsvFileObject;
-import org.hillview.utils.HillviewLogging;
+import javax.annotation.Nullable;
+import java.io.Serializable;
 
-import java.io.IOException;
+/**
+ * Class used to wrap responses of map and sketch executions.
+ * @param <T> Return type of the result
+ */
+public class OperationResponse<T> implements Serializable {
+    @Nullable public final T result;
 
-public class LoadFileMapper implements IMap<CsvFileObject, ITable> {
-    @Override
-    public ITable apply(CsvFileObject csvFileObject) {
-        try {
-            HillviewLogging.logger().info("Loading " + csvFileObject);
-            return csvFileObject.loadTable();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public OperationResponse(@Nullable final T result) {
+        this.result = result;
     }
 }

@@ -102,12 +102,18 @@ export class Histogram2DView extends HistogramViewBase {
     }
 
     changeBuckets(bucketCount: number): void {
+        /* TODO: use sampling here too
+        let xSamplingRate = HistogramViewBase.samplingRate(bucketCount, this.currentData.visiblePoints, this.page);
+        let ySamplingRate = HistogramViewBase.samplingRate(this.currentData.yPoints, this.currentData.visiblePoints, this.page);
+        */
+        let samplingRate = 1; // Math.max(xSamplingRate, ySamplingRate);
+
         let arg0: ColumnAndRange = {
             columnName: this.currentData.xData.description.name,
             min: this.currentData.xData.stats.min,
             max: this.currentData.xData.stats.max,
             bucketCount: bucketCount,
-            samplingRate: HistogramViewBase.samplingRate(bucketCount, this.currentData.visiblePoints),
+            samplingRate: samplingRate,
             cdfBucketCount: 0,
             bucketBoundaries: this.currentData.xData.distinctStrings.uniqueStrings
         };
@@ -115,7 +121,7 @@ export class Histogram2DView extends HistogramViewBase {
             columnName: this.currentData.yData.description.name,
             min: this.currentData.yData.stats.min,
             max: this.currentData.yData.stats.max,
-            samplingRate: HistogramViewBase.samplingRate(this.currentData.yPoints, this.currentData.visiblePoints),
+            samplingRate: samplingRate,
             bucketCount: this.currentData.yPoints,
             cdfBucketCount: 0,
             bucketBoundaries: this.currentData.yData.distinctStrings.uniqueStrings
@@ -305,6 +311,8 @@ export class Histogram2DView extends HistogramViewBase {
 
         let barWidth = this.chartSize.width / bucketCount;
         let scale = this.chartSize.height / max;
+        let pixelHeight = max / this.chartSize.height;
+
         this.chart.selectAll("g")
         // bars
             .data(rects)
@@ -326,7 +334,7 @@ export class Histogram2DView extends HistogramViewBase {
             .attr("y", d => this.chartSize.height - (d * scale))
             .attr("text-anchor", "middle")
             .attr("dy", d => d <= (9 * max / 10) ? "-.25em" : ".75em")
-            .text(d => (d == 0) ? "" : significantDigits(d))
+            .text(d => HistogramViewBase.boxHeight(d, true, pixelHeight))
             .exit();
 
         this.chart.append("g")

@@ -29,7 +29,8 @@ import javax.websocket.Session;
  */
 class TablePairTarget extends RpcTarget {
     private final IDataSet<Pair<ITable, ITable>> tables;
-    TablePairTarget(IDataSet<Pair<ITable, ITable>> tables) {
+    TablePairTarget(IDataSet<Pair<ITable, ITable>> tables, HillviewComputation computation) {
+        super(computation);
         this.tables = tables;
     }
 

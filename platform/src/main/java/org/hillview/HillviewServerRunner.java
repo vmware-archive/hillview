@@ -21,8 +21,9 @@ import com.google.common.net.HostAndPort;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IDataSet;
-import org.hillview.remoting.HillviewServer;
+import org.hillview.dataset.remoting.HillviewServer;
 import org.hillview.utils.HillviewLogging;
+import org.slf4j.Logger;
 
 /**
  * Brings up a single instance of a HillviewServer
@@ -34,23 +35,21 @@ public class HillviewServerRunner {
     }
 
     public static void main(String[] args) {
-        try {
-            HillviewLogging.logger.trace("Created HillviewServer");
-            HillviewLogging.logger.debug("Created HillviewServer");
-            HillviewLogging.logger.info("Created HillviewServer");
-            HillviewLogging.logger.warn("Created HillviewServer");
-            HillviewLogging.logger.error("Created HillviewServer");
+        if (args.length != 1) {
+            usage();
+            throw new RuntimeException("Incorrect arguments");
+        }
 
-            final IDataSet<Empty> dataSet = new LocalDataSet<>(Empty.getInstance());
-            if (args.length != 1) {
-                usage();
-                throw new RuntimeException("Incorrect arguments");
-            }
+        HillviewLogging.initialize("hillview.log");
+        Logger logger = HillviewLogging.logger();
+        try {
+            final IDataSet<Empty> dataSet = new LocalDataSet<Empty>(Empty.getInstance());
             final String hostnameAndPort = args[0];
             final HillviewServer server = new HillviewServer(HostAndPort.fromString(hostnameAndPort), dataSet);
+            logger.info("Created HillviewServer");
             Thread.currentThread().join();
         } catch (Exception ex) {
-            HillviewLogging.logger.error("Caught exception", ex);
+            logger.error("Caught exception", ex);
         }
     }
 }

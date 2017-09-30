@@ -15,16 +15,11 @@
  * limitations under the License.
  */
 
+package org.hillview.dataset.remoting;
+
+import java.io.Serializable;
+
 /**
- * Package that doesn't allow null values as method parameters.
+ * Base type for remote operations with a unique ID
  */
-
-@ParametersAreNonnullByDefault
-@FieldsAreNonnullByDefault
-@MethodsAreNonnullByDefault
-package org.hillview.remoting;
-
-import org.hillview.utils.FieldsAreNonnullByDefault;
-import org.hillview.utils.MethodsAreNonnullByDefault;
-
-import javax.annotation.ParametersAreNonnullByDefault;
+public class RemoteOperation implements Serializable {}

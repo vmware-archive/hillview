@@ -26,7 +26,8 @@ import javax.websocket.Session;
 public class FileNamesTarget extends RpcTarget {
     private final IDataSet<CsvFileObject> files;
 
-    FileNamesTarget(IDataSet<CsvFileObject> files) {
+    FileNamesTarget(IDataSet<CsvFileObject> files, HillviewComputation computation) {
+        super(computation);
         this.files = files;
     }
 

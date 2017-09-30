@@ -1,0 +1,152 @@
+/*
+ * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import {ConsoleDisplay, IDataView, FullPage} from "./ui";
+import {TopMenu, TopSubMenu} from "./menu";
+import {InitialObject} from "./initialObject";
+import {RemoteObject, Renderer} from "./rpc";
+import {PartialResult, ICancellable} from "./util";
+
+export class ControlMenu extends RemoteObject implements IDataView {
+    private top: HTMLElement;
+    private menu: TopMenu;
+    private console: ConsoleDisplay;
+
+    constructor(protected init: InitialObject, protected page: FullPage) {
+        super(init.remoteObjectId);
+
+        this.top = document.createElement("div");
+        this.menu = new TopMenu([{
+            text: "Manage", subMenu: new TopSubMenu([
+                { text: "List machines", action: () => { this.ping(); } },
+                { text: "Toggle memoization", action: () => { this.command("toggleMemoization"); } },
+                { text: "Purge memoized", action: () => { this.command("purgeMemoization"); } },
+                { text: "Purge datasets", action: () => { this.command("purgeDatasets"); } }
+            ])}
+        ]);
+
+        this.console = new ConsoleDisplay();
+        this.top.appendChild(this.menu.getHTMLRepresentation());
+        this.top.appendChild(this.console.getHTMLRepresentation());
+    }
+
+    getHTMLRepresentation(): HTMLElement {
+        return this.top;
+    }
+
+    ping(): void {
+        let rr = this.createRpcRequest("ping", null);
+        rr.invoke(new PingReceiver(this.page, rr));
+    }
+
+    command(command: string): void {
+        let rr = this.createRpcRequest(command, null);
+        rr.invoke(new CommandReceiver(command, this.page, rr));
+    }
+
+    setPage(page: FullPage) {
+        if (page == null)
+            throw("null FullPage");
+        this.page = page;
+    }
+
+    getPage() : FullPage {
+        if (this.page == null)
+            throw("Page not set");
+        return this.page;
+    }
+
+    public refresh(): void {}
+}
+
+export function insertControlMenu(): void {
+    let page = new FullPage();
+    page.append();
+    let menu = new ControlMenu(InitialObject.instance, page);
+    page.setDataView(menu);
+}
+
+/**
+ * Corresponds to the Java class ControlMessage.Status.
+ */
+interface Status {
+    hostname: string;
+    result: string;
+    exception: string;
+}
+
+/**
+ * Receives the results of a remote command.
+ * @param T  each individual result has this type.
+ */
+class CommandReceiver extends Renderer<Status[]> {
+    private value: Status[];
+
+    public constructor(name: string, page: FullPage, operation: ICancellable) {
+        super(page, operation, name);
+    }
+
+    onNext(value: PartialResult<Status[]>): void {
+        super.onNext(value);
+        if (value.data != null)
+            this.value = value.data;
+    }
+
+    toString(s: Status): string {
+        let str = s.hostname + "=>";
+        if (s.exception == null)
+            str += s.result;
+        else
+            str += s.exception;
+        return str;
+    }
+
+    onCompleted() {
+        super.finished();
+        if (this.value == null)
+            return;
+
+        let res = "";
+        for (let s of this.value) {
+            if (res != "")
+                res += "\n";
+            res += this.toString(s);
+        }
+        this.page.reportError(res);
+    }
+}
+
+class PingReceiver extends Renderer<string[]> {
+    private value: string[];
+
+    public constructor(page: FullPage, operation: ICancellable) {
+        super(page, operation, "ping");
+    }
+
+    onNext(value: PartialResult<string[]>): void {
+        super.onNext(value);
+        if (value.data != null)
+            this.value = value.data;
+    }
+
+    onCompleted() {
+        super.finished();
+        if (this.value == null)
+            return;
+        this.page.reportError(this.value.toString());
+    }
+}

@@ -15,19 +15,16 @@
  * limitations under the License.
  */
 
-package org.hillview.remoting;
-
-import javax.annotation.Nullable;
-import java.io.Serializable;
-
 /**
- * Class used to wrap responses of map and sketch executions.
- * @param <T> Return type of the result
+ * Package that doesn't allow null values as method parameters.
  */
-public class OperationResponse<T> implements Serializable {
-    @Nullable public final T result;
 
-    public OperationResponse(@Nullable final T result) {
-        this.result = result;
-    }
-}
+@ParametersAreNonnullByDefault
+@FieldsAreNonnullByDefault
+@MethodsAreNonnullByDefault
+package org.hillview.management;
+
+import org.hillview.utils.FieldsAreNonnullByDefault;
+import org.hillview.utils.MethodsAreNonnullByDefault;
+
+import javax.annotation.ParametersAreNonnullByDefault;

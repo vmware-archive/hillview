@@ -19,6 +19,7 @@ package org.hillview.dataset;
 
 import org.hillview.dataset.api.*;
 import org.hillview.utils.HillviewLogging;
+import org.hillview.utils.JsonList;
 import rx.Observable;
 import rx.Scheduler;
 import rx.schedulers.Schedulers;
@@ -51,7 +52,7 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
 
     static {
         int cpuCount = Runtime.getRuntime().availableProcessors();
-        HillviewLogging.logger.info("Using {} processors", cpuCount);
+        HillviewLogging.logger().info("Using {} processors", cpuCount);
         ExecutorService executor = Executors.newFixedThreadPool(cpuCount);
         scheduler = Schedulers.from(executor);
     }
@@ -151,6 +152,26 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
         final LocalDataSet<Pair<T, S>> retval = new LocalDataSet<Pair<T, S>>(data);
         // This is very fast, so there is no need to use a callable or to return a zero.
         return Observable.just(new PartialResult<IDataSet<Pair<T, S>>>(retval));
+    }
+
+    @Override
+    public Observable<PartialResult<JsonList<ControlMessage.Status>>> manage(ControlMessage message) {
+        final Callable<JsonList<ControlMessage.Status>> callable = () -> {
+            this.log("Starting manage {}", message.toString());
+            ControlMessage.Status status;
+            try {
+                status = message.localAction(this);
+            } catch (final Throwable t) {
+                status = new ControlMessage.Status("Exception", t);
+            }
+            JsonList<ControlMessage.Status> result = new JsonList<ControlMessage.Status>();
+            if (status != null)
+                result.add(status);
+            this.log("Completed manage {}", message.toString());
+            return result;
+        };
+        final Observable<JsonList<ControlMessage.Status>> executed = Observable.fromCallable(callable);
+        return executed.map(PartialResult::new);
     }
 
     @Override

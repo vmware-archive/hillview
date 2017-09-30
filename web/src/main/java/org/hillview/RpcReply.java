@@ -19,18 +19,16 @@ package org.hillview;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import org.hillview.utils.HillviewLogging;
 
+import javax.annotation.Nullable;
 import javax.websocket.Session;
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 class RpcReply {
     private final int requestId;
     private final String result;
     private final boolean isError;
-    private static final Logger logger =
-            Logger.getLogger(RpcReply.class.getName());
 
     RpcReply(final int requestId, final String result, boolean isError) {
         this.requestId = requestId;
@@ -46,13 +44,21 @@ class RpcReply {
         return result;
     }
 
-    public void send(Session session) {
+    /**
+     * Send a reply using the specified web sockets session.
+     * @param session If the session is null no reply is sent.
+     */
+    void send(@Nullable Session session) {
         try {
+            if (session == null) {
+                HillviewLogging.logger().info("No session; reply skipped.");
+                return;
+            }
             JsonElement json = this.toJson();
             session.getBasicRemote().sendText(json.toString());
-            RpcReply.logger.log(Level.INFO, "Reply sent");
+            HillviewLogging.logger().info("Reply sent");
         } catch (IOException e) {
-            RpcReply.logger.log(Level.SEVERE, "Could not send reply");
+            HillviewLogging.logger().info("Could not send reply");
         }
     }
 }

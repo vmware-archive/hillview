@@ -123,7 +123,7 @@ public class CsvFileReader {
                 if (line == null)
                     throw new RuntimeException("Missing header row " + this.filename.toString());
                 if (this.configuration.schema == null) {
-                    HillviewLogging.logger.info("Creating schema");
+                    HillviewLogging.logger().info("Creating schema");
                     this.actualSchema = new Schema();
                     int index = 0;
                     for (String col : line) {

@@ -27,9 +27,10 @@ import org.hillview.pb.Ack;
 import org.hillview.pb.Command;
 import org.hillview.pb.HillviewServerGrpc;
 import org.hillview.pb.PartialResponse;
-import org.hillview.remoting.*;
+import org.hillview.dataset.remoting.*;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogging;
+import org.hillview.utils.JsonList;
 import rx.Observable;
 import rx.subjects.PublishSubject;
 
@@ -37,7 +38,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import static org.hillview.remoting.HillviewServer.DEFAULT_IDS_INDEX;
+import static org.hillview.dataset.remoting.HillviewServer.DEFAULT_IDS_INDEX;
 
 /**
  * An IDataSet that is a proxy for a DataSet on a remote machine. The remote IDataSet
@@ -109,7 +110,7 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
      */
     @Override
     public <R> Observable<PartialResult<R>> sketch(final ISketch<T, R> sketch) {
-        final SketchOperation<T, R> sketchOp = new SketchOperation<>(sketch);
+        final SketchOperation<T, R> sketchOp = new SketchOperation<T, R>(sketch);
         final byte[] serializedOp = SerializationUtils.serialize(sketchOp);
         final UUID operationId = UUID.randomUUID();
         final Command command = Command.newBuilder()
@@ -161,6 +162,25 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
                    .doOnUnsubscribe(() -> this.unsubscribe(operationId));
     }
 
+    @Override
+    public Observable<PartialResult<JsonList<ControlMessage.Status>>> manage(ControlMessage message) {
+        final ManageOperation manageOp = new ManageOperation(message);
+        final byte[] serializedOp = SerializationUtils.serialize(manageOp);
+        final UUID operationId = UUID.randomUUID();
+        final Command command = Command.newBuilder()
+                .setIdsIndex(this.remoteHandle)
+                .setSerializedOp(ByteString.copyFrom(serializedOp))
+                .setHighId(operationId.getMostSignificantBits())
+                .setLowId(operationId.getLeastSignificantBits())
+                .build();
+        final PublishSubject<PartialResult<JsonList<ControlMessage.Status>>> subj = PublishSubject.create();
+        final StreamObserver<PartialResponse> responseObserver =
+                new ManageObserver(subj, message, this);
+        return subj.doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
+                .manage(command, responseObserver))
+                .doOnUnsubscribe(() -> this.unsubscribe(operationId));
+    }
+
     /**
      * Unsubscribes an operation. This method is safe to invoke multiple times because the
      * logic on the remote end is idempotent.
@@ -205,7 +225,7 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
 
         @Override
         public void onError(final Throwable throwable) {
-            HillviewLogging.logger.error("Caught exception", throwable);
+            HillviewLogging.logger().error("Caught exception", throwable);
             throwable.printStackTrace();
             this.subject.onError(throwable);
         }
@@ -238,7 +258,7 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
     }
 
     /**
-     * StreamObserver used by test() implementation above.
+     * StreamObserver used by sketch() implementations above.
      */
     private static class SketchObserver<S> extends OperationObserver<PartialResult<S>> {
         public SketchObserver(final PublishSubject<PartialResult<S>> subject) {
@@ -251,6 +271,42 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
             final OperationResponse op = SerializationUtils.deserialize(response
                     .getSerializedOp().toByteArray());
             return (PartialResult<S>) Converters.checkNull(op.result);
+        }
+    }
+
+    /**
+     * StreamObserver used by manage() implementations above.
+     */
+    private static class ManageObserver extends OperationObserver<PartialResult<JsonList<ControlMessage.Status>>> {
+        private final ControlMessage message;
+        private final RemoteDataSet  dataSet;
+
+        public ManageObserver(PublishSubject<PartialResult<JsonList<ControlMessage.Status>>> subject,
+                              ControlMessage message, RemoteDataSet dataSet) {
+            super(subject);
+            this.message = message;
+            this.dataSet = dataSet;
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public PartialResult<JsonList<ControlMessage.Status>> processResponse(
+                final PartialResponse response) {
+            final OperationResponse op = SerializationUtils.deserialize(response
+                    .getSerializedOp().toByteArray());
+            return (PartialResult<JsonList<ControlMessage.Status>>)Converters.checkNull(op.result);
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public void onCompleted() {
+            ControlMessage.Status status = this.message.remoteAction(this.dataSet);
+            if (status != null) {
+                JsonList<ControlMessage.Status> list = new JsonList<ControlMessage.Status>();
+                list.add(status);
+                this.subject.onNext(new PartialResult<JsonList<ControlMessage.Status>>(0, list));
+            }
+            this.subject.onCompleted();
         }
     }
 }

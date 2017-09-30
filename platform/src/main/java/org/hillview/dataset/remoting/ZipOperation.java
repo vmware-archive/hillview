@@ -15,22 +15,17 @@
  * limitations under the License.
  */
 
-package org.hillview.remoting;
-
-import org.hillview.dataset.api.IMap;
+package org.hillview.dataset.remoting;
 
 import java.io.Serializable;
 
 /**
- * Wrap an IMap object to be sent to a remote node
- * @param <T> Input type of the map function
- * @param <S> Output type of the map function
+ * Message type to initiate a zip command against two RemoteDataSets
  */
-public class MapOperation<T, S> extends RemoteOperation implements Serializable {
+public class ZipOperation extends RemoteOperation implements Serializable {
+    public final int datasetIndex;
 
-    public final IMap<T, S> mapper;
-
-    public MapOperation(final IMap<T, S> mapper) {
-        this.mapper = mapper;
+    public ZipOperation(final int datasetIndex) {
+        this.datasetIndex = datasetIndex;
     }
 }

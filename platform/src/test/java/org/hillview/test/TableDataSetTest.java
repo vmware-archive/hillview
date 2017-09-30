@@ -22,7 +22,7 @@ import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.IDataSet;
-import org.hillview.remoting.HillviewServer;
+import org.hillview.dataset.remoting.HillviewServer;
 import org.hillview.sketches.*;
 import org.hillview.table.RecordOrder;
 import org.hillview.table.SmallTable;

@@ -15,18 +15,18 @@
  * limitations under the License.
  */
 
-package org.hillview.remoting;
+package org.hillview.management;
 
-import java.io.Serializable;
-import java.util.UUID;
+import org.hillview.dataset.api.ControlMessage;
+import org.hillview.dataset.remoting.HillviewServer;
 
 /**
- * Unsubscribe to a remote Map/Sketch operation
+ * This control message causes the remote servers to remove everything from their
+ * memoization caches.
  */
-public class UnsubscribeOperation implements Serializable {
-    public final UUID id;
-
-    public UnsubscribeOperation(final UUID id) {
-        this.id = id;
+public class PurgeMemoization extends ControlMessage {
+    public Status remoteServerAction(HillviewServer server) {
+        server.purgeCache();
+        return new Status("caches purged");
     }
 }

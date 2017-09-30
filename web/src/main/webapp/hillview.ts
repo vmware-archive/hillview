@@ -20,6 +20,7 @@ import {ScrollBar, ProgressBar, DataDisplay, FullPage} from "./ui";
 import {InitialObject} from "./initialObject";
 import {ConsoleErrorReporter} from "./errReporter";
 import {HistogramView} from "./histogram";
+import {insertControlMenu} from "./ControlMenu";
 
 // Top-level Hillview object: exports all typescript classes
 // that can be used in html.
@@ -35,7 +36,8 @@ let public_symbols = {
     RemoteTableReceiver,
     DataDisplay,
     FullPage,
-    HistogramView
+    HistogramView,
+    insertControlMenu
 };
 
 window["hillview"] = public_symbols;

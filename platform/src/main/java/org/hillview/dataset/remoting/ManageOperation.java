@@ -15,17 +15,17 @@
  * limitations under the License.
  */
 
-package org.hillview.remoting;
+package org.hillview.dataset.remoting;
 
+import org.hillview.dataset.api.ControlMessage;
 import java.io.Serializable;
 
 /**
- * Message type to initiate a zip command against two RemoteDataSets
+ * Wrap a ControlMessage object to be sent to a remote node
  */
-public class ZipOperation extends RemoteOperation implements Serializable {
-    public final int datasetIndex;
-
-    public ZipOperation(final int datasetIndex) {
-        this.datasetIndex = datasetIndex;
+public class ManageOperation extends RemoteOperation implements Serializable {
+    public final ControlMessage message;
+    public ManageOperation(final ControlMessage message) {
+        this.message = message;
     }
 }

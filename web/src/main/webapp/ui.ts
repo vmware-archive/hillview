@@ -89,6 +89,8 @@ export function translateString(x: number, y: number): string {
 
 export function significantDigits(n: number): string {
     let suffix = "";
+    if (n == 0)
+        return "0";
     let absn = Math.abs(n);
     if (absn > 1e12) {
         suffix = "T";

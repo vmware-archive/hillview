@@ -15,12 +15,18 @@
  * limitations under the License.
  */
 
-package org.hillview.remoting;
+package org.hillview.management;
 
-import java.io.Serializable;
+import org.hillview.dataset.api.ControlMessage;
+import org.hillview.dataset.remoting.HillviewServer;
 
 /**
- * Base type for remote operations with a unique ID
+ * This control message causes the remote servers to toggle their memoization.
+ * It returns the current memoization state.
  */
-public class RemoteOperation implements Serializable {
+public class ToggleMemoization extends ControlMessage {
+    public Status remoteServerAction(HillviewServer server) {
+        boolean b = server.toggleMemoization();
+        return new Status("memoizing=" + Boolean.toString(b));
+    }
 }

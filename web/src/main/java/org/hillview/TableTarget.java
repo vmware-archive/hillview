@@ -47,12 +47,13 @@ import javax.websocket.Session;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 @SuppressWarnings("CanBeFinal")
 public final class TableTarget extends RpcTarget {
     private final IDataSet<ITable> table;
-    TableTarget(IDataSet<ITable> table) {
+    TableTarget(IDataSet<ITable> table, HillviewComputation computation) {
+        super(computation);
         this.table = table;
     }
 
@@ -85,7 +86,7 @@ public final class TableTarget extends RpcTarget {
     void uniqueStrings(RpcRequest request, Session session) {
         String[] columnNames = request.parseArgs(String[].class);
         DistinctStringsSketch sk = new DistinctStringsSketch(0, columnNames);
-        this.runCompleteSketch(this.table, sk, e->e, request, session);
+        this.runCompleteSketch(this.table, sk, (e, c)->e, request, session);
     }
 
     @HillviewRpc
@@ -109,7 +110,8 @@ public final class TableTarget extends RpcTarget {
         ColPair info = request.parseArgs(ColPair.class);
         ColumnAndRange.HistogramParts h1 = Converters.checkNull(info.first).prepare();
         ColumnAndRange.HistogramParts h2 = Converters.checkNull(info.second).prepare();
-        HeatMapSketch sk = new HeatMapSketch(h1.buckets, h2.buckets, h1.column, h2.column);
+        // We expect the sampling rate to be the same for both columns
+        HeatMapSketch sk = new HeatMapSketch(h1.buckets, h2.buckets, h1.column, h2.column, info.first.samplingRate);
         this.runSketch(this.table, sk, request, session);
     }
 
@@ -234,7 +236,7 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     void projectToEigenVectors(RpcRequest request, Session session) {
         ProjectToEigenVectorsInfo info = request.parseArgs(ProjectToEigenVectorsInfo.class);
-        RpcTarget target = RpcObjectManager.instance.getObject(info.id);
+        RpcTarget target = RpcObjectManager.instance.retrieveTarget(info.id, true);
         CorrelationMatrixTarget cmt = (CorrelationMatrixTarget) target;
         CorrMatrix cm = cmt.corrMatrix;
         DoubleMatrix[] mats = LinAlg.eigenVectorsVarianceExplained(new DoubleMatrix(cm.getCorrelationMatrix()), info.numComponents);
@@ -347,7 +349,7 @@ public final class TableTarget extends RpcTarget {
     void quantile(RpcRequest request, Session session) {
         QuantileInfo info = request.parseArgs(QuantileInfo.class);
         SampleQuantileSketch sk = new SampleQuantileSketch(info.order, info.precision, info.tableSize);
-        Function<SampleList, RowSnapshot> getRow = ql -> ql.getRow(info.position);
+        BiFunction<SampleList, HillviewComputation, RowSnapshot> getRow = (ql, c) -> ql.getRow(info.position);
         this.runCompleteSketch(this.table, sk, getRow, request, session);
     }
 
@@ -377,29 +379,29 @@ public final class TableTarget extends RpcTarget {
         String heavyHittersId = "";
     }
 
-    private TopList getLists(FreqKList fkList, Schema schema) {
+    private static TopList getLists(FreqKList fkList, Schema schema, HillviewComputation computation) {
         fkList.filter();
         Pair<List<RowSnapshot>, List<Integer>> pair = fkList.getTop();
         TopList tl = new TopList();
         SmallTable tbl = new SmallTable(schema, Converters.checkNull(pair.first));
         tl.top = new NextKList(tbl, Converters.checkNull(pair.second), 0, fkList.totalRows);
-        tl.heavyHittersId = Converters.checkNull(new HeavyHittersTarget(fkList).objectId);
+        tl.heavyHittersId = Converters.checkNull(new HeavyHittersTarget(fkList, computation).objectId);
         return tl;
     }
 
     @HillviewRpc
     void checkHeavy(RpcRequest request, Session session) {
         HeavyHittersFilterInfo hhi = request.parseArgs(HeavyHittersFilterInfo.class);
-        RpcTarget target = RpcObjectManager.instance.getObject(hhi.hittersId);
+        RpcTarget target = RpcObjectManager.instance.retrieveTarget(hhi.hittersId, true);
         HeavyHittersTarget hht = (HeavyHittersTarget)target;
         ExactFreqSketch efSketch = new ExactFreqSketch(Converters.checkNull(hhi.schema), hht.heavyHitters);
-        this.runCompleteSketch(this.table, efSketch, x -> this.getLists(x, hhi.schema), request, session);
+        this.runCompleteSketch(this.table, efSketch, (x, c) -> getLists(x, hhi.schema, c), request, session);
     }
 
     @HillviewRpc
     void filterHeavy(RpcRequest request, Session session) {
         HeavyHittersFilterInfo hhi = request.parseArgs(HeavyHittersFilterInfo.class);
-        RpcTarget target = RpcObjectManager.instance.getObject(hhi.hittersId);
+        RpcTarget target = RpcObjectManager.instance.retrieveTarget(hhi.hittersId, true);
         HeavyHittersTarget hht = (HeavyHittersTarget)target;
         ITableFilterDescription filter = hht.heavyHitters.heavyFilter(Converters.checkNull(hhi.schema));
         FilterMap fm = new FilterMap(filter);
@@ -434,7 +436,7 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     void zip(RpcRequest request, Session session) {
         String otherId = request.parseArgs(String.class);
-        RpcTarget otherObj = RpcObjectManager.instance.getObject(otherId);
+        RpcTarget otherObj = RpcObjectManager.instance.retrieveTarget(otherId, true);
         TableTarget otherTable = (TableTarget)otherObj;
         this.runZip(this.table, otherTable.table, TablePairTarget::new, request, session);
     }

@@ -16,7 +16,7 @@
  */
 
 import {
-    FullPage, Point, Size, KeyCodes, Resolution
+    FullPage, Point, Size, KeyCodes, Resolution, significantDigits, SpecialChars
 } from "./ui";
 import {Dialog} from "./dialog";
 import d3 = require('d3');
@@ -163,11 +163,30 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
         this.selectionCompleted(this.selectionOrigin.x, x);
     }
 
-    public static samplingRate(bucketCount: number, pointCount: number): number {
-        return 1.0;
-        // TODO: if we sample we lose outliers; we should use the sampling to
-        // compute a fast result first.
-        // return Math.min(bucketCount * HistogramViewBase.chartHeight * Math.log(bucketCount + 2) * 5 / pointCount, 1);
+    public static samplingRate(bucketCount: number, pointCount: number, page: FullPage): number {
+        let height = Resolution.getChartSize(page).height;
+        return Math.min(bucketCount * height * Math.log(bucketCount + 2) * 5 / pointCount, 1);
+    }
+
+    /**
+     * Compute the string used to display the height of a box in a histogram
+     * @param  count  Box size as reported by histogram
+     * @param  exact  If true the box size is exact, otherwise it is approximate
+     * @param  pixelSize  The size of a box that is 1 pixel high.
+     */
+    protected static boxHeight(count: number, exact: boolean, pixelSize: number): string {
+        if (exact) {
+            if (count == 0)
+                return "";
+            return significantDigits(count);
+        }
+        let min = Math.max(count - pixelSize, 0);
+        let max = count + pixelSize;
+        let minString = significantDigits(min);
+        let maxString = significantDigits(max);
+        if (minString == maxString)
+            return minString;
+        return SpecialChars.approx + significantDigits(count);
     }
 
     public static bucketCount(stats: BasicColStats, page: FullPage, columnKind: ContentsKind,

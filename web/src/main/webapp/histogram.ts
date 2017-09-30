@@ -40,6 +40,7 @@ export class HistogramView extends HistogramViewBase {
         cdfSum: number[],  // prefix sum of cdf
         description: ColumnDescription,
         stats: BasicColStats,
+        exact: boolean,  // if false the histogram is computed using sampled data
         allStrings: DistinctStrings   // used only for categorical histograms
     };
 
@@ -71,7 +72,7 @@ export class HistogramView extends HistogramViewBase {
         let rr = this.createZipRequest(r);
         let finalRenderer = (page: FullPage, operation: ICancellable) => {
             return new MakeHistogram(page, operation, this.currentData.description,
-                this.tableSchema, this.currentData.allStrings);
+                this.tableSchema, this.currentData.exact, this.currentData.allStrings);
         };
         rr.invoke(new ZipReceiver(this.getPage(), rr, how, finalRenderer));
     }
@@ -124,11 +125,16 @@ export class HistogramView extends HistogramViewBase {
         let boundaries = this.currentData.allStrings != null ?
             this.currentData.allStrings.categoriesInRange(
                 this.currentData.stats.min, this.currentData.stats.max, cdfBucketCount) : null;
+        let samplingRate = 1.0;
+        if (!this.currentData.exact)
+            samplingRate = HistogramViewBase.samplingRate(+bucketCount, this.currentData.stats.presentCount, this.page);
+        let exact = samplingRate >= 1.0;
+
         let info: ColumnAndRange = {
             columnName: this.currentData.description.name,
             min: this.currentData.stats.min,
             max: this.currentData.stats.max,
-            samplingRate: HistogramViewBase.samplingRate(+bucketCount, this.currentData.stats.presentCount),
+            samplingRate: samplingRate,
             bucketCount: +bucketCount,
             cdfBucketCount: cdfBucketCount,
             bucketBoundaries: boundaries
@@ -136,7 +142,7 @@ export class HistogramView extends HistogramViewBase {
         let rr = this.createHistogramRequest(info);
         let renderer = new HistogramRenderer(this.page,
             this.remoteObjectId, this.tableSchema, this.currentData.description,
-            this.currentData.stats, rr, this.currentData.allStrings);
+            this.currentData.stats, rr, exact, this.currentData.allStrings);
         rr.invoke(renderer);
     }
 
@@ -158,6 +164,7 @@ export class HistogramView extends HistogramViewBase {
             this.currentData.description,
             this.currentData.stats,
             this.currentData.allStrings,
+            this.currentData.exact,
             0);
     }
 
@@ -210,13 +217,14 @@ export class HistogramView extends HistogramViewBase {
 
     public updateView(cdf: Histogram, h: Histogram,
                       cd: ColumnDescription, stats: BasicColStats,
-                      allStrings: DistinctStrings, elapsedMs: number) : void {
+                      allStrings: DistinctStrings, exact: boolean, elapsedMs: number) : void {
         this.currentData = {
             cdf: cdf,
             cdfSum: null,
             histogram: h,
             description: cd,
             stats: stats,
+            exact: exact,
             allStrings: allStrings };
         this.page.reportError("Operation took " + significantDigits(elapsedMs/1000) + " seconds");
 
@@ -321,13 +329,14 @@ export class HistogramView extends HistogramViewBase {
             .attr("height", d => this.chartSize.height - this.yScale(d))
             .attr("width", barWidth - 1);
 
+        let pixelHeight = max / this.chartSize.height;
         bars.append("text")
             .attr("class", "histogramBoxLabel")
             .attr("x", barWidth / 2)
             .attr("y", d => this.yScale(d))
             .attr("text-anchor", "middle")
             .attr("dy", d => d <= (9 * max / 10) ? "-.25em" : ".75em")
-            .text(d => (d == 0) ? "" : significantDigits(d))
+            .text(d => HistogramViewBase.boxHeight(d, this.currentData.exact, pixelHeight))
             .exit();
 
         this.chart.append("g")
@@ -421,7 +430,7 @@ export class HistogramView extends HistogramViewBase {
         let rr = this.createFilterRequest(filter);
         let renderer = new FilterReceiver(
                 this.currentData.description, this.tableSchema,
-                this.currentData.allStrings, this.page, rr);
+                this.currentData.allStrings, this.currentData.exact, this.page, rr);
         rr.invoke(renderer);
     }
 }
@@ -431,6 +440,7 @@ class FilterReceiver extends RemoteTableRenderer {
     constructor(protected columnDescription: ColumnDescription,
                 protected tableSchema: Schema,
                 protected allStrings: DistinctStrings,
+                protected exact: boolean,
                 page: FullPage,
                 operation: ICancellable) {
         super(page, operation, "Filter");
@@ -448,12 +458,11 @@ class FilterReceiver extends RemoteTableRenderer {
         let rr = this.remoteObject.createRangeRequest(rangeInfo);
         rr.chain(this.operation);
         rr.invoke(new RangeCollector(this.columnDescription, this.tableSchema,
-                  this.allStrings, this.page, this.remoteObject, this.operation));
+                  this.allStrings, this.page, this.remoteObject, this.exact, this.operation));
     }
 }
 
-// Waits for column stats to be received and then initiates a histogram
-// rendering.
+// Waits for column stats to be received and then initiates a histogram rendering.
 export class RangeCollector extends Renderer<BasicColStats> {
     protected stats: BasicColStats;
     constructor(protected cd: ColumnDescription,
@@ -461,6 +470,7 @@ export class RangeCollector extends Renderer<BasicColStats> {
                 protected allStrings: DistinctStrings,  // for categorical columns only
                 page: FullPage,
                 protected remoteObject: RemoteTableObject,
+                protected exact: boolean,  // if true we should do no sampling
                 operation: ICancellable) {
         super(page, operation, "histogram");
     }
@@ -484,11 +494,17 @@ export class RangeCollector extends Renderer<BasicColStats> {
         let cdfCount = Math.floor(size.width);
         let boundaries = this.allStrings != null ?
             this.allStrings.categoriesInRange(this.stats.min, this.stats.max, cdfCount) : null;
+
+        let samplingRate = 1.0;
+        if (!this.exact)
+            samplingRate = HistogramViewBase.samplingRate(bucketCount, this.stats.presentCount, this.page);
+        let doExact = samplingRate >= 1.0;
+
         let info: ColumnAndRange = {
             columnName: this.cd.name,
             min: this.stats.min,
             max: this.stats.max,
-            samplingRate: HistogramViewBase.samplingRate(bucketCount, this.stats.presentCount),
+            samplingRate: samplingRate,
             bucketCount: bucketCount,
             cdfBucketCount: cdfCount,
             bucketBoundaries: boundaries
@@ -497,7 +513,7 @@ export class RangeCollector extends Renderer<BasicColStats> {
         rr.chain(this.operation);
         let renderer = new HistogramRenderer(this.page,
             this.remoteObject.remoteObjectId, this.tableSchema,
-            this.cd, this.stats, rr, this.allStrings);
+            this.cd, this.stats, rr, doExact, this.allStrings);
         rr.invoke(renderer);
     }
 
@@ -524,6 +540,7 @@ export class HistogramRenderer extends Renderer<Pair<Histogram, Histogram>> {
                 protected cd: ColumnDescription,
                 protected stats: BasicColStats,
                 operation: ICancellable,
+                protected exact: boolean,
                 protected allStrings: DistinctStrings) {
         super(new FullPage(), operation, "histogram");
         page.insertAfterMe(this.page);
@@ -534,7 +551,7 @@ export class HistogramRenderer extends Renderer<Pair<Histogram, Histogram>> {
     onNext(value: PartialResult<Pair<Histogram, Histogram>>): void {
         super.onNext(value);
         this.histogram.updateView(value.data.first, value.data.second, this.cd,
-            this.stats, this.allStrings, this.elapsedMilliseconds());
+            this.stats, this.allStrings, this.exact, this.elapsedMilliseconds());
         this.histogram.scrollIntoView();
     }
 }
@@ -545,6 +562,7 @@ class MakeHistogram extends RemoteTableRenderer {
                        operation: ICancellable,
                        private colDesc: ColumnDescription,
                        private schema: Schema,
+                       protected exact: boolean,
                        private allStrings: DistinctStrings) {
         super(page, operation, "Reload");
     }
@@ -562,14 +580,14 @@ class MakeHistogram extends RemoteTableRenderer {
                     return;
                 let rr = this.remoteObject.createRangeRequest(ds.getRangeInfo(this.colDesc.name));
                 rr.chain(operation);
-                rr.invoke(new RangeCollector(this.colDesc, this.schema, ds, this.page, this.remoteObject, rr));
+                rr.invoke(new RangeCollector(this.colDesc, this.schema, ds, this.page, this.remoteObject, this.exact, rr));
             };
             // Get the categorical data and invoke the continuation
             CategoryCache.instance.retrieveCategoryValues(this.remoteObject, [this.colDesc.name], this.page, cont);
         } else {
             let rr = this.remoteObject.createRangeRequest({columnName: this.colDesc.name, allNames: null});
             rr.chain(this.operation);
-            rr.invoke(new RangeCollector(this.colDesc, this.schema, this.allStrings, this.page, this.remoteObject, rr));
+            rr.invoke(new RangeCollector(this.colDesc, this.schema, this.allStrings, this.page, this.remoteObject, this.exact, rr));
         }
     }
 }

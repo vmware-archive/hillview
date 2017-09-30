@@ -15,22 +15,24 @@
  * limitations under the License.
  */
 
-package org.hillview.remoting;
+package org.hillview.utils;
 
-import org.hillview.dataset.api.IMap;
+import org.hillview.dataset.api.IMonoid;
 
-import java.io.Serializable;
-import java.util.List;
+import javax.annotation.Nullable;
 
-/**
- * Wrap an IMap object to be sent to a remote node for a flatMap operation.
- * @param <T> Input type of the map function
- * @param <S> Output type of the map function
- */
-public class FlatMapOperation<T, S> extends RemoteOperation implements Serializable {
-    public final IMap<T, List<S>> mapper;
+public class JsonListMonoid<T> implements IMonoid<JsonList<T>> {
+    @Nullable
+    @Override
+    public JsonList<T> zero() {
+        return new JsonList<T>();
+    }
 
-    public FlatMapOperation(final IMap<T, List<S>> mapper) {
-        this.mapper = mapper;
+    @Nullable
+    @Override
+    public JsonList<T> add(@Nullable JsonList<T> left, @Nullable JsonList<T> right) {
+        JsonList<T> result = new JsonList(left);
+        result.addAll(right);
+        return result;
     }
 }
