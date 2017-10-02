@@ -37,7 +37,6 @@ import org.hillview.table.filters.RangeFilterDescription;
 import org.hillview.table.filters.RangeFilterPair;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.Converters;
-import org.hillview.utils.HillviewLogging;
 import org.hillview.utils.LinAlg;
 import org.hillview.utils.Point2D;
 import org.jblas.DoubleMatrix;
@@ -387,7 +386,6 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     void heavyHitters(RpcRequest request, RpcRequestContext context) {
         HeavyHittersInfo info = request.parseArgs(HeavyHittersInfo.class);
-        HillviewLogging.logger().info("HH on {} with {}", info.columns, info.amount);
         Converters.checkNull(info);
         FreqKSketch sk = new FreqKSketch(Converters.checkNull(info.columns), info.amount/100);
         this.runCompleteSketch(this.table, sk, (x, c) -> TableTarget.getLists(x, info.columns, true, c),
@@ -419,7 +417,6 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     void checkHeavy(RpcRequest request, RpcRequestContext context) {
         HeavyHittersFilterInfo hhi = request.parseArgs(HeavyHittersFilterInfo.class);
-<<<<<<< 2c525092d5a8886c17b5563fcecc74763e8877ef
         Observer<RpcTarget> observer = new SingleObserver<RpcTarget>() {
             @Override
             public void onSuccess(RpcTarget rpcTarget) {
@@ -431,12 +428,6 @@ public final class TableTarget extends RpcTarget {
             }
         };
         RpcObjectManager.instance.retrieveTarget(hhi.hittersId, true, observer);
-=======
-        RpcTarget target = RpcObjectManager.instance.getObject(hhi.hittersId);
-        HeavyHittersTarget hht = (HeavyHittersTarget)target;
-        ExactFreqSketch efSketch = new ExactFreqSketch(Converters.checkNull(hhi.schema), hht.heavyHitters);
-        this.runCompleteSketch(this.table, efSketch, x -> this.getLists(x, hhi.schema, false), request, session);
->>>>>>> Small changes to UI + Code review
     }
 
     @HillviewRpc
