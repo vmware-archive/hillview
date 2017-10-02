@@ -933,8 +933,7 @@ export interface TopList {
     heavyHittersId: string;
 }
 
-// The string received is actually the id of a remote object that stores
-// the heavy hitters information.
+// This method handles the outcome of the Misra-Gries skcetch for finding Heavy Hitters.
 class HeavyHittersReceiver extends Renderer<TopList> {
     private data: TopList;
     public constructor(page: FullPage,
@@ -953,44 +952,15 @@ class HeavyHittersReceiver extends Renderer<TopList> {
 
     onCompleted(): void {
         super.finished();
-        if (this.data == null)
+        if (this.data == null) {
+            this.page.reportError("No data came back!");
             return;
+        }
         let newPage = new FullPage();
         let hhv = new HeavyHittersView(this.data, newPage, this.tv, this.schema, this.order, true);
         newPage.setDataView(hhv);
         this.page.insertAfterMe(newPage);
         hhv.fill(this.data.top, this.elapsedMilliseconds());
-    }
-}
-
-// This class handles the reply of the "checkHeavy" method.
-export class HeavyHittersReceiver2 extends Renderer<TopList> {
-    private data: TopList;
-    public constructor(page: FullPage,
-                       protected tv: TableView,
-                       operation: ICancellable,
-                       protected schema: IColumnDescription[],
-                       protected order: RecordOrder) {
-        super(page, operation, "Heavy hitters -- exact counts");
-        this.data = null;
-    }
-
-    onNext(value: PartialResult<TopList>): any {
-        super.onNext(value);
-        if (value.data != null)
-            this.data = value.data;
-    }
-
-    onCompleted(): void {
-        super.finished();
-        if (this.data == null)
-            return;
-        let newPage = new FullPage();
-        let hhv = new HeavyHittersView(this.data, newPage, this.tv, this.schema, this.order, false);
-        newPage.setDataView(hhv);
-        this.page.insertAfterMe(newPage);
-        hhv.fill(this.data.top, this.elapsedMilliseconds());
-        hhv.scrollIntoView();
     }
 }
 

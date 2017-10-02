@@ -58,7 +58,6 @@ public class IntArrayGenerator {
     }
 
     /**
-     * @param range
      * @return An integer array containing numbers (1,.., range), where i occurs i^2 times.
      */
     public static IntArrayColumn getSqIntArray(int range) {

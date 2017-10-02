@@ -21,17 +21,16 @@ import org.hillview.dataset.api.Pair;
 import org.hillview.sketches.ExactFreqSketch;
 import org.hillview.sketches.FreqKList;
 import org.hillview.sketches.FreqKSketch;
-import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.SmallTable;
 import org.hillview.table.Table;
 import org.hillview.table.api.ITable;
+import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.Converters;
 import org.hillview.utils.TestTables;
 import org.junit.Test;
 
 import java.util.List;
 
-import static java.lang.Boolean.FALSE;
 import static org.junit.Assert.assertTrue;
 
 
@@ -50,7 +49,7 @@ public class ExactFreqSketchTest {
             Converters.checkNull(pair.second);
             assertTrue(pair.second.get(i - 1) >= pair.second.get(i));
         }
-        exactList.filter(FALSE);
+        exactList.filter(false);
         exactList.getList().forEach(rss ->
                 assertTrue(exactList.hMap.get(rss) >= fkList.totalRows*fkList.epsilon));
     }
