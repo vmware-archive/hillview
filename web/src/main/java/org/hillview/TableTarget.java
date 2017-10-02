@@ -37,7 +37,6 @@ import org.hillview.table.filters.RangeFilterDescription;
 import org.hillview.table.filters.RangeFilterPair;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.Converters;
-import org.hillview.utils.HillviewLogging;
 import org.hillview.utils.LinAlg;
 import org.hillview.utils.Point2D;
 import org.jblas.DoubleMatrix;
@@ -387,10 +386,10 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     void heavyHitters(RpcRequest request, RpcRequestContext context) {
         HeavyHittersInfo info = request.parseArgs(HeavyHittersInfo.class);
-        HillviewLogging.logger().info("HH on {} with {}", info.columns, info.amount);
         Converters.checkNull(info);
         FreqKSketch sk = new FreqKSketch(Converters.checkNull(info.columns), info.amount/100);
-        this.runCompleteSketch(this.table, sk, (x, c) -> TableTarget.getLists(x, info.columns, true, c), request, context);
+        this.runCompleteSketch(this.table, sk, (x, c) -> TableTarget.getLists(x, info.columns, true, c),
+                request, context);
     }
 
     static class HeavyHittersFilterInfo {

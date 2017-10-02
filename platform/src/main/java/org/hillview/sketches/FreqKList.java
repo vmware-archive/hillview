@@ -126,6 +126,7 @@ public class FreqKList implements Serializable {
         return new ArrayList<RowSnapshot>(this.hMap.keySet());
     }
 
+
     /**
      * Prunes the hashmap to retain only those RowSnapshots that occur with frequency above
      * 1/maxSize, and their frequencies.
