@@ -29,6 +29,7 @@ import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -41,10 +42,13 @@ public class RowSnapshot extends BaseRowSnapshot implements Serializable, IJson 
      * Maps a column name to a value.
      */
     private final LinkedHashMap<String, Object> fields = new LinkedHashMap<String, Object>();
+    private String[] fieldNames = new String[0];
 
     public RowSnapshot(final ITable data, final int rowIndex, final Schema schema) {
-        schema.getColumnNames().forEach(cn ->
-                this.fields.put(cn, data.getColumn(cn).getObject(rowIndex)));
+        for (String cn: schema.getColumnNames()) {
+                this.fields.put(cn, data.getColumn(cn).getObject(rowIndex));
+        }
+        this.fieldNames = this.fields.keySet().toArray(new String[0]);
     }
 
     public RowSnapshot(final ITable data, final int rowIndex) {
@@ -57,6 +61,7 @@ public class RowSnapshot extends BaseRowSnapshot implements Serializable, IJson 
         int index = 0;
         for (String col: schema.getColumnNames())
             this.fields.put(col, data[index++]);
+        this.fieldNames = this.fields.keySet().toArray(new String[0]);
     }
 
     public boolean isMissing(String colName) { return (this.fields.get(colName) == null); }
@@ -67,8 +72,8 @@ public class RowSnapshot extends BaseRowSnapshot implements Serializable, IJson 
     }
 
     @Override
-    public Iterable<String> getColumnNames() {
-        return this.fields.keySet();
+    public String[] getColumnNames() {
+        return this.fieldNames;
     }
 
     @Override
@@ -105,7 +110,7 @@ public class RowSnapshot extends BaseRowSnapshot implements Serializable, IJson 
     public static RowSnapshot parse(Schema schema, Object[] data) {
         Object[] converted = new Object[data.length];
         List<String> cols = new ArrayList<String>(data.length);
-        schema.getColumnNames().forEach(cols::add);
+        cols.addAll(Arrays.asList(schema.getColumnNames()));
         for (int i = 0; i < data.length; i++) {
             String c = cols.get(i);
             ColumnDescription cd = schema.getDescription(c);

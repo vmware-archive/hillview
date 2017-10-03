@@ -34,7 +34,7 @@ public class Issue46Test extends BaseTest {
         // Creating Int Table
         final SmallTable bigTable = TestTables.getIntTable(10000, 1);
         // Grabbing the Column
-        String colName = bigTable.getSchema().getColumnNames().iterator().next();
+        String colName = bigTable.getSchema().getColumnNames()[0];
         IColumn column  = bigTable.getColumn(colName);
         IMembershipSet memSet = bigTable.getMembershipSet();
         IRowIterator iter = memSet.getIterator();

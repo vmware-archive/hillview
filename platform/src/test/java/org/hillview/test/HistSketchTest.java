@@ -40,7 +40,7 @@ public class HistSketchTest extends BaseTest {
         final Table myTable = TestTables.getRepIntTable(tableSize, numCols);
         final BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(1, 50, 10);
         final HistogramSketch mySketch = new HistogramSketch(buckets,
-                new ColumnNameAndConverter(myTable.getSchema().getColumnNames().iterator().next()));
+                new ColumnNameAndConverter(myTable.getSchema().getColumnNames()[0]));
         Histogram result = mySketch.create(myTable);
         int size = 0;
         int bucketNum = result.getNumOfBuckets();
@@ -57,7 +57,7 @@ public class HistSketchTest extends BaseTest {
         final int bigSize = 100000;
         final BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(1, 50, 10);
         final SmallTable bigTable = TestTables.getIntTable(bigSize, numCols);
-        final String colName = bigTable.getSchema().getColumnNames().iterator().next();
+        final String colName = bigTable.getSchema().getColumnNames()[0];
         final ParallelDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize / 10);
         final Histogram hdl = all.blockingSketch(
                 new HistogramSketch(buckets, new ColumnNameAndConverter(colName), 0.5));
@@ -78,9 +78,8 @@ public class HistSketchTest extends BaseTest {
         final BucketsDescriptionEqSize buckets1 = new BucketsDescriptionEqSize(1, 50, 10);
         final BucketsDescriptionEqSize buckets2 = new BucketsDescriptionEqSize(1, 50, 15);
         final SmallTable bigTable = TestTables.getIntTable(bigSize, numCols);
-        final Iterator<String> iter = bigTable.getSchema().getColumnNames().iterator();
-        final String colName1 = iter.next();
-        final String colName2 = iter.next();
+        final String colName1 = bigTable.getSchema().getColumnNames()[0];
+        final String colName2 = bigTable.getSchema().getColumnNames()[1];
         final ParallelDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize/10);
         final HeatMap hm = all.blockingSketch(
                 new HeatMapSketch(buckets1, buckets2,

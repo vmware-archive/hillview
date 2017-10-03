@@ -40,7 +40,7 @@ public class CorrelationTest extends BaseTest {
     public void testCorrelation() {
         DoubleMatrix mat = new DoubleMatrix(new double[][]{{9, 8, 4, 1, 6}, {5, 8, 2, 10, 1}, {6, 4, 1, 6, 5}});
         ITable table = BlasConversions.toTable(mat);
-        List<String> colNames = new ArrayList<String>(table.getSchema().getColumnNames());
+        List<String> colNames = Arrays.asList(table.getSchema().getColumnNames());
 
         FullCorrelationSketch fcs = new FullCorrelationSketch(colNames);
         CorrMatrix cm = fcs.create(table);
@@ -67,7 +67,7 @@ public class CorrelationTest extends BaseTest {
         DoubleMatrix mat = DoubleMatrix.rand(20000, 5);
         mat.muli(4.3);
         ITable bigTable = BlasConversions.toTable(mat);
-        List<String> colNames = new ArrayList<String>(bigTable.getSchema().getColumnNames());
+        List<String> colNames = Arrays.asList(bigTable.getSchema().getColumnNames());
         IDataSet<ITable> dataset = TestTables.makeParallel(bigTable, 10);
 
         FullCorrelationSketch fcs = new FullCorrelationSketch(colNames);

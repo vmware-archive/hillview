@@ -34,7 +34,7 @@ public class BasicStatSketchTest extends BaseTest {
         final int tableSize = 1000;
         final Table myTable = TestTables.getRepIntTable(tableSize, numCols);
         final BasicColStatSketch mySketch = new BasicColStatSketch(
-                new ColumnNameAndConverter(myTable.getSchema().getColumnNames().iterator().next()),
+                new ColumnNameAndConverter(myTable.getSchema().getColumnNames()[0]),
                 0 , 0.1);
         BasicColStats result = mySketch.create(myTable);
         Assert.assertEquals(result.getPresentCount(), 100);
@@ -45,14 +45,14 @@ public class BasicStatSketchTest extends BaseTest {
         final int numCols = 1;
         final int bigSize = 100000;
         final SmallTable bigTable = TestTables.getIntTable(bigSize, numCols);
-        final String colName = bigTable.getSchema().getColumnNames().iterator().next();
+        final String colName = bigTable.getSchema().getColumnNames()[0];
 
         IDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize / 10);
         final BasicColStats result = all.blockingSketch(
                 new BasicColStatSketch(new ColumnNameAndConverter(colName, null)));
         final BasicColStatSketch mySketch = new BasicColStatSketch(
                 new ColumnNameAndConverter(
-                        bigTable.getSchema().getColumnNames().iterator().next()));
+                        bigTable.getSchema().getColumnNames()[0]));
         BasicColStats result1 = mySketch.create(bigTable);
         Assert.assertEquals(result.getMoment(1), result1.getMoment(1), 0.001);
     }

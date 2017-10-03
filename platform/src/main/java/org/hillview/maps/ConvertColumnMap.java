@@ -48,7 +48,7 @@ public class ConvertColumnMap implements IMap<ITable, ITable> {
 
     @Override
     public ITable apply(ITable table) {
-        if (table.getSchema().getColumnNames().contains(this.newColName))
+        if (table.getSchema().containsColumnName(this.newColName))
             throw new IllegalArgumentException("Column " + this.newColName + " already exists in table.");
         // Make new list of columns.
         List<IColumn> columns = new ArrayList<IColumn>();

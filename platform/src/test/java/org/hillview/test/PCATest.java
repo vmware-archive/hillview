@@ -31,13 +31,14 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class PCATest extends BaseTest {
     @Test
     public void testLinearDataset() {
         ITable table = TestTables.getLinearTable(10000, 30);
-        List<String> colNames = new ArrayList<String>(table.getSchema().getColumnNames());
+        List<String> colNames = Arrays.asList(table.getSchema().getColumnNames());
 
         IDataSet<ITable> dataset = TestTables.makeParallel(table, 1000);
 

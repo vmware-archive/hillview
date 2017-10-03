@@ -106,7 +106,7 @@ public class DateParsing {
 
         for (boolean b : asDate) {
             this.parseAsDate = b;
-            for (DateTimeFormatter d : toTry) {
+            for (@Nullable DateTimeFormatter d : toTry) {
                 try {
                     if (b)
                         LocalDate.parse(s, d);
