@@ -15,45 +15,22 @@
  * limitations under the License.
  */
 
-import {RemoteObject, Renderer} from "./rpc";
+import {RemoteObject, Renderer, OnCompleteRenderer} from "./rpc";
 import {RemoteTableReceiver} from "./table";
 import {FullPage} from "./ui";
 import {ICancellable, PartialResult} from "./util";
 
-class FileNames extends RemoteObject {
-    constructor(remoteObjectId: string) {
-        super(remoteObjectId);
-    }
-
-    public loadFiles(page: FullPage, operation: ICancellable): void {
-        let rr = this.createRpcRequest("loadTable", null);
-        rr.chain(operation);
-        let observer = new RemoteTableReceiver(page, rr);
-        rr.invoke(observer);
-    }
-}
-
-class FileNamesReceiver extends Renderer<string> {
-    private remoteObjId: string;
-
+class FileNamesReceiver extends OnCompleteRenderer<string> {
     constructor(page: FullPage, operation: ICancellable) {
         super(page, operation, "Find files");
     }
 
-    // only one reply expected
-    public onNext(value: PartialResult<string>): void {
-        super.onNext(value);
-        if (value.data != null)
-            this.remoteObjId = value.data;
-    }
-
-    public onCompleted(): void {
-        this.finished();
-        if (this.remoteObjId == null)
-            return;
-
-        let fn = new FileNames(this.remoteObjId);
-        fn.loadFiles(this.page, this.operation);
+    public run(remoteObjId: string): void {
+        let fn = new RemoteObject(remoteObjId);
+        let rr = fn.createRpcRequest("loadTable", null);
+        rr.chain(this.operation);
+        let observer = new RemoteTableReceiver(this.page, rr);
+        rr.invoke(observer);
     }
 }
 
@@ -73,11 +50,31 @@ export class InitialObject extends RemoteObject {
         rr.invoke(observer);
     }
 
+    public loadLogs(): void {
+        let rr = this.createRpcRequest("findLogs", null);
+        let page = new FullPage();
+        page.append();
+        let observer = new LogFileReceiver(page, rr);
+        rr.invoke(observer);
+    }
+
     public loadDBTable(): void {
         let rr = this.createRpcRequest("loadDBTable", null);
         let page = new FullPage();
         page.append();
         let observer = new RemoteTableReceiver(page, rr);
         rr.invoke(observer);
+    }
+}
+
+class LogFileReceiver extends OnCompleteRenderer<string> {
+    constructor(page: FullPage, operation: ICancellable) {
+        super(page, operation, "Find logs");
+    }
+
+    public run(objId: string): void {
+        let fn = new RemoteObject(objId);
+        // TODO
+        //fn.loadFiles(this.page, this.operation);
     }
 }

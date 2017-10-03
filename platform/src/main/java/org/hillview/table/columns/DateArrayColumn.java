@@ -23,7 +23,7 @@ import org.hillview.table.api.*;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /*
  * Column of dates with known size.
@@ -39,23 +39,23 @@ public final class DateArrayColumn
     }
 
     public DateArrayColumn(final ColumnDescription description,
-                           final LocalDateTime[] data) {
+                           final Instant[] data) {
         super(description, data.length);
         this.checkKind(ContentsKind.Date);
     }
 
     @Nullable
     @Override
-    public LocalDateTime getDate(final int rowIndex) {
+    public Instant getDate(final int rowIndex) {
         return Converters.toDate(this.getDouble(rowIndex));
     }
 
     @Override
     public void set(int rowIndex, @Nullable Object value) {
-        this.set(rowIndex, (LocalDateTime)value);
+        this.set(rowIndex, (Instant)value);
     }
 
-    public void set(final int rowIndex, @Nullable final LocalDateTime value) {
+    public void set(final int rowIndex, @Nullable final Instant value) {
         if (value == null)
             this.setMissing(rowIndex);
         else

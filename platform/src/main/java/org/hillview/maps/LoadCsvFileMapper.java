@@ -6,7 +6,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,20 +15,23 @@
  * limitations under the License.
  */
 
-package org.hillview.utils;
+package org.hillview.maps;
 
-import org.hillview.dataset.api.IJson;
+import org.hillview.dataset.api.IMap;
+import org.hillview.table.api.ITable;
+import org.hillview.utils.CsvFileObject;
+import org.hillview.utils.HillviewLogging;
 
-public class Point2D implements IJson {
-    public Point2D(double x, double y) {
-        this.x = x;
-        this.y = y;
-    }
-    public final double x;
-    public final double y;
+import java.io.IOException;
 
+public class LoadCsvFileMapper implements IMap<CsvFileObject, ITable> {
     @Override
-    public String toString() {
-        return String.format("(%.2f, %.2f)", x, y);
+    public ITable apply(CsvFileObject csvFileObject) {
+        try {
+            HillviewLogging.logger().info("Loading " + csvFileObject);
+            return csvFileObject.loadTable();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

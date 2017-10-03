@@ -20,7 +20,9 @@ package org.hillview.table;
 import com.google.gson.*;
 import org.hillview.dataset.api.IJson;
 import org.hillview.table.api.ContentsKind;
+import org.hillview.table.api.IAppendableColumn;
 import org.hillview.table.api.ISubSchema;
+import org.hillview.table.columns.BaseListColumn;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -155,5 +157,15 @@ public final class Schema
         String text = this.toJson();
         byte[] bytes = text.getBytes(StandardCharsets.UTF_8);
         Files.write(file, bytes, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+    }
+
+    public IAppendableColumn[] createAppendableColumns() {
+        IAppendableColumn[] cols = new IAppendableColumn[this.getColumnCount()];
+        int index = 0;
+        for (ColumnDescription cd: this.columns.values()) {
+            BaseListColumn col = BaseListColumn.create(cd);
+            cols[index++] = col;
+        }
+        return cols;
     }
 }

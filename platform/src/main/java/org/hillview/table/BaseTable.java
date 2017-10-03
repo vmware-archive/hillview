@@ -20,6 +20,7 @@ package org.hillview.table;
 import org.hillview.table.api.*;
 import org.hillview.table.columns.BaseArrayColumn;
 import org.hillview.table.rows.RowSnapshot;
+import org.hillview.utils.Utilities;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -50,6 +51,26 @@ public abstract class BaseTable implements ITable, Serializable {
             this.columns.put(c.getName(), c);
     }
 
+
+    <C extends IColumn> BaseTable(C[] columns) {
+        this(Utilities.arrayToIterable(columns));
+    }
+
+    /**
+     * Creates a BaseTable with empty columns.
+     */
+    BaseTable(Schema schema) {
+        this.columns = new HashMap<String, IColumn>();
+        for (final String c : schema.getColumnNames()) {
+            ColumnDescription cd = schema.getDescription(c);
+            this.columns.put(c, BaseArrayColumn.create(cd));
+        }
+    }
+
+    BaseTable() {
+        this.columns = new HashMap<>();
+    }
+
     /**
      * Returns columns in the order they appear in the schema.
      */
@@ -67,18 +88,6 @@ public abstract class BaseTable implements ITable, Serializable {
      */
     public Iterable<IColumn> getColumns() {
         return this.getColumns(this.getSchema());
-    }
-
-    BaseTable(Schema schema) {
-        this.columns = new HashMap<String, IColumn>();
-        for (final String c : schema.getColumnNames()) {
-            ColumnDescription cd = schema.getDescription(c);
-            this.columns.put(c, BaseArrayColumn.create(cd));
-        }
-    }
-
-    BaseTable() {
-        this.columns = new HashMap<>();
     }
 
     @Override

@@ -40,15 +40,16 @@ public class ControlMessage implements Serializable {
         /**
          * Host where control message executed.
          */
-        String hostname;
+        final String hostname;
         /**
          * Some report about the execution status.
          */
-        String result;
+        final String result;
         /**
          * Exception caused if any.
          */
         @Nullable
+        final
         Throwable exception;
 
         public Status(String result) {

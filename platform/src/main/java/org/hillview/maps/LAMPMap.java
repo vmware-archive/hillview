@@ -114,7 +114,7 @@ public class LAMPMap implements IMap<ITable, ITable> {
         /*This means that those columns are replaced if they're there!*/
         data.getColumns().forEach((col) -> {
             for (String newColName : this.newColNames) {
-                if (col.getName() == newColName)
+                if (col.getName().equals(newColName))
                     return;
             }
             allColumns.add(col);

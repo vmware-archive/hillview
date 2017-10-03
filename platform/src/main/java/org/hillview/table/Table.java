@@ -18,6 +18,7 @@
 package org.hillview.table;
 
 import org.hillview.table.api.*;
+import org.hillview.utils.Utilities;
 
 /**
  * This is a simple table held entirely in RAM.
@@ -58,6 +59,14 @@ public class Table extends BaseTable {
         this.members = members;
     }
 
+    public <C extends IColumn> Table(final Iterable<C> columns) {
+        this(columns, new FullMembership(columnSize(columns)));
+    }
+
+    public <C extends IColumn> Table(final C[] columns) {
+        this(Utilities.arrayToIterable(columns));
+    }
+
     @Override
     public ITable project(Schema schema) {
         Iterable<IColumn> cols = this.getColumns(schema);
@@ -79,10 +88,6 @@ public class Table extends BaseTable {
      */
     @Override
     public IMembershipSet getMembershipSet() { return this.members; }
-
-    public <C extends IColumn> Table(final Iterable<C> columns) {
-        this(columns, new FullMembership(columnSize(columns)));
-    }
 
     @Override
     public int getNumOfRows() {

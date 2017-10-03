@@ -24,7 +24,7 @@ import org.hillview.utils.Converters;
 import org.hillview.utils.DateParsing;
 
 import javax.annotation.Nullable;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * A column of Dates that can grow in size.
@@ -44,14 +44,14 @@ public class DateListColumn
 
     @Nullable
     @Override
-    public LocalDateTime getDate(final int rowIndex) {
+    public Instant getDate(final int rowIndex) {
         double d = this.getDouble(rowIndex);
         return Converters.toDate(d);
     }
 
     @Override
     @SuppressWarnings("Duplicates")
-    public void append(@Nullable final LocalDateTime value) {
+    public void append(@Nullable final Instant value) {
         if (value == null) {
             this.appendMissing();
         } else {
@@ -68,7 +68,7 @@ public class DateListColumn
             if (this.dateParser == null) {
                 this.dateParser = new DateParsing(s);
             }
-            LocalDateTime dt = this.dateParser.parse(s);
+            Instant dt = this.dateParser.parse(s);
             this.append(dt);
         }
     }
@@ -81,7 +81,7 @@ public class DateListColumn
     @Nullable
     @Override
     public String asString(int rowIndex) {
-        LocalDateTime dt = this.getDate(rowIndex);
+        Instant dt = this.getDate(rowIndex);
         if (dt == null)
             return null;
         return dt.toString();

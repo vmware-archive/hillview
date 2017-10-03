@@ -60,6 +60,6 @@ public class FilterMap implements IMap<ITable, ITable> {
     }
 
     public String asString() {
-        return this.rowFilterPredicate.toString();
+        return (this.rowFilterPredicate == null) ? "<null>" : this.rowFilterPredicate.toString();
     }
 }

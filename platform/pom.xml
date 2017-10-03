@@ -53,16 +53,11 @@
             <artifactId>mysql-connector-java</artifactId>
             <version>6.0.6</version>
         </dependency>
-        <!-- Eclipse collections -->
+        <!-- fast collections -->
         <dependency>
-            <groupId>org.eclipse.collections</groupId>
-            <artifactId>eclipse-collections-api</artifactId>
-            <version>8.1.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.collections</groupId>
-            <artifactId>eclipse-collections</artifactId>
-            <version>8.1.0</version>
+            <groupId>it.unimi.dsi</groupId>
+            <artifactId>dsiutils</artifactId>
+            <version>2.4.0</version>
         </dependency>
         <!-- Comma-separated value file I/O -->
         <dependency>

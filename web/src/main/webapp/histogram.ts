@@ -196,8 +196,7 @@ export class HistogramView extends HistogramViewBase {
         if (this.currentData.cdfSum != null) {
             // determine mouse position on cdf curve
             // we have to take into account the adjustment
-            let cdfX = (mouseX - this.adjustment / 2) * this.currentData.cdfSum.length /
-                (this.chartSize.width - this.adjustment);
+            let cdfX = mouseX * this.currentData.cdfSum.length / this.chartSize.width;
             let pos = 0;
             if (cdfX < 0) {
                 pos = 0;
@@ -289,9 +288,8 @@ export class HistogramView extends HistogramViewBase {
 
         let scaleAxis = HistogramViewBase.createScaleAndAxis(
             cd.kind, bucketCount, this.chartSize.width,
-            stats.min, stats.max, this.currentData.allStrings, true, true);
+            stats.min, stats.max, this.currentData.allStrings, true);
         this.xScale = scaleAxis.scale;
-        this.adjustment = scaleAxis.adjustment;
         let xAxis = scaleAxis.axis;
 
         this.canvas.append("text")
@@ -305,7 +303,7 @@ export class HistogramView extends HistogramViewBase {
         let cdfLine = d3.line<number>()
             .x((d, i) => {
                 let index = Math.floor(i / 2); // two points for each data point, for a zig-zag
-                return this.adjustment/2 + index * 2 * (this.chartSize.width - this.adjustment) / cdfData.length;
+                return index * 2 * this.chartSize.width / cdfData.length;
             })
             .y(d => this.yScale(d));
 
@@ -378,7 +376,7 @@ export class HistogramView extends HistogramViewBase {
             summary = formatNumber(h.missingData) + " missing, ";
         summary += formatNumber(stats.presentCount + stats.missingCount) + " points";
         if (this.currentData.allStrings != null)
-            summary += ", " + (this.currentData.stats.max - this.currentData.stats.min + 1) + " distinct values";
+            summary += ", " + (this.currentData.stats.max - this.currentData.stats.min) + " distinct values";
         summary += ", " + String(bucketCount) + " buckets";
         this.summary.textContent = summary;
     }
@@ -490,30 +488,15 @@ export class RangeCollector extends Renderer<BasicColStats> {
 
     public histogram(): void {
         let size = Resolution.getChartSize(this.page);
-        let bucketCount = HistogramViewBase.bucketCount(this.stats, this.page, this.cd.kind, false, true);
         let cdfCount = Math.floor(size.width);
-        let boundaries = this.allStrings != null ?
-            this.allStrings.categoriesInRange(this.stats.min, this.stats.max, cdfCount) : null;
+        let range = HistogramViewBase.getRange(this.stats, this.page, this.cd, this.allStrings,
+            cdfCount, this.exact, false, true);
+        let rr = this.remoteObject.createHistogramRequest(range);
 
-        let samplingRate = 1.0;
-        if (!this.exact)
-            samplingRate = HistogramViewBase.samplingRate(bucketCount, this.stats.presentCount, this.page);
-        let doExact = samplingRate >= 1.0;
-
-        let info: ColumnAndRange = {
-            columnName: this.cd.name,
-            min: this.stats.min,
-            max: this.stats.max,
-            samplingRate: samplingRate,
-            bucketCount: bucketCount,
-            cdfBucketCount: cdfCount,
-            bucketBoundaries: boundaries
-        };
-        let rr = this.remoteObject.createHistogramRequest(info);
         rr.chain(this.operation);
         let renderer = new HistogramRenderer(this.page,
             this.remoteObject.remoteObjectId, this.tableSchema,
-            this.cd, this.stats, rr, doExact, this.allStrings);
+            this.cd, this.stats, rr, range.samplingRate >= 1.0, this.allStrings);
         rr.invoke(renderer);
     }
 
@@ -522,6 +505,7 @@ export class RangeCollector extends Renderer<BasicColStats> {
         if (this.stats == null)
             // probably some error occurred
             return;
+        HistogramViewBase.adjustStats(this.cd.kind, this.stats);
         if (this.stats.presentCount == 0) {
             this.page.reportError("No data in range");
             return;

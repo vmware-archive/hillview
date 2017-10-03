@@ -341,6 +341,10 @@ export class DistinctStrings implements IDistinctStrings {
      */
     public categoriesInRange(min: number, max: number, bucketCount: number): string[] {
         let boundaries: string[] = null;
+        if (min <= 0)
+            min = 0;
+        if (max >= this.uniqueStrings.length - 2)
+            max = this.uniqueStrings.length - 2;
         max = Math.floor(max);
         min = Math.ceil(min);
         let range = max - min;

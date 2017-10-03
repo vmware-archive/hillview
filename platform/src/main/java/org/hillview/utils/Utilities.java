@@ -25,6 +25,7 @@ import org.hillview.dataset.api.PartialResult;
 import javax.annotation.Nullable;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Iterator;
 
 /**
  * This class has some useful static helper methods.
@@ -70,5 +71,23 @@ public class Utilities {
         else
             json.add("data", pr.deltaValue.toJsonTree());
         return json;
+    }
+
+    public static <T> Iterable<T> arrayToIterable(T[] data) {
+        return () -> new Iterator<T>() {
+            private int pos = 0;
+
+            public boolean hasNext() {
+                return data.length > pos;
+            }
+
+            public T next() {
+                return data[pos++];
+            }
+
+            public void remove() {
+                throw new UnsupportedOperationException("Cannot remove an element of an array.");
+            }
+        };
     }
 }

@@ -17,8 +17,8 @@
 
 package org.hillview.utils;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import javax.annotation.Nullable;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.LinkedHashMap;
@@ -28,6 +28,7 @@ public class DateParsing {
      * Used when parsing; this is set the first time when parsing a date
      * and used subsequently.
      */
+    @Nullable
     public DateTimeFormatter parserFormatter;
     /**
      * Used in conjunction with the parseFormatter.  If true
@@ -40,6 +41,24 @@ public class DateParsing {
     private static final LinkedHashMap<String, String> DATE_FORMAT_REGEXPS =
             new LinkedHashMap<String, String>() {{
                 put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s\\d{1,2}:\\d{2}:\\d{2}$", "yyyy-MM-dd HH:mm:ss");
+                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s\\d{1,2}:\\d{2}:\\d{2}.\\d$",
+                        "yyyy-MM-dd HH:mm:ss.S");
+                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s\\d{1,2}:\\d{2}:\\d{2}.\\d{2}$",
+                        "yyyy-MM-dd HH:mm:ss.SS");
+                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s\\d{1,2}:\\d{2}:\\d{2}.\\d{3}$",
+                        "yyyy-MM-dd HH:mm:ss.SSS");
+                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s\\d{1,2}:\\d{2}:\\d{2}.\\d{4}$",
+                        "yyyy-MM-dd HH:mm:ss.SSSS");
+                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s\\d{1,2}:\\d{2}:\\d{2}.\\d{5}$",
+                        "yyyy-MM-dd HH:mm:ss.SSSSS");
+                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s\\d{1,2}:\\d{2}:\\d{2}.\\d{6}$",
+                        "yyyy-MM-dd HH:mm:ss.SSSSSS");
+                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s\\d{1,2}:\\d{2}:\\d{2}.\\d{7}$",
+                        "yyyy-MM-dd HH:mm:ss.SSSSSSS");
+                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s\\d{1,2}:\\d{2}:\\d{2}.\\d{8}$",
+                        "yyyy-MM-dd HH:mm:ss.SSSSSSSS");
+                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s\\d{1,2}:\\d{2}:\\d{2}.\\d{9}$",
+                        "yyyy-MM-dd HH:mm:ss.SSSSSSSSS");
                 put("^\\d{1,2}\\s[a-z]{4,}\\s\\d{4}\\s\\d{1,2}:\\d{2}:\\d{2}$", "dd MMMM yyyy HH:mm:ss");
                 put("^\\d{1,2}\\s[a-z]{3}\\s\\d{4}\\s\\d{1,2}:\\d{2}:\\d{2}$", "dd MMM yyyy HH:mm:ss");
                 put("^\\d{4}/\\d{1,2}/\\d{1,2}\\s\\d{1,2}:\\d{2}:\\d{2}$", "yyyy/MM/dd HH:mm:ss");
@@ -87,7 +106,7 @@ public class DateParsing {
 
         for (boolean b : asDate) {
             this.parseAsDate = b;
-            for (DateTimeFormatter d : toTry) {
+            for (@Nullable DateTimeFormatter d : toTry) {
                 try {
                     if (b)
                         LocalDate.parse(s, d);
@@ -115,18 +134,20 @@ public class DateParsing {
                 return;
             }
         }
-
         throw new RuntimeException("Could not guess parsing format for date " + s);
     }
 
-    public LocalDateTime parse(String s) {
-        LocalDateTime dt;
+
+    public Instant parse(String s) {
+        Converters.checkNull(this.parserFormatter);
         if (this.parseAsDate) {
-            LocalDate date = LocalDate.parse(s, this.parserFormatter);
-            dt = date.atStartOfDay();
+            return LocalDate.parse(s, this.parserFormatter)
+                    .atStartOfDay(ZoneId.systemDefault())
+                    .toInstant();
         } else {
-            dt = LocalDateTime.parse(s, this.parserFormatter);
+            return LocalDateTime.parse(s, this.parserFormatter)
+                    .atZone(ZoneId.systemDefault())
+                    .toInstant();
         }
-        return dt;
     }
 }

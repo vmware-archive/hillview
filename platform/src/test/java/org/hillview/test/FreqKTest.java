@@ -31,6 +31,7 @@ import org.hillview.utils.TestTables;
 import org.junit.Assert;
 import org.junit.Test;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,7 +39,8 @@ import static org.junit.Assert.assertTrue;
 
 public class FreqKTest {
 
-    private void filterTest(FreqKList fkList) {
+    private void filterTest(@Nullable FreqKList fkList) {
+        Converters.checkNull(fkList);
         fkList.filter(Boolean.TRUE);
         fkList.getList().forEach(rss -> assertTrue(fkList.hMap.get(rss) >=
                 fkList.totalRows*fkList.epsilon - fkList.getErrBound()));

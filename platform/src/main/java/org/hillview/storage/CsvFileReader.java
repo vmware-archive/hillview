@@ -20,12 +20,11 @@ package org.hillview.storage;
 import com.univocity.parsers.csv.CsvFormat;
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
-import org.hillview.table.columns.BaseListColumn;
+import org.hillview.table.api.IAppendableColumn;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.Table;
 import org.hillview.table.api.ContentsKind;
-import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogging;
@@ -35,13 +34,11 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Knows how to read a CSV file (comma-separated file).
  */
-public class CsvFileReader {
+public class CsvFileReader extends TextFileReader {
     public static class CsvConfiguration {
         /**
          * Field separator in CSV file.
@@ -73,27 +70,14 @@ public class CsvFileReader {
         public Schema schema;
     }
 
-    private final Path filename;
     private final CsvConfiguration configuration;
     @Nullable
     private Schema actualSchema;
-    private int currentRow;
-    private int currentColumn;
-    @Nullable
-    private BaseListColumn[] columns;
-    private long currentField;
-    @Nullable
-    private String currentToken;
-    @SuppressWarnings("FieldCanBeLocal")
-    private int actualColumnCount;
 
     public CsvFileReader(final Path path, CsvConfiguration configuration) {
-        this.filename = path;
+        super(path);
         this.configuration = configuration;
-        this.currentRow = 0;
-        this.currentColumn = 0;
-        this.currentField = 0;
-        this.currentToken = null;
+        this.allowFewerColumns = configuration.allowFewerColumns;
     }
 
     // May return null when an error occurs.
@@ -147,7 +131,6 @@ public class CsvFileReader {
                     firstLine = reader.parseNext();
                     if (firstLine == null)
                         throw new RuntimeException("Cannot create schema from empty CSV file");
-                    this.actualColumnCount = firstLine.length;
                 }
 
                 for (int i = 0; i < this.configuration.columnCount; i++) {
@@ -158,16 +141,7 @@ public class CsvFileReader {
             }
 
             Converters.checkNull(this.actualSchema);
-            this.actualColumnCount = this.actualSchema.getColumnCount();
-            List<IColumn> columns = new ArrayList<IColumn>(this.actualColumnCount);
-            this.columns = new BaseListColumn[this.actualColumnCount];
-            int index = 0;
-            for (String col : this.actualSchema.getColumnNames()) {
-                ColumnDescription cd = Converters.checkNull(this.actualSchema.getDescription(col));
-                BaseListColumn column = BaseListColumn.create(cd);
-                columns.add(column);
-                this.columns[index++] = column;
-            }
+            this.columns = this.actualSchema.createAppendableColumns();
 
             if (firstLine != null)
                 this.append(firstLine);
@@ -179,60 +153,9 @@ public class CsvFileReader {
             }
 
             reader.stopParsing();
-            for (BaseListColumn c: this.columns)
+            for (IAppendableColumn c: this.columns)
                 c.seal();
             return new Table(columns);
         }
-    }
-
-    private void append(String[] data) {
-        try {
-            Converters.checkNull(this.columns);
-            int columnCount = this.columns.length;
-            this.currentColumn = 0;
-            if (data.length > columnCount)
-                this.error("Too many columns " + data.length + " vs " + columnCount);
-            for (this.currentColumn = 0; this.currentColumn < data.length; this.currentColumn++) {
-                this.currentToken = data[this.currentColumn];
-                this.columns[this.currentColumn].parseAndAppendString(this.currentToken);
-                this.currentField++;
-                if ((this.currentField % 100000) == 0) {
-                    System.out.print(".");
-                    System.out.flush();
-                }
-            }
-            if (data.length < columnCount) {
-                if (!this.configuration.allowFewerColumns)
-                    this.error("Too few columns " + data.length + " vs " + columnCount);
-                else {
-                    this.currentToken = "";
-                    for (int i = data.length; i < columnCount; i++)
-                        this.columns[i].parseAndAppendString(this.currentToken);
-                }
-            }
-            this.currentRow++;
-        } catch (Exception ex) {
-            this.error(ex);
-        }
-    }
-
-    private String errorMessage() {
-        String columnName = "";
-        if (this.columns != null) {
-            columnName = (this.currentColumn < this.columns.length) ?
-                    (" (" + this.columns[this.currentColumn].getName() + ")") : "";
-        }
-
-        return "Error while parsing CSV file " + this.filename.toString() +
-                " line " + this.currentRow + " column " + this.currentColumn +
-                columnName + (this.currentToken != null ? " token " + this.currentToken : "");
-    }
-
-    private void error(String message) {
-        throw new RuntimeException(this.errorMessage() + ": " + message);
-    }
-
-    private void error(Exception ex) {
-        throw new RuntimeException(this.errorMessage(), ex);
     }
 }

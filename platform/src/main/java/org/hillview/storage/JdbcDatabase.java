@@ -15,8 +15,11 @@
  * limitations under the License.
  */
 
-package org.hillview.table;
+package org.hillview.storage;
 
+import org.hillview.table.ColumnDescription;
+import org.hillview.table.Schema;
+import org.hillview.table.Table;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IAppendableColumn;
 import org.hillview.table.api.ITable;

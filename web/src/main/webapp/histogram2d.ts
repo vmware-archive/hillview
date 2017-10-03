@@ -73,11 +73,9 @@ export class Histogram2DView extends HistogramViewBase {
     }
 
     heatmap(): void {
-        let newPage = new FullPage();
-        this.page.insertAfterMe(newPage);
         let rcol = new Range2DCollector([this.currentData.xData.description, this.currentData.yData.description],
             this.tableSchema, [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
-            newPage, this, null, true);
+            this.page, this, null, true);
         rcol.setValue({ first: this.currentData.xData.stats, second: this.currentData.yData.stats });
         rcol.onCompleted();
     }
@@ -284,9 +282,8 @@ export class Histogram2DView extends HistogramViewBase {
         let cd = xData.description;
         let bucketCount = xPoints;
         let scAxis = HistogramViewBase.createScaleAndAxis(cd.kind, bucketCount, this.chartSize.width,
-            xData.stats.min, xData.stats.max, xData.distinctStrings, true, true);
+            xData.stats.min, xData.stats.max, xData.distinctStrings, true);
         this.xScale = scAxis.scale;
-        this.adjustment = scAxis.adjustment;
         let xAxis = scAxis.axis;
 
         this.canvas.append("text")
@@ -299,26 +296,6 @@ export class Histogram2DView extends HistogramViewBase {
             .attr("transform", translateString(this.chartSize.width / 2, 0))
             .attr("text-anchor", "middle")
             .attr("dominant-baseline", "text-before-edge");
-
-        /*
-         // After resizing the line may not have the exact number of points
-         // as the screen width.
-         let cdfLine = d3.line<number>()
-         .x((d, i) => {
-         let index = Math.floor(i / 2); // two points for each data point, for a zig-zag
-         return this.adjustment/2 + index * 2 * (chartWidth - this.adjustment) / cdfData.length;
-         })
-         .y(d => this.yScale(d));
-
-         // draw CDF curve
-         this.canvas.append("path")
-         .attr("transform", translateString(
-         Resolution.leftMargin, Resolution.topMargin))
-         .datum(cdfData)
-         .attr("stroke", "blue")
-         .attr("d", cdfLine)
-         .attr("fill", "none");
-         */
 
         let barWidth = this.chartSize.width / bucketCount;
         let scale = this.chartSize.height / max;
@@ -410,7 +387,7 @@ export class Histogram2DView extends HistogramViewBase {
         let scaleAxis = HistogramViewBase.createScaleAndAxis(
             this.currentData.yData.description.kind, legendBuckets, this.legendRect.width(),
             this.currentData.yData.stats.min, this.currentData.yData.stats.max,
-            this.currentData.yData.distinctStrings, false, true);
+            this.currentData.yData.distinctStrings, true);
 
         // create a scale and axis for the legend
         this.legendScale = scaleAxis.scale;
@@ -460,29 +437,6 @@ export class Histogram2DView extends HistogramViewBase {
 
         this.xDot.attr("cx", mouseX + Resolution.leftMargin);
         this.yDot.attr("cy", mouseY + Resolution.topMargin);
-
-        /*
-         if (this.currentData.cdfSum != null) {
-         // determine mouse position on cdf curve
-         // we have to take into account the adjustment
-         let cdfX = (mouseX - this.adjustment / 2) * this.currentData.cdfSum.length /
-         (this.chartResolution.width - this.adjustment);
-         let pos = 0;
-         if (cdfX < 0) {
-         pos = 0;
-         } else if (cdfX >= this.currentData.cdfSum.length) {
-         pos = 1;
-         } else {
-         let cdfPosition = this.currentData.cdfSum[Math.floor(cdfX)];
-         pos = cdfPosition / this.currentData.stats.presentCount;
-         }
-
-         this.cdfDot.attr("cx", mouseX + Resolution.leftMargin);
-         this.cdfDot.attr("cy", (1 - pos) * this.chartResolution.height + Resolution.topMargin);
-         let perc = percent(pos);
-         this.cdfLabel.textContent = "cdf=" + perc;
-         }
-         */
     }
 
     protected legendRectangle(): Rectangle {

@@ -29,7 +29,7 @@ import java.util.Objects;
 public class EqualityFilterDescription implements ITableFilterDescription {
     public final String column;
     @Nullable
-    public final Object compareValue;
+    public final String compareValue;
     public final boolean complement;
 
     /**
@@ -40,13 +40,13 @@ public class EqualityFilterDescription implements ITableFilterDescription {
      * @param complement If true, invert the filter such that it checks for inequality.
      */
     public EqualityFilterDescription(
-            String column, @Nullable Object compareValue, boolean complement) {
+            String column, @Nullable String compareValue, boolean complement) {
         this.column = column;
         this.compareValue = compareValue;
         this.complement = complement;
     }
 
-    public EqualityFilterDescription(String column, @Nullable Object compareValue) {
+    public EqualityFilterDescription(String column, @Nullable String compareValue) {
         this(column, compareValue, false);
     }
 
@@ -70,9 +70,8 @@ public class EqualityFilterDescription implements ITableFilterDescription {
         private final ContentsKind compareKind;
 
         public EqualityFilter(EqualityFilterDescription filter, ITable table) {
-            IColumn column = table.getColumn(filter.column);
-            this.compareKind = column.getDescription().kind;
-            this.column = column;
+            this.column = table.getColumn(filter.column);
+            this.compareKind = this.column.getDescription().kind;
             this.complement = filter.complement;
 
             if (filter.compareValue == null) {
@@ -83,15 +82,15 @@ public class EqualityFilterDescription implements ITableFilterDescription {
                 case Category:
                 case String:
                 case Json:
-                    this.s = (String)filter.compareValue;
+                    this.s = filter.compareValue;
                     break;
                 case Integer:
-                    this.i = (int)filter.compareValue;
+                    this.i = Integer.parseInt(filter.compareValue);
                     break;
                 case Double:
                 case Duration:
                 case Date:
-                    this.d = (double)filter.compareValue;
+                    this.d = Double.parseDouble(filter.compareValue);
                     break;
                 default:
                     throw new RuntimeException("Unexpected kind " + compareKind);

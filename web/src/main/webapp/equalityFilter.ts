@@ -21,7 +21,7 @@ import {Converters} from "./util";
 
 // Class explaining the search we want to perform
 export class EqualityFilterDescription {
-    columnDescription: ColumnDescription;
+    column: string;
     compareValue: string;
     complement: boolean;
 }
@@ -42,7 +42,7 @@ export class EqualityFilterDialog extends Dialog {
             textQuery = Converters.doubleFromDate(date).toString();
         }
         return {
-            columnDescription: this.columnDescription,
+            column: this.columnDescription.name,
             compareValue: textQuery,
             complement: complement,
         };

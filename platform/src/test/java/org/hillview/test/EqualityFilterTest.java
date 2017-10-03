@@ -73,7 +73,7 @@ public class EqualityFilterTest {
         Table table = TestTables.testRepTable();
 
         // Make a filter and apply it
-        EqualityFilterDescription equalityFilter = new EqualityFilterDescription("Age", 10);
+        EqualityFilterDescription equalityFilter = new EqualityFilterDescription("Age", "10");
         FilterMap filterMap = new FilterMap(equalityFilter);
         ITable result = filterMap.apply(table);
 
@@ -81,7 +81,7 @@ public class EqualityFilterTest {
         Assert.assertEquals(4, result.getNumOfRows());
 
         // Make a filter and apply it
-        equalityFilter = new EqualityFilterDescription("Age", 40);
+        equalityFilter = new EqualityFilterDescription("Age", "40");
         filterMap = new FilterMap(equalityFilter);
         result = filterMap.apply(table);
 

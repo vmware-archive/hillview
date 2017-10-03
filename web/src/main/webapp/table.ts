@@ -19,7 +19,7 @@ import Rx = require('rx');
 import {
     FullPage, formatNumber, significantDigits, percent, KeyCodes, ScrollBar, IScrollTarget, SpecialChars
 } from "./ui";
-import { Renderer, combineMenu, SelectedObject, CombineOperators, RemoteObject} from "./rpc";
+import {Renderer, combineMenu, SelectedObject, CombineOperators, RemoteObject, OnCompleteRenderer} from "./rpc";
 import {RangeCollector} from "./histogram";
 import {Range2DCollector} from "./heatMap";
 import {TopMenu, TopSubMenu, ContextMenu} from "./menu";
@@ -628,7 +628,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
                 value = Converters.doubleFromDate(date).toString();
             }
             let efd: EqualityFilterDescription = {
-                columnDescription: cd,
+                column: cd.name,
                 compareValue: value,
                 complement: (complement == null ? false : complement)
             };
@@ -899,9 +899,7 @@ export class RemoteTableReceiver extends RemoteTableRenderer {
     }
 }
 
-class QuantileReceiver extends Renderer<any[]> {
-    protected firstRow: any[];
-
+class QuantileReceiver extends OnCompleteRenderer<any[]> {
     public constructor(page: FullPage,
                        protected tv: TableView,
                        operation: ICancellable,
@@ -909,35 +907,20 @@ class QuantileReceiver extends Renderer<any[]> {
         super(page, operation, "Compute quantiles");
     }
 
-    onNext(value: PartialResult<any[]>): any {
-        super.onNext(value);
-        if (value.data != null)
-            this.firstRow = value.data;
-    }
-
-    onCompleted(): void {
-        super.finished();
-        if (this.firstRow == null)
-            return;
-
-        let rr = this.tv.createNextKRequest(this.order, this.firstRow);
+    run(firstRow: any[]): void {
+        let rr = this.tv.createNextKRequest(this.order, firstRow);
         rr.chain(this.operation);
         rr.invoke(new TableRenderer(this.page, this.tv, rr, false, this.order));
     }
 }
-
-
 
 export interface TopList {
     top: TableDataView;
     heavyHittersId: string;
 }
 
-// The string received is actually the id of a remote object that stores
-// the heavy hitters information.
-class HeavyHittersReceiver extends Renderer<TopList> {
-    private data: TopList;
-    public constructor(page: FullPage,
+class HeavyHittersReceiver extends OnCompleteRenderer<TopList> {
+     public constructor(page: FullPage,
                        protected tv: TableView,
                        operation: ICancellable,
                        protected schema: IColumnDescription[],
@@ -945,51 +928,31 @@ class HeavyHittersReceiver extends Renderer<TopList> {
         super(page, operation, "Heavy hitters -- approximate counts");
     }
 
-    onNext(value: PartialResult<TopList>): any {
-        super.onNext(value);
-        if (value.data != null)
-            this.data = value.data;
-    }
-
-    onCompleted(): void {
-        super.finished();
-        if (this.data == null)
-            return;
+    run(data: TopList): void {
         let newPage = new FullPage();
-        let hhv = new HeavyHittersView(this.data, newPage, this.tv, this.schema, this.order, true);
+        let hhv = new HeavyHittersView(data, newPage, this.tv, this.schema, this.order, true);
         newPage.setDataView(hhv);
         this.page.insertAfterMe(newPage);
-        hhv.fill(this.data.top, this.elapsedMilliseconds());
+        hhv.fill(data.top, this.elapsedMilliseconds());
     }
 }
 
 // This class handles the reply of the "checkHeavy" method.
-export class HeavyHittersReceiver2 extends Renderer<TopList> {
-    private data: TopList;
+export class HeavyHittersReceiver2 extends OnCompleteRenderer<TopList> {
     public constructor(page: FullPage,
                        protected tv: TableView,
                        operation: ICancellable,
                        protected schema: IColumnDescription[],
                        protected order: RecordOrder) {
         super(page, operation, "Heavy hitters -- exact counts");
-        this.data = null;
     }
 
-    onNext(value: PartialResult<TopList>): any {
-        super.onNext(value);
-        if (value.data != null)
-            this.data = value.data;
-    }
-
-    onCompleted(): void {
-        super.finished();
-        if (this.data == null)
-            return;
+    run(data: TopList): void {
         let newPage = new FullPage();
-        let hhv = new HeavyHittersView(this.data, newPage, this.tv, this.schema, this.order, false);
+        let hhv = new HeavyHittersView(data, newPage, this.tv, this.schema, this.order, false);
         newPage.setDataView(hhv);
         this.page.insertAfterMe(newPage);
-        hhv.fill(this.data.top, this.elapsedMilliseconds());
+        hhv.fill(data.top, this.elapsedMilliseconds());
         hhv.scrollIntoView();
     }
 }

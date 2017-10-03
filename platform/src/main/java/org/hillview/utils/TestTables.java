@@ -104,7 +104,6 @@ public class TestTables {
     }
 
     /**
-     * @param range
      * @return A table which contains number from (1,..., range), where i occurs i^2 times.
      */
     public static SmallTable getSqIntTable(final int range) {
@@ -282,11 +281,6 @@ public class TestTables {
      * Return a numerical table with numBlobs clusters, every cluster containing numPointsPerBlob n-dimensional
      * points sampled from a Gaussian centered at a random point in the nD unit hyperbox, with a standard deviation
      * of stdDev.
-     * @param numBlobs
-     * @param numPointsPerBlob
-     * @param n
-     * @param stdDev
-     * @return
      */
     public static ITable getNdGaussianBlobs(int numBlobs, int numPointsPerBlob, int n, double stdDev) {
         DoubleMatrix data = new DoubleMatrix(numBlobs * numPointsPerBlob, n);

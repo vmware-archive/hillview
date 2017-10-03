@@ -36,10 +36,10 @@ import java.util.logging.Logger;
  */
 public class MetricMDS {
     private static final Logger LOG = Logger.getLogger(MetricMDS.class.getName());
-    public static int maxIterations = (int) 1e3;
+    public static final int maxIterations = (int) 1e3;
     public static final double defaultLearningRate = 1;
     public static final double defaultLearningRateDecay = 0.999;
-    public static double tolerance = 1e-5;
+    public static final double tolerance = 1e-5;
     private static final double eps = 1e-9;
     public static final BiFunction<DoubleMatrix, DoubleMatrix, Double> squaredEuclid = (x1, x2) -> MatrixFunctions.pow(x1.sub(x2),2).sum();
     public static final BiFunction<DoubleMatrix, DoubleMatrix, Double> euclid = (x1, x2) -> Math.sqrt(MetricMDS.squaredEuclid.apply(x1, x2));
@@ -47,16 +47,16 @@ public class MetricMDS {
     /**
      * Number of observations in the dataset.
      */
-    private int numObservations;
+    private final int numObservations;
     /**
      * Number of output dimensions
      */
-    private int lowDims;
+    private final int lowDims;
     /**
      * Learning rate to use in the optimization. It is decreased over time to find a more accurate minimum.
      */
     public double learningRate = MetricMDS.defaultLearningRate;
-    public double learningRateDecay = MetricMDS.defaultLearningRateDecay;
+    public final double learningRateDecay = MetricMDS.defaultLearningRateDecay;
     /**
      * If the magnitude of the gradient is smaller than this value, we consider the optimization converged.
      */

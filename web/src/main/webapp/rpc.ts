@@ -285,3 +285,28 @@ export abstract class Renderer<T> extends RpcReceiver<PartialResult<T>> {
         return d3.timeMillisecond.count(this.operation.startTime(), new Date());
     }
 }
+
+export abstract class OnCompleteRenderer<T> extends Renderer<T> {
+    protected value: T = null;
+
+    public constructor(public page: FullPage,
+                       public operation: ICancellable,
+                       public description: string) {
+        super(page, operation, description);
+    }
+
+    public onNext(value: PartialResult<T>) {
+        super.onNext(value);
+        if (value.data != null)
+            this.value = value.data;
+    }
+
+    public onCompleted(): void {
+        super.finished();
+        if (this.value == null)
+            return;
+        this.run(this.value);
+    }
+
+    public abstract run(value: T): void;
+}

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {Renderer} from "./rpc";
+import {Renderer, OnCompleteRenderer} from "./rpc";
 import {IDistinctStrings, DistinctStrings, RemoteTableObject} from "./tableData";
 import {PartialResult, ICancellable} from "./util";
 import {FullPage} from "./ui";
@@ -64,10 +64,7 @@ export class CategoryCache {
 }
 
 // Receives a list of DistinctStrings and stores them into a TableDataSet.
-class ReceiveCategory extends Renderer<IDistinctStrings[]> {
-    /// Output produced: one set of distinct strings for each columns.
-    protected values: IDistinctStrings[];
-
+class ReceiveCategory extends OnCompleteRenderer<IDistinctStrings[]> {
     public constructor(
         protected cache: CategoryCache,
         protected columns: string[],
@@ -75,26 +72,18 @@ class ReceiveCategory extends Renderer<IDistinctStrings[]> {
         page: FullPage,
         operation: ICancellable) {
         super(page, operation, "Create converter");
-        this.values = null;
     }
 
-    public onNext(value: PartialResult<IDistinctStrings[]>): void {
-        super.onNext(value);
-        this.values = value.data;
-    }
-
-    public onCompleted(): void {
+    public run(value: IDistinctStrings[]): void {
         super.onCompleted();
-        if (this.values == null)
-            return;
-        if (this.columns.length != this.values.length)
-            throw "Required " + this.columns.length + " got " + this.values.length;
-        for (let i=0; i < this.values.length; i++) {
+        if (this.columns.length != value.length)
+            throw "Required " + this.columns.length + " got " + value.length;
+        for (let i=0; i < value.length; i++) {
             let col = this.columns[i];
-            if (this.values[i].truncated) {
+            if (value[i].truncated) {
                 this.page.reportError("Column " + col + " has too many distinct values; it is not really a category");
             } else {
-                let ds = new DistinctStrings(this.values[i]);
+                let ds = new DistinctStrings(value[i]);
                 this.cache.setDistinctStrings(col, ds);
             }
         }

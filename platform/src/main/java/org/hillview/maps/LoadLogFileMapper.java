@@ -18,20 +18,14 @@
 package org.hillview.maps;
 
 import org.hillview.dataset.api.IMap;
+import org.hillview.storage.HillviewLogs;
 import org.hillview.table.api.ITable;
-import org.hillview.utils.CsvFileObject;
-import org.hillview.utils.HillviewLogging;
 
-import java.io.IOException;
+import java.nio.file.Paths;
 
-public class LoadFileMapper implements IMap<CsvFileObject, ITable> {
+public class LoadLogFileMapper implements IMap<String, ITable> {
     @Override
-    public ITable apply(CsvFileObject csvFileObject) {
-        try {
-            HillviewLogging.logger().info("Loading " + csvFileObject);
-            return csvFileObject.loadTable();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public ITable apply(String data) {
+        return HillviewLogs.parseLogFile(Paths.get(data));
     }
 }

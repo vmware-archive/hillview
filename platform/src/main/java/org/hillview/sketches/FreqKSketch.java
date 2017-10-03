@@ -17,8 +17,10 @@
 
 package org.hillview.sketches;
 
-import org.eclipse.collections.api.block.HashingStrategy;
-import org.eclipse.collections.impl.map.strategy.mutable.UnifiedMapWithHashingStrategy;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenCustomHashMap;
+import it.unimi.dsi.fastutil.ints.IntHash;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.api.Pair;
 import org.hillview.table.rows.RowSnapshot;
@@ -32,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.function.IntConsumer;
 
 /** Computes heavy-hitters using the Misra-Gries algorithm, where N is the length on the input
  * table, and our goal is find all elements of frequency epsilon N. K is the number of counters
@@ -57,7 +60,7 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
      * The relative error goes down as 1/alpha. More precisely, for every element whose true
      * fractional frequency is eps, the reported frequency lies between eps and eps(1 - 1/alpha).
      */
-    private int alpha = 5;
+    private static final int alpha = 5;
 
     /**
      * The parameter K which controls how many indices we store in MG. We set it to alpha/epsilon.
@@ -117,27 +120,26 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
     @Override
     public FreqKList create(ITable data) {
         IRowIterator rowIt = data.getRowIterator();
-        HashingStrategy<Integer> hs = new HashingStrategy<Integer>() {
+        IntHash.Strategy hs = new IntHash.Strategy() {
             final VirtualRowSnapshot vrs = new VirtualRowSnapshot(data, FreqKSketch.this.schema);
             final VirtualRowSnapshot vrs1 = new VirtualRowSnapshot(data, FreqKSketch.this.schema);
 
             @Override
-            public int computeHashCode(Integer index) {
+            public int hashCode(int index) {
                 this.vrs.setRow(index);
                 return this.vrs.computeHashCode(FreqKSketch.this.schema);
             }
 
             @Override
-            public boolean equals(Integer index, Integer otherIndex) {
+            public boolean equals(int index, int otherIndex) {
                 this.vrs.setRow(index);
                 this.vrs1.setRow(otherIndex);
                 return this.vrs.compareForEquality(this.vrs1, FreqKSketch.this.schema);
             }
         };
-        UnifiedMapWithHashingStrategy<Integer, Integer> hMap = new
-                UnifiedMapWithHashingStrategy<Integer, Integer>(hs);
+        Int2IntOpenCustomHashMap hMap = new Int2IntOpenCustomHashMap(hs);
 
-        List<Integer> toRemove = new ArrayList<Integer>(this.maxSize);
+        IntSet toRemove = new IntOpenHashSet(this.maxSize);
         int i = rowIt.getNextRow();
         /* An optimization to speed up the algorithm is that we batch the decrements together in
         variable dec. We only perform an actual decrement when the total decrements equal the minimum
@@ -157,21 +159,22 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
                 dec += 1;
                 if (dec == min) {
                     toRemove.clear();
-                    for (Integer row : hMap.keySet()) {
+                    for (int row : hMap.keySet()) {
                         int count = hMap.get(row) - dec;
                         if (count == 0)
                             toRemove.add(row);
                         else
                             hMap.put(row, count);
                     }
-                    toRemove.forEach(hMap::remove);
+                    toRemove.forEach((IntConsumer) hMap::remove);
                     min = ((!hMap.isEmpty()) ? Collections.min(hMap.values()) : 0);
                 }
             }
             i = rowIt.getNextRow();
         }
         HashMap<RowSnapshot,Integer> hm = new HashMap<RowSnapshot, Integer>(this.maxSize);
-        hMap.keySet().forEach(ri -> hm.put(new RowSnapshot(data, ri, this.schema), hMap.get(ri)));
+        hMap.keySet().forEach((int ri) ->
+                hm.put(new RowSnapshot(data, ri, this.schema), hMap.get(ri)));
         return new FreqKList(data.getNumOfRows(), this.epsilon, this.maxSize, hm);
     }
 }

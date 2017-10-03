@@ -18,7 +18,7 @@
 import {ConsoleDisplay, IDataView, FullPage} from "./ui";
 import {TopMenu, TopSubMenu} from "./menu";
 import {InitialObject} from "./initialObject";
-import {RemoteObject, Renderer} from "./rpc";
+import {RemoteObject, Renderer, OnCompleteRenderer} from "./rpc";
 import {PartialResult, ICancellable} from "./util";
 
 export class ControlMenu extends RemoteObject implements IDataView {
@@ -95,17 +95,9 @@ interface Status {
  * Receives the results of a remote command.
  * @param T  each individual result has this type.
  */
-class CommandReceiver extends Renderer<Status[]> {
-    private value: Status[];
-
+class CommandReceiver extends OnCompleteRenderer<Status[]> {
     public constructor(name: string, page: FullPage, operation: ICancellable) {
         super(page, operation, name);
-    }
-
-    onNext(value: PartialResult<Status[]>): void {
-        super.onNext(value);
-        if (value.data != null)
-            this.value = value.data;
     }
 
     toString(s: Status): string {
@@ -117,13 +109,9 @@ class CommandReceiver extends Renderer<Status[]> {
         return str;
     }
 
-    onCompleted() {
-        super.finished();
-        if (this.value == null)
-            return;
-
+    run(value: Status[]): void {
         let res = "";
-        for (let s of this.value) {
+        for (let s of value) {
             if (res != "")
                 res += "\n";
             res += this.toString(s);
@@ -132,23 +120,12 @@ class CommandReceiver extends Renderer<Status[]> {
     }
 }
 
-class PingReceiver extends Renderer<string[]> {
-    private value: string[];
-
+class PingReceiver extends OnCompleteRenderer<string[]> {
     public constructor(page: FullPage, operation: ICancellable) {
         super(page, operation, "ping");
     }
 
-    onNext(value: PartialResult<string[]>): void {
-        super.onNext(value);
-        if (value.data != null)
-            this.value = value.data;
-    }
-
-    onCompleted() {
-        super.finished();
-        if (this.value == null)
-            return;
+    run(value: string[]): void {
         this.page.reportError(this.value.toString());
     }
 }

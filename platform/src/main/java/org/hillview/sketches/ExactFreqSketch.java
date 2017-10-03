@@ -17,8 +17,9 @@
 
 package org.hillview.sketches;
 
-import org.eclipse.collections.api.block.HashingStrategy;
-import org.eclipse.collections.impl.map.strategy.mutable.UnifiedMapWithHashingStrategy;
+import it.unimi.dsi.fastutil.Hash;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenCustomHashMap;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.table.rows.BaseRowSnapshot;
 import org.hillview.table.rows.RowSnapshot;
@@ -38,7 +39,6 @@ import java.util.List;
  * exact frequencies.
  */
 public class ExactFreqSketch implements ISketch<ITable, FreqKList> {
-
     /**
      * The schema of the RowSnapshots
      */
@@ -75,9 +75,9 @@ public class ExactFreqSketch implements ISketch<ITable, FreqKList> {
 
     @Override
     public FreqKList create(ITable data) {
-        HashingStrategy<BaseRowSnapshot> hs = new HashingStrategy<BaseRowSnapshot>() {
+        Hash.Strategy<BaseRowSnapshot> hs = new Hash.Strategy<BaseRowSnapshot>() {
             @Override
-            public int computeHashCode(BaseRowSnapshot brs) {
+            public int hashCode(BaseRowSnapshot brs) {
                 if (brs instanceof VirtualRowSnapshot) {
                     return brs.hashCode();
                 } else if (brs instanceof RowSnapshot) {
@@ -86,12 +86,17 @@ public class ExactFreqSketch implements ISketch<ITable, FreqKList> {
             }
 
             @Override
-            public boolean equals(BaseRowSnapshot brs1, BaseRowSnapshot brs2) {
+            public boolean equals(BaseRowSnapshot brs1, @Nullable BaseRowSnapshot brs2) {
+                // brs2 is null because the hashmap explicitly calls with null
+                // even if null cannot be a key.
+                if (brs2 == null)
+                    return brs1 == null;
                 return brs1.compareForEquality(brs2, ExactFreqSketch.this.schema);
             }
         };
-        UnifiedMapWithHashingStrategy<BaseRowSnapshot, Integer> hMap = new
-                UnifiedMapWithHashingStrategy<BaseRowSnapshot, Integer>(hs);
+
+        Object2IntMap<BaseRowSnapshot> hMap = new
+                Object2IntOpenCustomHashMap<BaseRowSnapshot>(hs);
         this.rssList.forEach(rss -> hMap.put(rss, 0));
         IRowIterator rowIt = data.getRowIterator();
         int i = rowIt.getNextRow();
@@ -99,13 +104,13 @@ public class ExactFreqSketch implements ISketch<ITable, FreqKList> {
         while (i != -1) {
             vrs.setRow(i);
             if (hMap.containsKey(vrs)) {
-                int count = hMap.get(vrs);
+                int count = hMap.getInt(vrs);
                 hMap.put(vrs, count + 1);
             }
             i = rowIt.getNextRow();
         }
         HashMap<RowSnapshot, Integer> hm = new HashMap<RowSnapshot, Integer>(this.rssList.size());
-        this.rssList.forEach(rss -> hm.put(rss, hMap.get(rss)));
+        this.rssList.forEach(rss -> hm.put(rss, hMap.getInt(rss)));
         return new FreqKList(data.getNumOfRows(), this.epsilon, hm);
     }
 }
