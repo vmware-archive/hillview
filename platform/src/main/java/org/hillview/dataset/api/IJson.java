@@ -61,7 +61,7 @@ public interface IJson extends Serializable {
             .registerTypeAdapter(Schema.class, new Schema.Serializer())
             .registerTypeAdapter(Schema.class, new Schema.Deserializer())
             .registerTypeAdapter(NextKList.class, new NextKSerializer())
-            .registerTypeAdapter(LocalDateTime.class, new DateSerializer())
+            .registerTypeAdapter(Instant.class, new DateSerializer())
             .registerTypeAdapter(HostAndPort.class, new ClusterDescription.HostAndPortSerializer())
             .registerTypeAdapter(HostAndPort.class, new ClusterDescription.HostAndPortDeserializer());
     Gson gsonInstance = builder.serializeNulls().create();

@@ -75,7 +75,6 @@ class ReceiveCategory extends OnCompleteRenderer<IDistinctStrings[]> {
     }
 
     public run(value: IDistinctStrings[]): void {
-        super.onCompleted();
         if (this.columns.length != value.length)
             throw "Required " + this.columns.length + " got " + value.length;
         for (let i=0; i < value.length; i++) {
