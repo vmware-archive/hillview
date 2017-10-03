@@ -27,7 +27,7 @@ import org.hillview.table.api.ITable;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class BasicStatSketchTest {
+public class BasicStatSketchTest extends BaseTest {
     @Test
     public void StatSketchTest() {
         final int numCols = 1;

@@ -43,7 +43,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public class CsvReaderTest {
+public class CsvReaderTest extends BaseTest {
     private static final String dataFolder = "../data";
     private static final String csvFile = "On_Time_Sample.csv";
     private static final String schemaFile = "On_Time.schema";

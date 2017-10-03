@@ -34,7 +34,7 @@ import javax.annotation.Nullable;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class VirtualRowSnapshotTest {
+public class VirtualRowSnapshotTest extends BaseTest {
     public void testSnapshots(ITable data) {
         VirtualRowSnapshot vrs = new VirtualRowSnapshot(data);
         IRowIterator rowIt = data.getRowIterator();

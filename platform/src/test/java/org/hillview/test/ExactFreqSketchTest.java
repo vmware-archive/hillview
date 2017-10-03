@@ -34,7 +34,7 @@ import java.util.List;
 import static org.junit.Assert.assertTrue;
 
 
-public class ExactFreqSketchTest {
+public class ExactFreqSketchTest extends BaseTest {
     @SuppressWarnings("SuspiciousMethodCalls")
     // Idea is complaining about the hMap.get calls below,
     // but it also complains if I add explicit casts.

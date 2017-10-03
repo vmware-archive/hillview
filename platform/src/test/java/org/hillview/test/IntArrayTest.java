@@ -32,7 +32,7 @@ import static org.junit.Assert.*;
 /**
  * Test for IntArrayColumn class
  */
-public class IntArrayTest {
+public class IntArrayTest extends BaseTest {
     @Test
     public void testRandArray(){
         final int size = 1000;

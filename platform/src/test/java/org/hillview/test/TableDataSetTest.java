@@ -36,7 +36,7 @@ import java.util.ArrayList;
 
 import static junit.framework.TestCase.assertTrue;
 
-public class TableDataSetTest {
+public class TableDataSetTest extends BaseTest {
     @Test
     public void localDataSetTest() {
         final int numCols = 3;

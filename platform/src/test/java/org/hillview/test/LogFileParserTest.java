@@ -29,18 +29,21 @@ import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-public class LogFileParserTest {
+public class LogFileParserTest extends BaseTest {
     @Test
     public void parseLogLines() throws IOException {
         String logFileContents = String.join("\n",
-                "2017-09-29 23:03:53.176 [main] INFO Hillview - Using 3 processors",
-                "2017-09-29 23:03:53.586 [main] INFO Hillview - Inserting dataset 1",
-                "2017-09-29 23:03:53.587 [main] INFO Hillview - Created HillviewServer",
-                "2017-09-29 23:04:30.612 [pool-1-thread-1] INFO Hillview - Current directory is: " +
-                "/home/mbudiu/git/hillview/platform",
-                "2017-09-29 23:04:30.677 [pool-1-thread-1] INFO Hillview - org.hillview.dataset" +
-                ".LocalDataSet(0)@ubuntu:org.hillview.dataset.api.Empty@15476baf:Starting flatMap" +
-                        " [org.hillview.maps.FindCsvFileMapper]");
+                "2017-10-03 13:41:52.931 [main] INFO Hillview - ubuntu,org.hillview.dataset" +
+                        ".LocalDataSet,<clinit>,Detect CPUs,Using 3 processors",
+                "2017-10-03 13:41:52.937 [main] INFO Hillview - ubuntu,org.hillview.dataset" +
+                        ".ParallelDataSet,sketch,Invoked sketch,target=ParallelDataSet of size 3",
+                "2017-10-03 13:41:53.024 [pool-1-thread-2] INFO Hillview - ubuntu,org.hillview" +
+                        ".dataset.LocalDataSet,lambda$sketch$4,Starting sketch,org.hillview.sketches.SampleQuantileSketch",
+                "2017-10-03 13:41:53.024 [pool-1-thread-1] INFO Hillview - ubuntu,org.hillview" +
+                        ".dataset.LocalDataSet,lambda$sketch$4,Starting sketch,org.hillview.sketches.SampleQuantileSketch",
+                "2017-10-03 13:41:53.032 [pool-1-thread-3] INFO Hillview - ubuntu,org.hillview" +
+                        ".dataset.LocalDataSet,lambda$sketch$4,Starting sketch,org.hillview.sketches.SampleQuantileSketch"
+        );
 
         File f = File.createTempFile("tmp", null, new File("."));
         f.deleteOnExit();
@@ -51,6 +54,6 @@ public class LogFileParserTest {
         Path path = Paths.get(".", f.getName());
         ITable table = HillviewLogs.parseLogFile(path);
         Converters.checkNull(table);
-        Assert.assertEquals(table.toString(), "Table[6x5]");
+        Assert.assertEquals(table.toString(), "Table[9x5]");
     }
 }

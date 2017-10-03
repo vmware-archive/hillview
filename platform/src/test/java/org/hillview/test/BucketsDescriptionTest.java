@@ -25,7 +25,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 
-public class BucketsDescriptionTest {
+public class BucketsDescriptionTest extends BaseTest {
     @Test
     public void testEqSize() throws Exception {
         BucketsDescriptionEqSize bdEqSize = new BucketsDescriptionEqSize(0.5, 100.5, 100);

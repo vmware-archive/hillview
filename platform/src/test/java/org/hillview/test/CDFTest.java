@@ -28,7 +28,7 @@ import static org.hillview.utils.TestTables.getIntTable;
 /**
  * Test class for performance profiling of histogram and CDF
  */
-public class CDFTest {
+public class CDFTest extends BaseTest {
     private final BasicColStats colStat;
     private final LocalDataSet<ITable> dataSet;
     private final String colName;

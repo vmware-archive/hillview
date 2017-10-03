@@ -31,7 +31,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 
-public class HLLTest {
+public class HLLTest extends BaseTest {
     @Test
     public void testHLL() {
         final int size = 2000000;

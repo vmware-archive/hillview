@@ -87,11 +87,11 @@
             <artifactId>grpc-stub</artifactId>
             <version>1.2.0</version>
         </dependency>
-        <!-- Used for serialization utils -->
+        <!-- Used for serialization utils and string quoting -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-            <version>3.5</version>
+            <version>3.6</version>
         </dependency>
         <!-- Junit for testing -->
         <dependency>

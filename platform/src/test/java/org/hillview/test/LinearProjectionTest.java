@@ -36,8 +36,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @SuppressWarnings("ConstantConditions")
-public class LinearProjectionTest {
-
+public class LinearProjectionTest extends BaseTest {
     @Test
     public void testConversions() {
         int cols = 20;

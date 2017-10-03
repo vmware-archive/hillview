@@ -17,7 +17,7 @@
 
 package org.hillview.dataset.api;
 
-import org.hillview.utils.HillviewLogging;
+import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Utilities;
 
 /**
@@ -43,15 +43,7 @@ public abstract class BaseDataSet<T> implements IDataSet<T> {
      * over each stream element.
      */
     protected <S> S logPipe(S data, String message) {
-        this.log(message);
+        HillviewLogger.instance.info("logPipe", "{0}:{1}", this.toString(), message);
         return data;
-    }
-
-    protected void log(String message) {
-        HillviewLogging.logger().info(this.toString() + ":" + message);
-    }
-
-    protected void log(String format, Object... values) {
-        HillviewLogging.logger().info("{}" + format, this.toString() + ":", values);
     }
 }

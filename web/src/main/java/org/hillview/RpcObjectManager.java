@@ -17,7 +17,7 @@
 
 package org.hillview;
 
-import org.hillview.utils.HillviewLogging;
+import org.hillview.utils.HillviewLogger;
 import rx.Observer;
 import rx.Subscription;
 
@@ -85,14 +85,14 @@ public final class RpcObjectManager {
         if (subscription.isUnsubscribed())
             // The computation may have already finished by the time we get here!
             return;
-        HillviewLogging.logger().info("Saving subscription {}", this.toString());
+        HillviewLogger.instance.info("Saving subscription", "{0}", this.toString());
         if (this.sessionSubscription.get(session) != null)
             throw new RuntimeException("Subscription already active on this context");
         this.sessionSubscription.put(session, subscription);
     }
 
     synchronized void removeSubscription(Session session) {
-        HillviewLogging.logger().info("Removing subscription {}", this.toString());
+        HillviewLogger.instance.info("Removing subscription", "{0}", this.toString());
         this.sessionSubscription.remove(session);
     }
 
@@ -109,14 +109,14 @@ public final class RpcObjectManager {
     synchronized void addObject(RpcTarget object) {
         if (this.objects.containsKey(object.objectId))
             throw new RuntimeException("Object with id " + object.objectId + " already in map");
-        HillviewLogging.logger().info("Object {} generated from {}", object.objectId, object.computation);
+        HillviewLogger.instance.info("Object generated", "{0} from {1}", object.objectId, object.computation);
         this.generator.put(object.objectId, object.computation);
-        HillviewLogging.logger().info("Inserting targetId {}", object.toString());
+        HillviewLogger.instance.info("Inserting targetId", "{0}", object.toString());
         this.objects.put(object.objectId, object);
     }
 
     synchronized @Nullable RpcTarget getObject(String id) {
-        HillviewLogging.logger().info("Getting object {}", id);
+        HillviewLogger.instance.info("Getting object", "{0}", id);
         return this.objects.get(id);
     }
 
@@ -147,15 +147,16 @@ public final class RpcObjectManager {
      * @param toNotify An observert that is notified when the object is available.
      */
     private void rebuild(String id, Observer<RpcTarget> toNotify) {
-        HillviewLogging.logger().info("Attempt to reconstruct {}", id);
+        HillviewLogger.instance.info("Attempt to reconstruct", "{0}", id);
         HillviewComputation computation = this.generator.get(id);
         if (computation != null) {
             // The following may trigger a recursive reconstruction.
-            HillviewLogging.logger().info("Located computation; replaying {}", computation);
+            HillviewLogger.instance.info("Replaying", "{0}", computation);
             computation.replay(toNotify);
         } else {
-            HillviewLogging.logger().warn("Could not locate computation for {}", id);
-            toNotify.onError(new RuntimeException("Cannot reconstruct " + id));
+            Exception ex = new RuntimeException("Cannot reconstruct " + id);
+            HillviewLogger.instance.error("Could not locate computation", ex);
+            toNotify.onError(ex);
         }
     }
 

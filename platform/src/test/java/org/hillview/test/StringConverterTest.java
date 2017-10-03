@@ -22,7 +22,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class StringConverterTest {
+public class StringConverterTest extends BaseTest {
     private final ExplicitStringConverter converter;
 
     public StringConverterTest() {

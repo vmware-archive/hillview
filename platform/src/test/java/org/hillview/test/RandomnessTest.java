@@ -22,7 +22,7 @@ import org.junit.Test;
 import java.util.Random;
 
 
-public class RandomnessTest {
+public class RandomnessTest extends BaseTest {
     private final Random randomPRG = new Random();
     private final MersenneTwister MT_PRG = new MersenneTwister();
 

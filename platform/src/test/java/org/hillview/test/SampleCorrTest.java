@@ -28,8 +28,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SampleCorrTest {
-
+public class SampleCorrTest extends BaseTest {
     @Test
     public void SampleCorrTest1() {
         int size = 40000;

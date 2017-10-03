@@ -36,7 +36,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-public class NextKSketchTest {
+public class NextKSketchTest extends BaseTest {
     @Test
     public void testTopK1() {
         final int numCols = 2;

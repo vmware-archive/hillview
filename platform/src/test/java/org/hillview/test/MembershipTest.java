@@ -30,7 +30,7 @@ import static junit.framework.TestCase.assertTrue;
 /* Tests for the three Membership Classes:
  * FullMembership, LazyMembership, SparseMembership
  */
-public class MembershipTest {
+public class MembershipTest extends BaseTest {
     private final int size = 10;
 
     @Test

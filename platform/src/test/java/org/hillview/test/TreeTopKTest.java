@@ -23,7 +23,7 @@ import org.junit.Test;
 /**
  * Tests for TreeMap implementation f TopK.
  */
-public class TreeTopKTest {
+public class TreeTopKTest extends BaseTest {
     private final int maxSize = 10;
     public final int inpSize = 1000;
     private final TreeTopK<Integer> myTree = new TreeTopK<Integer>(this.maxSize, Integer::compare);

@@ -25,6 +25,7 @@ platform/platform.iml
 web/web.iml
 
 hillview.log
+test.log
 out
 apache-tomcat-*
 web/classes

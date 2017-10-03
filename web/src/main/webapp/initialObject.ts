@@ -74,7 +74,8 @@ class LogFileReceiver extends OnCompleteRenderer<string> {
 
     public run(objId: string): void {
         let fn = new RemoteObject(objId);
-        // TODO
-        //fn.loadFiles(this.page, this.operation);
+        let rr = fn.createRpcRequest("loadTable", null);
+        let observer = new RemoteTableReceiver(this.page, rr);
+        rr.invoke(observer);
     }
 }

@@ -34,7 +34,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class PCATest {
+public class PCATest extends BaseTest {
     @Test
     public void testLinearDataset() {
         ITable table = TestTables.getLinearTable(10000, 30);

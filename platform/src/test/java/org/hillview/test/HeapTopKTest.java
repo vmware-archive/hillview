@@ -24,7 +24,7 @@ import org.junit.Test;
 /**
  * Tests for HashMap Implementation of TopK
  */
-public class HeapTopKTest {
+public class HeapTopKTest extends BaseTest {
     private final int maxSize = 10;
     private final HeapTopK<Integer> myHeap = new HeapTopK<Integer>(this.maxSize, Integer::compare);
 

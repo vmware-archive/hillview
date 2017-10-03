@@ -26,7 +26,7 @@ import org.junit.Test;
 /*
  * Test for StringArrayColumn class.
 */
-public class StringListTest {
+public class StringListTest extends BaseTest {
     private final ColumnDescription desc = new ColumnDescription("test", ContentsKind.String, true);
 
     @Test

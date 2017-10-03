@@ -33,7 +33,7 @@ import org.junit.Test;
 
 import java.util.*;
 
-public class CorrelationTest {
+public class CorrelationTest extends BaseTest {
     public CorrelationTest() {}
 
     @Test

@@ -23,9 +23,7 @@ import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
 
-
-public class IntSetTest {
-
+public class IntSetTest extends BaseTest {
     @Test
     public void TestIntSet() {
         final int size = 1000000;

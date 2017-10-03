@@ -17,20 +17,23 @@
 
 package org.hillview;
 
-import org.hillview.sketches.FreqKList;
-import org.hillview.utils.HillviewLogger;
+import org.hillview.dataset.api.IDataSet;
+import org.hillview.maps.LoadLogFileMapper;
 
 /**
- * This object has no RPC methods per se, but it can be used
- * as an argument for other RPC methods.
+ * This is an RpcTarget object which stores a file name to load as a log.
  */
-final class HeavyHittersTarget extends RpcTarget {
-    final FreqKList heavyHitters;
+public class LogFileTarget extends RpcTarget {
+    private final IDataSet<String> files;
 
-    HeavyHittersTarget(final FreqKList heavyHitters, final HillviewComputation computation) {
+    LogFileTarget(IDataSet<String> files, HillviewComputation computation) {
         super(computation);
-        this.heavyHitters = heavyHitters;
-        HillviewLogger.instance.info("Heavy hitters", "{0}", heavyHitters.getDistinctRowCount());
+        this.files = files;
         this.registerObject();
+    }
+
+    @HillviewRpc
+    public void loadTable(RpcRequest request, RpcRequestContext context) {
+        this.runMap(this.files, new LoadLogFileMapper(), TableTarget::new, request, context);
     }
 }

@@ -52,7 +52,7 @@ public class Utilities {
             java.net.InetAddress localMachine = java.net.InetAddress.getLocalHost();
             return localMachine.getHostName();
         } catch (java.net.UnknownHostException e) {
-            HillviewLogging.logger().error("Cannot get host name");
+            HillviewLogger.instance.error("Cannot get host name");
             return "?";
         }
     }

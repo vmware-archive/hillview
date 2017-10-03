@@ -18,7 +18,7 @@
 package org.hillview.dataset;
 
 import org.hillview.dataset.api.*;
-import org.hillview.utils.HillviewLogging;
+import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.JsonList;
 import rx.Observable;
 import rx.Scheduler;
@@ -52,7 +52,7 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
 
     static {
         int cpuCount = Runtime.getRuntime().availableProcessors();
-        HillviewLogging.logger().info("Using {} processors", cpuCount);
+        HillviewLogger.instance.info("Detect CPUs", "Using {0} processors", cpuCount);
         ExecutorService executor = Executors.newFixedThreadPool(cpuCount);
         scheduler = Schedulers.from(executor);
     }
@@ -105,9 +105,9 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
         // Actual map computation performed lazily when observable is subscribed to.
         final Callable<IDataSet<S>> callable = () -> {
             try {
-                this.log("Starting map {}", mapper.asString());
+                HillviewLogger.instance.info("Starting map", "{0}", mapper.asString());
                 S result = mapper.apply(LocalDataSet.this.data);
-                this.log("Completed map {}", mapper.asString());
+                HillviewLogger.instance.info("Completed map", "{0}", mapper.asString());
                 return new LocalDataSet<S>(result);
             } catch (final Throwable t) {
                 throw new Exception(t);
@@ -127,9 +127,9 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
                 List<S> list = mapper.apply(LocalDataSet.this.data);
                 List<IDataSet<S>> locals = new ArrayList<IDataSet<S>>();
                 for (S s : list) {
-                    this.log("Starting flatMap {}", mapper.asString());
+                    HillviewLogger.instance.info("Starting flatMap", "{0}", mapper.asString());
                     IDataSet<S> ds = new LocalDataSet<S>(s);
-                    this.log("Completed flatMap {}", mapper.asString());
+                    HillviewLogger.instance.info("Completed flatMap", "{0}", mapper.asString());
                     locals.add(ds);
                 }
                 return (IDataSet<S>) new ParallelDataSet<S>(locals);
@@ -157,17 +157,18 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
     @Override
     public Observable<PartialResult<JsonList<ControlMessage.Status>>> manage(ControlMessage message) {
         final Callable<JsonList<ControlMessage.Status>> callable = () -> {
-            this.log("Starting manage {}", message.toString());
+            HillviewLogger.instance.info("Starting manage", "{0}", message.toString());
             ControlMessage.Status status;
             try {
                 status = message.localAction(this);
             } catch (final Throwable t) {
                 status = new ControlMessage.Status("Exception", t);
+                HillviewLogger.instance.error("Exception during manage", t);
             }
             JsonList<ControlMessage.Status> result = new JsonList<ControlMessage.Status>();
             if (status != null)
                 result.add(status);
-            this.log("Completed manage {}", message.toString());
+            HillviewLogger.instance.info("Completed manage", "{0}", message.toString());
             return result;
         };
         final Observable<JsonList<ControlMessage.Status>> executed = Observable.fromCallable(callable);
@@ -181,9 +182,9 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
         // Actual computation performed lazily when observable is subscribed to.
         final Callable<R> callable = () -> {
             try {
-                this.log("Starting sketch {}", sketch.asString());
+                HillviewLogger.instance.info("Starting sketch", "{0}", sketch.asString());
                 R result = sketch.create(this.data);
-                this.log("Completed sketch {}", sketch.asString());
+                HillviewLogger.instance.info("Completed sketch", "{0}", sketch.asString());
                 return result;
             } catch (final Throwable t) {
                 throw new Exception(t);

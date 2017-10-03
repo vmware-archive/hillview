@@ -23,7 +23,7 @@ import org.hillview.table.api.ContentsKind;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-public class IntListTest {
+public class IntListTest extends BaseTest {
     private final ColumnDescription desc = new ColumnDescription("test", ContentsKind.Integer, true);
 
     /* Test for constructor using length and no arrays*/

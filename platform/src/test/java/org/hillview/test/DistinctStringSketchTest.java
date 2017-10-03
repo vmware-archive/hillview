@@ -29,7 +29,7 @@ import org.hillview.table.api.ITable;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class DistinctStringSketchTest {
+public class DistinctStringSketchTest extends BaseTest {
     private SemiExplicitConverter getStringConverter(DistinctStrings ds) {
         SemiExplicitConverter converter = new SemiExplicitConverter();
         int i = 0;

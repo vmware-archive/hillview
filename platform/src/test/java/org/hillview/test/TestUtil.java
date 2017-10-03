@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.function.Consumer;
 
 class TestUtil {
-
     private static void Percentiles(final long[] R1) {
         Arrays.sort(R1);
         System.out.println("Percentiles: 0,10,20,50,90,99 ");

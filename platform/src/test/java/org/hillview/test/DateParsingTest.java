@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import java.time.*;
 
-public class DateParsingTest {
+public class DateParsingTest extends BaseTest {
     @Test
     public void parseDates() {
         DateParsing parsing = new DateParsing("2017-01-01");
