@@ -33,8 +33,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class LAMPMapTest {
-
+public class LAMPMapTest extends BaseTest {
     private void testLAMPMap(ITable table, int numSamples, int fragmentSize) {
         IDataSet<ITable> dataset = TestTables.makeParallel(table, fragmentSize);
         List<String> colNames = TestUtils.getNumericColumnNames(table);

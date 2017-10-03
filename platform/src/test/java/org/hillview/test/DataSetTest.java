@@ -30,7 +30,7 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DataSetTest {
+public class DataSetTest extends BaseTest {
     private class Increment implements IMap<Integer, Integer> {
         @Override
         public Integer apply(final @Nullable Integer data) {

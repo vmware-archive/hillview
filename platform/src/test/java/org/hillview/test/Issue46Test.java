@@ -28,7 +28,7 @@ import org.junit.Test;
 
 import java.util.List;
 
-public class Issue46Test {
+public class Issue46Test extends BaseTest {
     @Test
     public void createBug() {
         // Creating Int Table

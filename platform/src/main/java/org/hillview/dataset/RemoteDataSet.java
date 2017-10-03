@@ -29,7 +29,7 @@ import org.hillview.pb.HillviewServerGrpc;
 import org.hillview.pb.PartialResponse;
 import org.hillview.dataset.remoting.*;
 import org.hillview.utils.Converters;
-import org.hillview.utils.HillviewLogging;
+import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.JsonList;
 import rx.Observable;
 import rx.subjects.PublishSubject;
@@ -225,7 +225,7 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
 
         @Override
         public void onError(final Throwable throwable) {
-            HillviewLogging.logger().error("Caught exception", throwable);
+            HillviewLogger.instance.error("Caught exception", throwable);
             throwable.printStackTrace();
             this.subject.onError(throwable);
         }

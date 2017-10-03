@@ -17,7 +17,7 @@
 
 package org.hillview;
 import org.hillview.utils.Converters;
-import org.hillview.utils.HillviewLogging;
+import org.hillview.utils.HillviewLogger;
 import rx.Observer;
 
 import java.io.Serializable;
@@ -59,7 +59,7 @@ public class HillviewComputation implements Serializable {
         this.onCreate = new ArrayList<Observer<RpcTarget>>();
     }
 
-    synchronized void registerOnCreate(Observer<RpcTarget> toNotify) {
+    private synchronized void registerOnCreate(Observer<RpcTarget> toNotify) {
         // If the object already exists notify right away
         // Hopefully there is no race which could lose a notification this way.
         RpcTarget target = RpcObjectManager.instance.getObject(this.resultId);
@@ -79,7 +79,7 @@ public class HillviewComputation implements Serializable {
     }
 
     void replay(Observer<RpcTarget> toNotify) {
-        HillviewLogging.logger().info("Attempt to replay {}", this);
+        HillviewLogger.instance.info("Attempt to replay", "{0}", this);
         // This observer is notified when the source object has been recreated.
         Observer<RpcTarget> sourceNotify = new SingleObserver<RpcTarget>() {
             @Override

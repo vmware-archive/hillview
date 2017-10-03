@@ -22,8 +22,7 @@ import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.remoting.HillviewServer;
-import org.hillview.utils.HillviewLogging;
-import org.slf4j.Logger;
+import org.hillview.utils.HillviewLogger;
 
 /**
  * Brings up a single instance of a HillviewServer
@@ -40,16 +39,15 @@ public class HillviewServerRunner {
             throw new RuntimeException("Incorrect arguments");
         }
 
-        HillviewLogging.initialize("hillview.log");
-        Logger logger = HillviewLogging.logger();
+        HillviewLogger.initialize("hillview.log");
         try {
             final IDataSet<Empty> dataSet = new LocalDataSet<Empty>(Empty.getInstance());
             final String hostnameAndPort = args[0];
             final HillviewServer server = new HillviewServer(HostAndPort.fromString(hostnameAndPort), dataSet);
-            logger.info("Created HillviewServer");
+            HillviewLogger.instance.info("Created HillviewServer");
             Thread.currentThread().join();
         } catch (Exception ex) {
-            logger.error("Caught exception", ex);
+            HillviewLogger.instance.error("Caught exception", ex);
         }
     }
 }

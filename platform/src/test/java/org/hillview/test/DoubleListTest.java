@@ -24,7 +24,7 @@ import org.junit.Test;
 import static java.lang.Math.sqrt;
 import static org.junit.Assert.*;
 
-public class DoubleListTest {
+public class DoubleListTest extends BaseTest {
     private final ColumnDescription desc = new ColumnDescription("test", ContentsKind.Double, true);
 
     /* Test for constructor using length and no arrays*/

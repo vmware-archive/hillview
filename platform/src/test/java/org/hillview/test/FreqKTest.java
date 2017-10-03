@@ -37,8 +37,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertTrue;
 
-public class FreqKTest {
-
+public class FreqKTest extends BaseTest {
     private void filterTest(@Nullable FreqKList fkList) {
         Converters.checkNull(fkList);
         fkList.filter(Boolean.TRUE);
@@ -66,8 +65,6 @@ public class FreqKTest {
         FreqKList fkList= fk.create(leftTable);
         filterTest(fkList);
     }
-
-
 
     @Test
     public void testTopK2() {

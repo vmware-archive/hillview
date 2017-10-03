@@ -47,8 +47,6 @@ public abstract class TextFileReader {
         this.currentToken = null;
     }
 
-    // May return null when an error occurs.
-    @Nullable
     public abstract ITable read() throws IOException;
 
     protected void append(String[] data) {

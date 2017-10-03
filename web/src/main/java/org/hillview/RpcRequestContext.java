@@ -17,7 +17,7 @@
 
 package org.hillview;
 
-import org.hillview.utils.HillviewLogging;
+import org.hillview.utils.HillviewLogger;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
@@ -57,7 +57,7 @@ class RpcRequestContext {
         if (this.session == null)
             return null;
         if (!this.session.isOpen()) {
-            HillviewLogging.logger().warn("Session already closed");
+            HillviewLogger.instance.warn("Session already closed");
             return null;
         }
         return this.session;

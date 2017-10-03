@@ -6,7 +6,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,23 +15,21 @@
  * limitations under the License.
  */
 
-package org.hillview.maps;
+package org.hillview;
 
-import org.hillview.dataset.api.IMap;
-import org.hillview.table.api.ITable;
-import org.hillview.utils.CsvFileObject;
 import org.hillview.utils.HillviewLogger;
 
-import java.io.IOException;
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
 
-public class LoadCsvFileMapper implements IMap<CsvFileObject, ITable> {
+public class WebServerInitializer implements ServletContextListener {
     @Override
-    public ITable apply(CsvFileObject csvFileObject) {
-        try {
-            HillviewLogger.instance.info("Loading CSV file", "{0}", csvFileObject);
-            return csvFileObject.loadTable();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public void contextDestroyed(ServletContextEvent arg) {}
+
+    // This is run before the web application is started.
+    @Override
+    public void contextInitialized(ServletContextEvent arg) {
+        HillviewLogger.initialize("hillview-web.log");
+        HillviewLogger.instance.info("Server started");
     }
 }

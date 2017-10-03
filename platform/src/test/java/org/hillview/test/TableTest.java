@@ -33,7 +33,7 @@ import static org.hillview.test.DoubleArrayTest.generateDoubleArray;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class TableTest {
+public class TableTest extends BaseTest {
     @Test
     public void getTableTest() {
         final SmallTable leftTable = TestTables.getIntTable(100, 2);

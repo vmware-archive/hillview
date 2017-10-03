@@ -15,23 +15,21 @@
  * limitations under the License.
  */
 
-package org.hillview.maps;
+package org.hillview.test;
 
-import org.hillview.dataset.api.IMap;
-import org.hillview.table.api.ITable;
-import org.hillview.utils.CsvFileObject;
 import org.hillview.utils.HillviewLogger;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
 
-import java.io.IOException;
-
-public class LoadCsvFileMapper implements IMap<CsvFileObject, ITable> {
-    @Override
-    public ITable apply(CsvFileObject csvFileObject) {
-        try {
-            HillviewLogger.instance.info("Loading CSV file", "{0}", csvFileObject);
-            return csvFileObject.loadTable();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+/**
+ * Base test class, used for global setup and teardown.
+ */
+@Ignore
+public class BaseTest {
+    @BeforeClass
+    public static void setup() {
+        //noinspection ConstantConditions
+        if (HillviewLogger.instance == null)
+            HillviewLogger.initialize("test.log");
     }
 }

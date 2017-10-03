@@ -27,7 +27,6 @@ import org.hillview.utils.Converters;
 import java.io.Serializable;
 import java.lang.reflect.Type;
 import java.time.Instant;
-import java.time.LocalDateTime;
 
 // Unfortunately this module introduces many circular dependences, because it has
 // to register various type adaptors.

@@ -269,7 +269,7 @@ class ControlPointsView extends RemoteTableObjectView {
                             .attr("cx", clamp(mouse[0], this.minX, this.minX + range))
                             .attr("cy", clamp(mouse[1], this.minY, this.minY + range));
                     })
-                    .on("end", (p: Point2D, i: number, circles: Element[]) => {
+                    .on("end", (/*p: Point2D, i: number, circles: Element[]*/) => {
                         this.applyLAMP();
                     })
                 )

@@ -35,7 +35,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-public class HistogramTest {
+public class HistogramTest extends BaseTest {
     long time(Runnable runnable) {
         //System.gc();
         long start = System.currentTimeMillis();

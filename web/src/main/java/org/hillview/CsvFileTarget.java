@@ -21,10 +21,10 @@ import org.hillview.dataset.api.IDataSet;
 import org.hillview.maps.LoadCsvFileMapper;
 import org.hillview.utils.CsvFileObject;
 
-public final class FileNamesTarget extends RpcTarget {
+public final class CsvFileTarget extends RpcTarget {
     private final IDataSet<CsvFileObject> files;
 
-    FileNamesTarget(IDataSet<CsvFileObject> files, HillviewComputation computation) {
+    CsvFileTarget(IDataSet<CsvFileObject> files, HillviewComputation computation) {
         super(computation);
         this.files = files;
         this.registerObject();
@@ -33,10 +33,5 @@ public final class FileNamesTarget extends RpcTarget {
     @HillviewRpc
     public void loadTable(RpcRequest request, RpcRequestContext context) {
         this.runMap(this.files, new LoadCsvFileMapper(), TableTarget::new, request, context);
-    }
-
-    @Override
-    public String toString() {
-        return "FileNamesTarget object, " + super.toString();
     }
 }

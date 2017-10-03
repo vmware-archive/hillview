@@ -24,7 +24,7 @@ import org.junit.Test;
 
 import java.util.function.Consumer;
 
-public class ColumnPerfTest {
+public class ColumnPerfTest extends BaseTest {
     @Test
     public void testColumnGetInt() {
         final IntArrayColumn col;

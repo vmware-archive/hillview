@@ -4,6 +4,7 @@
       <w>blas</w>
       <w>classname</w>
       <w>dest</w>
+      <w>dists</w>
       <w>eigen</w>
       <w>eigenvector</w>
       <w>eigenvectors</w>
@@ -11,7 +12,9 @@
       <w>gson</w>
       <w>hashmap</w>
       <w>hillview</w>
+      <w>hyperbox</w>
       <w>idempotence</w>
+      <w>ieee</w>
       <w>iter</w>
       <w>iterable</w>
       <w>jblas</w>
@@ -25,6 +28,8 @@
       <w>protoc</w>
       <w>repr</w>
       <w>retval</w>
+      <w>teardown</w>
+      <w>tvcg</w>
       <w>unsubscription</w>
       <w>vrops</w>
       <w>yossarian</w>

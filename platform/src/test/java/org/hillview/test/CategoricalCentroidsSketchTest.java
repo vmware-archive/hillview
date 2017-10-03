@@ -27,7 +27,7 @@ import org.junit.Test;
 
 import java.util.*;
 
-public class CategoricalCentroidsSketchTest {
+public class CategoricalCentroidsSketchTest extends BaseTest {
     @Test
     public void testFruits() {
         ITable table = TestTables.getCentroidTestTable();

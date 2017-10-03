@@ -106,15 +106,13 @@ public class DateParsing {
 
         for (boolean b : asDate) {
             this.parseAsDate = b;
-            for (@Nullable DateTimeFormatter d : toTry) {
+            for (DateTimeFormatter d : toTry) {
                 try {
                     if (b)
                         LocalDate.parse(s, d);
                     else
                         LocalDateTime.parse(s, d);
-
-                    HillviewLogging.logger().info(
-                            "Guessed date format {}", d);
+                    HillviewLogger.instance.info("Guessed date format", "{0}", d);
                     this.parserFormatter = d;
                     return;
                 } catch (DateTimeParseException ex) {
@@ -129,8 +127,7 @@ public class DateParsing {
             if (s.toLowerCase().matches(regexp)) {
                 String format = DATE_FORMAT_REGEXPS.get(regexp);
                 this.parserFormatter = DateTimeFormatter.ofPattern(format);
-                HillviewLogging.logger().info(
-                        "Guessed date format {}", regexp);
+                HillviewLogger.instance.info("Guessed date format", "{0}", regexp);
                 return;
             }
         }

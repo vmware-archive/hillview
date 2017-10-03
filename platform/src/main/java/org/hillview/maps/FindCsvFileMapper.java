@@ -20,7 +20,7 @@ package org.hillview.maps;
 import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IMap;
 import org.hillview.utils.CsvFileObject;
-import org.hillview.utils.HillviewLogging;
+import org.hillview.utils.HillviewLogger;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -66,7 +66,7 @@ public class FindCsvFileMapper implements IMap<Empty, List<CsvFileObject>> {
     public List<CsvFileObject> apply(Empty empty) {
         Path currentRelativePath = Paths.get("");
         String cwd = currentRelativePath.toAbsolutePath().toString();
-        HillviewLogging.logger().info("Current directory is: " + cwd);
+        HillviewLogger.instance.info("Current directory", "{0}", cwd);
 
         Path folder = Paths.get(this.folder);
         Path schemaPath = this.schemaFileName != null ?

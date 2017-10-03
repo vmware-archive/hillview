@@ -33,7 +33,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class JsonTest {
+public class JsonTest extends BaseTest {
     @Test
     public void convert() {
         ColumnDescription cd0 = new ColumnDescription("Age", ContentsKind.Integer, false);

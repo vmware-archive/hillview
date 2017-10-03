@@ -28,8 +28,7 @@ import org.junit.Test;
 
 import java.util.Arrays;
 
-public class SampleQuantileSketchTest {
-
+public class SampleQuantileSketchTest extends BaseTest {
     @Test
     public void SQSTest1() {
         final int numCols = 2;

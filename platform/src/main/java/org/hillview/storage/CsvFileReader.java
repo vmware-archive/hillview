@@ -27,7 +27,7 @@ import org.hillview.table.Table;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
-import org.hillview.utils.HillviewLogging;
+import org.hillview.utils.HillviewLogger;
 
 import javax.annotation.Nullable;
 import java.io.FileReader;
@@ -81,7 +81,6 @@ public class CsvFileReader extends TextFileReader {
     }
 
     // May return null when an error occurs.
-    @Nullable
     public ITable read() throws IOException {
         if (this.configuration.schema != null)
             this.actualSchema = this.configuration.schema;
@@ -107,7 +106,7 @@ public class CsvFileReader extends TextFileReader {
                 if (line == null)
                     throw new RuntimeException("Missing header row " + this.filename.toString());
                 if (this.configuration.schema == null) {
-                    HillviewLogging.logger().info("Creating schema");
+                    HillviewLogger.instance.info("Creating schema");
                     this.actualSchema = new Schema();
                     int index = 0;
                     for (String col : line) {

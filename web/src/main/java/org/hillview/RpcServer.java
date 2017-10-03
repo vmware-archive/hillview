@@ -21,7 +21,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.internal.Streams;
 import com.google.gson.stream.JsonReader;
 import org.hillview.utils.Converters;
-import org.hillview.utils.HillviewLogging;
+import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Utilities;
 import rx.Observer;
 import rx.Subscription;
@@ -46,15 +46,17 @@ public final class RpcServer {
     @SuppressWarnings("unused")
     @OnOpen
     public void onOpen(Session session) {
-        HillviewLogging.logger().info("Server {} new connection with client: {}",
-                                    version, session.getId());
+        HillviewLogger.instance.info(
+                "New connection with client", "version {0} client {1}",
+                version, session.getId());
         RpcObjectManager.instance.addSession(session, null);
     }
 
     @SuppressWarnings("unused")
     @OnMessage
     public void onMessage(String message, Session session) {
-        HillviewLogging.logger().info("New message from Client [{}]: {}", session.getId(), message);
+        HillviewLogger.instance.info("New message from client",
+                "[{0}]: {1}", session.getId(), message);
         RpcRequest req;
         try {
             Reader reader = new StringReader(message);
@@ -64,7 +66,7 @@ public final class RpcServer {
             if (RpcObjectManager.instance.getTarget(session) != null)
                 throw new RuntimeException("Session already associated with a request!");
         } catch (Exception ex) {
-            HillviewLogging.logger().error("Error processing json: ", ex);
+            HillviewLogger.instance.error("Error processing json", ex);
             this.replyWithError(ex, session);
             return;
         }
@@ -78,12 +80,12 @@ public final class RpcServer {
             JsonElement json = reply.toJson();
             session.getBasicRemote().sendText(json.toString());
         } catch (Exception e) {
-            HillviewLogging.logger().error("Could not send reply", e);
+            HillviewLogger.instance.error("Could not send reply", e);
         }
     }
 
     private void execute(RpcRequest rpcRequest, RpcRequestContext context) {
-        HillviewLogging.logger().info("Executing {}", rpcRequest);
+        HillviewLogger.instance.info("Executing request", "{0}", rpcRequest);
         // Observable invoked when the source object has been obtained.
         Observer<RpcTarget> obs = new Observer<RpcTarget>() {
             @Override
@@ -91,7 +93,7 @@ public final class RpcServer {
 
             @Override
             public void onError(Throwable throwable) {
-                HillviewLogging.logger().error("Return exception", throwable);
+                HillviewLogger.instance.error("Return exception", throwable);
                 RpcReply reply = rpcRequest.createReply(throwable);
                 Session session = context.getSessionIfOpen();
                 if (session == null)
@@ -117,7 +119,7 @@ public final class RpcServer {
                 session.close();
             RpcObjectManager.instance.removeSession(session);
         } catch (Exception ex) {
-            HillviewLogging.logger().error("Error closing context", ex);
+            HillviewLogger.instance.error("Error closing context", ex);
         }
     }
 
@@ -133,23 +135,23 @@ public final class RpcServer {
     public void onClose(final Session session, final CloseReason reason) {
         Subscription sub = RpcObjectManager.instance.getSubscription(session);
         if (sub != null) {
-            HillviewLogging.logger().info("Unsubscribing {}", this.toString());
+            HillviewLogger.instance.info("Unsubscribing", "{0}", this.toString());
             sub.unsubscribe();
             RpcObjectManager.instance.removeSubscription(session);
         }
 
         if (reason.getCloseCode() != CloseReason.CloseCodes.NORMAL_CLOSURE)
-            HillviewLogging.logger().error("Close connection for client: {}, {}",
-                                         session.getId(), reason.toString());
+            HillviewLogger.instance.error("Close connection for client",
+                    "{0}, {1}", session.getId(), reason.toString());
         else
-            HillviewLogging.logger().info("Normal connection closing for client: {}",
-                                        session.getId());
+            HillviewLogger.instance.info("Normal connection closing for client",
+                    "{0}", session.getId());
         RpcObjectManager.instance.removeSession(session);
     }
 
     @SuppressWarnings("unused")
     @OnError
     public void onError(final Throwable exception, final Session unused) {
-        HillviewLogging.logger().error("Exception", exception);
+        HillviewLogger.instance.error("Exception", exception);
     }
 }

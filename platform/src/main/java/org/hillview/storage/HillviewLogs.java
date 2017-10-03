@@ -17,14 +17,13 @@
 
 package org.hillview.storage;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.Table;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.ITable;
-import org.hillview.utils.Utilities;
 
-import javax.annotation.Nullable;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -40,17 +39,21 @@ public class HillviewLogs {
     static final Pattern logFilePattern;
 
     static {
-        logFilePattern = Pattern.compile("^([^\\[]+)\\s+\\[([^\\]]+)\\]\\s+(\\w+)\\s+(\\w+)\\s+-\\s+(.*)$");
+        logFilePattern = Pattern.compile(
+                "^([^\\[]+)\\s+\\[([^\\]]+)\\]\\s+(\\w+)\\s+(\\w+)\\s+-" +
+                        "\\s+([^,]*),([^,]*),([^,]*),([^,]*),(.*)$");
         HillviewLogs.schema.append(new ColumnDescription("Time", ContentsKind.Date, false));
-        HillviewLogs.schema.append(new ColumnDescription("Machine", ContentsKind.Category, false));
         HillviewLogs.schema.append(new ColumnDescription("Thread", ContentsKind.Category, false));
         HillviewLogs.schema.append(new ColumnDescription("Severity", ContentsKind.Category, false));
         HillviewLogs.schema.append(new ColumnDescription("Log name", ContentsKind.Category, false));
-        HillviewLogs.schema.append(new ColumnDescription("Message", ContentsKind.String, false));
+        HillviewLogs.schema.append(new ColumnDescription("Machine", ContentsKind.Category, false));
+        HillviewLogs.schema.append(new ColumnDescription("Class", ContentsKind.Category, false));
+        HillviewLogs.schema.append(new ColumnDescription("Method", ContentsKind.Category, false));
+        HillviewLogs.schema.append(new ColumnDescription("Message", ContentsKind.Category, false));
+        HillviewLogs.schema.append(new ColumnDescription("Arguments", ContentsKind.String, false));
     }
 
     static class LogFileReader extends TextFileReader {
-        private final String machine = Utilities.getHostName();
         LogFileReader(final Path path) {
             super(path);
         }
@@ -59,12 +62,15 @@ public class HillviewLogs {
             Matcher m = logFilePattern.matcher(line);
             if (!m.find())
                 this.error("Could not parse line");
-            output[0] = m.group(1);
-            output[1] = this.machine;
-            output[2] = m.group(2);
-            output[3] = m.group(3);
-            output[4] = m.group(4);
-            output[5] = m.group(5);
+            output[0] = m.group(1); // Time
+            output[1] = m.group(2); // Thread
+            output[2] = m.group(3); // Severity
+            output[3] = m.group(4); // Log name
+            output[4] = m.group(5); // Machine
+            output[5] = m.group(6); // Class
+            output[6] = m.group(7); // Method
+            output[7] = m.group(8); // Method
+            output[8] = StringEscapeUtils.unescapeCsv(m.group(9)); // Arguments
         }
 
         @Override

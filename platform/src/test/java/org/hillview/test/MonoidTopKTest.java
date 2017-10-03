@@ -27,7 +27,7 @@ import java.util.SortedMap;
 import static org.junit.Assert.assertTrue;
 
 
-public class MonoidTopKTest {
+public class MonoidTopKTest extends BaseTest {
     private final int maxSize =1000;
     private int lSize;
     private int rSize;

@@ -24,7 +24,7 @@ import org.junit.Test;
 
 import java.sql.ResultSet;
 
-public class JdbcTest {
+public class JdbcTest extends BaseTest {
     @Test
     public void testJdbc() {
         JdbcConnectionInformation conn =

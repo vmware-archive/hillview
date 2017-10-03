@@ -30,7 +30,7 @@ import org.hillview.utils.TestTables;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class EqualityFilterTest {
+public class EqualityFilterTest extends BaseTest {
     @Test
     public void testFilterSmallTable() {
         // Make a small table

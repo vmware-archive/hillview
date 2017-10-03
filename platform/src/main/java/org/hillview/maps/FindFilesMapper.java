@@ -19,7 +19,7 @@ package org.hillview.maps;
 
 import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IMap;
-import org.hillview.utils.HillviewLogging;
+import org.hillview.utils.HillviewLogger;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -42,7 +42,7 @@ public class FindFilesMapper implements IMap<Empty, List<String>> {
     private final String fileNamePattern;
 
     /**
-     * Create an object to find and create CsvFileObjects.
+     * Create an object to find all file names that match the specification.
      * @param folder   Folder where files are sought.
      * @param maxCount Maximum number of files to find.  If 0 there is no limit.
      * @param fileNamePattern  Regex for file names to search.  If null all file names match.
@@ -58,7 +58,7 @@ public class FindFilesMapper implements IMap<Empty, List<String>> {
     public List<String> apply(Empty empty) {
         Path currentRelativePath = Paths.get("");
         String cwd = currentRelativePath.toAbsolutePath().toString();
-        HillviewLogging.logger().info("Current directory is: " + cwd);
+        HillviewLogger.instance.info("Current directory is", "{0}", cwd);
 
         Path folder = Paths.get(this.folder);
         Stream<Path> files;

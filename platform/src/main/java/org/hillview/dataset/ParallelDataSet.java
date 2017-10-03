@@ -19,7 +19,7 @@ package org.hillview.dataset;
 
 import org.hillview.dataset.api.*;
 import org.hillview.utils.Converters;
-import org.hillview.utils.HillviewLogging;
+import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.JsonList;
 import org.hillview.utils.JsonListMonoid;
 import rx.Observable;
@@ -124,7 +124,7 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
     @Override
     public <S> Observable<PartialResult<IDataSet<S>>> map(
              final IMap<T, S> mapper) {
-        HillviewLogging.logger().info("Invoked map on {}", this);
+        HillviewLogger.instance.info("Invoked map", "target={0}", this);
         final List<Observable<Pair<Integer, PartialResult<IDataSet<S>>>>> obs =
                 new ArrayList<Observable<Pair<Integer, PartialResult<IDataSet<S>>>>>(this.size());
         // We run the mapper over each child, and then we tag the results produced by
@@ -169,7 +169,7 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
 
     @Override
     public <S> Observable<PartialResult<IDataSet<S>>> flatMap(IMap<T, List<S>> mapper) {
-        HillviewLogging.logger().info("Invoked flatMap on {}", this);
+        HillviewLogger.instance.info("Invoked flatMap", "target={0}", this);
         final List<Observable<Pair<Integer, PartialResult<IDataSet<S>>>>> obs =
                 new ArrayList<Observable<Pair<Integer, PartialResult<IDataSet<S>>>>>(this.size());
         // We run the mapper over each child, and then we tag the results produced by
@@ -215,7 +215,7 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
     @Override
     public <S> Observable<PartialResult<IDataSet<Pair<T, S>>>> zip(
             final IDataSet<S> other) {
-        HillviewLogging.logger().info("Invoked zip on {}", this);
+        HillviewLogger.instance.info("Invoked zip", "target={0}", this);
         if (!(other instanceof ParallelDataSet<?>))
             throw new RuntimeException("Expected a ParallelDataSet " + other);
         final ParallelDataSet<S> os = (ParallelDataSet<S>)other;
@@ -263,7 +263,7 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
 
     @Override
     public Observable<PartialResult<JsonList<ControlMessage.Status>>> manage(ControlMessage message) {
-        HillviewLogging.logger().info("Invoked manage on {}", this);
+        HillviewLogger.instance.info("Invoked manage", "target={0}", this);
         List<Observable<PartialResult<JsonList<ControlMessage.Status>>>> obs =
                 new ArrayList<Observable<PartialResult<JsonList<ControlMessage.Status>>>>();
         final int mySize = this.size();
@@ -276,7 +276,7 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
         }
 
         final Callable<JsonList<ControlMessage.Status>> callable = () -> {
-            this.log("Starting manage {}", message.toString());
+            HillviewLogger.instance.info("Starting manage", "{0}", message.toString());
             ControlMessage.Status status;
             try {
                 status = message.parallelAction(this);
@@ -286,7 +286,7 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
             JsonList<ControlMessage.Status> result = new JsonList<ControlMessage.Status>();
             if (status != null)
                 result.add(status);
-            this.log("Completed manage {}", message.toString());
+            HillviewLogger.instance.info("Completed manage", "{0}", message.toString());
             return result;
         };
         final Observable<JsonList<ControlMessage.Status>> executed = Observable.fromCallable(callable);
@@ -302,7 +302,7 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
 
     @Override
     public <R> Observable<PartialResult<R>> sketch(final ISketch<T, R> sketch) {
-        HillviewLogging.logger().info("Invoked sketch on {}", this);
+        HillviewLogger.instance.info("Invoked sketch", "target={0}", this);
         List<Observable<PartialResult<R>>> obs = new ArrayList<Observable<PartialResult<R>>>();
         final int mySize = this.size();
         // Run sketch over each child separately

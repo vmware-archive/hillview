@@ -29,7 +29,7 @@ import org.junit.Test;
 import java.util.*;
 import static org.junit.Assert.assertTrue;
 
-public class ListComparatorTest {
+public class ListComparatorTest extends BaseTest {
     @Test
     public void ListComparatorZero() {
         final int size = 1000, maxRange = 100;
