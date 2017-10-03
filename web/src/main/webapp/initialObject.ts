@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-import {RemoteObject, Renderer, OnCompleteRenderer} from "./rpc";
+import {RemoteObject, OnCompleteRenderer} from "./rpc";
 import {RemoteTableReceiver} from "./table";
 import {FullPage} from "./ui";
-import {ICancellable, PartialResult} from "./util";
+import {ICancellable} from "./util";
 
 class FileNamesReceiver extends OnCompleteRenderer<string> {
     constructor(page: FullPage, operation: ICancellable) {

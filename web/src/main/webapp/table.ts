@@ -19,7 +19,7 @@ import Rx = require('rx');
 import {
     FullPage, formatNumber, significantDigits, percent, KeyCodes, ScrollBar, IScrollTarget, SpecialChars
 } from "./ui";
-import {Renderer, combineMenu, SelectedObject, CombineOperators, RemoteObject, OnCompleteRenderer} from "./rpc";
+import {Renderer, combineMenu, SelectedObject, CombineOperators, OnCompleteRenderer} from "./rpc";
 import {RangeCollector} from "./histogram";
 import {Range2DCollector} from "./heatMap";
 import {TopMenu, TopSubMenu, ContextMenu} from "./menu";
@@ -919,6 +919,7 @@ export interface TopList {
     heavyHittersId: string;
 }
 
+// This method handles the outcome of the Misra-Gries skcetch for finding Heavy Hitters.
 class HeavyHittersReceiver extends OnCompleteRenderer<TopList> {
      public constructor(page: FullPage,
                        protected tv: TableView,
@@ -956,7 +957,6 @@ export class HeavyHittersReceiver2 extends OnCompleteRenderer<TopList> {
         hhv.scrollIntoView();
     }
 }
-
 
 class CorrelationMatrixReceiver extends RemoteTableRenderer {
     public constructor(page: FullPage,

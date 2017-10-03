@@ -91,7 +91,10 @@ export class HeavyHittersView extends RemoteTableObjectView {
             thr.appendChild(thd);
         }
         let thd1 = document.createElement("th");
-        thd1.innerHTML = "Count";
+        if (this.isMG)
+            thd1.innerHTML = "(Approximate) Count";
+        else
+            thd1.innerHTML = "(Exact) Count";
         thr.appendChild(thd1);
         let thd2 = document.createElement("th");
         thd2.innerHTML = "%";
@@ -134,7 +137,10 @@ export class HeavyHittersView extends RemoteTableObjectView {
                 }
                 let cell1 = trow.insertCell(this.schema.length + 1);
                 cell1.style.textAlign = "right";
-                cell1.textContent = significantDigits(tdv.rows[i].count);
+                if (this.isMG)
+                    cell1.textContent = significantDigits(tdv.rows[i].count);
+                else
+                    cell1.textContent = tdv.rows[i].count.toString();
                 let cell2 = trow.insertCell(this.schema.length + 2);
                 cell2.style.textAlign = "right";
                 cell2.textContent = significantDigits((tdv.rows[i].count/tdv.rowCount)*100);
