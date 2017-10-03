@@ -263,6 +263,7 @@ public final class TableTarget extends RpcTarget {
     static class SampledControlPoints {
         long rowCount;
         int numSamples;
+        long seed;
         boolean allowMissing;
         @Nullable
         String[] columnNames;
@@ -273,9 +274,9 @@ public final class TableTarget extends RpcTarget {
         SampledControlPoints info = request.parseArgs(SampledControlPoints.class);
         List<String> columnNamesList = Arrays.asList(Converters.checkNull(info.columnNames));
         double samplingRate = ((double) info.numSamples) / info.rowCount;
-        RandomSamplingSketch sketch = new RandomSamplingSketch(samplingRate, columnNamesList, info.allowMissing);
+        RandomSamplingSketch sketch = new RandomSamplingSketch(samplingRate, info.seed, columnNamesList, info.allowMissing);
         this.runCompleteSketch(this.table, sketch, (sampled, c) -> {
-            sampled = sampled.compress(sampled.getMembershipSet().sample(info.numSamples)); // Resample to get the exact number of samples.
+            sampled = sampled.compress(sampled.getMembershipSet().sample(info.numSamples, info.seed + 1)); // Resample to get the exact number of samples.
             return new ControlPointsTarget(sampled, columnNamesList, c);
         }, request, context);
     }

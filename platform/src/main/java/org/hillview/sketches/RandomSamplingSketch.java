@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 public class RandomSamplingSketch implements ISketch<ITable, SmallTable> {
     public static final double overSampling = 1.5;
     private final double rate;
+    private final long seed;
     private final List<String> columnNames;
     private final boolean allowMissing;
 
@@ -50,8 +51,9 @@ public class RandomSamplingSketch implements ISketch<ITable, SmallTable> {
      * @param allowMissing If this is false, do not allow rows that have missing values in at least one of the
      *                     columns to be in the result.
      */
-    public RandomSamplingSketch(double rate, List<String> columnNames, boolean allowMissing) {
+    public RandomSamplingSketch(double rate, long seed, List<String> columnNames, boolean allowMissing) {
         this.rate = Math.min(overSampling * rate, 1.0);
+        this.seed = seed;
         this.columnNames = columnNames;
         this.allowMissing = allowMissing;
     }
@@ -63,8 +65,8 @@ public class RandomSamplingSketch implements ISketch<ITable, SmallTable> {
      *             by a factor of RandomSamplingSketch.overSampling. To have an exact sampling, the result's
      *             membership set should be sampled once more.
      */
-    public RandomSamplingSketch(double rate) {
-        this(rate, new ArrayList<String>(), true);
+    public RandomSamplingSketch(double rate, long seed) {
+        this(rate, seed, new ArrayList<String>(), true);
     }
 
     @Override
@@ -80,7 +82,7 @@ public class RandomSamplingSketch implements ISketch<ITable, SmallTable> {
 
         SmallTable sample;
         if (this.allowMissing) {
-            sample = data.compress(data.getMembershipSet().sample(this.rate));
+            sample = data.compress(data.getMembershipSet().sample(this.rate, this.seed));
         } else {
             sample = data.compress(data.getMembershipSet().filter((row) -> {
                 for (IColumn column : columns) {
@@ -88,7 +90,7 @@ public class RandomSamplingSketch implements ISketch<ITable, SmallTable> {
                         return false;
                 }
                 return true;
-            }).sample(this.rate));
+            }).sample(this.rate, this.seed));
         }
         return sample;
     }

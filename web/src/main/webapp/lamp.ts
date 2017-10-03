@@ -295,12 +295,13 @@ export class LAMPDialog extends Dialog {
     constructor(private selectedColumns: string[], private page: FullPage,
                 private schema: Schema, private remoteObject: TableView) {
         super("LAMP");
-        this.addTextField("numSamples", "No. control points", "Integer", "15");
+        this.addTextField("numSamples", "No. control points", "Integer", "20");
         this.addSelectField("controlPointSelection", "Control point selection", ["Random samples", "Category centroids"], "Random samples");
         let catColumns = [""];
         for (let i = 0; i < schema.length; i++)
             if (schema[i].kind == "Category")
                 catColumns.push(schema[i].name);
+        this.addTextField("seed", "Random seed", "Integer", "1");
         this.addSelectField("category", "Category for centroids", catColumns, "");
         this.addSelectField("controlPointProjection", "Control point projection", ["MDS"], "MDS");
         this.setAction(() => this.execute());
@@ -315,11 +316,11 @@ export class LAMPDialog extends Dialog {
         let selection = this.getFieldValue("controlPointSelection");
         let projection = this.getFieldValue("controlPointProjection");
         let category = this.getFieldValue("category");
-
+        let seed = this.getFieldValueAsInt("seed");
         let rr: RpcRequest;
         switch (selection) {
             case "Random samples": {
-                rr = this.remoteObject.createSampledControlPointsRequest(this.remoteObject.getTotalRowCount(), numSamples, this.selectedColumns);
+                rr = this.remoteObject.createSampledControlPointsRequest(this.remoteObject.getTotalRowCount(), numSamples, this.selectedColumns, seed);
                 break;
             }
             case "Category centroids": {

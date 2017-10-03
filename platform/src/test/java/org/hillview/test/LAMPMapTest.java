@@ -35,10 +35,11 @@ import java.util.List;
 
 public class LAMPMapTest extends BaseTest {
     private void testLAMPMap(ITable table, int numSamples, int fragmentSize) {
+        long seed = 1;
         IDataSet<ITable> dataset = TestTables.makeParallel(table, fragmentSize);
         List<String> colNames = TestUtils.getNumericColumnNames(table);
         double samplingRate = ((double) numSamples) / table.getNumOfRows();
-        RandomSamplingSketch sketch = new RandomSamplingSketch(samplingRate, colNames, false);
+        RandomSamplingSketch sketch = new RandomSamplingSketch(samplingRate, seed, colNames, false);
         SmallTable sampling = dataset.blockingSketch(sketch);
         sampling = sampling.compress(sampling.getMembershipSet().sample(numSamples));
 
