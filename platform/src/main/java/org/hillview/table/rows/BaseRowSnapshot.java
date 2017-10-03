@@ -70,10 +70,26 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
     public int computeHashCode(Schema schema) {
         int hashCode = 31;
         for (String cn: schema.getColumnNames()) {
-            Object o = this.getObject(cn);
-            if (o == null)
+            if (this.isMissing(cn))
                 continue;
-            hashCode = HashUtil.murmurHash3(hashCode, o.hashCode());
+            switch (schema.getKind(cn)) {
+                case Category:
+                case String:
+                case Json:
+                    //noinspection ConstantConditions
+                    hashCode = HashUtil.murmurHash3(hashCode, this.getString(cn).hashCode());
+                    break;
+                case Integer:
+                    hashCode = HashUtil.murmurHash3(hashCode, this.getInt(cn));
+                    break;
+                case Date:
+                case Double:
+                case Duration:
+                    hashCode = HashUtil.murmurHash3(hashCode, Double.hashCode(this.getDouble(cn)));
+                    break;
+                default:
+                    throw new RuntimeException("Unexpected kind " + schema.getKind(cn));
+            }
         }
         return hashCode;
     }
