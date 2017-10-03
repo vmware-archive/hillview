@@ -595,11 +595,15 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
 
     private selectNumericColumns(): void {
         this.selectedColumns.clear();
+        let count = 0;
         for (let i = 0; i < this.schema.length; i++) {
             let kind = this.schema[i].kind;
-            if (kind == "Integer" || kind == "Double")
+            if (kind == "Integer" || kind == "Double") {
                 this.selectedColumns.add(this.schema[i].name);
+                count++;
+            }
         }
+        this.reportError(`Selected ${count} numeric columns.`);
         this.highlightSelectedColumns();
     }
 
