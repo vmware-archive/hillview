@@ -32,6 +32,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @SuppressWarnings("ConstantConditions")
@@ -44,7 +45,7 @@ public class LinearProjectionTest {
         Random.seed(42);
         DoubleMatrix matrix = DoubleMatrix.rand(rows, cols);
         ITable table = BlasConversions.toTable(matrix);
-        DoubleMatrix matrix2 = BlasConversions.toDoubleMatrix(table, new ArrayList<String>(table.getSchema().getColumnNames()));
+        DoubleMatrix matrix2 = BlasConversions.toDoubleMatrix(table, Arrays.asList(table.getSchema().getColumnNames()));
         Assert.assertEquals(rows * cols, matrix.eq(matrix2).sum(), Math.ulp(rows * rows));
     }
 
@@ -58,7 +59,7 @@ public class LinearProjectionTest {
         DoubleMatrix projectionMatrix = DoubleMatrix.rand(numProjections, cols);
         ITable table = BlasConversions.toTable(matrix);
         LinearProjectionMap lpm = new LinearProjectionMap(
-                new ArrayList<String>(table.getSchema().getColumnNames()), projectionMatrix,
+                Arrays.asList(table.getSchema().getColumnNames()), projectionMatrix,
                 "LP");
         ITable result = lpm.apply(table);
 
@@ -82,7 +83,7 @@ public class LinearProjectionTest {
         DoubleMatrix projectionCheck = dataMatrix.mmul(projectionMatrix.transpose());
 
         ITable bigTable = BlasConversions.toTable(dataMatrix);
-        List<String> colNames = new ArrayList<String>(bigTable.getSchema().getColumnNames());
+        List<String> colNames = Arrays.asList(bigTable.getSchema().getColumnNames());
         // Convert it to an IDataset
         IDataSet<ITable> all = TestTables.makeParallel(bigTable, rows / 10);
 

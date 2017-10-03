@@ -76,8 +76,7 @@ public class TestUtils {
 
     public static List<String> getNumericColumnNames(ITable table) {
         List<String> numericColNames = new ArrayList<String>();
-        Set<String> colNames = table.getSchema().getColumnNames();
-        for (String colName : colNames) {
+        for (String colName : table.getSchema().getColumnNames()) {
             ContentsKind kind = table.getSchema().getDescription(colName).kind;
             if (kind == ContentsKind.Double || kind == ContentsKind.Integer) {
                 numericColNames.add(colName);

@@ -34,7 +34,7 @@ public interface IRow {
     /**
      * @return The list of columns present in the row.
      */
-    Iterable<String> getColumnNames();
+    String[] getColumnNames();
 
     @Nullable
     Object getObject(final String colName);

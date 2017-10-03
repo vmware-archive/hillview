@@ -55,7 +55,7 @@ public class HLLTest {
         final int numCols = 1;
         final int bigSize = 100000;
         final SmallTable bigTable = TestTables.getIntTable(bigSize, numCols); //range is 5 * bigSize
-        final String colName = bigTable.getSchema().getColumnNames().iterator().next();
+        final String colName = bigTable.getSchema().getColumnNames()[0];
         final ParallelDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize / 10);
         final HLogLog hll = all.blockingSketch(new HLogLogSketch(colName,16,12345678));
         assertTrue(hll.distinctItemsEstimator() > 85000);

@@ -96,7 +96,7 @@ public class MatrixTest {
         }
 
         ITable table = new Table(columns);
-        List<String> colNames = new ArrayList<String>(table.getSchema().getColumnNames());
+        List<String> colNames = Arrays.asList(table.getSchema().getColumnNames());
         DoubleMatrix mat = BlasConversions.toDoubleMatrix(table, colNames);
         DoubleMatrix missingCount = mat.isNaN().columnSums();
         for (int i = 0; i < numCols; i++) {

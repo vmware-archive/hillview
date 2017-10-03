@@ -85,7 +85,7 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
     }
 
     @Override
-    public Iterable<String> getColumnNames() {
+    public String[] getColumnNames() {
         return this.schema.getColumnNames();
     }
 
