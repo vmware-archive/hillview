@@ -23,7 +23,7 @@ import org.hillview.table.api.ITableFilterDescription;
 import org.hillview.table.api.ITableFilter;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.ITable;
-import org.hillview.utils.HillviewLogging;
+import org.hillview.utils.HillviewLogger;
 
 import javax.annotation.Nullable;
 
@@ -54,12 +54,12 @@ public class FilterMap implements IMap<ITable, ITable> {
             filter = new FalseTableFilter();
         else
             filter = this.rowFilterPredicate.getFilter(data);
-        HillviewLogging.logger().info("Filtering with {}", filter);
+        HillviewLogger.instance.info("Filtering", "{0}", filter);
         IMembershipSet result = data.getMembershipSet().filter(filter::test);
         return data.selectRowsFromFullTable(result);
     }
 
     public String asString() {
-        return this.rowFilterPredicate.toString();
+        return (this.rowFilterPredicate == null) ? "<null>" : this.rowFilterPredicate.toString();
     }
 }

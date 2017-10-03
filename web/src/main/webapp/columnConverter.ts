@@ -18,7 +18,7 @@
 import {Dialog} from "./dialog";
 import {ContentsKind, asContentsKind} from "./tableData";
 import {TableView, RemoteTableReceiver} from "./table";
-import {Renderer} from "./rpc";
+import {Renderer, OnCompleteRenderer} from "./rpc";
 import {PartialResult, ICancellable} from "./util";
 import {FullPage} from "./ui";
 
@@ -85,22 +85,14 @@ interface HLogLog {
     distinctItemCount: number
 }
 
-export class HLogLogReceiver extends Renderer<HLogLog> {
-    private data: HLogLog;
-
-    constructor(page: FullPage, operation: ICancellable, name: string, private next: (number) => void) {
+export class HLogLogReceiver extends OnCompleteRenderer<HLogLog> {
+    constructor(page: FullPage, operation: ICancellable,
+                name: string,
+                private next: (number) => void) {
         super(page, operation, name);
-        this.data = null;
     }
 
-    onNext(value: PartialResult<HLogLog>) {
-        super.onNext(value);
-        this.data = value.data;
-    }
-
-    onCompleted(): void {
-        super.onCompleted();
-        if (this.data != null)
-            this.next(this.data)
+    run(data: HLogLog): void {
+        this.next(data)
     }
 }

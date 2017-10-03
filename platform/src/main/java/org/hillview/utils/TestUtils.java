@@ -17,20 +17,14 @@
 
 package org.hillview.utils;
 
-import org.hillview.maps.LinearProjectionMap;
-import org.hillview.sketches.CorrMatrix;
-import org.hillview.sketches.FullCorrelationSketch;
 import org.hillview.storage.CsvFileReader;
 import org.hillview.table.Schema;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ITable;
-import org.jblas.DoubleMatrix;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;

@@ -15,14 +15,17 @@
  * limitations under the License.
  */
 
-package org.hillview.table;
+package org.hillview.storage;
 
+import org.hillview.table.ColumnDescription;
+import org.hillview.table.Schema;
+import org.hillview.table.Table;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IAppendableColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.table.columns.BaseListColumn;
 import org.hillview.utils.Converters;
-import org.hillview.utils.HillviewLogging;
+import org.hillview.utils.HillviewLogger;
 
 import javax.annotation.Nullable;
 import java.sql.*;
@@ -45,7 +48,7 @@ public class JdbcDatabase {
 
     public void connect() throws SQLException {
         String url = this.connInfo.getURL();
-        HillviewLogging.logger().info("Database server url={}", url);
+        HillviewLogger.instance.info("Database server url", "{0}", url);
         this.connection = DriverManager.getConnection(
                 url, this.connInfo.user, this.connInfo.password);
     }

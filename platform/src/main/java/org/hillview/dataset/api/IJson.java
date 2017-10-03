@@ -26,21 +26,23 @@ import org.hillview.utils.Converters;
 
 import java.io.Serializable;
 import java.lang.reflect.Type;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 // Unfortunately this module introduces many circular dependences, because it has
 // to register various type adaptors.
 
 public interface IJson extends Serializable {
-    class DateSerializer implements JsonSerializer<LocalDateTime> {
-        public JsonElement serialize(LocalDateTime data, Type typeOfSchema, JsonSerializationContext unused) {
+    class DateSerializer implements JsonSerializer<Instant> {
+        public JsonElement serialize(Instant data, Type typeOfSchema, JsonSerializationContext
+                unused) {
             double d = Converters.toDouble(data);
             return new JsonPrimitive(d);
         }
     }
 
-    class DateDeserializer implements JsonDeserializer<LocalDateTime> {
-        public LocalDateTime deserialize(JsonElement data, Type typeOfSchema, JsonDeserializationContext unused) {
+    class DateDeserializer implements JsonDeserializer<Instant> {
+        public Instant deserialize(JsonElement data, Type typeOfSchema, JsonDeserializationContext
+                unused) {
             double d = data.getAsDouble();
             return Converters.toDate(d);
         }
@@ -58,7 +60,7 @@ public interface IJson extends Serializable {
             .registerTypeAdapter(Schema.class, new Schema.Serializer())
             .registerTypeAdapter(Schema.class, new Schema.Deserializer())
             .registerTypeAdapter(NextKList.class, new NextKSerializer())
-            .registerTypeAdapter(LocalDateTime.class, new DateSerializer())
+            .registerTypeAdapter(Instant.class, new DateSerializer())
             .registerTypeAdapter(HostAndPort.class, new ClusterDescription.HostAndPortSerializer())
             .registerTypeAdapter(HostAndPort.class, new ClusterDescription.HostAndPortDeserializer());
     Gson gsonInstance = builder.serializeNulls().create();

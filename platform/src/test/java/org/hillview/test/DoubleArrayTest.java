@@ -29,7 +29,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Test for DoubleArrayColumn class
  */
-public class DoubleArrayTest {
+public class DoubleArrayTest extends BaseTest {
     private final int size = 100;
     private static final ColumnDescription desc = new
             ColumnDescription("SQRT", ContentsKind.Double, true);

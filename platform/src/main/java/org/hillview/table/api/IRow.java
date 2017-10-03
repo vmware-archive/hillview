@@ -19,7 +19,7 @@ package org.hillview.table.api;
 
 import javax.annotation.Nullable;
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Abstract interface for a row.
@@ -41,7 +41,7 @@ public interface IRow {
     @Nullable
     String getString(String colName);
     @Nullable
-    LocalDateTime getDate(String colName);
+    Instant getDate(String colName);
     @Nullable
     Duration getDuration(String colName);
     int getInt(String colName);

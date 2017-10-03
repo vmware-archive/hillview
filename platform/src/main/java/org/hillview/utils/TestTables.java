@@ -27,7 +27,6 @@ import org.hillview.table.columns.DoubleArrayColumn;
 import org.hillview.table.columns.IntArrayColumn;
 import org.hillview.table.columns.StringArrayColumn;
 import org.jblas.DoubleMatrix;
-import org.junit.Assert;
 
 import java.util.*;
 
@@ -76,7 +75,7 @@ public class TestTables {
         ColumnDescription c0 = new ColumnDescription("Name", ContentsKind.Category, false);
         ColumnDescription c1 = new ColumnDescription("Age", ContentsKind.Integer, false);
 
-        Assert.assertTrue(!Arrays.asList(others).contains(test));
+        //Assert.assertTrue(!Arrays.asList(others).contains(test));
         Random random = new Random();
         ArrayList<String> names = new ArrayList<String>();
         ArrayList<Integer> ages = new ArrayList<Integer>();
@@ -104,8 +103,7 @@ public class TestTables {
     }
 
     /**
-     * @return A table which contains number from (1,..., range), where i occurs i^2 times, and
-     * range can be specified as a paramter.
+     * @return A table which contains number from (1,..., range), where i occurs i^2 times.
      */
     public static SmallTable getSqIntTable(final int range) {
         final List<IColumn> columns = new ArrayList<IColumn>();
@@ -282,11 +280,6 @@ public class TestTables {
      * Return a numerical table with numBlobs clusters, every cluster containing numPointsPerBlob n-dimensional
      * points sampled from a Gaussian centered at a random point in the nD unit hyperbox, with a standard deviation
      * of stdDev.
-     * @param numBlobs
-     * @param numPointsPerBlob
-     * @param n
-     * @param stdDev
-     * @return
      */
     public static ITable getNdGaussianBlobs(int numBlobs, int numPointsPerBlob, int n, double stdDev) {
         DoubleMatrix data = new DoubleMatrix(numBlobs * numPointsPerBlob, n);

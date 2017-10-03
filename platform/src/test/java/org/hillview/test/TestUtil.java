@@ -23,14 +23,16 @@ import org.hillview.table.columns.DateArrayColumn;
 import org.hillview.table.columns.DoubleArrayColumn;
 import org.hillview.table.columns.StringArrayColumn;
 import org.hillview.utils.Randomness;
+
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
 class TestUtil {
-
     private static void Percentiles(final long[] R1) {
         Arrays.sort(R1);
         System.out.println("Percentiles: 0,10,20,50,90,99 ");
@@ -80,11 +82,12 @@ class TestUtil {
 
     private static IColumn getRandDateArray(int size, String colName) {
         final ColumnDescription desc = new ColumnDescription(colName, ContentsKind.Date, false);
-        LocalDateTime[] data = new LocalDateTime[size];
+        Instant[] data = new Instant[size];
         final Randomness rn = new Randomness();
         for (int i = 0; i < size; i++) {
             data[i] =  LocalDateTime.of(1940 + rn.nextInt(70),
-                    rn.nextInt(11) + 1, rn.nextInt(28) + 1, rn.nextInt(24), rn.nextInt(60));
+                    rn.nextInt(11) + 1, rn.nextInt(28) + 1, rn.nextInt(24), rn.nextInt(60))
+                    .toInstant(ZoneOffset.UTC);
         }
         return new DateArrayColumn(desc, data);
     }

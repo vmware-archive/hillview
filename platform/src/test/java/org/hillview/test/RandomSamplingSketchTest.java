@@ -24,8 +24,7 @@ import org.hillview.table.api.ITable;
 import org.hillview.utils.TestTables;
 import org.junit.Test;
 
-public class RandomSamplingSketchTest {
-
+public class RandomSamplingSketchTest extends BaseTest {
     @Test
     public void testRandomSampling() {
         ITable table = TestTables.getNdGaussianBlobs(10, 1000, 15, 0.1);
@@ -38,5 +37,4 @@ public class RandomSamplingSketchTest {
         result = result.compress(result.getMembershipSet().sample(numSamples));
         System.out.println(String.format("Resampled result has %d rows.", result.getNumOfRows()));
     }
-
 }

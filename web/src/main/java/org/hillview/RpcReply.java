@@ -19,7 +19,7 @@ package org.hillview;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import org.hillview.utils.HillviewLogging;
+import org.hillview.utils.HillviewLogger;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
@@ -51,14 +51,14 @@ class RpcReply {
     void send(@Nullable Session session) {
         try {
             if (session == null) {
-                HillviewLogging.logger().info("No context; reply skipped.");
+                HillviewLogger.instance.info("No context; reply skipped.");
                 return;
             }
             JsonElement json = this.toJson();
             session.getBasicRemote().sendText(json.toString());
-            HillviewLogging.logger().info("Reply sent");
+            HillviewLogger.instance.info("Reply sent");
         } catch (IOException e) {
-            HillviewLogging.logger().info("Could not send reply");
+            HillviewLogger.instance.info("Could not send reply");
         }
     }
 }

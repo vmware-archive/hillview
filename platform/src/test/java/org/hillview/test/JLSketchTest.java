@@ -29,8 +29,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-public class JLSketchTest {
-
+public class JLSketchTest extends BaseTest {
     @Test
     public void JLtest1() {
         int size = 1000;

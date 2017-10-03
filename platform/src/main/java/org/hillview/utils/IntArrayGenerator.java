@@ -58,8 +58,7 @@ public class IntArrayGenerator {
     }
 
     /**
-     * @return An integer array containing numbers (1,.., range), where i occurs i^2 times, and
-     * range can be specified as a parameter.
+     * @return An integer array containing numbers (1,.., range), where i occurs i^2 times.
      */
     public static IntArrayColumn getSqIntArray(int range) {
         final ColumnDescription desc = new ColumnDescription("Squares", ContentsKind.Integer, false);

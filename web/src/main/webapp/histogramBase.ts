@@ -20,17 +20,19 @@ import {
 } from "./ui";
 import {Dialog} from "./dialog";
 import d3 = require('d3');
-import {ContentsKind, Schema, RemoteTableObjectView, BasicColStats, DistinctStrings} from "./tableData";
+import {
+    ContentsKind, Schema, RemoteTableObjectView, BasicColStats, DistinctStrings,
+    ColumnDescription, ColumnAndRange
+} from "./tableData";
 import {BaseType} from "d3-selection";
 import {ScaleLinear, ScaleTime} from "d3-scale";
-import {Converters, isInteger} from "./util";
+import {Converters} from "./util";
 
 export type AnyScale = ScaleLinear<number, number> | ScaleTime<number, number>;
 
 export interface ScaleAndAxis {
     scale: AnyScale,
     axis: any,  // a d3 axis, but typing does not work well
-    adjustment: number  // adjustment used for categorical and integral data
 }
 
 export abstract class HistogramViewBase extends RemoteTableObjectView {
@@ -46,7 +48,6 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
     protected xScale: AnyScale;
     protected yScale: ScaleLinear<number, number>;
     protected chartSize: Size;
-    protected adjustment: number = 0;
     protected chart: any;  // these are in fact a d3.Selection<>, but I can't make them typecheck
     protected canvas: any;
     protected xDot: any;
@@ -189,6 +190,42 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
         return SpecialChars.approx + significantDigits(count);
     }
 
+    // Adjust the statistics for integral and categorical data
+    public static adjustStats(kind: ContentsKind, stats: BasicColStats): void {
+         if (kind == "Integer" || kind == "Category") {
+             // If we don't do this the bucket boundaries when drawing don't
+             // correspond with the bucket boundaries when computing the histogram and
+             // the result is bad.
+             stats.min -= .5;
+             stats.max += .5;
+         }
+    }
+
+    public static getRange(stats: BasicColStats, page: FullPage,
+                           cd: ColumnDescription, allStrings: DistinctStrings,
+                           cdfBucketCount: number, exact: boolean, heatMap: boolean, bottom: boolean
+    ): ColumnAndRange {
+        let bucketCount = HistogramViewBase.bucketCount(stats, page, cd.kind, heatMap, bottom);
+        if (cdfBucketCount == 0)
+            cdfBucketCount = bucketCount;
+        let boundaries = allStrings != null ?
+            allStrings.categoriesInRange(stats.min, stats.max, cdfBucketCount) : null;
+
+        let samplingRate = 1.0;
+        if (!exact)
+            samplingRate = HistogramViewBase.samplingRate(bucketCount, stats.presentCount, page);
+
+        return {
+            columnName: cd.name,
+            min: stats.min,
+            max: stats.max,
+            samplingRate: samplingRate,
+            bucketCount: bucketCount,
+            cdfBucketCount: cdfBucketCount,
+            bucketBoundaries: boundaries
+        };
+    }
+
     public static bucketCount(stats: BasicColStats, page: FullPage, columnKind: ContentsKind,
                               heatMap: boolean, bottom: boolean): number {
         let size = Resolution.getChartSize(page);
@@ -203,12 +240,11 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
         let bucketCount = maxBucketCount;
         if (length / minBarWidth < bucketCount)
             bucketCount = Math.floor(length / minBarWidth);
+
         if (columnKind == "Integer" ||
-            columnKind == "Category") {
-            if (!isInteger(stats.min) || !isInteger(stats.max))
-                throw "Expected integer values";
-            bucketCount = Math.min(bucketCount, stats.max - stats.min + 1);
-        }
+            columnKind == "Category")
+            bucketCount = Math.min(bucketCount, stats.max - stats.min);
+
         return Math.floor(bucketCount);
     }
 
@@ -225,57 +261,52 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
         return result;
     }
 
-    // When plotting integer values we increase the data range by .5 on the left and right.
-    // The adjustment is the number of pixels on screen that we "waste".
-    // I.e., the cdf plot will start adjustment/2 pixels from the chart left margin
-    // and will end adjustment/2 pixels from the right margin.
     public static createScaleAndAxis(
         kind: ContentsKind, bucketCount: number, width: number,
         min: number, max: number, strings: DistinctStrings,
-        adjustIntegral: boolean,  // if true we perform adjustment for integral values
         bottom: boolean): ScaleAndAxis {
-        let minRange = min;
-        let maxRange = max;
-        let adjustment = 0;
         let axis = null;
 
-        let scaleCreator = bottom ? d3.axisBottom : d3.axisLeft;
-
-        if (adjustIntegral && (kind == "Integer" || kind == "Category" || min >= max)) {
-            minRange -= .5;
-            maxRange += .5;
-            adjustment = width / (maxRange - minRange);
-        }
-
+        let axisCreator = bottom ? d3.axisBottom : d3.axisLeft;
         // on vertical axis the direction is swapped
-        let domain = bottom ? [minRange, maxRange] : [maxRange, minRange];
+        let domain = bottom ? [min, max] : [max, min];
 
         let scale: AnyScale = null;
-        let ordinalScale = null;
         if (kind == "Integer" || kind == "Double") {
             scale = d3.scaleLinear()
                 .domain(domain)
                 .range([0, width]);
-            axis = scaleCreator(scale);
+            axis = axisCreator(scale);
         } else if (kind == "Category") {
             let ticks: number[] = [];
             let labels: string[] = [];
-            for (let i = 0; i < bucketCount; i++) {
-                let index = i * (maxRange - minRange) / bucketCount;
-                index = Math.round(index);
-                ticks.push(adjustment / 2 + index * width / (maxRange - minRange));
-                labels.push(strings.get(min + index));
+            let tickCount = max - min;
+            // TODO: if the tick count is too large it must be reduced
+            let minLabelWidth = 40;  // pixels
+            let maxLabelCount = width / minLabelWidth;
+            let labelPeriod = Math.ceil(tickCount / maxLabelCount);
+            let tickWidth = width / tickCount;
+
+            for (let i = 0; i < tickCount; i++) {
+                ticks.push((i + .5) * tickWidth);
+                let label = "";
+                if (i % labelPeriod == 0)
+                    label = strings.get(min + .5 + i);
+                labels.push(label);
             }
             if (!bottom)
                 labels.reverse();
 
-            ordinalScale = d3.scaleOrdinal()
-                .domain(labels)
-                .range(ticks);
+            // We manually control the ticks.
+            let manual = d3.scaleLinear()
+                .domain([0, width])
+                .range([0, width]);
             scale = d3.scaleLinear()
                 .domain(domain)
                 .range([0, width]);
-            axis = scaleCreator(ordinalScale);
+            axis = axisCreator(manual)
+                .tickValues(ticks)
+                .tickFormat((d, i) => labels[i]);
         } else if (kind == "Date") {
             let minDate: Date = Converters.dateFromDouble(domain[0]);
             let maxDate: Date = Converters.dateFromDouble(domain[1]);
@@ -283,13 +314,10 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
                 .scaleTime()
                 .domain([minDate, maxDate])
                 .range([0, width]);
-            axis = scaleCreator(scale);
+            axis = axisCreator(scale);
         }
-        // force a tick on x axis for degenerate scales
-        if (min >= max && axis != null)
-            axis.ticks(1);
 
-        return { scale: scale, axis: axis, adjustment: adjustment };
+        return { scale: scale, axis: axis };
     }
 }
 

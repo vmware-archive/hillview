@@ -17,14 +17,14 @@
 
 package org.hillview.test;
 
-import org.hillview.table.JdbcConnectionInformation;
+import org.hillview.storage.JdbcConnectionInformation;
 import org.hillview.table.api.ITable;
-import org.hillview.table.JdbcDatabase;
+import org.hillview.storage.JdbcDatabase;
 import org.junit.Test;
 
 import java.sql.ResultSet;
 
-public class JdbcTest {
+public class JdbcTest extends BaseTest {
     @Test
     public void testJdbc() {
         JdbcConnectionInformation conn =

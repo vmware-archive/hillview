@@ -53,16 +53,11 @@
             <artifactId>mysql-connector-java</artifactId>
             <version>6.0.6</version>
         </dependency>
-        <!-- Eclipse collections -->
+        <!-- fast collections -->
         <dependency>
-            <groupId>org.eclipse.collections</groupId>
-            <artifactId>eclipse-collections-api</artifactId>
-            <version>8.1.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.collections</groupId>
-            <artifactId>eclipse-collections</artifactId>
-            <version>8.1.0</version>
+            <groupId>it.unimi.dsi</groupId>
+            <artifactId>dsiutils</artifactId>
+            <version>2.4.0</version>
         </dependency>
         <!-- Comma-separated value file I/O -->
         <dependency>
@@ -92,11 +87,11 @@
             <artifactId>grpc-stub</artifactId>
             <version>1.2.0</version>
         </dependency>
-        <!-- Used for serialization utils -->
+        <!-- Used for serialization utils and string quoting -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-            <version>3.5</version>
+            <version>3.6</version>
         </dependency>
         <!-- Junit for testing -->
         <dependency>

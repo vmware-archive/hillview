@@ -17,28 +17,86 @@
 
 package org.hillview.storage;
 
-import org.hillview.table.ColumnDescription;
-import org.hillview.table.columns.StringListColumn;
-import org.hillview.table.api.ContentsKind;
-import org.hillview.table.api.IColumn;
+import org.hillview.table.api.IAppendableColumn;
+import org.hillview.table.api.ITable;
+import org.hillview.utils.Converters;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * Reads a newline-separated text file into a string column.
+ * Abstract class for a reader that reads data from a text file.
  */
-class TextFileReader {
-    private final Path file;
-    TextFileReader(final Path filename) {
-        this.file = filename;
+public abstract class TextFileReader {
+    protected final Path filename;
+    protected int currentRow;
+    private int currentColumn;
+    @Nullable
+    protected IAppendableColumn[] columns;
+    private long currentField;
+    @Nullable
+    private String currentToken;
+    protected boolean allowFewerColumns;
+
+    public TextFileReader(final Path path) {
+        this.filename = path;
+        this.currentRow = 0;
+        this.currentColumn = 0;
+        this.currentField = 0;
+        this.currentToken = null;
     }
 
-    IColumn readFile(final String columnName) throws IOException {
-        final ColumnDescription desc = new ColumnDescription(columnName, ContentsKind.String, false);
-        final StringListColumn result = new StringListColumn(desc);
-        Files.lines(this.file).forEach(result::append);
-        return result;
+    public abstract ITable read() throws IOException;
+
+    protected void append(String[] data) {
+        try {
+            Converters.checkNull(this.columns);
+            int columnCount = this.columns.length;
+            this.currentColumn = 0;
+            if (data.length > columnCount)
+                this.error("Too many columns " + data.length + " vs " + columnCount);
+            for (this.currentColumn = 0; this.currentColumn < data.length; this.currentColumn++) {
+                this.currentToken = data[this.currentColumn];
+                this.columns[this.currentColumn].parseAndAppendString(this.currentToken);
+                this.currentField++;
+                if ((this.currentField % 100000) == 0) {
+                    System.out.print(".");
+                    System.out.flush();
+                }
+            }
+            if (data.length < columnCount) {
+                if (!this.allowFewerColumns)
+                    this.error("Too few columns " + data.length + " vs " + columnCount);
+                else {
+                    this.currentToken = "";
+                    for (int i = data.length; i < columnCount; i++)
+                        this.columns[i].parseAndAppendString(this.currentToken);
+                }
+            }
+            this.currentRow++;
+        } catch (Exception ex) {
+            this.error(ex);
+        }
+    }
+
+    protected String errorMessage() {
+        String columnName = "";
+        if (this.columns != null) {
+            columnName = (this.currentColumn < this.columns.length) ?
+                    (" (" + this.columns[this.currentColumn].getName() + ")") : "";
+        }
+
+        return "Error while parsing file " + this.filename.toString() +
+                " line " + this.currentRow + " column " + this.currentColumn +
+                columnName + (this.currentToken != null ? " token " + this.currentToken : "");
+    }
+
+    protected void error(String message) {
+        throw new RuntimeException(this.errorMessage() + ": " + message);
+    }
+
+    protected void error(Exception ex) {
+        throw new RuntimeException(this.errorMessage(), ex);
     }
 }

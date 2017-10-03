@@ -23,10 +23,11 @@ import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.*;
 import org.hillview.management.*;
 import org.hillview.maps.FindCsvFileMapper;
+import org.hillview.maps.FindFilesMapper;
 import org.hillview.maps.LoadDatabaseTableMapper;
 import org.hillview.utils.*;
 import org.hillview.dataset.remoting.HillviewServer;
-import org.hillview.table.JdbcConnectionInformation;
+import org.hillview.storage.JdbcConnectionInformation;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
@@ -48,7 +49,7 @@ public class InitialObjectTarget extends RpcTarget {
 
     InitialObjectTarget() {
         // TODO: setup logging
-        //HillviewLogging.initialize("hillview-head.log");
+        //HillviewLogger.initialize("hillview-head.log");
         Empty empty = new Empty();
         // Get the base naming context
         final String value = System.getenv(ENV_VARIABLE);
@@ -59,13 +60,13 @@ public class InitialObjectTarget extends RpcTarget {
             this.initialize(desc);
         } else {
             try {
-                HillviewLogging.logger().info("Initializing cluster descriptor from file");
+                HillviewLogger.instance.info("Initializing cluster descriptor from file");
                 final List<String> lines = Files.readAllLines(Paths.get(value), Charset.defaultCharset());
                 final List<HostAndPort> hostAndPorts = lines.stream()
                                                             .map(HostAndPort::fromString)
                                                             .collect(Collectors.toList());
                 desc = new ClusterDescription(hostAndPorts);
-                HillviewLogging.logger().info("Backend servers: {}", lines);
+                HillviewLogger.instance.info("Backend servers", "{0}", lines);
                 this.initialize(desc);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -81,7 +82,7 @@ public class InitialObjectTarget extends RpcTarget {
         if (numServers <= 0) {
             throw new IllegalArgumentException("ClusterDescription must contain one or more servers");
         }
-        HillviewLogging.logger().info("Creating parallel dataset");
+        HillviewLogger.instance.info("Creating parallel dataset");
         final ArrayList<IDataSet<Empty>> emptyDatasets = new ArrayList<IDataSet<Empty>>(numServers);
         description.getServerList().forEach(server -> emptyDatasets.add(new RemoteDataSet<Empty>(server)));
         this.emptyDataset = new ParallelDataSet<Empty>(emptyDatasets);
@@ -123,8 +124,16 @@ public class InitialObjectTarget extends RpcTarget {
             throw new RuntimeException("Unexpected operation " + which);
         }
 
-        HillviewLogging.logger().info("Preparing files");
-        this.runFlatMap(this.emptyDataset, finder, FileNamesTarget::new, request, context);
+        HillviewLogger.instance.info("Preparing files");
+        this.runFlatMap(this.emptyDataset, finder, CsvFileTarget::new, request, context);
+    }
+
+    @HillviewRpc
+    void findLogs(RpcRequest request, RpcRequestContext context) {
+        Converters.checkNull(this.emptyDataset);
+        IMap<Empty, List<String>> finder = new FindFilesMapper(".", 0, "hillview.log");
+        HillviewLogger.instance.info("Finding logs");
+        this.runFlatMap(this.emptyDataset, finder, LogFileTarget::new, request, context);
     }
 
     @Override

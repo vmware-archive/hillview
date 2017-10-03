@@ -39,7 +39,7 @@ import java.util.function.BiFunction;
  * objects always reside on the web server.  They are managed by the RpcObjectManager.
  */
 abstract class RpcTarget implements IJson {
-    public final String objectId;
+    final String objectId;
     /**
      * Computation that has generated this object.  Can only
      * be null for the initial object.
@@ -115,10 +115,10 @@ abstract class RpcTarget implements IJson {
             Method method = this.getMethod(request.method);
             if (method == null)
                 throw new RuntimeException(this.toString() + ": No such method " + request.method);
-            HillviewLogging.logger().info("Executing {}", request);
+            HillviewLogger.instance.info("Executing", "{0}", request);
             method.invoke(this, request, context);
         } catch (Exception ex) {
-            HillviewLogging.logger().error("Exception while invoking method on {}", this, ex);
+            HillviewLogger.instance.error("Exception while invoking method", ex);
             throw new RuntimeException(ex);
         }
     }
@@ -152,16 +152,15 @@ abstract class RpcTarget implements IJson {
 
         @Override
         public void onCompleted() {
-            HillviewLogging.logger().info("Computation completed for {}", this.name);
+            HillviewLogger.instance.info("Computation completed", "for {0}", this.name);
             this.request.syncCloseSession(this.context.session);
         }
 
         @Override
         public void onError(Throwable throwable) {
             if (this.context.session == null || !this.context.session.isOpen()) return;
-
-            HillviewLogging.logger().error("{} onError", this.name);
-            HillviewLogging.logger().error(throwable.toString());
+            HillviewLogger.instance.error("onError", "{0}", this.name);
+            HillviewLogger.instance.error("onError", throwable.toString());
             RpcReply reply = this.request.createReply(throwable);
             reply.send(this.context.session);
         }
@@ -181,7 +180,7 @@ abstract class RpcTarget implements IJson {
 
         @Override
         public void onNext(PartialResult<R> pr) {
-            HillviewLogging.logger().info("Received partial result from {}", this.name);
+            HillviewLogger.instance.info("Received partial sketch", "from {0}", this.name);
             Session session = this.context.getSessionIfOpen();
             if (session == null)
                 return;
@@ -211,7 +210,7 @@ abstract class RpcTarget implements IJson {
 
         @Override
         public void onNext(PartialResult<R> pr) {
-            HillviewLogging.logger().info("Received partial result from {}", this.name);
+            HillviewLogger.instance.info("Received partial sketch", "from {0}", this.name);
             this.last = pr.deltaValue;
             Session session = this.context.getSessionIfOpen();
             if (session == null)
@@ -227,7 +226,7 @@ abstract class RpcTarget implements IJson {
 
         @Override
         public void onCompleted() {
-            HillviewLogging.logger().info("Computation completed for {}", this.name);
+            HillviewLogger.instance.info("Computation completed", "for {0}", this.name);
             JsonObject json = new JsonObject();
             json.addProperty("done", 1.0);
             S result = this.postprocessing.apply(this.last, this.getComputation());
@@ -256,7 +255,7 @@ abstract class RpcTarget implements IJson {
 
         @Override
         public void onNext(PartialResult<IDataSet<T>> pr) {
-            HillviewLogging.logger().info("Received partial result from ", this.name);
+            HillviewLogger.instance.info("Received partial map", "from {0}", this.name);
 
             JsonObject json = new JsonObject();
             json.addProperty("done", pr.deltaDone);
@@ -280,7 +279,7 @@ abstract class RpcTarget implements IJson {
 
     @Override
     public String toString() {
-        return "id: " + this.objectId;
+        return this.getClass().getName() + "::" + this.objectId;
     }
 
     /**
@@ -390,7 +389,7 @@ abstract class RpcTarget implements IJson {
         // Send the partial results back
         MapResultObserver<S> robs = new MapResultObserver<S>(
                 map.asString(), this, request, context, factory);
-        HillviewLogging.logger().info("Subscribing to flatMap");
+        HillviewLogger.instance.info("Subscribing to flatMap");
         Subscription sub = add.subscribe(robs);
         this.saveSubscription(context, sub);
     }

@@ -24,7 +24,7 @@ import org.hillview.table.columns.*;
 import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.function.Function;
 
 /**
@@ -40,7 +40,7 @@ public interface IColumn extends Serializable {
     @Nullable
     String getString(int rowIndex);
     @Nullable
-    LocalDateTime getDate(int rowIndex);
+    Instant getDate(int rowIndex);
     @Nullable
     Duration getDuration(int rowIndex);
 

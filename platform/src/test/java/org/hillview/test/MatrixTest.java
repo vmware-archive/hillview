@@ -33,7 +33,7 @@ import org.junit.Test;
 import java.util.*;
 
 @SuppressWarnings("ConstantConditions")
-public class MatrixTest {
+public class MatrixTest extends BaseTest {
     @Test
     public void testSimpleMatrix() {
         // Setting elements

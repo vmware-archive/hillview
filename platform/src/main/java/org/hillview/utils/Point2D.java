@@ -24,8 +24,8 @@ public class Point2D implements IJson {
         this.x = x;
         this.y = y;
     }
-    public double x;
-    public double y;
+    public final double x;
+    public final double y;
 
     @Override
     public String toString() {

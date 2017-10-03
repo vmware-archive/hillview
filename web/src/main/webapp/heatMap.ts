@@ -23,7 +23,7 @@ import { Renderer, combineMenu, CombineOperators, SelectedObject } from "./rpc";
 import {
     ColumnDescription, Schema, ContentsKind, RecordOrder, DistinctStrings,
     RemoteTableObjectView, RemoteTableObject, Histogram, BasicColStats, FilterDescription,
-    ColumnAndRange, ZipReceiver
+    ZipReceiver
 } from "./tableData";
 import {TableView, TableRenderer} from "./table";
 import {Pair, reorder, regression, ICancellable, PartialResult} from "./util";
@@ -54,7 +54,7 @@ export class AxisData {
     public scaleAndAxis(length: number, bottom: boolean): ScaleAndAxis {
         return HistogramViewBase.createScaleAndAxis(
             this.description.kind, this.bucketCount, length,
-            this.stats.min, this.stats.max, this.distinctStrings, true, bottom);
+            this.stats.min, this.stats.max, this.distinctStrings, bottom);
     }
 }
 
@@ -156,11 +156,9 @@ export class HeatMapView extends RemoteTableObjectView {
     }
 
     histogram(): void {
-        let newPage = new FullPage();
-        this.page.insertAfterMe(newPage);
         let rcol = new Range2DCollector([this.currentData.xData.description, this.currentData.yData.description],
                     this.tableSchema, [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
-                     newPage, this, null, false);
+                    this.page, this, null, false);
         rcol.setValue({ first: this.currentData.xData.stats, second: this.currentData.yData.stats });
         rcol.onCompleted();
     }
@@ -596,33 +594,11 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
     }
 
     public draw(): void {
-        let xBucketCount = HistogramViewBase.bucketCount(
-            this.stats.first, this.page, this.cds[0].kind, this.drawHeatMap, true);
-        let yBucketCount = HistogramViewBase.bucketCount(
-            this.stats.second, this.page, this.cds[1].kind, this.drawHeatMap, false);
+        let arg0 = HistogramViewBase.getRange(this.stats.first, this.page,
+            this.cds[0], this.ds[0], 0, true, this.drawHeatMap, true);
+        let arg1 = HistogramViewBase.getRange(this.stats.second, this.page,
+            this.cds[1], this.ds[1], 0, true, this.drawHeatMap, false);
 
-        let xBoundaries = this.ds != null && this.ds[0] != null ?
-            this.ds[0].categoriesInRange(this.stats.first.min, this.stats.first.max, xBucketCount) : null;
-        let yBoundaries = this.ds != null && this.ds[1] != null ?
-            this.ds[1].categoriesInRange(this.stats.second.min, this.stats.second.max, yBucketCount) : null;
-        let arg0: ColumnAndRange = {
-            columnName: this.cds[0].name,
-            min: this.stats.first.min,
-            max: this.stats.first.max,
-            samplingRate: 1.0,
-            bucketCount: xBucketCount,
-            cdfBucketCount: 0,
-            bucketBoundaries: xBoundaries
-        };
-        let arg1: ColumnAndRange = {
-            columnName: this.cds[1].name,
-            min: this.stats.second.min,
-            max: this.stats.second.max,
-            samplingRate: 1.0,
-            bucketCount: yBucketCount,
-            cdfBucketCount: 0,
-            bucketBoundaries: yBoundaries
-        };
         let rr = this.remoteObject.createHeatMapRequest(arg0, arg1);
         if (this.operation != null)
             rr.setStartTime(this.operation.startTime());
@@ -642,8 +618,10 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
     onCompleted(): void {
         super.onCompleted();
         if (this.stats == null)
-        // probably some error occurred
+            // probably some error occurred
             return;
+        HistogramViewBase.adjustStats(this.cds[0].kind, this.stats.first);
+        HistogramViewBase.adjustStats(this.cds[1].kind, this.stats.second);
         this.draw();
     }
 }

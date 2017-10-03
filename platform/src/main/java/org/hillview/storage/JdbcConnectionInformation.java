@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.hillview.table;
+package org.hillview.storage;
 
 import org.apache.http.client.utils.URIBuilder;
 

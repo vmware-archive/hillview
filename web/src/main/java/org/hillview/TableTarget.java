@@ -404,7 +404,7 @@ public final class TableTarget extends RpcTarget {
         String heavyHittersId = "";
     }
 
-    public static TopList getLists(FreqKList fkList, Schema schema, boolean isMG, HillviewComputation computation) {
+    private static TopList getLists(FreqKList fkList, Schema schema, boolean isMG, HillviewComputation computation) {
         fkList.filter(isMG);
         Pair<List<RowSnapshot>, List<Integer>> pair = fkList.getTop();
         TopList tl = new TopList();

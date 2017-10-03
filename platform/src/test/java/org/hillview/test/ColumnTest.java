@@ -25,7 +25,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class ColumnTest {
+public class ColumnTest extends BaseTest {
     @Test
     public void testIntColumn() {
         final IntArrayColumn col;

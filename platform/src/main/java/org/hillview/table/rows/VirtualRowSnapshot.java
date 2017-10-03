@@ -22,7 +22,7 @@ import org.hillview.table.api.ITable;
 import org.hillview.utils.HashUtil;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * A pointer to a (projection of a) row in a table. The projection is
@@ -110,7 +110,7 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
     }
 
     @Override
-    public LocalDateTime getDate(String colName) {
+    public Instant getDate(String colName) {
         return this.table.getColumn(colName).getDate(this.rowIndex);
     }
 

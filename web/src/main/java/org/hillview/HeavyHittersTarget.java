@@ -18,7 +18,7 @@
 package org.hillview;
 
 import org.hillview.sketches.FreqKList;
-import org.hillview.utils.HillviewLogging;
+import org.hillview.utils.HillviewLogger;
 
 /**
  * This object has no RPC methods per se, but it can be used
@@ -30,7 +30,7 @@ final class HeavyHittersTarget extends RpcTarget {
     HeavyHittersTarget(final FreqKList heavyHitters, final HillviewComputation computation) {
         super(computation);
         this.heavyHitters = heavyHitters;
-        HillviewLogging.logger().info("Heavy hitters " + heavyHitters.getDistinctRowCount());
+        HillviewLogger.instance.info("Heavy hitters", "{0}", heavyHitters.getDistinctRowCount());
         this.registerObject();
     }
 }

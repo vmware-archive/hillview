@@ -50,17 +50,13 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
                 case Json:
                     same = this.getString(cn).equals(other.getString(cn));
                     break;
-                case Date:
-                    same = this.getDate(cn).equals(other.getDate(cn));
-                    break;
                 case Integer:
                     same = this.getInt(cn) == other.getInt(cn);
                     break;
+                case Date:
                 case Double:
-                    same = this.getDouble(cn) == other.getDouble(cn);
-                    break;
                 case Duration:
-                    same = this.getDuration(cn).equals(other.getDuration(cn));
+                    same = this.getDouble(cn) == other.getDouble(cn);
                     break;
                 default:
                     throw new RuntimeException("Unexpected kind " + schema.getKind(cn));

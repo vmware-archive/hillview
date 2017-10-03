@@ -24,7 +24,7 @@ import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.HashMap;
 
 public class SparseColumn extends BaseColumn
@@ -175,9 +175,9 @@ public class SparseColumn extends BaseColumn
     }
 
     @Override
-    public LocalDateTime getDate(final int rowIndex) {
+    public Instant getDate(final int rowIndex) {
         Object o = this.getObject(rowIndex);
-        return (LocalDateTime)o;
+        return (Instant)o;
     }
 
     @Override

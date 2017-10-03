@@ -19,7 +19,7 @@ package org.hillview.table.api;
 
 import javax.annotation.Nullable;
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Interface implemented by a column where data can be appended.
@@ -37,9 +37,14 @@ public interface IAppendableColumn extends IColumn {
     { this.append((Object)value); }
     default void append(final double value)
     { this.append((Object)value); }
-    default void append(@Nullable final LocalDateTime value)
+    default void append(@Nullable final Instant value)
     { this.append((Object)value); }
     default void append(@Nullable final Duration value)
     { this.append((Object)value); }
     void appendMissing();
+
+    /**
+     * Parse this string and append it to the column.
+     */
+    void parseAndAppendString(@Nullable String s);
 }

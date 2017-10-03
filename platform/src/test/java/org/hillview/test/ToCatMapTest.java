@@ -38,8 +38,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-public class ToCatMapTest {
-
+public class ToCatMapTest extends BaseTest {
     private Table tableWithStringColumn() {
         ColumnDescription c0 = new ColumnDescription("Name", ContentsKind.String, false);
         ColumnDescription c1 = new ColumnDescription("Age", ContentsKind.Integer, false);

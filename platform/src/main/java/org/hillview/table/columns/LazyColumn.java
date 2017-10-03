@@ -24,7 +24,7 @@ import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * A LazyColumn is loaded lazily on demand.  The data is kept in a separate column.
@@ -62,7 +62,7 @@ public class LazyColumn implements IColumn {
 
     @Nullable
     @Override
-    public LocalDateTime getDate(int rowIndex) {
+    public Instant getDate(int rowIndex) {
         return this.loadIfNecessary().getDate(rowIndex);
     }
 

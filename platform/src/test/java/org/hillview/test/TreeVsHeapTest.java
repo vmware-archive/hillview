@@ -22,7 +22,7 @@ import org.hillview.sketches.TreeTopK;
 import org.hillview.utils.Randomness;
 import org.junit.Test;
 
-public class TreeVsHeapTest {
+public class TreeVsHeapTest extends BaseTest {
     private final int inpSize = 1000;
     private final int[] randInp = new int[this.inpSize];
     private final Randomness rn = new Randomness();

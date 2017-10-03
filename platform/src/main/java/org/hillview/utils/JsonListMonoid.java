@@ -31,7 +31,7 @@ public class JsonListMonoid<T> implements IMonoid<JsonList<T>> {
     @Nullable
     @Override
     public JsonList<T> add(@Nullable JsonList<T> left, @Nullable JsonList<T> right) {
-        JsonList<T> result = new JsonList(left);
+        JsonList<T> result = new JsonList<T>(Converters.checkNull(left));
         result.addAll(right);
         return result;
     }

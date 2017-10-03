@@ -27,7 +27,7 @@ import org.hillview.utils.Converters;
 
 import java.io.Serializable;
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -84,12 +84,12 @@ public class RowSnapshot extends BaseRowSnapshot implements Serializable, IJson 
         return (int)this.fields.get(colName);
     }
 
-    public double getDouble( String colName) {
+    public double getDouble(String colName) {
         return (double)this.fields.get(colName);
     }
 
-    public LocalDateTime getDate( String colName) {
-        return (LocalDateTime)this.fields.get(colName);
+    public Instant getDate(String colName) {
+        return (Instant)this.fields.get(colName);
     }
 
     public Duration getDuration( String colName) {

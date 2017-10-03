@@ -32,7 +32,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Test class for the sketches of all types of histograms.
  */
-public class HistSketchTest {
+public class HistSketchTest extends BaseTest {
     @Test
     public void Histogram1DTest() {
         final int numCols = 1;

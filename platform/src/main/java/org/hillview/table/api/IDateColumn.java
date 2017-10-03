@@ -21,14 +21,14 @@ import net.openhft.hashing.LongHashFunction;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public interface IDateColumn extends IColumn {
     @Override
     default double asDouble(final int rowIndex, @Nullable final IStringConverter unused) {
         if (isMissing(rowIndex))
             throw new MissingException(this, rowIndex);
-        final LocalDateTime tmp = this.getDate(rowIndex);
+        final Instant tmp = this.getDate(rowIndex);
         return Converters.toDouble(Converters.checkNull(tmp));
     }
 

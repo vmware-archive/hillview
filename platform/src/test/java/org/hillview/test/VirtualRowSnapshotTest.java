@@ -17,8 +17,9 @@
 
 package org.hillview.test;
 
-import org.eclipse.collections.api.block.HashingStrategy;
-import org.eclipse.collections.impl.map.strategy.mutable.UnifiedMapWithHashingStrategy;
+import it.unimi.dsi.fastutil.Hash;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenCustomHashMap;
 import org.hillview.table.rows.BaseRowSnapshot;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.Schema;
@@ -28,11 +29,12 @@ import org.hillview.table.api.ITable;
 import org.hillview.utils.TestTables;
 import org.junit.Test;
 
+import javax.annotation.Nullable;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class VirtualRowSnapshotTest {
-
+public class VirtualRowSnapshotTest extends BaseTest {
     public void testSnapshots(ITable data) {
         VirtualRowSnapshot vrs = new VirtualRowSnapshot(data);
         IRowIterator rowIt = data.getRowIterator();
@@ -59,9 +61,9 @@ public class VirtualRowSnapshotTest {
     public void VRSTest2() {
         ITable data = TestTables.testRepTable();
         Schema schema = data.getSchema();
-        HashingStrategy<BaseRowSnapshot> hs = new HashingStrategy<BaseRowSnapshot>() {
+        Hash.Strategy<BaseRowSnapshot> hs = new Hash.Strategy<BaseRowSnapshot>() {
             @Override
-            public int computeHashCode(BaseRowSnapshot brs) {
+            public int hashCode(BaseRowSnapshot brs) {
                 if (brs instanceof VirtualRowSnapshot) {
                     return brs.hashCode();
                 } else if (brs instanceof RowSnapshot) {
@@ -71,12 +73,16 @@ public class VirtualRowSnapshotTest {
             }
 
             @Override
-            public boolean equals(BaseRowSnapshot brs1, BaseRowSnapshot brs2) {
+            public boolean equals(BaseRowSnapshot brs1, @Nullable BaseRowSnapshot brs2) {
+                // brs2 is null because the hashmap explicitly calls with null
+                // even if null cannot be a key.
+                if (brs2 == null)
+                    return brs1 == null;
                 return brs1.compareForEquality(brs2, schema);
             }
         };
-        UnifiedMapWithHashingStrategy<BaseRowSnapshot, Integer> hMap = new
-                UnifiedMapWithHashingStrategy<BaseRowSnapshot, Integer>(hs);
+        Object2IntMap<BaseRowSnapshot> hMap = new
+                Object2IntOpenCustomHashMap<BaseRowSnapshot>(hs);
         for (int i = 0; i < 2; i++ ) {
             BaseRowSnapshot rs = new RowSnapshot(data, i);
             hMap.put(rs, 0);
@@ -86,7 +92,7 @@ public class VirtualRowSnapshotTest {
         vrs.setRow(0);
         if (hMap.containsKey(vrs)) {
             System.out.println("A hit!\n");
-            int count = hMap.get(vrs);
+            int count = hMap.getInt(vrs);
             hMap.put(vrs, count + 1);
         } else {
             throw new RuntimeException("Not found");

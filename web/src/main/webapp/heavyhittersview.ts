@@ -21,7 +21,7 @@ import {IColumnDescription, ColumnDescription, Schema, RecordOrder} from "./tabl
 import {TableView, TableDataView, TopList, TableOperationCompleted} from "./table";
 import {TopMenu, TopSubMenu} from "./menu";
 import {DataRange} from "./vis";
-import {RemoteObject, Renderer} from "./rpc";
+import {RemoteObject, Renderer, OnCompleteRenderer} from "./rpc";
 import {PartialResult, ICancellable} from "./util";
 
 // Class that renders a table containing the heavy hitters in sorted
@@ -208,29 +208,18 @@ export class HeavyHittersView extends RemoteTableObjectView {
 }
 
 // This class handles the reply of the "checkHeavy" method.
-export class HeavyHittersReceiver2 extends Renderer<TopList> {
-    private newData: TopList;
+export class HeavyHittersReceiver2 extends OnCompleteRenderer<TopList> {
     public constructor(public hhv: HeavyHittersView,
                        public operation: ICancellable) {
         super(hhv.page, operation, "Heavy hitters -- exact counts");
-        this.newData = null;
     }
 
-    onNext(value: PartialResult<TopList>): any {
-        super.onNext(value);
-        if (value.data != null)
-            this.newData = value.data;
-    }
-
-    onCompleted(): void {
-        super.finished();
-        if (this.newData == null)
-            return;
+    run(newData: TopList): void {
         let newPage = new FullPage();
-        let newHhv = new HeavyHittersView(this.newData, newPage, this.hhv.tv, this.hhv.schema, this.hhv.order, false);
+        let newHhv = new HeavyHittersView(newData, newPage, this.hhv.tv, this.hhv.schema, this.hhv.order, false);
         newPage.setDataView(newHhv);
         this.page.insertAfterMe(newPage);
-        newHhv.fill(this.newData.top, this.elapsedMilliseconds());
+        newHhv.fill(newData.top, this.elapsedMilliseconds());
         newHhv.scrollIntoView();
     }
 }

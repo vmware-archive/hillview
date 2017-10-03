@@ -17,26 +17,19 @@
 
 package org.hillview;
 
-import org.hillview.dataset.api.IDataSet;
-import org.hillview.maps.LoadFileMapper;
-import org.hillview.utils.CsvFileObject;
+import org.hillview.utils.HillviewLogger;
 
-public final class FileNamesTarget extends RpcTarget {
-    private final IDataSet<CsvFileObject> files;
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
 
-    FileNamesTarget(IDataSet<CsvFileObject> files, HillviewComputation computation) {
-        super(computation);
-        this.files = files;
-        this.registerObject();
-    }
-
-    @HillviewRpc
-    public void loadTable(RpcRequest request, RpcRequestContext context) {
-        this.runMap(this.files, new LoadFileMapper(), TableTarget::new, request, context);
-    }
-
+public class WebServerInitializer implements ServletContextListener {
     @Override
-    public String toString() {
-        return "FileNamesTarget object, " + super.toString();
+    public void contextDestroyed(ServletContextEvent arg) {}
+
+    // This is run before the web application is started.
+    @Override
+    public void contextInitialized(ServletContextEvent arg) {
+        HillviewLogger.initialize("hillview-web.log");
+        HillviewLogger.instance.info("Server started");
     }
 }

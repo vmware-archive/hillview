@@ -17,14 +17,16 @@
 
 package org.hillview.table.rows;
 
-import org.eclipse.collections.api.block.HashingStrategy;
-import org.eclipse.collections.impl.set.strategy.mutable.UnifiedSetWithHashingStrategy;
+import it.unimi.dsi.fastutil.Hash;
+import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectSet;
 import org.hillview.table.Schema;
 import org.hillview.table.api.ITableFilter;
 import org.hillview.table.api.ITable;
 import org.hillview.table.api.ITableFilterDescription;
 import org.hillview.utils.Converters;
 
+import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.util.function.Consumer;
 
@@ -35,7 +37,7 @@ import java.util.function.Consumer;
 public class RowSnapshotSet implements Serializable {
     @SuppressWarnings("FieldCanBeLocal")
     private final Schema schema;
-    private final UnifiedSetWithHashingStrategy<BaseRowSnapshot> rowSet;
+    private final ObjectSet<BaseRowSnapshot> rowSet;
 
     public RowSnapshotSet() {
         this(new Schema());
@@ -44,7 +46,7 @@ public class RowSnapshotSet implements Serializable {
     public RowSnapshotSet(Schema schema) {
         Converters.checkNull(schema);
         this.schema = schema;
-        this.rowSet = new UnifiedSetWithHashingStrategy<BaseRowSnapshot>(
+        this.rowSet = new ObjectOpenCustomHashSet<BaseRowSnapshot>(
                           new BaseRowSnapshotHashingStrategy(schema));
     }
 
@@ -97,7 +99,8 @@ public class RowSnapshotSet implements Serializable {
         }
     }
 
-    static class BaseRowSnapshotHashingStrategy implements HashingStrategy<BaseRowSnapshot>, Serializable {
+    static class BaseRowSnapshotHashingStrategy implements
+            Hash.Strategy<BaseRowSnapshot> {
         private final Schema schema;
 
         public BaseRowSnapshotHashingStrategy(final Schema schema) {
@@ -105,13 +108,15 @@ public class RowSnapshotSet implements Serializable {
         }
 
         @Override
-        public int computeHashCode(BaseRowSnapshot row) {
+        public int hashCode(BaseRowSnapshot row) {
             Converters.checkNull(this.schema);
             return row.computeHashCode(this.schema);
         }
 
         @Override
-        public boolean equals(BaseRowSnapshot left, BaseRowSnapshot right) {
+        public boolean equals(BaseRowSnapshot left, @Nullable BaseRowSnapshot right) {
+            if (right == null)
+                return left == null;
             return left.compareForEquality(right, this.schema);
         }
     }

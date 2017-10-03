@@ -21,7 +21,7 @@ import org.hillview.table.SortedStringsConverter;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class ConverterTest {
+public class ConverterTest extends BaseTest {
     @Test
     public void checkSortedConverter() {
         double eps = .0001;

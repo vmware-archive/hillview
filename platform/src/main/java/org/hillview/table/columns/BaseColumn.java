@@ -21,7 +21,7 @@ import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Base class for all columns.
@@ -49,7 +49,7 @@ abstract class BaseColumn implements IColumn {
     }
 
     @Override
-    public LocalDateTime getDate(final int rowIndex) {
+    public Instant getDate(final int rowIndex) {
         throw new UnsupportedOperationException();
     }
 

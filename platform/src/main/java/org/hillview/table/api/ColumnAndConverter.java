@@ -19,7 +19,7 @@ package org.hillview.table.api;
 
 import javax.annotation.Nullable;
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Convenience class packing a column and its associated string converter.
@@ -54,7 +54,8 @@ public class ColumnAndConverter {
         return this.column.getInt(rowIndex);
     }
 
-    public @Nullable LocalDateTime getDate(int rowIndex) {
+    public @Nullable
+    Instant getDate(int rowIndex) {
         return this.column.getDate(rowIndex);
     }
 

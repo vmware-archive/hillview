@@ -25,7 +25,7 @@ import org.hillview.utils.TestTables;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class RowSnapShotEqualityTest {
+public class RowSnapShotEqualityTest extends BaseTest {
     @Test
     public void rowSnapShotEqualityTest() {
         Table t = TestTables.testRepTable();

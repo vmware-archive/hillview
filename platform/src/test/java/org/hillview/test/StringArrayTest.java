@@ -27,7 +27,7 @@ import static org.junit.Assert.*;
 /*
  * Test for StringArrayColumn class.
 */
-public class StringArrayTest {
+public class StringArrayTest extends BaseTest {
     private final int size = 100;
     private final ColumnDescription desc = new ColumnDescription("test", ContentsKind.String, true);
 

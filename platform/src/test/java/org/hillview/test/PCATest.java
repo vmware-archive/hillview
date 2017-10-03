@@ -21,11 +21,7 @@ import org.hillview.dataset.api.IDataSet;
 import org.hillview.maps.LinearProjectionMap;
 import org.hillview.sketches.CorrMatrix;
 import org.hillview.sketches.FullCorrelationSketch;
-import org.hillview.storage.CsvFileReader;
-import org.hillview.table.Schema;
-import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.ITable;
-import org.hillview.utils.Converters;
 import org.hillview.utils.LinAlg;
 import org.hillview.utils.TestTables;
 import org.hillview.utils.TestUtils;
@@ -33,16 +29,11 @@ import org.jblas.DoubleMatrix;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
-public class PCATest {
+public class PCATest extends BaseTest {
     @Test
     public void testLinearDataset() {
         ITable table = TestTables.getLinearTable(10000, 30);

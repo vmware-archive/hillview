@@ -25,7 +25,7 @@ import org.hillview.utils.Converters;
 import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /*
  * Column of objects of any type; only for moving data around. Size of column expected to be small.
@@ -129,8 +129,8 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
     }
 
     @Override
-    public LocalDateTime getDate(final int rowIndex) {
-        return (LocalDateTime) this.data[rowIndex];
+    public Instant getDate(final int rowIndex) {
+        return (Instant) this.data[rowIndex];
     }
 
     @Override

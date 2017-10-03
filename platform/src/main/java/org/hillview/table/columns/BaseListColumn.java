@@ -83,8 +83,6 @@ public abstract class BaseListColumn extends BaseColumn implements IAppendableCo
         this.size++;
     }
 
-    public abstract void parseAndAppendString(@Nullable String s);
-
     void parseEmptyOrNull() {
         if (!this.description.allowMissing)
             throw new RuntimeException("Appending missing data to column " + this.toString());

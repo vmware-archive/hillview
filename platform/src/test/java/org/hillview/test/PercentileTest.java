@@ -21,7 +21,7 @@ import org.hillview.utils.Randomness;
 import org.junit.Test;
 import java.util.Arrays;
 
-public class PercentileTest {
+public class PercentileTest extends BaseTest {
     @Test
     public void plotPercentile() {
         final int resolution = 2000;

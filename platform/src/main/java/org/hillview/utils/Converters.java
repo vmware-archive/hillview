@@ -18,20 +18,17 @@
 package org.hillview.utils;
 
 import javax.annotation.Nullable;
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.*;
 
 /**
  * Conversion to and from doubles of various supported datatypes.
  */
 public class Converters {
-    private static final LocalDateTime baseTime = LocalDateTime.of(
+    private static final Instant baseTime = LocalDateTime.of(
             LocalDate.of(1970, 1, 1),
-            LocalTime.of(0, 0));
+            LocalTime.of(0, 0)).toInstant(ZoneOffset.UTC);
 
-    public static double toDouble(final LocalDateTime d) {
+    public static double toDouble(final Instant d) {
         Duration span = Duration.between(baseTime, d);
         return Converters.toDouble(span);
     }
@@ -48,7 +45,7 @@ public class Converters {
      * @param d input date.
      * @return Span from base converted to a double.
      */
-    public static LocalDateTime toDate(final double d) {
+    public static Instant toDate(final double d) {
         Duration span = toDuration(d);
         return baseTime.plus(span);
     }

@@ -17,7 +17,7 @@
 
 package org.hillview.test;
 
-class PerfRegressionTest {
+class PerfRegressionTest extends BaseTest {
     /**
      * Compare current run time of test to saved run time.
      */
