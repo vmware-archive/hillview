@@ -38,6 +38,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class InitialObjectTarget extends RpcTarget {
@@ -120,9 +121,6 @@ public class InitialObjectTarget extends RpcTarget {
             finder = new FindCsvFileMapper(dataFolder, 0, "mnist.csv", "mnist.schema");
         } else if (which == 4) {
             finder = new FindCsvFileMapper(dataFolder, 0, "segmentation.csv", "segmentation.schema");
-        } else if (which == 5) {
-            finder = null;
-            // TODO
         } else {
             throw new RuntimeException("Unexpected operation " + which);
         }
@@ -134,7 +132,8 @@ public class InitialObjectTarget extends RpcTarget {
     @HillviewRpc
     void findLogs(RpcRequest request, RpcRequestContext context) {
         Converters.checkNull(this.emptyDataset);
-        IMap<Empty, List<String>> finder = new FindFilesMapper(".", 0, "hillview.log");
+        UUID cookie = UUID.randomUUID();
+        IMap<Empty, List<String>> finder = new FindFilesMapper(".", 0, "hillview.log", cookie.toString());
         HillviewLogger.instance.info("Finding logs");
         this.runFlatMap(this.emptyDataset, finder, LogFileTarget::new, request, context);
     }
