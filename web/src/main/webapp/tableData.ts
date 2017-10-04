@@ -258,7 +258,7 @@ export class RemoteTableObject extends RemoteObject {
         return this.createRpcRequest("setOperation", CombineOperators[setOp]);
     }
 
-    public createSampledControlPointsRequest(rowCount: number, numSamples: number, columnNames: string[], seed: number) {
+    public createSampledControlPointsRequest(rowCount: number, numSamples: number, columnNames: string[], seed: number = 1) {
         return this.createRpcRequest("sampledControlPoints", {rowCount: rowCount, numSamples: numSamples, columnNames: columnNames, seed: seed});
     }
 
