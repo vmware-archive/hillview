@@ -40,7 +40,7 @@ public class ColumnAndRange implements Serializable {
         IStringConverter converter = null;
         if (this.bucketBoundaries != null) {
             converter = new SortedStringsConverter(
-                    this.bucketBoundaries, (int) Math.ceil(this.min), (int) Math.floor(this.max));
+                    this.bucketBoundaries, (int)Math.ceil(this.min), (int) Math.floor(this.max));
         }
         BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(this.min, this.max, this.bucketCount);
         ColumnNameAndConverter column = new ColumnNameAndConverter(this.columnName, converter);

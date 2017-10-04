@@ -40,18 +40,25 @@ public class FindFilesMapper implements IMap<Empty, List<String>> {
     private final int maxCount;
     @Nullable
     private final String fileNamePattern;
+    @SuppressWarnings("FieldCanBeLocal")
+    @Nullable
+    private final String cookie;
 
     /**
      * Create an object to find all file names that match the specification.
      * @param folder   Folder where files are sought.
      * @param maxCount Maximum number of files to find.  If 0 there is no limit.
      * @param fileNamePattern  Regex for file names to search.  If null all file names match.
+     * @param cookie   Supplying here a unique string will make the map un-cache-able,
+     *                 forcing it to load the files again.  There is no other use for the
+     *                 cookie.
      */
     public FindFilesMapper(String folder, int maxCount,
-                           @Nullable String fileNamePattern) {
+                           @Nullable String fileNamePattern, @Nullable String cookie) {
         this.folder = folder;
         this.maxCount = maxCount;
         this.fileNamePattern = fileNamePattern;
+        this.cookie = cookie;
     }
 
     @Override

@@ -343,8 +343,8 @@ export class DistinctStrings implements IDistinctStrings {
         let boundaries: string[] = null;
         if (min <= 0)
             min = 0;
-        if (max >= this.uniqueStrings.length - 2)
-            max = this.uniqueStrings.length - 2;
+        if (max >= this.uniqueStrings.length - 1)
+            max = this.uniqueStrings.length - 1;
         max = Math.floor(max);
         min = Math.ceil(min);
         let range = max - min;

@@ -71,6 +71,7 @@ public class HillviewLogs {
             output[6] = m.group(7); // Method
             output[7] = m.group(8); // Method
             output[8] = StringEscapeUtils.unescapeCsv(m.group(9)); // Arguments
+            output[8] = output[8].replace("\\n", "\n");
         }
 
         @Override

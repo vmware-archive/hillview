@@ -6,6 +6,10 @@
     - name: Load variables from configuration file
       include_vars: config.yaml
 
+    - stat:
+         path: "{{service_folder}}"
+      register: folder
+
     - name: Create root service folder
       file:
         path: "{{service_folder}}"
@@ -13,6 +17,7 @@
         mode: 0755
         owner: "{{ansible_user}}"
       become: yes
+      when: folder.stat.isdir is not defined
 
     - name: Create code directory
       file:
@@ -37,6 +42,10 @@
     - name: Load variables from configuration file
       include_vars: config.yaml
 
+    - stat:
+         path: "{{service_folder}}"
+      register: folder
+
     - name: Create root service folder
       file:
         path: "{{service_folder}}"
@@ -44,6 +53,7 @@
         mode: 0755
         owner: "{{ansible_user}}"
       become: yes
+      when: folder.stat.isdir is not defined
 
     - stat:
          path: "{{service_folder}}/{{tomcat_version}}"
