@@ -36,12 +36,15 @@ class ControlPointsView extends RemoteTableObjectView {
     private minY: number;
     private maxX: number;
     private maxY: number;
+    private maxVal: number; // Maximum value in the heat map
     private heatMapCanvas: any;
     private heatMapChart: any;
     private controlPointsCanvas: any;
     private controlPointsChart: any;
     public controlPoints: PointSet2D;
-    private heatMap: HeatMapData;
+    private heatMapDots: Array<any>;
+    private xDots: number;
+    private yDots: number;
     private lampTableObject: RemoteTableObject;
     private colorMap: ColorMap;
     private colorLegend: ColorLegend;
@@ -139,46 +142,53 @@ class ControlPointsView extends RemoteTableObjectView {
         this.applyLAMP();
     }
 
-    public updateHeatMap(heatMap: HeatMapData) {
-        this.heatMap = heatMap;
-        this.updateHeatMapView();
-    }
-    public updateHeatMapView() {
-        if (this.heatMap == null)
-            return;
-        this.heatMapChart.selectAll("*").remove();
-        this.heatMapChart.append("rect")
-            .attr("x", 0)
-            .attr("y", 0)
-            .attr("width", this.heatMapChart.attr("width"))
-            .attr("height", this.heatMapChart.attr("height"))
-            .style("fill", "none")
-            .style("stroke", "black");
-        let pointWidth = this.heatMapChart.attr("width") / this.heatMap.buckets.length;
-        let pointHeight = this.heatMapChart.attr("height") / this.heatMap.buckets[0].length;
-        let dots = [];
-        let max = 0;
-        for (let i = 0; i < this.heatMap.buckets.length; i++) {
-            for (let j = 0; j < this.heatMap.buckets[0].length; j++) {
-                let val = this.heatMap.buckets[i][j];
+    public updateHeatMap(heatMap: HeatMapData, lampTime: number) {
+        this.getPage().reportError(`LAMP completed in ${lampTime} s.`);
+
+        this.xDots = heatMap.buckets.length;
+        this.yDots = heatMap.buckets[0].length;
+        this.heatMapDots = [];
+        this.maxVal = 0;
+        for (let i = 0; i < this.xDots; i++) {
+            for (let j = 0; j < this.yDots; j++) {
+                let val = heatMap.buckets[i][j];
                 if (val > 0) {
-                    dots.push({x: i * pointWidth, y: this.heatMapChart.attr("height") - (j + 1) * pointHeight, v: val});
-                    max = Math.max(val, max);
+                    this.heatMapDots.push({x: i / this.xDots, y: 1 - (j + 1) / this.yDots, v: val});
+                    this.maxVal = Math.max(val, this.maxVal);
                 }
             }
         }
         this.colorMap.min = 1;
-        this.colorMap.max = max;
+        this.colorMap.max = this.maxVal;
+        this.colorMap.setLogScale(this.maxVal > ColorMap.logThreshold);
+
+        this.updateHeatMapView();
+    }
+    public updateHeatMapView() {
+        if (this.heatMapDots == null)
+            return;
+        let chartWidth = this.heatMapChart.attr("width");
+        let chartHeight = this.heatMapChart.attr("height");
+
+        this.heatMapChart.selectAll("*").remove();
+        this.heatMapChart.append("rect")
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("width", chartWidth)
+            .attr("height", chartHeight)
+            .style("fill", "none")
+            .style("stroke", "black");
+
         this.colorLegend.redraw();
         this.heatMapChart.selectAll()
-            .data(dots)
+            .data(this.heatMapDots)
             .enter()
             .append("rect")
-            .attr("x", d => d.x)
-            .attr("y", d => d.y)
+            .attr("x", d => d.x * chartWidth)
+            .attr("y", d => d.y * chartHeight)
             .attr("data-val", d => d.v)
-            .attr("width", pointWidth)
-            .attr("height", pointHeight)
+            .attr("width", chartWidth / this.xDots)
+            .attr("height", chartHeight / this.yDots)
             .style("stroke-width", 0)
             .style("fill", d => this.colorMap.apply(d.v));
     }
@@ -295,12 +305,13 @@ export class LAMPDialog extends Dialog {
     constructor(private selectedColumns: string[], private page: FullPage,
                 private schema: Schema, private remoteObject: TableView) {
         super("LAMP");
-        this.addTextField("numSamples", "No. control points", "Integer", "15");
+        this.addTextField("numSamples", "No. control points", "Integer", "20");
         this.addSelectField("controlPointSelection", "Control point selection", ["Random samples", "Category centroids"], "Random samples");
         let catColumns = [""];
         for (let i = 0; i < schema.length; i++)
             if (schema[i].kind == "Category")
                 catColumns.push(schema[i].name);
+        this.addTextField("seed", "Random seed", "Integer", "1");
         this.addSelectField("category", "Category for centroids", catColumns, "");
         this.addSelectField("controlPointProjection", "Control point projection", ["MDS"], "MDS");
         this.setAction(() => this.execute());
@@ -315,11 +326,11 @@ export class LAMPDialog extends Dialog {
         let selection = this.getFieldValue("controlPointSelection");
         let projection = this.getFieldValue("controlPointProjection");
         let category = this.getFieldValue("category");
-
+        let seed = this.getFieldValueAsInt("seed");
         let rr: RpcRequest;
         switch (selection) {
             case "Random samples": {
-                rr = this.remoteObject.createSampledControlPointsRequest(this.remoteObject.getTotalRowCount(), numSamples, this.selectedColumns);
+                rr = this.remoteObject.createSampledControlPointsRequest(this.remoteObject.getTotalRowCount(), numSamples, this.selectedColumns, seed);
                 break;
             }
             case "Category centroids": {
@@ -388,15 +399,16 @@ class LAMPMapReceiver extends RemoteTableRenderer {
 
     onCompleted() {
         super.finished();
+        let lampTime = this.elapsedMilliseconds() / 1000;
         this.cpView.updateRemoteTable(this.remoteObject);
         let rr = this.remoteObject.createHeatMapRequest(this.xColAndRange, this.yColAndRange);
-        rr.invoke(new LAMPHeatMapReceiver(this.page, rr, this.cpView));
+        rr.invoke(new LAMPHeatMapReceiver(this.page, rr, this.cpView, lampTime));
     }
 }
 
 class LAMPHeatMapReceiver extends Renderer<HeatMapData> {
     private heatMap: HeatMapData;
-    constructor(page, operation, private controlPointsView: ControlPointsView) {
+    constructor(page, operation, private controlPointsView: ControlPointsView, private lampTime: number) {
         super(page, operation, "Computing heat map")
     }
 
@@ -404,7 +416,7 @@ class LAMPHeatMapReceiver extends Renderer<HeatMapData> {
         super.onNext(result);
         this.heatMap = result.data;
         if (this.heatMap != null) {
-            this.controlPointsView.updateHeatMap(this.heatMap);
+            this.controlPointsView.updateHeatMap(this.heatMap, this.lampTime);
         }
     }
 

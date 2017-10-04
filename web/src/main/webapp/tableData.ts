@@ -258,8 +258,8 @@ export class RemoteTableObject extends RemoteObject {
         return this.createRpcRequest("setOperation", CombineOperators[setOp]);
     }
 
-    public createSampledControlPointsRequest(rowCount: number, numSamples: number, columnNames: string[]) {
-        return this.createRpcRequest("sampledControlPoints", {rowCount: rowCount, numSamples: numSamples, columnNames: columnNames});
+    public createSampledControlPointsRequest(rowCount: number, numSamples: number, columnNames: string[], seed: number) {
+        return this.createRpcRequest("sampledControlPoints", {rowCount: rowCount, numSamples: numSamples, columnNames: columnNames, seed: seed});
     }
 
     public createCategoricalCentroidsControlPointsRequest(categoricalColumnName: string, numericalColumnNames: string[]) {

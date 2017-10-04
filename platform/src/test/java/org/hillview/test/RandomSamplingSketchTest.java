@@ -27,11 +27,12 @@ import org.junit.Test;
 public class RandomSamplingSketchTest extends BaseTest {
     @Test
     public void testRandomSampling() {
+        long seed = 1;
         ITable table = TestTables.getNdGaussianBlobs(10, 1000, 15, 0.1);
         IDataSet<ITable> dataset = TestTables.makeParallel(table, 500);
         int numSamples = 20;
         double samplingRate = ((double) numSamples) / table.getNumOfRows();
-        RandomSamplingSketch sketch = new RandomSamplingSketch(samplingRate);
+        RandomSamplingSketch sketch = new RandomSamplingSketch(samplingRate, seed);
         SmallTable result = dataset.blockingSketch(sketch);
         System.out.println(String.format("Result has %d rows.", result.getNumOfRows()));
         result = result.compress(result.getMembershipSet().sample(numSamples));
