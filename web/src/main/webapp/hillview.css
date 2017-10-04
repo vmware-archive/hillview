@@ -261,6 +261,7 @@ table.dropdown {
     justify-content: center;
     align-items: stretch;
     text-align: center;
+    margin-bottom: 20px;
 }
 
 .lampView > div {
