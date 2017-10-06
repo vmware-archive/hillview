@@ -18,6 +18,7 @@
 package org.hillview.sketches;
 
 import it.unimi.dsi.fastutil.ints.Int2IntOpenCustomHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenCustomHashMap;
 import it.unimi.dsi.fastutil.ints.IntHash;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
@@ -137,8 +138,7 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
                 return this.vrs.compareForEquality(this.vrs1, FreqKSketch.this.schema);
             }
         };
-        Int2IntOpenCustomHashMap hMap = new Int2IntOpenCustomHashMap(hs);
-
+        Int2ObjectOpenCustomHashMap<MutableInteger> hMap = new Int2ObjectOpenCustomHashMap<MutableInteger>(hs);
         IntSet toRemove = new IntOpenHashSet(this.maxSize);
         int i = rowIt.getNextRow();
         /* An optimization to speed up the algorithm is that we batch the decrements together in
@@ -147,34 +147,52 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
         int min = 0; // Minimum count currently in the hashMap
         int dec = 0; // Accumulated decrements. Should always be less than min.
         while (i != -1) {
-            if (hMap.containsKey(i)) {
-                int val = hMap.get(i);
-                hMap.put(i, val + 1);
-                if (val == min)
-                    min = Collections.min(hMap.values());
+            MutableInteger val = hMap.get(i);
+            if (val != null) {
+                val.set(val.get() + 1);
+                if (val.get() == min)
+                    min = hMap.values().stream().map(MutableInteger::get).min(Integer::compareTo).get();
             } else if (hMap.size() < this.maxSize) {
-                hMap.put(i, 1);
+                hMap.put(i, new MutableInteger(1));
                 min = 1;
             } else {
                 dec += 1;
                 if (dec == min) {
                     toRemove.clear();
                     for (int row : hMap.keySet()) {
-                        int count = hMap.get(row) - dec;
+                        MutableInteger mutableInteger = hMap.get(row);
+                        int count = mutableInteger.get() - dec;
                         if (count == 0)
                             toRemove.add(row);
                         else
-                            hMap.put(row, count);
+                            mutableInteger.set(count);
                     }
                     toRemove.forEach((IntConsumer) hMap::remove);
-                    min = !hMap.isEmpty() ? Collections.min(hMap.values()) : 0;
+                    min = !hMap.isEmpty() ?
+                            hMap.values().stream().map(MutableInteger::get).min(Integer::compareTo).get() : 0;
                 }
             }
             i = rowIt.getNextRow();
         }
         HashMap<RowSnapshot,Integer> hm = new HashMap<RowSnapshot, Integer>(this.maxSize);
         hMap.keySet().forEach((int ri) ->
-                hm.put(new RowSnapshot(data, ri, this.schema), hMap.get(ri)));
+                hm.put(new RowSnapshot(data, ri, this.schema), hMap.get(ri).get()));
         return new FreqKList(data.getNumOfRows(), this.epsilon, this.maxSize, hm);
+    }
+
+    private static class MutableInteger {
+        private int val;
+
+        public MutableInteger(int val) {
+            this.val = val;
+        }
+
+        public int get() {
+            return val;
+        }
+
+        public void set(int val) {
+            this.val = val;
+        }
     }
 }
