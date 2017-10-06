@@ -146,7 +146,7 @@ public final class RpcObjectManager {
      * @param id  Id of object to reconstruct.
      * @param toNotify An observert that is notified when the object is available.
      */
-    private void rebuild(String id, Observer<RpcTarget> toNotify) {
+    public void rebuild(String id, Observer<RpcTarget> toNotify) {
         HillviewLogger.instance.info("Attempt to reconstruct", "{0}", id);
         HillviewComputation computation = this.generator.get(id);
         if (computation != null) {

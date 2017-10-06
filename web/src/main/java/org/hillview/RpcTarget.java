@@ -19,6 +19,7 @@ package org.hillview;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import io.grpc.StatusRuntimeException;
 import org.hillview.dataset.api.*;
 import org.hillview.dataset.*;
 import org.hillview.utils.*;
@@ -158,9 +159,10 @@ abstract class RpcTarget implements IJson {
 
         @Override
         public void onError(Throwable throwable) {
-            if (this.context.session == null || !this.context.session.isOpen()) return;
             HillviewLogger.instance.error("onError", "{0}", this.name);
             HillviewLogger.instance.error("onError", throwable.toString());
+            this.checkMissingDataset(throwable);
+            if (this.context.session == null || !this.context.session.isOpen()) return;
             RpcReply reply = this.request.createReply(throwable);
             reply.send(this.context.session);
         }
@@ -169,6 +171,57 @@ abstract class RpcTarget implements IJson {
             if (this.context.computation != null)
                 return this.context.computation;
             return new HillviewComputation(this.target, this.request);
+        }
+
+        /**
+         * This observer is invoked when the source of an RpcRequest
+         * has been reconstructed; it will try to rerun the request.
+         */
+        class ReconstructionObserver implements Observer<RpcTarget> {
+            private final RpcRequest failedRequest;
+            private final RpcRequestContext context;
+            boolean succeeded = false;
+
+            ReconstructionObserver(
+                    RpcRequest failedRequest, RpcRequestContext context) {
+                this.failedRequest = failedRequest;
+                this.context = context;
+            }
+
+            @Override
+            public void onCompleted() {
+                if (!this.succeeded)
+                    return;
+                RpcServer.execute(this.failedRequest, this.context);
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+                HillviewLogger.instance.error(
+                        "Error rebuilding", "{0}", this.failedRequest.objectId);
+            }
+
+            @Override
+            public void onNext(RpcTarget unused) {
+                this.succeeded = true;
+            }
+        }
+
+        /**
+         * Checks whether an exception indicates that a dataset has been
+         * removed by a worker, and it may need to be reconstructed.
+         */
+        void checkMissingDataset(Throwable throwable) {
+            if (!(throwable instanceof StatusRuntimeException))
+                return;
+            StatusRuntimeException sre = (StatusRuntimeException)throwable;
+            String description = sre.getStatus().getDescription();
+            if (description != null && description.contains("DatasetMissing")) {
+                HillviewLogger.instance.info("Trying to fix broken remote objects");
+                RpcObjectManager.instance.rebuild(
+                        this.request.objectId,
+                        new ReconstructionObserver(this.request, this.context));
+            }
         }
     }
 

@@ -68,7 +68,7 @@ public abstract class BaseTable implements ITable, Serializable {
     }
 
     BaseTable() {
-        this.columns = new HashMap<>();
+        this.columns = new HashMap<String, IColumn>();
     }
 
     /**

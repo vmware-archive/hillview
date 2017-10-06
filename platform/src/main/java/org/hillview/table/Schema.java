@@ -42,6 +42,9 @@ import java.util.*;
 public final class Schema
         implements Serializable, IJson {
     private final LinkedHashMap<String, ColumnDescription> columns;
+    // Read below about how these variables are mutated even
+    // if the schema is supposed to be immutable.
+    // cachedColumnNames is also used as a boolean flag.
     @Nullable
     private String[] cachedColumnNames;
     @Nullable
@@ -105,19 +108,26 @@ public final class Schema
         return this.columns.size();
     }
 
+    /**
+     * This method is tricky: schemas are supposed to be immutable,
+     * but this method mutates the schema.  This must be thread-safe.
+     * We rely on the users of the cached data in properly calling seal().
+     */
     private synchronized void seal() {
         if (this.cachedColumnNames != null)
             // This is a benign race
             return;
 
-        this.cachedColumnNames = new String[this.columns.size()];
+        String[] cols = new String[this.columns.size()];
         this.cachedKinds = new ContentsKind[this.columns.size()];
         int index = 0;
         for (String c: this.columns.keySet()) {
-            this.cachedColumnNames[index] = c;
+            cols[index] = c;
             this.cachedKinds[index] = this.columns.get(c).kind;
             index++;
         }
+        // Important: this assignment must be made last
+        this.cachedColumnNames = cols;
     }
 
     public String[] getColumnNames() {
@@ -127,7 +137,7 @@ public final class Schema
     }
 
     public ContentsKind[] getColumnKinds() {
-         if (this.cachedKinds == null)
+         if (this.cachedColumnNames == null)
              this.seal();
          return this.cachedKinds;
     }

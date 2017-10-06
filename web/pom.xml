@@ -96,6 +96,17 @@
             <artifactId>dsiutils</artifactId>
             <version>2.4.0</version>
         </dependency>
+        <dependency>
+            <groupId>net.openhft</groupId>
+            <artifactId>zero-allocation-hashing</artifactId>
+            <version>0.8</version>
+        </dependency>
+        <!-- Used for serialization utils and string quoting -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.6</version>
+        </dependency>
     </dependencies>
 
     <build>

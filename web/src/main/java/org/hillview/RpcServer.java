@@ -72,10 +72,10 @@ public final class RpcServer {
         }
 
         RpcRequestContext context = new RpcRequestContext(session);
-        this.execute(req, context);
+        RpcServer.execute(req, context);
     }
 
-    private void sendReply(RpcReply reply, Session session) {
+    private static void sendReply(RpcReply reply, Session session) {
         try {
             JsonElement json = reply.toJson();
             session.getBasicRemote().sendText(json.toString());
@@ -84,7 +84,7 @@ public final class RpcServer {
         }
     }
 
-    private void execute(RpcRequest rpcRequest, RpcRequestContext context) {
+    public static void execute(RpcRequest rpcRequest, RpcRequestContext context) {
         HillviewLogger.instance.info("Executing request", "{0}", rpcRequest);
         // Observable invoked when the source object has been obtained.
         Observer<RpcTarget> obs = new Observer<RpcTarget>() {
@@ -98,7 +98,7 @@ public final class RpcServer {
                 Session session = context.getSessionIfOpen();
                 if (session == null)
                     return;
-                RpcServer.this.sendReply(reply, session);
+                RpcServer.sendReply(reply, session);
                 rpcRequest.syncCloseSession(session);
             }
 
@@ -113,7 +113,7 @@ public final class RpcServer {
         RpcObjectManager.instance.retrieveTarget(rpcRequest.objectId, true, obs);
     }
 
-    private void closeSession(final Session session) {
+    public static void closeSession(final Session session) {
         try {
             if (session.isOpen())
                 session.close();
@@ -126,8 +126,8 @@ public final class RpcServer {
     private void replyWithError(final Throwable th, final Session session) {
         final RpcReply reply = new RpcReply(
                 -1, Converters.checkNull(Utilities.throwableToString(th)), true);
-        this.sendReply(reply, session);
-        this.closeSession(session);
+        RpcServer.sendReply(reply, session);
+        RpcServer.closeSession(session);
     }
 
     @SuppressWarnings("unused")

@@ -88,6 +88,8 @@ public class Table extends BaseTable {
         for (int i=0; i < columns.length; i++) {
             String name = columns[i].columnName;
             IColumn col = this.columns.get(name);
+            if (col == null)
+                throw new RuntimeException("Could not find column " + name);
             result[i] = new ColumnAndConverter(col, columns[i].getConverter());
         }
         return result;

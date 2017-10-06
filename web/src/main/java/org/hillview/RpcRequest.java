@@ -27,9 +27,21 @@ import javax.annotation.Nullable;
 import javax.websocket.Session;
 
 final class RpcRequest {
+    /**
+     * Each pair request-response uses a matching id.
+     */
     private final int requestId;
+    /**
+     * The id of the RpcTarget on which this RpcRequest operates.
+     */
     final String objectId;
+    /**
+     * The method of the RpcTarget that is being invoked.
+     */
     public final String method;
+    /**
+     * The method arguments, encoded as JSON; the method will decode these itself.
+     */
     @Nullable
     private final String arguments;  // A JSON string
 
