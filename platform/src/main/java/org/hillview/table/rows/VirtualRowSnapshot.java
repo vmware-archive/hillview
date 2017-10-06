@@ -49,10 +49,6 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
     private final Schema schema;
     private final HashMap<String, IColumn> columns;
 
-    public VirtualRowSnapshot(final ITable table) {
-        this(table, table.getSchema());
-    }
-
     public VirtualRowSnapshot(final ITable table, final Schema schema) {
         this.table = table;
         this.schema = schema;
@@ -62,8 +58,12 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
         ColumnAndConverter[] cols = table.getLoadedColumns(ccds);
         for (ColumnAndConverter col: cols) {
             Converters.checkNull(col);
-            this.columns.put(col.getName(), col.column);
+            this.columns.put(col.getName(), Converters.checkNull(col.column));
         }
+    }
+
+    public VirtualRowSnapshot(final ITable table) {
+        this(table, table.getSchema());
     }
 
     public void setRow(final int rowIndex) {
@@ -93,7 +93,7 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
     }
 
     public boolean isMissing(String colName) {
-        return (this.getColumn(colName).isMissing(this.rowIndex));
+        return this.getColumn(colName).isMissing(this.rowIndex);
     }
 
     @Override

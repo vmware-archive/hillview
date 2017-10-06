@@ -106,6 +106,10 @@ public final class Schema
     }
 
     private synchronized void seal() {
+        if (this.cachedColumnNames != null)
+            // This is a benign race
+            return;
+
         this.cachedColumnNames = new String[this.columns.size()];
         this.cachedKinds = new ContentsKind[this.columns.size()];
         int index = 0;
