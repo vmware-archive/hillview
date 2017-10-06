@@ -60,7 +60,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  * If memoization is enabled, it caches the results of (operation, dataset-index) types.
  */
 public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
-    public static final int DEFAULT_IDS_INDEX = 1;
+    /**
+     * Index of remote initial dataset, containing just the Empty object.
+     */
+    public static final int ROOT_DATASET_INDEX = 0;
     public static final int DEFAULT_PORT = 3569;
     private static final String LOCALHOST = "127.0.0.1";
     private static final int NUM_THREADS = 5;
@@ -87,7 +90,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                                         .build()
                                         .start();
         this.dataSets = new ConcurrentHashMap<Integer, IDataSet>();
-        this.put(this.dsIndex.incrementAndGet(), dataSet);
+        this.put(this.dsIndex.getAndIncrement(), dataSet);
     }
 
     synchronized private IDataSet get(int index) {
@@ -141,7 +144,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             public void onNext(final PartialResult<IDataSet> pr) {
                 Integer idsIndex = null;
                 if (pr.deltaValue != null) {
-                    idsIndex = HillviewServer.this.dsIndex.incrementAndGet();
+                    idsIndex = HillviewServer.this.dsIndex.getAndIncrement();
                     HillviewServer.this.put(idsIndex, pr.deltaValue);
                 }
                 final OperationResponse<Integer> res = new OperationResponse<Integer>(idsIndex);
@@ -423,13 +426,17 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
      */
     public int deleteAllDatasets() {
         // TODO: this will eventually be replaced with a smarter GC policy.
+        int removed = 0;
         List<Integer> list = new ArrayList<Integer>(this.dataSets.keySet());
         for (int i : list) {
-            if (i == 0)
+            if (i == ROOT_DATASET_INDEX)
                 continue;
             this.remove(i);
+            removed++;
         }
-        return list.size() - 1;
+        if (this.dataSets.size() == 0)
+            throw new RuntimeException("Cannot find initial dataset");
+        return removed;
     }
 
     /**

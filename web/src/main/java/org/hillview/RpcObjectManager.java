@@ -146,7 +146,7 @@ public final class RpcObjectManager {
      * @param id  Id of object to reconstruct.
      * @param toNotify An observert that is notified when the object is available.
      */
-    public void rebuild(String id, Observer<RpcTarget> toNotify) {
+    void rebuild(String id, Observer<RpcTarget> toNotify) {
         HillviewLogger.instance.info("Attempt to reconstruct", "{0}", id);
         HillviewComputation computation = this.generator.get(id);
         if (computation != null) {
@@ -161,7 +161,11 @@ public final class RpcObjectManager {
     }
 
     @SuppressWarnings("unused")
-    synchronized private void deleteObject(String id) {
+    synchronized void deleteObject(String id) {
+        if (id == "0") {
+            HillviewLogger.instance.error("Cannot delete object 0");
+            return;
+        }
         if (!this.objects.containsKey(id))
             throw new RuntimeException("Object with id " + id + " does not exist");
         this.objects.remove(id);

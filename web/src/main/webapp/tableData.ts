@@ -122,8 +122,6 @@ export interface BasicColStats {
     momentCount: number;
     min: number;
     max: number;
-    minObject: any;
-    maxObject: any;
     moments: Array<number>;
     presentCount: number;
     missingCount: number;

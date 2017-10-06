@@ -20,8 +20,6 @@ package org.hillview.sketches;
 import org.hillview.dataset.api.IJson;
 import org.hillview.table.api.*;
 
-import javax.annotation.Nullable;
-
 /**
  * A class that scans a column and collects basic statistics: maximum, minimum,
  * number of non-empty rows and the moments of asDouble values.
@@ -34,9 +32,7 @@ public class BasicColStats implements IJson {
     private long missingCount;
     // The following values are meaningful only if presentCount > 0.
     private double min;
-    @Nullable private Object minObject;
     private double max;
-    @Nullable private Object maxObject;
     private final double moments[];
 
     public BasicColStats(int momentCount) {
@@ -50,12 +46,7 @@ public class BasicColStats implements IJson {
     }
 
     public double getMin() { return this.min; }
-    @Nullable
-    public Object getMinObject() { return this.minObject; }
-
     public double getMax() { return this.max; }
-    @Nullable
-    public Object getMaxObject() { return this.maxObject; }
     /**
      *
      * @param i Moment number; note that moments are numbered from 1, not 0.
@@ -80,14 +71,10 @@ public class BasicColStats implements IJson {
                 if (this.presentCount == 0) {
                     this.min = val;
                     this.max = val;
-                    this.minObject = column.getObject(currRow);
-                    this.maxObject = this.minObject;
                 } else if (val < this.min) {
                     this.min = val;
-                    this.minObject = column.getObject(currRow);
                 } else if (val > this.max) {
                     this.max = val;
-                    this.maxObject = column.getObject(currRow);
                 }
                 if (this.momentCount > 0) {
                     double tmpMoment = val;
@@ -120,18 +107,14 @@ public class BasicColStats implements IJson {
 
         if (this.min < otherStat.min) {
             result.min = this.min;
-            result.minObject = this.minObject;
         } else {
             result.min = otherStat.min;
-            result.minObject = otherStat.minObject;
         }
 
         if (this.max > otherStat.max) {
             result.max = this.max;
-            result.maxObject = this.maxObject;
         } else {
             result.max = otherStat.max;
-            result.maxObject = otherStat.maxObject;
         }
         result.presentCount = this.presentCount + otherStat.presentCount;
         result.missingCount = this.missingCount + otherStat.missingCount;

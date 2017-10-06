@@ -218,6 +218,7 @@ abstract class RpcTarget implements IJson {
             String description = sre.getStatus().getDescription();
             if (description != null && description.contains("DatasetMissing")) {
                 HillviewLogger.instance.info("Trying to fix broken remote objects");
+                RpcObjectManager.instance.deleteObject(this.request.objectId);
                 RpcObjectManager.instance.rebuild(
                         this.request.objectId,
                         new ReconstructionObserver(this.request, this.context));

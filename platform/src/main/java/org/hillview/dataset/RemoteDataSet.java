@@ -38,7 +38,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import static org.hillview.dataset.remoting.HillviewServer.DEFAULT_IDS_INDEX;
+import static org.hillview.dataset.remoting.HillviewServer.ROOT_DATASET_INDEX;
 
 /**
  * An IDataSet that is a proxy for a DataSet on a remote machine. The remote IDataSet
@@ -52,7 +52,7 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
     private final HillviewServerGrpc.HillviewServerStub stub;
 
     public RemoteDataSet(final HostAndPort serverEndpoint) {
-        this(serverEndpoint, DEFAULT_IDS_INDEX);
+        this(serverEndpoint, ROOT_DATASET_INDEX);
     }
 
     public RemoteDataSet(final HostAndPort serverEndpoint, final int remoteHandle) {
