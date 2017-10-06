@@ -42,7 +42,10 @@ import java.util.*;
 public final class Schema
         implements Serializable, IJson {
     private final LinkedHashMap<String, ColumnDescription> columns;
-    private String[] cachedKeySet;
+    @Nullable
+    private String[] cachedColumnNames;
+    @Nullable
+    private ContentsKind[] cachedKinds;
 
     public static class Serializer implements JsonSerializer<Schema> {
         public JsonElement serialize(Schema schema, Type typeOfSchema,
@@ -71,7 +74,8 @@ public final class Schema
 
     public Schema() {
         this.columns = new LinkedHashMap<String, ColumnDescription>();
-        this.cachedKeySet = new String[0];
+        this.cachedColumnNames = null;
+        this.cachedKinds = null;
     }
 
     public void append(final ColumnDescription desc) {
@@ -79,7 +83,8 @@ public final class Schema
             throw new InvalidParameterException("Column with name " +
                     desc.name + " already exists");
         this.columns.put(desc.name, desc);
-        this.cachedKeySet = this.columns.keySet().toArray(new String[0]);
+        if (this.cachedColumnNames != null)
+            throw new RuntimeException("Changing immutable schema");
     }
 
     public int getColumnIndex(String columnName) {
@@ -100,8 +105,27 @@ public final class Schema
         return this.columns.size();
     }
 
+    private void seal() {
+        this.cachedColumnNames = new String[this.columns.size()];
+        this.cachedKinds = new ContentsKind[this.columns.size()];
+        int index = 0;
+        for (String c: this.columns.keySet()) {
+            this.cachedColumnNames[index] = c;
+            this.cachedKinds[index] = this.columns.get(c).kind;
+            index++;
+        }
+    }
+
     public String[] getColumnNames() {
-        return this.cachedKeySet;
+        if (this.cachedColumnNames == null)
+            this.seal();
+        return this.cachedColumnNames;
+    }
+
+    public ContentsKind[] getColumnKinds() {
+         if (this.cachedKinds == null)
+             this.seal();
+         return this.cachedKinds;
     }
 
     public boolean containsColumnName(String columnName) {

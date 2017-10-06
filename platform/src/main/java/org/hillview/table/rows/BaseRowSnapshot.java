@@ -20,6 +20,7 @@ package org.hillview.table.rows;
 import org.hillview.sketches.ColumnSortOrientation;
 import org.hillview.table.RecordOrder;
 import org.hillview.table.Schema;
+import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IRow;
 import org.hillview.utils.HashUtil;
 
@@ -38,13 +39,18 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
      */
     @SuppressWarnings("ConstantConditions")
     public boolean compareForEquality(BaseRowSnapshot other, Schema schema) {
-        for (String cn: schema.getColumnNames()) {
-            if (this.isMissing(cn) && other.isMissing(cn))
+        String[] columns = schema.getColumnNames();
+        ContentsKind[] kinds = schema.getColumnKinds();
+        for (int i = 0; i < columns.length; i++) {
+            String cn = columns[i];
+            boolean thisMissing = this.isMissing(cn);
+            boolean otherMissing = other.isMissing(cn);
+            if (thisMissing && otherMissing)
                 continue;
-            if (this.isMissing(cn) || other.isMissing(cn))
+            if (thisMissing || otherMissing)
                 return false;
             boolean same;
-            switch (schema.getKind(cn)) {
+            switch (kinds[i]) {
                 case Category:
                 case String:
                 case Json:
