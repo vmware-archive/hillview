@@ -21,6 +21,8 @@ import com.google.common.net.HostAndPort;
 import com.google.protobuf.ByteString;
 import io.grpc.netty.NettyChannelBuilder;
 import io.grpc.stub.StreamObserver;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.apache.commons.lang3.SerializationUtils;
 import org.hillview.dataset.api.*;
 import org.hillview.pb.Ack;
@@ -36,6 +38,8 @@ import rx.subjects.PublishSubject;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static org.hillview.dataset.remoting.HillviewServer.ROOT_DATASET_INDEX;
@@ -58,9 +62,13 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
     public RemoteDataSet(final HostAndPort serverEndpoint, final int remoteHandle) {
         this.serverEndpoint = serverEndpoint;
         this.remoteHandle = remoteHandle;
+        final ExecutorService executorService = Executors.newFixedThreadPool(5);
+        final EventLoopGroup nettyElg = new NioEventLoopGroup(1);
         this.stub = HillviewServerGrpc.newStub(NettyChannelBuilder
                 .forAddress(serverEndpoint.getHost(), serverEndpoint.getPort())
                 .maxInboundMessageSize(HillviewServer.MAX_MESSAGE_SIZE)
+                .executor(executorService)
+                .eventLoopGroup(nettyElg)
                 .usePlaintext(true)   // channel is unencrypted.
                 .build());
     }

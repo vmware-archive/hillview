@@ -24,6 +24,8 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.netty.NettyServerBuilder;
 import io.grpc.stub.StreamObserver;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.apache.commons.lang3.SerializationUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hillview.dataset.api.DatasetMissing;
@@ -50,6 +52,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -68,7 +71,8 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     private static final String LOCALHOST = "127.0.0.1";
     private static final int NUM_THREADS = 5;
     public static final int MAX_MESSAGE_SIZE = 20971520;
-    private static final Executor EXECUTOR = Executors.newFixedThreadPool(NUM_THREADS);
+    private final ExecutorService executorService = Executors.newFixedThreadPool(NUM_THREADS);
+    private final EventLoopGroup nettyElg = new NioEventLoopGroup(1);
     private final Server server;
     private final AtomicInteger dsIndex = new AtomicInteger(0);
     private final ConcurrentHashMap<Integer, IDataSet> dataSets;
@@ -84,7 +88,8 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
         this.listenAddress = listenAddress;
         this.server = NettyServerBuilder.forAddress(new InetSocketAddress(listenAddress.getHost(),
                                                                      listenAddress.getPort()))
-                                        .executor(EXECUTOR)
+                                        .executor(executorService)
+                                        .workerEventLoopGroup(nettyElg)
                                         .addService(this)
                                         .maxMessageSize(MAX_MESSAGE_SIZE)
                                         .build()
@@ -444,6 +449,8 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
      */
     public void shutdown() {
         this.server.shutdown();
+        this.nettyElg.shutdownGracefully();
+        this.executorService.shutdownNow();
     }
 
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
