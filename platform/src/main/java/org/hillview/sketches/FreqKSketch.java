@@ -29,6 +29,7 @@ import org.hillview.table.Schema;
 import org.hillview.table.rows.VirtualRowSnapshot;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ITable;
+import org.hillview.utils.MutableInteger;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -138,6 +139,7 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
                 return this.vrs.compareForEquality(this.vrs1, FreqKSketch.this.schema);
             }
         };
+
         Int2ObjectOpenCustomHashMap<MutableInteger> hMap = new Int2ObjectOpenCustomHashMap<MutableInteger>(hs);
         IntSet toRemove = new IntOpenHashSet(this.maxSize);
         int i = rowIt.getNextRow();
@@ -151,7 +153,7 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
             if (val != null) {
                 val.set(val.get() + 1);
                 if (val.get() == min)
-                    min = hMap.values().stream().map(MutableInteger::get).min(Integer::compareTo).get();
+                    min = Collections.min(hMap.values(), MutableInteger.COMPARATOR).get();
             } else if (hMap.size() < this.maxSize) {
                 hMap.put(i, new MutableInteger(1));
                 min = 1;
@@ -168,8 +170,7 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
                             mutableInteger.set(count);
                     }
                     toRemove.forEach((IntConsumer) hMap::remove);
-                    min = !hMap.isEmpty() ?
-                            hMap.values().stream().map(MutableInteger::get).min(Integer::compareTo).get() : 0;
+                    min = !hMap.isEmpty() ? Collections.min(hMap.values(), MutableInteger.COMPARATOR).get() : 0;
                 }
             }
             i = rowIt.getNextRow();
@@ -178,21 +179,5 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
         hMap.keySet().forEach((int ri) ->
                 hm.put(new RowSnapshot(data, ri, this.schema), hMap.get(ri).get()));
         return new FreqKList(data.getNumOfRows(), this.epsilon, this.maxSize, hm);
-    }
-
-    private static class MutableInteger {
-        private int val;
-
-        public MutableInteger(int val) {
-            this.val = val;
-        }
-
-        public int get() {
-            return val;
-        }
-
-        public void set(int val) {
-            this.val = val;
-        }
     }
 }
