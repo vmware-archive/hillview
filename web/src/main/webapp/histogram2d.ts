@@ -117,6 +117,16 @@ export class Histogram2DView extends HistogramViewBase {
         */
         let samplingRate = 1; // Math.max(xSamplingRate, ySamplingRate);
 
+        let xBoundaries, yBoundaries;
+        if (this.currentData.xData.distinctStrings == null)
+            xBoundaries = null;
+        else
+            xBoundaries = this.currentData.xData.distinctStrings.uniqueStrings;
+        if (this.currentData.yData.distinctStrings == null)
+            yBoundaries = null;
+        else
+            yBoundaries = this.currentData.yData.distinctStrings.uniqueStrings;
+
         let arg0: ColumnAndRange = {
             columnName: this.currentData.xData.description.name,
             min: this.currentData.xData.stats.min,
@@ -124,7 +134,7 @@ export class Histogram2DView extends HistogramViewBase {
             bucketCount: bucketCount,
             samplingRate: samplingRate,
             cdfBucketCount: 0,
-            bucketBoundaries: this.currentData.xData.distinctStrings.uniqueStrings
+            bucketBoundaries: xBoundaries
         };
         let arg1: ColumnAndRange = {
             columnName: this.currentData.yData.description.name,
@@ -133,7 +143,7 @@ export class Histogram2DView extends HistogramViewBase {
             samplingRate: samplingRate,
             bucketCount: this.currentData.yPoints,
             cdfBucketCount: 0,
-            bucketBoundaries: this.currentData.yData.distinctStrings.uniqueStrings
+            bucketBoundaries: yBoundaries
         };
         let rr = this.createHeatMapRequest(arg0, arg1);
         let renderer = new Histogram2DRenderer(this.page,

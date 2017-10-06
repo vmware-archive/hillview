@@ -311,7 +311,6 @@ export class LAMPDialog extends Dialog {
         for (let i = 0; i < schema.length; i++)
             if (schema[i].kind == "Category")
                 catColumns.push(schema[i].name);
-        this.addTextField("seed", "Random seed", "Integer", "1");
         this.addSelectField("category", "Category for centroids", catColumns, "");
         this.addSelectField("controlPointProjection", "Control point projection", ["MDS"], "MDS");
         this.setAction(() => this.execute());
@@ -326,11 +325,10 @@ export class LAMPDialog extends Dialog {
         let selection = this.getFieldValue("controlPointSelection");
         let projection = this.getFieldValue("controlPointProjection");
         let category = this.getFieldValue("category");
-        let seed = this.getFieldValueAsInt("seed");
         let rr: RpcRequest;
         switch (selection) {
             case "Random samples": {
-                rr = this.remoteObject.createSampledControlPointsRequest(this.remoteObject.getTotalRowCount(), numSamples, this.selectedColumns, seed);
+                rr = this.remoteObject.createSampledControlPointsRequest(this.remoteObject.getTotalRowCount(), numSamples, this.selectedColumns);
                 break;
             }
             case "Category centroids": {
