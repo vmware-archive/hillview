@@ -69,7 +69,12 @@ public class SortedStringsConverterDescription implements IStringConverterDescri
 
         @Override
         public double asDouble(String string) {
-            return this.memoizedResults.computeDoubleIfAbsent(string, this::computeIndex);
+            if (memoizedResults.containsKey(string)) {
+                return memoizedResults.getDouble(string);
+            }
+            final double index = computeIndex(string);
+            this.memoizedResults.put(string, index);
+            return index;
         }
 
         public double computeIndex(String string) {
