@@ -75,10 +75,13 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
 
     public int computeHashCode(Schema schema) {
         int hashCode = 31;
-        for (String cn: schema.getColumnNames()) {
+        String[] columns = schema.getColumnNames();
+        ContentsKind[] kinds = schema.getColumnKinds();
+        for (int i = 0; i < columns.length; i++) {
+            String cn = columns[i];
             if (this.isMissing(cn))
                 continue;
-            switch (schema.getKind(cn)) {
+            switch (kinds[i]) {
                 case Category:
                 case String:
                 case Json:

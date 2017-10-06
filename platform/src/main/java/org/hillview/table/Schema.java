@@ -105,7 +105,7 @@ public final class Schema
         return this.columns.size();
     }
 
-    private void seal() {
+    private synchronized void seal() {
         this.cachedColumnNames = new String[this.columns.size()];
         this.cachedKinds = new ContentsKind[this.columns.size()];
         int index = 0;
