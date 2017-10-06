@@ -17,13 +17,12 @@
 
 package org.hillview.sketches;
 
-import org.hillview.table.api.IColumn;
+import org.hillview.table.api.ColumnAndConverter;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.IRowIterator;
 
 import java.io.Serializable;
 import java.util.HashMap;
-import java.util.List;
 import java.util.function.Function;
 
 /**
@@ -64,10 +63,10 @@ public class Centroids<T> implements Serializable {
      * @param keyFunc Function that can determine the partition key of a row entry.
      * @param columns Column that define the nD space.
      */
-    public Centroids(IMembershipSet members, Function<Integer, T> keyFunc, List<IColumn> columns) {
+    public Centroids(IMembershipSet members, Function<Integer, T> keyFunc, ColumnAndConverter[] columns) {
         this();
         int colIndex = 0;
-        for (IColumn column : columns) {
+        for (ColumnAndConverter column : columns) {
             IRowIterator rowIterator = members.getIterator();
             int row = rowIterator.getNextRow();
             while (row >= 0) {
@@ -78,10 +77,10 @@ public class Centroids<T> implements Serializable {
                 }
                 T key = keyFunc.apply(row);
                 // Get the arrays for this partition from the HashMap (or create them if absent).
-                double[] sums = this.sums.computeIfAbsent(key, k -> new double[columns.size()]);
-                long[] counts = this.counts.computeIfAbsent(key, k -> new long[columns.size()]);
+                double[] sums = this.sums.computeIfAbsent(key, k -> new double[columns.length]);
+                long[] counts = this.counts.computeIfAbsent(key, k -> new long[columns.length]);
                 // Update the sum and count of this partition in this column
-                sums[colIndex] += column.asDouble(row, null);
+                sums[colIndex] += column.asDouble(row);
                 counts[colIndex]++;
 
                 row = rowIterator.getNextRow();

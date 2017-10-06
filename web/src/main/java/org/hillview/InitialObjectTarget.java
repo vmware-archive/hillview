@@ -133,7 +133,7 @@ public class InitialObjectTarget extends RpcTarget {
     void findLogs(RpcRequest request, RpcRequestContext context) {
         Converters.checkNull(this.emptyDataset);
         UUID cookie = UUID.randomUUID();
-        IMap<Empty, List<String>> finder = new FindFilesMapper(".", 0, "hillview.log", cookie.toString());
+        IMap<Empty, List<String>> finder = new FindFilesMapper(".", 0, "hillview.*.log", cookie.toString());
         HillviewLogger.instance.info("Finding logs");
         this.runFlatMap(this.emptyDataset, finder, LogFileTarget::new, request, context);
     }

@@ -18,10 +18,7 @@
 package org.hillview.table;
 
 import org.hillview.sketches.ColumnSortOrientation;
-import org.hillview.table.api.IColumn;
-import org.hillview.table.api.ISubSchema;
-import org.hillview.table.api.ITable;
-import org.hillview.table.api.IndexComparator;
+import org.hillview.table.api.*;
 import org.hillview.table.rows.VirtualRowSnapshot;
 
 import java.io.Serializable;
@@ -83,12 +80,21 @@ public class RecordOrder implements Iterable<ColumnSortOrientation>, Serializabl
      */
     public IndexComparator getComparator(final ITable table) {
         final List<IndexComparator> comparatorList = new ArrayList<IndexComparator>();
-        for (final ColumnSortOrientation ordCol : this.sortOrientationList) {
-            final IColumn nextCol = table.getColumn(ordCol.columnDescription.name);
+        ColumnAndConverterDescription[] ccds =
+                new ColumnAndConverterDescription[this.sortOrientationList.size()];
+        for (int i=0; i < this.sortOrientationList.size(); i++) {
+            ColumnSortOrientation ordCol = this.sortOrientationList.get(i);
+            ccds[i] = new ColumnAndConverterDescription(ordCol.columnDescription.name);
+        }
+        ColumnAndConverter[] cols = table.getLoadedColumns(ccds);
+
+        for (int i=0; i < this.sortOrientationList.size(); i++) {
+            ColumnSortOrientation ordCol = this.sortOrientationList.get(i);
+            ColumnAndConverter col = cols[i];
             if (ordCol.isAscending) {
-                comparatorList.add(nextCol.getComparator());
+                comparatorList.add(col.column.getComparator());
             } else {
-                comparatorList.add(nextCol.getComparator().rev());
+                comparatorList.add(col.column.getComparator().rev());
             }
         }
         return new ListComparator(comparatorList);
@@ -120,11 +126,13 @@ public class RecordOrder implements Iterable<ColumnSortOrientation>, Serializabl
      * comes form the Left.
      */
     public boolean[] getMergeOrder(final SmallTable left, final SmallTable right) {
+        left.check();
+        right.check();
         if (!left.schema.equals(right.schema)) {
             throw new RuntimeException("Tables do not have matching schemas");
         }
-        final int  leftLength = left.getNumOfRows();
-        final int  rightLength = right.getNumOfRows();
+        final int leftLength = left.getNumOfRows();
+        final int rightLength = right.getNumOfRows();
         final int length = leftLength + rightLength;
         final boolean[] mergeLeft = new boolean[length];
         int i = 0, j = 0, k = 0;

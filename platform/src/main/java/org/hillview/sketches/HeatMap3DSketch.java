@@ -17,7 +17,8 @@
 
 package org.hillview.sketches;
 import org.hillview.dataset.api.ISketch;
-import org.hillview.table.api.ColumnNameAndConverter;
+import org.hillview.table.api.ColumnAndConverter;
+import org.hillview.table.api.ColumnAndConverterDescription;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
 
@@ -27,26 +28,26 @@ public class HeatMap3DSketch implements ISketch<ITable, HeatMap3D> {
     private final IBucketsDescription bucketDescD1;
     private final IBucketsDescription bucketDescD2;
     private final IBucketsDescription bucketDescD3;
-    private final ColumnNameAndConverter col1;
-    private final ColumnNameAndConverter col2;
-    private final ColumnNameAndConverter col3;
+    private final ColumnAndConverterDescription col1;
+    private final ColumnAndConverterDescription col2;
+    private final ColumnAndConverterDescription col3;
     private final double rate;
 
     public HeatMap3DSketch(IBucketsDescription bucketDesc1,
                            IBucketsDescription bucketDesc2,
                            IBucketsDescription bucketDesc3,
-                           ColumnNameAndConverter col1,
-                           ColumnNameAndConverter col2,
-                           ColumnNameAndConverter col3) {
+                           ColumnAndConverterDescription col1,
+                           ColumnAndConverterDescription col2,
+                           ColumnAndConverterDescription col3) {
         this(bucketDesc1, bucketDesc2, bucketDesc3, col1, col2, col3, 1.0);
     }
 
     public HeatMap3DSketch(IBucketsDescription bucketDesc1,
                            IBucketsDescription bucketDesc2,
                            IBucketsDescription bucketDesc3,
-                           ColumnNameAndConverter col1,
-                           ColumnNameAndConverter col2,
-                           ColumnNameAndConverter col3,
+                           ColumnAndConverterDescription col1,
+                           ColumnAndConverterDescription col2,
+                           ColumnAndConverterDescription col3,
                            double rate) {
         this.bucketDescD1 = bucketDesc1;
         this.bucketDescD2 = bucketDesc2;
@@ -59,9 +60,11 @@ public class HeatMap3DSketch implements ISketch<ITable, HeatMap3D> {
 
     @Override
     public HeatMap3D create(final ITable data) {
+        ColumnAndConverter[] cols = data.getLoadedColumns(new ColumnAndConverterDescription[] {
+                this.col1, this.col2, this.col3
+        });
         HeatMap3D result = this.getZero();
-        result.createHeatMap(data.getColumn(this.col1), data.getColumn(this.col2),
-                data.getColumn(this.col3), data.getMembershipSet().sample(this.rate));
+        result.createHeatMap(cols[0], cols[1], cols[2], data.getMembershipSet().sample(this.rate));
         return result;
     }
 

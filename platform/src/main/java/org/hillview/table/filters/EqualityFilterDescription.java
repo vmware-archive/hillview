@@ -17,11 +17,7 @@
 
 package org.hillview.table.filters;
 
-import org.hillview.table.api.ITableFilter;
-import org.hillview.table.api.ContentsKind;
-import org.hillview.table.api.IColumn;
-import org.hillview.table.api.ITable;
-import org.hillview.table.api.ITableFilterDescription;
+import org.hillview.table.api.*;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
@@ -52,29 +48,29 @@ public class EqualityFilterDescription implements ITableFilterDescription {
 
     @Override
     public ITableFilter getFilter(ITable table) {
-        return new EqualityFilter(this, table);
+        return new EqualityFilter(table);
     }
 
     /**
      * This filter maps a given Table to a Table that only contains the given value in the
      * specified column.
      */
-    public static class EqualityFilter implements ITableFilter {
+    public class EqualityFilter implements ITableFilter {
         boolean missing;  // if true we look for missing values;
         double  d;
         int     i;
         @Nullable
         String  s;
-        private final boolean complement;
-        private final IColumn column;
+        private final ColumnAndConverter column;
         private final ContentsKind compareKind;
 
-        public EqualityFilter(EqualityFilterDescription filter, ITable table) {
-            this.column = table.getColumn(filter.column);
-            this.compareKind = this.column.getDescription().kind;
-            this.complement = filter.complement;
+        public EqualityFilter(ITable table) {
+            ColumnAndConverterDescription ccd = new ColumnAndConverterDescription
+                    (EqualityFilterDescription.this.column);
+            this.column = table.getLoadedColumn(ccd);
+            this.compareKind = this.column.column.getKind();
 
-            if (filter.compareValue == null) {
+            if (EqualityFilterDescription.this.compareValue == null) {
                 this.missing = true;
                 return;
             }
@@ -82,15 +78,15 @@ public class EqualityFilterDescription implements ITableFilterDescription {
                 case Category:
                 case String:
                 case Json:
-                    this.s = filter.compareValue;
+                    this.s = EqualityFilterDescription.this.compareValue;
                     break;
                 case Integer:
-                    this.i = Integer.parseInt(filter.compareValue);
+                    this.i = Integer.parseInt(EqualityFilterDescription.this.compareValue);
                     break;
                 case Double:
                 case Duration:
                 case Date:
-                    this.d = Double.parseDouble(filter.compareValue);
+                    this.d = Double.parseDouble(EqualityFilterDescription.this.compareValue);
                     break;
                 default:
                     throw new RuntimeException("Unexpected kind " + compareKind);
@@ -113,7 +109,7 @@ public class EqualityFilterDescription implements ITableFilterDescription {
                         case Duration:
                         case Double:
                         case Date:
-                            result = column.asDouble(rowIndex, null) == this.d;
+                            result = column.asDouble(rowIndex) == this.d;
                             break;
                         case Integer:
                             result = column.getInt(rowIndex) == this.i;
@@ -129,7 +125,7 @@ public class EqualityFilterDescription implements ITableFilterDescription {
                 }
             }
 
-            return this.complement != result;
+            return EqualityFilterDescription.this.complement != result;
         }
     }
 }

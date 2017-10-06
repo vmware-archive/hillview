@@ -29,7 +29,8 @@ public interface IStringColumn extends IColumn {
         if (isMissing(rowIndex))
             throw new MissingException(this, rowIndex);
         final String tmp = this.getString(rowIndex);
-        return Converters.checkNull(converter).asDouble(Converters.checkNull(tmp));
+        //noinspection ConstantConditions
+        return Converters.checkNull(converter).asDouble(tmp);
     }
 
     @Nullable

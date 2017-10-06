@@ -29,7 +29,6 @@ import org.hillview.table.rows.RowSnapshot;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -62,10 +61,10 @@ public class JsonTest extends BaseTest {
         sac.set(0, "John");
         sac.set(1, "Mike");
 
-        List<IColumn> l = new ArrayList<IColumn>();
-        l.add(iac);
-        l.add(dac);
-        l.add(sac);
+        IColumn[] l = new IColumn[3];
+        l[0] = iac;
+        l[1] = dac;
+        l[2] = sac;
         SmallTable t = new SmallTable(l);
         RowSnapshot rs = new RowSnapshot(t, 0);
         s = rs.toJson();

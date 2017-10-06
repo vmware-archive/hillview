@@ -31,8 +31,6 @@ import org.jblas.util.Random;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.*;
-
 public class CorrelationTest extends BaseTest {
     public CorrelationTest() {}
 
@@ -40,8 +38,7 @@ public class CorrelationTest extends BaseTest {
     public void testCorrelation() {
         DoubleMatrix mat = new DoubleMatrix(new double[][]{{9, 8, 4, 1, 6}, {5, 8, 2, 10, 1}, {6, 4, 1, 6, 5}});
         ITable table = BlasConversions.toTable(mat);
-        List<String> colNames = Arrays.asList(table.getSchema().getColumnNames());
-
+        String[] colNames = table.getSchema().getColumnNames();
         FullCorrelationSketch fcs = new FullCorrelationSketch(colNames);
         CorrMatrix cm = fcs.create(table);
 
@@ -67,14 +64,14 @@ public class CorrelationTest extends BaseTest {
         DoubleMatrix mat = DoubleMatrix.rand(20000, 5);
         mat.muli(4.3);
         ITable bigTable = BlasConversions.toTable(mat);
-        List<String> colNames = Arrays.asList(bigTable.getSchema().getColumnNames());
+        String[] colNames = bigTable.getSchema().getColumnNames();
         IDataSet<ITable> dataset = TestTables.makeParallel(bigTable, 10);
 
         FullCorrelationSketch fcs = new FullCorrelationSketch(colNames);
         CorrMatrix cm = dataset.blockingSketch(fcs);
 
         // Construct the correlation matrix that we compare against by using pure JBLAS.
-        DoubleMatrix cmCheck = new DoubleMatrix(colNames.size(), colNames.size());
+        DoubleMatrix cmCheck = new DoubleMatrix(colNames.length, colNames.length);
         DoubleMatrix means = mat.columnMeans();
         DoubleMatrix sigmas = MatrixFunctions.sqrt(
                 mat.subRowVector(means).mul(mat.subRowVector(means)).columnMeans()

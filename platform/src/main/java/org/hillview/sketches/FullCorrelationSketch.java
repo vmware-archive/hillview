@@ -25,7 +25,6 @@ import org.jblas.DoubleMatrix;
 
 import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
-import java.util.List;
 
 /**
  * This class computes the correlations between different columns in the table.
@@ -34,9 +33,9 @@ import java.util.List;
  * the BasicColStats's.
  */
 public class FullCorrelationSketch implements ISketch<ITable, CorrMatrix> {
-    private final List<String> colNames;
+    private final String[] colNames;
 
-    public FullCorrelationSketch(List<String> colNames) {
+    public FullCorrelationSketch(String[] colNames) {
         this.colNames = colNames;
     }
 
@@ -50,7 +49,7 @@ public class FullCorrelationSketch implements ISketch<ITable, CorrMatrix> {
         }
         CorrMatrix corrMatrix = new CorrMatrix(this.colNames);
         int nRows = table.getNumOfRows();
-        int nCols = this.colNames.size();
+        int nCols = this.colNames.length;
 
         // Convert the columns to a DoubleMatrix.
         DoubleMatrix mat = BlasConversions.toDoubleMatrix(table, this.colNames);
@@ -79,8 +78,8 @@ public class FullCorrelationSketch implements ISketch<ITable, CorrMatrix> {
         covMat.divi(corrMatrix.nonMissing);
         DoubleMatrix means = mat.columnSums().divRowVector(corrMatrix.nonMissing.diag());
 
-        for (int i = 0; i < this.colNames.size(); i++) {
-            for (int j = i; j < this.colNames.size(); j++) {
+        for (int i = 0; i < this.colNames.length; i++) {
+            for (int j = i; j < this.colNames.length; j++) {
                 corrMatrix.put(i, j,  covMat.get(i, j));
             }
             corrMatrix.means[i] = means.get(i);
@@ -102,14 +101,14 @@ public class FullCorrelationSketch implements ISketch<ITable, CorrMatrix> {
 
         CorrMatrix result = new CorrMatrix(this.colNames);
 
-        for (int i = 0; i < this.colNames.size(); i++) {
+        for (int i = 0; i < this.colNames.length; i++) {
             if (left.nonMissing.get(i, i) + right.nonMissing.get(i, i) == 0)
                 result.means[i] = 0;
             else {
                 double meanAlpha = left.nonMissing.get(i, i) / (left.nonMissing.get(i, i) + right.nonMissing.get(i, i));
                 result.means[i] = meanAlpha * left.means[i] + (1 - meanAlpha) * right.means[i];
             }
-            for (int j = i; j < this.colNames.size(); j++) {
+            for (int j = i; j < this.colNames.length; j++) {
                 if (left.nonMissing.get(i, j) + right.nonMissing.get(i, j) == 0) {
                     result.put(i, j, 0);
                 } else {

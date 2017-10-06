@@ -33,7 +33,7 @@ public class CategoricalCentroidsSketchTest extends BaseTest {
         ITable table = TestTables.getCentroidTestTable();
         CategoryCentroidsSketch sketch = new CategoryCentroidsSketch(
                 "FruitType",
-                Arrays.asList("x", "y")
+                new String[] { "x", "y" }
         );
         Centroids<String> centroids = sketch.create(table);
         HashMap<String, double[]> centroidsMap = centroids.computeCentroids();

@@ -25,9 +25,6 @@ import org.hillview.utils.TestTables;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class SampleCorrTest extends BaseTest {
     @Test
     public void SampleCorrTest1() {
@@ -36,20 +33,20 @@ public class SampleCorrTest extends BaseTest {
         int numCols = 5;
         SmallTable data = TestTables.getCorrelatedCols(size, numCols, range);
         //System.out.println(data.toLongString(20));
-        List<String> cn = new ArrayList<String>();
+        String[] cn = new String[numCols];
         for (int i = 0; i < numCols; i++) {
-            cn.add("Col" + String.valueOf(i));
+            cn[i] = "Col" + String.valueOf(i);
         }
         for (int i = 0; i <= 3; i++) {
             SampleCorrelationSketch ip = new SampleCorrelationSketch(cn, Math.pow(0.5, i));
             CorrMatrix cm = ip.create(data);
             //System.out.printf("Sampling rate %f: ", Math.pow(0.5, i));
-            for (int j = 0; j < cn.size(); j++)
-                for (int k = 0; k < cn.size(); k++) {
+            for (int j = 0; j < cn.length; j++)
+                for (int k = 0; k < cn.length; k++) {
                     Assert.assertEquals(cm.getCorrelationMatrix()[j][k],
-                            cm.getCorrelationWith(cn.get(j))[k], 0.001);
+                            cm.getCorrelationWith(cn[j])[k], 0.001);
                     Assert.assertEquals(cm.getCorrelationMatrix()[j][k],
-                            cm.getCorrelation(cn.get(j), cn.get(k)), 0.001);
+                            cm.getCorrelation(cn[j], cn[k]), 0.001);
                 }
             for (String s : cn)
                 Assert.assertEquals(cm.getNorm(s) * cm.getNorm(s), cm.getInnerProduct(s, s), 0.1);
@@ -65,9 +62,9 @@ public class SampleCorrTest extends BaseTest {
         double p = 0.01;
         ITable data = TestTables.getCorrelatedCols(size, numCols, range);
         ParallelDataSet<ITable> all = TestTables.makeParallel(data, 100);
-        List<String> cn = new ArrayList<String>();
+        String[] cn = new String[numCols];
         for (int i = 0; i < numCols; i++) {
-            cn.add("Col" + String.valueOf(i));
+            cn[i] = "Col" + String.valueOf(i);
         }
         long start, end;
         start = System.currentTimeMillis();
@@ -81,23 +78,23 @@ public class SampleCorrTest extends BaseTest {
         end = System.currentTimeMillis();
         PerfRegressionTest.comparePerf("SampleIP", end - start);
         start = System.currentTimeMillis();
-        JLSketch jl = new JLSketch(cn, lowDim);
+        JLSketch jl = new JLSketch(cn, lowDim, 0);
         ICorrelation jlp = all.blockingSketch(jl);
         end = System.currentTimeMillis();
         PerfRegressionTest.comparePerf("JL", end - start);
-        for (int j = 0; j < cn.size(); j++)
-            for (int k = 0; k < cn.size(); k++) {
-                String s = cn.get(j);
-                String t = cn.get(k);
+        for (int j = 0; j < cn.length; j++)
+            for (int k = 0; k < cn.length; k++) {
+                String s = cn[j];
+                String t = cn[k];
                 /*System.out.printf("(%d, %d): %.2f, %.2f, %.2f\n", j, k,
                         exactCorr.getCorrelation(s, t), cm.getCorrelation(s, t),
                         jlp.getCorrelation(s, t));*/
                 Assert.assertEquals(cm.getCorrelationMatrix()[j][k],
-                            cm.getCorrelationWith(cn.get(j))[k], 0.001);
+                            cm.getCorrelationWith(cn[j])[k], 0.001);
                 Assert.assertEquals(exactCorr.getCorrelationMatrix()[j][k],
-                        exactCorr.getCorrelationWith(cn.get(j))[k], 0.001);
+                        exactCorr.getCorrelationWith(cn[j])[k], 0.001);
                 Assert.assertEquals(jlp.getCorrelationMatrix()[j][k],
-                        jlp.getCorrelationWith(cn.get(j))[k], 0.001);
+                        jlp.getCorrelationWith(cn[j])[k], 0.001);
             }
     }
 }

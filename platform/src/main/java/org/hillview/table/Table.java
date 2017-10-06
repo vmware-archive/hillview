@@ -67,10 +67,30 @@ public class Table extends BaseTable {
         this(Utilities.arrayToIterable(columns));
     }
 
+    public <C extends IColumn> Table(final C[] columns, IMembershipSet set) {
+        this(Utilities.arrayToIterable(columns), set);
+    }
+
     @Override
     public ITable project(Schema schema) {
-        Iterable<IColumn> cols = this.getColumns(schema);
+        IColumn[] cols = this.getColumns(schema);
         return new Table(cols, this.members);
+    }
+
+    @Override
+    public ITable replace(IColumn[] columns) {
+        return new Table(columns, this.getMembershipSet());
+    }
+
+    @Override
+    public ColumnAndConverter[] getLoadedColumns(ColumnAndConverterDescription[] columns) {
+        ColumnAndConverter[] result = new ColumnAndConverter[columns.length];
+        for (int i=0; i < columns.length; i++) {
+            String name = columns[i].columnName;
+            IColumn col = this.columns.get(name);
+            result[i] = new ColumnAndConverter(col, columns[i].getConverter());
+        }
+        return result;
     }
 
     @Override

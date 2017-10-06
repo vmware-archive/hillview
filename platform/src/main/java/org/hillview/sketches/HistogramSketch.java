@@ -17,7 +17,7 @@
 
 package org.hillview.sketches;
 import org.hillview.dataset.api.ISketch;
-import org.hillview.table.api.ColumnNameAndConverter;
+import org.hillview.table.api.ColumnAndConverterDescription;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
 
@@ -25,14 +25,14 @@ import javax.annotation.Nullable;
 
 public class HistogramSketch implements ISketch<ITable, Histogram> {
     private final IBucketsDescription bucketDesc;
-    private final ColumnNameAndConverter col;
+    private final ColumnAndConverterDescription col;
     private final double rate;
 
-    public HistogramSketch(IBucketsDescription bucketDesc, ColumnNameAndConverter col) {
+    public HistogramSketch(IBucketsDescription bucketDesc, ColumnAndConverterDescription col) {
         this(bucketDesc, col, 1.0);
     }
 
-    public HistogramSketch(IBucketsDescription bucketDesc, ColumnNameAndConverter col,
+    public HistogramSketch(IBucketsDescription bucketDesc, ColumnAndConverterDescription col,
                            double rate) {
         this.bucketDesc = bucketDesc;
         this.col = col;
@@ -42,7 +42,7 @@ public class HistogramSketch implements ISketch<ITable, Histogram> {
     @Override
     public Histogram create(final ITable data) {
         Histogram result = this.getZero();
-        result.create(data.getColumn(this.col), data.getMembershipSet(), this.rate);
+        result.create(data.getLoadedColumn(this.col), data.getMembershipSet(), this.rate);
         return result;
     }
 

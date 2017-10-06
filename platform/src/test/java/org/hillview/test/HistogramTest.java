@@ -25,7 +25,7 @@ import org.hillview.table.columns.DoubleArrayColumn;
 import org.hillview.table.FullMembership;
 import org.hillview.table.Table;
 import org.hillview.table.api.ColumnAndConverter;
-import org.hillview.table.api.ColumnNameAndConverter;
+import org.hillview.table.api.ColumnAndConverterDescription;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.junit.Test;
@@ -86,7 +86,7 @@ public class HistogramTest extends BaseTest {
         List<IColumn> cols = new ArrayList<IColumn>();
         cols.add(col);
         ITable table = new Table(cols, fMap);
-        ISketch<ITable, Histogram> sk = new HistogramSketch(buckDes, new ColumnNameAndConverter(col
+        ISketch<ITable, Histogram> sk = new HistogramSketch(buckDes, new ColumnAndConverterDescription(col
                 .getName()));
         final IDataSet<ITable> ds = new LocalDataSet<ITable>(table, false);
 

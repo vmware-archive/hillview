@@ -22,7 +22,8 @@ import org.hillview.maps.FilterMap;
 import org.hillview.sketches.BasicColStatSketch;
 import org.hillview.sketches.BasicColStats;
 import org.hillview.table.*;
-import org.hillview.table.api.ColumnNameAndConverter;
+import org.hillview.table.api.ColumnAndConverter;
+import org.hillview.table.api.ColumnAndConverterDescription;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ITable;
 import org.hillview.table.filters.EqualityFilterDescription;
@@ -44,11 +45,12 @@ public class EqualityFilterTest extends BaseTest {
         // Assert number of rows are as expected
         Assert.assertEquals(1, result.getNumOfRows());
 
+        ColumnAndConverter col = result.getLoadedColumn("Name");
         // Make sure the rows are correct
         IRowIterator it = result.getMembershipSet().getIterator();
         int row = it.getNextRow();
         while (row != -1) {
-            Assert.assertEquals("Ed", result.getColumn("Name").getString(row));
+            Assert.assertEquals("Ed", col.getString(row));
             row = it.getNextRow();
         }
 
@@ -62,7 +64,7 @@ public class EqualityFilterTest extends BaseTest {
         it = result.getMembershipSet().getIterator();
         row = it.getNextRow();
         while (row != -1) {
-            Assert.assertEquals("Mike", result.getColumn("Name").getString(row));
+            Assert.assertEquals("Mike", col.getString(row));
             row = it.getNextRow();
         }
     }
@@ -107,12 +109,13 @@ public class EqualityFilterTest extends BaseTest {
 
         // Assert that the number of occurrences is correct.
         Assert.assertEquals(count, result.getNumOfRows());
+        ColumnAndConverter col = result.getLoadedColumn("Name");
 
         // Assert that the correct rows are filtered. (They should all have the same name.)
         IRowIterator it = result.getMembershipSet().getIterator();
         int row = it.getNextRow();
         while (row != -1) {
-            Assert.assertEquals(name, result.getColumn("Name").getString(row));
+            Assert.assertEquals(name, col.getString(row));
             row = it.getNextRow();
         }
     }
@@ -137,9 +140,9 @@ public class EqualityFilterTest extends BaseTest {
         IDataSet<ITable> result = all.blockingMap(filterMap);
 
         // Count the number of rows in the resulting IDataset with a BasicColStatsSketch
-        SortedStringsConverter converter = new SortedStringsConverter(possibleNames, 0, 50);
+        SortedStringsConverterDescription converter = new SortedStringsConverterDescription(possibleNames, 0, 50);
         BasicColStatSketch b = new BasicColStatSketch(
-                new ColumnNameAndConverter("Name", converter));
+                new ColumnAndConverterDescription("Name", converter));
         BasicColStats bcs = result.blockingSketch(b);
 
         // The sketch should have counted 'count' 'name's in the IDataset.

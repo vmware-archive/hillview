@@ -18,12 +18,9 @@
 package org.hillview.test;
 
 import org.hillview.table.ColumnDescription;
+import org.hillview.table.api.*;
 import org.hillview.table.columns.DoubleArrayColumn;
 import org.hillview.table.Table;
-import org.hillview.table.api.ContentsKind;
-import org.hillview.table.api.IColumn;
-import org.hillview.table.api.IRowIterator;
-import org.hillview.table.api.ITable;
 import org.hillview.utils.BlasConversions;
 import org.hillview.utils.TestTables;
 import org.jblas.DoubleMatrix;
@@ -59,17 +56,20 @@ public class MatrixTest extends BaseTest {
     @Test
     public void testMatrixFetch() {
         ITable table = TestTables.getIntTable(100, 3);
-        List<String> colNames = new ArrayList<String>(Arrays.asList("Column0", "Column1"));
+        String[] colNames = new String[] { "Column0", "Column1" };
+        ColumnAndConverterDescription[] desc = ColumnAndConverterDescription.create(colNames);
 
         DoubleMatrix mat = BlasConversions.toDoubleMatrix(table, colNames);
         IRowIterator it = table.getRowIterator();
         int row = it.getNextRow();
         int i = 0;
+        ColumnAndConverter[] cols = table.getLoadedColumns(desc);
+
         while (row >= 0) {
-            for (int j = 0; j < colNames.size(); j++) {
+            for (int j = 0; j < colNames.length; j++) {
                 Assert.assertEquals(
                         mat.get(i, j),
-                        table.getColumn(colNames.get(j)).asDouble(row, null),
+                        cols[j].asDouble(row),
                         Math.ulp(mat.get(i, j))
                 );
             }
@@ -96,7 +96,7 @@ public class MatrixTest extends BaseTest {
         }
 
         ITable table = new Table(columns);
-        List<String> colNames = Arrays.asList(table.getSchema().getColumnNames());
+        String[] colNames = table.getSchema().getColumnNames();
         DoubleMatrix mat = BlasConversions.toDoubleMatrix(table, colNames);
         DoubleMatrix missingCount = mat.isNaN().columnSums();
         for (int i = 0; i < numCols; i++) {

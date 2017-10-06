@@ -73,10 +73,10 @@ class TestUtil {
 
     static public SmallTable createSmallTable(int size) {
         final int numCols = 3;
-        final List<IColumn> columns = new ArrayList<IColumn>(numCols);
-        columns.add(getRandDateArray(size, "DOB"));
-        columns.add(getStringArray(size, "Name"));
-        columns.add(generateDoubleArray(size, "Income"));
+        final IColumn[] columns = new IColumn[numCols];
+        columns[0] = getRandDateArray(size, "DOB");
+        columns[1] = getStringArray(size, "Name");
+        columns[2] = generateDoubleArray(size, "Income");
         return new SmallTable(columns);
     }
 

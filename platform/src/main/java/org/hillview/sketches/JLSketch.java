@@ -18,16 +18,12 @@
 package org.hillview.sketches;
 
 import org.hillview.dataset.api.ISketch;
-import org.hillview.table.api.ContentsKind;
-import org.hillview.table.api.IColumn;
-import org.hillview.table.api.IRowIterator;
-import org.hillview.table.api.ITable;
+import org.hillview.table.api.*;
 import org.hillview.utils.Converters;
 import org.hillview.utils.Randomness;
 
 import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
-import java.util.List;
 
 /**
  * Implements the Johnson-Lindenstrauss (JL) sketch. It projects a column of doubles down to low
@@ -42,15 +38,20 @@ public class JLSketch implements ISketch<ITable, JLProjection>{
      * The list of columns that we wish to sketch. Currently, every column is assumed to be of type
      * int or double.
      */
-    private final List<String> colNames;
+    private final String[] colNames;
     /**
      * The dimension that we wish to project down to.
      */
     private final int lowDim;
+    /**
+     * Random seed.
+     */
+    private final long seed;
 
-    public JLSketch(List<String> colNames, int lowDim) {
-        this.colNames= colNames;
+    public JLSketch(String[] colNames, int lowDim, long seed) {
+        this.colNames = colNames;
         this.lowDim = lowDim;
+        this.seed = seed;
     }
 
     @Nullable
@@ -91,22 +92,23 @@ public class JLSketch implements ISketch<ITable, JLProjection>{
                 throw new InvalidParameterException("Projection Sketch requires column to be " +
                         "integer or double: " + col);
         }
+
+        ColumnAndConverterDescription[] ccds = ColumnAndConverterDescription.create(this.colNames);
+        ColumnAndConverter[] cols = data.getLoadedColumns(ccds);
+
         JLProjection jlProj = new JLProjection(this.colNames, this.lowDim);
-        long seed = System.nanoTime();
-        Randomness rn = new Randomness(seed);
+        Randomness rn = new Randomness(this.seed);
         int i, bit;
         double val;
         String name;
-        IColumn iCol;
         IRowIterator rowIt = data.getRowIterator();
         i = rowIt.getNextRow();
         while (i != -1) {
             for (int j = 0; j < this.lowDim; j++) {
                 bit = ((rn.nextInt(2) == 0) ? 1 : -1);
-                for (String colName: this.colNames) {
-                    iCol= data.getColumn(colName);
-                    val = (iCol.isMissing(i) ? 0 : (iCol.asDouble(i, null) * bit));
-                    jlProj.update(colName, j, val);
+                for (ColumnAndConverter col: cols) {
+                    val = (col.isMissing(i) ? 0 : (col.asDouble(i) * bit));
+                    jlProj.update(col.getName(), j, val);
                 }
             }
             i = rowIt.getNextRow();

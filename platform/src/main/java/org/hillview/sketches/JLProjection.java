@@ -17,10 +17,11 @@
 
 package org.hillview.sketches;
 
+import org.apache.commons.lang.ArrayUtils;
+
 import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
 import java.util.LinkedHashMap;
-import java.util.List;
 
 /** Data structure used to store the results of a Johnson-Lindenstrauss (JL) sketch.
  * It contains a vector of doubles for each column, and some other information that can be used for
@@ -46,20 +47,21 @@ public class JLProjection implements ICorrelation {
     /**
      * The list of columns we want to sketch. Each column should be of type Int/Double.
      */
-    public final List<String> colNames;
+    public final String[] colNames;
     /**
      * The matrix of pairwise correlations (see ICorrelation for exact definition of correlation).
      */
     @Nullable
     private double[][] corrMatrix;
 
-    public JLProjection(List<String> colNames, int lowDim) {
+    public JLProjection(String[] colNames, int lowDim) {
         if (lowDim <= 0)
             throw new InvalidParameterException("LowDim has to be positive.");
         this.lowDim = lowDim;
         this.colNames = colNames;
         this.hMap = new LinkedHashMap<String, double[]>();
-        colNames.forEach(s -> this.hMap.put(s, new double[this.lowDim]));
+        for (String s: colNames)
+            this.hMap.put(s, new double[this.lowDim]);
         this.highDim = 0;
         this.corrMatrix = null;
     }
@@ -108,13 +110,13 @@ public class JLProjection implements ICorrelation {
     @Override
     public double[][] getCorrelationMatrix() {
         if (this.corrMatrix == null) {
-            int d = this.colNames.size();
+            int d = this.colNames.length;
             this.corrMatrix = new double[d][d];
             for (int i = 0; i < d; i++)
                 for (int j = i; j < d; j++) {
                     double sum = 0, first = 0, second = 0;
-                    double a[] = this.hMap.get(this.colNames.get(i));
-                    double b[] = this.hMap.get(this.colNames.get(j));
+                    double a[] = this.hMap.get(this.colNames[i]);
+                    double b[] = this.hMap.get(this.colNames[j]);
                     for(int k = 0; k < this.lowDim; k++) {
                         sum += a[k]*b[k];
                         first += Math.pow(a[k], 2);
@@ -132,17 +134,14 @@ public class JLProjection implements ICorrelation {
 
     @Override
     public double getCorrelation(String s, String t) {
-        if (!this.colNames.contains(s))
-            throw new InvalidParameterException("No sketch found for column: " + s);
-        if (!this.colNames.contains(t))
-            throw new InvalidParameterException("No sketch found for column: " + t);
-        return this.getCorrelationMatrix()[this.colNames.indexOf(s)][this.colNames.indexOf(t)];
+        int sIndex = ArrayUtils.indexOf(this.colNames, s);
+        int tIndex = ArrayUtils.indexOf(this.colNames, t);
+        return this.getCorrelationMatrix()[sIndex][tIndex];
     }
 
     @Override
     public double[] getCorrelationWith(String s) {
-        if (!this.colNames.contains(s))
-            throw new InvalidParameterException("No sketch found for column: " + s);
-        return this.getCorrelationMatrix()[this.colNames.indexOf(s)];
+        int sIndex = ArrayUtils.indexOf(this.colNames, s);
+        return this.getCorrelationMatrix()[sIndex];
     }
 }

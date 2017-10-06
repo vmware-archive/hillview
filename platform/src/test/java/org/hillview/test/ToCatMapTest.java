@@ -23,9 +23,7 @@ import org.hillview.maps.ConvertColumnMap;
 import org.hillview.sketches.DistinctStrings;
 import org.hillview.sketches.DistinctStringsSketch;
 import org.hillview.table.*;
-import org.hillview.table.api.ContentsKind;
-import org.hillview.table.api.IRowIterator;
-import org.hillview.table.api.ITable;
+import org.hillview.table.api.*;
 import org.hillview.table.columns.IntArrayColumn;
 import org.hillview.table.columns.StringArrayColumn;
 import org.hillview.utils.JsonList;
@@ -60,14 +58,18 @@ public class ToCatMapTest extends BaseTest {
         System.out.println("Table after conversion:");
         TestUtils.printTable(result);
 
-        Assert.assertTrue(result.getColumn("Name Categorical").getDescription().kind == ContentsKind.Category);
+        ColumnAndConverterDescription nameCat =
+                new ColumnAndConverterDescription("Name Categorical");
+        ColumnAndConverterDescription name =
+                new ColumnAndConverterDescription("Name");
+        ColumnAndConverter nameCC = result.getLoadedColumn(name);
+        ColumnAndConverter nameCatCC = result.getLoadedColumn(nameCat);
+
+        Assert.assertTrue(nameCatCC.column.getDescription().kind == ContentsKind.Category);
         IRowIterator rowIt = result.getRowIterator();
         int row = rowIt.getNextRow();
         while (row >= 0) {
-            Assert.assertEquals(
-                    result.getColumn("Name").getString(row),
-                    result.getColumn("Name Categorical").getString(row)
-            );
+            Assert.assertEquals(nameCC.getString(row), nameCatCC.getString(row));
             row = rowIt.getNextRow();
         }
     }

@@ -36,8 +36,6 @@ public interface ITable {
 
     int getNumOfRows();
 
-    IColumn getColumn(String colName);
-
     /**
      * Creates a small table by keeping only the rows in the IRowOrder and
      * the columns in the subSchema.
@@ -48,6 +46,13 @@ public interface ITable {
     SmallTable compress(ISubSchema subSchema, IRowOrder rowOrder);
 
     SmallTable compress(IRowOrder rowOrder);
+
+    /**
+     * Gets the columns in the order they appear in the schema.
+     * The columns must have already been loaded.
+     * @param schema  Schema indicating which columns to load.
+     */
+    IColumn[] getColumns(Schema schema);
 
     /**
      * Creates a new table which has the same data with this one except the
@@ -66,18 +71,43 @@ public interface ITable {
     ITable project(Schema schema);
 
     /**
-     * Returns columns in the order they appear in the schema.
+     * Create a new table based on this set of columns but
+     * with the membershipset of the original one.
+     * @param columns  Set of columns for new table.
      */
-    Iterable<IColumn> getColumns(Schema schema);
+    ITable replace(IColumn[] columns);
 
     /**
-     * Returns columns in the order they appear in the schema.
+     * Append a bunch of columns to this table.
      */
-    Iterable<IColumn> getColumns();
+    ITable append(IColumn[] columns);
 
-    default ColumnAndConverter getColumn(ColumnNameAndConverter cc) {
-        return new ColumnAndConverter(this.getColumn(cc.columnName), cc.converter);
+    /**
+     * Returns the specified columns.  Ensures that the columns are loaded.
+     */
+    ColumnAndConverter[] getLoadedColumns(ColumnAndConverterDescription[] columns);
+
+    /**
+     * Returns the specified column.  Ensures that the column is loaded.
+     */
+    default ColumnAndConverter getLoadedColumn(ColumnAndConverterDescription column) {
+        ColumnAndConverterDescription[] cols = new ColumnAndConverterDescription[] { column };
+        ColumnAndConverter[] result = this.getLoadedColumns(cols);
+        return result[0];
     }
+
+    default ColumnAndConverter getLoadedColumn(String columnName) {
+        ColumnAndConverterDescription desc = new ColumnAndConverterDescription(columnName);
+        return this.getLoadedColumn(desc);
+    }
+
+    /**
+     * Return a new table which has the exact same columns as the specified one plus one extra.
+     * @param column  Column to insert.
+     * @param index   Position where column is inserted.  If -1 the column is appended.
+     * @return        A new table.
+     */
+    ITable insertColumn(IColumn column, int index);
 
     /**
      * Formats the first rows in the table as a long string.

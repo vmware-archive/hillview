@@ -23,12 +23,12 @@ import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.Utilities;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 /**
  * Base class for in-memory tables.
+ * We make this serializable because otherwise the columns field is not serialized
+ * when accessed by the SmallTable.
  */
 public abstract class BaseTable implements ITable, Serializable {
     /**
@@ -74,11 +74,13 @@ public abstract class BaseTable implements ITable, Serializable {
     /**
      * Returns columns in the order they appear in the schema.
      */
-    public Iterable<IColumn> getColumns(Schema schema) {
-        List<IColumn> cols = new ArrayList<IColumn>();
-        for (String col : schema.getColumnNames()) {
-            IColumn myCol = this.getColumn(col);
-            cols.add(myCol);
+    public IColumn[] getColumns(Schema schema) {
+        IColumn[] cols = new IColumn[schema.getColumnCount()];
+        String[] colNames = schema.getColumnNames();
+        for (int i=0; i < colNames.length; i++) {
+            String col = colNames[i];
+            IColumn myCol = this.columns.get(col);
+            cols[i] = myCol;
         }
         return cols;
     }
@@ -86,8 +88,17 @@ public abstract class BaseTable implements ITable, Serializable {
     /**
      * Returns columns in the order they appear in the schema.
      */
-    public Iterable<IColumn> getColumns() {
+    public IColumn[] getColumns() {
         return this.getColumns(this.getSchema());
+    }
+
+    @Override
+    public ITable append(IColumn[] columns) {
+        IColumn[] cols = new IColumn[this.columns.size() + columns.length];
+        IColumn[] old = this.getColumns();
+        System.arraycopy(old, 0, cols, 0, old.length);
+        System.arraycopy(columns, 0, cols, old.length, columns.length);
+        return this.replace(cols);
     }
 
     @Override
@@ -117,10 +128,6 @@ public abstract class BaseTable implements ITable, Serializable {
         return size;
     }
 
-    @Override public IColumn getColumn(final String colName) {
-        return this.columns.get(colName);
-    }
-
     /**
      * Compress generates a table that contains only the columns referred to by subSchema,
      * and only the rows contained in IMembership Set with consecutive numbering.
@@ -129,10 +136,13 @@ public abstract class BaseTable implements ITable, Serializable {
     @Override public SmallTable compress(final ISubSchema subSchema,
                                          final IRowOrder rowOrder) {
         Schema newSchema = this.getSchema().project(subSchema);
-        List<IColumn> compressedCols = new ArrayList<IColumn>(newSchema.getColumnCount());
-        for (String s : newSchema.getColumnNames()) {
+        String[] colNames = newSchema.getColumnNames();
+
+        IColumn[] compressedCols = new IColumn[newSchema.getColumnCount()];
+        for (int i=0; i < colNames.length; i++) {
+            String s = colNames[i];
             IColumn c = this.columns.get(s).compress(rowOrder);
-            compressedCols.add(c);
+            compressedCols[i] = c;
         }
         return new SmallTable(compressedCols, newSchema);
     }
@@ -164,6 +174,23 @@ public abstract class BaseTable implements ITable, Serializable {
             count++;
         }
         return builder.toString();
+    }
+
+    @Override
+    public ITable insertColumn(IColumn column, int index) {
+        IColumn[] result = new IColumn[this.columns.size() + 1];
+        int insertIndex = 0;
+        String[] colNames = this.getSchema().getColumnNames();
+        for (int i = 0; i < colNames.length; i++) {
+            if (i == index) {
+                result[i] = column;
+                insertIndex++;
+            }
+            result[insertIndex++] = this.columns.get(colNames[i]);
+        }
+        if (index == -1)
+            result[insertIndex] = column;
+        return this.replace(result);
     }
 
     static <C extends IColumn> void sealColumns(Iterable<C> columns) {

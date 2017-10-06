@@ -17,9 +17,11 @@
 
 package org.hillview.table.api;
 
-/**
- * A column loader is a class which knows how to load a column.
- */
 public interface IColumnLoader {
-    IColumn load();
+    /**
+     * Load the columns with the specified names.
+     * @param names  Column names to load.
+     * @return       The loaded columns.
+     */
+    IColumn[] loadColumns(String[] names);
 }

@@ -36,7 +36,7 @@ public final class ControlPointsTarget extends RpcTarget {
     @Nullable
     private DoubleMatrix lowDimData;
 
-    ControlPointsTarget(SmallTable table, List<String> colNames, HillviewComputation computation) {
+    ControlPointsTarget(SmallTable table, String[] colNames, HillviewComputation computation) {
         super(computation);
         this.highDimData = BlasConversions.toDoubleMatrix(table, colNames);
         this.registerObject();

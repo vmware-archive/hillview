@@ -17,7 +17,6 @@
 
 package org.hillview.table;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.gson.*;
 import org.hillview.dataset.api.IJson;
 import org.hillview.table.api.ContentsKind;
@@ -81,6 +80,16 @@ public final class Schema
                     desc.name + " already exists");
         this.columns.put(desc.name, desc);
         this.cachedKeySet = this.columns.keySet().toArray(new String[0]);
+    }
+
+    public int getColumnIndex(String columnName) {
+        int index = 0;
+        for (String c: this.columns.keySet()) {
+            if (c.equals(columnName))
+                break;
+            index++;
+        }
+        return index;
     }
 
     public ColumnDescription getDescription(final String columnName) {

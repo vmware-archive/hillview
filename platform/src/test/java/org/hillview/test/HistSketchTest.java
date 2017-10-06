@@ -18,14 +18,12 @@
 package org.hillview.test;
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.sketches.*;
-import org.hillview.table.api.ColumnNameAndConverter;
+import org.hillview.table.api.ColumnAndConverterDescription;
 import org.hillview.utils.TestTables;
 import org.hillview.table.SmallTable;
 import org.hillview.table.Table;
 import org.hillview.table.api.ITable;
 import org.junit.Test;
-
-import java.util.Iterator;
 
 import static org.junit.Assert.assertEquals;
 
@@ -40,7 +38,7 @@ public class HistSketchTest extends BaseTest {
         final Table myTable = TestTables.getRepIntTable(tableSize, numCols);
         final BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(1, 50, 10);
         final HistogramSketch mySketch = new HistogramSketch(buckets,
-                new ColumnNameAndConverter(myTable.getSchema().getColumnNames()[0]));
+                new ColumnAndConverterDescription(myTable.getSchema().getColumnNames()[0]));
         Histogram result = mySketch.create(myTable);
         int size = 0;
         int bucketNum = result.getNumOfBuckets();
@@ -60,7 +58,7 @@ public class HistSketchTest extends BaseTest {
         final String colName = bigTable.getSchema().getColumnNames()[0];
         final ParallelDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize / 10);
         final Histogram hdl = all.blockingSketch(
-                new HistogramSketch(buckets, new ColumnNameAndConverter(colName), 0.5));
+                new HistogramSketch(buckets, new ColumnAndConverterDescription(colName), 0.5));
         int size = 0;
         int bucketNum = hdl.getNumOfBuckets();
         for (int i = 0; i < bucketNum; i++)
@@ -83,7 +81,7 @@ public class HistSketchTest extends BaseTest {
         final ParallelDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize/10);
         final HeatMap hm = all.blockingSketch(
                 new HeatMapSketch(buckets1, buckets2,
-                        new ColumnNameAndConverter(colName1), new ColumnNameAndConverter(colName2),
+                        new ColumnAndConverterDescription(colName1), new ColumnAndConverterDescription(colName2),
                         rate));
         HistogramTest.basicTestHeatMap(hm, (long) (bigSize * rate));
     }

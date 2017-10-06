@@ -30,14 +30,12 @@ import org.jblas.DoubleMatrix;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class LAMPMapTest extends BaseTest {
     private void testLAMPMap(ITable table, int numSamples, int fragmentSize) {
         long seed = 1;
         IDataSet<ITable> dataset = TestTables.makeParallel(table, fragmentSize);
-        List<String> colNames = TestUtils.getNumericColumnNames(table);
+        String[] colNames = TestUtils.getNumericColumnNames(table);
         double samplingRate = ((double) numSamples) / table.getNumOfRows();
         RandomSamplingSketch sketch = new RandomSamplingSketch(samplingRate, seed, colNames, false);
         SmallTable sampling = dataset.blockingSketch(sketch);
@@ -53,9 +51,9 @@ public class LAMPMapTest extends BaseTest {
         System.out.println("\tMin y: " + proj.getColumn(1).min());
         System.out.println("\tMax y: " + proj.getColumn(1).max());
 
-        List<String> newColNames = new ArrayList<String>();
-        newColNames.add("LAMP1");
-        newColNames.add("LAMP2");
+        String[] newColNames = new String[2];
+        newColNames[0] = "LAMP1";
+        newColNames[1] = "LAMP2";
         LAMPMap map = new LAMPMap(ndControlPoints, proj, colNames, newColNames);
         ITable result = map.apply(table);
         IDataSet<ITable> datasetResult = dataset.blockingMap(map);

@@ -18,16 +18,12 @@
 package org.hillview.sketches;
 
 import org.hillview.dataset.api.ISketch;
+import org.hillview.table.HashSubSchema;
 import org.hillview.table.SmallTable;
-import org.hillview.table.Table;
-import org.hillview.table.api.IColumn;
-import org.hillview.table.api.ITable;
+import org.hillview.table.api.*;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * This sketch selects random rows from the table, and gives as a result a SmallTable. The rows in the table are
@@ -38,7 +34,7 @@ public class RandomSamplingSketch implements ISketch<ITable, SmallTable> {
     public static final double overSampling = 1.5;
     private final double rate;
     private final long seed;
-    private final List<String> columnNames;
+    private final String[] columnNames;
     private final boolean allowMissing;
 
     /**
@@ -47,11 +43,12 @@ public class RandomSamplingSketch implements ISketch<ITable, SmallTable> {
      * @param rate The rate in which the table is sampled. To account for rounding errors, the table is oversampled
      *             by a factor of RandomSamplingSketch.overSampling. To have an exact sampling, the result's
      *             membership set should be sampled once more.
-     * @param columnNames The list of columns that will be in the resulting SmallTable.
+     * @param columnNames The list of columns that will be in the resulting SmallTable.  If empty
+     *                    all columns are used.
      * @param allowMissing If this is false, do not allow rows that have missing values in at least one of the
      *                     columns to be in the result.
      */
-    public RandomSamplingSketch(double rate, long seed, List<String> columnNames, boolean allowMissing) {
+    public RandomSamplingSketch(double rate, long seed, String[] columnNames, boolean allowMissing) {
         this.rate = Math.min(overSampling * rate, 1.0);
         this.seed = seed;
         this.columnNames = columnNames;
@@ -66,33 +63,32 @@ public class RandomSamplingSketch implements ISketch<ITable, SmallTable> {
      *             membership set should be sampled once more.
      */
     public RandomSamplingSketch(double rate, long seed) {
-        this(rate, seed, new ArrayList<String>(), true);
+        this(rate, seed, new String[0], true);
     }
 
     @Override
     public SmallTable create(ITable data) {
-        List<IColumn> columns;
-        if (this.columnNames.size() != 0) {
-            columns = this.columnNames.stream().map(data::getColumn).collect(Collectors.toList());
-            data = new Table(columns).selectRowsFromFullTable(data.getMembershipSet());
-        } else {
-            columns = new ArrayList<IColumn>(data.getSchema().getColumnCount());
-            data.getColumns().forEach(columns::add);
-        }
+        ColumnAndConverterDescription[] ccds;
+        if (this.columnNames.length != 0)
+            ccds = ColumnAndConverterDescription.create(this.columnNames);
+        else
+            ccds = ColumnAndConverterDescription.create(data.getSchema().getColumnNames());
+        ColumnAndConverter[] cols = data.getLoadedColumns(ccds);
 
-        SmallTable sample;
+        IMembershipSet sample;
         if (this.allowMissing) {
-            sample = data.compress(data.getMembershipSet().sample(this.rate, this.seed));
+            sample = data.getMembershipSet().sample(this.rate, this.seed);
         } else {
-            sample = data.compress(data.getMembershipSet().filter((row) -> {
-                for (IColumn column : columns) {
+            sample = data.getMembershipSet().filter((row) -> {
+                for (ColumnAndConverter column : cols) {
                     if (column.isMissing(row))
                         return false;
                 }
                 return true;
-            }).sample(this.rate, this.seed));
+            }).sample(this.rate, this.seed);
         }
-        return sample;
+        ISubSchema schema = new HashSubSchema(this.columnNames);
+        return data.compress(schema, sample);
     }
 
     @Override

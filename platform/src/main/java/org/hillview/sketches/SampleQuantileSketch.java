@@ -28,8 +28,6 @@ import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.hillview.table.columns.ObjectArrayColumn.mergeColumns;
 
@@ -81,14 +79,18 @@ public class SampleQuantileSketch  implements ISketch<ITable, SampleList> {
     public SampleList add(@Nullable SampleList left, @Nullable SampleList right) {
         left = Converters.checkNull(left);
         right = Converters.checkNull(right);
+        left.table.check();
+        right.table.check();
         if (!left.table.getSchema().equals(right.table.getSchema()))
             throw new RuntimeException("The schemas do not match.");
-        final List<IColumn> mergedCol = new ArrayList<IColumn>(left.table.getSchema().getColumnCount());
+        final IColumn[] mergedCol = new IColumn[left.table.getSchema().getColumnCount()];
         final boolean[] mergeLeft = this.colSortOrder.getMergeOrder(left.table, right.table);
+        int index = 0;
         for (String colName: left.table.getSchema().getColumnNames()) {
             IColumn newCol = mergeColumns(left.table.getColumn(colName),
                     right.table.getColumn(colName), mergeLeft);
-            mergedCol.add(newCol);
+            mergedCol[index] = newCol;
+            index++;
         }
         return new SampleList(new SmallTable(mergedCol));
     }

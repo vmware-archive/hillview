@@ -21,9 +21,7 @@ import com.univocity.parsers.csv.CsvFormat;
 import com.univocity.parsers.csv.CsvWriter;
 import com.univocity.parsers.csv.CsvWriterSettings;
 import org.hillview.table.Schema;
-import org.hillview.table.api.IColumn;
-import org.hillview.table.api.IRowIterator;
-import org.hillview.table.api.ITable;
+import org.hillview.table.api.*;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -43,6 +41,10 @@ public class CsvFileWriter {
 
     public void writeTable(ITable table) throws IOException {
         Schema schema = table.getSchema();
+        ColumnAndConverterDescription[] ccds =
+                ColumnAndConverterDescription.create(schema.getColumnNames());
+        ColumnAndConverter[] cols = table.getLoadedColumns(ccds);
+
         CsvWriterSettings settings = new CsvWriterSettings();
         CsvFormat format = new CsvFormat();
         format.setDelimiter(this.separator);
@@ -53,11 +55,9 @@ public class CsvFileWriter {
             CsvWriter writer = new CsvWriter(fw, settings);
 
             String[] data = new String[schema.getColumnCount()];
-            IColumn[] columns = new IColumn[data.length];
             int index = 0;
             for (String c : schema.getColumnNames()) {
                 data[index] = c;
-                columns[index] = table.getColumn(c);
                 index++;
             }
             if (this.writeHeaderRow)
@@ -65,8 +65,8 @@ public class CsvFileWriter {
             IRowIterator rowIter = table.getMembershipSet().getIterator();
             int nextRow = rowIter.getNextRow();
             while (nextRow >= 0) {
-                for (index = 0; index < columns.length; index++) {
-                    String d = columns[index].asString(nextRow);
+                for (index = 0; index < cols.length; index++) {
+                    String d = cols[index].asString(nextRow);
                     data[index] = d;
                 }
                 writer.writeRow(data);

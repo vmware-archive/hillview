@@ -17,12 +17,8 @@
 
 package org.hillview.table.filters;
 
-import org.hillview.table.SortedStringsConverter;
-import org.hillview.table.api.ITableFilter;
-import org.hillview.table.api.ColumnAndConverter;
-import org.hillview.table.api.IStringConverter;
-import org.hillview.table.api.ITable;
-import org.hillview.table.api.ITableFilterDescription;
+import org.hillview.table.SortedStringsConverterDescription;
+import org.hillview.table.api.*;
 
 import javax.annotation.Nullable;
 
@@ -37,39 +33,40 @@ public class RangeFilterDescription implements ITableFilterDescription {
 
     @Override
     public ITableFilter getFilter(ITable table) {
-        IStringConverter converter = null;
-        if (this.bucketBoundaries != null)
-            converter = new SortedStringsConverter(
-                    this.bucketBoundaries, (int)Math.ceil(this.min), (int)Math.floor(this.max));
-        ColumnAndConverter column = new ColumnAndConverter(
-                table.getColumn(this.columnName), converter);
-        return new RangeFilter(column, this);
+        IStringConverterDescription conv = null;
+        if (this.bucketBoundaries != null) {
+            conv = new SortedStringsConverterDescription(
+                    this.bucketBoundaries, (int) Math.ceil(this.min), (int) Math.floor(this.max));
+        }
+        ColumnAndConverterDescription ccd = new ColumnAndConverterDescription(
+                this.columnName, conv);
+        return new RangeFilter(table.getLoadedColumn(ccd));
     }
 
-    public static class RangeFilter implements ITableFilter {
+    public class RangeFilter implements ITableFilter {
         final ColumnAndConverter column;
-        final RangeFilterDescription description;
 
-        public RangeFilter(ColumnAndConverter column, RangeFilterDescription desc) {
+        public RangeFilter(ColumnAndConverter column) {
             this.column = column;
-            this.description = desc;
         }
 
         public boolean test(int rowIndex) {
+            RangeFilterDescription desc = RangeFilterDescription.this;
             boolean result;
             if (this.column.isMissing(rowIndex))
                 result = false;
             else {
                 double d = this.column.asDouble(rowIndex);
-                result = (this.description.min <= d) && (d <= this.description.max);
+                result = (desc.min <= d) && (d <= desc.max);
             }
-            if (this.description.complement)
+            if (desc.complement)
                 result = !result;
             return result;
         }
 
         public String toString() {
-            return "Rangefilter[" + this.description.min + "," + this.description.max + "]";
+            return "Rangefilter[" + RangeFilterDescription.this.min + "," +
+                    RangeFilterDescription.this.max + "]";
         }
     }
 }

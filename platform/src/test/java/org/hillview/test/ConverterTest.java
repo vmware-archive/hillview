@@ -17,7 +17,8 @@
 
 package org.hillview.test;
 
-import org.hillview.table.SortedStringsConverter;
+import org.hillview.table.SortedStringsConverterDescription;
+import org.hillview.table.api.IStringConverter;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -26,13 +27,14 @@ public class ConverterTest extends BaseTest {
     public void checkSortedConverter() {
         double eps = .0001;
         String[] data = new String[] {"AA", "AB", "AZ", "B", "Z"};
-        SortedStringsConverter ssc = new SortedStringsConverter(data, 0, 10);
-        Assert.assertTrue(ssc.asDouble("A") < 0);
-        Assert.assertEquals(ssc.asDouble("AA"), 0, eps);
-        Assert.assertEquals(ssc.asDouble("AB"), 2.5, eps);
-        Assert.assertEquals(ssc.asDouble("AAB"), 2.5, eps);
-        Assert.assertEquals(ssc.asDouble("AZ"), 5, eps);
-        Assert.assertEquals(ssc.asDouble("Z"), 10, eps);
-        Assert.assertTrue(ssc.asDouble("ZZ") > 10);
+        SortedStringsConverterDescription ssc = new SortedStringsConverterDescription(data, 0, 10);
+        IStringConverter conv = ssc.getConverter();
+        Assert.assertTrue(conv.asDouble("A") < 0);
+        Assert.assertEquals(conv.asDouble("AA"), 0, eps);
+        Assert.assertEquals(conv.asDouble("AB"), 2.5, eps);
+        Assert.assertEquals(conv.asDouble("AAB"), 2.5, eps);
+        Assert.assertEquals(conv.asDouble("AZ"), 5, eps);
+        Assert.assertEquals(conv.asDouble("Z"), 10, eps);
+        Assert.assertTrue(conv.asDouble("ZZ") > 10);
     }
 }

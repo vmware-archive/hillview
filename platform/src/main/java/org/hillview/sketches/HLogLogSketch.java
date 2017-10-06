@@ -18,6 +18,8 @@
 package org.hillview.sketches;
 
 import org.hillview.dataset.api.ISketch;
+import org.hillview.table.api.ColumnAndConverter;
+import org.hillview.table.api.ColumnAndConverterDescription;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
 import org.hillview.utils.Randomness;
@@ -49,7 +51,9 @@ public class HLogLogSketch implements ISketch<ITable, HLogLog> {
     @Override
     public HLogLog create(final ITable data) {
         HLogLog result = this.getZero();
-        result.createHLL(data.getColumn(this.colName), data.getMembershipSet());
+        ColumnAndConverterDescription ccd = new ColumnAndConverterDescription(this.colName);
+        ColumnAndConverter col = data.getLoadedColumn(ccd);
+        result.createHLL(col.column, data.getMembershipSet());
         return result;
     }
 

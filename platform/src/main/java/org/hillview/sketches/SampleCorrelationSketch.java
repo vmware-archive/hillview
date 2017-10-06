@@ -23,7 +23,6 @@ import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
-import java.util.List;
 
 /**
  * A sketch to compute correlations between columns, using sampling.
@@ -33,10 +32,10 @@ public class SampleCorrelationSketch implements ISketch<ITable, CorrMatrix> {
      * The list of columns whose correlations we wish to compute. The columns are must be of type
      * Int or Double.
      */
-    private final List<String> colNames;
+    private final String[] colNames;
     private final double samplingRate;
 
-    public SampleCorrelationSketch(List<String> colNames, double samplingRate) {
+    public SampleCorrelationSketch(String[] colNames, double samplingRate) {
         this.colNames= colNames;
         this.samplingRate = samplingRate;
     }
@@ -44,8 +43,8 @@ public class SampleCorrelationSketch implements ISketch<ITable, CorrMatrix> {
     /**
      * The default probability of a row being included in the sample is 0.1
      */
-    public SampleCorrelationSketch(List<String> colNames) {
-        this.colNames= colNames;
+    public SampleCorrelationSketch(String[] colNames) {
+        this.colNames = colNames;
         this.samplingRate = 0.1;
     }
 
@@ -60,8 +59,8 @@ public class SampleCorrelationSketch implements ISketch<ITable, CorrMatrix> {
     public CorrMatrix add(@Nullable CorrMatrix left, @Nullable CorrMatrix right) {
         left = Converters.checkNull(left);
         right = Converters.checkNull(right);
-        for (int i = 0; i < this.colNames.size(); i++)
-            for (int j = i; j < this.colNames.size(); j++)
+        for (int i = 0; i < this.colNames.length; i++)
+            for (int j = i; j < this.colNames.length; j++)
                 left.update(i, j, right.get(i,j));
         left.count += right.count;
         return left;
@@ -81,9 +80,9 @@ public class SampleCorrelationSketch implements ISketch<ITable, CorrMatrix> {
                 throw new InvalidParameterException("Correlation Sketch requires column to be " +
                         "integer or double: " + col);
         }
-        IColumn[] iCols = new IColumn[this.colNames.size()];
-        for (int l=0; l < this.colNames.size(); l++)
-            iCols[l] = data.getColumn(this.colNames.get(l));
+        ColumnAndConverterDescription[] ccds = ColumnAndConverterDescription.create(
+                this.colNames);
+        ColumnAndConverter[] iCols = data.getLoadedColumns(ccds);
         CorrMatrix cm = new CorrMatrix(this.colNames);
         IMembershipSet sampleData = data.getMembershipSet().sample(this.samplingRate);
         cm.count = sampleData.getSize();
@@ -91,11 +90,11 @@ public class SampleCorrelationSketch implements ISketch<ITable, CorrMatrix> {
         int i = rowIt.getNextRow();
         double valJ, valK;
         while (i != -1) {
-            for (int j = 0; j < this.colNames.size(); j++) {
-                valJ = iCols[j].asDouble(i, null);
+            for (int j = 0; j < this.colNames.length; j++) {
+                valJ = iCols[j].asDouble(i);
                 cm.update(j, j, valJ * valJ);
-                for (int k = j + 1; k < this.colNames.size(); k++) {
-                    valK = iCols[k].asDouble(i, null);
+                for (int k = j + 1; k < this.colNames.length; k++) {
+                    valK = iCols[k].asDouble(i);
                     cm.update(j, k, valJ * valK);
                 }
             }

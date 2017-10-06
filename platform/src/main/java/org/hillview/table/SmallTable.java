@@ -21,10 +21,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.hillview.dataset.api.IJson;
-import org.hillview.table.api.IColumn;
-import org.hillview.table.api.IMembershipSet;
-import org.hillview.table.api.IRowIterator;
-import org.hillview.table.api.ITable;
+import org.hillview.table.api.*;
 import org.hillview.table.columns.ObjectArrayColumn;
 import org.hillview.table.rows.RowSnapshot;
 
@@ -56,7 +53,7 @@ public class SmallTable extends BaseTable implements Serializable, IJson {
      * @param columns  List of columns.
      * @param schema   The schema of the result; it must match the list of columns.
      */
-    SmallTable(final Iterable<IColumn> columns, final Schema schema) {
+    SmallTable(final IColumn[] columns, final Schema schema) {
         super(columns);
         this.rowCount = BaseTable.columnSize(this.columns.values());
         final Schema s = new Schema();
@@ -65,21 +62,33 @@ public class SmallTable extends BaseTable implements Serializable, IJson {
         this.schema = schema;
         if (!schema.equals(s))
             throw new RuntimeException("Schemas do not match");
+        this.check();
     }
 
-    public SmallTable(final Iterable<IColumn> columns) {
+    public SmallTable(final IColumn[] columns) {
         super(columns);
         this.rowCount = BaseTable.columnSize(this.columns.values());
         final Schema s = new Schema();
         for (final IColumn c : columns)
             s.append(c.getDescription());
         this.schema = s;
+        this.check();
     }
 
     public SmallTable(final Schema schema) {
         super(schema);
         this.schema = schema;
         this.rowCount = 0;
+        this.check();
+    }
+
+    public void check() {
+        if (this.columns.size() != this.schema.getColumnCount())
+            throw new RuntimeException("Invalid table");
+    }
+
+    public IColumn getColumn(String column) {
+        return this.columns.get(column);
     }
 
     static List<IColumn> colsFromRows(Schema schema, List<RowSnapshot> rows) {
@@ -97,6 +106,7 @@ public class SmallTable extends BaseTable implements Serializable, IJson {
         super(colsFromRows(schema, rowList));
         this.schema = schema;
         this.rowCount = rowList.size();
+        this.check();
     }
 
     @Override
@@ -106,8 +116,22 @@ public class SmallTable extends BaseTable implements Serializable, IJson {
 
     @Override
     public ITable project(Schema schema) {
-        Iterable<IColumn> cols = this.getColumns(schema);
+        IColumn[] cols = this.getColumns(schema);
         return new SmallTable(cols, schema);
+    }
+
+    @Override
+    public ColumnAndConverter[] getLoadedColumns(ColumnAndConverterDescription[] columns) {
+        ColumnAndConverter[] cols = new ColumnAndConverter[columns.length];
+        for (int i=0; i < columns.length; i++)
+            cols[i] = new ColumnAndConverter(this.columns.get(columns[i].columnName),
+                    columns[i].getConverter());
+        return cols;
+    }
+
+    @Override
+    public ITable replace(IColumn[] columns) {
+        return new SmallTable(columns);
     }
 
     @Override

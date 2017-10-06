@@ -22,6 +22,7 @@ import org.hillview.dataset.api.IJson;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.api.ContentsKind;
+import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
 
@@ -45,9 +46,9 @@ public class RowSnapshot extends BaseRowSnapshot implements Serializable, IJson 
     private String[] fieldNames = new String[0];
 
     public RowSnapshot(final ITable data, final int rowIndex, final Schema schema) {
-        for (String cn: schema.getColumnNames()) {
-                this.fields.put(cn, data.getColumn(cn).getObject(rowIndex));
-        }
+        IColumn[] columns = data.getColumns(schema);
+        for (IColumn c: columns)
+            this.fields.put(c.getName(), c.getObject(rowIndex));
         this.fieldNames = this.fields.keySet().toArray(new String[0]);
     }
 

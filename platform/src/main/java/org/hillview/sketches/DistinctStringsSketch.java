@@ -18,9 +18,7 @@
 package org.hillview.sketches;
 
 import org.hillview.dataset.api.ISketch;
-import org.hillview.table.api.ICategoryColumn;
-import org.hillview.table.api.IColumn;
-import org.hillview.table.api.ITable;
+import org.hillview.table.api.*;
 import org.hillview.utils.Converters;
 import org.hillview.utils.JsonList;
 
@@ -63,10 +61,12 @@ public class DistinctStringsSketch implements ISketch<ITable, JsonList<DistinctS
 
     @Override
     public JsonList<DistinctStrings> create(final ITable data) {
+        ColumnAndConverterDescription[] ccd = ColumnAndConverterDescription.create(this.colNames);
+        ColumnAndConverter[] cols = data.getLoadedColumns(ccd);
         JsonList<DistinctStrings> result = this.getZero();
         for (int i = 0; i < this.colNames.length; i++) {
-            IColumn col = data.getColumn(this.colNames[i]);
             final DistinctStrings ri = result.get(i);
+            IColumn col = cols[i].column;
             ri.setColumnSize(col.sizeInRows());
             if (col instanceof ICategoryColumn) {
                 ICategoryColumn cc = (ICategoryColumn)col;

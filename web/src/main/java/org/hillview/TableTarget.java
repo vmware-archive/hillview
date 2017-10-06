@@ -44,8 +44,6 @@ import rx.Observer;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiFunction;
 
@@ -154,11 +152,11 @@ public final class TableTarget extends RpcTarget {
         @Nullable
         String[] allNames;
 
-        ColumnNameAndConverter getColumn() {
-            IStringConverter converter = null;
+        ColumnAndConverterDescription getColumn() {
+            IStringConverterDescription converter = null;
             if (this.allNames != null)
-                converter = new SortedStringsConverter(this.allNames);
-            return new ColumnNameAndConverter(this.columnName, converter);
+                converter = new SortedStringsConverterDescription(this.allNames);
+            return new ColumnAndConverterDescription(this.columnName, converter);
         }
 
         BasicColStatSketch getBasicStatsSketch() {
@@ -227,7 +225,7 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     void correlationMatrix(RpcRequest request, RpcRequestContext context) {
         CorrelationMatrixRequest pcaReq = request.parseArgs(CorrelationMatrixRequest.class);
-        List<String> colNames = Arrays.asList(Converters.checkNull(pcaReq.columnNames));
+        String[] colNames = Converters.checkNull(pcaReq.columnNames);
         FullCorrelationSketch sketch = new FullCorrelationSketch(colNames);
         this.runCompleteSketch(this.table, sketch, CorrelationMatrixTarget::new, request, context);
     }
@@ -248,10 +246,10 @@ public final class TableTarget extends RpcTarget {
                 DoubleMatrix[] mats = LinAlg.eigenVectorsVarianceExplained(new DoubleMatrix(cm.getCorrelationMatrix()), info.numComponents);
                 DoubleMatrix projectionMatrix = mats[0];
                 DoubleMatrix varianceExplained = mats[1];
-                List<String> newColNames = new ArrayList<String>();
+                String[] newColNames = new String[projectionMatrix.rows];
                 for (int i = 0; i < projectionMatrix.rows; i++) {
                     int perc = (int) Math.round(varianceExplained.get(i) * 100);
-                    newColNames.add(String.format("PCA%d (%d%%)", i, perc));
+                    newColNames[i] = String.format("PCA%d (%d%%)", i, perc);
                 }
                 LinearProjectionMap lpm = new LinearProjectionMap(cm.columnNames, projectionMatrix, newColNames);
                 TableTarget.this.runMap(TableTarget.this.table, lpm, TableTarget::new, request, context);
@@ -272,12 +270,12 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     void sampledControlPoints(RpcRequest request, RpcRequestContext context) {
         SampledControlPoints info = request.parseArgs(SampledControlPoints.class);
-        List<String> columnNamesList = Arrays.asList(Converters.checkNull(info.columnNames));
         double samplingRate = ((double) info.numSamples) / info.rowCount;
-        RandomSamplingSketch sketch = new RandomSamplingSketch(samplingRate, info.seed, columnNamesList, info.allowMissing);
+        RandomSamplingSketch sketch = new RandomSamplingSketch(
+                samplingRate, info.seed, Converters.checkNull(info.columnNames), info.allowMissing);
         this.runCompleteSketch(this.table, sketch, (sampled, c) -> {
             sampled = sampled.compress(sampled.getMembershipSet().sample(info.numSamples, info.seed + 1)); // Resample to get the exact number of samples.
-            return new ControlPointsTarget(sampled, columnNamesList, c);
+            return new ControlPointsTarget(sampled, info.columnNames, c);
         }, request, context);
     }
 
@@ -290,7 +288,9 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     void categoricalCentroidsControlPoints(RpcRequest request, RpcRequestContext session) {
         CatCentroidControlPoints info = request.parseArgs(CatCentroidControlPoints.class);
-        CategoryCentroidsSketch sketch = new CategoryCentroidsSketch(info.categoricalColumnName, Arrays.asList(Converters.checkNull(info.numericalColumnNames)));
+        CategoryCentroidsSketch sketch = new CategoryCentroidsSketch(
+                Converters.checkNull(info.categoricalColumnName),
+                Converters.checkNull(info.numericalColumnNames));
         this.runCompleteSketch(this.table, sketch, ControlPointsTarget::new, request, session);
     }
 
@@ -354,9 +354,8 @@ public final class TableTarget extends RpcTarget {
                     lowDimPoints.put(i, 1, newControlPoints.points[i].y);
                 }
                 lowDimPoints.print();
-                List<String> colNames = Arrays.asList(Converters.checkNull(info.colNames));
-                List<String> newColNames = Arrays.asList(Converters.checkNull(info.newColNames));
-                LAMPMap map = new LAMPMap(highDimPoints, lowDimPoints, colNames, newColNames);
+                LAMPMap map = new LAMPMap(highDimPoints, lowDimPoints,
+                        Converters.checkNull(info.colNames), Converters.checkNull(info.newColNames));
                 TableTarget.this.runMap(TableTarget.this.table, map, TableTarget::new, request, context);
             }
         };

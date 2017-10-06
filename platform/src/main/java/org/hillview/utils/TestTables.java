@@ -106,8 +106,8 @@ public class TestTables {
      * @return A table which contains number from (1,..., range), where i occurs i^2 times.
      */
     public static SmallTable getSqIntTable(final int range) {
-        final List<IColumn> columns = new ArrayList<IColumn>();
-        columns.add(IntArrayGenerator.getSqIntArray(range));
+        final IColumn[] columns = new IColumn[1];
+        columns[0] = IntArrayGenerator.getSqIntArray(range);
         return new SmallTable(columns);
     }
     
@@ -122,12 +122,12 @@ public class TestTables {
      */
     public static SmallTable getIntTable(final int size, final int numCols) {
         Randomness rn = new Randomness(2); // we want deterministic random numbers for testing
-        final List<IColumn> columns = new ArrayList<IColumn>(numCols);
+        final IColumn[] columns = new IColumn[numCols];
         double exp = 1.0/numCols;
         final int range =  5*((int)Math.pow(size, exp));
         for (int i = 0; i < numCols; i++) {
             final String colName = "Column" + String.valueOf(i);
-            columns.add(IntArrayGenerator.getRandIntArray(size, range, colName, rn));
+            columns[i] = IntArrayGenerator.getRandIntArray(size, range, colName, rn);
         }
         return new SmallTable(columns);
     }
@@ -141,13 +141,13 @@ public class TestTables {
      */
     public static SmallTable getMissingIntTable(final int size, final int numCols) {
         Randomness rn = new Randomness(2); // we want deterministic random numbers for testing
-        final List<IColumn> columns = new ArrayList<IColumn>(numCols);
+        final IColumn[] columns = new IColumn[numCols];
         double exp = 1.0/numCols;
         final int range =  5*((int)Math.pow(size, exp));
         for (int i = 0; i < numCols; i++) {
             int mod = rn.nextInt(9) + 1;
             final String colName = "Missing" + String.valueOf(mod);
-            columns.add(IntArrayGenerator.getMissingIntArray(colName, size, mod));
+            columns[i] = IntArrayGenerator.getMissingIntArray(colName, size, mod);
         }
         return new SmallTable(columns);
     }
@@ -184,10 +184,10 @@ public class TestTables {
     public static SmallTable getHeavyIntTable(final int numCols, final int size, final double base,
                                               final int range) {
         Randomness rn = new Randomness(3);
-        final List<IColumn> columns = new ArrayList<IColumn>(numCols);
+        final IColumn[] columns = new IColumn[numCols];
         for (int i = 0; i < numCols; i++) {
             final String colName = "Column" + String.valueOf(i);
-            columns.add(IntArrayGenerator.getHeavyIntArray(size, base, range, colName, rn));
+            columns[i] = IntArrayGenerator.getHeavyIntArray(size, base, range, colName, rn);
         }
         return new SmallTable(columns);
     }
@@ -226,9 +226,7 @@ public class TestTables {
                 intCol[j].set(i, ((x > rho[j]) ? -k: k));
             }
         }
-        final List<IColumn> col = new ArrayList<IColumn>();
-        col.addAll(Arrays.asList(intCol).subList(0, numCols));
-        return new SmallTable(col);
+        return new SmallTable(intCol);
     }
 
     /**

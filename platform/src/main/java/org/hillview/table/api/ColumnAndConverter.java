@@ -17,6 +17,8 @@
 
 package org.hillview.table.api;
 
+import org.hillview.utils.Converters;
+
 import javax.annotation.Nullable;
 import java.time.Duration;
 import java.time.Instant;
@@ -30,6 +32,7 @@ public class ColumnAndConverter {
     public final IStringConverter converter;
 
     public ColumnAndConverter(IColumn column, @Nullable IStringConverter converter) {
+        Converters.checkNull(column);
         this.column = column;
         this.converter = converter;
     }
@@ -37,6 +40,10 @@ public class ColumnAndConverter {
     public ColumnAndConverter(IColumn column) {
         this(column, null);
     }
+
+    public String getName() { return this.column.getName(); }
+
+    public @Nullable String asString(int rowIndex) { return this.column.asString(rowIndex); }
 
     public @Nullable Object getObject(int rowIndex) {
         return this.column.getObject(rowIndex);

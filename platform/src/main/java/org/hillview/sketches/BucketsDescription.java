@@ -18,7 +18,7 @@
 package org.hillview.sketches;
 
 /**
- * MetaData for one dimensional buckets held by a histogram
+ * Metadata for one dimensional buckets held by a histogram
  */
 public class BucketsDescription implements IBucketsDescription {
     private final double minValue;

@@ -25,9 +25,6 @@ import org.hillview.table.columns.SparseColumn;
 import org.hillview.utils.BlasConversions;
 import org.jblas.DoubleMatrix;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * This map takes a list of column names and a projection matrix and applies the projection matrix to the matrix that is
  * constructed from the table by horizontally stacking the specified columns. The resulting table is a copy of the old
@@ -40,27 +37,26 @@ public class LinearProjectionMap implements IMap<ITable, ITable> {
      * of the column names in colNames.
      */
     private final DoubleMatrix projectionMatrix;
-    private final List<String> colNames;
-    private final List<String> newColNames;
+    private final String[] colNames;
+    private final String[] newColNames;
     private final int numProjections;
     private static final double threshold = .3;
     // For columns sparser than this use sparse storage.
 
-    public LinearProjectionMap(List<String> colNames, DoubleMatrix projectionMatrix, String projectionName) {
-        if (colNames.size() != projectionMatrix.columns)
+    public LinearProjectionMap(String[] colNames, DoubleMatrix projectionMatrix, String projectionName) {
+        if (colNames.length != projectionMatrix.columns)
             throw new RuntimeException("Number of columns in projectionMatrix should be eq. to number of names in colNames.");
 
         this.projectionMatrix = projectionMatrix;
         this.colNames = colNames;
-        this.newColNames = new ArrayList<String>();
-        for (int i = 0; i < projectionMatrix.rows; i++) {
-            newColNames.add(projectionName + i);
-        }
+        this.newColNames = new String[this.projectionMatrix.rows];
+        for (int i = 0; i < projectionMatrix.rows; i++)
+            newColNames[i] = projectionName + i;
         this.numProjections = projectionMatrix.rows;
     }
 
-    public LinearProjectionMap(List<String> colNames, DoubleMatrix projectionMatrix, List<String> newColNames) {
-        if (colNames.size() != projectionMatrix.columns)
+    public LinearProjectionMap(String[] colNames, DoubleMatrix projectionMatrix, String[] newColNames) {
+        if (colNames.length != projectionMatrix.columns)
             throw new RuntimeException("Number of columns in projectionMatrix should be eq. to number of names in colNames.");
 
         this.projectionMatrix = projectionMatrix;
@@ -71,13 +67,7 @@ public class LinearProjectionMap implements IMap<ITable, ITable> {
 
     @Override
     public ITable apply(ITable table) {
-        // Copy all existing columns to the column list for the new table.
-        List<IColumn> columns = new ArrayList<IColumn>();
-        Iterable<IColumn> inputColumns = table.getColumns();
-        for (IColumn inputColumn : inputColumns) {
-            columns.add(inputColumn);
-        }
-
+        IColumn[] columns = new IColumn[this.newColNames.length];
         // Compute the projection with BLAS
         DoubleMatrix mat = BlasConversions.toDoubleMatrix(table, this.colNames);
         DoubleMatrix resultMat = mat.mmul(this.projectionMatrix.transpose());
@@ -85,7 +75,8 @@ public class LinearProjectionMap implements IMap<ITable, ITable> {
         // Copy the result to new columns with the same membershipSet size. (Can't use
         // BlasConversions here.)
         for (int j = 0; j < this.numProjections; j++) {
-            ColumnDescription colDesc = new ColumnDescription(this.newColNames.get(j), ContentsKind.Double, true);
+            ColumnDescription colDesc = new ColumnDescription(
+                    this.newColNames[j], ContentsKind.Double, true);
             IMembershipSet set = table.getMembershipSet();
             int colSize = table.getMembershipSet().getMax();
             IMutableColumn column;
@@ -105,9 +96,9 @@ public class LinearProjectionMap implements IMap<ITable, ITable> {
                 row = it.getNextRow();
                 i++;
             }
-            columns.add(column);
+            columns[j] = column;
         }
 
-        return new Table(columns, table.getMembershipSet());
+        return table.append(columns);
     }
 }

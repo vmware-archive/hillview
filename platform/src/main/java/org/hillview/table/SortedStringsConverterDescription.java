@@ -17,7 +17,9 @@
 
 package org.hillview.table;
 
+import it.unimi.dsi.fastutil.objects.Object2DoubleOpenHashMap;
 import org.hillview.table.api.IStringConverter;
+import org.hillview.table.api.IStringConverterDescription;
 
 import java.util.Arrays;
 
@@ -33,13 +35,13 @@ import java.util.Arrays;
  * If a string is less than the first the result is less than min.
  * If a string is more than the last, the result is more than max.
  */
-public class SortedStringsConverter implements IStringConverter {
+public class SortedStringsConverterDescription implements IStringConverterDescription {
     // Last boundary is inclusive
     private final String[] boundaries;
     private final int min;
     private final int max;
 
-    public SortedStringsConverter(String[] boundaries, int min, int max) {
+    public SortedStringsConverterDescription(String[] boundaries, int min, int max) {
         this.min = min;
         this.max = max;
         if (boundaries.length < 1)
@@ -49,26 +51,45 @@ public class SortedStringsConverter implements IStringConverter {
         this.boundaries = boundaries;
     }
 
-    public SortedStringsConverter(String[] boundaries) {
+    public SortedStringsConverterDescription(String[] boundaries) {
         this(boundaries, 0, boundaries.length - 1);
     }
 
     @Override
-    public double asDouble(String string) {
-        int index = Arrays.binarySearch(this.boundaries, string);
-        // This method returns index of the search key, if it is contained in the array,
-        // else it returns (-(insertion point) - 1). The insertion point is the point
-        // at which the key would be inserted into the array: the index of the first
-        // element greater than the key, or a.length if all elements in the array
-        // are less than the specified key.
-        if (index < 0) {
-            index = -index - 1;
-            if (index == 0)
-                // before first element
-                index = -1;
+    public IStringConverter getConverter() {
+        return new Converter();
+    }
+
+    public class Converter implements IStringConverter {
+        private final Object2DoubleOpenHashMap<String> memoizedResults;
+
+        public Converter() {
+            this.memoizedResults = new Object2DoubleOpenHashMap<String>();
         }
-        if (this.boundaries.length == 1)
-            return this.min + index;
-        return this.min + ((index * (double)(this.max - this.min)) / (this.boundaries.length - 1));
+
+        @Override
+        public double asDouble(String string) {
+            return this.memoizedResults.computeDoubleIfAbsent(string, this::computeIndex);
+        }
+
+        public double computeIndex(String string) {
+            SortedStringsConverterDescription desc = SortedStringsConverterDescription.this;
+            int index = Arrays.binarySearch(
+                    desc.boundaries, string);
+            // This method returns index of the search key, if it is contained in the array,
+            // else it returns (-(insertion point) - 1). The insertion point is the point
+            // at which the key would be inserted into the array: the index of the first
+            // element greater than the key, or a.length if all elements in the array
+            // are less than the specified key.
+            if (index < 0) {
+                index = -index - 1;
+                if (index == 0)
+                    // before first element
+                    index = -1;
+            }
+            if (desc.boundaries.length == 1)
+                return desc.min + index;
+            return desc.min + ((index * (double)(desc.max - desc.min)) / (desc.boundaries.length - 1));
+        }
     }
 }

@@ -19,7 +19,6 @@ package org.hillview.maps;
 
 import org.hillview.dataset.api.IMap;
 import org.hillview.dataset.api.Pair;
-import org.hillview.table.Table;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
@@ -53,6 +52,6 @@ public class SetOperationMap implements IMap<Pair<ITable, ITable>, ITable> {
                 throw new RuntimeException("Unexpected operation " + this.operation);
         }
 
-        return new Table(data.first.getColumns(), rows);
+        return data.first.selectRowsFromFullTable(rows);
     }
 }

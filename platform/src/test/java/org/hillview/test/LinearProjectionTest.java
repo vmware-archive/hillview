@@ -21,7 +21,7 @@ import org.hillview.dataset.api.IDataSet;
 import org.hillview.maps.LinearProjectionMap;
 import org.hillview.sketches.BasicColStatSketch;
 import org.hillview.sketches.BasicColStats;
-import org.hillview.table.api.ColumnNameAndConverter;
+import org.hillview.table.api.ColumnAndConverterDescription;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.BlasConversions;
 import org.hillview.utils.TestTables;
@@ -30,10 +30,6 @@ import org.jblas.ranges.AllRange;
 import org.jblas.util.Random;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 @SuppressWarnings("ConstantConditions")
 public class LinearProjectionTest extends BaseTest {
@@ -44,7 +40,7 @@ public class LinearProjectionTest extends BaseTest {
         Random.seed(42);
         DoubleMatrix matrix = DoubleMatrix.rand(rows, cols);
         ITable table = BlasConversions.toTable(matrix);
-        DoubleMatrix matrix2 = BlasConversions.toDoubleMatrix(table, Arrays.asList(table.getSchema().getColumnNames()));
+        DoubleMatrix matrix2 = BlasConversions.toDoubleMatrix(table, table.getSchema().getColumnNames());
         Assert.assertEquals(rows * cols, matrix.eq(matrix2).sum(), Math.ulp(rows * rows));
     }
 
@@ -58,13 +54,13 @@ public class LinearProjectionTest extends BaseTest {
         DoubleMatrix projectionMatrix = DoubleMatrix.rand(numProjections, cols);
         ITable table = BlasConversions.toTable(matrix);
         LinearProjectionMap lpm = new LinearProjectionMap(
-                Arrays.asList(table.getSchema().getColumnNames()), projectionMatrix,
+                table.getSchema().getColumnNames(), projectionMatrix,
                 "LP");
         ITable result = lpm.apply(table);
 
-        List<String> newColNames = new ArrayList<String>();
+        String[] newColNames = new String[numProjections];
         for (int i = 0; i < numProjections; i++) {
-            newColNames.add(String.format("LP%d", i));
+            newColNames[i] = String.format("LP%d", i);
         }
 
         DoubleMatrix projectedData = BlasConversions.toDoubleMatrix(result, newColNames);
@@ -82,7 +78,7 @@ public class LinearProjectionTest extends BaseTest {
         DoubleMatrix projectionCheck = dataMatrix.mmul(projectionMatrix.transpose());
 
         ITable bigTable = BlasConversions.toTable(dataMatrix);
-        List<String> colNames = Arrays.asList(bigTable.getSchema().getColumnNames());
+        String[] colNames = bigTable.getSchema().getColumnNames();
         // Convert it to an IDataset
         IDataSet<ITable> all = TestTables.makeParallel(bigTable, rows / 10);
 
@@ -91,7 +87,7 @@ public class LinearProjectionTest extends BaseTest {
 
         for (int i = 0; i < numProjections; i++) {
             BasicColStatSketch b = new BasicColStatSketch(
-                    new ColumnNameAndConverter(String.format("LP%d", i)));
+                    new ColumnAndConverterDescription(String.format("LP%d", i)));
             BasicColStats bcs = result.blockingSketch(b);
             double expectedMean = projectionCheck.get(new AllRange(), i).mean();
             double actualMean = bcs.getMoment(1);

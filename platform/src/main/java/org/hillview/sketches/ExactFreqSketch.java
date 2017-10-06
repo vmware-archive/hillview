@@ -75,6 +75,7 @@ public class ExactFreqSketch implements ISketch<ITable, FreqKList> {
 
     @Override
     public FreqKList create(ITable data) {
+        data.getColumns(this.schema);
         Hash.Strategy<BaseRowSnapshot> hs = new Hash.Strategy<BaseRowSnapshot>() {
             @Override
             public int hashCode(BaseRowSnapshot brs) {

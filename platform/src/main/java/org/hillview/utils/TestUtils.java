@@ -20,8 +20,6 @@ package org.hillview.utils;
 import org.hillview.storage.CsvFileReader;
 import org.hillview.table.Schema;
 import org.hillview.table.api.ContentsKind;
-import org.hillview.table.api.IColumn;
-import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ITable;
 
 import java.io.IOException;
@@ -29,7 +27,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 public class TestUtils {
     /**
@@ -37,23 +34,7 @@ public class TestUtils {
      * @param table The table that is printed.
      */
     public static void printTable(ITable table) {
-        StringBuilder header = new StringBuilder("| ");
-        for (IColumn col : table.getColumns()) {
-            header.append(col.getName()).append("\t| ");
-        }
-        header.append("\t|");
-        System.out.println(header);
-        IRowIterator rowIt = table.getRowIterator();
-        int row = rowIt.getNextRow();
-        while (row >= 0) {
-            StringBuilder rowString = new StringBuilder("| ");
-            for (IColumn col : table.getColumns()) {
-                rowString.append(col.asString(row)).append("\t| ");
-            }
-            rowString.append("\t");
-            System.out.println(rowString);
-            row = rowIt.getNextRow();
-        }
+        System.out.println(table.toLongString(0));
     }
 
     public static ITable loadTableFromCSV(String dataFolder, String csvFile, String schemaFile) throws IOException {
@@ -74,7 +55,7 @@ public class TestUtils {
         return table;
     }
 
-    public static List<String> getNumericColumnNames(ITable table) {
+    public static String[] getNumericColumnNames(ITable table) {
         List<String> numericColNames = new ArrayList<String>();
         for (String colName : table.getSchema().getColumnNames()) {
             ContentsKind kind = table.getSchema().getDescription(colName).kind;
@@ -82,7 +63,6 @@ public class TestUtils {
                 numericColNames.add(colName);
             }
         }
-        return numericColNames;
+        return numericColNames.toArray(new String[numericColNames.size()]);
     }
-
 }

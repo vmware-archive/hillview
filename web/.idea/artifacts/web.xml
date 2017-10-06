@@ -44,6 +44,21 @@
           <element id="library" level="project" name="Maven: net.jcip:jcip-annotations:1.0" />
           <element id="library" level="project" name="Maven: org.eclipse.collections:eclipse-collections:8.1.0" />
           <element id="library" level="project" name="Maven: com.univocity:univocity-parsers:2.4.1" />
+          <element id="library" level="project" name="Maven: com.martiansoftware:jsap:2.1" />
+          <element id="library" level="project" name="Maven: com.univocity:univocity-parsers:2.5.5" />
+          <element id="library" level="project" name="Maven: commons-codec:commons-codec:1.9" />
+          <element id="library" level="project" name="Maven: commons-collections:commons-collections:20040616" />
+          <element id="library" level="project" name="Maven: commons-configuration:commons-configuration:1.10" />
+          <element id="library" level="project" name="Maven: commons-io:commons-io:2.5" />
+          <element id="library" level="project" name="Maven: commons-lang:commons-lang:2.6" />
+          <element id="library" level="project" name="Maven: commons-logging:commons-logging:1.2" />
+          <element id="library" level="project" name="Maven: it.unimi.dsi:dsiutils:2.4.0" />
+          <element id="library" level="project" name="Maven: it.unimi.dsi:fastutil:8.1.0" />
+          <element id="library" level="project" name="Maven: mysql:mysql-connector-java:6.0.6" />
+          <element id="library" level="project" name="Maven: org.apache.httpcomponents:httpclient:4.5.3" />
+          <element id="library" level="project" name="Maven: org.apache.httpcomponents:httpcore:4.4.6" />
+          <element id="library" level="project" name="Maven: org.slf4j:slf4j-api:1.7.25" />
+          <element id="library" level="project" name="Maven: org.slf4j:slf4j-simple:1.7.25" />
         </element>
       </element>
       <element id="library" level="project" name="Maven: net.openhft:zero-allocation-hashing:0.8" />

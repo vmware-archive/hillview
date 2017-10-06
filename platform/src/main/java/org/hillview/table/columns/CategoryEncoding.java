@@ -17,8 +17,10 @@
 
 package org.hillview.table.columns;
 
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+
 import javax.annotation.Nullable;
-import java.util.HashMap;
 import java.util.function.Consumer;
 
 /**
@@ -26,13 +28,13 @@ import java.util.function.Consumer;
  */
 public class CategoryEncoding {
     // Map categorical value to a small integer
-    private final HashMap<String, Integer> encoding;
+    private final Object2IntOpenHashMap<String> encoding;
     // Decode small integer into categorical value
-    private final HashMap<Integer, String> decoding;
+    private final Int2ObjectOpenHashMap<String> decoding;
 
     CategoryEncoding() {
-        this.encoding = new HashMap<String, Integer>(100);
-        this.decoding = new HashMap<Integer, String>(100);
+        this.encoding = new Object2IntOpenHashMap<String>(100);
+        this.decoding = new Int2ObjectOpenHashMap<String>(100);
     }
 
     @Nullable
@@ -44,7 +46,7 @@ public class CategoryEncoding {
 
     int encode(@Nullable String value) {
         if (this.encoding.containsKey(value))
-            return this.encoding.get(value);
+            return this.encoding.getInt(value);
         int encoding = this.encoding.size();
         this.encoding.put(value, encoding);
         this.decoding.put(encoding, value);

@@ -18,11 +18,16 @@
 package org.hillview.table.rows;
 
 import org.hillview.table.Schema;
+import org.hillview.table.api.ColumnAndConverter;
+import org.hillview.table.api.ColumnAndConverterDescription;
+import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
+import org.hillview.utils.Converters;
 import org.hillview.utils.HashUtil;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
 
 /**
  * A pointer to a (projection of a) row in a table. The projection is
@@ -42,15 +47,23 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
      */
     private int rowIndex = -1;
     private final Schema schema;
+    private final HashMap<String, IColumn> columns;
 
     public VirtualRowSnapshot(final ITable table) {
-        this.table = table;
-        this.schema = table.getSchema();
+        this(table, table.getSchema());
     }
 
     public VirtualRowSnapshot(final ITable table, final Schema schema) {
         this.table = table;
         this.schema = schema;
+        this.columns = new HashMap<String, IColumn>();
+        ColumnAndConverterDescription[] ccds = ColumnAndConverterDescription.create(
+                schema.getColumnNames());
+        ColumnAndConverter[] cols = table.getLoadedColumns(ccds);
+        for (ColumnAndConverter col: cols) {
+            Converters.checkNull(col);
+            this.columns.put(col.getName(), col.column);
+        }
     }
 
     public void setRow(final int rowIndex) {
@@ -75,8 +88,12 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
         return hashCode;
     }
 
+    protected IColumn getColumn(String colName) {
+        return this.columns.get(colName);
+    }
+
     public boolean isMissing(String colName) {
-        return (this.table.getColumn(colName).isMissing(this.rowIndex));
+        return (this.getColumn(colName).isMissing(this.rowIndex));
     }
 
     @Override
@@ -91,31 +108,31 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
 
     @Override
     public Object getObject(String colName) {
-        return this.table.getColumn(colName).getObject(this.rowIndex);
+        return this.getColumn(colName).getObject(this.rowIndex);
     }
 
     @Override
     public String getString(String colName) {
-        return this.table.getColumn(colName).getString(this.rowIndex);
+        return this.getColumn(colName).getString(this.rowIndex);
     }
 
     @Override
     public int getInt(String colName) {
-        return this.table.getColumn(colName).getInt(this.rowIndex);
+        return this.getColumn(colName).getInt(this.rowIndex);
     }
 
     @Override
     public double getDouble(String colName) {
-        return this.table.getColumn(colName).getDouble(this.rowIndex);
+        return this.getColumn(colName).getDouble(this.rowIndex);
     }
 
     @Override
     public Instant getDate(String colName) {
-        return this.table.getColumn(colName).getDate(this.rowIndex);
+        return this.getColumn(colName).getDate(this.rowIndex);
     }
 
     @Override
     public Duration getDuration(String colName) {
-        return this.table.getColumn(colName).getDuration(this.rowIndex);
+        return this.getColumn(colName).getDuration(this.rowIndex);
     }
 }

@@ -30,16 +30,12 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 public class PCATest extends BaseTest {
     @Test
     public void testLinearDataset() {
         ITable table = TestTables.getLinearTable(10000, 30);
-        List<String> colNames = Arrays.asList(table.getSchema().getColumnNames());
-
+        String[] colNames = table.getSchema().getColumnNames();
         IDataSet<ITable> dataset = TestTables.makeParallel(table, 1000);
 
         FullCorrelationSketch fcs = new FullCorrelationSketch(colNames);
@@ -69,8 +65,7 @@ public class PCATest extends BaseTest {
     public void testMNIST(){
         try {
             ITable table = TestUtils.loadTableFromCSV("../data", "mnist.csv", "mnist.schema");
-            List<String> numericColNames = TestUtils.getNumericColumnNames(table);
-
+            String[] numericColNames = TestUtils.getNumericColumnNames(table);
             FullCorrelationSketch fcs = new FullCorrelationSketch(numericColNames);
             CorrMatrix cm = fcs.create(table);
             DoubleMatrix corrMatrix = new DoubleMatrix(cm.getCorrelationMatrix());

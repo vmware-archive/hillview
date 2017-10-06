@@ -18,17 +18,11 @@
 package org.hillview.maps;
 
 import org.hillview.dataset.api.IMap;
-import org.hillview.table.Table;
-import org.hillview.table.api.ContentsKind;
-import org.hillview.table.api.IColumn;
-import org.hillview.table.api.ITable;
-
-import java.util.ArrayList;
-import java.util.List;
+import org.hillview.table.api.*;
 
 /**
- * This map receives a column name of the input table, and returns a table with the same column, with additionally
- * that specified column converted to different kind.
+ * This map receives a column name of the input table, and returns a table with a new column,
+ * containing the specified data converted to a new kind.
  */
 public class ConvertColumnMap implements IMap<ITable, ITable> {
     private final String inputColName;
@@ -50,17 +44,13 @@ public class ConvertColumnMap implements IMap<ITable, ITable> {
     public ITable apply(ITable table) {
         if (table.getSchema().containsColumnName(this.newColName))
             throw new IllegalArgumentException("Column " + this.newColName + " already exists in table.");
-        // Make new list of columns.
-        List<IColumn> columns = new ArrayList<IColumn>();
-        table.getColumns().forEach(columns::add);
 
-        IColumn newColumn =  table.getColumn(this.inputColName)
-                .convertKind(this.newKind, this.newColName, table.getMembershipSet());
+        ColumnAndConverterDescription ccd = new ColumnAndConverterDescription(this.inputColName);
+        ColumnAndConverter ccv = table.getLoadedColumn(ccd);
+        IColumn newColumn = ccv.column.convertKind(
+                this.newKind, this.newColName, table.getMembershipSet());
+        int index = table.getSchema().getColumnIndex(this.inputColName);
 
-        // Insert the new column next to the input column.
-        int inputColIndex = columns.indexOf(table.getColumn(this.inputColName));
-        columns.add(inputColIndex + 1, newColumn);
-
-        return new Table(columns, table.getMembershipSet());
+        return table.insertColumn(newColumn, index);
     }
 }

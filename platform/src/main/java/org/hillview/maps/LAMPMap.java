@@ -20,17 +20,12 @@ package org.hillview.maps;
 import org.hillview.dataset.api.IMap;
 import org.hillview.table.ColumnDescription;
 
-import org.hillview.table.Table;
 import org.hillview.table.api.*;
 import org.hillview.table.columns.DoubleArrayColumn;
 import org.hillview.table.columns.SparseColumn;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
 import org.jblas.Singular;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * This map receives a set of high- and low-dimensional control points, and computes a mapping of the rest of the
@@ -42,15 +37,15 @@ import java.util.stream.Collectors;
  */
 public class LAMPMap implements IMap<ITable, ITable> {
     private final static double eps = 1e-9;
-    private final List<String> numColNames;
+    private final String[] numColNames;
     private final DoubleMatrix highDimControlPoints;
     private final DoubleMatrix lowDimControlPoints;
     private final int highDims;
     private final int lowDims;
-    private final List<String> newColNames;
+    private final String[] newColNames;
 
-    public LAMPMap(DoubleMatrix highDimControlPoints, DoubleMatrix lowDimControlPoints, List<String> numColNames,
-                   List<String> newColNames) {
+    public LAMPMap(DoubleMatrix highDimControlPoints, DoubleMatrix lowDimControlPoints,
+                   String[] numColNames, String[] newColNames) {
         this.numColNames = numColNames;
         this.highDimControlPoints = highDimControlPoints;
         this.lowDimControlPoints = lowDimControlPoints;
@@ -61,17 +56,20 @@ public class LAMPMap implements IMap<ITable, ITable> {
 
     @Override
     public ITable apply(ITable data) {
-        List<IColumn> columns = numColNames.stream().map(data::getColumn).collect(Collectors.toList());
+        ColumnAndConverterDescription[] ccds =
+                ColumnAndConverterDescription.create(this.numColNames);
+        ColumnAndConverter[] columns = data.getLoadedColumns(ccds);
 
-        List<IMutableColumn> newColumns = new ArrayList<IMutableColumn>(this.lowDims);
+        IMutableColumn[] newColumns = new IMutableColumn[this.lowDims];
         IMembershipSet set = data.getMembershipSet();
         int colSize = set.getMax();
         for (int i = 0; i < this.lowDims; i++) {
-            ColumnDescription cd = new ColumnDescription(this.newColNames.get(i), ContentsKind.Double, true);
+            ColumnDescription cd = new ColumnDescription(
+                    this.newColNames[i], ContentsKind.Double, true);
             if (set.useSparseColumn(set.getSize()))
-                newColumns.add(new SparseColumn(cd, colSize));
+                newColumns[i] = new SparseColumn(cd, colSize);
             else
-                newColumns.add(new DoubleArrayColumn(cd, colSize));
+                newColumns[i] = new DoubleArrayColumn(cd, colSize);
         }
 
         IRowIterator rowIt = data.getRowIterator();
@@ -80,12 +78,12 @@ public class LAMPMap implements IMap<ITable, ITable> {
             DoubleMatrix x = new DoubleMatrix(1, this.highDims);
             boolean missing = false;
             for (int i = 0 ; i < this.highDims; i++) {
-                if (columns.get(i).isMissing(row)){
+                if (columns[i].isMissing(row)){
                     missing = true;
                     break;
                 }
                 else
-                    x.put(i, columns.get(i).asDouble(row, null));
+                    x.put(i, columns[i].asDouble(row));
             }
             if (!missing) {
                 DoubleMatrix y = computeMapping(x);
@@ -98,29 +96,18 @@ public class LAMPMap implements IMap<ITable, ITable> {
                 }
                 if (!missing) {
                     for (int i = 0; i < this.lowDims; i++) {
-                        newColumns.get(i).set(row, y.get(i));
+                        newColumns[i].set(row, y.get(i));
                     }
                 } else {
                     for (int i = 0; i < this.lowDims; i++) {
-                        newColumns.get(i).setMissing(row);
+                        newColumns[i].setMissing(row);
                     }
                 }
             }
             row = rowIt.getNextRow();
         }
 
-        List<IColumn> allColumns = new ArrayList<IColumn>();
-        /*Only add the original columns that were not already this map's new names.*/
-        /*This means that those columns are replaced if they're there!*/
-        data.getColumns().forEach((col) -> {
-            for (String newColName : this.newColNames) {
-                if (col.getName().equals(newColName))
-                    return;
-            }
-            allColumns.add(col);
-        });
-        allColumns.addAll(newColumns);
-        return new Table(allColumns);
+        return data.append(newColumns);
     }
 
     private DoubleMatrix computeMapping(DoubleMatrix x) {
@@ -136,6 +123,7 @@ public class LAMPMap implements IMap<ITable, ITable> {
         DoubleMatrix xTilde = this.highDimControlPoints.mulColumnVector(alphas).columnSums().div(alpha);
         DoubleMatrix yTilde = this.lowDimControlPoints.mulColumnVector(alphas).columnSums().div(alpha);
         DoubleMatrix xHats = this.highDimControlPoints.subRowVector(xTilde);
+        @SuppressWarnings("SuspiciousNameCombination")
         DoubleMatrix yHats = this.lowDimControlPoints.subRowVector(yTilde);
 
         DoubleMatrix sqrtAlphas = MatrixFunctions.sqrt(alphas);

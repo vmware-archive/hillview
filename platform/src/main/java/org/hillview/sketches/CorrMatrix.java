@@ -24,10 +24,8 @@ import org.jblas.DoubleMatrix;
 
 import javax.annotation.Nullable;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 
 /**
  * This rawMatrix is used in computing the inner products between a list of columns. It implements
@@ -42,7 +40,7 @@ public class CorrMatrix implements ICorrelation, Serializable, IJson {
     /**
      * List of column names needs to be public, as the order is needed for the projection.
      */
-    public final List<String> columnNames;
+    public final String[] columnNames;
     /**
      * A matrix that records the (un)-normalized inner products between pairs of columns.
      */
@@ -66,14 +64,14 @@ public class CorrMatrix implements ICorrelation, Serializable, IJson {
      */
     public DoubleMatrix nonMissing;
 
-    public CorrMatrix(List<String> colNames) {
-        this.columnNames = new ArrayList<String>(colNames);
-        this.colNum = new HashMap<>(colNames.size());
-        for (int i=0; i < colNames.size(); i++)
-            this.colNum.put(colNames.get(i), i);
-        this.rawMatrix = new double[colNames.size()][colNames.size()];
-        this.nonMissing = DoubleMatrix.zeros(colNames.size(), colNames.size());
-        this.means = new double[colNames.size()];
+    public CorrMatrix(String[] colNames) {
+        this.columnNames = colNames;
+        this.colNum = new HashMap<String, Integer>(colNames.length);
+        for (int i=0; i < colNames.length; i++)
+            this.colNum.put(colNames[i], i);
+        this.rawMatrix = new double[colNames.length][colNames.length];
+        this.nonMissing = DoubleMatrix.zeros(colNames.length, colNames.length);
+        this.means = new double[colNames.length];
         this.corrMatrix = null;
     }
 
@@ -144,6 +142,6 @@ public class CorrMatrix implements ICorrelation, Serializable, IJson {
 
     public LinearProjectionMap eigenVectorProjection(int nComponents) {
         DoubleMatrix eigenVectors = LinAlg.eigenVectors(new DoubleMatrix(this.getCorrelationMatrix()), nComponents);
-        return new LinearProjectionMap(new ArrayList<String>(this.columnNames), eigenVectors, "PCA");
+        return new LinearProjectionMap(this.columnNames, eigenVectors, "PCA");
     }
 }

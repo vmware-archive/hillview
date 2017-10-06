@@ -17,12 +17,9 @@
 
 package org.hillview.test;
 
+import org.hillview.table.api.*;
 import org.hillview.utils.TestTables;
 import org.hillview.table.SmallTable;
-import org.hillview.table.api.IColumn;
-import org.hillview.table.api.IMembershipSet;
-import org.hillview.table.api.IRowIterator;
-import org.hillview.table.api.ITable;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -45,11 +42,11 @@ public class Issue46Test extends BaseTest {
         List<ITable> tabList = TestTables.splitTable(bigTable, 10000);
         // Grabbing the column from  the sub-tables
         ITable subTable = tabList.iterator().next();
-        IColumn column1 = subTable.getColumn(colName);
+
+        ColumnAndConverter col = subTable.getLoadedColumn(colName);
         IMembershipSet memSet1 = subTable.getMembershipSet();
         IRowIterator iter1 = memSet1.getIterator();
-        //Null Exception!!!
-        Assert.assertNotNull(column1.asDouble(iter1.getNextRow(), null));
-        Assert.assertNotNull(column1.asDouble(iter1.getNextRow(), null));
+        Assert.assertNotNull(col.asDouble(iter1.getNextRow()));
+        Assert.assertNotNull(col.asDouble(iter1.getNextRow()));
     }
 }
