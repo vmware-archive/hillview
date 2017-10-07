@@ -101,7 +101,7 @@ public class Centroids<T> implements Serializable {
         result.counts.putAll(this.counts);
 
         // Add the other's information into the result.
-        other.sums.keySet().forEach((key) -> {
+        other.sums.forEach((key, value) -> {
             if (result.sums.containsKey(key)) {
                 // If the 'result' centroid already has the key, we have to sum the sums and counts for every column.
                 double[] sum = other.sums.get(key);

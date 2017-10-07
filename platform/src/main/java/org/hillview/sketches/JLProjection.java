@@ -22,6 +22,7 @@ import org.apache.commons.lang.ArrayUtils;
 import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 /** Data structure used to store the results of a Johnson-Lindenstrauss (JL) sketch.
  * It contains a vector of doubles for each column, and some other information that can be used for
@@ -75,9 +76,10 @@ public class JLProjection implements ICorrelation {
     }
 
     public void scale(double f) {
-        for (String s: this.hMap.keySet())
+        for (Map.Entry<String, double[]> entry: this.hMap.entrySet()) {
             for (int i = 0; i < this.lowDim; i++)
-                this.hMap.get(s)[i] *= f;
+                entry.getValue()[i] *= f;
+        }
     }
 
     public double getNorm(String s) {

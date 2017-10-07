@@ -54,8 +54,8 @@ public final class Schema
         public JsonElement serialize(Schema schema, Type typeOfSchema,
                                      JsonSerializationContext context) {
             JsonArray result = new JsonArray();
-            for (String col: schema.columns.keySet()) {
-                ColumnDescription cd = schema.getDescription(col);
+            for (Map.Entry<String, ColumnDescription> col: schema.columns.entrySet()) {
+                ColumnDescription cd = schema.getDescription(col.getKey());
                 result.add(cd.toJsonTree());
             }
             return result;
@@ -92,8 +92,8 @@ public final class Schema
 
     public int getColumnIndex(String columnName) {
         int index = 0;
-        for (String c: this.columns.keySet()) {
-            if (c.equals(columnName))
+        for (Map.Entry<String, ColumnDescription> c: this.columns.entrySet()) {
+            if (c.getKey().equals(columnName))
                 break;
             index++;
         }
