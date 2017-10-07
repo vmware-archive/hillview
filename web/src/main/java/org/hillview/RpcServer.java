@@ -110,6 +110,7 @@ public final class RpcServer {
                 rpcTarget.execute(rpcRequest, context);
             }
         };
+        // Retrieve the source object on which the operation is executed
         RpcObjectManager.instance.retrieveTarget(rpcRequest.objectId, true, obs);
     }
 
