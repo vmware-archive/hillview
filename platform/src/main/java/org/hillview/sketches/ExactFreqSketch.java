@@ -20,6 +20,7 @@ package org.hillview.sketches;
 import it.unimi.dsi.fastutil.Hash;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenCustomHashMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.table.rows.BaseRowSnapshot;
 import org.hillview.table.rows.RowSnapshot;
@@ -110,7 +111,7 @@ public class ExactFreqSketch implements ISketch<ITable, FreqKList> {
             }
             i = rowIt.getNextRow();
         }
-        HashMap<RowSnapshot, Integer> hm = new HashMap<RowSnapshot, Integer>(this.rssList.size());
+        Object2IntOpenHashMap<RowSnapshot> hm = new Object2IntOpenHashMap<RowSnapshot>(this.rssList.size());
         this.rssList.forEach(rss -> hm.put(rss, hMap.getInt(rss)));
         return new FreqKList(data.getNumOfRows(), this.epsilon, hm);
     }

@@ -18,6 +18,7 @@
 package org.hillview.table.rows;
 
 import com.google.gson.JsonElement;
+import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import org.hillview.dataset.api.IJson;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
@@ -31,7 +32,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -42,14 +43,21 @@ public class RowSnapshot extends BaseRowSnapshot implements Serializable, IJson 
     /**
      * Maps a column name to a value.
      */
-    private final LinkedHashMap<String, Object> fields = new LinkedHashMap<String, Object>();
+    private final HashMap<String, Object> fields =
+            new HashMap<String, Object>();
     private String[] fieldNames = new String[0];
+    private final int cachedHashcode;
 
     public RowSnapshot(final ITable data, final int rowIndex, final Schema schema) {
         IColumn[] columns = data.getColumns(schema);
-        for (IColumn c: columns)
+        this.fieldNames = new String[columns.length];
+        int i = 0;
+        for (IColumn c: columns) {
             this.fields.put(c.getName(), c.getObject(rowIndex));
-        this.fieldNames = this.fields.keySet().toArray(new String[0]);
+            this.fieldNames[i] = c.getName();
+            i++;
+        }
+        this.cachedHashcode = this.fields.hashCode();
     }
 
     public RowSnapshot(final ITable data, final int rowIndex) {
@@ -60,9 +68,13 @@ public class RowSnapshot extends BaseRowSnapshot implements Serializable, IJson 
         if (schema.getColumnCount() != data.length)
             throw new RuntimeException("Mismatched schema");
         int index = 0;
-        for (String col: schema.getColumnNames())
-            this.fields.put(col, data[index++]);
-        this.fieldNames = this.fields.keySet().toArray(new String[0]);
+        this.fieldNames = new String[schema.getColumnCount()];
+        for (String col: schema.getColumnNames()) {
+            this.fields.put(col, data[index]);
+            this.fieldNames[index] = col;
+            index++;
+        }
+        this.cachedHashcode = this.fields.hashCode();
     }
 
     public boolean isMissing(String colName) { return (this.fields.get(colName) == null); }
@@ -149,6 +161,6 @@ public class RowSnapshot extends BaseRowSnapshot implements Serializable, IJson 
 
     @Override
     public int hashCode() {
-        return this.fields.hashCode();
+        return this.cachedHashcode;
     }
 }
