@@ -54,6 +54,6 @@ public class CategoryEncoding {
     }
 
     public void allDistinctStrings(Consumer<String> action) {
-        this.encoding.forEach((k, v) -> action.accept(k));
+        this.encoding.keySet().forEach(action);
     }
 }

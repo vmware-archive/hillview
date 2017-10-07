@@ -18,7 +18,6 @@
 package org.hillview.table.rows;
 
 import com.google.gson.JsonElement;
-import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import org.hillview.dataset.api.IJson;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
@@ -32,7 +31,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 /**
@@ -43,8 +42,8 @@ public class RowSnapshot extends BaseRowSnapshot implements Serializable, IJson 
     /**
      * Maps a column name to a value.
      */
-    private final HashMap<String, Object> fields =
-            new HashMap<String, Object>();
+    private final LinkedHashMap<String, Object> fields =
+            new LinkedHashMap<String, Object>();
     private String[] fieldNames = new String[0];
     private final int cachedHashcode;
 
