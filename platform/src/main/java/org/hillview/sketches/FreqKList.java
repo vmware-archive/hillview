@@ -27,6 +27,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A data structure to store the K heavy hitters our of N elements, computed by the Misra-Gries
@@ -83,9 +84,10 @@ public class FreqKList implements Serializable {
      */
     public FreqKList add(FreqKList that) {
         this.totalRows += that.totalRows;
-        for (RowSnapshot rss : this.hMap.keySet()) {
-            int newVal = this.hMap.get(rss) + that.hMap.getOrDefault(rss, 0);
-            this.hMap.put(rss, newVal);
+
+        for (Map.Entry<RowSnapshot, Integer> entry : this.hMap.entrySet()) {
+            int newVal = entry.getValue() + that.hMap.getOrDefault(entry.getKey(), 0);
+            entry.setValue(newVal);
         }
         return this;
     }

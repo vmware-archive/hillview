@@ -187,7 +187,7 @@ public class SparseMembership implements IMembershipSet {
         return (baseMap.getSize() * eSize) / sampleSet.getSize();
     }
 
-    private class SparseIterator implements IRowIterator {
+    private static class SparseIterator implements IRowIterator {
         final private IntSet.IntSetIterator mySetIterator;
 
         private SparseIterator(final IntSet mySet) {
