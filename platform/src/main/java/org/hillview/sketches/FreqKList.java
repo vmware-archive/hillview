@@ -19,6 +19,7 @@ package org.hillview.sketches;
 
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import org.hillview.dataset.api.Pair;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.RowSnapshotSet;
@@ -136,10 +137,11 @@ public class FreqKList implements Serializable {
      * 1/maxSize, and their frequencies.
      */
     public void filter(double threshold) {
-        List<RowSnapshot> rssList = new ArrayList<RowSnapshot>(this.hMap.keySet());
-        for (RowSnapshot rss : rssList) {
-            if (this.hMap.getInt(rss) < (threshold))
-                this.hMap.removeInt(rss);
+        for (ObjectIterator<Object2IntMap.Entry<RowSnapshot>> it = this.hMap.object2IntEntrySet().fastIterator();
+             it.hasNext(); ) {
+            final Object2IntMap.Entry<RowSnapshot> entry = it.next();
+            if (entry.getIntValue() < (threshold))
+                it.remove();
         }
     }
 
