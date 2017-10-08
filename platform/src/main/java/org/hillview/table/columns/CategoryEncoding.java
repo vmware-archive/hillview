@@ -39,9 +39,7 @@ public class CategoryEncoding {
 
     @Nullable
     String decode(int code) {
-        if (this.decoding.containsKey(code))
-            return this.decoding.get(code);
-        return null;
+        return this.decoding.getOrDefault(code, null);
     }
 
     int encode(@Nullable String value) {
