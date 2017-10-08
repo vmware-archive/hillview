@@ -190,12 +190,10 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
         return SpecialChars.approx + significantDigits(count);
     }
 
-    // Adjust the statistics for integral and categorical data
+    // Adjust the statistics for integral and categorical data pretending
+    // that we are centering the values.
     public static adjustStats(kind: ContentsKind, stats: BasicColStats): void {
          if (kind == "Integer" || kind == "Category") {
-             // If we don't do this the bucket boundaries when drawing don't
-             // correspond with the bucket boundaries when computing the histogram and
-             // the result is bad.
              stats.min -= .5;
              stats.max += .5;
          }

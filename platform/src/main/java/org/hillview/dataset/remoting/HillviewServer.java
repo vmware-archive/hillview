@@ -51,7 +51,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -122,7 +121,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     }
 
     private Subscriber<PartialResult<IDataSet>> createSubscriber(final Command command,
-            final  UUID id, final StreamObserver<PartialResponse> responseObserver) {
+            final UUID id, final StreamObserver<PartialResponse> responseObserver) {
         return new Subscriber<PartialResult<IDataSet>>() {
             @Nullable private PartialResponse memoizedResult = null;
 
@@ -266,7 +265,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                                 .setSerializedOp(ByteString.copyFrom(bytes))
                                 .build();
                         HillviewServer.this.memoizedCommands.computeIfAbsent(command.getSerializedOp(),
-                                (k) -> new ConcurrentHashMap<>())
+                                (k) -> new ConcurrentHashMap<Integer, PartialResponse>())
                                 .put(command.getIdsIndex(), memoizedResult);
                     }
                 }
@@ -441,6 +440,14 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
         }
         if (this.dataSets.size() == 0)
             throw new RuntimeException("Cannot find initial dataset");
+
+        // This is necessary because otherwise we will have stale
+        // dataset ids in the cache, which will get returned incorrectly.
+        // Whatever we do for GC will have to keep a consistent map
+        // so that no stale dataset ids are in the memoization cache
+        // if they are not in the list of datasets.
+        this.purgeCache();
+
         return removed;
     }
 

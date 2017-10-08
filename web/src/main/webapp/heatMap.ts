@@ -591,6 +591,9 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
     onNext(value: PartialResult<Pair<BasicColStats, BasicColStats>>): void {
         super.onNext(value);
         this.setValue(value.data);
+
+        HistogramViewBase.adjustStats(this.cds[0].kind, this.stats.first);
+        HistogramViewBase.adjustStats(this.cds[1].kind, this.stats.second);
     }
 
     public draw(): void {
@@ -620,8 +623,6 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
         if (this.stats == null)
             // probably some error occurred
             return;
-        HistogramViewBase.adjustStats(this.cds[0].kind, this.stats.first);
-        HistogramViewBase.adjustStats(this.cds[1].kind, this.stats.second);
         this.draw();
     }
 }

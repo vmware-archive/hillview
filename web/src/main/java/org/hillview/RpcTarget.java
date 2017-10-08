@@ -161,8 +161,10 @@ abstract class RpcTarget implements IJson {
         public void onError(Throwable throwable) {
             HillviewLogger.instance.error("onError", "{0}", this.name);
             HillviewLogger.instance.error("onError", throwable.toString());
-            this.checkMissingDataset(throwable);
-            if (this.context.session == null || !this.context.session.isOpen()) return;
+            boolean reconstructing = this.checkMissingDataset(throwable);
+            if (reconstructing ||
+                    this.context.session == null ||
+                    !this.context.session.isOpen()) return;
             RpcReply reply = this.request.createReply(throwable);
             reply.send(this.context.session);
         }
@@ -210,10 +212,11 @@ abstract class RpcTarget implements IJson {
         /**
          * Checks whether an exception indicates that a dataset has been
          * removed by a worker, and it may need to be reconstructed.
+         * Returns true if the reconstruction is attempted.
          */
-        void checkMissingDataset(Throwable throwable) {
+        boolean checkMissingDataset(Throwable throwable) {
             if (!(throwable instanceof StatusRuntimeException))
-                return;
+                return false;
             StatusRuntimeException sre = (StatusRuntimeException)throwable;
             String description = sre.getStatus().getDescription();
             if (description != null && description.contains("DatasetMissing")) {
@@ -222,7 +225,9 @@ abstract class RpcTarget implements IJson {
                 RpcObjectManager.instance.rebuild(
                         this.request.objectId,
                         new ReconstructionObserver(this.request, this.context));
+                return true;
             }
+            return false;
         }
     }
 

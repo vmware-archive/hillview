@@ -484,6 +484,7 @@ export class RangeCollector extends Renderer<BasicColStats> {
     onNext(value: PartialResult<BasicColStats>): void {
         super.onNext(value);
         this.setValue(value.data);
+        HistogramViewBase.adjustStats(this.cd.kind, this.stats);
     }
 
     public histogram(): void {
@@ -505,7 +506,6 @@ export class RangeCollector extends Renderer<BasicColStats> {
         if (this.stats == null)
             // probably some error occurred
             return;
-        HistogramViewBase.adjustStats(this.cd.kind, this.stats);
         if (this.stats.presentCount == 0) {
             this.page.reportError("No data in range");
             return;
