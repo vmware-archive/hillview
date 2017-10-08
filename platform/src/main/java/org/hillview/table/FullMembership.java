@@ -22,6 +22,7 @@ import org.hillview.table.api.IRowIterator;
 import org.hillview.utils.IntSet;
 import org.hillview.utils.Randomness;
 
+import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 
 /**
@@ -75,7 +76,7 @@ public class FullMembership implements IMembershipSet {
     }
 
     @Override
-    public IMembershipSet filter(Predicate<Integer> predicate) {
+    public IMembershipSet filter(IntPredicate predicate) {
         return new SparseMembership(this, predicate);
     }
 

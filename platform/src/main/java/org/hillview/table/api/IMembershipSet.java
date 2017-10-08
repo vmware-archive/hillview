@@ -21,6 +21,7 @@ import org.hillview.utils.Randomness;
 import org.hillview.table.SparseMembership;
 import org.hillview.utils.IntSet;
 
+import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 
 /**
@@ -53,7 +54,7 @@ public interface IMembershipSet extends IRowOrder {
      * the predicate evaluates to true.
      * @param predicate  Predicate evaluated for each row.
      */
-    IMembershipSet filter(Predicate<Integer> predicate);
+    IMembershipSet filter(IntPredicate predicate);
 
     /**
      * @return an IMembershipSet containing k samples from the membership map. The samples are made
