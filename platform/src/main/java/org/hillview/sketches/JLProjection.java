@@ -75,9 +75,10 @@ public class JLProjection implements ICorrelation {
     }
 
     public void scale(double f) {
-        for (String s: this.hMap.keySet())
+        for (String s: this.hMap.keySet()) {
             for (int i = 0; i < this.lowDim; i++)
                 this.hMap.get(s)[i] *= f;
+        }
     }
 
     public double getNorm(String s) {

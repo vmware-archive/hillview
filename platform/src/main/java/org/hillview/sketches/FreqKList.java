@@ -17,6 +17,9 @@
 
 package org.hillview.sketches;
 
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import org.hillview.dataset.api.Pair;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.RowSnapshotSet;
@@ -27,6 +30,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A data structure to store the K heavy hitters our of N elements, computed by the Misra-Gries
@@ -48,18 +52,18 @@ public class FreqKList implements Serializable {
      * The number of times each row in the above table occurs in the original DataSet
      * (can be approximate depending on the context).
      */
-    public final HashMap<RowSnapshot, Integer> hMap;
+    public final Object2IntOpenHashMap<RowSnapshot> hMap;
 
     public final double epsilon;
 
-    public FreqKList(long totalRows, double epsilon, int maxSize, HashMap<RowSnapshot, Integer> hMap) {
+    public FreqKList(long totalRows, double epsilon, int maxSize, Object2IntOpenHashMap<RowSnapshot> hMap) {
         this.totalRows = totalRows;
         this.epsilon = epsilon;
         this.hMap = hMap;
         this.maxSize = maxSize;
     }
 
-    public FreqKList(long totalRows, double epsilon, HashMap<RowSnapshot, Integer> hMap) {
+    public FreqKList(long totalRows, double epsilon, Object2IntOpenHashMap<RowSnapshot> hMap) {
         this.totalRows = totalRows;
         this.epsilon = epsilon;
         this.hMap = hMap;
@@ -68,7 +72,7 @@ public class FreqKList implements Serializable {
 
     public FreqKList(List<RowSnapshot> rssList, double epsilon) {
         this.totalRows = 0;
-        this.hMap = new HashMap<RowSnapshot, Integer>();
+        this.hMap = new Object2IntOpenHashMap<RowSnapshot>();
         rssList.forEach(rss -> this.hMap.put(rss, 0));
         this.epsilon = epsilon;
         this.maxSize= (int) Math.ceil(1/epsilon);
@@ -83,9 +87,10 @@ public class FreqKList implements Serializable {
      */
     public FreqKList add(FreqKList that) {
         this.totalRows += that.totalRows;
-        for (RowSnapshot rss : this.hMap.keySet()) {
-            int newVal = this.hMap.get(rss) + that.hMap.getOrDefault(rss, 0);
-            this.hMap.put(rss, newVal);
+
+        for (Object2IntMap.Entry<RowSnapshot> entry : this.hMap.object2IntEntrySet()) {
+            int newVal = entry.getIntValue() + that.hMap.getOrDefault(entry.getKey(), 0);
+            entry.setValue(newVal);
         }
         return this;
     }
@@ -132,10 +137,11 @@ public class FreqKList implements Serializable {
      * 1/maxSize, and their frequencies.
      */
     public void filter(double threshold) {
-        List<RowSnapshot> rssList = new ArrayList<RowSnapshot>(this.hMap.keySet());
-        for (RowSnapshot rss : rssList) {
-            if (this.hMap.get(rss) < (threshold))
-                this.hMap.remove(rss);
+        for (ObjectIterator<Object2IntMap.Entry<RowSnapshot>> it = this.hMap.object2IntEntrySet().fastIterator();
+             it.hasNext(); ) {
+            final Object2IntMap.Entry<RowSnapshot> entry = it.next();
+            if (entry.getIntValue() < (threshold))
+                it.remove();
         }
     }
 

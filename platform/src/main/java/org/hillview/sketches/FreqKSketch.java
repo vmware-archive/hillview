@@ -18,10 +18,16 @@
 package org.hillview.sketches;
 
 import it.unimi.dsi.fastutil.ints.Int2IntOpenCustomHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenCustomHashMap;
 import it.unimi.dsi.fastutil.ints.IntHash;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.api.Pair;
 import org.hillview.table.rows.RowSnapshot;
@@ -36,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.IntConsumer;
 
 /** Computes heavy-hitters using the Misra-Gries algorithm, where N is the length on the input
@@ -78,7 +85,7 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
     @Nullable
     @Override
     public FreqKList zero() {
-        return new FreqKList(0, this.epsilon, this.maxSize, new HashMap<RowSnapshot, Integer>(0));
+        return new FreqKList(0, this.epsilon, this.maxSize, new Object2IntOpenHashMap<RowSnapshot>(0));
     }
 
     /**
@@ -91,25 +98,39 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
     @SuppressWarnings("ConstantConditions")
     @Override
     public FreqKList add(@Nullable FreqKList left, @Nullable FreqKList right) {
-        HashMap<RowSnapshot, Integer> resultMap =
-                new HashMap<RowSnapshot, Integer>(left.hMap);
-        for (RowSnapshot rs : right.hMap.keySet()) {
-            if (resultMap.containsKey(rs))
-                resultMap.put(rs, left.hMap.get(rs) + right.hMap.get(rs));
-            else
-                resultMap.put(rs, right.hMap.get(rs));
+        Object2ObjectOpenHashMap<RowSnapshot, MutableInteger> resultMap =
+                new Object2ObjectOpenHashMap<RowSnapshot, MutableInteger>(left.hMap.size());
+        for (ObjectIterator<Object2IntMap.Entry<RowSnapshot>> it1 = left.hMap.object2IntEntrySet().fastIterator();
+             it1.hasNext(); ) {
+            final Object2IntMap.Entry<RowSnapshot> it = it1.next();
+            resultMap.put(it.getKey(), new MutableInteger(it.getIntValue()));
         }
-        List<Pair<RowSnapshot, Integer>> pList =
-                new ArrayList<Pair<RowSnapshot, Integer>>(left.hMap.size());
-        resultMap.forEach((rs, j) -> pList.add(new Pair<RowSnapshot, Integer>(rs, j)));
-        pList.sort((p1, p2) -> Integer.compare(p2.second, p1.second));
+
+        // Add values of right.hMap to resultMap
+        for (ObjectIterator<Object2IntMap.Entry<RowSnapshot>> it1 = right.hMap.object2IntEntrySet().fastIterator();
+             it1.hasNext(); ) {
+            final Object2IntMap.Entry<RowSnapshot> it = it1.next();
+            MutableInteger val = resultMap.get(it.getKey());
+            if (val != null) {
+                val.set(val.get() + it.getIntValue());
+            }
+            else {
+                resultMap.put(it.getKey(), new MutableInteger(it.getIntValue()));
+            }
+        }
+
+        List<Object2ObjectMap.Entry<RowSnapshot, MutableInteger>> pList =
+                new ArrayList<Object2ObjectMap.Entry<RowSnapshot, MutableInteger>>(resultMap.size());
+        pList.addAll(resultMap.object2ObjectEntrySet());
+        pList.sort((p1, p2) -> Integer.compare(p2.getValue().get(), p1.getValue().get()));
+
         int k = 0;
         if (pList.size() >= (this.maxSize + 1))
-            k = pList.get(this.maxSize).second;
-        HashMap<RowSnapshot,Integer> hm = new HashMap<RowSnapshot, Integer>(this.maxSize);
+            k = pList.get(this.maxSize).getValue().get();
+        Object2IntOpenHashMap<RowSnapshot> hm = new Object2IntOpenHashMap<RowSnapshot>(this.maxSize);
         for (int i = 0; i < Math.min(this.maxSize, pList.size()); i++) {
-            if (pList.get(i).second >= (k + 1))
-                hm.put(pList.get(i).first, pList.get(i).second - k);
+            if (pList.get(i).getValue().get() >= (k + 1))
+                hm.put(pList.get(i).getKey(), pList.get(i).getValue().get() - k);
         }
         return new FreqKList(left.totalRows + right.totalRows, this.epsilon, this.maxSize, hm);
     }
@@ -161,11 +182,13 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
                 dec += 1;
                 if (dec == min) {
                     toRemove.clear();
-                    for (int row : hMap.keySet()) {
-                        MutableInteger mutableInteger = hMap.get(row);
+                    for (ObjectIterator<Int2ObjectMap.Entry<MutableInteger>> it =
+                            hMap.int2ObjectEntrySet().fastIterator(); it.hasNext(); ) {
+                        final Int2ObjectMap.Entry<MutableInteger> entry = it.next();
+                        MutableInteger mutableInteger = entry.getValue();
                         int count = mutableInteger.get() - dec;
                         if (count == 0)
-                            toRemove.add(row);
+                            toRemove.add(entry.getIntKey());
                         else
                             mutableInteger.set(count);
                     }
@@ -175,9 +198,12 @@ public class FreqKSketch implements ISketch<ITable, FreqKList> {
             }
             i = rowIt.getNextRow();
         }
-        HashMap<RowSnapshot,Integer> hm = new HashMap<RowSnapshot, Integer>(this.maxSize);
-        hMap.keySet().forEach((int ri) ->
-                hm.put(new RowSnapshot(data, ri, this.schema), hMap.get(ri).get()));
+        Object2IntOpenHashMap<RowSnapshot> hm = new Object2IntOpenHashMap<RowSnapshot>(this.maxSize);
+        for (ObjectIterator<Int2ObjectMap.Entry<MutableInteger>> it = hMap.int2ObjectEntrySet().fastIterator();
+             it.hasNext(); ) {
+            final Int2ObjectMap.Entry<MutableInteger> entry = it.next();
+            hm.put(new RowSnapshot(data, entry.getIntKey(), this.schema), entry.getValue().get());
+        }
         return new FreqKList(data.getNumOfRows(), this.epsilon, this.maxSize, hm);
     }
 }

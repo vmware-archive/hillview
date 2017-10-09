@@ -22,6 +22,7 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class DateParsing {
     /**
@@ -123,11 +124,11 @@ public class DateParsing {
 
         this.parseAsDate = false;
         // none of the standard formats worked, let's try some custom ones
-        for (String regexp : DATE_FORMAT_REGEXPS.keySet()) {
-            if (s.toLowerCase().matches(regexp)) {
-                String format = DATE_FORMAT_REGEXPS.get(regexp);
+        for (Map.Entry<String, String> regexpEntry : DATE_FORMAT_REGEXPS.entrySet()) {
+            if (s.toLowerCase().matches(regexpEntry.getKey())) {
+                String format = regexpEntry.getValue();
                 this.parserFormatter = DateTimeFormatter.ofPattern(format);
-                HillviewLogger.instance.info("Guessed date format", "{0}", regexp);
+                HillviewLogger.instance.info("Guessed date format", "{0}", regexpEntry.getKey());
                 return;
             }
         }

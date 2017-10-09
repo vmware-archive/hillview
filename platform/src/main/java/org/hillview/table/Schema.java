@@ -121,9 +121,9 @@ public final class Schema
         String[] cols = new String[this.columns.size()];
         this.cachedKinds = new ContentsKind[this.columns.size()];
         int index = 0;
-        for (String c: this.columns.keySet()) {
-            cols[index] = c;
-            this.cachedKinds[index] = this.columns.get(c).kind;
+        for (Map.Entry<String, ColumnDescription> c: this.columns.entrySet()) {
+            cols[index] = c.getKey();
+            this.cachedKinds[index] = c.getValue().kind;
             index++;
         }
         // Important: this assignment must be made last

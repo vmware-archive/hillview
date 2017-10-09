@@ -21,6 +21,7 @@ import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.utils.IntSet;
 
+import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 
 
@@ -42,7 +43,7 @@ public class SparseMembership implements IMembershipSet {
      * @param filter  the additional selectRowsFromFullTable to be applied on the base map
      */
     public SparseMembership(final IMembershipSet baseMap,
-                            final Predicate<Integer> filter) {
+                            final IntPredicate filter) {
         this.max = baseMap.getMax();
         final IRowIterator baseIterator = baseMap.getIterator();
         this.membershipMap = new IntSet(this.estimateSize(baseMap, filter));
@@ -96,7 +97,7 @@ public class SparseMembership implements IMembershipSet {
     }
 
     @Override
-    public IMembershipSet filter(Predicate<Integer> predicate) {
+    public IMembershipSet filter(IntPredicate predicate) {
         return new SparseMembership(this, predicate);
     }
 
@@ -172,7 +173,7 @@ public class SparseMembership implements IMembershipSet {
      * initialization of a hash table sizes.
      */
     private int estimateSize(final IMembershipSet baseMap,
-                             final Predicate<Integer> filter) {
+                             final IntPredicate filter) {
         final IMembershipSet sampleSet = baseMap.sample(sizeEstimationSampleSize);
         if (sampleSet.getSize() == 0)
             return 0;
@@ -187,7 +188,7 @@ public class SparseMembership implements IMembershipSet {
         return (baseMap.getSize() * eSize) / sampleSet.getSize();
     }
 
-    private class SparseIterator implements IRowIterator {
+    private static class SparseIterator implements IRowIterator {
         final private IntSet.IntSetIterator mySetIterator;
 
         private SparseIterator(final IntSet mySet) {
