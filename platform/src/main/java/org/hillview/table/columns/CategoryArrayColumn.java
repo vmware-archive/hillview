@@ -64,6 +64,10 @@ public class CategoryArrayColumn extends BaseArrayColumn
             throw new UnsupportedOperationException("Wrong value type");
     }
 
+    public void setMissing(int rowIndex) {
+        this.set(rowIndex, (String)null);
+    }
+
     @Override
     public void set(int rowIndex, @Nullable String value) {
         this.data[rowIndex] = this.encoding.encode(value);

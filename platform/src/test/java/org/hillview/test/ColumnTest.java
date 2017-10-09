@@ -18,9 +18,11 @@
 package org.hillview.test;
 
 import org.hillview.table.ColumnDescription;
+import org.hillview.table.columns.CategoryListColumn;
 import org.hillview.table.columns.DoubleListColumn;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.columns.IntArrayColumn;
+import org.junit.Assert;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -58,5 +60,25 @@ public class ColumnTest extends BaseTest {
         for (int i=0; i < size; i++)
             assertEquals((double)i, col.getDouble(i), 1e-3);
         assertEquals( col.asDouble(0, null), 0.0, 1e-3 );
+    }
+
+    @Test
+    public void testCategoryColumn() {
+        ColumnDescription desc = new ColumnDescription("Cat", ContentsKind.Category, true);
+        CategoryListColumn col = new CategoryListColumn(desc);
+        col.append("First");
+        col.append("First");
+        col.append((String)null);
+        col.appendMissing();
+        col.append("Second");
+        col.seal();
+        Assert.assertTrue(col.isMissing(2));
+        Assert.assertTrue(col.isMissing(3));
+        Assert.assertFalse(col.isMissing(0));
+        Assert.assertEquals(col.sizeInRows(), 5);
+        Assert.assertEquals(col.getString(0), "First");
+        Assert.assertEquals(col.getString(1), "First");
+        Assert.assertEquals(col.getString(2), null);
+        Assert.assertEquals(col.getString(4), "Second");
     }
 }

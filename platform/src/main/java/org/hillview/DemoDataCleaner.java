@@ -23,6 +23,7 @@ import org.hillview.table.HashSubSchema;
 import org.hillview.table.Schema;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
+import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.TestTables;
 
 import java.io.IOException;
@@ -46,6 +47,7 @@ public class DemoDataCleaner {
     static final String schemaFile = "On_Time.schema";
 
     public static void main(String[] args) throws IOException {
+        HillviewLogger.initialize("hillview.log");
         String[] columns = {
                 "DayOfWeek", "FlightDate", "UniqueCarrier",
                 "Origin", "OriginCityName", "OriginState", "Dest", "DestState",

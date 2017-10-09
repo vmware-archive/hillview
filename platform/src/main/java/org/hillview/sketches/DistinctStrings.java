@@ -17,6 +17,7 @@
 
 package org.hillview.sketches;
 
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import org.hillview.dataset.api.IJson;
 
 import javax.annotation.Nullable;
@@ -28,9 +29,9 @@ import java.util.TreeSet;
  */
 public class DistinctStrings implements IJson {
     private final int maxSize;
-    private final TreeSet<String> uniqueStrings;
+    private final ObjectOpenHashSet<String> uniqueStrings;
     private final boolean bounded;
-    private boolean truncated;  // if true we are missing some data
+    public boolean truncated;  // if true we are missing some data
     private long columnSize;
 
     public DistinctStrings(final int maxSize) {
@@ -38,7 +39,7 @@ public class DistinctStrings implements IJson {
             throw new IllegalArgumentException("size of DistinctString should be positive");
         this.maxSize = maxSize;
         this.bounded = maxSize != 0;
-        this.uniqueStrings = new TreeSet<String>();
+        this.uniqueStrings = new ObjectOpenHashSet<String>();
         this.columnSize = 0;
         this.truncated = false;
     }

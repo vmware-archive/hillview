@@ -51,7 +51,7 @@ public class ExactFreqSketchTest extends BaseTest {
         }
         exactList.filter(false);
         exactList.getList().forEach(rss ->
-                assertTrue(exactList.hMap.get(rss) >= fkList.totalRows*fkList.epsilon));
+                assertTrue(exactList.hMap.getInt(rss) >= fkList.totalRows*fkList.epsilon));
     }
 
     @Test

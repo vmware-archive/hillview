@@ -43,7 +43,7 @@ public class CsvFileReader extends TextFileReader {
         /**
          * Field separator in CSV file.
          */
-        public final char separator = ',';
+        public char separator = ',';
         /**
          * If true we allow a row to have fewer columns; the row is padded with "nulls".
          */
@@ -126,13 +126,15 @@ public class CsvFileReader extends TextFileReader {
             String[] firstLine = null;
             if (this.actualSchema == null) {
                 this.actualSchema = new Schema();
-                if (this.configuration.columnCount == 0) {
+                int columnCount = this.configuration.columnCount;
+                if (columnCount == 0) {
                     firstLine = reader.parseNext();
                     if (firstLine == null)
                         throw new RuntimeException("Cannot create schema from empty CSV file");
+                    columnCount = firstLine.length;
                 }
 
-                for (int i = 0; i < this.configuration.columnCount; i++) {
+                for (int i = 0; i < columnCount; i++) {
                     ColumnDescription cd = new ColumnDescription("Column " + Integer.toString(i),
                             ContentsKind.String, this.configuration.allowMissingData);
                     this.actualSchema.append(cd);

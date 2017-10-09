@@ -41,7 +41,7 @@ public class FreqKTest extends BaseTest {
     private void filterTest(@Nullable FreqKList fkList) {
         Converters.checkNull(fkList);
         fkList.filter(Boolean.TRUE);
-        fkList.getList().forEach(rss -> assertTrue(fkList.hMap.get(rss) >=
+        fkList.getList().forEach(rss -> assertTrue(fkList.hMap.getInt(rss) >=
                 fkList.totalRows*fkList.epsilon - fkList.getErrBound()));
     }
     @Test

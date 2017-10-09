@@ -66,8 +66,6 @@ public class CategoryListColumn extends BaseListColumn implements ICategoryColum
         final int localIndex = this.size & this.SegmentMask;
         if (this.segments.size() <= segmentId)
             this.grow();
-        if (value == null)
-            return;
         this.segments.get(segmentId)[localIndex] = this.encoding.encode(value);
         this.size++;
     }
