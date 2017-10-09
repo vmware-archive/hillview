@@ -176,40 +176,6 @@ abstract class RpcTarget implements IJson {
         }
 
         /**
-         * This observer is invoked when the source of an RpcRequest
-         * has been reconstructed; it will try to rerun the request.
-         */
-        class ReconstructionObserver implements Observer<RpcTarget> {
-            private final RpcRequest failedRequest;
-            private final RpcRequestContext context;
-            boolean succeeded = false;
-
-            ReconstructionObserver(
-                    RpcRequest failedRequest, RpcRequestContext context) {
-                this.failedRequest = failedRequest;
-                this.context = context;
-            }
-
-            @Override
-            public void onCompleted() {
-                if (!this.succeeded)
-                    return;
-                RpcServer.execute(this.failedRequest, this.context);
-            }
-
-            @Override
-            public void onError(Throwable throwable) {
-                HillviewLogger.instance.error(
-                        "Error rebuilding", "{0}", this.failedRequest.objectId);
-            }
-
-            @Override
-            public void onNext(RpcTarget unused) {
-                this.succeeded = true;
-            }
-        }
-
-        /**
          * Checks whether an exception indicates that a dataset has been
          * removed by a worker, and it may need to be reconstructed.
          * Returns true if the reconstruction is attempted.
@@ -220,11 +186,13 @@ abstract class RpcTarget implements IJson {
             StatusRuntimeException sre = (StatusRuntimeException)throwable;
             String description = sre.getStatus().getDescription();
             if (description != null && description.contains("DatasetMissing")) {
-                HillviewLogger.instance.info("Trying to fix broken remote objects");
-                RpcObjectManager.instance.deleteObject(this.request.objectId);
-                RpcObjectManager.instance.rebuild(
-                        this.request.objectId,
-                        new ReconstructionObserver(this.request, this.context));
+                String[] toDelete = this.request.getDatasetSourceIds();
+                for (String s: toDelete) {
+                    HillviewLogger.instance.info("Trying to fix missing remote object", "{0}", s);
+                    RpcObjectManager.instance.deleteObject(s);
+                }
+                // Try to re-execute this request; this will trigger rebuilding the sources.
+                RpcServer.execute(this.request, this.context);
                 return true;
             }
             return false;

@@ -53,6 +53,21 @@ final class RpcRequest {
         this.arguments = obj.get("arguments").getAsString();
     }
 
+    /**
+     * Returns the ids of the RpcTarget objects that store datasets to which
+     * method is applied.  For most methods this returns this.requestId,
+     * but for "zip" methods this will return a two-element array.  This method
+     * relies on the JSON method corresponding to IDataSet.zip calls being
+     * also called "zip".
+     */
+    public String[] getDatasetSourceIds() {
+        if (this.method.equals("zip")) {
+            String otherId = this.parseArgs(String.class);
+            return new String[] { this.objectId, otherId };
+        }
+        return new String[] { this.objectId };
+    }
+
     @Override
     public String toString() {
         return "RpcRequest: " + this.objectId + "." + this.method + "()";
