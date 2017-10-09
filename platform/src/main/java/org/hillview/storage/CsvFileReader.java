@@ -125,8 +125,8 @@ public class CsvFileReader extends TextFileReader {
 
             String[] firstLine = null;
             if (this.actualSchema == null) {
-                this.actualSchema = new Schema();
                 int columnCount = this.configuration.columnCount;
+                this.actualSchema = new Schema();
                 if (columnCount == 0) {
                     firstLine = reader.parseNext();
                     if (firstLine == null)

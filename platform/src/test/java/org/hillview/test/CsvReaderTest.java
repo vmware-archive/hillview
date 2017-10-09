@@ -45,16 +45,16 @@ import java.util.UUID;
 
 public class CsvReaderTest extends BaseTest {
     private static final String dataFolder = "../data";
-    private static final String csvFile = "On_Time_Sample.csv";
-    private static final String schemaFile = "On_Time.schema";
+    private static final String csvFile = "criteo.csv";
+    private static final String schemaFile = "criteo.schema";
 
     @Nullable
     private ITable readTable(String folder, String file) throws IOException {
         Path path = Paths.get(folder, file);
         CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
         config.allowFewerColumns = false;
-        config.hasHeaderRow = true;
-        config.allowMissingData = false;
+        config.hasHeaderRow = false;
+        config.allowMissingData = true;
         CsvFileReader r = new CsvFileReader(path, config);
         return r.read();
     }
@@ -72,8 +72,8 @@ public class CsvReaderTest extends BaseTest {
         path = Paths.get(dataFolder, csvFile);
         CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
         config.allowFewerColumns = false;
-        config.hasHeaderRow = true;
-        config.allowMissingData = false;
+        config.hasHeaderRow = false;
+        config.allowMissingData = true;
         config.schema = schema;
         CsvFileReader r = new CsvFileReader(path, config);
         ITable t = r.read();

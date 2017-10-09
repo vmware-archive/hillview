@@ -121,7 +121,10 @@ public class InitialObjectTarget extends RpcTarget {
             finder = new FindCsvFileMapper(dataFolder, 0, "mnist.csv", "mnist.schema");
         } else if (which == 4) {
             finder = new FindCsvFileMapper(dataFolder, 0, "segmentation.csv", "segmentation.schema");
-        } else {
+        } else if (which == 5) {
+        	finder = new FindCsvFileMapper(dataFolder, 0, "criteo.csv", "criteo.schema"); 
+        }
+        else {
             throw new RuntimeException("Unexpected operation " + which);
         }
 
