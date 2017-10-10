@@ -43,7 +43,7 @@ public interface IStringColumn extends IColumn {
     default IndexComparator getComparator() {
         return new IndexComparator() {
             @Override
-            public int compare(final Integer i, final Integer j) {
+            public int compare(final int i, final int j) {
                 final boolean iMissing = IStringColumn.this.isMissing(i);
                 final boolean jMissing = IStringColumn.this.isMissing(j);
                 if (iMissing && jMissing) {

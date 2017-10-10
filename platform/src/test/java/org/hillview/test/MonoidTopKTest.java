@@ -18,7 +18,7 @@
 package org.hillview.test;
 
 import org.hillview.sketches.MonoidTopK;
-import org.hillview.sketches.TreeTopK;
+import org.hillview.sketches.IntTreeTopK;
 import org.hillview.utils.Converters;
 import org.hillview.utils.Randomness;
 import org.junit.Test;
@@ -49,8 +49,8 @@ public class MonoidTopKTest extends BaseTest {
     public void MonoidTopKTest0() {
         this.lSize = 100;
         this.rSize = 100;
-        TreeTopK<Integer> leftTree = new TreeTopK<Integer>(this.lSize, Integer::compare);
-        TreeTopK<Integer> rightTree = new TreeTopK<Integer>(this.rSize, Integer::compare);
+        IntTreeTopK leftTree = new IntTreeTopK(this.lSize, Integer::compare);
+        IntTreeTopK rightTree = new IntTreeTopK(this.rSize, Integer::compare);
         final Randomness rn = new Randomness();
         for (int i = 0; i < this.inpSize; i++)
             leftTree.push(rn.nextInt(this.inpSize));
@@ -66,8 +66,8 @@ public class MonoidTopKTest extends BaseTest {
     public void MonoidTopKTest1() {
         this.lSize = 50;
         this.rSize = 50;
-        TreeTopK<Integer> leftTree = new TreeTopK<Integer>(this.lSize, Integer::compare);
-        TreeTopK<Integer> rightTree = new TreeTopK<Integer>(this.rSize, Integer::compare);
+        IntTreeTopK leftTree = new IntTreeTopK(this.lSize, Integer::compare);
+        IntTreeTopK rightTree = new IntTreeTopK(this.rSize, Integer::compare);
         final Randomness rn = new Randomness();
         for (int i = 0; i < this.inpSize; i++)
             leftTree.push(rn.nextInt(this.inpSize));
@@ -83,8 +83,8 @@ public class MonoidTopKTest extends BaseTest {
     public void MonoidTopKTestTimed() {
         this.lSize = 1000;
         this.rSize = 1000;
-        TreeTopK<Integer> leftTree = new TreeTopK<Integer>(this.lSize, Integer::compare);
-        TreeTopK<Integer> rightTree = new TreeTopK<Integer>(this.rSize, Integer::compare);
+        IntTreeTopK leftTree = new IntTreeTopK(this.lSize, Integer::compare);
+        IntTreeTopK rightTree = new IntTreeTopK(this.rSize, Integer::compare);
         final Randomness rn = new Randomness();
         for (int i = 0; i < this.inpSize; i++)
             leftTree.push(rn.nextInt(this.inpSize));

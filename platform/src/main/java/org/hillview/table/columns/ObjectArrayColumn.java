@@ -77,7 +77,7 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
     public IndexComparator getComparator() {
         return new IndexComparator() {
             @Override
-            public int compare(final Integer i, final Integer j) {
+            public int compare(final int i, final int j) {
                 final boolean iMissing = ObjectArrayColumn.this.isMissing(i);
                 final boolean jMissing = ObjectArrayColumn.this.isMissing(j);
                 if (iMissing && jMissing) {

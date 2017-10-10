@@ -83,7 +83,7 @@ public class SparseColumn extends BaseColumn
         return new IndexComparator() {
             @SuppressWarnings("ConstantConditions")
             @Override
-            public int compare(Integer o1, Integer o2) {
+            public int compare(int o1, int o2) {
             boolean o1m = SparseColumn.this.isMissing(o1);
             boolean o2m = SparseColumn.this.isMissing(o2);
             if (o1m) {

@@ -30,7 +30,7 @@ public class ListComparator extends IndexComparator {
     }
 
     @Override
-    public int compare(final Integer o1, final Integer o2) {
+    public int compare(final int o1, final int o2) {
         for (int i = 0; i < this.comparatorList.size() ; i++) {
             final int val = this.comparatorList.get(i).compare(o1, o2);
             if (val != 0) { return val; }
