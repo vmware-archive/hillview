@@ -28,9 +28,7 @@ import org.hillview.utils.Converters;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * A data structure to store the K heavy hitters our of N elements, computed by the Misra-Gries

@@ -15,70 +15,70 @@
  * limitations under the License.
  */
 
-package org.hillview.sketches;
+package org.hillview.utils;
 
-import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntRBTreeMap;
 import it.unimi.dsi.fastutil.objects.Object2IntSortedMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectRBTreeMap;
 
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.Comparator;
+import java.util.SortedMap;
+
 /**
- * HeapTopK implements the TopK Interface as a HashMap, and only sorts it when asked to return topK.
- * Seems to be slower that the TreeMap implementation
- * Possible reason: Membership and max finding are slower.
+ * Implements the ITopK interface as a SortedMap (which uses Red-Black trees).
+ * Seems faster than HashMap implementation.
  */
-public class HeapTopK<T> implements ITopK<T> {
+public class TreeTopK<T> implements ITopK<T> {
     private final int maxSize;
     private int size;
-    private final Object2IntOpenHashMap<T> data;
+    private final SortedMap<T, MutableInteger> data;
     @Nullable
     private T cutoff; /* max value that currently belongs to Top K. */
     private final Comparator<T> greater;
 
-    public HeapTopK(final int maxSize, final Comparator<T> greater) {
-        if (maxSize > 0)
-            this.maxSize = maxSize;
-        else
-            throw new IllegalArgumentException("Size should be positive");
+    public TreeTopK(final int maxSize, final Comparator<T> greater) {
+        this.maxSize = maxSize;
         this.size = 0;
         this.greater = greater;
-        this.data = new Object2IntOpenHashMap<T>();
+        this.data = new Object2ObjectRBTreeMap<>(this.greater);
     }
 
     @Override
-    public Object2IntSortedMap<T> getTopK() {
+    public SortedMap<T, Integer> getTopK() {
         final Object2IntSortedMap<T> finalMap = new Object2IntRBTreeMap<>(this.greater);
-        finalMap.putAll(this.data);
+        this.data.forEach((k, v) -> finalMap.put(k, v.get()));
         return finalMap;
     }
 
     @Override
     public void push(final T newVal) {
         if (this.size == 0) {
-            this.size += 1;
-            this.data.put(newVal, 1); // Add newVal to Top K
+            this.data.put(newVal, new MutableInteger(1)); // Add newVal to Top K
             this.cutoff = newVal;
+            this.size = 1;
             return;
         }
         final int gt = this.greater.compare(newVal, this.cutoff);
         if (gt <= 0) {
-            if (this.data.containsKey(newVal)) { //Already in Top K, increase count
-                final int count = this.data.get(newVal) + 1;
-                this.data.put(newVal, count);
+            final MutableInteger counter = this.data.get(newVal);
+            if (counter != null) { //Already in Top K, increase count. Size, cutoff do not change
+                final int count = counter.get() + 1;
+                counter.set(count);
             } else { // Add a new key to Top K
-                this.data.put(newVal, 1);
-                if (this.size >= this.maxSize) { // Remove the largest key, compute the new largest key
+                this.data.put(newVal, new MutableInteger(1));
+                if (this.size >= this.maxSize) {        // Remove the largest key, compute the new largest key
                     this.data.remove(this.cutoff);
-                    this.cutoff = Collections.max(this.data.keySet(), this.greater);
-                } else
+                    this.cutoff = this.data.lastKey();
+                } else {
                     this.size += 1;
+                }
             }
-        }
-        else {   //gt equals 1
-            if (this.size < this.maxSize) { // Only case where newVal needs to be added
+        } else {   // gt equals 1
+            if (this.size < this.maxSize) {   // Only case where newVal needs to be added
                 this.size += 1;
-                this.data.put(newVal, 1); // Add newVal to Top K
+                this.data.put(newVal, new MutableInteger(1));     // Add newVal to Top K
+                this.cutoff = newVal;    // It is now the largest value
             }
         }
     }

@@ -30,7 +30,7 @@ public class StringConverterTest extends BaseTest {
         this.converter.set("S", 0);
     }
 
-    @Test(expected=NullPointerException.class)
+    @Test(expected=RuntimeException.class)
     public void getNonExistent() {
         this.converter.asDouble("T");
     }

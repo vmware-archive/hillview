@@ -21,6 +21,7 @@ import it.unimi.dsi.fastutil.objects.Object2DoubleOpenHashMap;
 import org.hillview.table.api.IStringConverter;
 import org.hillview.table.api.IStringConverterDescription;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 
 /**
@@ -68,7 +69,7 @@ public class SortedStringsConverterDescription implements IStringConverterDescri
         }
 
         @Override
-        public double asDouble(String string) {
+        public double asDouble(@Nullable String string) {
             if (memoizedResults.containsKey(string)) {
                 return memoizedResults.getDouble(string);
             }

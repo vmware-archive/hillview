@@ -25,6 +25,8 @@ import org.hillview.management.*;
 import org.hillview.maps.FindCsvFileMapper;
 import org.hillview.maps.FindFilesMapper;
 import org.hillview.maps.LoadDatabaseTableMapper;
+import org.hillview.storage.CsvFileReader;
+import org.hillview.table.Schema;
 import org.hillview.utils.*;
 import org.hillview.dataset.remoting.HillviewServer;
 import org.hillview.storage.JdbcConnectionInformation;
@@ -34,6 +36,7 @@ import javax.websocket.Session;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -111,19 +114,35 @@ public class InitialObjectTarget extends RpcTarget {
         Converters.checkNull(this.emptyDataset);
 
         String dataFolder = "../data/";
+        String fileNamePattern;
+        CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
+        config.allowMissingData = true;
+        config.allowFewerColumns = false;
+        config.hasHeaderRow = true;
+        String schemaFile;
+        int limit = 0;
+
         IMap<Empty, List<CsvFileObject>> finder;
         if (which >= 0 && which <= 1) {
-            int limit = which == 0 ? 0 : 1;
-            finder = new FindCsvFileMapper(dataFolder, limit, "(\\d)+_(\\d)+\\.csv", "short.schema");
+            limit = which == 0 ? 0 : 1;
+            schemaFile = "short.schema";
+            fileNamePattern = "(\\d)+_(\\d)+\\.csv";
         } else if (which == 2) {
-            finder = new FindCsvFileMapper(dataFolder, 0, "vrops.csv", "vrops.schema");
+            fileNamePattern = "vrops.csv";
+            schemaFile = "vrops.schema";
         } else if (which == 3) {
-            finder = new FindCsvFileMapper(dataFolder, 0, "mnist.csv", "mnist.schema");
+            fileNamePattern = "mnist.csv";
+            schemaFile = "mnist.schema";
         } else if (which == 4) {
-            finder = new FindCsvFileMapper(dataFolder, 0, "segmentation.csv", "segmentation.schema");
+            fileNamePattern = "segmentation.csv";
+            schemaFile = "segmentation.schema";
         } else {
             throw new RuntimeException("Unexpected operation " + which);
         }
+
+        Path schemaPath = Paths.get(dataFolder, schemaFile);
+        config.schema = Schema.readFromJsonFile(schemaPath);
+        finder = new FindCsvFileMapper(dataFolder, limit, fileNamePattern, config);
 
         HillviewLogger.instance.info("Preparing files");
         this.runFlatMap(this.emptyDataset, finder, CsvFileTarget::new, request, context);

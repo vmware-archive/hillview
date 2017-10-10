@@ -17,6 +17,8 @@
 
 package org.hillview.table;
 
+import javax.annotation.Nullable;
+
 public class SemiExplicitConverter extends BaseExplicitConverter {
     private final double defaultValue;
     public SemiExplicitConverter () {
@@ -26,9 +28,9 @@ public class SemiExplicitConverter extends BaseExplicitConverter {
 
     /* Will return a default value when string is not known */
     @Override
-    public double asDouble(final String string) {
+    public double asDouble(@Nullable final String string) {
         if (this.stringValue.containsKey(string))
-            return this.stringValue.get(string);
+            return this.stringValue.getInt(string);
         else return this.defaultValue;
     }
 

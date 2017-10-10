@@ -21,7 +21,6 @@ import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import org.hillview.dataset.api.IJson;
 
 import javax.annotation.Nullable;
-import java.util.TreeSet;
 
 /**
  * A class that would hold a the set of distinct strings from a column bounded in size by maxSize.

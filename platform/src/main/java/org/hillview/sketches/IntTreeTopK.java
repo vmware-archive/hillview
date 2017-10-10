@@ -19,25 +19,15 @@ package org.hillview.sketches;
 
 import it.unimi.dsi.fastutil.ints.Int2IntRBTreeMap;
 import it.unimi.dsi.fastutil.ints.Int2IntSortedMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectRBTreeMap;
 import it.unimi.dsi.fastutil.ints.IntComparator;
-import it.unimi.dsi.fastutil.objects.Object2IntRBTreeMap;
-import it.unimi.dsi.fastutil.objects.Object2IntSortedMap;
-import it.unimi.dsi.fastutil.objects.Object2ObjectRBTreeMap;
-import it.unimi.dsi.fastutil.objects.Object2ObjectSortedMap;
 import org.hillview.utils.MutableInteger;
-
-import javax.annotation.Nullable;
-import java.util.Comparator;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 /**
  * Implements an int specialized version of the ITopK interface. Reduces boxing
  * overheads in comparison to the TreeTopK class.
  */
-public class IntTreeTopK implements ITopK<Integer> {
+public class IntTreeTopK {
     private final int maxSize;
     private int size;
     private final Int2ObjectRBTreeMap<MutableInteger> data;
@@ -55,12 +45,6 @@ public class IntTreeTopK implements ITopK<Integer> {
         final Int2IntSortedMap finalMap = new Int2IntRBTreeMap(this.greater);
         this.data.forEach((k, v) -> finalMap.put(k.intValue(), v.get()));
         return finalMap;
-    }
-
-    @Deprecated
-    @Override
-    public void push(final Integer newVal) {
-        push(newVal.intValue());
     }
 
     public void push(final int intVal) {

@@ -41,8 +41,7 @@ public class ListComparatorTest extends BaseTest {
         final ArrayList<IndexComparator> listCompare = new ArrayList<IndexComparator>();
         listCompare.add(col1.getComparator());
         listCompare.add(col2.getComparator().rev());
-        final ListComparator listComp;
-        listComp = new ListComparator(listCompare);
+        final ListComparator listComp = new ListComparator(listCompare);
         final List<Integer> toSort = new ArrayList<Integer>();
         final String alphabet = "abcdefghijklmnopqrstuvwxyz";
         for (int i = 0; i < size; i++) {
@@ -52,10 +51,12 @@ public class ListComparatorTest extends BaseTest {
         }
         toSort.sort(listComp);
         for (int i = 0; i < (size - 1); i++) {
-            assertTrue(listComp.compare(toSort.get(i), toSort.get(i + 1)) <= 0);
-            assertTrue(col1.getComparator().compare(toSort.get(i), toSort.get(i + 1)) <= 0);
-            if (col1.getComparator().compare(toSort.get(i), toSort.get(i + 1)) == 0) {
-                assertTrue(col2.getComparator().compare(toSort.get(i), toSort.get(i + 1)) >= 0);
+            assertTrue(listComp.compare((int)toSort.get(i), (int)toSort.get(i + 1)) <= 0);
+            assertTrue(col1.getComparator().compare(
+                    (int)toSort.get(i), (int)toSort.get(i + 1)) <= 0);
+            if (col1.getComparator().compare((int)toSort.get(i), (int)toSort.get(i + 1)) == 0) {
+                assertTrue(col2.getComparator().compare(
+                        (int)toSort.get(i), (int)toSort.get(i + 1)) >= 0);
             }
         }
     }

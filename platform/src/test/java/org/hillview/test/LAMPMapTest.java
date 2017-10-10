@@ -29,8 +29,6 @@ import org.hillview.utils.TestUtils;
 import org.jblas.DoubleMatrix;
 import org.junit.Test;
 
-import java.io.IOException;
-
 public class LAMPMapTest extends BaseTest {
     private void testLAMPMap(ITable table, int numSamples, int fragmentSize) {
         long seed = 1;
@@ -78,7 +76,7 @@ public class LAMPMapTest extends BaseTest {
         try {
             ITable table = TestUtils.loadTableFromCSV("../data", "mnist.csv", "mnist.schema");
             this.testLAMPMap(table, 20, 5000);
-        } catch (IOException e) {
+        } catch (Exception e) {
             System.out.println("Skipping test because MNIST data is not present.");
         }
     }
@@ -88,7 +86,7 @@ public class LAMPMapTest extends BaseTest {
         try {
             ITable table = TestUtils.loadTableFromCSV("../data", "segmentation.csv", "segmentation.schema");
             this.testLAMPMap(table, 20, 200);
-        } catch (IOException e) {
+        } catch (Exception e) {
             System.out.println("Skipping test because MNIST data is not present.");
         }
     }

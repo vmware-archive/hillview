@@ -153,9 +153,12 @@ public final class TableTarget extends RpcTarget {
         String[] allNames;
 
         ColumnAndConverterDescription getColumn() {
-            IStringConverterDescription converter = null;
+            IStringConverterDescription converter;
             if (this.allNames != null)
                 converter = new SortedStringsConverterDescription(this.allNames);
+            else
+                // only used if the column has Strings
+                converter = new RadixConverter();
             return new ColumnAndConverterDescription(this.columnName, converter);
         }
 

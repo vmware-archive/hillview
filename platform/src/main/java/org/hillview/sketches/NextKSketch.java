@@ -29,13 +29,13 @@ import org.hillview.utils.Converters;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.SortedMap;
 
 /**
  * Given a data set, the NextKSketch generates the Next K items in Sorted Order (specified by a
  * RecordOrder) starting from a specified rowSnapShot (topRow). It also computes counts for how many
  * rows in the data project onto each entry, and how many rows come before topRow.
  */
+@SuppressWarnings("Duplicates")
 public class NextKSketch implements ISketch<ITable, NextKList> {
     private final RecordOrder recordOrder;
     @Nullable

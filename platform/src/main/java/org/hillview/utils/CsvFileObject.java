@@ -18,37 +18,31 @@
 package org.hillview.utils;
 
 import org.hillview.storage.CsvFileReader;
-import org.hillview.table.Schema;
 import org.hillview.table.api.ITable;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 
 public class CsvFileObject {
     private final Path dataPath;
     @Nullable
-    private final Path schemaPath;
+    private final CsvFileReader.CsvConfiguration config;
 
-    public CsvFileObject(Path path, @Nullable Path schema) {
+    public CsvFileObject(Path path, @Nullable CsvFileReader.CsvConfiguration config) {
         this.dataPath = path;
-        this.schemaPath = schema;
+        this.config = config;
     }
 
     public ITable loadTable() throws IOException {
-        Schema schema = null;
-        if (this.schemaPath != null) {
-            String s = new String(Files.readAllBytes(this.schemaPath));
-            schema = Schema.fromJson(s);
+        CsvFileReader.CsvConfiguration config = this.config;
+        if (config == null) {
+            config = new CsvFileReader.CsvConfiguration();
+            config.allowFewerColumns = false;
+            config.hasHeaderRow = true;
+            config.allowMissingData = false;
         }
-
-        CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
-        config.allowFewerColumns = false;
-        config.hasHeaderRow = true;
-        config.allowMissingData = false;
-        config.schema = schema;
         CsvFileReader r = new CsvFileReader(this.dataPath, config);
 
         ITable tbl = r.read();

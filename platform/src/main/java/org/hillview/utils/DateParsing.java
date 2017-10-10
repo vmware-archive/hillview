@@ -107,7 +107,9 @@ public class DateParsing {
 
         for (boolean b : asDate) {
             this.parseAsDate = b;
-            for (@Nullable DateTimeFormatter d : toTry) {
+            //noinspection ForLoopReplaceableByForEach
+            for (int i=0; i < toTry.length; i++) {
+                DateTimeFormatter d = toTry[i];
                 try {
                     if (b)
                         LocalDate.parse(s, d);

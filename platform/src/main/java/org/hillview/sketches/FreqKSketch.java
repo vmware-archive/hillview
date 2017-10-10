@@ -17,7 +17,6 @@
 
 package org.hillview.sketches;
 
-import it.unimi.dsi.fastutil.ints.Int2IntOpenCustomHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenCustomHashMap;
 import it.unimi.dsi.fastutil.ints.IntHash;
@@ -29,7 +28,6 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import org.hillview.dataset.api.ISketch;
-import org.hillview.dataset.api.Pair;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.Schema;
 import org.hillview.table.rows.VirtualRowSnapshot;
@@ -40,9 +38,7 @@ import org.hillview.utils.MutableInteger;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.IntConsumer;
 
 /** Computes heavy-hitters using the Misra-Gries algorithm, where N is the length on the input

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.hillview.sketches;
+package org.hillview.utils;
 
 import java.util.SortedMap;
 

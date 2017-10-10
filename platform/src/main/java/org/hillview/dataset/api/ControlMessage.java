@@ -35,6 +35,7 @@ import java.io.Serializable;
  * on the return path through the IDataSet.  Each layer appends new status messages
  * if it does anything interesting.
  */
+@SuppressWarnings("SameReturnValue")
 public class ControlMessage implements Serializable {
     public static class Status implements Serializable, IJson {
         /**

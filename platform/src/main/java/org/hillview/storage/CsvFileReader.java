@@ -33,17 +33,18 @@ import javax.annotation.Nullable;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.io.Serializable;
 import java.nio.file.Path;
 
 /**
  * Knows how to read a CSV file (comma-separated file).
  */
 public class CsvFileReader extends TextFileReader {
-    public static class CsvConfiguration {
+    public static class CsvConfiguration implements Serializable {
         /**
          * Field separator in CSV file.
          */
-        public char separator = ',';
+        public final char separator = ',';
         /**
          * If true we allow a row to have fewer columns; the row is padded with "nulls".
          */

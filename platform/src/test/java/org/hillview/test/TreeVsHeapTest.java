@@ -17,7 +17,7 @@
 
 package org.hillview.test;
 
-import org.hillview.sketches.HeapTopK;
+import org.hillview.utils.HeapTopK;
 import org.hillview.sketches.IntTreeTopK;
 import org.hillview.utils.Randomness;
 import org.junit.Test;

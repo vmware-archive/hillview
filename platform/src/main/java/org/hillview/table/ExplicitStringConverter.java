@@ -17,10 +17,14 @@
 
 package org.hillview.table;
 
+import javax.annotation.Nullable;
+
 public final class ExplicitStringConverter extends BaseExplicitConverter {
     /* Will throw an exception when string is not known */
     @Override
-    public double asDouble(final String string) {
-        return this.stringValue.get(string);
+    public double asDouble(@Nullable final String string) {
+        if (this.stringValue.containsKey(string))
+            return this.stringValue.getInt(string);
+        throw new RuntimeException("Unknown key " + string);
     }
 }

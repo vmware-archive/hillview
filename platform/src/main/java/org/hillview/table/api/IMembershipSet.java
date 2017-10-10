@@ -22,7 +22,6 @@ import org.hillview.table.SparseMembership;
 import org.hillview.utils.IntSet;
 
 import java.util.function.IntPredicate;
-import java.util.function.Predicate;
 
 /**
  * A IMembershipSet is a representation of a set of integers between 0 and max.
