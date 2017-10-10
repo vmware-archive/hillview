@@ -29,6 +29,6 @@ import java.util.SortedMap;
  * - Insert: If we need to Insert newVal
  */
 interface ITopK<T> {
-    SortedMap<T,Integer> getTopK();
+    SortedMap<T, Integer> getTopK();
     void push(T newVal);
 }

@@ -44,7 +44,7 @@ public interface IDurationColumn extends IColumn {
     default IndexComparator getComparator() {
         return new IndexComparator() {
             @Override
-            public int compare(final Integer i, final Integer j) {
+            public int compare(final int i, final int j) {
                 final boolean iMissing = IDurationColumn.this.isMissing(i);
                 final boolean jMissing = IDurationColumn.this.isMissing(j);
                 if (iMissing && jMissing) {

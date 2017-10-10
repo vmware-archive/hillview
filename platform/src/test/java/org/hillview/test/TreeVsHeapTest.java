@@ -18,7 +18,7 @@
 package org.hillview.test;
 
 import org.hillview.sketches.HeapTopK;
-import org.hillview.sketches.TreeTopK;
+import org.hillview.sketches.IntTreeTopK;
 import org.hillview.utils.Randomness;
 import org.junit.Test;
 
@@ -44,7 +44,7 @@ public class TreeVsHeapTest extends BaseTest {
             }
             endTime = System.nanoTime();
             PerfRegressionTest.comparePerf(" Using Heap: ", endTime - startTime);
-            final TreeTopK<Integer> myTree = new TreeTopK<Integer>(maxSize, Integer::compare);
+            final IntTreeTopK myTree = new IntTreeTopK(maxSize, Integer::compare);
             startTime = System.nanoTime();
             for (final int j: this.randInp) {
                 myTree.push(j);

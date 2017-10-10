@@ -16,7 +16,7 @@
  */
 
 package org.hillview.test;
-import org.hillview.sketches.TreeTopK;
+import org.hillview.sketches.IntTreeTopK;
 import org.hillview.utils.Randomness;
 import org.junit.Test;
 
@@ -26,7 +26,7 @@ import org.junit.Test;
 public class TreeTopKTest extends BaseTest {
     private final int maxSize = 10;
     public final int inpSize = 1000;
-    private final TreeTopK<Integer> myTree = new TreeTopK<Integer>(this.maxSize, Integer::compare);
+    private final IntTreeTopK myTree = new IntTreeTopK(this.maxSize, Integer::compare);
 
     @Test
     public void testHeapTopKZero() {
