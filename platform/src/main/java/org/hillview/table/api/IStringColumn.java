@@ -44,17 +44,16 @@ public interface IStringColumn extends IColumn {
         return new IndexComparator() {
             @Override
             public int compare(final int i, final int j) {
-                final boolean iMissing = IStringColumn.this.isMissing(i);
-                final boolean jMissing = IStringColumn.this.isMissing(j);
-                if (iMissing && jMissing) {
+                final String str1 = IStringColumn.this.getString(i);
+                final String str2 = IStringColumn.this.getString(j);
+                if (str1 == null && str2 == null) {
                     return 0;
-                } else if (iMissing) {
+                } else if (str1 == null) {
                     return 1;
-                } else if (jMissing) {
+                } else if (str2 == null) {
                     return -1;
                 } else {
-                    return Converters.checkNull(IStringColumn.this.getString(i)).compareTo(
-                            Converters.checkNull(IStringColumn.this.getString(j)));
+                    return str1.compareTo(str2);
                 }
             }
         };
