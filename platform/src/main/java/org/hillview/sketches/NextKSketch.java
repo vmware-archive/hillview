@@ -17,6 +17,8 @@
 
 package org.hillview.sketches;
 
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntSortedMap;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.table.*;
 import org.hillview.table.api.*;
@@ -78,7 +80,7 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
         SortedMap<Integer, Integer> topKList = topK.getTopK();
         IRowOrder rowOrder = new ArrayRowOrder(topKList.keySet());
         SmallTable topKRows = data.compress(this.recordOrder.toSubSchema(), rowOrder);
-        List<Integer> count = new ArrayList<Integer>();
+        List<Integer> count = new ArrayList<Integer>(topKList.size());
         count.addAll(topKList.values());
         return new NextKList(topKRows, count, position, data.getNumOfRows());
     }

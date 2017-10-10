@@ -79,7 +79,7 @@ public class RecordOrder implements Iterable<ColumnSortOrientation>, Serializabl
      * @return A Comparator that compares two records based on the RecordOrder specified.
      */
     public IndexComparator getComparator(final ITable table) {
-        final List<IndexComparator> comparatorList = new ArrayList<IndexComparator>();
+        final ArrayList<IndexComparator> comparatorList = new ArrayList<IndexComparator>();
         ColumnAndConverterDescription[] ccds =
                 new ColumnAndConverterDescription[this.sortOrientationList.size()];
         for (int i=0; i < this.sortOrientationList.size(); i++) {

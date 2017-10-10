@@ -19,19 +19,20 @@ package org.hillview.table;
 
 import org.hillview.table.api.IndexComparator;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class ListComparator extends IndexComparator {
-    private final List<IndexComparator> comparatorList;
+    private final ArrayList<IndexComparator> comparatorList;
 
-    public ListComparator(final List<IndexComparator> comparatorList) {
+    public ListComparator(final ArrayList<IndexComparator> comparatorList) {
         this.comparatorList = comparatorList;
     }
 
     @Override
     public int compare(final Integer o1, final Integer o2) {
-        for (final IndexComparator aComparator : this.comparatorList) {
-            final int val = aComparator.compare(o1, o2);
+        for (int i = 0; i < this.comparatorList.size() ; i++) {
+            final int val = this.comparatorList.get(i).compare(o1, o2);
             if (val != 0) { return val; }
         }
         return 0;
