@@ -137,12 +137,13 @@ public class InitialObjectTarget extends RpcTarget {
             fileNamePattern = "segmentation.csv";
             schemaFile = "segmentation.schema";
         } else if (which == 5) {
-        	config.separator = '\t';
-        	fileNamePattern = "criteoTab.gz";
-        	schemaFile = "criteo.schema";
-        } else 
+            config.separator = '\t';
+            fileNamePattern = "criteoTab.gz";
+            schemaFile = "criteo.schema";
+        } else {
             throw new RuntimeException("Unexpected operation " + which);
-
+		}
+		
         Path schemaPath = Paths.get(dataFolder, schemaFile);
         config.schema = Schema.readFromJsonFile(schemaPath);
         finder = new FindCsvFileMapper(dataFolder, limit, fileNamePattern, config);
