@@ -22,7 +22,6 @@ import com.univocity.parsers.csv.CsvWriter;
 import com.univocity.parsers.csv.CsvWriterSettings;
 import org.hillview.storage.CsvFileReader;
 import org.hillview.storage.CsvFileWriter;
-import org.hillview.storage.CsvGzReader;
 import org.hillview.table.*;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
@@ -50,7 +49,7 @@ public class CsvReaderTest extends BaseTest {
     private static final String schemaFile = "On_Time.schema";
     private static final String csvFileC = "criteoTab.csv";
     private static final String schemaFileC = "criteo.schema";
-    private static final String csvGZ = "criteoTab.csv.gz";
+    private static final String csvGZ = "criteoTab.gz";
 
     @Nullable
     private ITable readTable(String folder, String file) throws IOException {
@@ -84,13 +83,14 @@ public class CsvReaderTest extends BaseTest {
         Path path = Paths.get(dataFolder, schemaFileC);
         Schema schema = Schema.readFromJsonFile(path);
         path = Paths.get(dataFolder, csvGZ);
-        CsvGzReader.CsvConfiguration config = new CsvGzReader.CsvConfiguration();
+        CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
         config.allowFewerColumns = false;
         config.hasHeaderRow = false;
         config.allowMissingData = true;
         config.schema = schema;
         config.separator = '\t';
-        CsvGzReader r = new CsvGzReader(path, config);
+        CsvFileReader r = new CsvFileReader(path, config);
+        System.out.println(path.getFileName().toString());
         ITable t = r.read();
         Assert.assertNotNull(t);
     }
