@@ -30,11 +30,13 @@ import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
 
 import javax.annotation.Nullable;
+import java.io.*;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Serializable;
 import java.nio.file.Path;
+import java.util.zip.GZIPInputStream;
 
 /**
  * Knows how to read a CSV file (comma-separated file).
@@ -44,7 +46,7 @@ public class CsvFileReader extends TextFileReader {
         /**
          * Field separator in CSV file.
          */
-        public final char separator = ',';
+        public char separator = ',';
         /**
          * If true we allow a row to have fewer columns; the row is padded with "nulls".
          */
@@ -85,8 +87,11 @@ public class CsvFileReader extends TextFileReader {
     public ITable read() throws IOException {
         if (this.configuration.schema != null)
             this.actualSchema = this.configuration.schema;
-
-        try (Reader file = new FileReader(this.filename.toString())) {
+        Reader file;
+        if (this.filename.toString().toLowerCase().endsWith(".gz"))
+            file = new InputStreamReader(new GZIPInputStream(new FileInputStream(this.filename.toString())));
+        else file = new FileReader(this.filename.toString());
+        try {
             CsvParserSettings settings = new CsvParserSettings();
             CsvFormat format = new CsvFormat();
             format.setDelimiter(this.configuration.separator);
@@ -126,8 +131,8 @@ public class CsvFileReader extends TextFileReader {
 
             String[] firstLine = null;
             if (this.actualSchema == null) {
-                this.actualSchema = new Schema();
                 int columnCount = this.configuration.columnCount;
+                this.actualSchema = new Schema();
                 if (columnCount == 0) {
                     firstLine = reader.parseNext();
                     if (firstLine == null)
@@ -158,6 +163,8 @@ public class CsvFileReader extends TextFileReader {
             for (IAppendableColumn c: this.columns)
                 c.seal();
             return new Table(columns);
+        } finally {
+            if (file != null) file.close();
         }
     }
 }
