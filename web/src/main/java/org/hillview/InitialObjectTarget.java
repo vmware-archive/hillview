@@ -134,17 +134,14 @@ public class InitialObjectTarget extends RpcTarget {
             fileNamePattern = "mnist.csv";
             schemaFile = "mnist.schema";
         } else if (which == 4) {
-            finder = new FindCsvFileMapper(dataFolder, 0, "segmentation.csv", "segmentation.schema");
-        } else if (which == 5) {
-        	config.separator = '\t';
-        	finder = new FindCsvFileMapper(dataFolder, 0, "criteoTab.gz", "criteo.schema"); 
-        }
-        else {
             fileNamePattern = "segmentation.csv";
             schemaFile = "segmentation.schema";
-        } else {
+        } else if (which == 5) {
+        	config.separator = '\t';
+        	fileNamePattern = "criteoTab.gz";
+        	schemaFile = "criteo.schema";
+        } else 
             throw new RuntimeException("Unexpected operation " + which);
-        }
 
         Path schemaPath = Paths.get(dataFolder, schemaFile);
         config.schema = Schema.readFromJsonFile(schemaPath);
