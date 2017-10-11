@@ -23,7 +23,6 @@ import org.hillview.utils.IntSet;
 import org.hillview.utils.Randomness;
 
 import java.util.function.IntPredicate;
-import java.util.function.Predicate;
 
 /**
  * A IMembershipSet which contains all rows.

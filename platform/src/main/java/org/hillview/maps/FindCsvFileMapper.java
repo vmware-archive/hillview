@@ -19,6 +19,7 @@ package org.hillview.maps;
 
 import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IMap;
+import org.hillview.storage.CsvFileReader;
 import org.hillview.utils.CsvFileObject;
 import org.hillview.utils.HillviewLogger;
 
@@ -44,22 +45,22 @@ public class FindCsvFileMapper implements IMap<Empty, List<CsvFileObject>> {
     @Nullable
     private final String fileNamePattern;
     @Nullable
-    private final String schemaFileName;
+    private final CsvFileReader.CsvConfiguration config;
 
     /**
      * Create an object to find and create CsvFileObjects.
      * @param folder   Folder where files are sought.
      * @param maxCount Maximum number of files to find.  If 0 there is no limit.
      * @param fileNamePattern  Regex for file names to search.  If null all file names match.
-     * @param schemaFileName   Name of schema file to search.  If null no schema is provided.
+     * @param config   Configuration to pass to CsvReader.
      */
     public FindCsvFileMapper(String folder, int maxCount,
                              @Nullable String fileNamePattern,
-                             @Nullable String schemaFileName) {
+                             @Nullable CsvFileReader.CsvConfiguration config) {
         this.folder = folder;
         this.maxCount = maxCount;
         this.fileNamePattern = fileNamePattern;
-        this.schemaFileName = schemaFileName;
+        this.config = config;
     }
 
     @Override
@@ -69,8 +70,6 @@ public class FindCsvFileMapper implements IMap<Empty, List<CsvFileObject>> {
         HillviewLogger.instance.info("Current directory", "{0}", cwd);
 
         Path folder = Paths.get(this.folder);
-        Path schemaPath = this.schemaFileName != null ?
-                Paths.get(this.folder, this.schemaFileName) : null;
         final List<CsvFileObject> result = new ArrayList<CsvFileObject>();
 
         Stream<Path> files;
@@ -89,7 +88,7 @@ public class FindCsvFileMapper implements IMap<Empty, List<CsvFileObject>> {
             files = files.limit(this.maxCount);
         files.sorted(Comparator.comparing(Path::toString))
                 .forEach(f -> {
-                    CsvFileObject cfo = new CsvFileObject(f, schemaPath);
+                    CsvFileObject cfo = new CsvFileObject(f, this.config);
                     result.add(cfo);
                 });
         return result;

@@ -72,7 +72,7 @@ public interface ITable {
 
     /**
      * Create a new table based on this set of columns but
-     * with the membershipset of the original one.
+     * with the membershipSet of the original one.
      * @param columns  Set of columns for new table.
      */
     ITable replace(IColumn[] columns);

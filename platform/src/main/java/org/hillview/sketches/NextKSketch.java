@@ -17,6 +17,7 @@
 
 package org.hillview.sketches;
 
+import it.unimi.dsi.fastutil.ints.Int2IntSortedMap;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.table.*;
 import org.hillview.table.api.*;
@@ -28,13 +29,13 @@ import org.hillview.utils.Converters;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.SortedMap;
 
 /**
  * Given a data set, the NextKSketch generates the Next K items in Sorted Order (specified by a
  * RecordOrder) starting from a specified rowSnapShot (topRow). It also computes counts for how many
  * rows in the data project onto each entry, and how many rows come before topRow.
  */
+@SuppressWarnings("Duplicates")
 public class NextKSketch implements ISketch<ITable, NextKList> {
     private final RecordOrder recordOrder;
     @Nullable
@@ -61,7 +62,7 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
     @Override
     public NextKList create(ITable data) {
         IndexComparator comp = this.recordOrder.getComparator(data);
-        TreeTopK<Integer> topK = new TreeTopK<Integer>(this.maxSize, comp);
+        IntTreeTopK topK = new IntTreeTopK(this.maxSize, comp);
         IRowIterator rowIt = data.getRowIterator();
         int i = rowIt.getNextRow();
         int position = 0;
@@ -75,10 +76,10 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
                 position++;
             i = rowIt.getNextRow();
         }
-        SortedMap<Integer, Integer> topKList = topK.getTopK();
+        Int2IntSortedMap topKList = topK.getTopK();
         IRowOrder rowOrder = new ArrayRowOrder(topKList.keySet());
         SmallTable topKRows = data.compress(this.recordOrder.toSubSchema(), rowOrder);
-        List<Integer> count = new ArrayList<Integer>();
+        List<Integer> count = new ArrayList<Integer>(topKList.size());
         count.addAll(topKList.values());
         return new NextKList(topKRows, count, position, data.getNumOfRows());
     }

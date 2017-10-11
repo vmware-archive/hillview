@@ -15,7 +15,11 @@
  * limitations under the License.
  */
 
-package org.hillview.sketches;
+package org.hillview.utils;
+
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2IntRBTreeMap;
+import it.unimi.dsi.fastutil.objects.Object2IntSortedMap;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -27,7 +31,7 @@ import java.util.*;
 public class HeapTopK<T> implements ITopK<T> {
     private final int maxSize;
     private int size;
-    private final HashMap<T, Integer> data;
+    private final Object2IntOpenHashMap<T> data;
     @Nullable
     private T cutoff; /* max value that currently belongs to Top K. */
     private final Comparator<T> greater;
@@ -39,12 +43,12 @@ public class HeapTopK<T> implements ITopK<T> {
             throw new IllegalArgumentException("Size should be positive");
         this.size = 0;
         this.greater = greater;
-        this.data = new HashMap<T, Integer>();
+        this.data = new Object2IntOpenHashMap<T>();
     }
 
     @Override
-    public SortedMap<T, Integer> getTopK() {
-        final SortedMap<T, Integer> finalMap = new TreeMap<T, Integer>(this.greater);
+    public Object2IntSortedMap<T> getTopK() {
+        final Object2IntSortedMap<T> finalMap = new Object2IntRBTreeMap<>(this.greater);
         finalMap.putAll(this.data);
         return finalMap;
     }
@@ -60,12 +64,12 @@ public class HeapTopK<T> implements ITopK<T> {
         final int gt = this.greater.compare(newVal, this.cutoff);
         if (gt <= 0) {
             if (this.data.containsKey(newVal)) { //Already in Top K, increase count
-                final int count = this.data.get(newVal) + 1;
+                final int count = this.data.getInt(newVal) + 1;
                 this.data.put(newVal, count);
             } else { // Add a new key to Top K
                 this.data.put(newVal, 1);
                 if (this.size >= this.maxSize) { // Remove the largest key, compute the new largest key
-                    this.data.remove(this.cutoff);
+                    this.data.removeInt(this.cutoff);
                     this.cutoff = Collections.max(this.data.keySet(), this.greater);
                 } else
                     this.size += 1;

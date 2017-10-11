@@ -22,7 +22,6 @@ import org.hillview.table.api.IRowIterator;
 import org.hillview.utils.IntSet;
 
 import java.util.function.IntPredicate;
-import java.util.function.Predicate;
 
 
 /**

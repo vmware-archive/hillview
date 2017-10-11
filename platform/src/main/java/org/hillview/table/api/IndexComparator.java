@@ -17,7 +17,7 @@
 
 package org.hillview.table.api;
 
-import java.util.Comparator;
+import it.unimi.dsi.fastutil.ints.IntComparator;
 
 /**
  * A comparator which compares two values given by their integer indexes in an array/column/table.
@@ -25,14 +25,14 @@ import java.util.Comparator;
  * descending order. Missing values are treated as + infinity and appear at the very end of the
  * ascending order. The default implementations are in IIntColumn etc.
  */
-public abstract class IndexComparator implements Comparator<Integer> {
+public abstract class IndexComparator implements IntComparator {
     /**
      * The reverse comparator.
      */
     public IndexComparator rev() {
         return new IndexComparator() {
             @Override
-            public int compare(final Integer o1, final Integer o2) {
+            public int compare(final int o1, final int o2) {
                 return IndexComparator.this.compare(o2, o1);
             }
         };

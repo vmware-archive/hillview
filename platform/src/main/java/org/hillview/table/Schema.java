@@ -23,9 +23,9 @@ import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IAppendableColumn;
 import org.hillview.table.api.ISubSchema;
 import org.hillview.table.columns.BaseListColumn;
+import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
-import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
@@ -139,7 +139,7 @@ public final class Schema
     public ContentsKind[] getColumnKinds() {
          if (this.cachedColumnNames == null)
              this.seal();
-         return this.cachedKinds;
+         return Converters.checkNull(this.cachedKinds);
     }
 
     public boolean containsColumnName(String columnName) {
@@ -203,15 +203,23 @@ public final class Schema
         return IJson.gsonInstance.fromJson(json, Schema.class);
     }
 
-    public static Schema readFromJsonFile(Path file) throws IOException {
-        String s = new String(Files.readAllBytes(file));
-        return Schema.fromJson(s);
+    public static Schema readFromJsonFile(Path file) {
+        try {
+            String s = new String(Files.readAllBytes(file));
+            return Schema.fromJson(s);
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
-    public void writeToJsonFile(Path file) throws IOException {
-        String text = this.toJson();
-        byte[] bytes = text.getBytes(StandardCharsets.UTF_8);
-        Files.write(file, bytes, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+    public void writeToJsonFile(Path file) {
+        try {
+            String text = this.toJson();
+            byte[] bytes = text.getBytes(StandardCharsets.UTF_8);
+            Files.write(file, bytes, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     public IAppendableColumn[] createAppendableColumns() {

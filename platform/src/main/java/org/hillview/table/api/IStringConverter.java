@@ -17,9 +17,11 @@
 
 package org.hillview.table.api;
 
+import javax.annotation.Nullable;
+
 /**
  * Knows how to convert a string to a double.
  */
 public interface IStringConverter {
-    double asDouble(String string);
+    double asDouble(@Nullable String string);
 }

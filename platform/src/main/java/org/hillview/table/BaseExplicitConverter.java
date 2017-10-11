@@ -17,19 +17,18 @@
 
 package org.hillview.table;
 
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import org.hillview.table.api.IStringConverter;
 import org.hillview.table.api.IStringConverterDescription;
-
-import java.util.HashMap;
 
 /**
  * A string converter which uses an explicit hash table to map strings to integers.
  */
 public abstract class BaseExplicitConverter implements IStringConverter, IStringConverterDescription {
-    final HashMap<String, Integer> stringValue;
+    final Object2IntOpenHashMap<String> stringValue;
 
     BaseExplicitConverter() {
-        this.stringValue = new HashMap<String, Integer>();
+        this.stringValue = new Object2IntOpenHashMap<String>();
     }
 
     public void set(final String s, final int value) {

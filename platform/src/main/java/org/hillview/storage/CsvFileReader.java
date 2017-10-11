@@ -30,7 +30,14 @@ import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
 
 import javax.annotation.Nullable;
+<<<<<<< HEAD
 import java.io.*;
+=======
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.Serializable;
+>>>>>>> master
 import java.nio.file.Path;
 import java.util.zip.GZIPInputStream;
 
@@ -38,7 +45,7 @@ import java.util.zip.GZIPInputStream;
  * Knows how to read a CSV file (comma-separated file).
  */
 public class CsvFileReader extends TextFileReader {
-    public static class CsvConfiguration {
+    public static class CsvConfiguration implements Serializable {
         /**
          * Field separator in CSV file.
          */

@@ -29,8 +29,6 @@ import org.jblas.DoubleMatrix;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.io.IOException;
-
 public class PCATest extends BaseTest {
     @Test
     public void testLinearDataset() {
@@ -72,7 +70,7 @@ public class PCATest extends BaseTest {
             DoubleMatrix eigenVectors = LinAlg.eigenVectors(corrMatrix, 2);
             LinearProjectionMap lpm = new LinearProjectionMap(numericColNames, eigenVectors, "PCA");
             ITable result = lpm.apply(table);
-        } catch (IOException e) {
+        } catch (Exception e) {
             System.out.println("Skipped test because MNIST data is not present.");
         }
     }

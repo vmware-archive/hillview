@@ -37,10 +37,13 @@ public class ColumnAndRange implements Serializable {
     public String[] bucketBoundaries;  // only used for Categorical columns
 
     public HistogramParts prepare() {
-        IStringConverterDescription converter = null;
+        IStringConverterDescription converter;
         if (this.bucketBoundaries != null) {
             converter = new SortedStringsConverterDescription(
                     this.bucketBoundaries, (int)Math.ceil(this.min), (int) Math.floor(this.max));
+        } else {
+            // may not be used
+            converter = new RadixConverter();
         }
         BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(this.min, this.max, this.bucketCount);
         ColumnAndConverterDescription column = new ColumnAndConverterDescription(this.columnName, converter);

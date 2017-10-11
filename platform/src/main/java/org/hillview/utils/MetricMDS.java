@@ -41,8 +41,10 @@ public class MetricMDS {
     public static final double defaultLearningRateDecay = 0.999;
     public static final double tolerance = 1e-5;
     private static final double eps = 1e-9;
-    public static final BiFunction<DoubleMatrix, DoubleMatrix, Double> squaredEuclid = (x1, x2) -> MatrixFunctions.pow(x1.sub(x2),2).sum();
-    public static final BiFunction<DoubleMatrix, DoubleMatrix, Double> euclid = (x1, x2) -> Math.sqrt(MetricMDS.squaredEuclid.apply(x1, x2));
+    public static final BiFunction<DoubleMatrix, DoubleMatrix, Double> squaredEuclid =
+            (x1, x2) -> MatrixFunctions.pow(x1.sub(x2),2).sum();
+    public static final BiFunction<DoubleMatrix, DoubleMatrix, Double> euclid =
+            (x1, x2) -> Math.sqrt(MetricMDS.squaredEuclid.apply(x1, x2));
 
     /**
      * Number of observations in the dataset.

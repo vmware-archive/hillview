@@ -17,24 +17,30 @@
 
 package org.hillview.table;
 
-import org.hillview.table.api.IndexComparator;
+import org.hillview.table.api.IStringConverter;
+import org.hillview.table.api.IStringConverterDescription;
 
-import java.util.ArrayList;
+import javax.annotation.Nullable;
 
-public class ListComparator extends IndexComparator {
-    private final ArrayList<IndexComparator> comparatorList;
+public class RadixConverter implements IStringConverter, IStringConverterDescription {
+    // TODO: handle utf-8
+    @Override
+    public double asDouble(@Nullable String string) {
+        double value = 0;
+        double coefficient = 1;
 
-    public ListComparator(final ArrayList<IndexComparator> comparatorList) {
-        this.comparatorList = comparatorList;
+        if (string != null) {
+            for (int i = 0; i < string.length(); i++) {
+                char c = string.charAt(i);
+                value += (int) c * coefficient;
+                coefficient /= 256;
+            }
+        }
+        return value;
     }
 
     @Override
-    public int compare(final int o1, final int o2) {
-        //noinspection ForLoopReplaceableByForEach
-        for (int i = 0; i < this.comparatorList.size() ; i++) {
-            final int val = this.comparatorList.get(i).compare(o1, o2);
-            if (val != 0) { return val; }
-        }
-        return 0;
+    public IStringConverter getConverter() {
+        return this;
     }
 }
