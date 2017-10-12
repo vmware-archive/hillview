@@ -36,6 +36,11 @@
       with_items:
         - { src: '../platform/target/hillview-server-jar-with-dependencies.jar', dest: "{{service_folder}}/hillview" }
 
+    - name: Delete old log files
+      shell:
+        chdir: "{{service_folder}}/hillview"
+        cmd: rm -f *.log *.log.* *.log*.lck
+
 # Sets up the web server by installing Tomcat and updating the ROOT war with the Hillview Web server war.
 - hosts: web
   tasks:
@@ -93,3 +98,15 @@
     - name: Create file with list of backend servers
       lineinfile: dest="{{service_folder}}/serverlist" line="{{item}}:{{backend_port}}"
       with_items: "{{groups.backends}}"
+
+    - name: Delete old log files
+      shell:
+        chdir: "{{service_folder}}"
+        cmd: rm -f *.log *.log.* *.log*.lck
+
+    - name: Create link to web server log file
+      file:
+        state=link
+        force=yes
+        src="{{service_folder}}/hillview-web.log"
+        path="{{service_folder}}/hillview/hillview-web.log"

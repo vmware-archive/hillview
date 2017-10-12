@@ -31,10 +31,6 @@ import org.hillview.utils.HillviewLogger;
 
 import javax.annotation.Nullable;
 import java.io.*;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.Reader;
-import java.io.Serializable;
 import java.nio.file.Path;
 import java.util.zip.GZIPInputStream;
 
@@ -164,7 +160,7 @@ public class CsvFileReader extends TextFileReader {
                 c.seal();
             return new Table(columns);
         } finally {
-            if (file != null) file.close();
+            file.close();
         }
     }
 }

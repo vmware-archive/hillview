@@ -47,7 +47,7 @@ public class DemoDataCleaner {
     static final String schemaFile = "On_Time.schema";
 
     public static void main(String[] args) throws IOException {
-        HillviewLogger.initialize("hillview.log");
+        HillviewLogger.initialize("data cleaner", "hillview.log");
         String[] columns = {
                 "DayOfWeek", "FlightDate", "UniqueCarrier",
                 "Origin", "OriginCityName", "OriginState", "Dest", "DestState",

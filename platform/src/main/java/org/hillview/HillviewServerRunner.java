@@ -39,7 +39,7 @@ public class HillviewServerRunner {
             throw new RuntimeException("Incorrect arguments");
         }
 
-        HillviewLogger.initialize("hillview.log");
+        HillviewLogger.initialize("worker", "hillview.log");
         try {
             final IDataSet<Empty> dataSet = new LocalDataSet<Empty>(Empty.getInstance());
             final String hostnameAndPort = args[0];

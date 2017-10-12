@@ -28,25 +28,23 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 /**
  * Reads Hillview logs into ITable objects.
  */
 public class HillviewLogs {
     static final Schema schema = new Schema();
-    static final Pattern logFilePattern;
+    static final Pattern pattern = Pattern.compile("([^,]*),([^,]*),([^,]*),([^,]*),([^,]*)," +
+            "([^,]*),([^,]*),([^,]*),?(.*)");
 
     static {
-        logFilePattern = Pattern.compile(
-                "^([^\\[]+)\\s+\\[([^\\]]+)\\]\\s+(\\w+)\\s+(\\w+)\\s+-" +
-                        "\\s+([^,]*),([^,]*),([^,]*),([^,]*),(.*)$");
         HillviewLogs.schema.append(new ColumnDescription("Time", ContentsKind.Date, false));
-        HillviewLogs.schema.append(new ColumnDescription("Thread", ContentsKind.Category, false));
-        HillviewLogs.schema.append(new ColumnDescription("Severity", ContentsKind.Category, false));
-        HillviewLogs.schema.append(new ColumnDescription("Log name", ContentsKind.Category, false));
+        HillviewLogs.schema.append(new ColumnDescription("Role", ContentsKind.Category, false));
+        HillviewLogs.schema.append(new ColumnDescription("Level", ContentsKind.Category, false));
         HillviewLogs.schema.append(new ColumnDescription("Machine", ContentsKind.Category, false));
+        HillviewLogs.schema.append(new ColumnDescription("Thread", ContentsKind.Category, false));
         HillviewLogs.schema.append(new ColumnDescription("Class", ContentsKind.Category, false));
         HillviewLogs.schema.append(new ColumnDescription("Method", ContentsKind.Category, false));
         HillviewLogs.schema.append(new ColumnDescription("Message", ContentsKind.Category, false));
@@ -59,19 +57,19 @@ public class HillviewLogs {
         }
 
         public void parse(String line, String[] output) {
-            Matcher m = logFilePattern.matcher(line);
+            Matcher m = pattern.matcher(line);
             if (!m.find())
                 this.error("Could not parse line");
             output[0] = m.group(1); // Time
-            output[1] = m.group(2); // Thread
-            output[2] = m.group(3); // Severity
-            output[3] = m.group(4); // Log name
-            output[4] = m.group(5); // Machine
+            output[1] = m.group(2); // Role
+            output[2] = m.group(3); // Level
+            output[3] = m.group(4); // Machine
+            output[4] = m.group(5); // Thread
             output[5] = m.group(6); // Class
             output[6] = m.group(7); // Method
-            output[7] = m.group(8); // Method
-            output[8] = StringEscapeUtils.unescapeCsv(m.group(9)); // Arguments
-            output[8] = output[8].replace("\\n", "\n");
+            output[7] = m.group(8); // Message
+            String arguments = StringEscapeUtils.unescapeCsv(m.group(9));
+            output[8] = arguments.replace("\\n", "\n");  // Arguments
         }
 
         @Override
