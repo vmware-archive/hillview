@@ -18,9 +18,7 @@
 package org.hillview.table.columns;
 
 import org.hillview.table.ColumnDescription;
-import org.hillview.utils.Converters;
 
-import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.security.InvalidParameterException;
 import java.util.BitSet;

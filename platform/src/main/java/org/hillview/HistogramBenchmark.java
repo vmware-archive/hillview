@@ -1,6 +1,5 @@
 package org.hillview;
 
-import it.unimi.dsi.fastutil.ints.Int2IntSortedMap;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.ISketch;

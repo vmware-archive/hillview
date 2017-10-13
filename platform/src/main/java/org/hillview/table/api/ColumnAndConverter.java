@@ -17,6 +17,7 @@
 
 package org.hillview.table.api;
 
+import org.hillview.table.NoOpStringConverter;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
@@ -28,17 +29,16 @@ import java.time.Instant;
  */
 public class ColumnAndConverter {
     public final IColumn column;
-    @Nullable
     public final IStringConverter converter;
 
-    public ColumnAndConverter(IColumn column, @Nullable IStringConverter converter) {
+    public ColumnAndConverter(IColumn column, IStringConverter converter) {
         Converters.checkNull(column);
         this.column = column;
         this.converter = converter;
     }
 
     public ColumnAndConverter(IColumn column) {
-        this(column, null);
+        this(column, NoOpStringConverter.getConverterInstance());
     }
 
     public String getName() { return this.column.getName(); }

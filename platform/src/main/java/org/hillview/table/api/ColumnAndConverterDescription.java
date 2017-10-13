@@ -18,17 +18,16 @@
 package org.hillview.table.api;
 
 import org.hillview.dataset.api.IJson;
+import org.hillview.table.NoOpStringConverter;
 
 import javax.annotation.Nullable;
 import java.io.Serializable;
 
 public class ColumnAndConverterDescription implements Serializable, IJson {
     public final String columnName;
-    @Nullable
     public final IStringConverterDescription converter;
 
     public ColumnAndConverterDescription(String columnName,
-                                         @Nullable
                                          IStringConverterDescription converter) {
         this.columnName = columnName;
         this.converter = converter;
@@ -46,13 +45,10 @@ public class ColumnAndConverterDescription implements Serializable, IJson {
     }
 
     public ColumnAndConverterDescription(String columnName) {
-        this(columnName, null);
+        this(columnName, NoOpStringConverter.getDescriptionInstance());
     }
 
-    @Nullable
     public IStringConverter getConverter() {
-        if (this.converter == null)
-            return null;
         return this.converter.getConverter();
     }
 }

@@ -49,7 +49,7 @@ public class BasicStatSketchTest extends BaseTest {
 
         IDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize / 10);
         final BasicColStats result = all.blockingSketch(
-                new BasicColStatSketch(new ColumnAndConverterDescription(colName, null)));
+                new BasicColStatSketch(new ColumnAndConverterDescription(colName)));
         final BasicColStatSketch mySketch = new BasicColStatSketch(
                 new ColumnAndConverterDescription(
                         bigTable.getSchema().getColumnNames()[0]));

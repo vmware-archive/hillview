@@ -44,7 +44,6 @@ public final class DateArrayColumn
         this.checkKind(ContentsKind.Date);
     }
 
-    @Nullable
     @Override
     public Instant getDate(final int rowIndex) {
         return Converters.toDate(this.getDouble(rowIndex));

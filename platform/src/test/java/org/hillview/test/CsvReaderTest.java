@@ -48,7 +48,6 @@ public class CsvReaderTest extends BaseTest {
     private static final String csvFile = "On_Time_Sample.csv";
     private static final String schemaFile = "On_Time.schema";
 
-    @Nullable
     private ITable readTable(String folder, String file) throws IOException {
         Path path = Paths.get(folder, file);
         CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
