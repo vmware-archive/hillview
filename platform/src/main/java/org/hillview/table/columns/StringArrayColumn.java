@@ -65,9 +65,6 @@ public final class StringArrayColumn
 
     @Override
     public IColumn seal() {
-        if (this.missing != null && this.missing.size() != this.data.length)
-            throw new RuntimeException("Missing size does not match column data: " +
-                    this.missing.size() + " vs. " + this.data.length);
         return this;
     }
 

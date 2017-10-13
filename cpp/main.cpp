@@ -27,7 +27,9 @@ int main() {
 
     auto histo = new Histogram(40, 0, 100);
     high_resolution_clock:: time_point before = high_resolution_clock::now();
-    data->histogram(histo);
+    for (int i = 0; i < 100; i++) {
+       data->histogram(histo);
+    }
     high_resolution_clock:: time_point after = high_resolution_clock::now();
 
     auto duration = duration_cast<microseconds>(after - before).count();
