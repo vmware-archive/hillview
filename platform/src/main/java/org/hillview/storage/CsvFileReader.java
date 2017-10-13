@@ -160,7 +160,6 @@ public class CsvFileReader extends TextFileReader {
                 c.seal();
             return new Table(columns);
         } finally {
-            if (file != null) file.close();
             file.close();
         }
     }
