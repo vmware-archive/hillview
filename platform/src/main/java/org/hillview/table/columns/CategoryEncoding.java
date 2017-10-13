@@ -17,7 +17,10 @@
 
 package org.hillview.table.columns;
 
+import it.unimi.dsi.fastutil.bytes.Byte2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2ByteMap;
+import it.unimi.dsi.fastutil.objects.Object2ByteOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 
 import javax.annotation.Nullable;
@@ -28,30 +31,52 @@ import java.util.function.Consumer;
  */
 public class CategoryEncoding {
     // Map categorical value to a small integer
-    private final Object2IntOpenHashMap<String> encoding;
+    private final Object2IntOpenHashMap<String> intEncoding;
     // Decode small integer into categorical value
-    private final Int2ObjectOpenHashMap<String> decoding;
+    private final Int2ObjectOpenHashMap<String> intDecoding;
+    // Map categorical value to a byte
+    private final Object2ByteOpenHashMap<String> byteEncoding;
+    // Decode byte into categorical value
+    private final Byte2ObjectOpenHashMap<String> byteDecoding;
+
 
     CategoryEncoding() {
-        this.encoding = new Object2IntOpenHashMap<String>(100);
-        this.decoding = new Int2ObjectOpenHashMap<String>(100);
+        this.intEncoding = new Object2IntOpenHashMap<String>(100);
+        this.intDecoding = new Int2ObjectOpenHashMap<String>(100);
+        this.byteEncoding = new Object2ByteOpenHashMap<String>(100);
+        this.byteDecoding = new Byte2ObjectOpenHashMap<String>(100);
     }
 
     @Nullable
-    String decode(int code) {
-        return this.decoding.getOrDefault(code, null);
+    String decode(int code) { return this.intDecoding.getOrDefault(code, null); }
+
+    @Nullable
+    String decode(byte code) { return this.byteDecoding.getOrDefault(code, null); }
+
+    int encodeInt(@Nullable String value) {
+        if (this.intEncoding.containsKey(value))
+            return this.intEncoding.getInt(value);
+        int encoding = this.intEncoding.size();
+        this.intEncoding.put(value, encoding);
+        this.intDecoding.put(encoding, value);
+        return encoding;
     }
 
-    int encode(@Nullable String value) {
-        if (this.encoding.containsKey(value))
-            return this.encoding.getInt(value);
-        int encoding = this.encoding.size();
-        this.encoding.put(value, encoding);
-        this.decoding.put(encoding, value);
+    byte encodeByte(@Nullable String value) {
+        if (this.byteEncoding.containsKey(value))
+            return this.byteEncoding.getByte(value);
+        byte encoding = (byte) this.byteEncoding.size();
+        this.byteEncoding.put(value, encoding);
+        this.byteDecoding.put(encoding, value);
         return encoding;
     }
 
     public void allDistinctStrings(Consumer<String> action) {
-        this.encoding.keySet().forEach(action);
+        this.byteEncoding.keySet().forEach(action);
+        this.intEncoding.keySet().forEach(action);
+    }
+
+    public boolean IsByteFull() {
+        return (byteEncoding.size() >= 255);
     }
 }
