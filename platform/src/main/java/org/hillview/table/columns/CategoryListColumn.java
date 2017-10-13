@@ -31,14 +31,20 @@ import java.util.function.Consumer;
  */
 public class CategoryListColumn extends BaseListColumn implements ICategoryColumn {
     private CategoryEncoding encoding;
-    private final ArrayList<int[]> segments;
+    private final ArrayList<int[]> intSegments;
+    private final ArrayList<byte[]> byteSegments;
+    private int switchPoint; //the row index beyond which int segments are used
+
 
     public CategoryListColumn(final ColumnDescription desc) {
         super(desc);
         if (desc.kind != ContentsKind.Category)
             throw new IllegalArgumentException("Unexpected column kind " + desc.kind);
-        this.segments = new ArrayList<int[]>();
+        this.byteSegments = new ArrayList<byte[]>();
+        this.intSegments = new ArrayList<int[]>();
         this.encoding = new CategoryEncoding();
+        this.switchPoint = Integer.MAX_VALUE;
+
     }
 
     @Nullable
@@ -46,9 +52,16 @@ public class CategoryListColumn extends BaseListColumn implements ICategoryColum
     public String getString(final int rowIndex) {
         final int segmentId = rowIndex >> this.LogSegmentSize;
         final int localIndex = rowIndex & this.SegmentMask;
-        int[] segment = this.segments.get(segmentId);
-        int index = segment[localIndex];
-        return this.encoding.decode(index);
+        if (rowIndex < this.switchPoint) { // use the byte segments
+            byte[] segment = this.byteSegments.get(segmentId);
+            byte index = segment[localIndex];
+            return this.encoding.decode(index);
+        }
+        else {
+            int[] segment = this.intSegments.get(segmentId - this.byteSegments.size() + 1);
+            int index = segment[localIndex];
+            return this.encoding.decode(index);
+        }
     }
 
     @Override
@@ -56,7 +69,10 @@ public class CategoryListColumn extends BaseListColumn implements ICategoryColum
 
     @Override
     void grow() {
-        this.segments.add(new int[this.SegmentSize]);
+        if (this.switchPoint == Integer.MAX_VALUE) // need to grow byte segments
+            this.byteSegments.add(new byte[this.SegmentSize]);
+        else
+            this.intSegments.add(new int[this.SegmentSize]);
         this.growMissing();
     }
 
@@ -64,9 +80,18 @@ public class CategoryListColumn extends BaseListColumn implements ICategoryColum
     public void append(@Nullable String value) {
         final int segmentId = this.size >> this.LogSegmentSize;
         final int localIndex = this.size & this.SegmentMask;
-        if (this.segments.size() <= segmentId)
-            this.grow();
-        this.segments.get(segmentId)[localIndex] = this.encoding.encode(value);
+        if (this.size < this.switchPoint) {
+            if (this.byteSegments.size() <= segmentId)
+                this.grow();
+            this.byteSegments.get(segmentId)[localIndex] = this.encoding.encodeByte(value);
+            if (this.encoding.IsByteFull())
+                this.switchPoint = size;
+        }
+        else {
+            if (this.intSegments.size() <= segmentId - this.byteSegments.size() + 1)
+                this.grow();
+            this.intSegments.get(segmentId - this.byteSegments.size() + 1)[localIndex] = this.encoding.encodeInt(value);
+        }
         this.size++;
     }
 
