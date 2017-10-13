@@ -71,7 +71,7 @@ public class ColumnTest extends BaseTest {
         col.append((String) null);
         col.appendMissing();
         col.append("Second");
-        for (int i = 0; i < 260; i++) {
+        for (int i = 0; i < 100000; i++) {
             col.append(Integer.toString(i));
             col.append("First");
         }
@@ -79,12 +79,13 @@ public class ColumnTest extends BaseTest {
         Assert.assertTrue(col.isMissing(2));
         Assert.assertTrue(col.isMissing(3));
         Assert.assertFalse(col.isMissing(0));
-        Assert.assertEquals(col.sizeInRows(), 525);
         Assert.assertEquals(col.getString(0), "First");
         Assert.assertEquals(col.getString(1), "First");
         Assert.assertEquals(col.getString(2), null);
         Assert.assertEquals(col.getString(4), "Second");
         Assert.assertEquals(col.getString(264), "First");
         Assert.assertEquals(col.getString(265), "130");
+        Assert.assertEquals(col.getString(266), "First");
+        Assert.assertEquals(col.getString(100004), "First");
     }
 }

@@ -31,9 +31,9 @@ import java.util.BitSet;
  */
 public abstract class BaseListColumn extends BaseColumn implements IAppendableColumn {
     // These should not be public, but they are made public for simplifying testing.
-    final int LogSegmentSize = 10;
-    public final int SegmentSize = 1 << this.LogSegmentSize;
-    final int SegmentMask = this.SegmentSize - 1;
+    static final int LogSegmentSize = 11;
+    public static final int SegmentSize = 1 << LogSegmentSize;
+    static final int SegmentMask = SegmentSize - 1;
 
     @Nullable
     protected ArrayList<BitSet> missing = null;
@@ -61,8 +61,8 @@ public abstract class BaseListColumn extends BaseColumn implements IAppendableCo
     public boolean isMissing(final int rowIndex) {
         if (this.missing == null)
             return false;
-        final int segmentId = rowIndex >> this.LogSegmentSize;
-        final int localIndex = rowIndex & this.SegmentMask;
+        final int segmentId = rowIndex >> LogSegmentSize;
+        final int localIndex = rowIndex & SegmentMask;
         return this.missing.get(segmentId).get(localIndex);
     }
 
@@ -74,8 +74,8 @@ public abstract class BaseListColumn extends BaseColumn implements IAppendableCo
     @Override
     public void appendMissing() {
         Converters.checkNull(this.missing);
-        final int segmentId = this.size >> this.LogSegmentSize;
-        final int localIndex = this.size & this.SegmentMask;
+        final int segmentId = this.size >> LogSegmentSize;
+        final int localIndex = this.size & SegmentMask;
         if (this.missing.size() <= segmentId) {
             this.grow();
         }
@@ -93,7 +93,7 @@ public abstract class BaseListColumn extends BaseColumn implements IAppendableCo
 
     void growMissing() {
         if (this.missing != null)
-            this.missing.add(new BitSet(this.SegmentSize));
+            this.missing.add(new BitSet(SegmentSize));
     }
 
     public static BaseListColumn create(ColumnDescription desc) {

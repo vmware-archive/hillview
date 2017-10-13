@@ -21,6 +21,7 @@ import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.ICategoryColumn;
 import org.hillview.table.api.IColumn;
+import org.hillview.utils.HillviewLogger;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -31,9 +32,17 @@ import java.util.function.Consumer;
  */
 public class CategoryListColumn extends BaseListColumn implements ICategoryColumn {
     private CategoryEncoding encoding;
+    // All these arrays hold indexes into the encoding data structure.
+    // We use byte-indexes until we run out of them.
+    // Then we use short indexes, and hopefully we never run out of them.
+    // But if we do we switch to using int indexes.
     private final ArrayList<int[]> intSegments;
+    private final ArrayList<short[]> shortSegments;
     private final ArrayList<byte[]> byteSegments;
-    private int switchPoint; //the row index beyond which int segments are used
+    // first segment that uses shorts
+    private int firstShortSegment;
+    // first segment that uses integers
+    private int firstIntSegment;
 
 
     public CategoryListColumn(final ColumnDescription desc) {
@@ -42,23 +51,33 @@ public class CategoryListColumn extends BaseListColumn implements ICategoryColum
             throw new IllegalArgumentException("Unexpected column kind " + desc.kind);
         this.byteSegments = new ArrayList<byte[]>();
         this.intSegments = new ArrayList<int[]>();
+        this.shortSegments = new ArrayList<short[]>();
         this.encoding = new CategoryEncoding();
-        this.switchPoint = Integer.MAX_VALUE;
-
+        this.firstIntSegment = Integer.MAX_VALUE;
+        this.firstShortSegment = Integer.MAX_VALUE;
     }
 
     @Nullable
     @Override
     public String getString(final int rowIndex) {
-        final int segmentId = rowIndex >> this.LogSegmentSize;
-        final int localIndex = rowIndex & this.SegmentMask;
-        if (rowIndex < this.switchPoint) { // use the byte segments
+        if (rowIndex > this.size)
+            throw new ArrayIndexOutOfBoundsException(
+                    "Index " + rowIndex + " larger than " + this.size);
+        int segmentId = rowIndex >> LogSegmentSize;
+        final int localIndex = rowIndex & SegmentMask;
+        if (segmentId < this.firstShortSegment) {
+            // use the byte segments
             byte[] segment = this.byteSegments.get(segmentId);
             byte index = segment[localIndex];
             return this.encoding.decode(index);
-        }
-        else {
-            int[] segment = this.intSegments.get(segmentId - this.byteSegments.size() + 1);
+        } else if (segmentId < this.firstIntSegment) {
+            segmentId = segmentId - this.firstShortSegment;
+            short[] segment = this.shortSegments.get(segmentId);
+            short index = segment[localIndex];
+            return this.encoding.decode(index);
+        } else {
+            segmentId = segmentId - this.firstIntSegment;
+            int[] segment = this.intSegments.get(segmentId);
             int index = segment[localIndex];
             return this.encoding.decode(index);
         }
@@ -69,28 +88,68 @@ public class CategoryListColumn extends BaseListColumn implements ICategoryColum
 
     @Override
     void grow() {
-        if (this.switchPoint == Integer.MAX_VALUE) // need to grow byte segments
-            this.byteSegments.add(new byte[this.SegmentSize]);
-        else
-            this.intSegments.add(new int[this.SegmentSize]);
-        this.growMissing();
+        if (this.firstIntSegment == Integer.MAX_VALUE) {
+            if (this.firstShortSegment == Integer.MAX_VALUE)
+                this.byteSegments.add(new byte[SegmentSize]);
+            else
+                this.shortSegments.add(new short[SegmentSize]);
+        } else {
+            this.intSegments.add(new int[SegmentSize]);
+        }
     }
 
     @Override
     public void append(@Nullable String value) {
-        final int segmentId = this.size >> this.LogSegmentSize;
-        final int localIndex = this.size & this.SegmentMask;
-        if (this.size < this.switchPoint) {
-            if (this.byteSegments.size() <= segmentId)
+        int segmentId = this.size >> LogSegmentSize;
+        int localIndex = this.size & SegmentMask;
+        int encoding = this.encoding.encode(value);
+
+        if (this.firstIntSegment != Integer.MAX_VALUE) {
+            // use an integer encoding
+            segmentId -= this.firstIntSegment;
+            if (this.intSegments.size() <= segmentId)
                 this.grow();
-            this.byteSegments.get(segmentId)[localIndex] = this.encoding.encodeByte(value);
-            if (this.encoding.IsByteFull())
-                this.switchPoint = size;
-        }
-        else {
-            if (this.intSegments.size() <= segmentId - this.byteSegments.size() + 1)
-                this.grow();
-            this.intSegments.get(segmentId - this.byteSegments.size() + 1)[localIndex] = this.encoding.encodeInt(value);
+            this.intSegments.get(segmentId)[localIndex] = encoding;
+        } else if (this.firstShortSegment != Integer.MAX_VALUE) {
+            if (encoding > 65535) {
+                // switch to an int encoding.  This should not really happen,
+                // but we guard here for wrong schemas.
+                HillviewLogger.instance.warn("Categorical column has too many values");
+                this.firstIntSegment = segmentId;
+                int[] segment = new int[SegmentSize];
+                this.intSegments.add(segment);
+                if (localIndex > 0) {
+                    segmentId -= this.firstShortSegment;
+                    short[] shortSegment = this.shortSegments.get(segmentId);
+                    for (int i = 0; i < localIndex; i++)
+                        segment[i] = Short.toUnsignedInt(shortSegment[i]);
+                    this.shortSegments.set(segmentId, null);
+                }
+                segment[localIndex] = (short)encoding;
+            } else {
+                segmentId -= this.firstShortSegment;
+                if (this.shortSegments.size() <= segmentId)
+                    this.grow();
+                this.shortSegments.get(segmentId)[localIndex] = (short)encoding;
+            }
+        } else {
+            if (encoding > 255) {
+                // switch to a short encoding
+                this.firstShortSegment = segmentId;
+                short[] segment = new short[SegmentSize];
+                this.shortSegments.add(segment);
+                if (localIndex > 0) {
+                    byte[] byteSegment = this.byteSegments.get(segmentId);
+                    for (int i = 0; i < localIndex; i++)
+                        segment[i] = (short)Byte.toUnsignedInt(byteSegment[i]);
+                    this.byteSegments.set(segmentId, null);
+                }
+                segment[localIndex] = (short)encoding;
+            } else {
+                if (this.byteSegments.size() <= segmentId)
+                    this.grow();
+                this.byteSegments.get(segmentId)[localIndex] = (byte)encoding;
+            }
         }
         this.size++;
     }

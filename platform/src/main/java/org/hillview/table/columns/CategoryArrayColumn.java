@@ -70,7 +70,7 @@ public class CategoryArrayColumn extends BaseArrayColumn
 
     @Override
     public void set(int rowIndex, @Nullable String value) {
-        this.data[rowIndex] = this.encoding.encodeInt(value);
+        this.data[rowIndex] = this.encoding.encode(value);
     }
 
     @Nullable
