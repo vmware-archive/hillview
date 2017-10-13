@@ -566,6 +566,8 @@ export class Histogram2DView extends HistogramViewBase {
     }
 
     color(d: number, max: number): string {
+        if (max == 0)
+            return Histogram2DView.colorMap(0);
         return Histogram2DView.colorMap(d / max);
     }
 

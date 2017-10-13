@@ -144,9 +144,7 @@ public class InitialObjectTarget extends RpcTarget {
             throw new RuntimeException("Unexpected operation " + which);
 		}
 		
-        Path schemaPath = Paths.get(dataFolder, schemaFile);
-        config.schema = Schema.readFromJsonFile(schemaPath);
-        finder = new FindCsvFileMapper(dataFolder, limit, fileNamePattern, config);
+        finder = new FindCsvFileMapper(dataFolder, limit, fileNamePattern, schemaFile, config);
 
         HillviewLogger.instance.info("Preparing files");
         this.runFlatMap(this.emptyDataset, finder, CsvFileTarget::new, request, context);

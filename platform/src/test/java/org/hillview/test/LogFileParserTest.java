@@ -18,6 +18,7 @@
 package org.hillview.test;
 
 import org.hillview.storage.HillviewLogs;
+import org.hillview.table.api.ColumnAndConverter;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
 import org.junit.Assert;
@@ -28,21 +29,25 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.*;
 
 public class LogFileParserTest extends BaseTest {
+    Object getValue(ITable table, String col) {
+        ColumnAndConverter cc = table.getLoadedColumn(col);
+        return Converters.checkNull(cc.getObject(0));
+    }
+
     @Test
     public void parseLogLines() throws IOException {
         String logFileContents = String.join("\n",
-                "2017-10-03 13:41:52.931 [main] INFO Hillview - ubuntu,org.hillview.dataset" +
-                        ".LocalDataSet,<clinit>,Detect CPUs,Using 3 processors",
-                "2017-10-03 13:41:52.937 [main] INFO Hillview - ubuntu,org.hillview.dataset" +
-                        ".ParallelDataSet,sketch,Invoked sketch,target=ParallelDataSet of size 3",
-                "2017-10-03 13:41:53.024 [pool-1-thread-2] INFO Hillview - ubuntu,org.hillview" +
-                        ".dataset.LocalDataSet,lambda$sketch$4,Starting sketch,org.hillview.sketches.SampleQuantileSketch",
-                "2017-10-03 13:41:53.024 [pool-1-thread-1] INFO Hillview - ubuntu,org.hillview" +
-                        ".dataset.LocalDataSet,lambda$sketch$4,Starting sketch,org.hillview.sketches.SampleQuantileSketch",
-                "2017-10-03 13:41:53.032 [pool-1-thread-3] INFO Hillview - ubuntu,org.hillview" +
-                        ".dataset.LocalDataSet,lambda$sketch$4,Starting sketch,org.hillview.sketches.SampleQuantileSketch"
+    "2017-10-12 02:17:42.722,worker,INFO,ubuntu,main,org.hillview.dataset" +
+            ".LocalDataSet,<clinit>,Detect CPUs,Using 3 processors",
+    "2017-10-12 02:17:43.172,worker,INFO,ubuntu,main,org.hillview.dataset" +
+            ".remoting.HillviewServer,put,Inserting dataset,0",
+    "2017-10-12 02:17:43.173,worker,INFO,ubuntu,main,org.hillview.utils" +
+            ".HillviewLogger,info,Created HillviewServer",
+    "2017-10-12 02:18:29.084,worker,INFO,ubuntu,pool-1-thread-1,org.hillview" +
+            ".maps.FindCsvFileMapper,apply,Find files in folder,/hillview/data"
         );
 
         File f = File.createTempFile("tmp", null, new File("."));
@@ -54,6 +59,20 @@ public class LogFileParserTest extends BaseTest {
         Path path = Paths.get(".", f.getName());
         ITable table = HillviewLogs.parseLogFile(path);
         Converters.checkNull(table);
-        Assert.assertEquals(table.toString(), "Table[9x5]");
+        Assert.assertEquals(table.toString(), "Table[9x4]");
+        LocalDate date = LocalDate.of(2017, 10, 12);
+        LocalTime time = LocalTime.of(2, 17, 42, 722000000);
+        LocalDateTime dt = LocalDateTime.of(date, time);
+        ZonedDateTime zdt = dt.atZone(ZoneId.systemDefault());
+        Instant instant = zdt.toInstant();
+        Assert.assertEquals(getValue(table, "Time"), instant);
+        Assert.assertEquals(getValue(table, "Role"), "worker");
+        Assert.assertEquals(getValue(table, "Level"), "INFO");
+        Assert.assertEquals(getValue(table, "Machine"), "ubuntu");
+        Assert.assertEquals(getValue(table, "Thread"), "main");
+        Assert.assertEquals(getValue(table, "Class"), "org.hillview.dataset.LocalDataSet");
+        Assert.assertEquals(getValue(table, "Method"), "<clinit>");
+        Assert.assertEquals(getValue(table, "Message"), "Detect CPUs");
+        Assert.assertEquals(getValue(table, "Arguments"), "Using 3 processors");
     }
 }
