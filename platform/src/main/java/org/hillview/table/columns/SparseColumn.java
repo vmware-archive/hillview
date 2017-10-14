@@ -50,8 +50,7 @@ public class SparseColumn extends BaseColumn
     @SuppressWarnings("ConstantConditions")
     @Override
     public double asDouble(int rowIndex, IStringConverter converter) {
-        if (this.isMissing(rowIndex))
-            throw new MissingException(this, rowIndex);
+        assert !this.isMissing(rowIndex);
         switch (this.description.kind) {
             case Category:
             case String:
@@ -121,8 +120,7 @@ public class SparseColumn extends BaseColumn
    @Override
     @SuppressWarnings("ConstantConditions")
     public long hashCode64(int rowIndex, LongHashFunction hash) {
-        if (isMissing(rowIndex))
-            return MISSING_HASH_VALUE;
+        assert !isMissing(rowIndex);
         switch (this.description.kind) {
             case Category:
             case String:
