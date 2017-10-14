@@ -22,7 +22,9 @@ import com.univocity.parsers.csv.CsvWriter;
 import com.univocity.parsers.csv.CsvWriterSettings;
 import org.hillview.storage.CsvFileReader;
 import org.hillview.storage.CsvFileWriter;
-import org.hillview.table.*;
+import org.hillview.table.ColumnDescription;
+import org.hillview.table.Schema;
+import org.hillview.table.Table;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
@@ -32,7 +34,6 @@ import org.hillview.utils.Converters;
 import org.junit.Assert;
 import org.junit.Test;
 
-import javax.annotation.Nullable;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;

@@ -18,6 +18,7 @@
 package org.hillview.utils;
 
 import org.hillview.table.ColumnDescription;
+import org.hillview.table.NoOpStringConverter;
 import org.hillview.table.columns.DoubleArrayColumn;
 import org.hillview.table.Table;
 import org.hillview.table.api.*;
@@ -54,7 +55,7 @@ public class BlasConversions {
                 if (col.isMissing(row)) {
                     mat.put(i, j, Double.NaN);
                 } else {
-                    mat.put(i, j, col.asDouble(row, null));
+                    mat.put(i, j, col.asDouble(row, NoOpStringConverter.getConverterInstance()));
                 }
                 row = iter.getNextRow();
                 i++;

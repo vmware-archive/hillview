@@ -62,7 +62,7 @@ public final class DateArrayColumn
     }
 
     @Override
-    public double asDouble(int rowIndex, @Nullable IStringConverter unused) {
+    public double asDouble(int rowIndex, IStringConverter unused) {
         return super.getDouble(rowIndex);
     }
 

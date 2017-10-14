@@ -20,7 +20,6 @@ package org.hillview.table.api;
 import org.hillview.dataset.api.IJson;
 import org.hillview.table.NoOpStringConverter;
 
-import javax.annotation.Nullable;
 import java.io.Serializable;
 
 public class ColumnAndConverterDescription implements Serializable, IJson {

@@ -17,6 +17,7 @@
 
 package org.hillview.test;
 
+import org.hillview.table.NoOpStringConverter;
 import org.hillview.table.api.*;
 import org.hillview.utils.TestTables;
 import org.hillview.table.SmallTable;
@@ -36,8 +37,10 @@ public class Issue46Test extends BaseTest {
         IMembershipSet memSet = bigTable.getMembershipSet();
         IRowIterator iter = memSet.getIterator();
         // All seem to work fine
-        System.out.println(" printing the double " + column.asDouble(iter.getNextRow(), null));
-        System.out.println(" printing the double " + column.asDouble(iter.getNextRow(), null));
+        System.out.println(" printing the double " + column.asDouble(iter.getNextRow(),
+                                                                     NoOpStringConverter.getConverterInstance()));
+        System.out.println(" printing the double " + column.asDouble(iter.getNextRow(),
+                                                                     NoOpStringConverter.getConverterInstance()));
         // Splitting the table
         List<ITable> tabList = TestTables.splitTable(bigTable, 10000);
         // Grabbing the column from  the sub-tables

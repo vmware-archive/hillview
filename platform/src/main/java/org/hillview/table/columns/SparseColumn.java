@@ -19,6 +19,7 @@ package org.hillview.table.columns;
 
 import net.openhft.hashing.LongHashFunction;
 import org.hillview.table.ColumnDescription;
+import org.hillview.table.NoOpStringConverter;
 import org.hillview.table.api.*;
 import org.hillview.utils.Converters;
 
@@ -48,14 +49,14 @@ public class SparseColumn extends BaseColumn
 
     @SuppressWarnings("ConstantConditions")
     @Override
-    public double asDouble(int rowIndex, @Nullable IStringConverter converter) {
+    public double asDouble(int rowIndex, IStringConverter converter) {
         if (this.isMissing(rowIndex))
             throw new MissingException(this, rowIndex);
         switch (this.description.kind) {
             case Category:
             case String:
             case Json:
-                return Converters.checkNull(converter).asDouble(this.getString(rowIndex));
+                return converter.asDouble(this.getString(rowIndex));
             case Integer:
                 return this.getInt(rowIndex);
             case Date:
@@ -107,8 +108,8 @@ public class SparseColumn extends BaseColumn
                 case Date:
                 case Double:
                 case Duration:
-                    return Double.compare(SparseColumn.this.asDouble(o1, null),
-                            SparseColumn.this.asDouble(o2, null));
+                    return Double.compare(SparseColumn.this.asDouble(o1, NoOpStringConverter.getConverterInstance()),
+                            SparseColumn.this.asDouble(o2, NoOpStringConverter.getConverterInstance()));
                 default:
                     throw new RuntimeException("Unexpected kind " +
                             SparseColumn.this.description.kind);
@@ -132,7 +133,8 @@ public class SparseColumn extends BaseColumn
             case Date:
             case Double:
             case Duration:
-                return hash.hashLong(Double.doubleToRawLongBits(this.asDouble(rowIndex, null)));
+                return hash.hashLong(Double.doubleToRawLongBits(this.asDouble(rowIndex,
+                                                                NoOpStringConverter.getConverterInstance())));
             default:
                 throw new RuntimeException("Unexpected kind " + this.description.kind);
         }

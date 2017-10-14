@@ -18,19 +18,18 @@
 package org.hillview.table.api;
 
 import net.openhft.hashing.LongHashFunction;
-import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.util.function.Function;
 
 public interface IStringColumn extends IColumn {
     @Override
-    default double asDouble(final int rowIndex, @Nullable final IStringConverter converter) {
+    default double asDouble(final int rowIndex, final IStringConverter converter) {
         if (isMissing(rowIndex))
             throw new MissingException(this, rowIndex);
         final String tmp = this.getString(rowIndex);
         //noinspection ConstantConditions
-        return Converters.checkNull(converter).asDouble(tmp);
+        return converter.asDouble(tmp);
     }
 
     @Nullable
