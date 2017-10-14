@@ -18,6 +18,7 @@
 package org.hillview.test;
 
 import org.hillview.table.ColumnDescription;
+import org.hillview.table.NoStringConverter;
 import org.hillview.table.columns.CategoryListColumn;
 import org.hillview.table.columns.DoubleListColumn;
 import org.hillview.table.api.ContentsKind;
@@ -42,7 +43,7 @@ public class ColumnTest extends BaseTest {
         assertEquals(col.getInt(0), 0);
         for (int i = 0; i < size; i++)
             assertEquals(i, col.getInt(i));
-        assertEquals(col.asDouble(0, null), 0.0, 1e-3);
+        assertEquals(col.asDouble(0, NoStringConverter.getConverterInstance()), 0.0, 1e-3);
     }
 
     @Test

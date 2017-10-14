@@ -87,6 +87,10 @@ public class HillviewLogger {
         instance = new HillviewLogger(role, filename);
     }
 
+    public void setLogLevel(final Level level) {
+        this.logger.setLevel(level);
+    }
+
     public void shutdown() {
         Handler[] hs = this.logger.getHandlers();
         for (Handler h : hs)

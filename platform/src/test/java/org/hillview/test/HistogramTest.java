@@ -17,86 +17,17 @@
 
 package org.hillview.test;
 
-import org.hillview.dataset.LocalDataSet;
-import org.hillview.dataset.api.IDataSet;
-import org.hillview.dataset.api.ISketch;
-import org.hillview.sketches.*;
-import org.hillview.table.columns.DoubleArrayColumn;
+import org.hillview.sketches.BucketsDescriptionEqSize;
+import org.hillview.sketches.HeatMap;
+import org.hillview.sketches.Histogram;
 import org.hillview.table.FullMembership;
-import org.hillview.table.Table;
 import org.hillview.table.api.ColumnAndConverter;
-import org.hillview.table.api.ColumnAndConverterDescription;
-import org.hillview.table.api.IColumn;
-import org.hillview.table.api.ITable;
+import org.hillview.table.columns.DoubleArrayColumn;
 import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
 public class HistogramTest extends BaseTest {
-    long time(Runnable runnable) {
-        //System.gc();
-        long start = System.currentTimeMillis();
-        runnable.run();
-        long end = System.currentTimeMillis();
-        return end - start;
-    }
-
-    String twoDigits(double d) {
-        return String.format("%.2f", d);
-    }
-
-    void runNTimes(Runnable runnable, int count, String message, int elemCount) {
-        long[] times = new long[count];
-        for (int i=0; i < count; i++) {
-            long t = time(runnable);
-            times[i] = t;
-        }
-        int minIndex = 0;
-        for (int i=0; i < count; i++)
-            if (times[i] < times[minIndex])
-                minIndex = i;
-        System.out.println(message);
-        System.out.println("Time (ms),Melems/s,Percent slower");
-        for (int i=0; i < count; i++) {
-            double speed = (double)(elemCount) / (times[i] * 1000);
-            double percent = 100 * ((double)times[i] - times[minIndex]) / times[minIndex];
-            System.out.println(times[i] + "," + twoDigits(speed) + "," + twoDigits(percent) + "%");
-        }
-    }
-
-    //@Test
-    public void testHistogramPerf() throws Exception {
-        // Testing the performance of histogram computations
-        final int bucketNum = 40;
-        final int mega = 1024 * 1024;
-        final int colSize = 100 * mega;
-        final int runCount = 10;
-
-        BucketsDescriptionEqSize buckDes = new BucketsDescriptionEqSize(0, 100, bucketNum);
-        final Histogram hist = new Histogram(buckDes);
-        DoubleArrayColumn col = DoubleArrayTest.generateDoubleArray(colSize, 100);
-        FullMembership fMap = new FullMembership(colSize);
-
-        Runnable r = () -> hist.create(new ColumnAndConverter(col), fMap, 1.0);
-        runNTimes(r, runCount, "Simple histogram", colSize);
-
-        List<IColumn> cols = new ArrayList<IColumn>();
-        cols.add(col);
-        ITable table = new Table(cols, fMap);
-        ISketch<ITable, Histogram> sk = new HistogramSketch(buckDes, new ColumnAndConverterDescription(col
-                .getName()));
-        final IDataSet<ITable> ds = new LocalDataSet<ITable>(table, false);
-
-        r = () -> ds.blockingSketch(sk);
-        runNTimes(r, runCount, "Dataset histogram", colSize);
-
-        final IDataSet<ITable> lds = new LocalDataSet<ITable>(table);
-        r = () -> lds.blockingSketch(sk);
-        runNTimes(r, runCount, "Dataset histogram (separate thread)", colSize);
-    }
 
     @Test
     public void testHistogram() throws Exception {
