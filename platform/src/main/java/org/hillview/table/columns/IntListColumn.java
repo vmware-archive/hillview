@@ -49,21 +49,21 @@ public final class IntListColumn
 
     @Override
     public int getInt(final int rowIndex) {
-        final int segmentId = rowIndex >> this.LogSegmentSize;
-        final int localIndex = rowIndex & this.SegmentMask;
+        final int segmentId = rowIndex >> LogSegmentSize;
+        final int localIndex = rowIndex & SegmentMask;
         return this.segments.get(segmentId)[localIndex];
     }
 
     @Override
     void grow() {
-        this.segments.add(new int[this.SegmentSize]);
+        this.segments.add(new int[SegmentSize]);
         this.growMissing();
     }
 
     @SuppressWarnings("Duplicates")
     public void append(final int value) {
-        final int segmentId = this.size >> this.LogSegmentSize;
-        final int localIndex = this.size & this.SegmentMask;
+        final int segmentId = this.size >> LogSegmentSize;
+        final int localIndex = this.size & SegmentMask;
         if (this.segments.size() <= segmentId)
             this.grow();
         this.segments.get(segmentId)[localIndex] = value;

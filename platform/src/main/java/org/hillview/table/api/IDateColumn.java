@@ -18,6 +18,7 @@
 package org.hillview.table.api;
 
 import net.openhft.hashing.LongHashFunction;
+import org.hillview.table.NoStringConverter;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
@@ -25,7 +26,7 @@ import java.time.Instant;
 
 public interface IDateColumn extends IColumn {
     @Override
-    default double asDouble(final int rowIndex, @Nullable final IStringConverter unused) {
+    default double asDouble(final int rowIndex, final IStringConverter unused) {
         if (isMissing(rowIndex))
             throw new MissingException(this, rowIndex);
         final Instant tmp = this.getDate(rowIndex);
@@ -65,7 +66,8 @@ public interface IDateColumn extends IColumn {
     default long hashCode64(int rowIndex, LongHashFunction hash) {
         if (isMissing(rowIndex))
             return MISSING_HASH_VALUE;
-        return hash.hashLong(Double.doubleToRawLongBits(this.asDouble(rowIndex, null)));
+        return hash.hashLong(Double.doubleToRawLongBits(this.asDouble(rowIndex,
+                NoStringConverter.getConverterInstance())));
     }
 
     @Override

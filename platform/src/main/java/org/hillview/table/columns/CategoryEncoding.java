@@ -28,30 +28,28 @@ import java.util.function.Consumer;
  */
 public class CategoryEncoding {
     // Map categorical value to a small integer
-    private final Object2IntOpenHashMap<String> encoding;
+    private final Object2IntOpenHashMap<String> intEncoding;
     // Decode small integer into categorical value
-    private final Int2ObjectOpenHashMap<String> decoding;
+    private final Int2ObjectOpenHashMap<String> intDecoding;
 
     CategoryEncoding() {
-        this.encoding = new Object2IntOpenHashMap<String>(100);
-        this.decoding = new Int2ObjectOpenHashMap<String>(100);
+        this.intEncoding = new Object2IntOpenHashMap<String>(100);
+        this.intDecoding = new Int2ObjectOpenHashMap<String>(100);
     }
 
     @Nullable
-    String decode(int code) {
-        return this.decoding.getOrDefault(code, null);
-    }
+    String decode(int code) { return this.intDecoding.getOrDefault(code, null); }
 
     int encode(@Nullable String value) {
-        if (this.encoding.containsKey(value))
-            return this.encoding.getInt(value);
-        int encoding = this.encoding.size();
-        this.encoding.put(value, encoding);
-        this.decoding.put(encoding, value);
+        if (this.intEncoding.containsKey(value))
+            return this.intEncoding.getInt(value);
+        int encoding = this.intEncoding.size();
+        this.intEncoding.put(value, encoding);
+        this.intDecoding.put(encoding, value);
         return encoding;
     }
 
     public void allDistinctStrings(Consumer<String> action) {
-        this.encoding.keySet().forEach(action);
+        this.intEncoding.keySet().forEach(action);
     }
 }

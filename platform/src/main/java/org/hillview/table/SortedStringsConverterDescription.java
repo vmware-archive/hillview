@@ -47,8 +47,6 @@ public class SortedStringsConverterDescription implements IStringConverterDescri
         this.max = max;
         if (boundaries.length < 1)
             throw new RuntimeException("Cannot have empty boundaries");
-        if ((boundaries.length == 1) && (this.min < this.max))
-            throw new RuntimeException("1 value requires a point interval");
         this.boundaries = boundaries;
     }
 
@@ -83,7 +81,7 @@ public class SortedStringsConverterDescription implements IStringConverterDescri
             return index;
         }
 
-        public double computeIndex(String string) {
+        public double computeIndex(@Nullable String string) {
             SortedStringsConverterDescription desc = SortedStringsConverterDescription.this;
             int index = Arrays.binarySearch(desc.boundaries, string);
             // This method returns index of the search key, if it is contained in the array,

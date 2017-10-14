@@ -63,14 +63,13 @@ public class FindFilesMapper implements IMap<Empty, List<String>> {
 
     @Override
     public List<String> apply(Empty empty) {
-        Path currentRelativePath = Paths.get("");
-        String cwd = currentRelativePath.toAbsolutePath().toString();
-        HillviewLogger.instance.info("Current directory is", "{0}", cwd);
+        Path dir = Paths.get(this.folder);
+        HillviewLogger.instance.info("Find files in folder", "{0}",
+                dir.toAbsolutePath().toString());
 
-        Path folder = Paths.get(this.folder);
         Stream<Path> files;
         try {
-            files = Files.walk(folder, 1, FileVisitOption.FOLLOW_LINKS);
+            files = Files.walk(dir, 1, FileVisitOption.FOLLOW_LINKS);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

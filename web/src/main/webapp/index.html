@@ -41,11 +41,11 @@
                 but[i].style.display = "none";
 
             // load the data
-            if (arg < 5)
+            if (arg < 6)
                 initialObject.loadFiles(arg);
-            else if (arg == 5)
-                initialObject.loadLogs();
             else if (arg == 6)
+                initialObject.loadLogs();
+            else if (arg == 7)
                 initialObject.loadDBTable();
         }
     </script>
@@ -59,8 +59,9 @@
         <button class="button" onclick="loadTable(2)">vrOps</button>
         <button class="button" onclick="loadTable(3)">MNIST</button>
         <button class="button" onclick="loadTable(4)">Image segmentation</button>
-        <button class="button" onclick="loadTable(5)">Hillview logs</button>
-        <button class="button" onclick="loadTable(6)">MySQL table</button>
+        <button class="button" onclick="loadTable(5)">Criteo (sample)</button>
+        <button class="button" onclick="loadTable(6)">Hillview logs</button>
+        <button class="button" onclick="loadTable(7)">MySQL table</button>
         <div id="top"></div>
     </div>
 </body>

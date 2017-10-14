@@ -43,7 +43,6 @@ public final class DurationArrayColumn extends DoubleArrayColumn
         this.checkKind(ContentsKind.Duration);
     }
 
-    @Nullable
     @Override
     public Duration getDuration(final int rowIndex) {
         return Converters.toDuration(this.getDouble(rowIndex));

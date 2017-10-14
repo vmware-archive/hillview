@@ -24,8 +24,8 @@ cpp/main
 platform/platform.iml
 web/web.iml
 
-hillview.log
-test.log
+*.log
+*.log.lck
 out
 apache-tomcat-*
 web/classes
