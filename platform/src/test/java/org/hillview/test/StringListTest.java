@@ -18,6 +18,7 @@
 package org.hillview.test;
 
 import org.hillview.table.ColumnDescription;
+import org.hillview.table.columns.BaseListColumn;
 import org.hillview.table.columns.StringListColumn;
 import org.hillview.table.api.ContentsKind;
 import org.junit.Assert;
@@ -56,7 +57,7 @@ public class StringListTest extends BaseTest {
     public void testStringColumnSparse() {
         // exercises a corner case in column growth
         final StringListColumn col = new StringListColumn(this.desc);
-        int ss = col.SegmentSize;
+        int ss = BaseListColumn.SegmentSize;
         for (int i = 0; i < (2 * ss); i++)
             col.appendMissing();
 

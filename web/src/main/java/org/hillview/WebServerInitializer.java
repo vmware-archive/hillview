@@ -29,7 +29,7 @@ public class WebServerInitializer implements ServletContextListener {
     // This is run before the web application is started.
     @Override
     public void contextInitialized(ServletContextEvent arg) {
-        HillviewLogger.initialize("hillview-web.log");
+        HillviewLogger.initialize("web server", "hillview-web.log");
         HillviewLogger.instance.info("Server started");
     }
 }

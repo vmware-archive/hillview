@@ -20,6 +20,7 @@ package org.hillview.maps;
 import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IMap;
 import org.hillview.storage.CsvFileReader;
+import org.hillview.table.Schema;
 import org.hillview.utils.CsvFileObject;
 import org.hillview.utils.HillviewLogger;
 
@@ -45,6 +46,8 @@ public class FindCsvFileMapper implements IMap<Empty, List<CsvFileObject>> {
     @Nullable
     private final String fileNamePattern;
     @Nullable
+    private final String schemaPath;
+    @Nullable
     private final CsvFileReader.CsvConfiguration config;
 
     /**
@@ -56,8 +59,10 @@ public class FindCsvFileMapper implements IMap<Empty, List<CsvFileObject>> {
      */
     public FindCsvFileMapper(String folder, int maxCount,
                              @Nullable String fileNamePattern,
+                             @Nullable String schemaPath,
                              @Nullable CsvFileReader.CsvConfiguration config) {
         this.folder = folder;
+        this.schemaPath = schemaPath;
         this.maxCount = maxCount;
         this.fileNamePattern = fileNamePattern;
         this.config = config;
@@ -65,16 +70,18 @@ public class FindCsvFileMapper implements IMap<Empty, List<CsvFileObject>> {
 
     @Override
     public List<CsvFileObject> apply(Empty empty) {
-        Path currentRelativePath = Paths.get("");
-        String cwd = currentRelativePath.toAbsolutePath().toString();
-        HillviewLogger.instance.info("Current directory", "{0}", cwd);
-
-        Path folder = Paths.get(this.folder);
+        if (this.config != null && this.schemaPath != null) {
+            Path sp = Paths.get(this.folder, this.schemaPath);
+            this.config.schema = Schema.readFromJsonFile(sp);
+        }
+        Path dir = Paths.get(this.folder);
+        HillviewLogger.instance.info("Find files in folder", "{0}",
+                dir.toAbsolutePath().toString());
         final List<CsvFileObject> result = new ArrayList<CsvFileObject>();
 
         Stream<Path> files;
         try {
-            files = Files.walk(folder, 1, FileVisitOption.FOLLOW_LINKS);
+            files = Files.walk(dir, 1, FileVisitOption.FOLLOW_LINKS);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

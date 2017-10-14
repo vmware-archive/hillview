@@ -48,15 +48,51 @@ public class CsvReaderTest extends BaseTest {
     private static final String dataFolder = "../data";
     private static final String csvFile = "On_Time_Sample.csv";
     private static final String schemaFile = "On_Time.schema";
+    private static final String csvFileC = "criteoTab.csv";
+    private static final String schemaFileC = "criteo.schema";
+    private static final String csvGZ = "criteoTab.gz";
 
     private ITable readTable(String folder, String file) throws IOException {
         Path path = Paths.get(folder, file);
         CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
         config.allowFewerColumns = false;
-        config.hasHeaderRow = true;
-        config.allowMissingData = false;
+        config.hasHeaderRow = false;
+        config.allowMissingData = true;
         CsvFileReader r = new CsvFileReader(path, config);
         return r.read();
+    }
+
+    @Test
+    public void readCsvFileWithSchemaCriteoTest() throws IOException {
+        Path path = Paths.get(dataFolder, schemaFileC);
+        Schema schema = Schema.readFromJsonFile(path);
+        path = Paths.get(dataFolder, csvFileC);
+        CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
+        config.allowFewerColumns = false;
+        config.hasHeaderRow = false;
+        config.allowMissingData = true;
+        config.schema = schema;
+        config.separator = '\t';
+        CsvFileReader r = new CsvFileReader(path, config);
+        ITable t = r.read();
+        Assert.assertNotNull(t);
+    }
+
+    @Test
+    public void readGzFileWithSchemaTest() throws IOException {
+        Path path = Paths.get(dataFolder, schemaFileC);
+        Schema schema = Schema.readFromJsonFile(path);
+        path = Paths.get(dataFolder, csvGZ);
+        CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
+        config.allowFewerColumns = false;
+        config.hasHeaderRow = false;
+        config.allowMissingData = true;
+        config.schema = schema;
+        config.separator = '\t';
+        CsvFileReader r = new CsvFileReader(path, config);
+        System.out.println(path.getFileName().toString());
+        ITable t = r.read();
+        Assert.assertNotNull(t);
     }
 
     @Test

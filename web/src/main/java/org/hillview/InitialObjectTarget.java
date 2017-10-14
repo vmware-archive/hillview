@@ -136,13 +136,15 @@ public class InitialObjectTarget extends RpcTarget {
         } else if (which == 4) {
             fileNamePattern = "segmentation.csv";
             schemaFile = "segmentation.schema";
+        } else if (which == 5) {
+            config.separator = '\t';
+            fileNamePattern = "criteoTab.gz";
+            schemaFile = "criteo.schema";
         } else {
             throw new RuntimeException("Unexpected operation " + which);
-        }
-
-        Path schemaPath = Paths.get(dataFolder, schemaFile);
-        config.schema = Schema.readFromJsonFile(schemaPath);
-        finder = new FindCsvFileMapper(dataFolder, limit, fileNamePattern, config);
+		}
+		
+        finder = new FindCsvFileMapper(dataFolder, limit, fileNamePattern, schemaFile, config);
 
         HillviewLogger.instance.info("Preparing files");
         this.runFlatMap(this.emptyDataset, finder, CsvFileTarget::new, request, context);

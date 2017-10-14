@@ -26,10 +26,12 @@ import org.junit.Ignore;
  */
 @Ignore
 public class BaseTest {
+    static boolean initialized = false;
+
     @BeforeClass
     public static void setup() {
-        //noinspection ConstantConditions
-        if (HillviewLogger.instance == null)
-            HillviewLogger.initialize("test.log");
+        if (!initialized)
+            HillviewLogger.initialize("test", "test.log");
+        initialized = true;
     }
 }

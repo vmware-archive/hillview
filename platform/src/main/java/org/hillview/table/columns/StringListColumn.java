@@ -44,15 +44,15 @@ public class StringListColumn extends BaseListColumn implements IStringColumn {
     @Nullable
     @Override
     public String getString(final int rowIndex) {
-        final int segmentId = rowIndex >> this.LogSegmentSize;
-        final int localIndex = rowIndex & this.SegmentMask;
+        final int segmentId = rowIndex >> LogSegmentSize;
+        final int localIndex = rowIndex & SegmentMask;
         String[] segment = this.segments.get(segmentId);
         return segment[localIndex];
     }
 
     @Override
     void grow() {
-        this.segments.add(new String[this.SegmentSize]);
+        this.segments.add(new String[SegmentSize]);
         this.growMissing();
     }
 
@@ -61,8 +61,8 @@ public class StringListColumn extends BaseListColumn implements IStringColumn {
         if (value != null)
             value = value.intern();
 
-        final int segmentId = this.size >> this.LogSegmentSize;
-        final int localIndex = this.size & this.SegmentMask;
+        final int segmentId = this.size >> LogSegmentSize;
+        final int localIndex = this.size & SegmentMask;
         if (this.segments.size() <= segmentId)
             this.grow();
         this.segments.get(segmentId)[localIndex] = value;

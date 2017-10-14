@@ -45,21 +45,21 @@ public class DoubleListColumn
 
     @Override
     public double getDouble(final int rowIndex) {
-        final int segmentId = rowIndex >> this.LogSegmentSize;
-        final int localIndex = rowIndex & this.SegmentMask;
+        final int segmentId = rowIndex >> LogSegmentSize;
+        final int localIndex = rowIndex & SegmentMask;
         return this.segments.get(segmentId)[localIndex];
     }
 
     @Override
     void grow() {
-        this.segments.add(new double[this.SegmentSize]);
+        this.segments.add(new double[SegmentSize]);
         this.growMissing();
     }
 
     @SuppressWarnings("Duplicates")
     public void append(final double value) {
-        final int segmentId = this.size >> this.LogSegmentSize;
-        final int localIndex = this.size & this.SegmentMask;
+        final int segmentId = this.size >> LogSegmentSize;
+        final int localIndex = this.size & SegmentMask;
         if (this.segments.size() <= segmentId)
             this.grow();
         this.segments.get(segmentId)[localIndex] = value;

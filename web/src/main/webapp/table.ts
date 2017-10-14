@@ -281,6 +281,16 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         return null;
     }
 
+    public static dropColumns(schema: Schema, filter: (IColumnDescription) => boolean): Schema {
+        let cols: IColumnDescription[] = [];
+        for (let i=0; i < schema.length; i++) {
+            let c = schema[i];
+            if (!filter(c))
+                cols.push(c);
+        }
+        return cols;
+    }
+
     getSortOrder(column: string): [boolean, number] {
         for (let i = 0; i < this.order.length(); i++) {
             let o = this.order.get(i);
@@ -499,6 +509,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
                 } else {
                     this.contextMenu.addItem({text: "Show", action: () => this.showColumns(1, false)});
                 }
+                this.contextMenu.addItem({text: "Drop", action: () => this.dropColumns() });
                 this.contextMenu.addItem({text: "Sort ascending", action: () => this.showColumns(1, true) });
                 this.contextMenu.addItem({text: "Sort descending", action: () => this.showColumns(-1, true) });
                 //if (cd.kind != "Json" && cd.kind != "String")
@@ -555,8 +566,14 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         this.reportError("Operation took " + significantDigits(elapsedMs/1000) + " seconds");
     }
 
+    dropColumns(): void {
+        let schema = TableView.dropColumns(this.schema, c => this.selectedColumns.has(c.name));
+        this.currentData.schema = schema;
+        this.refresh();
+    }
+
     public setSchema(schema: Schema): void {
-        if (this.schema == null)
+        if (schema != null)
             this.schema = schema;
     }
 

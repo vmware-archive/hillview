@@ -36,14 +36,14 @@ public class ColumnTest extends BaseTest {
 
         final ColumnDescription desc = new ColumnDescription("test", ContentsKind.Integer, false);
         col = new IntArrayColumn(desc, size);
-        for (int i=0; i < size; i++)
+        for (int i = 0; i < size; i++)
             col.set(i, i);
 
-        assertEquals( col.sizeInRows(), size );
-        assertEquals( col.getInt(0), 0 );
-        for (int i=0; i < size; i++)
+        assertEquals(col.sizeInRows(), size);
+        assertEquals(col.getInt(0), 0);
+        for (int i = 0; i < size; i++)
             assertEquals(i, col.getInt(i));
-        assertEquals( col.asDouble(0, NoStringConverter.getConverterInstance()), 0.0, 1e-3 );
+        assertEquals(col.asDouble(0, NoStringConverter.getConverterInstance()), 0.0, 1e-3);
     }
 
     @Test
@@ -53,14 +53,14 @@ public class ColumnTest extends BaseTest {
 
         final ColumnDescription desc = new ColumnDescription("test", ContentsKind.Double, false);
         col = new DoubleListColumn(desc);
-        for (int i=0; i < size; i++)
-            col.append((double)i);
+        for (int i = 0; i < size; i++)
+            col.append((double) i);
 
-        assertEquals( col.sizeInRows(), size );
-        assertEquals( col.getDouble(0), 0.0, 10e-3 );
-        for (int i=0; i < size; i++)
-            assertEquals((double)i, col.getDouble(i), 1e-3);
-        assertEquals( col.asDouble(0, NoStringConverter.getConverterInstance()), 0.0, 1e-3 );
+        assertEquals(col.sizeInRows(), size);
+        assertEquals(col.getDouble(0), 0.0, 10e-3);
+        for (int i = 0; i < size; i++)
+            assertEquals((double) i, col.getDouble(i), 1e-3);
+        assertEquals(col.asDouble(0, null), 0.0, 1e-3);
     }
 
     @Test
@@ -69,17 +69,24 @@ public class ColumnTest extends BaseTest {
         CategoryListColumn col = new CategoryListColumn(desc);
         col.append("First");
         col.append("First");
-        col.append((String)null);
+        col.append((String) null);
         col.appendMissing();
         col.append("Second");
+        for (int i = 0; i < 100000; i++) {
+            col.append(Integer.toString(i));
+            col.append("First");
+        }
         col.seal();
         Assert.assertTrue(col.isMissing(2));
         Assert.assertTrue(col.isMissing(3));
         Assert.assertFalse(col.isMissing(0));
-        Assert.assertEquals(col.sizeInRows(), 5);
         Assert.assertEquals(col.getString(0), "First");
         Assert.assertEquals(col.getString(1), "First");
         Assert.assertEquals(col.getString(2), null);
         Assert.assertEquals(col.getString(4), "Second");
+        Assert.assertEquals(col.getString(264), "First");
+        Assert.assertEquals(col.getString(265), "130");
+        Assert.assertEquals(col.getString(266), "First");
+        Assert.assertEquals(col.getString(100004), "First");
     }
 }

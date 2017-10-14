@@ -18,81 +18,139 @@
 package org.hillview.utils;
 
 import org.apache.commons.lang.StringEscapeUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
+import java.io.IOException;
+import java.text.DateFormat;
 import java.text.MessageFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.logging.*;
 
-public class HillviewLogger implements IHillviewLogger {
+/**
+ * Core API for logging in hillview.
+ * The hillview logging keeps each log message on a single line.
+ * It uses commas to separate the fields.
+ * The result produced by format and arguments is escaped: quotes and newlines are escaped.
+ * This is a typical log message format
+2017-10-12 02:18:29.084,worker,INFO,ubuntu,pool-1-thread-1,org.hillview.maps.FindCsvFileMapper,apply,Find files in folder,/hillview/data
+_______date_______________who__level_machine___thread___________class__________________________method__message______________args_________
+ */
+public class HillviewLogger {
+    // Actual logging channel.
     private final Logger logger;
+    // Machine where the core is running.
     private final String machine;
-    // This can be null if not initialized, but I am not using the Nullable annotation
-    // so I don't have to check everywhere.
-    @SuppressWarnings("NullableProblems")
-    public static HillviewLogger instance;
+    // Role of machine (worker or web server).
+    private final String role;
+    // Default logger if users forget to initialize
+    public static HillviewLogger instance = new HillviewLogger("none", null);
 
-    private HillviewLogger(String filename) {
-        System.setProperty("org.slf4j.simpleLogger.showDateTime", "true");
-        System.setProperty("org.slf4j.simpleLogger.showThreadName", "true");
-        System.setProperty("org.slf4j.simpleLogger.dateTimeFormat", "yyyy-MM-dd HH:mm:ss.SSS");
-        System.setProperty("org.slf4j.simpleLogger.logFile", filename);
-        this.logger = LoggerFactory.getLogger("Hillview");
-        this.machine = Utilities.getHostName();
+    private HillviewLogger(String role, @Nullable String filename) {
+        this.logger = Logger.getLogger("Hillview");
+        this.machine = this.checkCommas(Utilities.getHostName());
+        this.role = this.checkCommas(role);
+        this.logger.setLevel(Level.INFO);
+
+        if (filename != null) {
+            try {
+                Handler[] hs = logger.getHandlers();
+                for (Handler h : hs)
+                    logger.removeHandler(h);
+                FileHandler fh = new FileHandler(filename);
+                fh.setFormatter(new SimpleFormatter() {
+                    final String[] components = new String[5];
+                    final String newline = System.lineSeparator();
+                    private final DateFormat df = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss.SSS");
+                    @Override
+                    public synchronized String format(LogRecord record) {
+                        this.components[0] = HillviewLogger.this.checkCommas(
+                                df.format(new Date(record.getMillis())));
+                        this.components[1] = HillviewLogger.this.role;
+                        this.components[2] = HillviewLogger.this.checkCommas(
+                                record.getLevel().toString());
+                        this.components[3] = HillviewLogger.this.machine;
+                        this.components[4] = record.getMessage();
+                        String result = String.join(",", components);
+                        return result + this.newline;
+                    }
+                });
+                logger.addHandler(fh);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        this.info("Starting logger", "Working directory: {0}", System.getProperty("user.dir"));
     }
 
-    public static void initialize(String filename) {
-        instance = new HillviewLogger(filename);
+    public static void initialize(String role, String filename) {
+        instance = new HillviewLogger(role, filename);
     }
 
-    @Override
+    public void shutdown() {
+        Handler[] hs = this.logger.getHandlers();
+        for (Handler h : hs)
+            h.close();
+    }
+
     public void info(String message, String format, Object... arguments) {
-        if (!this.logger.isInfoEnabled())
+        if (!this.logger.isLoggable(Level.INFO))
             return;
         String text = this.createMessage(message, format, arguments);
         this.logger.info(text);
     }
 
-    @Override
     public void warn(String message, String format, Object... arguments) {
-        if (!this.logger.isWarnEnabled())
+        if (!this.logger.isLoggable(Level.WARNING))
             return;
         String text = this.createMessage(message, format, arguments);
-        this.logger.warn(text);
+        this.logger.warning(text);
     }
 
-    @Override
     public void debug(String message, String format, Object... arguments) {
-        if (!this.logger.isDebugEnabled())
+        if (!this.logger.isLoggable(Level.INFO))
             return;
         String text = this.createMessage(message, format, arguments);
-        this.logger.debug(text);
+        this.logger.log(Level.INFO, text);
     }
 
-    @Override
     public void error(String message, Throwable ex) {
         String text = this.createMessage(message, "{0}", Utilities.throwableToString(ex));
-        this.logger.error(text);
+        this.logger.severe(text);
     }
 
-    @Override
     public void error(String message, String format, Object... arguments) {
         String text = this.createMessage(message, format, arguments);
-        this.logger.error(text);
+        this.logger.severe(text);
+    }
+
+    private String checkCommas(String str) {
+        if (str.contains(","))
+            throw new RuntimeException("Message should contain no commas: " + str);
+        return str;
     }
 
     protected String createMessage(String message, String format, Object... arguments) {
-        if (message.contains(","))
-            throw new RuntimeException("Format message should contain no commas: " + message);
+        message = this.checkCommas(message);
         String text = MessageFormat.format(format, arguments);
-        StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
+        Thread current = Thread.currentThread();
+        StackTraceElement[] stackTraceElements = current.getStackTrace();
         StackTraceElement caller = stackTraceElements[3];
         String quoted = this.quote(text);
-        return String.join(",", this.machine, caller.getClassName(), caller.getMethodName(),
-                message, quoted);
+        return String.join(",", current.getName(), caller.getClassName(),
+                caller.getMethodName(), message, quoted);
     }
 
     protected String quote(String message) {
         message = message.replace("\n", "\\n");
         return StringEscapeUtils.escapeCsv(message);
     }
+
+    public void info(String message) { this.info(message, ""); }
+
+    public void warn(String message) { this.warn(message, ""); }
+
+    public void debug(String message) { this.debug(message, ""); }
+
+    public void error(String message) { this.error(message, ""); }
 }
