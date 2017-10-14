@@ -63,25 +63,29 @@ public class SortedStringsConverterDescription implements IStringConverterDescri
 
     public class Converter implements IStringConverter {
         private final Object2DoubleOpenHashMap<String> memoizedResults;
+        // The smallest value given by computeIndex is -1.
+        private final double keyNotFound;
+        private static final double EPSILON = 0.01;
 
         public Converter() {
             this.memoizedResults = new Object2DoubleOpenHashMap<String>();
+            this.keyNotFound = (boundaries.length) + 2;
         }
 
         @Override
         public double asDouble(@Nullable String string) {
-            if (memoizedResults.containsKey(string)) {
-                return memoizedResults.getDouble(string);
+            double index = memoizedResults.getOrDefault(string, keyNotFound);
+            if (index < keyNotFound - EPSILON) {
+                return index;
             }
-            final double index = computeIndex(string);
+            index = computeIndex(string);
             this.memoizedResults.put(string, index);
             return index;
         }
 
         public double computeIndex(String string) {
             SortedStringsConverterDescription desc = SortedStringsConverterDescription.this;
-            int index = Arrays.binarySearch(
-                    desc.boundaries, string);
+            int index = Arrays.binarySearch(desc.boundaries, string);
             // This method returns index of the search key, if it is contained in the array,
             // else it returns (-(insertion point) - 1). The insertion point is the point
             // at which the key would be inserted into the array: the index of the first
