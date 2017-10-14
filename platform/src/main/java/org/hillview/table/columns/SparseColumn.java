@@ -19,7 +19,7 @@ package org.hillview.table.columns;
 
 import net.openhft.hashing.LongHashFunction;
 import org.hillview.table.ColumnDescription;
-import org.hillview.table.NoOpStringConverter;
+import org.hillview.table.NoStringConverter;
 import org.hillview.table.api.*;
 import org.hillview.utils.Converters;
 
@@ -108,8 +108,8 @@ public class SparseColumn extends BaseColumn
                 case Date:
                 case Double:
                 case Duration:
-                    return Double.compare(SparseColumn.this.asDouble(o1, NoOpStringConverter.getConverterInstance()),
-                            SparseColumn.this.asDouble(o2, NoOpStringConverter.getConverterInstance()));
+                    return Double.compare(SparseColumn.this.asDouble(o1, NoStringConverter.getConverterInstance()),
+                            SparseColumn.this.asDouble(o2, NoStringConverter.getConverterInstance()));
                 default:
                     throw new RuntimeException("Unexpected kind " +
                             SparseColumn.this.description.kind);
@@ -134,7 +134,7 @@ public class SparseColumn extends BaseColumn
             case Double:
             case Duration:
                 return hash.hashLong(Double.doubleToRawLongBits(this.asDouble(rowIndex,
-                                                                NoOpStringConverter.getConverterInstance())));
+                                                                NoStringConverter.getConverterInstance())));
             default:
                 throw new RuntimeException("Unexpected kind " + this.description.kind);
         }

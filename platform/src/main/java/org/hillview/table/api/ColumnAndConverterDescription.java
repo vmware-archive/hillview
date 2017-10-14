@@ -18,7 +18,7 @@
 package org.hillview.table.api;
 
 import org.hillview.dataset.api.IJson;
-import org.hillview.table.NoOpStringConverter;
+import org.hillview.table.NoStringConverter;
 
 import java.io.Serializable;
 
@@ -44,7 +44,7 @@ public class ColumnAndConverterDescription implements Serializable, IJson {
     }
 
     public ColumnAndConverterDescription(String columnName) {
-        this(columnName, NoOpStringConverter.getDescriptionInstance());
+        this(columnName, NoStringConverter.getDescriptionInstance());
     }
 
     public IStringConverter getConverter() {

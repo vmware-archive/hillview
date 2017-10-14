@@ -27,23 +27,23 @@ import java.util.BitSet;
  * Adds a missing bit vector to BaseColumn (if missing values are allowed)
  */
 public abstract class BaseArrayColumn extends BaseColumn implements Serializable {
-    protected BitSet missing;
+    protected BitSet missing = new BitSet();
 
     public BaseArrayColumn(final ColumnDescription description, final int size) {
         super(description);
         if (size < 0)
             throw new InvalidParameterException("Size must be positive: " + size);
-        this.missing = new BitSet(size);
+        if (description.allowMissing) {
+            this.missing = new BitSet(size);
+        }
     }
 
     @Override
     public boolean isMissing(final int rowIndex) {
-        // Ignore the analysis complaint. this.missing can not be null.
         return this.missing.get(rowIndex);
     }
 
     public void setMissing(final int rowIndex) {
-        // Ignore the analysis complaint. this.missing can not be null.
         this.missing.set(rowIndex);
     }
 

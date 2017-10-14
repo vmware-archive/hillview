@@ -17,7 +17,7 @@
 
 package org.hillview.table.filters;
 
-import org.hillview.table.NoOpStringConverter;
+import org.hillview.table.NoStringConverter;
 import org.hillview.table.SortedStringsConverterDescription;
 import org.hillview.table.api.*;
 
@@ -34,7 +34,7 @@ public class RangeFilterDescription implements ITableFilterDescription {
 
     @Override
     public ITableFilter getFilter(ITable table) {
-        IStringConverterDescription conv = NoOpStringConverter.getDescriptionInstance();
+        IStringConverterDescription conv = NoStringConverter.getDescriptionInstance();
         if (this.bucketBoundaries != null) {
             conv = new SortedStringsConverterDescription(
                     this.bucketBoundaries, (int) Math.ceil(this.min), (int) Math.floor(this.max));

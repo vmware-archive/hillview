@@ -17,7 +17,7 @@
 
 package org.hillview.table.api;
 
-import org.hillview.table.NoOpStringConverter;
+import org.hillview.table.NoStringConverter;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
@@ -38,7 +38,7 @@ public class ColumnAndConverter {
     }
 
     public ColumnAndConverter(IColumn column) {
-        this(column, NoOpStringConverter.getConverterInstance());
+        this(column, NoStringConverter.getConverterInstance());
     }
 
     public String getName() { return this.column.getName(); }
