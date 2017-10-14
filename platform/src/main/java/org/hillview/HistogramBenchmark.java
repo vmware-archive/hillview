@@ -19,6 +19,7 @@ import org.hillview.utils.HillviewLogger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
 
 /**
  * Benchmark
@@ -86,7 +87,7 @@ public class HistogramBenchmark {
         final int colSize = 100 * mega;
         final int runCount = Integer.parseInt(args[1]);
 
-        HillviewLogger.initialize("/dev/null");
+        HillviewLogger.instance.setLogLevel(Level.OFF);
 
         BucketsDescriptionEqSize buckDes = new BucketsDescriptionEqSize(0, 100, bucketNum);
         final Histogram hist = new Histogram(buckDes);
