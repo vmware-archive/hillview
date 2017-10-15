@@ -31,6 +31,7 @@ import org.hillview.pb.HillviewServerGrpc;
 import org.hillview.pb.PartialResponse;
 import org.hillview.dataset.remoting.*;
 import org.hillview.utils.Converters;
+import org.hillview.utils.ExecutorUtils;
 import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.JsonList;
 import rx.Observable;
@@ -62,7 +63,8 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
     public RemoteDataSet(final HostAndPort serverEndpoint, final int remoteHandle) {
         this.serverEndpoint = serverEndpoint;
         this.remoteHandle = remoteHandle;
-        final ExecutorService executorService = Executors.newFixedThreadPool(5);
+        final ExecutorService executorService =
+                ExecutorUtils.newNamedThreadPool("remote-data-set:" + serverEndpoint, 5);
         final EventLoopGroup nettyElg = new NioEventLoopGroup(1);
         this.stub = HillviewServerGrpc.newStub(NettyChannelBuilder
                 .forAddress(serverEndpoint.getHost(), serverEndpoint.getPort())

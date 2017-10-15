@@ -1,8 +1,16 @@
 package org.hillview;
 
+import com.google.common.net.HostAndPort;
+import io.netty.util.internal.logging.InternalLoggerFactory;
+import io.netty.util.internal.logging.JdkLoggerFactory;
+import io.netty.util.internal.logging.Log4J2LoggerFactory;
+import io.netty.util.internal.logging.Log4JLoggerFactory;
+import io.netty.util.internal.logging.Slf4JLoggerFactory;
 import org.hillview.dataset.LocalDataSet;
+import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.ISketch;
+import org.hillview.dataset.remoting.HillviewServer;
 import org.hillview.sketches.BucketsDescriptionEqSize;
 import org.hillview.sketches.Histogram;
 import org.hillview.sketches.HistogramSketch;
@@ -17,9 +25,12 @@ import org.hillview.table.api.ITable;
 import org.hillview.table.columns.DoubleArrayColumn;
 import org.hillview.utils.HillviewLogger;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
+import java.util.logging.LogManager;
+import java.util.logging.Logger;
 
 /**
  * Benchmark
@@ -27,6 +38,17 @@ import java.util.logging.Level;
 public class HistogramBenchmark {
     private static final ColumnDescription desc = new
             ColumnDescription("SQRT", ContentsKind.Double, true);
+    private static final Logger GRPC_LOGGER;
+    private static final Logger NETTY_LOGGER;
+
+    static {
+        InternalLoggerFactory.setDefaultFactory(new JdkLoggerFactory());
+        HillviewLogger.instance.setLogLevel(Level.OFF);
+        GRPC_LOGGER = Logger.getLogger("io.grpc");
+        GRPC_LOGGER.setLevel(Level.WARNING);
+        NETTY_LOGGER = Logger.getLogger("io.grpc.netty.NettyServerHandler");
+        NETTY_LOGGER.setLevel(Level.OFF);
+    }
 
     /**
      * Generates a double array with every fifth entry missing
@@ -80,14 +102,12 @@ public class HistogramBenchmark {
     }
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         // Testing the performance of histogram computations
         final int bucketNum = 40;
         final int mega = 1024 * 1024;
         final int colSize = 100 * mega;
         final int runCount = Integer.parseInt(args[1]);
-
-        HillviewLogger.instance.setLogLevel(Level.OFF);
 
         BucketsDescriptionEqSize buckDes = new BucketsDescriptionEqSize(0, 100, bucketNum);
         final Histogram hist = new Histogram(buckDes);
@@ -115,5 +135,32 @@ public class HistogramBenchmark {
             Runnable r = () -> lds.blockingSketch(sk);
             runNTimes(r, runCount, "Dataset histogram (separate thread)", colSize);
         }
+
+        if (args[0].equals("remote")) {
+            // Setup server
+            final HostAndPort serverAddress = HostAndPort.fromParts("127.0.0.1",1234);
+            final IDataSet<ITable> lds = new LocalDataSet<ITable>(table);
+            final HillviewServer server = new HillviewServer(serverAddress, lds);
+
+            // Setup client
+            final IDataSet<ITable> remoteIds = new RemoteDataSet<ITable>(serverAddress);
+            Runnable r = () -> remoteIds.blockingSketch(sk);
+            runNTimes(r, runCount, "Dataset histogram (separate thread)", colSize);
+        }
+
+        if (args[0].equals("remote-no-memoization")) {
+            // Setup server
+            final HostAndPort serverAddress = HostAndPort.fromParts("127.0.0.1",1234);
+            final IDataSet<ITable> lds = new LocalDataSet<ITable>(table);
+            final HillviewServer server = new HillviewServer(serverAddress, lds);
+            server.toggleMemoization();
+
+            // Setup client
+            final IDataSet<ITable> remoteIds = new RemoteDataSet<ITable>(serverAddress);
+            Runnable r = () -> remoteIds.blockingSketch(sk);
+            runNTimes(r, runCount, "Dataset histogram (separate thread)", colSize);
+        }
+
+        System.exit(0);
     }
 }

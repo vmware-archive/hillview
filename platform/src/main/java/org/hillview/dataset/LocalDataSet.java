@@ -18,6 +18,7 @@
 package org.hillview.dataset;
 
 import org.hillview.dataset.api.*;
+import org.hillview.utils.ExecutorUtils;
 import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.JsonList;
 import rx.Observable;
@@ -53,7 +54,7 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
     static {
         int cpuCount = Runtime.getRuntime().availableProcessors();
         HillviewLogger.instance.info("Detect CPUs", "Using {0} processors", cpuCount);
-        ExecutorService executor = Executors.newFixedThreadPool(cpuCount);
+        ExecutorService executor = ExecutorUtils.newNamedThreadPool("computation", cpuCount);
         scheduler = Schedulers.from(executor);
     }
 
