@@ -19,7 +19,7 @@ public class ExecutorUtils {
     /**
      * Thread pool with standard threads
      */
-    public static synchronized ExecutorService newNamedThreadPool(final String poolName, final int numThreads) {
+    public static ExecutorService newNamedThreadPool(final String poolName, final int numThreads) {
         return Executors.newFixedThreadPool(numThreads, newNamedThreadFactory(poolName));
     }
 
