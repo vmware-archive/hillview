@@ -49,7 +49,8 @@ public class ExecutorUtils {
     }
 
     /**
-     * Standard threads with an exception handler.
+     * Use for all compute heavy tasks. For the time being, only used by LocalDataSet if it uses
+     * a separate thread for compute.
      */
     public static synchronized ExecutorService getComputeExecutorService() {
         if (computeExecutorService == null) {

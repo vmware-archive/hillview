@@ -97,6 +97,7 @@ public class HistogramBenchmark {
         final int mega = 1024 * 1024;
         final int colSize = 100 * mega;
         final int runCount = Integer.parseInt(args[1]);
+        HillviewLogger.instance.setLogLevel(Level.OFF);
 
         BucketsDescriptionEqSize buckDes = new BucketsDescriptionEqSize(0, 100, bucketNum);
         final Histogram hist = new Histogram(buckDes);
