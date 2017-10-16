@@ -69,7 +69,6 @@
         creates: "{{service_folder}}/{{tomcat}}"
         src: "http://archive.apache.org/dist/tomcat/tomcat-8/v{{tomcat_version}}/bin/{{tomcat}}.tar.gz"
         dest: "{{service_folder}}"
-        copy: no
         remote_src: yes
       when: p.stat.isdir is not defined or p.stat.isdir == False
 

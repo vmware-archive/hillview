@@ -18,16 +18,22 @@
 package org.hillview;
 
 import com.google.common.net.HostAndPort;
+import io.netty.util.internal.logging.InternalLoggerFactory;
+import io.netty.util.internal.logging.JdkLoggerFactory;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.remoting.HillviewServer;
 import org.hillview.utils.HillviewLogger;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  * Brings up a single instance of a HillviewServer
  */
 public class HillviewServerRunner {
+
     static void usage() {
         System.out.println("Invalid number of arguments.\n" +
                 "Usage: java -jar <jarname> <port listen address>");

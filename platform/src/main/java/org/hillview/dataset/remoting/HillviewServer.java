@@ -36,6 +36,7 @@ import org.hillview.pb.Ack;
 import org.hillview.pb.Command;
 import org.hillview.pb.HillviewServerGrpc;
 import org.hillview.pb.PartialResponse;
+import org.hillview.utils.ExecutorUtils;
 import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.JsonList;
 import rx.Observable;
@@ -70,7 +71,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     private static final String LOCALHOST = "127.0.0.1";
     private static final int NUM_THREADS = 5;
     public static final int MAX_MESSAGE_SIZE = 20971520;
-    private final ExecutorService executorService = Executors.newFixedThreadPool(NUM_THREADS);
+    private final ExecutorService executorService = ExecutorUtils.newNamedThreadPool("server", NUM_THREADS);
     private final EventLoopGroup nettyElg = new NioEventLoopGroup(1);
     private final Server server;
     private final AtomicInteger dsIndex = new AtomicInteger(0);
