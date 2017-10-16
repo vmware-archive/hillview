@@ -60,7 +60,7 @@ public class ColumnTest extends BaseTest {
         assertEquals(col.getDouble(0), 0.0, 10e-3);
         for (int i = 0; i < size; i++)
             assertEquals((double) i, col.getDouble(i), 1e-3);
-        assertEquals(col.asDouble(0, null), 0.0, 1e-3);
+        assertEquals(col.asDouble(0, NoStringConverter.getConverterInstance()), 0.0, 1e-3);
     }
 
     @Test

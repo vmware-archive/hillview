@@ -24,16 +24,14 @@ import javax.annotation.Nullable;
 public interface IIntColumn extends IColumn {
     @Override
     default double asDouble(final int rowIndex, final IStringConverter unused) {
-        if (isMissing(rowIndex))
-            throw new MissingException(this, rowIndex);
+        assert !isMissing(rowIndex);
         return this.getInt(rowIndex);
     }
 
     @Nullable
     @Override
     default String asString(final int rowIndex) {
-        if (this.isMissing(rowIndex))
-            return null;
+        assert !this.isMissing(rowIndex);
         return Integer.toString(this.getInt(rowIndex));
     }
 
@@ -62,8 +60,7 @@ public interface IIntColumn extends IColumn {
 
     @Override
     default long hashCode64(int rowIndex, LongHashFunction hash) {
-        if (this.isMissing(rowIndex))
-            return MISSING_HASH_VALUE;
+        assert !this.isMissing(rowIndex);
         return hash.hashInt(this.getInt(rowIndex));
     }
 

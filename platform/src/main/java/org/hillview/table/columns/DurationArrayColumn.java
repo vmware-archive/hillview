@@ -65,11 +65,9 @@ public final class DurationArrayColumn extends DoubleArrayColumn
         return super.getDouble(rowIndex);
     }
 
-    @Nullable
     @Override
     public String asString(int rowIndex) {
-        if (this.isMissing(rowIndex))
-            return null;
+        assert !this.isMissing(rowIndex);
         return this.getDuration(rowIndex).toString();
     }
 

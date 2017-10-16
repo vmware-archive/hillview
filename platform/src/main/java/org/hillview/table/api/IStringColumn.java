@@ -25,8 +25,7 @@ import java.util.function.Function;
 public interface IStringColumn extends IColumn {
     @Override
     default double asDouble(final int rowIndex, final IStringConverter converter) {
-        if (isMissing(rowIndex))
-            throw new MissingException(this, rowIndex);
+        assert !isMissing(rowIndex);
         final String tmp = this.getString(rowIndex);
         return converter.asDouble(tmp);
     }
@@ -59,8 +58,7 @@ public interface IStringColumn extends IColumn {
 
     @Override
     default long hashCode64(int rowIndex, LongHashFunction hash) {
-        if (isMissing(rowIndex))
-            return MISSING_HASH_VALUE;
+        assert !isMissing(rowIndex);
         //noinspection ConstantConditions
         return hash.hashChars(this.getString(rowIndex));
     }

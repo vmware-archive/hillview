@@ -66,11 +66,9 @@ public final class DateArrayColumn
         return super.getDouble(rowIndex);
     }
 
-    @Nullable
     @Override
     public String asString(int rowIndex) {
-        if (this.isMissing(rowIndex))
-            return null;
+        assert !this.isMissing(rowIndex);
         return this.getDate(rowIndex).toString();
     }
 

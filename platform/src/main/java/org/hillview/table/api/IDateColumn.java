@@ -27,8 +27,7 @@ import java.time.Instant;
 public interface IDateColumn extends IColumn {
     @Override
     default double asDouble(final int rowIndex, final IStringConverter unused) {
-        if (isMissing(rowIndex))
-            throw new MissingException(this, rowIndex);
+        assert !isMissing(rowIndex);
         final Instant tmp = this.getDate(rowIndex);
         return Converters.toDouble(Converters.checkNull(tmp));
     }
@@ -36,8 +35,7 @@ public interface IDateColumn extends IColumn {
     @Nullable
     @Override
     default String asString(final int rowIndex) {
-        if (this.isMissing(rowIndex))
-            return null;
+        assert !this.isMissing(rowIndex);
         return Converters.checkNull(this.getDate(rowIndex)).toString();
     }
 
@@ -64,8 +62,7 @@ public interface IDateColumn extends IColumn {
 
     @Override
     default long hashCode64(int rowIndex, LongHashFunction hash) {
-        if (isMissing(rowIndex))
-            return MISSING_HASH_VALUE;
+        assert !isMissing(rowIndex);
         return hash.hashLong(Double.doubleToRawLongBits(this.asDouble(rowIndex,
                 NoStringConverter.getConverterInstance())));
     }

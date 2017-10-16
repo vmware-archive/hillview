@@ -31,6 +31,7 @@ public class CategoryEncoding {
     private final Object2IntOpenHashMap<String> intEncoding;
     // Decode small integer into categorical value
     private final Int2ObjectOpenHashMap<String> intDecoding;
+    private static final int KEY_NOT_FOUND = -1;
 
     CategoryEncoding() {
         this.intEncoding = new Object2IntOpenHashMap<String>(100);
@@ -41,8 +42,9 @@ public class CategoryEncoding {
     String decode(int code) { return this.intDecoding.getOrDefault(code, null); }
 
     int encode(@Nullable String value) {
-        if (this.intEncoding.containsKey(value))
-            return this.intEncoding.getInt(value);
+        final int ret = this.intEncoding.getOrDefault(value, KEY_NOT_FOUND);
+        if (ret != KEY_NOT_FOUND)
+            return ret;
         int encoding = this.intEncoding.size();
         this.intEncoding.put(value, encoding);
         this.intDecoding.put(encoding, value);

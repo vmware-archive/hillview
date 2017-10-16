@@ -66,7 +66,7 @@ public class CsvFileWriter {
             int nextRow = rowIter.getNextRow();
             while (nextRow >= 0) {
                 for (index = 0; index < cols.length; index++) {
-                    String d = cols[index].asString(nextRow);
+                    String d = cols[index].isMissing(nextRow) ? null : cols[index].asString(nextRow);
                     data[index] = d;
                 }
                 writer.writeRow(data);

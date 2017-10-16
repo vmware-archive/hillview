@@ -61,17 +61,21 @@ public class SortedStringsConverterDescription implements IStringConverterDescri
 
     public class Converter implements IStringConverter {
         private final Object2DoubleOpenHashMap<String> memoizedResults;
+        // The smallest value given by computeIndex is -1.
+        private final double keyNotFound;
 
         public Converter() {
             this.memoizedResults = new Object2DoubleOpenHashMap<String>();
+            this.keyNotFound = (boundaries.length) + 2;
         }
 
         @Override
         public double asDouble(@Nullable String string) {
-            if (memoizedResults.containsKey(string)) {
-                return memoizedResults.getDouble(string);
+            double index = memoizedResults.getOrDefault(string, keyNotFound);
+            if (index < keyNotFound) {
+                return index;
             }
-            final double index = computeIndex(string);
+            index = computeIndex(string);
             this.memoizedResults.put(string, index);
             return index;
         }
