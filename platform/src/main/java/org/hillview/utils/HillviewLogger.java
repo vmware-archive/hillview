@@ -17,6 +17,8 @@
 
 package org.hillview.utils;
 
+import io.netty.util.internal.logging.InternalLoggerFactory;
+import io.netty.util.internal.logging.JdkLoggerFactory;
 import org.apache.commons.lang.StringEscapeUtils;
 
 import javax.annotation.Nullable;
@@ -45,6 +47,17 @@ public class HillviewLogger {
     private final String role;
     // Default logger if users forget to initialize
     public static HillviewLogger instance = new HillviewLogger("none", null);
+
+    private static final Logger GRPC_LOGGER;
+    private static final Logger NETTY_LOGGER;
+
+    static {
+        InternalLoggerFactory.setDefaultFactory(new JdkLoggerFactory());
+        GRPC_LOGGER = Logger.getLogger("io.grpc");
+        GRPC_LOGGER.setLevel(Level.INFO);
+        NETTY_LOGGER = Logger.getLogger("io.grpc.netty.NettyServerHandler");
+        NETTY_LOGGER.setLevel(Level.INFO);
+    }
 
     private HillviewLogger(String role, @Nullable String filename) {
         this.logger = Logger.getLogger("Hillview");

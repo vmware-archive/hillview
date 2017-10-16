@@ -38,17 +38,6 @@ import java.util.logging.Logger;
 public class HistogramBenchmark {
     private static final ColumnDescription desc = new
             ColumnDescription("SQRT", ContentsKind.Double, true);
-    private static final Logger GRPC_LOGGER;
-    private static final Logger NETTY_LOGGER;
-
-    static {
-        InternalLoggerFactory.setDefaultFactory(new JdkLoggerFactory());
-        HillviewLogger.instance.setLogLevel(Level.OFF);
-        GRPC_LOGGER = Logger.getLogger("io.grpc");
-        GRPC_LOGGER.setLevel(Level.WARNING);
-        NETTY_LOGGER = Logger.getLogger("io.grpc.netty.NettyServerHandler");
-        NETTY_LOGGER.setLevel(Level.OFF);
-    }
 
     /**
      * Generates a double array with every fifth entry missing

@@ -33,16 +33,6 @@ import java.util.logging.Logger;
  * Brings up a single instance of a HillviewServer
  */
 public class HillviewServerRunner {
-    private static final Logger GRPC_LOGGER;
-    private static final Logger NETTY_LOGGER;
-
-    static {
-        InternalLoggerFactory.setDefaultFactory(new JdkLoggerFactory());
-        GRPC_LOGGER = Logger.getLogger("io.grpc");
-        GRPC_LOGGER.setLevel(Level.WARNING);
-        NETTY_LOGGER = Logger.getLogger("io.grpc.netty.NettyServerHandler");
-        NETTY_LOGGER.setLevel(Level.OFF);
-    }
 
     static void usage() {
         System.out.println("Invalid number of arguments.\n" +
