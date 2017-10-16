@@ -52,9 +52,7 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
     private static final Scheduler scheduler;
 
     static {
-        int cpuCount = Runtime.getRuntime().availableProcessors();
-        HillviewLogger.instance.info("Detect CPUs", "Using {0} processors", cpuCount);
-        ExecutorService executor = ExecutorUtils.newNamedThreadPool("computation", cpuCount);
+        ExecutorService executor = ExecutorUtils.getComputeExecutorService();
         scheduler = Schedulers.from(executor);
     }
 
