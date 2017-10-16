@@ -169,8 +169,7 @@ public class SparseColumn extends BaseColumn
     @Override
     public double getDouble(final int rowIndex) {
         Object o = this.getObject(rowIndex);
-        if (o == null)
-            throw new MissingException(this, rowIndex);
+        assert o != null;
         return (double)o;
     }
 
@@ -183,8 +182,7 @@ public class SparseColumn extends BaseColumn
     @Override
     public int getInt(final int rowIndex) {
         Object o = this.getObject(rowIndex);
-        if (o == null)
-            throw new MissingException(this, rowIndex);
+        assert o != null;
         return (int)o;
     }
 

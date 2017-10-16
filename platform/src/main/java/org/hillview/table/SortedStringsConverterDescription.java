@@ -63,7 +63,6 @@ public class SortedStringsConverterDescription implements IStringConverterDescri
         private final Object2DoubleOpenHashMap<String> memoizedResults;
         // The smallest value given by computeIndex is -1.
         private final double keyNotFound;
-        private static final double EPSILON = 0.01;
 
         public Converter() {
             this.memoizedResults = new Object2DoubleOpenHashMap<String>();
@@ -73,7 +72,7 @@ public class SortedStringsConverterDescription implements IStringConverterDescri
         @Override
         public double asDouble(@Nullable String string) {
             double index = memoizedResults.getOrDefault(string, keyNotFound);
-            if (index < keyNotFound - EPSILON) {
+            if (index < keyNotFound) {
                 return index;
             }
             index = computeIndex(string);
