@@ -42,6 +42,7 @@ import org.hillview.utils.JsonList;
 import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
+import sun.nio.ch.PollSelectorProvider;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -72,7 +73,10 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     private static final int NUM_THREADS = 5;
     public static final int MAX_MESSAGE_SIZE = 20971520;
     private final ExecutorService executorService = ExecutorUtils.newNamedThreadPool("server", NUM_THREADS);
-    private final EventLoopGroup nettyElg = new NioEventLoopGroup(1);
+    private final EventLoopGroup workerElg = new NioEventLoopGroup(1,
+            ExecutorUtils.newFastLocalThreadFactory("worker"), new PollSelectorProvider());
+    private final EventLoopGroup bossElg = new NioEventLoopGroup(1,
+            ExecutorUtils.newFastLocalThreadFactory("boss"), new PollSelectorProvider());
     private final Server server;
     private final AtomicInteger dsIndex = new AtomicInteger(0);
     private final ConcurrentHashMap<Integer, IDataSet> dataSets;
@@ -89,7 +93,8 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
         this.server = NettyServerBuilder.forAddress(new InetSocketAddress(listenAddress.getHost(),
                                                                      listenAddress.getPort()))
                                         .executor(executorService)
-                                        .workerEventLoopGroup(nettyElg)
+                                        .workerEventLoopGroup(workerElg)
+                                        .bossEventLoopGroup(bossElg)
                                         .addService(this)
                                         .maxMessageSize(MAX_MESSAGE_SIZE)
                                         .build()
@@ -457,7 +462,8 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
      */
     public void shutdown() {
         this.server.shutdown();
-        this.nettyElg.shutdownGracefully();
+        this.workerElg.shutdownGracefully();
+        this.bossElg.shutdownGracefully();
         this.executorService.shutdownNow();
     }
 

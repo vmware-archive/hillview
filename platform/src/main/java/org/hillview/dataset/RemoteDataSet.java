@@ -36,6 +36,7 @@ import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.JsonList;
 import rx.Observable;
 import rx.subjects.PublishSubject;
+import sun.nio.ch.PollSelectorProvider;
 
 import java.util.List;
 import java.util.UUID;
@@ -65,12 +66,13 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
         this.remoteHandle = remoteHandle;
         final ExecutorService executorService =
                 ExecutorUtils.newNamedThreadPool("remote-data-set:" + serverEndpoint, 5);
-        final EventLoopGroup nettyElg = new NioEventLoopGroup(1);
+        final EventLoopGroup workerElg = new NioEventLoopGroup(1,
+                ExecutorUtils.newFastLocalThreadFactory("worker"), new PollSelectorProvider());
         this.stub = HillviewServerGrpc.newStub(NettyChannelBuilder
                 .forAddress(serverEndpoint.getHost(), serverEndpoint.getPort())
                 .maxInboundMessageSize(HillviewServer.MAX_MESSAGE_SIZE)
                 .executor(executorService)
-                .eventLoopGroup(nettyElg)
+                .eventLoopGroup(workerElg)
                 .usePlaintext(true)   // channel is unencrypted.
                 .build());
     }
