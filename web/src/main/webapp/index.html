@@ -47,6 +47,10 @@
                 initialObject.loadLogs();
             else if (arg == 7)
                 initialObject.loadDBTable();
+            else if (arg == 8)
+                initialObject.loadFiles(arg);
+            else if (arg == 9)
+                initialObject.loadFiles(arg);
         }
     </script>
 </head>
@@ -62,6 +66,8 @@
         <button class="button" onclick="loadTable(5)">Criteo (sample)</button>
         <button class="button" onclick="loadTable(6)">Hillview logs</button>
         <button class="button" onclick="loadTable(7)">MySQL table</button>
+        <button class="button" onclick="loadTable(8)">Flights (all) x5</button>
+        <button class="button" onclick="loadTable(9)">Flights (all) x10</button>
         <div id="top"></div>
     </div>
 </body>

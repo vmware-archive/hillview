@@ -121,6 +121,7 @@ public class InitialObjectTarget extends RpcTarget {
         config.hasHeaderRow = true;
         String schemaFile;
         int limit = 0;
+        int replicationFactor = 1;
 
         IMap<Empty, List<CsvFileObject>> finder;
         if (which >= 0 && which <= 1) {
@@ -140,11 +141,21 @@ public class InitialObjectTarget extends RpcTarget {
             config.separator = '\t';
             fileNamePattern = "criteoTab.gz";
             schemaFile = "criteo.schema";
+        } else if (which == 8) {
+            limit = 0;
+            schemaFile = "short.schema";
+            fileNamePattern = "(\\d)+_(\\d)+\\.csv";
+            replicationFactor = 5;
+        } else if (which == 9) {
+            limit = 0;
+            schemaFile = "short.schema";
+            fileNamePattern = "(\\d)+_(\\d)+\\.csv";
+            replicationFactor = 10;
         } else {
             throw new RuntimeException("Unexpected operation " + which);
 		}
 		
-        finder = new FindCsvFileMapper(dataFolder, limit, fileNamePattern, schemaFile, config);
+        finder = new FindCsvFileMapper(dataFolder, limit, fileNamePattern, schemaFile, config, replicationFactor);
 
         HillviewLogger.instance.info("Preparing files");
         this.runFlatMap(this.emptyDataset, finder, CsvFileTarget::new, request, context);
