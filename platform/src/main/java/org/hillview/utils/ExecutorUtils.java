@@ -34,7 +34,7 @@ public class ExecutorUtils {
      * Executors and ELGs that interact with Netty benefit from FastThreadLocalThreads, and therefore
      * use Netty's DefaultThreadFactory.
      */
-    private static DefaultThreadFactory newFastLocalThreadFactory(final String poolName) {
+    public static DefaultThreadFactory newFastLocalThreadFactory(final String poolName) {
         return new DefaultThreadFactory(poolName, true);
     }
 

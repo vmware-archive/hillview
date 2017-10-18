@@ -49,6 +49,7 @@ public class FindCsvFileMapper implements IMap<Empty, List<CsvFileObject>> {
     private final String schemaPath;
     @Nullable
     private final CsvFileReader.CsvConfiguration config;
+    private final int replicationFactor;
 
     /**
      * Create an object to find and create CsvFileObjects.
@@ -60,12 +61,14 @@ public class FindCsvFileMapper implements IMap<Empty, List<CsvFileObject>> {
     public FindCsvFileMapper(String folder, int maxCount,
                              @Nullable String fileNamePattern,
                              @Nullable String schemaPath,
-                             @Nullable CsvFileReader.CsvConfiguration config) {
+                             @Nullable CsvFileReader.CsvConfiguration config,
+                             int replicationFactor) {
         this.folder = folder;
         this.schemaPath = schemaPath;
         this.maxCount = maxCount;
         this.fileNamePattern = fileNamePattern;
         this.config = config;
+        this.replicationFactor = replicationFactor;
     }
 
     @Override
@@ -95,8 +98,10 @@ public class FindCsvFileMapper implements IMap<Empty, List<CsvFileObject>> {
             files = files.limit(this.maxCount);
         files.sorted(Comparator.comparing(Path::toString))
                 .forEach(f -> {
-                    CsvFileObject cfo = new CsvFileObject(f, this.config);
-                    result.add(cfo);
+                    for (int i = 0; i < replicationFactor; i++) {
+                        CsvFileObject cfo = new CsvFileObject(f, this.config);
+                        result.add(cfo);
+                    }
                 });
         return result;
     }
