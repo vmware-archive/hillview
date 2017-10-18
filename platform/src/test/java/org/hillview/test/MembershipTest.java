@@ -17,9 +17,10 @@
 
 package org.hillview.test;
 
-import org.hillview.table.*;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.IRowIterator;
+import org.hillview.table.membership.FullMembershipSet;
+import org.hillview.table.membership.SparseMembershipSet;
 import org.hillview.utils.IntSet;
 import org.junit.Test;
 import static junit.framework.TestCase.assertEquals;
@@ -35,7 +36,7 @@ public class MembershipTest extends BaseTest {
 
     @Test
     public void TestFullMembership() {
-        final FullMembership FM = new FullMembership(this.size);
+        final FullMembershipSet FM = new FullMembershipSet(this.size);
         final IRowIterator IT = FM.getIterator();
         int tmp = IT.getNextRow();
         while (tmp >= 0) {
@@ -44,17 +45,17 @@ public class MembershipTest extends BaseTest {
         assertEquals(this.size, FM.getSize());
         assertTrue(FM.isMember(7));
         assertFalse(FM.isMember(20));
-        final FullMembership FM1 = new FullMembership(1000);
-        final IMembershipSet FM2 = FM1.sample(0.1);
+        final FullMembershipSet FM1 = new FullMembershipSet(1000);
+        final IMembershipSet FM2 = FM1.sample(0.1, 0);
         assertEquals(100, FM2.getSize());
-        final IMembershipSet FM3 = FM2.sample(0.1);
+        final IMembershipSet FM3 = FM2.sample(0.1, 0);
         assertEquals(10, FM3.getSize());
     }
 
     @Test
     public void TestSparseMembership() {
-        final FullMembership fm = new FullMembership(this.size);
-        final SparseMembership PMS = new SparseMembership(fm, row -> (row % 2) == 0);
+        final FullMembershipSet fm = new FullMembershipSet(this.size);
+        final IMembershipSet PMS = fm.filter(row -> (row % 2) == 0);
         assertTrue(PMS.isMember(6));
         assertFalse(PMS.isMember(7));
         assertEquals(PMS.getSize(), 5);
@@ -65,7 +66,7 @@ public class MembershipTest extends BaseTest {
             testSet.add(tmp);
             tmp = IT.getNextRow();
         }
-        final SparseMembership PMS1 = new SparseMembership(testSet, fm.getMax());
+        final SparseMembershipSet PMS1 = new SparseMembershipSet(testSet, fm.getMax());
         assertEquals(PMS.getSize(), PMS1.getSize());
     }
 
@@ -74,7 +75,7 @@ public class MembershipTest extends BaseTest {
         final IntSet IS = new IntSet(10);
         for (int i = 5; i < 100; i += 2)
             IS.add(i);
-        final SparseMembership MS = new SparseMembership(IS, 100);
+        final SparseMembershipSet MS = new SparseMembershipSet(IS, 100);
         final IRowIterator iter = MS.getIterator();
         int tmp = iter.getNextRow();
         final IntSet IS1 = new IntSet();
@@ -83,7 +84,7 @@ public class MembershipTest extends BaseTest {
             IS1.add(tmp);
         }
         assertTrue(IS.size() == IS1.size());
-        final IMembershipSet mySample = MS.sample(20);
+        final IMembershipSet mySample = MS.sample(20, 0);
         final IRowIterator sIter = mySample.getIterator();
         int curr = sIter.getNextRow();
         while (curr >= 0) {

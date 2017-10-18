@@ -69,6 +69,7 @@ public final class DateArrayColumn
     @Override
     public String asString(int rowIndex) {
         assert !this.isMissing(rowIndex);
+        //noinspection ConstantConditions
         return this.getDate(rowIndex).toString();
     }
 

@@ -98,24 +98,11 @@ public interface IColumn extends Serializable {
     IndexComparator getComparator();
 
     /**
-     * Compresses an IColumn to an ObjectArrayColumn, ordered according to the specified rowOrder
+     * Compresses an IColumn to an IColumn, ordered according to the specified rowOrder
      * @param rowOrder specifies the set of rows and their order
-     * @return An ObjectArrayColumn with the specified sequence of rows
+     * @return An IColumn with the specified sequence of rows
      */
-    default IColumn compress(final IRowOrder rowOrder) {
-        final IRowIterator rowIt = rowOrder.getIterator();
-        final ObjectArrayColumn result = new ObjectArrayColumn(
-                this.getDescription(), rowOrder.getSize());
-        int row = 0;
-        while (true) {
-            final int i = rowIt.getNextRow();
-            if (i < 0)
-                break;
-            result.set(row, this.getObject(i));
-            row++;
-        }
-        return result;
-    }
+    IColumn compress(final IRowOrder rowOrder);
 
     default IMutableColumn allocateConvertedColumn(
         ContentsKind kind, IMembershipSet set, String newColName) {

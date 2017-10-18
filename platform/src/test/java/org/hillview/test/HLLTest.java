@@ -19,7 +19,7 @@ package org.hillview.test;
 
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.sketches.*;
-import org.hillview.table.FullMembership;
+import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.table.columns.IntArrayColumn;
 import org.hillview.table.SmallTable;
 import org.hillview.table.api.ITable;
@@ -41,7 +41,7 @@ public class HLLTest extends BaseTest {
         final int accuracy = 14;
         final long seed = 0; //deterministic seed for testing
         final HLogLog hll = new HLogLog(accuracy, seed);
-        final FullMembership memSet = new FullMembership(size);
+        final FullMembershipSet memSet = new FullMembershipSet(size);
         hll.createHLL(col, memSet);
         long alsoResult = hll.distinctItemCount;
         long result = hll.distinctItemsEstimator();

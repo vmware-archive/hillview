@@ -38,7 +38,7 @@ public class HistSketchTest extends BaseTest {
         final Table myTable = TestTables.getRepIntTable(tableSize, numCols);
         final BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(1, 50, 10);
         final HistogramSketch mySketch = new HistogramSketch(buckets,
-                new ColumnAndConverterDescription(myTable.getSchema().getColumnNames()[0]));
+                new ColumnAndConverterDescription(myTable.getSchema().getColumnNames()[0]), 1, 0);
         Histogram result = mySketch.create(myTable);
         int size = 0;
         int bucketNum = result.getNumOfBuckets();
@@ -58,7 +58,7 @@ public class HistSketchTest extends BaseTest {
         final String colName = bigTable.getSchema().getColumnNames()[0];
         final ParallelDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize / 10);
         final Histogram hdl = all.blockingSketch(
-                new HistogramSketch(buckets, new ColumnAndConverterDescription(colName), 0.5));
+                new HistogramSketch(buckets, new ColumnAndConverterDescription(colName), 0.5, 0));
         int size = 0;
         int bucketNum = hdl.getNumOfBuckets();
         for (int i = 0; i < bucketNum; i++)
@@ -82,7 +82,7 @@ public class HistSketchTest extends BaseTest {
         final HeatMap hm = all.blockingSketch(
                 new HeatMapSketch(buckets1, buckets2,
                         new ColumnAndConverterDescription(colName1), new ColumnAndConverterDescription(colName2),
-                        rate));
+                        rate, 0));
         HistogramTest.basicTestHeatMap(hm, (long) (bigSize * rate));
     }
 }

@@ -73,6 +73,7 @@ public class HeatMap3D implements Serializable, IJson {
 
     public long getSize() { return this.totalPresent; }
 
+    /*
     public void createSampleHistogram(
             final ColumnAndConverter columnD1, final ColumnAndConverter columnD2,
             final ColumnAndConverter columnD3,
@@ -89,6 +90,7 @@ public class HeatMap3D implements Serializable, IJson {
         this.createHeatMap(columnD1, columnD2, columnD3,
                            membershipSet.sample(sampleRate, seed));
     }
+    */
 
     public int getNumOfBucketsD1() { return this.bucketDescDim1.getNumOfBuckets(); }
 

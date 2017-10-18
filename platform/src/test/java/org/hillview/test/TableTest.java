@@ -22,6 +22,7 @@ import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.ITable;
 import org.hillview.table.columns.IntArrayColumn;
+import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.utils.IntArrayGenerator;
 import org.hillview.utils.TestTables;
 import org.junit.Test;
@@ -45,7 +46,7 @@ public class TableTest extends BaseTest {
         final int size = 100;
         final int numCols = 3;
         final IntArrayColumn col = IntArrayGenerator.getMissingIntArray("X", size, 5);
-        final FullMembership FM = new FullMembership(size);
+        final FullMembershipSet FM = new FullMembershipSet(size);
         final IMembershipSet PMD = FM.filter(row -> (row % 2) == 0);
         final IColumn smallCol = col.compress(PMD);
         assertNotNull(smallCol);
@@ -58,7 +59,7 @@ public class TableTest extends BaseTest {
         final List<IColumn> columns = new ArrayList<IColumn>(numCols);
         columns.add(IntArrayGenerator.getMissingIntArray("X", size, 5));
         columns.add(generateDoubleArray(size, 100));
-        FullMembership full = new FullMembership(size);
+        FullMembershipSet full = new FullMembershipSet(size);
         IMembershipSet partial = full.filter(row -> (row % 2) == 0);
         Table myTable = new Table(columns, partial);
         assertEquals(myTable.toString(), "Table[2x50]");
@@ -82,7 +83,7 @@ public class TableTest extends BaseTest {
         final List<IColumn> columns = new ArrayList<IColumn>(numCols);
         columns.add(IntArrayGenerator.getMissingIntArray("A", size, 5));
         columns.add(generateDoubleArray(size, 100));
-        final FullMembership full = new FullMembership(size);
+        final FullMembershipSet full = new FullMembershipSet(size);
         final IMembershipSet partial = full.filter(row -> (row % 2) == 0);
         final Table myTable = new Table(columns, partial);
         assertEquals(myTable.toString(), "Table[2x50]");

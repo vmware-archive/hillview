@@ -68,6 +68,7 @@ public final class DurationArrayColumn extends DoubleArrayColumn
     @Override
     public String asString(int rowIndex) {
         assert !this.isMissing(rowIndex);
+        //noinspection ConstantConditions
         return this.getDuration(rowIndex).toString();
     }
 

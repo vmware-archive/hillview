@@ -18,6 +18,7 @@
 package org.hillview.test;
 
 import com.google.common.net.HostAndPort;
+import net.jcip.annotations.NotThreadSafe;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.RemoteDataSet;
@@ -36,6 +37,7 @@ import java.util.ArrayList;
 
 import static junit.framework.TestCase.assertTrue;
 
+@NotThreadSafe
 public class TableDataSetTest extends BaseTest {
     @Test
     public void localDataSetTest() {
@@ -46,11 +48,11 @@ public class TableDataSetTest extends BaseTest {
         for (String colName : randTable.getSchema().getColumnNames()) {
             cso.append(new ColumnSortOrientation(randTable.getSchema().getDescription(colName), true));
         }
-        final SampleQuantileSketch sqSketch = new SampleQuantileSketch(cso, resolution, size);
+        final SampleQuantileSketch sqSketch = new SampleQuantileSketch(cso, resolution, size, 0);
         final LocalDataSet<ITable> ld = new LocalDataSet<ITable>(randTable);
         final SampleList sl = ld.blockingSketch(sqSketch);
         IndexComparator comp = cso.getComparator(sl.table);
-        for (int i = 0; i < (sl.table.getNumOfRows()- 1); i++)
+        for (int i = 0; i < (sl.table.getNumOfRows() - 1); i++)
             assertTrue(comp.compare(i, i + 1) <= 0);
         //System.out.println(ql);
     }
@@ -71,7 +73,7 @@ public class TableDataSetTest extends BaseTest {
         elements.add(ld1);
         elements.add(ld2);
         final ParallelDataSet<ITable> par = new ParallelDataSet<ITable>(elements);
-        final SampleQuantileSketch sqSketch = new SampleQuantileSketch(cso, resolution, size);
+        final SampleQuantileSketch sqSketch = new SampleQuantileSketch(cso, resolution, size, 0);
         final SampleList sl = par.blockingSketch(sqSketch);
         IndexComparator comp = cso.getComparator(sl.table);
         for (int i = 0; i < (sl.table.getNumOfRows() - 1); i++)
@@ -87,7 +89,7 @@ public class TableDataSetTest extends BaseTest {
         for (String colName : randTable.getSchema().getColumnNames()) {
             cso.append(new ColumnSortOrientation(randTable.getSchema().getDescription(colName), true));
         }
-        final SampleQuantileSketch sqSketch = new SampleQuantileSketch(cso, resolution, size);
+        final SampleQuantileSketch sqSketch = new SampleQuantileSketch(cso, resolution, size, 0);
         final HostAndPort h1 = HostAndPort.fromParts("127.0.0.1", 1234);
         final HillviewServer server1 = new HillviewServer(h1, new LocalDataSet<ITable>(randTable));
         try {

@@ -20,7 +20,7 @@ package org.hillview.test;
 import org.hillview.sketches.BucketsDescriptionEqSize;
 import org.hillview.sketches.HeatMap;
 import org.hillview.sketches.Histogram;
-import org.hillview.table.FullMembership;
+import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.table.api.ColumnAndConverter;
 import org.hillview.table.columns.DoubleArrayColumn;
 import org.junit.Test;
@@ -28,7 +28,6 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
 public class HistogramTest extends BaseTest {
-
     @Test
     public void testHistogram() throws Exception {
         final int bucketNum = 110;
@@ -36,23 +35,23 @@ public class HistogramTest extends BaseTest {
         BucketsDescriptionEqSize buckDes = new BucketsDescriptionEqSize(0, 100, bucketNum);
         Histogram hist = new Histogram(buckDes);
         DoubleArrayColumn col = DoubleArrayTest.generateDoubleArray(colSize, 100);
-        FullMembership fMap = new FullMembership(colSize);
-        hist.create(new ColumnAndConverter(col), fMap, 1.0);
+        FullMembershipSet fMap = new FullMembershipSet(colSize);
+        hist.create(new ColumnAndConverter(col), fMap, 1.0, 0);
         int size = 0;
         for (int i = 0; i < bucketNum; i++)
             size += hist.getCount(i);
         assertEquals(size + hist.getMissingData() + hist.getOutOfRange(), colSize);
         Histogram hist1 = new Histogram(buckDes);
         DoubleArrayColumn col1 = DoubleArrayTest.generateDoubleArray(2 * colSize, 100);
-        FullMembership fMap1 = new FullMembership(2 * colSize);
-        hist1.create(new ColumnAndConverter(col1), fMap1, 1.0);
+        FullMembershipSet fMap1 = new FullMembershipSet(2 * colSize);
+        hist1.create(new ColumnAndConverter(col1), fMap1, 1.0, 0);
         Histogram hist2 = hist1.union(hist);
         size = 0;
         for (int i = 0; i < bucketNum; i++)
             size += hist2.getCount(i);
         assertEquals(size + hist2.getMissingData() + hist2.getOutOfRange(), 3 * colSize);
         Histogram hist3 = new Histogram(buckDes);
-        hist3.create(new ColumnAndConverter(col), fMap, 0.1);
+        hist3.create(new ColumnAndConverter(col), fMap, 0.1, 0);
         size = 0;
         for (int i = 0; i < bucketNum; i++)
             size += hist3.getCount(i);
@@ -68,15 +67,15 @@ public class HistogramTest extends BaseTest {
         HeatMap hm = new HeatMap(buckDes1, buckDes2);
         DoubleArrayColumn col1 = DoubleArrayTest.generateDoubleArray(colSize, 5);
         DoubleArrayColumn col2 = DoubleArrayTest.generateDoubleArray(colSize, 3);
-        FullMembership fMap = new FullMembership(colSize);
+        FullMembershipSet fMap = new FullMembershipSet(colSize);
         hm.createHeatMap(new ColumnAndConverter(col1), new ColumnAndConverter(col2), fMap);
         basicTestHeatMap(hm, colSize);
         HeatMap hm1 = new HeatMap(buckDes1, buckDes2);
         DoubleArrayColumn col3 = DoubleArrayTest.generateDoubleArray(2 * colSize, 100);
         DoubleArrayColumn col4 = DoubleArrayTest.generateDoubleArray(2 * colSize, 100);
-        FullMembership fMap1 = new FullMembership(2 * colSize);
+        FullMembershipSet fMap1 = new FullMembershipSet(2 * colSize);
         hm1.createSampleHistogram(new ColumnAndConverter(col3), new ColumnAndConverter(col4),
-                fMap1, 0.1);
+                fMap1, 0.1, 0);
         basicTestHeatMap(hm1, 2 * colSize);
         HeatMap hm2 = hm.union(hm1);
         basicTestHeatMap(hm2, 3 * colSize);

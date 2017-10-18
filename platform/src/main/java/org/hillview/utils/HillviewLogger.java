@@ -52,7 +52,7 @@ public class HillviewLogger {
     private static final Logger NETTY_LOGGER;
 
     static {
-        InternalLoggerFactory.setDefaultFactory(new JdkLoggerFactory());
+        InternalLoggerFactory.setDefaultFactory(JdkLoggerFactory.INSTANCE);
         GRPC_LOGGER = Logger.getLogger("io.grpc");
         GRPC_LOGGER.setLevel(Level.INFO);
         NETTY_LOGGER = Logger.getLogger("io.grpc.netty.NettyServerHandler");

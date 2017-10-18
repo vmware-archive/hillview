@@ -17,6 +17,8 @@
 
 package org.hillview.table.columns;
 
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.openhft.hashing.LongHashFunction;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.NoStringConverter;
@@ -26,17 +28,16 @@ import org.hillview.utils.Converters;
 import javax.annotation.Nullable;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HashMap;
 
 public class SparseColumn extends BaseColumn
         implements IMutableColumn, IStringColumn, IDoubleColumn, IIntColumn, IDateColumn, IDurationColumn {
-    protected final HashMap<Integer, Object> data;
+    protected final Int2ObjectMap<Object> data;
     final int size;
 
     public SparseColumn(ColumnDescription desc, int size) {
         super(desc);
         this.size = size;
-        this.data = new HashMap<Integer, Object>();
+        this.data = new Int2ObjectOpenHashMap<Object>();
     }
 
     @Override
@@ -163,7 +164,7 @@ public class SparseColumn extends BaseColumn
     public void setMissing(final int rowIndex) {}
 
     public void set(final int rowIndex, final double value) {
-        this.data.put(rowIndex, value);
+        this.data.put(rowIndex, (Object)value);
     }
 
     @Override

@@ -90,17 +90,6 @@ public class HeatMap implements Serializable, IJson {
 
     public void createSampleHistogram(
             final ColumnAndConverter columnD1, final ColumnAndConverter columnD2,
-            final IMembershipSet membershipSet, double sampleRate) {
-        if (sampleRate <= 0)
-            throw new RuntimeException("Can't sample with a non positive rate");
-        if (sampleRate >= 1)
-            sampleRate = 1;
-        this.rate = sampleRate;
-        this.createHeatMap(columnD1, columnD2, membershipSet.sample(sampleRate));
-    }
-
-    public void createSampleHistogram(
-            final ColumnAndConverter columnD1, final ColumnAndConverter columnD2,
             final IMembershipSet membershipSet, double sampleRate, long seed) {
         if (sampleRate <= 0)
             throw new RuntimeException("Can't sample with a non positive rate");

@@ -38,7 +38,7 @@ public class SampleCorrTest extends BaseTest {
             cn[i] = "Col" + String.valueOf(i);
         }
         for (int i = 0; i <= 3; i++) {
-            SampleCorrelationSketch ip = new SampleCorrelationSketch(cn, Math.pow(0.5, i));
+            SampleCorrelationSketch ip = new SampleCorrelationSketch(cn, Math.pow(0.5, i), 0);
             CorrMatrix cm = ip.create(data);
             //System.out.printf("Sampling rate %f: ", Math.pow(0.5, i));
             for (int j = 0; j < cn.length; j++)
@@ -73,7 +73,7 @@ public class SampleCorrTest extends BaseTest {
         end = System.currentTimeMillis();
         PerfRegressionTest.comparePerf("Exact", end - start);
         start = System.currentTimeMillis();
-        SampleCorrelationSketch ip = new SampleCorrelationSketch(cn, p);
+        SampleCorrelationSketch ip = new SampleCorrelationSketch(cn, p, 0);
         ICorrelation cm = all.blockingSketch(ip);
         end = System.currentTimeMillis();
         PerfRegressionTest.comparePerf("SampleIP", end - start);

@@ -15,14 +15,12 @@
  * limitations under the License.
  */
 
-package org.hillview.table;
+package org.hillview.table.membership;
 
 import org.hillview.table.api.IMembershipSet;
+import org.hillview.table.api.IMutableMembershipSet;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.utils.IntSet;
-
-import java.util.function.IntPredicate;
-
 
 /**
  * This implementation uses a Set data structure to store the membership. It uses the Set's
@@ -30,46 +28,9 @@ import java.util.function.IntPredicate;
  * iterator is very efficient. So this implementation is best when the set is sparse.
  * The downside is the constructor that runs in linear time.
  */
-public class SparseMembership implements IMembershipSet {
+public class SparseMembershipSet implements IMembershipSet, IMutableMembershipSet {
     private final IntSet membershipMap;
-    private static final int sizeEstimationSampleSize = 20;
     private final int max;
-
-    /**
-     * Standard way to construct this map is by supplying a membershipSet (perhaps the full one),
-     * and the selectRowsFromFullTable function passed as a lambda expression.
-     * @param baseMap the base IMembershipSet map on which the selectRowsFromFullTable will be applied
-     * @param filter  the additional selectRowsFromFullTable to be applied on the base map
-     */
-    public SparseMembership(final IMembershipSet baseMap,
-                            final IntPredicate filter) {
-        this.max = baseMap.getMax();
-        final IRowIterator baseIterator = baseMap.getIterator();
-        this.membershipMap = new IntSet(this.estimateSize(baseMap, filter));
-        int tmp = baseIterator.getNextRow();
-        while (tmp >= 0) {
-            if (filter.test(tmp))
-                this.membershipMap.add(tmp);
-            tmp = baseIterator.getNextRow();
-        }
-    }
-
-    /**
-     * Instantiates the class without a  predicate. Effectively converts the implementation of
-     * the baseMap into that of a sparse map.
-     * @param baseMap of type IMembershipSet
-     */
-    public SparseMembership(final IMembershipSet baseMap) {
-        this.max = baseMap.getMax();
-        final IRowIterator baseIterator = baseMap.getIterator();
-        final int expectedSize = baseMap.getSize();
-        this.membershipMap = new IntSet(expectedSize);
-        int tmp = baseIterator.getNextRow();
-        while (tmp >= 0) {
-            this.membershipMap.add(tmp);
-            tmp = baseIterator.getNextRow();
-        }
-    }
 
     @Override
     public int getMax() { return this.max; }
@@ -78,9 +39,13 @@ public class SparseMembership implements IMembershipSet {
      * Essentially wraps a Set interface by IMembershipSet
      * @param baseSet of type Set
      */
-    public SparseMembership(final IntSet baseSet, int max) {
+    public SparseMembershipSet(final IntSet baseSet, int max) {
         this.membershipMap = baseSet;
         this.max = max;
+    }
+
+    public void add(int index) {
+        this.membershipMap.add(index);
     }
 
     /**
@@ -88,16 +53,15 @@ public class SparseMembership implements IMembershipSet {
      * @param start The first integer in the set.
      * @param size The number of integers in the set.
      */
-    public SparseMembership(int start, int size, int max) {
+    public SparseMembershipSet(int start, int size, int max) {
         this.membershipMap = new IntSet(size);
         for (int i = 0; i < size; i++)
             this.membershipMap.add(start + i);
         this.max = max;
     }
 
-    @Override
-    public IMembershipSet filter(IntPredicate predicate) {
-        return new SparseMembership(this, predicate);
+    public IMembershipSet seal() {
+        return this;
     }
 
     @Override
@@ -111,18 +75,6 @@ public class SparseMembership implements IMembershipSet {
     }
 
     /**
-     * Returns the k items from a random location in the map. Note that the k items are not
-     * completely independent but also depend on the placement done by the hash function.
-     * Remark: Slight difference from the contract in the interface, which calls for the sample to
-     * be independent with replacement. In order to obtain that call sample(1,seed) k times with
-     * different seeds.
-     */
-    @Override
-    public IMembershipSet sample(final int k) {
-        return new SparseMembership(this.membershipMap.sample(k, 0, false), this.getMax());
-    }
-
-    /**
      * Returns the k items from a random location in the map determined by a seed provided.
      * Note that the k items are not completely independent but also depend on the placement
      * done by the hash function.
@@ -132,7 +84,7 @@ public class SparseMembership implements IMembershipSet {
      */
     @Override
     public IMembershipSet sample(final int k, final long seed) {
-        return new SparseMembership(this.membershipMap.sample(k, seed, true), this.getMax());
+        return new SparseMembershipSet(this.membershipMap.sample(k, seed, true), this.getMax());
     }
 
     @Override
@@ -149,7 +101,7 @@ public class SparseMembership implements IMembershipSet {
             unionSet.add(curr);
             curr = iter.getNextRow();
         }
-        return new SparseMembership(unionSet, this.getMax());
+        return new SparseMembershipSet(unionSet, this.getMax());
     }
 
     @Override
@@ -162,30 +114,9 @@ public class SparseMembership implements IMembershipSet {
                 intersectSet.add(curr);
             curr = iter.getNextRow();
         }
-        return new SparseMembership(intersectSet, this.getMax());
+        return new SparseMembershipSet(intersectSet, this.getMax());
     }
 
-    /**
-     * Estimates the size of a selectRowsFromFullTable applied to an IMembershipSet
-     * @return an approximation of the size, based on a sample of size 20. May return 0.
-     * There are no strict guarantees on the quality of the approximation, but is good enough for
-     * initialization of a hash table sizes.
-     */
-    private int estimateSize(final IMembershipSet baseMap,
-                             final IntPredicate filter) {
-        final IMembershipSet sampleSet = baseMap.sample(sizeEstimationSampleSize);
-        if (sampleSet.getSize() == 0)
-            return 0;
-        int eSize = 0;
-        final IRowIterator iter = sampleSet.getIterator();
-        int curr = iter.getNextRow();
-        while (curr >= 0) {
-            if (filter.test(curr))
-                eSize++;
-            curr = iter.getNextRow();
-        }
-        return (baseMap.getSize() * eSize) / sampleSet.getSize();
-    }
 
     private static class SparseIterator implements IRowIterator {
         final private IntSet.IntSetIterator mySetIterator;

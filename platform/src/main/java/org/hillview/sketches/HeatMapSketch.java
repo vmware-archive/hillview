@@ -30,23 +30,17 @@ public class HeatMapSketch implements ISketch<ITable, HeatMap> {
     private final ColumnAndConverterDescription col1;
     private final ColumnAndConverterDescription col2;
     private final double rate;
+    private final long seed;
 
     public HeatMapSketch(IBucketsDescription bucketDesc1, IBucketsDescription bucketDesc2,
-                         ColumnAndConverterDescription col1, ColumnAndConverterDescription col2) {
-        this.bucketDescD1 = bucketDesc1;
-        this.bucketDescD2 = bucketDesc2;
-        this.col1 = col1;
-        this.col2 = col2;
-        this.rate = 1;
-    }
-
-    public HeatMapSketch(IBucketsDescription bucketDesc1, IBucketsDescription bucketDesc2,
-                         ColumnAndConverterDescription col1, ColumnAndConverterDescription col2, double rate) {
+                         ColumnAndConverterDescription col1, ColumnAndConverterDescription col2,
+                         double rate, long seed) {
         this.bucketDescD1 = bucketDesc1;
         this.bucketDescD2 = bucketDesc2;
         this.col1 = col1;
         this.col2 = col2;
         this.rate = rate;
+        this.seed = seed;
     }
 
     @Override
@@ -55,7 +49,8 @@ public class HeatMapSketch implements ISketch<ITable, HeatMap> {
         ColumnAndConverter[] cols = data.getLoadedColumns(new ColumnAndConverterDescription[] {
                 this.col1, this.col2
         });
-        result.createHeatMap(cols[0], cols[1], data.getMembershipSet().sample(this.rate));
+        result.createHeatMap(cols[0], cols[1],
+                data.getMembershipSet().sample(this.rate, this.seed));
         return result;
     }
 

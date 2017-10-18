@@ -22,6 +22,7 @@ import org.hillview.table.api.IColumn;
 import org.hillview.table.columns.DateArrayColumn;
 import org.hillview.table.columns.DoubleArrayColumn;
 import org.hillview.table.columns.StringArrayColumn;
+import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.utils.Randomness;
 
 import java.time.Instant;
@@ -67,7 +68,7 @@ class TestUtil {
         columns.add(getRandDateArray(size, "DOB"));
         columns.add(getStringArray(size, "Name"));
         columns.add(generateDoubleArray(size, "Income"));
-        final FullMembership full = new FullMembership(size);
+        final FullMembershipSet full = new FullMembershipSet(size);
         return new Table(columns, full);
     }
 

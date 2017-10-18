@@ -20,6 +20,9 @@ package org.hillview.table.columns;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
+import org.hillview.table.api.IRowIterator;
+import org.hillview.table.api.IRowOrder;
+
 import java.time.Duration;
 import java.time.Instant;
 
@@ -32,6 +35,17 @@ abstract class BaseColumn implements IColumn {
     void checkKind(ContentsKind kind) {
         if (this.description.kind != kind)
             throw new RuntimeException("Expected " + kind + " but have " + this.getDescription().kind);
+    }
+
+    @Override
+    public IColumn compress(IRowOrder rowOrder) {
+        ObjectArrayColumn result = new ObjectArrayColumn(
+                this.getDescription(), rowOrder.getSize());
+        IRowIterator it = rowOrder.getIterator();
+        int index = 0;
+        for (int current = it.getNextRow(); current >= 0; current = it.getNextRow())
+            result.set(index++, this.getObject(current));
+        return result;
     }
 
     public BaseColumn(final ColumnDescription description) {

@@ -26,25 +26,22 @@ import javax.annotation.Nullable;
 public class BasicColStatSketch implements ISketch<ITable, BasicColStats> {
     private final ColumnAndConverterDescription col;
     private final double rate;
+    private final long seed;
     private final int momentNum;
 
-    public BasicColStatSketch(ColumnAndConverterDescription col) {
-        this.col = col;
-        this.rate = 1;
-        this.momentNum = 2;
-    }
-
-    public BasicColStatSketch(ColumnAndConverterDescription col, int momentNum, double rate) {
+    public BasicColStatSketch(ColumnAndConverterDescription col, int momentNum,
+                              double rate, long seed) {
         this.col = col;
         this.rate = rate;
         this.momentNum = momentNum;
+        this.seed = seed;
     }
 
     @Override
     public BasicColStats create(final ITable data) {
         BasicColStats result = this.getZero();
         result.createStats(data.getLoadedColumn(this.col),
-                data.getMembershipSet().sample(this.rate));
+                data.getMembershipSet().sample(this.rate, this.seed));
         return result;
     }
 

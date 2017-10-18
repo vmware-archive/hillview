@@ -18,12 +18,8 @@
 package org.hillview.table.rows;
 
 import org.hillview.table.Schema;
-import org.hillview.table.api.ColumnAndConverter;
-import org.hillview.table.api.ColumnAndConverterDescription;
-import org.hillview.table.api.IColumn;
-import org.hillview.table.api.ITable;
+import org.hillview.table.api.*;
 import org.hillview.utils.Converters;
-import org.hillview.utils.HashUtil;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -78,14 +74,14 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
 
     @Override
     public int hashCode() {
-        int hashCode = 31;
-        for (String cn : this.schema.getColumnNames()) {
-            Object o = this.getObject(cn);
-            if (o == null)
-                continue;
-            hashCode = HashUtil.murmurHash3(hashCode, o.hashCode());
-        }
-        return hashCode;
+        return computeHashCode(this.schema);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof BaseRowSnapshot)) return false;
+        return compareForEquality((BaseRowSnapshot)o, this.schema);
     }
 
     protected IColumn getColumn(String colName) {

@@ -144,7 +144,7 @@ public final class RpcObjectManager {
      * We have lost the object with the specified id.  Try to reconstruct it
      * from the history.
      * @param id  Id of object to reconstruct.
-     * @param toNotify An observert that is notified when the object is available.
+     * @param toNotify An observer that is notified when the object is available.
      */
     void rebuild(String id, Observer<RpcTarget> toNotify) {
         HillviewLogger.instance.info("Attempt to reconstruct", "{0}", id);

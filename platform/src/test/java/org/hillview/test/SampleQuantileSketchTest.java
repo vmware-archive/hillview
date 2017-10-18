@@ -42,7 +42,7 @@ public class SampleQuantileSketchTest extends BaseTest {
                     new ColumnSortOrientation(leftTable.getSchema().getDescription(colName), true));
         }
         final SampleQuantileSketch sqSketch = new
-                SampleQuantileSketch(rso, resolution, leftSize + rightSize);
+                SampleQuantileSketch(rso, resolution, leftSize + rightSize, 0);
         final SampleList leftQ = sqSketch.create(leftTable);
         RankInTable rLT = new RankInTable(leftTable, rso);
         System.out.println(Arrays.toString(rLT.getRank(leftQ.getQuantiles(9))));
@@ -67,7 +67,7 @@ public class SampleQuantileSketchTest extends BaseTest {
                     new ColumnSortOrientation(Table.getSchema().getDescription(colName), true));
         }
         ParallelDataSet<ITable> all = TestTables.makeParallel(Table, 200000);
-        SampleList sl = all.blockingSketch(new SampleQuantileSketch(rso, resolution, size));
+        SampleList sl = all.blockingSketch(new SampleQuantileSketch(rso, resolution, size, 0));
         /*
         System.out.printf("Sample of size: %d", sl.table.getNumOfRows());
         for (int i =0; i < 10; i++)

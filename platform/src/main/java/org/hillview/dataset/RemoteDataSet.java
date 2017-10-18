@@ -40,7 +40,6 @@ import rx.subjects.PublishSubject;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static org.hillview.dataset.remoting.HillviewServer.ROOT_DATASET_INDEX;

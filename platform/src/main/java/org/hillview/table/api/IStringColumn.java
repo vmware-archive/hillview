@@ -18,6 +18,7 @@
 package org.hillview.table.api;
 
 import net.openhft.hashing.LongHashFunction;
+import org.hillview.table.columns.StringArrayColumn;
 
 import javax.annotation.Nullable;
 import java.util.function.Function;
@@ -34,6 +35,17 @@ public interface IStringColumn extends IColumn {
     @Override
     default String asString(final int rowIndex) {
         return this.getString(rowIndex);
+    }
+
+    @Override
+    default IColumn compress(IRowOrder rowOrder) {
+        StringArrayColumn result = new StringArrayColumn(
+                this.getDescription(), rowOrder.getSize());
+        IRowIterator it = rowOrder.getIterator();
+        int index = 0;
+        for (int current = it.getNextRow(); current >= 0; current = it.getNextRow())
+            result.set(index++, this.getString(current));
+        return result;
     }
 
     @Override

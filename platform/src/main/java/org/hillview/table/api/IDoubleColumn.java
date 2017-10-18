@@ -18,6 +18,7 @@
 package org.hillview.table.api;
 
 import net.openhft.hashing.LongHashFunction;
+import org.hillview.table.columns.DoubleArrayColumn;
 
 import javax.annotation.Nullable;
 
@@ -33,6 +34,17 @@ public interface IDoubleColumn extends IColumn {
     default String asString(final int rowIndex) {
         assert !this.isMissing(rowIndex);
         return Double.toString(this.getDouble(rowIndex));
+    }
+
+    @Override
+    default IColumn compress(IRowOrder rowOrder) {
+        DoubleArrayColumn result = new DoubleArrayColumn(
+                this.getDescription(), rowOrder.getSize());
+        IRowIterator it = rowOrder.getIterator();
+        int index = 0;
+        for (int current = it.getNextRow(); current >= 0; current = it.getNextRow())
+            result.set(index++, this.getDouble(current));
+        return result;
     }
 
     @Override

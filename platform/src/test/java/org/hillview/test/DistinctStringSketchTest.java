@@ -53,7 +53,7 @@ public class DistinctStringSketchTest extends BaseTest {
         SemiExplicitConverter converter = getStringConverter(result.get(0));
         BucketsDescriptionEqSize desc = new BucketsDescriptionEqSize(1, size + 1, size);
         HistogramSketch histSketch = new HistogramSketch(
-                desc, new ColumnAndConverterDescription("Name", converter));
+                desc, new ColumnAndConverterDescription("Name", converter), 1, 0);
         Histogram hist = histSketch.create(myTable);
     }
 
@@ -70,6 +70,7 @@ public class DistinctStringSketchTest extends BaseTest {
         BucketsDescriptionEqSize desc = new BucketsDescriptionEqSize(
                 -1, ds.get(0).size(), ds.get(0).size() + 1);
         Histogram hist = all.blockingSketch(
-                new HistogramSketch(desc, new ColumnAndConverterDescription("Name", converter)));
+                new HistogramSketch(
+                        desc, new ColumnAndConverterDescription("Name", converter), 1, 0));
     }
 }

@@ -37,7 +37,7 @@ public class LAMPMapTest extends BaseTest {
         double samplingRate = ((double) numSamples) / table.getNumOfRows();
         RandomSamplingSketch sketch = new RandomSamplingSketch(samplingRate, seed, colNames, false);
         SmallTable sampling = dataset.blockingSketch(sketch);
-        sampling = sampling.compress(sampling.getMembershipSet().sample(numSamples));
+        sampling = sampling.compress(sampling.getMembershipSet().sample(numSamples, 0));
 
         DoubleMatrix ndControlPoints = BlasConversions.toDoubleMatrix(sampling, colNames);
         MetricMDS mds = new MetricMDS(ndControlPoints);

@@ -18,6 +18,7 @@
 package org.hillview.table;
 
 import org.hillview.table.api.*;
+import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.utils.Utilities;
 
 /**
@@ -34,7 +35,7 @@ public class Table extends BaseTable {
     public Table(final Schema schema) {
         super(schema);
         this.schema = schema;
-        this.members = new FullMembership(0);
+        this.members = new FullMembershipSet(0);
     }
 
     /**
@@ -60,7 +61,7 @@ public class Table extends BaseTable {
     }
 
     public <C extends IColumn> Table(final Iterable<C> columns) {
-        this(columns, new FullMembership(columnSize(columns)));
+        this(columns, new FullMembershipSet(columnSize(columns)));
     }
 
     public <C extends IColumn> Table(final C[] columns) {

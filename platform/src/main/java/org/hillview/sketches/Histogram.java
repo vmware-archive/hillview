@@ -51,13 +51,13 @@ public class Histogram implements Serializable {
     }
 
     public void create(final ColumnAndConverter column, IMembershipSet membershipSet,
-                       double sampleRate) {
+                       double sampleRate, long seed) {
         if (sampleRate <= 0)
             throw new RuntimeException("Negative sampling rate");
         if (sampleRate >= 1)
             sampleRate = 1;
         if (sampleRate < 1)
-            membershipSet = membershipSet.sample(sampleRate);
+            membershipSet = membershipSet.sample(sampleRate, seed);
         final IRowIterator myIter = membershipSet.getIterator();
         int currRow = myIter.getNextRow();
         while (currRow >= 0) {
