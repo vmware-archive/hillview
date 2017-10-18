@@ -10,7 +10,7 @@
 
    - name: Start back-end service
      shell:
-       cmd: nohup java -Dlog4j.configurationFile=./log4j.properties -jar -server -Xmx{{heap_size}} hillview-server-jar-with-dependencies.jar 0.0.0.0:{{backend_port}} &
+       cmd: nohup java -Dlog4j.configurationFile=./log4j.properties -server -Xms{{heap_size}} -Xmx{{heap_size}} -XX:+AlwaysPreTouch -Xloggc:/hillview/hillview/gc.log  -jar hillview-server-jar-with-dependencies.jar 0.0.0.0:{{backend_port}} &
        chdir: "{{service_folder}}/hillview"
 
 - hosts: web
