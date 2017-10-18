@@ -66,6 +66,8 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
         this.remoteHandle = remoteHandle;
         final ExecutorService executorService =
                 ExecutorUtils.newNamedThreadPool("remote-data-set:" + serverEndpoint, 5);
+        // Using PollSelectorProvider() to avoid Epoll CPU utilization problems.
+        // See: https://github.com/netty/netty/issues/327
         final EventLoopGroup workerElg = new NioEventLoopGroup(1,
                 ExecutorUtils.newFastLocalThreadFactory("worker"), new PollSelectorProvider());
         this.stub = HillviewServerGrpc.newStub(NettyChannelBuilder

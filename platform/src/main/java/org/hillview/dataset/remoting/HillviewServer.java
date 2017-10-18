@@ -73,6 +73,9 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     private static final int NUM_THREADS = 5;
     public static final int MAX_MESSAGE_SIZE = 20971520;
     private final ExecutorService executorService = ExecutorUtils.newNamedThreadPool("server", NUM_THREADS);
+
+    // Using PollSelectorProvider() to avoid Epoll CPU utilization problems.
+    // See: https://github.com/netty/netty/issues/327
     private final EventLoopGroup workerElg = new NioEventLoopGroup(1,
             ExecutorUtils.newFastLocalThreadFactory("worker"), new PollSelectorProvider());
     private final EventLoopGroup bossElg = new NioEventLoopGroup(1,
