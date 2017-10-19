@@ -50,7 +50,7 @@ public class SampleQuantileSketch  implements ISketch<ITable, SampleList> {
     public SampleQuantileSketch(final RecordOrder sortOrder, final int resolution,
                                 final long dataSize, final long seed) {
         this.colSortOrder = sortOrder;
-        int n = Math.max(resolution, 100);
+        double n = Math.max(resolution, 100);
         this.samplingRate = (n * n)/dataSize;
         this.seed = seed;
     }
@@ -70,10 +70,10 @@ public class SampleQuantileSketch  implements ISketch<ITable, SampleList> {
     public SampleList create(ITable data) {
         final IMembershipSet sampleSet = data.getMembershipSet().sample(
                 this.samplingRate, this.seed);
-        final SmallTable sampleTable = data.compress(sampleSet);
+        final SmallTable sampleTable = data.compress(this.colSortOrder.toSubSchema(), sampleSet);
         final IRowOrder rowOrder = new ArrayRowOrder(this.
                 colSortOrder.getSortedRowOrder(sampleTable));
-        return new SampleList(sampleTable.compress(this.colSortOrder.toSubSchema(), rowOrder));
+        return new SampleList(sampleTable.compress(rowOrder));
     }
 
     /**

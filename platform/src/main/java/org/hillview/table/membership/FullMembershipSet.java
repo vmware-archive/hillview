@@ -18,6 +18,7 @@
 package org.hillview.table.membership;
 
 import org.hillview.table.api.IMembershipSet;
+import org.hillview.table.api.IMutableMembershipSet;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.utils.IntSet;
 import org.hillview.utils.Randomness;
@@ -72,48 +73,19 @@ public class FullMembershipSet implements IMembershipSet {
         return this.sampleUtil(randomGenerator, k);
     }
 
-    @Override
-    public IMembershipSet union(final IMembershipSet otherSet) {
-        if (otherSet instanceof FullMembershipSet)
-            return new FullMembershipSet(Integer.max(this.rowCount, otherSet.getSize()));
-        return otherSet.union(this);
-    }
-
-    @Override
-    public IMembershipSet intersection(final IMembershipSet otherSet) {
-        if (otherSet instanceof FullMembershipSet)
-            return new FullMembershipSet(Integer.min(this.rowCount, otherSet.getSize()));
-        return otherSet.intersection(this);
-    }
-
-    @Override
-    public IMembershipSet setMinus(final IMembershipSet otherSet) {
-        if (otherSet instanceof FullMembershipSet) {
-            final IntSet baseMap = new IntSet(Integer.max(0, this.getSize()-otherSet.getSize()));
-            for (int i = otherSet.getSize(); i < this.rowCount; i++)
-                baseMap.add(i);
-            return new SparseMembershipSet(baseMap, this.getMax());
-        }
-        final IntSet baseMap = new IntSet();
-        for (int i = 0; i < this.getSize(); i++)
-            if (!otherSet.isMember(i))
-                baseMap.add(i);
-        return new SparseMembershipSet(baseMap, this.getMax());
-    }
-
     private IMembershipSet sampleUtil(final Randomness randomGenerator, final int k) {
         int l = k;
-        if (k > (int) (this.rowCount * 0.7)) // sample the items that are not returned
+        if (k > (int)(this.rowCount * 0.7)) // sample the items that are not returned
             l = this.rowCount - k;
-        final IntSet s = new IntSet(l);
+        IMutableMembershipSet s = MembershipSetFactory.create(this.getMax(), k);
         for (int i=0; i < l; i++)
             s.add(randomGenerator.nextInt(this.rowCount));
         while (s.size() < l)
             s.add(randomGenerator.nextInt(this.rowCount));
         if (l == k)
-            return new SparseMembershipSet(s, this.getMax());
+            return s.seal();
         else
-            return this.setMinus(new SparseMembershipSet(s, this.getMax()));
+            return this.setMinus(s.seal());
     }
 
     public static class FullMembershipIterator implements IRowIterator {

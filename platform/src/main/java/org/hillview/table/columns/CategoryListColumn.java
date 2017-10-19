@@ -152,17 +152,6 @@ public class CategoryListColumn extends BaseListColumn implements ICategoryColum
     }
 
     @Override
-    public IColumn compress(IRowOrder rowOrder) {
-        CategoryArrayColumn result = new CategoryArrayColumn(
-                this.getDescription(), rowOrder.getSize());
-        IRowIterator it = rowOrder.getIterator();
-        int index = 0;
-        for (int current = it.getNextRow(); current >= 0; current = it.getNextRow())
-            result.set(index++, this.getString(current));
-        return result;
-    }
-
-    @Override
     public boolean isMissing(final int rowIndex) {
         return this.getString(rowIndex) == null;
     }

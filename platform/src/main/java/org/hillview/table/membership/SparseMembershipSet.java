@@ -35,13 +35,13 @@ public class SparseMembershipSet implements IMembershipSet, IMutableMembershipSe
     @Override
     public int getMax() { return this.max; }
 
-    /**
-     * Essentially wraps a Set interface by IMembershipSet
-     * @param baseSet of type Set
-     */
-    public SparseMembershipSet(final IntSet baseSet, int max) {
-        this.membershipMap = baseSet;
+    private SparseMembershipSet(IntSet map, int max) {
+        this.membershipMap = map;
         this.max = max;
+    }
+
+    public SparseMembershipSet(int max, int estimated) {
+        this(new IntSet(estimated), max);
     }
 
     public void add(int index) {
@@ -74,6 +74,9 @@ public class SparseMembershipSet implements IMembershipSet, IMutableMembershipSe
         return this.membershipMap.size();
     }
 
+    @Override
+    public int size() { return this.getSize(); }
+
     /**
      * Returns the k items from a random location in the map determined by a seed provided.
      * Note that the k items are not completely independent but also depend on the placement
@@ -84,39 +87,13 @@ public class SparseMembershipSet implements IMembershipSet, IMutableMembershipSe
      */
     @Override
     public IMembershipSet sample(final int k, final long seed) {
-        return new SparseMembershipSet(this.membershipMap.sample(k, seed, true), this.getMax());
+        return new SparseMembershipSet(this.membershipMap.sample(k, seed), this.getMax());
     }
 
     @Override
     public IRowIterator getIterator() {
         return new SparseIterator(this.membershipMap);
     }
-
-    @Override
-    public IMembershipSet union(final IMembershipSet otherSet) {
-        final IntSet unionSet = this.membershipMap.copy();
-        final IRowIterator iter = otherSet.getIterator();
-        int curr = iter.getNextRow();
-        while (curr >=0) {
-            unionSet.add(curr);
-            curr = iter.getNextRow();
-        }
-        return new SparseMembershipSet(unionSet, this.getMax());
-    }
-
-    @Override
-    public IMembershipSet intersection(final IMembershipSet otherSet) {
-        final IntSet intersectSet = new IntSet();
-        final IRowIterator iter = otherSet.getIterator();
-        int curr = iter.getNextRow();
-        while (curr >= 0) {
-            if (this.isMember(curr))
-                intersectSet.add(curr);
-            curr = iter.getNextRow();
-        }
-        return new SparseMembershipSet(intersectSet, this.getMax());
-    }
-
 
     private static class SparseIterator implements IRowIterator {
         final private IntSet.IntSetIterator mySetIterator;

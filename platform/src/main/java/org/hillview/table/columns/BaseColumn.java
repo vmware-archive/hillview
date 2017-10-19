@@ -37,17 +37,6 @@ abstract class BaseColumn implements IColumn {
             throw new RuntimeException("Expected " + kind + " but have " + this.getDescription().kind);
     }
 
-    @Override
-    public IColumn compress(IRowOrder rowOrder) {
-        ObjectArrayColumn result = new ObjectArrayColumn(
-                this.getDescription(), rowOrder.getSize());
-        IRowIterator it = rowOrder.getIterator();
-        int index = 0;
-        for (int current = it.getNextRow(); current >= 0; current = it.getNextRow())
-            result.set(index++, this.getObject(current));
-        return result;
-    }
-
     public BaseColumn(final ColumnDescription description) {
         this.description = description;
     }

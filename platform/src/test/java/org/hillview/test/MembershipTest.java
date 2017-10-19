@@ -18,9 +18,10 @@
 package org.hillview.test;
 
 import org.hillview.table.api.IMembershipSet;
+import org.hillview.table.api.IMutableMembershipSet;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.membership.FullMembershipSet;
-import org.hillview.table.membership.SparseMembershipSet;
+import org.hillview.table.membership.MembershipSetFactory;
 import org.hillview.utils.IntSet;
 import org.junit.Test;
 import static junit.framework.TestCase.assertEquals;
@@ -59,23 +60,22 @@ public class MembershipTest extends BaseTest {
         assertTrue(PMS.isMember(6));
         assertFalse(PMS.isMember(7));
         assertEquals(PMS.getSize(), 5);
-        final IntSet testSet = new IntSet();
+        IMutableMembershipSet mms = MembershipSetFactory.create(fm.getMax(), fm.getSize());
         final IRowIterator IT = PMS.getIterator();
         int tmp = IT.getNextRow();
         while (tmp >= 0) {
-            testSet.add(tmp);
+            mms.add(tmp);
             tmp = IT.getNextRow();
         }
-        final SparseMembershipSet PMS1 = new SparseMembershipSet(testSet, fm.getMax());
-        assertEquals(PMS.getSize(), PMS1.getSize());
+        assertEquals(PMS.getSize(), mms.seal().getSize());
     }
 
     @Test
     public void TestMembershipSparse() {
-        final IntSet IS = new IntSet(10);
+        IMutableMembershipSet mms = MembershipSetFactory.create(100, 10);
         for (int i = 5; i < 100; i += 2)
-            IS.add(i);
-        final SparseMembershipSet MS = new SparseMembershipSet(IS, 100);
+            mms.add(i);
+        IMembershipSet MS = mms.seal();
         final IRowIterator iter = MS.getIterator();
         int tmp = iter.getNextRow();
         final IntSet IS1 = new IntSet();
@@ -83,7 +83,7 @@ public class MembershipTest extends BaseTest {
             tmp = iter.getNextRow();
             IS1.add(tmp);
         }
-        assertTrue(IS.size() == IS1.size());
+        assertTrue(mms.size() == IS1.size());
         final IMembershipSet mySample = MS.sample(20, 0);
         final IRowIterator sIter = mySample.getIterator();
         int curr = sIter.getNextRow();

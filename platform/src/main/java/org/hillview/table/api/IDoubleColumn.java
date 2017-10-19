@@ -37,17 +37,6 @@ public interface IDoubleColumn extends IColumn {
     }
 
     @Override
-    default IColumn compress(IRowOrder rowOrder) {
-        DoubleArrayColumn result = new DoubleArrayColumn(
-                this.getDescription(), rowOrder.getSize());
-        IRowIterator it = rowOrder.getIterator();
-        int index = 0;
-        for (int current = it.getNextRow(); current >= 0; current = it.getNextRow())
-            result.set(index++, this.getDouble(current));
-        return result;
-    }
-
-    @Override
     default IndexComparator getComparator() {
         return new IndexComparator() {
             @Override

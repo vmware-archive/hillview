@@ -29,17 +29,6 @@ public interface IIntColumn extends IColumn {
         return this.getInt(rowIndex);
     }
 
-    @Override
-    default IColumn compress(IRowOrder rowOrder) {
-        IntArrayColumn result = new IntArrayColumn(
-                this.getDescription(), rowOrder.getSize());
-        IRowIterator it = rowOrder.getIterator();
-        int index = 0;
-        for (int current = it.getNextRow(); current >= 0; current = it.getNextRow())
-            result.set(index++, this.getInt(current));
-        return result;
-    }
-
     @Nullable
     @Override
     default String asString(final int rowIndex) {

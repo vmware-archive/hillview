@@ -20,6 +20,7 @@ package org.hillview.table.membership;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.IMutableMembershipSet;
 import org.hillview.table.api.IRowIterator;
+import org.hillview.utils.Randomness;
 
 import java.util.BitSet;
 
@@ -49,17 +50,32 @@ public class DenseMembershipSet implements IMembershipSet, IMutableMembershipSet
 
     @Override
     public IMembershipSet sample(int k, long seed) {
-        return null;
-    }
+        if (k >= this.size)
+            return this;
 
-    @Override
-    public IMembershipSet union(IMembershipSet otherMap) {
-        return null;
-    }
+        final Randomness psg = new Randomness();
+        psg.setSeed(seed);
+        int[] chosen = new int[k];
+        int i, row = -1;
 
-    @Override
-    public IMembershipSet intersection(IMembershipSet otherMap) {
-        return null;
+        // Reservoir sampling from this current set of bits
+        IRowIterator ri = this.getIterator();
+        for (i = 0; i < k; ++ i) {
+            row = ri.getNextRow();
+            assert row >= 0;
+            chosen[i] = row;
+        }
+        for (; row >= 0; ++ i) {
+            row = ri.getNextRow();
+            int j = psg.nextInt(i+1);
+            if (j < k)
+                chosen[j] = row;
+        }
+
+        IMutableMembershipSet mms = MembershipSetFactory.create(this.getMax(), k);
+        for (i=0; i < k; i++)
+            mms.add(chosen[i]);
+        return mms.seal();
     }
 
     @Override
@@ -81,15 +97,18 @@ public class DenseMembershipSet implements IMembershipSet, IMutableMembershipSet
     }
 
     @Override
+    public int size() { return this.size; }
+
+    @Override
     public IRowIterator getIterator() {
-        return new DenseMemebershipIterator(this.membershipMap);
+        return new DenseMembershipIterator(this.membershipMap);
     }
 
-    public static class DenseMemebershipIterator implements IRowIterator {
+    public static class DenseMembershipIterator implements IRowIterator {
         private final BitSet bits;
         private int current;
 
-        DenseMemebershipIterator(BitSet bits) {
+        DenseMembershipIterator(BitSet bits) {
             this.bits = bits;
             this.current = -1;
         }

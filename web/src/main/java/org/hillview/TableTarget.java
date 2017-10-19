@@ -110,8 +110,10 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     void heatMap(RpcRequest request, RpcRequestContext context) {
         ColPair info = request.parseArgs(ColPair.class);
-        ColumnAndRange.HistogramParts h1 = Converters.checkNull(info.first).prepare();
-        ColumnAndRange.HistogramParts h2 = Converters.checkNull(info.second).prepare();
+        assert info.first != null;
+        assert info.second != null;
+        ColumnAndRange.HistogramParts h1 = info.first.prepare();
+        ColumnAndRange.HistogramParts h2 = info.second.prepare();
         // We expect the sampling rate to be the same for both columns
         HeatMapSketch sk = new HeatMapSketch(
                 h1.buckets, h2.buckets, h1.column, h2.column, info.first.samplingRate, info.first.seed);
@@ -121,9 +123,12 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     void heatMap3D(RpcRequest request, RpcRequestContext context) {
         ColTriple info = request.parseArgs(ColTriple.class);
-        ColumnAndRange.HistogramParts h1 = Converters.checkNull(info.first).prepare();
-        ColumnAndRange.HistogramParts h2 = Converters.checkNull(info.second).prepare();
-        ColumnAndRange.HistogramParts h3 = Converters.checkNull(info.third).prepare();
+        assert info.first != null;
+        assert info.second != null;
+        assert info.third != null;
+        ColumnAndRange.HistogramParts h1 = info.first.prepare();
+        ColumnAndRange.HistogramParts h2 = info.second.prepare();
+        ColumnAndRange.HistogramParts h3 = info.third.prepare();
         HeatMap3DSketch sk = new HeatMap3DSketch(h1.buckets, h2.buckets, h3.buckets,
                 h1.column, h2.column, h3.column, 1.0, info.first.seed);
         this.runSketch(this.table, sk, request, context);
@@ -132,8 +137,10 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     void histogram2D(RpcRequest request, RpcRequestContext context) {
         ColPair info = request.parseArgs(ColPair.class);
-        ColumnAndRange.HistogramParts h1 = Converters.checkNull(info.first).prepare();
-        ColumnAndRange.HistogramParts h2 = Converters.checkNull(info.second).prepare();
+        assert info.first != null;
+        assert info.second != null;
+        ColumnAndRange.HistogramParts h1 = info.first.prepare();
+        ColumnAndRange.HistogramParts h2 = info.second.prepare();
         HeatMapSketch sketch = new HeatMapSketch(
                 h1.buckets, h2.buckets, h1.column, h2.column, 1.0, info.first.seed);
 
@@ -276,6 +283,7 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     void sampledControlPoints(RpcRequest request, RpcRequestContext context) {
         SampledControlPoints info = request.parseArgs(SampledControlPoints.class);
+        assert info.columnNames != null;
         double samplingRate = ((double) info.numSamples) / info.rowCount;
         RandomSamplingSketch sketch = new RandomSamplingSketch(
                 samplingRate, info.seed, Converters.checkNull(info.columnNames), info.allowMissing);
@@ -393,7 +401,7 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     void heavyHitters(RpcRequest request, RpcRequestContext context) {
         HeavyHittersInfo info = request.parseArgs(HeavyHittersInfo.class);
-        Converters.checkNull(info);
+        assert info.columns != null;
         FreqKSketch sk = new FreqKSketch(Converters.checkNull(info.columns), info.amount/100);
         this.runCompleteSketch(this.table, sk, (x, c) -> TableTarget.getLists(x, info.columns, true, c),
                 request, context);
@@ -424,11 +432,12 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     void checkHeavy(RpcRequest request, RpcRequestContext context) {
         HeavyHittersFilterInfo hhi = request.parseArgs(HeavyHittersFilterInfo.class);
+        assert hhi.schema != null;
         Observer<RpcTarget> observer = new SingleObserver<RpcTarget>() {
             @Override
             public void onSuccess(RpcTarget rpcTarget) {
                 HeavyHittersTarget hht = (HeavyHittersTarget)rpcTarget;
-                ExactFreqSketch efSketch = new ExactFreqSketch(Converters.checkNull(hhi.schema), hht.heavyHitters);
+                ExactFreqSketch efSketch = new ExactFreqSketch(hhi.schema, hht.heavyHitters);
                 TableTarget.this.runCompleteSketch(
                         TableTarget.this.table, efSketch, (x, c) -> TableTarget.getLists(x, hhi.schema, false, c),
                         request, context);

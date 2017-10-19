@@ -20,7 +20,6 @@ package org.hillview.table.membership;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.IMutableMembershipSet;
 import org.hillview.table.api.IRowIterator;
-import org.hillview.utils.IntSet;
 
 import java.util.function.IntPredicate;
 
@@ -28,7 +27,7 @@ import java.util.function.IntPredicate;
  * This class knows how to create a membership set.
  */
 public class MembershipSetFactory {
-    private static final int sizeEstimationSampleSize = 20;
+    private static final int sizeEstimationSampleSize = 40;
 
     /**
      * Creates a mutable membership set.
@@ -36,8 +35,10 @@ public class MembershipSetFactory {
      * @param estimatedSize  Estimated number of elements inside.
      */
     public static IMutableMembershipSet create(int maxSize, int estimatedSize) {
-        IntSet set = new IntSet(estimatedSize);
-        return new SparseMembershipSet(set, maxSize);
+        if (estimatedSize >= maxSize / 2)
+            return new DenseMembershipSet(maxSize, estimatedSize);
+        else
+            return new SparseMembershipSet(maxSize, estimatedSize);
     }
 
     /**

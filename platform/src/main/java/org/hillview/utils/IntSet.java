@@ -173,14 +173,13 @@ public class IntSet {
      * @param k the number of items to be sampled
      * @return an IntSet of the sample
      */
-    public IntSet sample(final int k, final long seed, final boolean useSeed) {
+    public IntSet sample(final int k, final long seed) {
         if (k >= this.size)
             return this.copy();
         final IntSet sampleSet = new IntSet(k);
         final Randomness psg = new Randomness();
+        psg.setSeed(seed);
         int sampleSize;
-        if (useSeed)
-            psg.setSeed(seed);
         int randomKey = psg.nextInt(this.n);
         if ((this.containsZero) && (randomKey == 0)) {  // sampling zero is done separately
             sampleSet.add(0);
@@ -226,7 +225,7 @@ public class IntSet {
                 return 0;
             }
             while (--this.pos >= 0) {
-                if(IntSet.this.key[this.pos] != 0)
+                if (IntSet.this.key[this.pos] != 0)
                     return IntSet.this.key[this.pos];
             }
             return -1;

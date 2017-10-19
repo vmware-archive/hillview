@@ -28,4 +28,9 @@ public interface IMutableMembershipSet {
      * @return  A membership set that can be used in read mode.
      */
     IMembershipSet seal();
+
+    /**
+     * The number of elements currently in the set.
+     */
+    int size();
 }
