@@ -24,7 +24,7 @@ import {
 import {TableView, TableRenderer} from "./table";
 import {FullPage, significantDigits, formatNumber, translateString, Resolution, Rectangle} from "./ui";
 import {TopMenu, TopSubMenu} from "./menu";
-import {reorder, transpose, ICancellable, PartialResult} from "./util";
+import {reorder, transpose, ICancellable, PartialResult, Seed} from "./util";
 import {AxisData, HeatMapData, Range2DCollector} from "./heatMap";
 import {combineMenu, CombineOperators, SelectedObject, Renderer} from "./rpc";
 
@@ -133,6 +133,7 @@ export class Histogram2DView extends HistogramViewBase {
             max: this.currentData.xData.stats.max,
             bucketCount: bucketCount,
             samplingRate: samplingRate,
+            seed: Seed.instance.get(),
             cdfBucketCount: 0,
             bucketBoundaries: xBoundaries
         };
@@ -141,6 +142,7 @@ export class Histogram2DView extends HistogramViewBase {
             min: this.currentData.yData.stats.min,
             max: this.currentData.yData.stats.max,
             samplingRate: samplingRate,
+            seed: Seed.instance.get(),
             bucketCount: this.currentData.yPoints,
             cdfBucketCount: 0,
             bucketBoundaries: yBoundaries

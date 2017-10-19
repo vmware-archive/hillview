@@ -42,6 +42,17 @@ export class Converters {
     }
 }
 
+// Random seed management
+export class Seed {
+    public static instance: Seed = new Seed();
+
+    constructor() {}
+
+    public get(): number {
+        return Math.round(Math.random() * 1024 * 1024);
+    }
+}
+
 export function reorder(m: number, n: number): [number, number] {
     if (m < n)
         return [m, n];

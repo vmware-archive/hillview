@@ -24,7 +24,7 @@
 import {RpcRequest, RemoteObject, CombineOperators, Renderer} from "./rpc";
 import {FullPage, IDataView, Resolution} from "./ui";
 import {EqualityFilterDescription} from "./equalityFilter";
-import {ICancellable, PartialResult, Triple} from "./util";
+import {ICancellable, PartialResult, Seed, Triple} from "./util";
 import {PointSet2D} from "./lamp";
 export type ContentsKind = "Category" | "Json" | "String" | "Integer" | "Double" | "Date" | "Interval";
 export function asContentsKind(kind: string): ContentsKind {
@@ -105,9 +105,13 @@ export interface IDistinctStrings {
 }
 
 export class RangeInfo {
+    seed: number;
+
     constructor(public columnName: string,
                 // The following is only used for categorical columns
-                public allNames?: string[]) {}
+                public allNames?: string[]) {
+        this.seed = Seed.instance.get();
+    }
 }
 
 // same as Java class
@@ -132,6 +136,7 @@ export interface ColumnAndRange {
     min: number;
     max: number;
     samplingRate: number;
+    seed: number;
     columnName: string;
     bucketCount: number;
     cdfBucketCount: number;
@@ -167,7 +172,8 @@ export class RemoteTableObject extends RemoteObject {
             precision: 100,
             tableSize: rowCount,
             order: o,
-            position: position
+            position: position,
+            seed: Seed.instance.get()
         });
     }
 
@@ -193,8 +199,8 @@ export class RemoteTableObject extends RemoteObject {
     }
 
     public createRange2DColsRequest(c1: string, c2: string): RpcRequest {
-        let r1: RangeInfo = { columnName: c1, allNames: null };
-        let r2: RangeInfo = { columnName: c2, allNames: null };
+        let r1: RangeInfo = new RangeInfo(c1, null);
+        let r2: RangeInfo = new RangeInfo(c2, null);
         return this.createRange2DRequest(r1, r2);
     }
 
@@ -256,20 +262,23 @@ export class RemoteTableObject extends RemoteObject {
         return this.createRpcRequest("setOperation", CombineOperators[setOp]);
     }
 
-    public createSampledControlPointsRequest(rowCount: number, numSamples: number, columnNames: string[], seed: number = 1) {
-        return this.createRpcRequest("sampledControlPoints", {rowCount: rowCount, numSamples: numSamples, columnNames: columnNames, seed: seed});
+    public createSampledControlPointsRequest(rowCount: number, numSamples: number, columnNames: string[]) {
+        return this.createRpcRequest("sampledControlPoints",
+            {rowCount: rowCount, numSamples: numSamples, columnNames: columnNames, seed: Seed.instance.get() });
     }
 
     public createCategoricalCentroidsControlPointsRequest(categoricalColumnName: string, numericalColumnNames: string[]) {
-        return this.createRpcRequest("categoricalCentroidsControlPoints", {categoricalColumnName: categoricalColumnName, numericalColumnNames: numericalColumnNames});
+        return this.createRpcRequest("categoricalCentroidsControlPoints",
+            {categoricalColumnName: categoricalColumnName, numericalColumnNames: numericalColumnNames});
     }
 
-    public createMDSProjectionRequest(id: string, seed: number = 1) {
-        return this.createRpcRequest("makeMDSProjection", {id: id, seed: seed});
+    public createMDSProjectionRequest(id: string) {
+        return this.createRpcRequest("makeMDSProjection", { id: id, seed: Seed.instance.get() });
     }
 
     public createLAMPMapRequest(controlPointsId: string, colNames: string[], controlPoints: PointSet2D, newColNames: string[]) {
-        return this.createRpcRequest("lampMap", {controlPointsId: controlPointsId, colNames: colNames, newLowDimControlPoints: controlPoints, newColNames: newColNames});
+        return this.createRpcRequest("lampMap",
+            {controlPointsId: controlPointsId, colNames: colNames, newLowDimControlPoints: controlPoints, newColNames: newColNames});
     }
 }
 
@@ -324,10 +333,7 @@ export class DistinctStrings implements IDistinctStrings {
     public size(): number { return this.uniqueStrings.length; }
 
     public getRangeInfo(colName: string): RangeInfo {
-        return {
-            columnName: colName,
-            allNames: this.uniqueStrings
-        };
+        return new RangeInfo(colName, this.uniqueStrings);
     }
 
     /**

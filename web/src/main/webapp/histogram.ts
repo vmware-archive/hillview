@@ -27,7 +27,7 @@ import {
 } from "./tableData";
 import {TableRenderer, TableView} from "./table";
 import {TopMenu, TopSubMenu} from "./menu";
-import {Pair, reorder, ICancellable, PartialResult} from "./util";
+import {Pair, reorder, ICancellable, PartialResult, Seed} from "./util";
 import {HistogramViewBase, BucketDialog} from "./histogramBase";
 import {Dialog} from "./dialog";
 import {Range2DCollector} from "./heatMap";
@@ -135,6 +135,7 @@ export class HistogramView extends HistogramViewBase {
             min: this.currentData.stats.min,
             max: this.currentData.stats.max,
             samplingRate: samplingRate,
+            seed: Seed.instance.get(),
             bucketCount: +bucketCount,
             cdfBucketCount: cdfBucketCount,
             bucketBoundaries: boundaries
@@ -569,7 +570,8 @@ class MakeHistogram extends RemoteTableRenderer {
             // Get the categorical data and invoke the continuation
             CategoryCache.instance.retrieveCategoryValues(this.remoteObject, [this.colDesc.name], this.page, cont);
         } else {
-            let rr = this.remoteObject.createRangeRequest({columnName: this.colDesc.name, allNames: null});
+            let rr = this.remoteObject.createRangeRequest(
+                {columnName: this.colDesc.name, allNames: null, seed: Seed.instance.get()});
             rr.chain(this.operation);
             rr.invoke(new RangeCollector(this.colDesc, this.schema, this.allStrings, this.page, this.remoteObject, this.exact, rr));
         }

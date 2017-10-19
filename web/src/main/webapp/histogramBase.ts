@@ -26,7 +26,7 @@ import {
 } from "./tableData";
 import {BaseType} from "d3-selection";
 import {ScaleLinear, ScaleTime} from "d3-scale";
-import {Converters} from "./util";
+import {Converters, Seed} from "./util";
 
 export type AnyScale = ScaleLinear<number, number> | ScaleTime<number, number>;
 
@@ -218,6 +218,7 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
             min: stats.min,
             max: stats.max,
             samplingRate: samplingRate,
+            seed: Seed.instance.get(),
             bucketCount: bucketCount,
             cdfBucketCount: cdfBucketCount,
             bucketBoundaries: boundaries

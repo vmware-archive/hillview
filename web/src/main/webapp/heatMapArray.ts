@@ -23,7 +23,7 @@ import {RecordOrder} from "./tableData";
 import {
     FullPage, Size, Resolution, ScrollBar, significantDigits, IScrollTarget
 } from "./ui";
-import {Pair, Triple, truncate, Point2D, ICancellable, PartialResult} from "./util";
+import {Pair, Triple, truncate, Point2D, ICancellable, PartialResult, Seed} from "./util";
 import {ColorMap, ColorLegend} from "./vis";
 import d3 = require('d3');
 import {AxisData} from "./heatMap";
@@ -558,6 +558,7 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
         let numXBuckets = CompactHeatMapView.size.width / Resolution.minDotSize;
         let numYBuckets = CompactHeatMapView.size.height / Resolution.minDotSize;
 
+        // TODO: sample
         let heatMapArrayArgs: Triple<ColumnAndRange, ColumnAndRange, ColumnAndRange> = {
             first: {
                 columnName: this.args.cds[0].name,
@@ -566,6 +567,7 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
                 cdfBucketCount: 0,
                 bucketCount: numXBuckets,
                 samplingRate: 1,
+                seed: Seed.instance.get(),
                 bucketBoundaries: null
             },
             second: {
@@ -575,6 +577,7 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
                 cdfBucketCount: 0,
                 bucketCount: numYBuckets,
                 samplingRate: 1,
+                seed: Seed.instance.get(),
                 bucketBoundaries: null
             },
             third: {
@@ -584,6 +587,7 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
                 cdfBucketCount: 0,
                 bucketCount: zBins.length,
                 samplingRate: 1,
+                seed: Seed.instance.get(),
                 bucketBoundaries: zBins
             }
         };
