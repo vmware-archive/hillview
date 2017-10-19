@@ -40,7 +40,8 @@ public class CDFTest extends BaseTest {
         this.colName = bigTable.getSchema().getColumnNames()[0];
         this.dataSet = new LocalDataSet<ITable>(bigTable);
         this.colStat = this.dataSet.blockingSketch(
-                       new BasicColStatSketch(new ColumnAndConverterDescription(this.colName)));
+                       new BasicColStatSketch(
+                               new ColumnAndConverterDescription(this.colName), 0, 1, 0));
     }
 
     private Histogram prepareCDF(int width, int height, boolean useSampling) {
@@ -50,7 +51,8 @@ public class CDFTest extends BaseTest {
         double rate = sampleSize / (double)this.colStat.getPresentCount();
         if ((rate > 0.1) || (!useSampling))
             rate = 1.0; // no performance gains in sampling
-        HistogramSketch sk = new HistogramSketch(bDec, new ColumnAndConverterDescription(this.colName), rate);
+        HistogramSketch sk = new HistogramSketch(
+                bDec, new ColumnAndConverterDescription(this.colName), rate, 0);
         final Histogram tmpHist = this.dataSet.blockingSketch(sk);
         return tmpHist.createCDF();
     }
@@ -65,7 +67,8 @@ public class CDFTest extends BaseTest {
         if ((rate > 0.1) || (!useSampling))
             rate = 1.0; //no use in sampling
         return this.dataSet.blockingSketch(
-                new HistogramSketch(bDec, new ColumnAndConverterDescription(this.colName), rate));
+                new HistogramSketch(
+                        bDec, new ColumnAndConverterDescription(this.colName), rate, 0));
     }
 
     @Test

@@ -109,14 +109,17 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
      */
     @SuppressWarnings("ConstantConditions")
     public int compareTo(BaseRowSnapshot other, RecordOrder ro) {
-        for (ColumnSortOrientation cso: ro) {
+        for (int i = 0; i < ro.getSize(); i++) {
+            ColumnSortOrientation cso = ro.getOrientation(i);
             String cn = cso.columnDescription.name;
+            boolean thisMissing = this.isMissing(cn);
+            boolean otherMissing = other.isMissing(cn);
             int c;
-            if (this.isMissing(cn) && other.isMissing(cn))
+            if (thisMissing && otherMissing)
                 c = 0;
-            else if (this.isMissing(cn))
+            else if (thisMissing)
                 c = 1;
-            else if (other.isMissing(cn))
+            else if (otherMissing)
                 c = -1;
             else switch (cso.columnDescription.kind) {
                 case Category:

@@ -17,10 +17,8 @@
 
 package org.hillview.table.api;
 
+import org.hillview.table.membership.MembershipSetFactory;
 import org.hillview.utils.Randomness;
-import org.hillview.table.SparseMembership;
-import org.hillview.utils.IntSet;
-
 import java.util.function.IntPredicate;
 
 /**
@@ -42,18 +40,23 @@ public interface IMembershipSet extends IRowOrder {
     boolean isMember(int rowIndex);
 
     /**
-     * @return an IMembershipSet containing k samples from the membership map. The samples are made
-     * without replacement. Returns the full set if its size is smaller than k. There is no guarantee that
-     * two subsequent samples return the same sample set.
-     */
-    IMembershipSet sample(int k);
-
-    /**
      * Return a membership containing only the rows in the current one where
      * the predicate evaluates to true.
      * @param predicate  Predicate evaluated for each row.
      */
-    IMembershipSet filter(IntPredicate predicate);
+    default IMembershipSet filter(IntPredicate predicate) {
+        int estimatedSize = MembershipSetFactory.estimateSize(this, predicate);
+        IMutableMembershipSet ms = MembershipSetFactory.create(this.getSize(), estimatedSize);
+
+        IRowIterator baseIterator = this.getIterator();
+        int tmp = baseIterator.getNextRow();
+        while (tmp >= 0) {
+            if (predicate.test(tmp))
+                ms.add(tmp);
+            tmp = baseIterator.getNextRow();
+        }
+        return ms.seal();
+    }
 
     /**
      * @return an IMembershipSet containing k samples from the membership map. The samples are made
@@ -65,34 +68,55 @@ public interface IMembershipSet extends IRowOrder {
     /**
      * @return a sample of size (rate * rowCount). randomizes between the floor and ceiling of this expression.
      */
-    default IMembershipSet sample(double rate) {
-        return this.sample(this.getSampleSize(rate, 0, false));
-    }
-
-    /**
-     * @return same as sample(double rate) but with the seed for randomness specified by the caller.
-     */
     default IMembershipSet sample(double rate, long seed) {
+        if (rate <= 0)
+            throw new RuntimeException("Sampling rate of 0");
         return this.sample(this.getSampleSize(rate, seed, true), seed);
     }
 
-    /**
-     * @return a new map which is the union of current map and otherMap.
-     */
-    IMembershipSet union(IMembershipSet otherMap);
-
-    IMembershipSet intersection(IMembershipSet otherMap);
-
-    default IMembershipSet setMinus(IMembershipSet otherMap) {
-        final IntSet setMinusSet = new IntSet();
+    default IMembershipSet setMinus(IMembershipSet other) {
+        IMutableMembershipSet mms = MembershipSetFactory.create(
+                this.getMax(), this.getSize() - other.getSize());
         final IRowIterator iter = this.getIterator();
         int curr = iter.getNextRow();
         while (curr >= 0) {
-            if (!otherMap.isMember(curr))
-                setMinusSet.add(curr);
+            if (!other.isMember(curr))
+                mms.add(curr);
             curr = iter.getNextRow();
         }
-        return new SparseMembership(setMinusSet, this.getMax());
+        return mms.seal();
+    }
+
+    default IMembershipSet union(final IMembershipSet other) {
+        IMutableMembershipSet mms = MembershipSetFactory.create(
+                this.getMax(), this.getSize() + other.getSize());
+        IRowIterator iter = this.getIterator();
+        int curr = iter.getNextRow();
+        while (curr >= 0) {
+            mms.add(curr);
+            curr = iter.getNextRow();
+        }
+
+        iter = other.getIterator();
+        curr = iter.getNextRow();
+        while (curr >= 0) {
+            mms.add(curr);
+            curr = iter.getNextRow();
+        }
+        return mms.seal();
+    }
+
+    default IMembershipSet intersection(final IMembershipSet other) {
+        IMutableMembershipSet mms = MembershipSetFactory.create(
+                this.getMax(), Math.min(this.getSize(), other.getSize()));
+        final IRowIterator iter = this.getIterator();
+        int curr = iter.getNextRow();
+        while (curr >= 0) {
+            if (other.isMember(curr))
+                mms.add(curr);
+            curr = iter.getNextRow();
+        }
+        return mms.seal();
     }
 
     default int getSampleSize(double rate, long seed, boolean useSeed) {

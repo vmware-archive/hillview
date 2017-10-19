@@ -33,19 +33,20 @@ public class SampleCorrelationSketch implements ISketch<ITable, CorrMatrix> {
      * Int or Double.
      */
     private final String[] colNames;
+    private final long seed;
     private final double samplingRate;
 
-    public SampleCorrelationSketch(String[] colNames, double samplingRate) {
+    public SampleCorrelationSketch(String[] colNames, double samplingRate, long seed) {
         this.colNames= colNames;
         this.samplingRate = samplingRate;
+        this.seed = seed;
     }
 
     /**
      * The default probability of a row being included in the sample is 0.1
      */
-    public SampleCorrelationSketch(String[] colNames) {
-        this.colNames = colNames;
-        this.samplingRate = 0.1;
+    public SampleCorrelationSketch(String[] colNames, long seed) {
+        this(colNames, .1, seed);
     }
 
     @Nullable
@@ -84,7 +85,7 @@ public class SampleCorrelationSketch implements ISketch<ITable, CorrMatrix> {
                 this.colNames);
         ColumnAndConverter[] iCols = data.getLoadedColumns(ccds);
         CorrMatrix cm = new CorrMatrix(this.colNames);
-        IMembershipSet sampleData = data.getMembershipSet().sample(this.samplingRate);
+        IMembershipSet sampleData = data.getMembershipSet().sample(this.samplingRate, this.seed);
         cm.count = sampleData.getSize();
         IRowIterator rowIt = sampleData.getIterator();
         int i = rowIt.getNextRow();

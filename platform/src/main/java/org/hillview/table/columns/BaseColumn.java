@@ -20,6 +20,9 @@ package org.hillview.table.columns;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
+import org.hillview.table.api.IRowIterator;
+import org.hillview.table.api.IRowOrder;
+
 import java.time.Duration;
 import java.time.Instant;
 

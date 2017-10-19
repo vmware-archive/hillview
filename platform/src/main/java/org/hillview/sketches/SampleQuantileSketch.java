@@ -34,22 +34,25 @@ import static org.hillview.table.columns.ObjectArrayColumn.mergeColumns;
 public class SampleQuantileSketch  implements ISketch<ITable, SampleList> {
     private final RecordOrder colSortOrder;
     /**
-     * The rate at which we sample the data. It is set to be 5*(resolution)^2/dataSize,
-     * so we expect a table of size 5*(resolution)^2. This is chosen so that the desired accuracy in
+     * The rate at which we sample the data. It is set to be (resolution)^2/dataSize,
+     * so we expect a table of size (resolution)^2. This is chosen so that the desired accuracy in
      * the quantiles is 1/resolution. It can be tuned by changing the size by a constant factor.
-     * For a resolution of 100, the expected sample size is 50,000.
+     * For a resolution of 100, the expected sample size is 10,000.
      */
     private final double samplingRate;
+    private final long seed;
+
     /**
      * @param sortOrder The sorting order on the columns.
      * @param resolution Number of buckets: percentiles correspond to 100 buckets etc.
      * @param dataSize The size of the input table on which we want to run the quantile computation.
      */
     public SampleQuantileSketch(final RecordOrder sortOrder, final int resolution,
-                                final long dataSize) {
+                                final long dataSize, final long seed) {
         this.colSortOrder = sortOrder;
-        int n = Math.max(resolution, 100);
-        this.samplingRate = (5.0*resolution*resolution)/dataSize;
+        double n = Math.max(resolution, 100);
+        this.samplingRate = (n * n)/dataSize;
+        this.seed = seed;
     }
 
     @Nullable
@@ -65,11 +68,12 @@ public class SampleQuantileSketch  implements ISketch<ITable, SampleList> {
      */
     @Override
     public SampleList create(ITable data) {
-        final IMembershipSet sampleSet = data.getMembershipSet().sample(this.samplingRate);
-        final SmallTable sampleTable = data.compress(sampleSet);
+        final IMembershipSet sampleSet = data.getMembershipSet().sample(
+                this.samplingRate, this.seed);
+        final SmallTable sampleTable = data.compress(this.colSortOrder.toSubSchema(), sampleSet);
         final IRowOrder rowOrder = new ArrayRowOrder(this.
                 colSortOrder.getSortedRowOrder(sampleTable));
-        return new SampleList(sampleTable.compress(this.colSortOrder.toSubSchema(), rowOrder));
+        return new SampleList(sampleTable.compress(rowOrder));
     }
 
     /**

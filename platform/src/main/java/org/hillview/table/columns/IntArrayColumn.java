@@ -18,10 +18,7 @@
 package org.hillview.table.columns;
 
 import org.hillview.table.ColumnDescription;
-import org.hillview.table.api.ContentsKind;
-import org.hillview.table.api.IColumn;
-import org.hillview.table.api.IIntColumn;
-import org.hillview.table.api.IMutableColumn;
+import org.hillview.table.api.*;
 
 import javax.annotation.Nullable;
 import java.io.Serializable;

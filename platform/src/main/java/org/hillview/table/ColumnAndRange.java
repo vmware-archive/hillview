@@ -33,6 +33,7 @@ public class ColumnAndRange implements Serializable {
     public int cdfBucketCount;
     public int bucketCount;
     public double samplingRate;
+    public long seed;
     @Nullable
     public String[] bucketBoundaries;  // only used for Categorical columns
 
@@ -47,7 +48,7 @@ public class ColumnAndRange implements Serializable {
         }
         BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(this.min, this.max, this.bucketCount);
         ColumnAndConverterDescription column = new ColumnAndConverterDescription(this.columnName, converter);
-        HistogramSketch sketch = new HistogramSketch(buckets, column, this.samplingRate);
+        HistogramSketch sketch = new HistogramSketch(buckets, column, this.samplingRate, this.seed);
         return new HistogramParts(buckets, column, sketch);
     }
 

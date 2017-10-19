@@ -18,8 +18,7 @@
 package org.hillview.table.columns;
 
 import org.hillview.table.ColumnDescription;
-import org.hillview.table.api.IColumn;
-import org.hillview.table.api.IDoubleColumn;
+import org.hillview.table.api.*;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;

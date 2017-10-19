@@ -32,15 +32,7 @@ public class HeatMap3DSketch implements ISketch<ITable, HeatMap3D> {
     private final ColumnAndConverterDescription col2;
     private final ColumnAndConverterDescription col3;
     private final double rate;
-
-    public HeatMap3DSketch(IBucketsDescription bucketDesc1,
-                           IBucketsDescription bucketDesc2,
-                           IBucketsDescription bucketDesc3,
-                           ColumnAndConverterDescription col1,
-                           ColumnAndConverterDescription col2,
-                           ColumnAndConverterDescription col3) {
-        this(bucketDesc1, bucketDesc2, bucketDesc3, col1, col2, col3, 1.0);
-    }
+    private final long seed;
 
     public HeatMap3DSketch(IBucketsDescription bucketDesc1,
                            IBucketsDescription bucketDesc2,
@@ -48,7 +40,7 @@ public class HeatMap3DSketch implements ISketch<ITable, HeatMap3D> {
                            ColumnAndConverterDescription col1,
                            ColumnAndConverterDescription col2,
                            ColumnAndConverterDescription col3,
-                           double rate) {
+                           double rate, long seed) {
         this.bucketDescD1 = bucketDesc1;
         this.bucketDescD2 = bucketDesc2;
         this.bucketDescD3 = bucketDesc3;
@@ -56,6 +48,7 @@ public class HeatMap3DSketch implements ISketch<ITable, HeatMap3D> {
         this.col2 = col2;
         this.col3 = col3;
         this.rate = rate;
+        this.seed = seed;
     }
 
     @Override
@@ -64,7 +57,8 @@ public class HeatMap3DSketch implements ISketch<ITable, HeatMap3D> {
                 this.col1, this.col2, this.col3
         });
         HeatMap3D result = this.getZero();
-        result.createHeatMap(cols[0], cols[1], cols[2], data.getMembershipSet().sample(this.rate));
+        result.createHeatMap(cols[0], cols[1], cols[2],
+                data.getMembershipSet().sample(this.rate, this.seed));
         return result;
     }
 

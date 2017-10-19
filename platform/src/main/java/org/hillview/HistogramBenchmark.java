@@ -1,11 +1,6 @@
 package org.hillview;
 
 import com.google.common.net.HostAndPort;
-import io.netty.util.internal.logging.InternalLoggerFactory;
-import io.netty.util.internal.logging.JdkLoggerFactory;
-import io.netty.util.internal.logging.Log4J2LoggerFactory;
-import io.netty.util.internal.logging.Log4JLoggerFactory;
-import io.netty.util.internal.logging.Slf4JLoggerFactory;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.IDataSet;
@@ -15,7 +10,7 @@ import org.hillview.sketches.BucketsDescriptionEqSize;
 import org.hillview.sketches.Histogram;
 import org.hillview.sketches.HistogramSketch;
 import org.hillview.table.ColumnDescription;
-import org.hillview.table.FullMembership;
+import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.table.Table;
 import org.hillview.table.api.ColumnAndConverter;
 import org.hillview.table.api.ColumnAndConverterDescription;
@@ -29,8 +24,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
-import java.util.logging.LogManager;
-import java.util.logging.Logger;
 
 /**
  * Benchmark
@@ -102,17 +95,18 @@ public class HistogramBenchmark {
         BucketsDescriptionEqSize buckDes = new BucketsDescriptionEqSize(0, 100, bucketNum);
         final Histogram hist = new Histogram(buckDes);
         DoubleArrayColumn col = generateDoubleArray(colSize, 100);
-        FullMembership fMap = new FullMembership(colSize);
+        FullMembershipSet fMap = new FullMembershipSet(colSize);
 
         if (args[0].equals("simple")) {
-            Runnable r = () -> hist.create(new ColumnAndConverter(col), fMap, 1.0);
+            Runnable r = () -> hist.create(new ColumnAndConverter(col), fMap, 1.0, 0);
             runNTimes(r, runCount, "Simple histogram", colSize);
         }
         List<IColumn> cols = new ArrayList<IColumn>();
             cols.add(col);
         ITable table = new Table(cols, fMap);
-        ISketch<ITable, Histogram> sk = new HistogramSketch(buckDes, new ColumnAndConverterDescription(col
-                .getName()));
+        ISketch<ITable, Histogram> sk =
+                new HistogramSketch(
+                        buckDes, new ColumnAndConverterDescription(col.getName()), 1, 0);
 
         if (args[0].equals("noseparatethread")) {
             final IDataSet<ITable> ds = new LocalDataSet<ITable>(table, false);

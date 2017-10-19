@@ -26,6 +26,8 @@ import org.hillview.table.columns.CategoryArrayColumn;
 import org.hillview.table.columns.DoubleArrayColumn;
 import org.hillview.table.columns.IntArrayColumn;
 import org.hillview.table.columns.StringArrayColumn;
+import org.hillview.table.membership.FullMembershipSet;
+import org.hillview.table.membership.SparseMembershipSet;
 import org.jblas.DoubleMatrix;
 
 import java.util.*;
@@ -168,7 +170,7 @@ public class TestTables {
             final String colName = "Column" + String.valueOf(i);
             columns.add(IntArrayGenerator.getRandIntArray(size, range, colName, rn));
         }
-        final FullMembership full = new FullMembership(size);
+        final FullMembershipSet full = new FullMembershipSet(size);
         return new Table(columns, full);
     }
 
@@ -311,7 +313,7 @@ public class TestTables {
         int start = 0;
         while (start < tableSize) {
             int thisFragSize = Math.min(fragmentSize, tableSize - start);
-            IMembershipSet members = new SparseMembership(start, thisFragSize, tableSize);
+            IMembershipSet members = new SparseMembershipSet(start, thisFragSize, tableSize);
             tableList.add(bigTable.selectRowsFromFullTable(members));
             start += fragmentSize;
         }

@@ -27,22 +27,21 @@ public class HistogramSketch implements ISketch<ITable, Histogram> {
     private final IBucketsDescription bucketDesc;
     private final ColumnAndConverterDescription col;
     private final double rate;
-
-    public HistogramSketch(IBucketsDescription bucketDesc, ColumnAndConverterDescription col) {
-        this(bucketDesc, col, 1.0);
-    }
+    private final long seed;
 
     public HistogramSketch(IBucketsDescription bucketDesc, ColumnAndConverterDescription col,
-                           double rate) {
+                           double rate, long seed) {
         this.bucketDesc = bucketDesc;
         this.col = col;
         this.rate = rate;
+        this.seed = seed;
     }
 
     @Override
     public Histogram create(final ITable data) {
         Histogram result = this.getZero();
-        result.create(data.getLoadedColumn(this.col), data.getMembershipSet(), this.rate);
+        result.create(data.getLoadedColumn(this.col), data.getMembershipSet(),
+                this.rate, this.seed);
         return result;
     }
 

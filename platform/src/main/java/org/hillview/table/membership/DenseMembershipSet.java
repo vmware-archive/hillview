@@ -1,0 +1,122 @@
+/*
+ * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.hillview.table.membership;
+
+import org.hillview.table.api.IMembershipSet;
+import org.hillview.table.api.IMutableMembershipSet;
+import org.hillview.table.api.IRowIterator;
+import org.hillview.utils.Randomness;
+
+import java.util.BitSet;
+
+/**
+ * A dense membership set.
+ */
+public class DenseMembershipSet implements IMembershipSet, IMutableMembershipSet {
+    private final BitSet membershipMap;
+    private final int max;
+    private int size;
+
+    public DenseMembershipSet(int max, int expectedSize) {
+        this.membershipMap = new BitSet(expectedSize);
+        this.max = max;
+        this.size = 0;
+    }
+
+    @Override
+    public int getMax() {
+        return this.max;
+    }
+
+    @Override
+    public boolean isMember(int rowIndex) {
+        return this.membershipMap.get(rowIndex);
+    }
+
+    @Override
+    public IMembershipSet sample(int k, long seed) {
+        if (k >= this.size)
+            return this;
+
+        final Randomness psg = new Randomness();
+        psg.setSeed(seed);
+        int[] chosen = new int[k];
+        int i, row = -1;
+
+        // Reservoir sampling from this current set of bits
+        IRowIterator ri = this.getIterator();
+        for (i = 0; i < k; ++ i) {
+            row = ri.getNextRow();
+            assert row >= 0;
+            chosen[i] = row;
+        }
+        for (; row >= 0; ++ i) {
+            row = ri.getNextRow();
+            int j = psg.nextInt(i+1);
+            if (j < k)
+                chosen[j] = row;
+        }
+
+        IMutableMembershipSet mms = MembershipSetFactory.create(this.getMax(), k);
+        for (i=0; i < k; i++)
+            mms.add(chosen[i]);
+        return mms.seal();
+    }
+
+    @Override
+    public void add(int index) {
+        if (this.membershipMap.get(index))
+            return;
+        this.membershipMap.set(index);
+        this.size++;
+    }
+
+    @Override
+    public IMembershipSet seal() {
+        return this;
+    }
+
+    @Override
+    public int getSize() {
+        return this.size;
+    }
+
+    @Override
+    public int size() { return this.size; }
+
+    @Override
+    public IRowIterator getIterator() {
+        return new DenseMembershipIterator(this.membershipMap);
+    }
+
+    public static class DenseMembershipIterator implements IRowIterator {
+        private final BitSet bits;
+        private int current;
+
+        DenseMembershipIterator(BitSet bits) {
+            this.bits = bits;
+            this.current = -1;
+        }
+
+        @Override
+        public int getNextRow() {
+            this.current = this.bits.nextSetBit(this.current + 1);
+            return this.current;
+        }
+    }
+}

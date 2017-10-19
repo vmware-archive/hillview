@@ -88,6 +88,13 @@
             <artifactId>junit</artifactId>
             <version>4.12</version>
         </dependency>
+        <!-- junit parallel testing annotation -->
+        <dependency>
+            <groupId>com.github.stephenc.jcip</groupId>
+            <artifactId>jcip-annotations</artifactId>
+            <version>1.0-1</version>
+            <scope>test</scope>
+        </dependency>
         <!-- Java reactive APIs: Observables -->
         <dependency>
             <groupId>io.reactivex</groupId>
@@ -132,6 +139,16 @@
             </extension>
         </extensions>
         <plugins>
+            <!-- for parallel junit tests -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.20.1</version>
+                <configuration>
+                    <parallel>classes</parallel>
+                    <threadCount>3</threadCount>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>

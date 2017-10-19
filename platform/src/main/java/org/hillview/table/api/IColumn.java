@@ -20,6 +20,7 @@ package org.hillview.table.api;
 import net.openhft.hashing.LongHashFunction;
 import org.hillview.table.*;
 import org.hillview.table.columns.*;
+import org.hillview.utils.HillviewLogger;
 
 import javax.annotation.Nullable;
 import java.io.Serializable;
@@ -99,11 +100,13 @@ public interface IColumn extends Serializable {
 
     /**
      * Compresses an IColumn to an ObjectArrayColumn, ordered according to the specified rowOrder
-     * @param rowOrder specifies the set of rows and their order
-     * @return An ObjectArrayColumn with the specified sequence of rows
+     * @param rowOrder specifies the set of rows and their order.
+     * @return An ObjectArrayColumn with the specified sequence of rows.
      */
-    default IColumn compress(final IRowOrder rowOrder) {
+    default ObjectArrayColumn compress(final IRowOrder rowOrder) {
         final IRowIterator rowIt = rowOrder.getIterator();
+        HillviewLogger.instance.info("Compressing column",
+                "{0} to {1}", this.sizeInRows(), rowOrder.getSize());
         final ObjectArrayColumn result = new ObjectArrayColumn(
                 this.getDescription(), rowOrder.getSize());
         int row = 0;

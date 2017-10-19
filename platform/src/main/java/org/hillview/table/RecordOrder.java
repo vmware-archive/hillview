@@ -24,7 +24,6 @@ import org.hillview.table.rows.VirtualRowSnapshot;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -34,7 +33,7 @@ import java.util.List;
  * As long as a record contains all these columns, we can project onto just these columns and order
  * the record.
  */
-public class RecordOrder implements Iterable<ColumnSortOrientation>, Serializable {
+public class RecordOrder implements Serializable {
     private final List<ColumnSortOrientation> sortOrientationList;
 
     public RecordOrder() {
@@ -50,10 +49,19 @@ public class RecordOrder implements Iterable<ColumnSortOrientation>, Serializabl
      */
     public Schema toSchema() {
         Schema newSchema = new Schema();
-        for (ColumnSortOrientation o: this.sortOrientationList) {
-            newSchema.append(o.columnDescription);
+        for (int i=0; i < this.getSize(); i++) {
+            ColumnSortOrientation ordCol = this.getOrientation(i);
+            newSchema.append(ordCol.columnDescription);
         }
         return newSchema;
+    }
+
+    public int getSize() {
+        return this.sortOrientationList.size();
+    }
+
+    public ColumnSortOrientation getOrientation(int index) {
+        return this.sortOrientationList.get(index);
     }
 
     /**
@@ -61,15 +69,11 @@ public class RecordOrder implements Iterable<ColumnSortOrientation>, Serializabl
      */
     public ISubSchema toSubSchema() {
         final HashSubSchema subSchema = new HashSubSchema();
-        for (final ColumnSortOrientation ordCol : this) {
+        for (int i=0; i < this.getSize(); i++) {
+            ColumnSortOrientation ordCol = this.getOrientation(i);
             subSchema.add(ordCol.columnDescription.name);
         }
         return subSchema;
-    }
-
-    @Override
-    public Iterator<ColumnSortOrientation> iterator() {
-        return this.sortOrientationList.iterator();
     }
 
     /**

@@ -23,6 +23,7 @@ import com.google.gson.JsonObject;
 import org.hillview.dataset.api.IJson;
 import org.hillview.table.api.*;
 import org.hillview.table.columns.ObjectArrayColumn;
+import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.table.rows.RowSnapshot;
 
 import java.io.Serializable;
@@ -136,12 +137,12 @@ public class SmallTable extends BaseTable implements Serializable, IJson {
 
     @Override
     public IRowIterator getRowIterator() {
-        return new FullMembership.FullMembershipIterator(this.rowCount);
+        return new FullMembershipSet.FullMembershipIterator(this.rowCount);
     }
 
     @Override
     public IMembershipSet getMembershipSet() {
-        return new FullMembership(this.rowCount);
+        return new FullMembershipSet(this.rowCount);
     }
 
     @Override

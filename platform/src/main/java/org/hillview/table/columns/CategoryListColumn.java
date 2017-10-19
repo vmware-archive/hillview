@@ -18,9 +18,7 @@
 package org.hillview.table.columns;
 
 import org.hillview.table.ColumnDescription;
-import org.hillview.table.api.ContentsKind;
-import org.hillview.table.api.ICategoryColumn;
-import org.hillview.table.api.IColumn;
+import org.hillview.table.api.*;
 import org.hillview.utils.HillviewLogger;
 
 import javax.annotation.Nullable;
@@ -43,7 +41,6 @@ public class CategoryListColumn extends BaseListColumn implements ICategoryColum
     private int firstShortSegment;
     // first segment that uses integers
     private int firstIntSegment;
-
 
     public CategoryListColumn(final ColumnDescription desc) {
         super(desc);

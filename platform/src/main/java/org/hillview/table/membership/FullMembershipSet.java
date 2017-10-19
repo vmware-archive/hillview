@@ -15,22 +15,21 @@
  * limitations under the License.
  */
 
-package org.hillview.table;
+package org.hillview.table.membership;
 
 import org.hillview.table.api.IMembershipSet;
+import org.hillview.table.api.IMutableMembershipSet;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.utils.IntSet;
 import org.hillview.utils.Randomness;
 
-import java.util.function.IntPredicate;
-
 /**
  * A IMembershipSet which contains all rows.
  */
-public class FullMembership implements IMembershipSet {
+public class FullMembershipSet implements IMembershipSet {
     private final int rowCount;
 
-    public FullMembership(final int rowCount) throws NegativeArraySizeException {
+    public FullMembershipSet(final int rowCount) throws NegativeArraySizeException {
         if (rowCount >= 0)
             this.rowCount = rowCount;
         else
@@ -59,28 +58,7 @@ public class FullMembership implements IMembershipSet {
     }
 
     /**
-     * Samples k items. Generator is seeded using its default method. Sampled items are
-     * first placed in a Set. The procedure samples k times with replacement so it
-     * may return a set with less than k distinct items.
-     *
-     * @param k the number of samples with replacement
-     * @return IMembershipSet instantiated as a Partial Sparse
-     */
-    @Override
-    public IMembershipSet sample(final int k) {
-        if (k >= this.rowCount)
-            return new FullMembership(this.rowCount);
-        final Randomness randomGenerator = new Randomness();
-        return this.sampleUtil(randomGenerator, k);
-    }
-
-    @Override
-    public IMembershipSet filter(IntPredicate predicate) {
-        return new SparseMembership(this, predicate);
-    }
-
-    /**
-     * Same as sample(k) but with the seed of the generator given as a parameter. The procedure
+     * The procedure
      * samples k times with replacement so it may return a set with less than k distinct items
      * @param k the number of samples taken with replacement
      * @param seed the seed for the randomness generator
@@ -89,54 +67,25 @@ public class FullMembership implements IMembershipSet {
     @Override
     public IMembershipSet sample(final int k, final long seed) {
         if (k >= this.rowCount)
-            return new FullMembership(this.rowCount);
+            return new FullMembershipSet(this.rowCount);
         final Randomness randomGenerator = new Randomness();
         randomGenerator.setSeed(seed);
         return this.sampleUtil(randomGenerator, k);
     }
 
-    @Override
-    public IMembershipSet union(final IMembershipSet otherSet) {
-        if (otherSet instanceof FullMembership)
-            return new FullMembership(Integer.max(this.rowCount, otherSet.getSize()));
-        return otherSet.union(this);
-    }
-
-    @Override
-    public IMembershipSet intersection(final IMembershipSet otherSet) {
-        if (otherSet instanceof FullMembership)
-            return new FullMembership(Integer.min(this.rowCount, otherSet.getSize()));
-        return otherSet.intersection(this);
-    }
-
-    @Override
-    public IMembershipSet setMinus(final IMembershipSet otherSet) {
-        if (otherSet instanceof FullMembership) {
-            final IntSet baseMap = new IntSet(Integer.max(0, this.getSize()-otherSet.getSize()));
-            for (int i = otherSet.getSize(); i < this.rowCount; i++)
-                baseMap.add(i);
-            return new SparseMembership(baseMap, this.getMax());
-        }
-        final IntSet baseMap = new IntSet();
-        for (int i = 0; i < this.getSize(); i++)
-            if (!otherSet.isMember(i))
-                baseMap.add(i);
-        return new SparseMembership(baseMap, this.getMax());
-    }
-
     private IMembershipSet sampleUtil(final Randomness randomGenerator, final int k) {
         int l = k;
-        if (k > (int) (this.rowCount * 0.7)) // sample the items that are not returned
+        if (k > (int)(this.rowCount * 0.7)) // sample the items that are not returned
             l = this.rowCount - k;
-        final IntSet s = new IntSet(l);
+        IMutableMembershipSet s = MembershipSetFactory.create(this.getMax(), k);
         for (int i=0; i < l; i++)
             s.add(randomGenerator.nextInt(this.rowCount));
         while (s.size() < l)
             s.add(randomGenerator.nextInt(this.rowCount));
         if (l == k)
-            return new SparseMembership(s, this.getMax());
+            return s.seal();
         else
-            return this.setMinus(new SparseMembership(s, this.getMax()));
+            return this.setMinus(s.seal());
     }
 
     public static class FullMembershipIterator implements IRowIterator {

@@ -35,7 +35,7 @@ public class RandomSamplingSketchTest extends BaseTest {
         RandomSamplingSketch sketch = new RandomSamplingSketch(samplingRate, seed);
         SmallTable result = dataset.blockingSketch(sketch);
         System.out.println(String.format("Result has %d rows.", result.getNumOfRows()));
-        result = result.compress(result.getMembershipSet().sample(numSamples));
+        result = result.compress(result.getMembershipSet().sample(numSamples, 0));
         System.out.println(String.format("Resampled result has %d rows.", result.getNumOfRows()));
     }
 }

@@ -43,6 +43,7 @@ import static org.junit.Assert.fail;
 /**
  * Remoting tests for Hillview.
  */
+@net.jcip.annotations.NotThreadSafe
 public class RemotingTest extends BaseTest {
     private final static HostAndPort serverAddress = HostAndPort.fromParts("127.0.0.1",
                                                                            1234);

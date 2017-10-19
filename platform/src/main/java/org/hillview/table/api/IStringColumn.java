@@ -18,6 +18,7 @@
 package org.hillview.table.api;
 
 import net.openhft.hashing.LongHashFunction;
+import org.hillview.table.columns.StringArrayColumn;
 
 import javax.annotation.Nullable;
 import java.util.function.Function;

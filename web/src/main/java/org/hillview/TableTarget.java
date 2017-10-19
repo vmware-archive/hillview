@@ -101,7 +101,7 @@ public final class TableTarget extends RpcTarget {
         }
         ColumnAndRange.HistogramParts parts = info.prepare();
         BucketsDescriptionEqSize cdfBuckets = new BucketsDescriptionEqSize(info.min, info.max, cdfBucketCount);
-        HistogramSketch cdf = new HistogramSketch(cdfBuckets, parts.column);
+        HistogramSketch cdf = new HistogramSketch(cdfBuckets, parts.column, 1.0, info.seed);
         ConcurrentSketch<ITable, Histogram, Histogram> csk =
                 new ConcurrentSketch<ITable, Histogram, Histogram>(cdf, parts.sketch);
         this.runSketch(this.table, csk, request, context);
@@ -110,37 +110,46 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     void heatMap(RpcRequest request, RpcRequestContext context) {
         ColPair info = request.parseArgs(ColPair.class);
-        ColumnAndRange.HistogramParts h1 = Converters.checkNull(info.first).prepare();
-        ColumnAndRange.HistogramParts h2 = Converters.checkNull(info.second).prepare();
+        assert info.first != null;
+        assert info.second != null;
+        ColumnAndRange.HistogramParts h1 = info.first.prepare();
+        ColumnAndRange.HistogramParts h2 = info.second.prepare();
         // We expect the sampling rate to be the same for both columns
-        HeatMapSketch sk = new HeatMapSketch(h1.buckets, h2.buckets, h1.column, h2.column, info.first.samplingRate);
+        HeatMapSketch sk = new HeatMapSketch(
+                h1.buckets, h2.buckets, h1.column, h2.column, info.first.samplingRate, info.first.seed);
         this.runSketch(this.table, sk, request, context);
     }
 
     @HillviewRpc
     void heatMap3D(RpcRequest request, RpcRequestContext context) {
         ColTriple info = request.parseArgs(ColTriple.class);
-        ColumnAndRange.HistogramParts h1 = Converters.checkNull(info.first).prepare();
-        ColumnAndRange.HistogramParts h2 = Converters.checkNull(info.second).prepare();
-        ColumnAndRange.HistogramParts h3 = Converters.checkNull(info.third).prepare();
+        assert info.first != null;
+        assert info.second != null;
+        assert info.third != null;
+        ColumnAndRange.HistogramParts h1 = info.first.prepare();
+        ColumnAndRange.HistogramParts h2 = info.second.prepare();
+        ColumnAndRange.HistogramParts h3 = info.third.prepare();
         HeatMap3DSketch sk = new HeatMap3DSketch(h1.buckets, h2.buckets, h3.buckets,
-                h1.column, h2.column, h3.column);
+                h1.column, h2.column, h3.column, 1.0, info.first.seed);
         this.runSketch(this.table, sk, request, context);
     }
 
     @HillviewRpc
     void histogram2D(RpcRequest request, RpcRequestContext context) {
         ColPair info = request.parseArgs(ColPair.class);
-        ColumnAndRange.HistogramParts h1 = Converters.checkNull(info.first).prepare();
-        ColumnAndRange.HistogramParts h2 = Converters.checkNull(info.second).prepare();
-        HeatMapSketch sketch = new HeatMapSketch(h1.buckets, h2.buckets, h1.column, h2.column);
+        assert info.first != null;
+        assert info.second != null;
+        ColumnAndRange.HistogramParts h1 = info.first.prepare();
+        ColumnAndRange.HistogramParts h2 = info.second.prepare();
+        HeatMapSketch sketch = new HeatMapSketch(
+                h1.buckets, h2.buckets, h1.column, h2.column, 1.0, info.first.seed);
 
         int width = info.first.cdfBucketCount;
         if (info.first.min >= info.first.max)
             width = 1;
         BucketsDescriptionEqSize cdfBuckets =
                 new BucketsDescriptionEqSize(info.first.min, info.first.max, width);
-        HistogramSketch cdf = new HistogramSketch(cdfBuckets, h1.column);
+        HistogramSketch cdf = new HistogramSketch(cdfBuckets, h1.column, 1.0, info.first.seed);
         ConcurrentSketch<ITable, Histogram, HeatMap> csk =
                 new ConcurrentSketch<ITable, Histogram, HeatMap>(cdf, sketch);
         this.runSketch(this.table, csk, request, context);
@@ -151,6 +160,7 @@ public final class TableTarget extends RpcTarget {
         // The following are only used for categorical columns
         @Nullable
         String[] allNames;
+        long seed;
 
         ColumnAndConverterDescription getColumn() {
             IStringConverterDescription converter;
@@ -163,14 +173,14 @@ public final class TableTarget extends RpcTarget {
         }
 
         BasicColStatSketch getBasicStatsSketch() {
-            return new BasicColStatSketch(this.getColumn(), 0, 1.0);
+            return new BasicColStatSketch(this.getColumn(), 0, 1.0, this.seed);
         }
     }
 
     @HillviewRpc
     void range(RpcRequest request, RpcRequestContext context) {
         RangeInfo info = request.parseArgs(RangeInfo.class);
-        BasicColStatSketch sk = new BasicColStatSketch(info.getColumn(), 0, 1.0);
+        BasicColStatSketch sk = new BasicColStatSketch(info.getColumn(), 0, 1.0, info.seed);
         this.runSketch(this.table, sk, request, context);
     }
 
@@ -273,6 +283,7 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     void sampledControlPoints(RpcRequest request, RpcRequestContext context) {
         SampledControlPoints info = request.parseArgs(SampledControlPoints.class);
+        assert info.columnNames != null;
         double samplingRate = ((double) info.numSamples) / info.rowCount;
         RandomSamplingSketch sketch = new RandomSamplingSketch(
                 samplingRate, info.seed, Converters.checkNull(info.columnNames), info.allowMissing);
@@ -369,13 +380,14 @@ public final class TableTarget extends RpcTarget {
         int precision;
         double position;
         long tableSize;
+        long seed;
         RecordOrder order = new RecordOrder();
     }
 
     @HillviewRpc
     void quantile(RpcRequest request, RpcRequestContext context) {
         QuantileInfo info = request.parseArgs(QuantileInfo.class);
-        SampleQuantileSketch sk = new SampleQuantileSketch(info.order, info.precision, info.tableSize);
+        SampleQuantileSketch sk = new SampleQuantileSketch(info.order, info.precision, info.tableSize, info.seed);
         BiFunction<SampleList, HillviewComputation, RowSnapshot> getRow = (ql, c) -> ql.getRow(info.position);
         this.runCompleteSketch(this.table, sk, getRow, request, context);
     }
@@ -389,7 +401,7 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     void heavyHitters(RpcRequest request, RpcRequestContext context) {
         HeavyHittersInfo info = request.parseArgs(HeavyHittersInfo.class);
-        Converters.checkNull(info);
+        assert info.columns != null;
         FreqKSketch sk = new FreqKSketch(Converters.checkNull(info.columns), info.amount/100);
         this.runCompleteSketch(this.table, sk, (x, c) -> TableTarget.getLists(x, info.columns, true, c),
                 request, context);
@@ -420,11 +432,12 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     void checkHeavy(RpcRequest request, RpcRequestContext context) {
         HeavyHittersFilterInfo hhi = request.parseArgs(HeavyHittersFilterInfo.class);
+        assert hhi.schema != null;
         Observer<RpcTarget> observer = new SingleObserver<RpcTarget>() {
             @Override
             public void onSuccess(RpcTarget rpcTarget) {
                 HeavyHittersTarget hht = (HeavyHittersTarget)rpcTarget;
-                ExactFreqSketch efSketch = new ExactFreqSketch(Converters.checkNull(hhi.schema), hht.heavyHitters);
+                ExactFreqSketch efSketch = new ExactFreqSketch(hhi.schema, hht.heavyHitters);
                 TableTarget.this.runCompleteSketch(
                         TableTarget.this.table, efSketch, (x, c) -> TableTarget.getLists(x, hhi.schema, false, c),
                         request, context);

@@ -25,7 +25,9 @@ platform/platform.iml
 web/web.iml
 
 *.log
+*.log.*
 *.log.lck
+*.log.lck.*
 out
 apache-tomcat-*
 web/classes
