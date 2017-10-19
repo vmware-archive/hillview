@@ -66,9 +66,8 @@ public class DenseMembershipSet implements IMembershipSet, IMutableMembershipSet
         row = ri.getNextRow();
         for (; row >= 0; ++ i) {
             int j = psg.nextInt(i+1);
-            if (j < k) {
+            if (j < k)
                 chosen[j] = row;
-            }
             row = ri.getNextRow();
         }
 
