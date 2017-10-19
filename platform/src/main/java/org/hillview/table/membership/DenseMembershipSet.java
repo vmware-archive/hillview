@@ -48,7 +48,7 @@ public class DenseMembershipSet implements IMembershipSet, IMutableMembershipSet
         return this.membershipMap.get(rowIndex);
     }
 
-    public IMembershipSet denseSample(int k, long seed) {
+    private IMembershipSet denseSample(int k, long seed) {
         if (k >= this.size)
             return this;
 
