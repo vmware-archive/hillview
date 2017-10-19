@@ -48,8 +48,7 @@ public class DenseMembershipSet implements IMembershipSet, IMutableMembershipSet
         return this.membershipMap.get(rowIndex);
     }
 
-    @Override
-    public IMembershipSet sample(int k, long seed) {
+    public IMembershipSet denseSample(int k, long seed) {
         if (k >= this.size)
             return this;
 
@@ -64,16 +63,35 @@ public class DenseMembershipSet implements IMembershipSet, IMutableMembershipSet
             assert row >= 0;
             chosen[i] = row;
         }
+        row = ri.getNextRow();
         for (; row >= 0; ++ i) {
-            row = ri.getNextRow();
             int j = psg.nextInt(i+1);
-            if (j < k)
+            if (j < k) {
                 chosen[j] = row;
+            }
+            row = ri.getNextRow();
         }
 
         IMutableMembershipSet mms = MembershipSetFactory.create(this.getMax(), k);
         for (i=0; i < k; i++)
             mms.add(chosen[i]);
+        return mms.seal();
+    }
+
+    @Override
+    public IMembershipSet sample(int k, long seed) {
+        if (k > 0.7 * this.size)
+            return this.denseSample(k, seed);
+        final int numOfTries = 5;
+        final Randomness psg = new Randomness(seed);
+        IMutableMembershipSet mms = MembershipSetFactory.create(this.getMax(), k);
+        int i = 0;
+        while ((i < numOfTries * k) && (mms.size() < k)){
+            int index = psg.nextInt(this.membershipMap.length());
+            if (this.membershipMap.get(index))
+                    mms.add(index);
+            i++;
+        }
         return mms.seal();
     }
 
