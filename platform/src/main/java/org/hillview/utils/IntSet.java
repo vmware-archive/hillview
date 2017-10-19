@@ -131,6 +131,7 @@ public class IntSet {
     }
 
     private void rehash(final int newN) {
+        HillviewLogger.instance.info("Rehashing", "from {0} to {1}", this.realSize(), newN);
         final int[] key = this.key;
         final int mask = newN - 1;
         final int[] newKey = new int[newN + 1];
@@ -177,8 +178,7 @@ public class IntSet {
         if (k >= this.size)
             return this.copy();
         final IntSet sampleSet = new IntSet(k);
-        final Randomness psg = new Randomness();
-        psg.setSeed(seed);
+        final Randomness psg = new Randomness(seed);
         int sampleSize;
         int randomKey = psg.nextInt(this.n);
         if ((this.containsZero) && (randomKey == 0)) {  // sampling zero is done separately

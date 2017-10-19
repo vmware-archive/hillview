@@ -30,7 +30,7 @@ public class TreeTopKTest extends BaseTest {
 
     @Test
     public void testHeapTopKZero() {
-        final Randomness rn = new Randomness();
+        final Randomness rn = this.getRandomness();
         for (int j =1; j <20; j++) {
             for (int i = 1; i < 1000; i++)
                 this.myTree.push(rn.nextInt(10000));
@@ -40,7 +40,7 @@ public class TreeTopKTest extends BaseTest {
 
     @Test
     public void testTreeTopKTimed() {
-        final Randomness rn = new Randomness();
+        final Randomness rn = this.getRandomness();
         final int inpSize = 1000000;
         final long startTime = System.nanoTime();
         for (int j = 1; j < inpSize; j++)

@@ -68,8 +68,7 @@ public class FullMembershipSet implements IMembershipSet {
     public IMembershipSet sample(final int k, final long seed) {
         if (k >= this.rowCount)
             return new FullMembershipSet(this.rowCount);
-        final Randomness randomGenerator = new Randomness();
-        randomGenerator.setSeed(seed);
+        final Randomness randomGenerator = new Randomness(seed);
         return this.sampleUtil(randomGenerator, k);
     }
 

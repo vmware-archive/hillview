@@ -22,10 +22,6 @@ import org.apache.commons.math3.random.MersenneTwister;
 public class Randomness {
     final private MersenneTwister myPrg;
 
-    public Randomness() {
-        this.myPrg = new MersenneTwister();
-    }
-
     public Randomness(long seed) {
         this.myPrg = new MersenneTwister(seed);
     }
@@ -35,8 +31,6 @@ public class Randomness {
     public int nextInt(int range) { return this.myPrg.nextInt(range); }
 
     public double nextDouble() { return this.myPrg.nextDouble(); }
-
-    public void setSeed(long seed) { this.myPrg.setSeed(seed); }
 
     public boolean nextBoolean() { return this.myPrg.nextBoolean(); }
 

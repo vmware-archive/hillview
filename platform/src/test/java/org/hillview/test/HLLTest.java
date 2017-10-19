@@ -36,7 +36,7 @@ public class HLLTest extends BaseTest {
     public void testHLL() {
         final int size = 2000000;
         final int range = 20000;
-        final Randomness rn = new Randomness();
+        final Randomness rn = this.getRandomness();
         final IntArrayColumn col = IntArrayGenerator.getRandIntArray(size, range, "Test", rn);
         final int accuracy = 14;
         final long seed = 0; //deterministic seed for testing

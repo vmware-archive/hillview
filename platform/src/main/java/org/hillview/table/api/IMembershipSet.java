@@ -71,7 +71,7 @@ public interface IMembershipSet extends IRowOrder {
     default IMembershipSet sample(double rate, long seed) {
         if (rate <= 0)
             throw new RuntimeException("Sampling rate of 0");
-        return this.sample(this.getSampleSize(rate, seed, true), seed);
+        return this.sample(this.getSampleSize(rate, seed), seed);
     }
 
     default IMembershipSet setMinus(IMembershipSet other) {
@@ -119,12 +119,10 @@ public interface IMembershipSet extends IRowOrder {
         return mms.seal();
     }
 
-    default int getSampleSize(double rate, long seed, boolean useSeed) {
+    default int getSampleSize(double rate, long seed) {
         if (rate >= 1)
             return this.getSize();
-        Randomness r = new Randomness();
-        if (useSeed)
-            r.setSeed(seed);
+        Randomness r = new Randomness(seed);
         final int sampleSize;
         final double appSampleSize = rate * this.getSize();
         if (r.nextDouble() < (appSampleSize - Math.floor(appSampleSize)))

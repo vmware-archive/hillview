@@ -25,16 +25,16 @@ import org.junit.Test;
 public class TreeVsHeapTest extends BaseTest {
     private final int inpSize = 1000;
     private final int[] randInp = new int[this.inpSize];
-    private final Randomness rn = new Randomness();
 
     @Test
     public void TreeVsHeapOne() {
         final int runs = 10;
         long startTime, endTime;
+        Randomness rn = this.getRandomness();
         //noinspection ConstantConditions
         for (int i = 1; i < runs; i++) {
             for (int j = 1; j < this.inpSize; j++) {
-                this.randInp[j] = this.rn.nextInt(this.inpSize);
+                this.randInp[j] = rn.nextInt(this.inpSize);
             }
             final int maxSize = 100;
             final HeapTopK<Integer> myHeap = new HeapTopK<Integer>(maxSize, Integer::compare);

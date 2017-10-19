@@ -18,6 +18,7 @@
 package org.hillview.test;
 
 import org.hillview.utils.HillviewLogger;
+import org.hillview.utils.Randomness;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 
@@ -27,11 +28,16 @@ import org.junit.Ignore;
 @Ignore
 public class BaseTest {
     static boolean initialized = false;
+    static Randomness randomness = new Randomness(0);
 
     @BeforeClass
     public static void setup() {
         if (!initialized)
             HillviewLogger.initialize("test", "test.log");
         initialized = true;
+    }
+
+    public Randomness getRandomness() {
+        return randomness;
     }
 }

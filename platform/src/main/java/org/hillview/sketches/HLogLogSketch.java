@@ -35,10 +35,8 @@ public class HLogLogSketch implements ISketch<ITable, HLogLog> {
      **/
     private final int logSpaceSize;
 
-    public HLogLogSketch(String colName) {
-        this.colName = colName;
-        this.seed = new Randomness().nextLong();
-        this.logSpaceSize = 12;
+    public HLogLogSketch(String colName, long seed) {
+        this(colName, 12, seed);
     }
 
     public HLogLogSketch(String colName, int logSpaceSize, long seed) {

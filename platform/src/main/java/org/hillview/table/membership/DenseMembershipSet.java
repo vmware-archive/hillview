@@ -53,8 +53,7 @@ public class DenseMembershipSet implements IMembershipSet, IMutableMembershipSet
         if (k >= this.size)
             return this;
 
-        final Randomness psg = new Randomness();
-        psg.setSeed(seed);
+        final Randomness psg = new Randomness(seed);
         int[] chosen = new int[k];
         int i, row = -1;
 
