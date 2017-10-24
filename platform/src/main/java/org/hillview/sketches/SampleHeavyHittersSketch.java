@@ -70,8 +70,7 @@ public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKList> {
             MutableInteger val = resultMap.get(it.getKey());
             if (val != null) {
                 val.set(val.get() + it.getIntValue());
-            }
-            else {
+            } else {
                 resultMap.put(it.getKey(), new MutableInteger(it.getIntValue()));
             }
         }
@@ -83,7 +82,7 @@ public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKList> {
 
         Object2IntOpenHashMap<RowSnapshot> hm = new Object2IntOpenHashMap<RowSnapshot>(pList.size());
         for (int i = 0; i < pList.size(); i++) {
-                hm.put(pList.get(i).getKey(), pList.get(i).getValue().get());
+            hm.put(pList.get(i).getKey(), pList.get(i).getValue().get());
         }
         return new FreqKList(left.totalRows + right.totalRows, this.epsilon,
                 left.maxSize + right.maxSize, hm);

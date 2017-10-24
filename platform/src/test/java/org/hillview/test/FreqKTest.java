@@ -46,6 +46,7 @@ public class FreqKTest extends BaseTest {
                 fkList.totalRows*fkList.epsilon - fkList.getErrBound()));
     }
 
+
     private void shhAdd(ITable left, ITable right, double epsilon) {
         SampleHeavyHittersSketch shh = new SampleHeavyHittersSketch(left.getSchema(), epsilon,
                 left.getNumOfRows() + right.getNumOfRows(), 135078971);
