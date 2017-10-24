@@ -82,7 +82,6 @@ export class HeavyHittersView extends RemoteTableObjectView {
         let thr = tHead.appendChild(document.createElement("tr"));
         let thd0 = document.createElement("th");
         thd0.innerHTML = "Rank";
-
         thr.appendChild(thd0);
         for (let i = 0; i < this.schema.length; i++) {
             let cd = new ColumnDescription(this.schema[i]);

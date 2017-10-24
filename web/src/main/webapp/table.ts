@@ -38,6 +38,7 @@ import {HeatMapArrayDialog} from "./heatMapArray";
 import {ColumnConverter, HLogLog} from "./columnConverter";
 import {DataRange} from "./vis"
 import {HeavyHittersView} from "./heavyhittersview";
+import {SchemaView} from "./schemaview";
 import {LAMPDialog} from "./lamp";
 
 /**
@@ -100,7 +101,8 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
                     { text: "Full dataset", action: () => { TableView.fullDataset(this.page); } },
                     { text: "Refresh", action: () => { this.refresh(); } },
                     { text: "All columns", action: () => { this.showAllRows(); } },
-                    { text: "No columns", action: () => { this.setOrder(new RecordOrder([])); } }
+                    { text: "No columns", action: () => { this.setOrder(new RecordOrder([])); } },
+                    { text: "Schema", action: () => { this.viewSchema();}}
                 ])
             },
             {
@@ -811,6 +813,13 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
 
     public getColumnCount() : number {
         return this.schema.length;
+    }
+
+    public viewSchema(): void {
+        let newPage = new FullPage("Schema", this.page);
+        let sv = new SchemaView(this.remoteObjectId, newPage, this.schema);
+        newPage.setDataView(sv);
+        this.page.insertAfterMe(newPage);
     }
 
     private runHeavyHitters(percent: number, isMG: boolean) {
