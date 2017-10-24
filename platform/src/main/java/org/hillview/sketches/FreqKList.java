@@ -44,6 +44,7 @@ public class FreqKList implements Serializable {
     public long totalRows;
     /**
      * The number of counters we store: the K in top-K heavy hitters.
+     * In sampleHeavyHitters, it is used to store the number of samples taken.
      */
     private final int maxSize;
     /**

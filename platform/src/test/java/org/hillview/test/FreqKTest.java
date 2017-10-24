@@ -22,6 +22,7 @@ import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.sketches.FreqKList;
 import org.hillview.sketches.FreqKSketch;
+import org.hillview.sketches.SampleHeavyHittersSketch;
 import org.hillview.table.HashSubSchema;
 import org.hillview.table.SmallTable;
 import org.hillview.table.Table;
@@ -44,26 +45,40 @@ public class FreqKTest extends BaseTest {
         fkList.getList().forEach(rss -> assertTrue(fkList.hMap.getInt(rss) >=
                 fkList.totalRows*fkList.epsilon - fkList.getErrBound()));
     }
+
+    private FreqKList shhCreate(ITable table, double epsilon) {
+        SampleHeavyHittersSketch shh = new SampleHeavyHittersSketch(table.getSchema(), epsilon,
+                table.getNumOfRows(), 135078971);
+        FreqKList shhList  = shh.create(table);
+        System.out.println(shhList.toString());
+        return shhList;
+    }
+
+    private FreqKList fkCreate(ITable table, double epsilon) {
+        FreqKSketch fk = new FreqKSketch(table.getSchema(), epsilon);
+        FreqKList fkList= fk.create(table);
+        fkList.filter(true);
+        System.out.println(fkList.toString());
+        return fkList;
+    }
+
     @Test
     public void testTopK1() {
         final int numCols = 2;
-        final double epsilon = 0.01;
-        final int size = 1000;
+        final double epsilon = 0.005;
+        final int size = 2000;
         Table leftTable = TestTables.getRepIntTable(size, numCols);
-        FreqKSketch fk = new FreqKSketch(leftTable.getSchema(), epsilon);
-        FreqKList fkList= fk.create(leftTable);
-        filterTest(fkList);
-
+        FreqKList fkList = fkCreate(leftTable, epsilon);
+        FreqKList shhList = shhCreate(leftTable, epsilon);
     }
 
     @Test
     public void testTopKSq() {
-        final int range = 15;
-        double eps = 0.2;
+        final int range = 10;
+        double epsilon = 0.02;
         SmallTable leftTable = TestTables.getSqIntTable(range);
-        FreqKSketch fk = new FreqKSketch(leftTable.getSchema(), eps);
-        FreqKList fkList= fk.create(leftTable);
-        filterTest(fkList);
+        FreqKList fkList = fkCreate(leftTable, epsilon);
+        FreqKList shhList = shhCreate(leftTable, epsilon);
     }
 
     @Test
@@ -86,9 +101,8 @@ public class FreqKTest extends BaseTest {
         final int range = 14;
         final int size = 20000;
         SmallTable leftTable = TestTables.getHeavyIntTable(numCols, size, base, range);
-        FreqKSketch fk = new FreqKSketch(leftTable.getSchema(), epsilon);
-        FreqKList fkList= fk.create(leftTable);
-        filterTest(fkList);
+        FreqKList fkList = fkCreate(leftTable, epsilon);
+        FreqKList shhList = shhCreate(leftTable, epsilon);
     }
 
     @Test
