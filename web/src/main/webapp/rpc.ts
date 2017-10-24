@@ -279,6 +279,8 @@ export abstract class Renderer<T> extends RpcReceiver<PartialResult<T>> {
 
     public onNext(value: PartialResult<T>) {
         this.progressBar.setPosition(value.done);
+        if (this.operation != null)
+           console.log("Message took: " + this.elapsedMilliseconds());
     }
 
     public elapsedMilliseconds(): number {

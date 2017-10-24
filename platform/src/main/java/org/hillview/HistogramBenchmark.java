@@ -2,6 +2,7 @@ package org.hillview;
 
 import com.google.common.net.HostAndPort;
 import org.hillview.dataset.LocalDataSet;
+import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.ISketch;
@@ -10,20 +11,22 @@ import org.hillview.sketches.BucketsDescriptionEqSize;
 import org.hillview.sketches.Histogram;
 import org.hillview.sketches.HistogramSketch;
 import org.hillview.table.ColumnDescription;
-import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.table.Table;
-import org.hillview.table.api.ColumnAndConverter;
 import org.hillview.table.api.ColumnAndConverterDescription;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.table.columns.DoubleArrayColumn;
+import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.utils.HillviewLogger;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * Benchmark
@@ -83,29 +86,28 @@ public class HistogramBenchmark {
         }
     }
 
+    private static ITable createTable(final int colSize, final IColumn col) {
+        FullMembershipSet fMap = new FullMembershipSet(colSize);
+        List<IColumn> cols = new ArrayList<IColumn>();
+        cols.add(col);
+        return new Table(cols, fMap);
+    }
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, InterruptedException {
         // Testing the performance of histogram computations
         final int bucketNum = 40;
         final int mega = 1024 * 1024;
         final int colSize = 100 * mega;
         final int runCount = Integer.parseInt(args[1]);
+        final int parallelism = Integer.parseInt(args[3]);
         HillviewLogger.instance.setLogLevel(Level.OFF);
+        final DoubleArrayColumn col = generateDoubleArray(colSize, 100);
 
         BucketsDescriptionEqSize buckDes = new BucketsDescriptionEqSize(0, 100, bucketNum);
         final Histogram hist = new Histogram(buckDes);
-        DoubleArrayColumn col = generateDoubleArray(colSize, 100);
-        FullMembershipSet fMap = new FullMembershipSet(colSize);
 
-        if (args[0].equals("simple")) {
-            Runnable r = () -> hist.create(new ColumnAndConverter(col), fMap, 1.0, 0);
-            runNTimes(r, runCount, "Simple histogram", colSize);
-        }
-        List<IColumn> cols = new ArrayList<IColumn>();
-            cols.add(col);
-        ITable table = new Table(cols, fMap);
-        ISketch<ITable, Histogram> sk =
-                new HistogramSketch(
+        ITable table = createTable(colSize, col);
+        ISketch<ITable, Histogram> sk = new HistogramSketch(
                         buckDes, new ColumnAndConverterDescription(col.getName()), 1, 0);
 
         if (args[0].equals("noseparatethread")) {
@@ -123,7 +125,11 @@ public class HistogramBenchmark {
         if (args[0].equals("remote")) {
             // Setup server
             final HostAndPort serverAddress = HostAndPort.fromParts("127.0.0.1",1234);
-            final IDataSet<ITable> lds = new LocalDataSet<ITable>(table);
+            final List<IDataSet<ITable>> tables =  IntStream.range(0, parallelism)
+                    .mapToObj((i) -> new LocalDataSet<ITable>(createTable(colSize,
+                            generateDoubleArray(colSize, 100))))
+                    .collect(Collectors.toList());
+            final IDataSet<ITable> lds = new ParallelDataSet<>(tables);
             final HillviewServer server = new HillviewServer(serverAddress, lds);
 
             // Setup client
@@ -135,12 +141,57 @@ public class HistogramBenchmark {
         if (args[0].equals("remote-no-memoization")) {
             // Setup server
             final HostAndPort serverAddress = HostAndPort.fromParts("127.0.0.1",1234);
-            final IDataSet<ITable> lds = new LocalDataSet<ITable>(table);
+            final List<IDataSet<ITable>> tables =  IntStream.range(0, parallelism)
+                                    .mapToObj((i) -> new LocalDataSet<ITable>(createTable(colSize,
+                                                         generateDoubleArray(colSize, 100))))
+                                    .collect(Collectors.toList());
+            final IDataSet<ITable> lds = new ParallelDataSet<>(tables);
             final HillviewServer server = new HillviewServer(serverAddress, lds);
             server.toggleMemoization();
 
             // Setup client
             final IDataSet<ITable> remoteIds = new RemoteDataSet<ITable>(serverAddress);
+            Runnable r = () -> remoteIds.blockingSketch(sk);
+            runNTimes(r, runCount, "Dataset histogram (separate thread)", colSize);
+        }
+
+
+        if (args[0].equals("remote-no-memoization-nw-server")) {
+            final HostAndPort serverAddress = HostAndPort.fromParts(args[2],1234);
+            // Setup server
+            final List<IDataSet<ITable>> tables =  IntStream.range(0, parallelism).parallel()
+                    .mapToObj((i) -> {
+                        System.out.println("LDS " + i + " " + parallelism);
+                        return new LocalDataSet<ITable>(createTable(colSize,
+                            generateDoubleArray(colSize, 100)));
+                    })
+                    .collect(Collectors.toList());
+            final IDataSet<ITable> lds = new ParallelDataSet<>(tables);
+            final HillviewServer server = new HillviewServer(serverAddress, lds);
+            server.toggleMemoization();
+            Thread.currentThread().join();
+        }
+
+        if (args[0].equals("remote-nw-server")) {
+            final HostAndPort serverAddress = HostAndPort.fromParts(args[2],1234);
+            // Setup server
+            final List<IDataSet<ITable>> tables =  IntStream.range(0, parallelism)
+                    .mapToObj((i) -> new LocalDataSet<ITable>(createTable(colSize,
+                            generateDoubleArray(colSize, 100))))
+                    .collect(Collectors.toList());
+            final IDataSet<ITable> lds = new ParallelDataSet<>(tables);
+            final HillviewServer server = new HillviewServer(serverAddress, lds);
+            Thread.currentThread().join();
+        }
+
+        if (args[0].equals("remote-nw-client")) {
+            final List<IDataSet<ITable>> dataSets = Arrays.stream(args[2].split(","))
+                    .map(s -> s + ":1234")
+                    .map(HostAndPort::fromString)
+                    .map(RemoteDataSet<ITable>::new)
+                    .collect(Collectors.toList());
+            // Setup client
+            final IDataSet<ITable> remoteIds = new ParallelDataSet<>(dataSets);
             Runnable r = () -> remoteIds.blockingSketch(sk);
             runNTimes(r, runCount, "Dataset histogram (separate thread)", colSize);
         }
