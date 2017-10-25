@@ -45,12 +45,13 @@ import java.util.List;
 import java.util.UUID;
 
 public class CsvReaderTest extends BaseTest {
-    private static final String dataFolder = "../data";
+    private static final String ontimeFolder = "../data/ontime";
+    private static final String criteoFolder = "../data/criteo";
     private static final String csvFile = "On_Time_Sample.csv";
     private static final String schemaFile = "On_Time.schema";
-    private static final String csvFileC = "criteoTab.csv";
-    private static final String schemaFileC = "criteo.schema";
-    private static final String csvGZ = "criteoTab.gz";
+    private static final String criteoFile = "criteoTab.csv";
+    private static final String criteoSchema = "criteo.schema";
+    private static final String criteoCompressed = "criteoTab.gz";
 
     private ITable readTable(String folder, String file) throws IOException {
         Path path = Paths.get(folder, file);
@@ -64,9 +65,9 @@ public class CsvReaderTest extends BaseTest {
 
     @Test
     public void readCsvFileWithSchemaCriteoTest() throws IOException {
-        Path path = Paths.get(dataFolder, schemaFileC);
+        Path path = Paths.get(criteoFolder, criteoSchema);
         Schema schema = Schema.readFromJsonFile(path);
-        path = Paths.get(dataFolder, csvFileC);
+        path = Paths.get(criteoFolder, criteoFile);
         CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
         config.allowFewerColumns = false;
         config.hasHeaderRow = false;
@@ -80,9 +81,9 @@ public class CsvReaderTest extends BaseTest {
 
     @Test
     public void readGzFileWithSchemaTest() throws IOException {
-        Path path = Paths.get(dataFolder, schemaFileC);
+        Path path = Paths.get(criteoFolder, criteoSchema);
         Schema schema = Schema.readFromJsonFile(path);
-        path = Paths.get(dataFolder, csvGZ);
+        path = Paths.get(criteoFolder, criteoCompressed);
         CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
         config.allowFewerColumns = false;
         config.hasHeaderRow = false;
@@ -97,15 +98,15 @@ public class CsvReaderTest extends BaseTest {
 
     @Test
     public void readCsvFileTest() throws IOException {
-        ITable t = this.readTable(dataFolder, csvFile);
+        ITable t = this.readTable(ontimeFolder, csvFile);
         Assert.assertNotNull(t);
     }
 
     @Test
     public void readCsvFileWithSchemaTest() throws IOException {
-        Path path = Paths.get(dataFolder, schemaFile);
+        Path path = Paths.get(ontimeFolder, schemaFile);
         Schema schema = Schema.readFromJsonFile(path);
-        path = Paths.get(dataFolder, csvFile);
+        path = Paths.get(ontimeFolder, csvFile);
         CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
         config.allowFewerColumns = false;
         config.hasHeaderRow = true;
@@ -193,7 +194,7 @@ public class CsvReaderTest extends BaseTest {
 
     @Test
     public void writeCsvFileTest() throws IOException {
-        ITable tbl = this.readTable(dataFolder, csvFile);
+        ITable tbl = this.readTable(ontimeFolder, csvFile);
         writeReadTable(Converters.checkNull(tbl));
     }
 }
