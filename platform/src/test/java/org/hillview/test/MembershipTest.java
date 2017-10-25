@@ -20,6 +20,7 @@ package org.hillview.test;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.IMutableMembershipSet;
 import org.hillview.table.api.IRowIterator;
+import org.hillview.table.membership.DenseMembershipSet;
 import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.table.membership.MembershipSetFactory;
 import org.hillview.utils.IntSet;
@@ -90,5 +91,16 @@ public class MembershipTest extends BaseTest {
         while (curr >= 0) {
             curr = sIter.getNextRow();
         }
+    }
+
+    @Test
+    public void TestDenseMembership() {
+        DenseMembershipSet dms = new DenseMembershipSet(10000, 10000);
+        for (int i = 0; i < 10000; i++)
+            if (i % 7 != 0) dms.add(i);
+        IMembershipSet sample = dms.sample(8000, 12345);
+        assertEquals(sample.getSize(), 8000);
+        IMembershipSet smallSample = dms.sample(40, 12345);
+        assertEquals(smallSample.getSize(), 40);
     }
 }

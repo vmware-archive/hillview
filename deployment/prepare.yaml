@@ -103,6 +103,12 @@
         chdir: "{{service_folder}}"
         cmd: rm -f *.log *.log.* *.log*.lck
 
+    - name: Create code directory
+      file:
+        path: "{{service_folder}}/hillview"
+        state: directory
+        mode: 0755
+
     - name: Create link to web server log file
       file:
         state=link

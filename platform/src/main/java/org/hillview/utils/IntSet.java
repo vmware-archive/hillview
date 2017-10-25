@@ -33,18 +33,15 @@ public class IntSet {
     private int maxFill;
     private final float f; /* the maximal load of the array */
 
-    public IntSet(final int expected, final float f) {
+    public IntSet(int expected, final float f) {
+        if (expected < 10)
+            expected = 100;
         if ((f > 0.0F) && (f <= 1.0F)) {
-            if (expected < 0) {
-                throw new IllegalArgumentException("The expected number of elements must be " +
-                        "non-negative");
-            } else {
-                this.f = f;
-                this.n = HashUtil.arraySize(expected, f); /* size of array is power of two */
-                this.mask = this.n - 1;
-                this.maxFill = HashUtil.maxFill(this.n, f);
-                this.key = new int[this.n + 1];
-            }
+            this.f = f;
+            this.n = HashUtil.arraySize(expected, f); /* size of array is power of two */
+            this.mask = this.n - 1;
+            this.maxFill = HashUtil.maxFill(this.n, f);
+            this.key = new int[this.n + 1];
         } else {
             throw new IllegalArgumentException("Load factor must be greater than 0 and " +
                     "smaller than or equal to 1");
@@ -55,7 +52,7 @@ public class IntSet {
      * Create an IntSet
      * @param expected The expected number of elements.
      */
-    public IntSet(final int expected) {
+    public IntSet(int expected) {
         this(expected, 0.75F);
     }
 

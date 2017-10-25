@@ -26,7 +26,6 @@ import org.hillview.maps.FindCsvFileMapper;
 import org.hillview.maps.FindFilesMapper;
 import org.hillview.maps.LoadDatabaseTableMapper;
 import org.hillview.storage.CsvFileReader;
-import org.hillview.table.Schema;
 import org.hillview.utils.*;
 import org.hillview.dataset.remoting.HillviewServer;
 import org.hillview.storage.JdbcConnectionInformation;
@@ -36,7 +35,6 @@ import javax.websocket.Session;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -104,6 +102,7 @@ public class InitialObjectTarget extends RpcTarget {
         Converters.checkNull(this.emptyDataset);
         JdbcConnectionInformation conn = new JdbcConnectionInformation("localhost", "employees", "mbudiu", "password");
         LoadDatabaseTableMapper mapper = new LoadDatabaseTableMapper("salaries", conn);
+        assert this.emptyDataset != null;
         this.runMap(this.emptyDataset, mapper, TableTarget::new, request, context);
     }
 
@@ -126,6 +125,7 @@ public class InitialObjectTarget extends RpcTarget {
         IMap<Empty, List<CsvFileObject>> finder;
         if (which >= 0 && which <= 1) {
             limit = which == 0 ? 0 : 1;
+            dataFolder += "ontime/";
             schemaFile = "short.schema";
             fileNamePattern = "(\\d)+_(\\d)+\\.csv";
         } else if (which == 2) {
@@ -142,15 +142,19 @@ public class InitialObjectTarget extends RpcTarget {
             fileNamePattern = "criteoTab.gz";
             schemaFile = "criteo.schema";
         } else if (which == 8) {
-            limit = 0;
+            dataFolder += "ontime/";
             schemaFile = "short.schema";
             fileNamePattern = "(\\d)+_(\\d)+\\.csv";
             replicationFactor = 5;
         } else if (which == 9) {
-            limit = 0;
+            dataFolder += "ontime/";
             schemaFile = "short.schema";
             fileNamePattern = "(\\d)+_(\\d)+\\.csv";
             replicationFactor = 10;
+        } else if (which == 10) {
+            dataFolder += "nycabs/";
+            schemaFile = "yellow.schema";
+            fileNamePattern = "yellow_tripdata_(\\d)+-(\\d)+\\.csv.gz";
         } else {
             throw new RuntimeException("Unexpected operation " + which);
 		}
@@ -158,6 +162,7 @@ public class InitialObjectTarget extends RpcTarget {
         finder = new FindCsvFileMapper(dataFolder, limit, fileNamePattern, schemaFile, config, replicationFactor);
 
         HillviewLogger.instance.info("Preparing files");
+        assert this.emptyDataset != null;
         this.runFlatMap(this.emptyDataset, finder, CsvFileTarget::new, request, context);
     }
 
@@ -167,6 +172,7 @@ public class InitialObjectTarget extends RpcTarget {
         UUID cookie = UUID.randomUUID();
         IMap<Empty, List<String>> finder = new FindFilesMapper(".", 0, "hillview.*.log", cookie.toString());
         HillviewLogger.instance.info("Finding logs");
+        assert this.emptyDataset != null;
         this.runFlatMap(this.emptyDataset, finder, LogFileTarget::new, request, context);
     }
 

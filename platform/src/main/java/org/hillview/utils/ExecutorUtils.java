@@ -55,7 +55,7 @@ public class ExecutorUtils {
         if (computeExecutorService == null) {
             int cpuCount = Runtime.getRuntime().availableProcessors();
             HillviewLogger.instance.info("Detect CPUs", "Using {0} processors", cpuCount);
-            computeExecutorService = ExecutorUtils.newNamedThreadPool("computation", cpuCount);
+            computeExecutorService = newNamedThreadPool("computation", cpuCount);
         }
         return computeExecutorService;
     }

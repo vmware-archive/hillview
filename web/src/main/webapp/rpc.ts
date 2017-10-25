@@ -19,7 +19,6 @@
 
 import Rx = require('rx');
 import Observer = Rx.Observer;
-import Observable = Rx.Observable;
 import d3 = require('d3');
 import {ErrorReporter, ConsoleErrorReporter} from "./errReporter";
 import {ProgressBar, FullPage} from "./ui";
@@ -233,11 +232,7 @@ export abstract class RpcReceiver<T> implements Rx.Observer<T> {
 // Used for operations between multiple objects: the selected object
 // is a RemoteObject which can be combined with another one.
 export class SelectedObject {
-    private selected: RemoteObject;
-
-    private constructor() {
-        this.selected = null;
-    }
+    private selected: RemoteObject = null;
 
     select(object: RemoteObject) {
         this.selected = object;
@@ -279,6 +274,8 @@ export abstract class Renderer<T> extends RpcReceiver<PartialResult<T>> {
 
     public onNext(value: PartialResult<T>) {
         this.progressBar.setPosition(value.done);
+        if (this.operation != null)
+            console.log("onNext after " + this.elapsedMilliseconds());
     }
 
     public elapsedMilliseconds(): number {

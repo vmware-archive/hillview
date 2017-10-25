@@ -32,18 +32,18 @@ export class ColorMap {
         this.logScale = logScale;
     }
 
-    public apply(x) {
+    public apply(x: number) {
         if (this.logScale)
             return this.applyLog(x);
         else
             return this.applyLinear(x);
     }
 
-    private applyLinear(x) {
+    private applyLinear(x: number) {
         return this.map(x / this.max);
     }
 
-    private applyLog(x) {
+    private applyLog(x: number) {
         return this.map(Math.log(x) / Math.log(this.max));
     }
 }

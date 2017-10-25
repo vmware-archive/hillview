@@ -463,8 +463,8 @@ public final class TableTarget extends RpcTarget {
 
     @HillviewRpc
     void hLogLog(RpcRequest request, RpcRequestContext context) {
-        String colName = request.parseArgs(String.class);
-        HLogLogSketch sketch = new HLogLogSketch(colName);
+        RangeInfo col = request.parseArgs(RangeInfo.class);
+        HLogLogSketch sketch = new HLogLogSketch(col.columnName, col.seed);
         this.runSketch(this.table, sketch, request, context);
     }
 

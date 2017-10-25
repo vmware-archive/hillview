@@ -37,12 +37,12 @@ import java.util.stream.Stream;
 /**
  * TODO: delete this class
  * This entry point is only used for preparing some data files for a demo.
- * It takes files named like data/On_Time_On_Time_Performance_*_*.csv and
+ * It takes files named like data/ontime/On_Time_On_Time_Performance_*_*.csv and
  * removes some columns from them.  Optionally, it can also split these into
  * smaller files each.
  */
 public class DemoDataCleaner {
-    static final String dataFolder = "../data";
+    static final String dataFolder = "../data/ontime";
     static final String csvFile = "On_Time_Sample.csv";
     static final String schemaFile = "On_Time.schema";
 

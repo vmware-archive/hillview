@@ -86,9 +86,9 @@ using a sample dataset.
   default is to download 2 months of data.
 
 ```
-$ cd data
+$ cd data/ontime
 $ ./download.sh
-$ cd ..
+$ cd ../..
 ```
 
 If you run out of memory while doing any of the following try to

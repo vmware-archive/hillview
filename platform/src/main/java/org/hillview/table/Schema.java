@@ -69,7 +69,7 @@ public final class Schema
             Schema result = new Schema();
             for (JsonElement e: json.getAsJsonArray()) {
                 ColumnDescription cd = gsonInstance.fromJson(e, ColumnDescription.class);
-                result.append(cd);
+                result.append(Converters.checkNull(cd));
             }
             return result;
         }
@@ -82,6 +82,7 @@ public final class Schema
     }
 
     public void append(final ColumnDescription desc) {
+        desc.validate();
         if (this.columns.containsKey(desc.name))
             throw new InvalidParameterException("Column with name " +
                     desc.name + " already exists");

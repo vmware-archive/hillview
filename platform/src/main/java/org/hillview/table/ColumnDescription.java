@@ -48,6 +48,12 @@ public class ColumnDescription implements Serializable, IJson {
             throw new RuntimeException("Column names cannot be empty");
     }
 
+    public void validate() {
+        // This can happen because column descriptions may be read from external files.
+        if (this.name == null || this.kind == null)
+            throw new RuntimeException("null field in column description");
+    }
+
     @Override public String toString() {
         return this.name + "(" + this.kind.toString() + ")";
     }

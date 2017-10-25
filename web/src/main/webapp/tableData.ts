@@ -191,7 +191,7 @@ export class RemoteTableObject extends RemoteObject {
     }
 
     public createHLogLogRequest(colName: string) : RpcRequest {
-    	return this.createRpcRequest("hLogLog", colName);
+    	return this.createRpcRequest("hLogLog", { columnName: colName, seed: Seed.instance.get() });
     }
 
     public createRange2DRequest(r1: RangeInfo, r2: RangeInfo): RpcRequest {

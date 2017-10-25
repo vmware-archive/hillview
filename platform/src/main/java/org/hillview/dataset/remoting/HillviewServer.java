@@ -52,6 +52,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -132,41 +133,48 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             final UUID id, final StreamObserver<PartialResponse> responseObserver) {
         return new Subscriber<PartialResult<IDataSet>>() {
             @Nullable private PartialResponse memoizedResult = null;
+            private CompletableFuture queue = CompletableFuture.completedFuture(null);
 
             @Override
             public void onCompleted() {
-                responseObserver.onCompleted();
-                HillviewServer.this.operationToObservable.remove(id);
-                if (MEMOIZE && this.memoizedResult != null) {
-                    HillviewServer.this.memoizedCommands.computeIfAbsent(command.getSerializedOp(),
-                                                     (k) -> new ConcurrentHashMap<>())
-                                    .put(command.getIdsIndex(), this.memoizedResult);
-                }
+                queue = queue.thenRunAsync(() -> {
+                    responseObserver.onCompleted();
+                    HillviewServer.this.operationToObservable.remove(id);
+                    if (MEMOIZE && this.memoizedResult != null) {
+                        HillviewServer.this.memoizedCommands.computeIfAbsent(command.getSerializedOp(),
+                                (k) -> new ConcurrentHashMap<>())
+                                .put(command.getIdsIndex(), this.memoizedResult);
+                    }
+                }, executorService);
             }
 
             @Override
             public void onError(final Throwable e) {
-                HillviewLogger.instance.error("Error when creating subscriber", e);
-                e.printStackTrace();
-                responseObserver.onError(asStatusRuntimeException(e));
-                HillviewServer.this.operationToObservable.remove(id);
+                queue = queue.thenRunAsync(() -> {
+                    HillviewLogger.instance.error("Error when creating subscriber", e);
+                    e.printStackTrace();
+                    responseObserver.onError(asStatusRuntimeException(e));
+                    HillviewServer.this.operationToObservable.remove(id);
+                }, executorService);
             }
 
             @Override
             public void onNext(final PartialResult<IDataSet> pr) {
-                Integer idsIndex = null;
-                if (pr.deltaValue != null) {
-                    idsIndex = HillviewServer.this.dsIndex.getAndIncrement();
-                    HillviewServer.this.put(idsIndex, pr.deltaValue);
-                }
-                final OperationResponse<Integer> res = new OperationResponse<Integer>(idsIndex);
-                final byte[] bytes = SerializationUtils.serialize(res);
-                final PartialResponse result = PartialResponse.newBuilder()
-                        .setSerializedOp(ByteString.copyFrom(bytes)).build();
-                responseObserver.onNext(result);
-                if (MEMOIZE) {
-                    this.memoizedResult = result;
-                }
+                queue = queue.thenRunAsync(() -> {
+                    Integer idsIndex = null;
+                    if (pr.deltaValue != null) {
+                        idsIndex = HillviewServer.this.dsIndex.getAndIncrement();
+                        HillviewServer.this.put(idsIndex, pr.deltaValue);
+                    }
+                    final OperationResponse<Integer> res = new OperationResponse<Integer>(idsIndex);
+                    final byte[] bytes = SerializationUtils.serialize(res);
+                    final PartialResponse result = PartialResponse.newBuilder()
+                            .setSerializedOp(ByteString.copyFrom(bytes)).build();
+                    responseObserver.onNext(result);
+                    if (MEMOIZE) {
+                        this.memoizedResult = result;
+                    }
+                }, executorService);
             }
         };
     }
@@ -257,46 +265,52 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                                                                       .sketch(sketchOp.sketch);
             final UUID commandId = new UUID(command.getHighId(), command.getLowId());
             final Subscription sub = observable.subscribe(new Subscriber<PartialResult>() {
-                @Nullable private Object sketchResultAccumulator =
-                        memoize ? sketchOp.sketch.getZero(): null;
+                @Nullable private Object sketchResultAccumulator = memoize ? sketchOp.sketch.getZero(): null;
+                private CompletableFuture queue = CompletableFuture.completedFuture(null);
 
                 @Override
                 public void onCompleted() {
-                    responseObserver.onCompleted();
-                    HillviewServer.this.operationToObservable.remove(commandId);
+                    queue = queue.thenRunAsync(() -> {
+                        responseObserver.onCompleted();
+                        HillviewServer.this.operationToObservable.remove(commandId);
 
-                    if (memoize && this.sketchResultAccumulator != null) {
-                        final OperationResponse<PartialResult> res =
-                                new OperationResponse<PartialResult>(new PartialResult(1.0, this.sketchResultAccumulator));
-                        final byte[] bytes = SerializationUtils.serialize(res);
-                        final PartialResponse memoizedResult = PartialResponse.newBuilder()
-                                .setSerializedOp(ByteString.copyFrom(bytes))
-                                .build();
-                        HillviewServer.this.memoizedCommands.computeIfAbsent(command.getSerializedOp(),
-                                (k) -> new ConcurrentHashMap<Integer, PartialResponse>())
-                                .put(command.getIdsIndex(), memoizedResult);
-                    }
+                        if (memoize && this.sketchResultAccumulator != null) {
+                            final OperationResponse<PartialResult> res =
+                                    new OperationResponse<PartialResult>(new PartialResult(1.0, this.sketchResultAccumulator));
+                            final byte[] bytes = SerializationUtils.serialize(res);
+                            final PartialResponse memoizedResult = PartialResponse.newBuilder()
+                                    .setSerializedOp(ByteString.copyFrom(bytes))
+                                    .build();
+                            HillviewServer.this.memoizedCommands.computeIfAbsent(command.getSerializedOp(),
+                                    (k) -> new ConcurrentHashMap<Integer, PartialResponse>())
+                                    .put(command.getIdsIndex(), memoizedResult);
+                        }
+                    }, executorService);
                 }
 
                 @Override
                 public void onError(final Throwable e) {
-                    HillviewLogger.instance.error("Exception in sketch", e);
-                    e.printStackTrace();
-                    responseObserver.onError(asStatusRuntimeException(e));
-                    HillviewServer.this.operationToObservable.remove(commandId);
+                    queue = queue.thenRunAsync(() -> {
+                        HillviewLogger.instance.error("Exception in sketch", e);
+                        e.printStackTrace();
+                        responseObserver.onError(asStatusRuntimeException(e));
+                        HillviewServer.this.operationToObservable.remove(commandId);
+                    }, executorService);
                 }
 
                 @Override
                 public void onNext(final PartialResult pr) {
-                    if (memoize && this.sketchResultAccumulator != null)
-                        this.sketchResultAccumulator = sketchOp.sketch.add(this
-                            .sketchResultAccumulator, pr.deltaValue);
-                    final OperationResponse<PartialResult> res =
-                            new OperationResponse<PartialResult>(pr);
-                    final byte[] bytes = SerializationUtils.serialize(res);
-                    responseObserver.onNext(PartialResponse.newBuilder()
-                                                           .setSerializedOp(ByteString.copyFrom(bytes))
-                                                           .build());
+                    queue = queue.thenRunAsync(() -> {
+                        if (memoize && this.sketchResultAccumulator != null)
+                            this.sketchResultAccumulator = sketchOp.sketch.add(this
+                                    .sketchResultAccumulator, pr.deltaValue);
+                        final OperationResponse<PartialResult> res =
+                                new OperationResponse<PartialResult>(pr);
+                        final byte[] bytes = SerializationUtils.serialize(res);
+                        responseObserver.onNext(PartialResponse.newBuilder()
+                                .setSerializedOp(ByteString.copyFrom(bytes))
+                                .build());
+                    }, executorService);
                 }
             });
             this.operationToObservable.put(commandId, sub);
