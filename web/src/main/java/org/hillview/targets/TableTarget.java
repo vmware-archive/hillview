@@ -380,7 +380,7 @@ public final class TableTarget extends RpcTarget {
     }
 
     @HillviewRpc
-    void heavyHittersMG(RpcRequest request, RpcRequestContext context) {
+    public void heavyHittersMG(RpcRequest request, RpcRequestContext context) {
         HeavyHittersInfo info = request.parseArgs(HeavyHittersInfo.class);
         assert info.columns != null;
         FreqKSketch sk = new FreqKSketch(Converters.checkNull(info.columns), info.amount/100);
@@ -390,7 +390,7 @@ public final class TableTarget extends RpcTarget {
 
 
     @HillviewRpc
-    void heavyHitters(RpcRequest request, RpcRequestContext context) {
+    public void heavyHitters(RpcRequest request, RpcRequestContext context) {
         HeavyHittersInfo info = request.parseArgs(HeavyHittersInfo.class);
         assert info.columns != null;
         SampleHeavyHittersSketch shh = new SampleHeavyHittersSketch(Converters.checkNull(info.columns),
