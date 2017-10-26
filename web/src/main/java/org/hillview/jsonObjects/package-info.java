@@ -6,7 +6,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,17 +15,16 @@
  * limitations under the License.
  */
 
-package org.hillview.table.columns;
+/**
+ * Package that doesn't allow null values as method parameters.
+ */
 
-import org.hillview.table.ColumnAndRange;
+@ParametersAreNonnullByDefault
+@FieldsAreNonnullByDefault
+@MethodsAreNonnullByDefault
+package org.hillview.jsonObjects;
 
-import javax.annotation.Nullable;
+import org.hillview.utils.FieldsAreNonnullByDefault;
+import org.hillview.utils.MethodsAreNonnullByDefault;
 
-@SuppressWarnings("CanBeFinal")
-public class ColPair {
-    // fields are never really null, but we have no default initializer
-    @Nullable
-    public ColumnAndRange first;
-    @Nullable
-    public ColumnAndRange second;
-}
+import javax.annotation.ParametersAreNonnullByDefault;

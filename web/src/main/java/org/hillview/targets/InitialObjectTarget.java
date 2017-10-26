@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package org.hillview;
+package org.hillview.targets;
 
 import com.google.common.net.HostAndPort;
+import org.hillview.*;
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.*;
@@ -49,9 +50,7 @@ public class InitialObjectTarget extends RpcTarget {
     @Nullable
     private IDataSet<Empty> emptyDataset = null;
 
-    InitialObjectTarget() {
-        // TODO: setup logging
-        //HillviewLogger.initialize("hillview-head.log");
+    public InitialObjectTarget() {
         Empty empty = new Empty();
         // Get the base naming context
         final String value = System.getenv(ENV_VARIABLE);
@@ -91,14 +90,14 @@ public class InitialObjectTarget extends RpcTarget {
     }
 
     @HillviewRpc
-    void initializeCluster(RpcRequest request, RpcRequestContext context) {
+    public void initializeCluster(RpcRequest request, RpcRequestContext context) {
         ClusterDescription description = request.parseArgs(ClusterDescription.class);
         this.initialize(description);
     }
 
     // TODO: cleanup this code
     @HillviewRpc
-    void loadDBTable(RpcRequest request, RpcRequestContext context) {
+    public void loadDBTable(RpcRequest request, RpcRequestContext context) {
         Converters.checkNull(this.emptyDataset);
         JdbcConnectionInformation conn = new JdbcConnectionInformation("localhost", "employees", "mbudiu", "password");
         LoadDatabaseTableMapper mapper = new LoadDatabaseTableMapper("salaries", conn);
@@ -108,7 +107,7 @@ public class InitialObjectTarget extends RpcTarget {
 
     // TODO: cleanup this code.
     @HillviewRpc
-    void prepareFiles(RpcRequest request, RpcRequestContext context) {
+    public void prepareFiles(RpcRequest request, RpcRequestContext context) {
         int which = request.parseArgs(Integer.class);
         Converters.checkNull(this.emptyDataset);
 
@@ -167,7 +166,7 @@ public class InitialObjectTarget extends RpcTarget {
     }
 
     @HillviewRpc
-    void findLogs(RpcRequest request, RpcRequestContext context) {
+    public void findLogs(RpcRequest request, RpcRequestContext context) {
         Converters.checkNull(this.emptyDataset);
         UUID cookie = UUID.randomUUID();
         IMap<Empty, List<String>> finder = new FindFilesMapper(".", 0, "hillview.*.log", cookie.toString());
@@ -185,37 +184,37 @@ public class InitialObjectTarget extends RpcTarget {
     // Management messages
 
     @HillviewRpc
-    void ping(RpcRequest request, RpcRequestContext context) {
+    public void ping(RpcRequest request, RpcRequestContext context) {
         PingSketch<Empty> ping = new PingSketch<Empty>();
         this.runSketch(Converters.checkNull(this.emptyDataset), ping, request, context);
     }
 
     @HillviewRpc
-    void toggleMemoization(RpcRequest request, RpcRequestContext context) {
+    public void toggleMemoization(RpcRequest request, RpcRequestContext context) {
         ToggleMemoization tm = new ToggleMemoization();
         this.runManage(Converters.checkNull(this.emptyDataset), tm, request, context);
     }
 
     @HillviewRpc
-    void purgeMemoization(RpcRequest request, RpcRequestContext context) {
+    public void purgeMemoization(RpcRequest request, RpcRequestContext context) {
         PurgeMemoization tm = new PurgeMemoization();
         this.runManage(Converters.checkNull(this.emptyDataset), tm, request, context);
     }
 
     @HillviewRpc
-    void purgeLeftDatasets(RpcRequest request, RpcRequestContext context) {
+    public void purgeLeftDatasets(RpcRequest request, RpcRequestContext context) {
         PurgeLeafDatasets tm = new PurgeLeafDatasets();
         this.runManage(Converters.checkNull(this.emptyDataset), tm, request, context);
     }
 
     @HillviewRpc
-    void memoryUse(RpcRequest request, RpcRequestContext context) {
+    public void memoryUse(RpcRequest request, RpcRequestContext context) {
         MemoryUse tm = new MemoryUse();
         this.runManage(Converters.checkNull(this.emptyDataset), tm, request, context);
     }
 
     @HillviewRpc
-    void purgeDatasets(RpcRequest request, RpcRequestContext context) {
+    public void purgeDatasets(RpcRequest request, RpcRequestContext context) {
         int deleted = RpcObjectManager.instance.removeAllObjects();
         ControlMessage.Status status = new ControlMessage.Status("Deleted " + deleted + " objects");
         JsonList<ControlMessage.Status> statusList = new JsonList<ControlMessage.Status>();

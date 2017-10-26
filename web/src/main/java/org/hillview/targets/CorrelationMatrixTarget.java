@@ -15,14 +15,18 @@
  * limitations under the License.
  */
 
-package org.hillview;
+package org.hillview.targets;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import org.hillview.HillviewComputation;
+import org.hillview.RpcTarget;
+import org.hillview.sketches.CorrMatrix;
 
-// This annotation is used on methods that are invoked by the RPC layer.
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
-public @interface HillviewRpc {}
+final class CorrelationMatrixTarget extends RpcTarget {
+    final CorrMatrix corrMatrix;
+
+    CorrelationMatrixTarget(final CorrMatrix cm, HillviewComputation computation) {
+        super(computation);
+        this.corrMatrix = cm;
+        this.registerObject();
+    }
+}

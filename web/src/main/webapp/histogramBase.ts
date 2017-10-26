@@ -26,7 +26,7 @@ import {
 } from "./tableData";
 import {BaseType} from "d3-selection";
 import {ScaleLinear, ScaleTime} from "d3-scale";
-import {Converters, Seed} from "./util";
+import {Converters} from "./util";
 
 export type AnyScale = ScaleLinear<number, number> | ScaleTime<number, number>;
 
@@ -199,28 +199,14 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
          }
     }
 
-    public static getRange(stats: BasicColStats, page: FullPage,
-                           cd: ColumnDescription, allStrings: DistinctStrings,
-                           cdfBucketCount: number, exact: boolean, heatMap: boolean, bottom: boolean
-    ): ColumnAndRange {
-        let bucketCount = HistogramViewBase.bucketCount(stats, page, cd.kind, heatMap, bottom);
-        if (cdfBucketCount == 0)
-            cdfBucketCount = bucketCount;
+    public static getRange(stats: BasicColStats, cd: ColumnDescription, allStrings: DistinctStrings,
+                           bucketCount: number): ColumnAndRange {
         let boundaries = allStrings != null ?
-            allStrings.categoriesInRange(stats.min, stats.max, cdfBucketCount) : null;
-
-        let samplingRate = 1.0;
-        if (!exact)
-            samplingRate = HistogramViewBase.samplingRate(bucketCount, stats.presentCount, page);
-
+            allStrings.categoriesInRange(stats.min, stats.max, bucketCount) : null;
         return {
             columnName: cd.name,
             min: stats.min,
             max: stats.max,
-            samplingRate: samplingRate,
-            seed: Seed.instance.get(),
-            bucketCount: bucketCount,
-            cdfBucketCount: cdfBucketCount,
             bucketBoundaries: boundaries
         };
     }
@@ -260,10 +246,8 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
         return result;
     }
 
-    public static createScaleAndAxis(
-        kind: ContentsKind, bucketCount: number, width: number,
-        min: number, max: number, strings: DistinctStrings,
-        bottom: boolean): ScaleAndAxis {
+    public static createScaleAndAxis(kind: ContentsKind, width: number, min: number,
+                                     max: number, strings: DistinctStrings, bottom: boolean): ScaleAndAxis {
         let axis = null;
 
         let axisCreator = bottom ? d3.axisBottom : d3.axisLeft;

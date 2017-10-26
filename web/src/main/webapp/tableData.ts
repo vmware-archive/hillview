@@ -24,7 +24,7 @@
 import {RpcRequest, RemoteObject, CombineOperators, Renderer} from "./rpc";
 import {FullPage, IDataView, Resolution} from "./ui";
 import {EqualityFilterDescription} from "./equalityFilter";
-import {ICancellable, PartialResult, Seed, Triple} from "./util";
+import {ICancellable, PartialResult, Seed} from "./util";
 import {PointSet2D} from "./lamp";
 export type ContentsKind = "Category" | "Json" | "String" | "Integer" | "Double" | "Date" | "Interval";
 export function asContentsKind(kind: string): ContentsKind {
@@ -106,7 +106,6 @@ export interface IDistinctStrings {
 
 export class RangeInfo {
     seed: number;
-
     constructor(public columnName: string,
                 // The following is only used for categorical columns
                 public allNames?: string[]) {
@@ -135,12 +134,40 @@ export interface BasicColStats {
 export interface ColumnAndRange {
     min: number;
     max: number;
-    samplingRate: number;
-    seed: number;
     columnName: string;
-    bucketCount: number;
-    cdfBucketCount: number;
     bucketBoundaries: string[];
+}
+
+// Same as Java class
+export class HistogramArgs {
+    column: ColumnAndRange;
+    cdfBucketCount: number;
+    bucketCount: number;
+    samplingRate: number;
+    cdfSamplingRate: number;
+    seed: number;
+}
+
+// Same as Java class
+export class Histogram2DArgs {
+    first: ColumnAndRange;
+    second: ColumnAndRange;
+    xBucketCount: number;
+    yBucketCount: number;
+    samplingRate: number;
+    seed:         number;
+}
+
+// Same as Java class
+export class Histogram3DArgs {
+    first: ColumnAndRange;
+    second: ColumnAndRange;
+    third: ColumnAndRange;
+    xBucketCount: number;
+    yBucketCount: number;
+    zBucketCount: number;
+    samplingRate: number;
+    seed:         number;
 }
 
 export interface FilterDescription {
@@ -245,16 +272,15 @@ export class RemoteTableObject extends RemoteObject {
         return this.createRpcRequest("filter2DRange", {first: xRange, second: yRange});
     }
 
-    public createHeatMapRequest(x: ColumnAndRange, y: ColumnAndRange): RpcRequest {
-        return this.createRpcRequest("heatMap", { first: x, second: y });
+    public createHeatMapRequest(info: Histogram2DArgs): RpcRequest {
+        return this.createRpcRequest("heatMap", info);
     }
 
-
-    public createHeatMap3DRequest(data: Triple<ColumnAndRange, ColumnAndRange, ColumnAndRange>): RpcRequest {
-        return this.createRpcRequest("heatMap3D", data);
+    public createHeatMap3DRequest(info: Histogram3DArgs): RpcRequest {
+        return this.createRpcRequest("heatMap3D", info);
     }
 
-    public createHistogramRequest(info: ColumnAndRange): RpcRequest {
+    public createHistogramRequest(info: HistogramArgs): RpcRequest {
         return this.createRpcRequest("histogram", info);
     }
 

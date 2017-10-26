@@ -15,14 +15,16 @@
  * limitations under the License.
  */
 
-package org.hillview;
+/**
+ * Package that doesn't allow null values as method parameters.
+ */
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+@ParametersAreNonnullByDefault
+@FieldsAreNonnullByDefault
+@MethodsAreNonnullByDefault
+package org.hillview.targets;
 
-// This annotation is used on methods that are invoked by the RPC layer.
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
-public @interface HillviewRpc {}
+import org.hillview.utils.FieldsAreNonnullByDefault;
+import org.hillview.utils.MethodsAreNonnullByDefault;
+
+import javax.annotation.ParametersAreNonnullByDefault;

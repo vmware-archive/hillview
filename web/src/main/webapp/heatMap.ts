@@ -23,10 +23,10 @@ import { Renderer, combineMenu, CombineOperators, SelectedObject } from "./rpc";
 import {
     ColumnDescription, Schema, ContentsKind, RecordOrder, DistinctStrings,
     RemoteTableObjectView, RemoteTableObject, Histogram, BasicColStats, FilterDescription,
-    ZipReceiver
+    ZipReceiver, Histogram2DArgs
 } from "./tableData";
 import {TableView, TableRenderer} from "./table";
-import {Pair, reorder, regression, ICancellable, PartialResult} from "./util";
+import {Pair, reorder, regression, ICancellable, PartialResult, Seed} from "./util";
 import {AnyScale, HistogramViewBase, ScaleAndAxis} from "./histogramBase";
 import {BaseType} from "d3-selection";
 import {ScaleLinear, ScaleTime} from "d3-scale";
@@ -52,9 +52,7 @@ export class AxisData {
     {}
 
     public scaleAndAxis(length: number, bottom: boolean): ScaleAndAxis {
-        return HistogramViewBase.createScaleAndAxis(
-            this.description.kind, this.bucketCount, length,
-            this.stats.min, this.stats.max, this.distinctStrings, bottom);
+        return HistogramViewBase.createScaleAndAxis(this.description.kind, length, this.stats.min, this.stats.max, this.distinctStrings, bottom);
     }
 }
 
@@ -597,12 +595,23 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
     }
 
     public draw(): void {
-        let arg0 = HistogramViewBase.getRange(this.stats.first, this.page,
-            this.cds[0], this.ds[0], 0, true, this.drawHeatMap, true);
-        let arg1 = HistogramViewBase.getRange(this.stats.second, this.page,
-            this.cds[1], this.ds[1], 0, true, this.drawHeatMap, false);
-
-        let rr = this.remoteObject.createHeatMapRequest(arg0, arg1);
+        let xBucketCount = HistogramViewBase.bucketCount(this.stats.first, this.page,
+            this.cds[0].kind, this.drawHeatMap, true);
+        let yBucketCount = HistogramViewBase.bucketCount(this.stats.second, this.page,
+            this.cds[1].kind, this.drawHeatMap, false);
+        let arg0 = HistogramViewBase.getRange(this.stats.first,
+            this.cds[0], this.ds[0], xBucketCount);
+        let arg1 = HistogramViewBase.getRange(this.stats.second,
+            this.cds[1], this.ds[1], yBucketCount);
+        let arg: Histogram2DArgs = {
+            first: arg0,
+            second: arg1,
+            samplingRate: 1.0, // TODO
+            seed: Seed.instance.get(),
+            xBucketCount: xBucketCount,
+            yBucketCount: yBucketCount
+        };
+        let rr = this.remoteObject.createHeatMapRequest(arg);
         if (this.operation != null)
             rr.setStartTime(this.operation.startTime());
         let renderer: Renderer<HeatMapData> = null;

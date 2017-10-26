@@ -17,6 +17,7 @@
 
 package org.hillview;
 
+import org.hillview.targets.InitialObjectTarget;
 import org.hillview.utils.HillviewLogger;
 import rx.Observer;
 import rx.Subscription;
@@ -106,7 +107,7 @@ public final class RpcObjectManager {
         this.objects = new HashMap<String, RpcTarget>();
     }
 
-    synchronized void addObject(RpcTarget object) {
+    public synchronized void addObject(RpcTarget object) {
         if (this.objects.containsKey(object.objectId))
             throw new RuntimeException("Object with id " + object.objectId + " already in map");
         HillviewLogger.instance.info("Object generated", "{0} from {1}", object.objectId, object.computation);
@@ -126,7 +127,7 @@ public final class RpcObjectManager {
      * @param toNotify     An observer notified when the object is retrieved.
      * @param rebuild      If true attempt to rebuild the object if not found.
      */
-    void retrieveTarget(String id, boolean rebuild, Observer<RpcTarget> toNotify) {
+    public void retrieveTarget(String id, boolean rebuild, Observer<RpcTarget> toNotify) {
         RpcTarget target = this.getObject(id);
         if (target != null) {
             toNotify.onNext(target);
@@ -175,7 +176,7 @@ public final class RpcObjectManager {
      * Removes all RemoteObjects from the cache, except the initial object.
      * @return  The number of objects removed.
      */
-    int removeAllObjects() {
+    public int removeAllObjects() {
         List<String> toDelete = new ArrayList<String>();
         for (String k: this.objects.keySet()) {
             if (!k.equals(initialObjectId))

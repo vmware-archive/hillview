@@ -18,10 +18,13 @@
 import {Dialog} from "./dialog";
 import {TopMenu, TopSubMenu} from "./menu";
 import {TableDataView, TableView, TableRenderer} from "./table";
-import {RangeInfo, BasicColStats, Schema, RemoteTableObject, RemoteTableObjectView, RemoteTableRenderer, RecordOrder} from "./tableData";
+import {
+    RangeInfo, BasicColStats, Schema, RemoteTableObject, RemoteTableObjectView, RemoteTableRenderer, RecordOrder,
+    ColumnAndRange, Histogram2DArgs
+} from "./tableData";
 import {FullPage, Resolution} from "./ui";
 import {Renderer, RpcRequest} from "./rpc";
-import {PartialResult, Point2D, clamp, Pair} from "./util";
+import {PartialResult, Point2D, clamp, Pair, ICancellable, Seed} from "./util";
 import {HeatMapData} from "./heatMap";
 import {HeatMapArrayDialog} from "./heatMapArray";
 import {ColorMap, ColorLegend} from "./vis";
@@ -50,7 +53,8 @@ class ControlPointsView extends RemoteTableObjectView {
     private colorLegend: ColorLegend;
     private lampColNames: string[];
 
-    constructor(private originalTableObject: RemoteTableObject, private originalSchema, page: FullPage, private controlPointsId, private selectedColumns) {
+    constructor(private originalTableObject: RemoteTableObject, private originalSchema,
+                page: FullPage, private controlPointsId, private selectedColumns) {
         super(originalTableObject.remoteObjectId, page);
         this.topLevel = document.createElement("div");
         this.topLevel.classList.add("chart");
@@ -196,26 +200,28 @@ class ControlPointsView extends RemoteTableObjectView {
     public applyLAMP() {
         let xBuckets = Math.ceil(this.heatMapChart.attr("width") / Resolution.minDotSize);
         let yBuckets = Math.ceil(this.heatMapChart.attr("height") / Resolution.minDotSize);
-        let xColAndRange = {
+        let xColAndRange: ColumnAndRange = {
             min: this.minX,
             max: this.maxX,
-            samplingRate: 1.0,
             columnName: this.lampColNames[0],
-            bucketCount: xBuckets,
-            cdfBucketCount: 0,
             bucketBoundaries: null
         };
-        let yColAndRange = {
+        let yColAndRange: ColumnAndRange = {
             min: this.minY,
             max: this.maxY,
-            samplingRate: 1.0,
             columnName: this.lampColNames[1],
-            bucketCount: yBuckets,
-            cdfBucketCount: 0,
             bucketBoundaries: null
         };
+        let arg: Histogram2DArgs = {
+            first: xColAndRange,
+            second: yColAndRange,
+            samplingRate: 1.0,  // TODO
+            seed: Seed.instance.get(),
+            xBucketCount: xBuckets,
+            yBucketCount: yBuckets
+        };
         let rr = this.originalTableObject.createLAMPMapRequest(this.controlPointsId, this.selectedColumns, this.controlPoints, this.lampColNames);
-        rr.invoke(new LAMPMapReceiver(this.page, rr, this, xColAndRange, yColAndRange));
+        rr.invoke(new LAMPMapReceiver(this.page, rr, this, arg));
     }
 
     public updateRanges(l1: BasicColStats, l2: BasicColStats) {
@@ -391,7 +397,8 @@ class ControlPointsRenderer extends Renderer<PointSet2D> {
 }
 
 class LAMPMapReceiver extends RemoteTableRenderer {
-    constructor(page, operation, private cpView: ControlPointsView, private xColAndRange, private yColAndRange) {
+    constructor(page: FullPage, operation: ICancellable, private cpView: ControlPointsView,
+                private arg: Histogram2DArgs) {
         super(page, operation, "Computing LAMP");
     }
 
@@ -399,14 +406,15 @@ class LAMPMapReceiver extends RemoteTableRenderer {
         super.finished();
         let lampTime = this.elapsedMilliseconds() / 1000;
         this.cpView.updateRemoteTable(this.remoteObject);
-        let rr = this.remoteObject.createHeatMapRequest(this.xColAndRange, this.yColAndRange);
+        let rr = this.remoteObject.createHeatMapRequest(this.arg);
         rr.invoke(new LAMPHeatMapReceiver(this.page, rr, this.cpView, lampTime));
     }
 }
 
 class LAMPHeatMapReceiver extends Renderer<HeatMapData> {
     private heatMap: HeatMapData;
-    constructor(page, operation, private controlPointsView: ControlPointsView, private lampTime: number) {
+    constructor(page: FullPage, operation: ICancellable,
+                private controlPointsView: ControlPointsView, private lampTime: number) {
         super(page, operation, "Computing heat map")
     }
 
@@ -421,7 +429,7 @@ class LAMPHeatMapReceiver extends Renderer<HeatMapData> {
 }
 
 class LAMPRangeCollector extends Renderer<Pair<BasicColStats, BasicColStats>> {
-    constructor(page, operation, private cpView: ControlPointsView) {
+    constructor(page: FullPage, operation: ICancellable, private cpView: ControlPointsView) {
         super(page, operation, "Getting LAMP ranges.")
     }
 
@@ -433,9 +441,9 @@ class LAMPRangeCollector extends Renderer<Pair<BasicColStats, BasicColStats>> {
 
 class SchemaCollector extends Renderer<TableDataView> {
     private schema: Schema;
-    constructor(page, operation, private tableObject, private lampColumnNames: string[]) {
+    constructor(page: FullPage, operation: ICancellable,
+                private tableObject: RemoteTableObject, private lampColumnNames: string[]) {
         super(page, operation, "Getting new schema");
-
     }
 
     onNext(value: PartialResult<TableDataView>) {

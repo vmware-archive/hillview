@@ -20,12 +20,6 @@ export interface Pair<T1, T2> {
     second: T2;
 }
 
-export interface Triple<T1, T2, T3> {
-    first: T1;
-    second: T2;
-    third: T3;
-}
-
 export interface Point2D {
     x: number;
     y: number;

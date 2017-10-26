@@ -15,14 +15,20 @@
  * limitations under the License.
  */
 
-package org.hillview;
+package org.hillview.jsonObjects;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import javax.annotation.Nullable;
 
-// This annotation is used on methods that are invoked by the RPC layer.
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
-public @interface HillviewRpc {}
+@SuppressWarnings("CanBeFinal")
+public class Histogram2DArgs implements RpcArguments {
+    // fields are never really null, but we have no default initializer
+    @Nullable
+    public ColumnAndRange first;
+    @Nullable
+    public ColumnAndRange second;
+
+    public int xBucketCount;
+    public int yBucketCount;
+    public double samplingRate;
+    public long seed;
+}

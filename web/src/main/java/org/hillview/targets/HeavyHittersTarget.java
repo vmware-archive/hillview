@@ -15,8 +15,10 @@
  * limitations under the License.
  */
 
-package org.hillview;
+package org.hillview.targets;
 
+import org.hillview.HillviewComputation;
+import org.hillview.RpcTarget;
 import org.hillview.sketches.FreqKList;
 import org.hillview.utils.HillviewLogger;
 

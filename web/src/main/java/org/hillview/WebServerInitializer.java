@@ -22,6 +22,10 @@ import org.hillview.utils.HillviewLogger;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
+/**
+ * This class is used by TomCat to initialize the web server before the
+ * first client request is processed.
+ */
 public class WebServerInitializer implements ServletContextListener {
     @Override
     public void contextDestroyed(ServletContextEvent arg) {}

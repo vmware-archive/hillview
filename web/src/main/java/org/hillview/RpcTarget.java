@@ -39,8 +39,8 @@ import java.util.function.BiFunction;
  * When these objects are serialized as JSON only their String id is send; the
  * objects always reside on the web server.  They are managed by the RpcObjectManager.
  */
-abstract class RpcTarget implements IJson {
-    final String objectId;
+public abstract class RpcTarget implements IJson {
+    public final String objectId;
     /**
      * Computation that has generated this object.  Can only
      * be null for the initial object.
@@ -51,12 +51,12 @@ abstract class RpcTarget implements IJson {
     /**
      * This constructor is only called for the InitialObject.
      */
-    RpcTarget() {
+    protected RpcTarget() {
         this.objectId = RpcObjectManager.initialObjectId;
         this.computation = null;
     }
 
-    RpcTarget(HillviewComputation computation) {
+    protected RpcTarget(HillviewComputation computation) {
         this.computation = computation;
         this.objectId = computation.resultId;
     }
@@ -67,7 +67,7 @@ abstract class RpcTarget implements IJson {
      * This method should be called last thing after the construction of the
      * object has been completed.
      */
-    void registerObject() {
+    public void registerObject() {
         RpcObjectManager.instance.addObject(this);
         if (this.computation != null)
             this.computation.objectCreated(this);
@@ -324,7 +324,7 @@ abstract class RpcTarget implements IJson {
      * @param request Web socket request, where replies are sent.
      * @param context Context for the computation.
      */
-    <T, R extends IJson> void
+    protected <T, R extends IJson> void
     runSketch(IDataSet<T> data, ISketch<T, R> sketch,
               RpcRequest request, RpcRequestContext context) {
         // Run the sketch
@@ -349,7 +349,7 @@ abstract class RpcTarget implements IJson {
      * @param request Web socket request, where replies are sent.
      * @param context Context for the computation.
      */
-    <T, R, S extends IJson> void
+    protected <T, R, S extends IJson> void
     runCompleteSketch(IDataSet<T> data, ISketch<T, R> sketch,
                       BiFunction<R, HillviewComputation, S> postprocessing,
                       RpcRequest request, RpcRequestContext context) {
@@ -376,7 +376,7 @@ abstract class RpcTarget implements IJson {
      * @param request Web socket request, used to send the reply.
      * @param context Context for the computation.
      */
-    <T, S> void
+    protected <T, S> void
     runMap(IDataSet<T> data, IMap<T, S> map,
            BiFunction<IDataSet<S>, HillviewComputation, RpcTarget> factory,
            RpcRequest request, RpcRequestContext context) {
@@ -403,7 +403,7 @@ abstract class RpcTarget implements IJson {
      * @param request Web socket request, used to send the reply.
      * @param context Context for the computation.
      */
-    <T, S> void
+    protected <T, S> void
     runFlatMap(IDataSet<T> data, IMap<T, List<S>> map,
                BiFunction<IDataSet<S>, HillviewComputation, RpcTarget> factory,
                RpcRequest request, RpcRequestContext context) {
@@ -431,7 +431,7 @@ abstract class RpcTarget implements IJson {
      * @param request Web socket request, used to send the reply.
      * @param context Context for the computation.
      */
-    <T, S> void
+    protected <T, S> void
     runZip(IDataSet<T> data, IDataSet<S> other,
            BiFunction<IDataSet<Pair<T, S>>, HillviewComputation, RpcTarget> factory,
            RpcRequest request, RpcRequestContext context) {
@@ -452,7 +452,7 @@ abstract class RpcTarget implements IJson {
      * @param request Web socket request, where replies are sent.
      * @param context Context for the computation.
      */
-    <T, R extends IJson> void
+    protected <T, R extends IJson> void
     runManage(IDataSet<T> data, ControlMessage command,
               RpcRequest request, RpcRequestContext context) {
         // Run the sketch

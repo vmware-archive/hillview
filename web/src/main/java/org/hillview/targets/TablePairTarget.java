@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-package org.hillview;
+package org.hillview.targets;
 
+import org.hillview.*;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.Pair;
 import org.hillview.maps.SetOperationMap;
@@ -34,7 +35,7 @@ final class TablePairTarget extends RpcTarget {
     }
 
     @HillviewRpc
-    void setOperation(RpcRequest request, RpcRequestContext context) {
+    public void setOperation(RpcRequest request, RpcRequestContext context) {
         String op = request.parseArgs(String.class);
         SetOperationMap sm = new SetOperationMap(op);
         this.runMap(this.tables, sm, TableTarget::new, request, context);

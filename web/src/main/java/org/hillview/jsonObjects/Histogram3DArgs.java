@@ -6,7 +6,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,14 +15,12 @@
  * limitations under the License.
  */
 
-package org.hillview.table.columns;
-
-import org.hillview.table.ColumnAndRange;
+package org.hillview.jsonObjects;
 
 import javax.annotation.Nullable;
 
 @SuppressWarnings("CanBeFinal")
-public class ColTriple {
+public class Histogram3DArgs implements RpcArguments {
     // fields are never really null, but we have no default initializer
     @Nullable
     public ColumnAndRange first;
@@ -30,4 +28,10 @@ public class ColTriple {
     public ColumnAndRange second;
     @Nullable
     public ColumnAndRange third;
+
+    public int xBucketCount;
+    public int yBucketCount;
+    public int zBucketCount;
+    public double samplingRate;
+    public long seed;
 }

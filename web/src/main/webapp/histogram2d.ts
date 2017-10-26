@@ -19,7 +19,7 @@ import d3 = require('d3');
 import { HistogramViewBase, BucketDialog, AnyScale } from "./histogramBase";
 import {
     ColumnDescription, Schema, RecordOrder, ColumnAndRange, FilterDescription,
-    ZipReceiver, RemoteTableRenderer, BasicColStats, DistinctStrings, RangeInfo
+    ZipReceiver, RemoteTableRenderer, BasicColStats, DistinctStrings, RangeInfo, Histogram2DArgs
 } from "./tableData";
 import {TableView, TableRenderer} from "./table";
 import {FullPage, significantDigits, formatNumber, translateString, Resolution, Rectangle} from "./ui";
@@ -111,11 +111,9 @@ export class Histogram2DView extends HistogramViewBase {
     }
 
     changeBuckets(bucketCount: number): void {
-        /* TODO: use sampling here too
         let xSamplingRate = HistogramViewBase.samplingRate(bucketCount, this.currentData.visiblePoints, this.page);
         let ySamplingRate = HistogramViewBase.samplingRate(this.currentData.yPoints, this.currentData.visiblePoints, this.page);
-        */
-        let samplingRate = 1; // Math.max(xSamplingRate, ySamplingRate);
+        let samplingRate = Math.max(xSamplingRate, ySamplingRate);
 
         let xBoundaries, yBoundaries;
         if (this.currentData.xData.distinctStrings == null)
@@ -131,23 +129,23 @@ export class Histogram2DView extends HistogramViewBase {
             columnName: this.currentData.xData.description.name,
             min: this.currentData.xData.stats.min,
             max: this.currentData.xData.stats.max,
-            bucketCount: bucketCount,
-            samplingRate: samplingRate,
-            seed: Seed.instance.get(),
-            cdfBucketCount: 0,
             bucketBoundaries: xBoundaries
         };
         let arg1: ColumnAndRange = {
             columnName: this.currentData.yData.description.name,
             min: this.currentData.yData.stats.min,
             max: this.currentData.yData.stats.max,
-            samplingRate: samplingRate,
-            seed: Seed.instance.get(),
-            bucketCount: this.currentData.yPoints,
-            cdfBucketCount: 0,
             bucketBoundaries: yBoundaries
         };
-        let rr = this.createHeatMapRequest(arg0, arg1);
+        let args: Histogram2DArgs = {
+            first: arg0,
+            second: arg1,
+            xBucketCount: bucketCount,
+            yBucketCount: this.currentData.yPoints,
+            samplingRate: samplingRate,
+            seed: Seed.instance.get()
+        };
+        let rr = this.createHeatMapRequest(args);
         let renderer = new Histogram2DRenderer(this.page,
             this.remoteObjectId, this.tableSchema,
             [this.currentData.xData.description, this.currentData.yData.description],
@@ -293,8 +291,7 @@ export class Histogram2DView extends HistogramViewBase {
 
         let cd = xData.description;
         let bucketCount = xPoints;
-        let scAxis = HistogramViewBase.createScaleAndAxis(cd.kind, bucketCount, this.chartSize.width,
-            xData.stats.min, xData.stats.max, xData.distinctStrings, true);
+        let scAxis = HistogramViewBase.createScaleAndAxis(cd.kind, this.chartSize.width, xData.stats.min, xData.stats.max, xData.distinctStrings, true);
         this.xScale = scAxis.scale;
         let xAxis = scAxis.axis;
 
@@ -395,10 +392,8 @@ export class Histogram2DView extends HistogramViewBase {
             .attr("x", this.legendRect.upperLeft().x)
             .attr("y", this.legendRect.upperLeft().y);
 
-        let legendBuckets = this.currentData.data[0].length;
-        let scaleAxis = HistogramViewBase.createScaleAndAxis(
-            this.currentData.yData.description.kind, legendBuckets, this.legendRect.width(),
-            this.currentData.yData.stats.min, this.currentData.yData.stats.max,
+        let scaleAxis = HistogramViewBase.createScaleAndAxis(this.currentData.yData.description.kind,
+            this.legendRect.width(), this.currentData.yData.stats.min, this.currentData.yData.stats.max,
             this.currentData.yData.distinctStrings, true);
 
         // create a scale and axis for the legend

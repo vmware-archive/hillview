@@ -15,8 +15,10 @@
  * limitations under the License.
  */
 
-package org.hillview;
+package org.hillview.targets;
 
+import org.hillview.HillviewComputation;
+import org.hillview.RpcTarget;
 import org.hillview.sketches.Centroids;
 import org.hillview.table.SmallTable;
 import org.hillview.utils.Converters;
@@ -28,7 +30,6 @@ import org.jblas.DoubleMatrix;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Set;
 
 public final class ControlPointsTarget extends RpcTarget {

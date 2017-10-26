@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-import Rx = require('rx');
 import {
     FullPage, formatNumber, significantDigits, percent, KeyCodes, ScrollBar, IScrollTarget, SpecialChars
 } from "./ui";
@@ -25,7 +24,6 @@ import {Range2DCollector} from "./heatMap";
 import {TopMenu, TopSubMenu, ContextMenu} from "./menu";
 import {Converters, PartialResult, ICancellable, cloneSet} from "./util";
 import {EqualityFilterDialog, EqualityFilterDescription} from "./equalityFilter";
-import d3 = require('d3');
 import {Dialog} from "./dialog";
 import {
     Schema, RowView, RecordOrder, IColumnDescription, ColumnDescription, ColumnSortOrientation,
@@ -567,8 +565,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
     }
 
     dropColumns(): void {
-        let schema = TableView.dropColumns(this.schema, c => this.selectedColumns.has(c.name));
-        this.currentData.schema = schema;
+        this.currentData.schema = TableView.dropColumns(this.schema, c => this.selectedColumns.has(c.name));
         this.refresh();
     }
 

@@ -15,18 +15,17 @@
  * limitations under the License.
  */
 
-package org.hillview;
+package org.hillview.targets;
 
+import org.hillview.*;
 import org.hillview.dataset.api.IDataSet;
-import org.hillview.maps.LoadLogFileMapper;
+import org.hillview.maps.LoadCsvFileMapper;
+import org.hillview.utils.CsvFileObject;
 
-/**
- * This is an RpcTarget object which stores a file name to load as a log.
- */
-public class LogFileTarget extends RpcTarget {
-    private final IDataSet<String> files;
+public final class CsvFileTarget extends RpcTarget {
+    private final IDataSet<CsvFileObject> files;
 
-    LogFileTarget(IDataSet<String> files, HillviewComputation computation) {
+    CsvFileTarget(IDataSet<CsvFileObject> files, HillviewComputation computation) {
         super(computation);
         this.files = files;
         this.registerObject();
@@ -34,6 +33,6 @@ public class LogFileTarget extends RpcTarget {
 
     @HillviewRpc
     public void loadTable(RpcRequest request, RpcRequestContext context) {
-        this.runMap(this.files, new LoadLogFileMapper(), TableTarget::new, request, context);
+        this.runMap(this.files, new LoadCsvFileMapper(), TableTarget::new, request, context);
     }
 }

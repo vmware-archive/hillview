@@ -26,7 +26,7 @@ import org.hillview.utils.Utilities;
 import javax.annotation.Nullable;
 import javax.websocket.Session;
 
-final class RpcRequest {
+public final class RpcRequest {
     /**
      * Each pair request-response uses a matching id.
      */
@@ -60,7 +60,7 @@ final class RpcRequest {
      * relies on the JSON method corresponding to IDataSet.zip calls being
      * also called "zip".
      */
-    public String[] getDatasetSourceIds() {
+    String[] getDatasetSourceIds() {
         if (this.method.equals("zip")) {
             String otherId = this.parseArgs(String.class);
             return new String[] { this.objectId, otherId };
@@ -81,7 +81,7 @@ final class RpcRequest {
         return new RpcReply(this.requestId, json, false);
     }
 
-    RpcReply createReply(JsonElement userResult) {
+    public RpcReply createReply(JsonElement userResult) {
         return this.createReply(userResult.toString());
     }
 
@@ -90,7 +90,7 @@ final class RpcRequest {
                 Utilities.throwableToString(th), true);
     }
 
-    <T> T parseArgs(Class<T> classOfT) {
+    public <T> T parseArgs(Class<T> classOfT) {
         return IJson.gsonInstance.fromJson(this.arguments, classOfT);
     }
 
@@ -98,7 +98,7 @@ final class RpcRequest {
      * Initiated by the server.
      * @param session  Session to close.
      */
-    void syncCloseSession(@Nullable Session session) {
+    public void syncCloseSession(@Nullable Session session) {
         if (session == null)
             return;
         try {

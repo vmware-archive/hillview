@@ -15,23 +15,11 @@
  * limitations under the License.
  */
 
-package org.hillview;
+package org.hillview.jsonObjects;
 
-import org.hillview.dataset.api.IDataSet;
-import org.hillview.maps.LoadCsvFileMapper;
-import org.hillview.utils.CsvFileObject;
-
-public final class CsvFileTarget extends RpcTarget {
-    private final IDataSet<CsvFileObject> files;
-
-    CsvFileTarget(IDataSet<CsvFileObject> files, HillviewComputation computation) {
-        super(computation);
-        this.files = files;
-        this.registerObject();
-    }
-
-    @HillviewRpc
-    public void loadTable(RpcRequest request, RpcRequestContext context) {
-        this.runMap(this.files, new LoadCsvFileMapper(), TableTarget::new, request, context);
-    }
-}
+/**
+ * This interface represents Java classes that represent the decoding of
+ * JSON objects sent by the client.  It has no methods, it is just here
+ * for documentation purposes.
+ */
+public interface RpcArguments {}

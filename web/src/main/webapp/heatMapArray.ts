@@ -19,11 +19,11 @@ import {Renderer} from "./rpc";
 import {Dialog} from "./dialog";
 import {TopMenu, TopSubMenu} from "./menu";
 import {TableView, TableRenderer} from "./table";
-import {RecordOrder} from "./tableData";
+import {Histogram3DArgs, RecordOrder} from "./tableData";
 import {
     FullPage, Size, Resolution, ScrollBar, significantDigits, IScrollTarget
 } from "./ui";
-import {Pair, Triple, truncate, Point2D, ICancellable, PartialResult, Seed} from "./util";
+import {Pair, truncate, Point2D, ICancellable, PartialResult, Seed} from "./util";
 import {ColorMap, ColorLegend} from "./vis";
 import d3 = require('d3');
 import {AxisData} from "./heatMap";
@@ -558,41 +558,36 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
         let numXBuckets = CompactHeatMapView.size.width / Resolution.minDotSize;
         let numYBuckets = CompactHeatMapView.size.height / Resolution.minDotSize;
 
-        // TODO: sample
-        let heatMapArrayArgs: Triple<ColumnAndRange, ColumnAndRange, ColumnAndRange> = {
-            first: {
-                columnName: this.args.cds[0].name,
-                min: this.args.xStats.min,
-                max: this.args.xStats.max,
-                cdfBucketCount: 0,
-                bucketCount: numXBuckets,
-                samplingRate: 1,
-                seed: Seed.instance.get(),
-                bucketBoundaries: null
-            },
-            second: {
-                columnName: this.args.cds[1].name,
-                min: this.args.yStats.min,
-                max: this.args.yStats.max,
-                cdfBucketCount: 0,
-                bucketCount: numYBuckets,
-                samplingRate: 1,
-                seed: Seed.instance.get(),
-                bucketBoundaries: null
-            },
-            third: {
-                columnName: this.args.cds[2].name,
-                min: this.offset,
-                max: this.offset + zBins.length - 1,
-                cdfBucketCount: 0,
-                bucketCount: zBins.length,
-                samplingRate: 1,
-                seed: Seed.instance.get(),
-                bucketBoundaries: zBins
-            }
+        let col0: ColumnAndRange = {
+            columnName: this.args.cds[0].name,
+            min: this.args.xStats.min,
+            max: this.args.xStats.max,
+            bucketBoundaries: null  // TODO
+        };
+        let col1: ColumnAndRange = {
+            columnName: this.args.cds[1].name,
+            min: this.args.yStats.min,
+            max: this.args.yStats.max,
+            bucketBoundaries: null  // TODO
+        };
+        let col2: ColumnAndRange = {
+            columnName: this.args.cds[2].name,
+            min: this.offset,
+            max: this.offset + zBins.length - 1,
+            bucketBoundaries: zBins  // TODO
+        };
+        let args: Histogram3DArgs = {
+            first: col0,
+            second: col1,
+            third: col2,
+            seed: Seed.instance.get(),
+            samplingRate: 1.0, // TODO
+            xBucketCount: numXBuckets,
+            yBucketCount: numYBuckets,
+            zBucketCount: zBins.length
         };
 
-        let rr = this.createHeatMap3DRequest(heatMapArrayArgs);
+        let rr = this.createHeatMap3DRequest(args);
         rr.invoke(new HeatMap3DRenderer(this.getPage(), this, rr, zBins));
     }
 }
@@ -641,11 +636,11 @@ export class HeatMapArrayDialog extends Dialog {
         selectedColumns.forEach((selectedColumn) => {
             if (catColumns.indexOf(selectedColumn) >= 0)
                 selectedCatColumn = selectedColumn;
-        })
+        });
         selectedColumns.forEach((selectedColumn) => {
             if (numColumns.indexOf(selectedColumn) >= 0)
                 selectedNumColumns.push(selectedColumn);
-        })
+        });
         if (selectedCatColumn == "" && catColumns.length > 0) {
             selectedCatColumn = catColumns[0];
         }

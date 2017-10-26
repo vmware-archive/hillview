@@ -15,16 +15,26 @@
  * limitations under the License.
  */
 
-package org.hillview;
+package org.hillview.targets;
 
-import org.hillview.sketches.CorrMatrix;
+import org.hillview.*;
+import org.hillview.dataset.api.IDataSet;
+import org.hillview.maps.LoadLogFileMapper;
 
-final class CorrelationMatrixTarget extends RpcTarget {
-    final CorrMatrix corrMatrix;
+/**
+ * This is an RpcTarget object which stores a file name to load as a log.
+ */
+public class LogFileTarget extends RpcTarget {
+    private final IDataSet<String> files;
 
-    CorrelationMatrixTarget(final CorrMatrix cm, HillviewComputation computation) {
+    LogFileTarget(IDataSet<String> files, HillviewComputation computation) {
         super(computation);
-        this.corrMatrix = cm;
+        this.files = files;
         this.registerObject();
+    }
+
+    @HillviewRpc
+    public void loadTable(RpcRequest request, RpcRequestContext context) {
+        this.runMap(this.files, new LoadLogFileMapper(), TableTarget::new, request, context);
     }
 }

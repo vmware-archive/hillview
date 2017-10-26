@@ -6,7 +6,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,54 +15,39 @@
  * limitations under the License.
  */
 
-package org.hillview.table;
+package org.hillview.jsonObjects;
 
 import org.hillview.sketches.BucketsDescriptionEqSize;
-import org.hillview.sketches.HistogramSketch;
+import org.hillview.sketches.IBucketsDescription;
+import org.hillview.table.RadixConverter;
+import org.hillview.table.SortedStringsConverterDescription;
 import org.hillview.table.api.ColumnAndConverterDescription;
 import org.hillview.table.api.IStringConverterDescription;
 
 import javax.annotation.Nullable;
-import java.io.Serializable;
 
 @SuppressWarnings("CanBeFinal")
-public class ColumnAndRange implements Serializable {
+public class ColumnAndRange {
     public String columnName = "";
     public double min;
     public double max;
-    public int cdfBucketCount;
-    public int bucketCount;
-    public double samplingRate;
-    public long seed;
     @Nullable
     public String[] bucketBoundaries;  // only used for Categorical columns
 
-    public HistogramParts prepare() {
+    public ColumnAndConverterDescription getDescription() {
         IStringConverterDescription converter;
         if (this.bucketBoundaries != null) {
             converter = new SortedStringsConverterDescription(
                     this.bucketBoundaries, (int)Math.ceil(this.min), (int) Math.floor(this.max));
         } else {
-            // may not be used
             converter = new RadixConverter();
         }
-        BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(this.min, this.max, this.bucketCount);
-        ColumnAndConverterDescription column = new ColumnAndConverterDescription(this.columnName, converter);
-        HistogramSketch sketch = new HistogramSketch(buckets, column, this.samplingRate, this.seed);
-        return new HistogramParts(buckets, column, sketch);
+        return new ColumnAndConverterDescription(this.columnName, converter);
     }
 
-    public static class HistogramParts {
-        public final BucketsDescriptionEqSize buckets;
-        public final ColumnAndConverterDescription column;
-        public final HistogramSketch sketch;
-
-        public HistogramParts(BucketsDescriptionEqSize buckets,
-                              ColumnAndConverterDescription column,
-                              HistogramSketch sketch) {
-            this.buckets = buckets;
-            this.column = column;
-            this.sketch = sketch;
-        }
+    public IBucketsDescription getBuckets(int count) {
+        if (this.min >= this.max)
+            count = 1;
+        return new BucketsDescriptionEqSize(this.min, this.max, count);
     }
 }

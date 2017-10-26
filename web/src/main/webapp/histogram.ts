@@ -23,7 +23,7 @@ import { combineMenu, CombineOperators, SelectedObject, Renderer } from "./rpc";
 import {
     ColumnDescription, Schema, RecordOrder, DistinctStrings, RangeInfo, Histogram,
     BasicColStats, ColumnAndRange, FilterDescription, RemoteTableObject,
-    ZipReceiver, RemoteTableRenderer
+    ZipReceiver, RemoteTableRenderer, HistogramArgs
 } from "./tableData";
 import {TableRenderer, TableView} from "./table";
 import {TopMenu, TopSubMenu} from "./menu";
@@ -130,17 +130,21 @@ export class HistogramView extends HistogramViewBase {
             samplingRate = HistogramViewBase.samplingRate(+bucketCount, this.currentData.stats.presentCount, this.page);
         let exact = samplingRate >= 1.0;
 
-        let info: ColumnAndRange = {
+        let col: ColumnAndRange = {
             columnName: this.currentData.description.name,
             min: this.currentData.stats.min,
             max: this.currentData.stats.max,
-            samplingRate: samplingRate,
-            seed: Seed.instance.get(),
-            bucketCount: +bucketCount,
-            cdfBucketCount: cdfBucketCount,
             bucketBoundaries: boundaries
         };
-        let rr = this.createHistogramRequest(info);
+        let histoArg: HistogramArgs = {
+            column: col,
+            seed: Seed.instance.get(),
+            bucketCount: +bucketCount,
+            samplingRate: samplingRate,
+            cdfBucketCount: cdfBucketCount,
+            cdfSamplingRate: 1.0 // TODO
+        };
+        let rr = this.createHistogramRequest(histoArg);
         let renderer = new HistogramRenderer(this.page,
             this.remoteObjectId, this.tableSchema, this.currentData.description,
             this.currentData.stats, rr, exact, this.currentData.allStrings);
@@ -287,9 +291,7 @@ export class HistogramView extends HistogramViewBase {
         let yAxis = d3.axisLeft(this.yScale)
             .tickFormat(d3.format(".2s"));
 
-        let scaleAxis = HistogramViewBase.createScaleAndAxis(
-            cd.kind, bucketCount, this.chartSize.width,
-            stats.min, stats.max, this.currentData.allStrings, true);
+        let scaleAxis = HistogramViewBase.createScaleAndAxis(cd.kind, this.chartSize.width, stats.min, stats.max, this.currentData.allStrings, true);
         this.xScale = scaleAxis.scale;
         let xAxis = scaleAxis.axis;
 
@@ -491,14 +493,29 @@ export class RangeCollector extends Renderer<BasicColStats> {
     public histogram(): void {
         let size = Resolution.getChartSize(this.page);
         let cdfCount = Math.floor(size.width);
-        let range = HistogramViewBase.getRange(this.stats, this.page, this.cd, this.allStrings,
-            cdfCount, this.exact, false, true);
-        let rr = this.remoteObject.createHistogramRequest(range);
+        let bucketCount = HistogramViewBase.bucketCount(this.stats, this.page, this.cd.kind, false, true);
+        if (cdfCount == 0)
+            cdfCount = bucketCount;
+
+        let samplingRate = 1.0;
+        if (!this.exact)
+            samplingRate = HistogramViewBase.samplingRate(bucketCount, this.stats.presentCount, this.page);
+
+        let column = HistogramViewBase.getRange(this.stats, this.cd, this.allStrings, cdfCount);
+        let args: HistogramArgs = {
+            column: column,
+            samplingRate: samplingRate,
+            cdfSamplingRate: 1.0, // TODO
+            seed: Seed.instance.get(),
+            cdfBucketCount: cdfCount,
+            bucketCount: bucketCount
+        };
+        let rr = this.remoteObject.createHistogramRequest(args);
 
         rr.chain(this.operation);
         let renderer = new HistogramRenderer(this.page,
             this.remoteObject.remoteObjectId, this.tableSchema,
-            this.cd, this.stats, rr, range.samplingRate >= 1.0, this.allStrings);
+            this.cd, this.stats, rr, samplingRate >= 1.0, this.allStrings);
         rr.invoke(renderer);
     }
 

@@ -25,9 +25,21 @@ import javax.annotation.Nullable;
 import javax.websocket.Session;
 import java.io.IOException;
 
-class RpcReply {
+/**
+ * Represents a reply that is sent from the web server to the web client.
+ */
+public final class RpcReply {
+    /**
+     * Request that is being answered.
+     */
     private final int requestId;
+    /**
+     * Actual result: a string encoding a json object.
+     */
     private final String result;
+    /**
+     * True if this reply represents an error that occurred.
+     */
     private final boolean isError;
 
     RpcReply(final int requestId, final String result, boolean isError) {
@@ -48,10 +60,10 @@ class RpcReply {
      * Send a reply using the specified web sockets context.
      * @param session If the context is null no reply is sent.
      */
-    void send(@Nullable Session session) {
+    public void send(@Nullable Session session) {
         try {
             if (session == null) {
-                HillviewLogger.instance.info("No context; reply skipped.");
+                HillviewLogger.instance.info("No session; reply skipped.");
                 return;
             }
             JsonElement json = this.toJson();

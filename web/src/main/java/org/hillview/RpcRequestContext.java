@@ -25,7 +25,7 @@ import javax.websocket.Session;
 /**
  * This class models the context in which an RpcRequest is executed.
  */
-class RpcRequestContext {
+public final class RpcRequestContext {
     /**
      * If non-null this request is being executed within the context of a web transaction
      * initiated by a user.
@@ -53,7 +53,7 @@ class RpcRequestContext {
      * @return  The session if it exists and open, null otherwise.
      */
     @Nullable
-    Session getSessionIfOpen() {
+    public Session getSessionIfOpen() {
         if (this.session == null)
             return null;
         if (!this.session.isOpen()) {
