@@ -32,7 +32,7 @@ public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKList> {
     /**
      * The size of the input table.
      */
-    private int totalRows;
+    private long totalRows;
 
     /**
      * The rate at which we sample data.
@@ -40,12 +40,12 @@ public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKList> {
     private double samplingRate;
     final long seed;
 
-    public SampleHeavyHittersSketch(Schema schema, double epsilon, int totalRows, long seed) {
+    public SampleHeavyHittersSketch(Schema schema, double epsilon, long totalRows, long seed) {
         this.schema = schema;
         this.epsilon = epsilon;
         this.totalRows= totalRows;
         this.seed = seed;
-        this.samplingRate = 1/(totalRows*epsilon*epsilon);
+        this.samplingRate = Math.max(1/(totalRows*epsilon*epsilon), 20000.0/totalRows);
     }
 
     @Nullable

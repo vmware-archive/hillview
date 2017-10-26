@@ -513,7 +513,8 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
                 //if (cd.kind != "Json" && cd.kind != "String")
                     this.contextMenu.addItem({text: "Histogram", action: () => this.histogram(false) });
                 this.contextMenu.addItem({text: "Heat map", action: () => this.heatMap() });
-                this.contextMenu.addItem({text: "Heavy hitters...", action: () => this.heavyHitters() });
+                this.contextMenu.addItem({text: "Heavy hitters (Sampling)...", action: () => this.heavyHitters(false) });
+                this.contextMenu.addItem({text: "Heavy hitters (Streaming)...", action: () => this.heavyHitters(true) });
                 this.contextMenu.addItem({text: "Select numeric columns", action: () => this.selectNumericColumns()});
                 this.contextMenu.addItem({text: "Estimate Distinct Elements", action: () => this.hLogLog(cd.name)});
                 this.contextMenu.addItem({text: "PCA...", action: () => this.pca() });
@@ -787,7 +788,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         return this.schema.length;
     }
 
-    private runHeavyHitters(percent: number) {
+    private runHeavyHitters(percent: number, isMG: boolean) {
         if (percent == null || percent < .1 || percent > 100) {
             this.reportError("Percentage must be between .1 and 100");
             return;
@@ -800,17 +801,17 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
             cso.push({ columnDescription: colDesc, isAscending: true });
         });
         let order = new RecordOrder(cso);
-        let rr = this.createHeavyHittersRequest(columns, percent);
+        let rr = this.createHeavyHittersRequest(columns, percent, this.getTotalRowCount(), isMG);
         rr.invoke(new HeavyHittersReceiver(this.getPage(), this, rr, columns, order));
     }
 
-    private heavyHitters(): void {
+    private heavyHitters(isMG: boolean): void {
         let d = new Dialog("Heavy hitters");
         d.addTextField("percent", "Threshold (%)", "Double");
         d.setAction(() => {
             let amount = d.getFieldValueAsNumber("percent");
             if (amount != null)
-                this.runHeavyHitters(amount)
+                this.runHeavyHitters(amount, isMG)
         });
         d.show();
     }
@@ -937,7 +938,7 @@ export interface TopList {
     heavyHittersId: string;
 }
 
-// This method handles the outcome of the Misra-Gries skcetch for finding Heavy Hitters.
+// This method handles the outcome of the Misra-Gries sketch for finding Heavy Hitters.
 class HeavyHittersReceiver extends OnCompleteRenderer<TopList> {
      public constructor(page: FullPage,
                        protected tv: TableView,
