@@ -38,10 +38,6 @@ public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKList> {
      * The rate at which we sample data.
      */
     private double samplingRate;
-    /**
-     * The number of samples we take.
-     */
-    private int maxSize;
     final long seed;
 
     public SampleHeavyHittersSketch(Schema schema, double epsilon, int totalRows, long seed) {
@@ -55,7 +51,7 @@ public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKList> {
     @Nullable
     @Override
     public FreqKList zero() {
-        return new FreqKList(0, this.epsilon, this.maxSize, new Object2IntOpenHashMap<RowSnapshot>(0));
+        return new FreqKList(0, this.epsilon, 0, new Object2IntOpenHashMap<RowSnapshot>(0));
     }
 
     public FreqKList add(@Nullable FreqKList left, @Nullable FreqKList right) {
@@ -89,7 +85,8 @@ public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKList> {
         for (int i = 0; i < pList.size(); i++) {
                 hm.put(pList.get(i).getKey(), pList.get(i).getValue().get());
         }
-        return new FreqKList(left.totalRows + right.totalRows, this.epsilon, this.maxSize, hm);
+        return new FreqKList(left.totalRows + right.totalRows, this.epsilon,
+                left.maxSize + right.maxSize, hm);
     }
 
     public FreqKList create(ITable data) {
@@ -124,12 +121,12 @@ public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKList> {
             }
             i = rowIt.getNextRow();
         }
-        Object2IntOpenHashMap<RowSnapshot> hm = new Object2IntOpenHashMap<RowSnapshot>(this.maxSize);
+        Object2IntOpenHashMap<RowSnapshot> hm = new Object2IntOpenHashMap<RowSnapshot>(hMap.size());
         for (ObjectIterator<Int2ObjectMap.Entry<MutableInteger>> it = hMap.int2ObjectEntrySet().fastIterator();
              it.hasNext(); ) {
             final Int2ObjectMap.Entry<MutableInteger> entry = it.next();
             hm.put(new RowSnapshot(data, entry.getIntKey(), this.schema), entry.getValue().get());
         }
-        return new FreqKList(data.getNumOfRows(), this.epsilon, this.maxSize, hm);
+        return new FreqKList(data.getNumOfRows(), this.epsilon, sampleSet.getSize(), hm);
     }
 }
