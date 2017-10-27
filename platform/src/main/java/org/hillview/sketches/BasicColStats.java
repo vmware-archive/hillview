@@ -62,8 +62,10 @@ public class BasicColStats implements IJson {
     public long getPresentCount() { return this.presentCount; }
     public long getRowCount() { return this.presentCount + this.missingCount; }
 
-    public void createStats(final ColumnAndConverter column, final IMembershipSet membershipSet) {
-        final IRowIterator myIter = membershipSet.getIterator();
+    public void createStats(final ColumnAndConverter column,
+                            final IMembershipSet membershipSet,
+                            double rate, long seed) {
+        final IRowIterator myIter = membershipSet.getIteratorOverSample(rate, seed);
         int currRow = myIter.getNextRow();
         while (currRow >= 0) {
             if (!column.column.isMissing(currRow)) {

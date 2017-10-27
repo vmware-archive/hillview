@@ -32,7 +32,6 @@ public class HeatMap implements Serializable, IJson {
     private Histogram histogramMissingD1; // hist of items that are missing in D2
     private Histogram histogramMissingD2; // hist of items that are missing in D1
     private long totalSize;
-    private double rate;
 
     public HeatMap(final IBucketsDescription buckets1,
                    final IBucketsDescription buckets2) {
@@ -41,12 +40,11 @@ public class HeatMap implements Serializable, IJson {
         this.buckets = new long[buckets1.getNumOfBuckets()][buckets2.getNumOfBuckets()]; // Automatically initialized to 0
         this.histogramMissingD1 = new Histogram(this.bucketDescDim1);
         this.histogramMissingD2 = new Histogram(this.bucketDescDim2);
-        rate = 1.0;
     }
 
     public void createHeatMap(final ColumnAndConverter columnD1, final ColumnAndConverter columnD2,
-                              final IMembershipSet membershipSet) {
-        final IRowIterator myIter = membershipSet.getIterator();
+                              final IMembershipSet membershipSet, double samplingRate, long seed) {
+        final IRowIterator myIter = membershipSet.getIteratorOverSample(samplingRate, seed);
         int currRow = myIter.getNextRow();
         while (currRow >= 0) {
             boolean isMissingD1 = columnD1.isMissing(currRow);
@@ -71,14 +69,14 @@ public class HeatMap implements Serializable, IJson {
             }
             currRow = myIter.getNextRow();
         }
-        if (this.rate < 1) {
-            this.histogramMissingD1.rescale(this.rate);
-            this.histogramMissingD2.rescale(this.rate);
-            this.outOfRange = (long) ((double) this.outOfRange / this.rate);
-            this.missingData = (long) ((double) this.missingData / this.rate);
+        if (samplingRate < 1) {
+            this.histogramMissingD1.rescale(samplingRate);
+            this.histogramMissingD2.rescale(samplingRate);
+            this.outOfRange = (long) ((double) this.outOfRange / samplingRate);
+            this.missingData = (long) ((double) this.missingData / samplingRate);
             for (int i = 0; i < this.buckets.length; i++)
                 for (int j = 0; j < this.buckets[i].length; j++)
-                    this.buckets[i][j] = (long) ((double) this.buckets[i][j] / this.rate);
+                    this.buckets[i][j] = (long) ((double) this.buckets[i][j] / samplingRate);
         }
     }
 
@@ -87,17 +85,6 @@ public class HeatMap implements Serializable, IJson {
     public long getSize() { return this.totalSize; }
 
     public Histogram getMissingHistogramD2() { return this.histogramMissingD2; }
-
-    public void createSampleHistogram(
-            final ColumnAndConverter columnD1, final ColumnAndConverter columnD2,
-            final IMembershipSet membershipSet, double sampleRate, long seed) {
-        if (sampleRate <= 0)
-            throw new RuntimeException("Can't sample with a non positive rate");
-        if (sampleRate >= 1)
-            sampleRate = 1;
-        this.rate = sampleRate;
-        this.createHeatMap(columnD1, columnD2, membershipSet.sample(sampleRate, seed));
-    }
 
     public int getNumOfBucketsD1() { return this.bucketDescDim1.getNumOfBuckets(); }
 

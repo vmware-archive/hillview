@@ -19,6 +19,7 @@ package org.hillview.test;
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.sketches.*;
 import org.hillview.table.api.ColumnAndConverterDescription;
+import org.hillview.table.api.IColumn;
 import org.hillview.utils.TestTables;
 import org.hillview.table.SmallTable;
 import org.hillview.table.Table;
@@ -51,14 +52,26 @@ public class HistSketchTest extends BaseTest {
     @Test
     public void Histogram1DTest2() {
         final int numCols = 1;
-        final int maxSize = 50;
         final int bigSize = 100000;
-        final BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(1, 50, 10);
         final SmallTable bigTable = TestTables.getIntTable(bigSize, numCols);
+        double min, max;
         final String colName = bigTable.getSchema().getColumnNames()[0];
+        IColumn col = bigTable.getColumn(colName);
+        min = col.getInt(0);
+        max = col.getInt(0);
+        for (int i=0; i < col.sizeInRows(); i++) {
+            int e = col.getInt(i);
+            if (e < min)
+                min = e;
+            if (e > max)
+                max = e;
+        }
+
+        final BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(min, max, 10);
         final ParallelDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize / 10);
         final Histogram hdl = all.blockingSketch(
-                new HistogramSketch(buckets, new ColumnAndConverterDescription(colName), 0.5, 0));
+                new HistogramSketch(buckets, new ColumnAndConverterDescription(colName), 0.5,
+                        0));
         int size = 0;
         int bucketNum = hdl.getNumOfBuckets();
         for (int i = 0; i < bucketNum; i++)
@@ -83,6 +96,6 @@ public class HistSketchTest extends BaseTest {
                 new HeatMapSketch(buckets1, buckets2,
                         new ColumnAndConverterDescription(colName1), new ColumnAndConverterDescription(colName2),
                         rate, 0));
-        HistogramTest.basicTestHeatMap(hm, (long) (bigSize * rate));
+        HistogramTest.basicTestHeatMap(hm, bigSize);
     }
 }

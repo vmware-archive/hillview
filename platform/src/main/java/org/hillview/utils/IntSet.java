@@ -173,7 +173,7 @@ public class IntSet {
      */
     public IntSet sample(final int k, final long seed) {
         if (k >= this.size)
-            return this.copy();
+            return this;
         final IntSet sampleSet = new IntSet(k);
         final Randomness psg = new Randomness(seed);
         int sampleSize;

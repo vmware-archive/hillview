@@ -18,6 +18,7 @@
 package org.hillview.table.api;
 
 import org.hillview.table.membership.MembershipSetFactory;
+import org.hillview.table.membership.SampledRowIterator;
 import org.hillview.utils.Randomness;
 import java.util.function.IntPredicate;
 
@@ -64,6 +65,19 @@ public interface IMembershipSet extends IRowOrder {
      * generator is seeded with parameter seed.
      */
     IMembershipSet sample(int k, long seed);
+
+    /**
+     * Returns an iterator that runs over the sampled data.
+     * @param rate  Sampling rate.
+     * @param seed  Random seed.
+     * @return      An iterator over the sampled data.
+     */
+    default IRowIterator getIteratorOverSample(double rate, long seed) {
+        if (rate >= 1)
+            return this.getIterator();
+        return this.sample(rate, seed).getIterator();
+        //return new SampledRowIterator(this.getIterator(), rate, seed);
+    }
 
     /**
      * @return a sample of size (rate * rowCount). randomizes between the floor and ceiling of this expression.

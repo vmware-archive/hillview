@@ -85,9 +85,8 @@ public class SampleCorrelationSketch implements ISketch<ITable, CorrMatrix> {
                 this.colNames);
         ColumnAndConverter[] iCols = data.getLoadedColumns(ccds);
         CorrMatrix cm = new CorrMatrix(this.colNames);
-        IMembershipSet sampleData = data.getMembershipSet().sample(this.samplingRate, this.seed);
-        cm.count = sampleData.getSize();
-        IRowIterator rowIt = sampleData.getIterator();
+        IMembershipSet mm = data.getMembershipSet();
+        IRowIterator rowIt = mm.getIteratorOverSample(this.samplingRate, this.seed);
         int i = rowIt.getNextRow();
         double valJ, valK;
         while (i != -1) {
@@ -100,6 +99,7 @@ public class SampleCorrelationSketch implements ISketch<ITable, CorrMatrix> {
                 }
             }
             i = rowIt.getNextRow();
+            cm.count++;
         }
         return cm;
     }

@@ -68,13 +68,13 @@ public class HistogramTest extends BaseTest {
         DoubleArrayColumn col1 = DoubleArrayTest.generateDoubleArray(colSize, 5);
         DoubleArrayColumn col2 = DoubleArrayTest.generateDoubleArray(colSize, 3);
         FullMembershipSet fMap = new FullMembershipSet(colSize);
-        hm.createHeatMap(new ColumnAndConverter(col1), new ColumnAndConverter(col2), fMap);
+        hm.createHeatMap(new ColumnAndConverter(col1), new ColumnAndConverter(col2), fMap, 1.0, 0);
         basicTestHeatMap(hm, colSize);
         HeatMap hm1 = new HeatMap(buckDes1, buckDes2);
         DoubleArrayColumn col3 = DoubleArrayTest.generateDoubleArray(2 * colSize, 100);
         DoubleArrayColumn col4 = DoubleArrayTest.generateDoubleArray(2 * colSize, 100);
         FullMembershipSet fMap1 = new FullMembershipSet(2 * colSize);
-        hm1.createSampleHistogram(new ColumnAndConverter(col3), new ColumnAndConverter(col4),
+        hm1.createHeatMap(new ColumnAndConverter(col3), new ColumnAndConverter(col4),
                 fMap1, 0.1, 0);
         basicTestHeatMap(hm1, 2 * colSize);
         HeatMap hm2 = hm.union(hm1);

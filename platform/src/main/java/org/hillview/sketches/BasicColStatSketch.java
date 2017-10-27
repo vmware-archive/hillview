@@ -41,7 +41,7 @@ public class BasicColStatSketch implements ISketch<ITable, BasicColStats> {
     public BasicColStats create(final ITable data) {
         BasicColStats result = this.getZero();
         result.createStats(data.getLoadedColumn(this.col),
-                data.getMembershipSet().sample(this.rate, this.seed));
+                data.getMembershipSet(), this.rate, this.seed);
         return result;
     }
 
