@@ -21,9 +21,9 @@ import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import org.hillview.dataset.api.Pair;
+import org.hillview.table.Schema;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.RowSnapshotSet;
-import org.hillview.table.Schema;
 import org.hillview.utils.Converters;
 
 import java.io.Serializable;
@@ -43,9 +43,10 @@ public class FreqKList implements Serializable {
      */
     public long totalRows;
     /**
-     * The number of counters we store: the K in top-K heavy hitters.
+     * In MG it is the number of counters we store: the K in top-K heavy hitters.
+     * In sampleHeavyHitters, it is used to store the number of samples taken
      */
-    private final int maxSize;
+    public int maxSize;
     /**
      * The number of times each row in the above table occurs in the original DataSet
      * (can be approximate depending on the context).
@@ -54,11 +55,13 @@ public class FreqKList implements Serializable {
 
     public final double epsilon;
 
-    public FreqKList(long totalRows, double epsilon, int maxSize, Object2IntOpenHashMap<RowSnapshot> hMap) {
-        this.totalRows = totalRows;
-        this.epsilon = epsilon;
-        this.hMap = hMap;
-        this.maxSize = maxSize;
+
+    public FreqKList(long totalRows, double epsilon, int maxSize,
+                     Object2IntOpenHashMap<RowSnapshot> hMap) {
+            this.totalRows = totalRows;
+            this.epsilon = epsilon;
+            this.maxSize = maxSize;
+            this.hMap = hMap;
     }
 
     public FreqKList(long totalRows, double epsilon, Object2IntOpenHashMap<RowSnapshot> hMap) {
@@ -148,6 +151,18 @@ public class FreqKList implements Serializable {
         if (isMG)
             threshold -= this.getErrBound();
         filter(threshold);
+    }
+
+    public void rescale() {
+        for (ObjectIterator<Object2IntMap.Entry<RowSnapshot>> it = this.hMap.object2IntEntrySet().fastIterator();
+             it.hasNext(); ) {
+            final Object2IntMap.Entry<RowSnapshot> entry = it.next();
+            if (entry.getIntValue() < (this.epsilon * this.maxSize /1.1))
+                it.remove();
+            else
+                this.hMap.put(entry.getKey(), (int) Math.ceil(entry
+                        .getIntValue() * this.totalRows / this.maxSize));
+        }
     }
 
     public Pair<List<RowSnapshot>, List<Integer>> getTop() {

@@ -375,14 +375,27 @@ public final class TableTarget extends RpcTarget {
         @Nullable
         Schema columns;
         double amount;
+        long totalRows;
+        long seed;
     }
+
+    @HillviewRpc
+    public void heavyHittersMG(RpcRequest request, RpcRequestContext context) {
+        HeavyHittersInfo info = request.parseArgs(HeavyHittersInfo.class);
+        assert info.columns != null;
+        FreqKSketch sk = new FreqKSketch(Converters.checkNull(info.columns), info.amount/100);
+        this.runCompleteSketch(this.table, sk, (x, c) -> TableTarget.getLists(x, info.columns, 0, c),
+                request, context);
+    }
+
 
     @HillviewRpc
     public void heavyHitters(RpcRequest request, RpcRequestContext context) {
         HeavyHittersInfo info = request.parseArgs(HeavyHittersInfo.class);
         assert info.columns != null;
-        FreqKSketch sk = new FreqKSketch(Converters.checkNull(info.columns), info.amount/100);
-        this.runCompleteSketch(this.table, sk, (x, c) -> TableTarget.getLists(x, info.columns, true, c),
+        SampleHeavyHittersSketch shh = new SampleHeavyHittersSketch(Converters.checkNull(info.columns),
+                info.amount/100, info.totalRows, info.seed);
+        this.runCompleteSketch(this.table, shh, (x, c) -> TableTarget.getLists(x, info.columns, 2, c),
                 request, context);
     }
 
@@ -398,8 +411,13 @@ public final class TableTarget extends RpcTarget {
         String heavyHittersId = "";
     }
 
-    private static TopList getLists(FreqKList fkList, Schema schema, boolean isMG, HillviewComputation computation) {
-        fkList.filter(isMG);
+    private static TopList getLists(FreqKList fkList, Schema schema, int type, HillviewComputation computation) {
+        if(type == 0) //Misra-Gries
+            fkList.filter(true);
+        else if (type ==1) //Exact Frequency
+            fkList.filter(false);
+        else //SampleHeavyHitters
+            fkList.rescale();
         Pair<List<RowSnapshot>, List<Integer>> pair = fkList.getTop();
         TopList tl = new TopList();
         SmallTable tbl = new SmallTable(schema, Converters.checkNull(pair.first));
@@ -418,7 +436,7 @@ public final class TableTarget extends RpcTarget {
                 HeavyHittersTarget hht = (HeavyHittersTarget)rpcTarget;
                 ExactFreqSketch efSketch = new ExactFreqSketch(hhi.schema, hht.heavyHitters);
                 TableTarget.this.runCompleteSketch(
-                        TableTarget.this.table, efSketch, (x, c) -> TableTarget.getLists(x, hhi.schema, false, c),
+                        TableTarget.this.table, efSketch, (x, c) -> TableTarget.getLists(x, hhi.schema, 1, c),
                         request, context);
             }
         };
