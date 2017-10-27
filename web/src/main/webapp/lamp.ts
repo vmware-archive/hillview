@@ -16,7 +16,7 @@
  */
 
 import {Dialog} from "./dialog";
-import {TopMenu, TopSubMenu} from "./menu";
+import {TopMenu, SubMenu} from "./menu";
 import {TableDataView, TableView, TableRenderer} from "./table";
 import {
     RangeInfo, BasicColStats, Schema, RemoteTableObject, RemoteTableObjectView, RemoteTableRenderer, RecordOrder,
@@ -61,7 +61,7 @@ class ControlPointsView extends RemoteTableObjectView {
         this.topLevel.classList.add("lampView");
 
         let menu = new TopMenu( [
-            { text: "View", subMenu: new TopSubMenu([
+            { text: "View", subMenu: new SubMenu([
                 { text: "refresh", action: () => { this.refresh(); } },
                 { text: "update ranges", action: () => { this.fetchNewRanges(); } },
                 { text: "table", action: () => { this.showTable(); } },

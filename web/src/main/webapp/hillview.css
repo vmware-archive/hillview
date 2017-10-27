@@ -239,6 +239,10 @@ table.menu table.menu {
     position: absolute;
 }
 
+td.menuItem.disabled {
+    color: grey;
+}
+
 table.menu td:hover {
     background-color: rgb(126, 126, 126);
     color: rgb(255, 255, 255);

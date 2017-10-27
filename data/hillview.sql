@@ -1,3 +1,9 @@
+/*
+This file is a benchmarking script for MySql running on linux.
+It creates a memory-resident table with 100M rows and then computes
+a histogram on a numeric column of that table.  The histogram
+is repeated 10 times.
+*/
 set tmp_table_size = 1024 * 1024 * 1024 * 10;
 set max_heap_table_size = 1024 * 1024 * 1024 * 10;
 set default_storage_engine = memory;

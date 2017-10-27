@@ -17,13 +17,13 @@
 
 import {Renderer} from "./rpc";
 import {Dialog} from "./dialog";
-import {TopMenu, TopSubMenu} from "./menu";
+import {TopMenu, SubMenu} from "./menu";
 import {TableView, TableRenderer} from "./table";
 import {Histogram3DArgs, RecordOrder} from "./tableData";
 import {
-    FullPage, Size, Resolution, ScrollBar, significantDigits, IScrollTarget
+    FullPage, Size, Resolution, ScrollBar, IScrollTarget
 } from "./ui";
-import {Pair, truncate, Point2D, ICancellable, PartialResult, Seed} from "./util";
+import {Pair, truncate, significantDigits, Point2D, ICancellable, PartialResult, Seed} from "./util";
 import {ColorMap, ColorLegend} from "./vis";
 import d3 = require('d3');
 import {AxisData} from "./heatMap";
@@ -294,7 +294,7 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
         this.topLevel.classList.add("chart");
 
         let menu = new TopMenu( [
-            { text: "View", subMenu: new TopSubMenu([
+            { text: "View", subMenu: new SubMenu([
                 { text: "refresh", action: () => { this.refresh(); } },
                 { text: "swap axes", action: () => { this.swapAxes(); } },
                 { text: "table", action: () => { this.showTable(); } },

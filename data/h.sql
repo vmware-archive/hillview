@@ -1,3 +1,6 @@
+/* This is a test script that checks that a SQL query in the Hillview
+paper produces the expected result. */
+
 DROP TABLE IF EXISTS flights;
 
 CREATE TABLE flights (

@@ -16,7 +16,7 @@
  */
 
 import {
-    FullPage, Point, Size, KeyCodes, Resolution, significantDigits, SpecialChars
+    FullPage, Point, Size, KeyCodes, Resolution, SpecialChars
 } from "./ui";
 import {Dialog} from "./dialog";
 import d3 = require('d3');
@@ -26,7 +26,7 @@ import {
 } from "./tableData";
 import {BaseType} from "d3-selection";
 import {ScaleLinear, ScaleTime} from "d3-scale";
-import {Converters} from "./util";
+import {Converters, significantDigits} from "./util";
 
 export type AnyScale = ScaleLinear<number, number> | ScaleTime<number, number>;
 
@@ -164,30 +164,35 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
         this.selectionCompleted(this.selectionOrigin.x, x);
     }
 
-    public static samplingRate(bucketCount: number, pointCount: number, page: FullPage): number {
+    public static samplingRate(bucketCount: number, rowCount: number, page: FullPage): number {
+        let constant = 4;  // This models the confidence we want from the sampling
         let height = Resolution.getChartSize(page).height;
-        return Math.min(bucketCount * height * Math.log(bucketCount + 2) * 5 / pointCount, 1);
+        let sampleCount = constant * height * height;
+        let sampleRate = sampleCount / rowCount;
+        return Math.min(sampleRate, 1);
     }
 
     /**
      * Compute the string used to display the height of a box in a histogram
-     * @param  count  Box size as reported by histogram
-     * @param  exact  If true the box size is exact, otherwise it is approximate
-     * @param  pixelSize  The size of a box that is 1 pixel high.
+     * @param  barSize         Bar size as reported by histogram.
+     * @param  samplingRate  Sampling rate that was used to compute the box height.
+     * @param  totalPop      Total population which was sampled to get this box.
      */
-    protected static boxHeight(count: number, exact: boolean, pixelSize: number): string {
-        if (exact) {
-            if (count == 0)
+    protected static boxHeight(barSize: number, samplingRate: number, totalPop: number): string {
+        if (samplingRate >= 1) {
+            if (barSize == 0)
                 return "";
-            return significantDigits(count);
+            return significantDigits(barSize);
         }
-        let min = Math.max(count - pixelSize, 0);
-        let max = count + pixelSize;
+        let muS = barSize / totalPop;
+        let dev = 2.38 * Math.sqrt(muS * (1 - muS) * totalPop / samplingRate);
+        let min = Math.max(barSize - dev, 0);
+        let max = barSize + dev;
         let minString = significantDigits(min);
         let maxString = significantDigits(max);
         if (minString == maxString)
             return minString;
-        return SpecialChars.approx + significantDigits(count);
+        return SpecialChars.approx + significantDigits(barSize);
     }
 
     // Adjust the statistics for integral and categorical data pretending

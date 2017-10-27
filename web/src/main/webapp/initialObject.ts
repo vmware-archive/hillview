@@ -40,6 +40,7 @@ export class InitialObject extends RemoteObject {
     // The "0" argument is the object id for the initial object.
     // It must match the id of the object declared in RpcServer.java.
     // This is a "well-known" name used for bootstrapping the system.
+    // noinspection JSUnusedLocalSymbols
     private constructor() { super("0"); }
 
     public loadFiles(which: number): void {

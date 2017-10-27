@@ -17,7 +17,7 @@
 
 import {ErrorReporter} from "./errReporter";
 import d3 = require('d3');
-import {ICancellable} from "./util";
+import {ICancellable, removeAllChildren, significantDigits} from "./util";
 
 export interface IHtmlElement {
     getHTMLRepresentation() : HTMLElement;
@@ -73,63 +73,15 @@ export interface IDataView extends IHtmlElement {
     refresh(): void;
 }
 
-export function formatNumber(n: number): string {
-    return n.toLocaleString();
-}
-
-export function percent(n: number): string {
-    n = Math.round(n * 1000) / 10;
-    return significantDigits(n) + "%";
-}
-
 // Generates a string that encodes a call to the SVG translate method
 export function translateString(x: number, y: number): string {
     return "translate(" + String(x) + ", " + String(y) + ")";
-}
-
-export function significantDigits(n: number): string {
-    let suffix = "";
-    if (n == 0)
-        return "0";
-    let absn = Math.abs(n);
-    if (absn > 1e12) {
-        suffix = "T";
-        n = n / 1e12;
-    } else if (absn > 1e9) {
-        suffix = "B";
-        n = n / 1e9;
-    } else if (absn > 1e6) {
-        suffix = "M";
-        n = n / 1e6;
-    } else if (absn > 5e3) {
-        // This will prevent many year values from being converted
-        suffix = "K";
-        n = n / 1e3;
-    } else if (absn < 1e-12) {
-        n = 0;
-    } else if (absn < 1e-9) {
-        suffix = "n";
-        n = n * 1e9;
-    } else if (absn < 1e-6) {
-        suffix = "u";
-        n = n * 1e6;
-    } else if (absn < 1e-3) {
-        suffix = "m";
-        n = n * 1e3;
-    }
-    n = Math.round(n * 100) / 100;
-    return String(n) + suffix;
 }
 
 export interface IScrollTarget {
     scrolledTo(position: number): void;
     pageDown(): void;
     pageUp(): void;
-}
-
-export function removeAllChildren(h: HTMLElement): void {
-    while (h.hasChildNodes())
-        h.removeChild(h.lastChild);
 }
 
 export class ScrollBar implements IHtmlElement {
@@ -532,6 +484,10 @@ export class FullPage implements IHtmlElement {
     public reportError(error: string) {
         this.getErrorReporter().clear();
         this.getErrorReporter().reportError(error);
+    }
+
+    public reportTime(timeInMs: number) {
+        this.reportError("Operation took " + significantDigits(timeInMs/1000) + " seconds");
     }
 
     public getWidthInPixels(): number {

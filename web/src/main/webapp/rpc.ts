@@ -23,7 +23,7 @@ import d3 = require('d3');
 import {ErrorReporter, ConsoleErrorReporter} from "./errReporter";
 import {ProgressBar, FullPage} from "./ui";
 import {PartialResult, ICancellable, EnumIterators, RpcReply} from "./util";
-import {TopSubMenu} from "./menu";
+import {SubMenu} from "./menu";
 
 // path in server url for rpc web sockets
 const RpcRequestPath = "rpc";
@@ -249,7 +249,7 @@ export enum CombineOperators {
     Union, Intersection, Exclude, Replace
 }
 
-export function combineMenu(ro: RemoteObject): TopSubMenu {
+export function combineMenu(ro: RemoteObject): SubMenu {
     let combineMenu = [];
     combineMenu.push({
         text: "Select current",
@@ -259,7 +259,7 @@ export function combineMenu(ro: RemoteObject): TopSubMenu {
         .forEach(c => combineMenu.push({
             text: c.name,
             action: () => { ro.combine(c.value); } }));
-    return new TopSubMenu(combineMenu);
+    return new SubMenu(combineMenu);
 }
 
 export abstract class Renderer<T> extends RpcReceiver<PartialResult<T>> {

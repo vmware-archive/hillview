@@ -80,11 +80,15 @@ export class ContextMenu implements IHtmlElement {
     }
 }
 
-export class TopSubMenu implements IHtmlElement {
+export class SubMenu implements IHtmlElement {
+    private items: MenuItem[];
+    private cells: HTMLTableDataCellElement[];  // in the same order as menu items.
     private outer: HTMLTableElement;
     private tableBody: HTMLTableSectionElement;
 
     constructor(mis: MenuItem[]) {
+        this.items = [];
+        this.cells = [];
         this.outer = document.createElement("table");
         this.outer.classList.add("menu", "hidden");
         this.tableBody = this.outer.createTBody();
@@ -95,8 +99,10 @@ export class TopSubMenu implements IHtmlElement {
     }
 
     addItem(mi: MenuItem): void {
+        this.items.push(mi);
         let trow = this.tableBody.insertRow();
         let cell = trow.insertCell(0);
+        this.cells.push(cell);
         if (mi.text == "---")
             cell.innerHTML = "<hr>";
         else
@@ -118,11 +124,34 @@ export class TopSubMenu implements IHtmlElement {
     hide(): void {
         this.outer.classList.add("hidden");
     }
+
+    // find the position of an item
+    find(text: string): number {
+        for (let i=0; i < this.items.length; i++)
+            if (this.items[i].text === text)
+                return i;
+        return -1;
+    }
+
+    enable(text: string, enabled: boolean): void {
+        let index = this.find(text);
+        if (index < 0)
+            throw "Cannot find menu item " + text;
+        let cell = this.cells[index];
+        if (enabled) {
+            let mi = this.items[index];
+            cell.classList.remove("disabled");
+            cell.onclick = (e: MouseEvent) => { e.stopPropagation(); this.hide(); mi.action(); }
+        } else {
+            cell.classList.add("disabled");
+            cell.onclick = null;
+        }
+    }
 }
 
 export interface TopMenuItem {
     readonly text: string;
-    readonly subMenu: TopSubMenu;
+    readonly subMenu: SubMenu;
 }
 
 export class TopMenu implements IHtmlElement {
@@ -158,5 +187,13 @@ export class TopMenu implements IHtmlElement {
 
     getHTMLRepresentation(): HTMLElement {
         return this.outer;
+    }
+
+    // find the position of an item
+    getSubmenu(text: string): SubMenu {
+        for (let i=0; i < this.items.length; i++)
+            if (this.items[i].text === text)
+                return this.items[i].subMenu;
+        return null;
     }
 }

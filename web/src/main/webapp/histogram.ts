@@ -17,7 +17,7 @@
 
 import d3 = require('d3');
 import {
-    FullPage, significantDigits, formatNumber, percent, translateString, Resolution
+    FullPage, translateString, Resolution
 } from "./ui";
 import { combineMenu, CombineOperators, SelectedObject, Renderer } from "./rpc";
 import {
@@ -26,8 +26,8 @@ import {
     ZipReceiver, RemoteTableRenderer, HistogramArgs
 } from "./tableData";
 import {TableRenderer, TableView} from "./table";
-import {TopMenu, TopSubMenu} from "./menu";
-import {Pair, reorder, ICancellable, PartialResult, Seed} from "./util";
+import {TopMenu, SubMenu} from "./menu";
+import {Pair, reorder, significantDigits, formatNumber, percent, ICancellable, PartialResult, Seed} from "./util";
 import {HistogramViewBase, BucketDialog} from "./histogramBase";
 import {Dialog} from "./dialog";
 import {Range2DCollector} from "./heatMap";
@@ -40,16 +40,18 @@ export class HistogramView extends HistogramViewBase {
         cdfSum: number[],  // prefix sum of cdf
         description: ColumnDescription,
         stats: BasicColStats,
-        exact: boolean,  // if false the histogram is computed using sampled data
+        samplingRate: number,
         allStrings: DistinctStrings   // used only for categorical histograms
     };
+    protected menu: TopMenu;
 
     constructor(remoteObjectId: string, protected tableSchema: Schema, page: FullPage) {
         super(remoteObjectId, tableSchema, page);
-        let menu = new TopMenu( [
-            { text: "View", subMenu: new TopSubMenu([
+        this.menu = new TopMenu( [
+            { text: "View", subMenu: new SubMenu([
                 { text: "refresh", action: () => { this.refresh(); } },
                 { text: "table", action: () => this.showTable() },
+                { text: "exact", action: () => this.exactHistogram() },
                 { text: "# buckets...", action: () => this.chooseBuckets() },
                 { text: "correlate...", action: () => this.chooseSecondColumn() },
             ]) },
@@ -58,7 +60,7 @@ export class HistogramView extends HistogramViewBase {
             }
         ]);
 
-        this.topLevel.insertBefore(menu.getHTMLRepresentation(), this.topLevel.children[0]);
+        this.topLevel.insertBefore(this.menu.getHTMLRepresentation(), this.topLevel.children[0]);
     }
 
     // combine two views according to some operation
@@ -72,7 +74,7 @@ export class HistogramView extends HistogramViewBase {
         let rr = this.createZipRequest(r);
         let finalRenderer = (page: FullPage, operation: ICancellable) => {
             return new MakeHistogram(page, operation, this.currentData.description,
-                this.tableSchema, this.currentData.exact, this.currentData.allStrings);
+                this.tableSchema, this.currentData.samplingRate, this.currentData.allStrings);
         };
         rr.invoke(new ZipReceiver(this.getPage(), rr, how, finalRenderer));
     }
@@ -113,7 +115,8 @@ export class HistogramView extends HistogramViewBase {
             let distinct: DistinctStrings[] = [this.currentData.allStrings, ds];
             let rr = this.createRange2DRequest(r0, r1);
             rr.chain(operation);
-            rr.invoke(new Range2DCollector(cds, this.tableSchema, distinct, this.getPage(), this, rr, false));
+            rr.invoke(new Range2DCollector(cds, this.tableSchema, distinct, this.getPage(), this,
+                this.currentData.samplingRate >=1, rr, false));
         };
         CategoryCache.instance.retrieveCategoryValues(this, catColumns, this.getPage(), cont);
     }
@@ -125,29 +128,26 @@ export class HistogramView extends HistogramViewBase {
         let boundaries = this.currentData.allStrings != null ?
             this.currentData.allStrings.categoriesInRange(
                 this.currentData.stats.min, this.currentData.stats.max, cdfBucketCount) : null;
-        let samplingRate = 1.0;
-        if (!this.currentData.exact)
-            samplingRate = HistogramViewBase.samplingRate(+bucketCount, this.currentData.stats.presentCount, this.page);
-        let exact = samplingRate >= 1.0;
-
         let col: ColumnAndRange = {
             columnName: this.currentData.description.name,
             min: this.currentData.stats.min,
             max: this.currentData.stats.max,
             bucketBoundaries: boundaries
         };
+        let samplingRate = HistogramViewBase.samplingRate(bucketCount, this.currentData.stats.presentCount, this.page);
         let histoArg: HistogramArgs = {
             column: col,
             seed: Seed.instance.get(),
             bucketCount: +bucketCount,
             samplingRate: samplingRate,
             cdfBucketCount: cdfBucketCount,
-            cdfSamplingRate: 1.0 // TODO
+            cdfSamplingRate: this.currentData.samplingRate,
         };
         let rr = this.createHistogramRequest(histoArg);
         let renderer = new HistogramRenderer(this.page,
             this.remoteObjectId, this.tableSchema, this.currentData.description,
-            this.currentData.stats, rr, exact, this.currentData.allStrings);
+            this.currentData.stats, rr, this.currentData.samplingRate,
+            this.currentData.allStrings);
         rr.invoke(renderer);
     }
 
@@ -169,8 +169,17 @@ export class HistogramView extends HistogramViewBase {
             this.currentData.description,
             this.currentData.stats,
             this.currentData.allStrings,
-            this.currentData.exact,
+            this.currentData.samplingRate,
             0);
+    }
+
+    exactHistogram(): void {
+        if (this.currentData == null)
+            return;
+        let rc = new RangeCollector(this.currentData.description, this.tableSchema,
+            this.currentData.allStrings, this.page, this, true, null);
+        rc.setValue(this.currentData.stats);
+        rc.onCompleted();
     }
 
     protected onMouseMove(): void {
@@ -221,16 +230,25 @@ export class HistogramView extends HistogramViewBase {
 
     public updateView(cdf: Histogram, h: Histogram,
                       cd: ColumnDescription, stats: BasicColStats,
-                      allStrings: DistinctStrings, exact: boolean, elapsedMs: number) : void {
+                      allStrings: DistinctStrings,
+                      samplingRate: number, elapsedMs: number) : void {
+        this.page.reportTime(elapsedMs);
+        if (h == null) {
+            this.page.reportError("No data to display");
+            return;
+        }
+        if (samplingRate >= 1) {
+            let submenu = this.menu.getSubmenu("View");
+            submenu.enable("exact", false);
+        }
         this.currentData = {
             cdf: cdf,
             cdfSum: null,
             histogram: h,
             description: cd,
             stats: stats,
-            exact: exact,
+            samplingRate: samplingRate,
             allStrings: allStrings };
-        this.page.reportError("Operation took " + significantDigits(elapsedMs/1000) + " seconds");
 
         let canvasSize = Resolution.getCanvasSize(this.page);
         this.chartSize = Resolution.getChartSize(this.page);
@@ -330,14 +348,14 @@ export class HistogramView extends HistogramViewBase {
             .attr("height", d => this.chartSize.height - this.yScale(d))
             .attr("width", barWidth - 1);
 
-        let pixelHeight = max / this.chartSize.height;
         bars.append("text")
             .attr("class", "histogramBoxLabel")
             .attr("x", barWidth / 2)
             .attr("y", d => this.yScale(d))
             .attr("text-anchor", "middle")
             .attr("dy", d => d <= (9 * max / 10) ? "-.25em" : ".75em")
-            .text(d => HistogramViewBase.boxHeight(d, this.currentData.exact, pixelHeight))
+            .text(d => HistogramViewBase.boxHeight(d, this.currentData.samplingRate,
+                this.currentData.stats.presentCount))
             .exit();
 
         this.chart.append("g")
@@ -381,6 +399,8 @@ export class HistogramView extends HistogramViewBase {
         if (this.currentData.allStrings != null)
             summary += ", " + (this.currentData.stats.max - this.currentData.stats.min) + " distinct values";
         summary += ", " + String(bucketCount) + " buckets";
+        if (samplingRate < 1.0)
+            summary += ", sampling rate " + significantDigits(samplingRate);
         this.summary.textContent = summary;
     }
 
@@ -431,7 +451,8 @@ export class HistogramView extends HistogramViewBase {
         let rr = this.createFilterRequest(filter);
         let renderer = new FilterReceiver(
                 this.currentData.description, this.tableSchema,
-                this.currentData.allStrings, this.currentData.exact, this.page, rr);
+                this.currentData.allStrings, this.currentData.samplingRate >= 1.0,
+                this.page, rr);
         rr.invoke(renderer);
     }
 }
@@ -505,7 +526,7 @@ export class RangeCollector extends Renderer<BasicColStats> {
         let args: HistogramArgs = {
             column: column,
             samplingRate: samplingRate,
-            cdfSamplingRate: 1.0, // TODO
+            cdfSamplingRate: samplingRate,
             seed: Seed.instance.get(),
             cdfBucketCount: cdfCount,
             bucketCount: bucketCount
@@ -515,7 +536,7 @@ export class RangeCollector extends Renderer<BasicColStats> {
         rr.chain(this.operation);
         let renderer = new HistogramRenderer(this.page,
             this.remoteObject.remoteObjectId, this.tableSchema,
-            this.cd, this.stats, rr, samplingRate >= 1.0, this.allStrings);
+            this.cd, this.stats, rr, samplingRate, this.allStrings);
         rr.invoke(renderer);
     }
 
@@ -542,7 +563,7 @@ export class HistogramRenderer extends Renderer<Pair<Histogram, Histogram>> {
                 protected cd: ColumnDescription,
                 protected stats: BasicColStats,
                 operation: ICancellable,
-                protected exact: boolean,
+                protected samplingRate: number,
                 protected allStrings: DistinctStrings) {
         super(new FullPage(), operation, "histogram");
         page.insertAfterMe(this.page);
@@ -553,7 +574,7 @@ export class HistogramRenderer extends Renderer<Pair<Histogram, Histogram>> {
     onNext(value: PartialResult<Pair<Histogram, Histogram>>): void {
         super.onNext(value);
         this.histogram.updateView(value.data.first, value.data.second, this.cd,
-            this.stats, this.allStrings, this.exact, this.elapsedMilliseconds());
+            this.stats, this.allStrings, this.samplingRate, this.elapsedMilliseconds());
         this.histogram.scrollIntoView();
     }
 }
@@ -564,7 +585,7 @@ class MakeHistogram extends RemoteTableRenderer {
                        operation: ICancellable,
                        private colDesc: ColumnDescription,
                        private schema: Schema,
-                       protected exact: boolean,
+                       protected samplingRate: number,
                        private allStrings: DistinctStrings) {
         super(page, operation, "Reload");
     }
@@ -582,7 +603,8 @@ class MakeHistogram extends RemoteTableRenderer {
                     return;
                 let rr = this.remoteObject.createRangeRequest(ds.getRangeInfo(this.colDesc.name));
                 rr.chain(operation);
-                rr.invoke(new RangeCollector(this.colDesc, this.schema, ds, this.page, this.remoteObject, this.exact, rr));
+                rr.invoke(new RangeCollector(this.colDesc, this.schema, ds, this.page, this.remoteObject,
+                    this.samplingRate >= 1, rr));
             };
             // Get the categorical data and invoke the continuation
             CategoryCache.instance.retrieveCategoryValues(this.remoteObject, [this.colDesc.name], this.page, cont);
@@ -590,7 +612,8 @@ class MakeHistogram extends RemoteTableRenderer {
             let rr = this.remoteObject.createRangeRequest(
                 {columnName: this.colDesc.name, allNames: null, seed: Seed.instance.get()});
             rr.chain(this.operation);
-            rr.invoke(new RangeCollector(this.colDesc, this.schema, this.allStrings, this.page, this.remoteObject, this.exact, rr));
+            rr.invoke(new RangeCollector(this.colDesc, this.schema, this.allStrings, this.page, this.remoteObject,
+                this.samplingRate >= 1, rr));
         }
     }
 }

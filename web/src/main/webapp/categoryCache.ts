@@ -15,15 +15,16 @@
  * limitations under the License.
  */
 
-import {Renderer, OnCompleteRenderer} from "./rpc";
+import {OnCompleteRenderer} from "./rpc";
 import {IDistinctStrings, DistinctStrings, RemoteTableObject} from "./tableData";
-import {PartialResult, ICancellable} from "./util";
+import {ICancellable} from "./util";
 import {FullPage} from "./ui";
 
 export class CategoryCache {
     columnValues: Map<string, DistinctStrings>;
     // TODO: handle errors that can occur while retrieving DistinctStrings
 
+    // noinspection JSUnusedLocalSymbols
     private constructor() {
         this.columnValues = new Map<string, DistinctStrings>();
     }

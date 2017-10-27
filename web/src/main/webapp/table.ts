@@ -16,13 +16,13 @@
  */
 
 import {
-    FullPage, formatNumber, significantDigits, percent, KeyCodes, ScrollBar, IScrollTarget, SpecialChars
+    FullPage, KeyCodes, ScrollBar, IScrollTarget, SpecialChars
 } from "./ui";
 import {Renderer, combineMenu, SelectedObject, CombineOperators, OnCompleteRenderer} from "./rpc";
 import {RangeCollector} from "./histogram";
 import {Range2DCollector} from "./heatMap";
-import {TopMenu, TopSubMenu, ContextMenu} from "./menu";
-import {Converters, PartialResult, ICancellable, cloneSet} from "./util";
+import {TopMenu, SubMenu, ContextMenu} from "./menu";
+import {Converters, PartialResult, ICancellable, cloneSet, percent, formatNumber, significantDigits} from "./util";
 import {EqualityFilterDialog, EqualityFilterDescription} from "./equalityFilter";
 import {Dialog} from "./dialog";
 import {
@@ -91,7 +91,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
 
         let menu = new TopMenu([
             {
-                text: "View", subMenu: new TopSubMenu([
+                text: "View", subMenu: new SubMenu([
                     { text: "Full dataset", action: () => { TableView.fullDataset(this.page); } },
                     { text: "Refresh", action: () => { this.refresh(); } },
                     { text: "All columns", action: () => { this.showAllRows(); } },
@@ -420,7 +420,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
             if (twoDimensional) {
                 let rr = this.createRange2DRequest(rangeInfo[0], rangeInfo[1]);
                 rr.chain(operation);
-                rr.invoke(new Range2DCollector(cds, this.schema, distinct, this.getPage(), this, rr, heatMap));
+                rr.invoke(new Range2DCollector(cds, this.schema, distinct, this.getPage(), this, false, rr, heatMap));
             } else {
                 let rr = this.createRangeRequest(rangeInfo[0]);
                 rr.chain(operation);
@@ -561,7 +561,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
 
         this.updateScrollBar();
         this.highlightSelectedColumns();
-        this.reportError("Operation took " + significantDigits(elapsedMs/1000) + " seconds");
+        this.page.reportTime(elapsedMs);
     }
 
     dropColumns(): void {

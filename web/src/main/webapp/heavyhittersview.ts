@@ -16,13 +16,13 @@
  */
 
 import {RemoteTableObjectView} from "./tableData";
-import {significantDigits, FullPage, Resolution} from "./ui";
-import {IColumnDescription, ColumnDescription, Schema, RecordOrder} from "./tableData";
+import {FullPage, Resolution} from "./ui";
+import {IColumnDescription, ColumnDescription, RecordOrder} from "./tableData";
 import {TableView, TableDataView, TopList, TableOperationCompleted} from "./table";
-import {TopMenu, TopSubMenu} from "./menu";
+import {TopMenu, SubMenu} from "./menu";
 import {DataRange} from "./vis";
-import {RemoteObject, Renderer, OnCompleteRenderer} from "./rpc";
-import {PartialResult, ICancellable} from "./util";
+import {RemoteObject, OnCompleteRenderer} from "./rpc";
+import {significantDigits, ICancellable} from "./util";
 
 // Class that renders a table containing the heavy hitters in sorted
 // order of counts. It also displays a menu that gives the option to
@@ -38,7 +38,9 @@ export class HeavyHittersView extends RemoteTableObjectView {
                 private isMG: boolean) {
         super(data.heavyHittersId, page);
         this.topLevel = document.createElement("div");
-        let subMenu = new TopSubMenu([ {text: "As Table", action: () => {this.showTable();}}])
+        let subMenu = new SubMenu([
+            {text: "As Table", action: () => {this.showTable();}}
+        ]);
         if(isMG == true)
             subMenu.addItem({text: "Get exact counts", action: () => {this.exactCounts();}});
         let menu = new TopMenu([ {text: "View", subMenu} ]);
@@ -69,7 +71,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
         this.getHTMLRepresentation().scrollIntoView( { block: "end", behavior: "smooth" } );
     }
 
-    public fill(tdv: TableDataView, elapsedMS: number): void {
+    public fill(tdv: TableDataView, elapsedMs: number): void {
         let scroll_div = document.createElement("div");
         scroll_div.style.maxHeight = Resolution.canvasHeight.toString() + "px";
         scroll_div.style.overflowY = "auto";
@@ -159,7 +161,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
         cell.colSpan = this.schema.length + 4;
         cell.className = "footer";
 
-        this.page.reportError("Operation took " + significantDigits(elapsedMS/1000) + " seconds");
+        this.page.reportTime(elapsedMs);
     }
 
     private getRestCount(tdv:TableDataView): number{

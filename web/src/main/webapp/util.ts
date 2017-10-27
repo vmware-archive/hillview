@@ -47,6 +47,55 @@ export class Seed {
     }
 }
 
+export function formatNumber(n: number): string {
+    return n.toLocaleString();
+}
+
+export function percent(n: number): string {
+    n = Math.round(n * 1000) / 10;
+    return significantDigits(n) + "%";
+}
+
+export function removeAllChildren(h: HTMLElement): void {
+    while (h.hasChildNodes())
+        h.removeChild(h.lastChild);
+}
+
+export function significantDigits(n: number): string {
+    let suffix = "";
+    if (n == 0)
+        return "0";
+    let absn = Math.abs(n);
+    if (absn > 1e12) {
+        suffix = "T";
+        n = n / 1e12;
+    } else if (absn > 1e9) {
+        suffix = "B";
+        n = n / 1e9;
+    } else if (absn > 1e6) {
+        suffix = "M";
+        n = n / 1e6;
+    } else if (absn > 5e3) {
+        // This will prevent many year values from being converted
+        suffix = "K";
+        n = n / 1e3;
+    } else if (absn < 1e-12) {
+        n = n * 1e15;
+        suffix = "* 10^{-15}"
+    } else if (absn < 1e-9) {
+        suffix = "* 10^{-12}";
+        n = n * 1e12;
+    } else if (absn < 1e-6) {
+        suffix = "* 10^{-9}";
+        n = n * 1e9;
+    } else if (absn < 1e-3) {
+        suffix = "* 10^{-6}";
+        n = n * 1e6;
+    }
+    n = Math.round(n * 100) / 100;
+    return String(n) + suffix;
+}
+
 export function reorder(m: number, n: number): [number, number] {
     if (m < n)
         return [m, n];

@@ -16,9 +16,10 @@
  */
 
 import d3 = require("d3");
-import {Size, IElement, IHtmlElement, significantDigits, Resolution} from "./ui";
+import {Size, IElement, IHtmlElement, Resolution} from "./ui";
 import {ContextMenu} from "./menu";
 import {Point} from "./ui";
+import {significantDigits} from "./util";
 
 export class ColorMap {
     public static logThreshold = 50; /* Suggested threshold for when a log-scale should be used. */

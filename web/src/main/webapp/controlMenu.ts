@@ -16,10 +16,10 @@
  */
 
 import {ConsoleDisplay, IDataView, FullPage} from "./ui";
-import {TopMenu, TopSubMenu} from "./menu";
+import {TopMenu, SubMenu} from "./menu";
 import {InitialObject} from "./initialObject";
-import {RemoteObject, Renderer, OnCompleteRenderer} from "./rpc";
-import {PartialResult, ICancellable} from "./util";
+import {RemoteObject, OnCompleteRenderer} from "./rpc";
+import {ICancellable} from "./util";
 
 export class ControlMenu extends RemoteObject implements IDataView {
     private top: HTMLElement;
@@ -31,7 +31,7 @@ export class ControlMenu extends RemoteObject implements IDataView {
 
         this.top = document.createElement("div");
         this.menu = new TopMenu([{
-            text: "Manage", subMenu: new TopSubMenu([
+            text: "Manage", subMenu: new SubMenu([
                 { text: "List machines", action: () => { this.ping(); } },
                 { text: "Toggle memoization", action: () => { this.command("toggleMemoization"); } },
                 { text: "Memory use", action: () => { this.command("memoryUse"); } },
