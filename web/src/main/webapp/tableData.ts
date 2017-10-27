@@ -231,9 +231,23 @@ export class RemoteTableObject extends RemoteObject {
         return this.createRange2DRequest(r1, r2);
     }
 
-    public createHeavyHittersRequest(columns: IColumnDescription[], percent: number): RpcRequest {
-        return this.createRpcRequest("heavyHitters", {columns: columns, amount: percent});
+    public createHeavyHittersRequest(columns: IColumnDescription[],
+                                     percent: number,
+                                     totalRows: number,
+                                     isMG: boolean): RpcRequest {
+        if(isMG) {
+            return this.createRpcRequest("heavyHittersMG",
+                {columns: columns, amount: percent,
+                    totalRows: totalRows, seed: Seed.instance.get() });
+        }
+    else{
+            return this.createRpcRequest("heavyHitters",
+                {columns: columns, amount: percent,
+                    totalRows: totalRows, seed: Seed.instance.get() });
+
+        }
     }
+
 
     public createCheckHeavyRequest(r: RemoteObject, schema: Schema): RpcRequest {
         return this.createRpcRequest("checkHeavy", {
