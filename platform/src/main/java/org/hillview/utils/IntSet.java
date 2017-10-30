@@ -97,6 +97,19 @@ public class IntSet {
         return true;
     }
 
+    /**
+     *
+     * @param pos a location in the key[] array
+     * @return in res[0] the location of the next full slot after cursor. In res[1] the value.
+     */
+    public int[] getNext(int pos) {
+        int[] res = new int[2];
+        while ( key[pos & this.mask] == 0) { pos++; }
+            res[0] = (pos & this.mask);
+            res[1] = key[pos & this.mask];
+        return res;
+        }
+
     public boolean contains(final int k) {
         if (k == 0) {
             return this.containsZero;
@@ -164,6 +177,8 @@ public class IntSet {
         System.arraycopy(this.key, 0, newSet.key, 0, this.key.length);
         return newSet;
     }
+
+    public int arraySize() { return this.key.length; }
 
     /**
      * Uses the class Randomness to sample k items without replacement. If k > size returns the

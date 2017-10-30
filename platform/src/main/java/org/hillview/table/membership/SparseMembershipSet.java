@@ -21,6 +21,7 @@ import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.IMutableMembershipSet;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.utils.IntSet;
+import org.hillview.utils.Randomness;
 
 /**
  * This implementation uses a Set data structure to store the membership. It uses the Set's
@@ -93,6 +94,53 @@ public class SparseMembershipSet implements IMembershipSet, IMutableMembershipSe
     @Override
     public IRowIterator getIterator() {
         return new SparseIterator(this.membershipMap);
+    }
+
+
+    /**
+     * Returns an iterator that runs over the sampled data.
+     * @param rate  Sampling rate.
+     * @param seed  Random seed.
+     * @return      An iterator over the sampled data.
+     */
+    @Override
+    public IRowIterator getIteratorOverSample(double rate, long seed) {
+        if (rate >= 1)
+            return this.getIterator();
+        return new SparseMembershipSet.SparseSampledRowIterator(rate, seed, this.membershipMap);
+    }
+
+    private static class SparseSampledRowIterator implements IRowIterator {
+        final int sampleSize;
+        final Randomness psg;
+        int currentSize = 0;
+        int currentCursor;
+        final IntSet mMap;
+
+        private SparseSampledRowIterator(final double rate, final long seed, IntSet mmap) {
+            this.mMap = mmap;
+            psg = new Randomness(seed);
+            double bias = psg.nextDouble();
+            if (bias < rate)
+                this.sampleSize = (int) Math.floor(rate * mMap.size());
+            else this.sampleSize = (int) Math.ceil(rate * mMap.size());
+            currentCursor = psg.nextInt(mMap.arraySize());
+        }
+
+        @Override
+        public int getNextRow() {
+            if (this.currentSize >= this.sampleSize)
+                return -1;
+            if ((this.currentSize == this.sampleSize - 1) && mMap.contains(0))
+                if (this.psg.nextDouble() < 1 / this.sampleSize) {
+                    this.currentSize++;
+                    return 0;
+                }
+            int res[] = mMap.getNext(currentCursor); // returns the location and value of next member of the set
+            this.currentSize++;
+            this.currentCursor = res[0] + 1;
+            return res[1];
+        }
     }
 
     private static class SparseIterator implements IRowIterator {

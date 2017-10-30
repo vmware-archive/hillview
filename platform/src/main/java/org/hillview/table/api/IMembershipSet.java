@@ -18,7 +18,6 @@
 package org.hillview.table.api;
 
 import org.hillview.table.membership.MembershipSetFactory;
-import org.hillview.table.membership.SampledRowIterator;
 import org.hillview.utils.Randomness;
 import java.util.function.IntPredicate;
 
@@ -76,7 +75,6 @@ public interface IMembershipSet extends IRowOrder {
         if (rate >= 1)
             return this.getIterator();
         return this.sample(rate, seed).getIterator();
-        //return new SampledRowIterator(this.getIterator(), rate, seed);
     }
 
     /**
