@@ -108,12 +108,12 @@ public class MembershipTest extends BaseTest {
     @Test
     public void TestFMSIterator() {
         FullMembershipSet fm = new FullMembershipSet(1000);
-        double rate = 0.5;
-        IRowIterator it = fm.getIteratorOverSample(rate, 123645);
+        double rate = 0.1;
+        IRowIterator it = fm.getIteratorOverSample(rate, 162545);
         int i = 0;
         while (it.getNextRow() > 0)
             i++;
-        assertTrue((i > 450) && (i < 550));
+        assertTrue((i > 90) && (i < 110));
     }
 
     @Test

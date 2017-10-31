@@ -48,13 +48,7 @@ public class Randomness {
     public int nextGeometric(double p) {
         if (p <= 0) throw new IllegalArgumentException("parameter of Geometric Distribution must be positive");
         double sample = myPrg.nextDouble();
-        int i = 0;
-        double bar = 0;
-        while (sample > bar) {
-            i++;
-            bar += (1 - bar) * p;
-        }
-        return i;
+        return (int) (Math.floor((Math.log(1 - sample) / Math.log(1-p) ) )) + 1;
     }
 
     /**

@@ -116,6 +116,7 @@ public class SparseMembershipSet implements IMembershipSet, IMutableMembershipSe
         int currentSize = 0;
         int currentCursor;
         final IntSet mMap;
+        int res[];
 
         private SparseSampledRowIterator(final double rate, final long seed, IntSet mmap) {
             this.mMap = mmap;
@@ -136,10 +137,10 @@ public class SparseMembershipSet implements IMembershipSet, IMutableMembershipSe
                     this.currentSize++;
                     return 0;
                 }
-            int res[] = mMap.getNext(currentCursor); // returns the location and value of next member of the set
+            int index = mMap.getNext(currentCursor);
             this.currentSize++;
-            this.currentCursor = res[0] + 1;
-            return res[1];
+            this.currentCursor = index + 1;
+            return mMap.probe(index);
         }
     }
 

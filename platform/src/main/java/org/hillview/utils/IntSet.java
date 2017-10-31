@@ -100,15 +100,14 @@ public class IntSet {
     /**
      *
      * @param pos a location in the key[] array
-     * @return in res[0] the location of the next full slot after cursor. In res[1] the value.
+     * @return the location of the next full slot after cursor.
      */
-    public int[] getNext(int pos) {
-        int[] res = new int[2];
+    public int getNext(int pos) {
         while ( key[pos & this.mask] == 0) { pos++; }
-            res[0] = (pos & this.mask);
-            res[1] = key[pos & this.mask];
-        return res;
+        return (pos & this.mask);
         }
+
+    public int probe(int index) { return key[index & mask]; }
 
     public boolean contains(final int k) {
         if (k == 0) {
