@@ -24,6 +24,7 @@ import org.hillview.table.membership.DenseMembershipSet;
 import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.table.membership.MembershipSetFactory;
 import org.hillview.utils.IntSet;
+import org.hillview.utils.Randomness;
 import org.junit.Test;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
@@ -102,5 +103,30 @@ public class MembershipTest extends BaseTest {
         assertEquals(sample.getSize(), 8000);
         IMembershipSet smallSample = dms.sample(40, 12345);
         assertEquals(smallSample.getSize(), 40);
+    }
+
+    @Test
+    public void TestFMSIterator() {
+        FullMembershipSet fm = new FullMembershipSet(1000);
+        double rate = 0.1;
+        IRowIterator it = fm.getIteratorOverSample(rate, 162545);
+        int i = 0;
+        while (it.getNextRow() > 0)
+            i++;
+        assertTrue((i > 90) && (i < 110));
+    }
+
+    @Test
+    public void TestSparseSampleIterator() {
+        IMutableMembershipSet mms = MembershipSetFactory.create(100, 10);
+        for (int i = 5; i < 100; i += 2)
+            mms.add(i);
+        IMembershipSet MS = mms.seal();
+        double rate = 0.5;
+        IRowIterator iter = MS.getIteratorOverSample(rate, 12345);
+        int i = 0;
+        while (iter.getNextRow() > 0)
+            i++;
+        assertTrue(i == 24);
     }
 }
