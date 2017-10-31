@@ -20,7 +20,6 @@ package org.hillview.table.membership;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.IMutableMembershipSet;
 import org.hillview.table.api.IRowIterator;
-import org.hillview.utils.IntSet;
 import org.hillview.utils.Randomness;
 
 /**

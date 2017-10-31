@@ -1,3 +1,4 @@
+"use strict";
 /*
  * Copyright (c) 2017 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
@@ -14,27 +15,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-var path = require('path');
-
-module.exports = {
-    entry: "./hillview.ts",
-    output: {
-        filename: "./bundle.js"
-    },
-    // This is needed to find ts-loader which is installed globally
-    resolve: {
-        // Add '.ts' and '.tsx' as a resolvable extension.
-        extensions: [".ts", ".tsx", ".js"]
-    },
-    module: {
-        rules: [
-            // all files with a '.ts' or '.tsx' extension will be handled by 'ts-loader'
-            {
-                test: /\.tsx?$/,
-                loader: "/usr/local/lib/node_modules/ts-loader"
-            }
-        ],
-    },
-    devtool: "source-map"
-};
+function __export(m) {
+    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+}
+Object.defineProperty(exports, "__esModule", { value: true });
+// This file packges a subset of d3 tools
+__export(require("d3-selection"));
+__export(require("d3-shape"));
+__export(require("d3-drag"));
+__export(require("d3-scale"));
+__export(require("d3-axis"));
+__export(require("d3-format"));
+__export(require("d3-time"));
+//# sourceMappingURL=d3bundle.js.map

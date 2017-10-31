@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import * as d3 from "./d3bundle";
 import {Renderer} from "./rpc";
 import {Dialog} from "./dialog";
 import {TopMenu, SubMenu} from "./menu";
@@ -25,7 +26,6 @@ import {
 } from "./ui";
 import {Pair, truncate, significantDigits, Point2D, ICancellable, PartialResult, Seed} from "./util";
 import {ColorMap, ColorLegend} from "./vis";
-import d3 = require('d3');
 import {AxisData} from "./heatMap";
 import {
     RemoteTableObjectView, IColumnDescription, BasicColStats, DistinctStrings,

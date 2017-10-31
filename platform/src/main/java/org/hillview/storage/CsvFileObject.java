@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
-package org.hillview.utils;
+package org.hillview.storage;
 
 import org.hillview.storage.CsvFileReader;
 import org.hillview.table.api.ITable;
+import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.io.IOException;

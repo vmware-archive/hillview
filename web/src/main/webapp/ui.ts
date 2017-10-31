@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
+import * as d3 from "./d3bundle";
 import {ErrorReporter} from "./errReporter";
-import d3 = require('d3');
 import {ICancellable, removeAllChildren, significantDigits} from "./util";
 
 export interface IHtmlElement {

@@ -19,6 +19,7 @@
     "rx": "^4.1.0"
   },
   "devDependencies": {
-    "webpack": "^3.6.0"
+    "webpack": "^3.6.0",
+    "webpack-node-externals": "^1.6.0"
   }
 }

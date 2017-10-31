@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
+import * as d3 from "./d3bundle";
 import {
     FullPage, Point, Size, KeyCodes, Resolution, SpecialChars
 } from "./ui";
 import {Dialog} from "./dialog";
-import d3 = require('d3');
 import {
     ContentsKind, Schema, RemoteTableObjectView, BasicColStats, DistinctStrings,
     ColumnDescription, ColumnAndRange

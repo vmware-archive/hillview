@@ -19,7 +19,7 @@
 
 import Rx = require('rx');
 import Observer = Rx.Observer;
-import d3 = require('d3');
+import * as d3 from "./d3bundle";
 import {ErrorReporter, ConsoleErrorReporter} from "./errReporter";
 import {ProgressBar, FullPage} from "./ui";
 import {PartialResult, ICancellable, EnumIterators, RpcReply} from "./util";

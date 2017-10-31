@@ -15,26 +15,12 @@
  * limitations under the License.
  */
 
-var path = require('path');
+// This file packges a subset of d3 tools
 
-module.exports = {
-    entry: "./hillview.ts",
-    output: {
-        filename: "./bundle.js"
-    },
-    // This is needed to find ts-loader which is installed globally
-    resolve: {
-        // Add '.ts' and '.tsx' as a resolvable extension.
-        extensions: [".ts", ".tsx", ".js"]
-    },
-    module: {
-        rules: [
-            // all files with a '.ts' or '.tsx' extension will be handled by 'ts-loader'
-            {
-                test: /\.tsx?$/,
-                loader: "/usr/local/lib/node_modules/ts-loader"
-            }
-        ],
-    },
-    devtool: "source-map"
-};
+export * from 'd3-selection';
+export * from 'd3-shape';
+export * from 'd3-drag';
+export * from 'd3-scale';
+export * from 'd3-axis';
+export * from 'd3-format';
+export * from 'd3-time';

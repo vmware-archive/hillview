@@ -19,7 +19,7 @@ package org.hillview.maps;
 
 import org.hillview.dataset.api.IMap;
 import org.hillview.table.api.ITable;
-import org.hillview.utils.CsvFileObject;
+import org.hillview.storage.CsvFileObject;
 import org.hillview.utils.HillviewLogger;
 
 import java.io.IOException;

@@ -76,7 +76,6 @@ public interface IMembershipSet extends IRowOrder {
         if (rate >= 1)
             return this.getIterator();
         return this.sample(rate, seed).getIterator();
-        //return new SampledRowIterator(this.getIterator(), rate, seed);
     }
 
     /**

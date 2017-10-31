@@ -21,7 +21,7 @@ import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IMap;
 import org.hillview.storage.CsvFileReader;
 import org.hillview.table.Schema;
-import org.hillview.utils.CsvFileObject;
+import org.hillview.storage.CsvFileObject;
 import org.hillview.utils.HillviewLogger;
 
 import javax.annotation.Nullable;

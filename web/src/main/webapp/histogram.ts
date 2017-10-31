@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import d3 = require('d3');
+import * as d3 from "./d3bundle";
 import {
     FullPage, translateString, Resolution
 } from "./ui";
@@ -255,7 +255,7 @@ export class HistogramView extends HistogramViewBase {
 
         let counts = h.buckets;
         let bucketCount = counts.length;
-        let max = d3.max(counts);
+        let max = Math.max(...counts);
 
         // prefix sum for cdf
         let cdfData: number[] = [];
