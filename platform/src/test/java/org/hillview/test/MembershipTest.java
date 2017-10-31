@@ -129,4 +129,18 @@ public class MembershipTest extends BaseTest {
             i++;
         assertTrue(i == 24);
     }
+
+    @Test
+    public void TestDenseSampledIterator() {
+        DenseMembershipSet dms = new DenseMembershipSet(10000, 10000);
+        for (int i = 0; i < 10000; i++)
+            if (i % 7 != 0) dms.add(i);
+        double rate = 0.2;
+        IRowIterator iter = dms.getIteratorOverSample(rate, 123);
+        int counter = 0;
+        while (iter.getNextRow() > 0)
+            counter++;
+        assertTrue( counter > 0.9 * rate * dms.getSize());
+        assertTrue( counter < 1.1 * rate * dms.getSize());
+    }
 }
