@@ -116,7 +116,6 @@ public class SparseMembershipSet implements IMembershipSet, IMutableMembershipSe
         int currentSize = 0;
         int currentCursor;
         final IntSet mMap;
-        int res[];
 
         private SparseSampledRowIterator(final double rate, final long seed, IntSet mmap) {
             this.mMap = mmap;
