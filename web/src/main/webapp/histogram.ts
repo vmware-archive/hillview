@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import * as d3 from "./d3bundle";
+import d3 = require('d3');
 import {
     FullPage, translateString, Resolution
 } from "./ui";

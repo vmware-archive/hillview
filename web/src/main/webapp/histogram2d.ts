@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import * as d3 from "./d3bundle";
+import d3 = require('d3');
 import { HistogramViewBase, BucketDialog, AnyScale } from "./histogramBase";
 import {
     ColumnDescription, Schema, RecordOrder, ColumnAndRange, FilterDescription,
