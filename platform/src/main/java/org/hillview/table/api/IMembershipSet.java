@@ -18,7 +18,6 @@
 package org.hillview.table.api;
 
 import org.hillview.table.membership.MembershipSetFactory;
-import org.hillview.table.membership.SampledRowIterator;
 import org.hillview.utils.Randomness;
 import java.util.function.IntPredicate;
 

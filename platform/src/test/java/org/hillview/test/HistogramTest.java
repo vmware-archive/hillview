@@ -26,6 +26,7 @@ import org.hillview.table.columns.DoubleArrayColumn;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class HistogramTest extends BaseTest {
     @Test
@@ -55,7 +56,8 @@ public class HistogramTest extends BaseTest {
         size = 0;
         for (int i = 0; i < bucketNum; i++)
             size += hist3.getCount(i);
-        assertEquals(size + hist3.getMissingData() + hist3.getOutOfRange(), colSize);
+        assertTrue(size + hist3.getMissingData() + hist3.getOutOfRange() > 0.9 * colSize);
+        assertTrue(size + hist3.getMissingData() + hist3.getOutOfRange() < 1.1 * colSize);
     }
 
     @Test
@@ -96,6 +98,7 @@ public class HistogramTest extends BaseTest {
         for (int i = 0; i < hist.getNumOfBucketsD2(); i++)
             size2 += hist.getMissingHistogramD2().getCount(i);
         size2 += hist.getMissingHistogramD2().getOutOfRange();
-        assertEquals(size + size1 + size2, expectedSize);
+        assertTrue(size + size1 + size2 > 0.9 * expectedSize);
+        assertTrue(size + size1 + size2 < 1.1 * expectedSize);
     }
 }

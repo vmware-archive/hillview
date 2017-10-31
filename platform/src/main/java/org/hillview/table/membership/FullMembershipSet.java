@@ -86,6 +86,40 @@ public class FullMembershipSet implements IMembershipSet {
             return this.setMinus(s.seal());
     }
 
+    /**
+     * Returns an iterator that runs over the sampled data.
+     * @param rate  Sampling rate.
+     * @param seed  Random seed.
+     * @return      An iterator over the sampled data.
+     */
+    @Override
+    public IRowIterator getIteratorOverSample(double rate, long seed) {
+        if (rate >= 1)
+            return this.getIterator();
+        return new FullSampledRowIterator (rowCount, rate, seed);
+    }
+
+    private static class FullSampledRowIterator implements IRowIterator {
+        private int cursor = 0;
+        private final int range;
+        private final double rate;
+        private Randomness prg;
+
+        public FullSampledRowIterator(final int range, double rate, long seed) {
+            this.rate = rate;
+            this.range = range;
+            this.prg = new Randomness(seed);
+        }
+
+        @Override
+        public int getNextRow() {
+            this.cursor += this.prg.nextGeometric(rate);
+            if (this.cursor < this.range)
+                return this.cursor;
+            else return - 1;
+        }
+    }
+
     public static class FullMembershipIterator implements IRowIterator {
         private int cursor = 0;
         private final int range;

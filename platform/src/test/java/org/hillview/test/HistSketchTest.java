@@ -27,6 +27,7 @@ import org.hillview.table.api.ITable;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Test class for the sketches of all types of histograms.
@@ -76,8 +77,9 @@ public class HistSketchTest extends BaseTest {
         int bucketNum = hdl.getNumOfBuckets();
         for (int i = 0; i < bucketNum; i++)
             size += hdl.getCount(i);
-        assertEquals(size + hdl.getMissingData() + hdl.getOutOfRange(),
-                bigTable.getMembershipSet().getSize());
+        long guess = size + hdl.getMissingData() + hdl.getOutOfRange();
+        assertTrue((guess > 0.9 * bigTable.getMembershipSet().getSize()) &&
+                (guess < 1.1 * bigTable.getMembershipSet().getSize()));
     }
 
    @Test
