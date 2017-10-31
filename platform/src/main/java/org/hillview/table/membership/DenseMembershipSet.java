@@ -120,6 +120,38 @@ public class DenseMembershipSet implements IMembershipSet, IMutableMembershipSet
         return new DenseMembershipIterator(this.membershipMap);
     }
 
+    @Override
+    public IRowIterator getIteratorOverSample(double rate, long seed) {
+        if (rate >= 1)
+            return this.getIterator();
+        return new DenseSampledRowIterator (this.membershipMap, rate, seed);
+    }
+
+    private static class DenseSampledRowIterator implements IRowIterator {
+        private final BitSet bits;
+        private final Randomness prg;
+        private final double rate;
+        int cursor = -1;
+
+        DenseSampledRowIterator(BitSet bits, double rate, long seed) {
+            this.bits = bits;
+            this.prg = new Randomness(seed);
+            this.rate = rate;
+        }
+
+        @Override
+        public int getNextRow() {
+            this.cursor += this.prg.nextGeometric(rate);
+            while (this.cursor < this.bits.size()) {
+                if (this.bits.get(cursor))
+                    return this.cursor;
+                this.cursor += this.prg.nextGeometric(rate);
+            }
+            return - 1;
+        }
+    }
+
+
     public static class DenseMembershipIterator implements IRowIterator {
         private final BitSet bits;
         private int current;
