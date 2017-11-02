@@ -26,7 +26,10 @@ import {
     ZipReceiver, Histogram2DArgs
 } from "./tableData";
 import {TableView, TableRenderer} from "./table";
-import {Pair, significantDigits, formatNumber, reorder, regression, ICancellable, PartialResult, Seed} from "./util";
+import {
+    Pair, significantDigits, formatNumber, reorder, regression, ICancellable, PartialResult, Seed,
+    formatDate
+} from "./util";
 import {AnyScale, HistogramViewBase, ScaleAndAxis} from "./histogramBase";
 import {BaseType} from "d3-selection";
 import {ScaleLinear, ScaleTime} from "d3-scale";
@@ -441,7 +444,7 @@ export class HeatMapView extends RemoteTableObjectView {
         summary += ", " + formatNumber(distinct) + " distinct dots";
         if (samplingRate < 1.0)
             summary += ", sampling rate " + significantDigits(samplingRate);
-        this.summary.textContent = summary;
+        this.summary.innerHTML = summary;
     }
 
     private reapplyColorMap() {
@@ -459,7 +462,8 @@ export class HeatMapView extends RemoteTableObjectView {
             result = allStrings.get(<number>inv);
         else if (kind == "Integer" || kind == "Double")
             result = significantDigits(<number>inv);
-        // For Date do nothing
+        else if (kind == "Date")
+            result = formatDate(<Date>inv);
         return result;
     }
 

@@ -24,7 +24,10 @@ import {
 import {TableView, TableRenderer} from "./table";
 import {FullPage, translateString, Resolution, Rectangle} from "./ui";
 import {TopMenu, SubMenu} from "./menu";
-import {reorder, transpose, significantDigits, formatNumber, ICancellable, PartialResult, Seed} from "./util";
+import {
+    reorder, transpose, significantDigits, formatNumber, ICancellable, PartialResult, Seed,
+    formatDate
+} from "./util";
 import {AxisData, HeatMapData, Range2DCollector} from "./heatMap";
 import {combineMenu, CombineOperators, SelectedObject, Renderer} from "./rpc";
 
@@ -442,7 +445,7 @@ export class Histogram2DView extends HistogramViewBase {
         summary += ", " + String(bucketCount) + " buckets";
         if (samplingRate < 1.0)
             summary += ", sampling rate " + significantDigits(samplingRate);
-        this.summary.textContent = summary;
+        this.summary.innerHTML = summary;
     }
 
     protected onMouseMove(): void {
@@ -462,6 +465,8 @@ export class Histogram2DView extends HistogramViewBase {
         else if (this.currentData.xData.description.kind == "Integer" ||
             this.currentData.xData.description.kind == "Double")
             xs = significantDigits(<number>x);
+        else if (this.currentData.xData.description.kind == "Date")
+            xs = formatDate(<Date>x);
         let y = Math.round(this.yScale.invert(position[1]));
         let ys = significantDigits(y);
         this.xLabel.textContent = "x=" + xs;

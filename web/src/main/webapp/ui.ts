@@ -500,7 +500,7 @@ export class Resolution {
     static readonly minBarWidth = 5;      // minimum number of pixels for a histogram bar
     static readonly minCanvasWidth = 300; // minimum number of pixels for a plot (including margins)
     static readonly canvasHeight = 500;   // size of a plot
-    static readonly topMargin = 50;       // top margin in pixels in a plot
+    static readonly topMargin = 60;       // top margin in pixels in a plot
     static readonly rightMargin = 20;     // right margin in pixels in a plot
     static readonly bottomMargin = 50;    // bottom margin in pixels in a plot
     static readonly leftMargin = 40;      // left margin in pixels in a plot

@@ -22,7 +22,10 @@ import {Renderer, combineMenu, SelectedObject, CombineOperators, OnCompleteRende
 import {RangeCollector} from "./histogram";
 import {Range2DCollector} from "./heatMap";
 import {TopMenu, SubMenu, ContextMenu} from "./menu";
-import {Converters, PartialResult, ICancellable, cloneSet, percent, formatNumber, significantDigits} from "./util";
+import {
+    Converters, PartialResult, ICancellable, cloneSet, percent, formatNumber, significantDigits,
+    formatDate
+} from "./util";
 import {EqualityFilterDialog, EqualityFilterDescription} from "./equalityFilter";
 import {Dialog} from "./dialog";
 import {
@@ -32,7 +35,7 @@ import {
 } from "./tableData";
 import {CategoryCache} from "./categoryCache";
 import {HeatMapArrayDialog} from "./heatMapArray";
-import {ColumnConverter, HLogLogReceiver} from "./columnConverter";
+import {ColumnConverter, HLogLog} from "./columnConverter";
 import {DataRange} from "./vis"
 import {HeavyHittersView} from "./heavyhittersview";
 import {LAMPDialog} from "./lamp";
@@ -424,7 +427,6 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
             } else {
                 let rr = this.createRangeRequest(rangeInfo[0]);
                 rr.chain(operation);
-                // TODO: add support for approximate histograms
                 rr.invoke(new RangeCollector(cds[0], this.schema, distinct[0], this.getPage(), this, false, rr));
             }
         };
@@ -507,16 +509,15 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
                 } else {
                     this.contextMenu.addItem({text: "Show", action: () => this.showColumns(1, false)});
                 }
-                this.contextMenu.addItem({text: "Drop", action: () => this.dropColumns() });
+                //this.contextMenu.addItem({text: "Drop", action: () => this.dropColumns() });
+                this.contextMenu.addItem({text: "Estimate Distinct Elements", action: () => this.hLogLog(cd.name)});
                 this.contextMenu.addItem({text: "Sort ascending", action: () => this.showColumns(1, true) });
                 this.contextMenu.addItem({text: "Sort descending", action: () => this.showColumns(-1, true) });
-                //if (cd.kind != "Json" && cd.kind != "String")
-                    this.contextMenu.addItem({text: "Histogram", action: () => this.histogram(false) });
+                this.contextMenu.addItem({text: "Histogram", action: () => this.histogram(false) });
                 this.contextMenu.addItem({text: "Heat map", action: () => this.heatMap() });
-                this.contextMenu.addItem({text: "Heavy hitters (Sampling)...", action: () => this.heavyHitters(false) });
-                this.contextMenu.addItem({text: "Heavy hitters (Streaming)...", action: () => this.heavyHitters(true) });
-                this.contextMenu.addItem({text: "Select numeric columns", action: () => this.selectNumericColumns()});
-                this.contextMenu.addItem({text: "Estimate Distinct Elements", action: () => this.hLogLog(cd.name)});
+                this.contextMenu.addItem({text: "Heavy hitters...", action: () => this.heavyHitters(false) });
+                //this.contextMenu.addItem({text: "Heavy hitters (Streaming)...", action: () => this.heavyHitters(true) });
+                //this.contextMenu.addItem({text: "Select numeric columns", action: () => this.selectNumericColumns()});
                 this.contextMenu.addItem({text: "PCA...", action: () => this.pca() });
                 this.contextMenu.addItem({text: "LAMP...", action: () => this.lamp() });
                 this.contextMenu.addItem({text: "Filter...", action: () => this.equalityFilter(cd.name)});
@@ -657,10 +658,8 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
 
     private hLogLog(colName: string): void {
         let rr = this.createHLogLogRequest(colName);
-        rr.invoke(new HLogLogReceiver(this.getPage(), rr, "HLogLog",
-            (res) => this.page.reportError("Distinct values in column \'" +
-            colName + "\' " + SpecialChars.approx +
-            String(res.distinctItemCount))));
+        let rec = new CountReceiver(this.getPage(), rr, colName);
+        rr.invoke(rec);
     }
 
     private getSelectedColNames(): string[] {
@@ -820,11 +819,11 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         if (kind == "Integer" || kind == "Double")
             return String(val);
         else if (kind == "Date")
-            return Converters.dateFromDouble(<number>val).toString();
+            return formatDate(Converters.dateFromDouble(<number>val));
         else if (kind == "Category" || kind == "String" || kind == "Json")
             return <string>val;
         else
-            return "?";  // TODO
+            return val.toString();  // TODO
     }
 
     public addRow(row : RowView, cds: ColumnDescription[]) : void {
@@ -878,6 +877,20 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
 
     public setScroll(top: number, bottom: number) : void {
         this.scrollBar.setPosition(top, bottom);
+    }
+}
+
+class CountReceiver extends OnCompleteRenderer<HLogLog> {
+    constructor(page: FullPage, operation: ICancellable,
+                protected colName: string) {
+        super(page, operation, "HyperLogLog");
+    }
+
+    run(data: HLogLog): void {
+        let timeInMs = this.elapsedMilliseconds();
+        this.page.reportError("Distinct values in column \'" +
+            this.colName + "\' " + SpecialChars.approx + String(data.distinctItemCount) + "\n" +
+            "Operation took " + significantDigits(timeInMs/1000) + " seconds");
     }
 }
 

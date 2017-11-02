@@ -27,7 +27,10 @@ import {
 } from "./tableData";
 import {TableRenderer, TableView} from "./table";
 import {TopMenu, SubMenu} from "./menu";
-import {Pair, reorder, significantDigits, formatNumber, percent, ICancellable, PartialResult, Seed} from "./util";
+import {
+    Pair, reorder, significantDigits, formatNumber, percent, ICancellable, PartialResult, Seed,
+    formatDate, exponentialDistribution
+} from "./util";
 import {HistogramViewBase, BucketDialog} from "./histogramBase";
 import {Dialog} from "./dialog";
 import {Range2DCollector} from "./heatMap";
@@ -199,6 +202,8 @@ export class HistogramView extends HistogramViewBase {
         else if (this.currentData.description.kind == "Integer" ||
             this.currentData.description.kind == "Double")
             xs = significantDigits(<number>x);
+        else if (this.currentData.description.kind == "Date")
+            xs = formatDate(<Date>x);
         let y = Math.round(this.yScale.invert(position[1]));
         let ys = significantDigits(y);
         this.xLabel.textContent = "x=" + xs;
@@ -401,7 +406,7 @@ export class HistogramView extends HistogramViewBase {
         summary += ", " + String(bucketCount) + " buckets";
         if (samplingRate < 1.0)
             summary += ", sampling rate " + significantDigits(samplingRate);
-        this.summary.textContent = summary;
+        this.summary.innerHTML = summary;
     }
 
     // show the table corresponding to the data in the histogram
@@ -556,6 +561,13 @@ export class RangeCollector extends Renderer<BasicColStats> {
 // Renders a column histogram
 export class HistogramRenderer extends Renderer<Pair<Histogram, Histogram>> {
     protected histogram: HistogramView;
+    protected timeInMs: number;
+    /*
+    // The following field is only used for measurements.
+    // If set to true then the renderer automatically triggers another histogram
+    // after a think time.
+    protected infiniteLoop: boolean = false;
+    */
 
     constructor(page: FullPage,
                 remoteTableId: string,
@@ -573,10 +585,65 @@ export class HistogramRenderer extends Renderer<Pair<Histogram, Histogram>> {
 
     onNext(value: PartialResult<Pair<Histogram, Histogram>>): void {
         super.onNext(value);
+        this.timeInMs = this.elapsedMilliseconds();
         this.histogram.updateView(value.data.first, value.data.second, this.cd,
-            this.stats, this.allStrings, this.samplingRate, this.elapsedMilliseconds());
+            this.stats, this.allStrings, this.samplingRate, this.timeInMs);
         this.histogram.scrollIntoView();
     }
+
+    /*
+    onCompleted(): void {
+        super.onCompleted();
+        if (!this.infiniteLoop)
+            return;
+        // The following code is just for running experiments.
+        // It keeps initiating histograms in an infinite loop
+        // with a Poisson process between initiations.
+        let arrivalRate = .2;  // mean is 5 seconds
+        let time = exponentialDistribution(arrivalRate);
+        HistogramRenderer.lastMeasurements.push(this.timeInMs);
+        if (HistogramRenderer.lastMeasurements.length == 5)
+            HistogramRenderer.lastMeasurements.splice(0, 1);
+        let min = 1e6, max = 0;
+        for (let i=0; i < HistogramRenderer.lastMeasurements.length; i++) {
+            let val = HistogramRenderer.lastMeasurements[i];
+            if (val < min)
+                min = val;
+            if (val > max)
+                max = val;
+        }
+        this.page.reportError("Latency range=[" + significantDigits(min) +
+            ".." + significantDigits(max) + "]");
+
+        //this.page.reportError("Starting a new histogram in " + time + "s");
+        setTimeout(() => this.histogramInInfiniteLoop(), time * 1000);
+    }
+
+    // A stack of two prior pages; we can't close the current page,
+    // because the next one is inserted after it.
+    private static pageToClose: FullPage = null;
+    private static nextPage: FullPage = null;
+    private static lastMeasurements: number[] = [];
+
+    histogramInInfiniteLoop(): void {
+        if (this.histogram == null)
+            return;
+
+        // This stuff only works if there is exactly 1 histogram running at a time.
+        if (HistogramRenderer.pageToClose != null)
+            HistogramRenderer.pageToClose.remove();
+        HistogramRenderer.pageToClose = HistogramRenderer.nextPage;
+        HistogramRenderer.nextPage = this.page;
+
+        let rangeInfo: RangeInfo;
+        if (this.allStrings != null)
+            rangeInfo = this.allStrings.getRangeInfo(this.cd.name);
+        else
+            rangeInfo = new RangeInfo(this.cd.name);
+        let rr = this.histogram.createRangeRequest(rangeInfo);
+        rr.invoke(new RangeCollector(this.cd, this.schema, this.allStrings, this.page, this.histogram, false, rr));
+    }
+    */
 }
 
 // This class is invoked by the ZipReceiver after a set operation to create a new histogram

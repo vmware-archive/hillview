@@ -21,7 +21,9 @@
 <head>
     <link rel="icon" href="/favicon.png" type="image/png" />
     <link rel="shortcut icon" href="/favicon.png" />
+    <!--
     <title>Hillview</title>
+    -->
     <link rel="stylesheet" href="hillview.css">
     <script type="text/javascript" src="./bundle.js" charset="utf-8"></script>
     <script>
@@ -43,9 +45,9 @@
             // load the data
             if (arg < 6)
                 initialObject.loadFiles(arg);
-            else if (arg == 6)
+            else if (arg === 6)
                 initialObject.loadLogs();
-            else if (arg == 7)
+            else if (arg === 7)
                 initialObject.loadDBTable();
             else if (arg >= 8)
                 initialObject.loadFiles(arg);
@@ -53,8 +55,10 @@
     </script>
 </head>
 <body onload="loaded()">
-<H1>Hillview <a href="https://github.com/vmware/hillview/">big data spreadsheet</a></H1>
+    <!--
+    <H1>Hillview <a href="https://github.com/vmware/hillview/">big data spreadsheet</a></H1>
     <img src="hillview-logo.png">
+    -->
     <div id="contents">
         <button class="button" onclick="loadTable(0)">Flights (all)</button>
         <button class="button" onclick="loadTable(1)">Flights (subset)</button>

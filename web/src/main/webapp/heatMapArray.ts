@@ -329,8 +329,6 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
         this.heatMapsSvg = d3.select(this.arrayAndScrollBar).append("svg")
             .attr("width", svgSize.width)
             .attr("height", svgSize.height);
-
-
     }
 
     // Returns the maximum size that the canvas is allowed to use
@@ -425,7 +423,7 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
         this.refresh();
     }
 
-    public updateView(heatMapsArray: HeatMapArrayData, zBins: string[]): void {
+    public updateView(heatMapsArray: HeatMapArrayData, zBins: string[], timeInMs: number): void {
         if (heatMapsArray == null) {
             this.page.reportError("Did not receive data.");
             return;
@@ -499,6 +497,7 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
         this.heatMapsSvg
             .on("mousemove", () => this.mousemove())
             .on("mouseleave", () => this.mouseleave());
+        this.page.reportTime(timeInMs);
     }
 
     // Use the color map to set the colors in the heat maps
@@ -615,7 +614,7 @@ class HeatMap3DRenderer extends Renderer<HeatMapArrayData> {
 
     onNext(data: PartialResult<HeatMapArrayData>): void {
         super.onNext(data);
-        this.view.updateView(data.data, this.zBins);
+        this.view.updateView(data.data, this.zBins, this.elapsedMilliseconds());
     }
 }
 

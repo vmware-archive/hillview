@@ -18,8 +18,8 @@
 import {Dialog} from "./dialog";
 import {ContentsKind, asContentsKind} from "./tableData";
 import {TableView, RemoteTableReceiver} from "./table";
-import {Renderer, OnCompleteRenderer} from "./rpc";
-import {PartialResult, ICancellable} from "./util";
+import {OnCompleteRenderer} from "./rpc";
+import {ICancellable} from "./util";
 import {FullPage} from "./ui";
 
 export class ColumnConverter  {
@@ -55,44 +55,44 @@ export class ColumnConverter  {
         }
         if (this.newKind == "Category") {
             let rr = this.table.createRpcRequest("hLogLog", this.columnName);
-            rr.invoke(new HLogLogReceiver(this.table.getPage(), rr, "HLogLog",
-                (count) => this.checkValidForCategory(count)));
+            let rec: HLogLogReceiver = new HLogLogReceiver(this.table.getPage(), rr, this);
+            rr.invoke(rec);
         } else {
-            this.runConversion();
+            this.convert(null);
         }
     }
 
-    private checkValidForCategory(hLogLog: HLogLog) {
-        if (hLogLog.distinctItemCount > ColumnConverter.maxCategoricalCount) {
-            this.table.reportError(`Too many values for categorical column. There are ${hLogLog.distinctItemCount}, and up to ${ColumnConverter.maxCategoricalCount} are supported.`);
-        } else {
-            this.runConversion();
+    public countReceived(count: number, operation: ICancellable): void {
+        if (count > ColumnConverter.maxCategoricalCount) {
+            this.table.reportError(`Too many values for categorical column. There are ${count}, " +
+            "and up to ${ColumnConverter.maxCategoricalCount} are supported.`);
+            return;
         }
+        this.convert(operation);
     }
 
-    private runConversion() {
+    public convert(operation: ICancellable): void {
         let args = {
             colName: this.columnName,
             newColName: this.newColumnName,
             newKind: this.newKind
         };
         let rr = this.table.createRpcRequest("convertColumnMap", args);
+        rr.chain(operation);
         rr.invoke(new RemoteTableReceiver(this.table.getPage(), rr));
     }
 }
 
-interface HLogLog {
+export interface HLogLog {
     distinctItemCount: number
 }
 
-export class HLogLogReceiver extends OnCompleteRenderer<HLogLog> {
-    constructor(page: FullPage, operation: ICancellable,
-                name: string,
-                private next: (number) => void) {
-        super(page, operation, name);
+class HLogLogReceiver extends OnCompleteRenderer<HLogLog> {
+    constructor(page: FullPage, operation: ICancellable, protected cc: ColumnConverter) {
+        super(page, operation, "HyperLogLog");
     }
 
     run(data: HLogLog): void {
-        this.next(data)
+        this.cc.countReceived(data.distinctItemCount, this.operation);
     }
 }

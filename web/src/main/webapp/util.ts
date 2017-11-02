@@ -47,20 +47,68 @@ export class Seed {
     }
 }
 
+// Convert a number to a more readable reprsentation.
 export function formatNumber(n: number): string {
     return n.toLocaleString();
 }
 
+// Convert n to a string representing a percent value
+// where we keep at most one digit after the decimal point
 export function percent(n: number): string {
     n = Math.round(n * 1000) / 10;
     return significantDigits(n) + "%";
 }
 
+// convert a number to a string and prepend zeros if necessary to
+// bring the integer part to the specified number of digits
+function zeroPad(num: number, length: number): string {
+    let n = Math.abs(num);
+    let zeros = Math.max(0, length - Math.floor(n).toString().length );
+    let zeroString = Math.pow(10,zeros).toString().substr(1);
+    if (num < 0) {
+        zeroString = '-' + zeroString;
+    }
+
+    return zeroString + n;
+}
+
+// Write a date into a format like
+// 2017/03/05 10:05:30.243
+// The suffix may be ommitted if it is zero
+export function formatDate(d?: Date): string {
+    if (d == null)
+        d = new Date();
+    let year = d.getFullYear();
+    let month = d.getMonth() + 1;
+    let day = d.getDate();
+    let hour = d.getHours();
+    let minutes = d.getMinutes();
+    let seconds = d.getSeconds();
+    let ms = d.getMilliseconds();
+    let df = String(year) + "/" + zeroPad(month, 2) + "/" + zeroPad(day, 2);
+    let suffix = "";
+    if (ms != 0)
+        suffix = "." + zeroPad(ms, 3);
+    if (seconds != 0 || suffix != "")
+        suffix = ":" + zeroPad(seconds, 2) + suffix;
+    if (minutes != 0 || suffix != "")
+        suffix = ":" + zeroPad(minutes, 2) + suffix;
+    if (hour != 0 || suffix != "") {
+        if (suffix == "")
+            suffix = ":00:00";
+        suffix = " " + zeroPad(hour, 2) + suffix;
+    }
+    return df + suffix;
+}
+
+// remove all children of an HTML node
 export function removeAllChildren(h: HTMLElement): void {
     while (h.hasChildNodes())
         h.removeChild(h.lastChild);
 }
 
+// Convert a number to a string by keeping only the most significant digits
+// and adding a suffix.
 export function significantDigits(n: number): string {
     let suffix = "";
     if (n == 0)
@@ -81,21 +129,22 @@ export function significantDigits(n: number): string {
         n = n / 1e3;
     } else if (absn < 1e-12) {
         n = n * 1e15;
-        suffix = "* 10^{-15}"
+        suffix = "* 10<sup>-15</sup>"
     } else if (absn < 1e-9) {
-        suffix = "* 10^{-12}";
+        suffix = "* 10<sup>-12</sup>";
         n = n * 1e12;
     } else if (absn < 1e-6) {
-        suffix = "* 10^{-9}";
+        suffix = "* 10<sup>-9</sup>";
         n = n * 1e9;
     } else if (absn < 1e-3) {
-        suffix = "* 10^{-6}";
+        suffix = "* 10<sup>-6</sup>";
         n = n * 1e6;
     }
     n = Math.round(n * 100) / 100;
     return String(n) + suffix;
 }
 
+// order two numbers such that the smaller one comes first
 export function reorder(m: number, n: number): [number, number] {
     if (m < n)
         return [m, n];
@@ -123,6 +172,7 @@ export class EnumIterators {
     }
 }
 
+// transpose a matrix
 export function transpose<D>(m: D[][]): D[][] {
     let w = m.length;
     if (w == 0)
@@ -170,6 +220,7 @@ export function regression(data: number[][]) : number[] {
     return [alpha, beta];
 }
 
+// truncate a string to the specified length, adding ellipses if it was too long
 export function truncate(str: string, length: number): string {
     if (str.length > length) {
         return str.slice(0, length) + "..."
@@ -186,14 +237,20 @@ export function isInteger(n: number) {
     return Math.floor(n) === n;
 }
 
+// convert a copy of an array
 export function cloneArray<T>(arr: T[]): T[] {
     return arr.slice(0);
 }
 
+// convert a set to an array
 export function cloneSet<T>(set: Set<T>): T[] {
     let ret: T[] = [];
     set.forEach((val) => ret.push(val));
     return ret;
+}
+
+export function exponentialDistribution(lambda: number) {
+    return -Math.log(1 - Math.random()) / lambda;
 }
 
 export class PartialResult<T> {
@@ -210,5 +267,6 @@ export interface ICancellable {
     // return 'true' if cancellation succeeds.
     // Cancellation may fail if the computation is terminated.
     cancel(): boolean;
+    // time when operation was initiated
     startTime(): Date;
 }

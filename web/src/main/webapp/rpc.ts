@@ -22,7 +22,7 @@ import Observer = Rx.Observer;
 import d3 = require('d3');
 import {ErrorReporter, ConsoleErrorReporter} from "./errReporter";
 import {ProgressBar, FullPage} from "./ui";
-import {PartialResult, ICancellable, EnumIterators, RpcReply} from "./util";
+import {PartialResult, ICancellable, EnumIterators, RpcReply, formatDate} from "./util";
 import {SubMenu} from "./menu";
 
 // path in server url for rpc web sockets
@@ -137,7 +137,7 @@ export class RpcRequest implements ICancellable {
             };
             this.socket.onmessage = function (r: MessageEvent) {
                 // parse json and invoke onReply.onNext
-                console.log('reply received: ' + r.data);
+                console.log(formatDate() + ' reply received: ' + r.data);
                 let reply = <RpcReply>JSON.parse(r.data);
                 if (reply.isError) {
                     onReply.onError(reply.result);
@@ -157,7 +157,7 @@ export class RpcRequest implements ICancellable {
             this.socket.onopen = () => {
                 this.closed = false;
                 let reqStr: string = this.serialize();
-                console.log("Sending message " + reqStr);
+                console.log(formatDate() + " Sending message " + reqStr);
                 this.socket.send(reqStr);
             };
             this.socket.onclose = (e: CloseEvent) => {

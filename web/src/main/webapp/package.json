@@ -11,12 +11,11 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git://github.com/mbudiu-vmw/hiero.git"
+    "url": "git://github.com/vmware/hillview.git"
   },
   "dependencies": {
     "@types/d3": "^4.11.0",
-    "d3": "^4.10.2",
-    "rx": "^4.1.0"
+    "d3": "^4.10.2"
   },
   "devDependencies": {
     "webpack": "^3.6.0",
