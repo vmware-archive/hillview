@@ -165,14 +165,51 @@ public class FreqKList implements Serializable {
         }
     }
 
-    public Pair<List<RowSnapshot>, List<Integer>> getTop() {
-        return getTop(this.hMap.size());
+    /**
+     * Type indicates which HeavyHitter Sketch is running.
+     * Type 0: the Misra-Gries sketch.
+     * Type 1: the exact Frequency sketch.
+     * Type 2: the Sampling frequency sketch.
+     */
+    public Pair<List<RowSnapshot>, List<Integer>> getTop(int type) {
+        return getTop(this.hMap.size(), type);
     }
 
-    public Pair<List<RowSnapshot>, List<Integer>> getTop(int size) {
+    /**
+     * @param size: Lets us specify how many of the top items to select from the FreqKList.
+     */
+    public Pair<List<RowSnapshot>, List<Integer>> getTop(int size, int type) {
         List<Pair<RowSnapshot, Integer>> pList = new
                 ArrayList<Pair<RowSnapshot, Integer>>(this.hMap.size());
-        this.hMap.forEach((rs, j) -> pList.add(new Pair<RowSnapshot, Integer>(rs, j)));
+        if( type == 0) {
+            double threshold = this.epsilon * this.totalRows - this.getErrBound();
+            this.hMap.forEach((rs, j) -> {
+                if (j >= threshold) pList.add(new Pair<RowSnapshot, Integer>(rs, j));
+            });
+        }
+        else if (type == 1) {
+            double threshold = this.epsilon * this.totalRows;
+            this.hMap.forEach((rs, j) -> {
+                if (j >= threshold) pList.add(new Pair<RowSnapshot, Integer>(rs, j));
+            });
+        }
+        else {
+            double threshold = 0.99* this.epsilon * this.maxSize;
+            this.hMap.forEach((rs, j) -> {
+                if (j >= threshold)
+                {
+                    int k = j*(int)this.totalRows/this.maxSize;
+                    pList.add(new Pair<RowSnapshot, Integer>(rs, k));
+                }
+            });
+            double cutoff = 0.5* this.epsilon * this.maxSize;
+            for (ObjectIterator<Object2IntMap.Entry<RowSnapshot>> it = this.hMap.object2IntEntrySet().fastIterator();
+                 it.hasNext(); ) {
+                final Object2IntMap.Entry<RowSnapshot> entry = it.next();
+                if (entry.getIntValue() < cutoff)
+                    it.remove();
+            }
+        }
         pList.sort((p1, p2) -> Integer.compare(
                 Converters.checkNull(p2.second),
                 Converters.checkNull(p1.second)));

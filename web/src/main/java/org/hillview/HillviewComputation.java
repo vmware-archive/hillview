@@ -16,14 +16,12 @@
  */
 
 package org.hillview;
-import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
 import rx.Observer;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Represents information that has led to the creation of an RpcTarget object.
@@ -39,13 +37,13 @@ public class HillviewComputation implements Serializable {
     /**
      * The id of the target on which the request was executed.
      */
-    private final String sourceId;
+    private final RpcTarget.Id sourceId;
     /**
      * The id of the result produced by the computation.
      * Today all RpcRequests can produce at most one result.
      * We will have to revisit this architecture if this changes.
      */
-    final String resultId;
+    final RpcTarget.Id resultId;
     /**
      * Announce these guys when the object with resultId has been created.
      * This field should not be serialized.
@@ -54,8 +52,8 @@ public class HillviewComputation implements Serializable {
 
     HillviewComputation(RpcTarget source, RpcRequest request) {
         this.request = request;
-        this.sourceId = Converters.checkNull(source.objectId);
-        this.resultId = this.freshId();
+        this.sourceId = source.getId();
+        this.resultId = RpcTarget.Id.freshId();
         this.onCreate = new ArrayList<Observer<RpcTarget>>();
     }
 
@@ -69,13 +67,6 @@ public class HillviewComputation implements Serializable {
         } else {
             this.onCreate.add(toNotify);
         }
-    }
-
-    /**
-     * Allocate a fresh identifier.
-     */
-    private String freshId() {
-        return UUID.randomUUID().toString();
     }
 
     void replay(Observer<RpcTarget> toNotify) {

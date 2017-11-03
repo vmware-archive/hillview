@@ -34,7 +34,7 @@ public final class RpcRequest {
     /**
      * The id of the RpcTarget on which this RpcRequest operates.
      */
-    final String objectId;
+    final RpcTarget.Id objectId;
     /**
      * The method of the RpcTarget that is being invoked.
      */
@@ -48,7 +48,7 @@ public final class RpcRequest {
     public RpcRequest(JsonElement element) {
         final JsonObject obj = element.getAsJsonObject();
         this.requestId = obj.get("requestId").getAsInt();
-        this.objectId = obj.get("objectId").getAsString();
+        this.objectId = new RpcTarget.Id(obj.get("objectId").getAsString());
         this.method = obj.get("method").getAsString();
         this.arguments = obj.get("arguments").getAsString();
     }
@@ -60,12 +60,12 @@ public final class RpcRequest {
      * relies on the JSON method corresponding to IDataSet.zip calls being
      * also called "zip".
      */
-    String[] getDatasetSourceIds() {
+    RpcTarget.Id[] getDatasetSourceIds() {
         if (this.method.equals("zip")) {
             String otherId = this.parseArgs(String.class);
-            return new String[] { this.objectId, otherId };
+            return new RpcTarget.Id[] { this.objectId, new RpcTarget.Id(otherId) };
         }
-        return new String[] { this.objectId };
+        return new RpcTarget.Id[] { this.objectId };
     }
 
     @Override

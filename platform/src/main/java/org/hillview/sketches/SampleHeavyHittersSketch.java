@@ -55,6 +55,8 @@ public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKList> {
     }
 
     public FreqKList add(@Nullable FreqKList left, @Nullable FreqKList right) {
+        assert left != null;
+        assert right != null;
         Object2ObjectOpenHashMap<RowSnapshot, MutableInteger> resultMap =
                 new Object2ObjectOpenHashMap<RowSnapshot, MutableInteger>(left.hMap.size() + right.hMap.size());
         for (ObjectIterator<Object2IntMap.Entry<RowSnapshot>> it1 = left.hMap.object2IntEntrySet().fastIterator();
@@ -70,8 +72,7 @@ public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKList> {
             MutableInteger val = resultMap.get(it.getKey());
             if (val != null) {
                 val.set(val.get() + it.getIntValue());
-            }
-            else {
+            } else {
                 resultMap.put(it.getKey(), new MutableInteger(it.getIntValue()));
             }
         }
@@ -82,8 +83,8 @@ public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKList> {
         pList.sort((p1, p2) -> Integer.compare(p2.getValue().get(), p1.getValue().get()));
 
         Object2IntOpenHashMap<RowSnapshot> hm = new Object2IntOpenHashMap<RowSnapshot>(pList.size());
-        for (int i = 0; i < pList.size(); i++) {
-                hm.put(pList.get(i).getKey(), pList.get(i).getValue().get());
+        for (Object2ObjectMap.Entry<RowSnapshot, MutableInteger> aPList : pList) {
+            hm.put(aPList.getKey(), aPList.getValue().get());
         }
         return new FreqKList(left.totalRows + right.totalRows, this.epsilon,
                 left.maxSize + right.maxSize, hm);

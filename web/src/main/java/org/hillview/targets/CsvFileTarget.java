@@ -20,7 +20,7 @@ package org.hillview.targets;
 import org.hillview.*;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.maps.LoadCsvFileMapper;
-import org.hillview.utils.CsvFileObject;
+import org.hillview.storage.CsvFileObject;
 
 public final class CsvFileTarget extends RpcTarget {
     private final IDataSet<CsvFileObject> files;
