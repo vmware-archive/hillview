@@ -22,14 +22,15 @@ import org.hillview.*;
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.*;
+import org.hillview.dataset.remoting.HillviewServer;
 import org.hillview.management.*;
 import org.hillview.maps.FindCsvFileMapper;
 import org.hillview.maps.FindFilesMapper;
 import org.hillview.maps.LoadDatabaseTableMapper;
+import org.hillview.storage.CsvFileObject;
 import org.hillview.storage.CsvFileReader;
-import org.hillview.utils.*;
-import org.hillview.dataset.remoting.HillviewServer;
 import org.hillview.storage.JdbcConnectionInformation;
+import org.hillview.utils.*;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;

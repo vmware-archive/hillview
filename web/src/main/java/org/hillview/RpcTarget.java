@@ -31,22 +31,72 @@ import javax.annotation.Nullable;
 import javax.websocket.Session;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.BiFunction;
 
 /**
  * An RPC target is an object that has methods that are invoked from the UI
  * through the web server.  All these methods are tagged with @HillviewRpc.
- * When these objects are serialized as JSON only their String id is send; the
+ * When these objects are serialized as JSON only their String id is sent; the
  * objects always reside on the web server.  They are managed by the RpcObjectManager.
  */
 public abstract class RpcTarget implements IJson {
-    public final String objectId;
+    /**
+     * This class represents the ID of an RPC Target.
+     * It is used by other classes that refer to RpcTargets by their ids.
+     */
+    public static class Id {
+        private final String objectId;
+        public Id(String objectId) {
+            this.objectId = objectId;
+        }
+
+        /**
+         * Allocate a fresh identifier.
+         */
+        static Id freshId() {
+            return new RpcTarget.Id(UUID.randomUUID().toString());
+        }
+
+        public static Id initialId() {
+            return new RpcTarget.Id("0");
+        }
+
+        @Override
+        public String toString() {
+            return this.objectId;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || this.getClass() != o.getClass()) return false;
+
+            Id id = (Id) o;
+            return this.objectId.equals(id.objectId);
+        }
+
+        @Override
+        public int hashCode() {
+            return this.objectId.hashCode();
+        }
+
+        boolean isInitial() {
+            return this.objectId.equals("0");
+        }
+    }
+
+    private final Id objectId;
     /**
      * Computation that has generated this object.  Can only
      * be null for the initial object.
      */
     @Nullable
     public final HillviewComputation computation;
+
+    public Id getId() {
+        return this.objectId;
+    }
 
     /**
      * This constructor is only called for the InitialObject.
@@ -67,7 +117,7 @@ public abstract class RpcTarget implements IJson {
      * This method should be called last thing after the construction of the
      * object has been completed.
      */
-    public void registerObject() {
+    protected void registerObject() {
         RpcObjectManager.instance.addObject(this);
         if (this.computation != null)
             this.computation.objectCreated(this);
@@ -186,8 +236,8 @@ public abstract class RpcTarget implements IJson {
             StatusRuntimeException sre = (StatusRuntimeException)throwable;
             String description = sre.getStatus().getDescription();
             if (description != null && description.contains("DatasetMissing")) {
-                String[] toDelete = this.request.getDatasetSourceIds();
-                for (String s: toDelete) {
+                RpcTarget.Id[] toDelete = this.request.getDatasetSourceIds();
+                for (RpcTarget.Id s: toDelete) {
                     HillviewLogger.instance.info("Trying to fix missing remote object", "{0}", s);
                     RpcObjectManager.instance.deleteObject(s);
                 }
@@ -291,7 +341,7 @@ public abstract class RpcTarget implements IJson {
             if (dataSet != null) {
                 this.result = dataSet;
                 RpcTarget target = this.factory.apply(this.result, this.getComputation());
-                json.addProperty("data", target.objectId);
+                json.addProperty("data", target.getId().toString());
             } else {
                 json.add("data", null);
             }

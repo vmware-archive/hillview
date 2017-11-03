@@ -43,7 +43,7 @@ public final class RpcObjectManager {
     /**
      * Well-known id of the initial object.
      */
-    static final String initialObjectId = "0";
+    static final RpcTarget.Id initialObjectId = RpcTarget.Id.initialId();
 
     // We have exactly one instance of this object, because the web server
     // is multi-threaded and it instantiates various classes on demand to service requests.
@@ -52,7 +52,7 @@ public final class RpcObjectManager {
     public static final RpcObjectManager instance;
 
     // Map object id to object.
-    private final HashMap<String, RpcTarget> objects;
+    private final HashMap<RpcTarget.Id, RpcTarget> objects;
 
     // Map the session to the targetId object that is replying to the request, if any.
     private final HashMap<Session, RpcTarget> sessionRequest =
@@ -63,8 +63,8 @@ public final class RpcObjectManager {
 
     // TODO: persist object history into persistent storage.
     // For each object id the computation that has produced it.
-    private final HashMap<String, HillviewComputation> generator =
-            new HashMap<String, HillviewComputation>();
+    private final HashMap<RpcTarget.Id, HillviewComputation> generator =
+            new HashMap<RpcTarget.Id, HillviewComputation>();
 
     synchronized void addSession(Session session, @Nullable RpcTarget target) {
         this.sessionRequest.put(session, target);
@@ -104,19 +104,19 @@ public final class RpcObjectManager {
 
     // Private constructor
     private RpcObjectManager() {
-        this.objects = new HashMap<String, RpcTarget>();
+        this.objects = new HashMap<RpcTarget.Id, RpcTarget>();
     }
 
-    public synchronized void addObject(RpcTarget object) {
-        if (this.objects.containsKey(object.objectId))
-            throw new RuntimeException("Object with id " + object.objectId + " already in map");
-        HillviewLogger.instance.info("Object generated", "{0} from {1}", object.objectId, object.computation);
-        this.generator.put(object.objectId, object.computation);
-        HillviewLogger.instance.info("Inserting targetId", "{0}", object.toString());
-        this.objects.put(object.objectId, object);
+    public synchronized void addObject(RpcTarget target) {
+        if (this.objects.containsKey(target.getId()))
+            throw new RuntimeException("Object with id " + target.getId() + " already in map");
+        HillviewLogger.instance.info("Object generated", "{0} from {1}", target.getId(), target.computation);
+        this.generator.put(target.getId(), target.computation);
+        HillviewLogger.instance.info("Inserting targetId", "{0}", target.toString());
+        this.objects.put(target.getId(), target);
     }
 
-    synchronized @Nullable RpcTarget getObject(String id) {
+    synchronized @Nullable RpcTarget getObject(RpcTarget.Id id) {
         HillviewLogger.instance.info("Getting object", "{0}", id);
         return this.objects.get(id);
     }
@@ -127,7 +127,7 @@ public final class RpcObjectManager {
      * @param toNotify     An observer notified when the object is retrieved.
      * @param rebuild      If true attempt to rebuild the object if not found.
      */
-    public void retrieveTarget(String id, boolean rebuild, Observer<RpcTarget> toNotify) {
+    public void retrieveTarget(RpcTarget.Id id, boolean rebuild, Observer<RpcTarget> toNotify) {
         RpcTarget target = this.getObject(id);
         if (target != null) {
             toNotify.onNext(target);
@@ -147,7 +147,7 @@ public final class RpcObjectManager {
      * @param id  Id of object to reconstruct.
      * @param toNotify An observer that is notified when the object is available.
      */
-    void rebuild(String id, Observer<RpcTarget> toNotify) {
+    void rebuild(RpcTarget.Id id, Observer<RpcTarget> toNotify) {
         HillviewLogger.instance.info("Attempt to reconstruct", "{0}", id);
         HillviewComputation computation = this.generator.get(id);
         if (computation != null) {
@@ -162,8 +162,8 @@ public final class RpcObjectManager {
     }
 
     @SuppressWarnings("unused")
-    synchronized void deleteObject(String id) {
-        if (id == "0") {
+    synchronized void deleteObject(RpcTarget.Id id) {
+        if (id.isInitial()) {
             HillviewLogger.instance.error("Cannot delete object 0");
             return;
         }
@@ -177,13 +177,13 @@ public final class RpcObjectManager {
      * @return  The number of objects removed.
      */
     public int removeAllObjects() {
-        List<String> toDelete = new ArrayList<String>();
-        for (String k: this.objects.keySet()) {
+        List<RpcTarget.Id> toDelete = new ArrayList<RpcTarget.Id>();
+        for (RpcTarget.Id k: this.objects.keySet()) {
             if (!k.equals(initialObjectId))
                 toDelete.add(k);
         }
 
-        for (String k: toDelete)
+        for (RpcTarget.Id k: toDelete)
             this.deleteObject(k);
         return toDelete.size();
     }

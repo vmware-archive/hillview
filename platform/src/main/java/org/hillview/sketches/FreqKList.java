@@ -29,6 +29,7 @@ import org.hillview.utils.Converters;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * A data structure to store the K heavy hitters our of N elements, computed by the Misra-Gries
@@ -165,14 +166,42 @@ public class FreqKList implements Serializable {
         }
     }
 
-    public Pair<List<RowSnapshot>, List<Integer>> getTop() {
-        return getTop(this.hMap.size());
+    public Pair<List<RowSnapshot>, List<Integer>> getTop(int type) {
+        return getTop(this.hMap.size(), type);
     }
 
-    public Pair<List<RowSnapshot>, List<Integer>> getTop(int size) {
+    public Pair<List<RowSnapshot>, List<Integer>> getTop(int size, int type) {
         List<Pair<RowSnapshot, Integer>> pList = new
                 ArrayList<Pair<RowSnapshot, Integer>>(this.hMap.size());
-        this.hMap.forEach((rs, j) -> pList.add(new Pair<RowSnapshot, Integer>(rs, j)));
+        if( type == 0) {
+            double threshold = this.epsilon * this.totalRows - this.getErrBound();
+            this.hMap.forEach((rs, j) -> {
+                if (j >= threshold) pList.add(new Pair<RowSnapshot, Integer>(rs, j));
+            });
+        }
+        else if (type == 1) {
+            double threshold = this.epsilon * this.totalRows;
+            this.hMap.forEach((rs, j) -> {
+                if (j >= threshold) pList.add(new Pair<RowSnapshot, Integer>(rs, j));
+            });
+        }
+        else {
+            double threshold = 0.99* this.epsilon * this.maxSize;
+            this.hMap.forEach((rs, j) -> {
+                if (j >= threshold)
+                {
+                    int k = j*(int)this.totalRows/this.maxSize;
+                    pList.add(new Pair<RowSnapshot, Integer>(rs, k));
+                }
+            });
+            double cutoff = 0.5* this.epsilon * this.maxSize;
+            for (ObjectIterator<Object2IntMap.Entry<RowSnapshot>> it = this.hMap.object2IntEntrySet().fastIterator();
+                 it.hasNext(); ) {
+                final Object2IntMap.Entry<RowSnapshot> entry = it.next();
+                if (entry.getIntValue() < cutoff)
+                    it.remove();
+            }
+        }
         pList.sort((p1, p2) -> Integer.compare(
                 Converters.checkNull(p2.second),
                 Converters.checkNull(p1.second)));
@@ -189,12 +218,12 @@ public class FreqKList implements Serializable {
     @SuppressWarnings("ConstantConditions")
     @Override
     public String toString() {
-        List<Pair<RowSnapshot, Integer>> pList = new
-                ArrayList<Pair<RowSnapshot, Integer>>(this.hMap.size());
-        this.hMap.forEach((rs, j) -> pList.add(new Pair<RowSnapshot, Integer>(rs, j)));
-        pList.sort((p1, p2) -> Integer.compare(p2.second, p1.second));
+        AtomicReference<List<Pair<RowSnapshot, Integer>>> pList = new AtomicReference<>(new
+                ArrayList<Pair<RowSnapshot, Integer>>(this.hMap.size()));
+        this.hMap.forEach((rs, j) -> pList.get().add(new Pair<RowSnapshot, Integer>(rs, j)));
+        pList.get().sort((p1, p2) -> Integer.compare(p2.second, p1.second));
         final StringBuilder builder = new StringBuilder();
-        pList.forEach(p ->  builder.append(p.first.toString()).append(": ").append(p.second)
+        pList.get().forEach(p ->  builder.append(p.first.toString()).append(": ").append(p.second)
                                    .append(System.getProperty("line.separator")));
         return builder.toString();
     }

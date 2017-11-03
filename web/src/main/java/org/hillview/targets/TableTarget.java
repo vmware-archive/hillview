@@ -247,7 +247,7 @@ public final class TableTarget extends RpcTarget {
                 TableTarget.this.runMap(TableTarget.this.table, lpm, TableTarget::new, request, context);
             }
         };
-        RpcObjectManager.instance.retrieveTarget(info.id, true, observer);
+        RpcObjectManager.instance.retrieveTarget(new RpcTarget.Id(info.id), true, observer);
     }
 
     static class SampledControlPoints {
@@ -319,7 +319,7 @@ public final class TableTarget extends RpcTarget {
                 request.syncCloseSession(session);
             }
         };
-        RpcObjectManager.instance.retrieveTarget(info.id, true, observer);
+        RpcObjectManager.instance.retrieveTarget(new RpcTarget.Id(info.id), true, observer);
     }
 
     static class LAMPMapInfo {
@@ -352,7 +352,7 @@ public final class TableTarget extends RpcTarget {
                 TableTarget.this.runMap(TableTarget.this.table, map, TableTarget::new, request, context);
             }
         };
-        RpcObjectManager.instance.retrieveTarget(info.controlPointsId, true, observer);
+        RpcObjectManager.instance.retrieveTarget(new RpcTarget.Id(info.controlPointsId), true, observer);
     }
 
     static class QuantileInfo {
@@ -379,6 +379,42 @@ public final class TableTarget extends RpcTarget {
         long seed;
     }
 
+    /**
+     * This serializes the result of heavyHitterSketch for the front end.
+     */
+    public static class TopList implements IJson {
+        /**
+         * The NextKList stores the fields to display and their counts.
+         */
+        @Nullable
+        NextKList top;
+        /**
+         * The id of the FreqKList object which might be used for further filtering.
+         */
+        @Nullable
+        String heavyHittersId;
+    }
+
+    /**
+     * Post-processing method applied to the result of a heavy hitters sketch before displaying the results. It will
+     * discard elements that are too low in (estimated) frequency.
+     * @param fkList The list of candidate heavy hitters
+     * @param schema The schema of the heavy hitters computation.
+     * @param type 0 represents MG, 1 represents SampleHeavyHitters
+     * @return A TopList
+     */
+    private static TopList getLists(FreqKList fkList, Schema schema, int type, HillviewComputation computation) {
+        Pair<List<RowSnapshot>, List<Integer>> pair = fkList.getTop(type);
+        TopList tl = new TopList();
+        SmallTable tbl = new SmallTable(schema, Converters.checkNull(pair.first));
+        tl.top = new NextKList(tbl, Converters.checkNull(pair.second), 0, fkList.totalRows);
+        tl.heavyHittersId = new HeavyHittersTarget(fkList, computation).getId().toString();
+        return tl;
+    }
+
+    /**
+     * Calls the Misra-Greis (streaming) heavy hitters routine.
+     */
     @HillviewRpc
     public void heavyHittersMG(RpcRequest request, RpcRequestContext context) {
         HeavyHittersInfo info = request.parseArgs(HeavyHittersInfo.class);
@@ -388,7 +424,9 @@ public final class TableTarget extends RpcTarget {
                 request, context);
     }
 
-
+    /**
+     * Calls the Sampling heavy hitters routine.
+     */
     @HillviewRpc
     public void heavyHitters(RpcRequest request, RpcRequestContext context) {
         HeavyHittersInfo info = request.parseArgs(HeavyHittersInfo.class);
@@ -399,33 +437,17 @@ public final class TableTarget extends RpcTarget {
                 request, context);
     }
 
+
+
     static class HeavyHittersFilterInfo {
         String hittersId = "";
         @Nullable
         Schema schema;
     }
 
-    public static class TopList implements IJson {
-        @Nullable
-        NextKList top;
-        String heavyHittersId = "";
-    }
-
-    private static TopList getLists(FreqKList fkList, Schema schema, int type, HillviewComputation computation) {
-        if(type == 0) //Misra-Gries
-            fkList.filter(true);
-        else if (type ==1) //Exact Frequency
-            fkList.filter(false);
-        else //SampleHeavyHitters
-            fkList.rescale();
-        Pair<List<RowSnapshot>, List<Integer>> pair = fkList.getTop();
-        TopList tl = new TopList();
-        SmallTable tbl = new SmallTable(schema, Converters.checkNull(pair.first));
-        tl.top = new NextKList(tbl, Converters.checkNull(pair.second), 0, fkList.totalRows);
-        tl.heavyHittersId = Converters.checkNull(new HeavyHittersTarget(fkList, computation).objectId);
-        return tl;
-    }
-
+    /**
+     * Runs the ExactFreqSketch method on a candidate list of heavy hitters.
+     */
     @HillviewRpc
     public void checkHeavy(RpcRequest request, RpcRequestContext context) {
         HeavyHittersFilterInfo hhi = request.parseArgs(HeavyHittersFilterInfo.class);
@@ -440,9 +462,12 @@ public final class TableTarget extends RpcTarget {
                         request, context);
             }
         };
-        RpcObjectManager.instance.retrieveTarget(hhi.hittersId, true, observer);
+        RpcObjectManager.instance.retrieveTarget(new RpcTarget.Id(hhi.hittersId), true, observer);
     }
 
+    /**
+     * Creates a table containing only the heavy hitters.
+     */
     @HillviewRpc
     public void filterHeavy(RpcRequest request, RpcRequestContext context) {
         HeavyHittersFilterInfo hhi = request.parseArgs(HeavyHittersFilterInfo.class);
@@ -455,7 +480,7 @@ public final class TableTarget extends RpcTarget {
                 TableTarget.this.runMap(TableTarget.this.table, fm, TableTarget::new, request, context);
             }
         };
-        RpcObjectManager.instance.retrieveTarget(hhi.hittersId, true, observer);
+        RpcObjectManager.instance.retrieveTarget(new RpcTarget.Id(hhi.hittersId), true, observer);
     }
 
     @HillviewRpc
@@ -494,6 +519,6 @@ public final class TableTarget extends RpcTarget {
                         TableTarget.this.table, otherTable.table, TablePairTarget::new, request, context);
             }
         };
-        RpcObjectManager.instance.retrieveTarget(otherId, true, observer);
+        RpcObjectManager.instance.retrieveTarget(new RpcTarget.Id(otherId), true, observer);
     }
 }
