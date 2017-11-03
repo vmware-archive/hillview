@@ -120,13 +120,13 @@ public class DenseMembershipSet implements IMembershipSet, IMutableMembershipSet
         return new DenseMembershipIterator(this.membershipMap);
     }
 
-    @Override
+ /*   @Override
     public IRowIterator getIteratorOverSample(double rate, long seed) {
         if (rate >= 1)
             return this.getIterator();
         return new DenseSampledRowIterator (this.membershipMap, rate, seed);
     }
-
+*/
     private static class DenseSampledRowIterator implements IRowIterator {
         private final BitSet bits;
         private final Randomness prg;
