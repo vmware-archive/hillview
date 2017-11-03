@@ -29,7 +29,6 @@ import org.hillview.utils.Converters;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * A data structure to store the K heavy hitters our of N elements, computed by the Misra-Gries
@@ -166,10 +165,19 @@ public class FreqKList implements Serializable {
         }
     }
 
+    /**
+     * Type indicates which HeavyHitter Sketch is running.
+     * Type 0: the Misra-Gries sketch.
+     * Type 1: the exact Frequency sketch.
+     * Type 2: the Sampling frequency sketch.
+     */
     public Pair<List<RowSnapshot>, List<Integer>> getTop(int type) {
         return getTop(this.hMap.size(), type);
     }
 
+    /**
+     * @param size: Lets us specify how many of the top items to select from the FreqKList.
+     */
     public Pair<List<RowSnapshot>, List<Integer>> getTop(int size, int type) {
         List<Pair<RowSnapshot, Integer>> pList = new
                 ArrayList<Pair<RowSnapshot, Integer>>(this.hMap.size());
@@ -218,12 +226,12 @@ public class FreqKList implements Serializable {
     @SuppressWarnings("ConstantConditions")
     @Override
     public String toString() {
-        AtomicReference<List<Pair<RowSnapshot, Integer>>> pList = new AtomicReference<>(new
-                ArrayList<Pair<RowSnapshot, Integer>>(this.hMap.size()));
-        this.hMap.forEach((rs, j) -> pList.get().add(new Pair<RowSnapshot, Integer>(rs, j)));
-        pList.get().sort((p1, p2) -> Integer.compare(p2.second, p1.second));
+        List<Pair<RowSnapshot, Integer>> pList = new
+                ArrayList<Pair<RowSnapshot, Integer>>(this.hMap.size());
+        this.hMap.forEach((rs, j) -> pList.add(new Pair<RowSnapshot, Integer>(rs, j)));
+        pList.sort((p1, p2) -> Integer.compare(p2.second, p1.second));
         final StringBuilder builder = new StringBuilder();
-        pList.get().forEach(p ->  builder.append(p.first.toString()).append(": ").append(p.second)
+        pList.forEach(p ->  builder.append(p.first.toString()).append(": ").append(p.second)
                                    .append(System.getProperty("line.separator")));
         return builder.toString();
     }
