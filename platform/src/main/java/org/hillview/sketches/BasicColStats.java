@@ -98,6 +98,7 @@ public class BasicColStats implements IJson {
             }
             currRow = myIter.getNextRow();
         }
+        this.presentCount = (long) Math.floor((double) this.presentCount / usedRate);
     }
 
     /**
@@ -132,6 +133,4 @@ public class BasicColStats implements IJson {
         }
         return result;
     }
-
-    public double rate() { return this.usedRate; }
 }

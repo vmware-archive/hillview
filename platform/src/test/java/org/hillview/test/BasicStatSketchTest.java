@@ -37,7 +37,7 @@ public class BasicStatSketchTest extends BaseTest {
                 new ColumnAndConverterDescription(myTable.getSchema().getColumnNames()[0]),
                 0 , 0.1, 0);
         BasicColStats result = mySketch.create(myTable);
-        Assert.assertEquals(result.getPresentCount(), (int) (1000 * result.rate()));
+        Assert.assertEquals(result.getPresentCount(), 1000);
     }
 
     @Test
