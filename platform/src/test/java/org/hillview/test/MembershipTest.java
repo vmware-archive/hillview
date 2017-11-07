@@ -109,11 +109,12 @@ public class MembershipTest extends BaseTest {
     public void TestFMSIterator() {
         FullMembershipSet fm = new FullMembershipSet(1000);
         double rate = 0.1;
-        IRowIterator it = fm.getIteratorOverSample(rate, 162545);
+        IRowIterator it = fm.getIteratorOverSample(rate, 162545, false);
         int i = 0;
-        while (it.getNextRow() > 0)
+        while (it.getNextRow() >= 0)
             i++;
-        assertTrue((i > 90) && (i < 110));
+        assertTrue(i > 1000 * it.rate() * 0.9);
+        assertTrue(i < it.rate() * 1000 * 1.1);
     }
 
     @Test
@@ -123,7 +124,7 @@ public class MembershipTest extends BaseTest {
             mms.add(i);
         IMembershipSet MS = mms.seal();
         double rate = 0.5;
-        IRowIterator iter = MS.getIteratorOverSample(rate, 12345);
+        IRowIterator iter = MS.getIteratorOverSample(rate, 12345, false);
         int i = 0;
         while (iter.getNextRow() > 0)
             i++;
@@ -136,11 +137,11 @@ public class MembershipTest extends BaseTest {
         for (int i = 0; i < 10000; i++)
             if (i % 7 != 0) dms.add(i);
         double rate = 0.2;
-        IRowIterator iter = dms.getIteratorOverSample(rate, 123);
+        IRowIterator iter = dms.getIteratorOverSample(rate, 123, false);
         int counter = 0;
         while (iter.getNextRow() > 0)
             counter++;
-        assertTrue( counter > 0.9 * rate * dms.getSize());
-        assertTrue( counter < 1.1 * rate * dms.getSize());
+        assertTrue( counter > 0.9 * iter.rate() * dms.getSize());
+        assertTrue( counter < 1.1 * iter.rate() * dms.getSize());
     }
 }

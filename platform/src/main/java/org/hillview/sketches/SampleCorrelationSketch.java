@@ -86,7 +86,7 @@ public class SampleCorrelationSketch implements ISketch<ITable, CorrMatrix> {
         ColumnAndConverter[] iCols = data.getLoadedColumns(ccds);
         CorrMatrix cm = new CorrMatrix(this.colNames);
         IMembershipSet mm = data.getMembershipSet();
-        IRowIterator rowIt = mm.getIteratorOverSample(this.samplingRate, this.seed);
+        IRowIterator rowIt = mm.getIteratorOverSample(this.samplingRate, this.seed, true);
         int i = rowIt.getNextRow();
         double valJ, valK;
         while (i != -1) {

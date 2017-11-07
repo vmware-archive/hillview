@@ -101,10 +101,10 @@ public class SparseMembershipSet implements IMembershipSet, IMutableMembershipSe
      * Returns an iterator that runs over the sampled data.
      * @param rate  Sampling rate.
      * @param seed  Random seed.
-     * @return      An iterator over the sampled data.
+     * @return      An iterator over the sampled data. Using a lower rate is always beneficial
      */
     @Override
-    public IRowIterator getIteratorOverSample(double rate, long seed) {
+    public IRowIterator getIteratorOverSample(double rate, long seed, boolean enforceRate) {
         if (rate >= 1)
             return this.getIterator();
         return new SparseMembershipSet.SparseSampledRowIterator(rate, seed, this.membershipMap);
@@ -116,6 +116,7 @@ public class SparseMembershipSet implements IMembershipSet, IMutableMembershipSe
         int currentSize = 0;
         int currentCursor;
         final IntSet mMap;
+        final double rate;
 
         private SparseSampledRowIterator(final double rate, final long seed, IntSet mmap) {
             this.mMap = mmap;
@@ -125,7 +126,11 @@ public class SparseMembershipSet implements IMembershipSet, IMutableMembershipSe
                 this.sampleSize = (int) Math.floor(rate * mMap.size());
             else this.sampleSize = (int) Math.ceil(rate * mMap.size());
             currentCursor = psg.nextInt(mMap.arraySize());
+            this.rate = rate;
         }
+
+        @Override
+        public double rate() { return this.rate; }
 
         @Override
         public int getNextRow() {

@@ -23,6 +23,7 @@ import org.hillview.table.api.*;
 /**
  * A class that scans a column and collects basic statistics: maximum, minimum,
  * number of non-empty rows and the moments of asDouble values.
+ * TODO: fix the sampling version of it, or perhaps not allow sampling at all, or always enforce sampling.
  */
 public class BasicColStats implements IJson {
     private final int momentCount;
@@ -34,6 +35,7 @@ public class BasicColStats implements IJson {
     private double min;
     private double max;
     private final double moments[];
+    private double usedRate;
 
     public BasicColStats(int momentCount) {
         if (momentCount < 0)
@@ -43,6 +45,7 @@ public class BasicColStats implements IJson {
         this.min = 0;  // we cannot use infinity, since that cannot be serialized as JSON
         this.max = 0;
         this.presentCount = 0;
+        this.usedRate = 1;
     }
 
     public double getMin() { return this.min; }
@@ -65,7 +68,8 @@ public class BasicColStats implements IJson {
     public void createStats(final ColumnAndConverter column,
                             final IMembershipSet membershipSet,
                             double rate, long seed) {
-        final IRowIterator myIter = membershipSet.getIteratorOverSample(rate, seed);
+        final IRowIterator myIter = membershipSet.getIteratorOverSample(rate, seed, false);
+        this.usedRate = myIter.rate();
         int currRow = myIter.getNextRow();
         while (currRow >= 0) {
             if (!column.column.isMissing(currRow)) {
@@ -128,4 +132,6 @@ public class BasicColStats implements IJson {
         }
         return result;
     }
+
+    public double rate() { return this.usedRate; }
 }

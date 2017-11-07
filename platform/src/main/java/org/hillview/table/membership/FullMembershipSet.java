@@ -93,10 +93,28 @@ public class FullMembershipSet implements IMembershipSet {
      * @return      An iterator over the sampled data.
      */
     @Override
-    public IRowIterator getIteratorOverSample(double rate, long seed) {
-        if (rate >= 1)
+    public IRowIterator getIteratorOverSample(double rate, long seed, boolean enforceRate) {
+        double effectiveRate;
+        if (enforceRate)
+            effectiveRate = rate;
+        else
+            effectiveRate = computeRate(rate);
+        if (effectiveRate >= 1)
             return this.getIterator();
-        return new FullSampledRowIterator (rowCount, rate, seed);
+        else
+            return new FullSampledRowIterator (rowCount, rate, seed);
+    }
+
+    /**
+     * Returns the best rate to sample the data given the rate the user asked for
+     * @return the actual rate to sample the data
+     */
+    private double computeRate(double rate) {
+        double threshold = 0.04; // Threshold probably depends on RowCount too, need to investigate this more.
+        if (rate  <= threshold)
+            return rate;
+        else
+            return 1;
     }
 
     private static class FullSampledRowIterator implements IRowIterator {
@@ -110,6 +128,9 @@ public class FullMembershipSet implements IMembershipSet {
             this.range = range;
             this.prg = new Randomness(seed);
         }
+
+        @Override
+        public double rate() { return this.rate; }
 
         @Override
         public int getNextRow() {

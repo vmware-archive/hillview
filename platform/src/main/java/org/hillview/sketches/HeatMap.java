@@ -43,8 +43,8 @@ public class HeatMap implements Serializable, IJson {
     }
 
     public void createHeatMap(final ColumnAndConverter columnD1, final ColumnAndConverter columnD2,
-                              final IMembershipSet membershipSet, double samplingRate, long seed) {
-        final IRowIterator myIter = membershipSet.getIteratorOverSample(samplingRate, seed);
+                              final IMembershipSet membershipSet, double samplingRate, long seed, boolean enforceRate) {
+        final IRowIterator myIter = membershipSet.getIteratorOverSample(samplingRate, seed, enforceRate);
         int currRow = myIter.getNextRow();
         while (currRow >= 0) {
             boolean isMissingD1 = columnD1.isMissing(currRow);
@@ -69,9 +69,10 @@ public class HeatMap implements Serializable, IJson {
             }
             currRow = myIter.getNextRow();
         }
+        samplingRate = myIter.rate();
         if (samplingRate < 1) {
-            this.histogramMissingD1.rescale(samplingRate);
-            this.histogramMissingD2.rescale(samplingRate);
+            this.histogramMissingD1.rescale(myIter.rate());
+            this.histogramMissingD2.rescale(myIter.rate());
             this.outOfRange = (long) ((double) this.outOfRange / samplingRate);
             this.missingData = (long) ((double) this.missingData / samplingRate);
             for (int i = 0; i < this.buckets.length; i++)
