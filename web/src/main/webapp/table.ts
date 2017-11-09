@@ -22,10 +22,7 @@ import {Renderer, combineMenu, SelectedObject, CombineOperators, OnCompleteRende
 import {RangeCollector} from "./histogram";
 import {Range2DCollector} from "./heatMap";
 import {TopMenu, SubMenu, ContextMenu} from "./menu";
-import {
-    Converters, PartialResult, ICancellable, cloneSet, percent, formatNumber, significantDigits,
-    formatDate
-} from "./util";
+import { Converters, PartialResult, ICancellable, percent, formatNumber, significantDigits, formatDate} from "./util";
 import {EqualityFilterDialog, EqualityFilterDescription} from "./equalityFilter";
 import {Dialog} from "./dialog";
 import {
@@ -40,6 +37,7 @@ import {DataRange} from "./vis"
 import {HeavyHittersView} from "./heavyhittersview";
 import {SchemaView} from "./schemaview";
 import {LAMPDialog} from "./lamp";
+import {stateMachine} from "./stateMachine";
 
 /**
  * The serialization of a NextKList Java object
@@ -70,8 +68,8 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
     protected tHead : HTMLTableSectionElement;
     protected tBody: HTMLTableSectionElement;
     protected currentData: TableDataView | null;
-    protected selectedColumns: Set<string>;
     protected firstSelectedColumn: string | null;  // for shift-click
+    protected selectedColumns: stateMachine;
     protected contextMenu: ContextMenu;
     protected cellsPerColumn: Map<string, HTMLElement[]>;
     static firstTable: RemoteTableObject;
@@ -86,8 +84,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         this.topLevel.id = "tableContainer";
         this.topLevel.tabIndex = 1;  // necessary for keyboard events?
         this.topLevel.onkeydown = e => this.keyDown(e);
-        this.selectedColumns = new Set<string>();
-        this.firstSelectedColumn = null;
+        this.selectedColumns = new stateMachine();
 
         this.topLevel.style.flexDirection = "column";
         this.topLevel.style.display = "flex";
@@ -367,7 +364,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         let o = this.order.clone();
         // The set iterator did not seem to work correctly...
         let s: string[] = [];
-        this.selectedColumns.forEach(v => s.push(v));
+        this.selectedColumns.getStates().forEach(i => s.push(this.schema[i].name));
 
         for (let i = 0; i < s.length; i++) {
             let colName = s[i];
@@ -385,7 +382,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
     }
 
     public histogram(heatMap: boolean): void {
-        if (this.selectedColumns.size > 2) {
+        if (this.selectedColumns.size() > 2) {
             this.reportError("Must select 1 or 2 columns for histogram");
             return;
         }
@@ -394,7 +391,8 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         let catColumns: string[] = [];  // categorical columns
 
         let index = 0;
-        this.selectedColumns.forEach(v => {
+        this.selectedColumns.getStates().forEach(i => {
+            let v = this.schema[i].name;
             let colDesc = TableView.findColumn(this.schema, v);
             if (colDesc.kind == "String") {
                 this.reportError("Histograms not supported for string columns " + colDesc.name);
@@ -407,7 +405,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
             cds.push(colDesc);
         });
 
-        if (cds.length != this.selectedColumns.size)
+        if (cds.length != this.selectedColumns.size())
             // some error occurred
             return;
 
@@ -451,7 +449,8 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
             }
         };
 
-        // Get the categorical data and invoke the continuation
+        // Get the categorical data and invoke the continuati
+        // on
         CategoryCache.instance.retrieveCategoryValues(this, catColumns, this.getPage(), cont);
     }
 
@@ -466,7 +465,6 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
     public updateView(data: TableDataView, revert: boolean,
                       order: RecordOrder, elapsedMs: number) : void {
         this.selectedColumns.clear();
-        this.firstSelectedColumn = null;
         this.currentData = data;
         this.dataRowsDisplayed = 0;
         this.startPosition = data.startPosition;
@@ -513,10 +511,10 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
             cds.push(cd);
             let thd = this.addHeaderCell(thr, cd);
             thd.className = this.columnClass(cd.name);
-            thd.onclick = e => this.columnClick(cd.name, e);
+            thd.onclick = e => this.columnClick(i, e);
             thd.oncontextmenu = e => {
                 e.preventDefault();
-                this.columnClick(cd.name, e);
+                this.columnClick(i, e);
                 if (e.ctrlKey && (e.button == 1)) {
                     // Ctrl + click is interpreted as a right-click on macOS.
                     // This makes sure it's interpreted as a column click with Ctrl.
@@ -597,34 +595,20 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
     }
 
     // mouse click on a column
-    private columnClick(colName: string, e: MouseEvent): void {
+    private columnClick(colNum: number, e: MouseEvent): void {
         e.preventDefault();
-        if (e.ctrlKey || e.metaKey) {
-            this.firstSelectedColumn = colName;
-            if (this.selectedColumns.has(colName))
-                this.selectedColumns.delete(colName);
-            else
-                this.selectedColumns.add(colName);
-        } else if (e.shiftKey) {
-            if (this.firstSelectedColumn == null)
-                this.firstSelectedColumn = colName;
-            let first = TableView.columnIndex(this.schema, this.firstSelectedColumn);
-            let last = TableView.columnIndex(this.schema, colName);
-            this.selectedColumns.clear();
-            if (first > last) { let tmp = first; first = last; last = tmp; }
-            for (let i = first; i <= last; i++)
-                this.selectedColumns.add(this.schema[i].name);
-        } else {
+        if (e.ctrlKey || e.metaKey)
+            this.selectedColumns.changeState( 1,colNum);
+        else if (e.shiftKey)
+            this.selectedColumns.changeState( 2,colNum);
+        else {
             if (e.button == 2) {
                 // right button
-                if (this.selectedColumns.has(colName))
-                    // Do nothing if pressed on a selected column
+                if (this.selectedColumns.has(colNum))
+                // Do nothing if pressed on a selected column
                     return;
             }
-
-            this.firstSelectedColumn = colName;
-            this.selectedColumns.clear();
-            this.selectedColumns.add(colName);
+            this.selectedColumns.changeState(0, colNum);
         }
         this.highlightSelectedColumns();
     }
@@ -636,7 +620,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         for (let i = 0; i < this.schema.length; i++) {
             let kind = this.schema[i].kind;
             if (kind == "Integer" || kind == "Double") {
-                this.selectedColumns.add(this.schema[i].name);
+                this.selectedColumns.add(i);
                 count++;
             }
         }
@@ -680,11 +664,11 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
     }
 
     private hLogLog(): void {
-        if (this.selectedColumns.size != 1) {
+        if (this.selectedColumns.size() != 1) {
             this.reportError("Only one column must be selected");
             return;
         }
-        let colName = this.selectedColumns.values().next().value;
+        let colName = this.getSelectedColNames()[0];
         let rr = this.createHLogLogRequest(colName);
         let rec = new CountReceiver(this.getPage(), rr, colName);
         rr.invoke(rec);
@@ -692,7 +676,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
 
     private getSelectedColNames(): string[] {
         let colNames: string[] = [];
-        this.selectedColumns.forEach(col => colNames.push(col));
+        this.selectedColumns.getStates().forEach(i => colNames.push(this.schema[i].name));
         return colNames;
     }
 
@@ -748,18 +732,20 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         }
     }
 
+
     private heatMapArray(): void {
-        let selectedColumns: string[] = cloneSet(this.selectedColumns);
-        let dialog = new HeatMapArrayDialog(selectedColumns, this.getPage(), this.schema, this);
+        let colNames: string[] = [];
+        this.selectedColumns.getStates().forEach(i => {colNames.push(this.schema[i].name)});
+        let dialog = new HeatMapArrayDialog(colNames, this.getPage(), this.schema, this);
         dialog.show();
     }
 
     private heatMap(): void {
-        if (this.selectedColumns.size == 3) {
+        if (this.selectedColumns.size() == 3) {
             this.heatMapArray();
             return;
         }
-        if (this.selectedColumns.size != 2) {
+        if (this.selectedColumns.size() != 2) {
             this.reportError("Must select exactly 2 columns for heat map");
             return;
         }
@@ -769,12 +755,11 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
 
     private highlightSelectedColumns(): void {
         for (let i = 0; i < this.schema.length; i++) {
-            let cd = new ColumnDescription(this.schema[i]);
-            let name = cd.name;
+            let name = this.schema[i].name;
             let cls = this.columnClass(name);
             let headers = this.tHead.getElementsByClassName(cls);
             let cells = this.cellsPerColumn.get(name);
-            let selected = this.selectedColumns.has(name);
+            let selected = this.selectedColumns.has(i);
             for (let i = 0; i < headers.length; i++) {
                 let header = headers[i];
                 if (selected)
@@ -829,7 +814,8 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         }
         let columns: IColumnDescription[] = [];
         let cso : ColumnSortOrientation[] = [];
-        this.selectedColumns.forEach(v => {
+        this.selectedColumns.getStates().forEach(i => {
+            let v = this.schema[i].name;
             let colDesc = TableView.findColumn(this.schema, v);
             columns.push(colDesc);
             cso.push({ columnDescription: colDesc, isAscending: true });
@@ -841,11 +827,11 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
 
     private heavyHitters(isMG: boolean): void {
         let title = "Heavy hitters on ";
-        if (this.selectedColumns.size <= 1) {
-            let col: string = this.selectedColumns.values().next().value;
-            title += " " + col;
+        let cols: string[] = this.getSelectedColNames();
+        if (cols.length <= 1) {
+            title += " " + cols[0];
         } else {
-            title += this.selectedColumns.size + " columns";
+            title += cols.length + " columns";
         }
         let d = new Dialog(title);
         d.addTextField("percent", "Threshold (%)", "Double", "1");

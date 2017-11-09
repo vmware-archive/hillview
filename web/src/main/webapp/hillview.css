@@ -219,6 +219,10 @@ svg.dataRange > g > rect {
     fill: black;
 }
 
+textarea:focus, input:focus{
+    outline: none;
+}
+
 table.menu {
     box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.5);
     border: 1px solid grey;
