@@ -76,7 +76,7 @@ export class ControlMenu extends RemoteObject implements IDataView {
 }
 
 export function insertControlMenu(): void {
-    let page = new FullPage();
+    let page = new FullPage("Control center");
     page.append();
     let menu = new ControlMenu(InitialObject.instance, page);
     page.setDataView(menu);

@@ -291,7 +291,7 @@ class ControlPointsView extends RemoteTableObjectView {
                 )
     }
     private showTable() {
-        let page = new FullPage();
+        let page = new FullPage("Table", this.page);
         this.getPage().insertAfterMe(page);
         let table = new TableView(this.lampTableObject.remoteObjectId, page);
         page.setDataView(table);
@@ -350,7 +350,7 @@ export class LAMPDialog extends Dialog {
             }
         }
 
-        let newPage = new FullPage();
+        let newPage = new FullPage("LAMP", this.page);
         this.page.insertAfterMe(newPage);
 
         switch (projection) {

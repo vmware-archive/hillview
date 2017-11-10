@@ -100,7 +100,7 @@ public class RowSnapshotSet implements Serializable {
     }
 
     static class BaseRowSnapshotHashingStrategy implements
-            Hash.Strategy<BaseRowSnapshot> {
+            Hash.Strategy<BaseRowSnapshot>, Serializable {
         private final Schema schema;
 
         public BaseRowSnapshotHashingStrategy(final Schema schema) {

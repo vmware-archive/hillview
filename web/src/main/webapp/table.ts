@@ -66,9 +66,9 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
     protected htmlTable : HTMLTableElement;
     protected tHead : HTMLTableSectionElement;
     protected tBody: HTMLTableSectionElement;
-    protected currentData: TableDataView;
+    protected currentData: TableDataView | null;
     protected selectedColumns: Set<string>;
-    protected firstSelectedColumn: string;  // for shift-click
+    protected firstSelectedColumn: string | null;  // for shift-click
     protected contextMenu: ContextMenu;
     protected cellsPerColumn: Map<string, HTMLElement[]>;
     static firstTable: RemoteTableObject;
@@ -145,6 +145,9 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
 
     // invoked when scrolling has completed
     scrolledTo(position: number): void {
+        if (this.currentData == null)
+            return;
+
         if (position <= 0) {
             this.begin();
         } else if (position >= 1.0) {
@@ -510,7 +513,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
                     this.contextMenu.addItem({text: "Show", action: () => this.showColumns(1, false)});
                 }
                 //this.contextMenu.addItem({text: "Drop", action: () => this.dropColumns() });
-                this.contextMenu.addItem({text: "Estimate Distinct Elements", action: () => this.hLogLog(cd.name)});
+                this.contextMenu.addItem({text: "Estimate Distinct Elements", action: () => this.hLogLog()});
                 this.contextMenu.addItem({text: "Sort ascending", action: () => this.showColumns(1, true) });
                 this.contextMenu.addItem({text: "Sort descending", action: () => this.showColumns(-1, true) });
                 this.contextMenu.addItem({text: "Histogram", action: () => this.histogram(false) });
@@ -609,6 +612,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         this.highlightSelectedColumns();
     }
 
+    // noinspection JSUnusedLocalSymbols
     private selectNumericColumns(): void {
         this.selectedColumns.clear();
         let count = 0;
@@ -630,7 +634,9 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
 
     private runFilter(filter: EqualityFilterDescription): void {
         let rr = this.createFilterEqualityRequest(filter);
-        let newPage = new FullPage();
+        let newPage = new FullPage("Filtered: is " +
+            (filter.complement ? "not " : "") +
+            filter.compareValue, this.page);
         this.page.insertAfterMe(newPage);
         rr.invoke(new RemoteTableReceiver(newPage, rr));
     }
@@ -656,7 +662,12 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         }
     }
 
-    private hLogLog(colName: string): void {
+    private hLogLog(): void {
+        if (this.selectedColumns.size != 1) {
+            this.reportError("Only one column must be selected");
+            return;
+        }
+        let colName = this.selectedColumns.values()[0];
         let rr = this.createHLogLogRequest(colName);
         let rec = new CountReceiver(this.getPage(), rr, colName);
         rr.invoke(rec);
@@ -805,8 +816,13 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
     }
 
     private heavyHitters(isMG: boolean): void {
-        let d = new Dialog("Heavy hitters");
-        d.addTextField("percent", "Threshold (%)", "Double");
+        let title = "Heavy hitters";
+        if (this.selectedColumns.size <= 1)
+            title += " " + this.selectedColumns.values()[0];
+        else
+            title += " on " + this.selectedColumns.size + " columns";
+        let d = new Dialog(title);
+        d.addTextField("percent", "Threshold (%)", "Double", "1");
         d.setAction(() => {
             let amount = d.getFieldValueAsNumber("percent");
             if (amount != null)
@@ -962,7 +978,7 @@ class HeavyHittersReceiver extends OnCompleteRenderer<TopList> {
     }
 
     run(data: TopList): void {
-        let newPage = new FullPage();
+        let newPage = new FullPage("Heavy hitters", this.page);
         let hhv = new HeavyHittersView(data, newPage, this.tv, this.schema, this.order, true);
         newPage.setDataView(hhv);
         this.page.insertAfterMe(newPage);
@@ -981,7 +997,7 @@ export class HeavyHittersReceiver2 extends OnCompleteRenderer<TopList> {
     }
 
     run(data: TopList): void {
-        let newPage = new FullPage();
+        let newPage = new FullPage("Heavy hitters", this.page);
         let hhv = new HeavyHittersView(data, newPage, this.tv, this.schema, this.order, false);
         newPage.setDataView(hhv);
         this.page.insertAfterMe(newPage);

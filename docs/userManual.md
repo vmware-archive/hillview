@@ -1,18 +1,19 @@
 # Hillview User Manual
 
-Hillview is a simple cloud-based spreadsheet program for browsing
-large data collections.  Currently the data manipulated is read-only.
-Users can sort, find, filter, transform, query, and chart data in some
-simple ways; several operations are performed easily using direct
-manipulation in the GUI.  Hillview is designed to work on very large
-data sets (multi-million rows), complementing tools such as Excel.
+[Hillview](https://github.com/vmware/hillview) is a simple cloud-based
+spreadsheet program for browsing large data collections.  Currently
+the data manipulated is read-only.  Users can sort, find, filter,
+transform, query, and chart data in some simple ways; several
+operations are performed easily using direct manipulation in the GUI.
+Hillview is designed to work on very large data sets (billions of
+rows), complementing tools such as Excel.
 
 Hillview attempts to provide fast data manipulation.  The illusion of
 fast manipulation is provided by deferring work: Hillview only
 computes as much of the data as must be shown to the user.  For
 example, when sorting a dataset, it only sorts the rows currently
 visible on the screen.  Hillview performs all operations using a class
-of very efficient algorithms, called “Sketches”, which are constrained
+of very efficient algorithms, called “sketches”, which are constrained
 to compute with bounded memory over distributed data.
 
 ## System architecture
@@ -32,7 +33,7 @@ The spreadsheet is a three-tier system, as shown in the following figure:
 The Hillview service is implemented in Java.  The UI is written in
 TypeScript.
 
-Hillview can run as a federated system or loosel interconnected
+Hillview can run as a federated system or loosely interconnected
 components; the head node only sends small queries to the servers, and
 it receivers small results from these.  The data on the server is
 never sent over the network; the servers locally compute all results
@@ -63,9 +64,9 @@ types:
   * Category (represented as strings)
   * JSON (represented as strings)
   * Double
-  * Integer
-  * DateTime
-  * Interval
+  * Integer (32-bit)
+  * Dates and times
+  * Time intervals
 
 Hillview supports a special value "missing" which indicates that a
 value is not present.  This is similar to NULL values in databases.
@@ -94,6 +95,22 @@ Hillview can read data from comma- or tab-separated files.
 
 Hillview can read data from one or many SQL databases (any database
 that supports the JDBC standard for reading).
+
+Numeric values are converted either to integers (if they fit into
+32-bits) or to doubles.  Boolean values are read as categories
+containing two values, "true" and "false".
+
+*TODO*
+
+#### Reading data from Parquet files and Impala databases
+
+Hillview can read data directly from
+[Parquet](https://parquet.apache.org/) files on disk.  The
+[Impala](https://impala.apache.org/) database uses Parquet to store
+data.
+
+Parquet Int96 data types are read as Datetime values.  Boolean values
+are read as categories containing two values, "true" and "false".
 
 *TODO*
 
@@ -124,6 +141,15 @@ sorted as follows:
 * Finally, when two rows have the same value in the Origin and
   UniqueCarrier columns, they are next ordered by their value in the
   Cancelled column, also in decreasing order.
+
+This display is equivalent with the output of the following SQL query:
+
+```SQL
+SELECT COUNT(*), Origin, UniqueCarrier, Cancelled FROM data
+GROUP BY Origin, UniqueCarrier, Cancelled
+ORDER BY Origin ASC, UniqueCarrier ASC, Cancelled ASC
+LIMIT 0, 19
+```
 
 Initially a table view displays no columns.  The user can choose which
 columns are displayed or hidden.
@@ -166,7 +192,7 @@ covers 1/4 of the rows in the dataset.
 
 The scroll-bar can be moved using the keyboard (page up, page down,
 home and end), or dragged using the mouse.  When moving the scroll-bar
-the size of teh "visible region" can change, sometimes dramatically,
+the size of the "visible region" can change, sometimes dramatically,
 depending on the distribution of the values in the visible columns.
 
 To drag the scroll-bar with the mouse one has to grab the narrow
@@ -193,7 +219,7 @@ columns.
 
 #### Operations on selected columns
 
-Clicking on a column header pops up a menu that offers a set of
+Right-clicking on a column header pops up a menu that offers a set of
 operations on the currently selected columns, as shown in the
 following figure:
 
@@ -202,11 +228,16 @@ following figure:
 The contents of this menu may depend on the type of the column and on
 the current state of the display.
 
-* Hide: the selected columns will be added to end of the current
+* Show: the selected columns will be added to end of the current
   sorting order and the columns will become visible.
 
 * Hide: the selected columns will be removed from the sorting order
   and they will be hidden.
+
+* Estimate distinct elements: selecting this option will run a
+  computation that estimates the number of distinct values that exist
+  in the selected column.  The shown number is just an approximation,
+  but it should be a good approximation.
 
 * Sort ascending: The selected columns will be moved to the front of
   the sort order in ascending order.
@@ -214,15 +245,15 @@ the current state of the display.
 * Sort descending: The selected columns will be moved to the front of
   the sort order in descending order.
 
-* Heat map: this option requires exactly two or three columns of
+* Heatmap: this option requires exactly two or three columns of
   suitable types to be selected; in this case, it will draw a heatmap
   plot of the data in these columns.  For Heatmaps see [Heat-map
-  views](#heat-map-views).
+  views](#heatmap-views).
 
 * Histogram: this option requires exactly one or two columns of
-  suitable types to be selected.  If one column is selected, this menu
-  will draw a histogram of the data in the selected column.  For
-  one-dimensional histograms see
+  suitable types to be selected.  If one column is selected, this
+  operation will draw a histogram of the data in the selected column.
+  For one-dimensional histograms see
   [Uni-dimensional-histogram-views](#uni-dimensional histogram views).
   If two columns are selected this menu will draw a two-dimensional
   histogram of the data in the selected columns.  For two-dimensional
@@ -237,14 +268,9 @@ the current state of the display.
 
   ![Heavy hitters menu](heavy-hitters-menu.png)
 
-  The user has to specify a percentage, between .01 (1/10000 of the
-  data) and 100 (the whole data).  The computation will return all
-  tuples in the dataset (looking only at the selected columns) that
-  occur at least this many times in the dataset.  E.g., if the user
-  selects the columns "Origin" and "Destination" and then specifies 1
-  for the percentage, the heavy hitters will return a table where the
-  Origin-Destination pairs contains only values which appear in more
-  than 1% of all rows in the input dataset.
+  The user has to specify a percentage, between .1 (1/1000 of the
+  data) and 100 (the whole data).  The result is shown in a [heavy
+  hitter view](#heavy-hitter-views).
 
 * Filter...: this option will pop-up a dialog window that allows the user
   to filter the data in the selected column (this option requires only
@@ -258,7 +284,7 @@ the current state of the display.
   Analysis](https://en.wikipedia.org/wiki/Principal_component_analysis)
   is a method to project data in a high-dimensional space to a
   lower-dimensional space while preserving as much of the "shape" of
-  the data.  Initially the user selects a set of columns containing
+  the data.  The must have selected a set of columns containing
   numerical data.  The number of columns is the original dimension of
   the data.
 
@@ -271,17 +297,106 @@ the current state of the display.
   appended column will indicate the amount of variance in the original
   data that is captured by the column (0-100%).
 
+* LAMP...: local affine multidimensional projection (experimental).
+  This is another method to project a high-dimensional space to a
+  low-dimensional space.  This method is currently not very scalable
+  to large datasets; we are exploring methods to speed it up.  For
+  more details see [LAMP](#lamp-projection).
+
+* Convert...: convert the type of data in a column.  Only one column
+  must be selected.
+
+  ![Convert menu](convert-menu.png)
+
+  The conversion allows the user to change the type of data in a
+  column.  For example, a numeric column can be converted to a string
+  column.  One particularly useful conversion allows a string column
+  to be converted to a categorical column.  This can only succeed if
+  the number of distinct values in the column is below 10,000.  After
+  conversion a new column is appended to the table, containing the
+  converted data.
+
 #### Operations on tables
 
 ![View menu](table-view-menu.png)
 
-*TODO*
+* Full dataset: selecting this option will open the table with the
+  full dataset, as it looked when first loaded; all selected columns
+  and filtering operations are undone.
+
+* Refresh: this redraws the current view of the table.
+
+* All columns: all columns will become visible by being added to the
+  current sort order in order from left to right.
+
+* No columns: all columns will be hidden.
+
+### Heavy hitter views
+
+* TODO *
 
 ### Uni-dimensional histogram views
 
+A uni-dimensional histogram is a succinct representation of the data
+in a column.  Histograms can be used to display numeric data (integers
+or doubles), date/time values, time interval values, or categorical
+values; see [below](#categorical-histograms) for a description of
+categorical histograms.  A histogram is computed in two phases:
+
+- first the range of the data in the column is computed (minimum and
+  maximum values)
+
+- the range is divided into a small number of equal buckets.  Then the
+  data is scanned and the number of points in the column that fall in
+  each bucket is computed.
+
+A histogram is displayed as a bar chart, with one bar per bucket.  The
+height of the bucket shows the number of values that fall within the
+bucket.  The X axis corresponds to the column being plotted, and the Y
+axis is the count of values within each bucket.  Histograms can be
+computed only approximately, but in this case the error in each bar
+should be smaller than one pixel in size.
+
 ![A one dimensional histogram](hillview-histogram.png)
 
+On top of each bar is shown the size of the bar.  If the size is only
+approximately the value is shown with an approximation sign: &#2248;.
+
+The thin blue line shown is the cumulative distribution function
+([CDF](https://en.wikipedia.org/wiki/Cumulative_distribution_function)).
+The CDF is drawn on a different implicit vertical scale ranging
+between 0 and 100%.  A point on the CDF curve at coordinate X shows
+how many of the data points in the displayed column are smaller than X.
+
+The window also displays the current coordinates of the mouse and the
+position of a blue dot that is closest to the mouse on the CDF curve.
+
 ![View menu](histogram-view-menu.png)
+
+The "View" menu from a histogram display has the following functions:
+
+* refresh: redraws the current histogram.
+
+* table: switches to a tabular display of the data shown in the
+  current histogram
+
+* exact: (only shown if the current histogram is only approximately
+  computed) redraws the current histogram display by computing
+  precisely the histogram
+
+* \#buckets: shows a menu that allows the user to specify the number
+  of buckets; the histogram will be redrawn using the specified number
+  of buckets
+
+* correlate: allows the user to specify a second column and switches
+  the display to a [two-dimensional
+  histogram](#two-dimensional-histogram-views)
+
+#### Mouse selection in histogram views
+
+*TODO*
+
+#### Categorical histograms
 
 *TODO*
 
@@ -295,7 +410,7 @@ the current state of the display.
 
 *TODO*
 
-### Heat-map views
+### Heatmap views
 
 ![A heatmap](hillview-heatmap.png)
 
@@ -310,5 +425,37 @@ the current state of the display.
 ### Combining two views
 
 ![Combining two views](combine-menu.png)
+
+*TODO*
+
+### LAMP projection
+
+This is another method to project a high-dimensional space to a
+low-dimensional space, called local affine multidimensional
+projection.  This is based on the paper [Local Affine Multidimensional
+Projection](http://ieeexplore.ieee.org/document/6065024/) from IEEE
+Transactions on Visualization and Computer Graphics, vol 17, issue 12,
+Dec 2011, by Paulo Joia, Danilo Coimbra, Jose A Cuminato, Fernando V
+Paulovich, and Luis G Nonato.
+
+This method only applies to numerical columns.  In this method the
+user can interactively guide the projection.  This always projects the
+set of selected columns down to 2 dimensions and plots the result as a
+heatmap.
+
+This menu below allows the user to choose parameters of the
+projection.
+
+  ![LAMP menu](lamp-menu.png)
+
+The users is presented with a set of control-points which can be moved
+around to guide the projection.  A typical projection is shown in the
+following figure:
+
+  ![LAMP projection](lamp-projection.png)
+
+*TODO*
+
+  ![LAMP view menu](lamp-view-menu.png)
 
 *TODO*

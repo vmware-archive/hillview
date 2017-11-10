@@ -205,7 +205,7 @@ export class HeatMapView extends RemoteTableObjectView {
             isAscending: true
         }]);
         let rr = table.createNextKRequest(order, null);
-        let page = new FullPage();
+        let page = new FullPage("Table view ", this.page);
         page.setDataView(table);
         this.page.insertAfterMe(page);
         rr.invoke(new TableRenderer(page, table, rr, false, order));
@@ -696,7 +696,7 @@ export class HeatMapRenderer extends Renderer<HeatMapData> {
                 protected samplingRate: number,
                 protected ds: DistinctStrings[],
                 operation: ICancellable) {
-        super(new FullPage(), operation, "histogram");
+        super(new FullPage("Heat map", page), operation, "histogram");
         page.insertAfterMe(this.page);
         this.heatMap = new HeatMapView(remoteTableId, schema, this.page);
         this.page.setDataView(this.heatMap);

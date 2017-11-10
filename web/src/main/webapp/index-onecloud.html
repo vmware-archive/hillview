@@ -39,16 +39,20 @@
             for (var i = 0; i < but.length; i++)
                 but[i].style.display = "none";
 
-            initialObject.loadFiles(arg);
+            if (arg < 6)
+                initialObject.loadFiles(arg);
+            else if (arg === 6)
+                initialObject.loadLogs();
         }
     </script>
 </head>
 <body onload="loaded()">
-<H1>Hillview <a href="https://github.com/vmware/hillview/">big data spreadsheet</a></H1>
+<H1>Hillview <a href="https://github.com/vmware/hillview/blob/master/docs/userManual.md">big data spreadsheet</a></H1>
     <img src="hillview-logo.png">
     <p>This instance of the Hillview service runs on 20 OneCloud machines.</p>
     <div id="contents">
         <button class="button" onclick="loadTable(0)">Flights (all)</button>
+        <button class="button" onclick="loadTable(6)">Hillview logs</button>
         <div id="top"></div>
     </div>
 </body>

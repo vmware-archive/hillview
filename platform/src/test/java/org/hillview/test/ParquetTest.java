@@ -17,30 +17,21 @@
 
 package org.hillview.test;
 
-import org.hillview.utils.HillviewLogger;
-import org.hillview.utils.Randomness;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
+import org.hillview.storage.ParquetReader;
+import org.hillview.table.api.ITable;
+import org.junit.Test;
 
-/**
- * Base test class, used for global setup and teardown.
- * If your test is not thread-safe, use the following annotation
- * on the test class:
- * @net.jcip.annotations.NotThreadSafe
- */
-@Ignore
-public class BaseTest {
-    static boolean initialized = false;
-    static Randomness randomness = new Randomness(0);
-
-    @BeforeClass
-    public static void setup() {
-        if (!initialized)
-            HillviewLogger.initialize("test", "test.log");
-        initialized = true;
-    }
-
-    public Randomness getRandomness() {
-        return randomness;
+public class ParquetTest extends BaseTest {
+    @Test
+    public void readTest() {
+        try {
+            // This is an Impala-produced file which is not yet checked-in into the repository
+            String path = "../data/parquet/" +
+            "part-r-00000-9d5cd245-a2e4-4002-9d58-0efdfb0fb962.gz.parquet";
+            ParquetReader pr = new ParquetReader(path);
+            ITable table = pr.read();
+        } catch (Exception ex) {
+            // If the file is not present do not fail the test.
+        }
     }
 }

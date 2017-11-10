@@ -3,6 +3,7 @@
   "compilerOptions": {
     // Output format is a module in the commonjs format.
     "module": "commonjs",
+    // "strictNullChecks": true,  // not ready for primetime
     "sourceMap": true,
     "target": "es5"
   },

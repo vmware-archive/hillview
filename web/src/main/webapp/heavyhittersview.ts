@@ -16,7 +16,7 @@
  */
 
 import {RemoteTableObjectView} from "./tableData";
-import {FullPage, Resolution} from "./ui";
+import {FullPage, Resolution, SpecialChars} from "./ui";
 import {IColumnDescription, ColumnDescription, RecordOrder} from "./tableData";
 import {TableView, TableDataView, TopList, TableOperationCompleted} from "./table";
 import {TopMenu, SubMenu} from "./menu";
@@ -41,18 +41,18 @@ export class HeavyHittersView extends RemoteTableObjectView {
         let subMenu = new SubMenu([
             {text: "As Table", action: () => {this.showTable();}}
         ]);
-        if(isMG == true)
-            subMenu.addItem({text: "Get exact counts", action: () => {this.exactCounts();}});
+        if (isMG == true)
+            subMenu.addItem({ text: "Get exact counts", action: () => { this.exactCounts(); }});
         let menu = new TopMenu([ {text: "View", subMenu} ]);
         this.topLevel.appendChild(menu.getHTMLRepresentation());
         this.topLevel.appendChild(document.createElement("br"));
     }
 
-    refresh(): void{}
+    refresh(): void {}
 
     // Method the creates the filtered table.
     public showTable(): void {
-        let newPage2 = new FullPage();
+        let newPage2 = new FullPage("Frequent elements", this.page);
         this.page.insertAfterMe(newPage2);
         let rr = this.tv.createRpcRequest("filterHeavy", {
                 hittersId: this.data.heavyHittersId,
@@ -65,7 +65,6 @@ export class HeavyHittersView extends RemoteTableObjectView {
         let rr = this.tv.createCheckHeavyRequest(new RemoteObject(this.data.heavyHittersId), this.schema);
         rr.invoke(new HeavyHittersReceiver2(this, rr));
     }
-
 
     public scrollIntoView() {
         this.getHTMLRepresentation().scrollIntoView( { block: "end", behavior: "smooth" } );
@@ -93,10 +92,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
             thr.appendChild(thd);
         }
         let thd1 = document.createElement("th");
-        if (this.isMG)
-            thd1.innerHTML = "(Approximate) Count";
-        else
-            thd1.innerHTML = "(Exact) Count";
+        thd1.innerHTML = "Count";
         thr.appendChild(thd1);
         let thd2 = document.createElement("th");
         thd2.innerHTML = "%";
@@ -139,13 +135,17 @@ export class HeavyHittersView extends RemoteTableObjectView {
                 }
                 let cell1 = trow.insertCell(this.schema.length + 1);
                 cell1.style.textAlign = "right";
+
+                let c1 = significantDigits(tdv.rows[i].count);
                 if (this.isMG)
-                    cell1.textContent = significantDigits(tdv.rows[i].count);
-                else
-                    cell1.textContent = tdv.rows[i].count.toString();
+                    c1 = SpecialChars.approx + c1;
+                cell1.textContent = c1;
                 let cell2 = trow.insertCell(this.schema.length + 2);
                 cell2.style.textAlign = "right";
-                cell2.textContent = significantDigits((tdv.rows[i].count/tdv.rowCount)*100);
+                let c2 = significantDigits((tdv.rows[i].count/tdv.rowCount)*100);
+                if (this.isMG)
+                    c2 = SpecialChars.approx + c2;
+                cell2.textContent = c2;
                 let cell3 = trow.insertCell(this.schema.length + 3);
                 let dataRange = new DataRange(position, tdv.rows[i].count, tdv.rowCount);
                 cell3.appendChild(dataRange.getDOMRepresentation());
@@ -217,7 +217,7 @@ export class HeavyHittersReceiver2 extends OnCompleteRenderer<TopList> {
     }
 
     run(newData: TopList): void {
-        let newPage = new FullPage();
+        let newPage = new FullPage("Heavy hitters", this.hhv.page);
         let newHhv = new HeavyHittersView(newData, newPage, this.hhv.tv, this.hhv.schema, this.hhv.order, false);
         newPage.setDataView(newHhv);
         this.page.insertAfterMe(newPage);
