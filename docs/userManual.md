@@ -333,7 +333,29 @@ the current state of the display.
 
 ### Heavy hitter views
 
-* TODO *
+A heavy hitters view shows the most frequent values that appear in the
+dataset in a set of selected columns (above a certain user-specified
+threshold).
+
+![Heavy hitters view](heavy-hitters-view.png)
+
+The data is sorted in decreasing order of frequency.  Each row
+displays a combination of values and its count and relative frequency
+within the dataset.  A special that may appear is "Everything else",
+which indicates the estimated number of rows that do not appear
+frequently enough to be above the chosen threshold.
+
+The following operations may be performed on a heavy hitters view:
+
+![Heavy hitters view menu](heavy-hitters-view-menu.png)
+
+* As table: switches back to a [table view](#table-views), but where
+  the table only contains the rows with values in the set of heavy
+  hitters.
+
+* Get exact counts: runs a more expensive but more precise
+  heavy-hitters computation which computes the exact frequency for
+  each value.
 
 ### Uni-dimensional histogram views
 

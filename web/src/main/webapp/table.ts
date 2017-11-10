@@ -667,7 +667,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
             this.reportError("Only one column must be selected");
             return;
         }
-        let colName = this.selectedColumns.values()[0];
+        let colName = this.selectedColumns.values().next().value;
         let rr = this.createHLogLogRequest(colName);
         let rec = new CountReceiver(this.getPage(), rr, colName);
         rr.invoke(rec);
@@ -816,11 +816,13 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
     }
 
     private heavyHitters(isMG: boolean): void {
-        let title = "Heavy hitters";
-        if (this.selectedColumns.size <= 1)
-            title += " " + this.selectedColumns.values()[0];
-        else
-            title += " on " + this.selectedColumns.size + " columns";
+        let title = "Heavy hitters on ";
+        if (this.selectedColumns.size <= 1) {
+            let col: string = this.selectedColumns.values().next().value;
+            title += " " + col;
+        } else {
+            title += this.selectedColumns.size + " columns";
+        }
         let d = new Dialog(title);
         d.addTextField("percent", "Threshold (%)", "Double", "1");
         d.setAction(() => {

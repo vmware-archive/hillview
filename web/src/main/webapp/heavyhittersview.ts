@@ -136,16 +136,10 @@ export class HeavyHittersView extends RemoteTableObjectView {
                 let cell1 = trow.insertCell(this.schema.length + 1);
                 cell1.style.textAlign = "right";
 
-                let c1 = significantDigits(tdv.rows[i].count);
-                if (this.isMG)
-                    c1 = SpecialChars.approx + c1;
-                cell1.textContent = c1;
+                cell1.textContent = this.valueToString(tdv.rows[i].count);
                 let cell2 = trow.insertCell(this.schema.length + 2);
                 cell2.style.textAlign = "right";
-                let c2 = significantDigits((tdv.rows[i].count/tdv.rowCount)*100);
-                if (this.isMG)
-                    c2 = SpecialChars.approx + c2;
-                cell2.textContent = c2;
+                cell2.textContent = this.valueToString((tdv.rows[i].count/tdv.rowCount)*100);
                 let cell3 = trow.insertCell(this.schema.length + 3);
                 let dataRange = new DataRange(position, tdv.rows[i].count, tdv.rowCount);
                 cell3.appendChild(dataRange.getDOMRepresentation());
@@ -186,6 +180,13 @@ export class HeavyHittersView extends RemoteTableObjectView {
         }
     }
 
+    private valueToString(n: number): string {
+        let str = significantDigits(n);
+        if (this.isMG)
+            str = SpecialChars.approx + str;
+        return str;
+    }
+
     private showRest(k: number, position: number, restCount: number, total: number, tBody: any): void {
         let trow = tBody.insertRow();
         let cell = trow.insertCell(0);
@@ -199,10 +200,10 @@ export class HeavyHittersView extends RemoteTableObjectView {
         }
         let cell1 = trow.insertCell(this.schema.length + 1);
         cell1.style.textAlign = "right";
-        cell1.textContent = significantDigits(restCount);
+        cell1.textContent = this.valueToString(restCount);
         let cell2 = trow.insertCell(this.schema.length + 2);
         cell2.style.textAlign = "right";
-        cell2.textContent = significantDigits((restCount/total)*100);
+        cell2.textContent = this.valueToString((restCount/total)*100);
         let cell3 = trow.insertCell(this.schema.length + 3);
         let dataRange = new DataRange(position, restCount, total);
         cell3.appendChild(dataRange.getDOMRepresentation());
