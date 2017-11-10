@@ -611,7 +611,7 @@ export class Histogram2DView extends HistogramViewBase {
             isAscending: true
         } ]);
         let rr = table.createNextKRequest(order, null);
-        let page = new FullPage();
+        let page = new FullPage("Table", this.page);
         page.setDataView(table);
         this.page.insertAfterMe(page);
         rr.invoke(new TableRenderer(page, table, rr, false, order));
@@ -682,7 +682,7 @@ export class Histogram2DRenderer extends Renderer<HeatMapData> {
                 protected samplingRate: number,
                 protected uniqueStrings: DistinctStrings[],
                 operation: ICancellable) {
-        super(new FullPage(), operation, "histogram");
+        super(new FullPage("2D Histogram", page), operation, "histogram");
         page.insertAfterMe(this.page);
         this.histogram = new Histogram2DView(remoteTableId, schema, this.page);
         this.page.setDataView(this.histogram);

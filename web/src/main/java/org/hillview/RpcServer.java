@@ -106,8 +106,12 @@ public final class RpcServer {
             public void onNext(RpcTarget rpcTarget) {
                 if (context.session != null)
                     RpcObjectManager.instance.addSession(context.session, rpcTarget);
-                // This function is responsible for sending the replies and closing the session.
-                rpcTarget.execute(rpcRequest, context);
+                try {
+                    // This function is responsible for sending the replies and closing the session.
+                    rpcTarget.execute(rpcRequest, context);
+                } catch (Exception ex) {
+                    this.onError(ex);
+                }
             }
         };
         // Retrieve the source object on which the operation is executed

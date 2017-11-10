@@ -16,6 +16,7 @@
  */
 
 import {IHtmlElement} from "./ui";
+
 export interface MenuItem {
     text: string;
     action: () => void;

@@ -27,6 +27,7 @@ import {
 } from "./tableData";
 import {TableRenderer, TableView} from "./table";
 import {TopMenu, SubMenu} from "./menu";
+// noinspection ES6UnusedImports
 import {
     Pair, reorder, significantDigits, formatNumber, percent, ICancellable, PartialResult, Seed,
     formatDate, exponentialDistribution
@@ -390,7 +391,6 @@ export class HistogramView extends HistogramViewBase {
             .append("circle")
             .attr("r", dotRadius)
             .attr("fill", "blue");
-
         this.selectionRectangle = this.canvas
             .append("rect")
             .attr("class", "dashed")
@@ -411,7 +411,7 @@ export class HistogramView extends HistogramViewBase {
 
     // show the table corresponding to the data in the histogram
     protected showTable(): void {
-        let newPage = new FullPage();
+        let newPage = new FullPage("Table view", this.page);
         let table = new TableView(this.remoteObjectId, newPage);
         newPage.setDataView(table);
         this.page.insertAfterMe(newPage);
@@ -577,7 +577,7 @@ export class HistogramRenderer extends Renderer<Pair<Histogram, Histogram>> {
                 operation: ICancellable,
                 protected samplingRate: number,
                 protected allStrings: DistinctStrings) {
-        super(new FullPage(), operation, "histogram");
+        super(new FullPage("Histogram", page), operation, "histogram");
         page.insertAfterMe(this.page);
         this.histogram = new HistogramView(remoteTableId, schema, this.page);
         this.page.setDataView(this.histogram);

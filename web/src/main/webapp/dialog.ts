@@ -114,13 +114,18 @@ export class Dialog implements IHtmlElement {
 
         let label = document.createElement("label");
         label.textContent = labelText;
+        label.style.verticalAlign = "center";
         fieldDiv.appendChild(label);
 
-        let input = <HTMLInputElement> document.createElement("input");
+        let input: HTMLInputElement = document.createElement("input");
         fieldDiv.appendChild(input);
+        fieldDiv.style.verticalAlign = "center";
         if (type == "Integer") {
             input.type = "number";
         }
+        if (type == "Integer" || type == "Double")
+            input.width = "3em";
+
         this.fields.set(fieldName, {html: input, type: type});
         if (value != null)
             this.fields.get(fieldName).html.value = value;

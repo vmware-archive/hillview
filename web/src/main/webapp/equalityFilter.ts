@@ -29,7 +29,7 @@ export class EqualityFilterDescription {
 // Dialog that has fields for making an EqualityFilterDescription.
 export class EqualityFilterDialog extends Dialog {
     constructor(private columnDescription: ColumnDescription) {
-        super("Filter");
+        super("Filter on " + columnDescription.name);
         this.addTextField("query", "Find:", columnDescription.kind);
         this.addSelectField("complement", "Check for:", ["Equality", "Inequality"]);
     }

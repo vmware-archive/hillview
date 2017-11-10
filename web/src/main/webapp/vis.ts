@@ -238,11 +238,12 @@ export class DataRange implements IElement {
         let x = position / totalCount;
         if (x + w > 1)
             x = 1 - w;
+        let label = w.toString() + "%";
         d3.select(this.topLevel)
             .append("g").append("rect")
             .attr("x", x)
             .attr("y", 0)
-            .attr("width", w.toString() + "%")
+            .attr("width", label)
             .attr("height", 1);
     }
 

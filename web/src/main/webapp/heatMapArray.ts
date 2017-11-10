@@ -71,7 +71,7 @@ export class CompactHeatMapView {
     private chart: any; // chart on which the heat map is drawn
 
     private axesG: any; // g element that will contain the axes
-    private textRect: any; // rectangle for readability of value indicator.
+    private positionRect: any; // rectangle for readability of value indicator.
     private xAxis;
     private yAxis;
     private marker: any; // Marker that will indicate the x, y pair.
@@ -208,8 +208,8 @@ export class CompactHeatMapView {
             .attr("stroke", "blue")
             .attr("stroke-dasharray", "5,5");
 
-        // Draw a rectangle for the text value indicator.
-        this.textRect = this.axesG.append("rect")
+        // Rectangle where current position information is displayed
+        this.positionRect = this.axesG.append("rect")
             .attr("width", this.chartSize.width)
             .attr("height", Resolution.lineHeight * 2)
             .attr("fill", "rgba(255, 255, 255, 0.9)");
@@ -251,9 +251,9 @@ export class CompactHeatMapView {
         this.yText.text(truncate(this.yAxisData.description.name, CompactHeatMapView.maxTextLabelLength) + " = " + significantDigits(yVal))
             .attr("x", mouse[0] + 5)
             .attr("y", mouse[1] - 5 - Resolution.lineHeight);
-        this.textRect
+        this.positionRect
             .attr("x", mouse[0])
-            .attr("y", mouse[1] - this.textRect.attr("height"))
+            .attr("y", mouse[1] - this.positionRect.attr("height"))
             .attr("width", Math.max(this.xText.node().getBBox().width, this.yText.node().getBBox().width) + 10);
 
         return val;
@@ -393,7 +393,7 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
             isAscending: true
         }]);
         let rr = table.createNextKRequest(order, null);
-        let page = new FullPage();
+        let page = new FullPage("Table view", this.page);
         page.setDataView(table);
         this.page.insertAfterMe(page);
         rr.invoke(new TableRenderer(page, table, rr, false, order));
@@ -495,8 +495,8 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
 
         // Register click listeners only after everything's set up.
         this.heatMapsSvg
-            .on("mousemove", () => this.mousemove())
-            .on("mouseleave", () => this.mouseleave());
+            .on("mousemove", () => this.mouseMove())
+            .on("mouseleave", () => this.mouseLeave());
         this.page.reportTime(timeInMs);
     }
 
@@ -507,7 +507,7 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
         });
     }
 
-    private mousemove() {
+    private mouseMove() {
         // Calculate which heat map is being moved over.
         let mouse = d3.mouse(this.heatMapsSvg.node());
         let [numCols, numRows] = this.numHeatMaps();
@@ -532,10 +532,9 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
             let val = this.mouseOverHeatMap.updateAxes();
             this.colorLegend.indicate(val);
         }
-
     }
 
-    private mouseleave() {
+    private mouseLeave() {
         // Hide the previously mouse-over'd heat map
         if (this.mouseOverHeatMap != null){
             this.mouseOverHeatMap.hideAxes();
@@ -662,7 +661,7 @@ export class HeatMapArrayDialog extends Dialog {
             return;
         }
 
-        let newPage = new FullPage();
+        let newPage = new FullPage("Heatmaps", this.page);
         this.page.insertAfterMe(newPage);
 
         let heatMapArrayView = new HeatMapArrayView(this.remoteObject.remoteObjectId, newPage, args, this.schema);

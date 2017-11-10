@@ -58,7 +58,7 @@ public abstract class RpcTarget implements IJson {
             return new RpcTarget.Id(UUID.randomUUID().toString());
         }
 
-        public static Id initialId() {
+        static Id initialId() {
             return new RpcTarget.Id("0");
         }
 
@@ -364,7 +364,7 @@ public abstract class RpcTarget implements IJson {
      */
     @Override
     public JsonElement toJsonTree() {
-        return IJson.gsonInstance.toJsonTree(this.objectId);
+        return IJson.gsonInstance.toJsonTree(this.objectId.toString());
     }
 
     /**

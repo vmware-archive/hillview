@@ -107,7 +107,7 @@ export function removeAllChildren(h: HTMLElement): void {
         h.removeChild(h.lastChild);
 }
 
-// Convert a number to a string by keeping only the most significant digits
+// Convert a number to an html string by keeping only the most significant digits
 // and adding a suffix.
 export function significantDigits(n: number): string {
     let suffix = "";
@@ -127,20 +127,16 @@ export function significantDigits(n: number): string {
         // This will prevent many year values from being converted
         suffix = "K";
         n = n / 1e3;
-    } else if (absn < 1e-12) {
-        n = n * 1e15;
-        suffix = "* 10<sup>-15</sup>"
-    } else if (absn < 1e-9) {
-        suffix = "* 10<sup>-12</sup>";
-        n = n * 1e12;
-    } else if (absn < 1e-6) {
-        suffix = "* 10<sup>-9</sup>";
-        n = n * 1e9;
-    } else if (absn < 1e-3) {
-        suffix = "* 10<sup>-6</sup>";
-        n = n * 1e6;
+    } else if (absn < .001) {
+        let expo = 0;
+        while (n < .1) {
+            n = n * 10;
+            expo++;
+        }
+        suffix = "* 10<sup>-" + expo + "</sup>"
     }
-    n = Math.round(n * 100) / 100;
+    if (suffix == "")
+        n = Math.round(n * 100) / 100;
     return String(n) + suffix;
 }
 

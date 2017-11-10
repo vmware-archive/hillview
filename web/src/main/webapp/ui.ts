@@ -378,12 +378,13 @@ export class ConsoleDisplay implements IHtmlElement, ErrorReporter {
         return this.topLevel;
     }
 
-    public reportError(message: string): void {
-        this.topLevel.textContent += message + "\r\n";
+    // Report an error.  The message is interpreted as html.
+    public reportError(htmlMessage: string): void {
+        this.topLevel.innerHTML += htmlMessage + "<br>";
     }
 
     public clear(): void {
-        this.topLevel.textContent = "";
+        this.topLevel.innerHTML = "";
     }
 }
 
@@ -403,7 +404,7 @@ export class FullPage implements IHtmlElement {
     // All visible pages are children of a div named 'top'.
     static allPages: FullPage[] = [];  // should be the same as the children of top 'div'
 
-    public constructor() {
+    public constructor(title: string, sourcePage?: FullPage) {
         this.pageId = FullPage.pageCounter++;
         this.console = new ConsoleDisplay();
         this.progressManager = new ProgressManager();
@@ -412,6 +413,11 @@ export class FullPage implements IHtmlElement {
         this.pageTopLevel = document.createElement("div");
         this.pageTopLevel.className = "hillviewPage";
         this.bottomContainer = document.createElement("div");
+        let h1 = document.createElement("h1");
+        if (sourcePage != null)
+            title += " from " + sourcePage.pageId;
+        h1.innerHTML = title;
+        // this.pageTopLevel.appendChild(h1);
         let close = document.createElement("span");
         close.className = "close";
         close.innerHTML = this.pageId + " &times;";
