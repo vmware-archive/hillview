@@ -44,7 +44,7 @@ public class HeatMap implements Serializable, IJson {
 
     public void createHeatMap(final ColumnAndConverter columnD1, final ColumnAndConverter columnD2,
                               final IMembershipSet membershipSet, double samplingRate, long seed, boolean enforceRate) {
-        final IRowIterator myIter = membershipSet.getIteratorOverSample(samplingRate, seed, enforceRate);
+        final ISampledRowIterator myIter = membershipSet.getIteratorOverSample(samplingRate, seed, enforceRate);
         int currRow = myIter.getNextRow();
         while (currRow >= 0) {
             boolean isMissingD1 = columnD1.isMissing(currRow);

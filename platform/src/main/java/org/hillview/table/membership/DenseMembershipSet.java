@@ -20,6 +20,7 @@ package org.hillview.table.membership;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.IMutableMembershipSet;
 import org.hillview.table.api.IRowIterator;
+import org.hillview.table.api.ISampledRowIterator;
 import org.hillview.utils.Randomness;
 
 import java.util.BitSet;
@@ -31,6 +32,7 @@ public class DenseMembershipSet implements IMembershipSet, IMutableMembershipSet
     private final BitSet membershipMap;
     private final int max;
     private int size;
+    private final static double samplingThreshold = 0.05;
 
     public DenseMembershipSet(int max, int expectedSize) {
         this.membershipMap = new BitSet(expectedSize);
@@ -121,26 +123,40 @@ public class DenseMembershipSet implements IMembershipSet, IMutableMembershipSet
     }
 
     @Override
-    public IRowIterator getIteratorOverSample(double rate, long seed, boolean enforceRate) {
+    public ISampledRowIterator getIteratorOverSample(double rate, long seed, boolean enforceRate) {
         double usedRate;
         if (enforceRate)
             usedRate = rate;
         else
             usedRate = computeRate(rate);
         if (usedRate >= 1)
-            return this.getIterator();
+            return new NoSampleRowIterator(this.membershipMap);
         return new DenseSampledRowIterator (this.membershipMap, usedRate, seed);
-
     }
 
     private double computeRate(double rate) {
-        double threshold = 0.05;
-        if (rate <= threshold)
+        if (rate <= DenseMembershipSet.samplingThreshold)
             return rate;
         else return 1;
     }
 
-    private static class DenseSampledRowIterator implements IRowIterator {
+    private static class NoSampleRowIterator implements ISampledRowIterator {
+        private DenseMembershipIterator iter;
+
+        public NoSampleRowIterator(BitSet bits) {
+            this.iter = new DenseMembershipIterator(bits);
+        }
+
+        @Override
+        public double rate() { return 1; }
+
+        @Override
+        public int getNextRow() {
+            return this.iter.getNextRow();
+        }
+    }
+
+    private static class DenseSampledRowIterator implements ISampledRowIterator {
         private final BitSet bits;
         private final Randomness prg;
         private final double rate;
@@ -162,8 +178,10 @@ public class DenseMembershipSet implements IMembershipSet, IMutableMembershipSet
             }
             return - 1;
         }
-    }
 
+        @Override
+        public double rate() { return this.rate; }
+    }
 
     public static class DenseMembershipIterator implements IRowIterator {
         private final BitSet bits;

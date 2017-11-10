@@ -20,6 +20,7 @@ package org.hillview.table.membership;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.IMutableMembershipSet;
 import org.hillview.table.api.IRowIterator;
+import org.hillview.table.api.ISampledRowIterator;
 import org.hillview.utils.IntSet;
 import org.hillview.utils.Randomness;
 
@@ -101,16 +102,33 @@ public class SparseMembershipSet implements IMembershipSet, IMutableMembershipSe
      * Returns an iterator that runs over the sampled data.
      * @param rate  Sampling rate.
      * @param seed  Random seed.
-     * @return      An iterator over the sampled data. Using a lower rate is always beneficial
+     * @return      An iterator over the sampled data.
      */
     @Override
-    public IRowIterator getIteratorOverSample(double rate, long seed, boolean enforceRate) {
+    public ISampledRowIterator getIteratorOverSample(double rate, long seed, boolean enforceRate) {
         if (rate >= 1)
-            return this.getIterator();
+            return new NoSampleRowIterator(this.membershipMap);
+        // Using a lower rate is always beneficial so enforceRate is always assumed to be true
         return new SparseMembershipSet.SparseSampledRowIterator(rate, seed, this.membershipMap);
     }
 
-    private static class SparseSampledRowIterator implements IRowIterator {
+    private static class NoSampleRowIterator implements ISampledRowIterator {
+        private SparseIterator iter;
+
+        public NoSampleRowIterator(IntSet mySet) {
+            this.iter = new SparseIterator(mySet);
+        }
+
+        @Override
+        public double rate() { return 1; }
+
+        @Override
+        public int getNextRow() {
+            return this.iter.getNextRow();
+        }
+    }
+
+    private static class SparseSampledRowIterator implements ISampledRowIterator {
         final int sampleSize;
         final Randomness psg;
         int currentSize = 0;

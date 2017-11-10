@@ -54,10 +54,7 @@ public class Histogram implements Serializable {
                        double sampleRate, long seed, boolean enforceRate) {
         if (sampleRate <= 0)
             throw new RuntimeException("Negative sampling rate");
-        final IRowIterator myIter = membershipSet.getIteratorOverSample(sampleRate, seed, enforceRate);
-        /*
-        final IRowIterator myIter = membershipSet.getIteratorOverSample(sampleRate, seed);
-        */
+        final ISampledRowIterator myIter = membershipSet.getIteratorOverSample(sampleRate, seed, enforceRate);
         int currRow = myIter.getNextRow();
         while (currRow >= 0) {
             if (column.isMissing(currRow))
