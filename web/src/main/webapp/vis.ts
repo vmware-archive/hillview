@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import d3 = require('d3');
+import {d3} from "./d3-modules"
 import {Size, IElement, IHtmlElement, Resolution} from "./ui";
 import {ContextMenu} from "./menu";
 import {Point} from "./ui";

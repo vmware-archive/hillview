@@ -40,7 +40,9 @@ import {DataRange} from "./vis"
 import {HeavyHittersView} from "./heavyhittersview";
 import {LAMPDialog} from "./lamp";
 
-// This is the serialization of a NextKList Java object
+/**
+ * The serialization of a NextKList Java object
+ */
 export class TableDataView {
     public schema?: Schema;
     // Total number of rows in the complete table
@@ -102,10 +104,11 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
                 ])
             },
             {
-                text: "Combine", subMenu: combineMenu(this)
+                text: "Combine", subMenu: combineMenu(this, page.pageId)
             }
         ]);
-        this.topLevel.appendChild(menu.getHTMLRepresentation());
+        //this.topLevel.appendChild(menu.getHTMLRepresentation());
+        this.page.setMenu(menu);
         this.contextMenu = new ContextMenu();
         this.topLevel.appendChild(this.contextMenu.getHTMLRepresentation());
         this.topLevel.appendChild(document.createElement("hr"));
@@ -128,7 +131,9 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         this.page.reportError(s);
     }
 
-    // combine two views according to some operation
+    /**
+     * Combine two views according to some operation: intersection, union, etc.
+     */
     combine(how: CombineOperators): void {
         let r = SelectedObject.current.getSelected();
         if (r == null) {
@@ -143,7 +148,9 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         rr.invoke(new ZipReceiver(this.getPage(), rr, how, finalRenderer));
     }
 
-    // invoked when scrolling has completed
+    /**
+     * Invoked when scrolling has completed.
+     */
     scrolledTo(position: number): void {
         if (this.currentData == null)
             return;
@@ -160,6 +167,9 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         }
     }
 
+    /**
+     * Event handler called when a key is pressed
+     */
     protected keyDown(ev: KeyboardEvent): void {
         if (ev.keyCode == KeyCodes.pageUp)
             this.pageUp();
@@ -171,6 +181,9 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
             this.begin();
     }
 
+    /**
+     * Scroll one page up
+     */
     public pageUp(): void {
         if (this.currentData == null || this.currentData.rows.length == 0)
             return;
@@ -430,7 +443,9 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
             } else {
                 let rr = this.createRangeRequest(rangeInfo[0]);
                 rr.chain(operation);
-                rr.invoke(new RangeCollector(cds[0], this.schema, distinct[0], this.getPage(), this, false, rr));
+                let title = "Histogram " + cds[0].name;
+                rr.invoke(new RangeCollector(title, cds[0], this.schema, distinct[0],
+                    this.getPage(), this, false, rr));
             }
         };
 
@@ -632,11 +647,11 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         return "col" + String(index);
     }
 
-    private runFilter(filter: EqualityFilterDescription): void {
+    private runFilter(filter: EqualityFilterDescription, kind: ContentsKind): void {
         let rr = this.createFilterEqualityRequest(filter);
-        let newPage = new FullPage("Filtered: is " +
+        let newPage = new FullPage("Filtered: " + filter.column + " is " +
             (filter.complement ? "not " : "") +
-            filter.compareValue, this.page);
+            TableView.convert(filter.compareValue, kind), this.page);
         this.page.insertAfterMe(newPage);
         rr.invoke(new RemoteTableReceiver(newPage, rr));
     }
@@ -645,7 +660,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         let cd = TableView.findColumn(this.schema, colName);
         if (value == null) {
             let ef = new EqualityFilterDialog(cd);
-            ef.setAction(() => this.runFilter(ef.getFilter()));
+            ef.setAction(() => this.runFilter(ef.getFilter(), cd.kind));
             ef.show();
         } else {
             if (cd.kind == "Date") {
@@ -658,7 +673,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
                 compareValue: value,
                 complement: (complement == null ? false : complement)
             };
-            this.runFilter(efd);
+            this.runFilter(efd, cd.kind);
         }
     }
 
@@ -969,14 +984,16 @@ export interface TopList {
     heavyHittersId: string;
 }
 
-// This method handles the outcome of the Misra-Gries sketch for finding Heavy Hitters.
+/**
+ * This method handles the outcome of the Misra-Gries sketch for finding Heavy Hitters.
+ */
 class HeavyHittersReceiver extends OnCompleteRenderer<TopList> {
      public constructor(page: FullPage,
                        protected tv: TableView,
                        operation: ICancellable,
                        protected schema: IColumnDescription[],
                        protected order: RecordOrder) {
-        super(page, operation, "Heavy hitters -- approximate counts");
+        super(page, operation, "Heavy hitters");
     }
 
     run(data: TopList): void {
@@ -985,26 +1002,6 @@ class HeavyHittersReceiver extends OnCompleteRenderer<TopList> {
         newPage.setDataView(hhv);
         this.page.insertAfterMe(newPage);
         hhv.fill(data.top, this.elapsedMilliseconds());
-    }
-}
-
-// This class handles the reply of the "checkHeavy" method.
-export class HeavyHittersReceiver2 extends OnCompleteRenderer<TopList> {
-    public constructor(page: FullPage,
-                       protected tv: TableView,
-                       operation: ICancellable,
-                       protected schema: IColumnDescription[],
-                       protected order: RecordOrder) {
-        super(page, operation, "Heavy hitters -- exact counts");
-    }
-
-    run(data: TopList): void {
-        let newPage = new FullPage("Heavy hitters", this.page);
-        let hhv = new HeavyHittersView(data, newPage, this.tv, this.schema, this.order, false);
-        newPage.setDataView(hhv);
-        this.page.insertAfterMe(newPage);
-        hhv.fill(data.top, this.elapsedMilliseconds());
-        hhv.scrollIntoView();
     }
 }
 

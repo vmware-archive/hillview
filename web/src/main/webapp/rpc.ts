@@ -17,9 +17,9 @@
 
 /// <reference path="node_modules/rx/ts/rx.d.ts" />
 
+import {d3} from "./d3-modules";
 import Rx = require('rx');
 import Observer = Rx.Observer;
-import d3 = require('d3');
 import {ErrorReporter, ConsoleErrorReporter} from "./errReporter";
 import {ProgressBar, FullPage} from "./ui";
 import {PartialResult, ICancellable, EnumIterators, RpcReply, formatDate} from "./util";
@@ -33,10 +33,6 @@ export class RemoteObject {
 
     createRpcRequest(method: string, args: any) : RpcRequest {
         return new RpcRequest(this.remoteObjectId, method, args);
-    }
-
-    selectCurrent(): void {
-        SelectedObject.current.select(this);
     }
 
     // Combines the current RemoteObject with the currently
@@ -233,13 +229,19 @@ export abstract class RpcReceiver<T> implements Rx.Observer<T> {
 // is a RemoteObject which can be combined with another one.
 export class SelectedObject {
     private selected: RemoteObject = null;
+    private pageId: number;  // page containing the object
 
-    select(object: RemoteObject) {
+    select(object: RemoteObject, pageId: number) {
         this.selected = object;
+        this.pageId = pageId;
     }
 
     getSelected(): RemoteObject {
         return this.selected;
+    }
+
+    getPage(): number {
+        return this.pageId;
     }
 
     static current: SelectedObject = new SelectedObject();
@@ -249,11 +251,11 @@ export enum CombineOperators {
     Union, Intersection, Exclude, Replace
 }
 
-export function combineMenu(ro: RemoteObject): SubMenu {
+export function combineMenu(ro: RemoteObject, pageId: number): SubMenu {
     let combineMenu = [];
     combineMenu.push({
         text: "Select current",
-        action: () => { SelectedObject.current.select(ro); }});
+        action: () => { SelectedObject.current.select(ro, pageId); }});
     combineMenu.push({text: "---", action: null});
     EnumIterators.getNamesAndValues(CombineOperators)
         .forEach(c => combineMenu.push({

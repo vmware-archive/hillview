@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import d3 = require('d3');
+import {d3} from "./d3-modules";
 import {Renderer} from "./rpc";
 import {Dialog} from "./dialog";
 import {TopMenu, SubMenu} from "./menu";
@@ -300,11 +300,7 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
                 { text: "table", action: () => { this.showTable(); } },
             ]) }
         ]);
-        this.topLevel.appendChild(menu.getHTMLRepresentation());
-
-        let title = document.createElement("h2");
-        title.textContent = `Heat maps by ${this.args.cds[2].name}`;
-        this.topLevel.appendChild(title);
+        this.page.setMenu(menu);
 
         this.colorMap = new ColorMap();
         this.colorLegend = new ColorLegend(this.colorMap);
@@ -661,7 +657,7 @@ export class HeatMapArrayDialog extends Dialog {
             return;
         }
 
-        let newPage = new FullPage("Heatmaps", this.page);
+        let newPage = new FullPage("Heatmaps by " + args.cds[2].name, this.page);
         this.page.insertAfterMe(newPage);
 
         let heatMapArrayView = new HeatMapArrayView(this.remoteObject.remoteObjectId, newPage, args, this.schema);

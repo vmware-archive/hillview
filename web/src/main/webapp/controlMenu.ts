@@ -42,7 +42,7 @@ export class ControlMenu extends RemoteObject implements IDataView {
         ]);
 
         this.console = new ConsoleDisplay();
-        this.top.appendChild(this.menu.getHTMLRepresentation());
+        this.page.setMenu(this.menu);
         this.top.appendChild(this.console.getHTMLRepresentation());
     }
 
