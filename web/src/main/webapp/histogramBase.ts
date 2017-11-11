@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import d3 = require('d3');
+import {d3} from "./d3-modules";
 import {
     FullPage, Point, Size, KeyCodes, Resolution, SpecialChars
 } from "./ui";
@@ -24,7 +24,6 @@ import {
     ContentsKind, Schema, RemoteTableObjectView, BasicColStats, DistinctStrings,
     ColumnDescription, ColumnAndRange
 } from "./tableData";
-import {BaseType} from "d3-selection";
 import {ScaleLinear, ScaleTime} from "d3-scale";
 import {Converters, significantDigits} from "./util";
 
@@ -39,7 +38,7 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
     protected dragging: boolean;
     protected svg: any;
     protected selectionOrigin: Point;
-    protected selectionRectangle: d3.Selection<BaseType, any, BaseType, BaseType>;
+    protected selectionRectangle: any;
     protected xLabel: HTMLElement;
     protected yLabel: HTMLElement;
     protected cdfLabel: HTMLElement;

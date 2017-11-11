@@ -24,10 +24,11 @@ import org.hillview.maps.SetOperationMap;
 import org.hillview.table.api.ITable;
 
 /**
- * This is a remote object that has a reference to an IDataSet[Pair[ITable,ITable]]
+ * This is an RpcTarget that has a reference to an IDataSet[Pair[ITable,ITable]]
  */
-final class TablePairTarget extends RpcTarget {
+public final class TablePairTarget extends RpcTarget {
     private final IDataSet<Pair<ITable, ITable>> tables;
+
     TablePairTarget(IDataSet<Pair<ITable, ITable>> tables, HillviewComputation computation) {
         super(computation);
         this.tables = tables;

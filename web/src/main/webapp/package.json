@@ -18,7 +18,6 @@
     "d3": "^4.10.2"
   },
   "devDependencies": {
-    "webpack": "^3.6.0",
-    "webpack-node-externals": "^1.6.0"
+    "webpack": "^3.6.0"
   }
 }

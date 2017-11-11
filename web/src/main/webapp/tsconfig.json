@@ -11,5 +11,6 @@
     "hillview.ts",
     "node_modules/rx/ts/core/es6-iterable.d.ts"
   ],
-  "exclude": [ "node_modules" ]
+  "exclude": [ "node_modules" ],
+  "types": [ "node" ]
 }

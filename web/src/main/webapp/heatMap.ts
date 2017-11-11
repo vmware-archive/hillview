@@ -15,7 +15,9 @@
  * limitations under the License.
  */
 
-import d3 = require('d3');
+import {d3} from "./d3-modules";
+import {ScaleLinear, ScaleTime} from "d3-scale";
+
 import {
     FullPage, Point, Size, KeyCodes, translateString, Resolution
 } from "./ui";
@@ -31,8 +33,6 @@ import {
     formatDate
 } from "./util";
 import {AnyScale, HistogramViewBase, ScaleAndAxis} from "./histogramBase";
-import {BaseType} from "d3-selection";
-import {ScaleLinear, ScaleTime} from "d3-scale";
 import {TopMenu, SubMenu} from "./menu";
 import {Histogram2DRenderer, Make2DHistogram, Filter2DReceiver} from "./histogram2d";
 import {ColorMap, ColorLegend} from "./vis";
@@ -68,7 +68,7 @@ export class HeatMapView extends RemoteTableObjectView {
     protected dragging: boolean;
     protected svg: any;
     private selectionOrigin: Point;
-    private selectionRectangle: d3.Selection<BaseType, any, BaseType, BaseType>;
+    private selectionRectangle: any;
     private xLabel: HTMLElement;
     private yLabel: HTMLElement;
     private valueLabel: HTMLElement;
@@ -114,11 +114,11 @@ export class HeatMapView extends RemoteTableObjectView {
                 { text: "histogram", action: () => { this.histogram(); } },
             ]) },
             {
-                text: "Combine", subMenu: combineMenu(this)
+                text: "Combine", subMenu: combineMenu(this, page.pageId)
             }
         ]);
 
-        this.topLevel.appendChild(this.menu.getHTMLRepresentation());
+        this.page.setMenu(this.menu);
         this.topLevel.tabIndex = 1;
 
         this.colorMap = new ColorMap();
@@ -579,6 +579,7 @@ export class HeatMapView extends RemoteTableObjectView {
         let xRange : FilterDescription = {
             min: xMin,
             max: xMax,
+            kind: this.currentData.xData.description.kind,
             columnName: this.currentData.xData.description.name,
             bucketBoundaries: xBoundaries,
             complement: d3.event.sourceEvent.ctrlKey
@@ -586,6 +587,7 @@ export class HeatMapView extends RemoteTableObjectView {
         let yRange : FilterDescription = {
             min: yMin,
             max: yMax,
+            kind: this.currentData.yData.description.kind,
             columnName: this.currentData.yData.description.name,
             bucketBoundaries: yBoundaries,
             complement: d3.event.sourceEvent.ctrlKey

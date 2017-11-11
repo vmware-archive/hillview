@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import {d3} from "./d3-modules";
 import {Dialog} from "./dialog";
 import {TopMenu, SubMenu} from "./menu";
 import {TableDataView, TableView, TableRenderer} from "./table";
@@ -28,7 +29,6 @@ import {PartialResult, Point2D, clamp, Pair, ICancellable, Seed} from "./util";
 import {HeatMapData} from "./heatMap";
 import {HeatMapArrayDialog} from "./heatMapArray";
 import {ColorMap, ColorLegend} from "./vis";
-import d3 = require('d3');
 
 export class PointSet2D {
     points: Point2D[];
@@ -68,8 +68,7 @@ class ControlPointsView extends RemoteTableObjectView {
                 { text: "3D heat map", action: () => { this.heatMap3D(); } },
             ]) }
         ]);
-
-        this.topLevel.appendChild(menu.getHTMLRepresentation());
+        this.page.setMenu(menu);
 
         this.colorMap = new ColorMap(0, 1);
         this.colorLegend = new ColorLegend(this.colorMap);

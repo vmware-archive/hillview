@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-import d3 = require('d3');
+import {d3} from "./d3-modules";
 import {ErrorReporter} from "./errReporter";
 import {ICancellable, removeAllChildren, significantDigits} from "./util";
+import {TopMenu} from "./menu";
 
 export interface IHtmlElement {
     getHTMLRepresentation() : HTMLElement;
@@ -400,6 +401,7 @@ export class FullPage implements IHtmlElement {
     pageTopLevel: HTMLElement;
     static pageCounter: number = 0;
     public readonly pageId: number;
+    private menuSlot: HTMLElement;
 
     // All visible pages are children of a div named 'top'.
     static allPages: FullPage[] = [];  // should be the same as the children of top 'div'
@@ -413,21 +415,82 @@ export class FullPage implements IHtmlElement {
         this.pageTopLevel = document.createElement("div");
         this.pageTopLevel.className = "hillviewPage";
         this.bottomContainer = document.createElement("div");
+
+        let titleRow = document.createElement("div");
+        titleRow.style.display = "flex";
+        titleRow.style.width = "100%";
+        titleRow.style.flexDirection = "row";
+        titleRow.style.flexWrap = "false";
+        titleRow.style.alignItems = "center";
+        this.pageTopLevel.appendChild(titleRow);
+        this.menuSlot = titleRow.appendChild(document.createElement("div"));
+
         let h1 = document.createElement("h1");
-        if (sourcePage != null)
-            title += " from " + sourcePage.pageId;
         h1.innerHTML = title;
-        // this.pageTopLevel.appendChild(h1);
+        h1.style.textOverflow = "ellipsis";
+        h1.style.textAlign = "center";
+        this.addCell(titleRow, h1, false);
+
+        if (sourcePage != null) {
+            h1.innerHTML += " from ";
+            let refLink = this.pageReference(sourcePage.pageId);
+            h1.appendChild(refLink);
+        }
+
+        let pageId = document.createElement("span");
+        pageId.textContent = "[" + this.pageId + "]";
+        this.addCell(titleRow, pageId, true);
+
         let close = document.createElement("span");
         close.className = "close";
-        close.innerHTML = this.pageId + " &times;";
+        close.innerHTML = "&times;";
         close.onclick = (e) => this.remove();
-        this.pageTopLevel.appendChild(close);
+        this.addCell(titleRow, close, true);
+
         this.pageTopLevel.appendChild(this.dataDisplay.getHTMLRepresentation());
         this.pageTopLevel.appendChild(this.bottomContainer);
 
         this.bottomContainer.appendChild(this.progressManager.getHTMLRepresentation());
         this.bottomContainer.appendChild(this.console.getHTMLRepresentation());
+    }
+
+    /**
+     * Returns an html string that represents a reference to the specified page.
+     * @returns {string}
+     */
+    pageReference(pageId: number): HTMLElement {
+        let refLink = document.createElement("a");
+        refLink.href = "#";
+        refLink.textContent = "[" + pageId + "]";
+        refLink.onclick = () => this.navigateToPage(pageId);
+        return refLink;
+    }
+
+    setMenu(c: TopMenu): void {
+        removeAllChildren(this.menuSlot);
+        this.menuSlot.appendChild(c.getHTMLRepresentation());
+    }
+
+    addCell(row: HTMLElement, c: HTMLElement, minSize: boolean): void {
+        if (minSize != null && minSize)
+            c.style.flexGrow = "1";
+        else
+            c.style.flexGrow = "100";
+        row.appendChild(c);
+    }
+
+    protected navigateToPage(pageId: number): boolean {
+        let found = false;
+        for (let p of FullPage.allPages) {
+            if (p.pageId == pageId) {
+                p.getHTMLRepresentation().scrollIntoView( { block: "end", behavior: "smooth" } );
+                found = true;
+            }
+        }
+        // return false to prevent the url from being followed.
+        if (!found)
+            this.reportError("Page [" + pageId + "] no longer exists");
+        return false;
     }
 
     protected static getTop(): HTMLElement {

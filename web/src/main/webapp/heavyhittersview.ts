@@ -44,8 +44,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
         if (isMG == true)
             subMenu.addItem({ text: "Get exact counts", action: () => { this.exactCounts(); }});
         let menu = new TopMenu([ {text: "View", subMenu} ]);
-        this.topLevel.appendChild(menu.getHTMLRepresentation());
-        this.topLevel.appendChild(document.createElement("br"));
+        this.page.setMenu(menu);
     }
 
     refresh(): void {}
@@ -210,7 +209,9 @@ export class HeavyHittersView extends RemoteTableObjectView {
     }
 }
 
-// This class handles the reply of the "checkHeavy" method.
+/**
+ * This class handles the reply of the "checkHeavy" method.
+  */
 export class HeavyHittersReceiver2 extends OnCompleteRenderer<TopList> {
     public constructor(public hhv: HeavyHittersView,
                        public operation: ICancellable) {

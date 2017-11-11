@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import d3 = require('d3');
+import {d3} from "./d3-modules";
 import { HistogramViewBase, BucketDialog, AnyScale } from "./histogramBase";
 import {
     ColumnDescription, Schema, RecordOrder, ColumnAndRange, FilterDescription,
@@ -69,13 +69,13 @@ export class Histogram2DView extends HistogramViewBase {
                 { text: "percent/value", action: () => { this.normalized = !this.normalized; this.refresh(); } },
             ]) },
             {
-                text: "Combine", subMenu: combineMenu(this)
+                text: "Combine", subMenu: combineMenu(this, page.pageId)
             }
         ]);
 
         this.normalized = false;
         this.selectingLegend = true;
-        this.topLevel.insertBefore(this.menu.getHTMLRepresentation(), this.topLevel.children[0]);
+        this.page.setMenu(this.menu);
     }
 
     heatmap(): void {
@@ -549,6 +549,7 @@ export class Histogram2DView extends HistogramViewBase {
         let filter: FilterDescription = {
             min: min,
             max: max,
+            kind: selectedAxis.description.kind,
             columnName: selectedAxis.description.name,
             bucketBoundaries: boundaries,
             complement: d3.event.sourceEvent.ctrlKey
@@ -682,7 +683,8 @@ export class Histogram2DRenderer extends Renderer<HeatMapData> {
                 protected samplingRate: number,
                 protected uniqueStrings: DistinctStrings[],
                 operation: ICancellable) {
-        super(new FullPage("2D Histogram", page), operation, "histogram");
+        super(new FullPage("2D Histogram " + cds[0].name + ", " + cds[1].name, page),
+            operation, "histogram");
         page.insertAfterMe(this.page);
         this.histogram = new Histogram2DView(remoteTableId, schema, this.page);
         this.page.setDataView(this.histogram);

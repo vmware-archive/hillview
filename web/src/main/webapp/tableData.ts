@@ -21,7 +21,7 @@
 
 // I can't use an enum for ContentsKind because JSON deserialization does not
 // return an enum from a string.
-import {RpcRequest, RemoteObject, CombineOperators, Renderer} from "./rpc";
+import {RpcRequest, RemoteObject, CombineOperators, Renderer, SelectedObject} from "./rpc";
 import {FullPage, IDataView, Resolution} from "./ui";
 import {EqualityFilterDescription} from "./equalityFilter";
 import {ICancellable, PartialResult, Seed} from "./util";
@@ -174,6 +174,7 @@ export interface FilterDescription {
     min: number;
     max: number;
     columnName: string;
+    kind: ContentsKind,
     complement: boolean;
     bucketBoundaries: string[];
 }
@@ -340,6 +341,10 @@ export abstract class RemoteTableObjectView extends RemoteTableObject implements
         if (this.page == null)
             throw("Page not set");
         return this.page;
+    }
+
+    selectCurrent(): void {
+        SelectedObject.current.select(this, this.page.pageId);
     }
 
     public abstract refresh(): void;
