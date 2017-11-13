@@ -51,7 +51,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
 
     // Method the creates the filtered table.
     public showTable(): void {
-        let newPage2 = new FullPage("Frequent elements", this.page);
+        let newPage2 = new FullPage("Table View of Heavy Hitters", this.page);
         this.page.insertAfterMe(newPage2);
         let rr = this.tv.createRpcRequest("filterHeavy", {
                 hittersId: this.data.heavyHittersId,
@@ -63,10 +63,6 @@ export class HeavyHittersView extends RemoteTableObjectView {
     public exactCounts(): void {
         let rr = this.tv.createCheckHeavyRequest(new RemoteObject(this.data.heavyHittersId), this.schema);
         rr.invoke(new HeavyHittersReceiver2(this, rr));
-    }
-
-    public scrollIntoView() {
-        this.getHTMLRepresentation().scrollIntoView( { block: "end", behavior: "smooth" } );
     }
 
     public fill(tdv: NextKList, elapsedMs: number): void {

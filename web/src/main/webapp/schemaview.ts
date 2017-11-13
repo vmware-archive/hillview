@@ -1,11 +1,9 @@
 import {ColumnDescription, RecordOrder, RemoteTableObjectView} from "./tableData";
-import {IDataView, IHtmlElement, FullPage} from "./ui";
-import {IColumnDescription, Schema} from "./tableData";
+import {FullPage} from "./ui";
+import {Schema} from "./tableData";
 import {stateMachine} from "./stateMachine";
 import {SubMenu, TopMenu} from "./menu";
-import {NextKList, TableRenderer, TableView} from "./table";
-import {PartialResult} from "./util";
-
+import {NextKList, TableView} from "./table";
 
 export class SchemaView extends RemoteTableObjectView {
     protected selectedRows: stateMachine;
@@ -70,7 +68,7 @@ export class SchemaView extends RemoteTableObjectView {
         return cds;
     }
     private showTable(): void {
-        let newPage = new FullPage();
+        let newPage = new FullPage("Table of Selected Columns", this.page);
         this.page.insertAfterMe(newPage);
         let tv = new TableView(this.remoteObjectId, newPage);
         newPage.setDataView(tv);
@@ -78,6 +76,7 @@ export class SchemaView extends RemoteTableObjectView {
         nkl.schema = this.createSchema();
         nkl.rowCount = this.rowCount;
         tv.updateView(nkl, false, new RecordOrder([]), 0);
+        tv.scrollIntoView();
     }
 
     // mouse click on a row
