@@ -1,8 +1,10 @@
-import {RemoteTableObjectView} from "./tableData";
+import {ColumnDescription, RecordOrder, RemoteTableObjectView} from "./tableData";
 import {IDataView, IHtmlElement, FullPage} from "./ui";
 import {IColumnDescription, Schema} from "./tableData";
 import {stateMachine} from "./stateMachine";
 import {SubMenu, TopMenu} from "./menu";
+import {NextKList, TableRenderer, TableView} from "./table";
+import {PartialResult} from "./util";
 
 
 export class SchemaView extends RemoteTableObjectView {
@@ -11,7 +13,8 @@ export class SchemaView extends RemoteTableObjectView {
 
     constructor(remoteObjectId: string,
                 protected page: FullPage,
-                public schema: Schema) {
+                public schema: Schema,
+                private rowCount: number) {
         super(remoteObjectId, page);
         this.topLevel = document.createElement("div");
         this.selectedRows = new stateMachine();
@@ -61,7 +64,21 @@ export class SchemaView extends RemoteTableObjectView {
     refresh(): void {
     }
 
-    private showTable(): void {}
+    private createSchema(): Schema {
+        let cds: ColumnDescription[] = [];
+        this.selectedRows.getStates().forEach(i => {cds.push(this.schema[i])});
+        return cds;
+    }
+    private showTable(): void {
+        let newPage = new FullPage();
+        this.page.insertAfterMe(newPage);
+        let tv = new TableView(this.remoteObjectId, newPage);
+        newPage.setDataView(tv);
+        let nkl = new NextKList();
+        nkl.schema = this.createSchema();
+        nkl.rowCount = this.rowCount;
+        tv.updateView(nkl, false, new RecordOrder([]), 0);
+    }
 
     // mouse click on a row
     private rowClick(rowIndex: number, e: MouseEvent): void {

@@ -18,7 +18,7 @@
 import {RemoteTableObjectView} from "./tableData";
 import {FullPage, Resolution, SpecialChars} from "./ui";
 import {IColumnDescription, ColumnDescription, RecordOrder} from "./tableData";
-import {TableView, TableDataView, TopList, TableOperationCompleted} from "./table";
+import {TableView, NextKList, TopList, TableOperationCompleted} from "./table";
 import {TopMenu, SubMenu} from "./menu";
 import {DataRange} from "./vis";
 import {RemoteObject, OnCompleteRenderer} from "./rpc";
@@ -69,7 +69,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
         this.getHTMLRepresentation().scrollIntoView( { block: "end", behavior: "smooth" } );
     }
 
-    public fill(tdv: TableDataView, elapsedMs: number): void {
+    public fill(tdv: NextKList, elapsedMs: number): void {
         let scroll_div = document.createElement("div");
         scroll_div.style.maxHeight = Resolution.canvasHeight.toString() + "px";
         scroll_div.style.overflowY = "auto";
@@ -155,7 +155,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
         this.page.reportTime(elapsedMs);
     }
 
-    private getRestCount(tdv:TableDataView): number{
+    private getRestCount(tdv:NextKList): number{
         if (tdv.rows == null)
             return tdv.rowCount;
         else {
@@ -166,7 +166,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
         }
     }
 
-    private getRestPos(tdv:TableDataView, restCount: number): number{
+    private getRestPos(tdv:NextKList, restCount: number): number{
         if (tdv.rows == null)
             return 0;
         else {

@@ -42,7 +42,8 @@ import {stateMachine} from "./stateMachine";
 /**
  * The serialization of a NextKList Java object
  */
-export class TableDataView {
+// This is the serialization of a NextKList Java object
+export class NextKList {
     public schema?: Schema;
     // Total number of rows in the complete table
     public rowCount: number;
@@ -67,8 +68,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
     protected htmlTable : HTMLTableElement;
     protected tHead : HTMLTableSectionElement;
     protected tBody: HTMLTableSectionElement;
-    protected currentData: TableDataView | null;
-    protected firstSelectedColumn: string | null;  // for shift-click
+    protected currentData: NextKList;
     protected selectedColumns: stateMachine;
     protected contextMenu: ContextMenu;
     protected cellsPerColumn: Map<string, HTMLElement[]>;
@@ -363,21 +363,16 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         //          1 to sort ascending
         let o = this.order.clone();
         // The set iterator did not seem to work correctly...
-        let s: string[] = [];
-        this.selectedColumns.getStates().forEach(i => s.push(this.schema[i].name));
-
-        for (let i = 0; i < s.length; i++) {
-            let colName = s[i];
+        this.getSelectedColNames().forEach(colName => {
             let col = TableView.findColumn(this.schema, colName);
             if (order != 0 && col != null) {
                 if (first)
                     o.sortFirst({columnDescription: col, isAscending: order > 0});
                 else
                     o.show({columnDescription: col, isAscending: order > 0});
-            } else {
+            } else
                 o.hide(colName);
-            }
-        }
+        });
         this.setOrder(o);
     }
 
@@ -389,10 +384,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
 
         let cds: ColumnDescription[] = [];
         let catColumns: string[] = [];  // categorical columns
-
-        let index = 0;
-        this.selectedColumns.getStates().forEach(i => {
-            let v = this.schema[i].name;
+        this.getSelectedColNames().forEach(v => {
             let colDesc = TableView.findColumn(this.schema, v);
             if (colDesc.kind == "String") {
                 this.reportError("Histograms not supported for string columns " + colDesc.name);
@@ -400,8 +392,6 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
             }
             if (colDesc.kind == "Category")
                 catColumns.push(v);
-
-            index++;
             cds.push(colDesc);
         });
 
@@ -409,7 +399,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
             // some error occurred
             return;
 
-        let twoDimensional = cds.length == 2;
+        let twoDimensional = (cds.length == 2);
         // Continuation invoked after the distinct strings have been obtained
         let cont = (operation: ICancellable) => {
             let rangeInfo: RangeInfo[] = [];
@@ -449,8 +439,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
             }
         };
 
-        // Get the categorical data and invoke the continuati
-        // on
+        // Get the categorical data and invoke the continuation
         CategoryCache.instance.retrieveCategoryValues(this, catColumns, this.getPage(), cont);
     }
 
@@ -462,7 +451,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         this.updateView(this.currentData, false, this.order, 0);
     }
 
-    public updateView(data: TableDataView, revert: boolean,
+    public updateView(data: NextKList, revert: boolean,
                       order: RecordOrder, elapsedMs: number) : void {
         this.selectedColumns.clear();
         this.currentData = data;
@@ -585,7 +574,8 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
     }
 
     dropColumns(): void {
-        this.currentData.schema = TableView.dropColumns(this.schema, c => this.selectedColumns.has(c.name));
+        this.currentData.schema = TableView.dropColumns(this.schema,
+                c => (this.getSelectedColNames().indexOf(c.name) != -1));
         this.refresh();
     }
 
@@ -674,7 +664,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         rr.invoke(rec);
     }
 
-    private getSelectedColNames(): string[] {
+    public getSelectedColNames(): string[] {
         let colNames: string[] = [];
         this.selectedColumns.getStates().forEach(i => colNames.push(this.schema[i].name));
         return colNames;
@@ -734,8 +724,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
 
 
     private heatMapArray(): void {
-        let colNames: string[] = [];
-        this.selectedColumns.getStates().forEach(i => {colNames.push(this.schema[i].name)});
+        let colNames: string[] = this.getSelectedColNames();
         let dialog = new HeatMapArrayDialog(colNames, this.getPage(), this.schema, this);
         dialog.show();
     }
@@ -802,7 +791,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
 
     public viewSchema(): void {
         let newPage = new FullPage("Schema", this.page);
-        let sv = new SchemaView(this.remoteObjectId, newPage, this.schema);
+        let sv = new SchemaView(this.remoteObjectId, newPage, this.schema, this.rowCount);
         newPage.setDataView(sv);
         this.page.insertAfterMe(newPage);
     }
@@ -814,8 +803,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         }
         let columns: IColumnDescription[] = [];
         let cso : ColumnSortOrientation[] = [];
-        this.selectedColumns.getStates().forEach(i => {
-            let v = this.schema[i].name;
+        this.getSelectedColNames().forEach(v => {
             let colDesc = TableView.findColumn(this.schema, v);
             columns.push(colDesc);
             cso.push({ columnDescription: colDesc, isAscending: true });
@@ -922,16 +910,16 @@ class CountReceiver extends OnCompleteRenderer<HLogLog> {
     }
 }
 
-export class TableRenderer extends Renderer<TableDataView> {
+export class TableRenderer extends Renderer<NextKList> {
     constructor(page: FullPage,
                 protected table: TableView,
                 operation: ICancellable,
                 protected reverse: boolean,
                 protected order: RecordOrder) {
-        super(page, operation, "Geting table info");
+        super(page, operation, "Getting table info");
     }
 
-    onNext(value: PartialResult<TableDataView>): void {
+    onNext(value: PartialResult<NextKList>): void {
         super.onNext(value);
         this.table.updateView(value.data, this.reverse, this.order, this.elapsedMilliseconds());
         this.table.scrollIntoView();
@@ -975,7 +963,7 @@ class QuantileReceiver extends OnCompleteRenderer<any[]> {
 }
 
 export interface TopList {
-    top: TableDataView;
+    top: NextKList;
     heavyHittersId: string;
 }
 
