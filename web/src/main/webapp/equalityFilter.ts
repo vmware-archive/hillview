@@ -16,17 +16,27 @@
  */
 
 import {ColumnDescription} from "./tableData";
-import {Dialog} from "./dialog"
+import {Dialog} from "./ui/dialog"
 import {Converters} from "./util";
 
-// Class explaining the search we want to perform
+/**
+ * Describes the a filter that checks for (in)equality.
+ */
 export class EqualityFilterDescription {
+    /**
+     * Column that is being filtered.
+     */
     column: string;
+    /**
+     * Value to look for (represented as a string).
+     */
     compareValue: string;
+    /**
+     * True if we are looking for anything that is not equal.
+     */
     complement: boolean;
 }
 
-// Dialog that has fields for making an EqualityFilterDescription.
 export class EqualityFilterDialog extends Dialog {
     constructor(private columnDescription: ColumnDescription) {
         super("Filter on " + columnDescription.name);

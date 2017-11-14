@@ -15,18 +15,23 @@
  * limitations under the License.
  */
 
-export interface ErrorReporter {
-    reportError(message: string) : void;
-    clear(): void;
-}
+/**
+ * This file is just used to package together several d3 modules.
+ * TODO: this does not seem to work, so currently we load all of d3.
+ */
 
-export class ConsoleErrorReporter implements ErrorReporter {
-    public static instance: ConsoleErrorReporter = new ConsoleErrorReporter();
+import d3 = require('d3');
 
-    public reportError(message: string) : void {
-        console.log(message);
-    }
+/*
+import d3drag = require('d3-drag');
+import d3select = require('d3-selection');
+import d3format = require('d3-format');
+import d3scale = require('d3-scale');
+import d3axis = require('d3-axis');
+import d3shape = require('d3-shape');
+import d3time = require('d3-time');
+export { d3drag, d3select, d3format, d3scale, d3axis, d3shape, d3time };
+*/
 
-    // We cannot clear the console
-    public clear() : void {}
-}
+export { d3 };
+

@@ -15,29 +15,21 @@
  * limitations under the License.
  */
 
-import {TableView, RemoteTableReceiver} from "./table";
-import {ScrollBar, ProgressBar, DataDisplay, FullPage} from "./ui";
 import {InitialObject} from "./initialObject";
-import {ConsoleErrorReporter} from "./errReporter";
-import {HistogramView} from "./histogram";
-import {insertControlMenu} from "./controlMenu";
+import {FullPage} from "./ui/fullPage";
 
-// Top-level Hillview object: exports all typescript classes
-// that can be used in html.
+/**
+ * This file exports all TypeScript classes which can be used directly
+ * in index.html.
+ */
 
-// Workaround webpack: export symbols
-// by making them fields of the window object.
+/**
+ * This is a workaround webpack limitations: we export all symbols we need
+ * by making them fields of the window object.
+ */
 let public_symbols = {
-    TableView,
-    ScrollBar,
-    ProgressBar,
     InitialObject,
-    ConsoleErrorReporter,
-    RemoteTableReceiver,
-    DataDisplay,
-    FullPage,
-    HistogramView,
-    insertControlMenu
+    FullPage   // used for resizing
 };
 
 window["hillview"] = public_symbols;

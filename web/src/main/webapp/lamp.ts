@@ -15,23 +15,24 @@
  * limitations under the License.
  */
 
-import {d3} from "./d3-modules";
-import {Dialog} from "./dialog";
-import {TopMenu, SubMenu} from "./menu";
+import {d3} from "./ui/d3-modules";
+import {Dialog} from "./ui/dialog";
+import {TopMenu, SubMenu} from "./ui/menu";
 import {TableDataView, TableView, TableRenderer} from "./table";
 import {
     RangeInfo, BasicColStats, Schema, RemoteTableObject, RemoteTableObjectView, RemoteTableRenderer, RecordOrder,
     ColumnAndRange, Histogram2DArgs
 } from "./tableData";
-import {FullPage, Resolution} from "./ui";
 import {Renderer, RpcRequest} from "./rpc";
-import {PartialResult, Point2D, clamp, Pair, ICancellable, Seed} from "./util";
+import {PartialResult, clamp, Pair, ICancellable, Seed} from "./util";
 import {HeatMapData} from "./heatMap";
 import {HeatMapArrayDialog} from "./heatMapArray";
-import {ColorMap, ColorLegend} from "./vis";
+import {Point, Resolution} from "./ui/ui";
+import {FullPage} from "./ui/fullPage";
+import {ColorLegend, ColorMap} from "./ui/colorLegend";
 
 export class PointSet2D {
-    points: Point2D[];
+    points: Point[];
 }
 
 class ControlPointsView extends RemoteTableObjectView {
@@ -274,7 +275,7 @@ class ControlPointsView extends RemoteTableObjectView {
                 .attr("stroke", "black")
                 .attr("vector-effect", "non-scaling-stroke")
                 .call(d3.drag()
-                    .on("drag", (p: Point2D, i: number, circles: Element[]) => {
+                    .on("drag", (p: Point, i: number, circles: Element[]) => {
                         let mouse = d3.mouse(plot.node());
                         mouse[0] = clamp(mouse[0], this.minX, this.minX + range);
                         mouse[1] = clamp(mouse[1], this.minY, this.minY + range);
@@ -284,13 +285,13 @@ class ControlPointsView extends RemoteTableObjectView {
                             .attr("cx", clamp(mouse[0], this.minX, this.minX + range))
                             .attr("cy", clamp(mouse[1], this.minY, this.minY + range));
                     })
-                    .on("end", (/*p: Point2D, i: number, circles: Element[]*/) => {
+                    .on("end", (/*p: Point, i: number, circles: Element[]*/) => {
                         this.applyLAMP();
                     })
                 )
     }
     private showTable() {
-        let page = new FullPage("Table", this.page);
+        let page = new FullPage("Table", "Table", this.page);
         this.getPage().insertAfterMe(page);
         let table = new TableView(this.lampTableObject.remoteObjectId, page);
         page.setDataView(table);
@@ -349,7 +350,7 @@ export class LAMPDialog extends Dialog {
             }
         }
 
-        let newPage = new FullPage("LAMP", this.page);
+        let newPage = new FullPage("LAMP", "LAMP", this.page);
         this.page.insertAfterMe(newPage);
 
         switch (projection) {

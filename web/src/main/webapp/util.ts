@@ -20,11 +20,6 @@ export interface Pair<T1, T2> {
     second: T2;
 }
 
-export interface Point2D {
-    x: number;
-    y: number;
-}
-
 // Direct counterpart of corresponding Java class
 export class Converters {
     public static dateFromDouble(value: number): Date {
@@ -101,14 +96,10 @@ export function formatDate(d?: Date): string {
     return df + suffix;
 }
 
-// remove all children of an HTML node
-export function removeAllChildren(h: HTMLElement): void {
-    while (h.hasChildNodes())
-        h.removeChild(h.lastChild);
-}
-
-// Convert a number to an html string by keeping only the most significant digits
-// and adding a suffix.
+/**
+ * Convert a number to an html string by keeping only the most significant digits
+ * and adding a suffix.
+ */
 export function significantDigits(n: number): string {
     let suffix = "";
     if (n == 0)

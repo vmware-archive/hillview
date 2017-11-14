@@ -17,13 +17,14 @@
 
 /// <reference path="node_modules/rx/ts/rx.d.ts" />
 
-import {d3} from "./d3-modules";
+import {d3} from "./ui/d3-modules";
 import Rx = require('rx');
 import Observer = Rx.Observer;
-import {ErrorReporter, ConsoleErrorReporter} from "./errReporter";
-import {ProgressBar, FullPage} from "./ui";
+import {ErrorReporter, ConsoleErrorReporter} from "./ui/errReporter";
 import {PartialResult, ICancellable, EnumIterators, RpcReply, formatDate} from "./util";
-import {SubMenu} from "./menu";
+import {SubMenu} from "./ui/menu";
+import {ProgressBar} from "./ui/progress";
+import {FullPage} from "./ui/fullPage";
 
 // path in server url for rpc web sockets
 const RpcRequestPath = "rpc";

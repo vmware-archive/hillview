@@ -18,9 +18,17 @@
 import {OnCompleteRenderer} from "./rpc";
 import {IDistinctStrings, DistinctStrings, RemoteTableObject} from "./tableData";
 import {ICancellable} from "./util";
-import {FullPage} from "./ui";
+import {FullPage} from "./ui/fullPage";
 
+/**
+ * The CategoryCache is a singleton class that maintains a cache mapping column names
+ * to sets of strings.  Each column name is from a categorical column.  (This imposes the
+ * constraint that all views ever created starting from the same table will have unique column names.)
+ */
 export class CategoryCache {
+    /**
+     * Maps a column name to a set of distinct strings.
+     */
     columnValues: Map<string, DistinctStrings>;
     // TODO: handle errors that can occur while retrieving DistinctStrings
 

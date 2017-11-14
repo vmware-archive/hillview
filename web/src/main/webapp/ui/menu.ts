@@ -17,16 +17,32 @@
 
 import {IHtmlElement} from "./ui";
 
+/**
+ * One item in a menu.
+ */
 export interface MenuItem {
+    /**
+     * Text that is written on screen when menu is displayed.
+     */
     text: string;
+    /**
+     * Action that is executed when the item is selected by the user.
+     */
     action: () => void;
 }
 
+/**
+ * A context menu is displayed on right-click on some displayed element.
+ */
 export class ContextMenu implements IHtmlElement {
     items: MenuItem[];
     private outer: HTMLTableElement;
     private tableBody: HTMLTableSectionElement;
 
+    /**
+     * Create a context menu.
+     * @param {MenuItem[]} mis  List of menu items in the context menu.
+     */
     constructor(mis?: MenuItem[]) {
         this.outer = document.createElement("table");
         this.outer.classList.add("dropdown");
@@ -42,28 +58,38 @@ export class ContextMenu implements IHtmlElement {
         this.hide();
     }
 
+    /**
+     * Display the menu.
+     */
     public show(): void {
         this.outer.hidden = false;
     }
 
+    /**
+     * Hide the menu.
+     */
     public hide(): void {
         this.outer.hidden = true;
     }
 
-    public clear(): void {
+    /**
+     * Remove all elements from the menu.
+     */
+    clear(): void {
         this.tableBody.remove();
         this.tableBody = this.outer.createTBody();
     }
 
+    /**
+     * Place the menu at some specific position on the screen.
+     * @param {number} x  Absolute x coordinate.
+     * @param {number} y  Absolute y coordinate.
+     */
     public move(x: number, y: number): void {
-        this.outer.style.transform =
-            "translate("
-                + x + "px , "
-                + y + "px"
-            + ")";
+        this.outer.style.transform = `translate(${x}px, ${y}px)`;
     }
 
-    public addItem(mi: MenuItem): void {
+    addItem(mi: MenuItem): void {
         this.items.push(mi);
         let trow = this.tableBody.insertRow();
         let cell = trow.insertCell(0);
@@ -81,12 +107,27 @@ export class ContextMenu implements IHtmlElement {
     }
 }
 
+/**
+ * A sub-menu is a menu displayed when selecting an item
+ * from a topmenu.
+ */
 export class SubMenu implements IHtmlElement {
+    /**
+     * Menu items describing the submenu.
+     */
     private items: MenuItem[];
-    private cells: HTMLTableDataCellElement[];  // in the same order as menu items.
+    /**
+     * Actual html representations corresponding to the submenu items.
+     * They are stored in the same order as the items.
+     */
+    private cells: HTMLTableDataCellElement[];
     private outer: HTMLTableElement;
     private tableBody: HTMLTableSectionElement;
 
+    /**
+     * Build a submenu.
+     * @param {MenuItem[]} mis  List of items to display.
+     */
     constructor(mis: MenuItem[]) {
         this.items = [];
         this.cells = [];
@@ -126,7 +167,10 @@ export class SubMenu implements IHtmlElement {
         this.outer.classList.add("hidden");
     }
 
-    // find the position of an item
+    /**
+     * Find the position of an item based on its text.
+     * @param text   Text string in the item.
+     */
     find(text: string): number {
         for (let i=0; i < this.items.length; i++)
             if (this.items[i].text === text)
@@ -134,6 +178,12 @@ export class SubMenu implements IHtmlElement {
         return -1;
     }
 
+    /**
+     * Mark a menu item as enabled or disabled.  If disabled the action
+     * cannot be triggered.
+     * @param {string} text      Text of the item which identifies the item.
+     * @param {boolean} enabled  If true the menu item is enabled, else it is disabled.
+     */
     enable(text: string, enabled: boolean): void {
         let index = this.find(text);
         if (index < 0)
@@ -150,16 +200,27 @@ export class SubMenu implements IHtmlElement {
     }
 }
 
+/**
+ * A topmenu is composed only of submenus.
+ * TODO: allow a topmenu to also have simple items.
+ */
 export interface TopMenuItem {
     readonly text: string;
     readonly subMenu: SubMenu;
 }
 
+/**
+ * A TopMenu is a two-level menu.
+ */
 export class TopMenu implements IHtmlElement {
     items: TopMenuItem[];
     private outer: HTMLTableElement;
     private tableBody: HTMLTableSectionElement;
 
+    /**
+     * Create a topmenu.
+     * @param {TopMenuItem[]} mis  List of top menu items to display.
+     */
     constructor(mis: TopMenuItem[]) {
         this.outer = document.createElement("table");
         this.outer.classList.add("menu");
@@ -190,7 +251,10 @@ export class TopMenu implements IHtmlElement {
         return this.outer;
     }
 
-    // find the position of an item
+    /**
+     * Find the position of an item
+     * @param text   Text string in the item.
+     */
     getSubmenu(text: string): SubMenu {
         for (let i=0; i < this.items.length; i++)
             if (this.items[i].text === text)

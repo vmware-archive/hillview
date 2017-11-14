@@ -15,17 +15,16 @@
  * limitations under the License.
  */
 
-import {d3} from "./d3-modules";
-import {
-    FullPage, Point, Size, KeyCodes, Resolution, SpecialChars
-} from "./ui";
-import {Dialog} from "./dialog";
+import {d3} from "./ui/d3-modules";
+import {Dialog} from "./ui/dialog";
 import {
     ContentsKind, Schema, RemoteTableObjectView, BasicColStats, DistinctStrings,
     ColumnDescription, ColumnAndRange
 } from "./tableData";
 import {ScaleLinear, ScaleTime} from "d3-scale";
 import {Converters, significantDigits} from "./util";
+import {KeyCodes, Point, Resolution, Size, SpecialChars} from "./ui/ui";
+import {FullPage} from "./ui/fullPage";
 
 export type AnyScale = ScaleLinear<number, number> | ScaleTime<number, number>;
 
@@ -38,6 +37,9 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
     protected dragging: boolean;
     protected svg: any;
     protected selectionOrigin: Point;
+    /**
+     * The coordinates of the selectionRectangle are relative to the canvas.
+     */
     protected selectionRectangle: any;
     protected xLabel: HTMLElement;
     protected yLabel: HTMLElement;

@@ -29,8 +29,8 @@ public class HeatMap implements Serializable, IJson {
     private long outOfRange;
     private final IBucketsDescription bucketDescDim1;
     private final IBucketsDescription bucketDescDim2;
-    private Histogram histogramMissingD1; // hist of items that are missing in D2
-    private Histogram histogramMissingD2; // hist of items that are missing in D1
+    private Histogram histogramMissingD1; // dim1 is missing, dim2 exists
+    private Histogram histogramMissingD2; // dim2 is missing, dim1 exists
     private long totalSize;
 
     public HeatMap(final IBucketsDescription buckets1,
@@ -38,8 +38,8 @@ public class HeatMap implements Serializable, IJson {
         this.bucketDescDim1 = buckets1;
         this.bucketDescDim2 = buckets2;
         this.buckets = new long[buckets1.getNumOfBuckets()][buckets2.getNumOfBuckets()]; // Automatically initialized to 0
-        this.histogramMissingD1 = new Histogram(this.bucketDescDim1);
-        this.histogramMissingD2 = new Histogram(this.bucketDescDim2);
+        this.histogramMissingD1 = new Histogram(this.bucketDescDim2);
+        this.histogramMissingD2 = new Histogram(this.bucketDescDim1);
     }
 
     public void createHeatMap(final ColumnAndConverter columnD1, final ColumnAndConverter columnD2,
@@ -50,12 +50,18 @@ public class HeatMap implements Serializable, IJson {
             boolean isMissingD1 = columnD1.isMissing(currRow);
             boolean isMissingD2 = columnD2.isMissing(currRow);
             if (isMissingD1 || isMissingD2) {
-                if (!isMissingD1)  // only column 2 is missing
-                    this.histogramMissingD2.addValue(columnD1.asDouble(currRow));
-                else if (!isMissingD2) // only column 1 is missing
-                    this.histogramMissingD1.addValue(columnD2.asDouble(currRow));
-                else
-                    this.missingData++; // both are missing
+                if (!isMissingD1) {
+                    // only column 2 is missing
+                    double val1 = columnD1.asDouble(currRow);
+                    this.histogramMissingD2.addValue(val1);
+                } else if (!isMissingD2) {
+                    // only column 1 is missing
+                    double val2 = columnD2.asDouble(currRow);
+                    this.histogramMissingD1.addValue(val2);
+                } else {
+                    // both are missing
+                    this.missingData++;
+                }
             } else {
                 double val1 = columnD1.asDouble(currRow);
                 double val2 = columnD2.asDouble(currRow);

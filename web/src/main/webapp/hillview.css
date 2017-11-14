@@ -88,6 +88,11 @@ th, td {
     display: flex;
 }
 
+.external-link {
+    color: blue;
+    text-decoration: underline;
+}
+
 .hillviewPage {
     border: 1px solid black;
     margin: 5px 0;

@@ -15,19 +15,16 @@
  * limitations under the License.
  */
 
-import {
-    FullPage, KeyCodes, ScrollBar, IScrollTarget, SpecialChars
-} from "./ui";
 import {Renderer, combineMenu, SelectedObject, CombineOperators, OnCompleteRenderer} from "./rpc";
 import {RangeCollector} from "./histogram";
 import {Range2DCollector} from "./heatMap";
-import {TopMenu, SubMenu, ContextMenu} from "./menu";
+import {TopMenu, SubMenu, ContextMenu} from "./ui/menu";
 import {
     Converters, PartialResult, ICancellable, cloneSet, percent, formatNumber, significantDigits,
     formatDate
 } from "./util";
 import {EqualityFilterDialog, EqualityFilterDescription} from "./equalityFilter";
-import {Dialog} from "./dialog";
+import {Dialog} from "./ui/dialog";
 import {
     Schema, RowView, RecordOrder, IColumnDescription, ColumnDescription, ColumnSortOrientation,
     ContentsKind, RangeInfo, RemoteTableObjectView, ZipReceiver, RemoteTableRenderer, RemoteTableObject,
@@ -36,9 +33,12 @@ import {
 import {CategoryCache} from "./categoryCache";
 import {HeatMapArrayDialog} from "./heatMapArray";
 import {ColumnConverter, HLogLog} from "./columnConverter";
-import {DataRange} from "./vis"
+import {DataRange} from "./ui/dataRange"
 import {HeavyHittersView} from "./heavyhittersview";
 import {LAMPDialog} from "./lamp";
+import {IScrollTarget, ScrollBar} from "./ui/scroll";
+import {FullPage} from "./ui/fullPage";
+import {KeyCodes, SpecialChars} from "./ui/ui";
 
 /**
  * The serialization of a NextKList Java object
@@ -538,7 +538,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
                 //this.contextMenu.addItem({text: "Select numeric columns", action: () => this.selectNumericColumns()});
                 this.contextMenu.addItem({text: "PCA...", action: () => this.pca() });
                 this.contextMenu.addItem({text: "LAMP...", action: () => this.lamp() });
-                this.contextMenu.addItem({text: "Filter...", action: () => this.equalityFilter(cd.name)});
+                this.contextMenu.addItem({text: "Filter...", action: () => this.equalityFilter(cd.name, null, true)});
                 this.contextMenu.addItem({text: "Convert...", action: () => ColumnConverter.dialog(cd.name, TableView.allColumnNames(this.schema), this)});
 
                 // Spawn the menu at the mouse's location
@@ -651,19 +651,19 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         let rr = this.createFilterEqualityRequest(filter);
         let newPage = new FullPage("Filtered: " + filter.column + " is " +
             (filter.complement ? "not " : "") +
-            TableView.convert(filter.compareValue, kind), this.page);
+            TableView.convert(filter.compareValue, kind), "Table", this.page);
         this.page.insertAfterMe(newPage);
         rr.invoke(new RemoteTableReceiver(newPage, rr));
     }
 
-    private equalityFilter(colName: string, value?: string, complement?: boolean): void {
+    private equalityFilter(colName: string, value: string, showMenu: boolean, complement?: boolean): void {
         let cd = TableView.findColumn(this.schema, colName);
-        if (value == null) {
+        if (showMenu) {
             let ef = new EqualityFilterDialog(cd);
             ef.setAction(() => this.runFilter(ef.getFilter(), cd.kind));
             ef.show();
         } else {
-            if (cd.kind == "Date") {
+            if (value != null && cd.kind == "Date") {
                 // Parse the date in Javascript; the Java Date parser is very bad
                 let date = new Date(value);
                 value = Converters.doubleFromDate(date).toString();
@@ -849,6 +849,8 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
     }
 
     public static convert(val: any, kind: ContentsKind): string {
+        if (val == null)
+            return "missing";
         if (kind == "Integer" || kind == "Double")
             return String(val);
         else if (kind == "Date")
@@ -885,23 +887,26 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
                 continue;
             if (this.isVisible(cd.name)) {
                 let value = row.values[dataIndex];
+
+                let cellValue : string;
                 if (value == null) {
                     cell.classList.add("missingData");
-                    cell.textContent = "missing";
+                    cellValue = "missing";
                 } else {
-                    let cellValue : string = TableView.convert(row.values[dataIndex], cd.kind);
-                    cell.textContent = cellValue;
-                    cell.oncontextmenu = e => {
-                        e.preventDefault();
-                        this.contextMenu.clear();
-                        this.contextMenu.addItem({text: "Filter for " + cellValue,
-                            action: () => this.equalityFilter(cd.name, cellValue)});
-                        this.contextMenu.addItem({text: "Filter for not " + cellValue,
-                            action: () => this.equalityFilter(cd.name, cellValue, true)});
-                        this.contextMenu.move(e.pageX - 1, e.pageY - 1);
-                        this.contextMenu.show();
-                    };
+                    cellValue = TableView.convert(row.values[dataIndex], cd.kind);
+                    value = cellValue;
                 }
+                cell.textContent = cellValue;
+                cell.oncontextmenu = e => {
+                    e.preventDefault();
+                    this.contextMenu.clear();
+                    this.contextMenu.addItem({text: "Filter for " + cellValue,
+                        action: () => this.equalityFilter(cd.name, value, false)});
+                    this.contextMenu.addItem({text: "Filter for not " + cellValue,
+                        action: () => this.equalityFilter(cd.name, value, false, true)});
+                    this.contextMenu.move(e.pageX - 1, e.pageY - 1);
+                    this.contextMenu.show();
+                };
             }
 
         }
@@ -997,7 +1002,7 @@ class HeavyHittersReceiver extends OnCompleteRenderer<TopList> {
     }
 
     run(data: TopList): void {
-        let newPage = new FullPage("Heavy hitters", this.page);
+        let newPage = new FullPage("Heavy hitters", "HeavyHitters", this.page);
         let hhv = new HeavyHittersView(data, newPage, this.tv, this.schema, this.order, true);
         newPage.setDataView(hhv);
         this.page.insertAfterMe(newPage);

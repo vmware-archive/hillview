@@ -15,11 +15,13 @@
  * limitations under the License.
  */
 
-import {ConsoleDisplay, IDataView, FullPage} from "./ui";
-import {TopMenu, SubMenu} from "./menu";
+import {TopMenu, SubMenu} from "./ui/menu";
 import {InitialObject} from "./initialObject";
 import {RemoteObject, OnCompleteRenderer} from "./rpc";
 import {ICancellable} from "./util";
+import {IDataView} from "./ui/dataview";
+import {ConsoleDisplay} from "./ui/errReporter";
+import {FullPage} from "./ui/fullPage";
 
 export class ControlMenu extends RemoteObject implements IDataView {
     private top: HTMLElement;
@@ -76,7 +78,7 @@ export class ControlMenu extends RemoteObject implements IDataView {
 }
 
 export function insertControlMenu(): void {
-    let page = new FullPage("Control center");
+    let page = new FullPage("Control center", null);
     page.append();
     let menu = new ControlMenu(InitialObject.instance, page);
     page.setDataView(menu);

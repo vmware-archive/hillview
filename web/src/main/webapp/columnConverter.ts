@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-import {Dialog} from "./dialog";
+import {Dialog} from "./ui/dialog";
 import {ContentsKind, asContentsKind} from "./tableData";
 import {TableView, RemoteTableReceiver} from "./table";
 import {OnCompleteRenderer} from "./rpc";
 import {ICancellable} from "./util";
-import {FullPage} from "./ui";
+import {FullPage} from "./ui/fullPage";
 
 export class ColumnConverter  {
     public static maxCategoricalCount = 1e4;

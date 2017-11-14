@@ -20,13 +20,17 @@ package org.hillview.test;
 import org.hillview.sketches.BucketsDescriptionEqSize;
 import org.hillview.sketches.HeatMap;
 import org.hillview.sketches.Histogram;
+import org.hillview.table.ColumnDescription;
+import org.hillview.table.Table;
+import org.hillview.table.api.ContentsKind;
+import org.hillview.table.api.IAppendableColumn;
+import org.hillview.table.api.IColumn;
+import org.hillview.table.columns.BaseListColumn;
 import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.table.api.ColumnAndConverter;
 import org.hillview.table.columns.DoubleArrayColumn;
+import org.junit.Assert;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class HistogramTest extends BaseTest {
     @Test
@@ -41,7 +45,7 @@ public class HistogramTest extends BaseTest {
         int size = 0;
         for (int i = 0; i < bucketNum; i++)
             size += hist.getCount(i);
-        assertEquals(size + hist.getMissingData() + hist.getOutOfRange(), colSize);
+        Assert.assertEquals(size + hist.getMissingData() + hist.getOutOfRange(), colSize);
         Histogram hist1 = new Histogram(buckDes);
         DoubleArrayColumn col1 = DoubleArrayTest.generateDoubleArray(2 * colSize, 100);
         FullMembershipSet fMap1 = new FullMembershipSet(2 * colSize);
@@ -50,14 +54,14 @@ public class HistogramTest extends BaseTest {
         size = 0;
         for (int i = 0; i < bucketNum; i++)
             size += hist2.getCount(i);
-        assertEquals(size + hist2.getMissingData() + hist2.getOutOfRange(), 3 * colSize);
+        Assert.assertEquals(size + hist2.getMissingData() + hist2.getOutOfRange(), 3 * colSize);
         Histogram hist3 = new Histogram(buckDes);
         hist3.create(new ColumnAndConverter(col), fMap, 0.1, 0);
         size = 0;
         for (int i = 0; i < bucketNum; i++)
             size += hist3.getCount(i);
-        assertTrue(size + hist3.getMissingData() + hist3.getOutOfRange() > 0.9 * colSize);
-        assertTrue(size + hist3.getMissingData() + hist3.getOutOfRange() < 1.1 * colSize);
+        Assert.assertTrue(size + hist3.getMissingData() + hist3.getOutOfRange() > 0.9 * colSize);
+        Assert.assertTrue(size + hist3.getMissingData() + hist3.getOutOfRange() < 1.1 * colSize);
     }
 
     @Test
@@ -92,13 +96,60 @@ public class HistogramTest extends BaseTest {
                 size += hist.getCount(i,j);
         size += hist.getMissingData();
         size += hist.getOutOfRange();
-        for (int i = 0; i < hist.getNumOfBucketsD1(); i++)
+        for (int i = 0; i < hist.getNumOfBucketsD2(); i++)
             size1 += hist.getMissingHistogramD1().getCount(i);
         size1 += hist.getMissingHistogramD1().getOutOfRange();
-        for (int i = 0; i < hist.getNumOfBucketsD2(); i++)
+        for (int i = 0; i < hist.getNumOfBucketsD1(); i++)
             size2 += hist.getMissingHistogramD2().getCount(i);
         size2 += hist.getMissingHistogramD2().getOutOfRange();
-        assertTrue(size + size1 + size2 > 0.9 * expectedSize);
-        assertTrue(size + size1 + size2 < 1.1 * expectedSize);
+        Assert.assertTrue(size + size1 + size2 > 0.9 * expectedSize);
+        Assert.assertTrue(size + size1 + size2 < 1.1 * expectedSize);
+    }
+
+    static void testMissing() {
+        ColumnDescription c0 = new ColumnDescription("col0", ContentsKind.Double, true);
+        ColumnDescription c1 = new ColumnDescription("col1", ContentsKind.Double, true);
+        IAppendableColumn col0 = BaseListColumn.create(c0);
+        IAppendableColumn col1 = BaseListColumn.create(c1);
+        for (int i=0; i < 3; i++) {
+            col0.append(0);
+            col0.append(1);
+            col0.append(2);
+            col0.appendMissing();
+        }
+
+        for (int i = 0; i < 4; i++)
+            col1.append(0);
+        for (int i = 0; i < 4; i++)
+            col1.append(1);
+        for (int i = 0; i < 4; i++)
+            col1.appendMissing();
+
+        IColumn[] cols = new IColumn[2];
+        cols[0] = col0;
+        cols[1] = col1;
+        Table t = new Table(cols);
+        BucketsDescriptionEqSize buckDes1 = new BucketsDescriptionEqSize(0, 2, 3);
+        BucketsDescriptionEqSize buckDes2 = new BucketsDescriptionEqSize(0, 1, 2);
+        HeatMap hm = new HeatMap(buckDes1, buckDes2);
+        hm.createHeatMap(new ColumnAndConverter(col0), new ColumnAndConverter(col1), new
+                FullMembershipSet(col0.sizeInRows()), 1.0, 0);
+
+        Histogram h1 = hm.getMissingHistogramD1();
+        Histogram h2 = hm.getMissingHistogramD2();
+        Assert.assertEquals(1, hm.getCount(0, 0));
+        Assert.assertEquals(1, hm.getCount(0, 1));
+        Assert.assertEquals(1, hm.getCount(1, 0));
+        Assert.assertEquals(1, hm.getCount(1, 1));
+        Assert.assertEquals(1, hm.getCount(2, 1));
+        Assert.assertEquals(1, hm.getCount(2, 1));
+        Assert.assertEquals(3, h1.getNumOfBuckets());
+        Assert.assertEquals(1, h1.getCount(0));
+        Assert.assertEquals(1, h1.getCount(1));
+        Assert.assertEquals(1, h1.getCount(2));
+        Assert.assertEquals(2, h2.getNumOfBuckets());
+        Assert.assertEquals(1, h2.getCount(0));
+        Assert.assertEquals(1, h2.getCount(1));
+        Assert.assertEquals(1, hm.getMissingData());
     }
 }

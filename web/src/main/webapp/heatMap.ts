@@ -15,12 +15,9 @@
  * limitations under the License.
  */
 
-import {d3} from "./d3-modules";
+import {d3} from "./ui/d3-modules";
 import {ScaleLinear, ScaleTime} from "d3-scale";
 
-import {
-    FullPage, Point, Size, KeyCodes, translateString, Resolution
-} from "./ui";
 import { Renderer, combineMenu, CombineOperators, SelectedObject } from "./rpc";
 import {
     ColumnDescription, Schema, ContentsKind, RecordOrder, DistinctStrings,
@@ -33,9 +30,11 @@ import {
     formatDate
 } from "./util";
 import {AnyScale, HistogramViewBase, ScaleAndAxis} from "./histogramBase";
-import {TopMenu, SubMenu} from "./menu";
+import {TopMenu, SubMenu} from "./ui/menu";
 import {Histogram2DRenderer, Make2DHistogram, Filter2DReceiver} from "./histogram2d";
-import {ColorMap, ColorLegend} from "./vis";
+import {KeyCodes, Point, Resolution, Size} from "./ui/ui";
+import {FullPage} from "./ui/fullPage";
+import {ColorLegend, ColorMap} from "./ui/colorLegend";
 
 /**
  * Maximum number of colors that we expect users can distinguish reliably.
@@ -205,7 +204,7 @@ export class HeatMapView extends RemoteTableObjectView {
             isAscending: true
         }]);
         let rr = table.createNextKRequest(order, null);
-        let page = new FullPage("Table view ", this.page);
+        let page = new FullPage("Table view ", "Table", this.page);
         page.setDataView(table);
         this.page.insertAfterMe(page);
         rr.invoke(new TableRenderer(page, table, rr, false, order));
@@ -317,7 +316,7 @@ export class HeatMapView extends RemoteTableObjectView {
         // The chart uses a fragment of the canvas offset by the margins
         this.chart = this.canvas
             .append("g")
-            .attr("transform", translateString(Resolution.leftMargin, Resolution.topMargin));
+            .attr("transform", `translate(${Resolution.leftMargin}, ${Resolution.topMargin})`);
 
         let xsc = this.currentData.xData.scaleAndAxis(this.chartSize.width, true);
         let ysc = this.currentData.yData.scaleAndAxis(this.chartSize.height, false);
@@ -381,14 +380,14 @@ export class HeatMapView extends RemoteTableObjectView {
             .attr("dominant-baseline", "text-before-edge");
         this.canvas.append("text")
             .text(xData.description.name)
-            .attr("transform", translateString(
-                this.chartSize.width / 2, this.chartSize.height + Resolution.topMargin + Resolution.bottomMargin / 2))
+            .attr("transform", `translate(${this.chartSize.width / 2}, 
+                  ${this.chartSize.height + Resolution.topMargin + Resolution.bottomMargin / 2})`)
             .attr("text-anchor", "middle")
             .attr("dominant-baseline", "hanging");
 
         this.chart.append("g")
             .attr("class", "x-axis")
-            .attr("transform", translateString(0, this.chartSize.height))
+            .attr("transform", `translate(0, ${this.chartSize.height})`)
             .call(xAxis);
 
         this.chart.append("g")
@@ -698,7 +697,7 @@ export class HeatMapRenderer extends Renderer<HeatMapData> {
                 protected samplingRate: number,
                 protected ds: DistinctStrings[],
                 operation: ICancellable) {
-        super(new FullPage("Heat map", page), operation, "histogram");
+        super(new FullPage("Heatmap", "Heatmap", page), operation, "histogram");
         page.insertAfterMe(this.page);
         this.heatMap = new HeatMapView(remoteTableId, schema, this.page);
         this.page.setDataView(this.heatMap);

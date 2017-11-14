@@ -16,13 +16,18 @@
  */
 
 import {d3} from "./d3-modules"
-import {Size, IElement, IHtmlElement, Resolution} from "./ui";
+import {IHtmlElement, Point, Resolution, Size} from "./ui";
 import {ContextMenu} from "./menu";
-import {Point} from "./ui";
-import {significantDigits} from "./util";
+import {significantDigits} from "../util";
 
+/**
+ * Represents a map from the range 0-1 to colors.
+ */
 export class ColorMap {
-    public static logThreshold = 50; /* Suggested threshold for when a log-scale should be used. */
+    /**
+     *  Suggested threshold for when a log-scale should be used.
+     */
+    public static logThreshold = 50;
     public logScale: boolean;
 
     public map: (x) => string = d3.interpolateWarm;
@@ -49,6 +54,9 @@ export class ColorMap {
     }
 }
 
+/**
+ * Displays a color map suitable for heatmaps.
+ */
 export class ColorLegend implements IHtmlElement {
     /* Static counter that increments to assign every ColorLegend object
        a unique ID for the gradient element. */
@@ -68,10 +76,10 @@ export class ColorLegend implements IHtmlElement {
      * @param colorMap: ColorMap to make this legend for.
      * @param size: Size of the legend
      * @param barHeight: Height of the color bar rectangle.
-    **/
+     **/
     constructor(private colorMap: ColorMap,
-        private size: Size = Resolution.legendSize,
-        private barHeight = 16
+                private size: Size = Resolution.legendSize,
+                private barHeight = 16
     ) {
         this.uniqueId = ColorLegend.nextUniqueId++;
         this.topLevel = document.createElement("div");
@@ -213,41 +221,6 @@ export class ColorLegend implements IHtmlElement {
     }
 
     public getHTMLRepresentation() {
-        return this.topLevel;
-    }
-}
-
-/**
- * This class displays the relative size of a subsequence within a sequence,
- * in a bar.
- */
-export class DataRange implements IElement {
-    private topLevel: Element;
-
-    /**
-     * @param position: Index where the subsequence starts.
-     * @param count: Number of items in the subsequence.
-     * @param totalCount: Total number of items in the 'supersequence'.
-     */
-    constructor(position: number, count: number, totalCount: number) {
-        this.topLevel = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        this.topLevel.classList.add("dataRange");
-        // If the range represents < 1 % of the total count, use 1% of the
-        // bar's width, s.t. it is still visible.
-        let w = Math.max(0.01, count / totalCount);
-        let x = position / totalCount;
-        if (x + w > 1)
-            x = 1 - w;
-        let label = w.toString() + "%";
-        d3.select(this.topLevel)
-            .append("g").append("rect")
-            .attr("x", x)
-            .attr("y", 0)
-            .attr("width", label)
-            .attr("height", 1);
-    }
-
-    public getDOMRepresentation(): Element {
         return this.topLevel;
     }
 }

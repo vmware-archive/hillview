@@ -15,23 +15,23 @@
  * limitations under the License.
  */
 
-import {d3} from "./d3-modules";
+import {d3} from "./ui/d3-modules";
 import {Renderer} from "./rpc";
-import {Dialog} from "./dialog";
-import {TopMenu, SubMenu} from "./menu";
+import {Dialog} from "./ui/dialog";
+import {TopMenu, SubMenu} from "./ui/menu";
 import {TableView, TableRenderer} from "./table";
 import {Histogram3DArgs, RecordOrder} from "./tableData";
-import {
-    FullPage, Size, Resolution, ScrollBar, IScrollTarget
-} from "./ui";
-import {Pair, truncate, significantDigits, Point2D, ICancellable, PartialResult, Seed} from "./util";
-import {ColorMap, ColorLegend} from "./vis";
+import {Pair, truncate, significantDigits, ICancellable, PartialResult, Seed} from "./util";
 import {AxisData} from "./heatMap";
 import {
     RemoteTableObjectView, IColumnDescription, BasicColStats, DistinctStrings,
     ColumnAndRange, Schema, isNumeric, RemoteTableObject
 } from "./tableData";
 import {CategoryCache} from "./categoryCache";
+import {Point, Resolution, Size} from "./ui/ui";
+import {IScrollTarget, ScrollBar} from "./ui/scroll";
+import {FullPage} from "./ui/fullPage";
+import {ColorLegend, ColorMap} from "./ui/colorLegend";
 
 export class HeatMapArrayData {
     buckets: number[][][];
@@ -84,7 +84,7 @@ export class CompactHeatMapView {
 
     constructor(
         private parent: any, // Element where this heat map is appended to.
-        private pos: Point2D, // Position in parent
+        private pos: Point, // Position in parent
         private readonly chartSize: Size,
         private readonly labelSize: Size,
         private binLabel: string,
@@ -143,7 +143,7 @@ export class CompactHeatMapView {
 
     // Returns the index of the cell where the given point is in. The
     // coordinates are relative to the origin of this chart.
-    public getValAt(point: Point2D): number {
+    public getValAt(point: Point): number {
         let xIndex = Math.floor(point.x / this.dotSize.width);
         let yIndex = Math.floor((this.chart.attr("height") - point.y) / this.dotSize.height);
         let val = this.data.get(yIndex * this.xDim + xIndex);
@@ -389,7 +389,7 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
             isAscending: true
         }]);
         let rr = table.createNextKRequest(order, null);
-        let page = new FullPage("Table view", this.page);
+        let page = new FullPage("Table view", "Table", this.page);
         page.setDataView(table);
         this.page.insertAfterMe(page);
         rr.invoke(new TableRenderer(page, table, rr, false, order));
@@ -657,7 +657,7 @@ export class HeatMapArrayDialog extends Dialog {
             return;
         }
 
-        let newPage = new FullPage("Heatmaps by " + args.cds[2].name, this.page);
+        let newPage = new FullPage("Heatmaps by " + args.cds[2].name, "Trellis", this.page);
         this.page.insertAfterMe(newPage);
 
         let heatMapArrayView = new HeatMapArrayView(this.remoteObject.remoteObjectId, newPage, args, this.schema);

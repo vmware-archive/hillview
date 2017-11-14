@@ -16,24 +16,39 @@
  */
 
 import {IHtmlElement, KeyCodes} from "./ui"
-import {ContentsKind} from "./tableData"
+import {ContentsKind} from "../tableData"
 
-// Represents a field in the dialog. It is just the HTML element, and an optional type.
+/**
+ *  Represents a field in the dialog.
+ */
 export class DialogField {
     html: HTMLSelectElement | HTMLInputElement;
+    /**
+     * Optional kind of data expected to be input by the user.
+     */
     type?: ContentsKind;
 }
 
-// Base class for dialog implementations
+/**
+ * Base class for dialog implementations.
+ * A dialog asks the user to fill in values for a set of fields.
+ */
 export class Dialog implements IHtmlElement {
     private container: HTMLDivElement;
     private fieldsDiv: HTMLDivElement;
-    public onConfirm: () => void;  // method to be invoked when dialog is closed successfully
-    // Stores the input elements and (optionally) their types.
+    /**
+     * Method to be invoked when dialog is closed with OK.
+     */
+    public onConfirm: () => void;
+    /**
+     * Stores the input elements and (optionally) their types.
+     */
     private fields: Map<string, DialogField> = new Map<string, DialogField>();
     private confirmButton: HTMLButtonElement;
 
-    // Create a dialog with the given name.
+    /**
+     * Create a dialog with the given name.
+     */
     constructor(title: string) {
         this.onConfirm = null;
         this.container = document.createElement("div");
@@ -71,6 +86,10 @@ export class Dialog implements IHtmlElement {
         }
     }
 
+    /**
+     * Set the action to execute when the dialog is closed.
+     * @param {() => void} onConfirm  Action to execute.
+     */
     public setAction(onConfirm: () => void): void {
         this.onConfirm = onConfirm;
         if (onConfirm != null)
@@ -80,7 +99,9 @@ export class Dialog implements IHtmlElement {
             };
     }
 
-    // display the menu
+    /**
+     * Display the menu
+      */
     public show(): void {
         document.body.appendChild(this.container);
         if (this.fieldsDiv.childElementCount == 0) {
@@ -94,8 +115,8 @@ export class Dialog implements IHtmlElement {
         this.container.onkeydown = (ev) => this.handleKeypress(ev);
     }
 
-    // Removes the menu from the DOM
     public hide(): void {
+        // Removes the menu from the DOM
         this.container.remove();
     }
 
@@ -103,11 +124,13 @@ export class Dialog implements IHtmlElement {
         return this.container;
     }
 
-    // Add a text field with the given internal name, label, and data type.
-    // @param fieldName: Internal name. Has to be used when parsing the input.
-    // @param labelText: Text in the dialog for this field.
-    // @param type: Data type of this field. For now, only Integer is special.
-    // @param value: Initial default value.
+    /**
+     * Add a text field with the given internal name, label, and data type.
+     * @param fieldName: Internal name. Has to be used when parsing the input.
+     * @param labelText: Text in the dialog for this field.
+     * @param type: Data type of this field. For now, only Integer is special.
+     * @param value: Initial default value.
+     */
     public addTextField(fieldName: string, labelText: string, type: ContentsKind, value?: string): void {
         let fieldDiv = document.createElement("div");
         this.fieldsDiv.appendChild(fieldDiv);
@@ -131,11 +154,13 @@ export class Dialog implements IHtmlElement {
             this.fields.get(fieldName).html.value = value;
     }
 
-    // Add a selection field with the given options.
-    // @param fieldName: Internal name. Has to be used when parsing the input.
-    // @param labelText: Text in the dialog for this field.
-    // @param options: List of strings that are the options in the selection box.
-    // @param value: Initial default value.
+    /**
+     * Add a drop-down selection field with the given options.
+     * @param fieldName: Internal name. Has to be used when parsing the input.
+     * @param labelText: Text in the dialog for this field.
+     * @param options: List of strings that are the options in the selection box.
+     * @param value: Initial default value.
+     */
     public addSelectField(fieldName: string, labelText: string, options: string[], value?: string): void {
         let fieldDiv = document.createElement("div");
         this.fieldsDiv.appendChild(fieldDiv);
@@ -169,11 +194,19 @@ export class Dialog implements IHtmlElement {
             this.fields.get(fieldName).html.value = value;
     }
 
+    /**
+     * The value associated with a specific field in a dialog.
+     * @param {string} field  Field whose value is sought.
+     * @returns {string}      The value associated to the given field.
+     */
     public getFieldValue(field: string): string {
         return this.fields.get(field).html.value;
     }
 
-    // Returns either a number or null.
+    /**
+     * The value associated with a field cast to an integer.
+     * Returns either a number or null if the value cannot be parsed.
+     */
     public getFieldValueAsInt(field: string): number {
         let s = this.getFieldValue(field);
         let result = parseInt(s);
@@ -182,7 +215,10 @@ export class Dialog implements IHtmlElement {
         return result;
     }
 
-    // Returns either a number or null.
+    /**
+     * The value associated with a field cast to a double.
+     * Returns either a number or null if the value cannot be parsed.
+     */
     public getFieldValueAsNumber(field: string): number {
         let s = this.getFieldValue(field);
         let result = parseFloat(s);
@@ -191,8 +227,8 @@ export class Dialog implements IHtmlElement {
         return result;
     }
 
-    // Remove this element from the DOM.
     private cancelAction(): void {
+        // Remove this element from the DOM.
         this.hide();
     }
 }

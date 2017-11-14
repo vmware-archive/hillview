@@ -16,13 +16,14 @@
  */
 
 import {RemoteTableObjectView} from "./tableData";
-import {FullPage, Resolution, SpecialChars} from "./ui";
 import {IColumnDescription, ColumnDescription, RecordOrder} from "./tableData";
 import {TableView, TableDataView, TopList, TableOperationCompleted} from "./table";
-import {TopMenu, SubMenu} from "./menu";
-import {DataRange} from "./vis";
+import {TopMenu, SubMenu} from "./ui/menu";
 import {RemoteObject, OnCompleteRenderer} from "./rpc";
 import {significantDigits, ICancellable} from "./util";
+import {FullPage} from "./ui/fullPage";
+import {Resolution, SpecialChars} from "./ui/ui";
+import {DataRange} from "./ui/dataRange";
 
 // Class that renders a table containing the heavy hitters in sorted
 // order of counts. It also displays a menu that gives the option to
@@ -51,7 +52,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
 
     // Method the creates the filtered table.
     public showTable(): void {
-        let newPage2 = new FullPage("Frequent elements", this.page);
+        let newPage2 = new FullPage("Frequent elements", "HeavyHitters", this.page);
         this.page.insertAfterMe(newPage2);
         let rr = this.tv.createRpcRequest("filterHeavy", {
                 hittersId: this.data.heavyHittersId,
@@ -219,7 +220,7 @@ export class HeavyHittersReceiver2 extends OnCompleteRenderer<TopList> {
     }
 
     run(newData: TopList): void {
-        let newPage = new FullPage("Heavy hitters", this.hhv.page);
+        let newPage = new FullPage("Heavy hitters", "HeavyHitters", this.hhv.page);
         let newHhv = new HeavyHittersView(newData, newPage, this.hhv.tv, this.hhv.schema, this.hhv.order, false);
         newPage.setDataView(newHhv);
         this.page.insertAfterMe(newPage);

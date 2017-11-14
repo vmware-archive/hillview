@@ -19,13 +19,16 @@
  * This file contains lots of classes for accessing the remote TableTarget.java class.
  */
 
-// I can't use an enum for ContentsKind because JSON deserialization does not
-// return an enum from a string.
 import {RpcRequest, RemoteObject, CombineOperators, Renderer, SelectedObject} from "./rpc";
-import {FullPage, IDataView, Resolution} from "./ui";
 import {EqualityFilterDescription} from "./equalityFilter";
 import {ICancellable, PartialResult, Seed} from "./util";
 import {PointSet2D} from "./lamp";
+import {Resolution} from "./ui/ui";
+import {IDataView} from "./ui/dataview";
+import {FullPage} from "./ui/fullPage";
+
+// I can't use an enum for ContentsKind because JSON deserialization does not
+// return an enum from a string.
 export type ContentsKind = "Category" | "Json" | "String" | "Integer" | "Double" | "Date" | "Interval";
 export function asContentsKind(kind: string): ContentsKind {
     switch (kind) {

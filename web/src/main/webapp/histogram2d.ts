@@ -15,21 +15,22 @@
  * limitations under the License.
  */
 
-import {d3} from "./d3-modules";
+import {d3} from "./ui/d3-modules";
 import { HistogramViewBase, BucketDialog, AnyScale } from "./histogramBase";
 import {
     ColumnDescription, Schema, RecordOrder, ColumnAndRange, FilterDescription,
     ZipReceiver, RemoteTableRenderer, BasicColStats, DistinctStrings, RangeInfo, Histogram2DArgs
 } from "./tableData";
 import {TableView, TableRenderer} from "./table";
-import {FullPage, translateString, Resolution, Rectangle} from "./ui";
-import {TopMenu, SubMenu} from "./menu";
+import {TopMenu, SubMenu} from "./ui/menu";
 import {
     reorder, transpose, significantDigits, formatNumber, ICancellable, PartialResult, Seed,
     formatDate
 } from "./util";
 import {AxisData, HeatMapData, Range2DCollector} from "./heatMap";
 import {combineMenu, CombineOperators, SelectedObject, Renderer} from "./rpc";
+import {Rectangle, Resolution} from "./ui/ui";
+import {FullPage} from "./ui/fullPage";
 
 interface Rect {
     x: number;
@@ -51,7 +52,7 @@ export class Histogram2DView extends HistogramViewBase {
     };
     protected normalized: boolean;  // true when bars are normalized to 100%
     protected selectingLegend: boolean;  // true when selection is being done in legend
-    protected legendRect: Rectangle;  // legend position on the screen
+    protected legendRect: Rectangle;  // legend position on the screen; relative to canvas
     protected legend: any;  // a d3 object
     protected legendScale: AnyScale;
     protected menu: TopMenu;
@@ -228,6 +229,7 @@ export class Histogram2DView extends HistogramViewBase {
         this.chartSize = Resolution.getChartSize(this.page);
 
         /*
+        TODO: compute and draw CDF
          let counts = h.buckets;
          let bucketCount = counts.length;
          let max = d3.max(counts);
@@ -256,6 +258,7 @@ export class Histogram2DView extends HistogramViewBase {
             this.canvas.remove();
 
         let counts: number[] = [];
+        let missingDisplayed: number = 0;
 
         let max: number = 0;
         let rects: Rect[] = [];
@@ -275,13 +278,28 @@ export class Histogram2DView extends HistogramViewBase {
                 }
                 yTotal += v;
             }
+            let v = yData.missing.buckets[x];
+            let rec: Rect = {
+                x: x,
+                y: yTotal,
+                index: data[x].length,
+                height: v
+            };
+            rects.push(rec);
+            yTotal += v;
+            missingDisplayed += v;
             if (yTotal > max)
                 max = yTotal;
             counts.push(yTotal);
         }
 
+        let noX = 0;
+        for (let y = 0; y < xData.missing.buckets.length; y++)
+            noX += xData.missing.buckets[y];
+
         if (max <= 0) {
-            this.page.reportError("No data");
+            this.page.reportError("All values are missing: " + noX + " have no X value, "
+                + missingData + " have no X or Y value");
             return;
         }
 
@@ -304,7 +322,7 @@ export class Histogram2DView extends HistogramViewBase {
         // The chart uses a fragment of the canvas offset by the margins
         this.chart = this.canvas
             .append("g")
-            .attr("transform", translateString(Resolution.leftMargin, Resolution.topMargin));
+            .attr("transform", `translate(${Resolution.leftMargin}, ${Resolution.topMargin})`);
 
         this.yScale = d3.scaleLinear()
             .range([this.chartSize.height, 0]);
@@ -323,20 +341,15 @@ export class Histogram2DView extends HistogramViewBase {
 
         this.canvas.append("text")
             .text(xData.description.name)
-            .attr("transform", translateString(this.chartSize.width / 2,
-                this.chartSize.height + Resolution.topMargin + Resolution.bottomMargin))
+            .attr("transform", `translate(${this.chartSize.width / 2},
+                ${this.chartSize.height + Resolution.topMargin + Resolution.bottomMargin})`)
             .attr("text-anchor", "middle");
-        this.canvas.append("text")
-            .text(yData.description.name)
-            .attr("transform", translateString(this.chartSize.width / 2, 0))
-            .attr("text-anchor", "middle")
-            .attr("dominant-baseline", "text-before-edge");
 
         let barWidth = this.chartSize.width / bucketCount;
         let scale = this.chartSize.height / max;
 
         this.chart.selectAll("g")
-        // bars
+             // bars
             .data(rects)
             .enter().append("g")
             .append("svg:rect")
@@ -345,6 +358,8 @@ export class Histogram2DView extends HistogramViewBase {
             .attr("height", d => this.rectHeight(d, counts, scale, this.chartSize.height))
             .attr("width", barWidth - 1)
             .attr("fill", d => this.color(d.index, yRectangles - 1))
+            .attr("stroke", "black")
+            .attr("stroke-width", d => d.index > yRectangles - 1 ? 1 : 0)
             .exit()
             // label bars
             .data(counts)
@@ -366,7 +381,7 @@ export class Histogram2DView extends HistogramViewBase {
         if (xAxis != null) {
             this.chart.append("g")
                 .attr("class", "x-axis")
-                .attr("transform", translateString(0, this.chartSize.height))
+                .attr("transform", `translate(0, ${this.chartSize.height})`)
                 .call(xAxis);
         }
 
@@ -388,46 +403,88 @@ export class Histogram2DView extends HistogramViewBase {
             .attr("r", dotRadius)
             .attr("fill", "blue");
 
-        this.legendRect = this.legendRectangle();
-        let legendSvg = this.canvas
-            .append("svg");
+        if (this.currentData.yData.stats.max > this.currentData.yData.stats.min) {
+            this.canvas.append("text")
+                .text(yData.description.name)
+                .attr("transform", `translate(${this.chartSize.width / 2}, 0)`)
+                .attr("text-anchor", "middle")
+                .attr("dominant-baseline", "text-before-edge");
 
-        // apparently SVG defs are global, even if they are in
-        // different SVG elements.  So we have to assign unique names.
-        let gradientId = 'gradient' + this.getPage().pageId;
-        let gradient = legendSvg.append('defs')
-            .append('linearGradient')
-            .attr('id', gradientId)
-            .attr('x1', '0%')
-            .attr('y1', '0%')
-            .attr('x2', '100%')
-            .attr('y2', '0%')
-            .attr('spreadMethod', 'pad');
+            this.legendRect = this.legendRectangle();
+            let legendSvg = this.canvas
+                .append("svg");
 
-        for (let i = 0; i <= 100; i += 4) {
-            gradient.append("stop")
-                .attr("offset", i + "%")
-                .attr("stop-color", Histogram2DView.colorMap(i / 100))
-                .attr("stop-opacity", 1)
+            // apparently SVG defs are global, even if they are in
+            // different SVG elements.  So we have to assign unique names.
+            let gradientId = 'gradient' + this.getPage().pageId;
+            let gradient = legendSvg.append('defs')
+                .append('linearGradient')
+                .attr('id', gradientId)
+                .attr('x1', '0%')
+                .attr('y1', '0%')
+                .attr('x2', '100%')
+                .attr('y2', '0%')
+                .attr('spreadMethod', 'pad');
+
+            for (let i = 0; i <= 100; i += 4) {
+                gradient.append("stop")
+                    .attr("offset", i + "%")
+                    .attr("stop-color", Histogram2DView.colorMap(i / 100))
+                    .attr("stop-opacity", 1)
+            }
+
+            this.legend = legendSvg.append("rect")
+                .attr("width", this.legendRect.width())
+                .attr("height", this.legendRect.height())
+                .style("fill", "url(#" + gradientId + ")")
+                .attr("x", this.legendRect.upperLeft().x)
+                .attr("y", this.legendRect.upperLeft().y);
+
+            let scaleAxis = HistogramViewBase.createScaleAndAxis(this.currentData.yData.description.kind,
+                this.legendRect.width(), this.currentData.yData.stats.min, this.currentData.yData.stats.max,
+                this.currentData.yData.distinctStrings, true);
+
+            // create a scale and axis for the legend
+            this.legendScale = scaleAxis.scale;
+            let legendAxis = scaleAxis.axis;
+            legendSvg.append("g")
+                .attr("transform", `translate(${this.legendRect.lowerLeft().x}, 
+                                              ${this.legendRect.lowerLeft().y})`)
+                .call(legendAxis);
         }
 
-        this.legend = legendSvg.append("rect")
-            .attr("width", this.legendRect.width())
-            .attr("height", this.legendRect.height())
-            .style("fill", "url(#" + gradientId + ")")
-            .attr("x", this.legendRect.upperLeft().x)
-            .attr("y", this.legendRect.upperLeft().y);
+        if (missingDisplayed > 0) {
+            let missingGap = 20;
+            let missingWidth = 20;
+            let missingHeight = 15;
+            let missingX = 0;
+            let missingY = 0;
+            if (this.legendRect != null) {
+                missingX = this.legendRect.upperRight().x + missingGap;
+                missingY = this.legendRect.upperRight().y;
+            } else {
+                missingX = this.chartSize.width / 2;
+                missingY = Resolution.topMargin / 3;
+            }
+            let missingSvg = this.canvas
+                .append("svg");
 
-        let scaleAxis = HistogramViewBase.createScaleAndAxis(this.currentData.yData.description.kind,
-            this.legendRect.width(), this.currentData.yData.stats.min, this.currentData.yData.stats.max,
-            this.currentData.yData.distinctStrings, true);
+            missingSvg.append("rect")
+                .attr("width", missingWidth)
+                .attr("height", missingHeight)
+                .attr("x", missingX)
+                .attr("y", missingY)
+                .attr("stroke", "black")
+                .attr("fill", "none")
+                .attr("stroke-width", 1);
 
-        // create a scale and axis for the legend
-        this.legendScale = scaleAxis.scale;
-        let legendAxis = scaleAxis.axis;
-        legendSvg.append("g")
-            .attr("transform", translateString(this.legendRect.lowerLeft().x, this.legendRect.lowerLeft().y))
-            .call(legendAxis);
+            this.canvas.append("text")
+                .text("missing")
+                .attr("transform", `translate(${missingX + missingWidth / 2}, ${missingY + missingHeight + 7})`)
+                .attr("text-anchor", "middle")
+                .attr("font-size", 10)
+                .attr("dominant-baseline", "text-before-edge");
+        }
 
         this.selectionRectangle = this.canvas
             .append("rect")
@@ -503,6 +560,21 @@ export class Histogram2DView extends HistogramViewBase {
             return;
 
         if (this.selectingLegend) {
+            // Prevent the selection from being larger than the legend.
+            let minSel: number = +this.selectionRectangle.attr("x");
+            let width: number = +this.selectionRectangle.attr("width");
+            if (minSel < this.legendRect.origin.x) {
+                let delta = this.legendRect.origin.x - minSel;
+                this.selectionRectangle
+                    .attr("x", this.legendRect.origin.x)
+                    .attr("width", width - delta);
+            } else if (minSel + width > this.legendRect.lowerRight().x) {
+                let delta = minSel + width - this.legendRect.lowerRight().x;
+                this.selectionRectangle
+                    .attr("width", width - delta);
+            }
+
+            // Move the selection rectangle in the legend.
             this.selectionRectangle
                 .attr("y", this.legendRect.upperLeft().y)
                 .attr("height", this.legendRect.height());
@@ -594,6 +666,9 @@ export class Histogram2DView extends HistogramViewBase {
     }
 
     color(d: number, max: number): string {
+        if (d > max)
+            // This is for the "missing" data
+            return "none";
         if (max == 0)
             return Histogram2DView.colorMap(0);
         return Histogram2DView.colorMap(d / max);
@@ -612,7 +687,7 @@ export class Histogram2DView extends HistogramViewBase {
             isAscending: true
         } ]);
         let rr = table.createNextKRequest(order, null);
-        let page = new FullPage("Table", this.page);
+        let page = new FullPage("Table", "Table", this.page);
         page.setDataView(table);
         this.page.insertAfterMe(page);
         rr.invoke(new TableRenderer(page, table, rr, false, order));
@@ -683,7 +758,7 @@ export class Histogram2DRenderer extends Renderer<HeatMapData> {
                 protected samplingRate: number,
                 protected uniqueStrings: DistinctStrings[],
                 operation: ICancellable) {
-        super(new FullPage("2D Histogram " + cds[0].name + ", " + cds[1].name, page),
+        super(new FullPage("2D Histogram " + cds[0].name + ", " + cds[1].name, "2DHistogram", page),
             operation, "histogram");
         page.insertAfterMe(this.page);
         this.histogram = new Histogram2DView(remoteTableId, schema, this.page);

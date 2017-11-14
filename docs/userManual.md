@@ -114,6 +114,33 @@ are read as categories containing two values, "true" and "false".
 
 *TODO*
 
+### User interface organization
+
+The Hillview user interface uses a single web page to display multiple
+views of the same dataset.  As the user navigates the dataset new
+views are opened and displayed.  This image shows a browser window
+containing multiple views of the same dataset; three views are visible
+in the browser window, and the user needs to scroll up and down to see
+the views.
+
+![User interface organization](ui-organization.png)
+
+Each view has a heading that describes it briefly, as shown in the
+following figure.  Each view has a unique number, shown on the
+top-right.  The lineage of views is usually shown in the title,
+allowing users to navigate from a view to the source view, where it
+generated from.  Views can also be closed by clicking the button
+marked with x.
+
+![View heading](view-heading.png)
+
+### Data schema views
+
+The data schema views allows users to browse and select a the set of
+columns from the dataset to focus on.
+
+*TODO*
+
 ### Table views
 
 The next figure shows a typical table view.
@@ -254,7 +281,7 @@ the current state of the display.
   suitable types to be selected.  If one column is selected, this
   operation will draw a histogram of the data in the selected column.
   For one-dimensional histograms see
-  [Uni-dimensional-histogram-views](#uni-dimensional histogram views).
+  [Uni-dimensional-histogram-views](#uni-dimensional-histogram-views).
   If two columns are selected this menu will draw a two-dimensional
   histogram of the data in the selected columns.  For two-dimensional
   histograms see [Two-dimensional
@@ -359,11 +386,12 @@ The following operations may be performed on a heavy hitters view:
 
 ### Uni-dimensional histogram views
 
-A uni-dimensional histogram is a succinct representation of the data
-in a column.  Histograms can be used to display numeric data (integers
-or doubles), date/time values, time interval values, or categorical
-values; see [below](#categorical-histograms) for a description of
-categorical histograms.  A histogram is computed in two phases:
+A uni-dimensional (1D) histogram is a succinct representation of the
+data in a column.  Histograms can be used to display numeric data
+(integers or doubles), date/time values, time interval values, or
+categorical values; see [below](#categorical-histograms) for a
+description of categorical histograms.  A histogram is computed in two
+phases:
 
 - first the range of the data in the column is computed (minimum and
   maximum values)
@@ -379,10 +407,13 @@ axis is the count of values within each bucket.  Histograms can be
 computed only approximately, but in this case the error in each bar
 should be smaller than one pixel in size.
 
+The total number of missing values is displayed below the histogram
+itself, as a number.
+
 ![A one dimensional histogram](hillview-histogram.png)
 
 On top of each bar is shown the size of the bar.  If the size is only
-approximately the value is shown with an approximation sign: &#2248;.
+approximately the value is shown with an approximation sign: &asymp;.
 
 The thin blue line shown is the cumulative distribution function
 ([CDF](https://en.wikipedia.org/wiki/Cumulative_distribution_function)).
@@ -400,15 +431,15 @@ The "View" menu from a histogram display has the following functions:
 * refresh: redraws the current histogram.
 
 * table: switches to a tabular display of the data shown in the
-  current histogram
+  current histogram.
 
 * exact: (only shown if the current histogram is only approximately
   computed) redraws the current histogram display by computing
-  precisely the histogram
+  precisely the histogram.
 
 * \#buckets: shows a menu that allows the user to specify the number
   of buckets; the histogram will be redrawn using the specified number
-  of buckets
+  of buckets.
 
 * correlate: allows the user to specify a second column and switches
   the display to a [two-dimensional
@@ -416,29 +447,141 @@ The "View" menu from a histogram display has the following functions:
 
 #### Mouse selection in histogram views
 
-*TODO*
+The mouse can be used to select a portion of the data in a histogram.
+The user can click-and-drag to select a subset of the data.  The
+selection chooses a contiguous range on the X axis.
+
+![Selection in histogram](histogram-selection.png)
+
+When the user releases the mouse button the selection takes place.
+The selection can be cancelled by pressing the ESC key.  The selection
+can be complemented by pressing the CONTROL at the time the selection
+is released (this will eliminate all the data that has been
+selected).q
 
 #### Categorical histograms
 
-*TODO*
+When drawing a histogram of categorical data it is possible to have
+more categories on the X axis than there are buckets.  In this case
+each bucket will contain multiple categorical values, and one needs to
+zoom-in by selecting to reveal the finer-grained structure of the data
+in a bucket.  This case can be distinguished visually since there will
+be multiple ticks on the X axis for each bucket.  The CDF function
+will also probably indicate that the data has a higher resolution than
+shown by the buckets alone.
+
+![Categorical histogram](categorical-histogram.png)
+
+The figure above shows a histogram where there are 294 distinct values
+but only 40 buckets.  One can see multiple ticks in each bucket.  Only
+some of the tick labels are displayed.
 
 ### Two-dimensional histogram views
 
+A 2D histogram is a useful visual tool for estimating whether the
+values in two columns are independent of each other.  Neither of the
+two columns can be a String column.  A 2D histogram is a 1D histogram
+where each bucket is further divided into sub-buckets according to the
+distribution in a second column.
+
 ![A two-dimensional histogram](hillview-histogram2d.png)
 
-![A normalized two-dimensional histogram](hillview-histogram-normalized.png)
+For example, in this figure we see a 2D histogram where the X axis has
+the airline carriers.  For each carrier the bar is divided into
+sub-bars, each of which corresponding to a range of departure delays.
+The color legend at the top shows the encoding of values into colors.
+
+The handling of missing values is as follows:
+
+* The count of rows values that have a missing value for the X axis is
+shown at the bottom.
+
+* For each bucket a transparent rectangle with is used for the missing
+  data.  The following image shows a 2D histogram where some buckets
+  contain missing data.
+
+[!2D histogram with missing data](2d-histogram-missing.png)
 
 ![View menu](2d-histogram-view-menu.png)
 
-*TODO*
+* Refresh: this causes the histogram to be re-displayed.
+
+* Table: Displays a tabular view of the data visible in the current
+  histogram.
+
+* Exact: Computes the histogram bar heights exactly.
+
+* \#buckets: Allows the user to choose the number of buckets to use
+  for the X axis.
+
+* swap axes: Draws a new 2D histogram where the two columns are
+  swapped.
+
+* heatmap: Displays a [heat map](#heatmap-views) of the data using the
+  same two columns as in the current histogram.
+
+* percent/value: This toggles between displaying the 2D histogram bars
+with relative sizes or normalized all to 100% height, as in the
+following image.
+
+![A normalized two-dimensional histogram](hillview-histogram-normalized.png)
+
+#### Selection in 2D histograms
+
+In a 2D histogram users can select data in two ways:
+
+* X-axis based selection: similar to 1D histograms, users can select a
+  range on the X axis to zoom into.  Similar with 1D histogram
+  selection, by keeping the Control button pressed when the mouse
+  button is released the user will select the complement of the
+  specified range.
+
+* Colormap based selection: the user can select a range in the
+  colormap to perform a selection of the data based on the second
+  column.
 
 ### Heatmap views
 
+A heatmap view displays the data in two columns.  Neither of the two
+columns can be a string column.  The two columns are mapped to the two
+axes of a plot, then the screen is divided into small patches a few
+pixels wide and the number of data points that falls within each patch
+is counted.  The number of values that falls within each patch is
+displayed as a heatmap, where the color intensity indicates the number
+of points.  A heatmap where the Y axis is not categorical will also
+display a line that gives the best linear regression between the
+values in the two columns.
+
+*TODO* discuss missing values.
+
 ![A heatmap](hillview-heatmap.png)
+
+The colormap of a heatmap can be adjusted using a drop-down menu that
+appears when clicking the colormap.
+
+![Colormap menu](colormap-menu.png)
+
+The heatmap view menu has the following operations:
 
 ![View menu](heatmap-view-menu.png)
 
+* refresh: Redraws the heatmap
+
+* swap axes: Swaps the X and Y axes.
+
+* table: Displays the data in the current heatmap in a tabular form.
+
+* exact: Redraws the heatmap exactly.
+
+* Histogram: Draws a [2D histogram](two-dimensional-histogram-views)
+  of the data in the two columns that are used for the heatmap
+  display.
+
+#### Selection from a heatmap
+
 *TODO*
+
+### Trellis plot views
 
 ![An array of heatmap views](hillview-heatmap-array.png)
 

@@ -15,10 +15,7 @@
  * limitations under the License.
  */
 
-import { d3 } from "./d3-modules";
-import {
-    FullPage, translateString, Resolution
-} from "./ui";
+import { d3 } from "./ui/d3-modules";
 import { combineMenu, CombineOperators, SelectedObject, Renderer } from "./rpc";
 import {
     ColumnDescription, Schema, RecordOrder, DistinctStrings, RangeInfo, Histogram,
@@ -26,16 +23,18 @@ import {
     ZipReceiver, RemoteTableRenderer, HistogramArgs
 } from "./tableData";
 import {TableRenderer, TableView} from "./table";
-import {TopMenu, SubMenu} from "./menu";
+import {TopMenu, SubMenu} from "./ui/menu";
 // noinspection ES6UnusedImports
 import {
     Pair, reorder, significantDigits, formatNumber, percent, ICancellable, PartialResult, Seed,
     formatDate, exponentialDistribution
 } from "./util";
 import {HistogramViewBase, BucketDialog} from "./histogramBase";
-import {Dialog} from "./dialog";
+import {Dialog} from "./ui/dialog";
 import {Range2DCollector} from "./heatMap";
 import {CategoryCache} from "./categoryCache";
+import {FullPage} from "./ui/fullPage";
+import {Resolution} from "./ui/ui";
 
 export class HistogramView extends HistogramViewBase {
     protected currentData: {
@@ -311,7 +310,7 @@ export class HistogramView extends HistogramViewBase {
         // The chart uses a fragment of the canvas offset by the margins
         this.chart = this.canvas
             .append("g")
-            .attr("transform", translateString(Resolution.leftMargin, Resolution.topMargin));
+            .attr("transform", `translate(${Resolution.leftMargin}, ${Resolution.topMargin})`);
 
         this.yScale = d3.scaleLinear()
             .domain([0, max])
@@ -334,7 +333,7 @@ export class HistogramView extends HistogramViewBase {
 
         // draw CDF curve
         this.canvas.append("path")
-            .attr("transform", translateString(Resolution.leftMargin, Resolution.topMargin))
+            .attr("transform", `translate(${Resolution.leftMargin}, ${Resolution.topMargin})`)
             .datum(cdfData)
             .attr("stroke", "blue")
             .attr("d", cdfLine)
@@ -344,7 +343,7 @@ export class HistogramView extends HistogramViewBase {
         let bars = this.chart.selectAll("g")
             .data(counts)
             .enter().append("g")
-            .attr("transform", (d, i) => translateString(i * barWidth, 0));
+            .attr("transform", (d, i) => `translate(${i * barWidth}, 0)`);
 
         bars.append("rect")
             .attr("y", d => this.yScale(d))
@@ -368,7 +367,7 @@ export class HistogramView extends HistogramViewBase {
         if (xAxis != null) {
             this.chart.append("g")
                 .attr("class", "x-axis")
-                .attr("transform", translateString(0, this.chartSize.height))
+                .attr("transform", `translate(0, ${this.chartSize.height})`)
                 .call(xAxis);
         }
 
@@ -409,7 +408,7 @@ export class HistogramView extends HistogramViewBase {
 
     // show the table corresponding to the data in the histogram
     protected showTable(): void {
-        let newPage = new FullPage("Table view", this.page);
+        let newPage = new FullPage("Table view", "Table", this.page);
         let table = new TableView(this.remoteObjectId, newPage);
         newPage.setDataView(table);
         this.page.insertAfterMe(newPage);
@@ -585,7 +584,7 @@ export class HistogramRenderer extends Renderer<Pair<Histogram, Histogram>> {
                 operation: ICancellable,
                 protected samplingRate: number,
                 protected allStrings: DistinctStrings) {
-        super(new FullPage(title, page), operation, "histogram");
+        super(new FullPage(title, "Histogram", page), operation, "histogram");
         page.insertAfterMe(this.page);
         this.histogram = new HistogramView(remoteTableId, schema, this.page);
         this.page.setDataView(this.histogram);
