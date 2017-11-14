@@ -3,50 +3,12 @@
 # Introduction
 
 Hillview: a big data spreadsheet.  Hillview is a cloud-based
-application for browsing large datasets.  It is under active
-development.  Currently the software is in pre-alpha version.  For
-more information see the [Hillview user manual](docs/userManual.md).
-
-The hillview user interface executes in a browser.  The browser can
-display multiple views of the data, as in the following screenshots.
-These screenshots were obtained by browsing a dataset containing more
-than 120 million rows, representing all passenger airline flights in
-the United States between 1997 and 2016.
-
-The first image shows a tabular display of the data; the user can
-choose a subset of the columns to display, and can sort on any
-combination of columns.  In this image the data is sorted in
-decreasing order on the flight distance.
-
-![A table view](docs/hillview-table.png)
-
-The second image shows a histogram of the data in one column, in this
-case the flight departure delay.
-
-![A one dimensional histogram](docs/hillview-histogram.png)
-
-The third image shows a two-dimensional histogram, where the X axis is
-the duration of a flight and where each bar is color-coded according
-to the distance travelled.
-
-![A two-dimensional histogram](docs/hillview-histogram2d.png)
-
-The fourth image shows another display of a two-dimensional histogram,
-where the X axis is the flight date and where each bar is color-coded
-according to its delay.
-
-![A normalized two-dimensional histogram](docs/hillview-histogram-normalized.png)
-
-The fifth image shows a heatmap, where the X axis is the departure
-delay, the Y axis is the arrival delay, and the color shows the number
-of flights that fall into each pixel, with hotter colors showing more
-flights.
-
-![A heatmap](docs/hillview-heatmap.png)
-
-Here is a [short
-  video](https://1drv.ms/v/s!AlywK8G1COQ_jbF-il8AQvIkOdW2dw) of the
-  system in action.
+application for browsing large datasets.  The hillview user interface
+executes in a browser.  It is under active development.  Currently the
+software is in pre-alpha version.  For more information and examples
+see the [Hillview user manual](docs/userManual.md).  Here is a [short
+video](https://1drv.ms/v/s!AlywK8G1COQ_jbF-il8AQvIkOdW2dw) of the
+system in action.
 
 # Developing Hillview
 
