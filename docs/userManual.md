@@ -502,6 +502,8 @@ shown at the bottom.
 
 ![2D histogram with missing data](2d-histogram-missing.png)
 
+The "view" menu for a 2D histogram offers the following operations:
+
 ![View menu](2d-histogram-view-menu.png)
 
 * Refresh: this causes the histogram to be re-displayed.
@@ -538,7 +540,9 @@ In a 2D histogram users can select data in two ways:
 
 * Colormap based selection: the user can select a range in the
   colormap to perform a selection of the data based on the second
-  column.
+  column, as shown in the following image.
+
+![Selecting from a 2D histogram legend](legend-selection.png)
 
 ### Heatmap views
 
@@ -579,7 +583,9 @@ The heatmap view menu has the following operations:
 
 #### Selection from a heatmap
 
-*TODO*
+Users can select a rectangular area from a heatmap with the mouse.
+
+![Selection from a heatmap](heatmap-selection.png)
 
 ### Trellis plot views
 
@@ -589,15 +595,37 @@ The heatmap view menu has the following operations:
 
 ### Combining two views
 
+Any view represents logically a subset of rows from an original table.
+Two different views can be combined by performing a set operation
+between the rows that they represent.  This done using the "Combine"
+menu, which is present in almost all views.
+
 ![Combining two views](combine-menu.png)
 
-*TODO*
+The operations are as follows:
+
+* Select current: this selects the current view for a subsequent
+  combining operation.
+
+* Union: combines the previously-selected view with the current one by
+  keeping all rows that appear in either view.
+
+* Intersection: combines the previously-selected view with the current
+  one by keeping only the rows that appear in both views.
+
+* Exclude: combines the previously-selected view the current one by
+  excluding from the current view all the rows from the previous one.
+
+* Replace: replaces the data in the current view with the data from
+  the previously-selected one.
 
 ### LAMP projection
 
-This is another method to project a high-dimensional space to a
-low-dimensional space, called local affine multidimensional
-projection.  This is based on the paper [Local Affine Multidimensional
+(This is an experimental feature, which currently is be too slow to
+apply to large datasets.)  This is another method to project a
+high-dimensional space to a low-dimensional space, called local affine
+multidimensional projection.  This is based on the paper [Local Affine
+Multidimensional
 Projection](http://ieeexplore.ieee.org/document/6065024/) from IEEE
 Transactions on Visualization and Computer Graphics, vol 17, issue 12,
 Dec 2011, by Paulo Joia, Danilo Coimbra, Jose A Cuminato, Fernando V
