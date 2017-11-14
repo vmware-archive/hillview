@@ -55,6 +55,8 @@ web/src/main/webapp/util.js
 web/src/main/webapp/pca.js
 web/src/main/webapp/lamp.js
 web/src/main/webapp/equalityFilter.js
+web/src/main/webapp/stateMachine.js
+web/src/main/webapp/schemaview.js
 web/src/main/webapp/node_modules/
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml

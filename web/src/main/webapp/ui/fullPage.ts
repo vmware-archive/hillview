@@ -32,7 +32,8 @@ let helpUrl = {
     "Heatmap": "heatmap-views",
     "Trellis": "trellis-plot-views",
     "HeavyHitters": "heavy-hitter-views",
-    "LAMP": "lamp-projection"
+    "LAMP": "lamp-projection",
+    "Schema": "data-schema-views"
 };
 
 /**
