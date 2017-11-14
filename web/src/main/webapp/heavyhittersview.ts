@@ -18,7 +18,7 @@
 import {RemoteTableObjectView} from "./tableData";
 import {FullPage, Resolution, SpecialChars} from "./ui";
 import {IColumnDescription, ColumnDescription, RecordOrder} from "./tableData";
-import {TableView, TableDataView, TopList, TableOperationCompleted} from "./table";
+import {TableView, NextKList, TopList, TableOperationCompleted} from "./table";
 import {TopMenu, SubMenu} from "./menu";
 import {DataRange} from "./vis";
 import {RemoteObject, OnCompleteRenderer} from "./rpc";
@@ -35,14 +35,14 @@ export class HeavyHittersView extends RemoteTableObjectView {
                 public tv: TableView,
                 public schema: IColumnDescription[],
                 public order: RecordOrder,
-                private isMG: boolean) {
+                private isApprox: boolean) {
         super(data.heavyHittersId, page);
         this.topLevel = document.createElement("div");
         let subMenu = new SubMenu([
             {text: "As Table", action: () => {this.showTable();}}
         ]);
-        if (isMG == true)
-            subMenu.addItem({ text: "Get exact counts", action: () => { this.exactCounts(); }});
+        if(isApprox == true)
+            subMenu.addItem({text: "Get exact counts", action: () => {this.exactCounts();}});
         let menu = new TopMenu([ {text: "View", subMenu} ]);
         this.page.setMenu(menu);
     }
@@ -51,7 +51,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
 
     // Method the creates the filtered table.
     public showTable(): void {
-        let newPage2 = new FullPage("Frequent elements", this.page);
+        let newPage2 = new FullPage("Table View of Heavy Hitters", this.page);
         this.page.insertAfterMe(newPage2);
         let rr = this.tv.createRpcRequest("filterHeavy", {
                 hittersId: this.data.heavyHittersId,
@@ -65,11 +65,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
         rr.invoke(new HeavyHittersReceiver2(this, rr));
     }
 
-    public scrollIntoView() {
-        this.getHTMLRepresentation().scrollIntoView( { block: "end", behavior: "smooth" } );
-    }
-
-    public fill(tdv: TableDataView, elapsedMs: number): void {
+    public fill(tdv: NextKList, elapsedMs: number): void {
         let scroll_div = document.createElement("div");
         scroll_div.style.maxHeight = Resolution.canvasHeight.toString() + "px";
         scroll_div.style.overflowY = "auto";
@@ -82,7 +78,6 @@ export class HeavyHittersView extends RemoteTableObjectView {
         let thr = tHead.appendChild(document.createElement("tr"));
         let thd0 = document.createElement("th");
         thd0.innerHTML = "Rank";
-
         thr.appendChild(thd0);
         for (let i = 0; i < this.schema.length; i++) {
             let cd = new ColumnDescription(this.schema[i]);
@@ -134,7 +129,6 @@ export class HeavyHittersView extends RemoteTableObjectView {
                 }
                 let cell1 = trow.insertCell(this.schema.length + 1);
                 cell1.style.textAlign = "right";
-
                 cell1.textContent = this.valueToString(tdv.rows[i].count);
                 let cell2 = trow.insertCell(this.schema.length + 2);
                 cell2.style.textAlign = "right";
@@ -157,7 +151,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
         this.page.reportTime(elapsedMs);
     }
 
-    private getRestCount(tdv:TableDataView): number{
+    private getRestCount(tdv:NextKList): number{
         if (tdv.rows == null)
             return tdv.rowCount;
         else {
@@ -168,7 +162,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
         }
     }
 
-    private getRestPos(tdv:TableDataView, restCount: number): number{
+    private getRestPos(tdv:NextKList, restCount: number): number{
         if (tdv.rows == null)
             return 0;
         else {
@@ -181,7 +175,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
 
     private valueToString(n: number): string {
         let str = significantDigits(n);
-        if (this.isMG)
+        if (this.isApprox)
             str = SpecialChars.approx + str;
         return str;
     }

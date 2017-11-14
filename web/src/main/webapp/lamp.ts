@@ -18,7 +18,7 @@
 import {d3} from "./d3-modules";
 import {Dialog} from "./dialog";
 import {TopMenu, SubMenu} from "./menu";
-import {TableDataView, TableView, TableRenderer} from "./table";
+import {NextKList, TableView, TableRenderer} from "./table";
 import {
     RangeInfo, BasicColStats, Schema, RemoteTableObject, RemoteTableObjectView, RemoteTableRenderer, RecordOrder,
     ColumnAndRange, Histogram2DArgs
@@ -438,14 +438,14 @@ class LAMPRangeCollector extends Renderer<Pair<BasicColStats, BasicColStats>> {
     }
 }
 
-class SchemaCollector extends Renderer<TableDataView> {
+class SchemaCollector extends Renderer<NextKList> {
     private schema: Schema;
     constructor(page: FullPage, operation: ICancellable,
                 private tableObject: RemoteTableObject, private lampColumnNames: string[]) {
         super(page, operation, "Getting new schema");
     }
 
-    onNext(value: PartialResult<TableDataView>) {
+    onNext(value: PartialResult<NextKList>) {
         this.schema = value.data.schema;
     }
 
