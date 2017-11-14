@@ -1,12 +1,16 @@
 import {ColumnDescription, RecordOrder, RemoteTableObjectView} from "./tableData";
 import {FullPage} from "./ui";
 import {Schema} from "./tableData";
-import {stateMachine} from "./stateMachine";
+import {StateMachine} from "./stateMachine";
 import {SubMenu, TopMenu} from "./menu";
 import {NextKList, TableView} from "./table";
 
+/**
+ * This class is used to browse through the columns in the schema and select columns from them. It allows the user to
+ * view the table consisting of only the selected columns.
+ */
 export class SchemaView extends RemoteTableObjectView {
-    protected selectedRows: stateMachine;
+    protected selectedRows: StateMachine;
     protected cellsPerRow: Map<number, HTMLElement[]>;
 
     constructor(remoteObjectId: string,
@@ -15,7 +19,7 @@ export class SchemaView extends RemoteTableObjectView {
                 private rowCount: number) {
         super(remoteObjectId, page);
         this.topLevel = document.createElement("div");
-        this.selectedRows = new stateMachine();
+        this.selectedRows = new StateMachine();
         this.cellsPerRow = new Map<number, HTMLElement[]>();
 
         this.topLevel = document.createElement("div");
@@ -62,11 +66,18 @@ export class SchemaView extends RemoteTableObjectView {
     refresh(): void {
     }
 
+    /**
+     * This method returns a Schema comprising of the selected columns.
+     */
     private createSchema(): Schema {
         let cds: ColumnDescription[] = [];
         this.selectedRows.getStates().forEach(i => {cds.push(this.schema[i])});
         return cds;
     }
+
+    /**
+     * This method displays the table consisting of only the columns contained in the schema above.
+     */
     private showTable(): void {
         let newPage = new FullPage("Table of Selected Columns", this.page);
         this.page.insertAfterMe(newPage);
@@ -79,15 +90,18 @@ export class SchemaView extends RemoteTableObjectView {
         tv.scrollIntoView();
     }
 
-    // mouse click on a row
+    /**
+     * This method handles the transitions in the set of selected rows resulting from mouse clicks, combined with
+     * various kinds of key selections
+     */
     private rowClick(rowIndex: number, e: MouseEvent): void {
         e.preventDefault();
         if (e.ctrlKey || e.metaKey) {
-            this.selectedRows.changeState(1, rowIndex);
+            this.selectedRows.changeState("Ctrl", rowIndex);
         } else if (e.shiftKey) {
-            this.selectedRows.changeState(2, rowIndex);
+            this.selectedRows.changeState("Shift", rowIndex);
         } else
-            this.selectedRows.changeState(0, rowIndex);
+            this.selectedRows.changeState("NoKey", rowIndex);
         this.highlightSelectedRows();
     }
 

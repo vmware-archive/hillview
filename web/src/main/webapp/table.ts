@@ -37,7 +37,7 @@ import {DataRange} from "./vis"
 import {HeavyHittersView} from "./heavyhittersview";
 import {SchemaView} from "./schemaview";
 import {LAMPDialog} from "./lamp";
-import {stateMachine} from "./stateMachine";
+import {StateMachine} from "./stateMachine";
 
 /**
  * The serialization of a NextKList Java object
@@ -69,7 +69,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
     protected tHead : HTMLTableSectionElement;
     protected tBody: HTMLTableSectionElement;
     protected currentData: NextKList;
-    protected selectedColumns: stateMachine;
+    protected selectedColumns: StateMachine;
     protected contextMenu: ContextMenu;
     protected cellsPerColumn: Map<string, HTMLElement[]>;
     static firstTable: RemoteTableObject;
@@ -84,7 +84,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         this.topLevel.id = "tableContainer";
         this.topLevel.tabIndex = 1;  // necessary for keyboard events?
         this.topLevel.onkeydown = e => this.keyDown(e);
-        this.selectedColumns = new stateMachine();
+        this.selectedColumns = new StateMachine();
 
         this.topLevel.style.flexDirection = "column";
         this.topLevel.style.display = "flex";
@@ -588,9 +588,9 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
     private columnClick(colNum: number, e: MouseEvent): void {
         e.preventDefault();
         if (e.ctrlKey || e.metaKey)
-            this.selectedColumns.changeState( 1,colNum);
+            this.selectedColumns.changeState( "Ctrl", colNum);
         else if (e.shiftKey)
-            this.selectedColumns.changeState( 2,colNum);
+            this.selectedColumns.changeState( "Shift", colNum);
         else {
             if (e.button == 2) {
                 // right button
@@ -598,7 +598,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
                 // Do nothing if pressed on a selected column
                     return;
             }
-            this.selectedColumns.changeState(0, colNum);
+            this.selectedColumns.changeState("NoKey", colNum);
         }
         this.highlightSelectedColumns();
     }

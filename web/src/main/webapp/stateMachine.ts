@@ -1,8 +1,12 @@
+
+type TransitionType = "NoKey" | "Ctrl" | "Shift";
+
 /**
- * This class stores a subset of states from some universe.
+ * This class stores a subset of states from a universe of integers.
  * It supports membership queries, as well as various kind of state transitions.
+ * It is meant to model selection of rows/columns using mouse clicks and
  */
-export class stateMachine {
+export class StateMachine {
     protected selected: Set<number>;
     protected curState: number;
 
@@ -53,29 +57,28 @@ export class stateMachine {
 
     /**
      * This method changes the set of selected states, given a numeric value, and type of transition.
-     * @param {number} type: takes on 3 values, depending on which key if any is pressed. 0 means no key,
-     * 1 means Ctrl/Esc, and 2 means Shift.
+     * @param {TransitionType} type: Specifies which keybaord key was pressed. Currently takes on 3 values.
      * @param {number} val: this is a numeric value from the universe of values, of which we are storing a subset.
      * It indicates which row/column is currently clicked.
      * The semantics are as follows:
-     * - Type 0. Toggle the membership of val. Delete everything else.
-     * - Type 1. Toggle the membership of val. The rest stays unchanged.
-     * - Type 2. Toggle the state of val. Change the state of the open interval from the last clicked state to val,
+     * - Type NoKey: Toggle the membership of val. Delete everything else.
+     * - Type Ctrl: Toggle the membership of val. The rest stays unchanged.
+     * - Type Shift: Toggle the state of val. Change the state of the open interval from the last clicked state to val,
      * so that its state matches that of val.
      */
-    public changeState(type: number, val: number) {
-        if (type == 0) { //No buttons pressed, forget everything else, toggle val
+    public changeState(type: TransitionType, val: number) {
+        if (type == "NoKey") { //No buttons pressed, forget everything else, toggle val
             let isPresent: boolean = this.has(val);
             this.selected.clear();
             if (!isPresent)
                 this.selected.add(val);
             this.curState = val;
         }
-        else if (type == 1) { //Ctrl or Esc pressed, keep everything else, toggle val
+        else if (type == "Ctrl") { //Ctrl or Esc pressed, keep everything else, toggle val
             this.toggle(val);
             this.curState = val;
         }
-        else if (type == 2) { //Shift pressed, toggle states in the open interval
+        else if (type == "Shift") { //Shift pressed, toggle states in the open interval
             // curState to val
             let current: boolean = this.selected.has(val);
             if (val > this.curState)
