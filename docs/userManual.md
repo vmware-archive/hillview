@@ -500,7 +500,7 @@ shown at the bottom.
   data.  The following image shows a 2D histogram where some buckets
   contain missing data.
 
-[!2D histogram with missing data](2d-histogram-missing.png)
+![2D histogram with missing data](2d-histogram-missing.png)
 
 ![View menu](2d-histogram-view-menu.png)
 
