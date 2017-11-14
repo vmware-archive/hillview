@@ -130,7 +130,7 @@ public class DenseMembershipSet implements IMembershipSet, IMutableMembershipSet
         else
             usedRate = computeRate(rate);
         if (usedRate >= 1)
-            return new NoSampleRowIterator(this.membershipMap);
+            return new NoSampleRowIterator(this.getIterator());
         return new DenseSampledRowIterator (this.membershipMap, usedRate, seed);
     }
 
@@ -138,22 +138,6 @@ public class DenseMembershipSet implements IMembershipSet, IMutableMembershipSet
         if (rate <= DenseMembershipSet.samplingThreshold)
             return rate;
         else return 1;
-    }
-
-    private static class NoSampleRowIterator implements ISampledRowIterator {
-        private DenseMembershipIterator iter;
-
-        public NoSampleRowIterator(BitSet bits) {
-            this.iter = new DenseMembershipIterator(bits);
-        }
-
-        @Override
-        public double rate() { return 1; }
-
-        @Override
-        public int getNextRow() {
-            return this.iter.getNextRow();
-        }
     }
 
     private static class DenseSampledRowIterator implements ISampledRowIterator {

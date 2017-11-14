@@ -71,11 +71,6 @@ public interface IMembershipSet extends IRowOrder {
      * @param seed  Random seed.
      * @return      An iterator over the sampled data.
      */
-    //default ISampledRowIterator getIteratorOverSample(double rate, long seed, boolean enforceRate) {
-      //  if (rate >= 1)
-      //      return this.getIterator();
-      //  return this.sample(rate, seed).getIterator();
-    //}
     ISampledRowIterator getIteratorOverSample(double rate, long seed, boolean enforceRate);
 
     /**

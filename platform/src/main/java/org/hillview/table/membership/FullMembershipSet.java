@@ -102,7 +102,7 @@ public class FullMembershipSet implements IMembershipSet {
         else
             effectiveRate = computeRate(rate);
         if (effectiveRate >= 1)
-            return new NoSampleRowIterator(rowCount);
+            return new NoSampleRowIterator(this.getIterator());
         else
             return new FullSampledRowIterator (rowCount, rate, seed);
     }
@@ -116,22 +116,6 @@ public class FullMembershipSet implements IMembershipSet {
             return rate;
         else
             return 1;
-    }
-
-    private static class NoSampleRowIterator implements ISampledRowIterator {
-        private FullMembershipIterator iter;
-
-        public NoSampleRowIterator(int range) {
-            this.iter = new FullMembershipIterator(range);
-        }
-
-        @Override
-        public double rate() { return 1; }
-
-        @Override
-        public int getNextRow() {
-            return this.iter.getNextRow();
-        }
     }
 
     private static class FullSampledRowIterator implements ISampledRowIterator {

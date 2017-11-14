@@ -107,25 +107,9 @@ public class SparseMembershipSet implements IMembershipSet, IMutableMembershipSe
     @Override
     public ISampledRowIterator getIteratorOverSample(double rate, long seed, boolean enforceRate) {
         if (rate >= 1)
-            return new NoSampleRowIterator(this.membershipMap);
+            return new NoSampleRowIterator(this.getIterator());
         // Using a lower rate is always beneficial so enforceRate is always assumed to be true
         return new SparseMembershipSet.SparseSampledRowIterator(rate, seed, this.membershipMap);
-    }
-
-    private static class NoSampleRowIterator implements ISampledRowIterator {
-        private SparseIterator iter;
-
-        public NoSampleRowIterator(IntSet mySet) {
-            this.iter = new SparseIterator(mySet);
-        }
-
-        @Override
-        public double rate() { return 1; }
-
-        @Override
-        public int getNextRow() {
-            return this.iter.getNextRow();
-        }
     }
 
     private static class SparseSampledRowIterator implements ISampledRowIterator {
