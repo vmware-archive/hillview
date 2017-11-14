@@ -34,6 +34,7 @@ public class BasicColStats implements IJson {
     private double min;
     private double max;
     private final double moments[];
+    private double usedRate;
 
     public BasicColStats(int momentCount) {
         if (momentCount < 0)
@@ -43,6 +44,7 @@ public class BasicColStats implements IJson {
         this.min = 0;  // we cannot use infinity, since that cannot be serialized as JSON
         this.max = 0;
         this.presentCount = 0;
+        this.usedRate = 1;
     }
 
     public double getMin() { return this.min; }
@@ -65,7 +67,8 @@ public class BasicColStats implements IJson {
     public void createStats(final ColumnAndConverter column,
                             final IMembershipSet membershipSet,
                             double rate, long seed) {
-        final IRowIterator myIter = membershipSet.getIteratorOverSample(rate, seed);
+        final ISampledRowIterator myIter = membershipSet.getIteratorOverSample(rate, seed, false);
+        this.usedRate = myIter.rate();
         int currRow = myIter.getNextRow();
         while (currRow >= 0) {
             if (!column.column.isMissing(currRow)) {
@@ -94,6 +97,7 @@ public class BasicColStats implements IJson {
             }
             currRow = myIter.getNextRow();
         }
+        this.presentCount = (long) Math.floor((double) this.presentCount / usedRate);
     }
 
     /**

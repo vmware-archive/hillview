@@ -50,7 +50,7 @@ public class HeatMapSketch implements ISketch<ITable, HeatMap> {
                 this.col1, this.col2
         });
         result.createHeatMap(cols[0], cols[1],
-                data.getMembershipSet(), this.rate, this.seed);
+                data.getMembershipSet(), this.rate, this.seed, false);
         return result;
     }
 

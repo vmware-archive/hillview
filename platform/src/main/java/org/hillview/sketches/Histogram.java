@@ -51,13 +51,10 @@ public class Histogram implements Serializable {
     }
 
     public void create(final ColumnAndConverter column, IMembershipSet membershipSet,
-                       double sampleRate, long seed) {
+                       double sampleRate, long seed, boolean enforceRate) {
         if (sampleRate <= 0)
             throw new RuntimeException("Negative sampling rate");
-        final IRowIterator myIter = membershipSet.getIteratorOverSample(sampleRate, seed);
-        /*
-        final IRowIterator myIter = membershipSet.getIteratorOverSample(sampleRate, seed);
-        */
+        final ISampledRowIterator myIter = membershipSet.getIteratorOverSample(sampleRate, seed, enforceRate);
         int currRow = myIter.getNextRow();
         while (currRow >= 0) {
             if (column.isMissing(currRow))
@@ -71,7 +68,7 @@ public class Histogram implements Serializable {
             }
             currRow = myIter.getNextRow();
         }
-        this.rescale(sampleRate);
+        this.rescale(myIter.rate());
     }
 
     public long getMissingData() { return this.missingData; }

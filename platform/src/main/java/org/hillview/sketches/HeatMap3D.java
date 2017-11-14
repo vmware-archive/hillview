@@ -47,8 +47,8 @@ public class HeatMap3D implements Serializable, IJson {
             final ColumnAndConverter columnD3,
             final IMembershipSet membershipSet,
             final double samplingRate,
-            final long seed) {
-        final IRowIterator myIter = membershipSet.getIteratorOverSample(samplingRate, seed);
+            final long seed, boolean enforceRate) {
+        final IRowIterator myIter = membershipSet.getIteratorOverSample(samplingRate, seed, enforceRate);
         int currRow = myIter.getNextRow();
         while (currRow >= 0) {
             boolean isMissingD1 = columnD1.isMissing(currRow);

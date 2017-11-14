@@ -20,6 +20,7 @@ package org.hillview.table.membership;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.IMutableMembershipSet;
 import org.hillview.table.api.IRowIterator;
+import org.hillview.table.api.ISampledRowIterator;
 import org.hillview.utils.Randomness;
 
 /**
@@ -27,6 +28,7 @@ import org.hillview.utils.Randomness;
  */
 public class FullMembershipSet implements IMembershipSet {
     private final int rowCount;
+    private static final double samplingThreshold = 0.04;
 
     public FullMembershipSet(final int rowCount) throws NegativeArraySizeException {
         if (rowCount >= 0)
@@ -93,13 +95,30 @@ public class FullMembershipSet implements IMembershipSet {
      * @return      An iterator over the sampled data.
      */
     @Override
-    public IRowIterator getIteratorOverSample(double rate, long seed) {
-        if (rate >= 1)
-            return this.getIterator();
-        return new FullSampledRowIterator (rowCount, rate, seed);
+    public ISampledRowIterator getIteratorOverSample(double rate, long seed, boolean enforceRate) {
+        double effectiveRate;
+        if (enforceRate)
+            effectiveRate = rate;
+        else
+            effectiveRate = computeRate(rate);
+        if (effectiveRate >= 1)
+            return new NoSampleRowIterator(this.getIterator());
+        else
+            return new FullSampledRowIterator (rowCount, rate, seed);
     }
 
-    private static class FullSampledRowIterator implements IRowIterator {
+    /**
+     * Returns the best rate to sample the data given the rate the user asked for
+     * @return the actual rate to sample the data
+     */
+    private double computeRate(double rate) {
+        if (rate  <= FullMembershipSet.samplingThreshold)
+            return rate;
+        else
+            return 1;
+    }
+
+    private static class FullSampledRowIterator implements ISampledRowIterator {
         private int cursor = 0;
         private final int range;
         private final double rate;
@@ -110,6 +129,9 @@ public class FullMembershipSet implements IMembershipSet {
             this.range = range;
             this.prg = new Randomness(seed);
         }
+
+        @Override
+        public double rate() { return this.rate; }
 
         @Override
         public int getNextRow() {

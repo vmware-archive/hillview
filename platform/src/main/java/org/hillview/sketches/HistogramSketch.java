@@ -41,7 +41,7 @@ public class HistogramSketch implements ISketch<ITable, Histogram> {
     public Histogram create(final ITable data) {
         Histogram result = this.getZero();
         result.create(data.getLoadedColumn(this.col), data.getMembershipSet(),
-                this.rate, this.seed);
+                this.rate, this.seed, false);
         return result;
     }
 

@@ -58,7 +58,7 @@ public class HeatMap3DSketch implements ISketch<ITable, HeatMap3D> {
         });
         HeatMap3D result = this.getZero();
         result.createHeatMap(cols[0], cols[1], cols[2],
-                data.getMembershipSet(), this.rate, this.seed);
+                data.getMembershipSet(), this.rate, this.seed, true);
         return result;
     }
 

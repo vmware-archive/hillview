@@ -20,6 +20,7 @@ package org.hillview.table.membership;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.IMutableMembershipSet;
 import org.hillview.table.api.IRowIterator;
+import org.hillview.table.api.ISampledRowIterator;
 import org.hillview.utils.IntSet;
 import org.hillview.utils.Randomness;
 
@@ -104,18 +105,20 @@ public class SparseMembershipSet implements IMembershipSet, IMutableMembershipSe
      * @return      An iterator over the sampled data.
      */
     @Override
-    public IRowIterator getIteratorOverSample(double rate, long seed) {
+    public ISampledRowIterator getIteratorOverSample(double rate, long seed, boolean enforceRate) {
         if (rate >= 1)
-            return this.getIterator();
+            return new NoSampleRowIterator(this.getIterator());
+        // Using a lower rate is always beneficial so enforceRate is always assumed to be true
         return new SparseMembershipSet.SparseSampledRowIterator(rate, seed, this.membershipMap);
     }
 
-    private static class SparseSampledRowIterator implements IRowIterator {
+    private static class SparseSampledRowIterator implements ISampledRowIterator {
         final int sampleSize;
         final Randomness psg;
         int currentSize = 0;
         int currentCursor;
         final IntSet mMap;
+        final double rate;
 
         private SparseSampledRowIterator(final double rate, final long seed, IntSet mmap) {
             this.mMap = mmap;
@@ -125,7 +128,11 @@ public class SparseMembershipSet implements IMembershipSet, IMutableMembershipSe
                 this.sampleSize = (int) Math.floor(rate * mMap.size());
             else this.sampleSize = (int) Math.ceil(rate * mMap.size());
             currentCursor = psg.nextInt(mMap.arraySize());
+            this.rate = rate;
         }
+
+        @Override
+        public double rate() { return this.rate; }
 
         @Override
         public int getNextRow() {
