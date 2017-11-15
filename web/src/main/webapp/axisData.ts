@@ -158,9 +158,9 @@ export class AxisData {
                 if (end < start)
                     return "empty";
                 else if (end == start)
-                    return this.distinctStrings[start];
+                    return this.distinctStrings.get(start);
                 else
-                    return this.distinctStrings[start] + " - " + this.distinctStrings[end];
+                    return this.distinctStrings.get(start) + " - " + this.distinctStrings.get(end);
             }
             case "Date": {
                 let minDate: Date = Converters.dateFromDouble(start);

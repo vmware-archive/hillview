@@ -523,6 +523,12 @@ distribution in a second column.
 
 ![A two-dimensional histogram](hillview-histogram2d.png)
 
+Next to the mouse an overlay box displays four different values:
+* the mouse's position on the X axis
+* the mouse's position on the Y axis
+* the range of values corresponding to the bar where the mouse is placed
+* the size of the bar (the number of rows corresponding to the bar)
+
 For example, in this figure we see a 2D histogram where the X axis has
 the airline carriers.  For each carrier the bar is divided into
 sub-bars, each of which corresponding to a range of departure delays.
