@@ -57,6 +57,7 @@ web/src/main/webapp/lamp.js
 web/src/main/webapp/equalityFilter.js
 web/src/main/webapp/stateMachine.js
 web/src/main/webapp/schemaview.js
+web/src/main/webapp/axisData.js
 web/src/main/webapp/node_modules/
 web/.idea/typescript-compiler.xml
 

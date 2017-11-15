@@ -101,6 +101,7 @@ export class FullPage implements IHtmlElement {
         h1.innerHTML = title;
         h1.style.textOverflow = "ellipsis";
         h1.style.textAlign = "center";
+        h1.style.margin = "0";
         this.addCell(titleRow, h1, false);
 
         if (sourcePage != null) {

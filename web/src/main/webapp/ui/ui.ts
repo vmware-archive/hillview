@@ -133,6 +133,7 @@ export class Resolution {
     static readonly minDotSize = 4;       // dots are drawn as rectangles of this size in pixels
     static readonly tableRowsOnScreen = 20; // table rows displayed
     static readonly lineHeight = 20;      // Height of a line of text drawn in svg (including reasonable margin).
+    static readonly mouseDotRadius = 3;        // Size of dots that show mouse position
     static readonly legendSize: Size = {width: 500, height: 50}; // Default legend size in px.
 
     // Everything is drawn on top of the canvas.

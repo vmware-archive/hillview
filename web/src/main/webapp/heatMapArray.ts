@@ -22,7 +22,7 @@ import {TopMenu, SubMenu} from "./ui/menu";
 import {TableView, TableRenderer} from "./table";
 import {Histogram3DArgs, RecordOrder} from "./tableData";
 import {Pair, truncate, significantDigits, ICancellable, PartialResult, Seed} from "./util";
-import {AxisData} from "./heatMap";
+import {AxisData} from "./axisData";
 import {
     RemoteTableObjectView, IColumnDescription, BasicColStats, DistinctStrings,
     ColumnAndRange, Schema, isNumeric, RemoteTableObject
@@ -79,7 +79,7 @@ export class CompactHeatMapView {
     private xLine: any;
     private yLine: any;
 
-    private to: TextOverlay;
+    private pointDescription: TextOverlay;
 
     constructor(
         private parent: any, // Element where this heat map is appended to.
@@ -207,7 +207,7 @@ export class CompactHeatMapView {
             .attr("stroke", "blue")
             .attr("stroke-dasharray", "5,5");
 
-        this.to = new TextOverlay(this.axesG,
+        this.pointDescription = new TextOverlay(this.axesG,
             [this.xAxisData.description.name, this.yAxisData.description.name, "value"],
             CompactHeatMapView.maxTextLabelLength);
     }
@@ -238,7 +238,7 @@ export class CompactHeatMapView {
 
         let x = mouse[0] + 5;
         let y = mouse[1] - 5;
-        this.to.update([significantDigits(xVal), significantDigits(yVal), val.toString()], x, y);
+        this.pointDescription.update([significantDigits(xVal), significantDigits(yVal), val.toString()], x, y);
     }
 
     public hideAxes() {

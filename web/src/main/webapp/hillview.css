@@ -101,9 +101,9 @@ th, td {
 
 /* close button */
 .close {
-    float: right;
-    font-size: 28px;
+    font-size: 20px;
     font-weight: bold;
+    color: red;
     cursor: pointer;
 }
 

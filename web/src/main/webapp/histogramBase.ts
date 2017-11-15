@@ -21,17 +21,12 @@ import {
     ContentsKind, Schema, RemoteTableObjectView, BasicColStats, DistinctStrings,
     ColumnDescription, ColumnAndRange
 } from "./tableData";
-import {ScaleLinear, ScaleTime} from "d3-scale";
-import {Converters, significantDigits} from "./util";
+import {ScaleLinear} from "d3-scale";
+import {Converters, formatDate, significantDigits} from "./util";
 import {KeyCodes, Point, Resolution, Size, SpecialChars} from "./ui/ui";
 import {FullPage} from "./ui/fullPage";
-
-export type AnyScale = ScaleLinear<number, number> | ScaleTime<number, number>;
-
-export interface ScaleAndAxis {
-    scale: AnyScale,
-    axis: any,  // a d3 axis, but typing does not work well
-}
+import {TextOverlay} from "./ui/textOverlay";
+import {AnyScale} from "./axisData";
 
 export abstract class HistogramViewBase extends RemoteTableObjectView {
     protected dragging: boolean;
@@ -41,9 +36,6 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
      * The coordinates of the selectionRectangle are relative to the canvas.
      */
     protected selectionRectangle: any;
-    protected xLabel: HTMLElement;
-    protected yLabel: HTMLElement;
-    protected cdfLabel: HTMLElement;
     protected chartDiv: HTMLElement;
     protected summary: HTMLElement;
     protected xScale: AnyScale;
@@ -51,10 +43,9 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
     protected chartSize: Size;
     protected chart: any;  // these are in fact a d3.Selection<>, but I can't make them typecheck
     protected canvas: any;
-    protected xDot: any;
-    protected yDot: any;
     protected cdfDot: any;
     protected moved: boolean;  // to detect trivial empty drags
+    protected pointDescription: TextOverlay;
 
     constructor(remoteObjectId: string, protected tableSchema: Schema, page: FullPage) {
         super(remoteObjectId, page);
@@ -71,35 +62,6 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
 
         this.summary = document.createElement("div");
         this.topLevel.appendChild(this.summary);
-
-        let position = document.createElement("table");
-        this.topLevel.appendChild(position);
-        position.className = "noBorder";
-        let body = position.createTBody();
-        let row = body.insertRow();
-        row.className = "noBorder";
-
-        let infoWidth = "150px";
-        let labelCell = row.insertCell(0);
-        labelCell.width = infoWidth;
-        this.xLabel = document.createElement("div");
-        this.xLabel.style.textAlign = "left";
-        labelCell.appendChild(this.xLabel);
-        labelCell.className = "noBorder";
-
-        labelCell = row.insertCell(1);
-        labelCell.width = infoWidth;
-        this.yLabel = document.createElement("div");
-        this.yLabel.style.textAlign = "left";
-        labelCell.appendChild(this.yLabel);
-        labelCell.className = "noBorder";
-
-        labelCell = row.insertCell(2);
-        labelCell.width = infoWidth;
-        this.cdfLabel = document.createElement("div");
-        this.cdfLabel.style.textAlign = "left";
-        labelCell.appendChild(this.cdfLabel);
-        labelCell.className = "noBorder";
     }
 
     protected keyDown(ev: KeyboardEvent): void {
@@ -239,6 +201,20 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
         return Math.floor(bucketCount);
     }
 
+    static invert(v: number, scale: AnyScale, kind: ContentsKind, allStrings: DistinctStrings): string {
+        let inv = scale.invert(v);
+        if (kind == "Integer")
+            inv = Math.round(<number>inv);
+        let result = String(inv);
+        if (kind == "Category")
+            result = allStrings.get(<number>inv);
+        else if (kind == "Integer" || kind == "Double")
+            result = significantDigits(<number>inv);
+        else if (kind == "Date")
+            result = formatDate(<Date>inv);
+        return result;
+    }
+
     public static invertToNumber(v: number, scale: AnyScale, kind: ContentsKind): number {
         let inv = scale.invert(v);
         let result: number = 0;
@@ -250,63 +226,6 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
             result = Converters.doubleFromDate(<Date>inv);
         }
         return result;
-    }
-
-    public static createScaleAndAxis(kind: ContentsKind, width: number, min: number,
-                                     max: number, strings: DistinctStrings, bottom: boolean): ScaleAndAxis {
-        let axis = null;
-
-        let axisCreator = bottom ? d3.axisBottom : d3.axisLeft;
-        // on vertical axis the direction is swapped
-        let domain = bottom ? [min, max] : [max, min];
-
-        let scale: AnyScale = null;
-        if (kind == "Integer" || kind == "Double") {
-            scale = d3.scaleLinear()
-                .domain(domain)
-                .range([0, width]);
-            axis = axisCreator(scale);
-        } else if (kind == "Category") {
-            let ticks: number[] = [];
-            let labels: string[] = [];
-            let tickCount = max - min;
-            // TODO: if the tick count is too large it must be reduced
-            let minLabelWidth = 40;  // pixels
-            let maxLabelCount = width / minLabelWidth;
-            let labelPeriod = Math.ceil(tickCount / maxLabelCount);
-            let tickWidth = width / tickCount;
-
-            for (let i = 0; i < tickCount; i++) {
-                ticks.push((i + .5) * tickWidth);
-                let label = "";
-                if (i % labelPeriod == 0)
-                    label = strings.get(min + .5 + i);
-                labels.push(label);
-            }
-            if (!bottom)
-                labels.reverse();
-
-            // We manually control the ticks.
-            let manual = d3.scaleLinear()
-                .domain([0, width])
-                .range([0, width]);
-            scale = d3.scaleLinear()
-                .domain(domain)
-                .range([0, width]);
-            axis = axisCreator(manual)
-                .tickValues(ticks)
-                .tickFormat((d, i) => labels[i]);
-        } else if (kind == "Date") {
-            let minDate: Date = Converters.dateFromDouble(domain[0]);
-            let maxDate: Date = Converters.dateFromDouble(domain[1]);
-            scale = d3
-                .scaleTime()
-                .domain([minDate, maxDate])
-                .range([0, width]);
-            axis = axisCreator(scale);
-        }
-
-        return { scale: scale, axis: axis };
     }
 }
 

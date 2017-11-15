@@ -20,21 +20,22 @@ import {ScaleLinear, ScaleTime} from "d3-scale";
 
 import { Renderer, combineMenu, CombineOperators, SelectedObject } from "./rpc";
 import {
-    ColumnDescription, Schema, ContentsKind, RecordOrder, DistinctStrings,
+    ColumnDescription, Schema, RecordOrder, DistinctStrings,
     RemoteTableObjectView, RemoteTableObject, Histogram, BasicColStats, FilterDescription,
     ZipReceiver, Histogram2DArgs
 } from "./tableData";
 import {TableView, TableRenderer} from "./table";
 import {
-    Pair, significantDigits, formatNumber, reorder, regression, ICancellable, PartialResult, Seed,
-    formatDate
+    Pair, significantDigits, formatNumber, reorder, regression, ICancellable, PartialResult, Seed
 } from "./util";
-import {AnyScale, HistogramViewBase, ScaleAndAxis} from "./histogramBase";
+import {HistogramViewBase} from "./histogramBase";
 import {TopMenu, SubMenu} from "./ui/menu";
 import {Histogram2DRenderer, Make2DHistogram, Filter2DReceiver} from "./histogram2d";
 import {KeyCodes, Point, Resolution, Size} from "./ui/ui";
 import {FullPage} from "./ui/fullPage";
 import {ColorLegend, ColorMap} from "./ui/colorLegend";
+import {TextOverlay} from "./ui/textOverlay";
+import {AxisData} from "./axisData";
 
 /**
  * Maximum number of colors that we expect users can distinguish reliably.
@@ -50,27 +51,11 @@ export class HeatMapData {
     totalsize: number;
 }
 
-export class AxisData {
-    public constructor(public missing: Histogram,
-                       public description: ColumnDescription,
-                       public stats: BasicColStats,
-                       public distinctStrings: DistinctStrings,    // used only for categorical histograms
-                       public bucketCount: number)
-    {}
-
-    public scaleAndAxis(length: number, bottom: boolean): ScaleAndAxis {
-        return HistogramViewBase.createScaleAndAxis(this.description.kind, length, this.stats.min, this.stats.max, this.distinctStrings, bottom);
-    }
-}
-
 export class HeatMapView extends RemoteTableObjectView {
     protected dragging: boolean;
     protected svg: any;
     private selectionOrigin: Point;
     private selectionRectangle: any;
-    private xLabel: HTMLElement;
-    private yLabel: HTMLElement;
-    private valueLabel: HTMLElement;
     protected chartDiv: HTMLElement;
     protected colorLegend: ColorLegend;
     protected colorMap: ColorMap;
@@ -81,6 +66,7 @@ export class HeatMapView extends RemoteTableObjectView {
     protected pointWidth: number;
     protected pointHeight: number;
     private moved: boolean;
+    protected pointDescription: TextOverlay;
 
     protected currentData: {
         xData: AxisData;
@@ -93,8 +79,6 @@ export class HeatMapView extends RemoteTableObjectView {
     };
     private chart: any;  // these are in fact a d3.Selection<>, but I can't make them typecheck
     protected canvas: any;
-    private xDot: any;
-    private yDot: any;
     private menu: TopMenu;
 
     constructor(remoteObjectId: string, protected tableSchema: Schema, page: FullPage) {
@@ -132,35 +116,6 @@ export class HeatMapView extends RemoteTableObjectView {
 
         this.summary = document.createElement("div");
         this.topLevel.appendChild(this.summary);
-
-        let position = document.createElement("table");
-        this.topLevel.appendChild(position);
-        position.className = "noBorder";
-        let body = position.createTBody();
-        let row = body.insertRow();
-        row.className = "noBorder";
-
-        let infoWidth = "150px";
-        let labelCell = row.insertCell(0);
-        labelCell.width = infoWidth;
-        this.xLabel = document.createElement("div");
-        this.xLabel.style.textAlign = "left";
-        labelCell.appendChild(this.xLabel);
-        labelCell.className = "noBorder";
-
-        labelCell = row.insertCell(1);
-        labelCell.width = infoWidth;
-        this.yLabel = document.createElement("div");
-        this.yLabel.style.textAlign = "left";
-        labelCell.appendChild(this.yLabel);
-        labelCell.className = "noBorder";
-
-        labelCell = row.insertCell(2);
-        labelCell.width = infoWidth;
-        this.valueLabel = document.createElement("div");
-        this.valueLabel.style.textAlign = "left";
-        labelCell.appendChild(this.valueLabel);
-        labelCell.className = "noBorder";
     }
 
     histogram(): void {
@@ -394,20 +349,6 @@ export class HeatMapView extends RemoteTableObjectView {
             .attr("class", "y-axis")
             .call(yAxis);
 
-        let dotRadius = 3;
-        this.xDot = this.chart
-            .append("circle")
-            .attr("r", dotRadius)
-            .attr("cy", this.chartSize.height)
-            .attr("cx", 0)
-            .attr("fill", "blue");
-        this.yDot = this.chart
-            .append("circle")
-            .attr("r", dotRadius)
-            .attr("cx", 0)
-            .attr("cy", 0)
-            .attr("fill", "blue");
-
         this.selectionRectangle = this.canvas
             .append("rect")
             .attr("class", "dashed")
@@ -433,6 +374,7 @@ export class HeatMapView extends RemoteTableObjectView {
             }
         }
 
+        this.pointDescription = new TextOverlay(this.chart, ["x", "y", "count"], 40);
         let summary = formatNumber(visible) + " data points";
         if (missingData != 0)
             summary += ", " + formatNumber(missingData) + " missing";
@@ -452,20 +394,6 @@ export class HeatMapView extends RemoteTableObjectView {
             .style("fill", d => this.colorMap.apply(d.val))
     }
 
-    static invert(v: number, scale: AnyScale, kind: ContentsKind, allStrings: DistinctStrings): string {
-        let inv = scale.invert(v);
-        if (kind == "Integer")
-            inv = Math.round(<number>inv);
-        let result = String(inv);
-        if (kind == "Category")
-            result = allStrings.get(<number>inv);
-        else if (kind == "Integer" || kind == "Double")
-            result = significantDigits(<number>inv);
-        else if (kind == "Date")
-            result = formatDate(<Date>inv);
-        return result;
-    }
-
     onMouseMove(): void {
         if (this.xScale == null)
             // not yet setup
@@ -475,28 +403,22 @@ export class HeatMapView extends RemoteTableObjectView {
         let mouseX = position[0];
         let mouseY = position[1];
 
-        let xs = HeatMapView.invert(position[0], this.xScale,
+        let xs = HistogramViewBase.invert(position[0], this.xScale,
             this.currentData.xData.description.kind, this.currentData.xData.distinctStrings);
-        let ys = HeatMapView.invert(position[1], this.yScale,
+        let ys = HistogramViewBase.invert(position[1], this.yScale,
             this.currentData.yData.description.kind, this.currentData.yData.distinctStrings);
-
-        this.xLabel.textContent = "x=" + xs;
-        this.yLabel.textContent = "y=" + ys;
 
         let xi = position[0] / this.pointWidth;
         let yi = (this.chartSize.height - position[1]) / this.pointHeight;
         xi = Math.floor(xi);
         yi = Math.floor(yi);
+        let value = "0";
         if (xi >= 0 && xi < this.currentData.xPoints &&
             yi >= 0 && yi < this.currentData.yPoints) {
-            let v = this.currentData.data[xi][yi];
-            this.valueLabel.textContent = "value=" + v;
-        } else {
-            this.valueLabel.textContent = "";
+            value = this.currentData.data[xi][yi].toString();
         }
 
-        this.xDot.attr("cx", mouseX);
-        this.yDot.attr("cy", mouseY);
+        this.pointDescription.update([xs, ys, value], mouseX, mouseY);
     }
 
     dragStart(): void {

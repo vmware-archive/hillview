@@ -61,7 +61,21 @@ export class TextOverlay {
      */
     update(values: string[], x: number, y: number): void {
         let maxWidth = 0;
+
+        // compute width
         let index = 0;
+        for (let v of values) {
+            maxWidth = Math.max(maxWidth, this.lines[index].node().getBBox().width);
+            index++;
+        }
+
+        // If too close to the margin move it a bit
+        if (window.innerWidth < x + maxWidth)
+            x -= maxWidth;
+        if (Resolution.canvasHeight < y + this.height)
+            y -= this.height;
+
+        index = 0;
         let crtY = y;
         for (let v of values) {
             this.lines[index]
@@ -69,12 +83,11 @@ export class TextOverlay {
                 .attr("x", x)
                 .attr("y", crtY);
             crtY += Resolution.lineHeight;
-            maxWidth = Math.max(maxWidth, this.lines[index].node().getBBox().width);
             index++;
         }
         this.rect
             .attr("x", x)
-            .attr("y", y /*- this.height*/)
+            .attr("y", y)
             .attr("width", maxWidth + 10);
     }
 }
