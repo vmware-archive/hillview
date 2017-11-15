@@ -66,7 +66,7 @@ class ControlPointsView extends RemoteTableObjectView {
                 { text: "refresh", action: () => { this.refresh(); } },
                 { text: "update ranges", action: () => { this.fetchNewRanges(); } },
                 { text: "table", action: () => { this.showTable(); } },
-                { text: "3D heat map", action: () => { this.heatMap3D(); } },
+                { text: "3D heat map...", action: () => { this.heatMap3D(); } },
             ]) }
         ]);
         this.page.setMenu(menu);
@@ -305,14 +305,20 @@ class ControlPointsView extends RemoteTableObjectView {
     }
 }
 
+/**
+ * Displays a dialog to allow the user to select the parameters of a LAMP multi-dimensional
+ * projection.
+ */
 export class LAMPDialog extends Dialog {
     public static maxNumSamples = 100;
 
     constructor(private selectedColumns: string[], private page: FullPage,
                 private schema: Schema, private remoteObject: TableView) {
         super("LAMP");
-        this.addTextField("numSamples", "No. control points", "Integer", "20");
-        this.addSelectField("controlPointSelection", "Control point selection", ["Random samples", "Category centroids"], "Random samples");
+        let sel = this.addSelectField("controlPointSelection", "Control point selection",
+            ["Random samples", "Category centroids"], "Random samples");
+        sel.onchange = () => this.ctrlPointsChanged();
+        this.addTextField("numSamples", "No. control points", "Integer", "5");
         let catColumns = [""];
         for (let i = 0; i < schema.length; i++)
             if (schema[i].kind == "Category")
@@ -320,20 +326,35 @@ export class LAMPDialog extends Dialog {
         this.addSelectField("category", "Category for centroids", catColumns, "");
         this.addSelectField("controlPointProjection", "Control point projection", ["MDS"], "MDS");
         this.setAction(() => this.execute());
+        this.ctrlPointsChanged();
+    }
+
+    private ctrlPointsChanged(): void {
+        let sel = this.getFieldValue("controlPointSelection");
+        switch (sel) {
+            case "Random samples":
+                this.showField("numSamples", true);
+                this.showField("category", false);
+                break;
+            case "Category centroids":
+                this.showField("numSamples", false);
+                this.showField("category", true);
+                break;
+        }
     }
 
     private execute() {
         let numSamples = this.getFieldValueAsInt("numSamples");
-        if (numSamples > LAMPDialog.maxNumSamples) {
-            this.page.reportError(`Too many samples. Use at most ${LAMPDialog.maxNumSamples}.`);
-            return;
-        }
         let selection = this.getFieldValue("controlPointSelection");
         let projection = this.getFieldValue("controlPointProjection");
         let category = this.getFieldValue("category");
         let rr: RpcRequest;
         switch (selection) {
             case "Random samples": {
+                if (numSamples > LAMPDialog.maxNumSamples) {
+                    this.page.reportError(`Too many samples. Use at most ${LAMPDialog.maxNumSamples}.`);
+                    return;
+                }
                 rr = this.remoteObject.createSampledControlPointsRequest(this.remoteObject.getTotalRowCount(), numSamples, this.selectedColumns);
                 break;
             }

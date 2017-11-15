@@ -57,6 +57,14 @@ export enum KeyCodes {
     home = 36
 }
 
+export const missingHtml: string = "<div class='missingData'>missing</div>";
+
+export function textToDiv(text: string): HTMLElement {
+    let div = document.createElement("div");
+    div.innerHTML = text;
+    return div;
+}
+
 /**
  * A list of special unicode character codes.
  */

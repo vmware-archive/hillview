@@ -1,17 +1,15 @@
 import {ColumnDescription, RecordOrder, RemoteTableObjectView} from "./tableData";
 import {FullPage} from "./ui/fullPage";
 import {Schema} from "./tableData";
-import {StateMachine} from "./stateMachine";
 import {SubMenu, TopMenu} from "./ui/menu";
 import {NextKList, TableView} from "./table";
+import {TabularDisplay} from "./ui/tabularDisplay";
 
 /**
- * This class is used to browse through the columns in the schema and select columns from them. It allows the user to
- * view the table consisting of only the selected columns.
+ * This class is used to browse through the columns in the schema and select columns from them.
  */
 export class SchemaView extends RemoteTableObjectView {
-    protected selectedRows: StateMachine;
-    protected cellsPerRow: Map<number, HTMLElement[]>;
+    protected display: TabularDisplay;
 
     constructor(remoteObjectId: string,
                 protected page: FullPage,
@@ -19,59 +17,32 @@ export class SchemaView extends RemoteTableObjectView {
                 private rowCount: number) {
         super(remoteObjectId, page);
         this.topLevel = document.createElement("div");
-        this.selectedRows = new StateMachine();
-        this.cellsPerRow = new Map<number, HTMLElement[]>();
 
         this.topLevel = document.createElement("div");
         let subMenu = new SubMenu([
-            {text: "As Table", action: () => {this.showTable();}}
+            {text: "Selected columns", action: () => {this.showTable();}}
         ]);
-        let menu = new TopMenu([{text: "View Table", subMenu}]);
-        this.topLevel.appendChild(menu.getHTMLRepresentation());
+        let menu = new TopMenu([{text: "View", subMenu}]);
+        this.page.setMenu(menu);
         this.topLevel.appendChild(document.createElement("br"));
 
-        let table = document.createElement("table");
-        this.topLevel.appendChild(table);
-        let tHead = table.createTHead();
-        let thr = tHead.appendChild(document.createElement("tr"));
-        let thd0 = document.createElement("th");
-        thd0.innerHTML = "Number";
-        thr.appendChild(thd0);
-        let thd1 = document.createElement("th");
-        thd1.innerHTML = "Name";
-        thr.appendChild(thd1);
-        let thd2 = document.createElement("th");
-        thd2.innerHTML = "Type";
-        thr.appendChild(thd2);
+        this.display = new TabularDisplay();
+        this.display.setColumns(["#", "Name", "Type", "Allows missing"]);
 
-        let tBody = table.createTBody();
-        for (let i = 0; i < schema.length; i++) {
-            let trow = tBody.insertRow();
-            this.cellsPerRow.set(i, []);
-            for (let j = 0; j < 3; j++) {
-                let cell = trow.insertCell(j);
-                cell.style.textAlign = "right";
-                cell.onclick = e => this.rowClick(i, e);
-                if (j == 0)
-                    cell.textContent = (i + 1).toString();
-                else if (j == 1)
-                    cell.textContent = schema[i].name;
-                else if (j == 2)
-                    cell.textContent = schema[i].kind;
-                this.cellsPerRow.get(i).push(cell);
-            }
-        }
+        for (let i = 0; i < schema.length; i++)
+            this.display.addRow([(i+1).toString(), schema[i].name,
+                schema[i].kind.toString(), schema[i].allowMissing.toString()]);
+        this.topLevel.appendChild(this.display.getHTMLRepresentation());
     }
 
-    refresh(): void {
-    }
+    refresh(): void { }
 
     /**
      * This method returns a Schema comprising of the selected columns.
      */
     private createSchema(): Schema {
         let cds: ColumnDescription[] = [];
-        this.selectedRows.getStates().forEach(i => {cds.push(this.schema[i])});
+        this.display.getSelectedRows().forEach(i => { cds.push(this.schema[i]) });
         return cds;
     }
 
@@ -90,31 +61,5 @@ export class SchemaView extends RemoteTableObjectView {
         tv.scrollIntoView();
     }
 
-    /**
-     * This method handles the transitions in the set of selected rows resulting from mouse clicks, combined with
-     * various kinds of key selections
-     */
-    private rowClick(rowIndex: number, e: MouseEvent): void {
-        e.preventDefault();
-        if (e.ctrlKey || e.metaKey) {
-            this.selectedRows.changeState("Ctrl", rowIndex);
-        } else if (e.shiftKey) {
-            this.selectedRows.changeState("Shift", rowIndex);
-        } else
-            this.selectedRows.changeState("NoKey", rowIndex);
-        this.highlightSelectedRows();
-    }
 
-    private highlightSelectedRows(): void {
-        for (let i = 0; i < this.schema.length; i++) {
-            if (this.selectedRows.has(i)) {
-                for (let j = 0; j < 3; j++)
-                    this.cellsPerRow.get(i)[j].classList.add("selected");
-            }
-            else {
-                for (let j = 0; j < 3; j++)
-                    this.cellsPerRow.get(i)[j].classList.remove("selected");
-            }
-        }
-    }
 }

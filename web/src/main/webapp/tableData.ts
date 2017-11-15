@@ -30,6 +30,7 @@ import {FullPage} from "./ui/fullPage";
 // I can't use an enum for ContentsKind because JSON deserialization does not
 // return an enum from a string.
 export type ContentsKind = "Category" | "Json" | "String" | "Integer" | "Double" | "Date" | "Interval";
+export const allContentsKind: ContentsKind[] = ["Category", "Json", "String", "Integer", "Double", "Date", "Interval"];
 export function asContentsKind(kind: string): ContentsKind {
     switch (kind) {
         case "Category": {
@@ -489,7 +490,9 @@ export class RecordOrder {
     }
 }
 
-/// A renderer that receives a remoteObjectId for a RemoteTableObject.
+/**
+ * A renderer that receives a remoteObjectId for a RemoteTableObject.
+ */
 export abstract class RemoteTableRenderer extends Renderer<string> {
     protected remoteObject: RemoteTableObject;
 
@@ -510,9 +513,11 @@ export abstract class RemoteTableRenderer extends Renderer<string> {
     }
 }
 
-// A zip receiver receives the result of a Zip operation on
-// two IDataSet<ITable> objects (an IDataSet<Pair<ITable, ITable>>,
-// and applies to the pair the specified set operation setOp.
+/**
+ * A zip receiver receives the result of a Zip operation on
+ * two IDataSet<ITable> objects (an IDataSet<Pair<ITable, ITable>>,
+ *  and applies to the pair the specified set operation setOp.
+ */
 export class ZipReceiver extends RemoteTableRenderer {
     public constructor(page: FullPage,
                        operation: ICancellable,

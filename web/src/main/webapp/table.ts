@@ -28,19 +28,19 @@ import {Dialog} from "./ui/dialog";
 import {
     Schema, RowView, RecordOrder, IColumnDescription, ColumnDescription, ColumnSortOrientation,
     ContentsKind, RangeInfo, RemoteTableObjectView, ZipReceiver, RemoteTableRenderer, RemoteTableObject,
-    DistinctStrings
+    DistinctStrings, asContentsKind
 } from "./tableData";
 import {CategoryCache} from "./categoryCache";
 import {HeatMapArrayDialog} from "./heatMapArray";
-import {ColumnConverter, HLogLog} from "./columnConverter";
+import {ColumnConverter, ConverterDialog, HLogLog} from "./columnConverter";
 import {DataRange} from "./ui/dataRange"
 import {HeavyHittersView} from "./heavyhittersview";
 import {SchemaView} from "./schemaview";
 import {LAMPDialog} from "./lamp";
 import {IScrollTarget, ScrollBar} from "./ui/scroll";
 import {FullPage} from "./ui/fullPage";
-import {KeyCodes, SpecialChars} from "./ui/ui";
-import {StateMachine} from "./stateMachine";
+import {KeyCodes, missingHtml, SpecialChars} from "./ui/ui";
+import {SelectionStateMachine} from "./ui/selectionStateMachine";
 
 /**
  * The serialization of a NextKList Java object
@@ -72,7 +72,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
     protected tHead : HTMLTableSectionElement;
     protected tBody: HTMLTableSectionElement;
     protected currentData: NextKList;
-    protected selectedColumns: StateMachine;
+    protected selectedColumns: SelectionStateMachine;
     protected contextMenu: ContextMenu;
     protected cellsPerColumn: Map<string, HTMLElement[]>;
     static firstTable: RemoteTableObject;
@@ -87,7 +87,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         this.topLevel.id = "tableContainer";
         this.topLevel.tabIndex = 1;  // necessary for keyboard events?
         this.topLevel.onkeydown = e => this.keyDown(e);
-        this.selectedColumns = new StateMachine();
+        this.selectedColumns = new SelectionStateMachine();
 
         this.topLevel.style.flexDirection = "column";
         this.topLevel.style.display = "flex";
@@ -531,7 +531,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
                 this.contextMenu.addItem({text: "PCA...", action: () => this.pca() });
                 this.contextMenu.addItem({text: "LAMP...", action: () => this.lamp() });
                 this.contextMenu.addItem({text: "Filter...", action: () => this.equalityFilter(cd.name, null, true)});
-                this.contextMenu.addItem({text: "Convert...", action: () => ColumnConverter.dialog(cd.name, TableView.allColumnNames(this.schema), this)});
+                this.contextMenu.addItem({text: "Convert...", action: () => this.convert(cd.name)});
 
                 // Spawn the menu at the mouse's location
                 this.contextMenu.move(e.pageX - 1, e.pageY - 1);
@@ -574,6 +574,22 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         this.updateScrollBar();
         this.highlightSelectedColumns();
         this.page.reportTime(elapsedMs);
+    }
+
+    /**
+     * Convert the data in a column to a different column kind.
+     */
+    convert(colName: string): void {
+        let cd = new ConverterDialog(colName, TableView.allColumnNames(this.schema));
+        cd.setAction(
+            () => {
+                let kindStr = cd.getFieldValue("newKind");
+                let kind: ContentsKind = asContentsKind(kindStr);
+                let converter: ColumnConverter = new ColumnConverter(
+                    cd.getFieldValue("columnName"), kind, cd.getFieldValue("newColumnName"), this);
+                converter.run();
+            });
+        cd.show();
     }
 
     dropColumns(): void {
@@ -834,9 +850,14 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         d.show();
     }
 
+    /**
+     * Convert a value in the table to a html string representation.
+     * @param val                  Value to convert.
+     * @param {ContentsKind} kind  Type of value.
+     */
     public static convert(val: any, kind: ContentsKind): string {
         if (val == null)
-            return "missing";
+            return missingHtml;
         if (kind == "Integer" || kind == "Double")
             return String(val);
         else if (kind == "Date")

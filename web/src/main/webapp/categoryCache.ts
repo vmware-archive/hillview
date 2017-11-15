@@ -72,7 +72,9 @@ export class CategoryCache {
     }
 }
 
-// Receives a list of DistinctStrings and stores them into a TableDataSet.
+/**
+ * Receives a list of DistinctStrings and stores them into a TableDataSet.
+  */
 class ReceiveCategory extends OnCompleteRenderer<IDistinctStrings[]> {
     public constructor(
         protected cache: CategoryCache,

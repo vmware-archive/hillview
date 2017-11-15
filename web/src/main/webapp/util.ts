@@ -231,7 +231,9 @@ export function cloneArray<T>(arr: T[]): T[] {
     return arr.slice(0);
 }
 
-// convert a set to an array
+/**
+ * Convert a set to an array
+  */
 export function cloneSet<T>(set: Set<T>): T[] {
     let ret: T[] = [];
     set.forEach((val) => ret.push(val));
