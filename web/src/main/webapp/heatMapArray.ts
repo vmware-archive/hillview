@@ -32,6 +32,7 @@ import {Point, Resolution, Size} from "./ui/ui";
 import {IScrollTarget, ScrollBar} from "./ui/scroll";
 import {FullPage} from "./ui/fullPage";
 import {ColorLegend, ColorMap} from "./ui/colorLegend";
+import {TextOverlay} from "./ui/textOverlay";
 
 export class HeatMapArrayData {
     buckets: number[][][];
@@ -71,16 +72,14 @@ export class CompactHeatMapView {
     private chart: any; // chart on which the heat map is drawn
 
     private axesG: any; // g element that will contain the axes
-    private positionRect: any; // rectangle for readability of value indicator.
     private xAxis;
     private yAxis;
     private marker: any; // Marker that will indicate the x, y pair.
     // Lines that assist the marker.
     private xLine: any;
     private yLine: any;
-    // Text that show the values as numbers on the screen.
-    private xText: any;
-    private yText: any;
+
+    private to: TextOverlay;
 
     constructor(
         private parent: any, // Element where this heat map is appended to.
@@ -208,20 +207,13 @@ export class CompactHeatMapView {
             .attr("stroke", "blue")
             .attr("stroke-dasharray", "5,5");
 
-        // Rectangle where current position information is displayed
-        this.positionRect = this.axesG.append("rect")
-            .attr("width", this.chartSize.width)
-            .attr("height", Resolution.lineHeight * 2)
-            .attr("fill", "rgba(255, 255, 255, 0.9)");
-        // Draw the values as strings.
-        this.xText = this.axesG.append("text")
-            .attr("text-anchor", "left");
-        this.yText = this.axesG.append("text")
-            .attr("text-anchor", "left");
+        this.to = new TextOverlay(this.axesG,
+            [this.xAxisData.description.name, this.yAxisData.description.name, "value"],
+            CompactHeatMapView.maxTextLabelLength);
     }
 
     // Returns the value (count in the histogram) under the mouse.
-    public updateAxes(): number {
+    public updateAxes(): void {
         let mouse = d3.mouse(this.chart.node());
         if (mouse[1] < 0) {
             this.hideAxes();
@@ -244,19 +236,9 @@ export class CompactHeatMapView {
             .attr("y2", mouse[1])
             .attr("x2", mouse[0]);
 
-        // Set the textual markers
-        this.xText.text(truncate(this.xAxisData.description.name, CompactHeatMapView.maxTextLabelLength) + " = " + significantDigits(xVal))
-            .attr("x", mouse[0] + 5)
-            .attr("y", mouse[1] - 5);
-        this.yText.text(truncate(this.yAxisData.description.name, CompactHeatMapView.maxTextLabelLength) + " = " + significantDigits(yVal))
-            .attr("x", mouse[0] + 5)
-            .attr("y", mouse[1] - 5 - Resolution.lineHeight);
-        this.positionRect
-            .attr("x", mouse[0])
-            .attr("y", mouse[1] - this.positionRect.attr("height"))
-            .attr("width", Math.max(this.xText.node().getBBox().width, this.yText.node().getBBox().width) + 10);
-
-        return val;
+        let x = mouse[0] + 5;
+        let y = mouse[1] - 5;
+        this.to.update([significantDigits(xVal), significantDigits(yVal), val.toString()], x, y);
     }
 
     public hideAxes() {
@@ -404,10 +386,7 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
     }
 
     public pageUp(): void {
-        this.offset = Math.max(
-            this.offset - this.maxNumHeatMaps(),
-            0
-        );
+        this.offset = Math.max(this.offset - this.maxNumHeatMaps(), 0);
         this.refresh();
     }
 
@@ -524,19 +503,16 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
         this.mouseOverHeatMap = newMouseOverHeatMap;
 
         // Show the new heat map's axes
-        if (this.mouseOverHeatMap != null){
-            let val = this.mouseOverHeatMap.updateAxes();
-            this.colorLegend.indicate(val);
-        }
+        if (this.mouseOverHeatMap != null)
+            this.mouseOverHeatMap.updateAxes();
     }
 
     private mouseLeave() {
         // Hide the previously mouse-over'd heat map
-        if (this.mouseOverHeatMap != null){
+        if (this.mouseOverHeatMap != null) {
             this.mouseOverHeatMap.hideAxes();
             this.mouseOverHeatMap = null;
         }
-        this.colorLegend.indicate(null);
     }
 
     public setStats(stats: Pair<BasicColStats, BasicColStats>): void {
@@ -614,8 +590,18 @@ class HeatMap3DRenderer extends Renderer<HeatMapArrayData> {
 }
 
 export class HeatMapArrayDialog extends Dialog {
+    /**
+     * Create a dialog to display a Trellis plot of heatmaps.
+     * @param {string[]} selectedColumns  Columns selected by the user.
+     * @param {FullPage} page             Page containing the original dataset.
+     * @param {Schema} schema             Data schema.
+     * @param {RemoteTableObject} remoteObject  Remote table object.
+     * @param {boolean} fixedColumns      If true do not allow the user to change the
+     *                                    first two selected columns.
+     */
     constructor(private selectedColumns: string[], private page: FullPage,
-                private schema: Schema, private remoteObject: RemoteTableObject) {
+                private schema: Schema, private remoteObject: RemoteTableObject,
+                fixedColumns: boolean) {
         super("Heat map array");
         let selectedNumColumns: string[] = [];
         let selectedCatColumn: string = "";
@@ -638,8 +624,10 @@ export class HeatMapArrayDialog extends Dialog {
         if (selectedCatColumn == "" && catColumns.length > 0) {
             selectedCatColumn = catColumns[0];
         }
-        this.addSelectField("col1", "Heat map column 1: ", numColumns, selectedNumColumns[0]);
-        this.addSelectField("col2", "Heat map column 2: ", numColumns, selectedNumColumns[1]);
+        this.addSelectField("col1", "Heat map column 1: ",
+            fixedColumns ? [selectedNumColumns[0]] : numColumns, selectedNumColumns[0]);
+        this.addSelectField("col2", "Heat map column 2: ",
+            fixedColumns ? [selectedNumColumns[1]] : numColumns, selectedNumColumns[1]);
         this.addSelectField("col3", "Array column: ", catColumns, selectedCatColumn);
         this.setAction(() => this.execute());
     }

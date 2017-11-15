@@ -300,6 +300,7 @@ class ControlPointsView extends RemoteTableObjectView {
     }
 
     private heatMap3D() {
+        // The lamp table has a new schema, so we have to retrieve it.
         let rr = this.lampTableObject.createGetSchemaRequest();
         rr.invoke(new SchemaCollector(this.getPage(), rr, this.lampTableObject, this.lampColNames));
     }
@@ -376,7 +377,8 @@ export class LAMPDialog extends Dialog {
 
         switch (projection) {
             case "MDS": {
-                rr.invoke(new ControlPointsProjector(newPage, rr, this.remoteObject, this.selectedColumns, this.schema));
+                rr.invoke(new ControlPointsProjector(
+                    newPage, rr, this.remoteObject, this.selectedColumns, this.schema));
                 break;
             }
             default: {
@@ -396,7 +398,8 @@ class ControlPointsProjector extends RemoteTableRenderer {
         if (this.remoteObject == null)
             return;
         let rr = this.tableObject.createMDSProjectionRequest(this.remoteObject.remoteObjectId);
-        rr.invoke(new ControlPointsRenderer(this.page, rr, this.tableObject, this.schema, this.remoteObject.remoteObjectId, this.selectedColumns));
+        rr.invoke(new ControlPointsRenderer(
+            this.page, rr, this.tableObject, this.schema, this.remoteObject.remoteObjectId, this.selectedColumns));
     }
 }
 
@@ -406,7 +409,8 @@ class ControlPointsRenderer extends Renderer<PointSet2D> {
 
     constructor(page, operation, tableObject, schema, controlPointsId, private selectedColumns) {
         super(page, operation, "Projecting control points");
-        this.controlPointsView = new ControlPointsView(tableObject, schema, page, controlPointsId, this.selectedColumns);
+        this.controlPointsView = new ControlPointsView(
+            tableObject, schema, page, controlPointsId, this.selectedColumns);
     }
 
     public onNext(result: PartialResult<PointSet2D>) {
@@ -473,7 +477,8 @@ class SchemaCollector extends Renderer<NextKList> {
 
     onCompleted() {
         super.onCompleted();
-        let dialog = new HeatMapArrayDialog(this.lampColumnNames, this.page, this.schema, this.tableObject);
+        let dialog = new HeatMapArrayDialog(
+            this.lampColumnNames, this.page, this.schema, this.tableObject, true);
         dialog.show();
     }
 }

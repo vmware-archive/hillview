@@ -726,8 +726,6 @@ The "View" menu offers the following options:
 * table: show a tabular view of the data represented in the LAMP view
 
 * 3D heat map: selecting this option opens a new menu which allows the
-  user to make a Trellis plot of the two-dimensional data produced by
-  the projection, by grouping all points that belong to a categorical
-  value.
-
- ![LAMP heat map array menu](lamp-heatmap-array-menu.png)
+  user to make a [Trellis plot](#trellis-plot-view) of the
+  two-dimensional data produced by the projection, by grouping all
+  points that belong to a categorical value.

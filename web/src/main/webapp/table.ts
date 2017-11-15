@@ -744,7 +744,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
 
     private heatMapArray(): void {
         let colNames: string[] = this.getSelectedColNames();
-        let dialog = new HeatMapArrayDialog(colNames, this.getPage(), this.schema, this);
+        let dialog = new HeatMapArrayDialog(colNames, this.getPage(), this.schema, this, false);
         dialog.show();
     }
 
