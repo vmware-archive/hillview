@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-import {Dialog} from "./ui/dialog";
-import {allContentsKind, ContentsKind} from "./tableData";
-import {TableView, RemoteTableReceiver} from "./table";
-import {OnCompleteRenderer} from "./rpc";
-import {ICancellable} from "./util";
-import {FullPage} from "./ui/fullPage";
+import {Dialog} from "../ui/dialog";
+import {OnCompleteRenderer} from "../rpc";
+import {ICancellable} from "../util";
+import {FullPage} from "../ui/fullPage";
+import {TableView, RemoteTableReceiver} from "./tableView";
+import {allContentsKind, ContentsKind} from "../javaBridge";
 
 /**
  * A dialog to find out information about how to perform the conversion of the data in a column.

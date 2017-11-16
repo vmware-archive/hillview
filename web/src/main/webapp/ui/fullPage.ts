@@ -71,7 +71,7 @@ export class FullPage implements IHtmlElement {
      * @param {ViewKind} viewKind    Kind of view that is being displayed.
      * @param {FullPage} sourcePage  Page which initiated the creation of this one.
      */
-    public constructor(title: string, viewKind: ViewKind, sourcePage?: FullPage) {
+    public constructor(title: string, viewKind: ViewKind, sourcePage: FullPage) {
         this.pageId = FullPage.pageCounter++;
         this.console = new ConsoleDisplay();
         this.progressManager = new ProgressManager();

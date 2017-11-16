@@ -15,27 +15,29 @@
  * limitations under the License.
  */
 
-import {d3} from "./ui/d3-modules";
-import {Dialog} from "./ui/dialog";
-import {TopMenu, SubMenu} from "./ui/menu";
-import {NextKList, TableView, TableRenderer} from "./table";
+import {d3} from "../ui/d3-modules";
+import {Dialog} from "../ui/dialog";
+import {TopMenu, SubMenu} from "../ui/menu";
 import {
-    RangeInfo, BasicColStats, Schema, RemoteTableObject, RemoteTableObjectView, RemoteTableRenderer, RecordOrder,
-    ColumnAndRange, Histogram2DArgs
-} from "./tableData";
-import {Renderer, RpcRequest} from "./rpc";
-import {PartialResult, clamp, Pair, ICancellable, Seed} from "./util";
-import {HeatMapData} from "./heatMap";
-import {HeatMapArrayDialog} from "./heatMapArray";
-import {Point, Resolution} from "./ui/ui";
-import {FullPage} from "./ui/fullPage";
-import {ColorLegend, ColorMap} from "./ui/colorLegend";
+    RangeInfo, BasicColStats, Schema, RecordOrder, ColumnAndRange, Histogram2DArgs, NextKList
+} from "../javaBridge";
+import {Renderer, RpcRequest} from "../rpc";
+import {PartialResult, clamp, Pair, ICancellable, Seed} from "../util";
+import {Point, PointSet, Resolution} from "../ui/ui";
+import {FullPage} from "../ui/fullPage";
+import {ColorLegend, ColorMap} from "../ui/colorLegend";
+import {TableView, TableRenderer} from "./tableView";
+import {HeatMapData} from "./heatMapView";
+import {HeatMapArrayDialog} from "./trellisHeatMapView";
+import {RemoteTableObject, RemoteTableObjectView, RemoteTableRenderer} from "../tableTarget";
 
-export class PointSet2D {
-    points: Point[];
-}
-
-class ControlPointsView extends RemoteTableObjectView {
+/**
+ * This class displays the results of performing a local affine multi-dimensional projection.
+ * See the paper Local Affine Multidimensional Projection from IEEE Transactions on Visualization
+ * and Computer Graphics, vol 17, issue 12, Dec 2011, by Paulo Joia, Danilo Coimbra, Jose A Cuminato,
+ * Fernando V Paulovich, and Luis G Nonato.
+ */
+class LampView extends RemoteTableObjectView {
     private minX: number;
     private minY: number;
     private maxX: number;
@@ -45,7 +47,7 @@ class ControlPointsView extends RemoteTableObjectView {
     private heatMapChart: any;
     private controlPointsCanvas: any;
     private controlPointsChart: any;
-    public controlPoints: PointSet2D;
+    public controlPoints: PointSet;
     private heatMapDots: Array<any>;
     private xDots: number;
     private yDots: number;
@@ -131,7 +133,7 @@ class ControlPointsView extends RemoteTableObjectView {
         this.lampTableObject = table;
     }
 
-    public updateControlPoints(pointSet: PointSet2D) {
+    public updateControlPoints(pointSet: PointSet) {
         this.controlPoints = pointSet;
         /* Set the coordinate system of the plot */
         let [minX, maxX] = [Math.min(...this.controlPoints.points.map(p => p.x)), Math.max(...this.controlPoints.points.map(p => p.x))];
@@ -290,6 +292,7 @@ class ControlPointsView extends RemoteTableObjectView {
                     })
                 )
     }
+
     private showTable() {
         let page = new FullPage("Table", "Table", this.page);
         this.getPage().insertAfterMe(page);
@@ -403,17 +406,17 @@ class ControlPointsProjector extends RemoteTableRenderer {
     }
 }
 
-class ControlPointsRenderer extends Renderer<PointSet2D> {
-    private controlPointsView: ControlPointsView;
-    private points: PointSet2D;
+class ControlPointsRenderer extends Renderer<PointSet> {
+    private controlPointsView: LampView;
+    private points: PointSet;
 
     constructor(page, operation, tableObject, schema, controlPointsId, private selectedColumns) {
         super(page, operation, "Projecting control points");
-        this.controlPointsView = new ControlPointsView(
+        this.controlPointsView = new LampView(
             tableObject, schema, page, controlPointsId, this.selectedColumns);
     }
 
-    public onNext(result: PartialResult<PointSet2D>) {
+    public onNext(result: PartialResult<PointSet>) {
         super.onNext(result);
         this.points = result.data;
         if (this.points != null)
@@ -422,7 +425,7 @@ class ControlPointsRenderer extends Renderer<PointSet2D> {
 }
 
 class LAMPMapReceiver extends RemoteTableRenderer {
-    constructor(page: FullPage, operation: ICancellable, private cpView: ControlPointsView,
+    constructor(page: FullPage, operation: ICancellable, private cpView: LampView,
                 private arg: Histogram2DArgs) {
         super(page, operation, "Computing LAMP");
     }
@@ -439,7 +442,7 @@ class LAMPMapReceiver extends RemoteTableRenderer {
 class LAMPHeatMapReceiver extends Renderer<HeatMapData> {
     private heatMap: HeatMapData;
     constructor(page: FullPage, operation: ICancellable,
-                private controlPointsView: ControlPointsView, private lampTime: number) {
+                private controlPointsView: LampView, private lampTime: number) {
         super(page, operation, "Computing heat map")
     }
 
@@ -454,7 +457,7 @@ class LAMPHeatMapReceiver extends Renderer<HeatMapData> {
 }
 
 class LAMPRangeCollector extends Renderer<Pair<BasicColStats, BasicColStats>> {
-    constructor(page: FullPage, operation: ICancellable, private cpView: ControlPointsView) {
+    constructor(page: FullPage, operation: ICancellable, private cpView: LampView) {
         super(page, operation, "Getting LAMP ranges.")
     }
 

@@ -15,27 +15,29 @@
  * limitations under the License.
  */
 
-import {d3} from "./ui/d3-modules";
+import {d3} from "../ui/d3-modules";
 import {ScaleLinear, ScaleTime} from "d3-scale";
 
-import { Renderer, combineMenu, CombineOperators, SelectedObject } from "./rpc";
+import { Renderer } from "../rpc";
 import {
-    ColumnDescription, Schema, RecordOrder, DistinctStrings,
-    RemoteTableObjectView, RemoteTableObject, Histogram, BasicColStats, FilterDescription,
-    ZipReceiver, Histogram2DArgs
-} from "./tableData";
-import {TableView, TableRenderer} from "./table";
+    ColumnDescription, Schema, RecordOrder, Histogram, BasicColStats, FilterDescription,
+    Histogram2DArgs, CombineOperators
+} from "../javaBridge";
+import {TableView, TableRenderer} from "./tableView";
 import {
     Pair, significantDigits, formatNumber, reorder, regression, ICancellable, PartialResult, Seed
-} from "./util";
-import {HistogramViewBase} from "./histogramBase";
-import {TopMenu, SubMenu} from "./ui/menu";
-import {Histogram2DRenderer, Make2DHistogram, Filter2DReceiver} from "./histogram2d";
-import {KeyCodes, Point, Resolution, Size} from "./ui/ui";
-import {FullPage} from "./ui/fullPage";
-import {ColorLegend, ColorMap} from "./ui/colorLegend";
-import {TextOverlay} from "./ui/textOverlay";
+} from "../util";
+import {HistogramViewBase} from "./histogramViewBase";
+import {TopMenu, SubMenu} from "../ui/menu";
+import {Histogram2DRenderer, Make2DHistogram, Filter2DReceiver} from "./histogram2DView";
+import {KeyCodes, Point, Resolution, Size} from "../ui/ui";
+import {FullPage} from "../ui/fullPage";
+import {ColorLegend, ColorMap} from "../ui/colorLegend";
+import {TextOverlay} from "../ui/textOverlay";
 import {AxisData} from "./axisData";
+import {RemoteTableObjectView, ZipReceiver, RemoteTableObject} from "../tableTarget";
+import {DistinctStrings} from "../distinctStrings";
+import {combineMenu, SelectedObject} from "../selectedObject";
 
 /**
  * Maximum number of colors that we expect users can distinguish reliably.
@@ -51,6 +53,9 @@ export class HeatMapData {
     totalsize: number;
 }
 
+/**
+ * A HeatMapView renders information as a heatmap.
+ */
 export class HeatMapView extends RemoteTableObjectView {
     protected dragging: boolean;
     protected svg: any;
@@ -522,7 +527,9 @@ export class HeatMapView extends RemoteTableObjectView {
     }
 }
 
-// Waits for all column stats to be received and then initiates a heatmap or 2Dhistogram.
+/**
+ * Waits for all column stats to be received and then initiates a heatmap or 2D histogram.
+  */
 export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats>> {
     protected stats: Pair<BasicColStats, BasicColStats>;
     constructor(protected cds: ColumnDescription[],
@@ -607,7 +614,9 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
     }
 }
 
-// Renders a heatmap
+/**
+ * Renders a heatmap
+  */
 export class HeatMapRenderer extends Renderer<HeatMapData> {
     protected heatMap: HeatMapView;
 

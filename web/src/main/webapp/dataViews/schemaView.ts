@@ -15,15 +15,16 @@
  * limitations under the License.
  */
 
-import {ColumnDescription, RecordOrder, RemoteTableObjectView} from "./tableData";
-import {FullPage} from "./ui/fullPage";
-import {Schema} from "./tableData";
-import {SubMenu, TopMenu} from "./ui/menu";
-import {NextKList, TableView} from "./table";
-import {TabularDisplay} from "./ui/tabularDisplay";
+import {RemoteTableObjectView} from "../tableTarget";
+import {FullPage} from "../ui/fullPage";
+import {NextKList, ColumnDescription, RecordOrder, Schema} from "../javaBridge";
+import {SubMenu, TopMenu} from "../ui/menu";
+import {TabularDisplay} from "../ui/tabularDisplay";
+import {TableView} from "./tableView";
 
 /**
- * This class is used to browse through the columns in the schema and select columns from them.
+ * This class is used to browse through the columns of a table schema
+ * and select columns from them.
  */
 export class SchemaView extends RemoteTableObjectView {
     protected display: TabularDisplay;
@@ -77,6 +78,4 @@ export class SchemaView extends RemoteTableObjectView {
         tv.updateView(nkl, false, new RecordOrder([]), 0);
         tv.scrollIntoView();
     }
-
-
 }

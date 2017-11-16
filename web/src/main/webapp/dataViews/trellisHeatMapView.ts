@@ -15,24 +15,25 @@
  * limitations under the License.
  */
 
-import {d3} from "./ui/d3-modules";
-import {Renderer} from "./rpc";
-import {Dialog} from "./ui/dialog";
-import {TopMenu, SubMenu} from "./ui/menu";
-import {TableView, TableRenderer} from "./table";
-import {Histogram3DArgs, RecordOrder} from "./tableData";
-import {Pair, truncate, significantDigits, ICancellable, PartialResult, Seed} from "./util";
+import {d3} from "../ui/d3-modules";
+import {Renderer} from "../rpc";
+import {Dialog} from "../ui/dialog";
+import {TopMenu, SubMenu} from "../ui/menu";
+import {Pair, truncate, significantDigits, ICancellable, PartialResult, Seed} from "../util";
 import {AxisData} from "./axisData";
 import {
-    RemoteTableObjectView, IColumnDescription, BasicColStats, DistinctStrings,
-    ColumnAndRange, Schema, isNumeric, RemoteTableObject
-} from "./tableData";
-import {CategoryCache} from "./categoryCache";
-import {Point, Resolution, Size} from "./ui/ui";
-import {IScrollTarget, ScrollBar} from "./ui/scroll";
-import {FullPage} from "./ui/fullPage";
-import {ColorLegend, ColorMap} from "./ui/colorLegend";
-import {TextOverlay} from "./ui/textOverlay";
+    IColumnDescription, BasicColStats,
+    ColumnAndRange, Schema, isNumeric, Histogram3DArgs, RecordOrder
+} from "../javaBridge";
+import {CategoryCache} from "../categoryCache";
+import {Point, Resolution, Size} from "../ui/ui";
+import {IScrollTarget, ScrollBar} from "../ui/scroll";
+import {FullPage} from "../ui/fullPage";
+import {ColorLegend, ColorMap} from "../ui/colorLegend";
+import {TextOverlay} from "../ui/textOverlay";
+import {TableView, TableRenderer} from "./tableView";
+import {DistinctStrings} from "../distinctStrings";
+import {RemoteTableObjectView, RemoteTableObject} from "../tableTarget";
 
 export class HeatMapArrayData {
     buckets: number[][][];
@@ -47,7 +48,7 @@ export interface HeatMapArrayArgs {
     yStats?: BasicColStats;
 }
 
-export class CompactHeatMapView {
+class CompactHeatMapView {
     // We aim for this size. Square (apart from the label space), so it is
     // natural to tile. It is assumed that this will fit on the screen.
     public static readonly size: Size = {
@@ -249,7 +250,10 @@ export class CompactHeatMapView {
     }
 }
 
-export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTarget {
+/**
+ * A Trellis plot containing multiple heat maps.
+ */
+export class TrellisHeatMapView extends RemoteTableObjectView implements IScrollTarget {
     // TODO: handle categorical values
     public args: HeatMapArrayArgs;
     private offset: number; // Offset from the start of the set of unique z-values.
@@ -562,8 +566,11 @@ export class HeatMapArrayView extends RemoteTableObjectView implements IScrollTa
     }
 }
 
+/**
+ * Receives the data range and initiates a new rendering.
+ */
 class Range2DRenderer extends Renderer<Pair<BasicColStats, BasicColStats>> {
-    constructor(page: FullPage, protected view: HeatMapArrayView, operation: ICancellable) {
+    constructor(page: FullPage, protected view: TrellisHeatMapView, operation: ICancellable) {
         super(page, operation, "Get stats");
     }
 
@@ -578,8 +585,11 @@ class Range2DRenderer extends Renderer<Pair<BasicColStats, BasicColStats>> {
     }
 }
 
+/**
+ * Receives data for the Trellis plot and updates the display.
+ */
 class HeatMap3DRenderer extends Renderer<HeatMapArrayData> {
-    constructor(page: FullPage, protected view: HeatMapArrayView, operation: ICancellable, private zBins: string[]) {
+    constructor(page: FullPage, protected view: TrellisHeatMapView, operation: ICancellable, private zBins: string[]) {
         super(page, operation, "3D Heat map render");
     }
 
@@ -589,6 +599,9 @@ class HeatMap3DRenderer extends Renderer<HeatMapArrayData> {
     }
 }
 
+/**
+ * Dialog to query user about parameters ot a Trellis plot of heatmaps.
+ */
 export class HeatMapArrayDialog extends Dialog {
     /**
      * Create a dialog to display a Trellis plot of heatmaps.
@@ -648,7 +661,7 @@ export class HeatMapArrayDialog extends Dialog {
         let newPage = new FullPage("Heatmaps by " + args.cds[2].name, "Trellis", this.page);
         this.page.insertAfterMe(newPage);
 
-        let heatMapArrayView = new HeatMapArrayView(this.remoteObject.remoteObjectId, newPage, args, this.schema);
+        let heatMapArrayView = new TrellisHeatMapView(this.remoteObject.remoteObjectId, newPage, args, this.schema);
         newPage.setDataView(heatMapArrayView);
         let cont = (operation: ICancellable) => {
             args.uniqueStrings = CategoryCache.instance.getDistinctStrings(categCol.name);

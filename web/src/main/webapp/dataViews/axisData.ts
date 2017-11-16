@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
-import {d3} from "./ui/d3-modules";
-import {Histogram, ColumnDescription, BasicColStats, DistinctStrings, RangeInfo, ColumnAndRange} from "./tableData";
+import {d3} from "../ui/d3-modules";
+import {Histogram, ColumnDescription, BasicColStats, RangeInfo, ColumnAndRange} from "../javaBridge";
 import {ScaleLinear, ScaleTime} from "d3";
-import {Converters, significantDigits} from "./util";
+import {Converters, significantDigits} from "../util";
+import {DistinctStrings} from "../distinctStrings";
 
 export type AnyScale = ScaleLinear<number, number> | ScaleTime<number, number>;
 
@@ -109,11 +110,20 @@ export class AxisData {
         return { scale: scale, axis: axis };
     }
 
+    /**
+     * @returns {RangeInfo} structure summarizing this data.
+     */
     getRangeInfo(): RangeInfo {
         return new RangeInfo(this.description.name,
             this.distinctStrings != null ? this.distinctStrings.uniqueStrings : null);
     }
 
+    /**
+     * The categorical values in the min-max range.
+     * @param {number} bucketCount  Number of categories to return.
+     * @returns {string[]}  An array of categories, or null if this is not a
+     * categorical column.
+     */
     getCategoriesInRange(bucketCount: number): string[] {
         if (this.distinctStrings == null)
             return null;
@@ -121,6 +131,11 @@ export class AxisData {
                 this.stats.min, this.stats.max, bucketCount);
     }
 
+    /**
+     * Creates a ColumnAndRange data structure from the AxisData, which
+     * may be used to initiate a histogram computation.
+     * @param {number} bucketCount  Number of buckets expected in histogram.
+     */
     getColumnAndRange(bucketCount: number): ColumnAndRange {
         return {
             columnName: this.description.name,

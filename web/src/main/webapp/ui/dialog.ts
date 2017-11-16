@@ -16,7 +16,7 @@
  */
 
 import {IHtmlElement, KeyCodes} from "./ui"
-import {ContentsKind} from "../tableData"
+import {ContentsKind} from "../javaBridge"
 
 /**
  *  Represents a field in the dialog.

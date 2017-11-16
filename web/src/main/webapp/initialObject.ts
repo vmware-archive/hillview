@@ -16,7 +16,7 @@
  */
 
 import {RemoteObject, OnCompleteRenderer} from "./rpc";
-import {RemoteTableReceiver} from "./table";
+import {RemoteTableReceiver} from "./dataViews/tableView";
 import {FullPage} from "./ui/fullPage";
 import {ICancellable} from "./util";
 
@@ -45,7 +45,7 @@ export class InitialObject extends RemoteObject {
 
     public loadFiles(which: number): void {
         let rr = this.createRpcRequest("prepareFiles", which);
-        let page = new FullPage("CSV Files", "Table");
+        let page = new FullPage("CSV Files", "Table", null);
         page.append();
         let observer = new FileNamesReceiver(page, rr);
         rr.invoke(observer);
@@ -53,7 +53,7 @@ export class InitialObject extends RemoteObject {
 
     public loadLogs(): void {
         let rr = this.createRpcRequest("findLogs", null);
-        let page = new FullPage("Hillview logs", "Table");
+        let page = new FullPage("Hillview logs", "Table", null);
         page.append();
         let observer = new LogFileReceiver(page, rr);
         rr.invoke(observer);
@@ -61,7 +61,7 @@ export class InitialObject extends RemoteObject {
 
     public loadDBTable(): void {
         let rr = this.createRpcRequest("loadDBTable", null);
-        let page = new FullPage("Database table", "Table");
+        let page = new FullPage("Database table", "Table", null);
         page.append();
         let observer = new RemoteTableReceiver(page, rr);
         rr.invoke(observer);

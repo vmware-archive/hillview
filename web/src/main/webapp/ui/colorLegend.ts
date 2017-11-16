@@ -18,7 +18,6 @@
 import {d3} from "./d3-modules"
 import {IHtmlElement, Point, Resolution, Size} from "./ui";
 import {ContextMenu} from "./menu";
-import {significantDigits} from "../util";
 
 /**
  * Represents a map from the range 0-1 to colors.

@@ -15,19 +15,21 @@
  * limitations under the License.
  */
 
-import {d3} from "./ui/d3-modules";
-import {Dialog} from "./ui/dialog";
-import {
-    ContentsKind, Schema, RemoteTableObjectView, BasicColStats, DistinctStrings,
-    ColumnDescription, ColumnAndRange
-} from "./tableData";
+import {d3} from "../ui/d3-modules";
+import {Dialog} from "../ui/dialog";
+import { ContentsKind, Schema, BasicColStats, ColumnDescription, ColumnAndRange } from "../javaBridge";
 import {ScaleLinear} from "d3-scale";
-import {Converters, formatDate, significantDigits} from "./util";
-import {KeyCodes, Point, Resolution, Size, SpecialChars} from "./ui/ui";
-import {FullPage} from "./ui/fullPage";
-import {TextOverlay} from "./ui/textOverlay";
+import {Converters, formatDate, significantDigits} from "../util";
+import {KeyCodes, Point, Resolution, Size, SpecialChars} from "../ui/ui";
+import {FullPage} from "../ui/fullPage";
+import {TextOverlay} from "../ui/textOverlay";
 import {AnyScale} from "./axisData";
+import {RemoteTableObjectView} from "../tableTarget";
+import {DistinctStrings} from "../distinctStrings";
 
+/**
+ * This is a base class that contains code common to various histogram renderings.
+ */
 export abstract class HistogramViewBase extends RemoteTableObjectView {
     protected dragging: boolean;
     protected svg: any;
@@ -167,7 +169,8 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
          }
     }
 
-    public static getRange(stats: BasicColStats, cd: ColumnDescription, allStrings: DistinctStrings,
+    public static getRange(stats: BasicColStats, cd: ColumnDescription,
+                           allStrings: DistinctStrings,
                            bucketCount: number): ColumnAndRange {
         let boundaries = allStrings != null ?
             allStrings.categoriesInRange(stats.min, stats.max, bucketCount) : null;
@@ -201,7 +204,8 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
         return Math.floor(bucketCount);
     }
 
-    static invert(v: number, scale: AnyScale, kind: ContentsKind, allStrings: DistinctStrings): string {
+    static invert(v: number, scale: AnyScale, kind: ContentsKind,
+                  allStrings: DistinctStrings): string {
         let inv = scale.invert(v);
         if (kind == "Integer")
             inv = Math.round(<number>inv);
@@ -229,6 +233,10 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
     }
 }
 
+/**
+ * A dialog that queries the user about the number of buckets to use
+ * in a histogram rendering.
+ */
 export class BucketDialog extends Dialog {
     constructor() {
         super("Set buckets");

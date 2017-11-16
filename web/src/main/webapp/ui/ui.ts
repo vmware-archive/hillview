@@ -97,6 +97,11 @@ export interface Point {
     y: number;
 }
 
+export class PointSet {
+    points: Point[];
+}
+
+
 /**
  * A rectangular surface.
  */

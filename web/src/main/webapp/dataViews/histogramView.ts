@@ -15,29 +15,34 @@
  * limitations under the License.
  */
 
-import { d3 } from "./ui/d3-modules";
-import { combineMenu, CombineOperators, SelectedObject, Renderer } from "./rpc";
+import { d3 } from "../ui/d3-modules";
+import { Renderer } from "../rpc";
 import {
-    ColumnDescription, Schema, RecordOrder, DistinctStrings, RangeInfo, Histogram,
-    BasicColStats, FilterDescription, RemoteTableObject,
-    ZipReceiver, RemoteTableRenderer, HistogramArgs
-} from "./tableData";
-import {TableRenderer, TableView} from "./table";
-import {TopMenu, SubMenu} from "./ui/menu";
+    ColumnDescription, Schema, RecordOrder, RangeInfo, Histogram,
+    BasicColStats, FilterDescription, HistogramArgs, CombineOperators
+} from "../javaBridge";
+import {TopMenu, SubMenu} from "../ui/menu";
 // noinspection ES6UnusedImports
 import {
     Pair, reorder, significantDigits, formatNumber, percent, ICancellable, PartialResult, Seed,
     formatDate, exponentialDistribution
-} from "./util";
-import {HistogramViewBase, BucketDialog} from "./histogramBase";
-import {Dialog} from "./ui/dialog";
-import {Range2DCollector} from "./heatMap";
-import {CategoryCache} from "./categoryCache";
-import {FullPage} from "./ui/fullPage";
-import {Resolution} from "./ui/ui";
-import {TextOverlay} from "./ui/textOverlay";
+} from "../util";
+import {Dialog} from "../ui/dialog";
+import {CategoryCache} from "../categoryCache";
+import {FullPage} from "../ui/fullPage";
+import {Resolution} from "../ui/ui";
+import {TextOverlay} from "../ui/textOverlay";
 import {AxisData} from "./axisData";
+import {HistogramViewBase, BucketDialog} from "./histogramViewBase";
+import {Range2DCollector} from "./heatMapView";
+import {TableRenderer, TableView} from "./tableView";
+import {RemoteTableObject, RemoteTableRenderer, ZipReceiver} from "../tableTarget";
+import {DistinctStrings} from "../distinctStrings";
+import {combineMenu, SelectedObject} from "../selectedObject";
 
+/**
+ * A HistogramView is responsible for showing a one-dimensional histogram on the screen.
+ */
 export class HistogramView extends HistogramViewBase {
     protected currentData: {
         histogram: Histogram,
@@ -428,7 +433,10 @@ export class HistogramView extends HistogramViewBase {
     }
 }
 
-// After filtering we obtain a handle to a new table
+/**
+ * Receives the results of a filtering operation and initiates a new Range computation
+ * (which in turn will initiate a new histogram rendering).
+ */
 class FilterReceiver extends RemoteTableRenderer {
     constructor(
         protected filter: FilterDescription,
@@ -462,7 +470,9 @@ class FilterReceiver extends RemoteTableRenderer {
     }
 }
 
-// Waits for column stats to be received and then initiates a histogram rendering.
+/**
+ * Waits for column stats to be received and then initiates a histogram rendering.
+  */
 export class RangeCollector extends Renderer<BasicColStats> {
     protected stats: BasicColStats;
     constructor(protected title: string,  // title of the resulting display
@@ -533,7 +543,9 @@ export class RangeCollector extends Renderer<BasicColStats> {
     }
 }
 
-// Renders a column histogram
+/**
+ * Renders a 1D histogram.
+  */
 export class HistogramRenderer extends Renderer<Pair<Histogram, Histogram>> {
     protected histogram: HistogramView;
     protected timeInMs: number;
@@ -620,7 +632,9 @@ export class HistogramRenderer extends Renderer<Pair<Histogram, Histogram>> {
     */
 }
 
-// This class is invoked by the ZipReceiver after a set operation to create a new histogram
+/**
+ * This class is invoked by the ZipReceiver after a set operation to create a new histogram
+  */
 class MakeHistogram extends RemoteTableRenderer {
     public constructor(private title: string,
                        page: FullPage,

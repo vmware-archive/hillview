@@ -15,44 +15,35 @@
  * limitations under the License.
  */
 
-import {Renderer, combineMenu, SelectedObject, CombineOperators, OnCompleteRenderer} from "./rpc";
-import {RangeCollector} from "./histogram";
-import {Range2DCollector} from "./heatMap";
-import {TopMenu, SubMenu, ContextMenu} from "./ui/menu";
+import {Renderer, OnCompleteRenderer} from "../rpc";
+import {TopMenu, SubMenu, ContextMenu} from "../ui/menu";
 import {
     Converters, PartialResult, ICancellable, percent, formatNumber, significantDigits,
     formatDate
-} from "./util";
+} from "../util";
 import {EqualityFilterDialog, EqualityFilterDescription} from "./equalityFilter";
-import {Dialog} from "./ui/dialog";
-import {
-    Schema, RowView, RecordOrder, IColumnDescription, ColumnDescription, ColumnSortOrientation,
-    ContentsKind, RangeInfo, RemoteTableObjectView, ZipReceiver, RemoteTableRenderer, RemoteTableObject,
-    DistinctStrings, asContentsKind
-} from "./tableData";
-import {CategoryCache} from "./categoryCache";
-import {HeatMapArrayDialog} from "./heatMapArray";
+import {Dialog} from "../ui/dialog";
+import {CategoryCache} from "../categoryCache";
 import {ColumnConverter, ConverterDialog, HLogLog} from "./columnConverter";
-import {DataRange} from "./ui/dataRange"
-import {HeavyHittersView} from "./heavyhittersview";
-import {SchemaView} from "./schemaview";
-import {LAMPDialog} from "./lamp";
-import {IScrollTarget, ScrollBar} from "./ui/scroll";
-import {FullPage} from "./ui/fullPage";
-import {KeyCodes, missingHtml, SpecialChars} from "./ui/ui";
-import {SelectionStateMachine} from "./ui/selectionStateMachine";
+import {DataRange} from "../ui/dataRange"
+import {IScrollTarget, ScrollBar} from "../ui/scroll";
+import {FullPage} from "../ui/fullPage";
+import {KeyCodes, missingHtml, SpecialChars} from "../ui/ui";
+import {SelectionStateMachine} from "../ui/selectionStateMachine";
 
-/**
- * The serialization of a NextKList Java object
- */
-// This is the serialization of a NextKList Java object
-export class NextKList {
-    public schema?: Schema;
-    // Total number of rows in the complete table
-    public rowCount: number;
-    public startPosition?: number;
-    public rows?: RowView[];
-}
+import {RangeCollector} from "./histogramView";
+import {Range2DCollector} from "./heatMapView";
+import {HeatMapArrayDialog} from "./trellisHeatMapView";
+import {HeavyHittersView} from "./heavyHittersView";
+import {SchemaView} from "./schemaView";
+import {LAMPDialog} from "./lampView";
+import {
+    IColumnDescription, RecordOrder, RowView, Schema, ColumnDescription, RangeInfo,
+    ContentsKind, asContentsKind, ColumnSortOrientation, NextKList, TopList, CombineOperators
+} from "../javaBridge";
+import {RemoteTableObject, RemoteTableObjectView, RemoteTableRenderer, ZipReceiver} from "../tableTarget";
+import {DistinctStrings} from "../distinctStrings";
+import {combineMenu, SelectedObject} from "../selectedObject";
 
 /**
  * Displays a table in the browser.
@@ -109,7 +100,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
                 text: "Combine", subMenu: combineMenu(this, page.pageId)
             }
         ]);
-        //this.topLevel.appendChild(menu.getHTMLRepresentation());
+
         this.page.setMenu(menu);
         this.contextMenu = new ContextMenu();
         this.topLevel.appendChild(this.contextMenu.getHTMLRepresentation());
@@ -991,11 +982,6 @@ class QuantileReceiver extends OnCompleteRenderer<any[]> {
     }
 }
 
-export interface TopList {
-    top: NextKList;
-    heavyHittersId: string;
-}
-
 /**
  * This method handles the outcome of the Misra-Gries sketch for finding Heavy Hitters.
  */
@@ -1017,6 +1003,10 @@ class HeavyHittersReceiver extends OnCompleteRenderer<TopList> {
     }
 }
 
+/**
+ * Receives the result of a PCA computation and initiates the request
+ * to project the specified columns using the projection matrix.
+ */
 class CorrelationMatrixReceiver extends RemoteTableRenderer {
     public constructor(page: FullPage,
                        protected tv: TableView,
@@ -1037,7 +1027,10 @@ class CorrelationMatrixReceiver extends RemoteTableRenderer {
     }
 }
 
-// After operating on a table receives the id of a new remote table.
+/**
+ * Receives the id of a remote table and
+ * initiates a request to display the nextK rows from this table.
+ */
 export class TableOperationCompleted extends RemoteTableRenderer {
     public constructor(page: FullPage,
                        protected tv: TableView,

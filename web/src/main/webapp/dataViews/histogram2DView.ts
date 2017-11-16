@@ -15,23 +15,26 @@
  * limitations under the License.
  */
 
-import {d3} from "./ui/d3-modules";
-import { HistogramViewBase, BucketDialog } from "./histogramBase";
+import {d3} from "../ui/d3-modules";
 import {
     ColumnDescription, Schema, RecordOrder, ColumnAndRange, FilterDescription,
-    ZipReceiver, RemoteTableRenderer, BasicColStats, DistinctStrings, RangeInfo, Histogram2DArgs
-} from "./tableData";
-import {TableView, TableRenderer} from "./table";
-import {TopMenu, SubMenu} from "./ui/menu";
+    BasicColStats, RangeInfo, Histogram2DArgs, CombineOperators
+} from "../javaBridge";
+import {TopMenu, SubMenu} from "../ui/menu";
 import {
     reorder, transpose, significantDigits, formatNumber, ICancellable, PartialResult, Seed
-} from "./util";
-import {HeatMapData, Range2DCollector} from "./heatMap";
-import {combineMenu, CombineOperators, SelectedObject, Renderer} from "./rpc";
-import {Rectangle, Resolution} from "./ui/ui";
-import {FullPage} from "./ui/fullPage";
-import {TextOverlay} from "./ui/textOverlay";
+} from "../util";
+import {Renderer} from "../rpc";
+import {Rectangle, Resolution} from "../ui/ui";
+import {FullPage} from "../ui/fullPage";
+import {TextOverlay} from "../ui/textOverlay";
 import {AnyScale, AxisData} from "./axisData";
+import { HistogramViewBase, BucketDialog } from "./histogramViewBase";
+import {TableView, TableRenderer} from "./tableView";
+import {HeatMapData, Range2DCollector} from "./heatMapView";
+import {RemoteTableRenderer, ZipReceiver} from "../tableTarget";
+import {DistinctStrings} from "../distinctStrings";
+import {combineMenu, SelectedObject} from "../selectedObject";
 
 /**
  * Represents an SVG rectangle drawn on the screen.
@@ -55,6 +58,10 @@ interface Rect {
     countBelow: number;
 }
 
+/**
+ * This class is responsible for rendering a 2D histogram.
+ * This is a histogram where each bar is divided further into sub-bars.
+ */
 export class Histogram2DView extends HistogramViewBase {
     protected currentData: {
         xData: AxisData;
@@ -686,6 +693,11 @@ export class Histogram2DView extends HistogramViewBase {
     }
 }
 
+/**
+ * Receives the result of a filtering operation on two axes and initiates
+ * a new 2D range computation, which in turns initiates a new 2D histogram
+ * rendering.
+ */
 export class Filter2DReceiver extends RemoteTableRenderer {
     constructor(protected xColumn: ColumnDescription,
                 protected yColumn: ColumnDescription,
@@ -713,7 +725,10 @@ export class Filter2DReceiver extends RemoteTableRenderer {
     }
 }
 
-// This class is invoked by the ZipReceiver after a set operation to create a new histogram
+/**
+ * This class is invoked by the ZipReceiver after a set operation
+ * to create a new 2D histogram.
+  */
 export class Make2DHistogram extends RemoteTableRenderer {
     public constructor(page: FullPage,
                        operation: ICancellable,
@@ -739,6 +754,10 @@ export class Make2DHistogram extends RemoteTableRenderer {
     }
 }
 
+/**
+ * Receives partial results and renders a 2D histogram.
+ * The 2D histogram data and the HeatMap data use the same data structure.
+ */
 export class Histogram2DRenderer extends Renderer<HeatMapData> {
     protected histogram: Histogram2DView;
 

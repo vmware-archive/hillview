@@ -15,22 +15,24 @@
  * limitations under the License.
  */
 
-import {RemoteTableObjectView} from "./tableData";
-import {IColumnDescription, RecordOrder} from "./tableData";
-import {TopMenu, SubMenu} from "./ui/menu";
-import {TableView, NextKList, TopList, TableOperationCompleted} from "./table";
-import {RemoteObject, OnCompleteRenderer} from "./rpc";
-import {significantDigits, ICancellable} from "./util";
-import {FullPage} from "./ui/fullPage";
-import {SpecialChars, textToDiv} from "./ui/ui";
-import {DataRange} from "./ui/dataRange";
-import {TabularDisplay} from "./ui/tabularDisplay";
+import {IColumnDescription, RecordOrder, NextKList, TopList} from "../javaBridge";
+import {TopMenu, SubMenu} from "../ui/menu";
+import {TableView, TableOperationCompleted} from "./tableView";
+import {RemoteObject, OnCompleteRenderer} from "../rpc";
+import {significantDigits, ICancellable} from "../util";
+import {FullPage} from "../ui/fullPage";
+import {SpecialChars, textToDiv} from "../ui/ui";
+import {DataRange} from "../ui/dataRange";
+import {TabularDisplay} from "../ui/tabularDisplay";
+import {RemoteTableObjectView} from "../tableTarget";
 
-// Class that renders a table containing the heavy hitters in sorted
-// order of counts. It also displays a menu that gives the option to
-// view the results as filtered version of the original
-// table. Clicking this option gives a table with the same rows, but
-// they are not in sorted order of counts.
+/**
+ * Class that renders a table containing the heavy hitters in sorted
+ * order of counts. It also displays a menu that gives the option to
+ * view the results as filtered version of the original
+ * table. Clicking this option gives a table with the same rows, but
+ *they are not in sorted order of counts.
+ */
 export class HeavyHittersView extends RemoteTableObjectView {
     constructor(public data: TopList,
                 public page: FullPage,
