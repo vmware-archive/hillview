@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-import {ColumnDescription} from "./tableData";
-import {Dialog} from "./ui/dialog"
-import {Converters} from "./util";
+import {ColumnDescription} from "../javaBridge";
+import {Dialog} from "../ui/dialog"
+import {Converters} from "../util";
 
 /**
  * Describes the a filter that checks for (in)equality.

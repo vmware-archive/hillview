@@ -24,6 +24,8 @@ import org.hillview.maps.LoadLogFileMapper;
 /**
  * This is an RpcTarget object which stores a file name to load as a log.
  */
+// All RpcTarget objects must be public
+@SuppressWarnings("WeakerAccess")
 public class LogFileTarget extends RpcTarget {
     private final IDataSet<String> files;
 

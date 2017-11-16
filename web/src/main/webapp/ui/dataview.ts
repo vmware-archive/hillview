@@ -19,7 +19,7 @@ import {IHtmlElement, removeAllChildren} from "./ui";
 import {FullPage} from "./fullPage";
 
 /**
- * Main interface implemented by all Hillview renderings.
+ * Main interface implemented by all Hillview views.
  * Any IDataView resides within a page.
  */
 export interface IDataView extends IHtmlElement {
@@ -39,7 +39,7 @@ export interface IDataView extends IHtmlElement {
 }
 
 /**
- * A datadisplay holds an IDataView within a FullPage.
+ * A DataDisplay holds an IDataView within a FullPage.
  */
 export class DataDisplay implements IHtmlElement {
     topLevel: HTMLElement;

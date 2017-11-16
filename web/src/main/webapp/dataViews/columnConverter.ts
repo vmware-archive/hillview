@@ -15,33 +15,53 @@
  * limitations under the License.
  */
 
-import {Dialog} from "./ui/dialog";
-import {ContentsKind, asContentsKind} from "./tableData";
-import {TableView, RemoteTableReceiver} from "./table";
-import {OnCompleteRenderer} from "./rpc";
-import {ICancellable} from "./util";
-import {FullPage} from "./ui/fullPage";
+import {Dialog} from "../ui/dialog";
+import {OnCompleteRenderer} from "../rpc";
+import {ICancellable} from "../util";
+import {FullPage} from "../ui/fullPage";
+import {TableView, RemoteTableReceiver} from "./tableView";
+import {allContentsKind, ContentsKind} from "../javaBridge";
 
+/**
+ * A dialog to find out information about how to perform the conversion of the data in a column.
+ */
+export class ConverterDialog extends Dialog {
+    private columnNameFixed: boolean = false;
+
+    constructor(protected columnName: string, protected allColumns: string[]) {
+        super("Convert column");
+        let cn = this.addSelectField("columnName", "Column: ", allColumns, columnName);
+        let nk = this.addSelectField("newKind", "Convert to: ", allContentsKind);
+        let nn = this.addTextField("newColumnName", "New column name: ", "String");
+        cn.onchange = () => this.generateColumnName();
+        nk.onchange = () => this.generateColumnName();
+        // If the user types a column name don't attempt to change it
+        nn.onchange = () => this.columnNameFixed = true;
+        this.generateColumnName();
+    }
+
+    private generateColumnName(): void {
+        if (this.columnNameFixed)
+            return;
+        let cn = this.getFieldValue("columnName");
+        let suffix = " (" + this.getFieldValue("newKind") + ")";
+        let nn = cn + suffix;
+        if (this.allColumns.indexOf(nn) >= 0) {
+            let counter = 0;
+            while (this.allColumns.indexOf(nn) >= 0) {
+                nn = cn + counter.toString() + suffix;
+                counter++;
+            }
+        }
+        this.setFieldValue("newColumnName", nn);
+    }
+}
+
+/**
+ * This class handles type conversions on columns (e.g. String to Integer).
+ */
 export class ColumnConverter  {
     public static maxCategoricalCount = 1e4;
-
-    public static dialog(columnName: string, allColumns: string[], table: TableView) {
-        let dialog: Dialog = new Dialog("Convert column");
-        dialog.addSelectField("columnName", "Column: ", allColumns, columnName);
-        dialog.addSelectField("newKind", "Convert to: ", ["Category", "Json", "String", "Integer", "Double", "Date", "Interval"]);
-        dialog.addTextField("newColumnName", "New column name: ", "String", columnName + " (Cat.)");
-        dialog.setAction(() => {
-            let kind: ContentsKind = asContentsKind(dialog.getFieldValue("newKind"));
-            let converter: ColumnConverter = new ColumnConverter(
-                dialog.getFieldValue("columnName"),
-                kind,
-                dialog.getFieldValue("newColumnName"),
-                table
-            );
-            converter.run();
-        });
-        dialog.show();
-    }
 
     constructor(private columnName: string,
         private newKind: ContentsKind,

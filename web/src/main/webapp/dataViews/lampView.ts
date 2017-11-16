@@ -15,27 +15,29 @@
  * limitations under the License.
  */
 
-import {d3} from "./ui/d3-modules";
-import {Dialog} from "./ui/dialog";
-import {TopMenu, SubMenu} from "./ui/menu";
-import {NextKList, TableView, TableRenderer} from "./table";
+import {d3} from "../ui/d3-modules";
+import {Dialog} from "../ui/dialog";
+import {TopMenu, SubMenu} from "../ui/menu";
 import {
-    RangeInfo, BasicColStats, Schema, RemoteTableObject, RemoteTableObjectView, RemoteTableRenderer, RecordOrder,
-    ColumnAndRange, Histogram2DArgs
-} from "./tableData";
-import {Renderer, RpcRequest} from "./rpc";
-import {PartialResult, clamp, Pair, ICancellable, Seed} from "./util";
-import {HeatMapData} from "./heatMap";
-import {HeatMapArrayDialog} from "./heatMapArray";
-import {Point, Resolution} from "./ui/ui";
-import {FullPage} from "./ui/fullPage";
-import {ColorLegend, ColorMap} from "./ui/colorLegend";
+    RangeInfo, BasicColStats, Schema, RecordOrder, ColumnAndRange, Histogram2DArgs, NextKList
+} from "../javaBridge";
+import {Renderer, RpcRequest} from "../rpc";
+import {PartialResult, clamp, Pair, ICancellable, Seed} from "../util";
+import {Point, PointSet, Resolution} from "../ui/ui";
+import {FullPage} from "../ui/fullPage";
+import {ColorLegend, ColorMap} from "../ui/colorLegend";
+import {TableView, TableRenderer} from "./tableView";
+import {HeatMapData} from "./heatMapView";
+import {HeatMapArrayDialog} from "./trellisHeatMapView";
+import {RemoteTableObject, RemoteTableObjectView, RemoteTableRenderer} from "../tableTarget";
 
-export class PointSet2D {
-    points: Point[];
-}
-
-class ControlPointsView extends RemoteTableObjectView {
+/**
+ * This class displays the results of performing a local affine multi-dimensional projection.
+ * See the paper Local Affine Multidimensional Projection from IEEE Transactions on Visualization
+ * and Computer Graphics, vol 17, issue 12, Dec 2011, by Paulo Joia, Danilo Coimbra, Jose A Cuminato,
+ * Fernando V Paulovich, and Luis G Nonato.
+ */
+class LampView extends RemoteTableObjectView {
     private minX: number;
     private minY: number;
     private maxX: number;
@@ -45,7 +47,7 @@ class ControlPointsView extends RemoteTableObjectView {
     private heatMapChart: any;
     private controlPointsCanvas: any;
     private controlPointsChart: any;
-    public controlPoints: PointSet2D;
+    public controlPoints: PointSet;
     private heatMapDots: Array<any>;
     private xDots: number;
     private yDots: number;
@@ -66,7 +68,7 @@ class ControlPointsView extends RemoteTableObjectView {
                 { text: "refresh", action: () => { this.refresh(); } },
                 { text: "update ranges", action: () => { this.fetchNewRanges(); } },
                 { text: "table", action: () => { this.showTable(); } },
-                { text: "3D heat map", action: () => { this.heatMap3D(); } },
+                { text: "3D heat map...", action: () => { this.heatMap3D(); } },
             ]) }
         ]);
         this.page.setMenu(menu);
@@ -131,7 +133,7 @@ class ControlPointsView extends RemoteTableObjectView {
         this.lampTableObject = table;
     }
 
-    public updateControlPoints(pointSet: PointSet2D) {
+    public updateControlPoints(pointSet: PointSet) {
         this.controlPoints = pointSet;
         /* Set the coordinate system of the plot */
         let [minX, maxX] = [Math.min(...this.controlPoints.points.map(p => p.x)), Math.max(...this.controlPoints.points.map(p => p.x))];
@@ -290,6 +292,7 @@ class ControlPointsView extends RemoteTableObjectView {
                     })
                 )
     }
+
     private showTable() {
         let page = new FullPage("Table", "Table", this.page);
         this.getPage().insertAfterMe(page);
@@ -300,19 +303,26 @@ class ControlPointsView extends RemoteTableObjectView {
     }
 
     private heatMap3D() {
+        // The lamp table has a new schema, so we have to retrieve it.
         let rr = this.lampTableObject.createGetSchemaRequest();
         rr.invoke(new SchemaCollector(this.getPage(), rr, this.lampTableObject, this.lampColNames));
     }
 }
 
+/**
+ * Displays a dialog to allow the user to select the parameters of a LAMP multi-dimensional
+ * projection.
+ */
 export class LAMPDialog extends Dialog {
     public static maxNumSamples = 100;
 
     constructor(private selectedColumns: string[], private page: FullPage,
                 private schema: Schema, private remoteObject: TableView) {
         super("LAMP");
-        this.addTextField("numSamples", "No. control points", "Integer", "20");
-        this.addSelectField("controlPointSelection", "Control point selection", ["Random samples", "Category centroids"], "Random samples");
+        let sel = this.addSelectField("controlPointSelection", "Control point selection",
+            ["Random samples", "Category centroids"], "Random samples");
+        sel.onchange = () => this.ctrlPointsChanged();
+        this.addTextField("numSamples", "No. control points", "Integer", "5");
         let catColumns = [""];
         for (let i = 0; i < schema.length; i++)
             if (schema[i].kind == "Category")
@@ -320,20 +330,35 @@ export class LAMPDialog extends Dialog {
         this.addSelectField("category", "Category for centroids", catColumns, "");
         this.addSelectField("controlPointProjection", "Control point projection", ["MDS"], "MDS");
         this.setAction(() => this.execute());
+        this.ctrlPointsChanged();
+    }
+
+    private ctrlPointsChanged(): void {
+        let sel = this.getFieldValue("controlPointSelection");
+        switch (sel) {
+            case "Random samples":
+                this.showField("numSamples", true);
+                this.showField("category", false);
+                break;
+            case "Category centroids":
+                this.showField("numSamples", false);
+                this.showField("category", true);
+                break;
+        }
     }
 
     private execute() {
         let numSamples = this.getFieldValueAsInt("numSamples");
-        if (numSamples > LAMPDialog.maxNumSamples) {
-            this.page.reportError(`Too many samples. Use at most ${LAMPDialog.maxNumSamples}.`);
-            return;
-        }
         let selection = this.getFieldValue("controlPointSelection");
         let projection = this.getFieldValue("controlPointProjection");
         let category = this.getFieldValue("category");
         let rr: RpcRequest;
         switch (selection) {
             case "Random samples": {
+                if (numSamples > LAMPDialog.maxNumSamples) {
+                    this.page.reportError(`Too many samples. Use at most ${LAMPDialog.maxNumSamples}.`);
+                    return;
+                }
                 rr = this.remoteObject.createSampledControlPointsRequest(this.remoteObject.getTotalRowCount(), numSamples, this.selectedColumns);
                 break;
             }
@@ -355,7 +380,8 @@ export class LAMPDialog extends Dialog {
 
         switch (projection) {
             case "MDS": {
-                rr.invoke(new ControlPointsProjector(newPage, rr, this.remoteObject, this.selectedColumns, this.schema));
+                rr.invoke(new ControlPointsProjector(
+                    newPage, rr, this.remoteObject, this.selectedColumns, this.schema));
                 break;
             }
             default: {
@@ -375,20 +401,22 @@ class ControlPointsProjector extends RemoteTableRenderer {
         if (this.remoteObject == null)
             return;
         let rr = this.tableObject.createMDSProjectionRequest(this.remoteObject.remoteObjectId);
-        rr.invoke(new ControlPointsRenderer(this.page, rr, this.tableObject, this.schema, this.remoteObject.remoteObjectId, this.selectedColumns));
+        rr.invoke(new ControlPointsRenderer(
+            this.page, rr, this.tableObject, this.schema, this.remoteObject.remoteObjectId, this.selectedColumns));
     }
 }
 
-class ControlPointsRenderer extends Renderer<PointSet2D> {
-    private controlPointsView: ControlPointsView;
-    private points: PointSet2D;
+class ControlPointsRenderer extends Renderer<PointSet> {
+    private controlPointsView: LampView;
+    private points: PointSet;
 
     constructor(page, operation, tableObject, schema, controlPointsId, private selectedColumns) {
         super(page, operation, "Projecting control points");
-        this.controlPointsView = new ControlPointsView(tableObject, schema, page, controlPointsId, this.selectedColumns);
+        this.controlPointsView = new LampView(
+            tableObject, schema, page, controlPointsId, this.selectedColumns);
     }
 
-    public onNext(result: PartialResult<PointSet2D>) {
+    public onNext(result: PartialResult<PointSet>) {
         super.onNext(result);
         this.points = result.data;
         if (this.points != null)
@@ -397,7 +425,7 @@ class ControlPointsRenderer extends Renderer<PointSet2D> {
 }
 
 class LAMPMapReceiver extends RemoteTableRenderer {
-    constructor(page: FullPage, operation: ICancellable, private cpView: ControlPointsView,
+    constructor(page: FullPage, operation: ICancellable, private cpView: LampView,
                 private arg: Histogram2DArgs) {
         super(page, operation, "Computing LAMP");
     }
@@ -414,7 +442,7 @@ class LAMPMapReceiver extends RemoteTableRenderer {
 class LAMPHeatMapReceiver extends Renderer<HeatMapData> {
     private heatMap: HeatMapData;
     constructor(page: FullPage, operation: ICancellable,
-                private controlPointsView: ControlPointsView, private lampTime: number) {
+                private controlPointsView: LampView, private lampTime: number) {
         super(page, operation, "Computing heat map")
     }
 
@@ -429,7 +457,7 @@ class LAMPHeatMapReceiver extends Renderer<HeatMapData> {
 }
 
 class LAMPRangeCollector extends Renderer<Pair<BasicColStats, BasicColStats>> {
-    constructor(page: FullPage, operation: ICancellable, private cpView: ControlPointsView) {
+    constructor(page: FullPage, operation: ICancellable, private cpView: LampView) {
         super(page, operation, "Getting LAMP ranges.")
     }
 
@@ -452,7 +480,8 @@ class SchemaCollector extends Renderer<NextKList> {
 
     onCompleted() {
         super.onCompleted();
-        let dialog = new HeatMapArrayDialog(this.lampColumnNames, this.page, this.schema, this.tableObject);
+        let dialog = new HeatMapArrayDialog(
+            this.lampColumnNames, this.page, this.schema, this.tableObject, true);
         dialog.show();
     }
 }

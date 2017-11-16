@@ -18,7 +18,6 @@
 import {d3} from "./d3-modules"
 import {IHtmlElement, Point, Resolution, Size} from "./ui";
 import {ContextMenu} from "./menu";
-import {significantDigits} from "../util";
 
 /**
  * Represents a map from the range 0-1 to colors.
@@ -61,12 +60,9 @@ export class ColorLegend implements IHtmlElement {
     /* Static counter that increments to assign every ColorLegend object
        a unique ID for the gradient element. */
     private static nextUniqueId: number = 0;
-
     private uniqueId: number;
-
     private topLevel: HTMLElement;
     private gradient: any; // Element that contains the definitions for the colors in the color map
-    private textIndicator: any; // Text indicator for the value.
 
     private onColorMapChange: (ColorMap) => void; // Function that is called to update other elements when the color map changes.
     private contextMenu: ContextMenu;
@@ -203,21 +199,8 @@ export class ColorLegend implements IHtmlElement {
         let axisG = svg.append("g")
             .attr("transform", `translate(0, ${this.barHeight})`);
 
-        this.textIndicator = svg.append("text").attr("id", "text-indicator")
-            .attr("x", "50%")
-            .attr("y", "100%")
-            .attr("text-anchor", "middle");
-
         let axis = this.getAxis();
         axisG.call(axis);
-    }
-
-    /* Indicate the given value in the text indicator. */
-    public indicate(val: number) {
-        if (val == null || isNaN(val))
-            this.textIndicator.text("");
-        else
-            this.textIndicator.text(significantDigits(val));
     }
 
     public getHTMLRepresentation() {

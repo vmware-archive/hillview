@@ -1,12 +1,29 @@
+/*
+ * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 type TransitionType = "NoKey" | "Ctrl" | "Shift";
 
 /**
  * This class stores a subset of states from a universe of integers.
  * It supports membership queries, as well as various kind of state transitions.
- * It is meant to model selection of rows/columns using mouse clicks and
+ * This is used to model how selection of multiple objects arranged in a row is handled
+ * for various combinations of operations (e.g., column selection).
  */
-export class StateMachine {
+export class SelectionStateMachine {
     protected selected: Set<number>;
     protected curState: number;
 
@@ -31,6 +48,7 @@ export class StateMachine {
         this.selected.clear();
         this.curState = null;
     }
+
     private toggle(val: number) {
         if(this.selected.has(val))
             this.selected.delete(val);

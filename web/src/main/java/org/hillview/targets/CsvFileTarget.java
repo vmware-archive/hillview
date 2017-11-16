@@ -22,6 +22,8 @@ import org.hillview.dataset.api.IDataSet;
 import org.hillview.maps.LoadCsvFileMapper;
 import org.hillview.storage.CsvFileObject;
 
+// All RpcTarget objects must be public
+@SuppressWarnings("WeakerAccess")
 public final class CsvFileTarget extends RpcTarget {
     private final IDataSet<CsvFileObject> files;
 

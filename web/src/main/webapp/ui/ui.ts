@@ -57,6 +57,14 @@ export enum KeyCodes {
     home = 36
 }
 
+export const missingHtml: string = "<div class='missingData'>missing</div>";
+
+export function textToDiv(text: string): HTMLElement {
+    let div = document.createElement("div");
+    div.innerHTML = text;
+    return div;
+}
+
 /**
  * A list of special unicode character codes.
  */
@@ -88,6 +96,11 @@ export interface Point {
     x: number;
     y: number;
 }
+
+export class PointSet {
+    points: Point[];
+}
+
 
 /**
  * A rectangular surface.
@@ -125,6 +138,7 @@ export class Resolution {
     static readonly minDotSize = 4;       // dots are drawn as rectangles of this size in pixels
     static readonly tableRowsOnScreen = 20; // table rows displayed
     static readonly lineHeight = 20;      // Height of a line of text drawn in svg (including reasonable margin).
+    static readonly mouseDotRadius = 3;        // Size of dots that show mouse position
     static readonly legendSize: Size = {width: 500, height: 50}; // Default legend size in px.
 
     // Everything is drawn on top of the canvas.

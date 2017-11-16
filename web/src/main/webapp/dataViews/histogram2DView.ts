@@ -15,30 +15,53 @@
  * limitations under the License.
  */
 
-import {d3} from "./ui/d3-modules";
-import { HistogramViewBase, BucketDialog, AnyScale } from "./histogramBase";
+import {d3} from "../ui/d3-modules";
 import {
     ColumnDescription, Schema, RecordOrder, ColumnAndRange, FilterDescription,
-    ZipReceiver, RemoteTableRenderer, BasicColStats, DistinctStrings, RangeInfo, Histogram2DArgs
-} from "./tableData";
-import {TableView, TableRenderer} from "./table";
-import {TopMenu, SubMenu} from "./ui/menu";
+    BasicColStats, RangeInfo, Histogram2DArgs, CombineOperators
+} from "../javaBridge";
+import {TopMenu, SubMenu} from "../ui/menu";
 import {
-    reorder, transpose, significantDigits, formatNumber, ICancellable, PartialResult, Seed,
-    formatDate
-} from "./util";
-import {AxisData, HeatMapData, Range2DCollector} from "./heatMap";
-import {combineMenu, CombineOperators, SelectedObject, Renderer} from "./rpc";
-import {Rectangle, Resolution} from "./ui/ui";
-import {FullPage} from "./ui/fullPage";
+    reorder, transpose, significantDigits, formatNumber, ICancellable, PartialResult, Seed
+} from "../util";
+import {Renderer} from "../rpc";
+import {Rectangle, Resolution} from "../ui/ui";
+import {FullPage} from "../ui/fullPage";
+import {TextOverlay} from "../ui/textOverlay";
+import {AnyScale, AxisData} from "./axisData";
+import { HistogramViewBase, BucketDialog } from "./histogramViewBase";
+import {TableView, TableRenderer} from "./tableView";
+import {HeatMapData, Range2DCollector} from "./heatMapView";
+import {RemoteTableRenderer, ZipReceiver} from "../tableTarget";
+import {DistinctStrings} from "../distinctStrings";
+import {combineMenu, SelectedObject} from "../selectedObject";
 
+/**
+ * Represents an SVG rectangle drawn on the screen.
+ */
 interface Rect {
-    x: number;
-    y: number;
-    index: number;
-    height: number;
+    /**
+     * Bucket index on the X axis.
+     */
+    xIndex: number;
+    /**
+     * Bucket index on the Y axis.
+     */
+    yIndex: number;
+    /**
+     * Count of items represented by the rectangle.
+     */
+    count: number;
+    /**
+     * Count of items below this rectangle.
+     */
+    countBelow: number;
 }
 
+/**
+ * This class is responsible for rendering a 2D histogram.
+ * This is a histogram where each bar is divided further into sub-bars.
+ */
 export class Histogram2DView extends HistogramViewBase {
     protected currentData: {
         xData: AxisData;
@@ -56,6 +79,8 @@ export class Histogram2DView extends HistogramViewBase {
     protected legend: any;  // a d3 object
     protected legendScale: AnyScale;
     protected menu: TopMenu;
+    protected barWidth: number;  // in pixels
+    protected max: number;  // maximum count displayed (total size of stacked bars)
 
     constructor(remoteObjectId: string, protected tableSchema: Schema, page: FullPage) {
         super(remoteObjectId, tableSchema, page);
@@ -228,31 +253,7 @@ export class Histogram2DView extends HistogramViewBase {
         let canvasSize = Resolution.getCanvasSize(this.page);
         this.chartSize = Resolution.getChartSize(this.page);
 
-        /*
-        TODO: compute and draw CDF
-         let counts = h.buckets;
-         let bucketCount = counts.length;
-         let max = d3.max(counts);
-
-         // prefix sum for cdf
-         let cdfData: number[] = [];
-         if (cdf != null) {
-         this.currentData.cdfSum = [];
-
-         let sum = 0;
-         for (let i in cdf.buckets) {
-         sum += cdf.buckets[i];
-         this.currentData.cdfSum.push(sum);
-         }
-
-         let point = 0;
-         for (let i in this.currentData.cdfSum) {
-         cdfData.push(point);
-         point = this.currentData.cdfSum[i] * max / stats.presentCount;
-         cdfData.push(point);
-         }
-         }
-         */
+        // TODO: compute and draw CDF
 
         if (this.canvas != null)
             this.canvas.remove();
@@ -260,7 +261,7 @@ export class Histogram2DView extends HistogramViewBase {
         let counts: number[] = [];
         let missingDisplayed: number = 0;
 
-        let max: number = 0;
+        this.max = 0;
         let rects: Rect[] = [];
         for (let x = 0; x < data.length; x++) {
             let yTotal = 0;
@@ -269,10 +270,10 @@ export class Histogram2DView extends HistogramViewBase {
                 this.currentData.visiblePoints += v;
                 if (v != 0) {
                     let rec: Rect = {
-                        x: x,
-                        y: yTotal,
-                        index: y,
-                        height: v
+                        xIndex: x,
+                        countBelow: yTotal,
+                        yIndex: y,
+                        count: v
                     };
                     rects.push(rec);
                 }
@@ -280,16 +281,16 @@ export class Histogram2DView extends HistogramViewBase {
             }
             let v = yData.missing.buckets[x];
             let rec: Rect = {
-                x: x,
-                y: yTotal,
-                index: data[x].length,
-                height: v
+                xIndex: x,
+                countBelow: yTotal,
+                yIndex: data[x].length,
+                count: v
             };
             rects.push(rec);
             yTotal += v;
             missingDisplayed += v;
-            if (yTotal > max)
-                max = yTotal;
+            if (yTotal > this.max)
+                this.max = yTotal;
             counts.push(yTotal);
         }
 
@@ -297,7 +298,7 @@ export class Histogram2DView extends HistogramViewBase {
         for (let y = 0; y < xData.missing.buckets.length; y++)
             noX += xData.missing.buckets[y];
 
-        if (max <= 0) {
+        if (this.max <= 0) {
             this.page.reportError("All values are missing: " + noX + " have no X value, "
                 + missingData + " have no X or Y value");
             return;
@@ -329,37 +330,37 @@ export class Histogram2DView extends HistogramViewBase {
         if (this.normalized)
             this.yScale.domain([0, 100]);
         else
-            this.yScale.domain([0, max]);
+            this.yScale.domain([0, this.max]);
         let yAxis = d3.axisLeft(this.yScale)
             .tickFormat(d3.format(".2s"));
 
-        let cd = xData.description;
         let bucketCount = xPoints;
-        let scAxis = HistogramViewBase.createScaleAndAxis(cd.kind, this.chartSize.width, xData.stats.min, xData.stats.max, xData.distinctStrings, true);
+        let scAxis = xData.scaleAndAxis(this.chartSize.width, true);
         this.xScale = scAxis.scale;
         let xAxis = scAxis.axis;
 
         this.canvas.append("text")
             .text(xData.description.name)
             .attr("transform", `translate(${this.chartSize.width / 2},
-                ${this.chartSize.height + Resolution.topMargin + Resolution.bottomMargin})`)
-            .attr("text-anchor", "middle");
+                ${this.chartSize.height + Resolution.topMargin + Resolution.bottomMargin / 2})`)
+            .attr("text-anchor", "middle")
+            .attr("dominant-baseline", "hanging");
 
-        let barWidth = this.chartSize.width / bucketCount;
-        let scale = this.chartSize.height / max;
+        this.barWidth = this.chartSize.width / bucketCount;
+        let scale = this.chartSize.height / this.max;
 
         this.chart.selectAll("g")
              // bars
             .data(rects)
             .enter().append("g")
             .append("svg:rect")
-            .attr("x", d => d.x * barWidth)
-            .attr("y", d => this.rectPosition(d, counts, scale, this.chartSize.height))
-            .attr("height", d => this.rectHeight(d, counts, scale, this.chartSize.height))
-            .attr("width", barWidth - 1)
-            .attr("fill", d => this.color(d.index, yRectangles - 1))
+            .attr("x", (d: Rect) => d.xIndex * this.barWidth)
+            .attr("y", (d: Rect) => this.rectPosition(d, counts, scale, this.chartSize.height))
+            .attr("height", (d: Rect) => this.rectHeight(d, counts, scale, this.chartSize.height))
+            .attr("width", this.barWidth - 1)
+            .attr("fill", (d: Rect) => this.color(d.yIndex, yRectangles - 1))
             .attr("stroke", "black")
-            .attr("stroke-width", d => d.index > yRectangles - 1 ? 1 : 0)
+            .attr("stroke-width", (d: Rect) => d.yIndex > yRectangles - 1 ? 1 : 0)
             .exit()
             // label bars
             .data(counts)
@@ -367,11 +368,11 @@ export class Histogram2DView extends HistogramViewBase {
             .append("g")
             .append("text")
             .attr("class", "histogramBoxLabel")
-            .attr("x", (c, i) => (i + .5) * barWidth)
-            .attr("y", d => this.normalized ? 0 : this.chartSize.height - (d * scale))
+            .attr("x", (c, i: number) => (i + .5) * this.barWidth)
+            .attr("y", (d: number) => this.normalized ? 0 : this.chartSize.height - (d * scale))
             .attr("text-anchor", "middle")
-            .attr("dy", d => this.normalized ? 0 : d <= (9 * max / 10) ? "-.25em" : ".75em")
-            .text(d => HistogramViewBase.boxHeight(d, this.currentData.samplingRate,
+            .attr("dy", (d: number) => this.normalized ? 0 : d <= (9 * this.max / 10) ? "-.25em" : ".75em")
+            .text((d: number) => HistogramViewBase.boxHeight(d, this.currentData.samplingRate,
                 this.currentData.visiblePoints))
             .exit();
 
@@ -385,31 +386,19 @@ export class Histogram2DView extends HistogramViewBase {
                 .call(xAxis);
         }
 
-        let dotRadius = 3;
-        this.xDot = this.canvas
-            .append("circle")
-            .attr("r", dotRadius)
-            .attr("cy", this.chartSize.height + Resolution.topMargin)
-            .attr("cx", 0)
-            .attr("fill", "blue");
-        this.yDot = this.canvas
-            .append("circle")
-            .attr("r", dotRadius)
-            .attr("cx", Resolution.leftMargin)
-            .attr("cy", 0)
-            .attr("fill", "blue");
         this.cdfDot = this.canvas
             .append("circle")
-            .attr("r", dotRadius)
+            .attr("r", Resolution.mouseDotRadius)
             .attr("fill", "blue");
 
-        if (this.currentData.yData.stats.max > this.currentData.yData.stats.min) {
+        if (missingDisplayed > 0 || this.currentData.yData.stats.max > this.currentData.yData.stats.min)
             this.canvas.append("text")
                 .text(yData.description.name)
                 .attr("transform", `translate(${this.chartSize.width / 2}, 0)`)
                 .attr("text-anchor", "middle")
                 .attr("dominant-baseline", "text-before-edge");
 
+        if (this.currentData.yData.stats.max > this.currentData.yData.stats.min) {
             this.legendRect = this.legendRectangle();
             let legendSvg = this.canvas
                 .append("svg");
@@ -440,9 +429,7 @@ export class Histogram2DView extends HistogramViewBase {
                 .attr("x", this.legendRect.upperLeft().x)
                 .attr("y", this.legendRect.upperLeft().y);
 
-            let scaleAxis = HistogramViewBase.createScaleAndAxis(this.currentData.yData.description.kind,
-                this.legendRect.width(), this.currentData.yData.stats.min, this.currentData.yData.stats.max,
-                this.currentData.yData.distinctStrings, true);
+            let scaleAxis = this.currentData.yData.scaleAndAxis(this.legendRect.width(), true);
 
             // create a scale and axis for the legend
             this.legendScale = scaleAxis.scale;
@@ -492,6 +479,9 @@ export class Histogram2DView extends HistogramViewBase {
             .attr("width", 0)
             .attr("height", 0);
 
+        this.pointDescription = new TextOverlay(this.chart,
+            [this.currentData.xData.description.name, "y",
+                this.currentData.yData.description.name, "count"], 40);
         let summary = formatNumber(this.currentData.visiblePoints) + " data points";
         if (missingData != 0)
             summary += ", " + formatNumber(missingData) + " missing";
@@ -510,27 +500,36 @@ export class Histogram2DView extends HistogramViewBase {
         let mouseX = position[0];
         let mouseY = position[1];
 
-        let x : number | Date = 0;
-        if (this.xScale != null)
-            x = this.xScale.invert(position[0]);
-
-        if (this.currentData.xData.description.kind == "Integer")
-            x = Math.round(<number>x);
-        let xs = String(x);
-        if (this.currentData.xData.description.kind == "Category")
-            xs = this.currentData.xData.distinctStrings.get(<number>x);
-        else if (this.currentData.xData.description.kind == "Integer" ||
-            this.currentData.xData.description.kind == "Double")
-            xs = significantDigits(<number>x);
-        else if (this.currentData.xData.description.kind == "Date")
-            xs = formatDate(<Date>x);
+        let xs = HistogramViewBase.invert(position[0], this.xScale,
+            this.currentData.xData.description.kind, this.currentData.xData.distinctStrings);
         let y = Math.round(this.yScale.invert(position[1]));
         let ys = significantDigits(y);
-        this.xLabel.textContent = "x=" + xs;
-        this.yLabel.textContent = "y=" + ys;
+        if (this.normalized)
+            ys += "%";
 
-        this.xDot.attr("cx", mouseX + Resolution.leftMargin);
-        this.yDot.attr("cy", mouseY + Resolution.topMargin);
+        // Find out the rectangle where the mouse is
+        let value = "", size = "";
+        let xIndex = Math.floor(position[0] / this.barWidth);
+        if (xIndex >= 0 && xIndex < this.currentData.data.length && y >= 0) {
+            let values: number[] = this.currentData.data[xIndex];
+            let yTotal = 0;
+            for (let i = 0; i < values.length; i++) {
+                yTotal += values[i];
+                if (yTotal >= y) {
+                    size = significantDigits(values[i]);
+                    value = this.currentData.yData.bucketDescription(i);
+                    break;
+                }
+            }
+            let missing = this.currentData.yData.missing.buckets[xIndex];
+            if (value == "" && yTotal + missing >= y) {
+                value = "missing";
+                size = significantDigits(missing);
+            }
+            // else value is ""
+        }
+
+        this.pointDescription.update([xs, ys, value, size], mouseX, mouseY);
     }
 
     protected legendRectangle(): Rectangle {
@@ -640,18 +639,18 @@ export class Histogram2DView extends HistogramViewBase {
 
     protected rectHeight(d: Rect, counts: number[], scale: number, chartHeight: number): number {
         if (this.normalized) {
-            let c = counts[d.x];
+            let c = counts[d.xIndex];
             if (c <= 0)
                 return 0;
-            return chartHeight * d.height / c;
+            return chartHeight * d.count / c;
         }
-        return d.height * scale;
+        return d.count * scale;
     }
 
     protected rectPosition(d: Rect, counts: number[], scale: number, chartHeight: number): number {
-        let y = d.y + d.height;
+        let y = d.countBelow + d.count;
         if (this.normalized) {
-            let c = counts[d.x];
+            let c = counts[d.xIndex];
             if (c <= 0)
                 return 0;
             return chartHeight * (1 - y / c);
@@ -694,6 +693,11 @@ export class Histogram2DView extends HistogramViewBase {
     }
 }
 
+/**
+ * Receives the result of a filtering operation on two axes and initiates
+ * a new 2D range computation, which in turns initiates a new 2D histogram
+ * rendering.
+ */
 export class Filter2DReceiver extends RemoteTableRenderer {
     constructor(protected xColumn: ColumnDescription,
                 protected yColumn: ColumnDescription,
@@ -721,7 +725,10 @@ export class Filter2DReceiver extends RemoteTableRenderer {
     }
 }
 
-// This class is invoked by the ZipReceiver after a set operation to create a new histogram
+/**
+ * This class is invoked by the ZipReceiver after a set operation
+ * to create a new 2D histogram.
+  */
 export class Make2DHistogram extends RemoteTableRenderer {
     public constructor(page: FullPage,
                        operation: ICancellable,
@@ -747,6 +754,10 @@ export class Make2DHistogram extends RemoteTableRenderer {
     }
 }
 
+/**
+ * Receives partial results and renders a 2D histogram.
+ * The 2D histogram data and the HeatMap data use the same data structure.
+ */
 export class Histogram2DRenderer extends Renderer<HeatMapData> {
     protected histogram: Histogram2DView;
 

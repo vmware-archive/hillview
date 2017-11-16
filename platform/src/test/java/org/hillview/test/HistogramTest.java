@@ -134,7 +134,6 @@ public class HistogramTest extends BaseTest {
         HeatMap hm = new HeatMap(buckDes1, buckDes2);
         hm.createHeatMap(new ColumnAndConverter(col0), new ColumnAndConverter(col1), new
                 FullMembershipSet(col0.sizeInRows()), 1.0, 0, false);
-
         Histogram h1 = hm.getMissingHistogramD1();
         Histogram h2 = hm.getMissingHistogramD2();
         Assert.assertEquals(1, hm.getCount(0, 0));

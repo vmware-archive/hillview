@@ -32,6 +32,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
 
+// All RpcTarget objects must be public
+@SuppressWarnings("WeakerAccess")
 public final class ControlPointsTarget extends RpcTarget {
     final DoubleMatrix highDimData;
     @Nullable

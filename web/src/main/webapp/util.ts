@@ -15,12 +15,18 @@
  * limitations under the License.
  */
 
+/**
+ * This file contains various useful functions and classes.
+ */
+
 export interface Pair<T1, T2> {
     first: T1;
     second: T2;
 }
 
-// Direct counterpart of corresponding Java class
+/**
+ * Direct counterpart of corresponding Java class
+ */
 export class Converters {
     public static dateFromDouble(value: number): Date {
         return new Date(value);
@@ -31,7 +37,9 @@ export class Converters {
     }
 }
 
-// Random seed management
+/**
+ * Random seed management
+  */
 export class Seed {
     public static instance: Seed = new Seed();
 
@@ -42,20 +50,26 @@ export class Seed {
     }
 }
 
-// Convert a number to a more readable reprsentation.
+/**
+ * Converts a number to a more readable representation.
+ */
 export function formatNumber(n: number): string {
     return n.toLocaleString();
 }
 
-// Convert n to a string representing a percent value
-// where we keep at most one digit after the decimal point
+/**
+ * Convert n to a string representing a percent value
+ * where we keep at most one digit after the decimal point
+ */
 export function percent(n: number): string {
     n = Math.round(n * 1000) / 10;
     return significantDigits(n) + "%";
 }
 
-// convert a number to a string and prepend zeros if necessary to
-// bring the integer part to the specified number of digits
+/**
+ * convert a number to a string and prepend zeros if necessary to
+ * bring the integer part to the specified number of digits
+ */
 function zeroPad(num: number, length: number): string {
     let n = Math.abs(num);
     let zeros = Math.max(0, length - Math.floor(n).toString().length );
@@ -67,9 +81,11 @@ function zeroPad(num: number, length: number): string {
     return zeroString + n;
 }
 
-// Write a date into a format like
-// 2017/03/05 10:05:30.243
-// The suffix may be ommitted if it is zero
+/**
+ * Write a date into a format like
+ * 2017/03/05 10:05:30.243
+ * The suffix may be omitted if it is zero
+ */
 export function formatDate(d?: Date): string {
     if (d == null)
         d = new Date();
@@ -133,7 +149,9 @@ export function significantDigits(n: number): string {
     return String(n) + suffix;
 }
 
-// order two numbers such that the smaller one comes first
+/**
+ * Order two numbers such that the smaller one comes first
+ */
 export function reorder(m: number, n: number): [number, number] {
     if (m < n)
         return [m, n];
@@ -141,19 +159,21 @@ export function reorder(m: number, n: number): [number, number] {
         return [n, m];
 }
 
-// This class builds some useful iterators over typescript enums.
-// In all these methods e is an enum *type*
+/**
+ * This class builds some useful iterators over typescript enums.
+ * In all these methods e is an enum *type*
+ */
 export class EnumIterators {
     static getNamesAndValues<T extends number>(e: any) {
         return EnumIterators.getNames(e).map(n => ({ name: n, value: e[n] as T }));
     }
 
     static getNames(e: any) {
-        return EnumIterators.getObjValues(e).filter(v => typeof v === "string") as string[];
+        return EnumIterators.getObjValues(e).filter(v => typeof v == "string") as string[];
     }
 
     static getValues<T extends number>(e: any) {
-        return EnumIterators.getObjValues(e).filter(v => typeof v === "number") as T[];
+        return EnumIterators.getObjValues(e).filter(v => typeof v == "number") as T[];
     }
 
     private static getObjValues(e: any): (number | string)[] {
@@ -161,7 +181,9 @@ export class EnumIterators {
     }
 }
 
-// transpose a matrix
+/**
+ * Transpose a matrix.
+ */
 export function transpose<D>(m: D[][]): D[][] {
     let w = m.length;
     if (w == 0)
@@ -178,9 +200,11 @@ export function transpose<D>(m: D[][]): D[][] {
     return result;
 }
 
-// given a set of values in a heat map this computes two coefficients for a
-// linear regression from X to Y.  The result is an array with two numbers, the
-// two coefficients.  If the regression is undefined, the coefficients array is empty.
+/**
+ * Given a set of values in a heat map this computes two coefficients for a
+ * linear regression from X to Y.  The result is an array with two numbers, the
+ * two coefficients.  If the regression is undefined, the coefficients array is empty.
+ */
 export function regression(data: number[][]) : number[] {
     let width = data.length;
     let height = data[0].length;
@@ -209,7 +233,9 @@ export function regression(data: number[][]) : number[] {
     return [alpha, beta];
 }
 
-// truncate a string to the specified length, adding ellipses if it was too long
+/**
+ * Truncate a string to the specified length, adding ellipses if it was too long.
+  */
 export function truncate(str: string, length: number): string {
     if (str.length > length) {
         return str.slice(0, length) + "..."
@@ -223,15 +249,19 @@ export function clamp(x: number, xMin: number, xMax: number) {
 }
 
 export function isInteger(n: number) {
-    return Math.floor(n) === n;
+    return Math.floor(n) == n;
 }
 
-// convert a copy of an array
+/**
+ * Convert a copy of an array.
+ */
 export function cloneArray<T>(arr: T[]): T[] {
     return arr.slice(0);
 }
 
-// convert a set to an array
+/**
+ * Convert a set to an array
+ */
 export function cloneSet<T>(set: Set<T>): T[] {
     let ret: T[] = [];
     set.forEach((val) => ret.push(val));
@@ -253,9 +283,11 @@ export interface RpcReply {
 }
 
 export interface ICancellable {
-    // return 'true' if cancellation succeeds.
-    // Cancellation may fail if the computation is terminated.
+    /**
+     * return 'true' if cancellation succeeds.
+     * Cancellation may fail if the computation is terminated.
+     */
     cancel(): boolean;
-    // time when operation was initiated
+    /** time when operation was initiated */
     startTime(): Date;
 }

@@ -15,21 +15,24 @@
  * limitations under the License.
  */
 
-import {RemoteTableObjectView} from "./tableData";
-import {IColumnDescription, ColumnDescription, RecordOrder} from "./tableData";
-import {TopMenu, SubMenu} from "./ui/menu";
-import {TableView, NextKList, TopList, TableOperationCompleted} from "./table";
-import {RemoteObject, OnCompleteRenderer} from "./rpc";
-import {significantDigits, ICancellable} from "./util";
-import {FullPage} from "./ui/fullPage";
-import {Resolution, SpecialChars} from "./ui/ui";
-import {DataRange} from "./ui/dataRange";
+import {IColumnDescription, RecordOrder, NextKList, TopList} from "../javaBridge";
+import {TopMenu, SubMenu} from "../ui/menu";
+import {TableView, TableOperationCompleted} from "./tableView";
+import {RemoteObject, OnCompleteRenderer} from "../rpc";
+import {significantDigits, ICancellable} from "../util";
+import {FullPage} from "../ui/fullPage";
+import {SpecialChars, textToDiv} from "../ui/ui";
+import {DataRange} from "../ui/dataRange";
+import {TabularDisplay} from "../ui/tabularDisplay";
+import {RemoteTableObjectView} from "../tableTarget";
 
-// Class that renders a table containing the heavy hitters in sorted
-// order of counts. It also displays a menu that gives the option to
-// view the results as filtered version of the original
-// table. Clicking this option gives a table with the same rows, but
-// they are not in sorted order of counts.
+/**
+ * Class that renders a table containing the heavy hitters in sorted
+ * order of counts. It also displays a menu that gives the option to
+ * view the results as filtered version of the original
+ * table. Clicking this option gives a table with the same rows, but
+ *they are not in sorted order of counts.
+ */
 export class HeavyHittersView extends RemoteTableObjectView {
     constructor(public data: TopList,
                 public page: FullPage,
@@ -67,34 +70,11 @@ export class HeavyHittersView extends RemoteTableObjectView {
     }
 
     public fill(tdv: NextKList, elapsedMs: number): void {
-        let scroll_div = document.createElement("div");
-        scroll_div.style.maxHeight = Resolution.canvasHeight.toString() + "px";
-        scroll_div.style.overflowY = "auto";
-        scroll_div.style.display =  "inline-block";
-        this.topLevel.appendChild(scroll_div);
-        let table = document.createElement("table");
-        scroll_div.appendChild(table);
-
-        let tHead = table.createTHead();
-        let thr = tHead.appendChild(document.createElement("tr"));
-        let thd0 = document.createElement("th");
-        thd0.innerHTML = "Rank";
-        thr.appendChild(thd0);
-        for (let i = 0; i < this.schema.length; i++) {
-            let cd = new ColumnDescription(this.schema[i]);
-            let thd = document.createElement("th");
-            thd.innerHTML = cd.name;
-            thr.appendChild(thd);
-        }
-        let thd1 = document.createElement("th");
-        thd1.innerHTML = "Count";
-        thr.appendChild(thd1);
-        let thd2 = document.createElement("th");
-        thd2.innerHTML = "%";
-        thr.appendChild(thd2);
-        let thd3 = document.createElement("th");
-        thd3.innerHTML = "Fraction";
-        thr.appendChild(thd3);
+        let table = new TabularDisplay();
+        let header: string[] = ["Rank"];
+        this.schema.forEach(c => header.push(c.name));
+        header = header.concat(["Count", "%", "Fraction"]);
+        table.setColumns(header);
 
         let restCount = this.getRestCount(tdv);
         let restPos: number;
@@ -103,51 +83,36 @@ export class HeavyHittersView extends RemoteTableObjectView {
         else
             restPos = tdv.rows.length;
 
-        let tBody = table.createTBody();
         if (tdv.rows != null) {
             let k = 0;
             let position = 0;
             for (let i = 0; i < tdv.rows.length; i++) {
                 k++;
                 if (i == restPos) {
-                    this.showRest(k, position, restCount, tdv.rowCount, tBody);
+                    this.showRest(k, position, restCount, tdv.rowCount, table);
                     position += restCount;
                     k++;
                 }
-                let trow = tBody.insertRow();
-                let cell = trow.insertCell(0);
-                cell.style.textAlign = "right";
-                cell.textContent = k.toString();
+
+                let row: Element[] = [];
+                row.push(textToDiv(k.toString()));
                 for (let j = 0; j < this.schema.length; j++) {
-                    let cell = trow.insertCell(j+1);
-                    cell.style.textAlign = "right";
                     let value = tdv.rows[i].values[j];
-                    if (value == null) {
-                        cell.classList.add("missingData");
-                        cell.textContent = "missing";
-                    } else
-                        cell.textContent = TableView.convert(value, this.schema[j].kind);
+                    row.push(textToDiv(TableView.convert(value, this.schema[j].kind)));
                 }
-                let cell1 = trow.insertCell(this.schema.length + 1);
-                cell1.style.textAlign = "right";
-                cell1.textContent = this.valueToString(tdv.rows[i].count);
-                let cell2 = trow.insertCell(this.schema.length + 2);
-                cell2.style.textAlign = "right";
-                cell2.textContent = this.valueToString((tdv.rows[i].count/tdv.rowCount)*100);
-                let cell3 = trow.insertCell(this.schema.length + 3);
-                let dataRange = new DataRange(position, tdv.rows[i].count, tdv.rowCount);
-                cell3.appendChild(dataRange.getDOMRepresentation());
+                row.push(textToDiv(this.valueToString(tdv.rows[i].count)));
+                row.push(textToDiv(this.valueToString((tdv.rows[i].count / tdv.rowCount) * 100)));
+                row.push(new DataRange(position, tdv.rows[i].count, tdv.rowCount).getDOMRepresentation());
+                table.addElementRow(row);
                 position += tdv.rows[i].count;
             }
             if ((restPos == tdv.rows.length) && (restCount > 0)) {
                 k = tdv.rows.length + 1;
-                this.showRest(k, position, restCount, tdv.rowCount, tBody);
+                this.showRest(k, position, restCount, tdv.rowCount, table);
             }
         }
-        let footer = tBody.insertRow();
-        let cell = footer.insertCell(0);
-        cell.colSpan = this.schema.length + 4;
-        cell.className = "footer";
+        table.addFooter();
+        this.topLevel.appendChild(table.getHTMLRepresentation());
 
         this.page.reportTime(elapsedMs);
     }
@@ -181,26 +146,18 @@ export class HeavyHittersView extends RemoteTableObjectView {
         return str;
     }
 
-    private showRest(k: number, position: number, restCount: number, total: number, tBody: any): void {
-        let trow = tBody.insertRow();
-        let cell = trow.insertCell(0);
-        cell.style.textAlign = "right";
-        cell.textContent = k.toString();
+    private showRest(k: number, position: number, restCount: number, total: number, table: TabularDisplay): void {
+        let row: Element[] = [];
+        row.push(textToDiv(k.toString()));
         for (let j = 0; j < this.schema.length; j++) {
-            let cell = trow.insertCell(j+1);
-            cell.style.textAlign = "right";
-            cell.textContent = "Everything Else";
-            cell.classList.add("missingData");
+            let m = textToDiv("everything else");
+            m.classList.add("missingData");
+            row.push(m);
         }
-        let cell1 = trow.insertCell(this.schema.length + 1);
-        cell1.style.textAlign = "right";
-        cell1.textContent = this.valueToString(restCount);
-        let cell2 = trow.insertCell(this.schema.length + 2);
-        cell2.style.textAlign = "right";
-        cell2.textContent = this.valueToString((restCount/total)*100);
-        let cell3 = trow.insertCell(this.schema.length + 3);
-        let dataRange = new DataRange(position, restCount, total);
-        cell3.appendChild(dataRange.getDOMRepresentation());
+        row.push(textToDiv(this.valueToString(restCount)));
+        row.push(textToDiv(this.valueToString((restCount/total)*100)));
+        row.push(new DataRange(position, restCount, total).getDOMRepresentation());
+        table.addElementRow(row);
     }
 }
 

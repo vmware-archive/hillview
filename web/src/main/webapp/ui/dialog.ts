@@ -16,7 +16,7 @@
  */
 
 import {IHtmlElement, KeyCodes} from "./ui"
-import {ContentsKind} from "../tableData"
+import {ContentsKind} from "../javaBridge"
 
 /**
  *  Represents a field in the dialog.
@@ -35,6 +35,9 @@ export class DialogField {
  */
 export class Dialog implements IHtmlElement {
     private container: HTMLDivElement;
+    /**
+     * The fieldsDiv is a div that contains all the form fields.
+     */
     private fieldsDiv: HTMLDivElement;
     /**
      * Method to be invoked when dialog is closed with OK.
@@ -44,6 +47,10 @@ export class Dialog implements IHtmlElement {
      * Stores the input elements and (optionally) their types.
      */
     private fields: Map<string, DialogField> = new Map<string, DialogField>();
+    /**
+     * Maps a field name to the fieldsDiv that contains all the corresponding visual elements.
+     */
+    private line: Map<string, HTMLElement> = new Map<string, HTMLElement>();
     private confirmButton: HTMLButtonElement;
 
     /**
@@ -130,28 +137,31 @@ export class Dialog implements IHtmlElement {
      * @param labelText: Text in the dialog for this field.
      * @param type: Data type of this field. For now, only Integer is special.
      * @param value: Initial default value.
+     * @return       The input element created for the user to type the text.
      */
-    public addTextField(fieldName: string, labelText: string, type: ContentsKind, value?: string): void {
+    public addTextField(
+        fieldName: string, labelText: string, type: ContentsKind, value?: string): HTMLInputElement {
         let fieldDiv = document.createElement("div");
+        fieldDiv.style.display = "flex";
+        fieldDiv.style.alignItems = "center";
         this.fieldsDiv.appendChild(fieldDiv);
 
         let label = document.createElement("label");
         label.textContent = labelText;
-        label.style.verticalAlign = "center";
         fieldDiv.appendChild(label);
 
         let input: HTMLInputElement = document.createElement("input");
         fieldDiv.appendChild(input);
-        fieldDiv.style.verticalAlign = "center";
-        if (type == "Integer") {
+        if (type == "Integer")
             input.type = "number";
-        }
         if (type == "Integer" || type == "Double")
             input.width = "3em";
 
         this.fields.set(fieldName, {html: input, type: type});
         if (value != null)
             this.fields.get(fieldName).html.value = value;
+        this.line.set(fieldName, fieldDiv);
+        return input;
     }
 
     /**
@@ -160,9 +170,13 @@ export class Dialog implements IHtmlElement {
      * @param labelText: Text in the dialog for this field.
      * @param options: List of strings that are the options in the selection box.
      * @param value: Initial default value.
+     * @return       A reference to the select html select field.
      */
-    public addSelectField(fieldName: string, labelText: string, options: string[], value?: string): void {
+    public addSelectField(
+        fieldName: string, labelText: string, options: string[], value?: string): HTMLSelectElement {
         let fieldDiv = document.createElement("div");
+        fieldDiv.style.display = "flex";
+        fieldDiv.style.alignItems = "center";
         this.fieldsDiv.appendChild(fieldDiv);
 
         let label = document.createElement("label");
@@ -192,6 +206,23 @@ export class Dialog implements IHtmlElement {
         this.fields.set(fieldName, {html: select});
         if (value != null)
             this.fields.get(fieldName).html.value = value;
+        this.line.set(fieldName, fieldDiv);
+        return select;
+    }
+
+    /**
+     * Make the specified field visible or invisible.
+     * @param {string} labelText   Label associated to the field.
+     * @param {boolean} show       If true show the field, else hide it.
+     */
+    public showField(labelText: string, show: boolean): void {
+        let fieldDiv = this.line.get(labelText);
+        if (fieldDiv == null)
+            return;
+        if (show)
+            fieldDiv.style.display = "flex";
+        else
+            fieldDiv.style.display = "none";
     }
 
     /**
@@ -201,6 +232,15 @@ export class Dialog implements IHtmlElement {
      */
     public getFieldValue(field: string): string {
         return this.fields.get(field).html.value;
+    }
+
+    /**
+     * Set the value of a field in the dialog.
+     * @param {string} field  Field whose value is set.
+     * @param {string} value  Value that is being set.
+     */
+    public setFieldValue(field: string, value: string): void {
+        this.fields.get(field).html.value = value;
     }
 
     /**

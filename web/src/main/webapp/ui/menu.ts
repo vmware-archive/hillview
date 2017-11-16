@@ -173,7 +173,7 @@ export class SubMenu implements IHtmlElement {
      */
     find(text: string): number {
         for (let i=0; i < this.items.length; i++)
-            if (this.items[i].text === text)
+            if (this.items[i].text == text)
                 return i;
         return -1;
     }
@@ -257,7 +257,7 @@ export class TopMenu implements IHtmlElement {
      */
     getSubmenu(text: string): SubMenu {
         for (let i=0; i < this.items.length; i++)
-            if (this.items[i].text === text)
+            if (this.items[i].text == text)
                 return this.items[i].subMenu;
         return null;
     }

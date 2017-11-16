@@ -136,10 +136,20 @@ marked with x.
 
 ### Data schema views
 
-The data schema views allows users to browse and select a the set of
-columns from the dataset to focus on.
+The data schema views allows users to browse the schema of the current
+table and select a set of columns from the dataset to focus on.
 
-*TODO*
+The following example shows a schema view; the rows in a schema view
+are the description of the columns of the data table.  In this example
+there are three rows selected.
+
+![Schema view](schema-view.png)
+
+Once the user selects a set columns they can display a view of the
+data table restricted to the selected columns using the View/Selected
+columns menu.
+
+![Schema view menu](schema-view-menu.png)
 
 ### Table views
 
@@ -180,6 +190,11 @@ LIMIT 0, 19
 
 Initially a table view displays no columns.  The user can choose which
 columns are displayed or hidden.
+
+Missing values are shown with a different color.  When sorting missing
+values are considered larger than any other value.
+
+![Missing value display](missing-value.png)
 
 In the tabular display a visible row can correspond to multiple rows
 in the original dataset.  For example, in this figure, the first
@@ -273,9 +288,13 @@ the current state of the display.
   the sort order in descending order.
 
 * Heatmap: this option requires exactly two or three columns of
-  suitable types to be selected; in this case, it will draw a heatmap
-  plot of the data in these columns.  For Heatmaps see [Heat-map
-  views](#heatmap-views).
+  suitable types to be selected.  When two columns are selected this
+  will display the data in these columns as a [Heat-map
+  views](#heatmap-views).  When three columns are selected the
+  following menu allows the user to configure the data to display as a
+  [Trellis plot views](#trellis-plot-view).
+
+  ![Heatmap array menu](heatmap-array-menu.png)
 
 * Histogram: this option requires exactly one or two columns of
   suitable types to be selected.  If one column is selected, this
@@ -343,7 +362,19 @@ the current state of the display.
   conversion a new column is appended to the table, containing the
   converted data.
 
+#### Operations on a table cell
+
+The user can also right-click on a cell in a visible column to pop-up
+a menu allowing filtering based on values; the menu permits to
+keep/eliminate all rows that have the specified value in the selected
+column.
+
+![Cell filtering context menu](filter-context-menu.png)
+
 #### Operations on tables
+
+The tabular display has a "view" menu that offers the following
+operations:
 
 ![View menu](table-view-menu.png)
 
@@ -357,6 +388,10 @@ the current state of the display.
   current sort order in order from left to right.
 
 * No columns: all columns will be hidden.
+
+* Schema: displays [the table schema](#data-schema-views).
+
+For a description of the combine menu see [combining two views](combining-two-views).
 
 ### Heavy hitter views
 
@@ -445,6 +480,8 @@ The "View" menu from a histogram display has the following functions:
   the display to a [two-dimensional
   histogram](#two-dimensional-histogram-views)
 
+For a description of the combine menu see [combining two views](combining-two-views).
+
 #### Mouse selection in histogram views
 
 The mouse can be used to select a portion of the data in a histogram.
@@ -486,6 +523,12 @@ distribution in a second column.
 
 ![A two-dimensional histogram](hillview-histogram2d.png)
 
+Next to the mouse an overlay box displays four different values:
+* the mouse's position on the X axis
+* the mouse's position on the Y axis
+* the range of values corresponding to the bar where the mouse is placed
+* the size of the bar (the number of rows corresponding to the bar)
+
 For example, in this figure we see a 2D histogram where the X axis has
 the airline carriers.  For each carrier the bar is divided into
 sub-bars, each of which corresponding to a range of departure delays.
@@ -525,6 +568,8 @@ The "view" menu for a 2D histogram offers the following operations:
 * percent/value: This toggles between displaying the 2D histogram bars
 with relative sizes or normalized all to 100% height, as in the
 following image.
+
+For a description of the combine menu see [combining two views](combining-two-views).
 
 ![A normalized two-dimensional histogram](hillview-histogram-normalized.png)
 
@@ -581,6 +626,8 @@ The heatmap view menu has the following operations:
   of the data in the two columns that are used for the heatmap
   display.
 
+For a description of the combine menu see [combining two views](combining-two-views).
+
 #### Selection from a heatmap
 
 Users can select a rectangular area from a heatmap with the mouse.
@@ -591,7 +638,13 @@ Users can select a rectangular area from a heatmap with the mouse.
 
 ![An array of heatmap views](hillview-heatmap-array.png)
 
-*TODO*
+A Trellis plot is an array of heatmaps, grouped by a third column.
+Currently the third column is restricted to be a categorical column.
+A Trellis plot is an array of heatmaps, where each heatmap corresponds
+to the rows that have a specific value in the third (categorical)
+column.
+
+*TODO* discuss missing values
 
 ### Combining two views
 
@@ -641,14 +694,44 @@ projection.
 
   ![LAMP menu](lamp-menu.png)
 
-The users is presented with a set of control-points which can be moved
-around to guide the projection.  A typical projection is shown in the
-following figure:
+The meaning of the parameters is as follows:
+
+* Control-point selection: control points can be chosen either
+  - by sampling a random set of rows from the table
+  - by choosing as control points a representative for each value in a categorical column
+
+* Number of control points: if the control points are selected by
+  randomly sampling from the table this number indicates the number of
+  control points produced.
+
+* Category for centroids: the user must select a categorical column
+  from the drop-down menu.  For each value in this column the average
+  of all points in the selected columns will be used as a control
+  point.
+
+* Control point projection: currently only MDS (multi-dimensional
+  scaling) is a possible choice.
+
+After the LAMP projection is displayed, users are presented with a set
+of control-points which can be moved around to guide the projection;
+these are shown as green circles.  A typical projection is shown in
+the following figure:
 
   ![LAMP projection](lamp-projection.png)
 
-*TODO*
+The "View" menu offers the following options:
 
   ![LAMP view menu](lamp-view-menu.png)
 
-*TODO*
+* refresh: redraws the image
+
+* update ranges: recalculates the min/max range of the heatmap display
+  to fit the data entirely.  When moving the handles the data range
+  can expand or shrink.
+
+* table: show a tabular view of the data represented in the LAMP view
+
+* 3D heat map: selecting this option opens a new menu which allows the
+  user to make a [Trellis plot](#trellis-plot-view) of the
+  two-dimensional data produced by the projection, by grouping all
+  points that belong to a categorical value.

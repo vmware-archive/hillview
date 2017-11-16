@@ -26,6 +26,7 @@ import javax.servlet.ServletContextListener;
  * This class is used by TomCat to initialize the web server before the
  * first client request is processed.
  */
+@SuppressWarnings("WeakerAccess")
 public class WebServerInitializer implements ServletContextListener {
     @Override
     public void contextDestroyed(ServletContextEvent arg) {}

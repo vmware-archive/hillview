@@ -26,7 +26,7 @@ import org.hillview.table.api.IStringConverterDescription;
 
 import javax.annotation.Nullable;
 
-@SuppressWarnings("CanBeFinal")
+@SuppressWarnings("WeakerAccess,CanBeFinal")
 public class ColumnAndRange {
     public String columnName = "";
     public double min;

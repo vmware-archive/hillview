@@ -71,7 +71,7 @@ export class FullPage implements IHtmlElement {
      * @param {ViewKind} viewKind    Kind of view that is being displayed.
      * @param {FullPage} sourcePage  Page which initiated the creation of this one.
      */
-    public constructor(title: string, viewKind: ViewKind, sourcePage?: FullPage) {
+    public constructor(title: string, viewKind: ViewKind, sourcePage: FullPage) {
         this.pageId = FullPage.pageCounter++;
         this.console = new ConsoleDisplay();
         this.progressManager = new ProgressManager();
@@ -93,7 +93,7 @@ export class FullPage implements IHtmlElement {
 
         let help = document.createElement("div");
         help.onclick = () => this.openInNewTab(this.helpUrl(viewKind));
-        help.textContent = "help^";
+        help.textContent = "help";
         help.className = "external-link";
         this.addCell(titleRow, help, true);
 
@@ -101,6 +101,7 @@ export class FullPage implements IHtmlElement {
         h1.innerHTML = title;
         h1.style.textOverflow = "ellipsis";
         h1.style.textAlign = "center";
+        h1.style.margin = "0";
         this.addCell(titleRow, h1, false);
 
         if (sourcePage != null) {
