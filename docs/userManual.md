@@ -6,7 +6,10 @@ the data manipulated is read-only.  Users can sort, find, filter,
 transform, query, and chart data in some simple ways; several
 operations are performed easily using direct manipulation in the GUI.
 Hillview is designed to work on very large data sets (billions of
-rows), complementing tools such as Excel.
+rows), complementing tools such as Excel.  Hillview can also be
+executed as a stand-alone executable on a local machine, but then the
+data size it can manipulate is limited by the available machine
+resources.
 
 Hillview attempts to provide fast data manipulation.  The illusion of
 fast manipulation is provided by deferring work: Hillview only
@@ -76,31 +79,134 @@ value is not present.  This is similar to NULL values in databases.
 In this section we describe the various ways to present and interact
 with the data.
 
-### Loading data sets
+## Error display
+
+Some operations can trigger errors.  For example, the attempt to load
+a non-existent file.  These errors usually manifest as Java exceptions
+in the backend.  Today the Hillview front-end captures these
+exceptions and displays them on the screen.  We are working to improve
+the usability of error messages; currently they are not very
+user-friendly.
+
+![Error displayed by Hillview](exception.png)
+
+### Loading data
 
 Hillview supports reading data from multiple data-sources.
 
-*TODO*
+When the program starts the user is presented with a Load menu.
 
-The final UI for loading datasets is not yet implemented.  Currently
-this UI consists in some buttons that load pre-defined datasets.
+![Load menu](load-menu.png)
+
+The load menu allows the user to specify a dataset to load from
+storage.
+
+* System logs: when this option is selected Hillview loads the logs
+  produced by the Hillview system itself as a table with 9 columns.
+  This is mostly useful to debug the performance of the Hillview
+  system itself.
+
+* CSV files: allows the user to [read data from a set of CSV
+  files](#reading-csv-files).
+
+* DB tables: allows the user to [read data from a set of federated
+  databases](#reading-data-from-sql-databases).
 
 #### Reading CSV files
 
-Hillview can read data from comma- or tab-separated files.
+Hillview can read data from comma- or tab-separated files.  The
+following menu allows the users to specify the files to load.  *The
+files must be resident on the same machines where the Hillview service
+is deployed*.
 
-*TODO*
+![Specifying CSV files](csv-menu.png)
+
+* Folder: Folder containing the files to load.
+
+* File name pattern: A shell expansion pattern that names the files to
+  load.  Multiple files may be loaded on each machine.
+
+* Schema file: An optional file in JSON format that describes the
+  schema of the data.  In the absence of a schema file Hillview loads
+  all columns as strings.
+
+* Header row: select this option if the first row in each CSV file is
+  a header row; the first row is used to generate names for the
+  columns in the absence of a schema.  If a schema is supplied the
+  first row is just ignored.
+
+All the CSV files must have the same schema (and the same number of
+columns).  CSV files may be compressed.  CSV fields may be quoted
+using double quotes, and then they may contain newlines.  An empty
+field (contained between two consecutive commas, or between a comma
+and a newline) is translated to a 'missing' data value.
+
+The following is an example of a schema specification in JSON for a
+table with 2 columns.
+
+```JSON
+[{
+    "name": "DayOfWeek"
+    "kind": "Integer",
+    "allowMissing": true
+}, {
+    "name": "FlightDate"
+    "kind": "Date",
+    "allowMissing": false
+}]
+```
+
+The schema is an array of JSON objects each describing a column.  A
+column description has three fields:
+
+* name: A string describing the column name.  All column names in a
+  schema must be unique.
+
+* allowMissing: A Boolean value which indicates whether the column can
+  contain 'missing' values.
+
+* kind: A string describing the type of data in the column,
+  corresponding to the types in the [data model](#data-model).  The
+  kind is one of: "String", "Category", "JSON", "Double", "Integer",
+  "Date", and "Interval".
 
 #### Reading data from SQL databases
 
-Hillview can read data from one or many SQL databases (any database
-that supports the JDBC standard for reading).
+The following menu allows the user to load data from a set of
+federated databases that are exposed as a JDBC service.  *Each worker
+machine in the cluster will attempt to connect to the database
+independently.* This works best when a separate database server is
+deployed on each local Hillview machine hosting a worker.
+
+Currently there is no way to load data from a single external database
+when Hillview is deployed as a cloud service; however, data can be
+loaded from a database when Hillview is deployed as a service running
+on the local user machine.
+
+The following menu allows the user to specify the data to load.
+
+![Specifying database connections](db-menu.png)
+
+* database kind: A drop-down menu indicating the kind of database to
+  load data from (e.g., MySQL).
+
+* host: The network name of a machine hosting the database.  *TODO*
+  this should be a pattern enabling each worker to specify a different
+  machine.
+
+* port: The network port where the database service is listening.
+
+* database: The database to load data from.
+
+* table: The table to load data from.
+
+* user: The name of the user connecting to the database.
+
+* password: Credentials of the user connecting to the database.
 
 Numeric values are converted either to integers (if they fit into
 32-bits) or to doubles.  Boolean values are read as categories
 containing two values, "true" and "false".
-
-*TODO*
 
 #### Reading data from Parquet files and Impala databases
 

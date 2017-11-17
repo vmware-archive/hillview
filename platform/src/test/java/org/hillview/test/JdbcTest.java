@@ -27,8 +27,12 @@ import java.sql.ResultSet;
 public class JdbcTest extends BaseTest {
     @Test
     public void testJdbc() {
-        JdbcConnectionInformation conn =
-                new JdbcConnectionInformation("localhost", "employees", "mbudiu", "password");
+        JdbcConnectionInformation conn = new JdbcConnectionInformation();
+        conn.host = "localhost";
+        conn.database = "employees";
+        conn.table = "salaries";
+        conn.user = "mbudiu";
+        conn.password = "password";
         JdbcDatabase db = new JdbcDatabase(conn);
         try {
             db.connect();

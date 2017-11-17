@@ -16,7 +16,7 @@
  */
 
 import {d3} from "../ui/d3-modules";
-import {Dialog} from "../ui/dialog";
+import {Dialog, FieldKind} from "../ui/dialog";
 import { ContentsKind, Schema, BasicColStats, ColumnDescription, ColumnAndRange } from "../javaBridge";
 import {ScaleLinear} from "d3-scale";
 import {Converters, formatDate, significantDigits} from "../util";
@@ -239,8 +239,9 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
  */
 export class BucketDialog extends Dialog {
     constructor() {
-        super("Set buckets");
-        this.addTextField("n_buckets", "Number of buckets:", "Integer");
+        super("Set buckets", "Change the number of buckets (bars) used to display the histogram.");
+        this.addTextField("n_buckets", "Number of buckets:", FieldKind.Integer, null,
+            "The number of buckets to use; must be between 1 and " + Resolution.maxBucketCount);
     }
 
     getBucketCount(): number {

@@ -615,7 +615,7 @@ export class HeatMapArrayDialog extends Dialog {
     constructor(private selectedColumns: string[], private page: FullPage,
                 private schema: Schema, private remoteObject: RemoteTableObject,
                 fixedColumns: boolean) {
-        super("Heat map array");
+        super("Heat map array", "Draws a set of heatmap displays, one for each value in a categorical column.");
         let selectedNumColumns: string[] = [];
         let selectedCatColumn: string = "";
         let catColumns = [];
@@ -638,10 +638,13 @@ export class HeatMapArrayDialog extends Dialog {
             selectedCatColumn = catColumns[0];
         }
         this.addSelectField("col1", "Heat map column 1: ",
-            fixedColumns ? [selectedNumColumns[0]] : numColumns, selectedNumColumns[0]);
+            fixedColumns ? [selectedNumColumns[0]] : numColumns, selectedNumColumns[0],
+            "Column to use for the X axis of the heatmap plot.");
         this.addSelectField("col2", "Heat map column 2: ",
-            fixedColumns ? [selectedNumColumns[1]] : numColumns, selectedNumColumns[1]);
-        this.addSelectField("col3", "Array column: ", catColumns, selectedCatColumn);
+            fixedColumns ? [selectedNumColumns[1]] : numColumns, selectedNumColumns[1],
+            "Column to use for the Y axis of the heatmap plot.");
+        this.addSelectField("col3", "Array column: ", catColumns, selectedCatColumn,
+            "Column used to group heapmap plots.  Must be a categorical column.");
         this.setAction(() => this.execute());
     }
 

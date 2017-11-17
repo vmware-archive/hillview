@@ -45,7 +45,9 @@ export class SchemaView extends RemoteTableObjectView {
         this.topLevel.appendChild(document.createElement("br"));
 
         this.display = new TabularDisplay();
-        this.display.setColumns(["#", "Name", "Type", "Allows missing"]);
+        this.display.setColumns(["#", "Name", "Type", "Allows missing"],
+            ["Colunm number", "Column name", "Type of data stored within the column",
+            "If this is true then the column can have 'missing' values."]);
 
         for (let i = 0; i < schema.length; i++)
             this.display.addRow([(i+1).toString(), schema[i].name,

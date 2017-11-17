@@ -9,6 +9,10 @@ These tools require `ansible` to be installed on the host running the
 following commands, as well as the servers you are trying to deploy
 to.  Ansible must be able to run commands on the servers.
 
+*Please note that Hillview allows arbitrary access to files on the
+worker nodes from the client application.  The worker nodes should be
+deployed within a restricted secure environment.*
+
 Before you run these commands, make sure you've built both `platform`
 and `web` projects.  The deployment scripts are in the `deployment`
 folder:

@@ -96,22 +96,47 @@ public class InitialObjectTarget extends RpcTarget {
         this.initialize(description);
     }
 
-    // TODO: cleanup this code
     @HillviewRpc
     public void loadDBTable(RpcRequest request, RpcRequestContext context) {
-        Converters.checkNull(this.emptyDataset);
-        JdbcConnectionInformation conn = new JdbcConnectionInformation("localhost", "employees", "mbudiu", "password");
-        LoadDatabaseTableMapper mapper = new LoadDatabaseTableMapper("salaries", conn);
+        JdbcConnectionInformation conn = request.parseArgs(JdbcConnectionInformation.class);
+        LoadDatabaseTableMapper mapper = new LoadDatabaseTableMapper(conn);
         assert this.emptyDataset != null;
         this.runMap(this.emptyDataset, mapper, TableTarget::new, request, context);
     }
 
-    // TODO: cleanup this code.
-    @HillviewRpc
-    public void prepareFiles(RpcRequest request, RpcRequestContext context) {
-        int which = request.parseArgs(Integer.class);
-        Converters.checkNull(this.emptyDataset);
+    public static class CSVFilesDescription {
+        String folder = "";
+        @Nullable
+        String fileNamePattern;
+        @Nullable
+        String schemaFile;
+        boolean hasHeaderRow;
+    }
 
+    @HillviewRpc
+    public void findCSVFiles(RpcRequest request, RpcRequestContext context) {
+        CSVFilesDescription desc = request.parseArgs(CSVFilesDescription.class);
+        CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
+        config.allowMissingData = true;
+        config.allowFewerColumns = false;
+        config.hasHeaderRow = desc.hasHeaderRow;
+        if (desc.fileNamePattern == null || desc.fileNamePattern.isEmpty())
+            desc.fileNamePattern = "*.csv";
+        String pattern = Utilities.wildcardToRegex(desc.fileNamePattern);
+        if (desc.schemaFile != null && desc.schemaFile.isEmpty())
+            desc.schemaFile = null;
+
+        IMap<Empty, List<CsvFileObject>> finder =
+                new FindCsvFileMapper(desc.folder, 0, pattern, desc.schemaFile, config, 1);
+
+        HillviewLogger.instance.info("Find CSV files");
+        assert this.emptyDataset != null;
+        this.runFlatMap(this.emptyDataset, finder, CsvFileTarget::new, request, context);
+    }
+
+    @HillviewRpc
+    public void testDataset(RpcRequest request, RpcRequestContext context) {
+        int which = request.parseArgs(Integer.class);
         String dataFolder = "../data/";
         String fileNamePattern;
         CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
@@ -141,17 +166,17 @@ public class InitialObjectTarget extends RpcTarget {
             config.separator = '\t';
             fileNamePattern = "criteoTab.gz";
             schemaFile = "criteo.schema";
-        } else if (which == 8) {
+        } else if (which == 6) {
             dataFolder += "ontime/";
             schemaFile = "short.schema";
             fileNamePattern = "(\\d)+_(\\d)+\\.csv";
             replicationFactor = 5;
-        } else if (which == 9) {
+        } else if (which == 7) {
             dataFolder += "ontime/";
             schemaFile = "short.schema";
             fileNamePattern = "(\\d)+_(\\d)+\\.csv";
             replicationFactor = 10;
-        } else if (which == 10) {
+        } else if (which == 8) {
             dataFolder += "nycabs/";
             schemaFile = "yellow.schema";
             fileNamePattern = "yellow_tripdata_(\\d)+-(\\d)+\\.csv.gz";
@@ -203,7 +228,7 @@ public class InitialObjectTarget extends RpcTarget {
     }
 
     @HillviewRpc
-    public void purgeLeftDatasets(RpcRequest request, RpcRequestContext context) {
+    public void purgeLeafDatasets(RpcRequest request, RpcRequestContext context) {
         PurgeLeafDatasets tm = new PurgeLeafDatasets();
         this.runManage(Converters.checkNull(this.emptyDataset), tm, request, context);
     }

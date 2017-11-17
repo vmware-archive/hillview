@@ -22,7 +22,7 @@ import {
     formatDate
 } from "../util";
 import {EqualityFilterDialog, EqualityFilterDescription} from "./equalityFilter";
-import {Dialog} from "../ui/dialog";
+import {Dialog, FieldKind} from "../ui/dialog";
 import {CategoryCache} from "../categoryCache";
 import {ColumnConverter, ConverterDialog, HLogLog} from "./columnConverter";
 import {DataRange} from "../ui/dataRange"
@@ -702,8 +702,12 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         let colNames = this.getSelectedColNames();
         let [valid, message] = this.checkNumericColumns(colNames);
         if (valid) {
-            let pcaDialog = new Dialog("Principal Component Analysis");
-            pcaDialog.addTextField("numComponents", "Number of components", "Integer", "2");
+            let pcaDialog = new Dialog("Principal Component Analysis",
+                "Projects a set of numeric columns to a smaller set of numeric columns while preserving the 'shape' "+
+                " of the data as much as possible.");
+            pcaDialog.addTextField("numComponents", "Number of components", FieldKind.Integer, "2",
+                "Number of dimensions to project to.  Must be an integer bigger than 1 and " +
+                "smaller than the number of selected columns");
             pcaDialog.setAction(() => {
                 let numComponents: number = pcaDialog.getFieldValueAsInt("numComponents");
                 if (numComponents < 1 || numComponents > colNames.length) {
@@ -831,8 +835,10 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         } else {
             title += cols.length + " columns";
         }
-        let d = new Dialog(title);
-        d.addTextField("percent", "Threshold (%)", "Double", "1");
+        let d = new Dialog(title, "Find the most frequent values in the selected columns.");
+        d.addTextField("percent", "Threshold (%)", FieldKind.Double, "1",
+            "All values that appear in a dataset with a frequency above this value (as a percent) " +
+            "will be included in the heavy hitters set.  Must be a number between 0.1 and 100.");
         d.setAction(() => {
             let amount = d.getFieldValueAsNumber("percent");
             if (amount != null)

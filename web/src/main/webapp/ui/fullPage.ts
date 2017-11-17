@@ -33,7 +33,8 @@ let helpUrl = {
     "Trellis": "trellis-plot-views",
     "HeavyHitters": "heavy-hitter-views",
     "LAMP": "lamp-projection",
-    "Schema": "data-schema-views"
+    "Schema": "data-schema-views",
+    "Load": "loading-data"
 };
 
 /**

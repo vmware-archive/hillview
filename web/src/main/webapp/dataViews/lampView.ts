@@ -16,7 +16,7 @@
  */
 
 import {d3} from "../ui/d3-modules";
-import {Dialog} from "../ui/dialog";
+import {Dialog, FieldKind} from "../ui/dialog";
 import {TopMenu, SubMenu} from "../ui/menu";
 import {
     RangeInfo, BasicColStats, Schema, RecordOrder, ColumnAndRange, Histogram2DArgs, NextKList
@@ -318,17 +318,22 @@ export class LAMPDialog extends Dialog {
 
     constructor(private selectedColumns: string[], private page: FullPage,
                 private schema: Schema, private remoteObject: TableView) {
-        super("LAMP");
+        super("LAMP", "Computes a 2D projection of the data based on a set of control-points that the user can control.");
         let sel = this.addSelectField("controlPointSelection", "Control point selection",
-            ["Random samples", "Category centroids"], "Random samples");
+            ["Random samples", "Category centroids"], "Random samples",
+            "The method used to select the control points.");
         sel.onchange = () => this.ctrlPointsChanged();
-        this.addTextField("numSamples", "No. control points", "Integer", "5");
+        this.addTextField("numSamples", "No. control points", FieldKind.Integer, "5",
+            "The number of control points to select.");
         let catColumns = [""];
         for (let i = 0; i < schema.length; i++)
             if (schema[i].kind == "Category")
                 catColumns.push(schema[i].name);
-        this.addSelectField("category", "Category for centroids", catColumns, "");
-        this.addSelectField("controlPointProjection", "Control point projection", ["MDS"], "MDS");
+        this.addSelectField("category", "Category for centroids", catColumns, "",
+            "A column name with categorical data that will be used to defined the control points." +
+            "There will be one control point for each categorical value.");
+        this.addSelectField("controlPointProjection", "Control point projection", ["MDS"], "MDS",
+            "The projection technique.  Currently only Multidimensional Scaling is an option.");
         this.setAction(() => this.execute());
         this.ctrlPointsChanged();
     }
