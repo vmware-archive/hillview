@@ -212,19 +212,27 @@ public final class TableTarget extends RpcTarget {
     static class CorrelationMatrixRequest {
         @Nullable
         String[] columnNames;
+        long totalRows;
+        long seed;
+        boolean toSample;
     }
 
     @HillviewRpc
     public void correlationMatrix(RpcRequest request, RpcRequestContext context) {
         CorrelationMatrixRequest pcaReq = request.parseArgs(CorrelationMatrixRequest.class);
         String[] colNames = Converters.checkNull(pcaReq.columnNames);
-        FullCorrelationSketch sketch = new FullCorrelationSketch(colNames);
-        this.runCompleteSketch(this.table, sketch, CorrelationMatrixTarget::new, request, context);
+        FullCorrelationSketch pcaSketch;
+        if(pcaReq.toSample)
+            pcaSketch = new FullCorrelationSketch(colNames, pcaReq.totalRows, pcaReq.seed);
+        else
+            pcaSketch = new FullCorrelationSketch(colNames);
+        this.runCompleteSketch(this.table, pcaSketch, CorrelationMatrixTarget::new, request, context);
     }
 
     static class ProjectToEigenVectorsInfo {
         String id = "";
         int numComponents;
+        String projectionName;
     }
 
     @HillviewRpc
@@ -235,13 +243,14 @@ public final class TableTarget extends RpcTarget {
             public void onSuccess(RpcTarget rpcTarget) {
                 CorrelationMatrixTarget cmt = (CorrelationMatrixTarget)rpcTarget;
                 CorrMatrix cm = cmt.corrMatrix;
-                DoubleMatrix[] mats = LinAlg.eigenVectorsVarianceExplained(new DoubleMatrix(cm.getCorrelationMatrix()), info.numComponents);
+                DoubleMatrix[] mats = LinAlg.eigenVectorsVarianceExplained(new DoubleMatrix(cm.getCorrelationMatrix()),
+                        info.numComponents);
                 DoubleMatrix projectionMatrix = mats[0];
                 DoubleMatrix varianceExplained = mats[1];
                 String[] newColNames = new String[projectionMatrix.rows];
                 for (int i = 0; i < projectionMatrix.rows; i++) {
                     int perc = (int) Math.round(varianceExplained.get(i) * 100);
-                    newColNames[i] = String.format("PCA%d (%d%%)", i, perc);
+                    newColNames[i] = String.format("%s%d (%d%%)", info.projectionName, i, perc);
                 }
                 LinearProjectionMap lpm = new LinearProjectionMap(cm.columnNames, projectionMatrix, newColNames);
                 TableTarget.this.runMap(TableTarget.this.table, lpm, TableTarget::new, request, context);
