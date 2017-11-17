@@ -19,7 +19,7 @@ package org.hillview.test;
 
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.sketches.CorrMatrix;
-import org.hillview.sketches.FullCorrelationSketch;
+import org.hillview.sketches.PCACorrelationSketch;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.BlasConversions;
 import org.hillview.utils.LinAlg;
@@ -39,7 +39,7 @@ public class CorrelationTest extends BaseTest {
         DoubleMatrix mat = new DoubleMatrix(new double[][]{{9, 8, 4, 1, 6}, {5, 8, 2, 10, 1}, {6, 4, 1, 6, 5}});
         ITable table = BlasConversions.toTable(mat);
         String[] colNames = table.getSchema().getColumnNames();
-        FullCorrelationSketch fcs = new FullCorrelationSketch(colNames);
+        PCACorrelationSketch fcs = new PCACorrelationSketch(colNames);
         CorrMatrix cm = fcs.create(table);
 
         DoubleMatrix corrMatrix = new DoubleMatrix(cm.getCorrelationMatrix());
@@ -67,7 +67,7 @@ public class CorrelationTest extends BaseTest {
         String[] colNames = bigTable.getSchema().getColumnNames();
         IDataSet<ITable> dataset = TestTables.makeParallel(bigTable, 10);
 
-        FullCorrelationSketch fcs = new FullCorrelationSketch(colNames);
+        PCACorrelationSketch fcs = new PCACorrelationSketch(colNames);
         CorrMatrix cm = dataset.blockingSketch(fcs);
 
         // Construct the correlation matrix that we compare against by using pure JBLAS.

@@ -20,7 +20,7 @@ package org.hillview.test;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.maps.LinearProjectionMap;
 import org.hillview.sketches.CorrMatrix;
-import org.hillview.sketches.FullCorrelationSketch;
+import org.hillview.sketches.PCACorrelationSketch;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.LinAlg;
 import org.hillview.utils.TestTables;
@@ -40,9 +40,9 @@ public class PCATest extends BaseTest {
         String[] colNames = table.getSchema().getColumnNames();
         IDataSet<ITable> dataset = TestTables.makeParallel(table, size/numFrags);
 
-        FullCorrelationSketch fcs = new FullCorrelationSketch(colNames, size, 30202);
+        PCACorrelationSketch fcs = new PCACorrelationSketch(colNames, size, 30202);
         CorrMatrix cm1 = dataset.blockingSketch(fcs);
-        FullCorrelationSketch fcs2 = new FullCorrelationSketch(colNames);
+        PCACorrelationSketch fcs2 = new PCACorrelationSketch(colNames);
         CorrMatrix cm2 = dataset.blockingSketch(fcs2);
 
         DoubleMatrix corrMatrix1 = new DoubleMatrix(cm1.getCorrelationMatrix());
@@ -78,7 +78,7 @@ public class PCATest extends BaseTest {
         try {
             ITable table = TestUtils.loadTableFromCSV("../data", "mnist.csv", "mnist.schema");
             String[] numericColNames = TestUtils.getNumericColumnNames(table);
-            FullCorrelationSketch fcs = new FullCorrelationSketch(numericColNames);
+            PCACorrelationSketch fcs = new PCACorrelationSketch(numericColNames);
             CorrMatrix cm = fcs.create(table);
             DoubleMatrix corrMatrix = new DoubleMatrix(cm.getCorrelationMatrix());
             DoubleMatrix eigenVectors = LinAlg.eigenVectors(corrMatrix, 2);

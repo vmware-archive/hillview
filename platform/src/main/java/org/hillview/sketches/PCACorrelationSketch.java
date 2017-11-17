@@ -28,25 +28,23 @@ import java.security.InvalidParameterException;
 
 /**
  * This class computes the correlations between different columns in the table.
- * This class is very similar to the SampleCorrelationSketch, apart from two important differences.
- * If the sampling rate is 0, then it uses the full data (it doesn't sample).
- * Second, it rescales the columns by using the mean and standard deviation from
- * the BasicColStats's.
+ * This class is very similar to the SampleCorrelationSketch, except that it handles missing values
+ * carefully (it does not include them while computing expectations).
  */
 
-public class FullCorrelationSketch implements ISketch<ITable, CorrMatrix> {
+public class PCACorrelationSketch implements ISketch<ITable, CorrMatrix> {
     private final String[] colNames;
     private final long seed;
     private long totalRows;
     private final double samplingRate;
 
-    public FullCorrelationSketch(String[] colNames, long totalRows, long seed) {
+    public PCACorrelationSketch(String[] colNames, long totalRows, long seed) {
         this.colNames= colNames;
         this.samplingRate = Math.min(1, 10000.0*colNames.length/totalRows);
         this.seed = seed;
     }
 
-    public FullCorrelationSketch(String[] colNames) {
+    public PCACorrelationSketch(String[] colNames) {
         this.colNames= colNames;
         this.samplingRate = 1;
         this.seed = 0;
