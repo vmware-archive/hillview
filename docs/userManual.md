@@ -185,7 +185,7 @@ on the local user machine.
 
 The following menu allows the user to specify the data to load.
 
-[!Specifying database connections](db-menu.png)
+![Specifying database connections](db-menu.png)
 
 * database kind: A drop-down menu indicating the kind of database to
   load data from (e.g., MySQL).
