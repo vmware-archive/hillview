@@ -49,6 +49,7 @@ web/src/main/webapp/hillview.js
 web/src/main/webapp/javaBridge.js
 web/src/main/webapp/selectedObject.js
 web/src/main/webapp/util.js
+web/src/main/webapp/loadMenu.js
 web/src/main/webapp/node_modules/
 web/.idea/typescript-compiler.xml
 
