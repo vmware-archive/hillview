@@ -35,11 +35,25 @@ const RpcRequestPath = "rpc";
 /**
  * Each remote object has a globally unique identifier.
  * (The initial remote object always has a fixed known identifier).
- * This is just a reference to a remote object.
+ * This is just a reference to a remote object.  All remote objects
+ * are represented in Java by classes that extend RpcTarget.
  */
 export class RemoteObject {
     constructor(public readonly remoteObjectId : string) {}
 
+    /**
+     * Creates a request to a remote method.  The request must be invoked separately.
+     * @param {string} method  Name of the method to invoke.  This method
+     *                         in Java is tagged with the annotation @HillviewRPC
+     *                         and has the signature:
+     *                         public void method(RpcRequest request, RpcRequestContext context).
+     * @param args             Arguments to pass to the method.  The arguments are converted
+     *                         to JSON and show up on the Java side as a string encoding
+     *                         in the 'arguments' field of the RpcRequest.  The Java side will
+     *                         decode the string into a suitable datatype and call the corresponding
+     *                         method in Java.
+     * @returns {RpcRequest}   The request that is created.
+     */
     createRpcRequest(method: string, args: any) : RpcRequest {
         return new RpcRequest(this.remoteObjectId, method, args);
     }
@@ -78,6 +92,12 @@ export class RpcRequest implements ICancellable {
 
     static requestCounter : number = 0;
 
+    /**
+     * Create a request to a remote object.
+     * @param {string} objectId   Remote object unique identifier.
+     * @param {string} method     Method that is being invoked.
+     * @param args                Arguments that are passed to method; will be converted to JSON.
+     */
     constructor(public objectId : string,
                 public method : string,
                 public args : any) {
@@ -106,21 +126,32 @@ export class RpcRequest implements ICancellable {
         return JSON.stringify(result);
     }
 
+    /**
+     * The time when this RPC request was invoked (or when the request it has been chained to
+     * has started).
+     */
     public startTime(): Date {
         return this.rpcTime;
     }
 
-    public setStartTime(start: Date): void{
+    setStartTime(start: Date): void{
         this.rpcTime = start;
     }
 
-    // Indicates that this rpc request is executed as a continuation of
-    // the specified operation.
+    /**
+     * Indicates that this rpc request is executed as a continuation of
+     * the specified operation.  This is mostly useful for accounting the time
+     * required for executing a chain of operations.
+     */
     public chain(after: ICancellable) {
         if (after != null)
             this.setStartTime(after.startTime());
     }
 
+    /**
+     * Cancel this RPC request.
+     * @returns {boolean}  True if the request was not already completed.
+     */
     public cancel(): boolean {
         if (!this.closed) {
             this.closed = true;
@@ -131,15 +162,17 @@ export class RpcRequest implements ICancellable {
     }
 
     /**
-     * Function to call to execute the RPC.
+     * Execute the RPC request and pass the results received to the specified observer.
      * @param onReply  An observer which is invoked for each result received by
      *                 the streaming RPC.
      */
     public invoke<T>(onReply : Observer<T>) : void {
         try {
-            // Create a web socked and send the request
+            // If time is not set we set it now.  The time may be set because this
+            // is a request that is part of a chain of requests.
             if (this.rpcTime == null)
                 this.rpcTime = new Date();
+            // Create a web socked and send the request
             let rpcRequestUrl = "ws://" + window.location.hostname + ":" + window.location.port + "/" + RpcRequestPath;
             this.socket = new WebSocket(rpcRequestUrl);
             this.socket.onerror = function (ev: ErrorEvent) {

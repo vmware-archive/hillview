@@ -56,6 +56,32 @@ export function asContentsKind(kind: string): ContentsKind {
     }
 }
 
+export interface JdbcConnectionInformation {
+    host: string;
+    database: string;
+    table: string;
+    port: number;
+    user: string;
+    password: string;
+    databaseKind: string;  // e.g. mysql; part of url for connection
+}
+
+export interface CSVFilesDescription {
+    folder: string;
+    fileNamePattern: string;
+    schemaFile: string;
+    hasHeaderRow: boolean;
+}
+
+/**
+ * Corresponds to the Java class ControlMessage.Status.
+ */
+export interface Status {
+    hostname: string;
+    result: string;
+    exception: string;
+}
+
 export enum CombineOperators {
     Union, Intersection, Exclude, Replace
 }

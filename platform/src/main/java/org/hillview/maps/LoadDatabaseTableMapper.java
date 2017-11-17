@@ -27,14 +27,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class LoadDatabaseTableMapper implements IMap<Empty, ITable> {
-    /**
-     * Name of SQL table to load.
-     */
-    private final String tableName;
     private final JdbcConnectionInformation conn;
 
-    public LoadDatabaseTableMapper(String tableName, JdbcConnectionInformation conn) {
-        this.tableName = tableName;
+    public LoadDatabaseTableMapper(JdbcConnectionInformation conn) {
         this.conn = conn;
     }
 
@@ -43,7 +38,7 @@ public class LoadDatabaseTableMapper implements IMap<Empty, ITable> {
         try {
             JdbcDatabase db = new JdbcDatabase(this.conn);
             db.connect();
-            ResultSet rs = db.getTable(this.tableName);
+            ResultSet rs = db.getTable(this.conn.table);
             ITable result = JdbcDatabase.getTable(rs);
             db.disconnect();
             return result;

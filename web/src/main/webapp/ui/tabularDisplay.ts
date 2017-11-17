@@ -54,11 +54,14 @@ export class TabularDisplay implements IHtmlElement {
     /**
      * Create columns.  The column names are used as the innerHTML of the cells.
      */
-    public setColumns(colNames: string[]): void {
+    public setColumns(colNames: string[], toolTips: string[]): void {
         let tHead = this.table.createTHead();
         let thr = tHead.appendChild(document.createElement("tr"));
+        let index = 0;
         for (let c of colNames) {
+            let tip = toolTips[index++];
             let thd = document.createElement("th");
+            thd.title = tip;
             thd.innerHTML = c;
             thr.appendChild(thd);
             this.columnCount++;

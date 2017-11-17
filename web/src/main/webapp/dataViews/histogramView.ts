@@ -104,8 +104,10 @@ export class HistogramView extends HistogramViewBase {
             return;
         }
 
-        let dialog = new Dialog("Choose column");
-        dialog.addSelectField("column", "column", columns);
+        let dialog = new Dialog("Choose column", "Select a second column to use for displaying a 2D histogram.");
+        dialog.addSelectField("column", "column", columns, null,
+            "The second column that will be used in addition to the one displayed here " +
+            "for drawing a two-dimensional histogram.");
         dialog.setAction(() => this.showSecondColumn(dialog.getFieldValue("column")));
         dialog.show();
     }

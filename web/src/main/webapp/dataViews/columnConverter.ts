@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {Dialog} from "../ui/dialog";
+import {Dialog, FieldKind} from "../ui/dialog";
 import {OnCompleteRenderer} from "../rpc";
 import {ICancellable} from "../util";
 import {FullPage} from "../ui/fullPage";
@@ -29,10 +29,13 @@ export class ConverterDialog extends Dialog {
     private columnNameFixed: boolean = false;
 
     constructor(protected columnName: string, protected allColumns: string[]) {
-        super("Convert column");
-        let cn = this.addSelectField("columnName", "Column: ", allColumns, columnName);
-        let nk = this.addSelectField("newKind", "Convert to: ", allContentsKind);
-        let nn = this.addTextField("newColumnName", "New column name: ", "String");
+        super("Convert column", "Creates a new column by converting the data in an existing column to a new type.");
+        let cn = this.addSelectField("columnName", "Column: ", allColumns, columnName,
+            "Column whose type is converted");
+        let nk = this.addSelectField("newKind", "Convert to: ", allContentsKind, null,
+            "Type of data for the converted column.");
+        let nn = this.addTextField("newColumnName", "New column name: ", FieldKind.String, null,
+            "A name for the new column.  The name must be different from all other column names.");
         cn.onchange = () => this.generateColumnName();
         nk.onchange = () => this.generateColumnName();
         // If the user types a column name don't attempt to change it

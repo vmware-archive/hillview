@@ -21,55 +21,22 @@
 <head>
     <link rel="icon" href="/favicon.png" type="image/png" />
     <link rel="shortcut icon" href="/favicon.png" />
-    <!--
     <title>Hillview</title>
-    -->
     <link rel="stylesheet" href="hillview.css">
     <script type="text/javascript" src="./bundle.js" charset="utf-8"></script>
     <script>
         //noinspection ThisExpressionReferencesGlobalObjectJS
         var hillview = this.hillview;
-        var initialObject = hillview.InitialObject.instance;
 
         function loaded() {
             window.addEventListener("resize", function() { hillview.FullPage.onResize() });
-            hillview.insertControlMenu();
-        }
-
-        function loadTable(arg) {
-            // hide the buttons
-            var but = document.getElementsByClassName("button");
-            for (var i = 0; i < but.length; i++)
-                but[i].style.display = "none";
-
-            // load the data
-            if (arg < 6)
-                initialObject.loadFiles(arg);
-            else if (arg === 6)
-                initialObject.loadLogs();
-            else if (arg === 7)
-                initialObject.loadDBTable();
-            else if (arg >= 8)
-                initialObject.loadFiles(arg);
+            hillview.createLoadMenu(true);
         }
     </script>
 </head>
 <body onload="loaded()">
     <H1>Hillview <a href="https://github.com/vmware/hillview/blob/master/docs/userManual.md">big data spreadsheet</a></H1>
     <img src="hillview-logo.png">
-    <div id="contents">
-        <button class="button" onclick="loadTable(0)">Flights (all)</button>
-        <button class="button" onclick="loadTable(1)">Flights (subset)</button>
-        <button class="button" onclick="loadTable(2)">vrOps</button>
-        <button class="button" onclick="loadTable(3)">MNIST</button>
-        <button class="button" onclick="loadTable(4)">Image segmentation</button>
-        <button class="button" onclick="loadTable(5)">Criteo (sample)</button>
-        <button class="button" onclick="loadTable(6)">Hillview logs</button>
-        <button class="button" onclick="loadTable(7)">MySQL table</button>
-        <button class="button" onclick="loadTable(8)">Flights (all) x5</button>
-        <button class="button" onclick="loadTable(9)">Flights (all) x10</button>
-        <button class="button" onclick="loadTable(10)">Taxis</button>
-        <div id="top"></div>
-    </div>
+    <div id="top"></div>
 </body>
 </html>

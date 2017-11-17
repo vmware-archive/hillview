@@ -72,9 +72,11 @@ export class HeavyHittersView extends RemoteTableObjectView {
     public fill(tdv: NextKList, elapsedMs: number): void {
         let table = new TabularDisplay();
         let header: string[] = ["Rank"];
-        this.schema.forEach(c => header.push(c.name));
+        let tips: string[] = ["Position in decreasing order of frequency."];
+        this.schema.forEach(c => { header.push(c.name); tips.push("Column name"); });
         header = header.concat(["Count", "%", "Fraction"]);
-        table.setColumns(header);
+        tips = tips.concat(["Number of occurrences", "Frequency within the dataset", "Frequency and position within the sorted order"]);
+        table.setColumns(header, tips);
 
         let restCount = this.getRestCount(tdv);
         let restPos: number;

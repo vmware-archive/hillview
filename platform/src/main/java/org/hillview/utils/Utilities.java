@@ -32,6 +32,40 @@ import java.util.Iterator;
  */
 public class Utilities {
     /**
+     * Convert a shell-type filename wildcard pattern into a Java
+     * regular expression string.
+     * @param wildcard  Simple filename wildcard string.
+     * @return          A String that represents a regular expression
+     *                  with the same semantics as the wildcard pattern.
+     */
+    public static String wildcardToRegex(String wildcard) {
+        StringBuffer s = new StringBuffer(wildcard.length());
+        s.append('^');
+        for (int i = 0; i < wildcard.length(); i++) {
+            char c = wildcard.charAt(i);
+            switch(c) {
+                case '*':
+                    s.append(".*");
+                    break;
+                case '?':
+                    s.append(".");
+                    break;
+                case '(': case ')': case '[': case ']': case '$':
+                case '.': case '{': case '}': case '|':
+                case '\\':
+                    s.append("\\");
+                    s.append(c);
+                    break;
+                default:
+                    s.append(c);
+                    break;
+            }
+        }
+        s.append('$');
+        return(s.toString());
+    }
+
+    /**
      * Converts a throwable to a string.
      */
     @Nullable
