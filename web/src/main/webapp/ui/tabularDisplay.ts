@@ -64,6 +64,7 @@ export class TabularDisplay implements IHtmlElement {
             thd.title = tip;
             thd.innerHTML = c;
             thr.appendChild(thd);
+            thd.classList.add("noselect");
             this.columnCount++;
         }
     }
@@ -81,6 +82,7 @@ export class TabularDisplay implements IHtmlElement {
             let cell = trow.insertCell(index++);
             cell.style.textAlign = "right";
             cell.innerHTML = d;
+            cell.classList.add("noselect");
             cell.onclick = e => this.rowClick(rowNo, e);
             rowCells.push(cell);
         }
@@ -107,6 +109,8 @@ export class TabularDisplay implements IHtmlElement {
             let cell = trow.insertCell(index++);
             cell.style.textAlign = "right";
             cell.appendChild(d);
+            cell.classList.add("noselect");
+            d.classList.add("noselect");
             cell.onclick = e => this.rowClick(rowNo, e);
             rowCells.push(cell);
         }

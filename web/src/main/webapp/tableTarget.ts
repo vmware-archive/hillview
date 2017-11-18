@@ -19,38 +19,41 @@
  * This file contains lots of classes for accessing the remote TableTarget.java class.
  */
 
-import {RpcRequest, RemoteObject, Renderer} from "./rpc";
+import {RpcRequest, RemoteObject, OnCompleteRenderer} from "./rpc";
 import {EqualityFilterDescription} from "./dataViews/equalityFilter";
-import {ICancellable, PartialResult, Seed} from "./util";
+import {ICancellable, Pair, PartialResult, Seed} from "./util";
 import {PointSet, Resolution} from "./ui/ui";
 import {IDataView} from "./ui/dataview";
 import {FullPage} from "./ui/fullPage";
 import {
-    CombineOperators,
-    FilterDescription, Histogram3DArgs, HistogramArgs, IColumnDescription, RangeInfo,
-    RecordOrder, Schema
+    BasicColStats,
+    CombineOperators, FilterDescription, Histogram, Histogram3DArgs, HistogramArgs, HLogLog,
+    IColumnDescription, NextKList, RangeInfo, RecordOrder, RemoteObjectId, Schema, TableSummary, TopList
 } from "./javaBridge";
 import {Histogram2DArgs} from "./javaBridge";
 import {SelectedObject} from "./selectedObject";
+import {HeatMapData} from "./dataViews/heatMapView";
+import {HeatMapArrayData} from "./dataViews/trellisHeatMapView";
 
 /**
  * This class methods that correspond directly to TableTarget.java methods.
  */
 export class RemoteTableObject extends RemoteObject {
-    constructor(remoteObjectId: string) {
+    constructor(remoteObjectId: RemoteObjectId) {
         super(remoteObjectId);
     }
 
-    public createRangeRequest(r: RangeInfo): RpcRequest {
-        return this.createRpcRequest("range", r);
+    public createRangeRequest(r: RangeInfo): RpcRequest<PartialResult<BasicColStats>> {
+        return this.createStreamingRpcRequest<BasicColStats>("range", r);
     }
 
-    public createZipRequest(r: RemoteObject): RpcRequest {
-        return this.createRpcRequest("zip", r.remoteObjectId);
+    public createZipRequest(r: RemoteObject): RpcRequest<PartialResult<RemoteObjectId>> {
+        return this.createStreamingRpcRequest<RemoteObjectId>("zip", r.remoteObjectId);
     }
 
-    public createQuantileRequest(rowCount: number, o: RecordOrder, position: number): RpcRequest {
-        return this.createRpcRequest("quantile", {
+    public createQuantileRequest(rowCount: number, o: RecordOrder, position: number):
+            RpcRequest<PartialResult<any[]>> {
+        return this.createStreamingRpcRequest<any[]>("quantile", {
             precision: 100,
             tableSize: rowCount,
             order: o,
@@ -59,28 +62,32 @@ export class RemoteTableObject extends RemoteObject {
         });
     }
 
-    public createNextKRequest(order: RecordOrder, firstRow: any[]): RpcRequest {
+    public createNextKRequest(order: RecordOrder, firstRow: any[]):
+        RpcRequest<PartialResult<NextKList>> {
         let nextKArgs = {
             order: order,
             firstRow: firstRow,
             rowsOnScreen: Resolution.tableRowsOnScreen
         };
-        return this.createRpcRequest("getNextK", nextKArgs);
+        return this.createStreamingRpcRequest<NextKList>("getNextK", nextKArgs);
     }
 
-    public createGetSchemaRequest(): RpcRequest {
-        return this.createRpcRequest("getSchema", null);
+    public createGetSchemaRequest(): RpcRequest<PartialResult<TableSummary>> {
+        return this.createStreamingRpcRequest<TableSummary>("getSchema", null);
     }
 
-    public createHLogLogRequest(colName: string) : RpcRequest {
-    	return this.createRpcRequest("hLogLog", { columnName: colName, seed: Seed.instance.get() });
+    public createHLogLogRequest(colName: string) : RpcRequest<PartialResult<HLogLog>> {
+    	return this.createStreamingRpcRequest<HLogLog>("hLogLog",
+            { columnName: colName, seed: Seed.instance.get() });
     }
 
-    public createRange2DRequest(r1: RangeInfo, r2: RangeInfo): RpcRequest {
-        return this.createRpcRequest("range2D", [r1, r2]);
+    public createRange2DRequest(r1: RangeInfo, r2: RangeInfo):
+    RpcRequest<PartialResult<Pair<BasicColStats, BasicColStats>>> {
+        return this.createStreamingRpcRequest<Pair<BasicColStats, BasicColStats>>("range2D", [r1, r2]);
     }
 
-    public createRange2DColsRequest(c1: string, c2: string): RpcRequest {
+    public createRange2DColsRequest(c1: string, c2: string):
+            RpcRequest<PartialResult<Pair<BasicColStats, BasicColStats>>> {
         let r1: RangeInfo = new RangeInfo(c1, null);
         let r2: RangeInfo = new RangeInfo(c2, null);
         return this.createRange2DRequest(r1, r2);
@@ -89,88 +96,92 @@ export class RemoteTableObject extends RemoteObject {
     public createHeavyHittersRequest(columns: IColumnDescription[],
                                      percent: number,
                                      totalRows: number,
-                                     isMG: boolean): RpcRequest {
+                                     isMG: boolean): RpcRequest<PartialResult<TopList>> {
         if (isMG) {
-            return this.createRpcRequest("heavyHittersMG",
+            return this.createStreamingRpcRequest<TopList>("heavyHittersMG",
                 {columns: columns, amount: percent,
                     totalRows: totalRows, seed: Seed.instance.get() });
         } else {
-            return this.createRpcRequest("heavyHitters",
+            return this.createStreamingRpcRequest<TopList>("heavyHitters",
                 {columns: columns, amount: percent,
                     totalRows: totalRows, seed: Seed.instance.get() });
-
         }
     }
 
-    public createCheckHeavyRequest(r: RemoteObject, schema: Schema): RpcRequest {
-        return this.createRpcRequest("checkHeavy", {
+    public createCheckHeavyRequest(r: RemoteObject, schema: Schema):
+            RpcRequest<PartialResult<TopList>> {
+        return this.createStreamingRpcRequest<TopList>("checkHeavy", {
             hittersId: r.remoteObjectId,
             schema: schema
         });
     }
 
-    public createFilterHeavyRequest(r: RemoteObject, schema: Schema): RpcRequest {
-        return this.createRpcRequest("filterHeavy", {
-            hittersId: r.remoteObjectId,
-            schema: schema
-        });
-    }
-
-    public createProjectToEigenVectorsRequest(r: RemoteObject, dimension: number): RpcRequest {
-        return this.createRpcRequest("projectToEigenVectors", {
+    public createProjectToEigenVectorsRequest(r: RemoteObject, dimension: number):
+            RpcRequest<PartialResult<RemoteObjectId>> {
+        return this.createStreamingRpcRequest<RemoteObjectId>("projectToEigenVectors", {
             id: r.remoteObjectId,
             numComponents: dimension
         });
     }
 
-    public createFilterEqualityRequest(filter: EqualityFilterDescription): RpcRequest {
-        return this.createRpcRequest("filterEquality", filter);
+    public createFilterEqualityRequest(filter: EqualityFilterDescription):
+            RpcRequest<PartialResult<RemoteObjectId>> {
+        return this.createStreamingRpcRequest<RemoteObjectId>("filterEquality", filter);
     }
 
-    public createCorrelationMatrixRequest(columnNames: string[]): RpcRequest {
-        return this.createRpcRequest("correlationMatrix", {columnNames: columnNames});
+    public createCorrelationMatrixRequest(columnNames: string[]):
+            RpcRequest<PartialResult<RemoteObjectId>> {
+        return this.createStreamingRpcRequest<RemoteObjectId>("correlationMatrix", {columnNames: columnNames});
     }
 
-    public createFilterRequest(f: FilterDescription): RpcRequest {
-        return this.createRpcRequest("filterRange", f);
+    public createFilterRequest(f: FilterDescription): RpcRequest<PartialResult<RemoteObjectId>> {
+        return this.createStreamingRpcRequest<RemoteObjectId>("filterRange", f);
     }
 
-    public createFilter2DRequest(xRange: FilterDescription, yRange: FilterDescription): RpcRequest {
-        return this.createRpcRequest("filter2DRange", {first: xRange, second: yRange});
+    public createFilter2DRequest(xRange: FilterDescription, yRange: FilterDescription):
+            RpcRequest<PartialResult<RemoteObjectId>> {
+        return this.createStreamingRpcRequest<RemoteObjectId>("filter2DRange", {first: xRange, second: yRange});
     }
 
-    public createHeatMapRequest(info: Histogram2DArgs): RpcRequest {
-        return this.createRpcRequest("heatMap", info);
+    public createHeatMapRequest(info: Histogram2DArgs): RpcRequest<PartialResult<HeatMapData>> {
+        return this.createStreamingRpcRequest<HeatMapData>("heatMap", info);
     }
 
-    public createHeatMap3DRequest(info: Histogram3DArgs): RpcRequest {
-        return this.createRpcRequest("heatMap3D", info);
+    public createHeatMap3DRequest(info: Histogram3DArgs):
+            RpcRequest<PartialResult<HeatMapArrayData>> {
+        return this.createStreamingRpcRequest<HeatMapArrayData>("heatMap3D", info);
     }
 
-    public createHistogramRequest(info: HistogramArgs): RpcRequest {
-        return this.createRpcRequest("histogram", info);
+    public createHistogramRequest(info: HistogramArgs):
+            RpcRequest<PartialResult<Pair<Histogram, Histogram>>> {
+        return this.createStreamingRpcRequest<Pair<Histogram, Histogram>>("histogram", info);
     }
 
-    public createSetOperationRequest(setOp: CombineOperators): RpcRequest {
-        return this.createRpcRequest("setOperation", CombineOperators[setOp]);
+    public createSetOperationRequest(setOp: CombineOperators): RpcRequest<PartialResult<RemoteObjectId>> {
+        return this.createStreamingRpcRequest<RemoteObjectId>("setOperation", CombineOperators[setOp]);
     }
 
-    public createSampledControlPointsRequest(rowCount: number, numSamples: number, columnNames: string[]) {
-        return this.createRpcRequest("sampledControlPoints",
+    public createSampledControlPointsRequest(rowCount: number, numSamples: number, columnNames: string[]):
+            RpcRequest<PartialResult<RemoteObjectId>> {
+        return this.createStreamingRpcRequest<RemoteObjectId>("sampledControlPoints",
             {rowCount: rowCount, numSamples: numSamples, columnNames: columnNames, seed: Seed.instance.get() });
     }
 
-    public createCategoricalCentroidsControlPointsRequest(categoricalColumnName: string, numericalColumnNames: string[]) {
-        return this.createRpcRequest("categoricalCentroidsControlPoints",
-            {categoricalColumnName: categoricalColumnName, numericalColumnNames: numericalColumnNames});
+    public createCategoricalCentroidsControlPointsRequest(categoricalColumnName: string, numericalColumnNames: string[]):
+            RpcRequest<PartialResult<RemoteObjectId>> {
+        return this.createStreamingRpcRequest<RemoteObjectId>("categoricalCentroidsControlPoints", {
+                categoricalColumnName: categoricalColumnName,
+                numericalColumnNames: numericalColumnNames} );
     }
 
-    public createMDSProjectionRequest(id: string) {
-        return this.createRpcRequest("makeMDSProjection", { id: id, seed: Seed.instance.get() });
+    public createMDSProjectionRequest(id: RemoteObjectId): RpcRequest<PartialResult<PointSet>> {
+        return this.createStreamingRpcRequest<PointSet>(
+            "makeMDSProjection", { id: id, seed: Seed.instance.get() });
     }
 
-    public createLAMPMapRequest(controlPointsId: string, colNames: string[], controlPoints: PointSet, newColNames: string[]) {
-        return this.createRpcRequest("lampMap",
+    public createLAMPMapRequest(controlPointsId: RemoteObjectId, colNames: string[], controlPoints: PointSet, newColNames: string[]):
+            RpcRequest<PartialResult<RemoteObjectId>> {
+        return this.createStreamingRpcRequest<RemoteObjectId>("lampMap",
             {controlPointsId: controlPointsId, colNames: colNames, newLowDimControlPoints: controlPoints, newColNames: newColNames});
     }
 }
@@ -182,7 +193,7 @@ export class RemoteTableObject extends RemoteObject {
 export abstract class RemoteTableObjectView extends RemoteTableObject implements IDataView {
     protected topLevel: HTMLElement;
 
-    constructor(remoteObjectId: string, protected page: FullPage) {
+    constructor(remoteObjectId: RemoteObjectId, protected page: FullPage) {
         super(remoteObjectId);
         this.setPage(page);
     }
@@ -208,16 +219,12 @@ export abstract class RemoteTableObjectView extends RemoteTableObject implements
     public getHTMLRepresentation(): HTMLElement {
         return this.topLevel;
     }
-
-    public scrollIntoView() {
-        this.getHTMLRepresentation().scrollIntoView( { block: "end", behavior: "smooth" } );
-    }
 }
 
 /**
  * A renderer that receives a remoteObjectId for a RemoteTableObject.
  */
-export abstract class RemoteTableRenderer extends Renderer<string> {
+export abstract class RemoteTableRenderer extends OnCompleteRenderer<RemoteObjectId> {
     protected remoteObject: RemoteTableObject;
 
     public constructor(public page: FullPage,
@@ -227,13 +234,9 @@ export abstract class RemoteTableRenderer extends Renderer<string> {
         this.remoteObject = null;
     }
 
-    public onNext(value: PartialResult<string>) {
-        super.onNext(value);
-        if (value.data != null) {
-            if (this.remoteObject != null)
-                throw "Remote object already set " + this.remoteObject;
-            this.remoteObject = new RemoteTableObject(value.data);
-        }
+    run(): void {
+        if (this.value != null)
+            this.remoteObject = new RemoteTableObject(this.value);
     }
 }
 
@@ -252,11 +255,8 @@ export class ZipReceiver extends RemoteTableRenderer {
         super(page, operation, "zip");
     }
 
-    onCompleted(): void {
-        super.finished();
-        if (this.remoteObject == null)
-            return;
-
+    run(): void {
+        super.run();
         let rr = this.remoteObject.createSetOperationRequest(this.setOp);
         let rec = this.receiver(this.page, rr);
         rr.invoke(rec);

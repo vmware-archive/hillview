@@ -19,18 +19,22 @@ import {RemoteObject, OnCompleteRenderer} from "./rpc";
 import {RemoteTableReceiver} from "./dataViews/tableView";
 import {FullPage} from "./ui/fullPage";
 import {ICancellable} from "./util";
-import {CSVFilesDescription, JdbcConnectionInformation} from "./javaBridge";
+import {CSVFilesDescription, JdbcConnectionInformation, RemoteObjectId} from "./javaBridge";
 
-class FileNamesReceiver extends OnCompleteRenderer<string> {
-    constructor(page: FullPage, operation: ICancellable) {
+/**
+ * A renderer which receives a remote object id that denotes a set of files.
+ * It initiates a loadTable RPC request to load data from these files as a table.
+ */
+class FileNamesReceiver extends OnCompleteRenderer<RemoteObjectId> {
+    constructor(page: FullPage, operation: ICancellable, protected title: string) {
         super(page, operation, "Find files");
     }
 
-    public run(remoteObjId: string): void {
+    public run(remoteObjId: RemoteObjectId): void {
         let fn = new RemoteObject(remoteObjId);
-        let rr = fn.createRpcRequest("loadTable", null);
+        let rr = fn.createStreamingRpcRequest<RemoteObjectId>("loadTable", null);
         rr.chain(this.operation);
-        let observer = new RemoteTableReceiver(this.page, rr);
+        let observer = new RemoteTableReceiver(this.page, rr, this.title);
         rr.invoke(observer);
     }
 }
@@ -41,6 +45,7 @@ class FileNamesReceiver extends OnCompleteRenderer<string> {
 export class InitialObject extends RemoteObject {
     public static instance: InitialObject = new InitialObject();
 
+    // noinspection JSUnusedLocalSymbols
     private constructor() {
         // The "0" argument is the object id for the initial object.
         // It must match the id of the object declared in RpcServer.java.
@@ -50,34 +55,27 @@ export class InitialObject extends RemoteObject {
     }
 
     public testDataset(which: number, menuPage: FullPage): void {
-        let rr = this.createRpcRequest("testDataset", which);
-        let page = new FullPage("Test dataset", "Table", null);
-        page.append();
-        let observer = new FileNamesReceiver(page, rr);
+        let rr = this.createStreamingRpcRequest<RemoteObjectId>("testDataset", which);
+        let observer = new FileNamesReceiver(menuPage, rr, "Test data set");
         rr.invoke(observer);
     }
 
     public loadCSVFiles(files: CSVFilesDescription, menuPage: FullPage): void {
-        let rr = this.createRpcRequest("findCSVFiles", files);
-        let page = new FullPage(files.fileNamePattern, "Table", null);
-        page.append();
-        let observer = new FileNamesReceiver(page, rr);
+        let rr = this.createStreamingRpcRequest<RemoteObjectId>("findCSVFiles", files);
+        let observer = new FileNamesReceiver(menuPage, rr, files.fileNamePattern);
         rr.invoke(observer);
     }
 
     public loadLogs(menuPage: FullPage): void {
-        let rr = this.createRpcRequest("findLogs", null);
-        let page = new FullPage("Hillview logs", "Table", null);
-        page.append();
-        let observer = new LogFileReceiver(page, rr);
+        let rr = this.createStreamingRpcRequest<RemoteObjectId>("findLogs", null);
+        let observer = new LogFileReceiver(menuPage, rr, "Hillview logs");
         rr.invoke(observer);
     }
 
     public loadDBTable(conn: JdbcConnectionInformation, menuPage: FullPage): void {
-        let rr = this.createRpcRequest("loadDBTable", conn);
-        let page = new FullPage("DB " + conn.database + ":" + conn.table, "Table", null);
-        page.append();
-        let observer = new RemoteTableReceiver(page, rr);
+        let rr = this.createStreamingRpcRequest<RemoteObjectId>("loadDBTable", conn);
+        let title = "DB " + conn.database + ":" + conn.table;
+        let observer = new RemoteTableReceiver(menuPage, rr, title);
         rr.invoke(observer);
     }
 }
@@ -85,15 +83,15 @@ export class InitialObject extends RemoteObject {
 /**
  * Receives and displays the Hillview system logs as a tabular view.
  */
-class LogFileReceiver extends OnCompleteRenderer<string> {
-    constructor(page: FullPage, operation: ICancellable) {
+class LogFileReceiver extends OnCompleteRenderer<RemoteObjectId> {
+    constructor(page: FullPage, operation: ICancellable, protected title: string) {
         super(page, operation, "Find logs");
     }
 
-    public run(objId: string): void {
+    public run(objId: RemoteObjectId): void {
         let fn = new RemoteObject(objId);
         let rr = fn.createRpcRequest("loadTable", null);
-        let observer = new RemoteTableReceiver(this.page, rr);
+        let observer = new RemoteTableReceiver(this.page, rr, this.title);
         rr.invoke(observer);
     }
 }

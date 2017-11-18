@@ -42,10 +42,21 @@ export class AxisData {
                        public bucketCount: number)
     {}
 
-    public scaleAndAxis(length: number, bottom: boolean): ScaleAndAxis {
+    public scaleAndAxis(length: number, bottom: boolean, legend: boolean): ScaleAndAxis {
         let axisCreator = bottom ? d3.axisBottom : d3.axisLeft;
+
+        let actualMin = this.stats.min;
+        let actualMax = this.stats.max;
+        let adjust = .5;
+        if (legend && (this.description.kind == "Integer" || this.description.kind == "Category")) {
+            // These were adjusted, bring them back.
+            actualMin += .5;
+            actualMax -= .5;
+            adjust = 0;
+        }
+
         // on vertical axis the direction is swapped
-        let domain = bottom ? [this.stats.min, this.stats.max] : [this.stats.max, this.stats.min];
+        let domain = bottom ? [actualMin, actualMax] : [actualMax, actualMin];
 
         let axis: any;
         let scale: AnyScale;
@@ -61,6 +72,7 @@ export class AxisData {
             case "Category": {
                 let ticks: number[] = [];
                 let labels: string[] = [];
+                // note: this is without adjustment.
                 let tickCount = this.stats.max - this.stats.min;
                 // TODO: if the tick count is too large it must be reduced
                 let minLabelWidth = 40;  // pixels
@@ -69,7 +81,7 @@ export class AxisData {
                 let tickWidth = length / tickCount;
 
                 for (let i = 0; i < tickCount; i++) {
-                    ticks.push((i + .5) * tickWidth);
+                    ticks.push((i + adjust) * tickWidth);
                     let label = "";
                     if (i % labelPeriod == 0)
                         label = this.distinctStrings.get(this.stats.min + .5 + i);

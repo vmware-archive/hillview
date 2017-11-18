@@ -17,7 +17,7 @@
 
 import {d3} from "../ui/d3-modules";
 import {Dialog, FieldKind} from "../ui/dialog";
-import { ContentsKind, Schema, BasicColStats, ColumnDescription, ColumnAndRange } from "../javaBridge";
+import {ContentsKind, Schema, BasicColStats, ColumnDescription, ColumnAndRange, RemoteObjectId} from "../javaBridge";
 import {ScaleLinear} from "d3-scale";
 import {Converters, formatDate, significantDigits} from "../util";
 import {KeyCodes, Point, Resolution, Size, SpecialChars} from "../ui/ui";
@@ -49,7 +49,7 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
     protected moved: boolean;  // to detect trivial empty drags
     protected pointDescription: TextOverlay;
 
-    constructor(remoteObjectId: string, protected tableSchema: Schema, page: FullPage) {
+    constructor(remoteObjectId: RemoteObjectId, protected tableSchema: Schema, page: FullPage) {
         super(remoteObjectId, page);
         this.topLevel = document.createElement("div");
         this.topLevel.className = "chart";
@@ -129,6 +129,7 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
         this.selectionCompleted(this.selectionOrigin.x, x);
     }
 
+    // noinspection JSUnusedLocalSymbols
     public static samplingRate(bucketCount: number, rowCount: number, page: FullPage): number {
         let constant = 4;  // This models the confidence we want from the sampling
         let height = Resolution.getChartSize(page).height;

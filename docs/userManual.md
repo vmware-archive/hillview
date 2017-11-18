@@ -90,6 +90,20 @@ user-friendly.
 
 ![Error displayed by Hillview](exception.png)
 
+## Mouse-based selection
+
+Several views allow the user to use the mouse to select data.
+Selections can be modified using the keyboard as follows:
+
+* Clicking on an element will select it and will unselect all other
+  selected elements.
+
+* Clicking while pressing shift button will select or unselect a whole
+  range of contiguous elements.
+
+* Clicking while pressing the control button
+  will toggle the selection of the current element
+
 ### Loading data
 
 Hillview supports reading data from multiple data-sources.
@@ -111,6 +125,12 @@ storage.
 
 * DB tables: allows the user to [read data from a set of federated
   databases](#reading-data-from-sql-databases).
+
+After the data loading is initiated the user will be presented with a
+view of the loaded table.  If the table has relatively few columns,
+the user is shown directly a [Tabular view](#table-views).  Otherwise
+the user is shown a [Schema view](#data-schema-views), which can be
+used to select a smaller set of columns to browse.
 
 #### Reading CSV files
 
@@ -251,11 +271,12 @@ there are three rows selected.
 
 ![Schema view](schema-view.png)
 
-Once the user selects a set columns they can display a view of the
-data table restricted to the selected columns using the View/Selected
-columns menu.
+The "View" menu offers the following operations:
 
 ![Schema view menu](schema-view-menu.png)
+
+* Selected columns: this displays a [table view](#table-views) of the
+data restricted to the selected columns.
 
 ### Table views
 
@@ -353,15 +374,9 @@ into view a set of rows that includes the requested quantile.
 
 #### Selecting columns
 
-The user can select one or more column using the mouse:
-* Clicking on a column will select the column
-* Clicking while pressing shift button will select a range of
-  contiguous columns
-* Clicking while pressing the control button will add or remove the
-  current column from the selection
-
-The following image shows the header of a table with 6 selected
-columns.
+The user can [select](#mouse-based-selection) one or more column using
+the mouse.  The following image shows the header of a table with 6
+selected columns.
 
 ![A table header with multiple selected columns](selected-columns-header.png)
 

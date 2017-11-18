@@ -21,9 +21,9 @@ import {ScaleLinear, ScaleTime} from "d3-scale";
 import { Renderer } from "../rpc";
 import {
     ColumnDescription, Schema, RecordOrder, Histogram, BasicColStats, FilterDescription,
-    Histogram2DArgs, CombineOperators
+    Histogram2DArgs, CombineOperators, RemoteObjectId
 } from "../javaBridge";
-import {TableView, TableRenderer} from "./tableView";
+import {TableView, NextKReceiver} from "./tableView";
 import {
     Pair, significantDigits, formatNumber, reorder, regression, ICancellable, PartialResult, Seed
 } from "../util";
@@ -86,7 +86,7 @@ export class HeatMapView extends RemoteTableObjectView {
     protected canvas: any;
     private menu: TopMenu;
 
-    constructor(remoteObjectId: string, protected tableSchema: Schema, page: FullPage) {
+    constructor(remoteObjectId: RemoteObjectId, protected tableSchema: Schema, page: FullPage) {
         super(remoteObjectId, page);
         this.topLevel = document.createElement("div");
         this.topLevel.className = "chart";
@@ -167,7 +167,7 @@ export class HeatMapView extends RemoteTableObjectView {
         let page = new FullPage("Table view ", "Table", this.page);
         page.setDataView(table);
         this.page.insertAfterMe(page);
-        rr.invoke(new TableRenderer(page, table, rr, false, order));
+        rr.invoke(new NextKReceiver(page, table, rr, false, order));
     }
 
     protected keyDown(ev: KeyboardEvent): void {
@@ -278,8 +278,8 @@ export class HeatMapView extends RemoteTableObjectView {
             .append("g")
             .attr("transform", `translate(${Resolution.leftMargin}, ${Resolution.topMargin})`);
 
-        let xsc = this.currentData.xData.scaleAndAxis(this.chartSize.width, true);
-        let ysc = this.currentData.yData.scaleAndAxis(this.chartSize.height, false);
+        let xsc = this.currentData.xData.scaleAndAxis(this.chartSize.width, true, false);
+        let ysc = this.currentData.yData.scaleAndAxis(this.chartSize.height, false, false);
         let xAxis = xsc.axis;
         let yAxis = ysc.axis;
         this.xScale = xsc.scale;
@@ -653,6 +653,5 @@ export class HeatMapRenderer extends Renderer<HeatMapData> {
         let yAxisData = new AxisData(value.data.histogramMissingD2, this.cds[1], this.stats[1], this.ds[1], yPoints);
         this.heatMap.updateView(value.data.buckets, xAxisData, yAxisData,
             value.data.missingData, this.samplingRate, this.elapsedMilliseconds());
-        this.heatMap.scrollIntoView();
     }
 }

@@ -24,7 +24,7 @@ import {ErrorReporter} from "./ui/errReporter";
 import {PartialResult, ICancellable, RpcReply, formatDate} from "./util";
 import {ProgressBar} from "./ui/progress";
 import {FullPage} from "./ui/fullPage";
-import {CombineOperators} from "./javaBridge";
+import {CombineOperators, RemoteObjectId} from "./javaBridge";
 
 /**
  * Path in server url for rpc web sockets.
@@ -39,7 +39,7 @@ const RpcRequestPath = "rpc";
  * are represented in Java by classes that extend RpcTarget.
  */
 export class RemoteObject {
-    constructor(public readonly remoteObjectId : string) {}
+    constructor(public readonly remoteObjectId : RemoteObjectId) {}
 
     /**
      * Creates a request to a remote method.  The request must be invoked separately.
@@ -54,8 +54,12 @@ export class RemoteObject {
      *                         method in Java.
      * @returns {RpcRequest}   The request that is created.
      */
-    createRpcRequest(method: string, args: any) : RpcRequest {
-        return new RpcRequest(this.remoteObjectId, method, args);
+    createRpcRequest<T>(method: string, args: any) : RpcRequest<T> {
+        return new RpcRequest<T>(this.remoteObjectId, method, args);
+    }
+
+    createStreamingRpcRequest<T>(method: string, args: any) : RpcRequest<PartialResult<T>> {
+        return this.createRpcRequest<PartialResult<T>>(method, args);
     }
 
     /**
@@ -77,8 +81,10 @@ export class RemoteObject {
  * we expect a stream of replies.  The requests are made
  * over web sockets.  When the last reply has been received
  * the web socket is closed.
+ *
+ * T is the type of the result returned.
  */
-export class RpcRequest implements ICancellable {
+export class RpcRequest<T> implements ICancellable {
     readonly protoVersion : number = 6;
     readonly requestId: number;
     cancelled: boolean;
@@ -166,7 +172,7 @@ export class RpcRequest implements ICancellable {
      * @param onReply  An observer which is invoked for each result received by
      *                 the streaming RPC.
      */
-    public invoke<T>(onReply : Observer<T>) : void {
+    public invoke(onReply : Observer<T>) : void {
         try {
             // If time is not set we set it now.  The time may be set because this
             // is a request that is part of a chain of requests.
@@ -266,7 +272,7 @@ export abstract class Renderer<T> implements Rx.Observer<PartialResult<T>> {
      * Create a Renderer.
      * @param {FullPage} page            This page will be used to show progress and to report errors.
      * @param {ICancellable} operation   The progress bar stop button can cancel this operation.
-     *                                   (The operation may be null ocasionally.)
+     *                                   (The operation may be null occasionally.)
      * @param {string} description       A description of the operation being performed that is shown
      *                                   next to the progress bar.
      */
@@ -308,7 +314,10 @@ export abstract class Renderer<T> implements Rx.Observer<PartialResult<T>> {
      * Do not forget to call super.onCompleted() if you override this method;
      * otherwise the progress bar may never disappear.
      */
-    public onCompleted(): void { this.finished(); }
+    public onCompleted(): void {
+        this.page.scrollIntoView();
+        this.finished();
+    }
 
     /**
      * Method called whenever a new partial result is received.  Advances
@@ -316,6 +325,7 @@ export abstract class Renderer<T> implements Rx.Observer<PartialResult<T>> {
      * this method; otherwise the progress bar will not advance.
      */
     public onNext(value: PartialResult<T>) {
+        this.page.scrollIntoView();
         this.progressBar.setPosition(value.done);
         if (this.operation != null)
             console.log("onNext after " + this.elapsedMilliseconds());
@@ -352,6 +362,7 @@ export abstract class OnCompleteRenderer<T> extends Renderer<T> {
 
     public onCompleted(): void {
         super.finished();
+        this.page.scrollIntoView();
         if (this.value == null)
             return;
         this.run(this.value);

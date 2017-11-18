@@ -170,7 +170,7 @@ export class FullPage implements IHtmlElement {
         let found = false;
         for (let p of FullPage.allPages) {
             if (p.pageId == pageId) {
-                p.getHTMLRepresentation().scrollIntoView( { block: "end", behavior: "smooth" } );
+                p.scrollIntoView();
                 found = true;
             }
         }
@@ -248,5 +248,9 @@ export class FullPage implements IHtmlElement {
 
     public getWidthInPixels(): number {
         return this.pageTopLevel.getBoundingClientRect().width;
+    }
+
+    scrollIntoView(): void {
+        this.getHTMLRepresentation().scrollIntoView( { block: "end", behavior: "smooth" } );
     }
 }

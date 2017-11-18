@@ -21,6 +21,8 @@
 
 import {Seed} from "./util";
 
+export type RemoteObjectId = string;
+
 export type ContentsKind = "Category" | "Json" | "String" | "Integer" |
     "Double" | "Date" | "Interval";
 
@@ -56,6 +58,11 @@ export function asContentsKind(kind: string): ContentsKind {
     }
 }
 
+export interface TableSummary {
+    schema: Schema;
+    rowCount: number;
+}
+
 export interface JdbcConnectionInformation {
     host: string;
     database: string;
@@ -71,6 +78,10 @@ export interface CSVFilesDescription {
     fileNamePattern: string;
     schemaFile: string;
     hasHeaderRow: boolean;
+}
+
+export interface HLogLog {
+    distinctItemCount: number
 }
 
 /**
@@ -205,11 +216,11 @@ export interface TopList {
  * The serialization of a NextKList Java object
  */
 export class NextKList {
-    public schema?: Schema;
+    public schema: Schema;
     // Total number of rows in the complete table
     public rowCount: number;
-    public startPosition?: number;
-    public rows?: RowView[];
+    public startPosition: number;
+    public rows: RowView[];
 }
 
 export class RecordOrder {

@@ -20,7 +20,7 @@ import {OnCompleteRenderer} from "../rpc";
 import {ICancellable} from "../util";
 import {FullPage} from "../ui/fullPage";
 import {TableView, RemoteTableReceiver} from "./tableView";
-import {allContentsKind, ContentsKind} from "../javaBridge";
+import {allContentsKind, ContentsKind, HLogLog} from "../javaBridge";
 
 /**
  * A dialog to find out information about how to perform the conversion of the data in a column.
@@ -102,12 +102,8 @@ export class ColumnConverter  {
         };
         let rr = this.table.createRpcRequest("convertColumnMap", args);
         rr.chain(operation);
-        rr.invoke(new RemoteTableReceiver(this.table.getPage(), rr));
+        rr.invoke(new RemoteTableReceiver(this.table.getPage(), rr, "New column " + this.newColumnName));
     }
-}
-
-export interface HLogLog {
-    distinctItemCount: number
 }
 
 class HLogLogReceiver extends OnCompleteRenderer<HLogLog> {
