@@ -118,7 +118,7 @@ export class RemoteTableObject extends RemoteObject {
 
     public createProjectToEigenVectorsRequest(r: RemoteObject, dimension: number, projectionName: string):
     RpcRequest<PartialResult<RemoteObjectId>> {
-        return this.createRpcRequest("projectToEigenVectors", {
+        return this.createStreamingRpcRequest<RemoteObjectId>("projectToEigenVectors", {
             id: r.remoteObjectId,
             numComponents: dimension,
             projectionName: projectionName
@@ -132,7 +132,7 @@ export class RemoteTableObject extends RemoteObject {
 
     public createCorrelationMatrixRequest(columnNames: string[], totalRows: number, toSample: boolean):
 RpcRequest<PartialResult<RemoteObjectId>> {
-        return this.createRpcRequest("correlationMatrix", {
+        return this.createStreamingRpcRequest<RemoteObjectId>("correlationMatrix", {
             columnNames: columnNames,
             totalRows: totalRows,
             seed: Seed.instance.get(),
