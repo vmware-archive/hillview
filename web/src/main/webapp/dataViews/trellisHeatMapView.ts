@@ -23,7 +23,7 @@ import {Pair, truncate, significantDigits, ICancellable, PartialResult, Seed} fr
 import {AxisData} from "./axisData";
 import {
     IColumnDescription, BasicColStats,
-    ColumnAndRange, Schema, isNumeric, Histogram3DArgs, RecordOrder
+    ColumnAndRange, Schema, isNumeric, Histogram3DArgs, RecordOrder, RemoteObjectId
 } from "../javaBridge";
 import {CategoryCache} from "../categoryCache";
 import {Point, Resolution, Size} from "../ui/ui";
@@ -31,7 +31,7 @@ import {IScrollTarget, ScrollBar} from "../ui/scroll";
 import {FullPage} from "../ui/fullPage";
 import {ColorLegend, ColorMap} from "../ui/colorLegend";
 import {TextOverlay} from "../ui/textOverlay";
-import {TableView, TableRenderer} from "./tableView";
+import {TableView, NextKReceiver} from "./tableView";
 import {DistinctStrings} from "../distinctStrings";
 import {RemoteTableObjectView, RemoteTableObject} from "../tableTarget";
 
@@ -125,8 +125,8 @@ class CompactHeatMapView {
 
         this.xAxisData = new AxisData(null, cds[0], xStats, null, this.xDim);
         this.yAxisData = new AxisData(null, cds[1], yStats, null, this.yDim);
-        this.xAxis = this.xAxisData.scaleAndAxis(this.chartSize.width, true).axis;
-        this.yAxis = this.yAxisData.scaleAndAxis(this.chartSize.height, false).axis;
+        this.xAxis = this.xAxisData.scaleAndAxis(this.chartSize.width, true, false).axis;
+        this.yAxis = this.yAxisData.scaleAndAxis(this.chartSize.height, false, false).axis;
         this.xAxis.ticks(CompactHeatMapView.axesTicks);
         this.yAxis.ticks(CompactHeatMapView.axesTicks);
     }
@@ -269,7 +269,8 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
     // Holds the state of which heatmap is hovered over.
     private mouseOverHeatMap: CompactHeatMapView;
 
-    constructor(remoteObjectId: string, page: FullPage, args: HeatMapArrayArgs, private tableSchema: Schema) {
+    constructor(remoteObjectId: RemoteObjectId, page: FullPage, args: HeatMapArrayArgs,
+                private tableSchema: Schema) {
         super(remoteObjectId, page);
         this.args = args;
         this.offset = 0;
@@ -378,7 +379,7 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
         let page = new FullPage("Table view", "Table", this.page);
         page.setDataView(table);
         this.page.insertAfterMe(page);
-        rr.invoke(new TableRenderer(page, table, rr, false, order));
+        rr.invoke(new NextKReceiver(page, table, rr, false, order));
     }
 
     public scrolledTo(position: number): void {

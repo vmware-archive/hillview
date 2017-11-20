@@ -19,14 +19,14 @@ import {d3} from "../ui/d3-modules";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {TopMenu, SubMenu} from "../ui/menu";
 import {
-    RangeInfo, BasicColStats, Schema, RecordOrder, ColumnAndRange, Histogram2DArgs, NextKList
+    RangeInfo, BasicColStats, Schema, RecordOrder, ColumnAndRange, Histogram2DArgs, TableSummary, RemoteObjectId
 } from "../javaBridge";
-import {Renderer, RpcRequest} from "../rpc";
+import {Renderer, RpcRequest, OnCompleteRenderer} from "../rpc";
 import {PartialResult, clamp, Pair, ICancellable, Seed} from "../util";
 import {Point, PointSet, Resolution} from "../ui/ui";
 import {FullPage} from "../ui/fullPage";
 import {ColorLegend, ColorMap} from "../ui/colorLegend";
-import {TableView, TableRenderer} from "./tableView";
+import {TableView, NextKReceiver} from "./tableView";
 import {HeatMapData} from "./heatMapView";
 import {HeatMapArrayDialog} from "./trellisHeatMapView";
 import {RemoteTableObject, RemoteTableObjectView, RemoteTableRenderer} from "../tableTarget";
@@ -299,7 +299,7 @@ class LampView extends RemoteTableObjectView {
         let table = new TableView(this.lampTableObject.remoteObjectId, page);
         page.setDataView(table);
         let rr = this.lampTableObject.createGetSchemaRequest();
-        rr.invoke(new TableRenderer(this.page, table, rr, false, new RecordOrder([])));
+        rr.invoke(new NextKReceiver(this.page, table, rr, false, new RecordOrder([])));
     }
 
     private heatMap3D() {
@@ -357,7 +357,7 @@ export class LAMPDialog extends Dialog {
         let selection = this.getFieldValue("controlPointSelection");
         let projection = this.getFieldValue("controlPointProjection");
         let category = this.getFieldValue("category");
-        let rr: RpcRequest;
+        let rr: RpcRequest<PartialResult<RemoteObjectId>>;
         switch (selection) {
             case "Random samples": {
                 if (numSamples > LAMPDialog.maxNumSamples) {
@@ -401,10 +401,8 @@ class ControlPointsProjector extends RemoteTableRenderer {
         super(page, operation, "Sampling control points");
     }
 
-    onCompleted() {
-        super.finished();
-        if (this.remoteObject == null)
-            return;
+    run() {
+        super.run();
         let rr = this.tableObject.createMDSProjectionRequest(this.remoteObject.remoteObjectId);
         rr.invoke(new ControlPointsRenderer(
             this.page, rr, this.tableObject, this.schema, this.remoteObject.remoteObjectId, this.selectedColumns));
@@ -435,8 +433,8 @@ class LAMPMapReceiver extends RemoteTableRenderer {
         super(page, operation, "Computing LAMP");
     }
 
-    onCompleted() {
-        super.finished();
+    run() {
+        super.run();
         let lampTime = this.elapsedMilliseconds() / 1000;
         this.cpView.updateRemoteTable(this.remoteObject);
         let rr = this.remoteObject.createHeatMapRequest(this.arg);
@@ -454,11 +452,9 @@ class LAMPHeatMapReceiver extends Renderer<HeatMapData> {
     onNext(result: PartialResult<HeatMapData>) {
         super.onNext(result);
         this.heatMap = result.data;
-        if (this.heatMap != null) {
+        if (this.heatMap != null)
             this.controlPointsView.updateHeatMap(this.heatMap, this.lampTime);
-        }
     }
-
 }
 
 class LAMPRangeCollector extends Renderer<Pair<BasicColStats, BasicColStats>> {
@@ -466,27 +462,23 @@ class LAMPRangeCollector extends Renderer<Pair<BasicColStats, BasicColStats>> {
         super(page, operation, "Getting LAMP ranges.")
     }
 
-    onNext(result: PartialResult<Pair<BasicColStats, BasicColStats>>) {
+    onNext(result: PartialResult<Pair<BasicColStats, BasicColStats>>): void {
         super.onNext(result);
         this.cpView.updateRanges(result.data.first, result.data.second);
     }
 }
 
-class SchemaCollector extends Renderer<NextKList> {
-    private schema: Schema;
+class SchemaCollector extends OnCompleteRenderer<TableSummary> {
     constructor(page: FullPage, operation: ICancellable,
                 private tableObject: RemoteTableObject, private lampColumnNames: string[]) {
         super(page, operation, "Getting new schema");
     }
 
-    onNext(value: PartialResult<NextKList>) {
-        this.schema = value.data.schema;
-    }
-
-    onCompleted() {
-        super.onCompleted();
+    run(): void {
+        if (this.value == null)
+            return;
         let dialog = new HeatMapArrayDialog(
-            this.lampColumnNames, this.page, this.schema, this.tableObject, true);
+            this.lampColumnNames, this.page, this.value.schema, this.tableObject, true);
         dialog.show();
     }
 }

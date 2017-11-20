@@ -17,7 +17,7 @@
 
 import {RemoteTableObjectView} from "../tableTarget";
 import {FullPage} from "../ui/fullPage";
-import {NextKList, ColumnDescription, RecordOrder, Schema} from "../javaBridge";
+import {NextKList, ColumnDescription, RecordOrder, Schema, RemoteObjectId} from "../javaBridge";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {TabularDisplay} from "../ui/tabularDisplay";
 import {TableView} from "./tableView";
@@ -29,7 +29,7 @@ import {TableView} from "./tableView";
 export class SchemaView extends RemoteTableObjectView {
     protected display: TabularDisplay;
 
-    constructor(remoteObjectId: string,
+    constructor(remoteObjectId: RemoteObjectId,
                 protected page: FullPage,
                 public schema: Schema,
                 private rowCount: number) {
@@ -78,6 +78,5 @@ export class SchemaView extends RemoteTableObjectView {
         nkl.schema = this.createSchema();
         nkl.rowCount = this.rowCount;
         tv.updateView(nkl, false, new RecordOrder([]), 0);
-        tv.scrollIntoView();
     }
 }

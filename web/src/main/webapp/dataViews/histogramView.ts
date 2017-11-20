@@ -19,7 +19,7 @@ import { d3 } from "../ui/d3-modules";
 import { Renderer } from "../rpc";
 import {
     ColumnDescription, Schema, RecordOrder, RangeInfo, Histogram,
-    BasicColStats, FilterDescription, HistogramArgs, CombineOperators
+    BasicColStats, FilterDescription, HistogramArgs, CombineOperators, RemoteObjectId
 } from "../javaBridge";
 import {TopMenu, SubMenu} from "../ui/menu";
 // noinspection ES6UnusedImports
@@ -35,7 +35,7 @@ import {TextOverlay} from "../ui/textOverlay";
 import {AxisData} from "./axisData";
 import {HistogramViewBase, BucketDialog} from "./histogramViewBase";
 import {Range2DCollector} from "./heatMapView";
-import {TableRenderer, TableView} from "./tableView";
+import {NextKReceiver, TableView} from "./tableView";
 import {RemoteTableObject, RemoteTableRenderer, ZipReceiver} from "../tableTarget";
 import {DistinctStrings} from "../distinctStrings";
 import {combineMenu, SelectedObject} from "../selectedObject";
@@ -54,7 +54,7 @@ export class HistogramView extends HistogramViewBase {
     };
     protected menu: TopMenu;
 
-    constructor(remoteObjectId: string, protected tableSchema: Schema, page: FullPage) {
+    constructor(remoteObjectId: RemoteObjectId, protected tableSchema: Schema, page: FullPage) {
         super(remoteObjectId, tableSchema, page);
         this.menu = new TopMenu( [
             { text: "View", subMenu: new SubMenu([
@@ -300,7 +300,7 @@ export class HistogramView extends HistogramViewBase {
         let yAxis = d3.axisLeft(this.yScale)
             .tickFormat(d3.format(".2s"));
 
-        let scaleAxis = axisData.scaleAndAxis(this.chartSize.width, true);
+        let scaleAxis = axisData.scaleAndAxis(this.chartSize.width, true, false);
         this.xScale = scaleAxis.scale;
         let xAxis = scaleAxis.axis;
 
@@ -393,7 +393,7 @@ export class HistogramView extends HistogramViewBase {
             isAscending: true
         } ]);
         let rr = table.createNextKRequest(order, null);
-        rr.invoke(new TableRenderer(newPage, table, rr, false, order));
+        rr.invoke(new NextKReceiver(newPage, table, rr, false, order));
     }
 
     protected selectionCompleted(xl: number, xr: number): void {
@@ -455,11 +455,8 @@ class FilterReceiver extends RemoteTableRenderer {
         return "Filtered";  // TODO: add title description
     }
 
-    public onCompleted(): void {
-        this.finished();
-        if (this.remoteObject == null)
-            return;
-
+    public run(): void {
+        super.run();
         let colName = this.columnDescription.name;
         let rangeInfo: RangeInfo = new RangeInfo(colName);
         if (this.allStrings != null)
@@ -559,14 +556,14 @@ export class HistogramRenderer extends Renderer<Pair<Histogram, Histogram>> {
     */
 
     constructor(protected title: string,
-                page: FullPage,
+                sourcePage: FullPage,
                 remoteTableId: string,
                 protected schema: Schema,
                 protected axisData: AxisData,
                 operation: ICancellable,
                 protected samplingRate: number) {
-        super(new FullPage(title, "Histogram", page), operation, "histogram");
-        page.insertAfterMe(this.page);
+        super(new FullPage(title, "Histogram", sourcePage), operation, "histogram");
+        sourcePage.insertAfterMe(this.page);
         this.histogram = new HistogramView(remoteTableId, schema, this.page);
         this.page.setDataView(this.histogram);
     }
@@ -576,7 +573,6 @@ export class HistogramRenderer extends Renderer<Pair<Histogram, Histogram>> {
         this.timeInMs = this.elapsedMilliseconds();
         this.histogram.updateView(this.title, value.data.first, value.data.second,
             this.axisData, this.samplingRate, this.timeInMs);
-        this.histogram.scrollIntoView();
     }
 
     /*
@@ -648,10 +644,8 @@ class MakeHistogram extends RemoteTableRenderer {
         super(page, operation, "Reload");
     }
 
-    onCompleted(): void {
-        super.finished();
-        if (this.remoteObject == null)
-            return;
+    run(): void {
+        super.run();
         if (this.colDesc.kind == "Category") {
             // Continuation invoked after the distinct strings have been obtained
             let cont = (operation: ICancellable) => {

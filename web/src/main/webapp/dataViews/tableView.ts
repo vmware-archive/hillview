@@ -24,7 +24,7 @@ import {
 import {EqualityFilterDialog, EqualityFilterDescription} from "./equalityFilter";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {CategoryCache} from "../categoryCache";
-import {ColumnConverter, ConverterDialog, HLogLog} from "./columnConverter";
+import {ColumnConverter, ConverterDialog} from "./columnConverter";
 import {DataRange} from "../ui/dataRange"
 import {IScrollTarget, ScrollBar} from "../ui/scroll";
 import {FullPage} from "../ui/fullPage";
@@ -39,11 +39,13 @@ import {SchemaView} from "./schemaView";
 import {LAMPDialog} from "./lampView";
 import {
     IColumnDescription, RecordOrder, RowView, Schema, ColumnDescription, RangeInfo,
-    ContentsKind, asContentsKind, ColumnSortOrientation, NextKList, TopList, CombineOperators
+    ContentsKind, asContentsKind, ColumnSortOrientation, NextKList, TopList, CombineOperators, TableSummary, HLogLog,
+    RemoteObjectId
 } from "../javaBridge";
 import {RemoteTableObject, RemoteTableObjectView, RemoteTableRenderer, ZipReceiver} from "../tableTarget";
 import {DistinctStrings} from "../distinctStrings";
 import {combineMenu, SelectedObject} from "../selectedObject";
+import {IDataView} from "../ui/dataview";
 
 /**
  * Displays a table in the browser.
@@ -68,7 +70,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
     protected cellsPerColumn: Map<string, HTMLElement[]>;
     static firstTable: RemoteTableObject;
 
-    public constructor(remoteObjectId: string, page: FullPage) {
+    public constructor(remoteObjectId: RemoteObjectId, page: FullPage) {
         super(remoteObjectId, page);
 
         this.order = new RecordOrder([]);
@@ -186,7 +188,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         }
         let order = this.order.invert();
         let rr = this.createNextKRequest(order, this.currentData.rows[0].values);
-        rr.invoke(new TableRenderer(this.getPage(), this, rr, true, order));
+        rr.invoke(new NextKReceiver(this.getPage(), this, rr, true, order));
     }
 
     protected begin(): void {
@@ -198,7 +200,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         }
         let o = this.order.clone();
         let rr = this.createNextKRequest(o, null);
-        rr.invoke(new TableRenderer(this.getPage(), this, rr, false, o));
+        rr.invoke(new NextKReceiver(this.getPage(), this, rr, false, o));
     }
 
     protected end(): void {
@@ -210,7 +212,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         }
         let order = this.order.invert();
         let rr = this.createNextKRequest(order, null);
-        rr.invoke(new TableRenderer(this.getPage(), this, rr, true, order));
+        rr.invoke(new NextKReceiver(this.getPage(), this, rr, true, order));
     }
 
     public pageDown(): void {
@@ -222,12 +224,12 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         }
         let o = this.order.clone();
         let rr = this.createNextKRequest(o, this.currentData.rows[this.currentData.rows.length - 1].values);
-        rr.invoke(new TableRenderer(this.getPage(), this, rr, false, o));
+        rr.invoke(new NextKReceiver(this.getPage(), this, rr, false, o));
     }
 
     protected setOrder(o: RecordOrder): void {
         let rr = this.createNextKRequest(o, null);
-        rr.invoke(new TableRenderer(this.getPage(), this, rr, false, o));
+        rr.invoke(new NextKReceiver(this.getPage(), this, rr, false, o));
     }
 
     protected showAllRows(): void {
@@ -252,7 +254,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         let table = new TableView(TableView.firstTable.remoteObjectId, page);
         page.setDataView(table);
         let rr = table.createGetSchemaRequest();
-        rr.invoke(new TableRenderer(page, table, rr, false, new RecordOrder([])));
+        rr.invoke(new NextKReceiver(page, table, rr, false, new RecordOrder([])));
     }
 
     public static allColumnNames(schema: Schema): string[] {
@@ -493,6 +495,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
             let cd = new ColumnDescription(this.schema[i]);
             cds.push(cd);
             let thd = this.addHeaderCell(thr, cd);
+            thd.classList.add("noselect");
             thd.className = this.columnClass(cd.name);
             thd.onclick = e => this.columnClick(i, e);
             thd.oncontextmenu = e => {
@@ -639,7 +642,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
             (filter.complement ? "not " : "") +
             TableView.convert(filter.compareValue, kind), "Table", this.page);
         this.page.insertAfterMe(newPage);
-        rr.invoke(new RemoteTableReceiver(newPage, rr));
+        rr.invoke(new RemoteTableReceiver(newPage, rr, "Filter"));
     }
 
     private equalityFilter(colName: string, value: string, showMenu: boolean, complement?: boolean): void {
@@ -901,6 +904,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
                     value = cellValue;
                 }
                 cell.textContent = cellValue;
+                cell.classList.add("noselect");
                 cell.oncontextmenu = e => {
                     e.preventDefault();
                     this.contextMenu.clear();
@@ -936,7 +940,10 @@ class CountReceiver extends OnCompleteRenderer<HLogLog> {
     }
 }
 
-export class TableRenderer extends Renderer<NextKList> {
+/**
+ * Receives the NextK rows from a table and displays them.
+ */
+export class NextKReceiver extends Renderer<NextKList> {
     constructor(page: FullPage,
                 protected table: TableView,
                 operation: ICancellable,
@@ -948,31 +955,61 @@ export class TableRenderer extends Renderer<NextKList> {
     onNext(value: PartialResult<NextKList>): void {
         super.onNext(value);
         this.table.updateView(value.data, this.reverse, this.order, this.elapsedMilliseconds());
-        this.table.scrollIntoView();
     }
 }
 
+/**
+ * Receives the ID for a remote table and initiates a request to get the
+ * table schema.
+ */
 export class RemoteTableReceiver extends RemoteTableRenderer {
-    constructor(page: FullPage, operation: ICancellable) {
+    constructor(page: FullPage, operation: ICancellable, protected title: string) {
         super(page, operation, "Get schema");
     }
 
-    protected getTableSchema() {
-        let table = new TableView(this.remoteObject.remoteObjectId, this.page);
-        this.page.setDataView(table);
-        let rr = table.createGetSchemaRequest();
+    public run(): void {
+        super.run();
+        let rr = this.remoteObject.createGetSchemaRequest();
         rr.chain(this.operation);
-        rr.invoke(new TableRenderer(this.page, table, rr, false, new RecordOrder([])));
-    }
-
-    public onCompleted(): void {
-        this.finished();
-        if (this.remoteObject == null)
-            return;
-        this.getTableSchema();
+        rr.invoke(new SchemaReceiver(this.page, rr, this.remoteObject.remoteObjectId, this.title));
     }
 }
 
+class SchemaReceiver extends OnCompleteRenderer<TableSummary> {
+    constructor(page: FullPage, operation: ICancellable,
+                protected remoteObjectId: string, protected title: string) {
+        super(page, operation, "")
+    }
+
+    run(summary: TableSummary): void {
+        let page: FullPage;
+        let dataView: IDataView;
+        if (summary.schema.length > 20) {
+            page = new FullPage(this.title, "Schema", this.page);
+            dataView = new SchemaView(this.remoteObjectId, page, summary.schema, summary.rowCount);
+        } else {
+            page = new FullPage(this.title, "Table", this.page);
+            let nk: NextKList = {
+                schema: this.value.schema,
+                rowCount: this.value.rowCount,
+                startPosition: 0,
+                rows: []
+            };
+
+            let order = new RecordOrder([]);
+            let table = new TableView(this.remoteObjectId, page);
+            table.updateView(nk, false, order, this.elapsedMilliseconds());
+            dataView = table;
+        }
+        this.page.insertAfterMe(page);
+        page.setDataView(dataView);
+    }
+}
+
+/**
+ * Receives a row which is the result of an approximate quantile request and
+ * initiates a request to get the NextK rows after this one.
+ */
 class QuantileReceiver extends OnCompleteRenderer<any[]> {
     public constructor(page: FullPage,
                        protected tv: TableView,
@@ -984,7 +1021,7 @@ class QuantileReceiver extends OnCompleteRenderer<any[]> {
     run(firstRow: any[]): void {
         let rr = this.tv.createNextKRequest(this.order, firstRow);
         rr.chain(this.operation);
-        rr.invoke(new TableRenderer(this.page, this.tv, rr, false, this.order));
+        rr.invoke(new NextKReceiver(this.page, this.tv, rr, false, this.order));
     }
 }
 
@@ -1022,14 +1059,12 @@ class CorrelationMatrixReceiver extends RemoteTableRenderer {
         super(page, operation, "Correlation matrix");
     }
 
-    onCompleted(): void {
-        super.finished();
-        if (this.remoteObject == null)
-            return;
+    run(): void {
+        super.run();
         let rr = this.tv.createProjectToEigenVectorsRequest(
                 this.remoteObject, this.numComponents);
         rr.chain(this.operation);
-        rr.invoke(new RemoteTableReceiver(this.page, rr));
+        rr.invoke(new RemoteTableReceiver(this.page, rr, "Data with PCA columns"));
     }
 }
 
@@ -1045,15 +1080,13 @@ export class TableOperationCompleted extends RemoteTableRenderer {
         super(page, operation, "Table operation");
     }
 
-    onCompleted(): void {
-        super.finished();
-        if (this.remoteObject == null)
-            return;
+    run(): void {
+        super.run();
         let table = new TableView(this.remoteObject.remoteObjectId, this.page);
         table.setSchema(this.tv.schema);
         this.page.setDataView(table);
         let rr = table.createNextKRequest(this.order, null);
         rr.chain(this.operation);
-        rr.invoke(new TableRenderer(this.page, table, rr, false, this.order));
+        rr.invoke(new NextKReceiver(this.page, table, rr, false, this.order));
     }
 }

@@ -18,7 +18,7 @@
 import {d3} from "../ui/d3-modules";
 import {
     ColumnDescription, Schema, RecordOrder, ColumnAndRange, FilterDescription,
-    BasicColStats, RangeInfo, Histogram2DArgs, CombineOperators
+    BasicColStats, RangeInfo, Histogram2DArgs, CombineOperators, RemoteObjectId
 } from "../javaBridge";
 import {TopMenu, SubMenu} from "../ui/menu";
 import {
@@ -30,7 +30,7 @@ import {FullPage} from "../ui/fullPage";
 import {TextOverlay} from "../ui/textOverlay";
 import {AnyScale, AxisData} from "./axisData";
 import { HistogramViewBase, BucketDialog } from "./histogramViewBase";
-import {TableView, TableRenderer} from "./tableView";
+import {TableView, NextKReceiver} from "./tableView";
 import {HeatMapData, Range2DCollector} from "./heatMapView";
 import {RemoteTableRenderer, ZipReceiver} from "../tableTarget";
 import {DistinctStrings} from "../distinctStrings";
@@ -82,7 +82,7 @@ export class Histogram2DView extends HistogramViewBase {
     protected barWidth: number;  // in pixels
     protected max: number;  // maximum count displayed (total size of stacked bars)
 
-    constructor(remoteObjectId: string, protected tableSchema: Schema, page: FullPage) {
+    constructor(remoteObjectId: RemoteObjectId, protected tableSchema: Schema, page: FullPage) {
         super(remoteObjectId, tableSchema, page);
         this.menu = new TopMenu( [
             { text: "View", subMenu: new SubMenu([
@@ -335,7 +335,7 @@ export class Histogram2DView extends HistogramViewBase {
             .tickFormat(d3.format(".2s"));
 
         let bucketCount = xPoints;
-        let scAxis = xData.scaleAndAxis(this.chartSize.width, true);
+        let scAxis = xData.scaleAndAxis(this.chartSize.width, true, false);
         this.xScale = scAxis.scale;
         let xAxis = scAxis.axis;
 
@@ -429,7 +429,7 @@ export class Histogram2DView extends HistogramViewBase {
                 .attr("x", this.legendRect.upperLeft().x)
                 .attr("y", this.legendRect.upperLeft().y);
 
-            let scaleAxis = this.currentData.yData.scaleAndAxis(this.legendRect.width(), true);
+            let scaleAxis = this.currentData.yData.scaleAndAxis(this.legendRect.width(), true, true);
 
             // create a scale and axis for the legend
             this.legendScale = scaleAxis.scale;
@@ -689,7 +689,7 @@ export class Histogram2DView extends HistogramViewBase {
         let page = new FullPage("Table", "Table", this.page);
         page.setDataView(table);
         this.page.insertAfterMe(page);
-        rr.invoke(new TableRenderer(page, table, rr, false, order));
+        rr.invoke(new NextKReceiver(page, table, rr, false, order));
     }
 }
 
@@ -711,11 +711,8 @@ export class Filter2DReceiver extends RemoteTableRenderer {
         super(page, operation, "Filter");
     }
 
-    public onCompleted(): void {
-        this.finished();
-        if (this.remoteObject == null)
-            return;
-
+    public run(): void {
+        super.run();
         let cds: ColumnDescription[] = [this.xColumn, this.yColumn];
         let ds: DistinctStrings[] = [this.xDs, this.yDs];
         let rx = new RangeInfo(this.xColumn.name, this.xDs != null ? this.xDs.uniqueStrings : null);
@@ -740,11 +737,8 @@ export class Make2DHistogram extends RemoteTableRenderer {
         super(page, operation, "Reload");
     }
 
-    onCompleted(): void {
-        super.finished();
-        if (this.remoteObject == null)
-            return;
-
+    run(): void {
+        super.run();
         let rx = new RangeInfo(this.colDesc[0].name, this.ds[0] != null ? this.ds[0].uniqueStrings : null);
         let ry = new RangeInfo(this.colDesc[1].name, this.ds[1] != null ? this.ds[1].uniqueStrings : null);
         let rr = this.remoteObject.createRange2DRequest(rx, ry);
@@ -794,6 +788,5 @@ export class Histogram2DRenderer extends Renderer<HeatMapData> {
         let yAxisData = new AxisData(value.data.histogramMissingD2, this.cds[1], this.stats[1], this.uniqueStrings[1], yPoints);
         this.histogram.updateView(value.data.buckets, xAxisData, yAxisData,
             value.data.missingData, this.samplingRate, this.elapsedMilliseconds());
-        this.histogram.scrollIntoView();
     }
 }

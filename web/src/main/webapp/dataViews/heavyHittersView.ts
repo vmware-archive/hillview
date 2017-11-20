@@ -178,6 +178,5 @@ export class HeavyHittersReceiver2 extends OnCompleteRenderer<TopList> {
         newPage.setDataView(newHhv);
         this.page.insertAfterMe(newPage);
         newHhv.fill(newData.top, this.elapsedMilliseconds());
-        newHhv.scrollIntoView();
     }
 }
