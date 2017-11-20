@@ -3,16 +3,15 @@
 [Hillview](https://github.com/vmware/hillview) is a simple cloud-based
 spreadsheet program for browsing large data collections.  Currently
 the data manipulated is read-only.  Users can sort, find, filter,
-transform, query, and chart data in some simple ways; several
+transform, query, and chart data in simple ways;
 operations are performed easily using direct manipulation in the GUI.
 Hillview is designed to work on very large data sets (billions of
-rows), complementing tools such as Excel.  Hillview can also be
+rows), with an interactive spreadsheet-like interaction style, complementing sophisticated analytic engines.  Hillview can also be
 executed as a stand-alone executable on a local machine, but then the
 data size it can manipulate is limited by the available machine
 resources.
 
-Hillview attempts to provide fast data manipulation.  The illusion of
-fast manipulation is provided by deferring work: Hillview only
+Hillview attempts to provide fast data manipulation.  The speed is obtained by deferring work: Hillview only
 computes as much of the data as must be shown to the user.  For
 example, when sorting a dataset, it only sorts the rows currently
 visible on the screen.  Hillview performs all operations using a class
@@ -21,7 +20,7 @@ to compute with bounded memory over distributed data.
 
 ## System architecture
 
-The spreadsheet is a three-tier system, as shown in the following figure:
+The tool is a three-tier system, as shown in the following figure:
 
 ![System architecture](system-architecture.png)
 
@@ -59,7 +58,7 @@ currently-executing operation.
 ## Data model
 
 The Hillview data model is a large table, with a relatively small
-number of columns (tens) and many rows (millions to billions).
+number of columns (currently tens but would increase to hundreds soon) and many rows (millions to billions).
 
 The data in each column is typed; Hillview supports the following data
 types:
@@ -85,8 +84,7 @@ Some operations can trigger errors.  For example, the attempt to load
 a non-existent file.  These errors usually manifest as Java exceptions
 in the backend.  Today the Hillview front-end captures these
 exceptions and displays them on the screen.  We are working to improve
-the usability of error messages; currently they are not very
-user-friendly.
+the usability of error messages.
 
 ![Error displayed by Hillview](exception.png)
 
@@ -114,7 +112,7 @@ storage.
 
 #### Reading CSV files
 
-Hillview can read data from comma- or tab-separated files.  The
+Hillview can read data from comma- or tab-separated files. The
 following menu allows the users to specify the files to load.  *The
 files must be resident on the same machines where the Hillview service
 is deployed*.
@@ -234,15 +232,15 @@ the views.
 Each view has a heading that describes it briefly, as shown in the
 following figure.  Each view has a unique number, shown on the
 top-right.  The lineage of views is usually shown in the title,
-allowing users to navigate from a view to the source view, where it
-generated from.  Views can also be closed by clicking the button
+allowing users to navigate from a view to the source view from which it
+was generated.  Views can also be closed by clicking the button
 marked with x.
 
 ![View heading](view-heading.png)
 
 ### Data schema views
 
-The data schema views allows users to browse the schema of the current
+The data schema views allow users to browse the schema of the current
 table and select a set of columns from the dataset to focus on.
 
 The following example shows a schema view; the rows in a schema view
@@ -251,7 +249,7 @@ there are three rows selected.
 
 ![Schema view](schema-view.png)
 
-Once the user selects a set columns they can display a view of the
+Once the user selects a set of columns, she can display a view of the
 data table restricted to the selected columns using the View/Selected
 columns menu.
 
@@ -285,7 +283,7 @@ sorted as follows:
   UniqueCarrier columns, they are next ordered by their value in the
   Cancelled column, also in decreasing order.
 
-This display is equivalent with the output of the following SQL query:
+This display is equivalent to the output of the following SQL query:
 
 ```SQL
 SELECT COUNT(*), Origin, UniqueCarrier, Cancelled FROM data
@@ -316,7 +314,7 @@ The first column, labeled (position) indicates with a horizontal
 scroll-bar where in the sorted order the current displayed row
 resides.  In this figure the first row is at the beginning of the
 sorted order (the dark bar is at the very left).  The second column,
-labeled (count) indicates how many row in the dataset correspond to
+labeled (count) indicates how many rows in the dataset correspond to
 the displayed row.  The scroll-bar also indicates what percentage of
 the whole dataset is covered by this row; in this case we can see that
 this row covers about 9% of the data.  You can see that, although the
@@ -396,9 +394,9 @@ the current state of the display.
 * Heatmap: this option requires exactly two or three columns of
   suitable types to be selected.  When two columns are selected this
   will display the data in these columns as a [Heat-map
-  views](#heatmap-views).  When three columns are selected the
+  view](#heatmap-views).  When three columns are selected the
   following menu allows the user to configure the data to display as a
-  [Trellis plot views](#trellis-plot-view).
+  [Trellis plot view](#trellis-plot-views).
 
   ![Heatmap array menu](heatmap-array-menu.png)
 
@@ -415,13 +413,14 @@ the current state of the display.
 * Heavy hitters...: This will initiate a heavy hitters computation on
   the selected columns; this computation finds the most frequent
   values that appear in the selected columns.  The user is presented
-  with a dialog for describing the parameters of the heavy hitters
+  with a dialog requesting the threshold parameter for the heavy hitters
   computation.
 
   ![Heavy hitters menu](heavy-hitters-menu.png)
 
   The user has to specify a percentage, between .1 (1/1000 of the
-  data) and 100 (the whole data).  The result is shown in a [heavy
+  data) and 100 (the whole data).  The result is all items whose frequency
+  in the selected columns is above the threshold. the result is shown in a [heavy
   hitter view](#heavy-hitter-views).
 
 * Filter...: this option will pop-up a dialog window that allows the user
@@ -436,7 +435,7 @@ the current state of the display.
   Analysis](https://en.wikipedia.org/wiki/Principal_component_analysis)
   is a method to project data in a high-dimensional space to a
   lower-dimensional space while preserving as much of the "shape" of
-  the data.  The must have selected a set of columns containing
+  the data.  The user must have selected a set of columns containing
   numerical data.  The number of columns is the original dimension of
   the data.
 
@@ -497,7 +496,7 @@ operations:
 
 * Schema: displays [the table schema](#data-schema-views).
 
-For a description of the combine menu see [combining two views](combining-two-views).
+For a description of the combine menu see [combining two views](#combining-two-views).
 
 ### Heavy hitter views
 
@@ -509,7 +508,7 @@ threshold).
 
 The data is sorted in decreasing order of frequency.  Each row
 displays a combination of values and its count and relative frequency
-within the dataset.  A special that may appear is "Everything else",
+within the dataset.  A special value that may appear is "Everything else",
 which indicates the estimated number of rows that do not appear
 frequently enough to be above the chosen threshold.
 
@@ -535,7 +534,7 @@ description of categorical histograms.  A histogram is computed in two
 phases:
 
 - first the range of the data in the column is computed (minimum and
-  maximum values)
+  maximum values).
 
 - the range is divided into a small number of equal buckets.  Then the
   data is scanned and the number of points in the column that fall in
@@ -553,7 +552,7 @@ itself, as a number.
 
 ![A one dimensional histogram](hillview-histogram.png)
 
-On top of each bar is shown the size of the bar.  If the size is only
+A number on top of each bar indicates the size of the bar.  If the size is only
 approximately the value is shown with an approximation sign: &asymp;.
 
 The thin blue line shown is the cumulative distribution function
@@ -586,7 +585,7 @@ The "View" menu from a histogram display has the following functions:
   the display to a [two-dimensional
   histogram](#two-dimensional-histogram-views)
 
-For a description of the combine menu see [combining two views](combining-two-views).
+For a description of the combine menu see [combining two views](#combining-two-views).
 
 #### Mouse selection in histogram views
 
@@ -600,7 +599,7 @@ When the user releases the mouse button the selection takes place.
 The selection can be cancelled by pressing the ESC key.  The selection
 can be complemented by pressing the CONTROL at the time the selection
 is released (this will eliminate all the data that has been
-selected).q
+selected).
 
 #### Categorical histograms
 
@@ -645,7 +644,7 @@ The handling of missing values is as follows:
 * The count of rows values that have a missing value for the X axis is
 shown at the bottom.
 
-* For each bucket a transparent rectangle with is used for the missing
+* For each bucket a transparent rectangle is used for the missing
   data.  The following image shows a 2D histogram where some buckets
   contain missing data.
 
@@ -675,9 +674,9 @@ The "view" menu for a 2D histogram offers the following operations:
 with relative sizes or normalized all to 100% height, as in the
 following image.
 
-For a description of the combine menu see [combining two views](combining-two-views).
-
 ![A normalized two-dimensional histogram](hillview-histogram-normalized.png)
+
+For a description of the combine menu see [combining two views](#combining-two-views).
 
 #### Selection in 2D histograms
 
@@ -704,8 +703,8 @@ pixels wide and the number of data points that falls within each patch
 is counted.  The number of values that falls within each patch is
 displayed as a heatmap, where the color intensity indicates the number
 of points.  A heatmap where the Y axis is not categorical will also
-display a line that gives the best linear regression between the
-values in the two columns.
+display a line that gives the best [linear regression](https://en.wikipedia.org/wiki/Linear_regression).
+between the values in the two columns.
 
 *TODO* discuss missing values.
 
@@ -732,7 +731,7 @@ The heatmap view menu has the following operations:
   of the data in the two columns that are used for the heatmap
   display.
 
-For a description of the combine menu see [combining two views](combining-two-views).
+For a description of the combine menu see [combining two views](#combining-two-views).
 
 #### Selection from a heatmap
 
@@ -744,10 +743,9 @@ Users can select a rectangular area from a heatmap with the mouse.
 
 ![An array of heatmap views](hillview-heatmap-array.png)
 
-A Trellis plot is an array of heatmaps, grouped by a third column.
-Currently the third column is restricted to be a categorical column.
-A Trellis plot is an array of heatmaps, where each heatmap corresponds
-to the rows that have a specific value in the third (categorical)
+A Trellis plot is an array of heatmaps, grouped by a third column, which
+currently is restricted to be a categorical column.
+Each heatmap is comprised of the rows that have a specific value in the third (categorical)
 column.
 
 *TODO* discuss missing values
@@ -756,7 +754,7 @@ column.
 
 Any view represents logically a subset of rows from an original table.
 Two different views can be combined by performing a set operation
-between the rows that they represent.  This done using the "Combine"
+between the rows that they represent.  This is done using the "Combine"
 menu, which is present in almost all views.
 
 ![Combining two views](combine-menu.png)
@@ -780,13 +778,12 @@ The operations are as follows:
 
 ### LAMP projection
 
-(This is an experimental feature, which currently is be too slow to
+(This is an experimental feature, which currently is too slow to
 apply to large datasets.)  This is another method to project a
 high-dimensional space to a low-dimensional space, called local affine
-multidimensional projection.  This is based on the paper [Local Affine
-Multidimensional
-Projection](http://ieeexplore.ieee.org/document/6065024/) from IEEE
-Transactions on Visualization and Computer Graphics, vol 17, issue 12,
+multidimensional projection.  This is based on the paper
+[Local Affine Multidimensional Projection](http://ieeexplore.ieee.org/document/6065024/)
+from IEEE Transactions on Visualization and Computer Graphics, vol 17, issue 12,
 Dec 2011, by Paulo Joia, Danilo Coimbra, Jose A Cuminato, Fernando V
 Paulovich, and Luis G Nonato.
 
@@ -795,7 +792,7 @@ user can interactively guide the projection.  This always projects the
 set of selected columns down to 2 dimensions and plots the result as a
 heatmap.
 
-This menu below allows the user to choose parameters of the
+The menu below allows the user to choose parameters of the
 projection.
 
   ![LAMP menu](lamp-menu.png)
@@ -829,15 +826,15 @@ The "View" menu offers the following options:
 
   ![LAMP view menu](lamp-view-menu.png)
 
-* refresh: redraws the image
+* refresh: redraws the image.
 
 * update ranges: recalculates the min/max range of the heatmap display
   to fit the data entirely.  When moving the handles the data range
   can expand or shrink.
 
-* table: show a tabular view of the data represented in the LAMP view
+* table: show a tabular view of the data represented in the LAMP view.
 
 * 3D heat map: selecting this option opens a new menu which allows the
-  user to make a [Trellis plot](#trellis-plot-view) of the
+  user to make a [Trellis plot](#trellis-plot-views) of the
   two-dimensional data produced by the projection, by grouping all
   points that belong to a categorical value.
