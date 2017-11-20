@@ -221,11 +221,11 @@ public final class TableTarget extends RpcTarget {
     public void correlationMatrix(RpcRequest request, RpcRequestContext context) {
         CorrelationMatrixRequest pcaReq = request.parseArgs(CorrelationMatrixRequest.class);
         String[] colNames = Converters.checkNull(pcaReq.columnNames);
-        FullCorrelationSketch pcaSketch;
+        PCACorrelationSketch pcaSketch;
         if (pcaReq.toSample)
-            pcaSketch = new FullCorrelationSketch(colNames, pcaReq.totalRows, pcaReq.seed);
+            pcaSketch = new PCACorrelationSketch(colNames, pcaReq.totalRows, pcaReq.seed);
         else
-            pcaSketch = new FullCorrelationSketch(colNames);
+            pcaSketch = new PCACorrelationSketch(colNames);
         this.runCompleteSketch(this.table, pcaSketch, CorrelationMatrixTarget::new, request, context);
     }
 
