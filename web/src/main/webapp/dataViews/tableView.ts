@@ -520,10 +520,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
                 this.contextMenu.addItem({text: "Histogram", action: () => this.histogram(false) });
                 this.contextMenu.addItem({text: "Heat map", action: () => this.heatMap() });
                 this.contextMenu.addItem({text: "Heavy hitters...", action: () => this.heavyHitters(false) });
-                //this.contextMenu.addItem({text: "Heavy hitters (Streaming)...", action: () => this.heavyHitters(true) });
-                //this.contextMenu.addItem({text: "Select numeric columns", action: () => this.selectNumericColumns()});
-                this.contextMenu.addItem({text: "PCA", action: () => this.pca(true) });
-                //this.contextMenu.addItem({text: "PCA (streaming)", action: () => this.pca(false) });
+                this.contextMenu.addItem({text: "PCA...", action: () => this.pca(true) });
                 this.contextMenu.addItem({text: "LAMP...", action: () => this.lamp() });
                 this.contextMenu.addItem({text: "Filter...", action: () => this.equalityFilter(cd.name, null, true)});
                 this.contextMenu.addItem({text: "Convert...", action: () => this.convert(cd.name)});

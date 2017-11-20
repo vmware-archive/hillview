@@ -222,7 +222,7 @@ public final class TableTarget extends RpcTarget {
         CorrelationMatrixRequest pcaReq = request.parseArgs(CorrelationMatrixRequest.class);
         String[] colNames = Converters.checkNull(pcaReq.columnNames);
         FullCorrelationSketch pcaSketch;
-        if(pcaReq.toSample)
+        if (pcaReq.toSample)
             pcaSketch = new FullCorrelationSketch(colNames, pcaReq.totalRows, pcaReq.seed);
         else
             pcaSketch = new FullCorrelationSketch(colNames);

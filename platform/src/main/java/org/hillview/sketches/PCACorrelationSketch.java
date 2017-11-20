@@ -60,7 +60,7 @@ public class PCACorrelationSketch implements ISketch<ITable, CorrMatrix> {
         }
         CorrMatrix corrMatrix = new CorrMatrix(this.colNames);
         ITable table;
-        if(this.samplingRate == 1)
+        if (this.samplingRate >= 1)
             table = data;
         else {
             ColumnAndConverterDescription[] ccds = ColumnAndConverterDescription.create(
