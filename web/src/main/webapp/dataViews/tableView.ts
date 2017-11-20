@@ -520,9 +520,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
                 this.contextMenu.addItem({text: "Histogram", action: () => this.histogram(false) });
                 this.contextMenu.addItem({text: "Heat map", action: () => this.heatMap() });
                 this.contextMenu.addItem({text: "Heavy hitters...", action: () => this.heavyHitters(false) });
-                //this.contextMenu.addItem({text: "Heavy hitters (Streaming)...", action: () => this.heavyHitters(true) });
-                //this.contextMenu.addItem({text: "Select numeric columns", action: () => this.selectNumericColumns()});
-                this.contextMenu.addItem({text: "PCA...", action: () => this.pca() });
+                this.contextMenu.addItem({text: "PCA...", action: () => this.pca(true) });
                 this.contextMenu.addItem({text: "LAMP...", action: () => this.lamp() });
                 this.contextMenu.addItem({text: "Filter...", action: () => this.equalityFilter(cd.name, null, true)});
                 this.contextMenu.addItem({text: "Convert...", action: () => this.convert(cd.name)});
@@ -701,7 +699,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         return [valid, message];
     }
 
-    private pca(): void {
+    private pca(toSample: boolean): void {
         let colNames = this.getSelectedColNames();
         let [valid, message] = this.checkNumericColumns(colNames);
         if (valid) {
@@ -711,16 +709,20 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
             pcaDialog.addTextField("numComponents", "Number of components", FieldKind.Integer, "2",
                 "Number of dimensions to project to.  Must be an integer bigger than 1 and " +
                 "smaller than the number of selected columns");
+            pcaDialog.addTextField("projectionName", "Name for Projected columns", FieldKind.String,
+                "PCA",
+                "The projected columns will appear with this name followed by a number starting from 0");
             pcaDialog.setAction(() => {
                 let numComponents: number = pcaDialog.getFieldValueAsInt("numComponents");
+                let projectionName: string = pcaDialog.getFieldValue("projectionName");
                 if (numComponents < 1 || numComponents > colNames.length) {
                     this.reportError("Number of components for PCA must be between 1 (incl.) " +
                         "and the number of selected columns, " + colNames.length + " (incl.). (" +
                         numComponents + " does not satisfy this.)");
                     return;
                 }
-                let rr = this.createCorrelationMatrixRequest(colNames);
-                rr.invoke(new CorrelationMatrixReceiver(this.getPage(), this, rr, this.order, numComponents));
+                let rr = this.createCorrelationMatrixRequest(colNames, this.getTotalRowCount(), toSample);
+                rr.invoke(new CorrelationMatrixReceiver(this.getPage(), this, rr, this.order, numComponents, projectionName));
             });
             pcaDialog.show();
         } else {
@@ -1055,14 +1057,15 @@ class CorrelationMatrixReceiver extends RemoteTableRenderer {
                        protected tv: TableView,
                        operation: ICancellable,
                        protected order: RecordOrder,
-                       private numComponents: number) {
+                       private numComponents: number,
+                       private projectionName: string) {
         super(page, operation, "Correlation matrix");
     }
 
     run(): void {
         super.run();
         let rr = this.tv.createProjectToEigenVectorsRequest(
-                this.remoteObject, this.numComponents);
+                this.remoteObject, this.numComponents, this.projectionName);
         rr.chain(this.operation);
         rr.invoke(new RemoteTableReceiver(this.page, rr, "Data with PCA columns"));
     }

@@ -116,11 +116,12 @@ export class RemoteTableObject extends RemoteObject {
         });
     }
 
-    public createProjectToEigenVectorsRequest(r: RemoteObject, dimension: number):
-            RpcRequest<PartialResult<RemoteObjectId>> {
+    public createProjectToEigenVectorsRequest(r: RemoteObject, dimension: number, projectionName: string):
+    RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<RemoteObjectId>("projectToEigenVectors", {
             id: r.remoteObjectId,
-            numComponents: dimension
+            numComponents: dimension,
+            projectionName: projectionName
         });
     }
 
@@ -129,9 +130,14 @@ export class RemoteTableObject extends RemoteObject {
         return this.createStreamingRpcRequest<RemoteObjectId>("filterEquality", filter);
     }
 
-    public createCorrelationMatrixRequest(columnNames: string[]):
-            RpcRequest<PartialResult<RemoteObjectId>> {
-        return this.createStreamingRpcRequest<RemoteObjectId>("correlationMatrix", {columnNames: columnNames});
+    public createCorrelationMatrixRequest(columnNames: string[], totalRows: number, toSample: boolean):
+RpcRequest<PartialResult<RemoteObjectId>> {
+        return this.createStreamingRpcRequest<RemoteObjectId>("correlationMatrix", {
+            columnNames: columnNames,
+            totalRows: totalRows,
+            seed: Seed.instance.get(),
+            toSample: toSample
+        });
     }
 
     public createFilterRequest(f: FilterDescription): RpcRequest<PartialResult<RemoteObjectId>> {

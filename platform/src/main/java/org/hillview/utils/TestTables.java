@@ -136,7 +136,7 @@ public class TestTables {
 
     /**
      * A table of integers with some missing values. Each column is the just the identity, but with
-     * every multiple of some integer mo in {0,..,99} missing.
+     * every multiple of some integer mod in {1,..,100} missing.
      * @param size The size of the desired table
      * @param numCols The number of columns
      * @return A table of integers with missing values.
@@ -147,8 +147,8 @@ public class TestTables {
         double exp = 1.0/numCols;
         final int range =  5*((int)Math.pow(size, exp));
         for (int i = 0; i < numCols; i++) {
-            int mod = rn.nextInt(9) + 1;
-            final String colName = "Missing" + String.valueOf(mod);
+            int mod = rn.nextInt(99) + 1;
+            final String colName = String.valueOf(i) + "Missing" + String.valueOf(mod);
             columns[i] = IntArrayGenerator.getMissingIntArray(colName, size, mod);
         }
         return new SmallTable(columns);
