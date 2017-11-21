@@ -35,7 +35,7 @@ public class MembershipSetFactory {
      * @param estimatedSize  Estimated number of elements inside.
      */
     public static IMutableMembershipSet create(int maxSize, int estimatedSize) {
-        if (estimatedSize >= maxSize / 2)
+        if (estimatedSize >= maxSize / 30)
             return new DenseMembershipSet(maxSize, estimatedSize);
         else
             return new SparseMembershipSet(maxSize, estimatedSize);
