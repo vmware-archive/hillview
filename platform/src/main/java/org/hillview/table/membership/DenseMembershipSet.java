@@ -33,6 +33,7 @@ public class DenseMembershipSet implements IMembershipSet, IMutableMembershipSet
     private final int max;
     private int size;
     private final static double samplingThreshold = 0.05;
+    private final static double samplingSizeMinimum = 100; // if size is smaller than this no need to sample
 
     public DenseMembershipSet(int max, int expectedSize) {
         this.membershipMap = new BitSet(expectedSize);
@@ -135,6 +136,8 @@ public class DenseMembershipSet implements IMembershipSet, IMutableMembershipSet
     }
 
     private double computeRate(double rate) {
+        if (this.size <  DenseMembershipSet.samplingSizeMinimum)
+            return 1;
         if (rate <= DenseMembershipSet.samplingThreshold)
             return rate;
         else return 1;

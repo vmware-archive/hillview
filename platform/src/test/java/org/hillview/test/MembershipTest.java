@@ -49,11 +49,13 @@ public class MembershipTest extends BaseTest {
         assertEquals(this.size, FM.getSize());
         assertTrue(FM.isMember(7));
         assertFalse(FM.isMember(20));
-        final FullMembershipSet FM1 = new FullMembershipSet(1000);
+        final FullMembershipSet FM1 = new FullMembershipSet(10000);
         final IMembershipSet FM2 = FM1.sample(0.1, 0);
-        assertEquals(100, FM2.getSize());
+        assertTrue(FM2.getSize() > 0.9 * 1000);
+        assertTrue(FM2.getSize() < 1.1 * 1000);
         final IMembershipSet FM3 = FM2.sample(0.1, 0);
-        assertEquals(10, FM3.getSize());
+        assertTrue(FM3.getSize() > 50);
+        assertTrue(FM3.getSize() < 150);
     }
 
     @Test
@@ -125,11 +127,12 @@ public class MembershipTest extends BaseTest {
             mms.add(i);
         IMembershipSet MS = mms.seal();
         double rate = 0.5;
-        IRowIterator iter = MS.getIteratorOverSample(rate, 12345, false);
+        ISampledRowIterator iter = MS.getIteratorOverSample(rate, 12345, false);
         int i = 0;
-        while (iter.getNextRow() > 0)
+        while (iter.getNextRow() >= 0)
             i++;
-        assertTrue(i == 24);
+        assertTrue(i < 1.2 * 48 * iter.rate());
+        assertTrue(i > 0.8 * 48 * iter.rate());
     }
 
     @Test
