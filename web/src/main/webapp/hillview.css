@@ -223,15 +223,10 @@ svg.dataRange {
     width: 100px;
     height: 10px;
     display: inline-block;
-    background: rgb(220, 220, 220);
 }
 
 svg.dataRange > g {
     transform: scale(100, 10);
-}
-
-svg.dataRange > g > rect {
-    fill: black;
 }
 
 textarea:focus, input:focus{

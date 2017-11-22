@@ -16,6 +16,7 @@
  */
 
 import {IHtmlElement} from "./ui";
+import {makeId} from "../util";
 
 /**
  * One item in a menu.
@@ -24,11 +25,15 @@ export interface MenuItem {
     /**
      * Text that is written on screen when menu is displayed.
      */
-    text: string;
+    readonly text: string;
+    /**
+     * String that is displayed as a help popup.
+     */
+    readonly help: string;
     /**
      * Action that is executed when the item is selected by the user.
      */
-    action: () => void;
+    readonly action: () => void;
 }
 
 /**
@@ -94,8 +99,11 @@ export class ContextMenu implements IHtmlElement {
         let trow = this.tableBody.insertRow();
         let cell = trow.insertCell(0);
         cell.innerHTML = mi.text;
+        if (mi.help != null)
+            cell.title = mi.help;
         cell.style.textAlign = "left";
         cell.className = "menuItem";
+        cell.id = makeId(mi.text);
         if (mi.action != null)
             cell.onclick = () => { this.hide(); mi.action(); };
         else
@@ -133,6 +141,7 @@ export class SubMenu implements IHtmlElement {
         this.cells = [];
         this.outer = document.createElement("table");
         this.outer.classList.add("menu", "hidden");
+        this.outer.id = "topMenu";
         this.tableBody = this.outer.createTBody();
         if (mis != null) {
             for (let mi of mis)
@@ -149,7 +158,10 @@ export class SubMenu implements IHtmlElement {
             cell.innerHTML = "<hr>";
         else
             cell.innerHTML = mi.text;
+        cell.id = makeId(mi.text);
         cell.style.textAlign = "left";
+        if (mi.help != null)
+            cell.title = mi.help;
         cell.classList.add("menuItem");
         if (mi.action != null)
             cell.onclick = (e: MouseEvent) => { e.stopPropagation(); this.hide(); mi.action(); }
@@ -207,6 +219,7 @@ export class SubMenu implements IHtmlElement {
 export interface TopMenuItem {
     readonly text: string;
     readonly subMenu: SubMenu;
+    readonly help: string;
 }
 
 /**
@@ -240,10 +253,13 @@ export class TopMenu implements IHtmlElement {
 
     addItem(mi: TopMenuItem): void {
         let cell = this.tableBody.rows.item(0).insertCell();
+        cell.id = makeId(mi.text);  // for testing
         cell.textContent = mi.text;
         cell.appendChild(mi.subMenu.getHTMLRepresentation());
         cell.onclick = () => {this.hideSubMenus(); mi.subMenu.show()};
         cell.onmouseleave = () => this.hideSubMenus();
+        if (mi.help != null)
+            cell.title = mi.help;
         this.items.push(mi);
     }
 

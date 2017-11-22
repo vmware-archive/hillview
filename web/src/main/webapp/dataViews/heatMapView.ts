@@ -42,6 +42,7 @@ import {combineMenu, SelectedObject} from "../selectedObject";
 /**
  * Maximum number of colors that we expect users can distinguish reliably.
  */
+// noinspection JSUnusedLocalSymbols
 const colorResolution: number = 20;
 
 // counterpart of Java class 'HeatMap'
@@ -94,15 +95,23 @@ export class HeatMapView extends RemoteTableObjectView {
         this.dragging = false;
         this.moved = false;
         this.menu = new TopMenu( [
-            { text: "View", subMenu: new SubMenu([
-                { text: "refresh", action: () => { this.refresh(); } },
-                { text: "swap axes", action: () => { this.swapAxes(); } },
-                { text: "table", action: () => { this.showTable(); } },
-                { text: "exact", action: () => { this.exactHistogram(); } },
-                { text: "histogram", action: () => { this.histogram(); } },
+            { text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
+                { text: "refresh",
+                    action: () => { this.refresh(); },
+                    help: "Redraw this view." },
+                { text: "swap axes",
+                    action: () => { this.swapAxes(); },
+                    help: "Draw the heatmap with the same data by swapping the X and Y axes." },
+                { text: "table",
+                    action: () => { this.showTable(); },
+                    help: "View the data underlying this view as a table."
+                },
+                { text: "histogram",
+                    action: () => { this.histogram(); },
+                    help: "Show this data as a two-dimensional histogram." },
             ]) },
             {
-                text: "Combine", subMenu: combineMenu(this, page.pageId)
+                text: "Combine", help: "Combine data in two separate views.", subMenu: combineMenu(this, page.pageId)
             }
         ]);
 
@@ -194,6 +203,7 @@ export class HeatMapView extends RemoteTableObjectView {
         collector.onCompleted();
     }
 
+    /*
     public exactHistogram(): void {
         if (this.currentData == null)
             return;
@@ -206,6 +216,7 @@ export class HeatMapView extends RemoteTableObjectView {
             second: this.currentData.yData.stats });
         rc.onCompleted();
     }
+    */
 
     public refresh(): void {
         if (this.currentData == null)
@@ -571,9 +582,12 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
             this.cds[1], this.ds[1], yBucketCount);
         let samplingRate: number;
         if (this.drawHeatMap) {
-            // TODO: we need an accurate presentCount for both axes
+            /* TODO: we need an accurate presentCount for both axes
             samplingRate = xBucketCount * yBucketCount * colorResolution * colorResolution /
                 Math.min(this.stats.first.presentCount, this.stats.second.presentCount);
+                */
+            // We cannot sample when we need to distinguish reliably 1 from 0.
+            samplingRate = 1.0;
         } else {
             samplingRate = HistogramViewBase.samplingRate(xBucketCount, this.stats.first.presentCount, this.page);
         }

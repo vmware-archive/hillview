@@ -69,24 +69,32 @@ export class TabularDisplay implements IHtmlElement {
         }
     }
 
+    insertRow(): HTMLTableRowElement {
+        let trow = this.tbody.insertRow();
+        let rowNo = this.rowCount;
+        trow.id = "row" + this.rowCount;
+        trow.onclick = e => this.rowClick(rowNo, e);
+        this.rows.push(trow);
+        this.rowCount++;
+        return trow;
+    }
+
+    addRowCell(trow: HTMLTableRowElement): HTMLTableCellElement {
+        let cell = trow.insertCell(trow.cells.length);
+        cell.style.textAlign = "right";
+        cell.classList.add("noselect");
+        return cell;
+    }
+
     /**
      * Add a row of values; these are set as the innerHTML values of the cells.
      */
     public addRow(data: string[]): void {
-        let trow = this.tbody.insertRow();
-        this.rows.push(trow);
-        let rowCells = [];
-        let index = 0;
-        let rowNo = this.rowCount;
+        let trow = this.insertRow();
         for (let d of data) {
-            let cell = trow.insertCell(index++);
-            cell.style.textAlign = "right";
+            let cell = this.addRowCell(trow);
             cell.innerHTML = d;
-            cell.classList.add("noselect");
-            cell.onclick = e => this.rowClick(rowNo, e);
-            rowCells.push(cell);
         }
-        this.rowCount++;
     }
 
     public addFooter() {
@@ -100,21 +108,12 @@ export class TabularDisplay implements IHtmlElement {
      * Add a row of values; these are set as the dom children of the table cells
      */
     public addElementRow(data: Element[]): void {
-        let trow = this.tbody.insertRow();
-        this.rows.push(trow);
-        let rowCells = [];
-        let index = 0;
-        let rowNo = this.rowCount;
+        let trow = this.insertRow();
         for (let d of data) {
-            let cell = trow.insertCell(index++);
-            cell.style.textAlign = "right";
+            let cell = this.addRowCell(trow);
             cell.appendChild(d);
-            cell.classList.add("noselect");
             d.classList.add("noselect");
-            cell.onclick = e => this.rowClick(rowNo, e);
-            rowCells.push(cell);
         }
-        this.rowCount++;
     }
 
     public getSelectedRows(): Set<number> {

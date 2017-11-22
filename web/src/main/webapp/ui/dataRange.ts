@@ -17,6 +17,7 @@
 
 import {d3} from "./d3-modules"
 import {IElement} from "./ui";
+import {formatNumber, percent} from "../util";
 
 /**
  * A horizontal rectangle that displays a data range within an interval 0-max.
@@ -40,9 +41,24 @@ export class DataRange implements IElement {
             x = 1 - w;
         let label = w.toString() + "%";
         d3.select(this.topLevel)
-            .append("g").append("rect")
+            .append("g")
+            .append("svg:title")
+            .text(
+                formatNumber(position) + "+" + formatNumber(count) + "/" + formatNumber(totalCount) + "\n" +
+                percent(position/totalCount) + "+" + percent(count/totalCount)
+            );
+        d3.select(this.topLevel).select("g")
+            .append("rect")
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("fill", "lightgray")
+            .attr("width", 1)
+            .attr("height", 1);
+        d3.select(this.topLevel).select("g")
+            .append("rect")
             .attr("x", x)
             .attr("y", 0)
+            .attr("fill", "black")
             .attr("width", label)
             .attr("height", 1);
     }

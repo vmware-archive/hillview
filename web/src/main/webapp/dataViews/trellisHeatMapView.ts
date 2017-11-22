@@ -281,10 +281,18 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
         this.topLevel.classList.add("chart");
 
         let menu = new TopMenu( [
-            { text: "View", subMenu: new SubMenu([
-                { text: "refresh", action: () => { this.refresh(); } },
-                { text: "swap axes", action: () => { this.swapAxes(); } },
-                { text: "table", action: () => { this.showTable(); } },
+            { text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
+                { text: "refresh",
+                    action: () => { this.refresh(); },
+                    help: "Redraw this view."
+                },{
+                text: "swap axes",
+                    action: () => { this.swapAxes(); },
+                    help: "Swap the X and Y axes of all plots."
+                }, { text: "table",
+                    action: () => { this.showTable(); },
+                    help: "Show the data underlying this view in a tabular view."
+                },
             ]) }
         ]);
         this.page.setMenu(menu);

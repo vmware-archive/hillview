@@ -18,7 +18,7 @@
 // Used for operations between multiple objects: the selected object
 // is a RemoteObject which can be combined with another one.
 import {RemoteObject} from "./rpc";
-import {SubMenu} from "./ui/menu";
+import {MenuItem, SubMenu} from "./ui/menu";
 import {EnumIterators} from "./util";
 import {CombineOperators} from "./javaBridge";
 
@@ -43,15 +43,19 @@ export class SelectedObject {
 }
 
 export function combineMenu(ro: RemoteObject, pageId: number): SubMenu {
-    let combineMenu = [];
+    let combineMenu: MenuItem[] = [];
     combineMenu.push({
         text: "Select current",
-        action: () => { SelectedObject.current.select(ro, pageId); }});
-    combineMenu.push({text: "---", action: null});
+        action: () => { SelectedObject.current.select(ro, pageId); },
+        help: "Save the current view; later it can be combined with another view, using one of the operations below."
+    });
+    combineMenu.push({text: "---", action: null, help: null});
     EnumIterators.getNamesAndValues(CombineOperators)
         .forEach(c => combineMenu.push({
             text: c.name,
-            action: () => { ro.combine(c.value); } }));
+            action: () => { ro.combine(c.value); },
+            help: "Combine the rows in the two views using the " + c.value + " operation"
+        }));
     return new SubMenu(combineMenu);
 }
 

@@ -38,9 +38,12 @@ export class SchemaView extends RemoteTableObjectView {
 
         this.topLevel = document.createElement("div");
         let subMenu = new SubMenu([
-            {text: "Selected columns", action: () => {this.showTable();}}
+            {text: "Selected columns",
+                action: () => {this.showTable();},
+                help: "Show the data using a tabular view containing the selected columns."
+            }
         ]);
-        let menu = new TopMenu([{text: "View", subMenu}]);
+        let menu = new TopMenu([{text: "View", help: "Change the way the data is displayed.", subMenu}]);
         this.page.setMenu(menu);
         this.topLevel.appendChild(document.createElement("br"));
 

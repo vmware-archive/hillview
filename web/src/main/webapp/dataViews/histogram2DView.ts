@@ -85,17 +85,34 @@ export class Histogram2DView extends HistogramViewBase {
     constructor(remoteObjectId: RemoteObjectId, protected tableSchema: Schema, page: FullPage) {
         super(remoteObjectId, tableSchema, page);
         this.menu = new TopMenu( [
-            { text: "View", subMenu: new SubMenu([
-                { text: "refresh", action: () => { this.refresh(); } },
-                { text: "table", action: () => this.showTable() },
-                { text: "exact", action: () => { this.exactHistogram(); } },
-                { text: "#buckets", action: () => this.chooseBuckets() },
-                { text: "swap axes", action: () => { this.swapAxes(); } },
-                { text: "heatmap", action: () => { this.heatmap(); } },
-                { text: "percent/value", action: () => { this.normalized = !this.normalized; this.refresh(); } },
+            { text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([{
+                text: "refresh",
+                action: () => { this.refresh(); },
+                help: "Redraw this view" }, {
+                text: "table",
+                action: () => this.showTable(),
+                help: "Show the data underlying this plot in a tabular view. "},{
+                text: "exact",
+                action: () => { this.exactHistogram(); },
+                help: "Draw this histogram without approximations." },{
+                text: "#buckets",
+                action: () => this.chooseBuckets(),
+                help: "Change the number of buckets used for drawing the histogram." +
+                "The number must be between 1 and " + Resolution.maxBucketCount }, {
+                text: "swap axes",
+                action: () => { this.swapAxes(); },
+                help: "Redraw this histogram by swapping the X and Y axes." }, {
+                text: "heatmap",
+                action: () => { this.heatmap(); },
+                help: "Plot this data as a heatmap view."}, {
+                text: "relative/absolute",
+                action: () => { this.normalized = !this.normalized; this.refresh(); },
+                help: "In an absolute plot the Y axis represents the size for a bucket. " +
+                "In a relative plot all bars are normalized to 100% on the Y axis."
+            },
             ]) },
             {
-                text: "Combine", subMenu: combineMenu(this, page.pageId)
+                text: "Combine", help: "Combine data in two separate views.", subMenu: combineMenu(this, page.pageId)
             }
         ]);
 

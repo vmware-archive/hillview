@@ -113,6 +113,17 @@ export function formatDate(d?: Date): string {
 }
 
 /**
+ * Converts a string into another string which can be used as a legal ID
+ * for an element.
+ * @param {string} text   Text to convert.
+ * @returns {string}      A similar text where each non-alphabetic or numeric character
+ *                        is replaced with an underscore.
+ */
+export function makeId(text: string): string {
+    return text.replace(/[^a-zA-Z0-9]/g, '_');
+}
+
+/**
  * Convert a number to an html string by keeping only the most significant digits
  * and adding a suffix.
  */

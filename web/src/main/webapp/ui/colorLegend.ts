@@ -95,24 +95,28 @@ export class ColorLegend implements IHtmlElement {
         this.contextMenu = new ContextMenu([
             {
                 text: "Cool",
+                help: "Use a color palette with cool colors.",
                 action: () => {
                     this.colorMap.map = d3.interpolateCool;
                     this.mapUpdated();
                 }
             }, {
                 text: "Warm",
+                help: "Use a color palette with warm colors.",
                 action: () => {
                     this.colorMap.map = d3.interpolateWarm;
                     this.mapUpdated();
                 }
             }, {
                 text: "Gray",
+                help: "Use a grayscale color palette.",
                 action: () => {
                     this.colorMap.map = (x: number) => `rgb(${Math.round(255 * (1 - x))}, ${Math.round(255 * (1 - x))}, ${Math.round(255 * (1 - x))})`;
                     this.mapUpdated();
                 }
             }, {
                 text: "Toggle log scale",
+                help: "Switch between a linear and logarithmic scale on the colormap.",
                 action: () => {
                     this.colorMap.setLogScale(!this.colorMap.logScale);
                     this.mapUpdated();

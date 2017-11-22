@@ -25,6 +25,7 @@ import {PartialResult, ICancellable, RpcReply, formatDate} from "./util";
 import {ProgressBar} from "./ui/progress";
 import {FullPage} from "./ui/fullPage";
 import {CombineOperators, RemoteObjectId} from "./javaBridge";
+import {Test} from "./test";
 
 /**
  * Path in server url for rpc web sockets.
@@ -217,6 +218,7 @@ export class RpcRequest<T> implements ICancellable {
                 console.log("Socket closed");
                 if (e.code == 1000) {
                     onReply.onCompleted();
+                    Test.instance.runNext();
                     return; // normal
                 }
 

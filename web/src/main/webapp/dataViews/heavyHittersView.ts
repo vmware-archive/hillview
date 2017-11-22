@@ -43,11 +43,17 @@ export class HeavyHittersView extends RemoteTableObjectView {
         super(data.heavyHittersId, page);
         this.topLevel = document.createElement("div");
         let subMenu = new SubMenu([
-            {text: "As Table", action: () => {this.showTable();}}
+            { text: "As Table",
+                action: () => {this.showTable();},
+                help: "Show the data corresponding to the heavy elements as a tabular view." }
         ]);
         if(isApprox == true)
-            subMenu.addItem({text: "Get exact counts", action: () => {this.exactCounts();}});
-        let menu = new TopMenu([ {text: "View", subMenu} ]);
+            subMenu.addItem({
+                text: "Get exact counts",
+                action: () => {this.exactCounts(); },
+                help: "Show the exact frequency of each item."
+                });
+        let menu = new TopMenu([ {text: "View", help: "Change the way the data is displayed.", subMenu} ]);
         this.page.setMenu(menu);
     }
 

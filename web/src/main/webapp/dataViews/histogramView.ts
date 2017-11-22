@@ -57,15 +57,31 @@ export class HistogramView extends HistogramViewBase {
     constructor(remoteObjectId: RemoteObjectId, protected tableSchema: Schema, page: FullPage) {
         super(remoteObjectId, tableSchema, page);
         this.menu = new TopMenu( [
-            { text: "View", subMenu: new SubMenu([
-                { text: "refresh", action: () => { this.refresh(); } },
-                { text: "table", action: () => this.showTable() },
-                { text: "exact", action: () => this.exactHistogram() },
-                { text: "# buckets...", action: () => this.chooseBuckets() },
-                { text: "correlate...", action: () => this.chooseSecondColumn() },
+            { text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
+                { text: "refresh",
+                    action: () => { this.refresh(); },
+                    help: "Redraw this view."
+                },
+                { text: "table",
+                    action: () => this.showTable(),
+                    help: "Show the data underlying this histogram using a table view."
+                },
+                { text: "exact",
+                    action: () => this.exactHistogram(),
+                    help: "Draw this histogram without making any approximations."
+                },
+                { text: "# buckets...",
+                    action: () => this.chooseBuckets(),
+                    help: "Change the number of buckets used to draw this histogram. " +
+                        "The number of buckets must be between 1 and " + Resolution.maxBucketCount
+                },
+                { text: "correlate...",
+                    action: () => this.chooseSecondColumn(),
+                    help: "Draw a 2-dimensional histogram using this data and another column."
+                },
             ]) },
             {
-                text: "Combine", subMenu: combineMenu(this, page.pageId)
+                text: "Combine", help: "Combine data in two separate views.", subMenu: combineMenu(this, page.pageId)
             }
         ]);
 

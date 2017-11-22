@@ -64,11 +64,24 @@ class LampView extends RemoteTableObjectView {
         this.topLevel.classList.add("lampView");
 
         let menu = new TopMenu( [
-            { text: "View", subMenu: new SubMenu([
-                { text: "refresh", action: () => { this.refresh(); } },
-                { text: "update ranges", action: () => { this.fetchNewRanges(); } },
-                { text: "table", action: () => { this.showTable(); } },
-                { text: "3D heat map...", action: () => { this.heatMap3D(); } },
+            { text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
+                { text: "refresh",
+                    action: () => { this.refresh(); },
+                    help: "Redraw this view."
+                },
+                { text: "update ranges",
+                    action: () => { this.fetchNewRanges(); },
+                    help: "Redraw this view such that all data fits on screen."
+                },
+                { text: "table",
+                    action: () => { this.showTable(); },
+                    help: "Show the data underlying this view using a table."
+                },
+                { text: "3D heat map...",
+                    action: () => { this.heatMap3D(); },
+                    help: "Specify a categorical column and replot this data" +
+                    " grouped on values of that column."
+                },
             ]) }
         ]);
         this.page.setMenu(menu);
