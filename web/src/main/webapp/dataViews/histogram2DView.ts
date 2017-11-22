@@ -84,35 +84,43 @@ export class Histogram2DView extends HistogramViewBase {
 
     constructor(remoteObjectId: RemoteObjectId, protected tableSchema: Schema, page: FullPage) {
         super(remoteObjectId, tableSchema, page);
-        this.menu = new TopMenu( [
-            { text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([{
+        this.menu = new TopMenu( [{
+            text: "View",
+            help: "Change the way the data is displayed.",
+            subMenu: new SubMenu([{
                 text: "refresh",
                 action: () => { this.refresh(); },
-                help: "Redraw this view" }, {
+                help: "Redraw this view"
+            }, {
                 text: "table",
                 action: () => this.showTable(),
-                help: "Show the data underlying this plot in a tabular view. "},{
+                help: "Show the data underlying this plot in a tabular view. "
+            },{
                 text: "exact",
                 action: () => { this.exactHistogram(); },
-                help: "Draw this histogram without approximations." },{
+                help: "Draw this histogram without approximations."
+            },{
                 text: "#buckets",
                 action: () => this.chooseBuckets(),
                 help: "Change the number of buckets used for drawing the histogram." +
-                "The number must be between 1 and " + Resolution.maxBucketCount }, {
+                    "The number must be between 1 and " + Resolution.maxBucketCount
+            }, {
                 text: "swap axes",
                 action: () => { this.swapAxes(); },
-                help: "Redraw this histogram by swapping the X and Y axes." }, {
+                help: "Redraw this histogram by swapping the X and Y axes."
+            }, {
                 text: "heatmap",
                 action: () => { this.heatmap(); },
-                help: "Plot this data as a heatmap view."}, {
+                help: "Plot this data as a heatmap view."
+            }, {
                 text: "relative/absolute",
                 action: () => { this.normalized = !this.normalized; this.refresh(); },
                 help: "In an absolute plot the Y axis represents the size for a bucket. " +
                 "In a relative plot all bars are normalized to 100% on the Y axis."
-            },
-            ]) },
-            {
-                text: "Combine", help: "Combine data in two separate views.", subMenu: combineMenu(this, page.pageId)
+            }]) }, {
+                text: "Combine",
+                help: "Combine data in two separate views.",
+                subMenu: combineMenu(this, page.pageId)
             }
         ]);
 
@@ -452,7 +460,7 @@ export class Histogram2DView extends HistogramViewBase {
             this.legendScale = scaleAxis.scale;
             let legendAxis = scaleAxis.axis;
             legendSvg.append("g")
-                .attr("transform", `translate(${this.legendRect.lowerLeft().x}, 
+                .attr("transform", `translate(${this.legendRect.lowerLeft().x},
                                               ${this.legendRect.lowerLeft().y})`)
                 .call(legendAxis);
         }
@@ -519,29 +527,42 @@ export class Histogram2DView extends HistogramViewBase {
 
         let xs = HistogramViewBase.invert(position[0], this.xScale,
             this.currentData.xData.description.kind, this.currentData.xData.distinctStrings);
-        let y = Math.round(this.yScale.invert(position[1]));
+        let y = Math.round(this.yScale.invert(mouseY));
         let ys = significantDigits(y);
+        let scale = 1.0;
         if (this.normalized)
             ys += "%";
 
         // Find out the rectangle where the mouse is
         let value = "", size = "";
-        let xIndex = Math.floor(position[0] / this.barWidth);
-        if (xIndex >= 0 && xIndex < this.currentData.data.length && y >= 0) {
+        let xIndex = Math.floor(mouseX / this.barWidth);
+        if (xIndex >= 0 && xIndex < this.currentData.data.length &&
+            y >= 0 && mouseY < this.chartSize.height) {
             let values: number[] = this.currentData.data[xIndex];
-            let yTotal = 0;
-            for (let i = 0; i < values.length; i++) {
-                yTotal += values[i];
-                if (yTotal >= y) {
-                    size = significantDigits(values[i]);
-                    value = this.currentData.yData.bucketDescription(i);
-                    break;
+
+            let total = 0;
+            for (let i = 0; i < values.length; i++)
+                total += values[i];
+            total += this.currentData.yData.missing.buckets[xIndex];
+            if (total > 0) {
+                // There could be no data for this specific x value
+                if (this.normalized)
+                    scale = 100 / total;
+
+                let yTotal = 0;
+                for (let i = 0; i < values.length; i++) {
+                    yTotal += values[i] * scale;
+                    if (yTotal >= y) {
+                        size = significantDigits(values[i]);
+                        value = this.currentData.yData.bucketDescription(i);
+                        break;
+                    }
                 }
-            }
-            let missing = this.currentData.yData.missing.buckets[xIndex];
-            if (value == "" && yTotal + missing >= y) {
-                value = "missing";
-                size = significantDigits(missing);
+                let missing = this.currentData.yData.missing.buckets[xIndex] * scale;
+                if (value == "" && yTotal + missing >= y) {
+                    value = "missing";
+                    size = significantDigits(missing);
+                }
             }
             // else value is ""
         }

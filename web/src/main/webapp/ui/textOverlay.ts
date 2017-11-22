@@ -72,7 +72,7 @@ export class TextOverlay {
         // If too close to the margin move it a bit
         if (window.innerWidth < x + maxWidth)
             x -= maxWidth;
-        if (Resolution.canvasHeight < y + this.height)
+        if (Resolution.canvasHeight - Resolution.bottomMargin < y + this.height)
             y -= this.height;
 
         index = 0;

@@ -237,10 +237,6 @@ export class HeatMapView extends RemoteTableObjectView {
             this.page.reportError("No data to display");
             return;
         }
-        if (samplingRate >= 1) {
-            let submenu = this.menu.getSubmenu("View");
-            submenu.enable("exact", false);
-        }
 
         let xPoints = data.length;
         let yPoints = data[0].length;
@@ -351,7 +347,7 @@ export class HeatMapView extends RemoteTableObjectView {
             .attr("dominant-baseline", "text-before-edge");
         this.canvas.append("text")
             .text(xData.description.name)
-            .attr("transform", `translate(${this.chartSize.width / 2}, 
+            .attr("transform", `translate(${this.chartSize.width / 2},
                   ${this.chartSize.height + Resolution.topMargin + Resolution.bottomMargin / 2})`)
             .attr("text-anchor", "middle")
             .attr("dominant-baseline", "hanging");

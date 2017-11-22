@@ -167,6 +167,9 @@ export class AxisData {
         let interval = (this.stats.max - this.stats.min) / this.bucketCount;
         let start = this.stats.min + interval * bucket;
         let end = start + interval;
+        let closeBracket = ")";
+        if (end >= this.stats.max)
+            closeBracket = "]";
         switch (this.description.kind) {
             case "Integer":
                 start = Math.ceil(start);
@@ -176,9 +179,9 @@ export class AxisData {
                 else if (end == start)
                     return significantDigits(start);
                 else
-                    return significantDigits(start) + " - " + significantDigits(end);
+                    return "[" + significantDigits(start) + ", " + significantDigits(end) + closeBracket;
             case "Double":
-                return significantDigits(start) + " - " + significantDigits(end);
+                 return "[" + significantDigits(start) + ", " + significantDigits(end) + closeBracket;
             case "Category": {
                 start = Math.ceil(start);
                 end = Math.floor(end);
@@ -187,12 +190,12 @@ export class AxisData {
                 else if (end == start)
                     return this.distinctStrings.get(start);
                 else
-                    return this.distinctStrings.get(start) + " - " + this.distinctStrings.get(end);
+                    return "[" + this.distinctStrings.get(start) + ", " + this.distinctStrings.get(end) + closeBracket;
             }
             case "Date": {
                 let minDate: Date = Converters.dateFromDouble(start);
                 let maxDate: Date = Converters.dateFromDouble(end);
-                return minDate + " - " + maxDate;
+                return "[" + minDate + ", " + maxDate + closeBracket;
             }
             default: {
                 return "unknown";

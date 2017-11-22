@@ -24,6 +24,7 @@ cpp/main
 platform/platform.iml
 web/web.iml
 
+TAGS
 *.log
 *.log.*
 *.log.lck
