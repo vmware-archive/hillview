@@ -56,11 +56,7 @@ export class SchemaView extends RemoteTableObjectView {
             ["Column number", "Column name", "Type of data stored within the column",
             "If this is true then the column can have 'missing' values."]);
 
-        let menuOptions: MenuItem[] = new Array<MenuItem>();
-        allContentsKind.forEach(s => menuOptions.push({text: s, action: () => this.selectType(s)}));
-        let selectTypeMenu = new ContextMenu(menuOptions);
-        this.topLevel.appendChild(selectTypeMenu.getHTMLRepresentation());
-
+        /* Dialog box for selecting columns based on type*/
         let typeDialog = new Dialog("Select by type", "Allows selecting/deselecting columns based on type");
         typeDialog.addSelectField("selectedType", "Type", allContentsKind, "String",
             "Type of columns you wish to select");
@@ -78,6 +74,7 @@ export class SchemaView extends RemoteTableObjectView {
             typeDialog.show()
         });
 
+        /* Dialog box for selecting columns based on whether they allow missing values.*/
         let missingDialog = new Dialog("Select by Allows Missing", "Allows " +
             "selecting/deselecting columns based on the Allows missing attribute");
         missingDialog.addBooleanField("allowsMissing", "Allows Missing",true,
@@ -103,6 +100,11 @@ export class SchemaView extends RemoteTableObjectView {
 
     refresh(): void { }
 
+    /**
+     * @param {string} selectedType: A type of column, from ContentsKind.
+     * @param {string} action: Either Add or Remove.
+     * This method updates the set of selected columns by adding/removing all columns of selectedType.
+     */
     private typeAction(selectedType:string, action: string) {
         for (let i = 0; i < this.schema.length; i++) {
             if (this.schema[i].kind == selectedType) {
@@ -114,6 +116,11 @@ export class SchemaView extends RemoteTableObjectView {
         }
     }
 
+    /**
+     *
+     * This method updates the set of selected columns by adding/removing all columns with a given value of
+     * AllowsMissing (either true of false).
+     */
     private missingAction(missingType: boolean, action: string) {
         for (let i = 0; i < this.schema.length; i++) {
             if (this.schema[i].allowMissing == missingType) {
@@ -123,16 +130,6 @@ export class SchemaView extends RemoteTableObjectView {
                     this.display.selectedRows.delete(i);
             }
         }
-    }
-
-    private selectType(s: string) {
-        console.log("selected type:", s);
-        this.display.selectedRows.clear();
-        for (let i = 0; i < this.schema.length; i++) {
-            if (this.schema[i].kind == s)
-                this.display.selectedRows.add(i);
-        }
-        this.display.highlightSelectedRows();
     }
 
     /**
