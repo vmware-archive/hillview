@@ -17,10 +17,14 @@
 
 import {RemoteTableObjectView} from "../tableTarget";
 import {FullPage} from "../ui/fullPage";
-import {NextKList, ColumnDescription, RecordOrder, Schema, RemoteObjectId} from "../javaBridge";
-import {SubMenu, TopMenu} from "../ui/menu";
+import {
+    NextKList, ColumnDescription, RecordOrder, Schema, RemoteObjectId, ContentsKind,
+    allContentsKind
+} from "../javaBridge";
+import {ContextMenu, MenuItem, SubMenu, TopMenu} from "../ui/menu";
 import {TabularDisplay} from "../ui/tabularDisplay";
 import {TableView} from "./tableView";
+import {Dialog} from "../ui/dialog";
 
 /**
  * This class is used to browse through the columns of a table schema
@@ -49,8 +53,47 @@ export class SchemaView extends RemoteTableObjectView {
 
         this.display = new TabularDisplay();
         this.display.setColumns(["#", "Name", "Type", "Allows missing"],
-            ["Colunm number", "Column name", "Type of data stored within the column",
+            ["Column number", "Column name", "Type of data stored within the column",
             "If this is true then the column can have 'missing' values."]);
+
+        let menuOptions: MenuItem[] = new Array<MenuItem>();
+        allContentsKind.forEach(s => menuOptions.push({text: s, action: () => this.selectType(s)}));
+        let selectTypeMenu = new ContextMenu(menuOptions);
+        this.topLevel.appendChild(selectTypeMenu.getHTMLRepresentation());
+
+        let typeDialog = new Dialog("Select by type", "Allows selecting/deselecting columns based on type");
+        typeDialog.addSelectField("selectedType", "Type", allContentsKind, "String",
+            "Type of columns you wish to select");
+        let actions: string[] =  ["Add", "Remove"];
+        typeDialog.addSelectField("action", "Action", actions, "Add",
+            "Add to or Remove from current selection");
+        typeDialog.setAction(() => {
+            let selectedType: string = typeDialog.getFieldValue("selectedType");
+            let action: string = typeDialog.getFieldValue("action");
+            this.typeAction(selectedType, action);
+            this.display.highlightSelectedRows();
+        });
+        this.display.addRightClickHandler("Type", (e: MouseEvent) => {
+            e.preventDefault();
+            typeDialog.show()
+        });
+
+        let missingDialog = new Dialog("Select by Allows Missing", "Allows " +
+            "selecting/deselecting columns based on the Allows missing attribute");
+        missingDialog.addBooleanField("allowsMissing", "Allows Missing",true,
+            "Type of columns you wish to select");
+        missingDialog.addSelectField("action", "Action", actions, "Add",
+            "Add to or Remove from current selection");
+        missingDialog.setAction(() => {
+            let missingType: boolean = missingDialog.getBooleanValue("allowsMissing");
+            let action: string = missingDialog.getFieldValue("action");
+            this.missingAction(missingType, action);
+            this.display.highlightSelectedRows();
+        });
+        this.display.addRightClickHandler("Allows missing", (e: MouseEvent) => {
+            e.preventDefault();
+            missingDialog.show()
+        });
 
         for (let i = 0; i < schema.length; i++)
             this.display.addRow([(i+1).toString(), schema[i].name,
@@ -59,6 +102,38 @@ export class SchemaView extends RemoteTableObjectView {
     }
 
     refresh(): void { }
+
+    private typeAction(selectedType:string, action: string) {
+        for (let i = 0; i < this.schema.length; i++) {
+            if (this.schema[i].kind == selectedType) {
+                if (action == "Add")
+                    this.display.selectedRows.add(i);
+                else if (action = "Remove")
+                    this.display.selectedRows.delete(i);
+            }
+        }
+    }
+
+    private missingAction(missingType: boolean, action: string) {
+        for (let i = 0; i < this.schema.length; i++) {
+            if (this.schema[i].allowMissing == missingType) {
+                if (action == "Add")
+                    this.display.selectedRows.add(i);
+                else if (action = "Remove")
+                    this.display.selectedRows.delete(i);
+            }
+        }
+    }
+
+    private selectType(s: string) {
+        console.log("selected type:", s);
+        this.display.selectedRows.clear();
+        for (let i = 0; i < this.schema.length; i++) {
+            if (this.schema[i].kind == s)
+                this.display.selectedRows.add(i);
+        }
+        this.display.highlightSelectedRows();
+    }
 
     /**
      * This method returns a Schema comprising of the selected columns.

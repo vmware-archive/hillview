@@ -16,7 +16,7 @@
  */
 
 import {d3} from "./d3-modules"
-import {IHtmlElement, Point, Resolution, Size} from "./ui";
+import {IHtmlElement, Resolution, Size} from "./ui";
 import {ContextMenu} from "./menu";
 
 /**
@@ -126,12 +126,11 @@ export class ColorLegend implements IHtmlElement {
         this.topLevel.appendChild(this.contextMenu.getHTMLRepresentation());
     }
 
-    private showContextMenu(pos: Point) {
+    private showContextMenu(event: MouseEvent) {
         /* Only show context menu if it is enabled. */
         if (this.contextMenu != null){
-            d3.event.preventDefault();
-            this.contextMenu.move(pos.x - 1, pos.y - 1);
-            this.contextMenu.show();
+            event.preventDefault();
+            this.contextMenu.show(event);
         }
     }
 
@@ -196,8 +195,7 @@ export class ColorLegend implements IHtmlElement {
             .attr("height", this.barHeight)
             .style("fill", `url(#gradient${this.uniqueId})`);
         bar.on("contextmenu", () => {
-            let pos = {x: d3.event.pageX, y: d3.event.pageY};
-            this.showContextMenu(pos);
+            this.showContextMenu(d3.event);
         });
 
         let axisG = svg.append("g")

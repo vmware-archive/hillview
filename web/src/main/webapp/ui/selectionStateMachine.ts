@@ -60,6 +60,20 @@ export class SelectionStateMachine {
         this.selected.add(val);
     }
 
+    public delete(val: number) {
+        this.selected.delete(val);
+    }
+
+    public addList(val: number[]) {
+        for(let c of val)
+            this.add(c);
+    }
+
+    public toggleList(val: number[]) {
+        for(let c of val)
+            this.toggle(c);
+    }
+
     /**
      * Changes the membership for all states in the interval [a,b] to the boolean value to.
      * Is used when the shift key is pressed.
