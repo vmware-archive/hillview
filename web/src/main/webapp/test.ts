@@ -185,7 +185,7 @@ export class Test {
                 findSelectedElement("#hillviewPage1 thead .col8").click();
                 let evt = mouseClick(false, true);
                 let col9 = findSelectedElement("#hillviewPage1 thead .col9");
-                col2.dispatchEvent(evt); // control-click
+                col9.dispatchEvent(evt); // control-click
                 let revt = contextMenuEvent();
                 col9.dispatchEvent(revt);
                 findSelectedElement("#hillviewPage1 .dropdown #Histogram").click();
