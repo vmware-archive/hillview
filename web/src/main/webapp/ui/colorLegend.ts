@@ -16,7 +16,7 @@
  */
 
 import {d3} from "./d3-modules"
-import {IHtmlElement, Point, Resolution, Size} from "./ui";
+import {IHtmlElement, Resolution, Size} from "./ui";
 import {ContextMenu} from "./menu";
 
 /**
@@ -92,7 +92,7 @@ export class ColorLegend implements IHtmlElement {
      * The context menu is added only when a colormap change event listener is set.
      */
     private enableContextMenu() {
-        this.contextMenu = new ContextMenu([
+        this.contextMenu = new ContextMenu(this.topLevel, [
             {
                 text: "Cool",
                 help: "Use a color palette with cool colors.",
@@ -123,16 +123,12 @@ export class ColorLegend implements IHtmlElement {
                 }
             },
         ]);
-        this.topLevel.appendChild(this.contextMenu.getHTMLRepresentation());
     }
 
-    private showContextMenu(pos: Point) {
+    private showContextMenu(e: MouseEvent) {
         /* Only show context menu if it is enabled. */
-        if (this.contextMenu != null){
-            d3.event.preventDefault();
-            this.contextMenu.move(pos.x - 1, pos.y - 1);
-            this.contextMenu.show();
-        }
+        if (this.contextMenu != null)
+            this.contextMenu.show(e);
     }
 
     // Redraw the legend, and notify the listeners.
@@ -195,10 +191,7 @@ export class ColorLegend implements IHtmlElement {
             .attr("width", this.size.width)
             .attr("height", this.barHeight)
             .style("fill", `url(#gradient${this.uniqueId})`);
-        bar.on("contextmenu", () => {
-            let pos = {x: d3.event.pageX, y: d3.event.pageY};
-            this.showContextMenu(pos);
-        });
+        bar.on("contextmenu", () => this.showContextMenu(d3.event));
 
         let axisG = svg.append("g")
             .attr("transform", `translate(0, ${this.barHeight})`);

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {IColumnDescription, RecordOrder, NextKList, TopList} from "../javaBridge";
+import {IColumnDescription, RecordOrder, NextKList, TopList, RemoteObjectId} from "../javaBridge";
 import {TopMenu, SubMenu} from "../ui/menu";
 import {TableView, TableOperationCompleted} from "./tableView";
 import {RemoteObject, OnCompleteRenderer} from "../rpc";
@@ -63,7 +63,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
     public showTable(): void {
         let newPage2 = new FullPage("Frequent elements", "HeavyHitters", this.page);
         this.page.insertAfterMe(newPage2);
-        let rr = this.tv.createRpcRequest("filterHeavy", {
+        let rr = this.tv.createStreamingRpcRequest<RemoteObjectId>("filterHeavy", {
                 hittersId: this.data.heavyHittersId,
                 schema: this.schema
         });

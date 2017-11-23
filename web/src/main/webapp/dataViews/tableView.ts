@@ -40,7 +40,7 @@ import {LAMPDialog} from "./lampView";
 import {
     IColumnDescription, RecordOrder, RowView, Schema, ColumnDescription, RangeInfo,
     ContentsKind, asContentsKind, ColumnSortOrientation, NextKList, TopList, CombineOperators, TableSummary, HLogLog,
-    RemoteObjectId
+    RemoteObjectId, allContentsKind, CreateColumnInfo
 } from "../javaBridge";
 import {RemoteTableObject, RemoteTableObjectView, RemoteTableRenderer, ZipReceiver} from "../tableTarget";
 import {DistinctStrings} from "../distinctStrings";
@@ -119,8 +119,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         ]);
 
         this.page.setMenu(menu);
-        this.contextMenu = new ContextMenu();
-        this.topLevel.appendChild(this.contextMenu.getHTMLRepresentation());
+        this.contextMenu = new ContextMenu(this.topLevel);
         this.topLevel.appendChild(document.createElement("hr"));
         this.htmlTable = document.createElement("table");
         this.scrollBar = new ScrollBar(this);
@@ -363,7 +362,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
             label += " " +
                 this.getSortArrow(cd.name) + this.getSortIndex(cd.name);
         }
-        thd.title = cd.kind + (cd.allowMissing ? ", can have missing data" : "") +
+        thd.title = "Column type is " + cd.kind + (cd.allowMissing ? ", can have missing data" : "") +
             ".\nA mouse click with the right button will open a menu.";
         thd.innerHTML = label;
         thr.appendChild(thd);
@@ -516,7 +515,6 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
             thd.className = this.columnClass(cd.name);
             thd.onclick = e => this.columnClick(i, e);
             thd.oncontextmenu = e => {
-                e.preventDefault();
                 this.columnClick(i, e);
                 if (e.ctrlKey && (e.button == 1)) {
                     // Ctrl + click is interpreted as a right-click on macOS.
@@ -561,7 +559,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
                     "The data cannot be of type String."
                 });
                 this.contextMenu.addItem({
-                    text: "Heat map",
+                    text: "Heatmap",
                     action: () => this.heatMap(),
                     help: "Plot the data in the selected columns as a heatmap or as a Trellis plot of heatmaps. " +
                     "Applies to two or three columns only."
@@ -593,10 +591,12 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
                     action: () => this.convert(cd.name),
                     help: "Convert the data in the selected column to a different data type."
                 });
-
-                // Spawn the menu at the mouse's location
-                this.contextMenu.move(e.pageX - 1, e.pageY - 1);
-                this.contextMenu.show();
+                this.contextMenu.addItem({
+                    text: "Create column...",
+                    action: () => this.addColumn(),
+                    help: "Add a new column computed from the selected columns."
+                });
+                this.contextMenu.show(e);
             };
         }
         this.tBody = this.htmlTable.createTBody();
@@ -637,6 +637,39 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         this.page.reportTime(elapsedMs);
     }
 
+    addColumn(): void {
+        let dialog = new Dialog(
+            "Add column", "Specify a JavaScript function which computes the values in a new column.");
+        dialog.addTextField(
+            "outColName", "Column name", FieldKind.String, null, "Name to use for the generated column.");
+        dialog.addSelectField(
+            "outColKind", "Data type", allContentsKind, "Category", "Type of data in the generated column.");
+        dialog.addMultiLineTextField("function", "Function",
+            "function map(row) { return row['col']; }",
+            "A JavaScript function called 'map' that computes the values for each row of the generated column." +
+            "The function has a single argument 'row'.  The row is a JavaScript map that can be indexed with " +
+            "a column name (a string) and which produces a value.");
+        dialog.setAction(() => this.createColumn(dialog));
+        dialog.show();
+    }
+
+    createColumn(dialog: Dialog): void {
+        let col = dialog.getFieldValue("outColName");
+        let kind = dialog.getFieldValue("outColKind");
+        let fun = dialog.getFieldValue("function");
+        let selColumns = this.getSelectedColNames();
+        let subSchema = TableView.dropColumns(this.schema, c => (selColumns.indexOf(c) < 0));
+        let arg: CreateColumnInfo = {
+            jsFunction: fun,
+            outputColumn: col,
+            outputKind: asContentsKind(kind),
+            schema: subSchema
+        };
+        let rr = this.createCreateColumnRequest(arg);
+        let rec = new RemoteTableReceiver(this.getPage(), rr, "New column " + col, true);
+        rr.invoke(rec);
+    }
+
     /**
      * Convert the data in a column to a different column kind.
      */
@@ -653,11 +686,12 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         cd.show();
     }
 
+    /*
     dropColumns(): void {
         this.currentData.schema = TableView.dropColumns(this.schema,
                 c => (this.getSelectedColNames().indexOf(c.name) != -1));
         this.refresh();
-    }
+    }*/
 
     public setSchema(schema: Schema): void {
         if (schema != null)
@@ -822,7 +856,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
             return;
         }
         if (this.selectedColumns.size() != 2) {
-            this.reportError("Must select exactly 2 columns for heat map");
+            this.reportError("Must select exactly 2 columns for heatmap");
             return;
         }
 
@@ -979,7 +1013,6 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
                 cell.classList.add("noselect");
                 cell.title = "Right click will popup a menu.";
                 cell.oncontextmenu = e => {
-                    e.preventDefault();
                     this.contextMenu.clear();
                     this.contextMenu.addItem({text: "Filter for " + cellValue,
                         action: () => this.equalityFilter(cd.name, value, false),
@@ -989,8 +1022,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
                         action: () => this.equalityFilter(cd.name, value, false, true),
                         help: "Keep only the rows that have a different value in this column."
                     });
-                    this.contextMenu.move(e.pageX - 1, e.pageY - 1);
-                    this.contextMenu.show();
+                    this.contextMenu.show(e);
                 };
             } else {
                 // disable context menu

@@ -110,7 +110,7 @@ export class Test {
             cont: () => findSelectedElement("#hillviewPage0 #topMenu #Flights__all_").click()
         }, {
             description: "Show all columns",
-            cond: () => findSelectedElement("#hillviewPage1") != null,
+            cond: () => findSelectedElement("#hillviewPage1 .idle") != null,
             cont: () => findSelectedElement("#hillviewPage1 #topMenu #All_columns").click()
         }, {
             description: "Show no columns",
@@ -155,23 +155,53 @@ export class Test {
                 // Add row 1
                 let row1 = findSelectedElement("#hillviewPage2 #row1");
                 let evt = mouseClick(false, true);
-                row1.dispatchEvent(evt);
+                row1.dispatchEvent(evt);  // control-click
                 // Add row 3
                 let row3 = findSelectedElement("#hillviewPage2 #row3");
                 row3.dispatchEvent(evt);
                 // Select menu item to show the associated table
                 findSelectedElement("#hillviewPage2 #topMenu #Selected_columns").click();
-                // This does not involve an RPC, it finished right away
-                // Close schema view
-                findSelectedElement("#hillviewPage2 .close").click()
-                // Close table view
-                findSelectedElement("#hillviewPage3 .close").click()
                 // Show a histogram
                 let col1 = findSelectedElement("#hillviewPage1 thead .col1");
                 let revt = contextMenuEvent();
                 col1.dispatchEvent(revt);
                 findSelectedElement("#hillviewPage1 .dropdown #Histogram").click();
             }
-        }]);
+        }, {
+            description: "Show a categorical histogram",
+            cond: () => findSelectedElement("#hillviewPage4 .idle") != null,
+            cont: () => {
+                // Show a histogram
+                let col2 = findSelectedElement("#hillviewPage1 thead .col2");
+                let evt = contextMenuEvent();
+                col2.dispatchEvent(evt);  // control-click
+                findSelectedElement("#hillviewPage1 .dropdown #Histogram").click();
+            }
+        }, {
+            description: "Show a 2D histogram",
+            cond: () => findSelectedElement("#hillviewPage5 .idle") != null,
+            cont: () => {
+                // Show a histogram
+                findSelectedElement("#hillviewPage1 thead .col8").click();
+                let evt = mouseClick(false, true);
+                let col9 = findSelectedElement("#hillviewPage1 thead .col9");
+                col2.dispatchEvent(evt); // control-click
+                let revt = contextMenuEvent();
+                col9.dispatchEvent(revt);
+                findSelectedElement("#hillviewPage1 .dropdown #Histogram").click();
+            }
+        },{
+            description: "Close some windows",
+            cond: () => true,
+            cont: () => {
+                /*
+                findSelectedElement("#hillviewPage2 .close").click();
+                findSelectedElement("#hillviewPage3 .close").click();
+                findSelectedElement("#hillviewPage4 .close").click();
+                findSelectedElement("#hillviewPage5 .close").click();
+                */
+            }
+        }
+        ]);
     }
 }

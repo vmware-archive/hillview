@@ -42,7 +42,7 @@ class LampView extends RemoteTableObjectView {
     private minY: number;
     private maxX: number;
     private maxY: number;
-    private maxVal: number; // Maximum value in the heat map
+    private maxVal: number; // Maximum value in the heatmap
     private heatMapCanvas: any;
     private heatMapChart: any;
     private controlPointsCanvas: any;
@@ -77,7 +77,7 @@ class LampView extends RemoteTableObjectView {
                     action: () => { this.showTable(); },
                     help: "Show the data underlying this view using a table."
                 },
-                { text: "3D heat map...",
+                { text: "3D heatmap...",
                     action: () => { this.heatMap3D(); },
                     help: "Specify a categorical column and replot this data" +
                     " grouped on values of that column."
@@ -459,7 +459,7 @@ class LAMPHeatMapReceiver extends Renderer<HeatMapData> {
     private heatMap: HeatMapData;
     constructor(page: FullPage, operation: ICancellable,
                 private controlPointsView: LampView, private lampTime: number) {
-        super(page, operation, "Computing heat map")
+        super(page, operation, "Computing heatmap")
     }
 
     onNext(result: PartialResult<HeatMapData>) {

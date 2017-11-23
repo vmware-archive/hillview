@@ -145,12 +145,12 @@ export class LoadMenu extends RemoteObject implements IDataView {
     }
 
     ping(): void {
-        let rr = this.createRpcRequest("ping", null);
+        let rr = this.createStreamingRpcRequest<string[]>("ping", null);
         rr.invoke(new PingReceiver(this.page, rr));
     }
 
     command(command: string): void {
-        let rr = this.createRpcRequest(command, null);
+        let rr = this.createStreamingRpcRequest<Status[]>(command, null);
         rr.invoke(new CommandReceiver(command, this.page, rr));
     }
 

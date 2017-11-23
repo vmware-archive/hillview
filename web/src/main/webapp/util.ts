@@ -212,7 +212,7 @@ export function transpose<D>(m: D[][]): D[][] {
 }
 
 /**
- * Given a set of values in a heat map this computes two coefficients for a
+ * Given a set of values in a heatmap this computes two coefficients for a
  * linear regression from X to Y.  The result is an array with two numbers, the
  * two coefficients.  If the regression is undefined, the coefficients array is empty.
  */

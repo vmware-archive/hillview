@@ -90,7 +90,7 @@ class LogFileReceiver extends OnCompleteRenderer<RemoteObjectId> {
 
     public run(objId: RemoteObjectId): void {
         let fn = new RemoteObject(objId);
-        let rr = fn.createRpcRequest("loadTable", null);
+        let rr = fn.createStreamingRpcRequest<string>("loadTable", null);
         let observer = new RemoteTableReceiver(this.page, rr, this.title, false);
         rr.invoke(observer);
     }

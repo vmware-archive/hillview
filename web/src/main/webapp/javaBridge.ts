@@ -63,6 +63,13 @@ export interface TableSummary {
     rowCount: number;
 }
 
+export interface ConvertColumnInfo {
+    colName: string,
+    newColName: string,
+    newKind: ContentsKind,
+    columnIndex: number
+}
+
 export interface JdbcConnectionInformation {
     host: string;
     database: string;
@@ -82,6 +89,13 @@ export interface CSVFilesDescription {
 
 export interface HLogLog {
     distinctItemCount: number
+}
+
+export interface CreateColumnInfo {
+    jsFunction: string;
+    schema: Schema;
+    outputColumn: string;
+    outputKind: ContentsKind;
 }
 
 /**

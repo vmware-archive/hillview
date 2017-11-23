@@ -415,13 +415,13 @@ export class HeatMapView extends RemoteTableObjectView {
         let mouseX = position[0];
         let mouseY = position[1];
 
-        let xs = HistogramViewBase.invert(position[0], this.xScale,
+        let xs = HistogramViewBase.invert(mouseX, this.xScale,
             this.currentData.xData.description.kind, this.currentData.xData.distinctStrings);
-        let ys = HistogramViewBase.invert(position[1], this.yScale,
+        let ys = HistogramViewBase.invert(mouseY, this.yScale,
             this.currentData.yData.description.kind, this.currentData.yData.distinctStrings);
 
-        let xi = position[0] / this.pointWidth;
-        let yi = (this.chartSize.height - position[1]) / this.pointHeight;
+        let xi = mouseX / this.pointWidth;
+        let yi = (this.chartSize.height - mouseY) / this.pointHeight;
         xi = Math.floor(xi);
         yi = Math.floor(yi);
         let value = "0";

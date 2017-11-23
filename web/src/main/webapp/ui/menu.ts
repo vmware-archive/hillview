@@ -48,7 +48,7 @@ export class ContextMenu implements IHtmlElement {
      * Create a context menu.
      * @param {MenuItem[]} mis  List of menu items in the context menu.
      */
-    constructor(mis?: MenuItem[]) {
+    constructor(parent: HTMLElement, mis?: MenuItem[]) {
         this.outer = document.createElement("table");
         this.outer.classList.add("dropdown");
         this.outer.classList.add("menu");
@@ -60,13 +60,16 @@ export class ContextMenu implements IHtmlElement {
             for (let mi of mis)
                 this.addItem(mi);
         }
+        parent.appendChild(this.getHTMLRepresentation());
         this.hide();
     }
 
     /**
      * Display the menu.
      */
-    public show(): void {
+    public show(e: MouseEvent): void {
+        e.preventDefault();
+        this.move(e.pageX, e.pageY);
         this.outer.hidden = false;
     }
 
@@ -90,7 +93,7 @@ export class ContextMenu implements IHtmlElement {
      * @param {number} x  Absolute x coordinate.
      * @param {number} y  Absolute y coordinate.
      */
-    public move(x: number, y: number): void {
+    move(x: number, y: number): void {
         this.outer.style.transform = `translate(${x}px, ${y}px)`;
     }
 

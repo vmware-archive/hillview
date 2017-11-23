@@ -24,7 +24,9 @@ import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IRow;
 import org.hillview.utils.HashUtil;
 
+import javax.annotation.Nullable;
 import java.io.Serializable;
+import java.util.Map;
 
 /**
  * An abstract class that implements IRow, which is an interface for accessing rows in a table.
@@ -165,5 +167,38 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
             first = false;
         }
         return builder.toString();
+    }
+
+    @Override
+    @Nullable
+    public Object get(Object key) {
+        return this.getObject((String)key);
+    }
+
+    // Unsupported Map operations
+
+    @Override
+    public boolean containsValue(Object value) {
+        throw new UnsupportedOperationException("Search by value is not supported.");
+    }
+
+    @Override
+    public Object put(String key, Object value) {
+        throw new UnsupportedOperationException("Rows are read-only.");
+    }
+
+    @Override
+    public Object remove(Object key) {
+        throw new UnsupportedOperationException("Rows are read-only.");
+    }
+
+    @Override
+    public void putAll(Map<? extends String, ?> m) {
+        throw new UnsupportedOperationException("Rows are read-only.");
+    }
+
+    @Override
+    public void clear() {
+        throw new UnsupportedOperationException("Rows are read-only.");
     }
 }

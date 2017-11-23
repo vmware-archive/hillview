@@ -97,7 +97,7 @@ export class FullPage implements IHtmlElement {
         help.onclick = () => this.openInNewTab(this.helpUrl(viewKind));
         help.textContent = "help";
         help.className = "external-link";
-        help.style.cursor = "pointer";
+        help.style.cursor = "help";
         help.title = "Open help documentation related to this view.";
         this.addCell(titleRow, help, true);
 

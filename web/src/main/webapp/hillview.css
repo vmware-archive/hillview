@@ -143,12 +143,9 @@ th, td {
 
 .dialog {
     position: fixed;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
     margin: auto;
-    padding: 8px;
-    border-radius: 10px;
+    padding: 5px;
+    border-radius: 5px;
     border: 1px solid black;
     width: auto;
     height: auto;

@@ -20,7 +20,7 @@ import {OnCompleteRenderer} from "../rpc";
 import {ICancellable} from "../util";
 import {FullPage} from "../ui/fullPage";
 import {TableView, RemoteTableReceiver} from "./tableView";
-import {allContentsKind, ContentsKind, HLogLog} from "../javaBridge";
+import {allContentsKind, ContentsKind, ConvertColumnInfo, HLogLog} from "../javaBridge";
 
 /**
  * A dialog to find out information about how to perform the conversion of the data in a column.
@@ -65,11 +65,14 @@ export class ConverterDialog extends Dialog {
  */
 export class ColumnConverter  {
     public static maxCategoricalCount = 1e4;
+    private columnIndex: number;  // index of original column in schema
 
     constructor(private columnName: string,
         private newKind: ContentsKind,
         private newColumnName: string,
-        private table: TableView) {}
+        private table: TableView) {
+        this.columnIndex = TableView.allColumnNames(this.table.schema).indexOf(this.columnName);
+    }
 
     public run(): void {
         if (TableView.allColumnNames(this.table.schema).indexOf(this.newColumnName) >= 0) {
@@ -77,7 +80,7 @@ export class ColumnConverter  {
             return;
         }
         if (this.newKind == "Category") {
-            let rr = this.table.createRpcRequest("hLogLog", this.columnName);
+            let rr = this.table.createHLogLogRequest(this.columnName);
             let rec: HLogLogReceiver = new HLogLogReceiver(this.table.getPage(), rr, this);
             rr.invoke(rec);
         } else {
@@ -95,12 +98,13 @@ export class ColumnConverter  {
     }
 
     public convert(operation: ICancellable): void {
-        let args = {
+        let args: ConvertColumnInfo = {
             colName: this.columnName,
             newColName: this.newColumnName,
-            newKind: this.newKind
+            newKind: this.newKind,
+            columnIndex: this.columnIndex
         };
-        let rr = this.table.createRpcRequest("convertColumnMap", args);
+        let rr = this.table.createStreamingRpcRequest<string>("convertColumnMap", args);
         rr.chain(operation);
         rr.invoke(new RemoteTableReceiver(this.table.getPage(), rr, "New column " + this.newColumnName, true));
     }

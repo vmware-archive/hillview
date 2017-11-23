@@ -55,7 +55,7 @@ export class CategoryCache {
                 columnsToFetch.push(c);
         }
 
-        let rr = remoteTable.createRpcRequest("uniqueStrings", columnsToFetch);
+        let rr = remoteTable.createStreamingRpcRequest<IDistinctStrings[]>("uniqueStrings", columnsToFetch);
         if (columnsToFetch.length > 0) {
             let renderer = new ReceiveCategory(this, columnsToFetch, continuation, page, rr);
             rr.invoke(renderer);

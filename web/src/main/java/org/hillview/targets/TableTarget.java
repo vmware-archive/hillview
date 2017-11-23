@@ -27,10 +27,7 @@ import org.hillview.dataset.api.Pair;
 import org.hillview.jsonObjects.Histogram2DArgs;
 import org.hillview.jsonObjects.Histogram3DArgs;
 import org.hillview.jsonObjects.HistogramArgs;
-import org.hillview.maps.ConvertColumnMap;
-import org.hillview.maps.FilterMap;
-import org.hillview.maps.LAMPMap;
-import org.hillview.maps.LinearProjectionMap;
+import org.hillview.maps.*;
 import org.hillview.sketches.*;
 import org.hillview.table.*;
 import org.hillview.table.api.*;
@@ -210,7 +207,7 @@ public final class TableTarget extends RpcTarget {
     }
 
     static class CorrelationMatrixRequest {
-        @Nullable
+        @SuppressWarnings("NullableProblems")
         String[] columnNames;
         long totalRows;
         long seed;
@@ -232,7 +229,7 @@ public final class TableTarget extends RpcTarget {
     static class ProjectToEigenVectorsInfo {
         String id = "";
         int numComponents;
-        String projectionName;
+        String projectionName = "";
     }
 
     @HillviewRpc
@@ -274,7 +271,7 @@ public final class TableTarget extends RpcTarget {
         assert info.columnNames != null;
         double samplingRate = ((double) info.numSamples) / info.rowCount;
         RandomSamplingSketch sketch = new RandomSamplingSketch(
-                samplingRate, info.seed, Converters.checkNull(info.columnNames), info.allowMissing);
+                samplingRate, info.seed, info.columnNames, info.allowMissing);
         this.runCompleteSketch(this.table, sketch, (sampled, c) -> {
             sampled = sampled.compress(sampled.getMembershipSet().sample(info.numSamples, info.seed + 1)); // Resample to get the exact number of samples.
             return new ControlPointsTarget(sampled, info.columnNames, c);
@@ -283,7 +280,7 @@ public final class TableTarget extends RpcTarget {
 
     static class CatCentroidControlPoints {
         String categoricalColumnName = "";
-        @Nullable
+        @SuppressWarnings("NullableProblems")
         String[] numericalColumnNames;
     }
 
@@ -291,8 +288,7 @@ public final class TableTarget extends RpcTarget {
     public void categoricalCentroidsControlPoints(RpcRequest request, RpcRequestContext session) {
         CatCentroidControlPoints info = request.parseArgs(CatCentroidControlPoints.class);
         CategoryCentroidsSketch sketch = new CategoryCentroidsSketch(
-                Converters.checkNull(info.categoricalColumnName),
-                Converters.checkNull(info.numericalColumnNames));
+                info.categoricalColumnName, info.numericalColumnNames);
         this.runCompleteSketch(this.table, sketch, ControlPointsTarget::new, request, session);
     }
 
@@ -331,13 +327,11 @@ public final class TableTarget extends RpcTarget {
         RpcObjectManager.instance.retrieveTarget(new RpcTarget.Id(info.id), true, observer);
     }
 
+    @SuppressWarnings("NullableProblems")
     static class LAMPMapInfo {
         String controlPointsId = "";
-        @Nullable
         String[] colNames;
-        @Nullable
         ControlPoints2D newLowDimControlPoints;
-        @Nullable
         String[] newColNames;
     }
 
@@ -356,8 +350,7 @@ public final class TableTarget extends RpcTarget {
                     lowDimPoints.put(i, 1, newControlPoints.points[i].y);
                 }
                 lowDimPoints.print();
-                LAMPMap map = new LAMPMap(highDimPoints, lowDimPoints,
-                        Converters.checkNull(info.colNames), Converters.checkNull(info.newColNames));
+                LAMPMap map = new LAMPMap(highDimPoints, lowDimPoints, info.colNames, info.newColNames);
                 TableTarget.this.runMap(TableTarget.this.table, map, TableTarget::new, request, context);
             }
         };
@@ -381,7 +374,7 @@ public final class TableTarget extends RpcTarget {
     }
 
     static class HeavyHittersInfo {
-        @Nullable
+        @SuppressWarnings("NullableProblems")
         Schema columns;
         double amount;
         long totalRows;
@@ -391,16 +384,15 @@ public final class TableTarget extends RpcTarget {
     /**
      * This serializes the result of heavyHitterSketch for the front end.
      */
+    @SuppressWarnings("NullableProblems")
     public static class TopList implements IJson {
         /**
          * The NextKList stores the fields to display and their counts.
          */
-        @Nullable
         NextKList top;
         /**
          * The id of the FreqKList object which might be used for further filtering.
          */
-        @Nullable
         String heavyHittersId;
     }
 
@@ -427,8 +419,7 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     public void heavyHittersMG(RpcRequest request, RpcRequestContext context) {
         HeavyHittersInfo info = request.parseArgs(HeavyHittersInfo.class);
-        assert info.columns != null;
-        FreqKSketch sk = new FreqKSketch(Converters.checkNull(info.columns), info.amount/100);
+        FreqKSketch sk = new FreqKSketch(info.columns, info.amount/100);
         this.runCompleteSketch(this.table, sk, (x, c) -> TableTarget.getLists(x, info.columns, 0, c),
                 request, context);
     }
@@ -439,18 +430,15 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     public void heavyHitters(RpcRequest request, RpcRequestContext context) {
         HeavyHittersInfo info = request.parseArgs(HeavyHittersInfo.class);
-        assert info.columns != null;
-        SampleHeavyHittersSketch shh = new SampleHeavyHittersSketch(Converters.checkNull(info.columns),
+        SampleHeavyHittersSketch shh = new SampleHeavyHittersSketch(info.columns,
                 info.amount/100, info.totalRows, info.seed);
         this.runCompleteSketch(this.table, shh, (x, c) -> TableTarget.getLists(x, info.columns, 2, c),
                 request, context);
     }
 
-
-
     static class HeavyHittersFilterInfo {
         String hittersId = "";
-        @Nullable
+        @SuppressWarnings("NullableProblems")
         Schema schema;
     }
 
@@ -460,7 +448,6 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     public void checkHeavy(RpcRequest request, RpcRequestContext context) {
         HeavyHittersFilterInfo hhi = request.parseArgs(HeavyHittersFilterInfo.class);
-        assert hhi.schema != null;
         Observer<RpcTarget> observer = new SingleObserver<RpcTarget>() {
             @Override
             public void onSuccess(RpcTarget rpcTarget) {
@@ -484,7 +471,7 @@ public final class TableTarget extends RpcTarget {
             @Override
             public void onSuccess(RpcTarget rpcTarget) {
                 HeavyHittersTarget hht = (HeavyHittersTarget)rpcTarget;
-                ITableFilterDescription filter = hht.heavyHitters.heavyFilter(Converters.checkNull(hhi.schema));
+                ITableFilterDescription filter = hht.heavyHitters.heavyFilter(hhi.schema);
                 FilterMap fm = new FilterMap(filter);
                 TableTarget.this.runMap(TableTarget.this.table, fm, TableTarget::new, request, context);
             }
@@ -502,13 +489,14 @@ public final class TableTarget extends RpcTarget {
     static class ConvertColumnInfo {
         String colName = "";
         String newColName = "";
+        int columnIndex;
         ContentsKind newKind = ContentsKind.Category;
     }
 
     @HillviewRpc
     public void convertColumnMap(RpcRequest request, RpcRequestContext context) {
         ConvertColumnInfo info = request.parseArgs(ConvertColumnInfo.class);
-        ConvertColumnMap map = new ConvertColumnMap(info.colName, info.newColName, info.newKind);
+        ConvertColumnMap map = new ConvertColumnMap(info.colName, info.newColName, info.newKind, info.columnIndex);
         this.runMap(this.table, map, TableTarget::new, request, context);
     }
 
@@ -529,5 +517,21 @@ public final class TableTarget extends RpcTarget {
             }
         };
         RpcObjectManager.instance.retrieveTarget(new RpcTarget.Id(otherId), true, observer);
+    }
+
+    @SuppressWarnings("NullableProblems")
+    static class CreateColumnInfo {
+        String jsFunction = "";
+        Schema schema;
+        String outputColumn;
+        ContentsKind outputKind = ContentsKind.Category;
+    }
+
+    @HillviewRpc
+    public void createColumn(RpcRequest request, RpcRequestContext context) {
+        CreateColumnInfo info = request.parseArgs(CreateColumnInfo.class);
+        ColumnDescription desc = new ColumnDescription(info.outputColumn, info.outputKind, true);
+        CreateColumnJSMap map = new CreateColumnJSMap(info.jsFunction, info.schema, desc);
+        this.runMap(this.table, map, TableTarget::new, request, context);
     }
 }

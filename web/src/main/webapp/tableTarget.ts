@@ -27,7 +27,7 @@ import {IDataView} from "./ui/dataview";
 import {FullPage} from "./ui/fullPage";
 import {
     BasicColStats,
-    CombineOperators, FilterDescription, Histogram, Histogram3DArgs, HistogramArgs, HLogLog,
+    CombineOperators, CreateColumnInfo, FilterDescription, Histogram, Histogram3DArgs, HistogramArgs, HLogLog,
     IColumnDescription, NextKList, RangeInfo, RecordOrder, RemoteObjectId, Schema, TableSummary, TopList
 } from "./javaBridge";
 import {Histogram2DArgs} from "./javaBridge";
@@ -138,6 +138,10 @@ RpcRequest<PartialResult<RemoteObjectId>> {
             seed: Seed.instance.get(),
             toSample: toSample
         });
+    }
+
+    public createCreateColumnRequest(c: CreateColumnInfo): RpcRequest<PartialResult<string>> {
+        return this.createStreamingRpcRequest<string>("createColumn", c);
     }
 
     public createFilterRequest(f: FilterDescription): RpcRequest<PartialResult<RemoteObjectId>> {
