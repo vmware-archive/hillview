@@ -125,10 +125,12 @@ export class ColorLegend implements IHtmlElement {
         ]);
     }
 
-    private showContextMenu(e: MouseEvent) {
+    private showContextMenu(event: MouseEvent) {
         /* Only show context menu if it is enabled. */
-        if (this.contextMenu != null)
-            this.contextMenu.show(e);
+        if (this.contextMenu != null){
+            event.preventDefault();
+            this.contextMenu.show(event);
+        }
     }
 
     // Redraw the legend, and notify the listeners.

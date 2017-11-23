@@ -30,6 +30,7 @@ export class TabularDisplay implements IHtmlElement {
     selectedRows: SelectionStateMachine;
     rowCount: number;
     columnCount: number;
+    colHeaderMap: Map<string, HTMLElement>;
     rows: HTMLTableRowElement[];
 
     constructor() {
@@ -44,6 +45,7 @@ export class TabularDisplay implements IHtmlElement {
         this.selectedRows = new SelectionStateMachine();
         this.rowCount = 0;
         this.columnCount = 0;
+        this.colHeaderMap = new Map<string, HTMLElement>();
         this.rows = [];
     }
 
@@ -66,6 +68,7 @@ export class TabularDisplay implements IHtmlElement {
             thr.appendChild(thd);
             thd.classList.add("noselect");
             this.columnCount++;
+            this.colHeaderMap.set(c, thd);
         }
     }
 
@@ -84,6 +87,10 @@ export class TabularDisplay implements IHtmlElement {
         cell.style.textAlign = "right";
         cell.classList.add("noselect");
         return cell;
+    }
+
+    public addRightClickHandler(colName: string, handler: (e: Event) => void) {
+        this.colHeaderMap.get(colName).oncontextmenu = handler;
     }
 
     /**
@@ -135,7 +142,7 @@ export class TabularDisplay implements IHtmlElement {
         this.highlightSelectedRows();
     }
 
-    private highlightSelectedRows(): void {
+    public highlightSelectedRows(): void {
         for (let i = 0; i < this.rowCount; i++) {
             let rowi = this.rows[i];
             if (this.selectedRows.has(i))

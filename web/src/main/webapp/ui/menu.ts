@@ -46,6 +46,7 @@ export class ContextMenu implements IHtmlElement {
 
     /**
      * Create a context menu.
+     * @oaran parent            HTML element where this is inserted.
      * @param {MenuItem[]} mis  List of menu items in the context menu.
      */
     constructor(parent: HTMLElement, mis?: MenuItem[]) {
@@ -69,7 +70,8 @@ export class ContextMenu implements IHtmlElement {
      */
     public show(e: MouseEvent): void {
         e.preventDefault();
-        this.move(e.pageX, e.pageY);
+        // Spawn the menu at the mouse's location
+        this.move(e.pageX - 1, e.pageY - 1);
         this.outer.hidden = false;
     }
 
