@@ -66,7 +66,10 @@ export class ContextMenu implements IHtmlElement {
     /**
      * Display the menu.
      */
-    public show(): void {
+    public show(e: MouseEvent): void {
+        e.preventDefault();
+        // Spawn the menu at the mouse's location
+        this.move(e.pageX - 1, e.pageY - 1);
         this.outer.hidden = false;
     }
 
@@ -90,7 +93,7 @@ export class ContextMenu implements IHtmlElement {
      * @param {number} x  Absolute x coordinate.
      * @param {number} y  Absolute y coordinate.
      */
-    public move(x: number, y: number): void {
+    private move(x: number, y: number): void {
         this.outer.style.transform = `translate(${x}px, ${y}px)`;
     }
 

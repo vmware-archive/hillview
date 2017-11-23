@@ -595,8 +595,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
                 });
 
                 // Spawn the menu at the mouse's location
-                this.contextMenu.move(e.pageX - 1, e.pageY - 1);
-                this.contextMenu.show();
+                this.contextMenu.show(e);
             };
         }
         this.tBody = this.htmlTable.createTBody();
@@ -989,8 +988,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
                         action: () => this.equalityFilter(cd.name, value, false, true),
                         help: "Keep only the rows that have a different value in this column."
                     });
-                    this.contextMenu.move(e.pageX - 1, e.pageY - 1);
-                    this.contextMenu.show();
+                    this.contextMenu.show(e);
                 };
             } else {
                 // disable context menu
