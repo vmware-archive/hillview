@@ -24,7 +24,7 @@ import {
 import {ContextMenu, MenuItem, SubMenu, TopMenu} from "../ui/menu";
 import {TabularDisplay} from "../ui/tabularDisplay";
 import {TableView} from "./tableView";
-import {Dialog} from "../ui/dialog";
+import {Dialog, FieldKind} from "../ui/dialog";
 
 /**
  * This class is used to browse through the columns of a table schema
@@ -39,15 +39,33 @@ export class SchemaView extends RemoteTableObjectView {
                 private rowCount: number) {
         super(remoteObjectId, page);
         this.topLevel = document.createElement("div");
-
-        this.topLevel = document.createElement("div");
         let subMenu = new SubMenu([
             {text: "Selected columns",
                 action: () => {this.showTable();},
                 help: "Show the data using a tabular view containing the selected columns."
             }
         ]);
-        let menu = new TopMenu([{text: "View", help: "Change the way the data is displayed.", subMenu}]);
+        let selectMenu = new SubMenu([
+            {
+                text: "By Name",
+                action: () => {nameDialog.show();},
+                help: "Select Columns by name."
+            },
+            {
+                text: "By Type",
+                action: () => {typeDialog.show();},
+                help: "Select Columns by type."
+            },
+            {
+                text: "By Allows Missing",
+                action: () => {missingDialog.show();},
+                help: "Select Columns by whether missing values are allowed."
+            }
+        ]);
+        let menu = new TopMenu([
+            {text: "View", subMenu: subMenu, help: "Change the way the data is displayed."},
+            {text: "Select", subMenu: selectMenu, help: "Select columns based on attributes." }
+            ]);
         this.page.setMenu(menu);
         this.topLevel.appendChild(document.createElement("br"));
 
@@ -56,11 +74,28 @@ export class SchemaView extends RemoteTableObjectView {
             ["Column number", "Column name", "Type of data stored within the column",
             "If this is true then the column can have 'missing' values."]);
 
+        /* Dialog box for selecting columns based on name*/
+        let nameDialog = new Dialog("Select by name", "Allows selecting/deselecting columns by name using regular expressions");
+        nameDialog.addTextField("selected", "Name", FieldKind.String, "",
+            "Names of columns to select (regular expressions allowed)");
+        let actions: string[] =  ["Add", "Remove"];
+        nameDialog.addSelectField("action", "Action", actions, "Add",
+            "Add to or Remove from current selection");
+        nameDialog.setAction(() => {
+            let regExp: RegExp= new RegExp(nameDialog.getFieldValue("selected"));
+            let action: string = nameDialog.getFieldValue("action");
+            this.nameAction(regExp, action);
+            this.display.highlightSelectedRows();
+        });
+        this.display.addRightClickHandler("Name", (e: MouseEvent) => {
+            e.preventDefault();
+            nameDialog.show()
+        });
+
         /* Dialog box for selecting columns based on type*/
         let typeDialog = new Dialog("Select by type", "Allows selecting/deselecting columns based on type");
         typeDialog.addSelectField("selectedType", "Type", allContentsKind, "String",
             "Type of columns you wish to select");
-        let actions: string[] =  ["Add", "Remove"];
         typeDialog.addSelectField("action", "Action", actions, "Add",
             "Add to or Remove from current selection");
         typeDialog.setAction(() => {
@@ -99,6 +134,17 @@ export class SchemaView extends RemoteTableObjectView {
     }
 
     refresh(): void { }
+
+    private nameAction(regExp: RegExp, action: string) {
+        for (let i = 0; i < this.schema.length; i++) {
+            if (this.schema[i].name.match(regExp)) {
+                if (action == "Add")
+                    this.display.selectedRows.add(i);
+                else if (action = "Remove")
+                    this.display.selectedRows.delete(i);
+            }
+        }
+    }
 
     /**
      * @param {string} selectedType: A type of column, from ContentsKind.
