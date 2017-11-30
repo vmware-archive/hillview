@@ -269,9 +269,9 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
     // Holds the state of which heatmap is hovered over.
     private mouseOverHeatMap: CompactHeatMapView;
 
-    constructor(remoteObjectId: RemoteObjectId, page: FullPage, args: HeatMapArrayArgs,
-                private tableSchema: Schema) {
-        super(remoteObjectId, page);
+    constructor(remoteObjectId: RemoteObjectId, originalTableId: RemoteObjectId,
+                page: FullPage, args: HeatMapArrayArgs,  private tableSchema: Schema) {
+        super(remoteObjectId, originalTableId, page);
         this.args = args;
         this.offset = 0;
         if (this.args.cds.length != 3)
@@ -370,7 +370,7 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
     }
 
     public showTable() {
-        let table = new TableView(this.remoteObjectId, this.page);
+        let table = new TableView(this.remoteObjectId, this.originalTableId, this.page);
         table.setSchema(this.tableSchema);
 
         let order =  new RecordOrder([ {
@@ -673,10 +673,12 @@ export class HeatMapArrayDialog extends Dialog {
         let newPage = new FullPage("Heatmaps by " + args.cds[2].name, "Trellis", this.page);
         this.page.insertAfterMe(newPage);
 
-        let heatMapArrayView = new TrellisHeatMapView(this.remoteObject.remoteObjectId, newPage, args, this.schema);
+        let heatMapArrayView = new TrellisHeatMapView(
+            this.remoteObject.remoteObjectId, this.remoteObject.originalTableId, newPage, args, this.schema);
         newPage.setDataView(heatMapArrayView);
         let cont = (operation: ICancellable) => {
-            args.uniqueStrings = CategoryCache.instance.getDistinctStrings(categCol.name);
+            args.uniqueStrings = CategoryCache.instance.getDistinctStrings(
+                this.remoteObject.originalTableId, categCol.name);
             let rr = heatMapArrayView.createRange2DColsRequest(args.cds[0].name, args.cds[1].name);
             rr.chain(operation);
             rr.invoke(new Range2DRenderer(newPage, heatMapArrayView, rr));

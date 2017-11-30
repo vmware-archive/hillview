@@ -18,7 +18,7 @@
 import {d3} from "../ui/d3-modules";
 import {
     ColumnDescription, Schema, RecordOrder, ColumnAndRange, FilterDescription,
-    BasicColStats, RangeInfo, Histogram2DArgs, CombineOperators, RemoteObjectId
+    BasicColStats, RangeInfo, Histogram2DArgs, CombineOperators, RemoteObjectId, HeatMap
 } from "../javaBridge";
 import {TopMenu, SubMenu} from "../ui/menu";
 import {
@@ -31,8 +31,8 @@ import {TextOverlay} from "../ui/textOverlay";
 import {AnyScale, AxisData} from "./axisData";
 import { HistogramViewBase, BucketDialog } from "./histogramViewBase";
 import {TableView, NextKReceiver} from "./tableView";
-import {HeatMapData, Range2DCollector} from "./heatMapView";
-import {RemoteTableRenderer, ZipReceiver} from "../tableTarget";
+import {Range2DCollector} from "./heatMapView";
+import {RemoteTableObject, RemoteTableRenderer, ZipReceiver} from "../tableTarget";
 import {DistinctStrings} from "../distinctStrings";
 import {combineMenu, SelectedObject} from "../selectedObject";
 
@@ -82,8 +82,9 @@ export class Histogram2DView extends HistogramViewBase {
     protected barWidth: number;  // in pixels
     protected max: number;  // maximum count displayed (total size of stacked bars)
 
-    constructor(remoteObjectId: RemoteObjectId, protected tableSchema: Schema, page: FullPage) {
-        super(remoteObjectId, tableSchema, page);
+    constructor(remoteObjectId: RemoteObjectId, originalTableId: RemoteObjectId,
+                protected tableSchema: Schema, page: FullPage) {
+        super(remoteObjectId, originalTableId, tableSchema, page);
         this.menu = new TopMenu( [{
             text: "View",
             help: "Change the way the data is displayed.",
@@ -139,11 +140,9 @@ export class Histogram2DView extends HistogramViewBase {
 
     // combine two views according to some operation
     combine(how: CombineOperators): void {
-        let r = SelectedObject.current.getSelected();
-        if (r == null) {
-            this.page.reportError("No view selected");
+        let r = SelectedObject.instance.getSelected(this, this.page.getErrorReporter());
+        if (r == null)
             return;
-        }
 
         let rr = this.createZipRequest(r);
         let renderer = (page: FullPage, operation: ICancellable) => {
@@ -151,9 +150,9 @@ export class Histogram2DView extends HistogramViewBase {
                 page, operation,
                 [this.currentData.xData.description, this.currentData.yData.description],
                 [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
-                this.tableSchema, this.currentData.samplingRate >= 1, false);
+                this.tableSchema, this.currentData.samplingRate >= 1, false, this.originalTableId);
         };
-        rr.invoke(new ZipReceiver(this.getPage(), rr, how, renderer));
+        rr.invoke(new ZipReceiver(this.getPage(), rr, how, this.originalTableId, renderer));
     }
 
     public swapAxes(): void {
@@ -217,7 +216,7 @@ export class Histogram2DView extends HistogramViewBase {
         };
         let rr = this.createHeatMapRequest(args);
         let renderer = new Histogram2DRenderer(this.page,
-            this.remoteObjectId, this.tableSchema,
+            this, this.tableSchema,
             [this.currentData.xData.description, this.currentData.yData.description],
             [this.currentData.xData.stats, this.currentData.yData.stats],
             samplingRate,
@@ -671,7 +670,8 @@ export class Histogram2DView extends HistogramViewBase {
             this.currentData.xData.distinctStrings,
             this.currentData.yData.distinctStrings,
             this.tableSchema,
-            this.page, this.currentData.samplingRate >= 1.0, rr, false);
+            this.page, this.currentData.samplingRate >= 1.0, rr, false,
+            this.originalTableId);
         rr.invoke(renderer);
     }
 
@@ -713,7 +713,7 @@ export class Histogram2DView extends HistogramViewBase {
 
     // show the table corresponding to the data in the histogram
     protected showTable(): void {
-        let table = new TableView(this.remoteObjectId, this.page);
+        let table = new TableView(this.remoteObjectId, this.originalTableId, this.page);
         table.setSchema(this.tableSchema);
 
         let order =  new RecordOrder([ {
@@ -745,8 +745,9 @@ export class Filter2DReceiver extends RemoteTableRenderer {
                 page: FullPage,
                 protected exact: boolean,
                 operation: ICancellable,
-                protected heatMap: boolean) {
-        super(page, operation, "Filter");
+                protected heatMap: boolean,
+                originalTableId: RemoteObjectId) {
+        super(page, operation, "Filter", originalTableId);
     }
 
     public run(): void {
@@ -771,8 +772,9 @@ export class Make2DHistogram extends RemoteTableRenderer {
                        protected ds: DistinctStrings[],
                        private schema: Schema,
                        private exact: boolean,
-                       private heatMap: boolean) {
-        super(page, operation, "Reload");
+                       private heatMap: boolean,
+                       originalTableId: RemoteObjectId) {
+        super(page, operation, "Reload", originalTableId);
     }
 
     run(): void {
@@ -790,11 +792,11 @@ export class Make2DHistogram extends RemoteTableRenderer {
  * Receives partial results and renders a 2D histogram.
  * The 2D histogram data and the HeatMap data use the same data structure.
  */
-export class Histogram2DRenderer extends Renderer<HeatMapData> {
+export class Histogram2DRenderer extends Renderer<HeatMap> {
     protected histogram: Histogram2DView;
 
     constructor(page: FullPage,
-                remoteTableId: string,
+                protected remoteObject: RemoteTableObject,
                 protected schema: Schema,
                 protected cds: ColumnDescription[],
                 protected stats: BasicColStats[],
@@ -804,13 +806,14 @@ export class Histogram2DRenderer extends Renderer<HeatMapData> {
         super(new FullPage("2D Histogram " + cds[0].name + ", " + cds[1].name, "2DHistogram", page),
             operation, "histogram");
         page.insertAfterMe(this.page);
-        this.histogram = new Histogram2DView(remoteTableId, schema, this.page);
+        this.histogram = new Histogram2DView(
+            this.remoteObject.remoteObjectId, this.remoteObject.originalTableId, schema, this.page);
         this.page.setDataView(this.histogram);
         if (cds.length != 2 || stats.length != 2 || uniqueStrings.length != 2)
             throw "Expected 2 columns";
     }
 
-    onNext(value: PartialResult<HeatMapData>): void {
+    onNext(value: PartialResult<HeatMap>): void {
         super.onNext(value);
         if (value == null)
             return;

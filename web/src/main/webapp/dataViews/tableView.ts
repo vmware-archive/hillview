@@ -68,14 +68,11 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
     protected selectedColumns: SelectionStateMachine;
     protected contextMenu: ContextMenu;
     protected cellsPerColumn: Map<string, HTMLElement[]>;
-    static firstTable: RemoteTableObject;
 
-    public constructor(remoteObjectId: RemoteObjectId, page: FullPage) {
-        super(remoteObjectId, page);
+    public constructor(remoteObjectId: RemoteObjectId, originalTableId: RemoteObjectId, page: FullPage) {
+        super(remoteObjectId, originalTableId, page);
 
         this.order = new RecordOrder([]);
-        if (TableView.firstTable == null)
-            TableView.firstTable = this;
         this.topLevel = document.createElement("div");
         this.topLevel.id = "tableContainer";
         this.topLevel.tabIndex = 1;  // necessary for keyboard events?
@@ -92,7 +89,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
             {
                 text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
                     { text: "Full dataset",
-                        action: () => { TableView.fullDataset(this.page); },
+                        action: () => { this.fullDataset(); },
                         help: "Show the initial dataset, prior to any filtering operations."
                     },
                     { text: "Refresh",
@@ -144,17 +141,15 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
      * Combine two views according to some operation: intersection, union, etc.
      */
     combine(how: CombineOperators): void {
-        let r = SelectedObject.current.getSelected();
-        if (r == null) {
-            this.reportError("No view selected");
+        let r = SelectedObject.instance.getSelected(this, this.getPage().getErrorReporter());
+        if (r == null)
             return;
-        }
 
         let rr = this.createZipRequest(r);
         let o = this.order.clone();
         let finalRenderer = (page: FullPage, operation: ICancellable) =>
             { return new TableOperationCompleted(page, this, operation, o); };
-        rr.invoke(new ZipReceiver(this.getPage(), rr, how, finalRenderer));
+        rr.invoke(new ZipReceiver(this.getPage(), rr, how, this.originalTableId, finalRenderer));
     }
 
     /**
@@ -261,14 +256,11 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
     }
 
     // Navigate back to the first table known
-    public static fullDataset(page: FullPage): void {
-        if (TableView.firstTable == null)
-            return;
-
-        let table = new TableView(TableView.firstTable.remoteObjectId, page);
-        page.setDataView(table);
+    public fullDataset(): void {
+        let table = new TableView(this.originalTableId, this.originalTableId, this.page);
+        this.page.setDataView(table);
         let rr = table.createGetSchemaRequest();
-        rr.invoke(new NextKReceiver(page, table, rr, false, new RecordOrder([])));
+        rr.invoke(new NextKReceiver(this.page, table, rr, false, new RecordOrder([])));
     }
 
     public static allColumnNames(schema: Schema): string[] {
@@ -389,7 +381,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
     }
 
     public histogram(heatMap: boolean): void {
-        if (this.selectedColumns.size() > 2) {
+        if (this.selectedColumns.size() < 1 || this.selectedColumns.size() > 2) {
             this.reportError("Must select 1 or 2 columns for histogram");
             return;
         }
@@ -421,7 +413,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
                 let colName = v.name;
                 let ri: RangeInfo;
                 if (v.kind == "Category") {
-                    let ds = CategoryCache.instance.getDistinctStrings(colName);
+                    let ds = CategoryCache.instance.getDistinctStrings(this.originalTableId, colName);
                     if (ds == null)
                     // Probably an error has occurred
                         return;
@@ -666,7 +658,8 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
             schema: subSchema
         };
         let rr = this.createCreateColumnRequest(arg);
-        let rec = new RemoteTableReceiver(this.getPage(), rr, "New column " + col, true);
+        let rec = new RemoteTableReceiver(
+            this.getPage(), rr, "New column " + col, true, this.originalTableId);
         rr.invoke(rec);
     }
 
@@ -742,7 +735,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         let title = "Filtered: " + filter.column + " is " +
             (filter.complement ? "not " : "") +
             TableView.convert(filter.compareValue, kind);
-        rr.invoke(new RemoteTableReceiver(this.page, rr, title, true));
+        rr.invoke(new RemoteTableReceiver(this.page, rr, title, true, this.originalTableId));
     }
 
     private equalityFilter(colName: string, value: string, showMenu: boolean, complement?: boolean): void {
@@ -912,7 +905,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
 
     public viewSchema(): void {
         let newPage = new FullPage("Schema", "Schema", this.page);
-        let sv = new SchemaView(this.remoteObjectId, newPage, this.schema, this.rowCount);
+        let sv = new SchemaView(this.remoteObjectId, this.originalTableId, newPage, this.schema, this.rowCount);
         newPage.setDataView(sv);
         this.page.insertAfterMe(newPage);
     }
@@ -1080,17 +1073,18 @@ export class RemoteTableReceiver extends RemoteTableRenderer {
      * @param {ICancellable} operation   Operation that will bring the results.
      * @param {string} title             Title to use for resulting page; if null the parent page is used.
      * @param forceTableView             If true the resulting view is always a table.
+     * @param originalTableId            Id of original table from which everything derives.
      */
     constructor(page: FullPage, operation: ICancellable, protected title: string,
-                protected forceTableView: boolean) {
-        super(page, operation, "Get schema");
+                protected forceTableView: boolean, originalTableId: RemoteObjectId) {
+        super(page, operation, "Get schema", originalTableId);
     }
 
     public run(): void {
         super.run();
         let rr = this.remoteObject.createGetSchemaRequest();
         rr.chain(this.operation);
-        rr.invoke(new SchemaReceiver(this.page, rr, this.remoteObject.remoteObjectId,
+        rr.invoke(new SchemaReceiver(this.page, rr, this.remoteObject,
             this.title, this.forceTableView));
     }
 }
@@ -1103,12 +1097,12 @@ class SchemaReceiver extends OnCompleteRenderer<TableSummary> {
      * Create a schema receiver for a new table.
      * @param {FullPage} page            Parent page initiating this request.
      * @param {ICancellable} operation   Operation that will bring the results.
-     * @param remoteObjectId             Id of remote table object.
+     * @param remoteObject               Table object.
      * @param {string} title             Title to use for resulting page; if null the parent page is used.
      * @param forceTableView             If true the resulting view is always a table.
      */
-    constructor(page: FullPage, operation: ICancellable,
-                protected remoteObjectId: string, protected title: string, protected forceTableView) {
+    constructor(page: FullPage, operation: ICancellable, protected remoteObject: RemoteTableObject,
+                protected title: string, protected forceTableView) {
         super(page, operation, "")
     }
 
@@ -1117,7 +1111,8 @@ class SchemaReceiver extends OnCompleteRenderer<TableSummary> {
         let dataView: IDataView;
         if (summary.schema.length > 20 && this.title != null && !this.forceTableView) {
             page = new FullPage(this.title, "Schema", this.page);
-            dataView = new SchemaView(this.remoteObjectId, page, summary.schema, summary.rowCount);
+            dataView = new SchemaView(this.remoteObject.remoteObjectId,
+                this.remoteObject.originalTableId, page, summary.schema, summary.rowCount);
         } else {
             if (this.title != null)
                 page = new FullPage(this.title, "Table", this.page);
@@ -1131,7 +1126,8 @@ class SchemaReceiver extends OnCompleteRenderer<TableSummary> {
             };
 
             let order = new RecordOrder([]);
-            let table = new TableView(this.remoteObjectId, page);
+            let table = new TableView(
+                this.remoteObject.remoteObjectId, this.remoteObject.originalTableId, page);
             table.updateView(nk, false, order, this.elapsedMilliseconds());
             dataView = table;
         }
@@ -1191,7 +1187,7 @@ class CorrelationMatrixReceiver extends RemoteTableRenderer {
                        protected order: RecordOrder,
                        private numComponents: number,
                        private projectionName: string) {
-        super(page, operation, "Correlation matrix");
+        super(page, operation, "Correlation matrix", tv.originalTableId);
     }
 
     run(): void {
@@ -1199,7 +1195,8 @@ class CorrelationMatrixReceiver extends RemoteTableRenderer {
         let rr = this.tv.createProjectToEigenVectorsRequest(
                 this.remoteObject, this.numComponents, this.projectionName);
         rr.chain(this.operation);
-        rr.invoke(new RemoteTableReceiver(this.page, rr, "Data with PCA projection columns", true));
+        rr.invoke(new RemoteTableReceiver(
+            this.page, rr, "Data with PCA projection columns", true, this.tv.originalTableId));
     }
 }
 
@@ -1212,12 +1209,13 @@ export class TableOperationCompleted extends RemoteTableRenderer {
                        protected tv: TableView,
                        operation: ICancellable,
                        protected order: RecordOrder) {
-        super(page, operation, "Table operation");
+        super(page, operation, "Table operation", tv.originalTableId);
     }
 
     run(): void {
         super.run();
-        let table = new TableView(this.remoteObject.remoteObjectId, this.page);
+        let table = new TableView(
+            this.remoteObject.remoteObjectId, this.remoteObject.originalTableId, this.page);
         table.setSchema(this.tv.schema);
         this.page.setDataView(table);
         let rr = table.createNextKRequest(this.order, null);

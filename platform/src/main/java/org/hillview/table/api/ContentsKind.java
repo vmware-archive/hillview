@@ -23,6 +23,7 @@ import java.io.Serializable;
  * Describes the kind of data that is in the column,
  */
 public enum ContentsKind implements Serializable {
+    None,     /* Data kind is unknown */
     Category, /* Categories and strings are the same, but strings cannot be histogrammed */
     String,
     Date,  /* java.time.LocalDateTime values */
@@ -39,10 +40,12 @@ public enum ContentsKind implements Serializable {
         switch (this) {
             case Category:
             case String:
-            case Date:
             case Json:
-            case Duration:
+            case None:
                 return true;
+            case Date:
+            case Duration:
+                // We store dates and durations as doubles
             case Integer:
             case Double:
             default:

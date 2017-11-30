@@ -200,20 +200,21 @@ public class SparseColumn extends BaseColumn
     }
 
     @Override
-    public IColumn convertKind(ContentsKind kind, String newColName, IMembershipSet set) {
+    public IColumn convertKind(
+            ContentsKind kind, String newColName, IMembershipSet set, boolean allowMissing) {
         switch (this.description.kind) {
             case Category:
             case String:
             case Json:
-                return IStringColumn.super.convertKind(kind, newColName, set);
+                return IStringColumn.super.convertKind(kind, newColName, set, allowMissing);
             case Integer:
-                return IIntColumn.super.convertKind(kind, newColName, set);
+                return IIntColumn.super.convertKind(kind, newColName, set, allowMissing);
             case Date:
-                return IDateColumn.super.convertKind(kind, newColName, set);
+                return IDateColumn.super.convertKind(kind, newColName, set, allowMissing);
             case Double:
-                return IDoubleColumn.super.convertKind(kind, newColName, set);
+                return IDoubleColumn.super.convertKind(kind, newColName, set, allowMissing);
             case Duration:
-                return IDurationColumn.super.convertKind(kind, newColName, set);
+                return IDurationColumn.super.convertKind(kind, newColName, set, allowMissing);
             default:
                 throw new RuntimeException("Unexpected kind " + this.description.kind);
         }

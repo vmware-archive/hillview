@@ -20,6 +20,7 @@ import {ICancellable} from "./util";
 import {FullPage} from "./ui/fullPage";
 import {DistinctStrings, IDistinctStrings} from "./distinctStrings";
 import {RemoteTableObject} from "./tableTarget";
+import {RemoteObjectId} from "./javaBridge";
 
 /**
  * The CategoryCache is a singleton class that maintains a cache mapping column names
@@ -28,14 +29,15 @@ import {RemoteTableObject} from "./tableTarget";
  */
 export class CategoryCache {
     /**
-     * Maps a column name to a set of distinct strings.
+     * For each original table id this keeps a
+     * map from a column name to a set of distinct strings.
      */
-    columnValues: Map<string, DistinctStrings>;
+    columnValues: Map<RemoteObjectId, Map<string, DistinctStrings>>;
     // TODO: handle errors that can occur while retrieving DistinctStrings
 
     // noinspection JSUnusedLocalSymbols
     private constructor() {
-        this.columnValues = new Map<string, DistinctStrings>();
+        this.columnValues = new Map<RemoteObjectId, Map<string, DistinctStrings>>();
     }
 
     public static instance: CategoryCache = new CategoryCache();
@@ -43,42 +45,52 @@ export class CategoryCache {
     /// Retrieves the category values for all specified column names
     /// and stores them internally in columnValues.
     /// Invokes continuation when all values are known.
-    public retrieveCategoryValues(remoteTable: RemoteTableObject,
+    public retrieveCategoryValues(originalTable: RemoteTableObject,
         columnNames: string[], page: FullPage,
         // The operation is the asynchronous operation
         // that may have retrieved the data
         continuation: (operation: ICancellable) => void): void {
+        if (!this.columnValues.has(originalTable.remoteObjectId))
+            this.columnValues.set(originalTable.remoteObjectId, new Map<string, DistinctStrings>());
+        let map = this.columnValues.get(originalTable.remoteObjectId);
 
         let columnsToFetch: string[] = [];
         for (let c of columnNames) {
-            if (!this.columnValues.has(c))
+            if (!map.has(c))
                 columnsToFetch.push(c);
         }
 
-        let rr = remoteTable.createStreamingRpcRequest<IDistinctStrings[]>("uniqueStrings", columnsToFetch);
+        let rr = originalTable.createStreamingRpcRequest<IDistinctStrings[]>("uniqueStrings", columnsToFetch);
         if (columnsToFetch.length > 0) {
-            let renderer = new ReceiveCategory(this, columnsToFetch, continuation, page, rr);
+            let renderer = new ReceiveCategory(originalTable.originalTableId, columnsToFetch, continuation, page, rr);
             rr.invoke(renderer);
         } else {
             continuation(rr);
         }
     }
 
-    public setDistinctStrings(columnName: string, values: DistinctStrings): void {
-        this.columnValues.set(columnName, values);
+    public setDistinctStrings(originalTableId: RemoteObjectId, columnName: string, values: DistinctStrings): void {
+        if (!this.columnValues.has(originalTableId))
+            this.columnValues.set(originalTableId, new Map<string, DistinctStrings>());
+        let map = this.columnValues.get(originalTableId);
+        map.set(columnName, values);
     }
 
-    public getDistinctStrings(columnName: string): DistinctStrings {
-        return this.columnValues.get(columnName);
+    public getDistinctStrings(originalTableId: RemoteObjectId, columnName: string): DistinctStrings {
+        if (!this.columnValues.has(originalTableId))
+            return null;
+        let map = this.columnValues.get(originalTableId);
+        return map.get(columnName);
     }
 }
 
 /**
- * Receives a list of DistinctStrings and stores them into a TableDataSet.
+ * Receives a list of DistinctStrings and stores them into the category cache.
+ * After that it calls the supplied continuation.
   */
 class ReceiveCategory extends OnCompleteRenderer<IDistinctStrings[]> {
     public constructor(
-        protected cache: CategoryCache,
+        protected originalTableId: RemoteObjectId,
         protected columns: string[],
         protected continuation: (operation: ICancellable) => void,
         page: FullPage,
@@ -95,7 +107,7 @@ class ReceiveCategory extends OnCompleteRenderer<IDistinctStrings[]> {
                 this.page.reportError("Column " + col + " has too many distinct values; it is not really a category");
             } else {
                 let ds = new DistinctStrings(value[i]);
-                this.cache.setDistinctStrings(col, ds);
+                CategoryCache.instance.setDistinctStrings(this.originalTableId, col, ds);
             }
         }
         this.continuation(this.operation);

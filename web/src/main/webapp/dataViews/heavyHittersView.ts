@@ -40,7 +40,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
                 public schema: IColumnDescription[],
                 public order: RecordOrder,
                 private isApprox: boolean) {
-        super(data.heavyHittersId, page);
+        super(data.heavyHittersId, tv.originalTableId, page);
         this.topLevel = document.createElement("div");
         let subMenu = new SubMenu([
             { text: "As Table",
@@ -72,7 +72,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
 
     public exactCounts(): void {
         let rr = this.tv.createCheckHeavyRequest(new RemoteObject(this.data.heavyHittersId), this.schema);
-        rr.invoke(new HeavyHittersReceiver2(this, rr));
+        rr.invoke(new HeavyHittersReceiver2(this, this.originalTableId, rr));
     }
 
     public fill(tdv: NextKList, elapsedMs: number): void {
@@ -174,6 +174,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
   */
 export class HeavyHittersReceiver2 extends OnCompleteRenderer<TopList> {
     public constructor(public hhv: HeavyHittersView,
+                       protected originalTableId: RemoteObjectId,
                        public operation: ICancellable) {
         super(hhv.page, operation, "Heavy hitters -- exact counts");
     }

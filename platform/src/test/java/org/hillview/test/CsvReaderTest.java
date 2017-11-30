@@ -115,11 +115,19 @@ public class CsvReaderTest extends BaseTest {
         CsvFileReader r = new CsvFileReader(path, config);
         ITable t = r.read();
         Assert.assertNotNull(t);
-        /*
-        System.gc();
-        long mem = Runtime.getRuntime().totalMemory();
-        long freeMem = Runtime.getRuntime().freeMemory();
-        System.out.printf("Total memory %d, Free memory %d.", mem, freeMem);*/
+    }
+
+    @Test
+    public void readCsvFileGuessSchemaTest() throws IOException {
+        Path path = Paths.get(ontimeFolder, csvFile);
+        CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
+        config.allowFewerColumns = false;
+        config.hasHeaderRow = true;
+        config.allowMissingData = false;
+        config.schema = null;
+        CsvFileReader r = new CsvFileReader(path, config);
+        ITable t = r.read();
+        Assert.assertNotNull(t);
     }
 
     private void writeReadTable(ITable table) throws IOException {

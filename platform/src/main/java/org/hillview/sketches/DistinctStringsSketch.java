@@ -29,8 +29,6 @@ import javax.annotation.Nullable;
  * all unique strings in the column.  It assumes that there are few
  * distinct strings in each such column; this makes sense when columns
  * are categorical.
- * This sketch is special, because it ignores the table membership set:
- * it just gets all strings in the given columns.
  */
 public class DistinctStringsSketch implements ISketch<ITable, JsonList<DistinctStrings>> {
     private final int maxSize;
@@ -68,14 +66,12 @@ public class DistinctStringsSketch implements ISketch<ITable, JsonList<DistinctS
             final DistinctStrings ri = result.get(i);
             IColumn col = cols[i].column;
             ri.setColumnSize(col.sizeInRows());
-            if (col instanceof ICategoryColumn) {
-                ICategoryColumn cc = (ICategoryColumn)col;
-                cc.allDistinctStrings(ri::add);
-            } else {
-                for (int row = 0; row < col.sizeInRows(); row++) {
-                    String s = col.getString(row);
-                    ri.add(s);
-                }
+            IRowIterator it = data.getMembershipSet().getIterator();
+            int row = it.getNextRow();
+            while (row >= 0) {
+                String s = col.getString(row);
+                ri.add(s);
+                row = it.getNextRow();
             }
         }
         return result;

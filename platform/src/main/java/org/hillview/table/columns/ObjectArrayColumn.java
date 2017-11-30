@@ -114,7 +114,8 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
     }
 
     @Override
-    public IColumn convertKind(ContentsKind kind, String newColName, IMembershipSet set) {
+    public IColumn convertKind(
+            ContentsKind kind, String newColName, IMembershipSet set, boolean allowMissing) {
         throw new UnsupportedOperationException("Converting object columns");
     }
 
