@@ -145,8 +145,8 @@ is deployed*.
   load.  Multiple files may be loaded on each machine.
 
 * Schema file: An optional file in JSON format that describes the
-  schema of the data.  In the absence of a schema file Hillview loads
-  all columns as strings.
+  schema of the data.  In the absence of a schema file Hillview
+  attempts to guess the type of data in each column.
 
 * Header row: select this option if the first row in each CSV file is
   a header row; the first row is used to generate names for the
@@ -484,6 +484,17 @@ the current state of the display.
   the number of distinct values in the column is below 10,000.  After
   conversion a new column is appended to the table, containing the
   converted data.
+
+* Create column...: allows the user to write a JavaScript program that
+  computes values for a new column.
+
+  ![Add column menu](add-column-menu.png)
+
+  The user has to specify the new column name and type.  The
+  JavaScript program is a function called 'map' that has a single
+  argument called 'row'.  This function is invoked for every row of
+  the dataset.  'row' is a JavaScript map that can be indexed with a
+  string column name.
 
 #### Operations on a table cell
 

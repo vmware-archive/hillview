@@ -121,9 +121,9 @@ public interface IColumn extends Serializable {
     }
 
     default IMutableColumn allocateConvertedColumn(
-        ContentsKind kind, IMembershipSet set, String newColName) {
+        ContentsKind kind, IMembershipSet set, String newColName, boolean allowMissing) {
         ColumnDescription cd = new ColumnDescription(
-                newColName, kind, this.getDescription().allowMissing);
+                newColName, kind, allowMissing);
         if (set.useSparseColumn())
             return new SparseColumn(cd, this.sizeInRows());
 
@@ -142,7 +142,7 @@ public interface IColumn extends Serializable {
             case Duration:
                 return new DurationArrayColumn(cd, this.sizeInRows());
             default:
-                throw new RuntimeException("Unexpected column kind " + this.getKind());
+                throw new RuntimeException("Unexpected column kind " + kind);
         }
     }
 
@@ -155,7 +155,10 @@ public interface IColumn extends Serializable {
                 dest.setMissing(rowIndex);
             } else {
                 T result = converter.apply(rowIndex);
-                dest.set(rowIndex, result);
+                if (result == null)
+                    dest.setMissing(rowIndex);
+                else
+                    dest.set(rowIndex, result);
             }
             rowIndex = it.getNextRow();
         }
@@ -166,9 +169,11 @@ public interface IColumn extends Serializable {
      * @param kind       The kind of the destination column.
      * @param newColName Name of the new column.
      * @param set        Set of elements that have to be converted.
+     * @param allowMissing If true the produced column will allow missing values.
      * @return An IColumn that is a copy of this column, converted to the specified kind.
      */
-    IColumn convertKind(ContentsKind kind, String newColName, IMembershipSet set);
+    IColumn convertKind(ContentsKind kind, String newColName,
+                        IMembershipSet set, boolean allowMissing);
 
     default String getName() {
         return this.getDescription().name;

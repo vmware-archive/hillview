@@ -18,9 +18,10 @@
 package org.hillview.table.api;
 
 import net.openhft.hashing.LongHashFunction;
-import org.hillview.table.columns.StringArrayColumn;
+import org.hillview.utils.DateParsing;
 
 import javax.annotation.Nullable;
+import java.time.Instant;
 import java.util.function.Function;
 
 public interface IStringColumn extends IColumn {
@@ -64,9 +65,32 @@ public interface IStringColumn extends IColumn {
         return hash.hashChars(this.getString(rowIndex));
     }
 
+    class DateParserHelper implements Function<Integer, Instant> {
+        final IStringColumn column;
+        @Nullable
+        DateParsing parser = null;
+
+        DateParserHelper(IStringColumn col) {
+            this.column = col;
+        }
+
+        @Override
+        @Nullable
+        public Instant apply(Integer index) {
+            String s = this.column.getString(index);
+            if (s == null)
+                return null;
+            if (this.parser == null)
+                this.parser = new DateParsing(s);
+            return this.parser.parse(s);
+        }
+    }
+
     @Override
-    default IColumn convertKind(ContentsKind kind, String newColName, IMembershipSet set) {
-        IMutableColumn newColumn = this.allocateConvertedColumn(kind, set, newColName);
+    default IColumn convertKind(
+            ContentsKind kind, String newColName, IMembershipSet set, boolean allowMissing) {
+        IMutableColumn newColumn = this.allocateConvertedColumn(
+                kind, set, newColName, allowMissing);
         switch(kind) {
             case Category:
             case Json:
@@ -77,6 +101,8 @@ public interface IStringColumn extends IColumn {
                 Function<Integer, Integer> f = rowIndex -> {
                     String s = this.getString(rowIndex);
                     //noinspection ConstantConditions
+                    if (s.trim().isEmpty())
+                        return null;
                     return Integer.parseInt(s);
                 };
                 this.convert(newColumn, set, f);
@@ -86,12 +112,18 @@ public interface IStringColumn extends IColumn {
                 Function<Integer, Double> f = rowIndex -> {
                     String s = this.getString(rowIndex);
                     //noinspection ConstantConditions
+                    if (s.trim().isEmpty())
+                        return null;
                     return Double.parseDouble(s);
                 };
                 this.convert(newColumn, set, f);
                 break;
             }
-            case Date:
+            case Date: {
+                Function<Integer, Instant> p = new DateParserHelper(this);
+                this.convert(newColumn, set, p);
+                break;
+            }
             case Duration:
                 throw new UnsupportedOperationException("Conversion from " + this.getKind()
                         + " to " + kind + " is not supported.");

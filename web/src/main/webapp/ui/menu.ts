@@ -46,7 +46,7 @@ export class ContextMenu implements IHtmlElement {
 
     /**
      * Create a context menu.
-     * @oaran parent            HTML element where this is inserted.
+     * @param parent            HTML element where this is inserted.
      * @param {MenuItem[]} mis  List of menu items in the context menu.
      */
     constructor(parent: HTMLElement, mis?: MenuItem[]) {

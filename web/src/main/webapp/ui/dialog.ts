@@ -179,6 +179,9 @@ export class Dialog implements IHtmlElement {
         fieldDiv.style.display = "flex";
         fieldDiv.style.alignItems = "center";
         fieldDiv.title = toolTip;
+        fieldDiv.onkeydown = e => e.stopPropagation();
+        fieldDiv.onkeypress = e => e.stopPropagation();
+        fieldDiv.onmousedown = e => e.stopPropagation();
         this.fieldsDiv.appendChild(fieldDiv);
 
         let label = document.createElement("label");

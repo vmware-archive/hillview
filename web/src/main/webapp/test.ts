@@ -32,7 +32,7 @@ interface TestOperation {
  * @param {string} cssselector  Node specification as a CSS selector.
  * @returns {Node}              The unique selected node.
  */
-function findSelectedElement(cssselector: string): HTMLElement {
+function findElement(cssselector: string): HTMLElement {
     let val = document.querySelector(cssselector);
     return <HTMLElement>val;
 }
@@ -41,16 +41,17 @@ function findSelectedElement(cssselector: string): HTMLElement {
  * Creates an event for a context menu.  This is usually triggered by a right mouse-click.
  */
 function contextMenuEvent(): Event {
-    let evt = document.createEvent("HTMLEvents");
-    evt.initEvent('contextmenu', true, true); // bubbles = true, cancelable = true
+    let evt: MouseEvent = document.createEvent("MouseEvents");
+    evt.initMouseEvent('contextmenu', true, true, window, 0, 0, 0, 0, 0, true, false,
+        false, false, 2, null);
     return evt;
 }
 
 /**
  * Creates a mouse click event with modifiers.
  */
-function mouseClick(shift: boolean, control: boolean): Event {
-    let evt = document.createEvent("MouseEvents");
+function mouseClickEvent(shift: boolean, control: boolean): Event {
+    let evt: MouseEvent = document.createEvent("MouseEvents");
     evt.initMouseEvent("click", true, true, window, 0, 0, 0, 0, 0, control, false, shift, false, 0, null);
     return evt;
 }
@@ -107,88 +108,88 @@ export class Test {
         this.addProgram([{
             description: "Load all flights",
             cond: () => true,
-            cont: () => findSelectedElement("#hillviewPage0 #topMenu #Flights__all_").click()
+            cont: () => findElement("#hillviewPage0 #topMenu #Flights__all_").click()
         }, {
             description: "Show all columns",
-            cond: () => findSelectedElement("#hillviewPage1 .idle") != null,
-            cont: () => findSelectedElement("#hillviewPage1 #topMenu #All_columns").click()
+            cond: () => findElement("#hillviewPage1 .idle") != null,
+            cont: () => findElement("#hillviewPage1 #topMenu #All_columns").click()
         }, {
             description: "Show no columns",
             cond: () => true,
-            cont: () => findSelectedElement("#hillviewPage1 #topMenu #No_columns").click()
+            cont: () => findElement("#hillviewPage1 #topMenu #No_columns").click()
         }, {
             description: "show column 0",
             cond: () => true,
             cont: () => {
-                let col0 = findSelectedElement("#hillviewPage1 thead .col0");
+                let col0 = findElement("#hillviewPage1 thead .col0");
                 let evt = contextMenuEvent();
                 col0.dispatchEvent(evt);
-                findSelectedElement("#hillviewPage1 .dropdown #Show").click();
+                findElement("#hillviewPage1 .dropdown #Show").click();
             }
         }, {
             description: "Show column 1",
             cond: () => true,
             cont: () => {
-                let col1 = findSelectedElement("#hillviewPage1 thead .col1");
+                let col1 = findElement("#hillviewPage1 thead .col1");
                 let evt = contextMenuEvent();
                 col1.dispatchEvent(evt);
-                findSelectedElement("#hillviewPage1 .dropdown #Show").click();
+                findElement("#hillviewPage1 .dropdown #Show").click();
             }
         }, {
             description: "Hide column 0",
             cond: () => true,
             cont: () => {
-                let col0 = findSelectedElement("#hillviewPage1 thead .col0");
+                let col0 = findElement("#hillviewPage1 thead .col0");
                 let evt = contextMenuEvent();
                 col0.dispatchEvent(evt);
-                findSelectedElement("#hillviewPage1 .dropdown #Hide").click();
+                findElement("#hillviewPage1 .dropdown #Hide").click();
             }
         }, {
             description: "Show schema view",
             cond: () => true,
             cont: () => {
-                findSelectedElement("#hillviewPage1 #topMenu #Schema").click();
+                findElement("#hillviewPage1 #topMenu #Schema").click();
                 // This does not involve an RPC; the result is available right away
                 // Select row 0
-                let row0 = findSelectedElement("#hillviewPage2 #row0");
+                let row0 = findElement("#hillviewPage2 #row0");
                 row0.click();
                 // Add row 1
-                let row1 = findSelectedElement("#hillviewPage2 #row1");
-                let evt = mouseClick(false, true);
+                let row1 = findElement("#hillviewPage2 #row1");
+                let evt = mouseClickEvent(false, true);
                 row1.dispatchEvent(evt);  // control-click
                 // Add row 3
-                let row3 = findSelectedElement("#hillviewPage2 #row3");
+                let row3 = findElement("#hillviewPage2 #row3");
                 row3.dispatchEvent(evt);
                 // Select menu item to show the associated table
-                findSelectedElement("#hillviewPage2 #topMenu #Selected_columns").click();
+                findElement("#hillviewPage2 #topMenu #Selected_columns").click();
                 // Show a histogram
-                let col1 = findSelectedElement("#hillviewPage1 thead .col1");
+                let col1 = findElement("#hillviewPage1 thead .col1");
                 let revt = contextMenuEvent();
                 col1.dispatchEvent(revt);
-                findSelectedElement("#hillviewPage1 .dropdown #Histogram").click();
+                findElement("#hillviewPage1 .dropdown #Histogram").click();
             }
         }, {
             description: "Show a categorical histogram",
-            cond: () => findSelectedElement("#hillviewPage4 .idle") != null,
+            cond: () => findElement("#hillviewPage4 .idle") != null,
             cont: () => {
                 // Show a histogram
-                let col2 = findSelectedElement("#hillviewPage1 thead .col2");
+                let col2 = findElement("#hillviewPage1 thead .col2");
                 let evt = contextMenuEvent();
                 col2.dispatchEvent(evt);  // control-click
-                findSelectedElement("#hillviewPage1 .dropdown #Histogram").click();
+                findElement("#hillviewPage1 .dropdown #Histogram").click();
             }
         }, {
             description: "Show a 2D histogram",
-            cond: () => findSelectedElement("#hillviewPage5 .idle") != null,
+            cond: () => findElement("#hillviewPage5 .idle") != null,
             cont: () => {
                 // Show a histogram
-                findSelectedElement("#hillviewPage1 thead .col8").click();
-                let evt = mouseClick(false, true);
-                let col9 = findSelectedElement("#hillviewPage1 thead .col9");
+                findElement("#hillviewPage1 thead .col8").click();
+                let evt = mouseClickEvent(false, true);
+                let col9 = findElement("#hillviewPage1 thead .col9");
                 col9.dispatchEvent(evt); // control-click
                 let revt = contextMenuEvent();
                 col9.dispatchEvent(revt);
-                findSelectedElement("#hillviewPage1 .dropdown #Histogram").click();
+                findElement("#hillviewPage1 .dropdown #Histogram").click();
             }
         },{
             description: "Close some windows",

@@ -49,8 +49,9 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
     protected moved: boolean;  // to detect trivial empty drags
     protected pointDescription: TextOverlay;
 
-    constructor(remoteObjectId: RemoteObjectId, protected tableSchema: Schema, page: FullPage) {
-        super(remoteObjectId, page);
+    constructor(remoteObjectId: RemoteObjectId, originalTableId: RemoteObjectId,
+                protected tableSchema: Schema, page: FullPage) {
+        super(remoteObjectId, originalTableId, page);
         this.topLevel = document.createElement("div");
         this.topLevel.className = "chart";
         this.topLevel.onkeydown = e => this.keyDown(e);

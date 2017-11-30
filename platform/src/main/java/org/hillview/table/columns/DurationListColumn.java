@@ -86,7 +86,8 @@ class DurationListColumn extends DoubleListColumn implements IDurationColumn {
     }
 
     @Override
-    public IColumn convertKind(ContentsKind kind, String newColName, IMembershipSet set) {
-        return IDurationColumn.super.convertKind(kind, newColName, set);
+    public IColumn convertKind(
+            ContentsKind kind, String newColName, IMembershipSet set, boolean allowMissing) {
+        return IDurationColumn.super.convertKind(kind, newColName, set, allowMissing);
     }
 }

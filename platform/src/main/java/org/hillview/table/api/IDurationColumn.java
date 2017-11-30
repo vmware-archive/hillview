@@ -68,8 +68,10 @@ public interface IDurationColumn extends IColumn {
     }
 
     @Override
-    default IColumn convertKind(ContentsKind kind, String newColName, IMembershipSet set) {
-        IMutableColumn newColumn = this.allocateConvertedColumn(kind, set, newColName);
+    default IColumn convertKind(
+            ContentsKind kind, String newColName, IMembershipSet set, boolean allowMissing) {
+        IMutableColumn newColumn = this.allocateConvertedColumn(
+                kind, set, newColName, allowMissing);
         switch(kind) {
             case Category:
             case Json:

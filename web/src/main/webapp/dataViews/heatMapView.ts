@@ -20,8 +20,8 @@ import {ScaleLinear, ScaleTime} from "d3-scale";
 
 import { Renderer } from "../rpc";
 import {
-    ColumnDescription, Schema, RecordOrder, Histogram, BasicColStats, FilterDescription,
-    Histogram2DArgs, CombineOperators, RemoteObjectId
+    ColumnDescription, Schema, RecordOrder, BasicColStats, FilterDescription,
+    Histogram2DArgs, CombineOperators, RemoteObjectId, HeatMap
 } from "../javaBridge";
 import {TableView, NextKReceiver} from "./tableView";
 import {
@@ -38,21 +38,6 @@ import {AxisData} from "./axisData";
 import {RemoteTableObjectView, ZipReceiver, RemoteTableObject} from "../tableTarget";
 import {DistinctStrings} from "../distinctStrings";
 import {combineMenu, SelectedObject} from "../selectedObject";
-
-/**
- * Maximum number of colors that we expect users can distinguish reliably.
- */
-// noinspection JSUnusedLocalSymbols
-const colorResolution: number = 20;
-
-// counterpart of Java class 'HeatMap'
-export class HeatMapData {
-    buckets: number[][];
-    missingData: number;
-    histogramMissingD1: Histogram;
-    histogramMissingD2: Histogram;
-    totalsize: number;
-}
 
 /**
  * A HeatMapView renders information as a heatmap.
@@ -87,8 +72,8 @@ export class HeatMapView extends RemoteTableObjectView {
     protected canvas: any;
     private menu: TopMenu;
 
-    constructor(remoteObjectId: RemoteObjectId, protected tableSchema: Schema, page: FullPage) {
-        super(remoteObjectId, page);
+    constructor(remoteObjectId: RemoteObjectId, originalTableId: RemoteObjectId, protected tableSchema: Schema, page: FullPage) {
+        super(remoteObjectId, originalTableId, page);
         this.topLevel = document.createElement("div");
         this.topLevel.className = "chart";
         this.topLevel.onkeydown = e => this.keyDown(e);
@@ -143,11 +128,9 @@ export class HeatMapView extends RemoteTableObjectView {
 
     // combine two views according to some operation
     combine(how: CombineOperators): void {
-        let r = SelectedObject.current.getSelected();
-        if (r == null) {
-            this.page.reportError("No view selected");
+        let r = SelectedObject.instance.getSelected(this, this.page.getErrorReporter());
+        if (r == null)
             return;
-        }
 
         let rr = this.createZipRequest(r);
         let renderer = (page: FullPage, operation: ICancellable) => {
@@ -155,16 +138,13 @@ export class HeatMapView extends RemoteTableObjectView {
                 page, operation,
                 [this.currentData.xData.description, this.currentData.yData.description],
                 [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
-                this.tableSchema, this.currentData.samplingRate >= 1, true);
+                this.tableSchema, this.currentData.samplingRate >= 1, true, this.originalTableId);
         };
-        rr.invoke(new ZipReceiver(this.getPage(), rr, how, renderer));
+        rr.invoke(new ZipReceiver(this.getPage(), rr, how, this.originalTableId, renderer));
     }
 
     // show the table corresponding to the data in the heatmap
     showTable(): void {
-        let table = new TableView(this.remoteObjectId, this.page);
-        table.setSchema(this.tableSchema);
-
         let order =  new RecordOrder([ {
             columnDescription: this.currentData.xData.description,
             isAscending: true
@@ -172,9 +152,11 @@ export class HeatMapView extends RemoteTableObjectView {
             columnDescription: this.currentData.yData.description,
             isAscending: true
         }]);
-        let rr = table.createNextKRequest(order, null);
         let page = new FullPage("Table view ", "Table", this.page);
+        let table = new TableView(this.remoteObjectId, this.originalTableId, page);
         page.setDataView(table);
+        table.setSchema(this.tableSchema);
+        let rr = table.createNextKRequest(order, null);
         this.page.insertAfterMe(page);
         rr.invoke(new NextKReceiver(page, table, rr, false, order));
     }
@@ -529,7 +511,7 @@ export class HeatMapView extends RemoteTableObjectView {
         let renderer = new Filter2DReceiver(
             this.currentData.xData.description, this.currentData.yData.description,
             this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings,
-            this.tableSchema, this.page, this.currentData.samplingRate >= 1, rr, true);
+            this.tableSchema, this.page, this.currentData.samplingRate >= 1, rr, true, this.originalTableId);
         rr.invoke(renderer);
     }
 }
@@ -601,15 +583,15 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
         let rr = this.remoteObject.createHeatMapRequest(arg);
         if (this.operation != null)
             rr.setStartTime(this.operation.startTime());
-        let renderer: Renderer<HeatMapData> = null;
+        let renderer: Renderer<HeatMap> = null;
         if (this.drawHeatMap) {
             renderer = new HeatMapRenderer(this.page,
-                this.remoteObject.remoteObjectId, this.tableSchema,
+                this.remoteObject, this.tableSchema,
                 this.cds, [this.stats.first, this.stats.second],
                 samplingRate, [this.ds[0], this.ds[1]], rr);
         } else {
             renderer = new Histogram2DRenderer(this.page,
-                this.remoteObject.remoteObjectId, this.tableSchema,
+                this.remoteObject, this.tableSchema,
                 this.cds, [this.stats.first, this.stats.second], samplingRate, this.ds, rr);
         }
         rr.invoke(renderer);
@@ -627,11 +609,11 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
 /**
  * Renders a heatmap
   */
-export class HeatMapRenderer extends Renderer<HeatMapData> {
+export class HeatMapRenderer extends Renderer<HeatMap> {
     protected heatMap: HeatMapView;
 
     constructor(page: FullPage,
-                remoteTableId: string,
+                remoteTable: RemoteTableObject,
                 protected schema: Schema,
                 protected cds: ColumnDescription[],
                 protected stats: BasicColStats[],
@@ -640,13 +622,13 @@ export class HeatMapRenderer extends Renderer<HeatMapData> {
                 operation: ICancellable) {
         super(new FullPage("Heatmap", "Heatmap", page), operation, "histogram");
         page.insertAfterMe(this.page);
-        this.heatMap = new HeatMapView(remoteTableId, schema, this.page);
+        this.heatMap = new HeatMapView(remoteTable.remoteObjectId, remoteTable.originalTableId, schema, this.page);
         this.page.setDataView(this.heatMap);
         if (cds.length != 2)
             throw "Expected 2 columns, got " + cds.length;
     }
 
-    onNext(value: PartialResult<HeatMapData>): void {
+    onNext(value: PartialResult<HeatMap>): void {
         super.onNext(value);
         if (value == null)
             return;

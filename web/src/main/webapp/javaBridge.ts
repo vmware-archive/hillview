@@ -98,6 +98,14 @@ export interface CreateColumnInfo {
     outputKind: ContentsKind;
 }
 
+export class HeatMap {
+    buckets: number[][];
+    missingData: number;
+    histogramMissingD1: Histogram;
+    histogramMissingD2: Histogram;
+    totalsize: number;
+}
+
 /**
  * Corresponds to the Java class ControlMessage.Status.
  */

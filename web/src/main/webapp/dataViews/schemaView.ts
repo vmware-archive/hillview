@@ -18,10 +18,9 @@
 import {RemoteTableObjectView} from "../tableTarget";
 import {FullPage} from "../ui/fullPage";
 import {
-    NextKList, ColumnDescription, RecordOrder, Schema, RemoteObjectId, ContentsKind,
-    allContentsKind
+    NextKList, ColumnDescription, RecordOrder, Schema, RemoteObjectId, allContentsKind
 } from "../javaBridge";
-import {ContextMenu, MenuItem, SubMenu, TopMenu} from "../ui/menu";
+import {SubMenu, TopMenu} from "../ui/menu";
 import {TabularDisplay} from "../ui/tabularDisplay";
 import {TableView} from "./tableView";
 import {Dialog} from "../ui/dialog";
@@ -34,10 +33,11 @@ export class SchemaView extends RemoteTableObjectView {
     protected display: TabularDisplay;
 
     constructor(remoteObjectId: RemoteObjectId,
+                originalTableId: RemoteObjectId,
                 protected page: FullPage,
                 public schema: Schema,
                 private rowCount: number) {
-        super(remoteObjectId, page);
+        super(remoteObjectId, originalTableId, page);
         this.topLevel = document.createElement("div");
 
         this.topLevel = document.createElement("div");
@@ -147,7 +147,7 @@ export class SchemaView extends RemoteTableObjectView {
     private showTable(): void {
         let newPage = new FullPage("Table with selected columns", "Table", this.page);
         this.page.insertAfterMe(newPage);
-        let tv = new TableView(this.remoteObjectId, newPage);
+        let tv = new TableView(this.remoteObjectId, this.originalTableId, newPage);
         newPage.setDataView(tv);
         let nkl = new NextKList();
         nkl.schema = this.createSchema();

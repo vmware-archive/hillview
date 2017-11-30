@@ -98,8 +98,9 @@ public class DateListColumn
     }
 
     @Override
-    public IColumn convertKind(ContentsKind kind, String newColName, IMembershipSet set) {
-        return IDateColumn.super.convertKind(kind, newColName, set);
+    public IColumn convertKind(
+            ContentsKind kind, String newColName, IMembershipSet set, boolean allowMissing) {
+        return IDateColumn.super.convertKind(kind, newColName, set, allowMissing);
     }
 }
 

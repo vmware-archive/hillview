@@ -106,7 +106,8 @@ export class ColumnConverter  {
         };
         let rr = this.table.createStreamingRpcRequest<string>("convertColumnMap", args);
         rr.chain(operation);
-        rr.invoke(new RemoteTableReceiver(this.table.getPage(), rr, "New column " + this.newColumnName, true));
+        rr.invoke(new RemoteTableReceiver(
+            this.table.getPage(), rr, "New column " + this.newColumnName, true, this.table.originalTableId));
     }
 }
 
