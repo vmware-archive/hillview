@@ -89,7 +89,11 @@ export class LoadMenu extends RemoteObject implements IDataView {
             items.push(
                 {
                     text: "Test", help: "Run UI tests", subMenu: new SubMenu([
-                        { text: "Run", help: "Run UI tests", action: () => this.runTests() }
+                        { text: "Run", help: "Run end-to-end tests from the user interface. " +
+                        "These tests simulate the user clicking in various menus in the browser." +
+                        "The tests must be run " +
+                        "immediately after reloading the main web page. The user should " +
+                        "not use the mouse during the tests.", action: () => this.runTests() }
                     ])
                 },
                 { text: "Manage", help: "Execute cluster management operations.", subMenu: new SubMenu([

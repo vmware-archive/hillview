@@ -345,8 +345,9 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
             return "&uArr;";
     }
 
-    private addHeaderCell(thr: Node, cd: ColumnDescription) : HTMLElement {
+    private addHeaderCell(thr: Node, cd: ColumnDescription, help: string) : HTMLElement {
         let thd = document.createElement("th");
+        thd.classList.add("noselect");
         let label = cd.name;
         if (!this.isVisible(cd.name)) {
             thd.style.fontWeight = "normal";
@@ -354,8 +355,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
             label += " " +
                 this.getSortArrow(cd.name) + this.getSortIndex(cd.name);
         }
-        thd.title = "Column type is " + cd.kind + (cd.allowMissing ? ", can have missing data" : "") +
-            ".\nA mouse click with the right button will open a menu.";
+        thd.title = help;
         thd.innerHTML = label;
         thr.appendChild(thd);
         return thd;
@@ -455,6 +455,8 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         this.updateView(this.currentData, false, this.order, 0);
     }
 
+
+
     public updateView(data: NextKList, revert: boolean,
                       order: RecordOrder, elapsedMs: number) : void {
         this.selectedColumns.clear();
@@ -494,16 +496,19 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
             allowMissing: false });
 
         // Create column headers
-        this.addHeaderCell(thr, posCd);
-        this.addHeaderCell(thr, ctCd);
+        let thd = this.addHeaderCell(thr, posCd, "Position within sorted order.");
+        thd.oncontextmenu = () => {};
+        thd = this.addHeaderCell(thr, ctCd, "Number of occurrences.");
+        thd.oncontextmenu = () => {};
         if (this.schema == null)
             return;
 
         for (let i = 0; i < this.schema.length; i++) {
             let cd = new ColumnDescription(this.schema[i]);
             cds.push(cd);
-            let thd = this.addHeaderCell(thr, cd);
-            thd.classList.add("noselect");
+            let title = "Column type is " + cd.kind + (cd.allowMissing ? ", can have missing data" : "") +
+                ".\nA mouse click with the right button will open a menu.";
+            let thd = this.addHeaderCell(thr, cd, title);
             thd.className = this.columnClass(cd.name);
             thd.onclick = e => this.columnClick(i, e);
             thd.oncontextmenu = e => {
@@ -514,80 +519,84 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
                     return;
                 }
 
+                let selectedCount = this.selectedColumns.size();
                 this.contextMenu.clear();
                 if (this.order.find(cd.name) >= 0) {
                     this.contextMenu.addItem({
                         text: "Hide",
                         action: () => this.showColumns(0, true),
                         help: "Hide the data in the selected columns"
-                    });
+                    }, true);
                 } else {
                     this.contextMenu.addItem({
                         text: "Show",
                         action: () => this.showColumns(1, false),
                         help: "Show the data in the selected columns."
-                    });
+                    }, true);
                 }
+
                 //this.contextMenu.addItem({text: "Drop", action: () => this.dropColumns() });
                 this.contextMenu.addItem({
                     text: "Estimate Distinct Elements",
                     action: () => this.hLogLog(),
                     help: "Compute an estimate of the number of different values that appear in the selected column."
-                });
+                }, selectedCount == 1);
                 this.contextMenu.addItem({
                     text: "Sort ascending",
                     action: () => this.showColumns(1, true),
                     help: "Sort the data first on this colum, in increasing order."
-                });
+                }, true);
                 this.contextMenu.addItem({
                     text: "Sort descending",
                     action: () => this.showColumns(-1, true),
                     help: "Sort the data first on this column, in decreasing order"
-                });
+                }, true);
                 this.contextMenu.addItem({
                     text: "Histogram",
                     action: () => this.histogram(false),
                     help: "Plot the data in the selected columns as a histogram.  Applies to one or two columns only. " +
                     "The data cannot be of type String."
-                });
+                }, selectedCount >= 1 && selectedCount <= 2);
                 this.contextMenu.addItem({
                     text: "Heatmap",
                     action: () => this.heatMap(),
                     help: "Plot the data in the selected columns as a heatmap or as a Trellis plot of heatmaps. " +
                     "Applies to two or three columns only."
-                });
+                }, selectedCount >= 2 && selectedCount <= 3);
                 this.contextMenu.addItem({
                     text: "Heavy hitters...",
                     action: () => this.heavyHitters(false),
                     help: "Find the values that occur most frequently in the selected columns."
-                });
+                }, true);
                 this.contextMenu.addItem({
                     text: "PCA...",
                     action: () => this.pca(true),
                     help: "Perform Principal Component Analysis on a set of numeric columns. " +
                     "This produces a smaller set of columns that preserve interesting properties of the data."
-                });
+                }, selectedCount > 1 &&
+                    this.getSelectedColNames().reduce( (a, b) => a && this.isNumericColumn(b), true) );
                 this.contextMenu.addItem({
                     text: "LAMP...",
                     action: () => this.lamp(),
                     help: "Perform a Local Affine Multidimensional Projection of the data in a set of numeric columns." +
                     "This produces a 2D view of the data which can be manually adjusted.  Note: this operation is rather slow."
-                });
+                }, selectedCount > 1 &&
+                    this.getSelectedColNames().reduce( (a, b) => a && this.isNumericColumn(b), true) );
                 this.contextMenu.addItem({
                     text: "Filter...",
                     action: () => this.equalityFilter(cd.name, null, true),
                     help: "Eliminate data that matches/does not match a specific value in a selected column."
-                });
+                }, selectedCount == 1);
                 this.contextMenu.addItem({
                     text: "Convert...",
                     action: () => this.convert(cd.name),
                     help: "Convert the data in the selected column to a different data type."
-                });
+                }, selectedCount == 1);
                 this.contextMenu.addItem({
                     text: "Create column...",
                     action: () => this.addColumn(),
                     help: "Add a new column computed from the selected columns."
-                });
+                }, true);
                 this.contextMenu.show(e);
             };
         }
@@ -776,6 +785,11 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         return colNames;
     }
 
+    private isNumericColumn(colName: string): boolean {
+        let kind = TableView.findColumn(this.schema, colName).kind;
+        return kind == "Double" || kind == "Integer";
+    }
+
     private checkNumericColumns(colNames: string[], atLeast: number = 3): [boolean, string] {
         if (colNames.length < atLeast) {
             let message = `\nNot enough columns. Need at least ${atLeast}. There are ${colNames.length}`;
@@ -784,8 +798,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         let valid = true;
         let message = "";
         colNames.forEach((colName) => {
-            let kind = TableView.findColumn(this.schema, colName).kind;
-            if (kind != "Double" && kind != "Integer") {
+            if (!this.isNumericColumn(colName)) {
                 valid = false;
                 message += "\n  * Column '" + colName  + "' is not numeric.";
             }
@@ -1010,11 +1023,11 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
                     this.contextMenu.addItem({text: "Filter for " + cellValue,
                         action: () => this.equalityFilter(cd.name, value, false),
                         help: "Keep only the rows that have this value in this column."
-                    });
+                    }, true);
                     this.contextMenu.addItem({text: "Filter for not " + cellValue,
                         action: () => this.equalityFilter(cd.name, value, false, true),
                         help: "Keep only the rows that have a different value in this column."
-                    });
+                    }, true);
                     this.contextMenu.show(e);
                 };
             } else {
