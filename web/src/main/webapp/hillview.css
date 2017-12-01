@@ -226,7 +226,7 @@ svg.dataRange > g {
     transform: scale(100, 10);
 }
 
-textarea:focus, input:focus{
+textarea:focus, input:focus {
     outline: none;
 }
 
@@ -255,7 +255,7 @@ td.menuItem.disabled {
     color: grey;
 }
 
-table.menu td:hover {
+table.menu td.selected {
     background-color: rgb(126, 126, 126);
     color: rgb(255, 255, 255);
 }

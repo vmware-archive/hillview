@@ -20,7 +20,7 @@ import {Dialog, FieldKind} from "../ui/dialog";
 import {ContentsKind, Schema, BasicColStats, ColumnDescription, ColumnAndRange, RemoteObjectId} from "../javaBridge";
 import {ScaleLinear} from "d3-scale";
 import {Converters, formatDate, significantDigits} from "../util";
-import {KeyCodes, Point, Resolution, Size, SpecialChars} from "../ui/ui";
+import {Point, Resolution, Size, SpecialChars} from "../ui/ui";
 import {FullPage} from "../ui/fullPage";
 import {TextOverlay} from "../ui/textOverlay";
 import {AnyScale} from "./axisData";
@@ -68,7 +68,7 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
     }
 
     protected keyDown(ev: KeyboardEvent): void {
-        if (ev.keyCode == KeyCodes.escape)
+        if (ev.code == "Escape")
             this.cancelDrag();
     }
 

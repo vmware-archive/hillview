@@ -44,19 +44,6 @@ export interface IElement {
     getDOMRepresentation(): Element;
 }
 
-/**
- * A list of keyboard decoding values for keys used by Hillview.
- */
-export enum KeyCodes {
-    enter = 13,
-    ctrl = 17,
-    escape = 27,
-    pageUp = 33,
-    pageDown = 34,
-    end = 35,
-    home = 36
-}
-
 export const missingHtml: string = "<div class='missingData'>missing</div>";
 
 export function textToDiv(text: string): HTMLElement {

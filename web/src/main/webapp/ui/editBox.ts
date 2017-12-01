@@ -15,34 +15,60 @@
  * limitations under the License.
  */
 
-import {IHtmlElement, KeyCodes} from "./ui";
+import {IHtmlElement} from "./ui";
 
 /**
  * A textarea which allows users to type a program.
  */
 export class EditBox implements IHtmlElement {
-    topLevel: HTMLTextAreaElement;
+    topLevel: HTMLDivElement;
+    textArea: HTMLTextAreaElement;
+    pre: HTMLInputElement;
+    post: HTMLInputElement;
 
-    constructor() {
-        this.topLevel = document.createElement("textarea");
-        this.topLevel.rows = 10;
-        this.topLevel.style.flexGrow = "100";
+    constructor(pre: string, value: string, post: string) {
+        this.topLevel = document.createElement("div");
+        this.textArea = document.createElement("textarea");
+        this.textArea.style.fontFamily = "monospace";
+        this.topLevel.style.display = "flex";
+        this.topLevel.style.flexDirection = "column";
+
+        this.pre = document.createElement("input");
+        this.pre.readOnly = true;
+        this.pre.style.fontFamily = "monospace";
+
+        this.post = document.createElement("input");
+        this.post.readOnly = true;
+        this.post.style.fontFamily = "monospace";
+
+        this.textArea.rows = 10;
+        this.textArea.style.flexGrow = "100";
         // The following will prevent these events from going to the parent element
-        this.topLevel.onkeydown = e => e.stopPropagation();
-        this.topLevel.onkeypress = e => e.stopPropagation();
-        this.topLevel.onmousedown = e => e.stopPropagation();
+        this.textArea.onkeydown = e => e.stopPropagation();
+        this.textArea.onkeypress = e => e.stopPropagation();
+        this.textArea.onmousedown = e => e.stopPropagation();
+
+        this.topLevel.appendChild(this.pre);
+        this.topLevel.appendChild(this.textArea);
+        this.topLevel.appendChild(this.post);
+        if (pre != null)
+            this.pre.value = pre;
+        if (value != null)
+            this.value = value;
+        if (post != null)
+            this.post.value = post;
     }
 
     focus(): void {
-        this.topLevel.focus();
+        this.textArea.focus();
     }
 
     get value(): string {
-        return this.topLevel.value;
+        return this.textArea.value;
     }
 
     set value(value: string) {
-        this.topLevel.value = value;
+        this.textArea.value = value;
     }
 
     setTabIndex(index: number) {

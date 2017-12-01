@@ -56,6 +56,12 @@ function mouseClickEvent(shift: boolean, control: boolean): Event {
     return evt;
 }
 
+function keyboardEvent(code: string): Event {
+    let evt: KeyboardEvent = new KeyboardEvent("keydown",
+        { code: code, altKey: false, bubbles: true, cancelable: true, ctrlKey: false });
+    return evt;
+}
+
 /**
  * This class is used for testing the UI.
  */
@@ -191,7 +197,15 @@ export class Test {
                 col9.dispatchEvent(revt);
                 findElement("#hillviewPage1 .dropdown #Histogram").click();
             }
-        },{
+        }, {
+            description: "Scroll",
+            cond: () => findElement("#hillviewPage1 .idle") != null,
+            cont: () => {
+                let evt = keyboardEvent("PageDown");
+                let tableHead = findElement("#hillviewPage1 #tableContainer");
+                tableHead.dispatchEvent(evt);
+            }
+        }, {
             description: "Close some windows",
             cond: () => true,
             cont: () => {

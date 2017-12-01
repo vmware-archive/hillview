@@ -45,13 +45,16 @@ abstract class BaseMenu implements IHtmlElement {
     outer: HTMLTableElement;
     tableBody: HTMLTableSectionElement;
     cells: HTMLTableDataCellElement[];
+    selectedIndex: number;  // -1 if no item is selected
 
     constructor(mis: MenuItem[]) {
         this.items = [];
         this.cells = [];
+        this.selectedIndex = -1;
         this.outer = document.createElement("table");
         this.outer.classList.add("menu", "hidden");
         this.tableBody = this.outer.createTBody();
+        this.outer.onkeydown = e => this.keyAction(e);
         if (mis != null) {
             for (let mi of mis)
                 this.addItem(mi, true);
@@ -59,6 +62,19 @@ abstract class BaseMenu implements IHtmlElement {
     }
 
     abstract setAction(mi: MenuItem, enabled: boolean): void;
+
+    keyAction(e: KeyboardEvent): void {
+        if (e.code == "ArrowDown" && this.selectedIndex < this.cells.length - 1) {
+            this.select(this.selectedIndex + 1);
+        } else if (e.code == "ArrowUp"  && this.selectedIndex > 0) {
+            this.select(this.selectedIndex - 1);
+        } else if (e.code == "Enter" && this.selectedIndex >= 0) {
+            // emulate a mouse click on this cell
+            this.cells[this.selectedIndex].click();
+        } else if (e.code == "Escape") {
+            this.hide();
+        }
+    }
 
     /**
      * Find the position of an item based on its text.
@@ -87,6 +103,7 @@ abstract class BaseMenu implements IHtmlElement {
     }
 
     public addItem(mi: MenuItem, enabled: boolean): HTMLTableDataCellElement {
+        let index = this.items.length;
         this.items.push(mi);
         let trow = this.tableBody.insertRow();
         let cell = trow.insertCell(0);
@@ -100,8 +117,36 @@ abstract class BaseMenu implements IHtmlElement {
         if (mi.help != null)
             cell.title = mi.help;
         cell.classList.add("menuItem");
+        cell.onmouseenter = () => this.select(index);
+        cell.onmouseleave = () => this.select(-1);
         this.enable(mi.text, enabled);
         return cell;
+    }
+
+    /**
+     * Highlight a menu item (based on mouse position on keyboard actions).
+     * @param {number} index      Index of item to highlight.
+     * @param {boolean} selected  True if the item is being selected.
+     */
+    markSelect(index: number, selected: boolean): void {
+        if (index >= 0 && index < this.cells.length) {
+            let cell = this.cells[index];
+            if (selected) {
+                cell.classList.add("selected");
+                this.outer.focus();
+            } else {
+                cell.classList.remove("selected");
+            }
+        }
+    }
+
+    select(index: number): void {
+        if (this.selectedIndex >= 0)
+            this.markSelect(this.selectedIndex, false);
+        if (index < 0 || index >= this.cells.length)
+            index = -1;  // no one
+        this.selectedIndex = index;
+        this.markSelect(this.selectedIndex, true);
     }
 
     enableByIndex(index: number, enabled: boolean): void {
@@ -168,6 +213,8 @@ export class ContextMenu extends BaseMenu implements IHtmlElement {
         // Spawn the menu at the mouse's location
         this.move(e.pageX - 1, e.pageY - 1);
         this.outer.classList.remove("hidden");
+        this.outer.tabIndex = 1;  // necessary for keyboard events?
+        this.outer.focus();
     }
 
     /**
@@ -205,6 +252,7 @@ export class SubMenu extends BaseMenu implements IHtmlElement {
 
     show(): void {
         this.outer.classList.remove("hidden");
+        this.outer.tabIndex = 1;  // necessary for keyboard events?
     }
 
     setAction(mi: MenuItem, enabled: boolean): void {
