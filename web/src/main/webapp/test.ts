@@ -57,8 +57,8 @@ function mouseClickEvent(shift: boolean, control: boolean): Event {
 }
 
 function keyboardEvent(code: string): Event {
-    let evt: KeyboardEvent = document.createEvent("KeyboardEvent");
-    evt.initKeyboardEvent("keydown", true, true, window, code, 0, null, false, null);
+    let evt: KeyboardEvent = new KeyboardEvent("keydown",
+        { code: code, altKey: false, bubbles: true, cancelable: true, ctrlKey: false });
     return evt;
 }
 
@@ -201,14 +201,9 @@ export class Test {
             description: "Scroll",
             cond: () => findElement("#hillviewPage1 .idle") != null,
             cont: () => {
-                // Show a histogram
-                findElement("#hillviewPage1 thead .col8").click();
-                let evt = mouseClickEvent(false, true);
-                let col9 = findElement("#hillviewPage1 thead .col9");
-                col9.dispatchEvent(evt); // control-click
-                let revt = contextMenuEvent();
-                col9.dispatchEvent(revt);
-                findElement("#hillviewPage1 .dropdown #Histogram").click();
+                let evt = keyboardEvent("PageDown");
+                let tableHead = findElement("#hillviewPage1 #tableContainer");
+                tableHead.dispatchEvent(evt);
             }
         }, {
             description: "Close some windows",
