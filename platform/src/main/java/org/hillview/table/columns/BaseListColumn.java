@@ -69,6 +69,10 @@ public abstract class BaseListColumn extends BaseColumn implements IAppendableCo
 
     @Override
     public void append(@Nullable Object obj) {
+        if (obj == null) {
+            this.appendMissing();
+            return;
+        }
         switch (this.description.kind) {
             case Category:
             case String:
@@ -79,12 +83,10 @@ public abstract class BaseListColumn extends BaseColumn implements IAppendableCo
                 this.append((Instant)obj);
                 break;
             case Integer:
-                //noinspection RedundantCast
-                this.append((Integer)obj);
+                this.append((int)obj);
                 break;
             case Double:
-                //noinspection RedundantCast
-                this.append((Double)obj);
+                this.append((double)obj);
                 break;
             case Duration:
                 this.append((Duration)obj);
