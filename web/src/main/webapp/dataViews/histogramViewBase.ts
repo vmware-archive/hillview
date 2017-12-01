@@ -244,6 +244,7 @@ export class BucketDialog extends Dialog {
         super("Set buckets", "Change the number of buckets (bars) used to display the histogram.");
         this.addTextField("n_buckets", "Number of buckets:", FieldKind.Integer, null,
             "The number of buckets to use; must be between 1 and " + Resolution.maxBucketCount);
+        this.setCacheTitle("BucketDialog");
     }
 
     getBucketCount(): number {

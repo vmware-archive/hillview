@@ -821,6 +821,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
             pcaDialog.addTextField("projectionName", "Name for Projected columns", FieldKind.String,
                 "PCA",
                 "The projected columns will appear with this name followed by a number starting from 0");
+            pcaDialog.setCacheTitle("PCADialog");
             pcaDialog.setAction(() => {
                 let numComponents: number = pcaDialog.getFieldValueAsInt("numComponents");
                 let projectionName: string = pcaDialog.getFieldValue("projectionName");
