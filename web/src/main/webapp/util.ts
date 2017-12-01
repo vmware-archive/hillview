@@ -113,6 +113,17 @@ export function formatDate(d?: Date): string {
 }
 
 /**
+ * Converts a string into another string which can be used as a legal ID
+ * for an element.
+ * @param {string} text   Text to convert.
+ * @returns {string}      A similar text where each non-alphabetic or numeric character
+ *                        is replaced with an underscore.
+ */
+export function makeId(text: string): string {
+    return text.replace(/[^a-zA-Z0-9]/g, '_');
+}
+
+/**
  * Convert a number to an html string by keeping only the most significant digits
  * and adding a suffix.
  */
@@ -201,7 +212,7 @@ export function transpose<D>(m: D[][]): D[][] {
 }
 
 /**
- * Given a set of values in a heat map this computes two coefficients for a
+ * Given a set of values in a heatmap this computes two coefficients for a
  * linear regression from X to Y.  The result is an array with two numbers, the
  * two coefficients.  If the regression is undefined, the coefficients array is empty.
  */

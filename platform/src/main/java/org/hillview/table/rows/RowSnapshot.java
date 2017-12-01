@@ -29,16 +29,14 @@ import org.hillview.utils.Converters;
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.*;
 
 /**
  * The copy of the data in a row of the table.
  * This is quite inefficient, it should be used rarely.
  */
-public class RowSnapshot extends BaseRowSnapshot implements Serializable, IJson {
+public class RowSnapshot extends BaseRowSnapshot
+        implements Serializable, IJson  {
     /**
      * Maps a column name to a value.
      */
@@ -59,10 +57,20 @@ public class RowSnapshot extends BaseRowSnapshot implements Serializable, IJson 
         this.cachedHashcode = this.fields.hashCode();
     }
 
+    /**
+     * Creates a row snapshot taking the data from the specified table.
+     * @param data     Table storing the data.
+     * @param rowIndex Index of the row containing the data.
+     */
     public RowSnapshot(final ITable data, final int rowIndex) {
         this(data, rowIndex, data.getSchema());
     }
 
+    /**
+     * Creates a row snapshot using a specified set of values.
+     * @param schema  Schema; describes the columns in the row snapshot.
+     * @param data    One value for each column in the schema.
+     */
     private RowSnapshot(final Schema schema, final Object[] data) {
         if (schema.getColumnCount() != data.length)
             throw new RuntimeException("Mismatched schema");
@@ -148,6 +156,43 @@ public class RowSnapshot extends BaseRowSnapshot implements Serializable, IJson 
         for (Object o : this.fields.values())
             data[index++] = o;
         return IJson.gsonInstance.toJsonTree(data);
+    }
+
+    // The following are Map interface methods.
+
+    @Override
+    public int size() {
+        return this.fields.size();
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return this.fields.isEmpty();
+    }
+
+    @Override
+    public boolean containsKey(Object key) {
+        return this.fields.containsKey(key);
+    }
+
+    @Override
+    public Object get(Object key) {
+        return this.fields.get(key);
+    }
+
+    @Override
+    public Set<String> keySet() {
+        return this.fields.keySet();
+    }
+
+    @Override
+    public Collection<Object> values() {
+        return this.fields.values();
+    }
+
+    @Override
+    public Set<Entry<String, Object>> entrySet() {
+        return this.fields.entrySet();
     }
 
     @Override

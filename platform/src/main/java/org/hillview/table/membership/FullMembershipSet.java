@@ -29,6 +29,7 @@ import org.hillview.utils.Randomness;
 public class FullMembershipSet implements IMembershipSet {
     private final int rowCount;
     private static final double samplingThreshold = 0.04;
+    private final static double samplingSizeMinimum = 100; // if size is smaller than this no need to sample
 
     public FullMembershipSet(final int rowCount) throws NegativeArraySizeException {
         if (rowCount >= 0)
@@ -112,6 +113,8 @@ public class FullMembershipSet implements IMembershipSet {
      * @return the actual rate to sample the data
      */
     private double computeRate(double rate) {
+        if (this.getSize() <  FullMembershipSet.samplingSizeMinimum)
+            return 1;
         if (rate  <= FullMembershipSet.samplingThreshold)
             return rate;
         else

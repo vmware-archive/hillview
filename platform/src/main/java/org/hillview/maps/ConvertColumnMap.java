@@ -17,40 +17,34 @@
 
 package org.hillview.maps;
 
-import org.hillview.dataset.api.IMap;
 import org.hillview.table.api.*;
 
 /**
  * This map receives a column name of the input table, and returns a table with a new column,
  * containing the specified data converted to a new kind.
  */
-public class ConvertColumnMap implements IMap<ITable, ITable> {
+public class ConvertColumnMap extends AddColumnMap {
     private final String inputColName;
-    private final String newColName;
     private final ContentsKind newKind;
 
     /**
      * @param inputColName The name of the column that has to be converted to a categorical column.
      * @param newColName Name of the new column. The table cannot have a column with this name already.
      * @param newKind Kind of the column.
+     * @param insertionIndex  Index where column will be inserted.
      */
-    public ConvertColumnMap(String inputColName, String newColName, ContentsKind newKind) {
+    public ConvertColumnMap(String inputColName, String newColName,
+                            ContentsKind newKind, int insertionIndex) {
+        super(newColName, insertionIndex);
         this.inputColName = inputColName;
-        this.newColName = newColName;
         this.newKind = newKind;
     }
 
     @Override
-    public ITable apply(ITable table) {
-        if (table.getSchema().containsColumnName(this.newColName))
-            throw new IllegalArgumentException("Column " + this.newColName + " already exists in table.");
-
+    public IColumn createColumn(ITable table) {
         ColumnAndConverterDescription ccd = new ColumnAndConverterDescription(this.inputColName);
         ColumnAndConverter ccv = table.getLoadedColumn(ccd);
-        IColumn newColumn = ccv.column.convertKind(
-                this.newKind, this.newColName, table.getMembershipSet());
-        int index = table.getSchema().getColumnIndex(this.inputColName);
-
-        return table.insertColumn(newColumn, index);
+        return ccv.column.convertKind(this.newKind, this.newColName, table.getMembershipSet(),
+                ccv.column.getDescription().allowMissing);
     }
 }

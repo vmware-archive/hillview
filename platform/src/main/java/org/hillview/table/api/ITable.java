@@ -111,6 +111,7 @@ public interface ITable {
 
     /**
      * Formats the first rows in the table as a long string.
+     * @param rowsToDisplay How many rows to format.
      */
     String toLongString(int rowsToDisplay);
 }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {IColumnDescription, RecordOrder, NextKList, TopList} from "../javaBridge";
+import {IColumnDescription, RecordOrder, NextKList, TopList, RemoteObjectId} from "../javaBridge";
 import {TopMenu, SubMenu} from "../ui/menu";
 import {TableView, TableOperationCompleted} from "./tableView";
 import {RemoteObject, OnCompleteRenderer} from "../rpc";
@@ -40,14 +40,20 @@ export class HeavyHittersView extends RemoteTableObjectView {
                 public schema: IColumnDescription[],
                 public order: RecordOrder,
                 private isApprox: boolean) {
-        super(data.heavyHittersId, page);
+        super(data.heavyHittersId, tv.originalTableId, page);
         this.topLevel = document.createElement("div");
         let subMenu = new SubMenu([
-            {text: "As Table", action: () => {this.showTable();}}
+            { text: "As Table",
+                action: () => {this.showTable();},
+                help: "Show the data corresponding to the heavy elements as a tabular view." }
         ]);
-        if(isApprox == true)
-            subMenu.addItem({text: "Get exact counts", action: () => {this.exactCounts();}});
-        let menu = new TopMenu([ {text: "View", subMenu} ]);
+        subMenu.addItem({
+             text: "Get exact counts",
+             action: () => {this.exactCounts(); },
+             help: "Show the exact frequency of each item."},
+            isApprox
+        );
+        let menu = new TopMenu([ {text: "View", help: "Change the way the data is displayed.", subMenu} ]);
         this.page.setMenu(menu);
     }
 
@@ -57,7 +63,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
     public showTable(): void {
         let newPage2 = new FullPage("Frequent elements", "HeavyHitters", this.page);
         this.page.insertAfterMe(newPage2);
-        let rr = this.tv.createRpcRequest("filterHeavy", {
+        let rr = this.tv.createStreamingRpcRequest<RemoteObjectId>("filterHeavy", {
                 hittersId: this.data.heavyHittersId,
                 schema: this.schema
         });
@@ -66,7 +72,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
 
     public exactCounts(): void {
         let rr = this.tv.createCheckHeavyRequest(new RemoteObject(this.data.heavyHittersId), this.schema);
-        rr.invoke(new HeavyHittersReceiver2(this, rr));
+        rr.invoke(new HeavyHittersReceiver2(this, this.originalTableId, rr));
     }
 
     public fill(tdv: NextKList, elapsedMs: number): void {
@@ -168,6 +174,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
   */
 export class HeavyHittersReceiver2 extends OnCompleteRenderer<TopList> {
     public constructor(public hhv: HeavyHittersView,
+                       protected originalTableId: RemoteObjectId,
                        public operation: ICancellable) {
         super(hhv.page, operation, "Heavy hitters -- exact counts");
     }

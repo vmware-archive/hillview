@@ -30,6 +30,7 @@ export class TabularDisplay implements IHtmlElement {
     selectedRows: SelectionStateMachine;
     rowCount: number;
     columnCount: number;
+    colHeaderMap: Map<string, HTMLElement>;
     rows: HTMLTableRowElement[];
 
     constructor() {
@@ -44,6 +45,7 @@ export class TabularDisplay implements IHtmlElement {
         this.selectedRows = new SelectionStateMachine();
         this.rowCount = 0;
         this.columnCount = 0;
+        this.colHeaderMap = new Map<string, HTMLElement>();
         this.rows = [];
     }
 
@@ -66,27 +68,40 @@ export class TabularDisplay implements IHtmlElement {
             thr.appendChild(thd);
             thd.classList.add("noselect");
             this.columnCount++;
+            this.colHeaderMap.set(c, thd);
         }
+    }
+
+    insertRow(): HTMLTableRowElement {
+        let trow = this.tbody.insertRow();
+        let rowNo = this.rowCount;
+        trow.id = "row" + this.rowCount;
+        trow.onclick = e => this.rowClick(rowNo, e);
+        this.rows.push(trow);
+        this.rowCount++;
+        return trow;
+    }
+
+    addRowCell(trow: HTMLTableRowElement): HTMLTableCellElement {
+        let cell = trow.insertCell(trow.cells.length);
+        cell.style.textAlign = "right";
+        cell.classList.add("noselect");
+        return cell;
+    }
+
+    public addRightClickHandler(colName: string, handler: (e: Event) => void) {
+        this.colHeaderMap.get(colName).oncontextmenu = handler;
     }
 
     /**
      * Add a row of values; these are set as the innerHTML values of the cells.
      */
     public addRow(data: string[]): void {
-        let trow = this.tbody.insertRow();
-        this.rows.push(trow);
-        let rowCells = [];
-        let index = 0;
-        let rowNo = this.rowCount;
+        let trow = this.insertRow();
         for (let d of data) {
-            let cell = trow.insertCell(index++);
-            cell.style.textAlign = "right";
+            let cell = this.addRowCell(trow);
             cell.innerHTML = d;
-            cell.classList.add("noselect");
-            cell.onclick = e => this.rowClick(rowNo, e);
-            rowCells.push(cell);
         }
-        this.rowCount++;
     }
 
     public addFooter() {
@@ -100,21 +115,12 @@ export class TabularDisplay implements IHtmlElement {
      * Add a row of values; these are set as the dom children of the table cells
      */
     public addElementRow(data: Element[]): void {
-        let trow = this.tbody.insertRow();
-        this.rows.push(trow);
-        let rowCells = [];
-        let index = 0;
-        let rowNo = this.rowCount;
+        let trow = this.insertRow();
         for (let d of data) {
-            let cell = trow.insertCell(index++);
-            cell.style.textAlign = "right";
+            let cell = this.addRowCell(trow);
             cell.appendChild(d);
-            cell.classList.add("noselect");
             d.classList.add("noselect");
-            cell.onclick = e => this.rowClick(rowNo, e);
-            rowCells.push(cell);
         }
-        this.rowCount++;
     }
 
     public getSelectedRows(): Set<number> {
@@ -136,7 +142,7 @@ export class TabularDisplay implements IHtmlElement {
         this.highlightSelectedRows();
     }
 
-    private highlightSelectedRows(): void {
+    public highlightSelectedRows(): void {
         for (let i = 0; i < this.rowCount; i++) {
             let rowi = this.rows[i];
             if (this.selectedRows.has(i))

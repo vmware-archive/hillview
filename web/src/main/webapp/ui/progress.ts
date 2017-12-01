@@ -127,6 +127,8 @@ export class ProgressBar implements IHtmlElement {
 /**
  * The progress manager maintains multiple progress bars and takes care of hiding
  * them automatically when the associated operations have completed.
+ *
+ * The PM has an 'idle' class when there are no operations outstanding.
  */
 export class ProgressManager implements IHtmlElement {
     topLevel: HTMLElement;
@@ -134,6 +136,7 @@ export class ProgressManager implements IHtmlElement {
     constructor() {
         this.topLevel = document.createElement("div");
         this.topLevel.className = "progressManager";
+        this.topLevel.classList.add("idle");
     }
 
     getHTMLRepresentation(): HTMLElement {
@@ -141,6 +144,7 @@ export class ProgressManager implements IHtmlElement {
     }
 
     newProgressBar(operation: ICancellable, description: string) {
+        this.topLevel.classList.remove("idle");
         let p = new ProgressBar(this, description, operation);
         this.topLevel.appendChild(p.getHTMLRepresentation());
         return p;
@@ -148,5 +152,7 @@ export class ProgressManager implements IHtmlElement {
 
     removeProgressBar(p: ProgressBar) {
         this.topLevel.removeChild(p.getHTMLRepresentation());
+        if (this.topLevel.children.length == 0)
+            this.topLevel.classList.add("idle");
     }
 }

@@ -17,6 +17,7 @@
 
 import {d3} from "./d3-modules";
 import {IHtmlElement} from "./ui";
+import {percent} from "../util";
 
 /**
  * A scroll target is an object which supports scrolling.  These are events
@@ -47,9 +48,13 @@ export class ScrollBar implements IHtmlElement {
     end : number;
 
     private topLevel: HTMLElement;
+    private beforeG: any;
     private before: any;
+    private afterG: any;
     private after: any;
+    private barG: any;
     private bar: any;
+    private handleG: any;
     private handle: any;
     private svg: any;
     private height: number;
@@ -76,14 +81,24 @@ export class ScrollBar implements IHtmlElement {
             .attr("width", ScrollBar.barWidth)
             .attr("height", "100%");
 
-        this.before = this.svg.append("rect")
+        this.beforeG = this.svg.append("g");
+        this.beforeG
+            .append("svg:title")
+            .text("Clicking in this area will move one page up.");
+        this.before = this.beforeG
+            .append("rect")
             .attr("width", "100%")
             .attr("height", 0)
             .attr("x", 0)
             .attr("y", 0)
             .attr("fill", "lightgrey")
             .on("click", () => this.target.pageUp());
-        this.after = this.svg.append("rect")
+        this.afterG = this.svg.append("g");
+        this.afterG
+            .append("svg:title")
+            .text("Clicking in this area will move one page down.");
+        this.after = this.afterG
+            .append("rect")
             .attr("width", "100%")
             .attr("height", 0)
             .attr("x", 0)
@@ -92,14 +107,22 @@ export class ScrollBar implements IHtmlElement {
             .on("click", () => this.target.pageDown());
         // This is drawn last; it may overlap with the other two
         // if we force its dimension to be minimumSize
-        this.bar = this.svg.append("rect")
+        this.barG = this.svg.append("g");
+        this.barG
+            .append("svg:title");
+        this.bar = this.barG
+            .append("rect")
             .attr("width", "100%")
             .attr("height", 0)
             .attr("x", 0)
             .attr("y", 0)
             .attr("fill", "darkgrey");
 
-        this.handle = this.svg
+        this.handleG = this.svg.append("g");
+        this.handleG
+            .append("svg:title")
+            .text("Drag this handle with the mouse to scroll.");
+        this.handle = this.handleG
             .append("rect")
             .attr("width", "80%")
             .attr("height", 6)
@@ -159,6 +182,9 @@ export class ScrollBar implements IHtmlElement {
         }
         this.before
             .attr("height", this.start * this.height);
+        this.barG
+            .select("title")
+            .text(percent(this.start) + " - " + percent(this.end));
         this.bar
             .attr("height", barHeight)
             .attr("y", barY);

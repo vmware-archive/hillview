@@ -81,27 +81,5 @@ public final class StringArrayColumn
     public boolean isMissing(final int rowIndex){ return this.getString(rowIndex) == null;}
 
     @Override
-    public void setMissing(final int rowIndex) { this.set(rowIndex, (String)null);}
-
-    @Override
-    public IColumn convertKind(ContentsKind kind, String newColName, IMembershipSet set) {
-        IColumn newColumn;
-        switch(kind) {
-            case Category:
-                ColumnDescription cd = new ColumnDescription(newColName, ContentsKind.Category, this.description.allowMissing);
-                newColumn = new CategoryArrayColumn(cd, this.data);
-                break;
-            case Json:
-            case String:
-            case Integer:
-            case Double:
-            case Date:
-            case Duration:
-                throw new UnsupportedOperationException("Conversion from " + this.description.kind.toString() + " to " +
-                        "" + kind.toString() + " is not supported.");
-            default:
-                throw new RuntimeException("Unexpected column kind " + description.toString());
-        }
-        return newColumn;
-    }
+    public void setMissing(final int rowIndex) { this.set(rowIndex, (String)null); }
 }

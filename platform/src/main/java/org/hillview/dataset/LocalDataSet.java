@@ -38,8 +38,9 @@ import java.util.concurrent.ExecutorService;
 public class LocalDataSet<T> extends BaseDataSet<T> {
     /**
      * Actual data held by the LocalDataSet.
+     * This should be private, but we make it public for ease of testing.
      */
-    private final T data;
+    public final T data;
     /**
      * If this is set to 'true' then data processing (i.e., the map and test calls)
      * are done on a separate thread.  This is the only place where multithreading

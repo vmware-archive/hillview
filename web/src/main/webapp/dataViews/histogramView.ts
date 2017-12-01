@@ -54,18 +54,34 @@ export class HistogramView extends HistogramViewBase {
     };
     protected menu: TopMenu;
 
-    constructor(remoteObjectId: RemoteObjectId, protected tableSchema: Schema, page: FullPage) {
-        super(remoteObjectId, tableSchema, page);
+    constructor(remoteObjectId: RemoteObjectId, originalTableId: RemoteObjectId, protected tableSchema: Schema, page: FullPage) {
+        super(remoteObjectId, originalTableId, tableSchema, page);
         this.menu = new TopMenu( [
-            { text: "View", subMenu: new SubMenu([
-                { text: "refresh", action: () => { this.refresh(); } },
-                { text: "table", action: () => this.showTable() },
-                { text: "exact", action: () => this.exactHistogram() },
-                { text: "# buckets...", action: () => this.chooseBuckets() },
-                { text: "correlate...", action: () => this.chooseSecondColumn() },
+            { text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
+                { text: "refresh",
+                    action: () => { this.refresh(); },
+                    help: "Redraw this view."
+                },
+                { text: "table",
+                    action: () => this.showTable(),
+                    help: "Show the data underlying this histogram using a table view."
+                },
+                { text: "exact",
+                    action: () => this.exactHistogram(),
+                    help: "Draw this histogram without making any approximations."
+                },
+                { text: "# buckets...",
+                    action: () => this.chooseBuckets(),
+                    help: "Change the number of buckets used to draw this histogram. " +
+                        "The number of buckets must be between 1 and " + Resolution.maxBucketCount
+                },
+                { text: "correlate...",
+                    action: () => this.chooseSecondColumn(),
+                    help: "Draw a 2-dimensional histogram using this data and another column."
+                },
             ]) },
             {
-                text: "Combine", subMenu: combineMenu(this, page.pageId)
+                text: "Combine", help: "Combine data in two separate views.", subMenu: combineMenu(this, page.pageId)
             }
         ]);
 
@@ -74,19 +90,18 @@ export class HistogramView extends HistogramViewBase {
 
     // combine two views according to some operation
     combine(how: CombineOperators): void {
-        let r = SelectedObject.current.getSelected();
-        if (r == null) {
-            this.page.reportError("No view selected");
+        let r = SelectedObject.instance.getSelected(this, this.getPage().getErrorReporter());
+        if (r == null)
             return;
-        }
 
-        let title = "[" + SelectedObject.current.getPage() + "] " + CombineOperators[how];
+        let title = "[" + SelectedObject.instance.getPage() + "] " + CombineOperators[how];
         let rr = this.createZipRequest(r);
         let finalRenderer = (page: FullPage, operation: ICancellable) => {
             return new MakeHistogram(title, page, operation, this.currentData.axisData.description,
-                this.tableSchema, this.currentData.samplingRate, this.currentData.axisData.distinctStrings);
+                this.tableSchema, this.currentData.samplingRate, this.currentData.axisData.distinctStrings,
+                this.originalTableId);
         };
-        rr.invoke(new ZipReceiver(this.getPage(), rr, how, finalRenderer));
+        rr.invoke(new ZipReceiver(this.getPage(), rr, how, this.originalTableId, finalRenderer));
     }
 
     chooseSecondColumn(): void {
@@ -121,7 +136,7 @@ export class HistogramView extends HistogramViewBase {
 
         let cont = (operation: ICancellable) => {
             let r0 = this.currentData.axisData.getRangeInfo();
-            let ds = CategoryCache.instance.getDistinctStrings(colName);
+            let ds = CategoryCache.instance.getDistinctStrings(this.originalTableId, colName);
             let r1 = new RangeInfo(colName, ds != null ? ds.uniqueStrings : null);
             let distinct: DistinctStrings[] = [this.currentData.axisData.distinctStrings, ds];
             let rr = this.createRange2DRequest(r0, r1);
@@ -152,7 +167,8 @@ export class HistogramView extends HistogramViewBase {
             this.currentData.axisData.stats, this.currentData.axisData.distinctStrings,
             +bucketCount);
         let renderer = new HistogramRenderer(this.currentData.title, this.page,
-            this.remoteObjectId, this.tableSchema, axisData, rr, this.currentData.samplingRate);
+            this.remoteObjectId, this.tableSchema, axisData, rr, this.currentData.samplingRate,
+            this.originalTableId);
         rr.invoke(renderer);
     }
 
@@ -383,7 +399,7 @@ export class HistogramView extends HistogramViewBase {
     // show the table corresponding to the data in the histogram
     protected showTable(): void {
         let newPage = new FullPage("Table view", "Table", this.page);
-        let table = new TableView(this.remoteObjectId, newPage);
+        let table = new TableView(this.remoteObjectId, this.originalTableId, newPage);
         newPage.setDataView(table);
         this.page.insertAfterMe(newPage);
         table.setSchema(this.tableSchema);
@@ -430,7 +446,7 @@ export class HistogramView extends HistogramViewBase {
         let renderer = new FilterReceiver(
             filter, this.currentData.axisData.description, this.tableSchema,
             this.currentData.axisData.distinctStrings, this.currentData.samplingRate >= 1.0,
-            this.page, rr);
+            this.page, rr, this.originalTableId);
         rr.invoke(renderer);
     }
 }
@@ -447,8 +463,9 @@ class FilterReceiver extends RemoteTableRenderer {
         protected allStrings: DistinctStrings,
         protected exact: boolean,
         page: FullPage,
-        operation: ICancellable) {
-        super(page, operation, "Filter");
+        operation: ICancellable,
+        originalTableId: RemoteObjectId) {
+        super(page, operation, "Filter", originalTableId);
     }
 
     private filterDescription() {
@@ -525,7 +542,7 @@ export class RangeCollector extends Renderer<BasicColStats> {
         let axisData = new AxisData(null, this.cd, this.stats, this.allStrings, bucketCount);
         let renderer = new HistogramRenderer(this.title, this.page,
             this.remoteObject.remoteObjectId, this.tableSchema,
-            axisData, rr, samplingRate);
+            axisData, rr, samplingRate, this.remoteObject.originalTableId);
         rr.invoke(renderer);
     }
 
@@ -561,10 +578,11 @@ export class HistogramRenderer extends Renderer<Pair<Histogram, Histogram>> {
                 protected schema: Schema,
                 protected axisData: AxisData,
                 operation: ICancellable,
-                protected samplingRate: number) {
+                protected samplingRate: number,
+                originalTableId: RemoteObjectId) {
         super(new FullPage(title, "Histogram", sourcePage), operation, "histogram");
         sourcePage.insertAfterMe(this.page);
-        this.histogram = new HistogramView(remoteTableId, schema, this.page);
+        this.histogram = new HistogramView(remoteTableId, originalTableId, schema, this.page);
         this.page.setDataView(this.histogram);
     }
 
@@ -640,8 +658,9 @@ class MakeHistogram extends RemoteTableRenderer {
                        private colDesc: ColumnDescription,
                        private schema: Schema,
                        protected samplingRate: number,
-                       private allStrings: DistinctStrings) {
-        super(page, operation, "Reload");
+                       private allStrings: DistinctStrings,
+                       originalTableId: RemoteObjectId) {
+        super(page, operation, "Reload", originalTableId);
     }
 
     run(): void {
@@ -649,7 +668,7 @@ class MakeHistogram extends RemoteTableRenderer {
         if (this.colDesc.kind == "Category") {
             // Continuation invoked after the distinct strings have been obtained
             let cont = (operation: ICancellable) => {
-                let ds = CategoryCache.instance.getDistinctStrings(this.colDesc.name);
+                let ds = CategoryCache.instance.getDistinctStrings(this.originalTableId, this.colDesc.name);
                 if (ds == null)
                 // Probably an error has occurred
                     return;

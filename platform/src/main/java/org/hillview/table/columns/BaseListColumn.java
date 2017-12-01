@@ -20,9 +20,10 @@ package org.hillview.table.columns;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.IAppendableColumn;
 import org.hillview.utils.Converters;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import javax.annotation.Nullable;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.BitSet;
 
@@ -68,7 +69,31 @@ public abstract class BaseListColumn extends BaseColumn implements IAppendableCo
 
     @Override
     public void append(@Nullable Object obj) {
-        throw new NotImplementedException();
+        if (obj == null) {
+            this.appendMissing();
+            return;
+        }
+        switch (this.description.kind) {
+            case Category:
+            case String:
+            case Json:
+                this.append((String)obj);
+                break;
+            case Date:
+                this.append((Instant)obj);
+                break;
+            case Integer:
+                this.append((int)obj);
+                break;
+            case Double:
+                this.append((double)obj);
+                break;
+            case Duration:
+                this.append((Duration)obj);
+                break;
+            default:
+                throw new RuntimeException("Unexpected kind " + this.description.kind);
+        }
     }
 
     @Override

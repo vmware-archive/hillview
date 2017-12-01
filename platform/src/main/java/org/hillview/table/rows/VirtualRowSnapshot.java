@@ -23,7 +23,9 @@ import org.hillview.utils.Converters;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Set;
 
 /**
  * A pointer to a (projection of a) row in a table. The projection is
@@ -31,7 +33,18 @@ import java.util.HashMap;
  * it is allocated once, and then the row is set multiple times, probably
  * while iterating over a MembershipSet.  It allows accessing the row
  * without actually materializing the data in the row.
- * This class is NOT serializable.
+ * This class is NOT serializable and it is not thread-safe; it should only
+ * be used as a local thread variable.
+ *
+ * VirtualRowSnapshot vrs = new VirtualRowSnapshot(table);
+ * IRowIterator it = table.getMembershipSet().getIterator();
+ * int row = it.getNextRow();
+ * while (row >= 0) {
+ *     vrs.setRow(row);  // point to next row
+ *     Object val = vrs.get("Col");
+ *     ...
+ *     row = it.getNextRow();
+ * }
  */
 public class VirtualRowSnapshot extends BaseRowSnapshot {
     /**
@@ -75,6 +88,36 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
     @Override
     public int hashCode() {
         return computeHashCode(this.schema);
+    }
+
+    @Override
+    public int size() {
+        return this.columns.size();
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return this.columns.isEmpty();
+    }
+
+    @Override
+    public boolean containsKey(Object key) {
+        return this.columns.containsKey(key);
+    }
+
+   @Override
+    public Set<String> keySet() {
+        return this.columns.keySet();
+    }
+
+    @Override
+    public Collection<Object> values() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Set<Entry<String, Object>> entrySet() {
+        throw new UnsupportedOperationException();
     }
 
     @Override

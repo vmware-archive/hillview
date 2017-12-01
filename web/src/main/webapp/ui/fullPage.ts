@@ -80,6 +80,7 @@ export class FullPage implements IHtmlElement {
 
         this.pageTopLevel = document.createElement("div");
         this.pageTopLevel.className = "hillviewPage";
+        this.pageTopLevel.id = "hillviewPage" + this.pageId.toString();
         this.bottomContainer = document.createElement("div");
 
         let titleRow = document.createElement("div");
@@ -96,6 +97,8 @@ export class FullPage implements IHtmlElement {
         help.onclick = () => this.openInNewTab(this.helpUrl(viewKind));
         help.textContent = "help";
         help.className = "external-link";
+        help.style.cursor = "help";
+        help.title = "Open help documentation related to this view.";
         this.addCell(titleRow, help, true);
 
         let h1 = document.createElement("h1");
@@ -108,17 +111,20 @@ export class FullPage implements IHtmlElement {
         if (sourcePage != null) {
             h1.innerHTML += " from ";
             let refLink = this.pageReference(sourcePage.pageId);
+            refLink.title = "View which produced this one.";
             h1.appendChild(refLink);
         }
 
         let pageId = document.createElement("span");
         pageId.textContent = "[" + this.pageId + "]";
+        pageId.title = "Unique number of this view.";
         this.addCell(titleRow, pageId, true);
 
         let close = document.createElement("span");
         close.className = "close";
         close.innerHTML = "&times;";
         close.onclick = (e) => this.remove();
+        close.title = "Close this view.";
         this.addCell(titleRow, close, true);
 
         this.pageTopLevel.appendChild(this.dataDisplay.getHTMLRepresentation());

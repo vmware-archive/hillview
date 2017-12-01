@@ -16,7 +16,7 @@
  */
 
 import {d3} from "./d3-modules"
-import {IHtmlElement, Point, Resolution, Size} from "./ui";
+import {IHtmlElement, Resolution, Size} from "./ui";
 import {ContextMenu} from "./menu";
 
 /**
@@ -92,42 +92,44 @@ export class ColorLegend implements IHtmlElement {
      * The context menu is added only when a colormap change event listener is set.
      */
     private enableContextMenu() {
-        this.contextMenu = new ContextMenu([
+        this.contextMenu = new ContextMenu(this.topLevel, [
             {
                 text: "Cool",
+                help: "Use a color palette with cool colors.",
                 action: () => {
                     this.colorMap.map = d3.interpolateCool;
                     this.mapUpdated();
                 }
             }, {
                 text: "Warm",
+                help: "Use a color palette with warm colors.",
                 action: () => {
                     this.colorMap.map = d3.interpolateWarm;
                     this.mapUpdated();
                 }
             }, {
                 text: "Gray",
+                help: "Use a grayscale color palette.",
                 action: () => {
                     this.colorMap.map = (x: number) => `rgb(${Math.round(255 * (1 - x))}, ${Math.round(255 * (1 - x))}, ${Math.round(255 * (1 - x))})`;
                     this.mapUpdated();
                 }
             }, {
                 text: "Toggle log scale",
+                help: "Switch between a linear and logarithmic scale on the colormap.",
                 action: () => {
                     this.colorMap.setLogScale(!this.colorMap.logScale);
                     this.mapUpdated();
                 }
             },
         ]);
-        this.topLevel.appendChild(this.contextMenu.getHTMLRepresentation());
     }
 
-    private showContextMenu(pos: Point) {
+    private showContextMenu(event: MouseEvent) {
         /* Only show context menu if it is enabled. */
         if (this.contextMenu != null){
-            d3.event.preventDefault();
-            this.contextMenu.move(pos.x - 1, pos.y - 1);
-            this.contextMenu.show();
+            event.preventDefault();
+            this.contextMenu.show(event);
         }
     }
 
@@ -191,10 +193,7 @@ export class ColorLegend implements IHtmlElement {
             .attr("width", this.size.width)
             .attr("height", this.barHeight)
             .style("fill", `url(#gradient${this.uniqueId})`);
-        bar.on("contextmenu", () => {
-            let pos = {x: d3.event.pageX, y: d3.event.pageY};
-            this.showContextMenu(pos);
-        });
+        bar.on("contextmenu", () => this.showContextMenu(d3.event));
 
         let axisG = svg.append("g")
             .attr("transform", `translate(0, ${this.barHeight})`);

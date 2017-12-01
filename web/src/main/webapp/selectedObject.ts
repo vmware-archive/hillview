@@ -16,22 +16,35 @@
  */
 
 // Used for operations between multiple objects: the selected object
-// is a RemoteObject which can be combined with another one.
-import {RemoteObject} from "./rpc";
-import {SubMenu} from "./ui/menu";
+// is a RemoteTableObjectView which can be combined with another one.
+import {MenuItem, SubMenu} from "./ui/menu";
 import {EnumIterators} from "./util";
 import {CombineOperators} from "./javaBridge";
+import {RemoteTableObject, RemoteTableObjectView} from "./tableTarget";
+import {ErrorReporter} from "./ui/errReporter";
 
 export class SelectedObject {
-    private selected: RemoteObject = null;
+    private selected: RemoteTableObjectView = null;
     private pageId: number;  // page containing the object
 
-    select(object: RemoteObject, pageId: number) {
+    select(object: RemoteTableObjectView, pageId: number) {
         this.selected = object;
         this.pageId = pageId;
     }
 
-    getSelected(): RemoteObject {
+    /**
+     * Check if the selected object can be combined with the specified one,
+     * and if so return it.  Otherwise write an error message and return null.
+     */
+    getSelected(compatible: RemoteTableObject, reporter: ErrorReporter): RemoteTableObjectView {
+        if (this.selected == null) {
+            reporter.reportError("No object is currently selected");
+            return null;
+        }
+        if (this.selected.originalTableId != compatible.originalTableId) {
+            reporter.reportError("These two views cannot be combined because they are based on different data sets.");
+            return null;
+        }
         return this.selected;
     }
 
@@ -39,19 +52,23 @@ export class SelectedObject {
         return this.pageId;
     }
 
-    static current: SelectedObject = new SelectedObject();
+    static instance: SelectedObject = new SelectedObject();
 }
 
-export function combineMenu(ro: RemoteObject, pageId: number): SubMenu {
-    let combineMenu = [];
+export function combineMenu(ro: RemoteTableObjectView, pageId: number): SubMenu {
+    let combineMenu: MenuItem[] = [];
     combineMenu.push({
         text: "Select current",
-        action: () => { SelectedObject.current.select(ro, pageId); }});
-    combineMenu.push({text: "---", action: null});
+        action: () => { SelectedObject.instance.select(ro, pageId); },
+        help: "Save the current view; later it can be combined with another view, using one of the operations below."
+    });
+    combineMenu.push({text: "---", action: null, help: null});
     EnumIterators.getNamesAndValues(CombineOperators)
         .forEach(c => combineMenu.push({
             text: c.name,
-            action: () => { ro.combine(c.value); } }));
+            action: () => { ro.combine(c.value); },
+            help: "Combine the rows in the two views using the " + c.value + " operation"
+        }));
     return new SubMenu(combineMenu);
 }
 

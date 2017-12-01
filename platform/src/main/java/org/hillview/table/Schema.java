@@ -148,6 +148,24 @@ public final class Schema
     }
 
     /**
+     * Check whether this column name already exists.  If it does, change it to be
+     * unique.
+     * @param columnName  Column name that we plan to add to the schema.
+     * @return            A column name based on this one which is unique.
+     */
+    public String generateColumnName(String columnName) {
+        if (!this.containsColumnName(columnName))
+            return columnName;
+        int counter = 0;
+        while (true) {
+            String newName = columnName + " (" + counter + ")";
+            if (!this.containsColumnName(newName))
+                return newName;
+            counter++;
+        }
+    }
+
+    /**
      * Generates a new Schema that contains only the subset of columns contained in the subSchema.
      */
     public Schema project(final ISubSchema subSchema) {
@@ -174,13 +192,13 @@ public final class Schema
 
     @Override
     public String toString() {
-        String result = "";
+        StringBuilder result = new StringBuilder();
         String separator = "";
         for (ColumnDescription c: this.columns.values()) {
-            result += separator + c.toString();
+            result.append(separator).append(c.toString());
             separator = ", ";
         }
-        return result;
+        return result.toString();
     }
 
     @Override

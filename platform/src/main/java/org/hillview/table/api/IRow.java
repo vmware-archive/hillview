@@ -20,12 +20,15 @@ package org.hillview.table.api;
 import javax.annotation.Nullable;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Map;
 
 /**
  * Abstract interface for a row.
  * Our tables are all column-oriented, so the IRow interface should be used sparingly.
+ * The Map interface is only partially supported: rows are read-only, so
+ * some Map interface methods will throw if invoked.
  */
-public interface IRow {
+public interface IRow extends Map<String, Object> {
     /**
      * @return The number of fields in the row.
      */

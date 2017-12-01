@@ -37,7 +37,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class ToCatMapTest extends BaseTest {
-    private Table tableWithStringColumn() {
+    public static Table tableWithStringColumn() {
         ColumnDescription c0 = new ColumnDescription("Name", ContentsKind.String, false);
         ColumnDescription c1 = new ColumnDescription("Age", ContentsKind.Integer, false);
         StringArrayColumn sac = new StringArrayColumn(c0,
@@ -50,10 +50,11 @@ public class ToCatMapTest extends BaseTest {
 
     @Test
     public void testToCatMap() {
-        ITable table = this.tableWithStringColumn();
+        ITable table = ToCatMapTest.tableWithStringColumn();
         System.out.println("Table before conversion:");
         TestUtils.printTable(table);
-        IMap<ITable, ITable> map = new ConvertColumnMap("Name", "Name Categorical", ContentsKind.Category);
+        IMap<ITable, ITable> map = new ConvertColumnMap(
+                "Name", "Name Categorical", ContentsKind.Category, 1);
         ITable result = map.apply(table);
         System.out.println("Table after conversion:");
         TestUtils.printTable(result);
@@ -76,9 +77,10 @@ public class ToCatMapTest extends BaseTest {
 
     @Test
     public void testToCatMapBig() {
-        ITable table = this.tableWithStringColumn();
+        ITable table = ToCatMapTest.tableWithStringColumn();
         IDataSet<ITable> bigTable = TestTables.makeParallel(table, 3);
-        IMap<ITable, ITable> map = new ConvertColumnMap("Name", "Name Categorical", ContentsKind.Category);
+        IMap<ITable, ITable> map = new ConvertColumnMap(
+                "Name", "Name Categorical", ContentsKind.Category, 1);
 
         IDataSet<ITable> result = bigTable.blockingMap(map);
 

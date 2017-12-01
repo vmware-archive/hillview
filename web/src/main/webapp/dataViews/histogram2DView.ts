@@ -18,7 +18,7 @@
 import {d3} from "../ui/d3-modules";
 import {
     ColumnDescription, Schema, RecordOrder, ColumnAndRange, FilterDescription,
-    BasicColStats, RangeInfo, Histogram2DArgs, CombineOperators, RemoteObjectId
+    BasicColStats, RangeInfo, Histogram2DArgs, CombineOperators, RemoteObjectId, HeatMap
 } from "../javaBridge";
 import {TopMenu, SubMenu} from "../ui/menu";
 import {
@@ -31,8 +31,8 @@ import {TextOverlay} from "../ui/textOverlay";
 import {AnyScale, AxisData} from "./axisData";
 import { HistogramViewBase, BucketDialog } from "./histogramViewBase";
 import {TableView, NextKReceiver} from "./tableView";
-import {HeatMapData, Range2DCollector} from "./heatMapView";
-import {RemoteTableRenderer, ZipReceiver} from "../tableTarget";
+import {Range2DCollector} from "./heatMapView";
+import {RemoteTableObject, RemoteTableRenderer, ZipReceiver} from "../tableTarget";
 import {DistinctStrings} from "../distinctStrings";
 import {combineMenu, SelectedObject} from "../selectedObject";
 
@@ -82,20 +82,46 @@ export class Histogram2DView extends HistogramViewBase {
     protected barWidth: number;  // in pixels
     protected max: number;  // maximum count displayed (total size of stacked bars)
 
-    constructor(remoteObjectId: RemoteObjectId, protected tableSchema: Schema, page: FullPage) {
-        super(remoteObjectId, tableSchema, page);
-        this.menu = new TopMenu( [
-            { text: "View", subMenu: new SubMenu([
-                { text: "refresh", action: () => { this.refresh(); } },
-                { text: "table", action: () => this.showTable() },
-                { text: "exact", action: () => { this.exactHistogram(); } },
-                { text: "#buckets", action: () => this.chooseBuckets() },
-                { text: "swap axes", action: () => { this.swapAxes(); } },
-                { text: "heatmap", action: () => { this.heatmap(); } },
-                { text: "percent/value", action: () => { this.normalized = !this.normalized; this.refresh(); } },
-            ]) },
-            {
-                text: "Combine", subMenu: combineMenu(this, page.pageId)
+    constructor(remoteObjectId: RemoteObjectId, originalTableId: RemoteObjectId,
+                protected tableSchema: Schema, page: FullPage) {
+        super(remoteObjectId, originalTableId, tableSchema, page);
+        this.menu = new TopMenu( [{
+            text: "View",
+            help: "Change the way the data is displayed.",
+            subMenu: new SubMenu([{
+                text: "refresh",
+                action: () => { this.refresh(); },
+                help: "Redraw this view"
+            }, {
+                text: "table",
+                action: () => this.showTable(),
+                help: "Show the data underlying this plot in a tabular view. "
+            },{
+                text: "exact",
+                action: () => { this.exactHistogram(); },
+                help: "Draw this histogram without approximations."
+            },{
+                text: "#buckets",
+                action: () => this.chooseBuckets(),
+                help: "Change the number of buckets used for drawing the histogram." +
+                    "The number must be between 1 and " + Resolution.maxBucketCount
+            }, {
+                text: "swap axes",
+                action: () => { this.swapAxes(); },
+                help: "Redraw this histogram by swapping the X and Y axes."
+            }, {
+                text: "heatmap",
+                action: () => { this.heatmap(); },
+                help: "Plot this data as a heatmap view."
+            }, {
+                text: "relative/absolute",
+                action: () => { this.normalized = !this.normalized; this.refresh(); },
+                help: "In an absolute plot the Y axis represents the size for a bucket. " +
+                "In a relative plot all bars are normalized to 100% on the Y axis."
+            }]) }, {
+                text: "Combine",
+                help: "Combine data in two separate views.",
+                subMenu: combineMenu(this, page.pageId)
             }
         ]);
 
@@ -114,11 +140,9 @@ export class Histogram2DView extends HistogramViewBase {
 
     // combine two views according to some operation
     combine(how: CombineOperators): void {
-        let r = SelectedObject.current.getSelected();
-        if (r == null) {
-            this.page.reportError("No view selected");
+        let r = SelectedObject.instance.getSelected(this, this.page.getErrorReporter());
+        if (r == null)
             return;
-        }
 
         let rr = this.createZipRequest(r);
         let renderer = (page: FullPage, operation: ICancellable) => {
@@ -126,9 +150,9 @@ export class Histogram2DView extends HistogramViewBase {
                 page, operation,
                 [this.currentData.xData.description, this.currentData.yData.description],
                 [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
-                this.tableSchema, this.currentData.samplingRate >= 1, false);
+                this.tableSchema, this.currentData.samplingRate >= 1, false, this.originalTableId);
         };
-        rr.invoke(new ZipReceiver(this.getPage(), rr, how, renderer));
+        rr.invoke(new ZipReceiver(this.getPage(), rr, how, this.originalTableId, renderer));
     }
 
     public swapAxes(): void {
@@ -192,7 +216,7 @@ export class Histogram2DView extends HistogramViewBase {
         };
         let rr = this.createHeatMapRequest(args);
         let renderer = new Histogram2DRenderer(this.page,
-            this.remoteObjectId, this.tableSchema,
+            this, this.tableSchema,
             [this.currentData.xData.description, this.currentData.yData.description],
             [this.currentData.xData.stats, this.currentData.yData.stats],
             samplingRate,
@@ -435,7 +459,7 @@ export class Histogram2DView extends HistogramViewBase {
             this.legendScale = scaleAxis.scale;
             let legendAxis = scaleAxis.axis;
             legendSvg.append("g")
-                .attr("transform", `translate(${this.legendRect.lowerLeft().x}, 
+                .attr("transform", `translate(${this.legendRect.lowerLeft().x},
                                               ${this.legendRect.lowerLeft().y})`)
                 .call(legendAxis);
         }
@@ -502,29 +526,42 @@ export class Histogram2DView extends HistogramViewBase {
 
         let xs = HistogramViewBase.invert(position[0], this.xScale,
             this.currentData.xData.description.kind, this.currentData.xData.distinctStrings);
-        let y = Math.round(this.yScale.invert(position[1]));
+        let y = Math.round(this.yScale.invert(mouseY));
         let ys = significantDigits(y);
+        let scale = 1.0;
         if (this.normalized)
             ys += "%";
 
         // Find out the rectangle where the mouse is
         let value = "", size = "";
-        let xIndex = Math.floor(position[0] / this.barWidth);
-        if (xIndex >= 0 && xIndex < this.currentData.data.length && y >= 0) {
+        let xIndex = Math.floor(mouseX / this.barWidth);
+        if (xIndex >= 0 && xIndex < this.currentData.data.length &&
+            y >= 0 && mouseY < this.chartSize.height) {
             let values: number[] = this.currentData.data[xIndex];
-            let yTotal = 0;
-            for (let i = 0; i < values.length; i++) {
-                yTotal += values[i];
-                if (yTotal >= y) {
-                    size = significantDigits(values[i]);
-                    value = this.currentData.yData.bucketDescription(i);
-                    break;
+
+            let total = 0;
+            for (let i = 0; i < values.length; i++)
+                total += values[i];
+            total += this.currentData.yData.missing.buckets[xIndex];
+            if (total > 0) {
+                // There could be no data for this specific x value
+                if (this.normalized)
+                    scale = 100 / total;
+
+                let yTotal = 0;
+                for (let i = 0; i < values.length; i++) {
+                    yTotal += values[i] * scale;
+                    if (yTotal >= y) {
+                        size = significantDigits(values[i]);
+                        value = this.currentData.yData.bucketDescription(i);
+                        break;
+                    }
                 }
-            }
-            let missing = this.currentData.yData.missing.buckets[xIndex];
-            if (value == "" && yTotal + missing >= y) {
-                value = "missing";
-                size = significantDigits(missing);
+                let missing = this.currentData.yData.missing.buckets[xIndex] * scale;
+                if (value == "" && yTotal + missing >= y) {
+                    value = "missing";
+                    size = significantDigits(missing);
+                }
             }
             // else value is ""
         }
@@ -633,7 +670,8 @@ export class Histogram2DView extends HistogramViewBase {
             this.currentData.xData.distinctStrings,
             this.currentData.yData.distinctStrings,
             this.tableSchema,
-            this.page, this.currentData.samplingRate >= 1.0, rr, false);
+            this.page, this.currentData.samplingRate >= 1.0, rr, false,
+            this.originalTableId);
         rr.invoke(renderer);
     }
 
@@ -675,7 +713,7 @@ export class Histogram2DView extends HistogramViewBase {
 
     // show the table corresponding to the data in the histogram
     protected showTable(): void {
-        let table = new TableView(this.remoteObjectId, this.page);
+        let table = new TableView(this.remoteObjectId, this.originalTableId, this.page);
         table.setSchema(this.tableSchema);
 
         let order =  new RecordOrder([ {
@@ -707,8 +745,9 @@ export class Filter2DReceiver extends RemoteTableRenderer {
                 page: FullPage,
                 protected exact: boolean,
                 operation: ICancellable,
-                protected heatMap: boolean) {
-        super(page, operation, "Filter");
+                protected heatMap: boolean,
+                originalTableId: RemoteObjectId) {
+        super(page, operation, "Filter", originalTableId);
     }
 
     public run(): void {
@@ -733,8 +772,9 @@ export class Make2DHistogram extends RemoteTableRenderer {
                        protected ds: DistinctStrings[],
                        private schema: Schema,
                        private exact: boolean,
-                       private heatMap: boolean) {
-        super(page, operation, "Reload");
+                       private heatMap: boolean,
+                       originalTableId: RemoteObjectId) {
+        super(page, operation, "Reload", originalTableId);
     }
 
     run(): void {
@@ -752,11 +792,11 @@ export class Make2DHistogram extends RemoteTableRenderer {
  * Receives partial results and renders a 2D histogram.
  * The 2D histogram data and the HeatMap data use the same data structure.
  */
-export class Histogram2DRenderer extends Renderer<HeatMapData> {
+export class Histogram2DRenderer extends Renderer<HeatMap> {
     protected histogram: Histogram2DView;
 
     constructor(page: FullPage,
-                remoteTableId: string,
+                protected remoteObject: RemoteTableObject,
                 protected schema: Schema,
                 protected cds: ColumnDescription[],
                 protected stats: BasicColStats[],
@@ -766,13 +806,14 @@ export class Histogram2DRenderer extends Renderer<HeatMapData> {
         super(new FullPage("2D Histogram " + cds[0].name + ", " + cds[1].name, "2DHistogram", page),
             operation, "histogram");
         page.insertAfterMe(this.page);
-        this.histogram = new Histogram2DView(remoteTableId, schema, this.page);
+        this.histogram = new Histogram2DView(
+            this.remoteObject.remoteObjectId, this.remoteObject.originalTableId, schema, this.page);
         this.page.setDataView(this.histogram);
         if (cds.length != 2 || stats.length != 2 || uniqueStrings.length != 2)
             throw "Expected 2 columns";
     }
 
-    onNext(value: PartialResult<HeatMapData>): void {
+    onNext(value: PartialResult<HeatMap>): void {
         super.onNext(value);
         if (value == null)
             return;

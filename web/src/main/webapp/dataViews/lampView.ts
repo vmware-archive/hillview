@@ -19,7 +19,8 @@ import {d3} from "../ui/d3-modules";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {TopMenu, SubMenu} from "../ui/menu";
 import {
-    RangeInfo, BasicColStats, Schema, RecordOrder, ColumnAndRange, Histogram2DArgs, TableSummary, RemoteObjectId
+    RangeInfo, BasicColStats, Schema, RecordOrder, ColumnAndRange, Histogram2DArgs, TableSummary, RemoteObjectId,
+    HeatMap
 } from "../javaBridge";
 import {Renderer, RpcRequest, OnCompleteRenderer} from "../rpc";
 import {PartialResult, clamp, Pair, ICancellable, Seed} from "../util";
@@ -27,7 +28,6 @@ import {Point, PointSet, Resolution} from "../ui/ui";
 import {FullPage} from "../ui/fullPage";
 import {ColorLegend, ColorMap} from "../ui/colorLegend";
 import {TableView, NextKReceiver} from "./tableView";
-import {HeatMapData} from "./heatMapView";
 import {HeatMapArrayDialog} from "./trellisHeatMapView";
 import {RemoteTableObject, RemoteTableObjectView, RemoteTableRenderer} from "../tableTarget";
 
@@ -42,7 +42,7 @@ class LampView extends RemoteTableObjectView {
     private minY: number;
     private maxX: number;
     private maxY: number;
-    private maxVal: number; // Maximum value in the heat map
+    private maxVal: number; // Maximum value in the heatmap
     private heatMapCanvas: any;
     private heatMapChart: any;
     private controlPointsCanvas: any;
@@ -56,19 +56,32 @@ class LampView extends RemoteTableObjectView {
     private colorLegend: ColorLegend;
     private lampColNames: string[];
 
-    constructor(private originalTableObject: RemoteTableObject, private originalSchema,
+    constructor(private tableObject: RemoteTableObject, private originalSchema,
                 page: FullPage, private controlPointsId, private selectedColumns) {
-        super(originalTableObject.remoteObjectId, page);
+        super(tableObject.remoteObjectId, tableObject.originalTableId, page);
         this.topLevel = document.createElement("div");
         this.topLevel.classList.add("chart");
         this.topLevel.classList.add("lampView");
 
         let menu = new TopMenu( [
-            { text: "View", subMenu: new SubMenu([
-                { text: "refresh", action: () => { this.refresh(); } },
-                { text: "update ranges", action: () => { this.fetchNewRanges(); } },
-                { text: "table", action: () => { this.showTable(); } },
-                { text: "3D heat map...", action: () => { this.heatMap3D(); } },
+            { text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
+                { text: "refresh",
+                    action: () => { this.refresh(); },
+                    help: "Redraw this view."
+                },
+                { text: "update ranges",
+                    action: () => { this.fetchNewRanges(); },
+                    help: "Redraw this view such that all data fits on screen."
+                },
+                { text: "table",
+                    action: () => { this.showTable(); },
+                    help: "Show the data underlying this view using a table."
+                },
+                { text: "3D heatmap...",
+                    action: () => { this.heatMap3D(); },
+                    help: "Specify a categorical column and replot this data" +
+                    " grouped on values of that column."
+                },
             ]) }
         ]);
         this.page.setMenu(menu);
@@ -148,7 +161,7 @@ class LampView extends RemoteTableObjectView {
         this.applyLAMP();
     }
 
-    public updateHeatMap(heatMap: HeatMapData, lampTime: number) {
+    public updateHeatMap(heatMap: HeatMap, lampTime: number) {
         this.getPage().reportError(`LAMP completed in ${lampTime} s.`);
 
         this.xDots = heatMap.buckets.length;
@@ -222,7 +235,7 @@ class LampView extends RemoteTableObjectView {
             xBucketCount: xBuckets,
             yBucketCount: yBuckets
         };
-        let rr = this.originalTableObject.createLAMPMapRequest(this.controlPointsId, this.selectedColumns, this.controlPoints, this.lampColNames);
+        let rr = this.tableObject.createLAMPMapRequest(this.controlPointsId, this.selectedColumns, this.controlPoints, this.lampColNames);
         rr.invoke(new LAMPMapReceiver(this.page, rr, this, arg));
     }
 
@@ -296,7 +309,7 @@ class LampView extends RemoteTableObjectView {
     private showTable() {
         let page = new FullPage("Table", "Table", this.page);
         this.getPage().insertAfterMe(page);
-        let table = new TableView(this.lampTableObject.remoteObjectId, page);
+        let table = new TableView(this.lampTableObject.remoteObjectId, this.lampTableObject.originalTableId, page);
         page.setDataView(table);
         let rr = this.lampTableObject.createGetSchemaRequest();
         rr.invoke(new NextKReceiver(this.page, table, rr, false, new RecordOrder([])));
@@ -398,7 +411,7 @@ export class LAMPDialog extends Dialog {
 
 class ControlPointsProjector extends RemoteTableRenderer {
     constructor(page, operation, private tableObject: RemoteTableObject, private selectedColumns, private schema) {
-        super(page, operation, "Sampling control points");
+        super(page, operation, "Sampling control points", tableObject.originalTableId);
     }
 
     run() {
@@ -430,7 +443,7 @@ class ControlPointsRenderer extends Renderer<PointSet> {
 class LAMPMapReceiver extends RemoteTableRenderer {
     constructor(page: FullPage, operation: ICancellable, private cpView: LampView,
                 private arg: Histogram2DArgs) {
-        super(page, operation, "Computing LAMP");
+        super(page, operation, "Computing LAMP", cpView.originalTableId);
     }
 
     run() {
@@ -442,14 +455,14 @@ class LAMPMapReceiver extends RemoteTableRenderer {
     }
 }
 
-class LAMPHeatMapReceiver extends Renderer<HeatMapData> {
-    private heatMap: HeatMapData;
+class LAMPHeatMapReceiver extends Renderer<HeatMap> {
+    private heatMap: HeatMap;
     constructor(page: FullPage, operation: ICancellable,
                 private controlPointsView: LampView, private lampTime: number) {
-        super(page, operation, "Computing heat map")
+        super(page, operation, "Computing heatmap")
     }
 
-    onNext(result: PartialResult<HeatMapData>) {
+    onNext(result: PartialResult<HeatMap>) {
         super.onNext(result);
         this.heatMap = result.data;
         if (this.heatMap != null)

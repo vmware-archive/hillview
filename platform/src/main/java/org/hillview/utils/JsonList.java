@@ -154,4 +154,7 @@ public class JsonList<T> implements IJson, List<T> {
     public List<T> subList(int fromIndex, int toIndex) {
         return new JsonList<T>(this.data.subList(fromIndex, toIndex));
     }
+
+    @Override
+    public String toString() { return this.data.toString(); }
 }

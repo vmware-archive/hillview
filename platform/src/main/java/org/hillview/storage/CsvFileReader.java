@@ -20,12 +20,12 @@ package org.hillview.storage;
 import com.univocity.parsers.csv.CsvFormat;
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
-import org.hillview.table.api.IAppendableColumn;
+import org.hillview.table.api.*;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.Table;
-import org.hillview.table.api.ContentsKind;
-import org.hillview.table.api.ITable;
+import org.hillview.table.membership.FullMembershipSet;
+import org.hillview.table.rows.GuessSchema;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
 
@@ -98,7 +98,7 @@ public class CsvFileReader extends TextFileReader {
             if (this.actualSchema != null)
                 settings.setMaxColumns(this.actualSchema.getColumnCount());
             else
-                settings.setMaxColumns(1024);
+                settings.setMaxColumns(50000);
             CsvParser reader = new CsvParser(settings);
             reader.beginParsing(file);
 
@@ -114,6 +114,7 @@ public class CsvFileReader extends TextFileReader {
                     for (String col : line) {
                         if ((col == null) || col.isEmpty())
                             col = this.actualSchema.newColumnName("Column_" + Integer.toString(index));
+                        col = this.actualSchema.newColumnName(col);
                         ColumnDescription cd = new ColumnDescription(col,
                                 ContentsKind.String,
                                 this.configuration.allowMissingData);
@@ -155,10 +156,29 @@ public class CsvFileReader extends TextFileReader {
                 this.append(line);
             }
 
+            IColumn[] sealed = new IColumn[this.columns.length];
             reader.stopParsing();
-            for (IAppendableColumn c: this.columns)
-                c.seal();
-            return new Table(columns);
+            IMembershipSet ms = null;
+            for (int ci = 0; ci < this.columns.length; ci++) {
+                IAppendableColumn c = this.columns[ci];
+                IColumn s = c.seal();
+                if (ms == null)
+                    ms = new FullMembershipSet(s.sizeInRows());
+                if (this.configuration.schema == null) {
+                    GuessSchema gs = new GuessSchema();
+                    GuessSchema.SchemaInfo info = gs.guess((IStringColumn)s);
+                    if (info.kind != ContentsKind.String &&
+                            info.kind != ContentsKind.None)  // all elements are null
+                        sealed[ci] = s.convertKind(info.kind, c.getName(), ms, info.allowMissing);
+                    else
+                        sealed[ci] = s;
+                } else {
+                    sealed[ci] = s;
+                }
+                Converters.checkNull(sealed[ci]);
+            }
+
+            return new Table(sealed);
         } finally {
             file.close();
         }

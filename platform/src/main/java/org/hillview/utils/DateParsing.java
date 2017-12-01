@@ -64,6 +64,7 @@ public class DateParsing {
                 put("^\\d{1,2}\\s[a-z]{3}\\s\\d{4}\\s\\d{1,2}:\\d{2}:\\d{2}$", "dd MMM yyyy HH:mm:ss");
                 put("^\\d{4}/\\d{1,2}/\\d{1,2}\\s\\d{1,2}:\\d{2}:\\d{2}$", "yyyy/MM/dd HH:mm:ss");
                 put("^\\d{1,2}/\\d{1,2}/\\d{4}\\s\\d{1,2}:\\d{2}:\\d{2}$", "MM/dd/yyyy HH:mm:ss");
+                put("^\\d{1,2}/\\d{1,2}/\\d{4}\\s\\d{1,2}:\\d{2}:\\d{2}.\\d{3}$", "MM/dd/yyyy HH:mm:ss.SSS");
                 put("^\\d{1,2}-\\d{1,2}-\\d{4}\\s\\d{1,2}:\\d{2}:\\d{2}$", "dd-MM-yyyy HH:mm:ss");
                 put("^\\d{1,2}-\\d{1,2}-\\d{4}\\s\\d{1,2}:\\d{2}$", "dd-MM-yyyy HH:mm");
                 put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s\\d{1,2}:\\d{2}$", "yyyy-MM-dd HH:mm");
@@ -103,6 +104,7 @@ public class DateParsing {
 
     @SuppressWarnings("UnnecessaryContinue")
     public DateParsing(String s) {
+        s = s.trim();
         boolean[] asDate = {false, true};
 
         for (boolean b : asDate) {
@@ -141,11 +143,11 @@ public class DateParsing {
     public Instant parse(String s) {
         Converters.checkNull(this.parserFormatter);
         if (this.parseAsDate) {
-            return LocalDate.parse(s, this.parserFormatter)
+            return LocalDate.parse(s.trim(), this.parserFormatter)
                     .atStartOfDay(ZoneId.systemDefault())
                     .toInstant();
         } else {
-            return LocalDateTime.parse(s, this.parserFormatter)
+            return LocalDateTime.parse(s.trim(), this.parserFormatter)
                     .atZone(ZoneId.systemDefault())
                     .toInstant();
         }

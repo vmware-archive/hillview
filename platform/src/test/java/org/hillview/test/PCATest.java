@@ -20,7 +20,7 @@ package org.hillview.test;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.maps.LinearProjectionMap;
 import org.hillview.sketches.CorrMatrix;
-import org.hillview.sketches.FullCorrelationSketch;
+import org.hillview.sketches.PCACorrelationSketch;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.LinAlg;
 import org.hillview.utils.TestTables;
@@ -32,29 +32,43 @@ import org.junit.Test;
 public class PCATest extends BaseTest {
     @Test
     public void testLinearDataset() {
-        ITable table = TestTables.getLinearTable(10000, 30);
+        int size = 100000;
+        int numFrags = 10;
+        int numCols  = 3;
+        ITable table = TestTables.getLinearTable(size, numCols);
+        //ITable table = TestTables.getMissingIntTable(size, numCols);
         String[] colNames = table.getSchema().getColumnNames();
-        IDataSet<ITable> dataset = TestTables.makeParallel(table, 1000);
+        IDataSet<ITable> dataset = TestTables.makeParallel(table, size/numFrags);
 
-        FullCorrelationSketch fcs = new FullCorrelationSketch(colNames);
-        CorrMatrix cm = dataset.blockingSketch(fcs);
+        PCACorrelationSketch fcs = new PCACorrelationSketch(colNames, size, 30202);
+        CorrMatrix cm1 = dataset.blockingSketch(fcs);
+        PCACorrelationSketch fcs2 = new PCACorrelationSketch(colNames);
+        CorrMatrix cm2 = dataset.blockingSketch(fcs2);
 
-        DoubleMatrix corrMatrix = new DoubleMatrix(cm.getCorrelationMatrix());
+        DoubleMatrix corrMatrix1 = new DoubleMatrix(cm1.getCorrelationMatrix());
         // Get just the eigenvector corresponding to the largest eigenvalue (because we know the data is approximately
         // linear).
-        DoubleMatrix eigenVectors = LinAlg.eigenVectors(corrMatrix, 1);
-        eigenVectors.print();
+        DoubleMatrix eigenVectors1 = LinAlg.eigenVectors(corrMatrix1, 1);
+        DoubleMatrix corrMatrix2 = new DoubleMatrix(cm2.getCorrelationMatrix());
+        DoubleMatrix eigenVectors2 = LinAlg.eigenVectors(corrMatrix2, 1);
 
-        for (int i = 2; i < eigenVectors.columns; i++) {
+        System.out.println(cm1.toString());
+        System.out.println(cm2.toString());
+        eigenVectors1.print();
+        eigenVectors2.print();
+
+        for (int i = 2; i < eigenVectors1.columns; i++) {
             // The eigenvector should have reasonably large components in the first two columns, compared to the
             // other components in the eigenvector.
             Assert.assertTrue(
                     "First component of eigenvector not large enough.",
-                    Math.abs(eigenVectors.get(0, 0)) > 3 * Math.abs(eigenVectors.get(0, i))
+                    Math.abs(eigenVectors1.get(0, 0)) >
+                            3 * Math.abs(eigenVectors1.get(0, i))
             );
             Assert.assertTrue(
                     "Second component of eigenvector not large enough.",
-                    Math.abs(eigenVectors.get(0, 1)) > 3 * Math.abs(eigenVectors.get(0, i))
+                    Math.abs(eigenVectors1.get(0, 1)) >
+                            3 * Math.abs(eigenVectors1.get(0, i))
             );
         }
     }
@@ -64,7 +78,7 @@ public class PCATest extends BaseTest {
         try {
             ITable table = TestUtils.loadTableFromCSV("../data", "mnist.csv", "mnist.schema");
             String[] numericColNames = TestUtils.getNumericColumnNames(table);
-            FullCorrelationSketch fcs = new FullCorrelationSketch(numericColNames);
+            PCACorrelationSketch fcs = new PCACorrelationSketch(numericColNames);
             CorrMatrix cm = fcs.create(table);
             DoubleMatrix corrMatrix = new DoubleMatrix(cm.getCorrelationMatrix());
             DoubleMatrix eigenVectors = LinAlg.eigenVectors(corrMatrix, 2);

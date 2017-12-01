@@ -79,4 +79,8 @@ public class DistinctStrings implements IJson {
     public Iterable<String> getStrings() {
         return this.uniqueStrings;
     }
+
+    public String toString() {
+        return this.uniqueStrings.toString();
+    }
 }

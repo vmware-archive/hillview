@@ -27,19 +27,23 @@ import {IDataView} from "./ui/dataview";
 import {FullPage} from "./ui/fullPage";
 import {
     BasicColStats,
-    CombineOperators, FilterDescription, Histogram, Histogram3DArgs, HistogramArgs, HLogLog,
+    CombineOperators, CreateColumnInfo, FilterDescription, HeatMap, Histogram, Histogram3DArgs, HistogramArgs, HLogLog,
     IColumnDescription, NextKList, RangeInfo, RecordOrder, RemoteObjectId, Schema, TableSummary, TopList
 } from "./javaBridge";
 import {Histogram2DArgs} from "./javaBridge";
 import {SelectedObject} from "./selectedObject";
-import {HeatMapData} from "./dataViews/heatMapView";
 import {HeatMapArrayData} from "./dataViews/trellisHeatMapView";
 
 /**
  * This class methods that correspond directly to TableTarget.java methods.
  */
 export class RemoteTableObject extends RemoteObject {
-    constructor(remoteObjectId: RemoteObjectId) {
+    /**
+     * Create a reference to a remote table target.
+     * @param {RemoteObjectId} remoteObjectId   Id of remote table on the web server.
+     * @param originalTableId                   Id of the table that this one is derived from.
+     */
+    constructor(remoteObjectId: RemoteObjectId, public originalTableId: RemoteObjectId) {
         super(remoteObjectId);
     }
 
@@ -116,11 +120,12 @@ export class RemoteTableObject extends RemoteObject {
         });
     }
 
-    public createProjectToEigenVectorsRequest(r: RemoteObject, dimension: number):
-            RpcRequest<PartialResult<RemoteObjectId>> {
+    public createProjectToEigenVectorsRequest(r: RemoteObject, dimension: number, projectionName: string):
+    RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<RemoteObjectId>("projectToEigenVectors", {
             id: r.remoteObjectId,
-            numComponents: dimension
+            numComponents: dimension,
+            projectionName: projectionName
         });
     }
 
@@ -129,9 +134,18 @@ export class RemoteTableObject extends RemoteObject {
         return this.createStreamingRpcRequest<RemoteObjectId>("filterEquality", filter);
     }
 
-    public createCorrelationMatrixRequest(columnNames: string[]):
-            RpcRequest<PartialResult<RemoteObjectId>> {
-        return this.createStreamingRpcRequest<RemoteObjectId>("correlationMatrix", {columnNames: columnNames});
+    public createCorrelationMatrixRequest(columnNames: string[], totalRows: number, toSample: boolean):
+RpcRequest<PartialResult<RemoteObjectId>> {
+        return this.createStreamingRpcRequest<RemoteObjectId>("correlationMatrix", {
+            columnNames: columnNames,
+            totalRows: totalRows,
+            seed: Seed.instance.get(),
+            toSample: toSample
+        });
+    }
+
+    public createCreateColumnRequest(c: CreateColumnInfo): RpcRequest<PartialResult<string>> {
+        return this.createStreamingRpcRequest<string>("createColumn", c);
     }
 
     public createFilterRequest(f: FilterDescription): RpcRequest<PartialResult<RemoteObjectId>> {
@@ -143,8 +157,8 @@ export class RemoteTableObject extends RemoteObject {
         return this.createStreamingRpcRequest<RemoteObjectId>("filter2DRange", {first: xRange, second: yRange});
     }
 
-    public createHeatMapRequest(info: Histogram2DArgs): RpcRequest<PartialResult<HeatMapData>> {
-        return this.createStreamingRpcRequest<HeatMapData>("heatMap", info);
+    public createHeatMapRequest(info: Histogram2DArgs): RpcRequest<PartialResult<HeatMap>> {
+        return this.createStreamingRpcRequest<HeatMap>("heatMap", info);
     }
 
     public createHeatMap3DRequest(info: Histogram3DArgs):
@@ -193,8 +207,8 @@ export class RemoteTableObject extends RemoteObject {
 export abstract class RemoteTableObjectView extends RemoteTableObject implements IDataView {
     protected topLevel: HTMLElement;
 
-    constructor(remoteObjectId: RemoteObjectId, protected page: FullPage) {
-        super(remoteObjectId);
+    constructor(remoteObjectId: RemoteObjectId, originalTableId: RemoteObjectId, protected page: FullPage) {
+        super(remoteObjectId, originalTableId);
         this.setPage(page);
     }
 
@@ -211,7 +225,7 @@ export abstract class RemoteTableObjectView extends RemoteTableObject implements
     }
 
     selectCurrent(): void {
-        SelectedObject.current.select(this, this.page.pageId);
+        SelectedObject.instance.select(this, this.page.pageId);
     }
 
     public abstract refresh(): void;
@@ -229,14 +243,18 @@ export abstract class RemoteTableRenderer extends OnCompleteRenderer<RemoteObjec
 
     public constructor(public page: FullPage,
                        public operation: ICancellable,
-                       public description: string) {
+                       public description: string,
+                       protected originalTableId: RemoteObjectId) { // may be null for the first table
         super(page, operation, description);
         this.remoteObject = null;
     }
 
     run(): void {
-        if (this.value != null)
-            this.remoteObject = new RemoteTableObject(this.value);
+        if (this.value != null) {
+            // If the originalTableId is null, this must be the first table we are receiving
+            let originalTableId = this.originalTableId == null ? this.value : this.originalTableId;
+            this.remoteObject = new RemoteTableObject(this.value, originalTableId);
+        }
     }
 }
 
@@ -249,10 +267,11 @@ export class ZipReceiver extends RemoteTableRenderer {
     public constructor(page: FullPage,
                        operation: ICancellable,
                        protected setOp: CombineOperators,
+                       protected originalTableId: RemoteObjectId,
                        // receiver constructs the renderer that is used to display
                        // the result after combining
                        protected receiver: (page: FullPage, operation: ICancellable) => RemoteTableRenderer) {
-        super(page, operation, "zip");
+        super(page, operation, "zip", originalTableId);
     }
 
     run(): void {

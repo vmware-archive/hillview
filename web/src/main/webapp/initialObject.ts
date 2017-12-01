@@ -34,7 +34,7 @@ class FileNamesReceiver extends OnCompleteRenderer<RemoteObjectId> {
         let fn = new RemoteObject(remoteObjId);
         let rr = fn.createStreamingRpcRequest<RemoteObjectId>("loadTable", null);
         rr.chain(this.operation);
-        let observer = new RemoteTableReceiver(this.page, rr, this.title);
+        let observer = new RemoteTableReceiver(this.page, rr, this.title, false, null);
         rr.invoke(observer);
     }
 }
@@ -75,7 +75,7 @@ export class InitialObject extends RemoteObject {
     public loadDBTable(conn: JdbcConnectionInformation, menuPage: FullPage): void {
         let rr = this.createStreamingRpcRequest<RemoteObjectId>("loadDBTable", conn);
         let title = "DB " + conn.database + ":" + conn.table;
-        let observer = new RemoteTableReceiver(menuPage, rr, title);
+        let observer = new RemoteTableReceiver(menuPage, rr, title, false, null);
         rr.invoke(observer);
     }
 }
@@ -90,8 +90,8 @@ class LogFileReceiver extends OnCompleteRenderer<RemoteObjectId> {
 
     public run(objId: RemoteObjectId): void {
         let fn = new RemoteObject(objId);
-        let rr = fn.createRpcRequest("loadTable", null);
-        let observer = new RemoteTableReceiver(this.page, rr, this.title);
+        let rr = fn.createStreamingRpcRequest<string>("loadTable", null);
+        let observer = new RemoteTableReceiver(this.page, rr, this.title, false, null);
         rr.invoke(observer);
     }
 }
