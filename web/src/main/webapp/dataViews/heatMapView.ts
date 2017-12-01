@@ -30,7 +30,7 @@ import {
 import {HistogramViewBase} from "./histogramViewBase";
 import {TopMenu, SubMenu} from "../ui/menu";
 import {Histogram2DRenderer, Make2DHistogram, Filter2DReceiver} from "./histogram2DView";
-import {KeyCodes, Point, Resolution, Size} from "../ui/ui";
+import {Point, Resolution, Size} from "../ui/ui";
 import {FullPage} from "../ui/fullPage";
 import {ColorLegend, ColorMap} from "../ui/colorLegend";
 import {TextOverlay} from "../ui/textOverlay";
@@ -162,7 +162,7 @@ export class HeatMapView extends RemoteTableObjectView {
     }
 
     protected keyDown(ev: KeyboardEvent): void {
-        if (ev.keyCode == KeyCodes.escape)
+        if (ev.code == "Escape")
             this.cancelDrag();
     }
 

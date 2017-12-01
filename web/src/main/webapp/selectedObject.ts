@@ -19,7 +19,7 @@
 // is a RemoteTableObjectView which can be combined with another one.
 import {MenuItem, SubMenu} from "./ui/menu";
 import {EnumIterators} from "./util";
-import {CombineOperators, RemoteObjectId} from "./javaBridge";
+import {CombineOperators} from "./javaBridge";
 import {RemoteTableObject, RemoteTableObjectView} from "./tableTarget";
 import {ErrorReporter} from "./ui/errReporter";
 
@@ -42,7 +42,7 @@ export class SelectedObject {
             return null;
         }
         if (this.selected.originalTableId != compatible.originalTableId) {
-            reporter.reportError("These two views cannot be combined because they are based on different data sets.")
+            reporter.reportError("These two views cannot be combined because they are based on different data sets.");
             return null;
         }
         return this.selected;

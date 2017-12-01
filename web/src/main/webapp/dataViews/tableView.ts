@@ -28,7 +28,7 @@ import {ColumnConverter, ConverterDialog} from "./columnConverter";
 import {DataRange} from "../ui/dataRange"
 import {IScrollTarget, ScrollBar} from "../ui/scroll";
 import {FullPage} from "../ui/fullPage";
-import {KeyCodes, missingHtml, SpecialChars} from "../ui/ui";
+import {missingHtml, SpecialChars} from "../ui/ui";
 import {SelectionStateMachine} from "../ui/selectionStateMachine";
 
 import {RangeCollector} from "./histogramView";
@@ -175,13 +175,13 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
      * Event handler called when a key is pressed
      */
     protected keyDown(ev: KeyboardEvent): void {
-        if (ev.keyCode == KeyCodes.pageUp)
+        if (ev.code == "PageUp")
             this.pageUp();
-        else if (ev.keyCode == KeyCodes.pageDown)
+        else if (ev.code == "PageDown")
             this.pageDown();
-        else if (ev.keyCode == KeyCodes.end)
+        else if (ev.code == "End")
             this.end();
-        else if (ev.keyCode == KeyCodes.home)
+        else if (ev.code == "Home")
             this.begin();
     }
 
@@ -646,8 +646,8 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         dialog.addSelectField(
             "outColKind", "Data type", allContentsKind, "Category", "Type of data in the generated column.");
         dialog.addMultiLineTextField("function", "Function",
-            "function map(row) { return row['col']; }",
-            "A JavaScript function called 'map' that computes the values for each row of the generated column." +
+            "function map(row) {", "  return row['col'];", "}",
+            "A JavaScript function that computes the values for each row of the generated column." +
             "The function has a single argument 'row'.  The row is a JavaScript map that can be indexed with " +
             "a column name (a string) and which produces a value.");
         dialog.setAction(() => this.createColumn(dialog));
@@ -657,7 +657,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
     createColumn(dialog: Dialog): void {
         let col = dialog.getFieldValue("outColName");
         let kind = dialog.getFieldValue("outColKind");
-        let fun = dialog.getFieldValue("function");
+        let fun = "function map(row) {" + dialog.getFieldValue("function") + "}";
         let selColumns = this.getSelectedColNames();
         let subSchema = TableView.dropColumns(this.schema, c => (selColumns.indexOf(c) < 0));
         let arg: CreateColumnInfo = {

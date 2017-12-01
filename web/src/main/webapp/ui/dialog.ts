@@ -16,7 +16,7 @@
  */
 
 import {d3} from "./d3-modules";
-import {IHtmlElement, KeyCodes, Point} from "./ui"
+import {IHtmlElement, Point} from "./ui"
 import {EditBox} from "./editBox";
 
 export enum FieldKind {
@@ -128,10 +128,10 @@ export class Dialog implements IHtmlElement {
     }
 
     protected handleKeypress(ev: KeyboardEvent): void {
-        if (ev.keyCode == KeyCodes.enter) {
+        if (ev.code == "Enter") {
             this.hide();
             this.onConfirm();
-        } else if (ev.key == "Escape") {
+        } else if (ev.code == "Escape") {
             this.hide();
         }
     }
@@ -223,19 +223,19 @@ export class Dialog implements IHtmlElement {
      * Add a multi-line text field with the given internal name, label, and data type.
      * @param fieldName: Internal name. Has to be used when parsing the input.
      * @param labelText: Text in the dialog for this field.
+     * @param pre:   String to write before editable field.
      * @param value: Initial default value.
+     * @param post:  String to write after editable field.
      * @param toolTip:  Help message to show as a tool-tip.
      */
-    public addMultiLineTextField(fieldName: string, labelText: string,
-                                 value: string, toolTip: string): void {
+    public addMultiLineTextField(fieldName: string, labelText: string, pre: string,
+                                 value: string, post: string, toolTip: string): void {
         let fieldDiv = this.createRowContainer(fieldName, labelText, toolTip);
-        let input = new EditBox();
+        let input = new EditBox(pre, value, post);
         input.setTabIndex(this.tabIndex++);
         fieldDiv.appendChild(input.getHTMLRepresentation());
 
         this.fields.set(fieldName, {html: input});
-        if (value != null)
-            input.value = value;
     }
 
     /**
