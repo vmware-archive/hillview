@@ -39,6 +39,27 @@ export class DialogField {
 }
 
 /**
+ * Maps dialog fields to values.  Used to cache previously-filled values
+ * in a dialog.
+ */
+class DialogValues {
+    /**
+     * Map field name to field value.
+     */
+   values: Map<string, string>;
+
+   constructor() { this.values = new Map<string, string>(); }
+
+   set(field: string, value: string): void {
+       this.values.set(field, value);
+   }
+
+   get(field: string): string {
+       return this.values.get(field);
+   }
+}
+
+/**
  * Base class for dialog implementations.
  * A dialog asks the user to fill in values for a set of fields.
  */
@@ -60,10 +81,20 @@ export class Dialog implements IHtmlElement {
     /**
      * Maps a field name to the fieldsDiv that contains all the corresponding visual elements.
      */
-    private line: Map<string, HTMLElement> = new Map<string, HTMLElement>();
+    private line: Map<string, HTMLElement>;
     private confirmButton: HTMLButtonElement;
     private dragMousePosition: Point;
     private dialogPosition: ClientRect;
+    /**
+     * Optional string which is used as an index in the dialogValueCache to
+     * populate a dialog with its previous values.
+     */
+    private dialogTitle: string;
+
+    /**
+     * This is a cache that can map a dialog title to a set of dialog values.
+     */
+    static dialogValueCache: Map<string, DialogValues> = new Map<string, DialogValues>();
 
     /**
      * Create a dialog with the given name.
@@ -72,6 +103,8 @@ export class Dialog implements IHtmlElement {
      */
     constructor(title: string, toolTip: string) {
         this.tabIndex = 0;
+        this.dialogTitle = null;
+        this.line = new Map<string, HTMLElement>();
         this.onConfirm = null;
         this.container = document.createElement("div");
         this.container.title = toolTip;
@@ -108,6 +141,21 @@ export class Dialog implements IHtmlElement {
         d3.select(this.container).call(drag);
     }
 
+    /**
+     * Sets the dialog title.  This indicates that the dialog values
+     * will be cached during a session and filled automatically if the
+     * dialog appears again.  If a set of values for this title is already
+     * available, it is used to populate the dialog.
+     */
+    setCacheTitle(title: string): void {
+        this.dialogTitle = title;
+        if (title != null) {
+            let values = Dialog.dialogValueCache.get(title);
+            if (values != null)
+                this.setAllValues(values);
+        }
+    }
+
     dragStart(): void {
         this.dragMousePosition = { x: d3.event.x, y: d3.event.y };
         this.dialogPosition = this.container.getBoundingClientRect();
@@ -127,13 +175,35 @@ export class Dialog implements IHtmlElement {
         this.container.style.cursor = "default";
     }
 
+    getAllValues(): DialogValues {
+        let retval = new DialogValues();
+        this.fields.forEach((v, k) => retval.set(k, this.getFieldValue(k)));
+        return retval;
+    }
+
+    setAllValues(values: DialogValues): void {
+        this.fields.forEach((v, k) => {
+            let value = values.get(k);
+            if (value != null)
+                this.setFieldValue(k, value);
+        });
+    }
+
     protected handleKeypress(ev: KeyboardEvent): void {
         if (ev.code == "Enter") {
             this.hide();
+            this.cacheValues();
             this.onConfirm();
         } else if (ev.code == "Escape") {
             this.hide();
         }
+    }
+
+    cacheValues(): void {
+        if (this.dialogTitle == null)
+            return;
+        let vals = this.getAllValues();
+        Dialog.dialogValueCache.set(this.dialogTitle, vals);
     }
 
     /**
@@ -145,6 +215,7 @@ export class Dialog implements IHtmlElement {
         if (onConfirm != null)
             this.confirmButton.onclick = () => {
                 this.hide();
+                this.cacheValues();
                 this.onConfirm();
             };
     }

@@ -186,6 +186,7 @@ class CSVFileDialog extends Dialog {
         this.addTextField("schemaFile", "Schema file (optional)", FieldKind.String, "data.schema",
             "The name of a JSON file that contains the schema of the data (leave empty if no schema file exists).");
         this.addBooleanField("hasHeader", "Header row", false, "True if first row in each file is a header row");
+        this.setCacheTitle("CSVFileDialog");
     }
 
     public getFiles(): CSVFilesDescription {
@@ -219,6 +220,7 @@ class DBDialog extends Dialog {
             "The name of the user opening the connection.");
         this.addTextField("password", "Password", FieldKind.Password, null,
             "The password for the user opening the connection.");
+        this.setCacheTitle("DBDialog");
     }
 
     public getConnection(): JdbcConnectionInformation {

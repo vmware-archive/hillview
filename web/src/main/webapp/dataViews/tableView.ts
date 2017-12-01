@@ -650,6 +650,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
             "A JavaScript function that computes the values for each row of the generated column." +
             "The function has a single argument 'row'.  The row is a JavaScript map that can be indexed with " +
             "a column name (a string) and which produces a value.");
+        dialog.setCacheTitle("CreateDialog");
         dialog.setAction(() => this.createColumn(dialog));
         dialog.show();
     }
@@ -957,6 +958,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
             if (amount != null)
                 this.runHeavyHitters(amount, isMG)
         });
+        d.setCacheTitle("HeavyHittersDialog");
         d.show();
     }
 
