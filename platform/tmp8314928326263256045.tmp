@@ -1,4 +1,0 @@
-2017-10-12 02:17:42.722,worker,INFO,ubuntu,main,org.hillview.dataset.LocalDataSet,<clinit>,Detect CPUs,Using 3 processors
-2017-10-12 02:17:43.172,worker,INFO,ubuntu,main,org.hillview.dataset.remoting.HillviewServer,put,Inserting dataset,0
-2017-10-12 02:17:43.173,worker,INFO,ubuntu,main,org.hillview.utils.HillviewLogger,info,Created HillviewServer
-2017-10-12 02:18:29.084,worker,INFO,ubuntu,pool-1-thread-1,org.hillview.maps.FindCsvFileMapper,apply,Find files in folder,/hillview/data
