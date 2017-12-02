@@ -74,13 +74,13 @@ export class Histogram2DView extends HistogramViewBase {
         samplingRate: number;
     };
     protected normalized: boolean;  // true when bars are normalized to 100%
-    protected selectingLegend: boolean;  // true when selection is being done in legend
     protected legendRect: Rectangle;  // legend position on the screen; relative to canvas
     protected legend: any;  // a d3 object
     protected legendScale: AnyScale;
     protected menu: TopMenu;
     protected barWidth: number;  // in pixels
     protected max: number;  // maximum count displayed (total size of stacked bars)
+    protected legendSelectionRectangle: any;
 
     constructor(remoteObjectId: RemoteObjectId, originalTableId: RemoteObjectId,
                 protected tableSchema: Schema, page: FullPage) {
@@ -126,7 +126,6 @@ export class Histogram2DView extends HistogramViewBase {
         ]);
 
         this.normalized = false;
-        this.selectingLegend = true;
         this.page.setMenu(this.menu);
     }
 
@@ -279,8 +278,10 @@ export class Histogram2DView extends HistogramViewBase {
 
         // TODO: compute and draw CDF
 
-        if (this.canvas != null)
+        if (this.canvas != null) {
             this.canvas.remove();
+            this.legendSvg.remove();
+        }
 
         let counts: number[] = [];
         let missingDisplayed: number = 0;
@@ -328,10 +329,22 @@ export class Histogram2DView extends HistogramViewBase {
             return;
         }
 
+        let legendDrag = d3.drag()
+            .on("start", () => this.dragLegendStart())
+            .on("drag", () => this.dragLegendMove())
+            .on("end", () => this.dragLegendEnd());
+
+        this.legendSvg = d3.select(this.chartDiv)
+            .append("svg")
+            .call(legendDrag)
+            .attr("id", "legend")
+            .attr("wdith", canvasSize.width)
+            .attr("height", Resolution.legendSize.height);
+
         let drag = d3.drag()
             .on("start", () => this.dragStart())
             .on("drag", () => this.dragMove())
-            .on("end", () => this.dragEnd());
+            .on("end", () => this.dragCanvasEnd());
 
         this.canvas = d3.select(this.chartDiv)
             .append("svg")
@@ -342,7 +355,9 @@ export class Histogram2DView extends HistogramViewBase {
             .attr("height", canvasSize.height)
             .attr("cursor", "crosshair");
 
-        this.canvas.on("mousemove", () => this.onMouseMove());
+        this.canvas.on("mousemove", () => this.onMouseMove())
+            .on("mouseleave", () => this.onMouseLeave())
+            .on("mouseenter", () => this.onMouseEnter());
 
         // The chart uses a fragment of the canvas offset by the margins
         this.chart = this.canvas
@@ -368,7 +383,7 @@ export class Histogram2DView extends HistogramViewBase {
             .attr("transform", `translate(${this.chartSize.width / 2},
                 ${this.chartSize.height + Resolution.topMargin + Resolution.bottomMargin / 2})`)
             .attr("text-anchor", "middle")
-            .attr("dominant-baseline", "hanging");
+            .attr("dominant-baseline", "text-before-edge");
 
         this.barWidth = this.chartSize.width / bucketCount;
         let scale = this.chartSize.height / this.max;
@@ -415,22 +430,18 @@ export class Histogram2DView extends HistogramViewBase {
             .attr("r", Resolution.mouseDotRadius)
             .attr("fill", "blue");
 
-        if (missingDisplayed > 0 || this.currentData.yData.stats.max > this.currentData.yData.stats.min)
-            this.canvas.append("text")
-                .text(yData.description.name)
-                .attr("transform", `translate(${this.chartSize.width / 2}, 0)`)
-                .attr("text-anchor", "middle")
-                .attr("dominant-baseline", "text-before-edge");
+        this.legendRect = this.legendRectangle();
+        this.legendSvg.append("text")
+            .text(yData.description.name)
+            .attr("transform", `translate(${this.chartSize.width / 2}, ${Resolution.legendSize.height * 2 / 3})`)
+            .attr("text-anchor", "middle")
+            .attr("dominant-baseline", "text-before-edge");
 
         if (this.currentData.yData.stats.max > this.currentData.yData.stats.min) {
-            this.legendRect = this.legendRectangle();
-            let legendSvg = this.canvas
-                .append("svg");
-
             // apparently SVG defs are global, even if they are in
             // different SVG elements.  So we have to assign unique names.
             let gradientId = 'gradient' + this.getPage().pageId;
-            let gradient = legendSvg.append('defs')
+            let gradient = this.legendSvg.append('defs')
                 .append('linearGradient')
                 .attr('id', gradientId)
                 .attr('x1', '0%')
@@ -446,7 +457,7 @@ export class Histogram2DView extends HistogramViewBase {
                     .attr("stop-opacity", 1)
             }
 
-            this.legend = legendSvg.append("rect")
+            this.legend = this.legendSvg.append("rect")
                 .attr("width", this.legendRect.width())
                 .attr("height", this.legendRect.height())
                 .style("fill", "url(#" + gradientId + ")")
@@ -458,14 +469,14 @@ export class Histogram2DView extends HistogramViewBase {
             // create a scale and axis for the legend
             this.legendScale = scaleAxis.scale;
             let legendAxis = scaleAxis.axis;
-            legendSvg.append("g")
+            this.legendSvg.append("g")
                 .attr("transform", `translate(${this.legendRect.lowerLeft().x},
                                               ${this.legendRect.lowerLeft().y})`)
                 .call(legendAxis);
         }
 
         if (missingDisplayed > 0) {
-            let missingGap = 20;
+            let missingGap = 30;
             let missingWidth = 20;
             let missingHeight = 15;
             let missingX = 0;
@@ -475,12 +486,10 @@ export class Histogram2DView extends HistogramViewBase {
                 missingY = this.legendRect.upperRight().y;
             } else {
                 missingX = this.chartSize.width / 2;
-                missingY = Resolution.topMargin / 3;
+                missingY = Resolution.legendSize.height / 3;
             }
-            let missingSvg = this.canvas
-                .append("svg");
 
-            missingSvg.append("rect")
+            this.legendSvg.append("rect")
                 .attr("width", missingWidth)
                 .attr("height", missingHeight)
                 .attr("x", missingX)
@@ -489,7 +498,7 @@ export class Histogram2DView extends HistogramViewBase {
                 .attr("fill", "none")
                 .attr("stroke-width", 1);
 
-            this.canvas.append("text")
+            this.legendSvg.append("text")
                 .text("missing")
                 .attr("transform", `translate(${missingX + missingWidth / 2}, ${missingY + missingHeight + 7})`)
                 .attr("text-anchor", "middle")
@@ -502,10 +511,16 @@ export class Histogram2DView extends HistogramViewBase {
             .attr("class", "dashed")
             .attr("width", 0)
             .attr("height", 0);
+        this.legendSelectionRectangle = this.legendSvg
+            .append("rect")
+            .attr("class", "dashed")
+            .attr("width", 0)
+            .attr("height", 0);
 
-        this.pointDescription = new TextOverlay(this.chart,
+        this.pointDescription = new TextOverlay(this.canvas,
             [this.currentData.xData.description.name, "y",
                 this.currentData.yData.description.name, "count"], 40);
+        this.pointDescription.show(false);
         let summary = formatNumber(this.currentData.visiblePoints) + " data points";
         if (missingData != 0)
             summary += ", " + formatNumber(missingData) + " missing";
@@ -519,8 +534,22 @@ export class Histogram2DView extends HistogramViewBase {
         this.summary.innerHTML = summary;
     }
 
+    protected onMouseEnter(): void {
+        super.onMouseEnter();
+        this.cdfDot.attr("visibility", true);
+    }
+
+    protected onMouseLeave(): void {
+        this.cdfDot.attr("visibility", false);
+        super.onMouseLeave();
+    }
+
+    /**
+     * Handles mouse movements in the canvas area only.
+     */
     protected onMouseMove(): void {
         let position = d3.mouse(this.chart.node());
+        // note: this position is within the chart
         let mouseX = position[0];
         let mouseY = position[1];
 
@@ -566,7 +595,9 @@ export class Histogram2DView extends HistogramViewBase {
             // else value is ""
         }
 
-        this.pointDescription.update([xs, ys, value, size], mouseX, mouseY);
+        // However, the pointDescription is within the chart
+        this.pointDescription.update([xs, ys, value, size],
+            mouseX + Resolution.leftMargin, mouseY + Resolution.topMargin);
     }
 
     protected legendRectangle(): Rectangle {
@@ -580,66 +611,105 @@ export class Histogram2DView extends HistogramViewBase {
         return new Rectangle({ x: x, y: y }, { width: width, height: height });
     }
 
-    // We support two kinds of selection:
-    // - selection of bars in the histogram area
-    // - selection in the legend area
-    // We distinguish the two by the original mouse position: if the mouse
-    // is above the chart, we are selecting in the legend.
-    protected dragStart() {
-        super.dragStart();
-        this.selectingLegend = this.legendRect != null && this.selectionOrigin.y < 0;
+    protected dragCanvasEnd() {
+        let dragging = this.dragging && this.moved;
+        super.dragEnd();
+        if (!dragging)
+            return;
+        let position = d3.mouse(this.canvas.node());
+        let x = position[0];
+        this.selectionCompleted(this.selectionOrigin.x, x, false);
     }
 
-    protected dragMove(): void {
-        super.dragMove();
+    // dragging in the legend
+   protected dragLegendStart() {
+       this.dragging = true;
+       this.moved = false;
+       let position = d3.mouse(this.legendSvg.node());
+       this.selectionOrigin = {
+           x: position[0],
+           y: position[1] };
+    }
+
+    protected dragLegendMove(): void {
         if (!this.dragging)
             return;
+        this.moved = true;
+        let ox = this.selectionOrigin.x;
+        let position = d3.mouse(this.legendSvg.node());
+        let x = position[0];
+        let width = x - ox;
+        let height = this.legendRect.height();
 
-        if (this.selectingLegend) {
-            // Prevent the selection from being larger than the legend.
-            let minSel: number = +this.selectionRectangle.attr("x");
-            let width: number = +this.selectionRectangle.attr("width");
-            if (minSel < this.legendRect.origin.x) {
-                let delta = this.legendRect.origin.x - minSel;
-                this.selectionRectangle
-                    .attr("x", this.legendRect.origin.x)
-                    .attr("width", width - delta);
-            } else if (minSel + width > this.legendRect.lowerRight().x) {
-                let delta = minSel + width - this.legendRect.lowerRight().x;
-                this.selectionRectangle
-                    .attr("width", width - delta);
-            }
+        if (width < 0) {
+            ox = x;
+            width = -width;
+        }
+        this.legendSelectionRectangle
+            .attr("x", ox)
+            .attr("width", width)
+            .attr("y", this.legendRect.upperLeft().y)
+            .attr("height", height);
 
-            // Move the selection rectangle in the legend.
-            this.selectionRectangle
-                .attr("y", this.legendRect.upperLeft().y)
-                .attr("height", this.legendRect.height());
+        // Prevent the selection from spilling out of the legend itself
+        if (ox < this.legendRect.origin.x) {
+            let delta = this.legendRect.origin.x - ox;
+            this.legendSelectionRectangle
+                .attr("x", this.legendRect.origin.x)
+                .attr("width", width - delta);
+        } else if (ox + width > this.legendRect.lowerRight().x) {
+            let delta = ox + width - this.legendRect.lowerRight().x;
+            this.legendSelectionRectangle
+                .attr("width", width - delta);
         }
     }
 
-    // xl and xr are coordinates of the mouse position within the chart
-    protected selectionCompleted(xl: number, xr: number): void {
-        if (this.xScale == null)
+    protected dragLegendEnd(): void {
+        if (!this.dragging || !this.moved)
             return;
+        this.dragging = false;
+        this.moved = false;
+        this.legendSelectionRectangle
+            .attr("width", 0)
+            .attr("height", 0);
 
+        let position = d3.mouse(this.legendSvg.node());
+        let x = position[0];
+        this.selectionCompleted(this.selectionOrigin.x, x, true);
+    }
+
+    protected cancelDrag() {
+        super.cancelDrag();
+        this.legendSelectionRectangle
+            .attr("width", 0)
+            .attr("heigh", 0);
+    }
+
+    /**
+     * * xl and xr are coordinates of the mouse position within the canvas or legendSvg respectively.
+     */
+    protected selectionCompleted(xl: number, xr: number, inLegend: boolean): void {
         let min: number;
         let max: number;
         let boundaries: string[] = null;
         let selectedAxis: AxisData = null;
         let scale: AnyScale = null;
 
-        if (this.selectingLegend) {
-            // Selecting in legend.  We have to adjust xl and xr, they are relative to the chart.
-            // The legend rectangle coordinates are relative to the canvas.
+        if (inLegend) {
             let legendX = this.legendRect.lowerLeft().x;
-            xl -= legendX - Resolution.leftMargin;
-            xr -= legendX - Resolution.leftMargin;
+            xl -= legendX;
+            xr -= legendX;
             selectedAxis = this.currentData.yData;
             scale = this.legendScale;
         } else {
+            xl -= Resolution.leftMargin;
+            xr -= Resolution.leftMargin;
             selectedAxis = this.currentData.xData;
             scale = this.xScale;
         }
+
+        if (scale == null)
+            return;
 
         let kind = selectedAxis.description.kind;
         let x0 = HistogramViewBase.invertToNumber(xl, scale, kind);

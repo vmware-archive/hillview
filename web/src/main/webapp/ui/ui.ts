@@ -118,7 +118,7 @@ export class Resolution {
     static readonly minBarWidth = 5;      // minimum number of pixels for a histogram bar
     static readonly minCanvasWidth = 300; // minimum number of pixels for a plot (including margins)
     static readonly canvasHeight = 500;   // size of a plot
-    static readonly topMargin = 60;       // top margin in pixels in a plot
+    static readonly topMargin = 10;        // top margin in pixels in a plot
     static readonly rightMargin = 20;     // right margin in pixels in a plot
     static readonly bottomMargin = 50;    // bottom margin in pixels in a plot
     static readonly leftMargin = 40;      // left margin in pixels in a plot
@@ -126,7 +126,7 @@ export class Resolution {
     static readonly tableRowsOnScreen = 20; // table rows displayed
     static readonly lineHeight = 20;      // Height of a line of text drawn in svg (including reasonable margin).
     static readonly mouseDotRadius = 3;        // Size of dots that show mouse position
-    static readonly legendSize: Size = {width: 500, height: 50}; // Default legend size in px.
+    static readonly legendSize: Size = {width: 500, height: 60}; // Default legend size in px.  TODO: not a good name
 
     // Everything is drawn on top of the canvas.
     // The canvas includes a chart plus margins.

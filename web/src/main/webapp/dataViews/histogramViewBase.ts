@@ -33,6 +33,9 @@ import {DistinctStrings} from "../distinctStrings";
 export abstract class HistogramViewBase extends RemoteTableObjectView {
     protected dragging: boolean;
     protected svg: any;
+    /**
+     * Coordinates are within the canvas, not within the chart.
+     */
     protected selectionOrigin: Point;
     /**
      * The coordinates of the selectionRectangle are relative to the canvas.
@@ -45,6 +48,7 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
     protected chartSize: Size;
     protected chart: any;  // these are in fact a d3.Selection<>, but I can't make them typecheck
     protected canvas: any;
+    protected legendSvg: any;
     protected cdfDot: any;
     protected moved: boolean;  // to detect trivial empty drags
     protected pointDescription: TextOverlay;
@@ -62,6 +66,8 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
 
         this.chartDiv = document.createElement("div");
         this.topLevel.appendChild(this.chartDiv);
+        this.chartDiv.style.display = "flex";
+        this.chartDiv.style.flexDirection = "column";
 
         this.summary = document.createElement("div");
         this.topLevel.appendChild(this.summary);
@@ -81,26 +87,38 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
 
     protected abstract showTable(): void;
     public abstract refresh(): void;
-    protected abstract onMouseMove(): void;
-    // xl and xr are coordinates of the mouse position within the chart
-    protected abstract selectionCompleted(xl: number, xr: number): void;
 
+    protected onMouseEnter(): void {
+        if (this.pointDescription != null)
+            this.pointDescription.show(true);
+    }
+
+    protected onMouseLeave(): void {
+        if (this.pointDescription != null)
+            this.pointDescription.show(false);
+    }
+
+    /**
+     * Dragging started in the canvas.
+     */
     protected dragStart(): void {
         this.dragging = true;
         this.moved = false;
-        let position = d3.mouse(this.chart.node());
+        let position = d3.mouse(this.canvas.node());
         this.selectionOrigin = {
             x: position[0],
             y: position[1] };
     }
 
+    /**
+     * The mouse moved in the canvas.
+     */
     protected dragMove(): void {
-        this.onMouseMove();
         if (!this.dragging)
             return;
         this.moved = true;
         let ox = this.selectionOrigin.x;
-        let position = d3.mouse(this.chart.node());
+        let position = d3.mouse(this.canvas.node());
         let x = position[0];
         let width = x - ox;
         let height = this.chartSize.height;
@@ -111,7 +129,7 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
         }
 
         this.selectionRectangle
-            .attr("x", ox + Resolution.leftMargin)
+            .attr("x", ox)
             .attr("y", Resolution.topMargin)
             .attr("width", width)
             .attr("height", height);
@@ -124,10 +142,6 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
         this.selectionRectangle
             .attr("width", 0)
             .attr("height", 0);
-
-        let position = d3.mouse(this.chart.node());
-        let x = position[0];
-        this.selectionCompleted(this.selectionOrigin.x, x);
     }
 
     // noinspection JSUnusedLocalSymbols
