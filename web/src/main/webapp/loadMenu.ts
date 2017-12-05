@@ -206,21 +206,34 @@ class DBDialog extends Dialog {
     constructor() {
         super("Load DB tables", "Loads one table on each machine that is part of the service.");
         // TODO: this should be a pattern string, based on local worker name.
-        this.addSelectField("databaseKind", "Database kind", ["mysql"], "mysql",
+        let sel = this.addSelectField("databaseKind", "Database kind", ["mysql", "impala"], "mysql",
             "The kind of database.");
+        sel.onchange = () => this.dbChanged();
         this.addTextField("host", "Host", FieldKind.String, "localhost",
             "Machine name where database is located; each machine will open a connection to this host");
         this.addTextField("port", "Port", FieldKind.Integer, "3306",
-            "Network port to connect to database; 3306 is the port for MySQL.");
+            "Network port to connect to database.");
         this.addTextField("database", "Database", FieldKind.String, null,
             "Name of database to load.");
         this.addTextField("table", "Table", FieldKind.String, null,
             "The name of the table to load.");
         this.addTextField("user", "User", FieldKind.String, null,
-            "The name of the user opening the connection.");
+            "(Optional) The name of the user opening the connection.");
         this.addTextField("password", "Password", FieldKind.Password, null,
-            "The password for the user opening the connection.");
+            "(Optional) The password for the user opening the connection.");
         this.setCacheTitle("DBDialog");
+    }
+
+    dbChanged(): void {
+        let db = this.getFieldValue("databaseKind");
+        switch (db) {
+            case "mysql":
+                this.setFieldValue("port", "3306");
+                break;
+            case "impala":
+                this.setFieldValue("port", "21050");
+                break;
+        }
     }
 
     public getConnection(): JdbcConnectionInformation {

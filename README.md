@@ -89,7 +89,7 @@ $ ./demo-data-cleaner.sh
   processing:
 
 ```
-$ ./demo-backend-start.sh &
+$ ./backend-start.sh &
 ```
 
 * Start the web server which receives requests from clients and
@@ -98,7 +98,7 @@ this command is run is important, since the path to the data files is
 relative to this folder.
 
 ```
-$ ./demo-frontend-start.sh
+$ ./frontend-start.sh
 ```
 
 * start a web browser at http://localhost:8080 and browse the data!
@@ -176,18 +176,13 @@ In more detail, here is a step-by-step guide to committing your changes:
 
 ## Installing the software needed
 
-Install Maven, node.js and ansible:
-
-```
-$ sudo apt-get install maven nodejs-legacy ansible npm
-```
-
 ### Installing Java
 
 We use Java 8.
 
 First, download a JDK for Linux x64 from here:
 http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
+Note: it is not enough to have a Java VM installed, you need a JDK.
 
 Make sure to download the tarball version of the JDK.
 
@@ -200,7 +195,15 @@ the following to your ~/.bashrc or ~/.zshrc.
 $ export JAVA_HOME="<path-to-jdk-folder>"
 ```
 
-## Install Apache Tomcat web application server
+### Installing other tools
+
+Install Maven, node.js and ansible:
+
+```
+$ sudo apt-get install maven nodejs-legacy ansible npm
+```
+
+### Install Apache Tomcat web application server
 
 The instructions here use version 8.5.8 (other versions may work,
 but we only tested this one).
@@ -214,7 +217,7 @@ $ ln -s ../../web/target/web-1.0-SNAPSHOT.war ROOT.war
 $ cd ../..
 ```
 
-## Install typescript and JavaScript libraries and tools
+### Install typescript and JavaScript libraries and tools
 
 On Mac the following command seems to work correctly only without `sudo`.
 
@@ -236,3 +239,15 @@ $ npm install rx d3
 $ npm install @types/d3 --save
 $ cd ../../../..
 ```
+
+### Impala Java libraries
+
+If you want to access the ![Impala](https://impala.apache.org/)
+database you will need to download and install the JDBC connectors for
+Impala libraries from
+![Cloudera](https://www.cloudera.com/documentation/other/connectors.html).
+(These are not free software, so they are not available in Java Maven
+repositories.)  You should install these in your local Maven
+repository, e.g. in the ~/.m2/com/cloudera/impala folder.  You may
+also need to adjust the version of the libraries in the file
+platform/pom.xml.

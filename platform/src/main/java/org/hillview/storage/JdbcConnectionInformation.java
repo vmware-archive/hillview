@@ -17,31 +17,24 @@
 
 package org.hillview.storage;
 
-import org.apache.http.client.utils.URIBuilder;
-
+import javax.annotation.Nullable;
 import java.io.Serializable;
 
 /**
  * This information is required to open a database connection.
  */
 public class JdbcConnectionInformation implements Serializable {
+    @Nullable
     public String host;
+    @Nullable
     public String database;
+    @Nullable
     public String table;
     public int port;
+    @Nullable
     public String user;
+    @Nullable
     public String password;
-    public String databaseKind;  // e.g. mysql
-
-    public String getURL() {
-        URIBuilder builder = new URIBuilder();
-        builder.setHost(this.host);
-        builder.setPort(this.port);
-        builder.setScheme("jdbc:" + this.databaseKind);
-        builder.setPath(this.database);
-        builder.addParameter("useSSL", "false");
-        // seems to be required for mysql
-        builder.addParameter("serverTimeZone", "PDT");
-        return builder.toString();
-    }
+    @Nullable
+    public String databaseKind;
 }
