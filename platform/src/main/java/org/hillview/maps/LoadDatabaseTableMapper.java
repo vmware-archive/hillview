@@ -22,6 +22,7 @@ import org.hillview.dataset.api.IMap;
 import org.hillview.storage.JdbcConnectionInformation;
 import org.hillview.table.api.ITable;
 import org.hillview.storage.JdbcDatabase;
+import org.hillview.utils.Converters;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -38,7 +39,8 @@ public class LoadDatabaseTableMapper implements IMap<Empty, ITable> {
         try {
             JdbcDatabase db = new JdbcDatabase(this.conn);
             db.connect();
-            ResultSet rs = db.getTable(this.conn.table);
+            Converters.checkNull(this.conn.table);
+            ResultSet rs = db.getTable(this.conn.table, -1);
             ITable result = JdbcDatabase.getTable(rs);
             db.disconnect();
             return result;

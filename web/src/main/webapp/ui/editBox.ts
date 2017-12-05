@@ -16,6 +16,7 @@
  */
 
 import {IHtmlElement} from "./ui";
+import {makeId} from "../util";
 
 /**
  * A textarea which allows users to type a program.
@@ -26,7 +27,7 @@ export class EditBox implements IHtmlElement {
     pre: HTMLInputElement;
     post: HTMLInputElement;
 
-    constructor(pre: string, value: string, post: string) {
+    constructor(name: string, pre: string, value: string, post: string) {
         this.topLevel = document.createElement("div");
         this.textArea = document.createElement("textarea");
         this.textArea.style.fontFamily = "monospace";
@@ -43,6 +44,7 @@ export class EditBox implements IHtmlElement {
 
         this.textArea.rows = 10;
         this.textArea.style.flexGrow = "100";
+        this.textArea.id = makeId(name);
         // The following will prevent these events from going to the parent element
         this.textArea.onkeydown = e => e.stopPropagation();
         this.textArea.onkeypress = e => e.stopPropagation();

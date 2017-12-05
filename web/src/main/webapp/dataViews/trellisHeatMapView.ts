@@ -629,7 +629,7 @@ export class HeatMapArrayDialog extends Dialog {
         let selectedCatColumn: string = "";
         let catColumns = [];
         let numColumns = [];
-        for (let i = 0; i < schema.length; i++){
+        for (let i = 0; i < schema.length; i++) {
             if (schema[i].kind == "Category")
                 catColumns.push(schema[i].name);
             if (schema[i].kind == "Double" || schema[i].kind == "Integer")

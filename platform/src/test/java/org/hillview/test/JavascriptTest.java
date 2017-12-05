@@ -26,6 +26,7 @@ import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ITable;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.VirtualRowSnapshot;
+import org.hillview.utils.DateParsing;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -33,6 +34,7 @@ import javax.script.Invocable;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
+import java.time.Instant;
 
 /**
  * Test the Javascript Nashorn engine.
@@ -82,5 +84,75 @@ public class JavascriptTest {
                 "Mike,20,true\n" +
                 "John,30,true\n" +
                 "Tom,10,false\n", data);
+    }
+
+    @Test
+    public void testDate() throws ScriptException, NoSuchMethodException {
+        ITable table = ToCatMapTest.tableWithStringColumn();
+        LocalDataSet<ITable> lds = new LocalDataSet<ITable>(table);
+        ColumnDescription outCol = new ColumnDescription("Date", ContentsKind.Date, false);
+        String function = "function map(row) { return new Date(1970 + row['Age'], 1, 2); }";
+        CreateColumnJSMap map = new CreateColumnJSMap(function, table.getSchema(), outCol);
+        IDataSet<ITable> mapped = lds.blockingMap(map);
+        ITable outTable = ((LocalDataSet<ITable>)mapped).data;
+        String data = outTable.toLongString(3);
+
+        String someDate = "1990-02-02";
+        DateParsing parsing = new DateParsing(someDate);
+        Instant someInstant = parsing.parse(someDate);
+        String s = someInstant.toString();
+        String suffix = s.substring(s.indexOf('T'));
+        Assert.assertEquals("Table[3x15]\n" +
+                "Mike,20,1990-02-02" + suffix + "\n" +
+                "John,30,2000-02-02" + suffix + "\n" +
+                "Tom,10,1980-02-02" + suffix + "\n", data);
+    }
+
+    @Test
+    public void testInteger() throws ScriptException, NoSuchMethodException {
+        ITable table = ToCatMapTest.tableWithStringColumn();
+        LocalDataSet<ITable> lds = new LocalDataSet<ITable>(table);
+        ColumnDescription outCol = new ColumnDescription("Older", ContentsKind.Integer, false);
+        String function = "function map(row) { return row['Age'] + 10; }";
+        CreateColumnJSMap map = new CreateColumnJSMap(function, table.getSchema(), outCol);
+        IDataSet<ITable> mapped = lds.blockingMap(map);
+        ITable outTable = ((LocalDataSet<ITable>)mapped).data;
+        String data = outTable.toLongString(3);
+        Assert.assertEquals("Table[3x15]\n" +
+                "Mike,20,30\n" +
+                "John,30,40\n" +
+                "Tom,10,20\n", data);
+    }
+
+    @Test
+    public void testDateOutput() throws ScriptException, NoSuchMethodException {
+        ITable table = ToCatMapTest.tableWithStringColumn();
+        LocalDataSet<ITable> lds = new LocalDataSet<ITable>(table);
+        // Add a date column
+        ColumnDescription outCol = new ColumnDescription("Date", ContentsKind.Date, false);
+        String function = "function map(row) { return new Date(1970 + row['Age'], 1, 2); }";
+        CreateColumnJSMap map = new CreateColumnJSMap(function, table.getSchema(), outCol);
+        IDataSet<ITable> mapped = lds.blockingMap(map);
+        // Convert the date column
+        outCol = new ColumnDescription("Later", ContentsKind.Date, false);
+        function = "function map(row) { " +
+                "var d = row['Date']; " +
+                "d.setFullYear(d.getFullYear() + 10); " +
+                "return d;" +
+                " }";
+        map = new CreateColumnJSMap(function, table.getSchema(), outCol);
+        mapped = mapped.blockingMap(map);
+        ITable outTable = ((LocalDataSet<ITable>)mapped).data;
+        String data = outTable.toLongString(3);
+
+        String someDate = "1990-02-02";
+        DateParsing parsing = new DateParsing(someDate);
+        Instant someInstant = parsing.parse(someDate);
+        String s = someInstant.toString();
+        String suffix = s.substring(s.indexOf('T'));
+        Assert.assertEquals("Table[4x15]\n" +
+                "Mike,20,1990-02-02" + suffix + ",2000-02-02" + suffix + "\n" +
+                "John,30,2000-02-02" + suffix + ",2010-02-02" + suffix + "\n" +
+                "Tom,10,1980-02-02" + suffix + ",1990-02-02" + suffix + "\n", data);
     }
 }

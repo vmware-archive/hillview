@@ -65,6 +65,10 @@ public class Utilities {
         return(s.toString());
     }
 
+    public static boolean isNullOrEmpty(@Nullable String s) {
+        return s == null || s.isEmpty();
+    }
+
     /**
      * Converts a throwable to a string.
      */

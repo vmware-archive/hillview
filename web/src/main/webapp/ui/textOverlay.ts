@@ -53,6 +53,12 @@ export class TextOverlay {
         }
     }
 
+    show(visible: boolean): void {
+        this.rect.attr("visibility", visible ? "visible" : "hidden");
+        for (let l of this.lines)
+            l.attr("visibility", visible ? "visible" : "hidden");
+    }
+
     /**
      * Update the contents of the overlay.
      * @param {string[]} values  Values corresponding to the keys.
@@ -63,11 +69,8 @@ export class TextOverlay {
         let maxWidth = 0;
 
         // compute width
-        let index = 0;
-        for (let v of values) {
+        for (let index = 0; index < values.length; index++)
             maxWidth = Math.max(maxWidth, this.lines[index].node().getBBox().width);
-            index++;
-        }
 
         // If too close to the margin move it a bit
         if (window.innerWidth < x + maxWidth)
@@ -75,7 +78,7 @@ export class TextOverlay {
         if (Resolution.canvasHeight - Resolution.bottomMargin < y + this.height)
             y -= this.height;
 
-        index = 0;
+        let index = 0;
         let crtY = y;
         for (let v of values) {
             this.lines[index]

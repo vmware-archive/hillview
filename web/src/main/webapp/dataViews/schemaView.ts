@@ -63,6 +63,7 @@ export class SchemaView extends RemoteTableObjectView {
         let actions: string[] =  ["Add", "Remove"];
         typeDialog.addSelectField("action", "Action", actions, "Add",
             "Add to or Remove from current selection");
+        typeDialog.setCacheTitle("SchemaTypeDialog");
         typeDialog.setAction(() => {
             let selectedType: string = typeDialog.getFieldValue("selectedType");
             let action: string = typeDialog.getFieldValue("action");
@@ -81,6 +82,7 @@ export class SchemaView extends RemoteTableObjectView {
             "Type of columns you wish to select");
         missingDialog.addSelectField("action", "Action", actions, "Add",
             "Add to or Remove from current selection");
+        missingDialog.setCacheTitle("SchemaMissingDialog");
         missingDialog.setAction(() => {
             let missingType: boolean = missingDialog.getBooleanValue("allowsMissing");
             let action: string = missingDialog.getFieldValue("action");

@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-/// <reference path="node_modules/rx/ts/rx.d.ts" />
-
 import {d3} from "./ui/d3-modules";
 import Rx = require('rx');
 import Observer = Rx.Observer;

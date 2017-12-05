@@ -66,17 +66,16 @@ export class ColorLegend implements IHtmlElement {
 
     private onColorMapChange: (ColorMap) => void; // Function that is called to update other elements when the color map changes.
     private contextMenu: ContextMenu;
+    private size: Size;  // TODO: this is not a good name
+    private barHeight: number;
 
     /**
      * Make a color legend for the given ColorMap with the specified parameters.
      * @param colorMap: ColorMap to make this legend for.
-     * @param size: Size of the legend
-     * @param barHeight: Height of the color bar rectangle.
      **/
-    constructor(private colorMap: ColorMap,
-                private size: Size = Resolution.legendSize,
-                private barHeight = 16
-    ) {
+    constructor(private colorMap: ColorMap) {
+        this.size = Resolution.legendSize;
+        this.barHeight = 16;
         this.uniqueId = ColorLegend.nextUniqueId++;
         this.topLevel = document.createElement("div");
         this.topLevel.classList.add("colorLegend");

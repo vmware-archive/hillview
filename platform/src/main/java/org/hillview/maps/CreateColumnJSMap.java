@@ -17,15 +17,19 @@
 
 package org.hillview.maps;
 
+import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.api.*;
 import org.hillview.table.columns.BaseListColumn;
+import org.hillview.table.rows.JSVirtualRowSnapshot;
 import org.hillview.table.rows.VirtualRowSnapshot;
+import org.hillview.utils.Converters;
 
 import javax.script.Invocable;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
+import java.time.Instant;
 
 /**
  * This map creates a new column by running a JavaScript
@@ -65,14 +69,43 @@ public class CreateColumnJSMap extends AddColumnMap {
 
             IAppendableColumn col = BaseListColumn.create(this.outputColumn);
             // TODO: ensure that the input columns are loaded.
+            ContentsKind kind = this.outputColumn.kind;
 
-            VirtualRowSnapshot vrs = new VirtualRowSnapshot(table);
+            JSVirtualRowSnapshot vrs = new JSVirtualRowSnapshot(table, engine);
             IRowIterator it = table.getMembershipSet().getIterator();
             int r = it.getNextRow();
             while (r >= 0) {
                 vrs.setRow(r);
                 Object value = invocable.invokeFunction("map", vrs);
-                col.append(value);
+                if (value == null)
+                    col.appendMissing();
+                else {
+                    switch (kind) {
+                        case None:
+                            col.append(value);
+                        case Category:
+                        case String:
+                        case Json:
+                            col.append((String)value);
+                            break;
+                        case Date:
+                            ScriptObjectMirror jsDate = (ScriptObjectMirror)value;
+                            double timestampLocal = (double)jsDate.callMember("getTime");
+                            Instant instant = Converters.toDate(timestampLocal);
+                            col.append(instant);
+                            break;
+                        case Integer:
+                            col.append((int)(double)value);
+                            break;
+                        case Double:
+                            col.append((double)value);
+                            break;
+                        case Duration:
+                            // TODO
+                            col.append(value);
+                            break;
+                    }
+                }
                 r = it.getNextRow();
             }
             return col;

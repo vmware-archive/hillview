@@ -206,7 +206,7 @@ The following menu allows the user to specify the data to load.
 ![Specifying database connections](db-menu.png)
 
 * database kind: A drop-down menu indicating the kind of database to
-  load data from (e.g., MySQL).
+  load data from.  Currently we support 'mysql' and 'impala'.
 
 * host: The network name of a machine hosting the database.  *TODO*
   this should be a pattern enabling each worker to specify a different
@@ -226,7 +226,7 @@ Numeric values are converted either to integers (if they fit into
 32-bits) or to doubles.  Boolean values are read as categories
 containing two values, "true" and "false".
 
-#### Reading data from Parquet files and Impala databases
+#### Reading data from Parquet files
 
 Hillview can read data directly from
 [Parquet](https://parquet.apache.org/) files on disk.  The

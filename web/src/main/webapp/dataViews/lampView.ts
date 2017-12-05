@@ -348,6 +348,7 @@ export class LAMPDialog extends Dialog {
         this.addSelectField("controlPointProjection", "Control point projection", ["MDS"], "MDS",
             "The projection technique.  Currently only Multidimensional Scaling is an option.");
         this.setAction(() => this.execute());
+        this.setCacheTitle("LAMPDialog");
         this.ctrlPointsChanged();
     }
 

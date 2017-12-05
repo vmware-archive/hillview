@@ -57,9 +57,8 @@ function mouseClickEvent(shift: boolean, control: boolean): Event {
 }
 
 function keyboardEvent(code: string): Event {
-    let evt: KeyboardEvent = new KeyboardEvent("keydown",
+    return new KeyboardEvent("keydown",
         { code: code, altKey: false, bubbles: true, cancelable: true, ctrlKey: false });
-    return evt;
 }
 
 /**
@@ -181,7 +180,7 @@ export class Test {
                 // Show a histogram
                 let col2 = findElement("#hillviewPage1 thead .col2");
                 let evt = contextMenuEvent();
-                col2.dispatchEvent(evt);  // control-click
+                col2.dispatchEvent(evt);
                 findElement("#hillviewPage1 .dropdown #Histogram").click();
             }
         }, {
@@ -206,6 +205,19 @@ export class Test {
                 tableHead.dispatchEvent(evt);
             }
         }, {
+            description: "Filter",
+            cond: () => findElement("#hillviewPage1 .idle") != null,
+            cont: () => {
+                // Show a histogram
+                let col2 = findElement("#hillviewPage1 thead .col2");
+                let evt = contextMenuEvent();
+                col2.dispatchEvent(evt);
+                findElement("#hillviewPage1 .dropdown #Filter___").click();
+                (<HTMLInputElement>findElement(".dialog #query")).value = "AA";
+                (<HTMLSelectElement>findElement(".dialog #complement")).value = "Equality";
+                findElement(".dialog .confirm").click();
+            }
+        },{
             description: "Close some windows",
             cond: () => true,
             cont: () => {
