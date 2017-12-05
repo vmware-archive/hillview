@@ -36,6 +36,54 @@
             <artifactId>httpclient</artifactId>
             <version>4.5.3</version>
         </dependency>
+        <!-- Impala JDBC connector.
+             Uncomment and edit the following if you want to access Impala through JDBC.
+             These assume a version of 2.5.29; you may need
+             to adjust the version if you download a different version of these libraries.
+             The libraries are not available in Maven repositories; they can be downloaded
+             from https://www.cloudera.com/documentation/other/connectors.html
+             (you need the JDBC connectors for Impala).
+        <dependency>
+            <groupId>com.cloudera.impala</groupId>
+            <artifactId>impala-jdbc-driver41</artifactId>
+            <version>2.5.29</version>
+        </dependency>
+        <dependency>
+            <groupId>com.cloudera.impala</groupId>
+            <artifactId>impala-jdbc-hive-metastore</artifactId>
+            <version>2.5.29</version>
+        </dependency>
+        <dependency>
+            <groupId>com.cloudera.impala</groupId>
+            <artifactId>impala-jdbc-hive-service</artifactId>
+            <version>2.5.29</version>
+        </dependency>
+        <dependency>
+            <groupId>com.cloudera.impala</groupId>
+            <artifactId>impala-jdbc-libfb303</artifactId>
+            <version>2.5.29</version>
+        </dependency>
+        <dependency>
+            <groupId>com.cloudera.impala</groupId>
+            <artifactId>impala-jdbc-libthrift</artifactId>
+            <version>2.5.29</version>
+        </dependency>
+        <dependency>
+            <groupId>com.cloudera.impala</groupId>
+            <artifactId>impala-jdbc-ql</artifactId>
+            <version>2.5.29</version>
+        </dependency>
+        <dependency>
+            <groupId>com.cloudera.impala</groupId>
+            <artifactId>impala-jdbc-zookeper</artifactId>
+            <version>2.5.29</version>
+        </dependency>
+        <dependency>
+            <groupId>com.cloudera.impala</groupId>
+            <artifactId>impala-jdbc-tcli-client</artifactId>
+            <version>2.5.29</version>
+        </dependency>
+             -->
         <!-- mysql database connector -->
         <dependency>
             <groupId>mysql</groupId>
@@ -266,6 +314,7 @@
                             <goal>single</goal>
                         </goals>
                     </execution>
+                    <!--
                     <execution>
                         <id>build-histogram-benchmark</id>
                         <configuration>
@@ -284,6 +333,7 @@
                             <goal>single</goal>
                         </goals>
                     </execution>
+                    -->
                 </executions>
             </plugin>
         </plugins>

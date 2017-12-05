@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-import {Dialog} from "./ui/dialog";
-
 interface TestOperation {
     /**
      * Condition which is evaluated to see whether the test can executed.
@@ -59,9 +57,8 @@ function mouseClickEvent(shift: boolean, control: boolean): Event {
 }
 
 function keyboardEvent(code: string): Event {
-    let evt: KeyboardEvent = new KeyboardEvent("keydown",
+    return new KeyboardEvent("keydown",
         { code: code, altKey: false, bubbles: true, cancelable: true, ctrlKey: false });
-    return evt;
 }
 
 /**

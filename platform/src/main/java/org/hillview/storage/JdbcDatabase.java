@@ -26,10 +26,11 @@ import org.hillview.table.api.ITable;
 import org.hillview.table.columns.BaseListColumn;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
+import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import java.sql.*;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,20 +38,26 @@ import java.util.List;
  * Conversions between JDBC information and ITable objects.
  */
 public class JdbcDatabase {
-    private final JdbcConnectionInformation connInfo;
+    private final JdbcConnection conn;
     @Nullable
     private Connection connection;
 
     public JdbcDatabase(final JdbcConnectionInformation connInfo) {
-        this.connInfo = connInfo;
+        this.conn = JdbcConnection.create(connInfo);
         this.connection = null;
     }
 
     public void connect() throws SQLException {
-        String url = this.connInfo.getURL();
+        String url = this.conn.getURL();
         HillviewLogger.instance.info("Database server url", "{0}", url);
-        this.connection = DriverManager.getConnection(
-                url, this.connInfo.user, this.connInfo.password);
+        if (Utilities.isNullOrEmpty(this.conn.info.password)) {
+            this.connection = DriverManager.getConnection(url);
+        } else {
+            if (Utilities.isNullOrEmpty(this.conn.info.user))
+                this.conn.info.user = System.getProperty("user.name");
+            this.connection = DriverManager.getConnection(
+                    url, this.conn.info.user, this.conn.info.password);
+        }
     }
 
     public void disconnect() throws SQLException {
@@ -60,8 +67,13 @@ public class JdbcDatabase {
         this.connection = null;
     }
 
-    public ResultSet getTable(String table) {
-        String query = "SELECT * FROM " + table;
+    /**
+     * Get the data in a table.
+     * @param table     Table to get data for.
+     * @param rowCount  Maximum number of rows.  If negative, bring all rows.
+     */
+    public ResultSet getTable(String table, int rowCount) {
+        String query = this.conn.getQuery(table, rowCount);
         try {
             return this.getQueryResult(query);
         } catch (SQLException e) {
@@ -229,8 +241,12 @@ public class JdbcDatabase {
                         case Types.TIME_WITH_TIMEZONE:
                         case Types.TIMESTAMP_WITH_TIMEZONE:
                             Timestamp ts = data.getTimestamp(colIndex);
-                            LocalDateTime ld = ts.toLocalDateTime();
-                            col.append(ld);
+                            if (ts == null) {
+                                col.appendMissing();
+                            } else {
+                                Instant instant = ts.toInstant();
+                                col.append(instant);
+                            }
                             break;
                         case Types.BINARY:
                         case Types.VARBINARY:
