@@ -18,6 +18,7 @@
 import {d3} from "./d3-modules";
 import {IHtmlElement, Point} from "./ui"
 import {EditBox} from "./editBox";
+import {makeId} from "../util";
 
 export enum FieldKind {
     String,
@@ -278,6 +279,7 @@ export class Dialog implements IHtmlElement {
         let input: HTMLInputElement = document.createElement("input");
         input.tabIndex = this.tabIndex++;
         input.style.flexGrow = "100";
+        input.id = makeId(fieldName);
         fieldDiv.appendChild(input);
         if (type == FieldKind.Integer)
             input.type = "number";
@@ -302,7 +304,7 @@ export class Dialog implements IHtmlElement {
     public addMultiLineTextField(fieldName: string, labelText: string, pre: string,
                                  value: string, post: string, toolTip: string): void {
         let fieldDiv = this.createRowContainer(fieldName, labelText, toolTip);
-        let input = new EditBox(pre, value, post);
+        let input = new EditBox(fieldName, pre, value, post);
         input.setTabIndex(this.tabIndex++);
         fieldDiv.appendChild(input.getHTMLRepresentation());
 
@@ -324,6 +326,7 @@ export class Dialog implements IHtmlElement {
         input.tabIndex = this.tabIndex++;
         input.type = "checkbox";
         input.style.flexGrow = "100";
+        input.id = makeId(fieldName);
         fieldDiv.appendChild(input);
         this.fields.set(fieldName, {html: input});
         if (value != null && value)
@@ -347,6 +350,7 @@ export class Dialog implements IHtmlElement {
         let select = document.createElement("select");
         select.tabIndex = this.tabIndex++;
         select.style.flexGrow = "100";
+        select.id = makeId(fieldName);
         fieldDiv.appendChild(select);
         options.forEach(option => {
             let optionElement = document.createElement("option");

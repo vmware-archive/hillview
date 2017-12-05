@@ -303,7 +303,9 @@ export class HistogramView extends HistogramViewBase {
             .attr("height", canvasHeight)
             .attr("cursor", "crosshair");
 
-        this.canvas.on("mousemove", () => this.onMouseMove());
+        this.canvas.on("mousemove", () => this.onMouseMove())
+            .on("mouseenter", () => this.onMouseEnter())
+            .on("mouseleave", () => this.onMouseLeave());
 
         // The chart uses a fragment of the canvas offset by the margins
         this.chart = this.canvas
@@ -383,6 +385,7 @@ export class HistogramView extends HistogramViewBase {
         if (this.currentData.cdfSum != null)
             pointDesc.push("cdf");
         this.pointDescription = new TextOverlay(this.chart, pointDesc, 40);
+        this.pointDescription.show(false);
 
         let summary = "";
         if (h.missingData != 0)
@@ -394,6 +397,22 @@ export class HistogramView extends HistogramViewBase {
         if (samplingRate < 1.0)
             summary += ", sampling rate " + significantDigits(samplingRate);
         this.summary.innerHTML = summary;
+    }
+
+    // override
+    protected dragMove() {
+        this.onMouseMove();
+        super.dragMove();
+    }
+
+    protected dragEnd() {
+        let dragging = this.dragging && this.moved;
+        super.dragEnd();
+        if (!dragging)
+            return;
+        let position = d3.mouse(this.canvas.node());
+        let x = position[0];
+        this.selectionCompleted(this.selectionOrigin.x, x);
     }
 
     // show the table corresponding to the data in the histogram
@@ -412,9 +431,18 @@ export class HistogramView extends HistogramViewBase {
         rr.invoke(new NextKReceiver(newPage, table, rr, false, order));
     }
 
+    /**
+     * Selection has been completed.
+     * @param {number} xl: X mouse coordinate within canvas.
+     * @param {number} xr: Y mouse coordinate within canvas.
+     */
     protected selectionCompleted(xl: number, xr: number): void {
         if (this.xScale == null)
             return;
+
+        // coordinates within chart
+        xl -= Resolution.leftMargin;
+        xr -= Resolution.leftMargin;
 
         let kind = this.currentData.axisData.description.kind;
         let x0 = HistogramViewBase.invertToNumber(xl, this.xScale, kind);

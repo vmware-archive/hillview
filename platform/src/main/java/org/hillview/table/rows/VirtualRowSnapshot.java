@@ -54,7 +54,7 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
     /**
      * Index of the row in the table.
      */
-    private int rowIndex = -1;
+    protected int rowIndex = -1;
     private final Schema schema;
     private final HashMap<String, IColumn> columns;
 

@@ -45,6 +45,9 @@ import {combineMenu, SelectedObject} from "../selectedObject";
 export class HeatMapView extends RemoteTableObjectView {
     protected dragging: boolean;
     protected svg: any;
+    /**
+     * Coordinates of mouse within canvas.
+     */
     private selectionOrigin: Point;
     private selectionRectangle: any;
     protected chartDiv: HTMLElement;
@@ -168,6 +171,7 @@ export class HeatMapView extends RemoteTableObjectView {
 
     protected cancelDrag() {
         this.dragging = false;
+        this.moved = false;
         this.selectionRectangle
             .attr("width", 0)
             .attr("height", 0);
@@ -260,7 +264,18 @@ export class HeatMapView extends RemoteTableObjectView {
             .attr("height", canvasSize.height)
             .attr("cursor", "crosshair");
 
-        this.canvas.on("mousemove", () => this.onMouseMove());
+        this.canvas.on("mousemove", () => this.onMouseMove())
+            .on("mouseenter", () => this.onMouseEnter())
+            .on("mouseleave", () => this.onMouseLeave());
+        this.canvas.append("text")
+            .text(yData.description.name)
+            .attr("dominant-baseline", "text-before-edge");
+        this.canvas.append("text")
+            .text(xData.description.name)
+            .attr("transform", `translate(${this.chartSize.width / 2},
+                  ${this.chartSize.height + Resolution.topMargin + Resolution.bottomMargin / 2})`)
+            .attr("text-anchor", "middle")
+            .attr("dominant-baseline", "hanging");
 
         // The chart uses a fragment of the canvas offset by the margins
         this.chart = this.canvas
@@ -324,16 +339,6 @@ export class HeatMapView extends RemoteTableObjectView {
 
         this.colorLegend.redraw();
 
-        this.canvas.append("text")
-            .text(yData.description.name)
-            .attr("dominant-baseline", "text-before-edge");
-        this.canvas.append("text")
-            .text(xData.description.name)
-            .attr("transform", `translate(${this.chartSize.width / 2},
-                  ${this.chartSize.height + Resolution.topMargin + Resolution.bottomMargin / 2})`)
-            .attr("text-anchor", "middle")
-            .attr("dominant-baseline", "hanging");
-
         this.chart.append("g")
             .attr("class", "x-axis")
             .attr("transform", `translate(0, ${this.chartSize.height})`)
@@ -368,7 +373,9 @@ export class HeatMapView extends RemoteTableObjectView {
             }
         }
 
-        this.pointDescription = new TextOverlay(this.chart, ["x", "y", "count"], 40);
+        this.pointDescription = new TextOverlay(this.chart,
+            [xData.description.name, yData.description.name, "count"], 40);
+        this.pointDescription.show(false);
         let summary = formatNumber(visible) + " data points";
         if (missingData != 0)
             summary += ", " + formatNumber(missingData) + " missing";
@@ -380,6 +387,16 @@ export class HeatMapView extends RemoteTableObjectView {
         if (samplingRate < 1.0)
             summary += ", sampling rate " + significantDigits(samplingRate);
         this.summary.innerHTML = summary;
+    }
+
+    protected onMouseEnter(): void {
+        if (this.pointDescription != null)
+            this.pointDescription.show(true);
+    }
+
+    protected onMouseLeave(): void {
+        if (this.pointDescription != null)
+            this.pointDescription.show(false);
     }
 
     private reapplyColorMap() {
@@ -421,7 +438,7 @@ export class HeatMapView extends RemoteTableObjectView {
 
         this.dragging = true;
         this.moved = false;
-        let position = d3.mouse(this.chart.node());
+        let position = d3.mouse(this.canvas.node());
         this.selectionOrigin = {
             x: position[0],
             y: position[1] };
@@ -437,7 +454,7 @@ export class HeatMapView extends RemoteTableObjectView {
         this.moved = true;
         let ox = this.selectionOrigin.x;
         let oy = this.selectionOrigin.y;
-        let position = d3.mouse(this.chart.node());
+        let position = d3.mouse(this.canvas.node());
         let x = position[0];
         let y = position[1];
         let width = x - ox;
@@ -453,8 +470,8 @@ export class HeatMapView extends RemoteTableObjectView {
         }
 
         this.selectionRectangle
-            .attr("x", ox + Resolution.leftMargin)
-            .attr("y", oy + Resolution.topMargin)
+            .attr("x", ox)
+            .attr("y", oy)
             .attr("width", width)
             .attr("height", height);
     }
@@ -468,13 +485,21 @@ export class HeatMapView extends RemoteTableObjectView {
         this.selectionRectangle
             .attr("width", 0)
             .attr("height", 0);
-        let position = d3.mouse(this.chart.node());
+        let position = d3.mouse(this.canvas.node());
         let x = position[0];
         let y = position[1];
         this.selectionCompleted(this.selectionOrigin.x, x, this.selectionOrigin.y, y);
     }
 
+    /**
+     * Selection has been completed.  The mouse coordinates are within the canvas.
+     */
     selectionCompleted(xl: number, xr: number, yl: number, yr: number): void {
+        xl -= Resolution.leftMargin;
+        xr -= Resolution.leftMargin;
+        yl -= Resolution.topMargin;
+        yr -= Resolution.topMargin;
+
         if (this.xScale == null || this.yScale == null)
             return;
 
@@ -620,7 +645,7 @@ export class HeatMapRenderer extends Renderer<HeatMap> {
                 protected samplingRate: number,
                 protected ds: DistinctStrings[],
                 operation: ICancellable) {
-        super(new FullPage("Heatmap", "Heatmap", page), operation, "histogram");
+        super(new FullPage("Heatmap " + cds[0].name + ", " + cds[1].name, "Heatmap", page), operation, "histogram");
         page.insertAfterMe(this.page);
         this.heatMap = new HeatMapView(remoteTable.remoteObjectId, remoteTable.originalTableId, schema, this.page);
         this.page.setDataView(this.heatMap);

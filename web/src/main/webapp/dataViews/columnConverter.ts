@@ -40,6 +40,7 @@ export class ConverterDialog extends Dialog {
         nk.onchange = () => this.generateColumnName();
         // If the user types a column name don't attempt to change it
         nn.onchange = () => this.columnNameFixed = true;
+        this.setCacheTitle("ConverterDialog");
         this.generateColumnName();
     }
 
