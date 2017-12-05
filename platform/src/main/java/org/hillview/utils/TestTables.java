@@ -78,7 +78,7 @@ public class TestTables {
         ColumnDescription c1 = new ColumnDescription("Age", ContentsKind.Integer, false);
 
         //Assert.assertTrue(!Arrays.asList(others).contains(test));
-        Random random = new Random();
+        Random random = new Random(0);
         ArrayList<String> names = new ArrayList<String>();
         ArrayList<Integer> ages = new ArrayList<Integer>();
         for (int i = 0; i < size - count; i++) {

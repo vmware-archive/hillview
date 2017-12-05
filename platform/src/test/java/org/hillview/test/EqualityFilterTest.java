@@ -120,7 +120,7 @@ public class EqualityFilterTest extends BaseTest {
         }
     }
 
-    @Test
+    //@Test
     public void testStringDataset() {
         // Make a quite large ITable
         int bigSize = 10000;
