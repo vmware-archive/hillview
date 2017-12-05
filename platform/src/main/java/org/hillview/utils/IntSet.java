@@ -98,6 +98,7 @@ public class IntSet {
         if (this.size++ >= this.maxFill) {
             this.rehash(HashUtil.arraySize(this.size + 1, this.f));
         }
+        this.iteratorKey = this.key;
         return true;
     }
 
@@ -184,8 +185,9 @@ public class IntSet {
     }
 
     public void sortIterator() {
-        iteratorKey = new int[this.n + 1];
-        System.arraycopy(this.key, 0, this.iteratorKey, 0, this.key.length);
+//        iteratorKey = new int[this.n + 1];
+        iteratorKey = Arrays.copyOf(this.key, this.key.length);
+//        System.arraycopy(this.key, 0, this.iteratorKey, 0, this.key.length);
         Arrays.sort(this.iteratorKey);
     }
 

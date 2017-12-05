@@ -17,6 +17,7 @@
 
 package org.hillview.test;
 
+import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.maps.FilterMap;
 import org.hillview.sketches.BasicColStatSketch;
@@ -120,17 +121,19 @@ public class EqualityFilterTest extends BaseTest {
         }
     }
 
-    //@Test
+    @Test
     public void testStringDataset() {
         // Make a quite large ITable
-        int bigSize = 10000;
-        int count = 42;
+        int bigSize = 1300;
+        int count = 10;
         String[] possibleNames = {"John", "Robert", "Ed", "Sam", "Ned", "Jaime", "Rickard"};
-        String name = "Varys";
-        ITable bigTable = TestTables.testLargeStringTable(bigSize, possibleNames, count, "Varys");
+        String name = "EVarys";
+        ITable bigTable = TestTables.testLargeStringTable(bigSize, possibleNames, count, "EVarys");
+
 
         // Convert it to an IDataset
-        IDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize / 10);
+//         IDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize / 10);
+        IDataSet<ITable> all = new LocalDataSet<ITable>(bigTable);
 
         // Make the filter map
         EqualityFilterDescription equalityFilter = new EqualityFilterDescription("Name", name);
@@ -138,6 +141,7 @@ public class EqualityFilterTest extends BaseTest {
 
         // Apply the map to the IDataset.
         IDataSet<ITable> result = all.blockingMap(filterMap);
+//        IDataSet<ITable> result = all;
 
         // Count the number of rows in the resulting IDataset with a BasicColStatsSketch
         SortedStringsConverterDescription converter = new SortedStringsConverterDescription(possibleNames, 0, 50);
