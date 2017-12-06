@@ -80,7 +80,7 @@ export interface JdbcConnectionInformation {
     databaseKind: string;  // e.g. mysql; part of url for connection
 }
 
-export interface CSVFilesDescription {
+export interface FileSetDescription {
     folder: string;
     fileNamePattern: string;
     schemaFile: string;

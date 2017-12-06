@@ -18,17 +18,19 @@
 package org.hillview.maps;
 
 import org.hillview.dataset.api.IMap;
-import org.hillview.storage.HillviewLogs;
+import org.hillview.storage.JsonFileReader;
 import org.hillview.table.api.ITable;
 
 import java.nio.file.Paths;
 
 /**
- * Loads a log file produced by Hillview as a table.
+ * Reads the specified file assuming it contains a single JSON object.
+ * See the JsonFileReader class for a description of the expected file format.
  */
-public class LoadLogFileMapper implements IMap<String, ITable> {
+public class LoadJsonFileMapper implements IMap<String, ITable> {
     @Override
     public ITable apply(String data) {
-        return HillviewLogs.parseLogFile(Paths.get(data));
+        JsonFileReader reader = new JsonFileReader(Paths.get(data));
+        return reader.read();
     }
 }
