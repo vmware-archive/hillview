@@ -140,7 +140,6 @@ public class EqualityFilterTest extends BaseTest {
 
         // Apply the map to the IDataset.
         IDataSet<ITable> result = all.blockingMap(filterMap);
-//        IDataSet<ITable> result = all;
 
         // Count the number of rows in the resulting IDataset with a BasicColStatsSketch
         SortedStringsConverterDescription converter = new SortedStringsConverterDescription(possibleNames, 0, 50);
