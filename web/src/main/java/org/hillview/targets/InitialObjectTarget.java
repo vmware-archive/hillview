@@ -104,7 +104,7 @@ public class InitialObjectTarget extends RpcTarget {
         this.runMap(this.emptyDataset, mapper, TableTarget::new, request, context);
     }
 
-    public static class CSVFilesDescription {
+    public static class FileSetDescription {
         String folder = "";
         @Nullable
         String fileNamePattern;
@@ -115,7 +115,7 @@ public class InitialObjectTarget extends RpcTarget {
 
     @HillviewRpc
     public void findCSVFiles(RpcRequest request, RpcRequestContext context) {
-        CSVFilesDescription desc = request.parseArgs(CSVFilesDescription.class);
+        FileSetDescription desc = request.parseArgs(FileSetDescription.class);
         CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
         config.allowMissingData = true;
         config.allowFewerColumns = false;
@@ -189,6 +189,17 @@ public class InitialObjectTarget extends RpcTarget {
         HillviewLogger.instance.info("Preparing files");
         assert this.emptyDataset != null;
         this.runFlatMap(this.emptyDataset, finder, CsvFileTarget::new, request, context);
+    }
+
+    @HillviewRpc
+    public void findJsonFiles(RpcRequest request, RpcRequestContext context) {
+        Converters.checkNull(this.emptyDataset);
+        FileSetDescription desc = request.parseArgs(FileSetDescription.class);
+        String pattern = Utilities.wildcardToRegex(desc.fileNamePattern);
+        IMap<Empty, List<String>> finder = new FindFilesMapper(desc.folder, 0, pattern, null);
+        HillviewLogger.instance.info("Finding JSON Files");
+        assert this.emptyDataset != null;
+        this.runFlatMap(this.emptyDataset, finder, JsonFileTarget::new, request, context);
     }
 
     @HillviewRpc

@@ -919,7 +919,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
     }
 
     public viewSchema(): void {
-        let newPage = new FullPage("Schema", "Schema", this.page);
+        let newPage = new FullPage("Schema of ", "Schema", this.page);
         let sv = new SchemaView(this.remoteObjectId, this.originalTableId, newPage, this.schema, this.rowCount);
         newPage.setDataView(sv);
         this.page.insertAfterMe(newPage);
@@ -1126,7 +1126,7 @@ class SchemaReceiver extends OnCompleteRenderer<TableSummary> {
         let page: FullPage;
         let dataView: IDataView;
         if (summary.schema.length > 20 && this.title != null && !this.forceTableView) {
-            page = new FullPage(this.title, "Schema", this.page);
+            page = new FullPage("Schema of " + this.title, "Schema", this.page);
             dataView = new SchemaView(this.remoteObject.remoteObjectId,
                 this.remoteObject.originalTableId, page, summary.schema, summary.rowCount);
         } else {
