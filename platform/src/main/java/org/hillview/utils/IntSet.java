@@ -184,10 +184,12 @@ public class IntSet {
         return newSet;
     }
 
+    /**
+     * Creates another array with the keys, this time in sorted order. This is used to optimize the iterator and
+     * therefore should be called only once the IntSet is deemed immutable.
+     */
     public void sortIterator() {
-//        iteratorKey = new int[this.n + 1];
         iteratorKey = Arrays.copyOf(this.key, this.key.length);
-//        System.arraycopy(this.key, 0, this.iteratorKey, 0, this.key.length);
         Arrays.sort(this.iteratorKey);
     }
 
@@ -249,9 +251,12 @@ public class IntSet {
                 this.mustReturnZero = false;
                 return 0;
             }
-            while (--this.pos >= 0) {
-                if (IntSet.this.iteratorKey[this.pos] != 0)
-                    return IntSet.this.iteratorKey[this.pos];
+            while (this.pos >= 0) {
+                if (IntSet.this.iteratorKey[this.pos] != 0) {
+                    this.pos--;
+                    return IntSet.this.iteratorKey[this.pos + 1];
+                }
+                this.pos--;
             }
             return -1;
         }
