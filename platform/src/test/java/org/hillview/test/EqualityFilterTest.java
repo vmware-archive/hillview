@@ -130,7 +130,6 @@ public class EqualityFilterTest extends BaseTest {
         String name = "Varys";
         ITable bigTable = TestTables.testLargeStringTable(bigSize, possibleNames, count, "Varys");
 
-
         // Convert it to an IDataset
         IDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize / 10);
 
