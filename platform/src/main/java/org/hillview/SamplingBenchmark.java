@@ -29,10 +29,7 @@ public class SamplingBenchmark {
         final int mega = 1024 * 1024;
         final int runCount = 10;
         HillviewLogger.instance.setLogLevel(Level.OFF);
-
         BucketsDescriptionEqSize buckDes = new BucketsDescriptionEqSize(0, 100, bucketNum);
-
-
         PrintWriter writer = new PrintWriter("SamplingBenchmarkFull", "UTF-8");
 
         for (int elements = 10 * mega; elements < 101 * mega; elements += (10 * mega)) {
@@ -96,7 +93,6 @@ public class SamplingBenchmark {
                 minIndex = i;
         double max = 0, mean = 0;
         double min = Double.MAX_VALUE;
-
         for (int i=0; i < count; i++) {
             mean += times[i];
             if (max < times[i]) max = times[i];
