@@ -124,16 +124,15 @@ public class EqualityFilterTest extends BaseTest {
     @Test
     public void testStringDataset() {
         // Make a quite large ITable
-        int bigSize = 1300;
-        int count = 10;
+        int bigSize = 10000;
+        int count = 42;
         String[] possibleNames = {"John", "Robert", "Ed", "Sam", "Ned", "Jaime", "Rickard"};
-        String name = "EVarys";
-        ITable bigTable = TestTables.testLargeStringTable(bigSize, possibleNames, count, "EVarys");
+        String name = "Varys";
+        ITable bigTable = TestTables.testLargeStringTable(bigSize, possibleNames, count, "Varys");
 
 
         // Convert it to an IDataset
-//         IDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize / 10);
-        IDataSet<ITable> all = new LocalDataSet<ITable>(bigTable);
+        IDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize / 10);
 
         // Make the filter map
         EqualityFilterDescription equalityFilter = new EqualityFilterDescription("Name", name);

@@ -333,7 +333,6 @@ public class TestTables {
             LocalDataSet<ITable> ds = new LocalDataSet<ITable>(t);
             a.add(ds);
         }
-        System.out.println(a.size());
         return new ParallelDataSet<ITable>(a);
     }
 }
