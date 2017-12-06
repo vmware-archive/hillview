@@ -22,7 +22,7 @@ import {ICancellable} from "./util";
 import {IDataView} from "./ui/dataview";
 import {ConsoleDisplay} from "./ui/errReporter";
 import {FullPage} from "./ui/fullPage";
-import {CSVFilesDescription, JdbcConnectionInformation, Status} from "./javaBridge";
+import {FileSetDescription, JdbcConnectionInformation, Status} from "./javaBridge";
 import {Dialog, FieldKind} from "./ui/dialog";
 import {Test} from "./test";
 
@@ -76,6 +76,9 @@ export class LoadMenu extends RemoteObject implements IDataView {
                     { text: "CSV files",
                         action: () => this.showCSVFileDialog(),
                         help: "A set of comma-separated value files residing on the worker machines." },
+                    { text: "JSON files",
+                        action: () => this.showJSONFileDialog(),
+                        help: "A set of files containing JSOn values residing on the worker machines." },
                     { text: "DB tables",
                         action: () => this.showDBDialog(),
                         help: "A set of database tables residing in databases on each worker machine." }
@@ -144,6 +147,12 @@ export class LoadMenu extends RemoteObject implements IDataView {
         dialog.show();
     }
 
+    showJSONFileDialog(): void {
+        let dialog = new JsonFileDialog();
+        dialog.setAction(() => this.init.loadJsonFiles(dialog.getFiles(), this.page));
+        dialog.show();
+    }
+
     getHTMLRepresentation(): HTMLElement {
         return this.top;
     }
@@ -189,11 +198,36 @@ class CSVFileDialog extends Dialog {
         this.setCacheTitle("CSVFileDialog");
     }
 
-    public getFiles(): CSVFilesDescription {
+    public getFiles(): FileSetDescription {
         return {
             schemaFile: this.getFieldValue("schemaFile"),
             fileNamePattern: this.getFieldValue("fileNamePattern"),
             hasHeaderRow: this.getBooleanValue("hasHeader"),
+            folder: this.getFieldValue("folder")
+        }
+    }
+}
+
+/**
+ * Dialog that asks the user which Json files to load.
+ */
+class JsonFileDialog extends Dialog {
+    constructor() {
+        super("Load JSON files", "Loads JSON files from all machines that are part of the service.  Each file should " +
+            "contain a JSON array of JSON objects.  All JSON objects should have the same schema.  Each JSON object" +
+            "field becomes a separate column.  The schema of all JSON files loaded should be the same.");
+        this.addTextField("folder", "Folder", FieldKind.String, "/",
+            "Folder on the remote machines where all the CSV files are found.");
+        this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "*.json",
+            "Shell pattern that describes the names of the files to load.");
+        this.setCacheTitle("JsonFileDialog");
+    }
+
+    public getFiles(): FileSetDescription {
+        return {
+            schemaFile: null,
+            fileNamePattern: this.getFieldValue("fileNamePattern"),
+            hasHeaderRow: false,
             folder: this.getFieldValue("folder")
         }
     }

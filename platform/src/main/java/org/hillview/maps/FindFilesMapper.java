@@ -82,6 +82,8 @@ public class FindFilesMapper implements IMap<Empty, List<String>> {
         files = files.sorted(Comparator.comparing(Path::toString));
         if (this.maxCount > 0)
             files = files.limit(this.maxCount);
-        return files.map(f -> f.getFileName().toString()).collect(Collectors.toList());
+        List<String> list = files.map(Path::toString).collect(Collectors.toList());
+        HillviewLogger.instance.info("Files found", "{0}", String.join(",", list));
+        return list;
     }
 }

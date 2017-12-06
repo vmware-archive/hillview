@@ -19,7 +19,7 @@ import {RemoteObject, OnCompleteRenderer} from "./rpc";
 import {RemoteTableReceiver} from "./dataViews/tableView";
 import {FullPage} from "./ui/fullPage";
 import {ICancellable} from "./util";
-import {CSVFilesDescription, JdbcConnectionInformation, RemoteObjectId} from "./javaBridge";
+import {FileSetDescription, JdbcConnectionInformation, RemoteObjectId} from "./javaBridge";
 
 /**
  * A renderer which receives a remote object id that denotes a set of files.
@@ -27,7 +27,7 @@ import {CSVFilesDescription, JdbcConnectionInformation, RemoteObjectId} from "./
  */
 class FileNamesReceiver extends OnCompleteRenderer<RemoteObjectId> {
     constructor(page: FullPage, operation: ICancellable, protected title: string) {
-        super(page, operation, "Find files");
+        super(page, operation, "Load files");
     }
 
     public run(remoteObjId: RemoteObjectId): void {
@@ -60,7 +60,7 @@ export class InitialObject extends RemoteObject {
         rr.invoke(observer);
     }
 
-    public loadCSVFiles(files: CSVFilesDescription, menuPage: FullPage): void {
+    public loadCSVFiles(files: FileSetDescription, menuPage: FullPage): void {
         let rr = this.createStreamingRpcRequest<RemoteObjectId>("findCSVFiles", files);
         let observer = new FileNamesReceiver(menuPage, rr, files.fileNamePattern);
         rr.invoke(observer);
@@ -69,6 +69,12 @@ export class InitialObject extends RemoteObject {
     public loadLogs(menuPage: FullPage): void {
         let rr = this.createStreamingRpcRequest<RemoteObjectId>("findLogs", null);
         let observer = new LogFileReceiver(menuPage, rr, "Hillview logs");
+        rr.invoke(observer);
+    }
+
+    public loadJsonFiles(files: FileSetDescription, menuPage: FullPage): void {
+        let rr = this.createStreamingRpcRequest<RemoteObjectId>("findJsonFiles", files);
+        let observer = new FileNamesReceiver(menuPage, rr, files.fileNamePattern);
         rr.invoke(observer);
     }
 

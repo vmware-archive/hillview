@@ -121,6 +121,9 @@ storage.
 * CSV files: allows the user to [read data from a set of CSV
   files](#reading-csv-files).
 
+* JSON files: allow the user to [read the data from a set of JSON
+  files](#reading-json-files).
+
 * DB tables: allows the user to [read data from a set of federated
   databases](#reading-data-from-sql-databases).
 
@@ -187,6 +190,29 @@ column description has three fields:
   corresponding to the types in the [data model](#data-model).  The
   kind is one of: "String", "Category", "JSON", "Double", "Integer",
   "Date", and "Interval".
+
+#### Reading JSON files
+
+Hillview can read data from JSON files. The following menu allows the
+users to specify the files to load.  *The files must be resident on
+the same machines where the Hillview service is deployed*.
+
+![Specifying JSON files](json-menu.png)
+
+* Folder: Folder containing the files to load.
+
+* File name pattern: A shell expansion pattern that names the files to
+  load.  Multiple files may be loaded on each machine.
+
+The assumed format is as follows:
+- the file contains a single JSON array
+- the array elements are flat JSON objects
+- each value will become a row in the table
+- all JSON objects have the same structure (schema)
+- JSON objects generate a column for each property
+
+All the JSON files must have the same schema.  JSON files may be
+compressed.
 
 #### Reading data from SQL databases
 

@@ -40,14 +40,10 @@ public class ImpalaJdbcConnection extends JdbcConnection {
         boolean hasUser = false;
         boolean hasPassword = false;
 
-        if (!Utilities.isNullOrEmpty(info.user)) {
-            //this.addParameter("user", info.user);
+        if (!Utilities.isNullOrEmpty(info.user))
             hasUser = true;
-        }
-        if (!Utilities.isNullOrEmpty(info.password)) {
-            //this.addParameter("password", info.password);
+        if (!Utilities.isNullOrEmpty(info.password))
             hasPassword = true;
-        }
 
         if (hasUser && hasPassword)
             authMech = 3;
