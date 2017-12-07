@@ -61,14 +61,14 @@ export class InitialObject extends RemoteObject {
     }
 
     public loadCSVFiles(files: FileSetDescription, menuPage: FullPage): void {
-        let rr = this.createStreamingRpcRequest<RemoteObjectId>("findCSVFiles", files);
+        let rr = this.createStreamingRpcRequest<RemoteObjectId>("findCsvFiles", files);
         let observer = new FileNamesReceiver(menuPage, rr, files.fileNamePattern);
         rr.invoke(observer);
     }
 
     public loadLogs(menuPage: FullPage): void {
         let rr = this.createStreamingRpcRequest<RemoteObjectId>("findLogs", null);
-        let observer = new LogFileReceiver(menuPage, rr, "Hillview logs");
+        let observer = new FileNamesReceiver(menuPage, rr, "Hillview logs");
         rr.invoke(observer);
     }
 
@@ -82,22 +82,6 @@ export class InitialObject extends RemoteObject {
         let rr = this.createStreamingRpcRequest<RemoteObjectId>("loadDBTable", conn);
         let title = "DB " + conn.database + ":" + conn.table;
         let observer = new RemoteTableReceiver(menuPage, rr, title, false, null);
-        rr.invoke(observer);
-    }
-}
-
-/**
- * Receives and displays the Hillview system logs as a tabular view.
- */
-class LogFileReceiver extends OnCompleteRenderer<RemoteObjectId> {
-    constructor(page: FullPage, operation: ICancellable, protected title: string) {
-        super(page, operation, "Find logs");
-    }
-
-    public run(objId: RemoteObjectId): void {
-        let fn = new RemoteObject(objId);
-        let rr = fn.createStreamingRpcRequest<string>("loadTable", null);
-        let observer = new RemoteTableReceiver(this.page, rr, this.title, false, null);
         rr.invoke(observer);
     }
 }

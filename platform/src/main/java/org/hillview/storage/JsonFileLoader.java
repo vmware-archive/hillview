@@ -24,16 +24,14 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.internal.Streams;
 import com.google.gson.stream.JsonReader;
 import org.hillview.table.ColumnDescription;
+import org.hillview.table.Schema;
 import org.hillview.table.Table;
 import org.hillview.table.api.*;
-import org.hillview.table.columns.BaseListColumn;
-import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.io.*;
-import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
-import java.util.zip.GZIPInputStream;
 
 /**
  * Reads data from a file containing data encoded as JSON.
@@ -46,47 +44,46 @@ import java.util.zip.GZIPInputStream;
  * TODO: add support for sparse data, with different schemas and hierarchical objects.
  * TODO: add suport for streaming reads
  */
-public class JsonFileReader {
-    protected final Path filename;
+public class JsonFileLoader extends TextFileLoader {
     @Nullable
-    protected IAppendableColumn[] columns;
+    protected String schemaPath;
 
-    public JsonFileReader(final Path path) {
-        this.filename = path;
+    public JsonFileLoader(String filename, @Nullable String schemaPath) {
+        super(filename);
+        this.schemaPath = schemaPath;
     }
 
-    public ITable read() {
-        try {
-            Reader file;
-            if (this.filename.toString().toLowerCase().endsWith(".gz"))
-                file = new InputStreamReader(new GZIPInputStream(new FileInputStream(this.filename.toString())));
-            else file = new FileReader(this.filename.toString());
-            JsonReader jReader = new JsonReader(file);
-            JsonElement elem = Streams.parse(jReader);
-            if (!elem.isJsonArray())
-                throw new RuntimeException("Expected a JSON array in file " + this.filename);
-            JsonArray array = elem.getAsJsonArray();
-            if (array.size() == 0)
-                throw new RuntimeException("Empty JSON array in file " + this.filename);
+    public ITable load() {
+        Schema schema = null;
+        if (this.schemaPath != null)
+            schema = Schema.readFromJsonFile(Paths.get(this.schemaPath));
 
-            JsonElement el = array.get(0);
-            this.allocateColumns(el);
+        Reader file = this.getFileReader();
+        JsonReader jReader = new JsonReader(file);
+        JsonElement elem = Streams.parse(jReader);
+        if (!elem.isJsonArray())
+            throw new RuntimeException("Expected a JSON array in file " + filename);
+        JsonArray array = elem.getAsJsonArray();
+        if (array.size() == 0)
+            throw new RuntimeException("Empty JSON array in file " + filename);
 
-            int row = 0;
-            for (JsonElement e : array)
-                this.append(e, row++);
+        JsonElement el = array.get(0);
+        if (schema == null)
+            schema = this.guessSchema(filename, el);
+        IAppendableColumn[] columns = schema.createAppendableColumns();
 
-            return new Table(Converters.checkNull(this.columns));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        int row = 0;
+        for (JsonElement e : array)
+            this.append(columns, e, row++);
+
+        return new Table(columns);
     }
 
-    void allocateColumns(JsonElement el) {
+    Schema guessSchema(String filename, JsonElement el) {
         if (!el.isJsonObject())
-            throw new RuntimeException("Expected a JSON array of JSON objects " + this.filename);
+            throw new RuntimeException("Expected a JSON array of JSON objects " + filename);
         JsonObject object = el.getAsJsonObject();
-        this.columns = new IAppendableColumn[object.size()];
+        Schema schema = new Schema();
         int index = 0;
         for (Map.Entry<String, JsonElement> e: object.entrySet()) {
             String name = e.getKey();
@@ -106,19 +103,18 @@ public class JsonFileReader {
             else
                 throw new RuntimeException("Unexpected JSON value " + prim);
             ColumnDescription desc = new ColumnDescription(name, kind, true);
-            IAppendableColumn col = BaseListColumn.create(desc);
-            this.columns[index++] = col;
+            schema.append(desc);
         }
+        return schema;
     }
 
-    void append(JsonElement e, int row) {
+    void append(IAppendableColumn[] columns, JsonElement e, int row) {
         if (!e.isJsonObject())
             throw new RuntimeException("Row " + row + " is not a JsonObject");
         JsonObject obj = e.getAsJsonObject();
-        Converters.checkNull(this.columns);
-        for (IAppendableColumn col: this.columns) {
+        for (IAppendableColumn col: columns) {
             JsonElement el = obj.get(col.getName());
-            if (el == null) {
+            if (el == null || el.isJsonNull()) {
                 col.appendMissing();
                 continue;
             }

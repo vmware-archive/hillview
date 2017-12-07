@@ -38,7 +38,10 @@ public class Utilities {
      * @return          A String that represents a regular expression
      *                  with the same semantics as the wildcard pattern.
      */
-    public static String wildcardToRegex(String wildcard) {
+    @Nullable
+    public static String wildcardToRegex(@Nullable String wildcard) {
+        if (wildcard == null)
+            return null;
         StringBuffer s = new StringBuffer(wildcard.length());
         s.append('^');
         for (int i = 0; i < wildcard.length(); i++) {

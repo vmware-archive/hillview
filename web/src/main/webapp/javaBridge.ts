@@ -84,7 +84,8 @@ export interface FileSetDescription {
     folder: string;
     fileNamePattern: string;
     schemaFile: string;
-    hasHeaderRow: boolean;
+    headerRow?: boolean;
+    cookie?: string;
 }
 
 export interface HLogLog {

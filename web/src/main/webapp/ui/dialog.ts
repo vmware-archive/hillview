@@ -103,7 +103,7 @@ export class Dialog implements IHtmlElement {
      * @param toolTip: help message to display on mouseover.
      */
     constructor(title: string, toolTip: string) {
-        this.tabIndex = 0;
+        this.tabIndex = 10;
         this.dialogTitle = null;
         this.line = new Map<string, HTMLElement>();
         this.onConfirm = null;
@@ -228,7 +228,7 @@ export class Dialog implements IHtmlElement {
         document.body.appendChild(this.container);
         if (this.fieldsDiv.childElementCount == 0) {
             // If there are somehow no fields, focus on the container.
-            this.container.setAttribute("tabindex", "0");
+            this.container.setAttribute("tabindex", "10");
             this.container.focus();
         } else {
             // Focus on the first input element.
@@ -251,8 +251,6 @@ export class Dialog implements IHtmlElement {
         fieldDiv.style.display = "flex";
         fieldDiv.style.alignItems = "center";
         fieldDiv.title = toolTip;
-        fieldDiv.onkeydown = e => e.stopPropagation();
-        fieldDiv.onkeypress = e => e.stopPropagation();
         fieldDiv.onmousedown = e => e.stopPropagation();
         this.fieldsDiv.appendChild(fieldDiv);
 

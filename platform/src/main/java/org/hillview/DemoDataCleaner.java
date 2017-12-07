@@ -17,12 +17,11 @@
 
 package org.hillview;
 
-import org.hillview.storage.CsvFileReader;
+import org.hillview.storage.CsvFileLoader;
 import org.hillview.storage.CsvFileWriter;
 import org.hillview.table.HashSubSchema;
 import org.hillview.table.Schema;
 import org.hillview.table.api.ITable;
-import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.TestTables;
 
@@ -56,8 +55,8 @@ public class DemoDataCleaner {
         };
 
         System.out.println("Splitting files in folder " + dataFolder);
-        Path path = Paths.get(dataFolder, schemaFile);
-        Schema schema = Schema.readFromJsonFile(path);
+        Path schemaPath = Paths.get(dataFolder, schemaFile);
+        Schema schema = Schema.readFromJsonFile(schemaPath);
         HashSubSchema subSchema = new HashSubSchema(columns);
         Schema proj = schema.project(subSchema);
         proj.writeToJsonFile(Paths.get(dataFolder, "short.schema"));
@@ -78,22 +77,14 @@ public class DemoDataCleaner {
                 .forEach(f -> {
                     String filename = f.getFileName().toString();
                     String end = filename.substring(prefix.length() + 1);
-                    CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
+                    CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
                     config.allowFewerColumns = false;
                     config.hasHeaderRow = true;
                     config.allowMissingData = false;
-                    config.schema = schema;
-                    CsvFileReader r = new CsvFileReader(f, config);
+                    CsvFileLoader r = new CsvFileLoader(filename, config, schemaPath.toString());
 
-                    ITable tbl = null;
-                    try {
-                        System.out.println("Reading " + f);
-                        tbl = r.read();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    Converters.checkNull(tbl);
-
+                    System.out.println("Reading " + f);
+                    ITable tbl = r.load();
                     ITable p = tbl.project(proj);
 
                     //noinspection ConstantConditions

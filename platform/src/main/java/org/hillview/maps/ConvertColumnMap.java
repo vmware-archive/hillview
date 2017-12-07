@@ -23,7 +23,7 @@ import org.hillview.table.api.*;
  * This map receives a column name of the input table, and returns a table with a new column,
  * containing the specified data converted to a new kind.
  */
-public class ConvertColumnMap extends AddColumnMap {
+public class ConvertColumnMap extends AppendColumnMap {
     private final String inputColName;
     private final ContentsKind newKind;
 

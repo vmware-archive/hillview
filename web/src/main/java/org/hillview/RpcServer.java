@@ -145,12 +145,14 @@ public final class RpcServer {
             RpcObjectManager.instance.removeSubscription(session);
         }
 
-        if (reason.getCloseCode() != CloseReason.CloseCodes.NORMAL_CLOSURE)
+        if (reason.getCloseCode() != CloseReason.CloseCodes.NORMAL_CLOSURE) {
             HillviewLogger.instance.error("Close connection for client",
                     "{0}, {1}", session.getId(), reason.toString());
-        else
+            HillviewLogger.instance.error("Stack trace from exception", new Exception());
+        } else {
             HillviewLogger.instance.info("Normal connection closing for client",
                     "{0}", session.getId());
+        }
         RpcObjectManager.instance.removeSession(session);
     }
 

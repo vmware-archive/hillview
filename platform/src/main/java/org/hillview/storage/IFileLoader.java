@@ -15,20 +15,16 @@
  * limitations under the License.
  */
 
-package org.hillview.maps;
+package org.hillview.storage;
 
-import org.hillview.dataset.api.IMap;
-import org.hillview.storage.HillviewLogs;
 import org.hillview.table.api.ITable;
 
-import java.nio.file.Paths;
-
 /**
- * Loads a log file produced by Hillview as a table.
+ * This class loads a file from disk and converts it into an ITable.
  */
-public class LoadLogFileMapper implements IMap<String, ITable> {
-    @Override
-    public ITable apply(String data) {
-        return HillviewLogs.parseLogFile(Paths.get(data));
-    }
+public interface IFileLoader {
+    /**
+     * Read the file, return a table.
+     */
+    ITable load();
 }

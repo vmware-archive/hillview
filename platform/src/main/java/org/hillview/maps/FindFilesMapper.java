@@ -19,6 +19,8 @@ package org.hillview.maps;
 
 import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IMap;
+import org.hillview.storage.FileLoaderDescription;
+import org.hillview.storage.IFileLoader;
 import org.hillview.utils.HillviewLogger;
 
 import javax.annotation.Nullable;
@@ -27,45 +29,42 @@ import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Comparator;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
  * Scans a folder and finds files matching a pattern.
+ * Creates a list of file loaders that can be invoked to load the actual file data as tables.
  */
-public class FindFilesMapper implements IMap<Empty, List<String>> {
+public class FindFilesMapper implements IMap<Empty, List<IFileLoader>> {
     private final String folder;
     private final int maxCount;
     @Nullable
     private final String fileNamePattern;
-    @SuppressWarnings("FieldCanBeLocal")
-    @Nullable
-    private final String cookie;
+    private final FileLoaderDescription loaderDescription;
 
     /**
      * Create an object to find all file names that match the specification.
      * @param folder   Folder where files are sought.
      * @param maxCount Maximum number of files to find.  If 0 there is no limit.
      * @param fileNamePattern  Regex for file names to search.  If null all file names match.
-     * @param cookie   Supplying here a unique string will make the map un-cache-able,
-     *                 forcing it to load the files again.  There is no other use for the
-     *                 cookie.
      */
     public FindFilesMapper(String folder, int maxCount,
-                           @Nullable String fileNamePattern, @Nullable String cookie) {
+                           @Nullable String fileNamePattern,
+                           FileLoaderDescription loader) {
         this.folder = folder;
         this.maxCount = maxCount;
         this.fileNamePattern = fileNamePattern;
-        this.cookie = cookie;
+        this.loaderDescription = loader;
     }
 
     @Override
-    public List<String> apply(Empty empty) {
+    public List<IFileLoader> apply(Empty empty) {
         Path dir = Paths.get(this.folder);
-        HillviewLogger.instance.info("Find files in folder", "{0}",
-                dir.toAbsolutePath().toString());
+        HillviewLogger.instance.info("Find files", "folder: {0}, pattern: {1}",
+                dir.toAbsolutePath().toString(), this.fileNamePattern);
 
         Stream<Path> files;
         try {
@@ -79,11 +78,15 @@ public class FindFilesMapper implements IMap<Empty, List<String>> {
             String filename = f.getFileName().toString();
             return filename.matches(this.fileNamePattern);
         });
-        files = files.sorted(Comparator.comparing(Path::toString));
+        Stream<String> fileNames = files.map(Path::toString).sorted();
         if (this.maxCount > 0)
-            files = files.limit(this.maxCount);
-        List<String> list = files.map(Path::toString).collect(Collectors.toList());
-        HillviewLogger.instance.info("Files found", "{0}", String.join(",", list));
-        return list;
+            fileNames = fileNames.limit(this.maxCount);
+        List<String> list = fileNames.collect(Collectors.toList());
+        String allNames = String.join(",", list);
+        HillviewLogger.instance.info("Files found", "{0}: {1}", list.size(), allNames);
+        List<IFileLoader> result = new ArrayList<IFileLoader>();
+        for (String n: list)
+            result.add(this.loaderDescription.createLoader(n));
+        return result;
     }
 }
