@@ -31,7 +31,7 @@ import org.hillview.table.api.*;
 import javax.annotation.Nullable;
 import java.io.*;
 import java.nio.file.Paths;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Reads data from a file containing data encoded as JSON.
@@ -67,9 +67,8 @@ public class JsonFileLoader extends TextFileLoader {
         if (array.size() == 0)
             throw new RuntimeException("Empty JSON array in file " + filename);
 
-        JsonElement el = array.get(0);
         if (schema == null)
-            schema = this.guessSchema(filename, el);
+            schema = this.guessSchema(filename, array);
         IAppendableColumn[] columns = schema.createAppendableColumns();
 
         int row = 0;
@@ -79,30 +78,71 @@ public class JsonFileLoader extends TextFileLoader {
         return new Table(columns);
     }
 
-    Schema guessSchema(String filename, JsonElement el) {
+    static ContentsKind getKind(@Nullable JsonElement e) {
+        if (e == null || e.isJsonNull())
+            return ContentsKind.None;
+        if (e.isJsonArray() || e.isJsonObject())
+            throw new RuntimeException("Values must be simple " + e);
+        JsonPrimitive prim = e.getAsJsonPrimitive();
+        if (prim.isBoolean())
+            return ContentsKind.Category;
+        if (prim.isNumber())
+            return ContentsKind.Double;
+        if (prim.isString())
+            return ContentsKind.String;
+        throw new RuntimeException("Unexpected JSON value " + prim);
+    }
+
+    Schema guessSchema(String filename, JsonArray array) {
+        Map<String, ContentsKind> colKind = new LinkedHashMap<String, ContentsKind>();
+        Set<String> unknownColumns = new HashSet<String>();
+
+        // Try to guess schema based on first element
+        JsonElement el = array.get(0);
         if (!el.isJsonObject())
             throw new RuntimeException("Expected a JSON array of JSON objects " + filename);
         JsonObject object = el.getAsJsonObject();
-        Schema schema = new Schema();
+
         int index = 0;
-        for (Map.Entry<String, JsonElement> e: object.entrySet()) {
+        for (Map.Entry<String, JsonElement> e : object.entrySet()) {
             String name = e.getKey();
             JsonElement value = e.getValue();
             if (value.isJsonArray() || value.isJsonObject())
                 throw new RuntimeException("Values must be simple " + value);
-            if (value.isJsonNull())
-                throw new RuntimeException("Null value in first row");
-            JsonPrimitive prim = value.getAsJsonPrimitive();
-            ContentsKind kind;
-            if (prim.isBoolean())
+            ContentsKind kind = JsonFileLoader.getKind(value);
+            if (kind == ContentsKind.None)
+                unknownColumns.add(name);
+            colKind.put(name, kind);
+        }
+
+        // If we could not guess schema scan the rest of the elements.
+        int row = 1;
+        List<String> found = new ArrayList<String>();
+        while (unknownColumns.size() != 0 && row < array.size()) {
+            el = array.get(row++);
+            if (!el.isJsonObject())
+                throw new RuntimeException("Expected a JSON array of JSON objects " + filename);
+            object = el.getAsJsonObject();
+
+            for (String u: unknownColumns) {
+                JsonElement e = object.get(u);
+                ContentsKind k = JsonFileLoader.getKind(e);
+                if (k != ContentsKind.None) {
+                    found.add(u);
+                    colKind.put(u, k);
+                }
+            }
+            unknownColumns.removeAll(found);
+            found.clear();
+        }
+
+        Schema schema = new Schema();
+        for (Map.Entry<String, ContentsKind> e: colKind.entrySet()) {
+            ContentsKind kind = e.getValue();
+            if (kind == ContentsKind.None)
+                // This column is always null
                 kind = ContentsKind.Category;
-            else if (prim.isNumber())
-                kind = ContentsKind.Double;
-            else if (prim.isString())
-                kind = ContentsKind.String;
-            else
-                throw new RuntimeException("Unexpected JSON value " + prim);
-            ColumnDescription desc = new ColumnDescription(name, kind, true);
+            ColumnDescription desc = new ColumnDescription(e.getKey(), kind, true);
             schema.append(desc);
         }
         return schema;
