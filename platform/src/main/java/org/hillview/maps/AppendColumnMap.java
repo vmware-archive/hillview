@@ -25,7 +25,7 @@ import org.hillview.table.api.ITable;
  * This is a base class for map computations that need to add
  * a column to a table.
  */
-public abstract class AddColumnMap implements IMap<ITable, ITable> {
+public abstract class AppendColumnMap implements IMap<ITable, ITable> {
     /**
      * Name for the new column.
      */
@@ -35,7 +35,7 @@ public abstract class AddColumnMap implements IMap<ITable, ITable> {
      */
     protected final int    insertionIndex;
 
-    AddColumnMap(String newColName, int insertionIndex) {
+    AppendColumnMap(String newColName, int insertionIndex) {
         this.newColName = newColName;
         this.insertionIndex = insertionIndex;
     }

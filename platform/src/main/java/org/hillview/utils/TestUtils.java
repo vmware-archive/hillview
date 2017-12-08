@@ -17,8 +17,7 @@
 
 package org.hillview.utils;
 
-import org.hillview.storage.CsvFileReader;
-import org.hillview.table.Schema;
+import org.hillview.storage.CsvFileLoader;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.ITable;
 
@@ -38,20 +37,15 @@ public class TestUtils {
     }
 
     public static ITable loadTableFromCSV(String dataFolder, String csvFile, String schemaFile) throws IOException {
-        Path path = Paths.get(dataFolder, schemaFile);
-        Schema schema = Schema.readFromJsonFile(path);
-        path = Paths.get(dataFolder, csvFile);
-        CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
+        Path schemaPath = Paths.get(dataFolder, schemaFile);
+        Path path = Paths.get(dataFolder, csvFile);
+        CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
         config.allowFewerColumns = false;
         config.hasHeaderRow = true;
         config.allowMissingData = false;
-        config.schema = schema;
-        CsvFileReader r = new CsvFileReader(path, config);
+        CsvFileLoader r = new CsvFileLoader(path.toString(), config, schemaPath.toString());
 
-        ITable table;
-        table = r.read();
-        table = Converters.checkNull(table);
-
+        ITable table = r.load();
         return table;
     }
 

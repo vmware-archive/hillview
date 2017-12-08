@@ -23,7 +23,6 @@ import org.hillview.table.Schema;
 import org.hillview.table.api.*;
 import org.hillview.table.columns.BaseListColumn;
 import org.hillview.table.rows.JSVirtualRowSnapshot;
-import org.hillview.table.rows.VirtualRowSnapshot;
 import org.hillview.utils.Converters;
 
 import javax.script.Invocable;
@@ -35,7 +34,7 @@ import java.time.Instant;
  * This map creates a new column by running a JavaScript
  * function over a set of columns.
  */
-public class CreateColumnJSMap extends AddColumnMap {
+public class CreateColumnJSMap extends AppendColumnMap {
     /**
      * A JavaScript function named 'map' that computes the value in the new column.
      * It has a single input, which is a row in the table, and it produces a single output,

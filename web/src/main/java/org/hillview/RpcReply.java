@@ -70,7 +70,7 @@ public final class RpcReply {
             session.getBasicRemote().sendText(json.toString());
             HillviewLogger.instance.info("Reply sent");
         } catch (IOException e) {
-            HillviewLogger.instance.info("Could not send reply");
+            HillviewLogger.instance.error("Could not send reply", e);
         }
     }
 }

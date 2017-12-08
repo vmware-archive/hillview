@@ -202,7 +202,7 @@ class CSVFileDialog extends Dialog {
         return {
             schemaFile: this.getFieldValue("schemaFile"),
             fileNamePattern: this.getFieldValue("fileNamePattern"),
-            hasHeaderRow: this.getBooleanValue("hasHeader"),
+            headerRow: this.getBooleanValue("hasHeader"),
             folder: this.getFieldValue("folder")
         }
     }
@@ -220,14 +220,16 @@ class JsonFileDialog extends Dialog {
             "Folder on the remote machines where all the CSV files are found.");
         this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "*.json",
             "Shell pattern that describes the names of the files to load.");
+        this.addTextField("schemaFile", "Schema file (optional)", FieldKind.String, "data.schema",
+            "The name of a JSON file that contains the schema of the data (leave empty if no schema file exists).");
         this.setCacheTitle("JsonFileDialog");
     }
 
     public getFiles(): FileSetDescription {
         return {
-            schemaFile: null,
+            schemaFile: this.getFieldValue("schemaFile"),
             fileNamePattern: this.getFieldValue("fileNamePattern"),
-            hasHeaderRow: false,
+            headerRow: false,
             folder: this.getFieldValue("folder")
         }
     }

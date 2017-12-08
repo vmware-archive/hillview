@@ -29,7 +29,7 @@ public class ParquetTest extends BaseTest {
             String path = "../data/parquet/" +
             "part-r-00000-9d5cd245-a2e4-4002-9d58-0efdfb0fb962.gz.parquet";
             ParquetReader pr = new ParquetReader(path);
-            ITable table = pr.read();
+            ITable table = pr.load();
         } catch (Exception ex) {
             // If the file is not present do not fail the test.
         }
