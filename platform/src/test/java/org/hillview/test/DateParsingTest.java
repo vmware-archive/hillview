@@ -73,5 +73,12 @@ public class DateParsingTest extends BaseTest {
                 .atZone(ZoneOffset.systemDefault())
                 .toInstant();
         Assert.assertEquals(instant, expected);
+
+        parsing = new DateParsing("2017-10-05T14:05:35.454000");
+        instant = parsing.parse("2017-10-05T14:05:35.454000");
+        expected = LocalDateTime.of(2017, 10, 5, 14, 5, 35, 454000000)
+                .atZone(ZoneOffset.systemDefault())
+                .toInstant();
+        Assert.assertEquals(instant, expected);
     }
 }
