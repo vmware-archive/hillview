@@ -83,6 +83,7 @@ public class DateParsing {
                 put("^\\d{8}$", "yyyyMMdd");
                 put("^\\d{14}$", "yyyyMMddHHmmss");
                 put("^\\d{8}\\s\\d{6}$", "yyyyMMdd HHmmss");
+                put("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{6}", "yyyy-mm-ddTHH:mm:ss.SSSSSS");
             }};
 
     private static final DateTimeFormatter[] toTry = {
