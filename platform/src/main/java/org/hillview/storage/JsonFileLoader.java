@@ -168,7 +168,7 @@ public class JsonFileLoader extends TextFileLoader {
             } else if (prim.isNumber()) {
                 col.append(prim.getAsDouble());
             } else if (prim.isString()) {
-                col.append(prim.getAsString());
+                col.parseAndAppendString(prim.getAsString());
             } else {
                 throw new RuntimeException("Unexpected Json value on row " + row);
             }
