@@ -108,7 +108,7 @@ public class IntSet {
      * @return the location of the next full slot after cursor. Operates on the iteratorKey array
      */
     public int getNext(int pos) {
-        while ( iteratorKey[pos & this.mask] == 0) { pos++; }
+        while ( this.iteratorKey[pos & this.mask] == 0) { pos++; }
         return (pos & this.mask);
         }
 

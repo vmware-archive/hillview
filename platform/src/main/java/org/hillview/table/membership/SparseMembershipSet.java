@@ -32,7 +32,9 @@ import org.hillview.utils.Randomness;
  */
 public class SparseMembershipSet implements IMembershipSet, IMutableMembershipSet {
     private final IntSet membershipMap;
-    private static final int thresholdSortedIterator = 50000000; //this intSet is used for the sole purpose of iteration.
+    /* If the Intset is smaller than this then the class would ask the IntSet to sort its array for the iterator.
+     * The sorting takes time but makes the iterator faster */
+    private static final int thresholdSortedIterator = 50000000;
     private final int max;
 
     @Override

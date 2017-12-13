@@ -17,7 +17,6 @@
 
 package org.hillview.test;
 
-import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.maps.FilterMap;
 import org.hillview.sketches.BasicColStatSketch;
