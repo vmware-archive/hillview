@@ -27,7 +27,6 @@ import org.hillview.table.api.ITable;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
@@ -51,8 +50,8 @@ public class HillviewLogs {
         HillviewLogs.schema.append(new ColumnDescription("Arguments", ContentsKind.String, false));
     }
 
-    static class LogFileReader extends TextFileReader {
-        LogFileReader(final Path path) {
+    public static class LogFileLoader extends TextFileLoader {
+        public LogFileLoader(final String path) {
             super(path);
         }
 
@@ -73,10 +72,10 @@ public class HillviewLogs {
         }
 
         @Override
-        public ITable read() throws IOException {
+        public ITable load() {
             this.columns = schema.createAppendableColumns();
             try (BufferedReader reader = new BufferedReader(
-                    new FileReader(this.filename.toString()))) {
+                    new FileReader(this.filename))) {
                 String[] fields = new String[this.columns.length];
                 while (true) {
                     String line = reader.readLine();
@@ -85,17 +84,15 @@ public class HillviewLogs {
                     this.parse(line, fields);
                     this.append(fields);
                 }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
             return new Table(this.columns);
         }
     }
 
-    public static ITable parseLogFile(Path file) {
-        LogFileReader reader = new LogFileReader(file);
-        try {
-            return reader.read();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public static ITable parseLogFile(String file) {
+        LogFileLoader reader = new LogFileLoader(file);
+        return reader.load();
     }
 }

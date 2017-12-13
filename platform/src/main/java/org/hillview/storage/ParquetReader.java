@@ -22,7 +22,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.column.page.PageReadStore;
 import org.apache.parquet.example.data.Group;
-import org.apache.parquet.example.data.simple.Int96Value;
 import org.apache.parquet.example.data.simple.NanoTime;
 import org.apache.parquet.example.data.simple.convert.GroupRecordConverter;
 import org.apache.parquet.format.converter.ParquetMetadataConverter;
@@ -42,16 +41,12 @@ import org.hillview.table.api.ITable;
 import org.hillview.table.columns.BaseListColumn;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
 
-public class ParquetReader {
-    private final String path;
-
+public class ParquetReader extends TextFileLoader {
     public ParquetReader(String path) {
-        this.path = path;
+        super(path);
     }
 
     private static void appendGroup(
@@ -162,13 +157,13 @@ public class ParquetReader {
         return result;
     }
 
-    public ITable read() {
+    public ITable load() {
         try {
             Configuration conf = new Configuration();
             System.setProperty("hadoop.home.dir", "/");
             conf.set("hadoop.security.authentication", "simple");
             conf.set("hadoop.security.authorization", "false");
-            Path path = new Path(this.path);
+            Path path = new Path(this.filename);
             ParquetMetadata md = ParquetFileReader.readFooter(conf, path,
                     ParquetMetadataConverter.NO_FILTER);
             MessageType schema = md.getFileMetaData().getSchema();

@@ -57,7 +57,7 @@ public class LogFileParserTest extends BaseTest {
         out.close();
 
         Path path = Paths.get(".", f.getName());
-        ITable table = HillviewLogs.parseLogFile(path);
+        ITable table = HillviewLogs.parseLogFile(path.toString());
         Converters.checkNull(table);
         Assert.assertEquals(table.toString(), "Table[9x4]");
         LocalDate date = LocalDate.of(2017, 10, 12);

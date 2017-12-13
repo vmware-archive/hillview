@@ -20,10 +20,9 @@ package org.hillview.test;
 import com.univocity.parsers.csv.CsvFormat;
 import com.univocity.parsers.csv.CsvWriter;
 import com.univocity.parsers.csv.CsvWriterSettings;
-import org.hillview.storage.CsvFileReader;
+import org.hillview.storage.CsvFileLoader;
 import org.hillview.storage.CsvFileWriter;
 import org.hillview.table.ColumnDescription;
-import org.hillview.table.Schema;
 import org.hillview.table.Table;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
@@ -55,44 +54,40 @@ public class CsvReaderTest extends BaseTest {
 
     private ITable readTable(String folder, String file) throws IOException {
         Path path = Paths.get(folder, file);
-        CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
+        CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
         config.allowFewerColumns = false;
         config.hasHeaderRow = false;
         config.allowMissingData = true;
-        CsvFileReader r = new CsvFileReader(path, config);
-        return r.read();
+        CsvFileLoader r = new CsvFileLoader(path.toString(), config, null);
+        return r.load();
     }
 
     @Test
     public void readCsvFileWithSchemaCriteoTest() throws IOException {
-        Path path = Paths.get(criteoFolder, criteoSchema);
-        Schema schema = Schema.readFromJsonFile(path);
-        path = Paths.get(criteoFolder, criteoFile);
-        CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
+        Path schemaPath = Paths.get(criteoFolder, criteoSchema);
+        Path path = Paths.get(criteoFolder, criteoFile);
+        CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
         config.allowFewerColumns = false;
         config.hasHeaderRow = false;
         config.allowMissingData = true;
-        config.schema = schema;
-        config.separator = '\t';
-        CsvFileReader r = new CsvFileReader(path, config);
-        ITable t = r.read();
+         config.separator = '\t';
+        CsvFileLoader r = new CsvFileLoader(path.toString(), config, schemaPath.toString());
+        ITable t = r.load();
         Assert.assertNotNull(t);
     }
 
     @Test
     public void readGzFileWithSchemaTest() throws IOException {
-        Path path = Paths.get(criteoFolder, criteoSchema);
-        Schema schema = Schema.readFromJsonFile(path);
-        path = Paths.get(criteoFolder, criteoCompressed);
-        CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
+        Path schemaPath = Paths.get(criteoFolder, criteoSchema);
+        Path path = Paths.get(criteoFolder, criteoCompressed);
+        CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
         config.allowFewerColumns = false;
         config.hasHeaderRow = false;
         config.allowMissingData = true;
-        config.schema = schema;
         config.separator = '\t';
-        CsvFileReader r = new CsvFileReader(path, config);
+        CsvFileLoader r = new CsvFileLoader(path.toString(), config, schemaPath.toString());
         System.out.println(path.getFileName().toString());
-        ITable t = r.read();
+        ITable t = r.load();
         Assert.assertNotNull(t);
     }
 
@@ -104,29 +99,26 @@ public class CsvReaderTest extends BaseTest {
 
     @Test
     public void readCsvFileWithSchemaTest() throws IOException {
-        Path path = Paths.get(ontimeFolder, schemaFile);
-        Schema schema = Schema.readFromJsonFile(path);
-        path = Paths.get(ontimeFolder, csvFile);
-        CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
+        Path schemaPath = Paths.get(ontimeFolder, schemaFile);
+        Path path = Paths.get(ontimeFolder, csvFile);
+        CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
         config.allowFewerColumns = false;
         config.hasHeaderRow = true;
         config.allowMissingData = false;
-        config.schema = schema;
-        CsvFileReader r = new CsvFileReader(path, config);
-        ITable t = r.read();
+        CsvFileLoader r = new CsvFileLoader(path.toString(), config, schemaPath.toString());
+        ITable t = r.load();
         Assert.assertNotNull(t);
     }
 
     @Test
     public void readCsvFileGuessSchemaTest() throws IOException {
         Path path = Paths.get(ontimeFolder, csvFile);
-        CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
+        CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
         config.allowFewerColumns = false;
         config.hasHeaderRow = true;
         config.allowMissingData = false;
-        config.schema = null;
-        CsvFileReader r = new CsvFileReader(path, config);
-        ITable t = r.read();
+        CsvFileLoader r = new CsvFileLoader(path.toString(), config, null);
+        ITable t = r.load();
         Assert.assertNotNull(t);
     }
 
@@ -134,19 +126,23 @@ public class CsvReaderTest extends BaseTest {
         UUID uid = UUID.randomUUID();
         String tmpFileName = uid.toString();
         Path path = Paths.get(".", tmpFileName);
+        UUID uid1 = UUID.randomUUID();
+        String tmpFileName1 = uid1.toString();
+        Path schemaPath = Paths.get(".", tmpFileName1);
 
         try {
             CsvFileWriter writer = new CsvFileWriter(path);
             writer.setWriteHeaderRow(true);
             writer.writeTable(table);
 
-            CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
+            table.getSchema().writeToJsonFile(schemaPath);
+
+            CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
             config.allowFewerColumns = false;
             config.hasHeaderRow = true;
             config.allowMissingData = false;
-            config.schema = table.getSchema();
-            CsvFileReader r = new CsvFileReader(path, config);
-            ITable t = r.read();
+            CsvFileLoader r = new CsvFileLoader(path.toString(), config, schemaPath.toString());
+            ITable t = r.load();
             Assert.assertNotNull(t);
 
             List<String> list = Files.readAllLines(path);
@@ -159,6 +155,8 @@ public class CsvReaderTest extends BaseTest {
         } finally {
             if (Files.exists(path))
                 Files.delete(path);
+            if (Files.exists(schemaPath))
+                Files.delete(schemaPath);
         }
     }
 

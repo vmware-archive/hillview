@@ -28,16 +28,16 @@ import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.table.rows.GuessSchema;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
+import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import java.io.*;
-import java.nio.file.Path;
-import java.util.zip.GZIPInputStream;
+import java.nio.file.Paths;
 
 /**
  * Knows how to read a CSV file (comma-separated file).
  */
-public class CsvFileReader extends TextFileReader {
+public class CsvFileLoader extends TextFileLoader {
     public static class CsvConfiguration implements Serializable {
         /**
          * Field separator in CSV file.
@@ -52,42 +52,31 @@ public class CsvFileReader extends TextFileReader {
          */
         public boolean hasHeaderRow;
         /**
-         * If not zero it specifies the expected number of columns.
-         */
-        @SuppressWarnings("CanBeFinal")
-        public int columnCount;
-        /**
          * If true columns are allowed to contain "nulls".
          */
         public boolean allowMissingData;
-        /**
-         * If non-null it specifies the expected file schema.
-         * In this case columnCount is ignored.  If schema is not specified
-         * all columns are treated as strings.
-         */
-        @Nullable
-        public Schema schema;
     }
 
     private final CsvConfiguration configuration;
     @Nullable
     private Schema actualSchema;
+    @Nullable
+    private String schemaPath;
 
-    public CsvFileReader(final Path path, CsvConfiguration configuration) {
+    public CsvFileLoader(String path, CsvConfiguration configuration, @Nullable String schemaPath) {
         super(path);
         this.configuration = configuration;
+        this.schemaPath = schemaPath;
         this.allowFewerColumns = configuration.allowFewerColumns;
     }
 
-    // May return null when an error occurs.
-    public ITable read() throws IOException {
-        if (this.configuration.schema != null)
-            this.actualSchema = this.configuration.schema;
-        Reader file;
-        if (this.filename.toString().toLowerCase().endsWith(".gz"))
-            file = new InputStreamReader(new GZIPInputStream(new FileInputStream(this.filename.toString())));
-        else file = new FileReader(this.filename.toString());
+    public ITable load() {
+        if (!Utilities.isNullOrEmpty(this.schemaPath))
+            this.actualSchema = Schema.readFromJsonFile(Paths.get(this.schemaPath));
+
+        Reader file = null;
         try {
+            file = this.getFileReader();
             CsvParserSettings settings = new CsvParserSettings();
             CsvFormat format = new CsvFormat();
             format.setDelimiter(this.configuration.separator);
@@ -106,8 +95,8 @@ public class CsvFileReader extends TextFileReader {
                 @Nullable
                 String[] line = reader.parseNext();
                 if (line == null)
-                    throw new RuntimeException("Missing header row " + this.filename.toString());
-                if (this.configuration.schema == null) {
+                    throw new RuntimeException("Missing header row " + this.filename);
+                if (this.actualSchema == null) {
                     HillviewLogger.instance.info("Creating schema");
                     this.actualSchema = new Schema();
                     int index = 0;
@@ -128,14 +117,12 @@ public class CsvFileReader extends TextFileReader {
 
             String[] firstLine = null;
             if (this.actualSchema == null) {
-                int columnCount = this.configuration.columnCount;
+                int columnCount;
                 this.actualSchema = new Schema();
-                if (columnCount == 0) {
-                    firstLine = reader.parseNext();
-                    if (firstLine == null)
-                        throw new RuntimeException("Cannot create schema from empty CSV file");
-                    columnCount = firstLine.length;
-                }
+                firstLine = reader.parseNext();
+                if (firstLine == null)
+                    throw new RuntimeException("Cannot create schema from empty CSV file");
+                columnCount = firstLine.length;
 
                 for (int i = 0; i < columnCount; i++) {
                     ColumnDescription cd = new ColumnDescription("Column " + Integer.toString(i),
@@ -164,7 +151,8 @@ public class CsvFileReader extends TextFileReader {
                 IColumn s = c.seal();
                 if (ms == null)
                     ms = new FullMembershipSet(s.sizeInRows());
-                if (this.configuration.schema == null) {
+                if (Utilities.isNullOrEmpty(this.schemaPath)) {
+                    // TODO: this is not enough, we have to reconcile between machines.
                     GuessSchema gs = new GuessSchema();
                     GuessSchema.SchemaInfo info = gs.guess((IStringColumn)s);
                     if (info.kind != ContentsKind.String &&
@@ -180,7 +168,13 @@ public class CsvFileReader extends TextFileReader {
 
             return new Table(sealed);
         } finally {
-            file.close();
+            try {
+                if (file != null)
+                    file.close();
+            } catch (IOException e) {
+                //noinspection ThrowFromFinallyBlock
+                throw new RuntimeException(e);
+            }
         }
     }
 }

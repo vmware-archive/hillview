@@ -19,25 +19,37 @@ package org.hillview.targets;
 
 import org.hillview.*;
 import org.hillview.dataset.api.IDataSet;
-import org.hillview.maps.LoadJsonFileMapper;
+import org.hillview.dataset.api.IMap;
+import org.hillview.maps.LoadFilesMapper;
+import org.hillview.storage.IFileLoader;
+import org.hillview.table.api.ITable;
+
+import javax.annotation.Nullable;
 
 /**
- * This is an RpcTarget object which stores a file name to load as a JSON file.
+ * This is an RpcTarget object which stores a file loader name in each leaf.
  */
 // All RpcTarget objects must be public
 @SuppressWarnings("WeakerAccess")
-public class JsonFileTarget extends RpcTarget {
-    private final IDataSet<String> files;
+public class FileDescriptionTarget extends RpcTarget {
+    private final IDataSet<IFileLoader> files;
 
-    JsonFileTarget(IDataSet<String> files, HillviewComputation computation) {
+    public FileDescriptionTarget(IDataSet<IFileLoader> files, HillviewComputation computation) {
         super(computation);
         this.files = files;
         this.registerObject();
     }
 
+    public static class SchemaFileLocation {
+        @Nullable
+        String schemaFilename;
+        boolean headerRow;
+    }
+
     @HillviewRpc
     public void loadTable(RpcRequest request, RpcRequestContext context) {
-        this.runMap(this.files, new LoadJsonFileMapper(), TableTarget::new, request, context);
+        IMap<IFileLoader, ITable> logReader = new LoadFilesMapper();
+        this.runMap(this.files, logReader, TableTarget::new, request, context);
     }
 }
 

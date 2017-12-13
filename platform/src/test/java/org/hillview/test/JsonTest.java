@@ -19,7 +19,7 @@ package org.hillview.test;
 
 import org.hillview.dataset.api.IJson;
 import org.hillview.sketches.NextKList;
-import org.hillview.storage.JsonFileReader;
+import org.hillview.storage.JsonFileLoader;
 import org.hillview.table.*;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
@@ -31,7 +31,6 @@ import org.hillview.table.rows.RowSnapshot;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 
@@ -69,6 +68,7 @@ public class JsonTest extends BaseTest {
         l[1] = dac;
         l[2] = sac;
         SmallTable t = new SmallTable(l);
+        @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
         RowSnapshot rs = new RowSnapshot(t, 0);
         s = rs.toJson();
         Assert.assertEquals(s, "[10,90.0,\"John\"]");
@@ -101,8 +101,8 @@ public class JsonTest extends BaseTest {
     public void jsonReaderTest() {
         final String jsonFolder = "../data/ontime";
         final String jsonSample = "short.schema";
-        JsonFileReader reader = new JsonFileReader(Paths.get(jsonFolder, jsonSample));
-        ITable table = reader.read();
+        JsonFileLoader reader = new JsonFileLoader(jsonFolder + "/" + jsonSample, null);
+        ITable table = reader.load();
         Assert.assertEquals("Table[3x15]", table.toString());
     }
 }

@@ -18,18 +18,19 @@
 package org.hillview.storage;
 
 import org.hillview.table.api.IAppendableColumn;
-import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
+import org.hillview.utils.HillviewLogger;
 
 import javax.annotation.Nullable;
-import java.io.IOException;
-import java.nio.file.Path;
+import java.io.*;
+import java.util.zip.GZIPInputStream;
 
 /**
- * Abstract class for a reader that reads data from a text file.
+ * Abstract class for a reader that reads data from a text file and keeps
+ * track of the current position within the file.
  */
-public abstract class TextFileReader {
-    protected final Path filename;
+public abstract class TextFileLoader implements IFileLoader {
+    protected final String filename;
     protected int currentRow;
     private int currentColumn;
     @Nullable
@@ -39,7 +40,7 @@ public abstract class TextFileReader {
     private String currentToken;
     protected boolean allowFewerColumns;
 
-    public TextFileReader(final Path path) {
+    public TextFileLoader(String path) {
         this.filename = path;
         this.currentRow = 0;
         this.currentColumn = 0;
@@ -47,7 +48,16 @@ public abstract class TextFileReader {
         this.currentToken = null;
     }
 
-    public abstract ITable read() throws IOException;
+    Reader getFileReader() {
+        try {
+            HillviewLogger.instance.info("Reading file", "{0}", this.filename);
+            if (this.filename.toLowerCase().endsWith(".gz"))
+                return new InputStreamReader(new GZIPInputStream(new FileInputStream(this.filename)));
+            return new FileReader(this.filename);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     protected void append(String[] data) {
         try {
@@ -87,7 +97,7 @@ public abstract class TextFileReader {
                     (" (" + this.columns[this.currentColumn].getName() + ")") : "";
         }
 
-        return "Error while parsing file " + this.filename.toString() +
+        return "Error while parsing file " + this.filename +
                 " line " + this.currentRow + " column " + this.currentColumn +
                 columnName + (this.currentToken != null ? " token " + this.currentToken : "");
     }

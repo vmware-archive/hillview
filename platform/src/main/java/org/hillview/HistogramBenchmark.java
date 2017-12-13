@@ -29,7 +29,9 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
- * Benchmark
+ * This is a set of Java files used to benchmark the performance of histograms.
+ * These form a separate main entry point, and should be built into a separate binary.
+ * They are meant only for measurements, and are not part of the actual Hillview service.
  */
 public class HistogramBenchmark {
     private static final ColumnDescription desc = new

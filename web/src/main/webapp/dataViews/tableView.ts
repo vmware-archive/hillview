@@ -1125,6 +1125,11 @@ class SchemaReceiver extends OnCompleteRenderer<TableSummary> {
     run(summary: TableSummary): void {
         let page: FullPage;
         let dataView: IDataView;
+        if (summary.schema == null) {
+            this.page.reportError("No schema received; empty dataset?");
+            return;
+        }
+
         if (summary.schema.length > 20 && this.title != null && !this.forceTableView) {
             page = new FullPage("Schema of " + this.title, "Schema", this.page);
             dataView = new SchemaView(this.remoteObject.remoteObjectId,

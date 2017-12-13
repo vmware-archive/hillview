@@ -24,11 +24,11 @@ import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.*;
 import org.hillview.dataset.remoting.HillviewServer;
 import org.hillview.management.*;
-import org.hillview.maps.FindCsvFileMapper;
 import org.hillview.maps.FindFilesMapper;
 import org.hillview.maps.LoadDatabaseTableMapper;
-import org.hillview.storage.CsvFileObject;
-import org.hillview.storage.CsvFileReader;
+import org.hillview.storage.CsvFileLoader;
+import org.hillview.storage.FileLoaderDescription;
+import org.hillview.storage.IFileLoader;
 import org.hillview.storage.JdbcConnectionInformation;
 import org.hillview.utils.*;
 
@@ -41,7 +41,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class InitialObjectTarget extends RpcTarget {
@@ -104,34 +103,43 @@ public class InitialObjectTarget extends RpcTarget {
         this.runMap(this.emptyDataset, mapper, TableTarget::new, request, context);
     }
 
+    /**
+     * Describes a set of files to load.  Not all fields are always used.
+     */
     public static class FileSetDescription {
+        /**
+         * Folder where files are looked up.
+         */
         String folder = "";
+        /**
+         * A simple shell pattern matching file names.
+         */
         @Nullable
         String fileNamePattern;
+        /**
+         * Name of schema file in folder.  If null or empty no schema file is assumed.
+         */
         @Nullable
         String schemaFile;
-        boolean hasHeaderRow;
-    }
+        /** Used to prevent caching */
+        @Nullable
+        String cookie;
+        /**
+         * If true the files are expected to have a header row.
+         */
+        boolean headerRow;
 
-    @HillviewRpc
-    public void findCSVFiles(RpcRequest request, RpcRequestContext context) {
-        FileSetDescription desc = request.parseArgs(FileSetDescription.class);
-        CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
-        config.allowMissingData = true;
-        config.allowFewerColumns = false;
-        config.hasHeaderRow = desc.hasHeaderRow;
-        if (desc.fileNamePattern == null || desc.fileNamePattern.isEmpty())
-            desc.fileNamePattern = "*.csv";
-        String pattern = Utilities.wildcardToRegex(desc.fileNamePattern);
-        if (desc.schemaFile != null && desc.schemaFile.isEmpty())
-            desc.schemaFile = null;
+        String getSchemaPath() {
+            if (Utilities.isNullOrEmpty(this.schemaFile))
+                return null;
+            return Paths.get(this.folder, this.schemaFile).toString();
+        }
 
-        IMap<Empty, List<CsvFileObject>> finder =
-                new FindCsvFileMapper(desc.folder, 0, pattern, desc.schemaFile, config, 1);
-
-        HillviewLogger.instance.info("Find CSV files");
-        assert this.emptyDataset != null;
-        this.runFlatMap(this.emptyDataset, finder, CsvFileTarget::new, request, context);
+        String getRegexPattern() {
+            if (this.fileNamePattern == null)
+                return null;
+            return Utilities.wildcardToRegex(this.fileNamePattern);
+        }
     }
 
     @HillviewRpc
@@ -139,7 +147,7 @@ public class InitialObjectTarget extends RpcTarget {
         int which = request.parseArgs(Integer.class);
         String dataFolder = "../data/";
         String fileNamePattern;
-        CsvFileReader.CsvConfiguration config = new CsvFileReader.CsvConfiguration();
+        CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
         config.allowMissingData = true;
         config.allowFewerColumns = false;
         config.hasHeaderRow = true;
@@ -147,7 +155,7 @@ public class InitialObjectTarget extends RpcTarget {
         int limit = 0;
         int replicationFactor = 1;
 
-        IMap<Empty, List<CsvFileObject>> finder;
+        IMap<Empty, List<IFileLoader>> finder;
         if (which >= 0 && which <= 1) {
             limit = which == 0 ? 0 : 1;
             dataFolder += "ontime/";
@@ -183,33 +191,49 @@ public class InitialObjectTarget extends RpcTarget {
         } else {
             throw new RuntimeException("Unexpected operation " + which);
 		}
-		
-        finder = new FindCsvFileMapper(dataFolder, limit, fileNamePattern, schemaFile, config, replicationFactor);
 
-        HillviewLogger.instance.info("Preparing files");
+        String schemaPath = Paths.get(dataFolder, schemaFile).toString();
+        FileLoaderDescription.CsvFile loader = new FileLoaderDescription.CsvFile(schemaPath, config);
+        finder = new FindFilesMapper(dataFolder, limit, fileNamePattern, loader);
+        HillviewLogger.instance.info("Finding csv files");
         assert this.emptyDataset != null;
-        this.runFlatMap(this.emptyDataset, finder, CsvFileTarget::new, request, context);
+        this.runFlatMap(this.emptyDataset, finder, FileDescriptionTarget::new, request, context);
+    }
+
+    @HillviewRpc
+    public void findCsvFiles(RpcRequest request, RpcRequestContext context) {
+        FileSetDescription desc = request.parseArgs(FileSetDescription.class);
+        CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
+        config.allowMissingData = true;
+        config.allowFewerColumns = false;
+        config.hasHeaderRow = desc.headerRow;
+
+        String schemaPath = desc.getSchemaPath();
+        FileLoaderDescription.CsvFile loader = new FileLoaderDescription.CsvFile(schemaPath, config);
+        IMap<Empty, List<IFileLoader>> finder = new FindFilesMapper(desc.folder, 0, desc.getRegexPattern(), loader);
+        HillviewLogger.instance.info("Finding csv files");
+        assert this.emptyDataset != null;
+        this.runFlatMap(this.emptyDataset, finder, FileDescriptionTarget::new, request, context);
     }
 
     @HillviewRpc
     public void findJsonFiles(RpcRequest request, RpcRequestContext context) {
-        Converters.checkNull(this.emptyDataset);
         FileSetDescription desc = request.parseArgs(FileSetDescription.class);
-        String pattern = Utilities.wildcardToRegex(desc.fileNamePattern);
-        IMap<Empty, List<String>> finder = new FindFilesMapper(desc.folder, 0, pattern, null);
-        HillviewLogger.instance.info("Finding JSON Files");
+        String schemaPath = desc.getSchemaPath();
+        FileLoaderDescription.JsonFile loader = new FileLoaderDescription.JsonFile(schemaPath);
+        IMap<Empty, List<IFileLoader>> finder = new FindFilesMapper(desc.folder, 0, desc.getRegexPattern(), loader);
+        HillviewLogger.instance.info("Finding json files");
         assert this.emptyDataset != null;
-        this.runFlatMap(this.emptyDataset, finder, JsonFileTarget::new, request, context);
+        this.runFlatMap(this.emptyDataset, finder, FileDescriptionTarget::new, request, context);
     }
 
     @HillviewRpc
     public void findLogs(RpcRequest request, RpcRequestContext context) {
-        Converters.checkNull(this.emptyDataset);
-        UUID cookie = UUID.randomUUID();
-        IMap<Empty, List<String>> finder = new FindFilesMapper(".", 0, "hillview.*.log", cookie.toString());
-        HillviewLogger.instance.info("Finding logs");
+        FileLoaderDescription.LogFile loader = new FileLoaderDescription.LogFile();
+        IMap<Empty, List<IFileLoader>> finder = new FindFilesMapper(".", 0, "hillview.*\\.log", loader);
+        HillviewLogger.instance.info("Finding log files");
         assert this.emptyDataset != null;
-        this.runFlatMap(this.emptyDataset, finder, LogFileTarget::new, request, context);
+        this.runFlatMap(this.emptyDataset, finder, FileDescriptionTarget::new, request, context);
     }
 
     @Override
