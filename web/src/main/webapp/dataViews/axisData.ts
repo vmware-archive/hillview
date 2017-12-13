@@ -73,12 +73,15 @@ export class AxisData {
                 let ticks: number[] = [];
                 let labels: string[] = [];
                 // note: this is without adjustment.
-                let tickCount = this.stats.max - this.stats.min;
+                let tickCount = Math.ceil(this.stats.max - this.stats.min);
                 // TODO: if the tick count is too large it must be reduced
                 let minLabelWidth = 40;  // pixels
                 let maxLabelCount = length / minLabelWidth;
                 let labelPeriod = Math.ceil(tickCount / maxLabelCount);
-                let tickWidth = length / tickCount;
+                // On a legend the leftmost and rightmost ticks are at the ends
+                // On a plot axis the ticks are offset .5 from the ends.
+                let totalIntervals = legend ? (tickCount - 1) : tickCount;
+                let tickWidth = length / totalIntervals;
 
                 for (let i = 0; i < tickCount; i++) {
                     ticks.push((i + adjust) * tickWidth);
