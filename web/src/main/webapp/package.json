@@ -15,7 +15,9 @@
   },
   "dependencies": {
     "@types/d3": "^4.11.0",
-    "d3": "^4.10.2"
+    "@types/pako": "^1.0.0",
+    "d3": "^4.10.2",
+    "pako": "^1.0.6"
   },
   "devDependencies": {
     "webpack": "^3.6.0"

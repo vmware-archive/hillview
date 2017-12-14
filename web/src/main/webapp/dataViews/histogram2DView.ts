@@ -18,11 +18,11 @@
 import {d3} from "../ui/d3-modules";
 import {
     ColumnDescription, Schema, RecordOrder, ColumnAndRange, FilterDescription,
-    BasicColStats, RangeInfo, Histogram2DArgs, CombineOperators, RemoteObjectId, HeatMap
+    BasicColStats, RangeInfo, Histogram2DArgs, CombineOperators, RemoteObjectId, HeatMap, Histogram
 } from "../javaBridge";
 import {TopMenu, SubMenu} from "../ui/menu";
 import {
-    reorder, transpose, significantDigits, formatNumber, ICancellable, PartialResult, Seed
+    reorder, transpose, significantDigits, formatNumber, ICancellable, PartialResult, Seed, Pair
 } from "../util";
 import {Renderer} from "../rpc";
 import {Rectangle, Resolution} from "../ui/ui";
@@ -67,6 +67,7 @@ export class Histogram2DView extends HistogramViewBase {
         xData: AxisData;
         yData: AxisData;
         missingData: number;
+        cdf: Histogram;
         data: number[][];
         xPoints: number;
         yPoints: number;
@@ -161,6 +162,7 @@ export class Histogram2DView extends HistogramViewBase {
             transpose(this.currentData.data),
             this.currentData.yData,
             this.currentData.xData,
+            null,
             this.currentData.missingData,
             this.currentData.samplingRate,
             0);
@@ -205,13 +207,19 @@ export class Histogram2DView extends HistogramViewBase {
             max: this.currentData.yData.stats.max,
             bucketBoundaries: yBoundaries
         };
+        let size = Resolution.getChartSize(this.page);
+        let cdfCount = Math.floor(size.width);
+
         let args: Histogram2DArgs = {
             first: arg0,
             second: arg1,
             xBucketCount: bucketCount,
             yBucketCount: this.currentData.yPoints,
             samplingRate: samplingRate,
-            seed: Seed.instance.get()
+            seed: Seed.instance.get(),
+            cdfBucketCount: cdfCount,
+            cdfSamplingRate: HistogramViewBase.samplingRate(bucketCount,
+                this.currentData.xData.stats.presentCount, this.page)
         };
         let rr = this.createHeatMapRequest(args);
         let renderer = new Histogram2DRenderer(this.page,
@@ -240,12 +248,13 @@ export class Histogram2DView extends HistogramViewBase {
             this.currentData.data,
             this.currentData.xData,
             this.currentData.yData,
+            this.currentData.cdf,
             this.currentData.missingData,
             this.currentData.samplingRate,
             0);
     }
 
-    public updateView(data: number[][], xData: AxisData, yData: AxisData,
+    public updateView(data: number[][], xData: AxisData, yData: AxisData, cdf: Histogram,
                       missingData: number, samplingRate: number, elapsedMs: number) : void {
         this.page.reportTime(elapsedMs);
         if (data == null || data.length == 0) {
@@ -266,6 +275,7 @@ export class Histogram2DView extends HistogramViewBase {
             data: data,
             xData: xData,
             yData: yData,
+            cdf: cdf,
             missingData: missingData,
             visiblePoints: 0,
             samplingRate: samplingRate,
@@ -355,9 +365,9 @@ export class Histogram2DView extends HistogramViewBase {
             .attr("height", canvasSize.height)
             .attr("cursor", "crosshair");
 
-        this.canvas.on("mousemove", () => this.onMouseMove())
-            .on("mouseleave", () => this.onMouseLeave())
-            .on("mouseenter", () => this.onMouseEnter());
+        this.canvas.on("mousemove", () => this.mouseMove())
+            .on("mouseleave", () => this.mouseLeave())
+            .on("mouseenter", () => this.mouseEnter());
 
         // The chart uses a fragment of the canvas offset by the margins
         this.chart = this.canvas
@@ -521,9 +531,9 @@ export class Histogram2DView extends HistogramViewBase {
             [this.currentData.xData.description.name, "y",
                 this.currentData.yData.description.name, "count"], 40);
         this.pointDescription.show(false);
-        let summary = formatNumber(this.currentData.visiblePoints) + " data points";
+        let summary = formatNumber(this.currentData.visiblePoints) + " (non-missing) data points";
         if (missingData != 0)
-            summary += ", " + formatNumber(missingData) + " missing";
+            summary += ", " + formatNumber(missingData) + " missing both coordinates";
         if (xData.missing.missingData != 0)
             summary += ", " + formatNumber(xData.missing.missingData) + " missing Y coordinate";
         if (yData.missing.missingData != 0)
@@ -534,20 +544,20 @@ export class Histogram2DView extends HistogramViewBase {
         this.summary.innerHTML = summary;
     }
 
-    protected onMouseEnter(): void {
-        super.onMouseEnter();
+    public mouseEnter(): void {
+        super.mouseEnter();
         this.cdfDot.attr("visibility", true);
     }
 
-    protected onMouseLeave(): void {
+    public mouseLeave(): void {
         this.cdfDot.attr("visibility", false);
-        super.onMouseLeave();
+        super.mouseLeave();
     }
 
     /**
      * Handles mouse movements in the canvas area only.
      */
-    protected onMouseMove(): void {
+    public mouseMove(): void {
         let position = d3.mouse(this.chart.node());
         // note: this position is within the chart
         let mouseX = position[0];
@@ -783,9 +793,6 @@ export class Histogram2DView extends HistogramViewBase {
 
     // show the table corresponding to the data in the histogram
     protected showTable(): void {
-        let table = new TableView(this.remoteObjectId, this.originalTableId, this.page);
-        table.setSchema(this.tableSchema);
-
         let order =  new RecordOrder([ {
             columnDescription: this.currentData.xData.description,
             isAscending: true
@@ -793,8 +800,11 @@ export class Histogram2DView extends HistogramViewBase {
             columnDescription: this.currentData.yData.description,
             isAscending: true
         } ]);
-        let rr = table.createNextKRequest(order, null);
+
         let page = new FullPage("Table", "Table", this.page);
+        let table = new TableView(this.remoteObjectId, this.originalTableId, page);
+        table.setSchema(this.tableSchema);
+        let rr = table.createNextKRequest(order, null);
         page.setDataView(table);
         this.page.insertAfterMe(page);
         rr.invoke(new NextKReceiver(page, table, rr, false, order));
@@ -862,7 +872,7 @@ export class Make2DHistogram extends RemoteTableRenderer {
  * Receives partial results and renders a 2D histogram.
  * The 2D histogram data and the HeatMap data use the same data structure.
  */
-export class Histogram2DRenderer extends Renderer<HeatMap> {
+export class Histogram2DRenderer extends Renderer<Pair<HeatMap, Histogram>> {
     protected histogram: Histogram2DView;
 
     constructor(page: FullPage,
@@ -883,11 +893,13 @@ export class Histogram2DRenderer extends Renderer<HeatMap> {
             throw "Expected 2 columns";
     }
 
-    onNext(value: PartialResult<HeatMap>): void {
+    onNext(value: PartialResult<Pair<HeatMap, Histogram>>): void {
         super.onNext(value);
         if (value == null)
             return;
-        let points = value.data.buckets;
+        let heatMap = value.data.first;
+        let cdf = value.data.second;
+        let points = heatMap.buckets;
         let xPoints = 1;
         let yPoints = 1;
         if (points != null) {
@@ -895,9 +907,9 @@ export class Histogram2DRenderer extends Renderer<HeatMap> {
             yPoints = points[0] != null ? points[0].length : 1;
         }
 
-        let xAxisData = new AxisData(value.data.histogramMissingD1, this.cds[0], this.stats[0], this.uniqueStrings[0], xPoints);
-        let yAxisData = new AxisData(value.data.histogramMissingD2, this.cds[1], this.stats[1], this.uniqueStrings[1], yPoints);
-        this.histogram.updateView(value.data.buckets, xAxisData, yAxisData,
-            value.data.missingData, this.samplingRate, this.elapsedMilliseconds());
+        let xAxisData = new AxisData(heatMap.histogramMissingD1, this.cds[0], this.stats[0], this.uniqueStrings[0], xPoints);
+        let yAxisData = new AxisData(heatMap.histogramMissingD2, this.cds[1], this.stats[1], this.uniqueStrings[1], yPoints);
+        this.histogram.updateView(heatMap.buckets, xAxisData, yAxisData, cdf,
+            heatMap.missingData, this.samplingRate, this.elapsedMilliseconds());
     }
 }

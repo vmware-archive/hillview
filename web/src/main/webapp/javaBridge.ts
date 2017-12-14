@@ -207,6 +207,8 @@ export class Histogram2DArgs {
     yBucketCount: number;
     samplingRate: number;
     seed:         number;
+    cdfBucketCount: number;
+    cdfSamplingRate: number;
 }
 
 export class Histogram3DArgs {

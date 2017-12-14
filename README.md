@@ -230,13 +230,13 @@ bundle multiple JavaScript files together, the `ts-loader` tool for
 webpack, which allows it to compile directly typescript into
 javascript.
 
-Then install JavaScript libraries `rx` and `d3`, together with the
+Then install some JavaScript libraries, together with the
 typescript type definitions for these libraries:
 
 ```
 $ cd web/src/main/webapp
-$ npm install rx d3
-$ npm install @types/d3 --save
+$ npm install rx d3 pako
+$ npm install @types/d3 @types/pako --save
 $ cd ../../../..
 ```
 

@@ -23,6 +23,7 @@ import org.hillview.storage.JsonFileLoader;
 import org.hillview.table.*;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
+import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.ITable;
 import org.hillview.table.columns.DoubleArrayColumn;
 import org.hillview.table.columns.IntArrayColumn;

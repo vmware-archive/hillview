@@ -15,23 +15,20 @@
  * limitations under the License.
  */
 
-package org.hillview.jsonObjects;
+/**
+ * Interface implemented by objects that handle drag events.
+ */
+export interface IDragHandler {
+    dragStart(): void,
+    dragMove(): void,
+    dragEnd(): void
+}
 
-import javax.annotation.Nullable;
-
-@SuppressWarnings("CanBeFinal")
-public class Histogram2DArgs implements RpcArguments {
-    // fields are never really null, but we have no default initializer
-    @Nullable
-    public ColumnAndRange first;
-    @Nullable
-    public ColumnAndRange second;
-
-    public int xBucketCount;
-    public int yBucketCount;
-    public double samplingRate;
-    public long seed;
-    // The following are only used for histograms, not for heatmaps.
-    public int cdfBucketCount;
-    public double cdfSamplingRate;
+/**
+ * Interface implemented by objects that handle mouse move events.
+ */
+export interface IMouseHandler {
+    mouseMove(): void,
+    mouseEnter(): void,
+    mouseLeave(): void
 }

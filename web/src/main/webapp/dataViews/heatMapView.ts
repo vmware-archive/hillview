@@ -601,25 +601,30 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
             first: arg0,
             second: arg1,
             samplingRate: samplingRate,
-            seed: Seed.instance.get(),
+            seed: samplingRate >= 1.0 ? 0 : Seed.instance.get(),
             xBucketCount: xBucketCount,
-            yBucketCount: yBucketCount
+            yBucketCount: yBucketCount,
+            cdfBucketCount: 1,  // TODO
+            cdfSamplingRate: 1.0  // TODO
         };
-        let rr = this.remoteObject.createHeatMapRequest(arg);
-        if (this.operation != null)
-            rr.setStartTime(this.operation.startTime());
-        let renderer: Renderer<HeatMap> = null;
         if (this.drawHeatMap) {
-            renderer = new HeatMapRenderer(this.page,
+            let rr = this.remoteObject.createHeatMapRequest(arg);
+            let renderer = new HeatMapRenderer(this.page,
                 this.remoteObject, this.tableSchema,
                 this.cds, [this.stats.first, this.stats.second],
                 samplingRate, [this.ds[0], this.ds[1]], rr);
+            if (this.operation != null)
+                rr.setStartTime(this.operation.startTime());
+            rr.invoke(renderer);
         } else {
-            renderer = new Histogram2DRenderer(this.page,
+            let rr = this.remoteObject.createHistogram2DMapRequest(arg);
+            let renderer = new Histogram2DRenderer(this.page,
                 this.remoteObject, this.tableSchema,
                 this.cds, [this.stats.first, this.stats.second], samplingRate, this.ds, rr);
+            if (this.operation != null)
+                rr.setStartTime(this.operation.startTime());
+            rr.invoke(renderer);
         }
-        rr.invoke(renderer);
     }
 
     onCompleted(): void {

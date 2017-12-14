@@ -63,7 +63,7 @@ public abstract class BaseTable implements ITable, Serializable {
         this.columns = new HashMap<String, IColumn>();
         for (final String c : schema.getColumnNames()) {
             ColumnDescription cd = schema.getDescription(c);
-            this.columns.put(c, BaseArrayColumn.create(cd));
+            this.columns.put(c, BaseArrayColumn.create(cd, 0));
         }
     }
 

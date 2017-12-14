@@ -29,6 +29,8 @@ import rx.Subscription;
 import javax.websocket.*;
 import javax.websocket.server.ServerEndpoint;
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.util.zip.InflaterInputStream;
 
 /**
  * A server which implements RPC calls between a web browser client and
@@ -54,14 +56,17 @@ public final class RpcServer {
 
     @SuppressWarnings("unused")
     @OnMessage
-    public void onMessage(String message, Session session) {
+    public void onMessage(ByteBuffer message, Session session) {
         HillviewLogger.instance.info("New message from client",
-                "[{0}]: {1}", session.getId(), message);
+                "{0}", session.getId());
         RpcRequest req;
         try {
-            Reader reader = new StringReader(message);
+            ByteArrayInputStream stream = new ByteArrayInputStream(message.array());
+            InflaterInputStream decompressed = new InflaterInputStream(stream);
+            Reader reader = new InputStreamReader(decompressed);
             JsonReader jReader = new JsonReader(reader);
             JsonElement elem = Streams.parse(jReader);
+            HillviewLogger.instance.info("Decoded message", "{0}", elem.toString());
             req = new RpcRequest(elem);
             if (RpcObjectManager.instance.getTarget(session) != null)
                 throw new RuntimeException("Session already associated with a request!");
