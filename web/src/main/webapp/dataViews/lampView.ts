@@ -233,7 +233,9 @@ class LampView extends RemoteTableObjectView {
             samplingRate: 1.0,  // TODO
             seed: Seed.instance.get(),
             xBucketCount: xBuckets,
-            yBucketCount: yBuckets
+            yBucketCount: yBuckets,
+            cdfBucketCount: 0,
+            cdfSamplingRate: 1.0
         };
         let rr = this.tableObject.createLAMPMapRequest(this.controlPointsId, this.selectedColumns, this.controlPoints, this.lampColNames);
         rr.invoke(new LAMPMapReceiver(this.page, rr, this, arg));

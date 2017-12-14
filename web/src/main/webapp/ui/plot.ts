@@ -15,23 +15,35 @@
  * limitations under the License.
  */
 
-package org.hillview.jsonObjects;
+import {PlottingSurface} from "./plottingSurface";
 
-import javax.annotation.Nullable;
+export abstract class Plot {
+    /**
+     * d3 Scale used for Y axis.
+     */
+    public yScale: any;
+    /**
+     * D3 vertical axis.
+     */
+    public yAxis: any;
+    /**
+     * d3 Scale used for X axis.
+     */
+    public xScale: any;
+    /**
+     * D3 vertical axis.
+     */
+    public xAxis: any;
 
-@SuppressWarnings("CanBeFinal")
-public class Histogram2DArgs implements RpcArguments {
-    // fields are never really null, but we have no default initializer
-    @Nullable
-    public ColumnAndRange first;
-    @Nullable
-    public ColumnAndRange second;
+    protected constructor(protected plottingSurface: PlottingSurface) {}
 
-    public int xBucketCount;
-    public int yBucketCount;
-    public double samplingRate;
-    public long seed;
-    // The following are only used for histograms, not for heatmaps.
-    public int cdfBucketCount;
-    public double cdfSamplingRate;
+    getChartWidth(): number {
+        return this.plottingSurface.getActualChartWidth();
+    }
+
+    getChartHeight(): number {
+        return this.plottingSurface.getActualChartHeight();
+    }
+
+    public abstract draw(): void;
 }

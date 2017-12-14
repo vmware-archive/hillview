@@ -34,7 +34,7 @@ export class LoadMenu extends RemoteObject implements IDataView {
     private menu: TopMenu;
     private console: ConsoleDisplay;
 
-    constructor(protected init: InitialObject, protected page: FullPage, showManagement: boolean) {
+    constructor(protected init: InitialObject, protected page: FullPage) {
         super(init.remoteObjectId);
 
         this.top = document.createElement("div");
@@ -84,43 +84,41 @@ export class LoadMenu extends RemoteObject implements IDataView {
                         help: "A set of database tables residing in databases on each worker machine." }
             ]) }
         ];
-        if (showManagement) {
-            /**
-             * These are operations supported by the back-end management API.
-             * They are mostly for testing, debugging, maintenance and measurement.
-             */
-            items.push(
-                {
-                    text: "Test", help: "Run UI tests", subMenu: new SubMenu([
-                        { text: "Run", help: "Run end-to-end tests from the user interface. " +
-                        "These tests simulate the user clicking in various menus in the browser." +
-                        "The tests must be run " +
-                        "immediately after reloading the main web page. The user should " +
-                        "not use the mouse during the tests.", action: () => this.runTests() }
-                    ])
-                },
-                { text: "Manage", help: "Execute cluster management operations.", subMenu: new SubMenu([
-                    { text: "List machines",
-                        action: () => this.ping(),
-                        help: "Produces a list of all worker machines." },
-                    { text: "Toggle memoization",
-                        action: () => this.command("toggleMemoization"),
-                        help: "Asks the workers to memoize/not memoize query results." },
-                    { text: "Memory use",
-                        action: () => this.command("memoryUse"),
-                        help: "Reports Java memory use for each worker." },
-                    { text: "Purge memoized",
-                        action: () => this.command("purgeMemoization"),
-                        help: "Remove all memoized datasets from the workers." },
-                    { text: "Purge root datasets",
-                        action: () => this.command("purgeDatasets"),
-                        help: "Remove all datasets stored at the root node." },
-                    { text: "Purge leaf datasets",
-                        action: () => this.command("purgeLeafDatasets"),
-                        help: "Remove all datasets stored at the worker nodes." }
-                ])}
-            );
-        }
+        /**
+         * These are operations supported by the back-end management API.
+         * They are mostly for testing, debugging, maintenance and measurement.
+         */
+        items.push(
+            {
+                text: "Test", help: "Run UI tests", subMenu: new SubMenu([
+                    { text: "Run", help: "Run end-to-end tests from the user interface. " +
+                    "These tests simulate the user clicking in various menus in the browser." +
+                    "The tests must be run " +
+                    "immediately after reloading the main web page. The user should " +
+                    "not use the mouse during the tests.", action: () => this.runTests() }
+                ])
+            },
+            { text: "Manage", help: "Execute cluster management operations.", subMenu: new SubMenu([
+                { text: "List machines",
+                    action: () => this.ping(),
+                    help: "Produces a list of all worker machines." },
+                { text: "Toggle memoization",
+                    action: () => this.command("toggleMemoization"),
+                    help: "Asks the workers to memoize/not memoize query results." },
+                { text: "Memory use",
+                    action: () => this.command("memoryUse"),
+                    help: "Reports Java memory use for each worker." },
+                { text: "Purge memoized",
+                    action: () => this.command("purgeMemoization"),
+                    help: "Remove all memoized datasets from the workers." },
+                { text: "Purge root datasets",
+                    action: () => this.command("purgeDatasets"),
+                    help: "Remove all datasets stored at the root node." },
+                { text: "Purge leaf datasets",
+                    action: () => this.command("purgeLeafDatasets"),
+                    help: "Remove all datasets stored at the worker nodes." }
+            ])}
+        );
 
         this.menu = new TopMenu(items);
         this.console = new ConsoleDisplay();
@@ -289,10 +287,10 @@ class DBDialog extends Dialog {
  * This is the main function exposed to the web page, which causes everything
  * to get going.  It creates and displays the menu for loading data.
  */
-export function createLoadMenu(showManagement: boolean): void {
+export function createLoadMenu(): void {
     let page = new FullPage("Load", "Load", null);
     page.append();
-    let menu = new LoadMenu(InitialObject.instance, page, showManagement);
+    let menu = new LoadMenu(InitialObject.instance, page);
     page.setDataView(menu);
 }
 

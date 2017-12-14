@@ -115,6 +115,24 @@ public final class TableTarget extends RpcTarget {
     }
 
     @HillviewRpc
+    public void histogram2D(RpcRequest request, RpcRequestContext context) {
+        Histogram2DArgs info = request.parseArgs(Histogram2DArgs.class);
+        assert info.first != null;
+        assert info.second != null;
+        HeatMapSketch sk = new HeatMapSketch(
+                info.first.getBuckets(info.xBucketCount),
+                info.second.getBuckets(info.yBucketCount),
+                info.first.getDescription(),
+                info.second.getDescription(),
+                info.samplingRate, info.seed);
+        IBucketsDescription buckets = info.first.getBuckets(info.cdfBucketCount);
+        HistogramSketch cdf = new HistogramSketch(buckets, info.first.getDescription(), info.cdfSamplingRate, info.seed);
+        ConcurrentSketch<ITable, HeatMap, Histogram> csk =
+                new ConcurrentSketch<ITable, HeatMap, Histogram>(sk, cdf);
+        this.runSketch(this.table, csk, request, context);
+    }
+
+    @HillviewRpc
     public void heatMap3D(RpcRequest request, RpcRequestContext context) {
         Histogram3DArgs info = request.parseArgs(Histogram3DArgs.class);
         assert info.first != null;

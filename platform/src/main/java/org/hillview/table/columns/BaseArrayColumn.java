@@ -18,6 +18,7 @@
 package org.hillview.table.columns;
 
 import org.hillview.table.ColumnDescription;
+import org.hillview.table.api.IMutableColumn;
 
 import java.io.Serializable;
 import java.security.InvalidParameterException;
@@ -51,20 +52,20 @@ public abstract class BaseArrayColumn extends BaseColumn implements Serializable
      * Create an empty column with the specified description.
      * @param description Column description.
      */
-    public static BaseArrayColumn create(ColumnDescription description) {
+    public static IMutableColumn create(ColumnDescription description, int size) {
         switch (description.kind) {
             case Category:
             case Json:
             case String:
-                return new StringArrayColumn(description, 0);
+                return new StringArrayColumn(description, size);
             case Date:
-                return new DateArrayColumn(description, 0);
+                return new DateArrayColumn(description, size);
             case Integer:
-                return new IntArrayColumn(description, 0);
+                return new IntArrayColumn(description, size);
             case Double:
-                return new DoubleArrayColumn(description, 0);
+                return new DoubleArrayColumn(description, size);
             case Duration:
-                return new DurationArrayColumn(description, 0);
+                return new DurationArrayColumn(description, size);
             default:
                 throw new RuntimeException("Unexpected column kind " + description.toString());
         }

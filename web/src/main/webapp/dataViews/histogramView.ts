@@ -39,23 +39,34 @@ import {NextKReceiver, TableView} from "./tableView";
 import {RemoteTableObject, RemoteTableRenderer, ZipReceiver} from "../tableTarget";
 import {DistinctStrings} from "../distinctStrings";
 import {combineMenu, SelectedObject} from "../selectedObject";
+import {IDragHandler, IMouseHandler} from "../ui/mouseApi";
+import {HistogramPlot} from "../ui/histogramPlot";
+import {PlottingSurface} from "../ui/plottingSurface";
+import {CDFPlot} from "../ui/CDFPlot";
 
 /**
  * A HistogramView is responsible for showing a one-dimensional histogram on the screen.
  */
-export class HistogramView extends HistogramViewBase {
+export class HistogramView extends HistogramViewBase implements IMouseHandler, IDragHandler {
     protected currentData: {
         histogram: Histogram,
         cdf: Histogram,
-        cdfSum: number[],  // prefix sum of cdf
         axisData: AxisData,
         samplingRate: number,
         title: string,
     };
     protected menu: TopMenu;
 
+    protected plot: HistogramPlot;
+    protected cdfPlot: CDFPlot;
+    protected surface: PlottingSurface;
+
     constructor(remoteObjectId: RemoteObjectId, originalTableId: RemoteObjectId, protected tableSchema: Schema, page: FullPage) {
         super(remoteObjectId, originalTableId, tableSchema, page);
+        this.surface = new PlottingSurface(this.chartDiv, page);
+        this.plot = new HistogramPlot(this.surface);
+        this.cdfPlot = new CDFPlot(this.surface);
+
         this.menu = new TopMenu( [
             { text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
                 { text: "refresh",
@@ -86,6 +97,77 @@ export class HistogramView extends HistogramViewBase {
         ]);
 
         this.page.setMenu(this.menu);
+    }
+
+    public updateView(title: string, cdf: Histogram, h: Histogram,
+                      axisData: AxisData, samplingRate: number, elapsedMs: number) : void {
+        this.page.reportTime(elapsedMs);
+        if (h == null) {
+            this.page.reportError("No data to display");
+            return;
+        }
+        if (samplingRate >= 1) {
+            let submenu = this.menu.getSubmenu("View");
+            submenu.enable("exact", false);
+        }
+        this.currentData = {
+            axisData: axisData,
+            title: title,
+            cdf: cdf,
+            histogram: h,
+            samplingRate: samplingRate };
+
+        let counts = h.buckets;
+        let bucketCount = counts.length;
+        let drag = d3.drag()
+            .on("start", () => this.dragStart())
+            .on("drag", () => this.dragMove())
+            .on("end", () => this.dragEnd());
+
+        this.plot.setHistogram(h, samplingRate, axisData);
+        this.plot.draw();
+        this.cdfPlot.setData(cdf);
+        this.cdfPlot.draw();
+        // TODO: eliminate these variables
+        this.canvas = this.surface.getCanvas();
+        this.chart = this.surface.getChart();
+        this.chartSize = this.surface.getChartSize();
+        this.yScale = this.plot.yScale;
+        this.xScale = this.plot.xScale;
+
+        this.canvas
+            .call(drag)
+            .on("mousemove", () => this.mouseMove())
+            .on("mouseenter", () => this.mouseEnter())
+            .on("mouseleave", () => this.mouseLeave());
+
+        this.cdfDot = this.canvas
+            .append("circle")
+            .attr("r", Resolution.mouseDotRadius)
+            .attr("fill", "blue");
+
+        this.selectionRectangle = this.canvas
+            .append("rect")
+            .attr("class", "dashed")
+            .attr("width", 0)
+            .attr("height", 0);
+
+        let pointDesc = ["x", "y"];
+        if (cdf != null)
+            pointDesc.push("cdf");
+        this.pointDescription = new TextOverlay(this.chart, pointDesc, 40);
+        this.pointDescription.show(false);
+
+        let summary = "";
+        if (h.missingData != 0)
+            summary = formatNumber(h.missingData) + " missing, ";
+        summary += formatNumber(axisData.stats.presentCount + axisData.stats.missingCount) + " points";
+        if (axisData.distinctStrings != null)
+            summary += ", " + (axisData.stats.max - axisData.stats.min) + " distinct values";
+        summary += ", " + String(bucketCount) + " buckets";
+        if (samplingRate < 1.0)
+            summary += ", sampling rate " + significantDigits(samplingRate);
+        this.summary.innerHTML = summary;
     }
 
     // combine two views according to some operation
@@ -202,7 +284,7 @@ export class HistogramView extends HistogramViewBase {
         rc.onCompleted();
     }
 
-    protected onMouseMove(): void {
+    public mouseMove(): void {
         let position = d3.mouse(this.chart.node());
         let mouseX = position[0];
         let mouseY = position[1];
@@ -216,20 +298,8 @@ export class HistogramView extends HistogramViewBase {
         let ys = significantDigits(y);
         let mouseLabel = [xs, ys];
 
-        if (this.currentData.cdfSum != null) {
-            // determine mouse position on cdf curve
-            // we have to take into account the adjustment
-            let cdfX = mouseX * this.currentData.cdfSum.length / this.chartSize.width;
-            let pos = 0;
-            if (cdfX < 0) {
-                pos = 0;
-            } else if (cdfX >= this.currentData.cdfSum.length) {
-                pos = 1;
-            } else {
-                let cdfPosition = this.currentData.cdfSum[Math.floor(cdfX)];
-                pos = cdfPosition / this.currentData.axisData.stats.presentCount;
-            }
-
+        if (this.cdfPlot != null) {
+            let pos = this.cdfPlot.getY(mouseX);
             this.cdfDot.attr("cx", mouseX + Resolution.leftMargin);
             this.cdfDot.attr("cy", (1 - pos) * this.chartSize.height + Resolution.topMargin);
             let perc = percent(pos);
@@ -238,174 +308,13 @@ export class HistogramView extends HistogramViewBase {
         this.pointDescription.update(mouseLabel, mouseX, mouseY);
     }
 
-    public updateView(title: string, cdf: Histogram, h: Histogram,
-                      axisData: AxisData, samplingRate: number, elapsedMs: number) : void {
-        this.page.reportTime(elapsedMs);
-        if (h == null) {
-            this.page.reportError("No data to display");
-            return;
-        }
-        if (samplingRate >= 1) {
-            let submenu = this.menu.getSubmenu("View");
-            submenu.enable("exact", false);
-        }
-        this.currentData = {
-            axisData: axisData,
-            title: title,
-            cdf: cdf,
-            cdfSum: null,
-            histogram: h,
-            samplingRate: samplingRate };
-
-        let canvasSize = Resolution.getCanvasSize(this.page);
-        this.chartSize = Resolution.getChartSize(this.page);
-
-        let counts = h.buckets;
-        let bucketCount = counts.length;
-        let max = Math.max(...counts);
-
-        // prefix sum for cdf
-        let cdfData: number[] = [];
-        if (cdf != null) {
-            this.currentData.cdfSum = [];
-
-            let sum = 0;
-            for (let i in cdf.buckets) {
-                sum += cdf.buckets[i];
-                this.currentData.cdfSum.push(sum);
-            }
-
-            let point = 0;
-            for (let i in this.currentData.cdfSum) {
-                cdfData.push(point);
-                point = this.currentData.cdfSum[i] * max / axisData.stats.presentCount;
-                cdfData.push(point);
-            }
-        }
-
-        if (this.canvas != null)
-            this.canvas.remove();
-
-        let drag = d3.drag()
-            .on("start", () => this.dragStart())
-            .on("drag", () => this.dragMove())
-            .on("end", () => this.dragEnd());
-
-        // Everything is drawn on top of the canvas.
-        // The canvas includes the margins
-        let canvasHeight = canvasSize.height;
-        this.canvas = d3.select(this.chartDiv)
-            .append("svg")
-            .attr("id", "canvas")
-            .call(drag)
-            .attr("width", canvasSize.width)
-            .attr("border", 1)
-            .attr("height", canvasHeight)
-            .attr("cursor", "crosshair");
-
-        this.canvas.on("mousemove", () => this.onMouseMove())
-            .on("mouseenter", () => this.onMouseEnter())
-            .on("mouseleave", () => this.onMouseLeave());
-
-        // The chart uses a fragment of the canvas offset by the margins
-        this.chart = this.canvas
-            .append("g")
-            .attr("transform", `translate(${Resolution.leftMargin}, ${Resolution.topMargin})`);
-
-        this.yScale = d3.scaleLinear()
-            .domain([0, max])
-            .range([this.chartSize.height, 0]);
-        let yAxis = d3.axisLeft(this.yScale)
-            .tickFormat(d3.format(".2s"));
-
-        let scaleAxis = axisData.scaleAndAxis(this.chartSize.width, true, false);
-        this.xScale = scaleAxis.scale;
-        let xAxis = scaleAxis.axis;
-
-        // After resizing the line may not have the exact number of points
-        // as the screen width.
-        let cdfLine = d3.line<number>()
-            .x((d, i) => {
-                let index = Math.floor(i / 2); // two points for each data point, for a zig-zag
-                return index * 2 * this.chartSize.width / cdfData.length;
-            })
-            .y(d => this.yScale(d));
-
-        // draw CDF curve
-        this.canvas.append("path")
-            .attr("transform", `translate(${Resolution.leftMargin}, ${Resolution.topMargin})`)
-            .datum(cdfData)
-            .attr("stroke", "blue")
-            .attr("d", cdfLine)
-            .attr("fill", "none");
-
-        let barWidth = this.chartSize.width / bucketCount;
-        let bars = this.chart.selectAll("g")
-            .data(counts)
-            .enter().append("g")
-            .attr("transform", (d, i) => `translate(${i * barWidth}, 0)`);
-
-        bars.append("rect")
-            .attr("y", d => this.yScale(d))
-            .attr("fill", "darkcyan")
-            .attr("height", d => this.chartSize.height - this.yScale(d))
-            .attr("width", barWidth - 1);
-
-        bars.append("text")
-            .attr("class", "histogramBoxLabel")
-            .attr("x", barWidth / 2)
-            .attr("y", d => this.yScale(d))
-            .attr("text-anchor", "middle")
-            .attr("dy", d => d <= (9 * max / 10) ? "-.25em" : ".75em")
-            .text(d => HistogramViewBase.boxHeight(d, this.currentData.samplingRate,
-                this.currentData.axisData.stats.presentCount))
-            .exit();
-
-        this.chart.append("g")
-            .attr("class", "y-axis")
-            .call(yAxis);
-        if (xAxis != null) {
-            this.chart.append("g")
-                .attr("class", "x-axis")
-                .attr("transform", `translate(0, ${this.chartSize.height})`)
-                .call(xAxis);
-        }
-
-        this.cdfDot = this.canvas
-            .append("circle")
-            .attr("r", Resolution.mouseDotRadius)
-            .attr("fill", "blue");
-        this.selectionRectangle = this.canvas
-            .append("rect")
-            .attr("class", "dashed")
-            .attr("width", 0)
-            .attr("height", 0);
-
-        let pointDesc = ["x", "y"];
-        if (this.currentData.cdfSum != null)
-            pointDesc.push("cdf");
-        this.pointDescription = new TextOverlay(this.chart, pointDesc, 40);
-        this.pointDescription.show(false);
-
-        let summary = "";
-        if (h.missingData != 0)
-            summary = formatNumber(h.missingData) + " missing, ";
-        summary += formatNumber(axisData.stats.presentCount + axisData.stats.missingCount) + " points";
-        if (axisData.distinctStrings != null)
-            summary += ", " + (axisData.stats.max - axisData.stats.min) + " distinct values";
-        summary += ", " + String(bucketCount) + " buckets";
-        if (samplingRate < 1.0)
-            summary += ", sampling rate " + significantDigits(samplingRate);
-        this.summary.innerHTML = summary;
-    }
-
     // override
-    protected dragMove() {
-        this.onMouseMove();
+    public dragMove() {
+        this.mouseMove();
         super.dragMove();
     }
 
-    protected dragEnd() {
+    public dragEnd() {
         let dragging = this.dragging && this.moved;
         super.dragEnd();
         if (!dragging)

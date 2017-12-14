@@ -26,11 +26,12 @@ import {TextOverlay} from "../ui/textOverlay";
 import {AnyScale} from "./axisData";
 import {RemoteTableObjectView} from "../tableTarget";
 import {DistinctStrings} from "../distinctStrings";
+import {IDragHandler} from "../ui/mouseApi";
 
 /**
  * This is a base class that contains code common to various histogram renderings.
  */
-export abstract class HistogramViewBase extends RemoteTableObjectView {
+export abstract class HistogramViewBase extends RemoteTableObjectView implements IDragHandler {
     protected dragging: boolean;
     protected svg: any;
     /**
@@ -88,12 +89,12 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
     protected abstract showTable(): void;
     public abstract refresh(): void;
 
-    protected onMouseEnter(): void {
+    public mouseEnter(): void {
         if (this.pointDescription != null)
             this.pointDescription.show(true);
     }
 
-    protected onMouseLeave(): void {
+    public mouseLeave(): void {
         if (this.pointDescription != null)
             this.pointDescription.show(false);
     }
@@ -101,7 +102,7 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
     /**
      * Dragging started in the canvas.
      */
-    protected dragStart(): void {
+    public dragStart(): void {
         this.dragging = true;
         this.moved = false;
         let position = d3.mouse(this.canvas.node());
@@ -113,7 +114,7 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
     /**
      * The mouse moved in the canvas.
      */
-    protected dragMove(): void {
+    public dragMove(): void {
         if (!this.dragging)
             return;
         this.moved = true;
@@ -135,7 +136,7 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
             .attr("height", height);
     }
 
-    protected dragEnd(): void {
+    public dragEnd(): void {
         if (!this.dragging || !this.moved)
             return;
         this.dragging = false;
@@ -159,7 +160,7 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
      * @param  samplingRate  Sampling rate that was used to compute the box height.
      * @param  totalPop      Total population which was sampled to get this box.
      */
-    protected static boxHeight(barSize: number, samplingRate: number, totalPop: number): string {
+    public static boxHeight(barSize: number, samplingRate: number, totalPop: number): string {
         if (samplingRate >= 1) {
             if (barSize == 0)
                 return "";
