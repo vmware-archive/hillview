@@ -32,6 +32,9 @@ import org.hillview.utils.Randomness;
  */
 public class SparseMembershipSet implements IMembershipSet, IMutableMembershipSet {
     private final IntSet membershipMap;
+    /* If the Intset is smaller than this then the class would ask the IntSet to sort its array for the iterator.
+     * The sorting takes time but makes the iterator faster */
+    private static final int thresholdSortedIterator = 50000000;
     private final int max;
 
     @Override
@@ -63,6 +66,8 @@ public class SparseMembershipSet implements IMembershipSet, IMutableMembershipSe
     }
 
     public IMembershipSet seal() {
+        if (this.size() < SparseMembershipSet.thresholdSortedIterator)
+            this.membershipMap.sortIterator();
         return this;
     }
 
@@ -93,10 +98,7 @@ public class SparseMembershipSet implements IMembershipSet, IMutableMembershipSe
     }
 
     @Override
-    public IRowIterator getIterator() {
-        return new SparseIterator(this.membershipMap);
-    }
-
+    public IRowIterator getIterator() { return new SparseIterator(this.membershipMap); }
 
     /**
      * Returns an iterator that runs over the sampled data.
@@ -153,9 +155,7 @@ public class SparseMembershipSet implements IMembershipSet, IMutableMembershipSe
     private static class SparseIterator implements IRowIterator {
         final private IntSet.IntSetIterator mySetIterator;
 
-        private SparseIterator(final IntSet mySet) {
-            this.mySetIterator = mySet.getIterator();
-        }
+        private SparseIterator(final IntSet mySet) { this.mySetIterator = mySet.getIterator(); }
 
         @Override
         public int getNextRow() {

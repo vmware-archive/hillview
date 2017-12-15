@@ -19,6 +19,7 @@ package org.hillview.storage;
 
 import org.hillview.table.api.IAppendableColumn;
 import org.hillview.utils.Converters;
+import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
@@ -50,6 +51,7 @@ public abstract class TextFileLoader implements IFileLoader {
 
     Reader getFileReader() {
         try {
+            HillviewLogger.instance.info("Reading file", "{0}", this.filename);
             if (this.filename.toLowerCase().endsWith(".gz"))
                 return new InputStreamReader(new GZIPInputStream(new FileInputStream(this.filename)));
             return new FileReader(this.filename);

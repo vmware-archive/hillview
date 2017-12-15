@@ -18,6 +18,8 @@
 package org.hillview.utils;
 
 
+import java.util.Arrays;
+
 /**
  * A set of integers.
  * A simplified version of IntOpenHash from fastutil http://fastutil.di.unimi.it
@@ -25,6 +27,7 @@ package org.hillview.utils;
 @SuppressWarnings("NestedAssignment")
 public class IntSet {
     private int[] key; /* The array of the linear probing */
+    private int[] iteratorKey; /* the array of keys for the iterator */
     private int mask;
     private int n;  /* the size of the array - 1 */
     private boolean containsZero = false;  /* zero is reserved to signify an empty cell */
@@ -42,6 +45,7 @@ public class IntSet {
             this.mask = this.n - 1;
             this.maxFill = HashUtil.maxFill(this.n, f);
             this.key = new int[this.n + 1];
+            this.iteratorKey = this.key;
         } else {
             throw new IllegalArgumentException("Load factor must be greater than 0 and " +
                     "smaller than or equal to 1");
@@ -94,20 +98,21 @@ public class IntSet {
         if (this.size++ >= this.maxFill) {
             this.rehash(HashUtil.arraySize(this.size + 1, this.f));
         }
+        this.iteratorKey = this.key;
         return true;
     }
 
     /**
      *
      * @param pos a location in the key[] array
-     * @return the location of the next full slot after cursor.
+     * @return the location of the next full slot after cursor. Operates on the iteratorKey array
      */
     public int getNext(int pos) {
-        while ( key[pos & this.mask] == 0) { pos++; }
+        while ( this.iteratorKey[pos & this.mask] == 0) { pos++; }
         return (pos & this.mask);
         }
 
-    public int probe(int index) { return key[index & mask]; }
+    public int probe(int index) { return iteratorKey[index & mask]; }
 
     public boolean contains(final int k) {
         if (k == 0) {
@@ -160,6 +165,7 @@ public class IntSet {
         this.mask = mask;
         this.maxFill = HashUtil.maxFill(this.n, this.f);
         this.key = newKey;
+        this.iteratorKey = this.key;
     }
 
     /**
@@ -173,8 +179,18 @@ public class IntSet {
         newSet.size = this.size;
         newSet.containsZero = this.containsZero;
         newSet.key = new int[this.n + 1];
+        newSet.iteratorKey = newSet.key;
         System.arraycopy(this.key, 0, newSet.key, 0, this.key.length);
         return newSet;
+    }
+
+    /**
+     * Creates another array with the keys, this time in sorted order. This is used to optimize the iterator and
+     * therefore should be called only once the IntSet is deemed immutable.
+     */
+    public void sortIterator() {
+        iteratorKey = Arrays.copyOf(this.key, this.key.length);
+        Arrays.sort(this.iteratorKey);
     }
 
     public int arraySize() { return this.key.length; }
@@ -235,9 +251,12 @@ public class IntSet {
                 this.mustReturnZero = false;
                 return 0;
             }
-            while (--this.pos >= 0) {
-                if (IntSet.this.key[this.pos] != 0)
-                    return IntSet.this.key[this.pos];
+            while (this.pos >= 0) {
+                if (IntSet.this.iteratorKey[this.pos] != 0) {
+                    this.pos--;
+                    return IntSet.this.iteratorKey[this.pos + 1];
+                }
+                this.pos--;
             }
             return -1;
         }

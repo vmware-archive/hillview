@@ -27,6 +27,7 @@ import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.Table;
 import org.hillview.table.api.*;
+import org.hillview.utils.HillviewLogger;
 
 import javax.annotation.Nullable;
 import java.io.*;
