@@ -27,19 +27,19 @@ public class HeatMap implements Serializable, IJson {
     private final long[][] buckets;
     private long missingData; // number of items missing on both columns
     private long outOfRange;
-    private final IBucketsDescription bucketDescDim1;
-    private final IBucketsDescription bucketDescDim2;
-    private Histogram histogramMissingD1; // dim1 is missing, dim2 exists
-    private Histogram histogramMissingD2; // dim2 is missing, dim1 exists
+    private final IBucketsDescription bucketDescX;
+    private final IBucketsDescription bucketDescY;
+    private Histogram histogramMissingX; // dim1 is missing, dim2 exists
+    private Histogram histogramMissingY; // dim2 is missing, dim1 exists
     private long totalSize;
 
-    public HeatMap(final IBucketsDescription buckets1,
-                   final IBucketsDescription buckets2) {
-        this.bucketDescDim1 = buckets1;
-        this.bucketDescDim2 = buckets2;
-        this.buckets = new long[buckets1.getNumOfBuckets()][buckets2.getNumOfBuckets()]; // Automatically initialized to 0
-        this.histogramMissingD1 = new Histogram(this.bucketDescDim2);
-        this.histogramMissingD2 = new Histogram(this.bucketDescDim1);
+    public HeatMap(final IBucketsDescription xBuckets,
+                   final IBucketsDescription yBuckets) {
+        this.bucketDescX = xBuckets;
+        this.bucketDescY = yBuckets;
+        this.buckets = new long[xBuckets.getNumOfBuckets()][yBuckets.getNumOfBuckets()]; // Automatically initialized to 0
+        this.histogramMissingX = new Histogram(this.bucketDescY);
+        this.histogramMissingY = new Histogram(this.bucketDescX);
     }
 
     public void createHeatMap(final ColumnAndConverter columnD1, final ColumnAndConverter columnD2,
@@ -53,11 +53,11 @@ public class HeatMap implements Serializable, IJson {
                 if (!isMissingD1) {
                     // only column 2 is missing
                     double val1 = columnD1.asDouble(currRow);
-                    this.histogramMissingD2.addValue(val1);
+                    this.histogramMissingY.addValue(val1);
                 } else if (!isMissingD2) {
                     // only column 1 is missing
                     double val2 = columnD2.asDouble(currRow);
-                    this.histogramMissingD1.addValue(val2);
+                    this.histogramMissingX.addValue(val2);
                 } else {
                     // both are missing
                     this.missingData++;
@@ -65,8 +65,8 @@ public class HeatMap implements Serializable, IJson {
             } else {
                 double val1 = columnD1.asDouble(currRow);
                 double val2 = columnD2.asDouble(currRow);
-                int index1 = this.bucketDescDim1.indexOf(val1);
-                int index2 = this.bucketDescDim2.indexOf(val2);
+                int index1 = this.bucketDescX.indexOf(val1);
+                int index2 = this.bucketDescY.indexOf(val2);
                 if ((index1 >= 0) && (index2 >= 0)) {
                     this.buckets[index1][index2]++;
                     this.totalSize++;
@@ -77,8 +77,8 @@ public class HeatMap implements Serializable, IJson {
         }
         samplingRate = myIter.rate();
         if (samplingRate < 1) {
-            this.histogramMissingD1.rescale(myIter.rate());
-            this.histogramMissingD2.rescale(myIter.rate());
+            this.histogramMissingX.rescale(myIter.rate());
+            this.histogramMissingY.rescale(myIter.rate());
             this.outOfRange = (long) ((double) this.outOfRange / samplingRate);
             this.missingData = (long) ((double) this.missingData / samplingRate);
             for (int i = 0; i < this.buckets.length; i++)
@@ -87,15 +87,15 @@ public class HeatMap implements Serializable, IJson {
         }
     }
 
-    public Histogram getMissingHistogramD1() { return this.histogramMissingD1; }
+    public Histogram getMissingHistogramD1() { return this.histogramMissingX; }
 
     public long getSize() { return this.totalSize; }
 
-    public Histogram getMissingHistogramD2() { return this.histogramMissingD2; }
+    public Histogram getMissingHistogramD2() { return this.histogramMissingY; }
 
-    public int getNumOfBucketsD1() { return this.bucketDescDim1.getNumOfBuckets(); }
+    public int getNumOfBucketsD1() { return this.bucketDescX.getNumOfBuckets(); }
 
-    public int getNumOfBucketsD2() { return this.bucketDescDim2.getNumOfBuckets(); }
+    public int getNumOfBucketsD2() { return this.bucketDescY.getNumOfBuckets(); }
 
     public long getMissingData() { return this.missingData; }
 
@@ -111,15 +111,15 @@ public class HeatMap implements Serializable, IJson {
      * @return a new HeatMap which is the union of this and otherHeatmap
      */
     public HeatMap union(HeatMap otherHeatmap) {
-        HeatMap unionH = new HeatMap(this.bucketDescDim1, this.bucketDescDim2);
-        for (int i = 0; i < unionH.bucketDescDim1.getNumOfBuckets(); i++)
-            for (int j = 0; j < unionH.bucketDescDim2.getNumOfBuckets(); j++)
+        HeatMap unionH = new HeatMap(this.bucketDescX, this.bucketDescY);
+        for (int i = 0; i < unionH.bucketDescX.getNumOfBuckets(); i++)
+            for (int j = 0; j < unionH.bucketDescY.getNumOfBuckets(); j++)
                 unionH.buckets[i][j] = this.buckets[i][j] + otherHeatmap.buckets[i][j];
         unionH.missingData = this.missingData + otherHeatmap.missingData;
         unionH.outOfRange = this.outOfRange + otherHeatmap.outOfRange;
         unionH.totalSize = this.totalSize + otherHeatmap.totalSize;
-        unionH.histogramMissingD1 = this.histogramMissingD1.union(otherHeatmap.histogramMissingD1);
-        unionH.histogramMissingD2 = this.histogramMissingD2.union(otherHeatmap.histogramMissingD2);
+        unionH.histogramMissingX = this.histogramMissingX.union(otherHeatmap.histogramMissingX);
+        unionH.histogramMissingY = this.histogramMissingY.union(otherHeatmap.histogramMissingY);
         return unionH;
     }
 }

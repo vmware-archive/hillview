@@ -20,6 +20,7 @@ package org.hillview.storage;
 import org.hillview.table.api.IAppendableColumn;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
+import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import java.io.*;
@@ -32,7 +33,7 @@ import java.util.zip.GZIPInputStream;
 public abstract class TextFileLoader implements IFileLoader {
     protected final String filename;
     protected int currentRow;
-    private int currentColumn;
+    protected int currentColumn;
     @Nullable
     protected IAppendableColumn[] columns;
     private long currentField;
@@ -97,9 +98,10 @@ public abstract class TextFileLoader implements IFileLoader {
                     (" (" + this.columns[this.currentColumn].getName() + ")") : "";
         }
 
-        return "Error while parsing file " + this.filename +
-                " line " + this.currentRow + " column " + this.currentColumn +
-                columnName + (this.currentToken != null ? " token " + this.currentToken : "");
+        return "Error while parsing file " + this.filename + "@" + Utilities.getHostName() +
+                " line " + this.currentRow + (this.currentColumn > 0 ?
+                " column " + this.currentColumn + columnName : "")
+                + (this.currentToken != null ? " token " + this.currentToken : "");
     }
 
     protected void error(String message) {

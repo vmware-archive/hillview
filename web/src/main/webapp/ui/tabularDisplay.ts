@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-import {IHtmlElement, Resolution} from "./ui";
+import {IHtmlElement} from "./ui";
 import {SelectionStateMachine} from "./selectionStateMachine";
+import {PlottingSurface} from "./plottingSurface";
 
 /**
  * A TabularDisplay is a visual representation that uses an HTML table to display
@@ -35,7 +36,7 @@ export class TabularDisplay implements IHtmlElement {
 
     constructor() {
         this.topLevel = document.createElement("div");
-        this.topLevel.style.maxHeight = Resolution.canvasHeight.toString() + "px";
+        this.topLevel.style.maxHeight = PlottingSurface.canvasHeight.toString() + "px";
         this.topLevel.style.overflowY = "auto";
         this.topLevel.style.display =  "inline-block";
 

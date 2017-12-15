@@ -18,14 +18,15 @@
 import {d3} from "../ui/d3-modules";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {ContentsKind, Schema, BasicColStats, ColumnDescription, ColumnAndRange, RemoteObjectId} from "../javaBridge";
-import {ScaleLinear} from "d3-scale";
 import {Converters, formatDate, significantDigits} from "../util";
-import {Point, Resolution, Size, SpecialChars} from "../ui/ui";
+import {Point, Resolution, SpecialChars} from "../ui/ui";
 import {FullPage} from "../ui/fullPage";
 import {TextOverlay} from "../ui/textOverlay";
 import {AnyScale} from "./axisData";
 import {RemoteTableObjectView} from "../tableTarget";
 import {DistinctStrings} from "../distinctStrings";
+import {CDFPlot} from "../ui/CDFPlot";
+import {PlottingSurface} from "../ui/plottingSurface";
 
 /**
  * This is a base class that contains code common to various histogram renderings.
@@ -43,15 +44,12 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
     protected selectionRectangle: any;
     protected chartDiv: HTMLElement;
     protected summary: HTMLElement;
-    protected xScale: AnyScale;
-    protected yScale: ScaleLinear<number, number>;
-    protected chartSize: Size;
-    protected chart: any;  // these are in fact a d3.Selection<>, but I can't make them typecheck
-    protected canvas: any;
-    protected legendSvg: any;
     protected cdfDot: any;
     protected moved: boolean;  // to detect trivial empty drags
     protected pointDescription: TextOverlay;
+
+    protected cdfPlot: CDFPlot;
+    protected surface: PlottingSurface;
 
     constructor(remoteObjectId: RemoteObjectId, originalTableId: RemoteObjectId,
                 protected tableSchema: Schema, page: FullPage) {
@@ -88,12 +86,12 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
     protected abstract showTable(): void;
     public abstract refresh(): void;
 
-    protected onMouseEnter(): void {
+    public mouseEnter(): void {
         if (this.pointDescription != null)
             this.pointDescription.show(true);
     }
 
-    protected onMouseLeave(): void {
+    public mouseLeave(): void {
         if (this.pointDescription != null)
             this.pointDescription.show(false);
     }
@@ -101,10 +99,10 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
     /**
      * Dragging started in the canvas.
      */
-    protected dragStart(): void {
+    public dragStart(): void {
         this.dragging = true;
         this.moved = false;
-        let position = d3.mouse(this.canvas.node());
+        let position = d3.mouse(this.surface.getCanvas().node());
         this.selectionOrigin = {
             x: position[0],
             y: position[1] };
@@ -113,15 +111,15 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
     /**
      * The mouse moved in the canvas.
      */
-    protected dragMove(): void {
+    public dragMove(): void {
         if (!this.dragging)
             return;
         this.moved = true;
         let ox = this.selectionOrigin.x;
-        let position = d3.mouse(this.canvas.node());
+        let position = d3.mouse(this.surface.getCanvas().node());
         let x = position[0];
         let width = x - ox;
-        let height = this.chartSize.height;
+        let height = this.surface.getActualChartHeight();
 
         if (width < 0) {
             ox = x;
@@ -130,12 +128,12 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
 
         this.selectionRectangle
             .attr("x", ox)
-            .attr("y", Resolution.topMargin)
+            .attr("y", this.surface.topMargin)
             .attr("width", width)
             .attr("height", height);
     }
 
-    protected dragEnd(): void {
+    public dragEnd(): void {
         if (!this.dragging || !this.moved)
             return;
         this.dragging = false;
@@ -147,7 +145,7 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
     // noinspection JSUnusedLocalSymbols
     public static samplingRate(bucketCount: number, rowCount: number, page: FullPage): number {
         let constant = 4;  // This models the confidence we want from the sampling
-        let height = Resolution.getChartSize(page).height;
+        let height = PlottingSurface.getDefaultChartSize(page).height;
         let sampleCount = constant * height * height;
         let sampleRate = sampleCount / rowCount;
         return Math.min(sampleRate, 1);
@@ -159,7 +157,7 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
      * @param  samplingRate  Sampling rate that was used to compute the box height.
      * @param  totalPop      Total population which was sampled to get this box.
      */
-    protected static boxHeight(barSize: number, samplingRate: number, totalPop: number): string {
+    public static boxHeight(barSize: number, samplingRate: number, totalPop: number): string {
         if (samplingRate >= 1) {
             if (barSize == 0)
                 return "";
@@ -200,7 +198,7 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
 
     public static bucketCount(stats: BasicColStats, page: FullPage, columnKind: ContentsKind,
                               heatMap: boolean, bottom: boolean): number {
-        let size = Resolution.getChartSize(page);
+        let size = PlottingSurface.getDefaultChartSize(page);
         let length = Math.floor(bottom ? size.width : size.height);
         let maxBucketCount = Resolution.maxBucketCount;
         let minBarWidth = Resolution.minBarWidth;

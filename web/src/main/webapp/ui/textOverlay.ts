@@ -17,6 +17,7 @@
 
 import {Resolution} from "./ui";
 import {truncate} from "../util";
+import {PlottingSurface} from "./plottingSurface";
 
 /**
  * This class is used to display a small semi-transparent rectangle that
@@ -33,6 +34,7 @@ export class TextOverlay {
 
     /**
      * Create a textOverlay.
+     * TODO: change parent to be a PlottingSurface
      * @param parent     Parent is really d3 svg element.
      * @param keys       Keys whose values will be updated.
      * @param maxLength  Maximum rendered key length.
@@ -75,7 +77,8 @@ export class TextOverlay {
         // If too close to the margin move it a bit
         if (window.innerWidth < x + maxWidth)
             x -= maxWidth;
-        if (Resolution.canvasHeight - Resolution.bottomMargin < y + this.height)
+        // TODO: make these depend on dynamic values
+        if (PlottingSurface.canvasHeight - PlottingSurface.bottomMargin < y + this.height)
             y -= this.height;
 
         let index = 0;

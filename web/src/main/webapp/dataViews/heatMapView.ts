@@ -16,7 +16,6 @@
  */
 
 import {d3} from "../ui/d3-modules";
-import {ScaleLinear, ScaleTime} from "d3-scale";
 
 import { Renderer } from "../rpc";
 import {
@@ -25,12 +24,12 @@ import {
 } from "../javaBridge";
 import {TableView, NextKReceiver} from "./tableView";
 import {
-    Pair, significantDigits, formatNumber, reorder, regression, ICancellable, PartialResult, Seed
+    Pair, significantDigits, formatNumber, reorder, ICancellable, PartialResult, Seed
 } from "../util";
 import {HistogramViewBase} from "./histogramViewBase";
 import {TopMenu, SubMenu} from "../ui/menu";
 import {Histogram2DRenderer, Make2DHistogram, Filter2DReceiver} from "./histogram2DView";
-import {Point, Resolution, Size} from "../ui/ui";
+import {Point} from "../ui/ui";
 import {FullPage} from "../ui/fullPage";
 import {ColorLegend, ColorMap} from "../ui/colorLegend";
 import {TextOverlay} from "../ui/textOverlay";
@@ -38,41 +37,35 @@ import {AxisData} from "./axisData";
 import {RemoteTableObjectView, ZipReceiver, RemoteTableObject} from "../tableTarget";
 import {DistinctStrings} from "../distinctStrings";
 import {combineMenu, SelectedObject} from "../selectedObject";
+import {PlottingSurface} from "../ui/plottingSurface";
+import {HeatmapPlot} from "../ui/heatmapPlot";
 
 /**
  * A HeatMapView renders information as a heatmap.
  */
 export class HeatMapView extends RemoteTableObjectView {
     protected dragging: boolean;
-    protected svg: any;
     /**
      * Coordinates of mouse within canvas.
      */
     private selectionOrigin: Point;
     private selectionRectangle: any;
-    protected chartDiv: HTMLElement;
     protected colorLegend: ColorLegend;
     protected colorMap: ColorMap;
     protected summary: HTMLElement;
-    private xScale: ScaleLinear<number, number> | ScaleTime<number, number>;
-    private yScale: ScaleLinear<number, number> | ScaleTime<number, number>;
-    protected chartSize: Size;
-    protected pointWidth: number;
-    protected pointHeight: number;
     private moved: boolean;
     protected pointDescription: TextOverlay;
+    protected surface: PlottingSurface;
+    protected plot: HeatmapPlot;
 
     protected currentData: {
         xData: AxisData;
         yData: AxisData;
-        missingData: number;
-        data: number[][];
+        heatMap: HeatMap;
         xPoints: number;
         yPoints: number;
         samplingRate: number;
     };
-    private chart: any;  // these are in fact a d3.Selection<>, but I can't make them typecheck
-    protected canvas: any;
     private menu: TopMenu;
 
     constructor(remoteObjectId: RemoteObjectId, originalTableId: RemoteObjectId, protected tableSchema: Schema, page: FullPage) {
@@ -108,17 +101,191 @@ export class HeatMapView extends RemoteTableObjectView {
 
         this.colorMap = new ColorMap();
         this.colorLegend = new ColorLegend(this.colorMap);
-        this.colorLegend.setColorMapChangeEventListener(() => {
-            this.reapplyColorMap();
-        });
+        this.colorLegend.setColorMapChangeEventListener(() => this.plot.reapplyColorMap());
         this.topLevel.appendChild(this.colorLegend.getHTMLRepresentation());
 
-        this.chartDiv = document.createElement("div");
-        this.topLevel.appendChild(this.chartDiv);
+        this.surface = new PlottingSurface(this.topLevel, page);
+        this.surface.setMargins(20, this.surface.rightMargin, this.surface.bottomMargin, this.surface.leftMargin);
+        this.plot = new HeatmapPlot(this.surface, this.colorMap);
 
         this.summary = document.createElement("div");
         this.topLevel.appendChild(this.summary);
     }
+
+    public updateView(heatmap: HeatMap, xData: AxisData, yData: AxisData,
+                      samplingRate: number, elapsedMs: number) : void {
+        this.page.reportTime(elapsedMs);
+        this.plot.clear();
+        if (heatmap == null || heatmap.buckets.length == 0) {
+            this.page.reportError("No data to display");
+            return;
+        }
+
+        let xPoints = heatmap.buckets.length;
+        let yPoints = heatmap.buckets[0].length;
+        if (yPoints == 0) {
+            this.page.reportError("No data to display");
+            return;
+        }
+
+        this.currentData = {
+            heatMap: heatmap,
+            xData: xData,
+            yData: yData,
+            xPoints: xPoints,
+            yPoints: yPoints,
+            samplingRate: samplingRate
+        };
+
+        /*
+        let canvasSize = PlottingSurface.getCanvasSize(this.page);
+        this.chartSize = PlottingSurface.getChartSize(this.page);
+        this.pointWidth = this.chartSize.width / xPoints;
+        this.pointHeight = this.chartSize.height / yPoints;
+
+        if (this.canvas != null)
+            this.canvas.remove();
+        */
+
+        let drag = d3.drag()
+            .on("start", () => this.dragStart())
+            .on("drag", () => this.dragMove())
+            .on("end", () => this.dragEnd());
+
+        /*
+        // Everything is drawn on top of the canvas.
+        // The canvas includes the margins
+        this.canvas = d3.select(this.chartDiv)
+            .append("svg")
+            .attr("id", "canvas")
+            .call(drag)
+            .attr("width", canvasSize.width)
+            .attr("border", 1)
+            .attr("height", canvasSize.height)
+            .attr("cursor", "crosshair");
+            */
+
+        let canvas = this.surface.getCanvas();
+        canvas.call(drag)
+            .on("mousemove", () => this.onMouseMove())
+            .on("mouseenter", () => this.onMouseEnter())
+            .on("mouseleave", () => this.onMouseLeave());
+
+        /*
+        this.canvas.append("text")
+            .text(yData.description.name)
+            .attr("dominant-baseline", "text-before-edge");
+        this.canvas.append("text")
+            .text(xData.description.name)
+            .attr("transform", `translate(${this.chartSize.width / 2},
+                  ${this.chartSize.height + PlottingSurface.topMargin + PlottingSurface.bottomMargin / 2})`)
+            .attr("text-anchor", "middle")
+            .attr("dominant-baseline", "hanging");
+
+        // The chart uses a fragment of the canvas offset by the margins
+        this.chart = this.canvas
+            .append("g")
+            .attr("transform", `translate(${PlottingSurface.leftMargin}, ${PlottingSurface.topMargin})`);
+        let xsc = this.currentData.xData.scaleAndAxis(this.chartSize.width, true, false);
+        let ysc = this.currentData.yData.scaleAndAxis(this.chartSize.height, false, false);
+        let xAxis = xsc.axis;
+        let yAxis = ysc.axis;
+        this.xScale = xsc.scale;
+        this.yScale = ysc.scale;
+
+        interface Dot {
+            x: number,
+            y: number,
+            v: number
+        }
+
+        let dots: Dot[] = [];
+        let max: number = 0;
+        let visible: number = 0;
+        let distinct: number = 0;
+        for (let x = 0; x < heatmap.buckets.length; x++) {
+            for (let y = 0; y < heatmap.buckets[x].length; y++) {
+                let v = heatmap.buckets[x][y];
+                if (v > max)
+                    max = v;
+                if (v != 0) {
+                    let rec = {
+                        x: x * this.pointWidth,
+                        y: this.chartSize.height - (y + 1) * this.pointHeight,  // +1 because it's the upper corner
+                        v: v
+                    };
+                    visible += v;
+                    distinct++;
+                    dots.push(rec);
+                }
+            }
+        }
+       */
+
+        // The order of these operations is important
+        this.plot.setData(heatmap, xData, yData, samplingRate);
+        this.colorMap.min = 1;
+        this.colorMap.max = this.plot.getMaxCount();
+        if (this.plot.getMaxCount() > ColorMap.logThreshold)
+            this.colorMap.setLogScale(true);
+        else
+            this.colorMap.setLogScale(false);
+        this.colorLegend.redraw();
+        this.plot.draw();
+
+        /*
+        this.chart.append("g")
+            .attr("class", "x-axis")
+            .attr("transform", `translate(0, ${this.chartSize.height})`)
+            .call(xAxis);
+
+        this.chart.append("g")
+            .attr("class", "y-axis")
+            .call(yAxis);
+          */
+        this.selectionRectangle = canvas
+            .append("rect")
+            .attr("class", "dashed")
+            .attr("stroke", "red")
+            .attr("width", 0)
+            .attr("height", 0);
+
+        /*
+        if (this.currentData.yData.description.kind != "Category") {
+            // it makes no sense to do regressions for categorical values
+            let regr = regression(heatmap.buckets);
+            if (regr.length == 2) {
+                let b = regr[0];
+                let a = regr[1];
+                let y1 = this.chartSize.height - b * this.pointHeight;
+                let y2 = this.chartSize.height - (a * heatmap.buckets.length + b) * this.pointHeight;
+                this.chart
+                    .append("line")
+                    .attr("x1", 0)
+                    .attr("y1", y1)
+                    .attr("x2", this.pointWidth * heatmap.buckets.length)
+                    .attr("y2", y2)
+                    .attr("stroke", "black");
+            }
+        }
+        */
+
+        this.pointDescription = new TextOverlay(this.surface.getChart(),
+            [xData.description.name, yData.description.name, "count"], 40);
+        this.pointDescription.show(false);
+        let summary = formatNumber(this.plot.getVisiblePoints()) + " data points";
+        if (heatmap.missingData != 0)
+            summary += ", " + formatNumber(heatmap.missingData) + " missing";
+        if (heatmap.histogramMissingX.missingData != 0)
+            summary += ", " + formatNumber(heatmap.histogramMissingX.missingData) + " missing Y coordinate";
+        if (heatmap.histogramMissingY.missingData != 0)
+            summary += ", " + formatNumber(heatmap.histogramMissingY.missingData) + " missing X coordinate";
+        summary += ", " + formatNumber(this.plot.getDistinct()) + " distinct dots";
+        if (samplingRate < 1.0)
+            summary += ", sampling rate " + significantDigits(samplingRate);
+        this.summary.innerHTML = summary;
+    }
+
 
     histogram(): void {
         // Draw this as a 2-D histogram
@@ -208,185 +375,11 @@ export class HeatMapView extends RemoteTableObjectView {
         if (this.currentData == null)
             return;
         this.updateView(
-            this.currentData.data,
+            this.currentData.heatMap,
             this.currentData.xData,
             this.currentData.yData,
-            this.currentData.missingData,
             this.currentData.samplingRate,
             0);
-    }
-
-    public updateView(data: number[][], xData: AxisData, yData: AxisData,
-                      missingData: number, samplingRate: number, elapsedMs: number) : void {
-        this.page.reportTime(elapsedMs);
-        if (data == null || data.length == 0) {
-            this.page.reportError("No data to display");
-            return;
-        }
-
-        let xPoints = data.length;
-        let yPoints = data[0].length;
-        if (yPoints == 0) {
-            this.page.reportError("No data to display");
-            return;
-        }
-        this.currentData = {
-            data: data,
-            xData: xData,
-            yData: yData,
-            missingData: missingData,
-            xPoints: xPoints,
-            yPoints: yPoints,
-            samplingRate: samplingRate
-        };
-
-        let canvasSize = Resolution.getCanvasSize(this.page);
-        this.chartSize = Resolution.getChartSize(this.page);
-        this.pointWidth = this.chartSize.width / xPoints;
-        this.pointHeight = this.chartSize.height / yPoints;
-
-        if (this.canvas != null)
-            this.canvas.remove();
-
-        let drag = d3.drag()
-            .on("start", () => this.dragStart())
-            .on("drag", () => this.dragMove())
-            .on("end", () => this.dragEnd());
-
-        // Everything is drawn on top of the canvas.
-        // The canvas includes the margins
-        this.canvas = d3.select(this.chartDiv)
-            .append("svg")
-            .attr("id", "canvas")
-            .call(drag)
-            .attr("width", canvasSize.width)
-            .attr("border", 1)
-            .attr("height", canvasSize.height)
-            .attr("cursor", "crosshair");
-
-        this.canvas.on("mousemove", () => this.onMouseMove())
-            .on("mouseenter", () => this.onMouseEnter())
-            .on("mouseleave", () => this.onMouseLeave());
-        this.canvas.append("text")
-            .text(yData.description.name)
-            .attr("dominant-baseline", "text-before-edge");
-        this.canvas.append("text")
-            .text(xData.description.name)
-            .attr("transform", `translate(${this.chartSize.width / 2},
-                  ${this.chartSize.height + Resolution.topMargin + Resolution.bottomMargin / 2})`)
-            .attr("text-anchor", "middle")
-            .attr("dominant-baseline", "hanging");
-
-        // The chart uses a fragment of the canvas offset by the margins
-        this.chart = this.canvas
-            .append("g")
-            .attr("transform", `translate(${Resolution.leftMargin}, ${Resolution.topMargin})`);
-
-        let xsc = this.currentData.xData.scaleAndAxis(this.chartSize.width, true, false);
-        let ysc = this.currentData.yData.scaleAndAxis(this.chartSize.height, false, false);
-        let xAxis = xsc.axis;
-        let yAxis = ysc.axis;
-        this.xScale = xsc.scale;
-        this.yScale = ysc.scale;
-
-        interface Dot {
-            x: number,
-            y: number,
-            v: number
-        }
-
-        let dots: Dot[] = [];
-        let max: number = 0;
-        let visible: number = 0;
-        let distinct: number = 0;
-        for (let x = 0; x < data.length; x++) {
-            for (let y = 0; y < data[x].length; y++) {
-                let v = data[x][y];
-                if (v > max)
-                    max = v;
-                if (v != 0) {
-                    let rec = {
-                        x: x * this.pointWidth,
-                        y: this.chartSize.height - (y + 1) * this.pointHeight,  // +1 because it's the upper corner
-                        v: v
-                    };
-                    visible += v;
-                    distinct++;
-                    dots.push(rec);
-                }
-            }
-        }
-        this.colorMap.min = 1;
-        this.colorMap.max = max;
-        if (max > ColorMap.logThreshold)
-            this.colorMap.setLogScale(true);
-        else
-            this.colorMap.setLogScale(false);
-
-        this.chart.selectAll()
-            .data(dots)
-            .enter()
-            .append("g")
-            .append("svg:rect")
-            .attr("class", "heatMapCell")
-            .attr("x", d => d.x)
-            .attr("y", d => d.y)
-            .attr("data-val", d => d.v)
-            .attr("width", this.pointWidth)
-            .attr("height", this.pointHeight)
-            .style("stroke-width", 0)
-            .style("fill", d => this.colorMap.apply(d.v));
-
-        this.colorLegend.redraw();
-
-        this.chart.append("g")
-            .attr("class", "x-axis")
-            .attr("transform", `translate(0, ${this.chartSize.height})`)
-            .call(xAxis);
-
-        this.chart.append("g")
-            .attr("class", "y-axis")
-            .call(yAxis);
-
-        this.selectionRectangle = this.canvas
-            .append("rect")
-            .attr("class", "dashed")
-            .attr("stroke", "red")
-            .attr("width", 0)
-            .attr("height", 0);
-
-        if (this.currentData.yData.description.kind != "Category") {
-            // it makes no sense to do regressions for categorical values
-            let regr = regression(data);
-            if (regr.length == 2) {
-                let b = regr[0];
-                let a = regr[1];
-                let y1 = this.chartSize.height - b * this.pointHeight;
-                let y2 = this.chartSize.height - (a * data.length + b) * this.pointHeight;
-                this.chart
-                    .append("line")
-                    .attr("x1", 0)
-                    .attr("y1", y1)
-                    .attr("x2", this.pointWidth * data.length)
-                    .attr("y2", y2)
-                    .attr("stroke", "black");
-            }
-        }
-
-        this.pointDescription = new TextOverlay(this.chart,
-            [xData.description.name, yData.description.name, "count"], 40);
-        this.pointDescription.show(false);
-        let summary = formatNumber(visible) + " data points";
-        if (missingData != 0)
-            summary += ", " + formatNumber(missingData) + " missing";
-        if (xData.missing.missingData != 0)
-            summary += ", " + formatNumber(xData.missing.missingData) + " missing Y coordinate";
-        if (yData.missing.missingData != 0)
-            summary += ", " + formatNumber(yData.missing.missingData) + " missing X coordinate";
-        summary += ", " + formatNumber(distinct) + " distinct dots";
-        if (samplingRate < 1.0)
-            summary += ", sampling rate " + significantDigits(samplingRate);
-        this.summary.innerHTML = summary;
     }
 
     protected onMouseEnter(): void {
@@ -399,62 +392,52 @@ export class HeatMapView extends RemoteTableObjectView {
             this.pointDescription.show(false);
     }
 
-    private reapplyColorMap() {
-        this.chart.selectAll(".heatMapCell")
-            .datum(function() {return this.dataset;})
-            .style("fill", d => this.colorMap.apply(d.val))
-    }
-
     onMouseMove(): void {
-        if (this.xScale == null)
+        if (this.plot.xScale == null)
             // not yet setup
             return;
 
-        let position = d3.mouse(this.chart.node());
+        let position = d3.mouse(this.surface.getChart().node());
         let mouseX = position[0];
         let mouseY = position[1];
 
-        let xs = HistogramViewBase.invert(mouseX, this.xScale,
+        let xs = HistogramViewBase.invert(mouseX, this.plot.xScale,
             this.currentData.xData.description.kind, this.currentData.xData.distinctStrings);
-        let ys = HistogramViewBase.invert(mouseY, this.yScale,
+        let ys = HistogramViewBase.invert(mouseY, this.plot.yScale,
             this.currentData.yData.description.kind, this.currentData.yData.distinctStrings);
 
-        let xi = mouseX / this.pointWidth;
+        /*
+        let xi = mouseX / this.plot.pointWidth;
         let yi = (this.chartSize.height - mouseY) / this.pointHeight;
         xi = Math.floor(xi);
         yi = Math.floor(yi);
         let value = "0";
         if (xi >= 0 && xi < this.currentData.xPoints &&
             yi >= 0 && yi < this.currentData.yPoints) {
-            value = this.currentData.data[xi][yi].toString();
+            value = this.currentData.heatMap.buckets[xi][yi].toString();
         }
-
-        this.pointDescription.update([xs, ys, value], mouseX, mouseY);
+        */
+        let value = this.plot.getCount(mouseX, mouseY);
+        this.pointDescription.update([xs, ys, value.toString()], mouseX, mouseY);
     }
 
     dragStart(): void {
-        if (this.chart == null)
-            return;
-
         this.dragging = true;
         this.moved = false;
-        let position = d3.mouse(this.canvas.node());
+        let position = d3.mouse(this.surface.getCanvas().node());
         this.selectionOrigin = {
             x: position[0],
             y: position[1] };
     }
 
     dragMove(): void {
-        if (this.chart == null)
-            return;
-
         this.onMouseMove();
         if (!this.dragging)
             return;
         this.moved = true;
         let ox = this.selectionOrigin.x;
         let oy = this.selectionOrigin.y;
-        let position = d3.mouse(this.canvas.node());
+        let position = d3.mouse(this.surface.getCanvas().node());
         let x = position[0];
         let y = position[1];
         let width = x - ox;
@@ -477,15 +460,13 @@ export class HeatMapView extends RemoteTableObjectView {
     }
 
     dragEnd(): void {
-        if (this.chart == null)
-            return;
         if (!this.dragging || !this.moved)
             return;
         this.dragging = false;
         this.selectionRectangle
             .attr("width", 0)
             .attr("height", 0);
-        let position = d3.mouse(this.canvas.node());
+        let position = d3.mouse(this.surface.getCanvas().node());
         let x = position[0];
         let y = position[1];
         this.selectionCompleted(this.selectionOrigin.x, x, this.selectionOrigin.y, y);
@@ -495,18 +476,18 @@ export class HeatMapView extends RemoteTableObjectView {
      * Selection has been completed.  The mouse coordinates are within the canvas.
      */
     selectionCompleted(xl: number, xr: number, yl: number, yr: number): void {
-        xl -= Resolution.leftMargin;
-        xr -= Resolution.leftMargin;
-        yl -= Resolution.topMargin;
-        yr -= Resolution.topMargin;
+        xl -= PlottingSurface.leftMargin;
+        xr -= PlottingSurface.leftMargin;
+        yl -= PlottingSurface.topMargin;
+        yr -= PlottingSurface.topMargin;
 
-        if (this.xScale == null || this.yScale == null)
+        if (this.plot.xScale == null || this.plot.yScale == null)
             return;
 
-        let xMin = HistogramViewBase.invertToNumber(xl, this.xScale, this.currentData.xData.description.kind);
-        let xMax = HistogramViewBase.invertToNumber(xr, this.xScale, this.currentData.xData.description.kind);
-        let yMin = HistogramViewBase.invertToNumber(yl, this.yScale, this.currentData.yData.description.kind);
-        let yMax = HistogramViewBase.invertToNumber(yr, this.yScale, this.currentData.yData.description.kind);
+        let xMin = HistogramViewBase.invertToNumber(xl, this.plot.xScale, this.currentData.xData.description.kind);
+        let xMax = HistogramViewBase.invertToNumber(xr, this.plot.xScale, this.currentData.xData.description.kind);
+        let yMin = HistogramViewBase.invertToNumber(yl, this.plot.yScale, this.currentData.yData.description.kind);
+        let yMax = HistogramViewBase.invertToNumber(yr, this.plot.yScale, this.currentData.yData.description.kind);
         [xMin, xMax] = reorder(xMin, xMax);
         [yMin, yMax] = reorder(yMin, yMax);
 
@@ -585,10 +566,6 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
             this.cds[1], this.ds[1], yBucketCount);
         let samplingRate: number;
         if (this.drawHeatMap) {
-            /* TODO: we need an accurate presentCount for both axes
-            samplingRate = xBucketCount * yBucketCount * colorResolution * colorResolution /
-                Math.min(this.stats.first.presentCount, this.stats.second.presentCount);
-                */
             // We cannot sample when we need to distinguish reliably 1 from 0.
             samplingRate = 1.0;
         } else {
@@ -597,29 +574,37 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
         if (this.exact)
             samplingRate = 1.0;
 
+        let size = PlottingSurface.getDefaultChartSize(this.page);
+        let cdfCount = Math.floor(size.width);
+
         let arg: Histogram2DArgs = {
             first: arg0,
             second: arg1,
             samplingRate: samplingRate,
-            seed: Seed.instance.get(),
+            seed: samplingRate >= 1.0 ? 0 : Seed.instance.get(),
             xBucketCount: xBucketCount,
-            yBucketCount: yBucketCount
+            yBucketCount: yBucketCount,
+            cdfBucketCount: cdfCount,
+            cdfSamplingRate: HistogramViewBase.samplingRate(cdfCount, this.stats.first.presentCount, this.page)
         };
-        let rr = this.remoteObject.createHeatMapRequest(arg);
-        if (this.operation != null)
-            rr.setStartTime(this.operation.startTime());
-        let renderer: Renderer<HeatMap> = null;
         if (this.drawHeatMap) {
-            renderer = new HeatMapRenderer(this.page,
+            let rr = this.remoteObject.createHeatMapRequest(arg);
+            let renderer = new HeatMapRenderer(this.page,
                 this.remoteObject, this.tableSchema,
                 this.cds, [this.stats.first, this.stats.second],
                 samplingRate, [this.ds[0], this.ds[1]], rr);
+            if (this.operation != null)
+                rr.setStartTime(this.operation.startTime());
+            rr.invoke(renderer);
         } else {
-            renderer = new Histogram2DRenderer(this.page,
+            let rr = this.remoteObject.createHistogram2DMapRequest(arg);
+            let renderer = new Histogram2DRenderer(this.page,
                 this.remoteObject, this.tableSchema,
                 this.cds, [this.stats.first, this.stats.second], samplingRate, this.ds, rr);
+            if (this.operation != null)
+                rr.setStartTime(this.operation.startTime());
+            rr.invoke(renderer);
         }
-        rr.invoke(renderer);
     }
 
     onCompleted(): void {
@@ -666,9 +651,9 @@ export class HeatMapRenderer extends Renderer<HeatMap> {
             yPoints = points[0] != null ? points[0].length : 1;
         }
 
-        let xAxisData = new AxisData(value.data.histogramMissingD1, this.cds[0], this.stats[0], this.ds[0], xPoints);
-        let yAxisData = new AxisData(value.data.histogramMissingD2, this.cds[1], this.stats[1], this.ds[1], yPoints);
-        this.heatMap.updateView(value.data.buckets, xAxisData, yAxisData,
-            value.data.missingData, this.samplingRate, this.elapsedMilliseconds());
+        let xAxisData = new AxisData(this.cds[0], this.stats[0], this.ds[0], xPoints);
+        let yAxisData = new AxisData(this.cds[1], this.stats[1], this.ds[1], yPoints);
+        this.heatMap.updateView(value.data, xAxisData, yAxisData,
+            this.samplingRate, this.elapsedMilliseconds());
     }
 }

@@ -455,8 +455,6 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         this.updateView(this.currentData, false, this.order, 0);
     }
 
-
-
     public updateView(data: NextKList, revert: boolean,
                       order: RecordOrder, elapsedMs: number) : void {
         this.selectedColumns.clear();

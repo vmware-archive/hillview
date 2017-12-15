@@ -102,9 +102,9 @@ export interface CreateColumnInfo {
 export class HeatMap {
     buckets: number[][];
     missingData: number;
-    histogramMissingD1: Histogram;
-    histogramMissingD2: Histogram;
-    totalsize: number;
+    histogramMissingX: Histogram;
+    histogramMissingY: Histogram;
+    totalSize: number;
 }
 
 /**
@@ -207,6 +207,8 @@ export class Histogram2DArgs {
     yBucketCount: number;
     samplingRate: number;
     seed:         number;
+    cdfBucketCount: number;
+    cdfSamplingRate: number;
 }
 
 export class Histogram3DArgs {

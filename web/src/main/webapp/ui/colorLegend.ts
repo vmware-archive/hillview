@@ -74,7 +74,7 @@ export class ColorLegend implements IHtmlElement {
      * @param colorMap: ColorMap to make this legend for.
      **/
     constructor(private colorMap: ColorMap) {
-        this.size = Resolution.legendSize;
+        this.size = { height: Resolution.legendSpaceHeight * 2/3, width: Resolution.legendBarWidth };
         this.barHeight = 16;
         this.uniqueId = ColorLegend.nextUniqueId++;
         this.topLevel = document.createElement("div");

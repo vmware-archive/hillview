@@ -30,6 +30,7 @@ import {ColorLegend, ColorMap} from "../ui/colorLegend";
 import {TableView, NextKReceiver} from "./tableView";
 import {HeatMapArrayDialog} from "./trellisHeatMapView";
 import {RemoteTableObject, RemoteTableObjectView, RemoteTableRenderer} from "../tableTarget";
+import {PlottingSurface} from "../ui/plottingSurface";
 
 /**
  * This class displays the results of performing a local affine multi-dimensional projection.
@@ -95,14 +96,18 @@ class LampView extends RemoteTableObjectView {
         let chartDiv = document.createElement("div");
         this.topLevel.appendChild(chartDiv);
 
-        let canvasSize = Math.min(Resolution.getCanvasSize(this.getPage()).width, Resolution.getCanvasSize(this.getPage()).height);
-        let chartSize = Math.min(Resolution.getChartSize(this.getPage()).width, Resolution.getChartSize(this.getPage()).height);
+        let canvasSize = Math.min(
+            PlottingSurface.getDefaultCanvasSize(this.getPage()).width,
+            PlottingSurface.getDefaultCanvasSize(this.getPage()).height);
+        let chartSize = Math.min(
+            PlottingSurface.getDefaultChartSize(this.getPage()).width,
+            PlottingSurface.getDefaultChartSize(this.getPage()).height);
         this.heatMapCanvas = d3.select(chartDiv).append("svg")
             .attr("width", canvasSize)
             .attr("height", canvasSize)
             .attr("class", "heatMap");
         this.heatMapChart = this.heatMapCanvas.append("g")
-            .attr("transform", `translate(${Resolution.leftMargin}, ${Resolution.topMargin})`)
+            .attr("transform", `translate(${PlottingSurface.leftMargin}, ${PlottingSurface.topMargin})`)
             .attr("width", chartSize)
             .attr("height", chartSize);
         this.controlPointsCanvas = d3.select(chartDiv).append("svg")
@@ -110,7 +115,7 @@ class LampView extends RemoteTableObjectView {
             .attr("height", canvasSize)
             .attr("class", "controlPoints");
         this.controlPointsChart = this.controlPointsCanvas.append("g")
-            .attr("transform", `translate(${Resolution.leftMargin}, ${Resolution.topMargin})`)
+            .attr("transform", `translate(${PlottingSurface.leftMargin}, ${PlottingSurface.topMargin})`)
             .attr("width", chartSize)
             .attr("height", chartSize);
         page.setDataView(this);
@@ -122,20 +127,20 @@ class LampView extends RemoteTableObjectView {
     }
 
     public refresh() {
-        let canvasSize = Math.min(Resolution.getCanvasSize(this.getPage()).width, Resolution.getCanvasSize(this.getPage()).height);
-        let chartSize = Math.min(Resolution.getChartSize(this.getPage()).width, Resolution.getChartSize(this.getPage()).height);
+        let canvasSize = Math.min(PlottingSurface.getDefaultCanvasSize(this.getPage()).width, PlottingSurface.getDefaultCanvasSize(this.getPage()).height);
+        let chartSize = Math.min(PlottingSurface.getDefaultChartSize(this.getPage()).width, PlottingSurface.getDefaultChartSize(this.getPage()).height);
         this.controlPointsCanvas
             .attr("width", canvasSize)
             .attr("height", canvasSize);
         this.controlPointsChart
-            .attr("transform", `translate(${Resolution.leftMargin}, ${Resolution.topMargin})`)
+            .attr("transform", `translate(${PlottingSurface.leftMargin}, ${PlottingSurface.topMargin})`)
             .attr("width", chartSize)
             .attr("height", chartSize);
         this.heatMapCanvas
             .attr("width", canvasSize)
             .attr("height", canvasSize);
         this.heatMapChart
-            .attr("transform", `translate(${Resolution.leftMargin}, ${Resolution.topMargin})`)
+            .attr("transform", `translate(${PlottingSurface.leftMargin}, ${PlottingSurface.topMargin})`)
             .attr("width", chartSize)
             .attr("height", chartSize);
         this.updateControlPointsView();
@@ -233,7 +238,9 @@ class LampView extends RemoteTableObjectView {
             samplingRate: 1.0,  // TODO
             seed: Seed.instance.get(),
             xBucketCount: xBuckets,
-            yBucketCount: yBuckets
+            yBucketCount: yBuckets,
+            cdfBucketCount: 0,
+            cdfSamplingRate: 1.0
         };
         let rr = this.tableObject.createLAMPMapRequest(this.controlPointsId, this.selectedColumns, this.controlPoints, this.lampColNames);
         rr.invoke(new LAMPMapReceiver(this.page, rr, this, arg));

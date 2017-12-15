@@ -22,8 +22,10 @@ import org.hillview.dataset.api.IDataSet;
 import org.hillview.maps.CreateColumnJSMap;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.ContentsKind;
+import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ITable;
+import org.hillview.table.membership.SparseMembershipSet;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.VirtualRowSnapshot;
 import org.hillview.utils.DateParsing;
@@ -71,7 +73,7 @@ public class JavascriptTest {
     }
 
     @Test
-    public void testMap() throws ScriptException, NoSuchMethodException {
+    public void testMap() {
         ITable table = ToCatMapTest.tableWithStringColumn();
         LocalDataSet<ITable> lds = new LocalDataSet<ITable>(table);
         ColumnDescription outCol = new ColumnDescription("IsAdult", ContentsKind.Category, false);
@@ -87,7 +89,7 @@ public class JavascriptTest {
     }
 
     @Test
-    public void testDate() throws ScriptException, NoSuchMethodException {
+    public void testDate() {
         ITable table = ToCatMapTest.tableWithStringColumn();
         LocalDataSet<ITable> lds = new LocalDataSet<ITable>(table);
         ColumnDescription outCol = new ColumnDescription("Date", ContentsKind.Date, false);
@@ -109,7 +111,7 @@ public class JavascriptTest {
     }
 
     @Test
-    public void testInteger() throws ScriptException, NoSuchMethodException {
+    public void testInteger() {
         ITable table = ToCatMapTest.tableWithStringColumn();
         LocalDataSet<ITable> lds = new LocalDataSet<ITable>(table);
         ColumnDescription outCol = new ColumnDescription("Older", ContentsKind.Integer, false);
@@ -125,7 +127,26 @@ public class JavascriptTest {
     }
 
     @Test
-    public void testDateOutput() throws ScriptException, NoSuchMethodException {
+    public void testFilter() {
+        ITable table = ToCatMapTest.tableWithStringColumn();
+        SparseMembershipSet set = new SparseMembershipSet(table.getMembershipSet().getMax(), 2);
+        set.add(0);
+        set.add(1);
+        ITable tbl = table.selectRowsFromFullTable(set);
+        LocalDataSet<ITable> lds = new LocalDataSet<ITable>(tbl);
+        ColumnDescription outCol = new ColumnDescription("Older", ContentsKind.Integer, false);
+        String function = "function map(row) { return row['Age'] + 10; }";
+        CreateColumnJSMap map = new CreateColumnJSMap(function, table.getSchema(), outCol);
+        IDataSet<ITable> mapped = lds.blockingMap(map);
+        ITable outTable = ((LocalDataSet<ITable>) mapped).data;
+        String data = outTable.toLongString(3);
+        Assert.assertEquals("Table[3x2]\n" +
+                "Mike,20,30\n" +
+                "John,30,40\n", data);
+    }
+
+    @Test
+    public void testDateOutput() {
         ITable table = ToCatMapTest.tableWithStringColumn();
         LocalDataSet<ITable> lds = new LocalDataSet<ITable>(table);
         // Add a date column

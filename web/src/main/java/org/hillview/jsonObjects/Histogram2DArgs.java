@@ -31,4 +31,7 @@ public class Histogram2DArgs implements RpcArguments {
     public int yBucketCount;
     public double samplingRate;
     public long seed;
+    // The following are only used for histograms, not for heatmaps.
+    public int cdfBucketCount;
+    public double cdfSamplingRate;
 }

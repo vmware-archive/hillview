@@ -134,11 +134,13 @@ export class Dialog implements IHtmlElement {
         cancelButton.onclick = () => this.cancelAction();
         cancelButton.textContent = "Cancel";
         cancelButton.classList.add("cancel");
+        cancelButton.ondrag = e => e.preventDefault();
         buttonsDiv.appendChild(cancelButton);
 
         this.confirmButton = document.createElement("button");
         this.confirmButton.textContent = "Confirm";
         this.confirmButton.classList.add("confirm");
+        this.confirmButton.ondrag = e => e.preventDefault();
         buttonsDiv.appendChild(this.confirmButton);
 
         let drag = d3.drag()

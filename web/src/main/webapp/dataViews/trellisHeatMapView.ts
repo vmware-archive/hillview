@@ -34,6 +34,7 @@ import {TextOverlay} from "../ui/textOverlay";
 import {TableView, NextKReceiver} from "./tableView";
 import {DistinctStrings} from "../distinctStrings";
 import {RemoteTableObjectView, RemoteTableObject} from "../tableTarget";
+import {PlottingSurface} from "../ui/plottingSurface";
 
 export class HeatMapArrayData {
     buckets: number[][][];
@@ -123,8 +124,8 @@ class CompactHeatMapView {
         this.dotSize = {width: this.chartSize.width / this.xDim, height: this.chartSize.height / this.yDim};
         this.data = new Map<number, number>();
 
-        this.xAxisData = new AxisData(null, cds[0], xStats, null, this.xDim);
-        this.yAxisData = new AxisData(null, cds[1], yStats, null, this.yDim);
+        this.xAxisData = new AxisData(cds[0], xStats, null, this.xDim);
+        this.yAxisData = new AxisData(cds[1], yStats, null, this.yDim);
         this.xAxis = this.xAxisData.scaleAndAxis(this.chartSize.width, true, false).axis;
         this.yAxis = this.yAxisData.scaleAndAxis(this.chartSize.height, false, false).axis;
         this.xAxis.ticks(CompactHeatMapView.axesTicks);
@@ -166,16 +167,16 @@ class CompactHeatMapView {
             .attr("transform", `translate(${this.pos.x}, ${this.pos.y + Resolution.lineHeight})`);
         // Draw semi-tranparent rectangles s.t. the axes are readable.
         this.axesG.append("rect")
-            .attr("x", -Resolution.leftMargin)
+            .attr("x", -PlottingSurface.leftMargin)
             .attr("y", 0)
-            .attr("width", Resolution.leftMargin)
+            .attr("width", PlottingSurface.leftMargin)
             .attr("height", this.chartSize.height)
             .attr("fill", "rgba(255, 255, 255, 0.9)");
         this.axesG.append("rect")
             .attr("x", 0)
             .attr("y", this.chartSize.height)
             .attr("width", this.chartSize.width)
-            .attr("height", Resolution.bottomMargin)
+            .attr("height", PlottingSurface.bottomMargin)
             .attr("fill", "rgba(255, 255, 255, 0.9)");
 
         // Draw the x and y axes
@@ -324,7 +325,7 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
 
     // Returns the maximum size that the canvas is allowed to use
     private maxDrawingSize(): Size {
-        let canvasSize = Resolution.getCanvasSize(this.getPage());
+        let canvasSize = PlottingSurface.getDefaultCanvasSize(this.getPage());
         return {
             width: canvasSize.width - ScrollBar.barWidth,
             height: canvasSize.height
