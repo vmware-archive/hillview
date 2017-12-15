@@ -37,7 +37,7 @@ Here is an example config.yaml file:
   # Network port where the servers listen for requests
   backend_port: 3569
   # Java heap size for Hillview service
-  heap_size: "5000m"
+  heap_size_global: "5000m"
   # Folder where the hillview service is installed on remote machines
   service_folder: "~"
   # Version of Apache Tomcat to deploy
@@ -58,12 +58,13 @@ deployed.  Here is an example of such a file:
 
 [backends]
 192.168.1.3
-192.168.1.4
+192.168.1.4 heap_size=10g
 ```
 
 The `web` group describes the front-end web server.
 
 The `backends` group lists all machines running the `hillview` service.
+Individual machines heap sizes can be specified by setting the machine's `heap_size` variable.
 
 ### Service permissions
 
@@ -97,7 +98,7 @@ $: ansible-playbook prepare.yaml -i hosts -u hillview
 The service is started by running the following command:
 
 ```
-$: ansible-playbook start.yaml -i hosts -u hillview
+$: ansible-playbook start.yaml -i hosts -u hillview -v
 ```
 
 To verify if the services are up and running, open
@@ -106,5 +107,5 @@ To verify if the services are up and running, open
 To stop the services you can run:
 
 ```
-$: ansible-playbook stop.yaml -i hosts -u hillview
+$: ansible-playbook stop.yaml -i hosts -u hillview -v
 ```
