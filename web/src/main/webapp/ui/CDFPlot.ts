@@ -32,7 +32,7 @@ export class CDFPlot extends Plot {
         super(plottingSurface);
     }
 
-    setData(cdf: Histogram): void {
+    public setData(cdf: Histogram): void {
         this.cdf = cdf;
         this.cdfData = [];
         let point = 0;

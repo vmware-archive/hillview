@@ -39,7 +39,6 @@ import {NextKReceiver, TableView} from "./tableView";
 import {RemoteTableObject, RemoteTableRenderer, ZipReceiver} from "../tableTarget";
 import {DistinctStrings} from "../distinctStrings";
 import {combineMenu, SelectedObject} from "../selectedObject";
-import {IDragHandler, IMouseHandler} from "../ui/mouseApi";
 import {HistogramPlot} from "../ui/histogramPlot";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {CDFPlot} from "../ui/CDFPlot";
@@ -47,7 +46,7 @@ import {CDFPlot} from "../ui/CDFPlot";
 /**
  * A HistogramView is responsible for showing a one-dimensional histogram on the screen.
  */
-export class HistogramView extends HistogramViewBase implements IMouseHandler, IDragHandler {
+export class HistogramView extends HistogramViewBase {
     protected currentData: {
         histogram: Histogram,
         cdf: Histogram,
@@ -56,10 +55,7 @@ export class HistogramView extends HistogramViewBase implements IMouseHandler, I
         title: string,
     };
     protected menu: TopMenu;
-
     protected plot: HistogramPlot;
-    protected cdfPlot: CDFPlot;
-    protected surface: PlottingSurface;
 
     constructor(remoteObjectId: RemoteObjectId, originalTableId: RemoteObjectId, protected tableSchema: Schema, page: FullPage) {
         super(remoteObjectId, originalTableId, tableSchema, page);
@@ -128,25 +124,19 @@ export class HistogramView extends HistogramViewBase implements IMouseHandler, I
         this.plot.draw();
         this.cdfPlot.setData(cdf);
         this.cdfPlot.draw();
-        // TODO: eliminate these variables
-        this.canvas = this.surface.getCanvas();
-        this.chart = this.surface.getChart();
-        this.chartSize = this.surface.getChartSize();
-        this.yScale = this.plot.yScale;
-        this.xScale = this.plot.xScale;
+        let canvas = this.surface.getCanvas();
 
-        this.canvas
-            .call(drag)
+        canvas.call(drag)
             .on("mousemove", () => this.mouseMove())
             .on("mouseenter", () => this.mouseEnter())
             .on("mouseleave", () => this.mouseLeave());
 
-        this.cdfDot = this.canvas
+        this.cdfDot = canvas
             .append("circle")
             .attr("r", Resolution.mouseDotRadius)
             .attr("fill", "blue");
 
-        this.selectionRectangle = this.canvas
+        this.selectionRectangle = canvas
             .append("rect")
             .attr("class", "dashed")
             .attr("width", 0)
@@ -155,7 +145,7 @@ export class HistogramView extends HistogramViewBase implements IMouseHandler, I
         let pointDesc = ["x", "y"];
         if (cdf != null)
             pointDesc.push("cdf");
-        this.pointDescription = new TextOverlay(this.chart, pointDesc, 40);
+        this.pointDescription = new TextOverlay(this.surface.getChart(), pointDesc, 40);
         this.pointDescription.show(false);
 
         let summary = "";
@@ -245,7 +235,7 @@ export class HistogramView extends HistogramViewBase implements IMouseHandler, I
             cdfSamplingRate: this.currentData.samplingRate,
         };
         let rr = this.createHistogramRequest(histoArg);
-        let axisData = new AxisData(null, this.currentData.axisData.description,
+        let axisData = new AxisData(this.currentData.axisData.description,
             this.currentData.axisData.stats, this.currentData.axisData.distinctStrings,
             +bucketCount);
         let renderer = new HistogramRenderer(this.currentData.title, this.page,
@@ -285,23 +275,24 @@ export class HistogramView extends HistogramViewBase implements IMouseHandler, I
     }
 
     public mouseMove(): void {
-        let position = d3.mouse(this.chart.node());
+        let position = d3.mouse(this.surface.getChart().node());
         let mouseX = position[0];
         let mouseY = position[1];
 
         let xs = "";
-        if (this.xScale != null) {
+        if (this.plot.xScale != null) {
             xs = HistogramViewBase.invert(
-                position[0], this.xScale, this.currentData.axisData.description.kind, this.currentData.axisData.distinctStrings)
+                position[0], this.plot.xScale, this.currentData.axisData.description.kind, this.currentData.axisData.distinctStrings)
         }
-        let y = Math.round(this.yScale.invert(position[1]));
+        let y = Math.round(this.plot.yScale.invert(position[1]));
         let ys = significantDigits(y);
         let mouseLabel = [xs, ys];
 
         if (this.cdfPlot != null) {
             let pos = this.cdfPlot.getY(mouseX);
-            this.cdfDot.attr("cx", mouseX + Resolution.leftMargin);
-            this.cdfDot.attr("cy", (1 - pos) * this.chartSize.height + Resolution.topMargin);
+            this.cdfDot.attr("cx", mouseX + this.surface.leftMargin);
+            this.cdfDot.attr("cy", (1 - pos) *
+                this.surface.getActualChartHeight() + this.surface.topMargin);
             let perc = percent(pos);
             mouseLabel.push(perc);
         }
@@ -319,7 +310,7 @@ export class HistogramView extends HistogramViewBase implements IMouseHandler, I
         super.dragEnd();
         if (!dragging)
             return;
-        let position = d3.mouse(this.canvas.node());
+        let position = d3.mouse(this.surface.getCanvas().node());
         let x = position[0];
         this.selectionCompleted(this.selectionOrigin.x, x);
     }
@@ -346,16 +337,16 @@ export class HistogramView extends HistogramViewBase implements IMouseHandler, I
      * @param {number} xr: Y mouse coordinate within canvas.
      */
     protected selectionCompleted(xl: number, xr: number): void {
-        if (this.xScale == null)
+        if (this.plot == null || this.plot.xScale == null)
             return;
 
         // coordinates within chart
-        xl -= Resolution.leftMargin;
-        xr -= Resolution.leftMargin;
+        xl -= this.surface.leftMargin;
+        xr -= this.surface.leftMargin;
 
         let kind = this.currentData.axisData.description.kind;
-        let x0 = HistogramViewBase.invertToNumber(xl, this.xScale, kind);
-        let x1 = HistogramViewBase.invertToNumber(xr, this.xScale, kind);
+        let x0 = HistogramViewBase.invertToNumber(xl, this.plot.xScale, kind);
+        let x1 = HistogramViewBase.invertToNumber(xr, this.plot.xScale, kind);
 
         // selection could be done in reverse
         let min: number;
@@ -454,7 +445,7 @@ export class RangeCollector extends Renderer<BasicColStats> {
     }
 
     public histogram(): void {
-        let size = Resolution.getChartSize(this.page);
+        let size = PlottingSurface.getChartSize(this.page);
         let cdfCount = Math.floor(size.width);
         let bucketCount = HistogramViewBase.bucketCount(this.stats, this.page, this.cd.kind, false, true);
         if (cdfCount == 0)
@@ -476,7 +467,7 @@ export class RangeCollector extends Renderer<BasicColStats> {
         let rr = this.remoteObject.createHistogramRequest(args);
 
         rr.chain(this.operation);
-        let axisData = new AxisData(null, this.cd, this.stats, this.allStrings, bucketCount);
+        let axisData = new AxisData(this.cd, this.stats, this.allStrings, bucketCount);
         let renderer = new HistogramRenderer(this.title, this.page,
             this.remoteObject.remoteObjectId, this.tableSchema,
             axisData, rr, samplingRate, this.remoteObject.originalTableId);

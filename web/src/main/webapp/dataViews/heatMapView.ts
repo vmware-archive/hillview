@@ -30,7 +30,7 @@ import {
 import {HistogramViewBase} from "./histogramViewBase";
 import {TopMenu, SubMenu} from "../ui/menu";
 import {Histogram2DRenderer, Make2DHistogram, Filter2DReceiver} from "./histogram2DView";
-import {Point, Resolution, Size} from "../ui/ui";
+import {Point, Size} from "../ui/ui";
 import {FullPage} from "../ui/fullPage";
 import {ColorLegend, ColorMap} from "../ui/colorLegend";
 import {TextOverlay} from "../ui/textOverlay";
@@ -38,6 +38,7 @@ import {AxisData} from "./axisData";
 import {RemoteTableObjectView, ZipReceiver, RemoteTableObject} from "../tableTarget";
 import {DistinctStrings} from "../distinctStrings";
 import {combineMenu, SelectedObject} from "../selectedObject";
+import {PlottingSurface} from "../ui/plottingSurface";
 
 /**
  * A HeatMapView renders information as a heatmap.
@@ -65,8 +66,7 @@ export class HeatMapView extends RemoteTableObjectView {
     protected currentData: {
         xData: AxisData;
         yData: AxisData;
-        missingData: number;
-        data: number[][];
+        heatMap: HeatMap;
         xPoints: number;
         yPoints: number;
         samplingRate: number;
@@ -208,40 +208,38 @@ export class HeatMapView extends RemoteTableObjectView {
         if (this.currentData == null)
             return;
         this.updateView(
-            this.currentData.data,
+            this.currentData.heatMap,
             this.currentData.xData,
             this.currentData.yData,
-            this.currentData.missingData,
             this.currentData.samplingRate,
             0);
     }
 
-    public updateView(data: number[][], xData: AxisData, yData: AxisData,
-                      missingData: number, samplingRate: number, elapsedMs: number) : void {
+    public updateView(data: HeatMap, xData: AxisData, yData: AxisData,
+                      samplingRate: number, elapsedMs: number) : void {
         this.page.reportTime(elapsedMs);
-        if (data == null || data.length == 0) {
+        if (data == null || data.buckets.length == 0) {
             this.page.reportError("No data to display");
             return;
         }
 
-        let xPoints = data.length;
-        let yPoints = data[0].length;
+        let xPoints = data.buckets.length;
+        let yPoints = data.buckets[0].length;
         if (yPoints == 0) {
             this.page.reportError("No data to display");
             return;
         }
         this.currentData = {
-            data: data,
+            heatMap: data,
             xData: xData,
             yData: yData,
-            missingData: missingData,
             xPoints: xPoints,
             yPoints: yPoints,
             samplingRate: samplingRate
         };
 
-        let canvasSize = Resolution.getCanvasSize(this.page);
-        this.chartSize = Resolution.getChartSize(this.page);
+        let canvasSize = PlottingSurface.getCanvasSize(this.page);
+        this.chartSize = PlottingSurface.getChartSize(this.page);
         this.pointWidth = this.chartSize.width / xPoints;
         this.pointHeight = this.chartSize.height / yPoints;
 
@@ -273,14 +271,14 @@ export class HeatMapView extends RemoteTableObjectView {
         this.canvas.append("text")
             .text(xData.description.name)
             .attr("transform", `translate(${this.chartSize.width / 2},
-                  ${this.chartSize.height + Resolution.topMargin + Resolution.bottomMargin / 2})`)
+                  ${this.chartSize.height + PlottingSurface.topMargin + PlottingSurface.bottomMargin / 2})`)
             .attr("text-anchor", "middle")
             .attr("dominant-baseline", "hanging");
 
         // The chart uses a fragment of the canvas offset by the margins
         this.chart = this.canvas
             .append("g")
-            .attr("transform", `translate(${Resolution.leftMargin}, ${Resolution.topMargin})`);
+            .attr("transform", `translate(${PlottingSurface.leftMargin}, ${PlottingSurface.topMargin})`);
 
         let xsc = this.currentData.xData.scaleAndAxis(this.chartSize.width, true, false);
         let ysc = this.currentData.yData.scaleAndAxis(this.chartSize.height, false, false);
@@ -299,9 +297,9 @@ export class HeatMapView extends RemoteTableObjectView {
         let max: number = 0;
         let visible: number = 0;
         let distinct: number = 0;
-        for (let x = 0; x < data.length; x++) {
-            for (let y = 0; y < data[x].length; y++) {
-                let v = data[x][y];
+        for (let x = 0; x < data.buckets.length; x++) {
+            for (let y = 0; y < data.buckets[x].length; y++) {
+                let v = data.buckets[x][y];
                 if (v > max)
                     max = v;
                 if (v != 0) {
@@ -357,17 +355,17 @@ export class HeatMapView extends RemoteTableObjectView {
 
         if (this.currentData.yData.description.kind != "Category") {
             // it makes no sense to do regressions for categorical values
-            let regr = regression(data);
+            let regr = regression(data.buckets);
             if (regr.length == 2) {
                 let b = regr[0];
                 let a = regr[1];
                 let y1 = this.chartSize.height - b * this.pointHeight;
-                let y2 = this.chartSize.height - (a * data.length + b) * this.pointHeight;
+                let y2 = this.chartSize.height - (a * data.buckets.length + b) * this.pointHeight;
                 this.chart
                     .append("line")
                     .attr("x1", 0)
                     .attr("y1", y1)
-                    .attr("x2", this.pointWidth * data.length)
+                    .attr("x2", this.pointWidth * data.buckets.length)
                     .attr("y2", y2)
                     .attr("stroke", "black");
             }
@@ -377,12 +375,12 @@ export class HeatMapView extends RemoteTableObjectView {
             [xData.description.name, yData.description.name, "count"], 40);
         this.pointDescription.show(false);
         let summary = formatNumber(visible) + " data points";
-        if (missingData != 0)
-            summary += ", " + formatNumber(missingData) + " missing";
-        if (xData.missing.missingData != 0)
-            summary += ", " + formatNumber(xData.missing.missingData) + " missing Y coordinate";
-        if (yData.missing.missingData != 0)
-            summary += ", " + formatNumber(yData.missing.missingData) + " missing X coordinate";
+        if (data.missingData != 0)
+            summary += ", " + formatNumber(data.missingData) + " missing";
+        if (data.histogramMissingX.missingData != 0)
+            summary += ", " + formatNumber(data.histogramMissingX.missingData) + " missing Y coordinate";
+        if (data.histogramMissingY.missingData != 0)
+            summary += ", " + formatNumber(data.histogramMissingY.missingData) + " missing X coordinate";
         summary += ", " + formatNumber(distinct) + " distinct dots";
         if (samplingRate < 1.0)
             summary += ", sampling rate " + significantDigits(samplingRate);
@@ -426,7 +424,7 @@ export class HeatMapView extends RemoteTableObjectView {
         let value = "0";
         if (xi >= 0 && xi < this.currentData.xPoints &&
             yi >= 0 && yi < this.currentData.yPoints) {
-            value = this.currentData.data[xi][yi].toString();
+            value = this.currentData.heatMap.buckets[xi][yi].toString();
         }
 
         this.pointDescription.update([xs, ys, value], mouseX, mouseY);
@@ -495,10 +493,10 @@ export class HeatMapView extends RemoteTableObjectView {
      * Selection has been completed.  The mouse coordinates are within the canvas.
      */
     selectionCompleted(xl: number, xr: number, yl: number, yr: number): void {
-        xl -= Resolution.leftMargin;
-        xr -= Resolution.leftMargin;
-        yl -= Resolution.topMargin;
-        yr -= Resolution.topMargin;
+        xl -= PlottingSurface.leftMargin;
+        xr -= PlottingSurface.leftMargin;
+        yl -= PlottingSurface.topMargin;
+        yr -= PlottingSurface.topMargin;
 
         if (this.xScale == null || this.yScale == null)
             return;
@@ -585,10 +583,6 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
             this.cds[1], this.ds[1], yBucketCount);
         let samplingRate: number;
         if (this.drawHeatMap) {
-            /* TODO: we need an accurate presentCount for both axes
-            samplingRate = xBucketCount * yBucketCount * colorResolution * colorResolution /
-                Math.min(this.stats.first.presentCount, this.stats.second.presentCount);
-                */
             // We cannot sample when we need to distinguish reliably 1 from 0.
             samplingRate = 1.0;
         } else {
@@ -597,6 +591,9 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
         if (this.exact)
             samplingRate = 1.0;
 
+        let size = PlottingSurface.getChartSize(this.page);
+        let cdfCount = Math.floor(size.width);
+
         let arg: Histogram2DArgs = {
             first: arg0,
             second: arg1,
@@ -604,8 +601,8 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
             seed: samplingRate >= 1.0 ? 0 : Seed.instance.get(),
             xBucketCount: xBucketCount,
             yBucketCount: yBucketCount,
-            cdfBucketCount: 1,  // TODO
-            cdfSamplingRate: 1.0  // TODO
+            cdfBucketCount: cdfCount,
+            cdfSamplingRate: HistogramViewBase.samplingRate(cdfCount, this.stats.first.presentCount, this.page)
         };
         if (this.drawHeatMap) {
             let rr = this.remoteObject.createHeatMapRequest(arg);
@@ -671,9 +668,9 @@ export class HeatMapRenderer extends Renderer<HeatMap> {
             yPoints = points[0] != null ? points[0].length : 1;
         }
 
-        let xAxisData = new AxisData(value.data.histogramMissingD1, this.cds[0], this.stats[0], this.ds[0], xPoints);
-        let yAxisData = new AxisData(value.data.histogramMissingD2, this.cds[1], this.stats[1], this.ds[1], yPoints);
-        this.heatMap.updateView(value.data.buckets, xAxisData, yAxisData,
-            value.data.missingData, this.samplingRate, this.elapsedMilliseconds());
+        let xAxisData = new AxisData(this.cds[0], this.stats[0], this.ds[0], xPoints);
+        let yAxisData = new AxisData(this.cds[1], this.stats[1], this.ds[1], yPoints);
+        this.heatMap.updateView(value.data, xAxisData, yAxisData,
+            this.samplingRate, this.elapsedMilliseconds());
     }
 }

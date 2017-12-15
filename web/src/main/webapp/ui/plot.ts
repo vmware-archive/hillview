@@ -17,6 +17,13 @@
 
 import {PlottingSurface} from "./plottingSurface";
 
+/**
+ * Abstract base class for all plots.
+ * A plot just contains an image, but no event handling.
+ * The event handling and interactive display is handled by *View classes.
+ * Each *View class will usually contain one or more plots.
+ * Multiple plots can share the same plotting surface.
+ */
 export abstract class Plot {
     /**
      * d3 Scale used for Y axis.
@@ -35,12 +42,21 @@ export abstract class Plot {
      */
     public xAxis: any;
 
+    /**
+     * Create a plot that will do all its drawing on the specified plotting surface.
+     */
     protected constructor(protected plottingSurface: PlottingSurface) {}
 
+    /**
+     * When the plot is of a chart this returns the chart width in pixels - excluding borders.
+     */
     getChartWidth(): number {
         return this.plottingSurface.getActualChartWidth();
     }
 
+    /**
+     * When the plot is of a chart this returns the chart height in pixels - excluding borders.
+     */
     getChartHeight(): number {
         return this.plottingSurface.getActualChartHeight();
     }
