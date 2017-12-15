@@ -66,9 +66,9 @@ export class Histogram2DView extends HistogramViewBase {
                 protected tableSchema: Schema, page: FullPage) {
         super(remoteObjectId, originalTableId, tableSchema, page);
 
-        let size = PlottingSurface.getCanvasSize(page);
-        size.height = Resolution.legendSize.height;
-        this.legendSurface = new PlottingSurface(this.chartDiv, page, size);
+        this.legendSurface = new PlottingSurface(this.chartDiv, page);
+        this.legendSurface.setMargins(0, 0, 0, 0);
+        this.legendSurface.setHeight(Resolution.legendSpaceHeight);
         this.legendPlot = new LegendPlot(this.legendSurface);
         this.surface = new PlottingSurface(this.chartDiv, page);
         this.plot = new Histogram2DPlot(this.surface);
@@ -121,6 +121,8 @@ export class Histogram2DView extends HistogramViewBase {
     public updateView(heatmap: HeatMap, xData: AxisData, yData: AxisData, cdf: Histogram,
                       samplingRate: number, elapsedMs: number) : void {
         this.page.reportTime(elapsedMs);
+        this.plot.clear();
+        this.legendPlot.clear();
         if (heatmap == null || heatmap.buckets.length == 0) {
             this.page.reportError("No data to display");
             return;
@@ -290,7 +292,7 @@ export class Histogram2DView extends HistogramViewBase {
             max: this.currentData.yData.stats.max,
             bucketBoundaries: yBoundaries
         };
-        let size = PlottingSurface.getChartSize(this.page);
+        let size = PlottingSurface.getDefaultChartSize(this.page);
         let cdfCount = Math.floor(size.width);
 
         let args: Histogram2DArgs = {

@@ -166,18 +166,6 @@ export class Histogram2DPlot extends Plot {
             .text((d: number) => HistogramViewBase.boxHeight(d, this.samplingRate, this.visiblePoints))
             .exit();
 
-        this.plottingSurface.getChart()
-            .append("g")
-            .attr("class", "y-axis")
-            .call(this.yAxis);
-        if (this.xAxis != null) {
-            this.plottingSurface.getChart()
-                .append("g")
-                .attr("class", "x-axis")
-                .attr("transform", `translate(0, ${this.getChartHeight()})`)
-                .call(this.xAxis);
-        }
-
         let noX = 0;
         for (let y = 0; y < this.heatmap.histogramMissingX.buckets.length; y++)
             noX += this.heatmap.histogramMissingX.buckets[y];
@@ -187,6 +175,8 @@ export class Histogram2DPlot extends Plot {
                 + this.heatmap.missingData + " have no X or Y value");
             return;
         }
+
+        this.drawAxes();
     }
 
     /**

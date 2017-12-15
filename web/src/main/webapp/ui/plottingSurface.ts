@@ -47,7 +47,7 @@ export class PlottingSurface implements IHtmlElement {
      */
     svgCanvas: any;
     /**
-     * Current size in pixels of the svg element.
+     * Current size in pixels of the canvas.
      */
     size: Size;
     /**
@@ -67,24 +67,24 @@ export class PlottingSurface implements IHtmlElement {
     static readonly bottomMargin = 50;    // bottom margin in pixels in a plot
     static readonly leftMargin = 40;      // left margin in pixels in a plot
 
-    constructor(parent: HTMLElement, public readonly page: FullPage, size?: Size) {
+    constructor(parent: HTMLElement, public readonly page: FullPage) {
         this.topLevel = document.createElement("div");
-        this.size = size;
         parent.appendChild(this.topLevel);
-        this.clear();
+        // Default margins.
+        this.setMargins(PlottingSurface.topMargin, PlottingSurface.rightMargin,
+            PlottingSurface.bottomMargin, PlottingSurface.leftMargin);
+        this.size = PlottingSurface.getDefaultCanvasSize(this.page);
     }
 
-    // TODO: make private
-    static getCanvasSize(page: FullPage): Size {
+    static getDefaultCanvasSize(page: FullPage): Size {
         let width = page.getWidthInPixels() - 3;
         if (width < PlottingSurface.minCanvasWidth)
             width = PlottingSurface.minCanvasWidth;
         return { width: width, height: PlottingSurface.canvasHeight };
     }
 
-    // TODO: make private
-    public static getChartSize(page: FullPage): Size {
-        let canvasSize = PlottingSurface.getCanvasSize(page);
+    public static getDefaultChartSize(page: FullPage): Size {
+        let canvasSize = PlottingSurface.getDefaultCanvasSize(page);
         let width = canvasSize.width - PlottingSurface.leftMargin - PlottingSurface.rightMargin;
         let height = canvasSize.height - PlottingSurface.topMargin - PlottingSurface.bottomMargin;
         return { width: width, height: height };
@@ -93,8 +93,9 @@ export class PlottingSurface implements IHtmlElement {
     clear() {
         if (this.svgCanvas != null)
             this.svgCanvas.remove();
-        if (this.size == null)
-            this.size = PlottingSurface.getCanvasSize(this.page);
+        let size = PlottingSurface.getDefaultCanvasSize(this.page);
+        this.size.width = Math.max(PlottingSurface.minCanvasWidth, size.width);
+
         this.svgCanvas = d3.select(this.topLevel)
             .append("svg")
             .attr("id", "canvas")
@@ -102,10 +103,9 @@ export class PlottingSurface implements IHtmlElement {
             .attr("cursor", "crosshair")
             .attr("width", this.size.width)
             .attr("height", this.size.height);
-        this.chartArea = this.svgCanvas.append("g");
-        // TODO: compute these instead of having them be fixed
-        this.setMargins(PlottingSurface.topMargin, PlottingSurface.rightMargin,
-            PlottingSurface.bottomMargin, PlottingSurface.leftMargin);
+        this.chartArea = this.svgCanvas
+            .append("g")
+            .attr("transform", `translate(${this.leftMargin}, ${this.topMargin})`);
     }
 
     getChart(): any {
@@ -130,7 +130,7 @@ export class PlottingSurface implements IHtmlElement {
         return this.size.height - this.topMargin - this.bottomMargin;
     }
 
-    getChartSize(): Size {
+    getDefaultChartSize(): Size {
         return { width: this.getActualChartWidth(), height: this.getActualChartHeight() };
     }
 
@@ -138,13 +138,23 @@ export class PlottingSurface implements IHtmlElement {
         return this.topLevel;
     }
 
-    setMargins(top: number, right: number, bottom: number, left: number): void {
+    /**
+     * Set the canvas height.  The width is usually imposed by the browser window.
+     * This does not trigger a redraw.
+     */
+    public setHeight(height: number): void {
+        this.size.height = height;
+    }
+
+    /**
+     * Set the margins for the chart area inside the canvas.
+     * This does not trigger a redraw.
+     */
+    public setMargins(top: number, right: number, bottom: number, left: number): void {
         this.topMargin = top;
         this.rightMargin = right;
         this.leftMargin = left;
         this.bottomMargin = bottom;
-        this.chartArea
-            .attr("transform", `translate(${this.leftMargin}, ${this.topMargin})`);
     }
 
     public reportError(message: string): void {

@@ -98,6 +98,7 @@ export class HistogramView extends HistogramViewBase {
     public updateView(title: string, cdf: Histogram, h: Histogram,
                       axisData: AxisData, samplingRate: number, elapsedMs: number) : void {
         this.page.reportTime(elapsedMs);
+        this.plot.clear();
         if (h == null) {
             this.page.reportError("No data to display");
             return;
@@ -445,7 +446,7 @@ export class RangeCollector extends Renderer<BasicColStats> {
     }
 
     public histogram(): void {
-        let size = PlottingSurface.getChartSize(this.page);
+        let size = PlottingSurface.getDefaultChartSize(this.page);
         let cdfCount = Math.floor(size.width);
         let bucketCount = HistogramViewBase.bucketCount(this.stats, this.page, this.cd.kind, false, true);
         if (cdfCount == 0)

@@ -95,17 +95,7 @@ export class HistogramPlot extends Plot {
         this.xScale = scaleAxis.scale;
         this.xAxis = scaleAxis.axis;
 
-        this.plottingSurface.getChart()
-            .append("g")
-            .attr("class", "y-axis")
-            .call(this.yAxis);
-        if (this.xAxis != null) {
-            this.plottingSurface.getChart()
-                .append("g")
-                .attr("class", "x-axis")
-                .attr("transform", `translate(0, ${chartHeight})`)
-                .call(this.xAxis);
-        }
+        this.drawAxes();
     }
 }
 

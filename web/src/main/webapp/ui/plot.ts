@@ -61,5 +61,24 @@ export abstract class Plot {
         return this.plottingSurface.getActualChartHeight();
     }
 
+    public clear(): void {
+        this.plottingSurface.clear();
+    }
+
+    drawAxes(): void {
+        if (this.yAxis != null)
+            this.plottingSurface.getChart()
+                .append("g")
+                .attr("class", "y-axis")
+                .call(this.yAxis);
+        if (this.xAxis != null) {
+            this.plottingSurface.getChart()
+                .append("g")
+                .attr("class", "x-axis")
+                .attr("transform", `translate(0, ${this.getChartHeight()})`)
+                .call(this.xAxis);
+        }
+    }
+
     public abstract draw(): void;
 }

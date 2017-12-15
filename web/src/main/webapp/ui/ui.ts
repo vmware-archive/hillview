@@ -117,5 +117,6 @@ export class Resolution {
     static readonly tableRowsOnScreen = 20; // table rows displayed
     static readonly lineHeight = 20;      // Height of a line of text drawn in svg (including reasonable margin).
     static readonly mouseDotRadius = 3;        // Size of dots that show mouse position
-    static readonly legendSize: Size = {width: 500, height: 60}; // Default legend size in px.  TODO: not a good name
+    static readonly legendBarWidth = 500;
+    static readonly legendSpaceHeight = 60;
 }

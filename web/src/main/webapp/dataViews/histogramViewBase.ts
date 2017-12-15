@@ -145,7 +145,7 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
     // noinspection JSUnusedLocalSymbols
     public static samplingRate(bucketCount: number, rowCount: number, page: FullPage): number {
         let constant = 4;  // This models the confidence we want from the sampling
-        let height = PlottingSurface.getChartSize(page).height;
+        let height = PlottingSurface.getDefaultChartSize(page).height;
         let sampleCount = constant * height * height;
         let sampleRate = sampleCount / rowCount;
         return Math.min(sampleRate, 1);
@@ -198,7 +198,7 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
 
     public static bucketCount(stats: BasicColStats, page: FullPage, columnKind: ContentsKind,
                               heatMap: boolean, bottom: boolean): number {
-        let size = PlottingSurface.getChartSize(page);
+        let size = PlottingSurface.getDefaultChartSize(page);
         let length = Math.floor(bottom ? size.width : size.height);
         let maxBucketCount = Resolution.maxBucketCount;
         let minBarWidth = Resolution.minBarWidth;

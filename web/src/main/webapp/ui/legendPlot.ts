@@ -20,6 +20,9 @@ import {Rectangle, Resolution} from "./ui";
 import {AxisData} from "../dataViews/axisData";
 import {Histogram2DView} from "../dataViews/histogram2DView";
 
+/**
+ * Displays a legend for a 2D histogram.
+ */
 export class LegendPlot extends Plot {
     protected axisData: AxisData;
     protected legendRect: Rectangle;
@@ -37,42 +40,27 @@ export class LegendPlot extends Plot {
             .attr("text-anchor", "middle")
             .attr("dominant-baseline", "text-before-edge");
 
-        // apparently SVG defs are global, even if they are in
-        // different SVG elements.  So we have to assign unique names.
-        let gradientId = 'gradient' + this.plottingSurface.page.pageId;
-        let gradient = this.plottingSurface.getCanvas()
-            .append('defs')
-            .append('linearGradient')
-            .attr('id', gradientId)
-            .attr('x1', '0%')
-            .attr('y1', '0%')
-            .attr('x2', '100%')
-            .attr('y2', '0%')
-            .attr('spreadMethod', 'pad');
-
-        for (let i = 0; i <= 100; i += 4) {
-            gradient.append("stop")
-                .attr("offset", i + "%")
-                .attr("stop-color", Histogram2DView.colorMap(i / 100))
-                .attr("stop-opacity", 1)
-        }
-
-        let width = Resolution.legendSize.width;
+        let width = Resolution.legendBarWidth;
         if (width > this.getChartWidth())
             width = this.getChartWidth();
         let height = 15;
 
         let x = (this.getChartWidth() - width) / 2;
-        let y = Resolution.legendSize.height / 3;
+        let y = Resolution.legendSpaceHeight / 3;
         this.legendRect = new Rectangle({ x: x, y: y }, { width: width, height: height });
-
         let canvas = this.plottingSurface.getCanvas();
-        canvas.append("rect")
-            .attr("width", this.legendRect.width())
-            .attr("height", this.legendRect.height())
-            .style("fill", "url(#" + gradientId + ")")
-            .attr("x", this.legendRect.upperLeft().x)
-            .attr("y", this.legendRect.upperLeft().y);
+
+        let colorWidth = width / this.axisData.bucketCount;
+        for (let i = 0; i < this.axisData.bucketCount; i++) {
+            let color = Histogram2DView.colorMap(i / this.axisData.bucketCount);
+            canvas.append("rect")
+                .attr("width", colorWidth)
+                .attr("height", height)
+                .style("fill", color)
+                .attr("x", x)
+                .attr("y", y);
+            x += colorWidth;
+        }
 
         let scaleAxis = this.axisData.scaleAndAxis(this.legendRect.width(), true, true);
         // create a scale and axis for the legend
@@ -94,7 +82,7 @@ export class LegendPlot extends Plot {
                 missingY = this.legendRect.upperRight().y;
             } else {
                 missingX = this.getChartWidth() / 2;
-                missingY = Resolution.legendSize.height / 3;
+                missingY = Resolution.legendSpaceHeight / 3;
             }
 
             canvas.append("rect")

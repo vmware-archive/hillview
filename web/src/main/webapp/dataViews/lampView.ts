@@ -97,11 +97,11 @@ class LampView extends RemoteTableObjectView {
         this.topLevel.appendChild(chartDiv);
 
         let canvasSize = Math.min(
-            PlottingSurface.getCanvasSize(this.getPage()).width,
-            PlottingSurface.getCanvasSize(this.getPage()).height);
+            PlottingSurface.getDefaultCanvasSize(this.getPage()).width,
+            PlottingSurface.getDefaultCanvasSize(this.getPage()).height);
         let chartSize = Math.min(
-            PlottingSurface.getChartSize(this.getPage()).width,
-            PlottingSurface.getChartSize(this.getPage()).height);
+            PlottingSurface.getDefaultChartSize(this.getPage()).width,
+            PlottingSurface.getDefaultChartSize(this.getPage()).height);
         this.heatMapCanvas = d3.select(chartDiv).append("svg")
             .attr("width", canvasSize)
             .attr("height", canvasSize)
@@ -127,8 +127,8 @@ class LampView extends RemoteTableObjectView {
     }
 
     public refresh() {
-        let canvasSize = Math.min(PlottingSurface.getCanvasSize(this.getPage()).width, PlottingSurface.getCanvasSize(this.getPage()).height);
-        let chartSize = Math.min(PlottingSurface.getChartSize(this.getPage()).width, PlottingSurface.getChartSize(this.getPage()).height);
+        let canvasSize = Math.min(PlottingSurface.getDefaultCanvasSize(this.getPage()).width, PlottingSurface.getDefaultCanvasSize(this.getPage()).height);
+        let chartSize = Math.min(PlottingSurface.getDefaultChartSize(this.getPage()).width, PlottingSurface.getDefaultChartSize(this.getPage()).height);
         this.controlPointsCanvas
             .attr("width", canvasSize)
             .attr("height", canvasSize);

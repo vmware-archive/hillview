@@ -325,7 +325,7 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
 
     // Returns the maximum size that the canvas is allowed to use
     private maxDrawingSize(): Size {
-        let canvasSize = PlottingSurface.getCanvasSize(this.getPage());
+        let canvasSize = PlottingSurface.getDefaultCanvasSize(this.getPage());
         return {
             width: canvasSize.width - ScrollBar.barWidth,
             height: canvasSize.height
