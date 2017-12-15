@@ -91,6 +91,7 @@ export class Dialog implements IHtmlElement {
      * populate a dialog with its previous values.
      */
     private dialogTitle: string;
+    private dragging: boolean;
 
     /**
      * This is a cache that can map a dialog title to a set of dialog values.
@@ -110,6 +111,7 @@ export class Dialog implements IHtmlElement {
         // in tab order in the whole DOM.  Probably the right solution is to handle the
         // tab keypress in an event handler.
         this.tabIndex = 10;
+        this.dragging = false;
         this.dialogTitle = null;
         this.line = new Map<string, HTMLElement>();
         this.onConfirm = null;
@@ -130,17 +132,20 @@ export class Dialog implements IHtmlElement {
         let buttonsDiv = document.createElement("div");
         this.container.appendChild(buttonsDiv);
 
+        let nodrag = d3.drag()
+            .on("start", () => this.dragEnd());
+
         let cancelButton = document.createElement("button");
         cancelButton.onclick = () => this.cancelAction();
         cancelButton.textContent = "Cancel";
         cancelButton.classList.add("cancel");
-        cancelButton.ondrag = e => e.preventDefault();
+        d3.select(cancelButton).call(nodrag);
         buttonsDiv.appendChild(cancelButton);
 
         this.confirmButton = document.createElement("button");
         this.confirmButton.textContent = "Confirm";
         this.confirmButton.classList.add("confirm");
-        this.confirmButton.ondrag = e => e.preventDefault();
+        d3.select(this.confirmButton).call(nodrag);
         buttonsDiv.appendChild(this.confirmButton);
 
         let drag = d3.drag()
@@ -166,6 +171,7 @@ export class Dialog implements IHtmlElement {
     }
 
     dragStart(): void {
+        this.dragging = true;
         this.dragMousePosition = { x: d3.event.x, y: d3.event.y };
         this.dialogPosition = this.container.getBoundingClientRect();
         this.container.style.transform = "";
@@ -174,6 +180,8 @@ export class Dialog implements IHtmlElement {
     }
 
     dragMove(): void {
+        if (!this.dragging)
+            return;
         let dx = this.dragMousePosition.x - d3.event.x;
         let dy = this.dragMousePosition.y - d3.event.y;
         this.container.style.left = (this.dialogPosition.left - dx).toString() + "px";
@@ -181,6 +189,7 @@ export class Dialog implements IHtmlElement {
     }
 
     dragEnd(): void {
+        this.dragging = false;
         this.container.style.cursor = "default";
     }
 

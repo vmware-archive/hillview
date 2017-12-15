@@ -29,9 +29,9 @@ import {
 import {HistogramViewBase} from "./histogramViewBase";
 import {TopMenu, SubMenu} from "../ui/menu";
 import {Histogram2DRenderer, Make2DHistogram, Filter2DReceiver} from "./histogram2DView";
-import {Point} from "../ui/ui";
+import {Point, Resolution} from "../ui/ui";
 import {FullPage} from "../ui/fullPage";
-import {ColorLegend, ColorMap} from "../ui/colorLegend";
+import {HeatmapLegendPlot} from "../ui/legendPlot";
 import {TextOverlay} from "../ui/textOverlay";
 import {AxisData} from "./axisData";
 import {RemoteTableObjectView, ZipReceiver, RemoteTableObject} from "../tableTarget";
@@ -50,8 +50,7 @@ export class HeatMapView extends RemoteTableObjectView {
      */
     private selectionOrigin: Point;
     private selectionRectangle: any;
-    protected colorLegend: ColorLegend;
-    protected colorMap: ColorMap;
+    protected colorLegend: HeatmapLegendPlot;
     protected summary: HTMLElement;
     private moved: boolean;
     protected pointDescription: TextOverlay;
@@ -99,14 +98,15 @@ export class HeatMapView extends RemoteTableObjectView {
         this.page.setMenu(this.menu);
         this.topLevel.tabIndex = 1;
 
-        this.colorMap = new ColorMap();
-        this.colorLegend = new ColorLegend(this.colorMap);
+        let legendSurface = new PlottingSurface(this.topLevel, page);
+        legendSurface.setMargins(0, 0, 0, 0);
+        legendSurface.setHeight(Resolution.legendSpaceHeight * 2/3);
+        this.colorLegend = new HeatmapLegendPlot(legendSurface);
         this.colorLegend.setColorMapChangeEventListener(() => this.plot.reapplyColorMap());
-        this.topLevel.appendChild(this.colorLegend.getHTMLRepresentation());
 
         this.surface = new PlottingSurface(this.topLevel, page);
         this.surface.setMargins(20, this.surface.rightMargin, this.surface.bottomMargin, this.surface.leftMargin);
-        this.plot = new HeatmapPlot(this.surface, this.colorMap);
+        this.plot = new HeatmapPlot(this.surface, this.colorLegend);
 
         this.summary = document.createElement("div");
         this.topLevel.appendChild(this.summary);
@@ -115,6 +115,7 @@ export class HeatMapView extends RemoteTableObjectView {
     public updateView(heatmap: HeatMap, xData: AxisData, yData: AxisData,
                       samplingRate: number, elapsedMs: number) : void {
         this.page.reportTime(elapsedMs);
+        this.colorLegend.clear();
         this.plot.clear();
         if (heatmap == null || heatmap.buckets.length == 0) {
             this.page.reportError("No data to display");
@@ -137,33 +138,10 @@ export class HeatMapView extends RemoteTableObjectView {
             samplingRate: samplingRate
         };
 
-        /*
-        let canvasSize = PlottingSurface.getCanvasSize(this.page);
-        this.chartSize = PlottingSurface.getChartSize(this.page);
-        this.pointWidth = this.chartSize.width / xPoints;
-        this.pointHeight = this.chartSize.height / yPoints;
-
-        if (this.canvas != null)
-            this.canvas.remove();
-        */
-
         let drag = d3.drag()
             .on("start", () => this.dragStart())
             .on("drag", () => this.dragMove())
             .on("end", () => this.dragEnd());
-
-        /*
-        // Everything is drawn on top of the canvas.
-        // The canvas includes the margins
-        this.canvas = d3.select(this.chartDiv)
-            .append("svg")
-            .attr("id", "canvas")
-            .call(drag)
-            .attr("width", canvasSize.width)
-            .attr("border", 1)
-            .attr("height", canvasSize.height)
-            .attr("cursor", "crosshair");
-            */
 
         let canvas = this.surface.getCanvas();
         canvas.call(drag)
@@ -171,104 +149,18 @@ export class HeatMapView extends RemoteTableObjectView {
             .on("mouseenter", () => this.onMouseEnter())
             .on("mouseleave", () => this.onMouseLeave());
 
-        /*
-        this.canvas.append("text")
-            .text(yData.description.name)
-            .attr("dominant-baseline", "text-before-edge");
-        this.canvas.append("text")
-            .text(xData.description.name)
-            .attr("transform", `translate(${this.chartSize.width / 2},
-                  ${this.chartSize.height + PlottingSurface.topMargin + PlottingSurface.bottomMargin / 2})`)
-            .attr("text-anchor", "middle")
-            .attr("dominant-baseline", "hanging");
-
-        // The chart uses a fragment of the canvas offset by the margins
-        this.chart = this.canvas
-            .append("g")
-            .attr("transform", `translate(${PlottingSurface.leftMargin}, ${PlottingSurface.topMargin})`);
-        let xsc = this.currentData.xData.scaleAndAxis(this.chartSize.width, true, false);
-        let ysc = this.currentData.yData.scaleAndAxis(this.chartSize.height, false, false);
-        let xAxis = xsc.axis;
-        let yAxis = ysc.axis;
-        this.xScale = xsc.scale;
-        this.yScale = ysc.scale;
-
-        interface Dot {
-            x: number,
-            y: number,
-            v: number
-        }
-
-        let dots: Dot[] = [];
-        let max: number = 0;
-        let visible: number = 0;
-        let distinct: number = 0;
-        for (let x = 0; x < heatmap.buckets.length; x++) {
-            for (let y = 0; y < heatmap.buckets[x].length; y++) {
-                let v = heatmap.buckets[x][y];
-                if (v > max)
-                    max = v;
-                if (v != 0) {
-                    let rec = {
-                        x: x * this.pointWidth,
-                        y: this.chartSize.height - (y + 1) * this.pointHeight,  // +1 because it's the upper corner
-                        v: v
-                    };
-                    visible += v;
-                    distinct++;
-                    dots.push(rec);
-                }
-            }
-        }
-       */
-
         // The order of these operations is important
         this.plot.setData(heatmap, xData, yData, samplingRate);
-        this.colorMap.min = 1;
-        this.colorMap.max = this.plot.getMaxCount();
-        if (this.plot.getMaxCount() > ColorMap.logThreshold)
-            this.colorMap.setLogScale(true);
-        else
-            this.colorMap.setLogScale(false);
-        this.colorLegend.redraw();
+        this.colorLegend.setData(1, this.plot.getMaxCount());
+        this.colorLegend.draw();
         this.plot.draw();
 
-        /*
-        this.chart.append("g")
-            .attr("class", "x-axis")
-            .attr("transform", `translate(0, ${this.chartSize.height})`)
-            .call(xAxis);
-
-        this.chart.append("g")
-            .attr("class", "y-axis")
-            .call(yAxis);
-          */
         this.selectionRectangle = canvas
             .append("rect")
             .attr("class", "dashed")
             .attr("stroke", "red")
             .attr("width", 0)
             .attr("height", 0);
-
-        /*
-        if (this.currentData.yData.description.kind != "Category") {
-            // it makes no sense to do regressions for categorical values
-            let regr = regression(heatmap.buckets);
-            if (regr.length == 2) {
-                let b = regr[0];
-                let a = regr[1];
-                let y1 = this.chartSize.height - b * this.pointHeight;
-                let y2 = this.chartSize.height - (a * heatmap.buckets.length + b) * this.pointHeight;
-                this.chart
-                    .append("line")
-                    .attr("x1", 0)
-                    .attr("y1", y1)
-                    .attr("x2", this.pointWidth * heatmap.buckets.length)
-                    .attr("y2", y2)
-                    .attr("stroke", "black");
-            }
-        }
-        */
 
         this.pointDescription = new TextOverlay(this.surface.getChart(),
             [xData.description.name, yData.description.name, "count"], 40);
@@ -406,17 +298,6 @@ export class HeatMapView extends RemoteTableObjectView {
         let ys = HistogramViewBase.invert(mouseY, this.plot.yScale,
             this.currentData.yData.description.kind, this.currentData.yData.distinctStrings);
 
-        /*
-        let xi = mouseX / this.plot.pointWidth;
-        let yi = (this.chartSize.height - mouseY) / this.pointHeight;
-        xi = Math.floor(xi);
-        yi = Math.floor(yi);
-        let value = "0";
-        if (xi >= 0 && xi < this.currentData.xPoints &&
-            yi >= 0 && yi < this.currentData.yPoints) {
-            value = this.currentData.heatMap.buckets[xi][yi].toString();
-        }
-        */
         let value = this.plot.getCount(mouseX, mouseY);
         this.pointDescription.update([xs, ys, value.toString()], mouseX, mouseY);
     }

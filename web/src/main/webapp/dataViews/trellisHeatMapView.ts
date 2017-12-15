@@ -29,7 +29,7 @@ import {CategoryCache} from "../categoryCache";
 import {Point, Resolution, Size} from "../ui/ui";
 import {IScrollTarget, ScrollBar} from "../ui/scroll";
 import {FullPage} from "../ui/fullPage";
-import {ColorLegend, ColorMap} from "../ui/colorLegend";
+import {HeatmapLegendPlot} from "../ui/legendPlot";
 import {TextOverlay} from "../ui/textOverlay";
 import {TableView, NextKReceiver} from "./tableView";
 import {DistinctStrings} from "../distinctStrings";
@@ -151,10 +151,10 @@ class CompactHeatMapView {
         return val == null ? 0 : val;
     }
 
-    public setColors(colorMap: ColorMap) {
+    public setColors(colorLegend: HeatmapLegendPlot) {
         this.chart.selectAll("rect")
             .datum(function() {return this.dataset;})
-            .style("fill", (rect) => colorMap.apply(rect.val));
+            .style("fill", (rect) => colorLegend.getColor(rect.val));
     }
 
     public getG() {
@@ -263,9 +263,9 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
     private heatMaps: CompactHeatMapView[];
     private scrollBar: ScrollBar;
     private arrayAndScrollBar: HTMLDivElement;
-    private colorMap: ColorMap;
-    private colorLegend: ColorLegend;
+    private colorLegend: HeatmapLegendPlot;
     private heatMapsSvg: any; // svg containing all heatmaps.
+    private legendSurface: PlottingSurface;
 
     // Holds the state of which heatmap is hovered over.
     private mouseOverHeatMap: CompactHeatMapView;
@@ -297,14 +297,15 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
             ]) }
         ]);
         this.page.setMenu(menu);
+        this.legendSurface = new PlottingSurface(this.topLevel, page);
+        this.legendSurface.setMargins(0, 0, 0, 0);
+        this.legendSurface.setHeight(Resolution.legendSpaceHeight);
 
-        this.colorMap = new ColorMap();
-        this.colorLegend = new ColorLegend(this.colorMap);
+        this.colorLegend = new HeatmapLegendPlot(this.legendSurface);
         // Add a listener that updates the heatmaps when the color map changes.
         this.colorLegend.setColorMapChangeEventListener(() => {
             this.reapplyColorMap();
         });
-        this.topLevel.appendChild(this.colorLegend.getHTMLRepresentation());
 
         // Div containing the array and the scrollbar
         this.arrayAndScrollBar = document.createElement("div");
@@ -312,7 +313,7 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
         this.topLevel.appendChild(this.arrayAndScrollBar);
 
         // Elements are added in this order so the scrollbars svg doesn't overlap
-        // the value-indicator. They're drawin from right to left using reverse flex
+        // the value-indicator. They're drawn from right to left using reverse flex
         // in css.
         this.scrollBar = new ScrollBar(this);
         this.arrayAndScrollBar.appendChild(this.scrollBar.getHTMLRepresentation());
@@ -418,6 +419,7 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
             return;
         }
 
+        this.colorLegend.clear();
         // Clear the heatmap svg, and resize it.
         this.heatMapsSvg.selectAll("*").remove();
         let svgSize = this.actualDrawingSize();
@@ -469,15 +471,9 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
             this.heatMaps[z] = heatMap;
         }
         // Update the color map based on the new values
-        this.colorMap.min = 1;
-        this.colorMap.max = max;
-        if (max > ColorMap.logThreshold)
-            this.colorMap.setLogScale(true);
-        else
-            this.colorMap.setLogScale(false);
-
+        this.colorLegend.setData(1, max);
         this.reapplyColorMap();
-        this.colorLegend.redraw();
+        this.colorLegend.draw();
 
         this.scrollBar.setPosition(this.offset / this.args.uniqueStrings.size(),
             (this.offset + zBins.length) / this.args.uniqueStrings.size());
@@ -491,9 +487,7 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
 
     // Use the color map to set the colors in the heatmaps
     private reapplyColorMap() {
-        this.heatMaps.forEach((heatMap) => {
-            heatMap.setColors(this.colorMap);
-        });
+        this.heatMaps.forEach((heatMap) => heatMap.setColors(this.colorLegend));
     }
 
     private mouseMove() {

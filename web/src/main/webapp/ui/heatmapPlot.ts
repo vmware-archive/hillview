@@ -20,7 +20,7 @@ import {PlottingSurface} from "./plottingSurface";
 import {HeatMap} from "../javaBridge";
 import {AxisData} from "../dataViews/axisData";
 import {regression} from "../util";
-import {ColorMap} from "./colorLegend";
+import {HeatmapLegendPlot} from "./legendPlot";
 
 interface Dot {
     x: number,
@@ -40,7 +40,7 @@ export class HeatmapPlot extends Plot {
     protected distinct: number;
     protected dots: Dot[];
 
-    public constructor(surface: PlottingSurface, protected colorMap: ColorMap) {
+    public constructor(surface: PlottingSurface, protected legendPlot: HeatmapLegendPlot) {
         super(surface);
         this.dots = null;
     }
@@ -82,7 +82,7 @@ export class HeatmapPlot extends Plot {
             .attr("width", this.pointWidth)
             .attr("height", this.pointHeight)
             .style("stroke-width", 0)
-            .style("fill", d => this.colorMap.apply(d.v));
+            .style("fill", d => this.legendPlot.getColor(d.v));
 
         this.drawAxes();
 
@@ -136,7 +136,7 @@ export class HeatmapPlot extends Plot {
         this.plottingSurface.getChart()
             .selectAll(".heatMapCell")
             .datum(function() {return this.dataset;})
-            .style("fill", d => this.colorMap.apply(d.val))
+            .style("fill", d => this.legendPlot.getColor(d.val))
     }
 
     public setData(heatmap: HeatMap, xData: AxisData, yData: AxisData, samplingRate: number) {

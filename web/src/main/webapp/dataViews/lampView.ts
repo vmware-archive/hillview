@@ -26,7 +26,7 @@ import {Renderer, RpcRequest, OnCompleteRenderer} from "../rpc";
 import {PartialResult, clamp, Pair, ICancellable, Seed} from "../util";
 import {Point, PointSet, Resolution} from "../ui/ui";
 import {FullPage} from "../ui/fullPage";
-import {ColorLegend, ColorMap} from "../ui/colorLegend";
+import {HeatmapLegendPlot} from "../ui/legendPlot";
 import {TableView, NextKReceiver} from "./tableView";
 import {HeatMapArrayDialog} from "./trellisHeatMapView";
 import {RemoteTableObject, RemoteTableObjectView, RemoteTableRenderer} from "../tableTarget";
@@ -53,9 +53,9 @@ class LampView extends RemoteTableObjectView {
     private xDots: number;
     private yDots: number;
     private lampTableObject: RemoteTableObject;
-    private colorMap: ColorMap;
-    private colorLegend: ColorLegend;
+    private colorLegend: HeatmapLegendPlot;
     private lampColNames: string[];
+    private legendSurface: PlottingSurface;
 
     constructor(private tableObject: RemoteTableObject, private originalSchema,
                 page: FullPage, private controlPointsId, private selectedColumns) {
@@ -87,12 +87,13 @@ class LampView extends RemoteTableObjectView {
         ]);
         this.page.setMenu(menu);
 
-        this.colorMap = new ColorMap(0, 1);
-        this.colorLegend = new ColorLegend(this.colorMap);
+        this.legendSurface = new PlottingSurface(this.topLevel, page);
+        this.legendSurface.setMargins(0, 0, 0, 0);
+        this.legendSurface.setHeight(Resolution.legendSpaceHeight);
+        this.colorLegend = new HeatmapLegendPlot(this.legendSurface);
         this.colorLegend.setColorMapChangeEventListener(() => {
             this.refresh();
         });
-        this.topLevel.appendChild(this.colorLegend.getHTMLRepresentation());
         let chartDiv = document.createElement("div");
         this.topLevel.appendChild(chartDiv);
 
@@ -182,18 +183,17 @@ class LampView extends RemoteTableObjectView {
                 }
             }
         }
-        this.colorMap.min = 1;
-        this.colorMap.max = this.maxVal;
-        this.colorMap.setLogScale(this.maxVal > ColorMap.logThreshold);
-
+        this.colorLegend.setData(1, this.maxVal);
         this.updateHeatMapView();
     }
+
     public updateHeatMapView() {
         if (this.heatMapDots == null)
             return;
         let chartWidth = this.heatMapChart.attr("width");
         let chartHeight = this.heatMapChart.attr("height");
 
+        this.colorLegend.clear();
         this.heatMapChart.selectAll("*").remove();
         this.heatMapChart.append("rect")
             .attr("x", 0)
@@ -203,7 +203,7 @@ class LampView extends RemoteTableObjectView {
             .style("fill", "none")
             .style("stroke", "black");
 
-        this.colorLegend.redraw();
+        this.colorLegend.draw();
         this.heatMapChart.selectAll()
             .data(this.heatMapDots)
             .enter()
@@ -214,7 +214,7 @@ class LampView extends RemoteTableObjectView {
             .attr("width", chartWidth / this.xDots)
             .attr("height", chartHeight / this.yDots)
             .style("stroke-width", 0)
-            .style("fill", d => this.colorMap.apply(d.v));
+            .style("fill", d => this.colorLegend.getColor(d.v));
     }
 
     public applyLAMP() {
@@ -269,6 +269,7 @@ class LampView extends RemoteTableObjectView {
     }
 
     private updateControlPointsView() {
+        this.colorLegend.clear();
         if (this.controlPoints == null)
             return; // Control points are not yet set.
         this.controlPointsChart.selectAll("*").remove();

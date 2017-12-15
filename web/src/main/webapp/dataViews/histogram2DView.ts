@@ -38,7 +38,7 @@ import {combineMenu, SelectedObject} from "../selectedObject";
 import {CDFPlot} from "../ui/CDFPlot";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {Histogram2DPlot} from "../ui/Histogram2DPlot";
-import {LegendPlot} from "../ui/legendPlot";
+import {HistogramLegendPlot} from "../ui/legendPlot";
 
 /**
  * This class is responsible for rendering a 2D histogram.
@@ -59,7 +59,7 @@ export class Histogram2DView extends HistogramViewBase {
     protected menu: TopMenu;
     protected legendSelectionRectangle: any;
     protected plot: Histogram2DPlot;
-    protected legendPlot: LegendPlot;
+    protected legendPlot: HistogramLegendPlot;
     protected legendSurface: PlottingSurface;
 
     constructor(remoteObjectId: RemoteObjectId, originalTableId: RemoteObjectId,
@@ -69,7 +69,7 @@ export class Histogram2DView extends HistogramViewBase {
         this.legendSurface = new PlottingSurface(this.chartDiv, page);
         this.legendSurface.setMargins(0, 0, 0, 0);
         this.legendSurface.setHeight(Resolution.legendSpaceHeight);
-        this.legendPlot = new LegendPlot(this.legendSurface);
+        this.legendPlot = new HistogramLegendPlot(this.legendSurface);
         this.surface = new PlottingSurface(this.chartDiv, page);
         this.plot = new Histogram2DPlot(this.surface);
         this.cdfPlot = new CDFPlot(this.surface);

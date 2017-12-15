@@ -188,7 +188,7 @@ public class IntSet {
      * Creates another array with the keys, this time in sorted order. This is used to optimize the iterator and
      * therefore should be called only once the IntSet is deemed immutable.
      */
-    public void sortIterator() {
+    private void sortIterator() {
         iteratorKey = Arrays.copyOf(this.key, this.key.length);
         Arrays.sort(this.iteratorKey);
     }
