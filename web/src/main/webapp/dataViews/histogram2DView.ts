@@ -67,7 +67,7 @@ export class Histogram2DView extends HistogramViewBase {
         super(remoteObjectId, originalTableId, tableSchema, page);
 
         this.legendSurface = new PlottingSurface(this.chartDiv, page);
-        this.legendSurface.setMargins(0, 0, 0, 0);
+        //this.legendSurface.setMargins(0, 0, 0, 0);
         this.legendSurface.setHeight(Resolution.legendSpaceHeight);
         this.legendPlot = new HistogramLegendPlot(this.legendSurface);
         this.surface = new PlottingSurface(this.chartDiv, page);

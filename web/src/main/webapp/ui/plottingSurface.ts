@@ -149,15 +149,29 @@ export class PlottingSurface implements IHtmlElement {
     /**
      * Set the margins for the chart area inside the canvas.
      * This does not trigger a redraw.
+     * If a value is null then it is not changed.
      */
     public setMargins(top: number, right: number, bottom: number, left: number): void {
-        this.topMargin = top;
-        this.rightMargin = right;
-        this.leftMargin = left;
-        this.bottomMargin = bottom;
+        if (top != null)
+            this.topMargin = top;
+        if (right != null)
+            this.rightMargin = right;
+        if (left != null)
+            this.leftMargin = left;
+        if (bottom != null)
+            this.bottomMargin = bottom;
     }
 
     public reportError(message: string): void {
         this.page.reportError(message);
+    }
+
+    /**
+     * Usually called after setting the margins; it causes the canvas position
+     * to be recomputed.
+     */
+    public moveCanvas(): void {
+        this.chartArea
+            .attr("transform", `translate(${this.leftMargin}, ${this.topMargin})`);
     }
 }

@@ -41,6 +41,8 @@ export abstract class Plot {
      * D3 vertical axis.
      */
     public xAxis: any;
+    protected xAxisRepresentation: any;
+    protected yAxisRepresentation: any;
 
     /**
      * Create a plot that will do all its drawing on the specified plotting surface.
@@ -67,17 +69,30 @@ export abstract class Plot {
 
     drawAxes(): void {
         if (this.yAxis != null)
-            this.plottingSurface.getChart()
+            this.yAxisRepresentation = this.plottingSurface.getChart()
                 .append("g")
                 .attr("class", "y-axis")
                 .call(this.yAxis);
         if (this.xAxis != null) {
-            this.plottingSurface.getChart()
+            this.xAxisRepresentation = this.plottingSurface.getChart()
                 .append("g")
                 .attr("class", "x-axis")
                 .attr("transform", `translate(0, ${this.getChartHeight()})`)
                 .call(this.xAxis);
         }
+    }
+
+    /**
+     * Measure the maximum label width on a axis, in pixels.
+     */
+    labelWidth(): number {
+        if (this.yAxis == null)
+            return 0;
+        let max = 0;
+        let domNodes = this.yAxisRepresentation.selectAll(".tick").select("text").nodes();
+        for (let i = 0; i < domNodes.length; i++)
+            max = Math.max(max, domNodes[i].getBBox().width);
+        return max;
     }
 
     public abstract draw(): void;

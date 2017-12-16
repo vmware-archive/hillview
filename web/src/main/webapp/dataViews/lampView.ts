@@ -88,7 +88,7 @@ class LampView extends RemoteTableObjectView {
         this.page.setMenu(menu);
 
         this.legendSurface = new PlottingSurface(this.topLevel, page);
-        this.legendSurface.setMargins(0, 0, 0, 0);
+        //this.legendSurface.setMargins(0, 0, 0, 0);
         this.legendSurface.setHeight(Resolution.legendSpaceHeight);
         this.colorLegend = new HeatmapLegendPlot(this.legendSurface);
         this.colorLegend.setColorMapChangeEventListener(() => {
