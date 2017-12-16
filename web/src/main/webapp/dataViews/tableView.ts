@@ -1033,7 +1033,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
                 };
             } else {
                 // disable context menu
-                cell.oncontextmenu = e => false;
+                cell.oncontextmenu = () => false;
             }
         }
         this.dataRowsDisplayed += row.count;

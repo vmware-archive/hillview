@@ -71,7 +71,7 @@ export class HistogramPlot extends Plot {
 
         this.yScale = d3.scaleLinear()
             .domain([0, max])
-            .range([this.plottingSurface.getActualChartHeight(), 0]);
+            .range([chartHeight, 0]);
 
         bars.append("rect")
             .attr("y", d => this.yScale(d))

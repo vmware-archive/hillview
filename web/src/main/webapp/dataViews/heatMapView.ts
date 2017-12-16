@@ -39,6 +39,7 @@ import {DistinctStrings} from "../distinctStrings";
 import {combineMenu, SelectedObject} from "../selectedObject";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {HeatmapPlot} from "../ui/heatmapPlot";
+import {HistogramPlot} from "../ui/histogramPlot";
 
 /**
  * A HeatMapView renders information as a heatmap.
@@ -56,6 +57,9 @@ export class HeatMapView extends RemoteTableObjectView {
     protected pointDescription: TextOverlay;
     protected surface: PlottingSurface;
     protected plot: HeatmapPlot;
+    protected showMissingData: boolean = false;  // TODO: enable this
+    protected xHistoSurface: PlottingSurface;
+    protected xHistoPlot: HistogramPlot;
 
     protected currentData: {
         xData: AxisData;
@@ -67,7 +71,8 @@ export class HeatMapView extends RemoteTableObjectView {
     };
     private menu: TopMenu;
 
-    constructor(remoteObjectId: RemoteObjectId, originalTableId: RemoteObjectId, protected tableSchema: Schema, page: FullPage) {
+    constructor(remoteObjectId: RemoteObjectId, originalTableId: RemoteObjectId,
+                protected tableSchema: Schema, page: FullPage) {
         super(remoteObjectId, originalTableId, page);
         this.topLevel = document.createElement("div");
         this.topLevel.className = "chart";
@@ -108,6 +113,13 @@ export class HeatMapView extends RemoteTableObjectView {
         this.surface.setMargins(20, this.surface.rightMargin, this.surface.bottomMargin, this.surface.leftMargin);
         this.plot = new HeatmapPlot(this.surface, this.colorLegend);
 
+        if (this.showMissingData) {
+            this.xHistoSurface = new PlottingSurface(this.topLevel, page);
+            this.xHistoSurface.setMargins(0, this.xHistoSurface.rightMargin, 16, this.xHistoSurface.leftMargin);
+            this.xHistoSurface.setHeight(100);
+            this.xHistoPlot = new HistogramPlot(this.xHistoSurface);
+        }
+
         this.summary = document.createElement("div");
         this.topLevel.appendChild(this.summary);
     }
@@ -117,6 +129,8 @@ export class HeatMapView extends RemoteTableObjectView {
         this.page.reportTime(elapsedMs);
         this.colorLegend.clear();
         this.plot.clear();
+        if (this.showMissingData)
+            this.xHistoPlot.clear();
         if (heatmap == null || heatmap.buckets.length == 0) {
             this.page.reportError("No data to display");
             return;
@@ -154,6 +168,10 @@ export class HeatMapView extends RemoteTableObjectView {
         this.colorLegend.setData(1, this.plot.getMaxCount());
         this.colorLegend.draw();
         this.plot.draw();
+        if (this.showMissingData) {
+            this.xHistoPlot.setHistogram(heatmap.histogramMissingX, 1.0, xData);
+            this.xHistoPlot.draw();
+        }
 
         this.selectionRectangle = canvas
             .append("rect")

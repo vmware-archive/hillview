@@ -34,7 +34,7 @@ public class SparseMembershipSet implements IMembershipSet, IMutableMembershipSe
     private final IntSet membershipMap;
     /* If the Intset is smaller than this then the class would ask the IntSet to sort its array for the iterator.
      * The sorting takes time but makes the iterator faster */
-    private static final int thresholdSortedIterator = 50000000;
+    public static final int thresholdSortedIterator = 50000000;
     private final int max;
 
     @Override
@@ -66,8 +66,6 @@ public class SparseMembershipSet implements IMembershipSet, IMutableMembershipSe
     }
 
     public IMembershipSet seal() {
-        if (this.size() < SparseMembershipSet.thresholdSortedIterator)
-            this.membershipMap.sortIterator();
         return this;
     }
 

@@ -237,20 +237,13 @@ export class Histogram2DView extends HistogramViewBase {
     public swapAxes(): void {
         if (this.currentData == null)
             return;
-        let heatmap: HeatMap = {
-            missingData: this.currentData.heatMap.missingData,
-            buckets: transpose(this.currentData.heatMap.buckets),
-            histogramMissingX: this.currentData.heatMap.histogramMissingX,
-            histogramMissingY: this.currentData.heatMap.histogramMissingY,
-            totalSize: this.currentData.heatMap.totalSize
-        };
-        this.updateView(
-            heatmap,
-            this.currentData.yData,
-            this.currentData.xData,
-            null,
-            this.currentData.samplingRate,
-            0);
+        let rc = new Range2DCollector(
+            [this.currentData.yData.description, this.currentData.xData.description],
+            this.tableSchema,
+            [this.currentData.yData.distinctStrings, this.currentData.xData.distinctStrings],
+            this.page, this, true, null, false);
+        rc.setValue({ first: this.currentData.yData.stats, second: this.currentData.xData.stats });
+        rc.onCompleted();
     }
 
     exactHistogram(): void {
