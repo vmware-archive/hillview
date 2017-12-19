@@ -300,10 +300,10 @@ there are three rows selected.
 
 There are two ways to modify the selection:
 1. By using the mouse: Clicking on a column description toggles its
-selection status. If CTRL is pressed, then we remember preserve the
-current selection status of the other column descriptions, if not,
+selection status. If CTRL is pressed, then we the
+current selection status of the other column descriptions is not affected, if CTRL is not pressed,
 they are unselected when we click. By pressing SHIFT, we can un/select
-intervals.
+whole intervals rather than a single column description at a time.
 
 2. By using the Column selection menu described below, or by
 right-clicking on the **Name**, **Type** or **Allows Missing** column
@@ -314,21 +314,24 @@ headers, both will pop-up the same selection menus.
 
 Columns can be un/selected using either the name, type or Allows Missing
 fields. We describe the search criteria allowed in detail below. In
-all cases, the search returns a subset of column descriptions, which can be added
-to or removed from the current selection.
+all cases, the search returns a subset of column descriptions, which
+can be added to or removed from the current selection.
 
 * By Name: allows regular expression matching against the name of the column.
+
 ![Select by name Menu](name-selection.png)
 
 * By Type: allows choosing all columns of a particular type.
+
 ![Select by type Menu](type-selection.png)
 
 * By Allows Missing: allows choosing only those columns that allow/disallow
   missing values.
+
 ![Select by allows missing menu](allows-missing-selection.png)
 
 
-Once the user selects a set of column descriptions, the user can display a view of the
+Once the user selects a set of column descriptions, they can display a view of the
 data table restricted to the selected columns using the View/Selected columns menu.
 
 ![Schema view menu](schema-view-menu.png)
