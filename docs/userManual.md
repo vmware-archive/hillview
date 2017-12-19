@@ -302,11 +302,13 @@ there are three rows selected.
 There are two ways to modify the selection:
 1. By using the mouse as described here.
 
-2. Using the selection menus:
+2. Using the selection menus, which can be accessed
+
 ..* By right-clicking on the **Name**, **Type** or **Allows Missing**
 column headers.
-..*  By using the Column selection menu described below.
-Both actions will pop-up the same selection menus.
+
+..*  By using the Column selection menu as shown below.
+
 
 
 ![Column selection menu](schema-browser.png)
