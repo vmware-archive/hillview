@@ -303,9 +303,11 @@ There are two ways to modify the selection:
 1. By using the mouse as described here.
 
 2. Using the selection menus, which can be accessed
-..* By right-clicking on the **Name**, **Type** or **Allows Missing**
+
+... By right-clicking on the **Name**, **Type** or **Allows Missing**
 column headers.
-..*  By clicking on the **Select** menu option at the top left as shown below.
+
+...  By clicking on the **Select** menu option at the top left as shown below.
 
 
 
