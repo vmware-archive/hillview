@@ -100,7 +100,8 @@ Selections can be modified using the keyboard as follows:
   range of contiguous elements.
 
 * Clicking while pressing the control button
-  will toggle the selection of the current element
+  will toggle the selection of the current element, while leaving the
+  selection status of other elements unchanged.
 
 ### Loading data
 
@@ -299,15 +300,13 @@ there are three rows selected.
 
 
 There are two ways to modify the selection:
-1. By using the mouse: Clicking on a column description toggles its
-selection status. If CTRL is pressed, then we the
-current selection status of the other column descriptions is not affected, if CTRL is not pressed,
-they are unselected when we click. By pressing SHIFT, we can un/select
-whole intervals rather than a single column description at a time.
+1. By using the mouse as described here.
 
-2. By using the Column selection menu described below, or by
-right-clicking on the **Name**, **Type** or **Allows Missing** column
-headers, both will pop-up the same selection menus.
+2. Using the selection menus:
+..* By right-clicking on the **Name**, **Type** or **Allows Missing**
+column headers.
+..*  By using the Column selection menu described below.
+Both actions will pop-up the same selection menus.
 
 
 ![Column selection menu](schema-browser.png)
