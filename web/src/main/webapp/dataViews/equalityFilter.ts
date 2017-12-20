@@ -24,10 +24,10 @@ export class EqualityFilterDialog extends Dialog {
     constructor(private columnDescription: ColumnDescription) {
         super("Filter on " + columnDescription.name, "Eliminates data from a column according to its value.");
         this.addTextField("query", "Find:", FieldKind.String, null, "Value to search");
-        this.addBooleanField("asRegEx", "Interpret as Regular Expression", false, "Click " +
-            "to interpret the search query as a regular expression");
-        this.addBooleanField("complement", "Exclude matches", false, "Click to filter out " +
-            "all matches");
+        this.addBooleanField("asRegEx", "Interpret as Regular Expression", false, "Select"
+            + "checkbox to interpret the search query as a regular expression");
+        this.addBooleanField("complement", "Exclude matches", false, "Select checkbox to "
+            + "filter out all matches");
     }
 
     public getFilter(): EqualityFilterDescription {

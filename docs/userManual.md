@@ -501,8 +501,11 @@ the current state of the display.
 
 * Filter...: this option will pop-up a dialog window that allows the user
   to filter the data in the selected column (this option requires only
-  one column to be selected).  The user can specify a value/pattern to be
-  searched for (regular expressions are permitted), and also whether the
+  one column to be selected). The user enters a search pattern. There
+  is a checkbox which when selected, will interpret the pattern as a
+  [Java regular
+  expression](https://docs.oracle.com/javase/7/docs/api/java/util/regex/Pattern.html). There
+  is a second checkbox which allows the user to choose  whether the
   matching values are to be kept or discarded.
 
   ![Filter menu](filter-menu.png)
