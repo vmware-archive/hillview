@@ -300,15 +300,12 @@ there are three rows selected.
 
 
 There are two ways to modify the selection:
-1. By using the mouse as described here.
+1. By [using the mouse](#mouse-base-selection).
 
-2. Using the selection menus, which can be accessed
-
-... By right-clicking on the **Name**, **Type** or **Allows Missing**
-column headers.
-
-...  By clicking on the **Select** menu option at the top left as shown below.
-
+2. Using the selection menus, which can be accessed either by
+right-clicking on the **Name**, **Type** or **Allows Missing** column
+headers, or by clicking on the **Select** menu option at the top left
+as shown below.
 
 
 ![Column selection menu](schema-browser.png)
@@ -504,9 +501,9 @@ the current state of the display.
 
 * Filter...: this option will pop-up a dialog window that allows the user
   to filter the data in the selected column (this option requires only
-  one column to be selected).  The user can specify a value to be
-  sought, and a comparison, indicating whether filtering keeps values
-  identical or different to the specified one.
+  one column to be selected).  The user can specify a value/pattern to be
+  searched for (regular expressions are permitted), and also whether the
+  matching values are to be kept or discarded.
 
   ![Filter menu](filter-menu.png)
 

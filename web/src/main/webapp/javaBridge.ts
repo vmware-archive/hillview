@@ -311,3 +311,25 @@ export class RecordOrder {
         return result;
     }
 }
+
+/**
+ * Describes the a filter that checks for (in)equality.
+ */
+export class EqualityFilterDescription {
+    /**
+     * Column that is being filtered.
+     */
+    column: string;
+    /**
+     * Value to look for (represented as a string).
+     */
+    compareValue: string;
+    /**
+     * True if we are looking for anything that is not equal.
+     */
+    complement: boolean;
+    /**
+     * True if we are looking to do regular expression matching.
+     */
+    asRegEx: boolean;
+}

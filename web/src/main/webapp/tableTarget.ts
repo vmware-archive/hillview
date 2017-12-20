@@ -20,7 +20,7 @@
  */
 
 import {RpcRequest, RemoteObject, OnCompleteRenderer} from "./rpc";
-import {EqualityFilterDescription} from "./dataViews/equalityFilter";
+import {EqualityFilterDescription} from "./javaBridge";
 import {ICancellable, Pair, PartialResult, Seed} from "./util";
 import {PointSet, Resolution} from "./ui/ui";
 import {IDataView} from "./ui/dataview";
