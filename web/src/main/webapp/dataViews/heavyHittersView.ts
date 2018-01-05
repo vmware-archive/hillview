@@ -67,7 +67,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
                 hittersId: this.data.heavyHittersId,
                 schema: this.schema
         });
-        rr.invoke(new TableOperationCompleted(newPage2, this.tv, rr, this.order));
+        rr.invoke(new TableOperationCompleted(newPage2, this.tv.schema, rr, this.order, this.tv.originalTableId));
     }
 
     public exactCounts(): void {

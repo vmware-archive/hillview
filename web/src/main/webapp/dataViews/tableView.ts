@@ -148,7 +148,7 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         let rr = this.createZipRequest(r);
         let o = this.order.clone();
         let finalRenderer = (page: FullPage, operation: ICancellable) =>
-            { return new TableOperationCompleted(page, this, operation, o); };
+            { return new TableOperationCompleted(page, this.schema, operation, o, this.originalTableId); };
         rr.invoke(new ZipReceiver(this.getPage(), rr, how, this.originalTableId, finalRenderer));
     }
 
@@ -1226,17 +1226,18 @@ class CorrelationMatrixReceiver extends RemoteTableRenderer {
  */
 export class TableOperationCompleted extends RemoteTableRenderer {
     public constructor(page: FullPage,
-                       protected tv: TableView,
+                       protected schema: Schema,
                        operation: ICancellable,
-                       protected order: RecordOrder) {
-        super(page, operation, "Table operation", tv.originalTableId);
+                       protected order: RecordOrder,
+                       originalTableId: RemoteObjectId) {
+        super(page, operation, "Table operation", originalTableId);
     }
 
     run(): void {
         super.run();
         let table = new TableView(
             this.remoteObject.remoteObjectId, this.remoteObject.originalTableId, this.page);
-        table.setSchema(this.tv.schema);
+        table.setSchema(this.schema);
         this.page.setDataView(table);
         let rr = table.createNextKRequest(this.order, null);
         rr.chain(this.operation);

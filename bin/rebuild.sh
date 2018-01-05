@@ -1,7 +1,13 @@
-#!/bin/sh
+#!/bin/bash
 # A small shell script which rebuilds both projects that compose Hillview
 
-cd ../platform
+# Bail out on first error
+set -e
+
+export MAVEN_OPTS="-Xmx2048M"
+pushd ../platform
 mvn install
-cd ../web
+popd
+pushd ../web
 mvn package
+popd

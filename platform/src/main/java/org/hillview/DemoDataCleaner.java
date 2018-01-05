@@ -61,10 +61,7 @@ public class DemoDataCleaner {
         Schema proj = schema.project(subSchema);
         proj.writeToJsonFile(Paths.get(dataFolder, "short.schema"));
 
-        // If non-zero, split each table into parts of this size.
-        final int splitSize = 0; // 1 << 16;
-
-        String prefix = "On_Time_On_Time_Performance";
+        String prefix = "On_Time_On_Time_Performance_";
         Path folder = Paths.get(dataFolder);
         Stream<Path> files = Files.walk(folder, 1);
         files.filter(f -> {
@@ -75,8 +72,7 @@ public class DemoDataCleaner {
             return true;
         }).sorted(Comparator.comparing(Path::toString))
                 .forEach(f -> {
-                    String filename = f.getFileName().toString();
-                    String end = filename.substring(prefix.length() + 1);
+                    String filename = f.toString();
                     CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
                     config.allowFewerColumns = false;
                     config.hasHeaderRow = true;
@@ -87,33 +83,14 @@ public class DemoDataCleaner {
                     ITable tbl = r.load();
                     ITable p = tbl.project(proj);
 
-                    //noinspection ConstantConditions
-                    if (splitSize > 0) {
-                        List<ITable> pieces = TestTables.splitTable(p, splitSize);
-
-                        int index = 0;
-                        for (ITable t : pieces) {
-                            String baseName = end.substring(0, end.lastIndexOf("."));
-                            String name = baseName + "-" + Integer.toString(index) + ".csv";
-                            Path outPath = Paths.get(dataFolder, name);
-                            CsvFileWriter writer = new CsvFileWriter(outPath);
-                            try {
-                                System.out.println("Writing " + outPath);
-                                writer.writeTable(t);
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                            index++;
-                        }
-                    } else {
-                        Path outPath = Paths.get(dataFolder, end);
-                        CsvFileWriter writer = new CsvFileWriter(outPath);
-                        try {
-                            System.out.println("Writing " + outPath);
-                            writer.writeTable(p);
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
+                    String end = filename.replace(prefix, "");
+                    Path outPath = Paths.get(end);
+                    CsvFileWriter writer = new CsvFileWriter(outPath);
+                    try {
+                        System.out.println("Writing " + outPath);
+                        writer.writeTable(p);
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }
                 });
     }

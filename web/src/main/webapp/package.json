@@ -14,10 +14,11 @@
     "url": "git://github.com/vmware/hillview.git"
   },
   "dependencies": {
-    "@types/d3": "^4.11.0",
-    "@types/pako": "^1.0.0",
     "d3": "^4.10.2",
-    "pako": "^1.0.6"
+    "pako": "^1.0.6",
+    "rx": "^4.1.0",
+    "@types/d3": "^4.11.0",
+    "@types/pako": "^1.0.0"
   },
   "devDependencies": {
     "webpack": "^3.6.0"
