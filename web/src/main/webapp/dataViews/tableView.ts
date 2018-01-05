@@ -21,7 +21,7 @@ import {
     Converters, PartialResult, ICancellable, percent, formatNumber, significantDigits,
     formatDate
 } from "../util";
-import {EqualityFilterDialog, EqualityFilterDescription} from "./equalityFilter";
+import {EqualityFilterDialog} from "./equalityFilter";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {CategoryCache} from "../categoryCache";
 import {ColumnConverter, ConverterDialog} from "./columnConverter";
@@ -40,7 +40,7 @@ import {LAMPDialog} from "./lampView";
 import {
     IColumnDescription, RecordOrder, RowView, Schema, ColumnDescription, RangeInfo,
     ContentsKind, asContentsKind, ColumnSortOrientation, NextKList, TopList, CombineOperators, TableSummary, HLogLog,
-    RemoteObjectId, allContentsKind, CreateColumnInfo
+    RemoteObjectId, allContentsKind, CreateColumnInfo, EqualityFilterDescription
 } from "../javaBridge";
 import {RemoteTableObject, RemoteTableObjectView, RemoteTableRenderer, ZipReceiver} from "../tableTarget";
 import {DistinctStrings} from "../distinctStrings";
@@ -761,7 +761,8 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
             let efd: EqualityFilterDescription = {
                 column: cd.name,
                 compareValue: value,
-                complement: (complement == null ? false : complement)
+                complement: (complement == null ? false : complement),
+                asRegEx: false
             };
             this.runFilter(efd, cd.kind);
         }

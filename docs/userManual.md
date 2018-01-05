@@ -100,7 +100,8 @@ Selections can be modified using the keyboard as follows:
   range of contiguous elements.
 
 * Clicking while pressing the control button
-  will toggle the selection of the current element
+  will toggle the selection of the current element, while leaving the
+  selection status of other elements unchanged.
 
 ### Loading data
 
@@ -287,7 +288,9 @@ marked with x.
 ### Data schema views
 
 The data schema views allow users to browse the schema of the current
-table and select a set of columns from the dataset to focus on.
+table and select a set of columns from the dataset to focus on. This
+feature is especially useful when the table contains too many columns
+to display at once, and the user wants to focus on a subset of them.
 
 The following example shows a schema view; the rows in a schema view
 are the description of the columns of the data table.  In this example
@@ -295,10 +298,39 @@ there are three rows selected.
 
 ![Schema view](schema-view.png)
 
-Once the user selects a set of columns, the user can display a view of the
-data table restricted to the selected columns using the View/Selected
-columns menu.
 
+There are two ways to modify the selection:
+1. By [using the mouse](#mouse-base-selection).
+
+2. Using the selection menus, which can be accessed either by
+right-clicking on the **Name**, **Type** or **Allows Missing** column
+headers, or by clicking on the **Select** menu option at the top left
+as shown below.
+
+
+![Column selection menu](schema-browser.png)
+
+Columns can be un/selected using either the name, type or Allows Missing
+fields. We describe the search criteria allowed in detail below. In
+all cases, the search returns a subset of column descriptions, which
+can be added to or removed from the current selection.
+
+* By Name: allows regular expression matching against the name of the column.
+
+![Select by name Menu](name-selection.png)
+
+* By Type: allows choosing all columns of a particular type.
+
+![Select by type Menu](type-selection.png)
+
+* By Allows Missing: allows choosing only those columns that allow/disallow
+  missing values.
+
+![Select by allows missing menu](allows-missing-selection.png)
+
+
+Once the user selects a set of column descriptions, they can display a view of the
+data table restricted to the selected columns using the View/Selected columns menu.
 
 ![Schema view menu](schema-view-menu.png)
 
@@ -469,9 +501,12 @@ the current state of the display.
 
 * Filter...: this option will pop-up a dialog window that allows the user
   to filter the data in the selected column (this option requires only
-  one column to be selected).  The user can specify a value to be
-  sought, and a comparison, indicating whether filtering keeps values
-  identical or different to the specified one.
+  one column to be selected). The user enters a search pattern. There
+  is a checkbox which when selected, will interpret the pattern as a
+  [Java regular
+  expression](https://docs.oracle.com/javase/7/docs/api/java/util/regex/Pattern.html). There
+  is a second checkbox which allows the user to choose  whether the
+  matching values are to be kept or discarded.
 
   ![Filter menu](filter-menu.png)
 
