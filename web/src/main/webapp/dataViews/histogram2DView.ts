@@ -22,7 +22,7 @@ import {
 } from "../javaBridge";
 import {TopMenu, SubMenu} from "../ui/menu";
 import {
-    reorder, transpose, significantDigits, formatNumber, ICancellable, PartialResult, Seed, Pair, percent
+    reorder, significantDigits, formatNumber, ICancellable, PartialResult, Seed, Pair, percent
 } from "../util";
 import {Renderer} from "../rpc";
 import {Rectangle, Resolution} from "../ui/ui";

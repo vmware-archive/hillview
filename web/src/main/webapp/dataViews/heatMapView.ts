@@ -168,11 +168,13 @@ export class HeatMapView extends RemoteTableObjectView {
         this.colorLegend.setData(1, this.plot.getMaxCount());
         this.colorLegend.draw();
         this.plot.draw();
+        /*
         let margin = this.plot.labelWidth();
         if (margin > this.surface.leftMargin) {
             this.surface.setMargins(null, null, null, margin);
             this.surface.moveCanvas();
         }
+        */
         if (this.showMissingData) {
             this.xHistoPlot.setHistogram(heatmap.histogramMissingX, 1.0, xData);
             this.xHistoPlot.draw();

@@ -55,7 +55,7 @@ export class HistogramLegendPlot extends Plot {
 
         let colorWidth = width / this.axisData.bucketCount;
         for (let i = 0; i < this.axisData.bucketCount; i++) {
-            let color = Histogram2DView.colorMap(i / this.axisData.bucketCount);
+            let color = Histogram2DView.colorMap(i / (this.axisData.bucketCount - 1));
             canvas.append("rect")
                 .attr("width", colorWidth)
                 .attr("height", height)

@@ -89,7 +89,7 @@ export abstract class Plot {
         if (this.yAxis == null)
             return 0;
         let max = 0;
-        let domNodes = this.yAxisRepresentation.selectAll(".tick").select("text").nodes();
+        let domNodes = this.yAxisRepresentation.selectAll(".tick").nodes();
         for (let i = 0; i < domNodes.length; i++)
             max = Math.max(max, domNodes[i].getBBox().width);
         return max;
