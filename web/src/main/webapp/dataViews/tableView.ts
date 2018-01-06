@@ -23,7 +23,6 @@ import {
 } from "../util";
 import {EqualityFilterDialog} from "./equalityFilter";
 import {Dialog, FieldKind} from "../ui/dialog";
-import {CategoryCache} from "../categoryCache";
 import {ColumnConverter, ConverterDialog} from "./columnConverter";
 import {DataRange} from "../ui/dataRange"
 import {IScrollTarget, ScrollBar} from "../ui/scroll";
@@ -31,28 +30,24 @@ import {FullPage} from "../ui/fullPage";
 import {missingHtml, SpecialChars} from "../ui/ui";
 import {SelectionStateMachine} from "../ui/selectionStateMachine";
 
-import {RangeCollector} from "./histogramView";
-import {Range2DCollector} from "./heatMapView";
-import {HeatMapArrayDialog} from "./trellisHeatMapView";
 import {HeavyHittersView} from "./heavyHittersView";
 import {SchemaView} from "./schemaView";
 import {LAMPDialog} from "./lampView";
 import {
-    IColumnDescription, RecordOrder, RowView, Schema, ColumnDescription, RangeInfo,
+    IColumnDescription, RecordOrder, RowView, Schema, ColumnDescription,
     ContentsKind, asContentsKind, ColumnSortOrientation, NextKList, TopList, CombineOperators, TableSummary, HLogLog,
     RemoteObjectId, allContentsKind, CreateColumnInfo, EqualityFilterDescription
 } from "../javaBridge";
-import {RemoteTableObject, RemoteTableObjectView, RemoteTableRenderer, ZipReceiver} from "../tableTarget";
-import {DistinctStrings} from "../distinctStrings";
+import {RemoteTableObject, RemoteTableRenderer, ZipReceiver} from "../tableTarget";
 import {combineMenu, SelectedObject} from "../selectedObject";
 import {IDataView} from "../ui/dataview";
+import {TableViewBase} from "./TableViewBase";
 
 /**
  * Displays a table in the browser.
  */
-export class TableView extends RemoteTableObjectView implements IScrollTarget {
+export class TableView extends TableViewBase implements IScrollTarget {
     // Data view part: received from remote site
-    public schema?: Schema;
     // Logical position of first row displayed
     protected startPosition?: number;
     // Total rows in the table
@@ -65,19 +60,19 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
     protected tHead : HTMLTableSectionElement;
     protected tBody: HTMLTableSectionElement;
     protected currentData: NextKList;
-    protected selectedColumns: SelectionStateMachine;
     protected contextMenu: ContextMenu;
     protected cellsPerColumn: Map<string, HTMLElement[]>;
+    protected selectedColumns = new SelectionStateMachine();
 
     public constructor(remoteObjectId: RemoteObjectId, originalTableId: RemoteObjectId, page: FullPage) {
         super(remoteObjectId, originalTableId, page);
 
+        this.selectedColumns = new SelectionStateMachine();
         this.order = new RecordOrder([]);
         this.topLevel = document.createElement("div");
         this.topLevel.id = "tableContainer";
         this.topLevel.tabIndex = 1;  // necessary for keyboard events?
         this.topLevel.onkeydown = e => this.keyDown(e);
-        this.selectedColumns = new SelectionStateMachine();
 
         this.topLevel.style.flexDirection = "column";
         this.topLevel.style.display = "flex";
@@ -89,28 +84,38 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
             {
                 text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
                     { text: "Full dataset",
-                        action: () => { this.fullDataset(); },
+                        action: () => this.fullDataset(),
                         help: "Show the initial dataset, prior to any filtering operations."
                     },
                     { text: "Refresh",
-                        action: () => { this.refresh(); },
+                        action: () => this.refresh(),
                         help: "Redraw this view."
                     },
                     { text: "All columns",
-                        action: () => { this.showAllRows(); },
+                        action: () => this.showAllRows(),
                         help: "Make all columns visible."
                     },
                     { text: "No columns",
-                        action: () => { this.setOrder(new RecordOrder([])); },
+                        action: () => this.setOrder(new RecordOrder([])),
                         help: "Make all columns invisible"
                     },
                     { text: "Schema",
-                        action: () => { this.viewSchema();},
+                        action: () => this.viewSchema(),
                         help: "Browse the list of columns of this table and choose a subset to visualize."
                     }
                 ])
-            },
-            {
+            }, /*{
+              text: "Chart", help: "Draw a chart", subMenu: new SubMenu([
+                    { text: "1D Histogram", action: () => this.todo(),
+                        help: "Draw a histogram of the data in one column."},
+                    { text: "2D Histogram", action: () => this.todo(),
+                        help: "Draw a histogram of the data in two columns."},
+                    { text: "Heatmap", action: () => this.todo(),
+                        help: "Draw a heatmap of the data in two columns."},
+                    { text: "Trellis plot", action: () => this.todo(),
+                        help: "Draw a Trellis plot of the data in three columns."},
+                ])
+            },*/ {
                 text: "Combine", help: "Combine data in two separate views.", subMenu: combineMenu(this, page.pageId)
             }
         ]);
@@ -133,10 +138,6 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         tblAndBar.appendChild(this.scrollBar.getHTMLRepresentation());
     }
 
-    reportError(s: string) {
-        this.page.reportError(s);
-    }
-
     /**
      * Combine two views according to some operation: intersection, union, etc.
      */
@@ -150,6 +151,10 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         let finalRenderer = (page: FullPage, operation: ICancellable) =>
             { return new TableOperationCompleted(page, this.schema, operation, o, this.originalTableId); };
         rr.invoke(new ZipReceiver(this.getPage(), rr, how, this.originalTableId, finalRenderer));
+    }
+
+    getSelectedColCount(): number {
+        return this.selectedColumns.size();
     }
 
     /**
@@ -378,73 +383,6 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
                 o.hide(colName);
         });
         this.setOrder(o);
-    }
-
-    public histogram(heatMap: boolean): void {
-        if (this.selectedColumns.size() < 1 || this.selectedColumns.size() > 2) {
-            this.reportError("Must select 1 or 2 columns for histogram");
-            return;
-        }
-
-        let cds: ColumnDescription[] = [];
-        let catColumns: string[] = [];  // categorical columns
-        this.getSelectedColNames().forEach(v => {
-            let colDesc = TableView.findColumn(this.schema, v);
-            if (colDesc.kind == "String") {
-                this.reportError("Histograms not supported for string columns " + colDesc.name);
-                return;
-            }
-            if (colDesc.kind == "Category")
-                catColumns.push(v);
-            cds.push(colDesc);
-        });
-
-        if (cds.length != this.selectedColumns.size())
-            // some error occurred
-            return;
-
-        let twoDimensional = (cds.length == 2);
-        // Continuation invoked after the distinct strings have been obtained
-        let cont = (operation: ICancellable) => {
-            let rangeInfo: RangeInfo[] = [];
-            let distinct: DistinctStrings[] = [];
-
-            cds.forEach(v => {
-                let colName = v.name;
-                let ri: RangeInfo;
-                if (v.kind == "Category") {
-                    let ds = CategoryCache.instance.getDistinctStrings(this.originalTableId, colName);
-                    if (ds == null)
-                    // Probably an error has occurred
-                        return;
-                    distinct.push(ds);
-                    ri = ds.getRangeInfo(colName);
-                } else {
-                    distinct.push(null);
-                    ri = new RangeInfo(colName);
-                }
-                rangeInfo.push(ri);
-            });
-
-            if (rangeInfo.length != cds.length)
-                // some error occurred in loop
-                return;
-
-            if (twoDimensional) {
-                let rr = this.createRange2DRequest(rangeInfo[0], rangeInfo[1]);
-                rr.chain(operation);
-                rr.invoke(new Range2DCollector(cds, this.schema, distinct, this.getPage(), this, false, rr, heatMap));
-            } else {
-                let rr = this.createRangeRequest(rangeInfo[0]);
-                rr.chain(operation);
-                let title = "Histogram " + cds[0].name;
-                rr.invoke(new RangeCollector(title, cds[0], this.schema, distinct[0],
-                    this.getPage(), this, false, rr));
-            }
-        };
-
-        // Get the categorical data and invoke the continuation
-        CategoryCache.instance.retrieveCategoryValues(this, catColumns, this.getPage(), cont);
     }
 
     public refresh(): void {
@@ -848,26 +786,6 @@ export class TableView extends RemoteTableObjectView implements IScrollTarget {
         } else {
             this.reportError("Not valid for LAMP:" + message);
         }
-    }
-
-
-    private heatMapArray(): void {
-        let colNames: string[] = this.getSelectedColNames();
-        let dialog = new HeatMapArrayDialog(colNames, this.getPage(), this.schema, this, false);
-        dialog.show();
-    }
-
-    private heatMap(): void {
-        if (this.selectedColumns.size() == 3) {
-            this.heatMapArray();
-            return;
-        }
-        if (this.selectedColumns.size() != 2) {
-            this.reportError("Must select exactly 2 columns for heatmap");
-            return;
-        }
-
-        this.histogram(true);
     }
 
     private highlightSelectedColumns(): void {
