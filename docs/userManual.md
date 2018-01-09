@@ -298,7 +298,6 @@ there are three rows selected.
 
 ![Schema view](schema-view.png)
 
-
 There are two ways to modify the selection:
 1. By [using the mouse](#mouse-base-selection).
 
@@ -335,8 +334,10 @@ data table restricted to the selected columns using the View/Selected columns me
 * Selected columns: this displays a [table view](#table-views) of the
 data restricted to the selected columns.
 
+#### The chart menu
+
 The user can also directly draw a chart of the data in a selected set
-of columns using the charting menu:
+of columns using the chart menu:
 
 ![Chart menu](chart-menu.png)
 
@@ -355,7 +356,7 @@ of columns using the charting menu:
 * Heatmap.  Selecting this menu presents a dialog allowing the user to
   select two columns whose data will be drawn as a [heatmap](#heatmap-views).
 
-![Heatmap dialog](2d-heatmap-dialog.png)
+![Heatmap dialog](heatmap-dialog.png)
 
 ### Table views
 
