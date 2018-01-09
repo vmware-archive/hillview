@@ -123,7 +123,7 @@ export class FullPage implements IHtmlElement {
         let close = document.createElement("span");
         close.className = "close";
         close.innerHTML = "&times;";
-        close.onclick = (e) => this.remove();
+        close.onclick = () => this.remove();
         close.title = "Close this view.";
         this.addCell(titleRow, close, true);
 

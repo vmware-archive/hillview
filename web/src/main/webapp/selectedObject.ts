@@ -17,7 +17,7 @@
 
 // Used for operations between multiple objects: the selected object
 // is a RemoteTableObjectView which can be combined with another one.
-import {MenuItem, SubMenu} from "./ui/menu";
+import {MenuItem, SubMenu, TopMenuItem} from "./ui/menu";
 import {EnumIterators} from "./util";
 import {CombineOperators} from "./javaBridge";
 import {RemoteTableObject, RemoteTableObjectView} from "./tableTarget";
@@ -55,7 +55,7 @@ export class SelectedObject {
     static instance: SelectedObject = new SelectedObject();
 }
 
-export function combineMenu(ro: RemoteTableObjectView, pageId: number): SubMenu {
+export function combineMenu(ro: RemoteTableObjectView, pageId: number): TopMenuItem {
     let combineMenu: MenuItem[] = [];
     combineMenu.push({
         text: "Select current",
@@ -69,6 +69,10 @@ export function combineMenu(ro: RemoteTableObjectView, pageId: number): SubMenu 
             action: () => { ro.combine(c.value); },
             help: "Combine the rows in the two views using the " + c.value + " operation"
         }));
-    return new SubMenu(combineMenu);
+    return {
+        text: "Combine",
+        help: "Combine data from two separate views.",
+        subMenu: new SubMenu(combineMenu)
+    };
 }
 

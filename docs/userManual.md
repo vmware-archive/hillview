@@ -307,7 +307,6 @@ right-clicking on the **Name**, **Type** or **Allows Missing** column
 headers, or by clicking on the **Select** menu option at the top left
 as shown below.
 
-
 ![Column selection menu](schema-browser.png)
 
 Columns can be un/selected using either the name, type or Allows Missing
@@ -328,7 +327,6 @@ can be added to or removed from the current selection.
 
 ![Select by allows missing menu](allows-missing-selection.png)
 
-
 Once the user selects a set of column descriptions, they can display a view of the
 data table restricted to the selected columns using the View/Selected columns menu.
 
@@ -336,6 +334,28 @@ data table restricted to the selected columns using the View/Selected columns me
 
 * Selected columns: this displays a [table view](#table-views) of the
 data restricted to the selected columns.
+
+The user can also directly draw a chart of the data in a selected set
+of columns using the charting menu:
+
+![Chart menu](chart-menu.png)
+
+* 1D Histogram. Selecting this menu presents a dialog allowing the user to
+  select a column whose data will be drawn as a
+  [uni-dimensional histogram view](#uni-dimensional-histogram-views).
+
+![1D histogram dialog](1d-histogram-dialog.png)
+
+* 2D Histogram.  Selecting this menu presents a dialog allowing the
+  user to select two columns whose data will be drawn as a
+  [two-dimensional histogram view](#two-dimensional-histograms).
+
+![2D histogram dialog](2d-histogram-dialog.png)
+
+* Heatmap.  Selecting this menu presents a dialog allowing the user to
+  select two columns whose data will be drawn as a [heatmap](#heatmap-views).
+
+![Heatmap dialog](2d-heatmap-dialog.png)
 
 ### Table views
 
@@ -371,7 +391,7 @@ This display is equivalent to the output of the following SQL query:
 SELECT COUNT(*), Origin, UniqueCarrier, Cancelled FROM data
 GROUP BY Origin, UniqueCarrier, Cancelled
 ORDER BY Origin ASC, UniqueCarrier ASC, Cancelled ASC
-LIMIT 0, 19
+TOP 20
 ```
 
 Initially a table view displays no columns.  The user can choose which
@@ -549,7 +569,7 @@ the current state of the display.
 * Create column...: allows the user to write a JavaScript program that
   computes values for a new column.
 
-  ![Add column menu](add-column-menu.png)
+  ![Add column dialog](add-column-dialog.png)
 
   The user has to specify the new column name and type.  The
   JavaScript program is a function called 'map' that has a single
@@ -585,6 +605,9 @@ operations:
 * No columns: all columns will be hidden.
 
 * Schema: displays [the table schema](#data-schema-views).
+
+The [chart menu](#chart-menu) operates in the same way as it does for
+a [schema view](#schema-view).
 
 For a description of the combine menu see [combining two views](#combining-two-views).
 
@@ -760,8 +783,8 @@ The "view" menu for a 2D histogram offers the following operations:
 * heatmap: Displays a [heat map](#heatmap-views) of the data using the
   same two columns as in the current histogram.
 
-* percent/value: This toggles between displaying the 2D histogram bars
-with relative sizes or normalized all to 100% height, as in the
+* relative/absolute: This toggles between displaying the 2D histogram
+bars with relative sizes or normalized all to 100% height, as in the
 following image.
 
 ![A normalized two-dimensional histogram](hillview-histogram-normalized.png)
@@ -780,7 +803,8 @@ In a 2D histogram users can select data in two ways:
 
 * Colormap based selection: the user can select a range in the
   colormap to perform a selection of the data based on the second
-  column, as shown in the following image.
+  column, as shown in the following image.  Note that the legend could
+  contain a color for "missing" data, which cannot be selected.
 
 ![Selecting from a 2D histogram legend](legend-selection.png)
 
@@ -793,8 +817,9 @@ pixels wide and the number of data points that falls within each patch
 is counted.  The number of values that falls within each patch is
 displayed as a heatmap, where the color intensity indicates the number
 of points.  A heatmap where the Y axis is not categorical will also
-display a line that gives the best [linear regression](https://en.wikipedia.org/wiki/Linear_regression).
-between the values in the two columns.
+display a line that gives the best [linear
+regression](https://en.wikipedia.org/wiki/Linear_regression).  between
+the values in the two columns.
 
 *TODO* discuss missing values.
 

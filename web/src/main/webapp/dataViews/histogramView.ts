@@ -18,7 +18,7 @@
 import { d3 } from "../ui/d3-modules";
 import { Renderer } from "../rpc";
 import {
-    ColumnDescription, Schema, RecordOrder, RangeInfo, Histogram,
+    IColumnDescription, Schema, RecordOrder, RangeInfo, Histogram,
     BasicColStats, FilterDescription, HistogramArgs, CombineOperators, RemoteObjectId
 } from "../javaBridge";
 import {TopMenu, SubMenu} from "../ui/menu";
@@ -87,9 +87,7 @@ export class HistogramView extends HistogramViewBase {
                     help: "Draw a 2-dimensional histogram using this data and another column."
                 },
             ]) },
-            {
-                text: "Combine", help: "Combine data in two separate views.", subMenu: combineMenu(this, page.pageId)
-            }
+            combineMenu(this, page.pageId)
         ]);
 
         this.page.setMenu(this.menu);
@@ -202,7 +200,7 @@ export class HistogramView extends HistogramViewBase {
 
     private showSecondColumn(colName: string) {
         let oc = TableView.findColumn(this.tableSchema, colName);
-        let cds: ColumnDescription[] = [this.currentData.axisData.description, oc];
+        let cds: IColumnDescription[] = [this.currentData.axisData.description, oc];
         let catColumns: string[] = [];
         if (oc.kind == "Category")
             catColumns.push(colName);
@@ -387,7 +385,7 @@ export class HistogramView extends HistogramViewBase {
 class FilterReceiver extends RemoteTableRenderer {
     constructor(
         protected filter: FilterDescription,
-        protected columnDescription: ColumnDescription,
+        protected columnDescription: IColumnDescription,
         protected tableSchema: Schema,
         protected allStrings: DistinctStrings,
         protected exact: boolean,
@@ -421,7 +419,7 @@ class FilterReceiver extends RemoteTableRenderer {
 export class RangeCollector extends Renderer<BasicColStats> {
     protected stats: BasicColStats;
     constructor(protected title: string,  // title of the resulting display
-                protected cd: ColumnDescription,
+                protected cd: IColumnDescription,
                 protected tableSchema: Schema,
                 protected allStrings: DistinctStrings,  // for categorical columns only
                 page: FullPage,
@@ -584,7 +582,7 @@ class MakeHistogram extends RemoteTableRenderer {
     public constructor(private title: string,
                        page: FullPage,
                        operation: ICancellable,
-                       private colDesc: ColumnDescription,
+                       private colDesc: IColumnDescription,
                        private schema: Schema,
                        protected samplingRate: number,
                        private allStrings: DistinctStrings,
@@ -615,5 +613,16 @@ class MakeHistogram extends RemoteTableRenderer {
             rr.invoke(new RangeCollector(this.title, this.colDesc, this.schema, this.allStrings,
                 this.page, this.remoteObject, this.samplingRate >= 1, rr));
         }
+    }
+}
+
+export class HistogramDialog extends Dialog {
+    constructor(allColumns: string[]) {
+        super("1D histogram", "Display a 1D histogram of the data in a column");
+        this.addSelectField("columnName", "Column", allColumns, allColumns[0], "Column to histogram");
+    }
+
+    getColumn(): string {
+        return this.getFieldValue("columnName");
     }
 }

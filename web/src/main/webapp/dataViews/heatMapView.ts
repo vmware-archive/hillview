@@ -19,7 +19,7 @@ import {d3} from "../ui/d3-modules";
 
 import { Renderer } from "../rpc";
 import {
-    ColumnDescription, Schema, RecordOrder, BasicColStats, FilterDescription,
+    IColumnDescription, Schema, RecordOrder, BasicColStats, FilterDescription,
     Histogram2DArgs, CombineOperators, RemoteObjectId, HeatMap
 } from "../javaBridge";
 import {TableView, NextKReceiver} from "./tableView";
@@ -95,9 +95,7 @@ export class HeatMapView extends RemoteTableObjectView {
                     action: () => { this.histogram(); },
                     help: "Show this data as a two-dimensional histogram." },
             ]) },
-            {
-                text: "Combine", help: "Combine data in two separate views.", subMenu: combineMenu(this, page.pageId)
-            }
+            combineMenu(this, page.pageId)
         ]);
 
         this.page.setMenu(this.menu);
@@ -433,7 +431,7 @@ export class HeatMapView extends RemoteTableObjectView {
   */
 export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats>> {
     protected stats: Pair<BasicColStats, BasicColStats>;
-    constructor(protected cds: ColumnDescription[],
+    constructor(protected cds: IColumnDescription[],
                 protected tableSchema: Schema,
                 protected ds: DistinctStrings[],
                 page: FullPage,
@@ -503,7 +501,7 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
                 rr.setStartTime(this.operation.startTime());
             rr.invoke(renderer);
         } else {
-            let rr = this.remoteObject.createHistogram2DMapRequest(arg);
+            let rr = this.remoteObject.createHistogram2DRequest(arg);
             let renderer = new Histogram2DRenderer(this.page,
                 this.remoteObject, this.tableSchema,
                 this.cds, [this.stats.first, this.stats.second], samplingRate, this.ds, rr);
@@ -531,7 +529,7 @@ export class HeatMapRenderer extends Renderer<HeatMap> {
     constructor(page: FullPage,
                 remoteTable: RemoteTableObject,
                 protected schema: Schema,
-                protected cds: ColumnDescription[],
+                protected cds: IColumnDescription[],
                 protected stats: BasicColStats[],
                 protected samplingRate: number,
                 protected ds: DistinctStrings[],

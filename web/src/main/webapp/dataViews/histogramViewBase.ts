@@ -17,7 +17,7 @@
 
 import {d3} from "../ui/d3-modules";
 import {Dialog, FieldKind} from "../ui/dialog";
-import {ContentsKind, Schema, BasicColStats, ColumnDescription, ColumnAndRange, RemoteObjectId} from "../javaBridge";
+import {ContentsKind, Schema, BasicColStats, IColumnDescription, ColumnAndRange, RemoteObjectId} from "../javaBridge";
 import {Converters, formatDate, significantDigits} from "../util";
 import {Point, Resolution, SpecialChars} from "../ui/ui";
 import {FullPage} from "../ui/fullPage";
@@ -183,7 +183,7 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
          }
     }
 
-    public static getRange(stats: BasicColStats, cd: ColumnDescription,
+    public static getRange(stats: BasicColStats, cd: IColumnDescription,
                            allStrings: DistinctStrings,
                            bucketCount: number): ColumnAndRange {
         let boundaries = allStrings != null ?

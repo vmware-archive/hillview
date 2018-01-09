@@ -17,14 +17,14 @@
 
 import {d3} from "../ui/d3-modules";
 import {
-    ColumnDescription, Schema, RecordOrder, ColumnAndRange, FilterDescription,
+    IColumnDescription, Schema, RecordOrder, ColumnAndRange, FilterDescription,
     BasicColStats, RangeInfo, Histogram2DArgs, CombineOperators, RemoteObjectId, HeatMap, Histogram
 } from "../javaBridge";
 import {TopMenu, SubMenu} from "../ui/menu";
 import {
     reorder, significantDigits, formatNumber, ICancellable, PartialResult, Seed, Pair, percent
 } from "../util";
-import {Renderer} from "../rpc";
+import {Renderer, RpcRequest} from "../rpc";
 import {Rectangle, Resolution} from "../ui/ui";
 import {FullPage} from "../ui/fullPage";
 import {TextOverlay} from "../ui/textOverlay";
@@ -39,6 +39,7 @@ import {CDFPlot} from "../ui/CDFPlot";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {Histogram2DPlot} from "../ui/Histogram2DPlot";
 import {HistogramLegendPlot} from "../ui/legendPlot";
+import {Dialog} from "../ui/dialog";
 
 /**
  * This class is responsible for rendering a 2D histogram.
@@ -90,7 +91,7 @@ export class Histogram2DView extends HistogramViewBase {
                 action: () => { this.exactHistogram(); },
                 help: "Draw this histogram without approximations."
             },{
-                text: "#buckets",
+                text: "# buckets...",
                 action: () => this.chooseBuckets(),
                 help: "Change the number of buckets used for drawing the histogram." +
                     "The number must be between 1 and " + Resolution.maxBucketCount
@@ -107,11 +108,8 @@ export class Histogram2DView extends HistogramViewBase {
                 action: () => { this.normalized = !this.normalized; this.refresh(); },
                 help: "In an absolute plot the Y axis represents the size for a bucket. " +
                 "In a relative plot all bars are normalized to 100% on the Y axis."
-            }]) }, {
-                text: "Combine",
-                help: "Combine data in two separate views.",
-                subMenu: combineMenu(this, page.pageId)
-            }
+            }]) },
+            combineMenu(this, page.pageId)
         ]);
 
         this.normalized = false;
@@ -299,7 +297,7 @@ export class Histogram2DView extends HistogramViewBase {
             cdfSamplingRate: HistogramViewBase.samplingRate(bucketCount,
                 this.currentData.xData.stats.presentCount, this.page)
         };
-        let rr = this.createHeatMapRequest(args);
+        let rr = this.createHistogram2DRequest(args);
         let renderer = new Histogram2DRenderer(this.page,
             this, this.tableSchema,
             [this.currentData.xData.description, this.currentData.yData.description],
@@ -329,6 +327,7 @@ export class Histogram2DView extends HistogramViewBase {
             this.currentData.cdf,
             this.currentData.samplingRate,
             0);
+        this.page.scrollIntoView();
     }
 
     public mouseEnter(): void {
@@ -565,8 +564,8 @@ export class Histogram2DView extends HistogramViewBase {
  * rendering.
  */
 export class Filter2DReceiver extends RemoteTableRenderer {
-    constructor(protected xColumn: ColumnDescription,
-                protected yColumn: ColumnDescription,
+    constructor(protected xColumn: IColumnDescription,
+                protected yColumn: IColumnDescription,
                 protected xDs: DistinctStrings,
                 protected yDs: DistinctStrings,
                 protected tableSchema: Schema,
@@ -580,7 +579,7 @@ export class Filter2DReceiver extends RemoteTableRenderer {
 
     public run(): void {
         super.run();
-        let cds: ColumnDescription[] = [this.xColumn, this.yColumn];
+        let cds: IColumnDescription[] = [this.xColumn, this.yColumn];
         let ds: DistinctStrings[] = [this.xDs, this.yDs];
         let rx = new RangeInfo(this.xColumn.name, this.xDs != null ? this.xDs.uniqueStrings : null);
         let ry = new RangeInfo(this.yColumn.name, this.yDs != null ? this.yDs.uniqueStrings : null);
@@ -596,7 +595,7 @@ export class Filter2DReceiver extends RemoteTableRenderer {
 export class Make2DHistogram extends RemoteTableRenderer {
     public constructor(page: FullPage,
                        operation: ICancellable,
-                       private colDesc: ColumnDescription[],
+                       private colDesc: IColumnDescription[],
                        protected ds: DistinctStrings[],
                        private schema: Schema,
                        private exact: boolean,
@@ -626,11 +625,11 @@ export class Histogram2DRenderer extends Renderer<Pair<HeatMap, Histogram>> {
     constructor(page: FullPage,
                 protected remoteObject: RemoteTableObject,
                 protected schema: Schema,
-                protected cds: ColumnDescription[],
+                protected cds: IColumnDescription[],
                 protected stats: BasicColStats[],
                 protected samplingRate: number,
                 protected uniqueStrings: DistinctStrings[],
-                operation: ICancellable) {
+                operation: RpcRequest<PartialResult<Pair<HeatMap, Histogram>>>) {
         super(new FullPage("2D Histogram " + cds[0].name + ", " + cds[1].name, "2DHistogram", page),
             operation, "histogram");
         page.insertAfterMe(this.page);
@@ -659,5 +658,27 @@ export class Histogram2DRenderer extends Renderer<Pair<HeatMap, Histogram>> {
         let yAxisData = new AxisData(this.cds[1], this.stats[1], this.uniqueStrings[1], yPoints);
         this.histogram.updateView(heatMap, xAxisData, yAxisData, cdf,
             this.samplingRate, this.elapsedMilliseconds());
+    }
+}
+
+export class Histogram2DDialog extends Dialog {
+    static label(heatmap: boolean): string {
+        return heatmap ? "heatmap" : "2D histogram";
+    }
+
+    constructor(allColumns: string[], heatmap: boolean) {
+        super(Histogram2DDialog.label(heatmap),
+            "Display a " + Histogram2DDialog.label(heatmap) + " of the data in two columns");
+        this.addSelectField("columnName0", "First Column", allColumns, allColumns[0],
+            "First column (X axis)");
+        this.addSelectField("columnName1", "Second Column", allColumns, allColumns[1],
+            "Second column " + (heatmap ? "(Y axis)" : "(color)"));
+    }
+
+    getColumn(first: boolean): string {
+        if (first)
+            return this.getFieldValue("columnName0");
+        else
+            return this.getFieldValue("columnName1");
     }
 }

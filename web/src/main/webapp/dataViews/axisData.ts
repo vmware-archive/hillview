@@ -16,7 +16,7 @@
  */
 
 import {d3} from "../ui/d3-modules";
-import {ColumnDescription, BasicColStats, RangeInfo, ColumnAndRange} from "../javaBridge";
+import {IColumnDescription, BasicColStats, RangeInfo, ColumnAndRange} from "../javaBridge";
 import {ScaleLinear, ScaleTime} from "d3";
 import {Converters, significantDigits} from "../util";
 import {DistinctStrings} from "../distinctStrings";
@@ -35,7 +35,7 @@ export interface ScaleAndAxis {
  * Contains all information required to build an axis and a d3 scale associated to it.
  */
 export class AxisData {
-    public constructor(public description: ColumnDescription,
+    public constructor(public description: IColumnDescription,
                        public stats: BasicColStats,
                        public distinctStrings: DistinctStrings,    // used only for categorical histograms
                        public bucketCount: number)

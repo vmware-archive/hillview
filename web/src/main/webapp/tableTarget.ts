@@ -157,7 +157,7 @@ RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<RemoteObjectId>("filter2DRange", {first: xRange, second: yRange});
     }
 
-    public createHistogram2DMapRequest(info: Histogram2DArgs): RpcRequest<PartialResult<Pair<HeatMap, Histogram>>> {
+    public createHistogram2DRequest(info: Histogram2DArgs): RpcRequest<PartialResult<Pair<HeatMap, Histogram>>> {
         return this.createStreamingRpcRequest<Pair<HeatMap, Histogram>>("histogram2D", info);
     }
 

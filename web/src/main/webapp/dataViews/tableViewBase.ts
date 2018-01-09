@@ -16,15 +16,17 @@
  */
 
 import {RemoteTableObjectView} from "../tableTarget";
-import {ColumnDescription, RangeInfo, RemoteObjectId, Schema} from "../javaBridge";
+import {IColumnDescription, RangeInfo, RemoteObjectId, Schema} from "../javaBridge";
 import {FullPage} from "../ui/fullPage";
 import {DistinctStrings} from "../distinctStrings";
 import {ICancellable} from "../util";
 import {TableView} from "./tableView";
 import {CategoryCache} from "../categoryCache";
-import {RangeCollector} from "./histogramView";
+import {HistogramDialog, RangeCollector} from "./histogramView";
 import {Range2DCollector} from "./heatMapView";
 import {HeatMapArrayDialog} from "./trellisHeatMapView";
+import {Histogram2DDialog} from "./histogram2DView";
+import {SubMenu, TopMenuItem} from "../ui/menu";
 
 /**
  * A base class for TableView and SchemaView
@@ -65,15 +67,10 @@ export abstract class TableViewBase extends RemoteTableObjectView {
         this.page.reportError(s);
     }
 
-    public histogram(heatMap: boolean): void {
-        if (this.getSelectedColCount() < 1 || this.getSelectedColCount() > 2) {
-            this.reportError("Must select 1 or 2 columns for histogram");
-            return;
-        }
-
-        let cds: ColumnDescription[] = [];
+    protected histogramOrHeatmap(columns: string[], heatMap: boolean): void {
+        let cds: IColumnDescription[] = [];
         let catColumns: string[] = [];  // categorical columns
-        this.getSelectedColNames().forEach(v => {
+        columns.forEach(v => {
             let colDesc = TableView.findColumn(this.schema, v);
             if (colDesc.kind == "String") {
                 this.reportError("Histograms not supported for string columns " + colDesc.name);
@@ -84,7 +81,7 @@ export abstract class TableViewBase extends RemoteTableObjectView {
             cds.push(colDesc);
         });
 
-        if (cds.length != this.getSelectedColCount())
+        if (cds.length != columns.length)
         // some error occurred
             return;
 
@@ -132,10 +129,68 @@ export abstract class TableViewBase extends RemoteTableObjectView {
         CategoryCache.instance.retrieveCategoryValues(this, catColumns, this.getPage(), cont);
     }
 
+    protected histogram(heatMap: boolean): void {
+        if (this.getSelectedColCount() < 1 || this.getSelectedColCount() > 2) {
+            this.reportError("Must select 1 or 2 columns for histogram");
+            return;
+        }
+
+        this.histogramOrHeatmap(this.getSelectedColNames(), heatMap);
+    }
+
     protected heatMapArray(): void {
         let colNames: string[] = this.getSelectedColNames();
         let dialog = new HeatMapArrayDialog(colNames, this.getPage(), this.schema, this, false);
         dialog.show();
     }
 
+    twoDHistogramMenu(heatmap: boolean): void {
+        let eligible = TableView.dropColumns(this.schema, d => d.kind == "String");
+        if (eligible.length < 2) {
+            this.reportError("Could not find two columns that can be charted.");
+            return;
+        }
+        let dia = new Histogram2DDialog(eligible.map(e => e.name), heatmap);
+        dia.setAction(
+            () => {
+                let col0 = dia.getColumn(false);
+                let col1 = dia.getColumn(true);
+                if (col0 == col1) {
+                    this.reportError("The two columns must be distinct");
+                    return;
+                }
+                this.histogramOrHeatmap([col0, col1], heatmap);
+            }
+        );
+        dia.show();
+    }
+
+    oneDHistogramMenu(): void {
+        let eligible = TableView.dropColumns(this.schema, d => d.kind == "String");
+        if (eligible.length == 0) {
+            this.reportError("No columns that can be histogrammed found.");
+            return;
+        }
+        let dia = new HistogramDialog(eligible.map(e => e.name));
+        dia.setAction(
+            () => {
+                let col = dia.getColumn();
+                this.histogramOrHeatmap([col], false);
+            }
+        );
+        dia.show();
+    }
+
+    chartMenu(): TopMenuItem {
+        return {
+            text: "Chart", help: "Draw a chart", subMenu: new SubMenu([
+                { text: "1D Histogram...", action: () => this.oneDHistogramMenu(),
+                    help: "Draw a histogram of the data in one column."},
+                { text: "2D Histogram....", action: () => this.twoDHistogramMenu(false),
+                    help: "Draw a histogram of the data in two columns."},
+                { text: "Heatmap...", action: () => this.twoDHistogramMenu(true),
+                    help: "Draw a heatmap of the data in two columns."},
+            ])
+        };
+    }
 }

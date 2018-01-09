@@ -34,14 +34,15 @@ import {HeavyHittersView} from "./heavyHittersView";
 import {SchemaView} from "./schemaView";
 import {LAMPDialog} from "./lampView";
 import {
-    IColumnDescription, RecordOrder, RowView, Schema, ColumnDescription,
-    ContentsKind, asContentsKind, ColumnSortOrientation, NextKList, TopList, CombineOperators, TableSummary, HLogLog,
+    IColumnDescription, RecordOrder, RowSnapshot, Schema,
+    ContentsKind, asContentsKind, ColumnSortOrientation, NextKList,
+    TopList, CombineOperators, TableSummary, HLogLog,
     RemoteObjectId, allContentsKind, CreateColumnInfo, EqualityFilterDescription
 } from "../javaBridge";
 import {RemoteTableObject, RemoteTableRenderer, ZipReceiver} from "../tableTarget";
 import {combineMenu, SelectedObject} from "../selectedObject";
 import {IDataView} from "../ui/dataview";
-import {TableViewBase} from "./TableViewBase";
+import {TableViewBase} from "./tableViewBase";
 
 /**
  * Displays a table in the browser.
@@ -104,20 +105,9 @@ export class TableView extends TableViewBase implements IScrollTarget {
                         help: "Browse the list of columns of this table and choose a subset to visualize."
                     }
                 ])
-            }, /*{
-              text: "Chart", help: "Draw a chart", subMenu: new SubMenu([
-                    { text: "1D Histogram", action: () => this.todo(),
-                        help: "Draw a histogram of the data in one column."},
-                    { text: "2D Histogram", action: () => this.todo(),
-                        help: "Draw a histogram of the data in two columns."},
-                    { text: "Heatmap", action: () => this.todo(),
-                        help: "Draw a heatmap of the data in two columns."},
-                    { text: "Trellis plot", action: () => this.todo(),
-                        help: "Draw a Trellis plot of the data in three columns."},
-                ])
-            },*/ {
-                text: "Combine", help: "Combine data in two separate views.", subMenu: combineMenu(this, page.pageId)
-            }
+            },
+            this.chartMenu(),
+            combineMenu(this, page.pageId)
         ]);
 
         this.page.setMenu(menu);
@@ -350,7 +340,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
             return "&uArr;";
     }
 
-    private addHeaderCell(thr: Node, cd: ColumnDescription, help: string) : HTMLElement {
+    private addHeaderCell(thr: Node, cd: IColumnDescription, help: string) : HTMLElement {
         let thd = document.createElement("th");
         thd.classList.add("noselect");
         let label = cd.name;
@@ -421,15 +411,15 @@ export class TableView extends TableViewBase implements IScrollTarget {
         let thr = this.tHead.appendChild(document.createElement("tr"));
 
         // These two columns are always shown
-        let cds : ColumnDescription[] = [];
-        let posCd = new ColumnDescription({
+        let cds : IColumnDescription[] = [];
+        let posCd: IColumnDescription = {
             kind: "Integer",
             name: "(position)",
-            allowMissing: false });
-        let ctCd = new ColumnDescription({
+            allowMissing: false };
+        let ctCd: IColumnDescription = {
             kind: "Integer",
             name: "(count)",
-            allowMissing: false });
+            allowMissing: false };
 
         // Create column headers
         let thd = this.addHeaderCell(thr, posCd, "Position within sorted order.");
@@ -440,7 +430,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
             return;
 
         for (let i = 0; i < this.schema.length; i++) {
-            let cd = new ColumnDescription(this.schema[i]);
+            let cd = this.schema[i];
             cds.push(cd);
             let title = "Column type is " + cd.kind + (cd.allowMissing ? ", can have missing data" : "") +
                 ".\nA mouse click with the right button will open a menu.";
@@ -604,8 +594,18 @@ export class TableView extends TableViewBase implements IScrollTarget {
             schema: subSchema
         };
         let rr = this.createCreateColumnRequest(arg);
-        let rec = new RemoteTableReceiver(
-            this.getPage(), rr, "New column " + col, true, this.originalTableId);
+        let newPage = new FullPage("New column " + col, "Table", this.page);
+        this.page.insertAfterMe(newPage);
+        let cd: IColumnDescription = {
+            kind: arg.outputKind,
+            name: col,
+            allowMissing: true
+        };
+        let schema = this.schema.concat(cd);
+        let o = this.order.clone();
+        o.show({columnDescription: cd, isAscending: true});
+        let rec = new TableOperationCompleted(
+            newPage, schema, rr, this.order, this.originalTableId);
         rr.invoke(rec);
     }
 
@@ -619,7 +619,8 @@ export class TableView extends TableViewBase implements IScrollTarget {
                 let kindStr = cd.getFieldValue("newKind");
                 let kind: ContentsKind = asContentsKind(kindStr);
                 let converter: ColumnConverter = new ColumnConverter(
-                    cd.getFieldValue("columnName"), kind, cd.getFieldValue("newColumnName"), this);
+                    cd.getFieldValue("columnName"), kind, cd.getFieldValue("newColumnName"), this,
+                    this.order, this.page);
                 converter.run();
             });
         cd.show();
@@ -681,7 +682,12 @@ export class TableView extends TableViewBase implements IScrollTarget {
         let title = "Filtered: " + filter.column + " is " +
             (filter.complement ? "not " : "") +
             TableView.convert(filter.compareValue, kind);
-        rr.invoke(new RemoteTableReceiver(this.page, rr, title, true, this.originalTableId));
+
+        let newPage = new FullPage(title, "Table", this.page);
+        this.page.insertAfterMe(newPage);
+        let cd = TableView.findColumn(this.schema, filter.column);
+        let schema = this.schema.concat(cd);
+        rr.invoke(new TableOperationCompleted(newPage, schema, rr, this.order, this.originalTableId));
     }
 
     private equalityFilter(colName: string, value: string, showMenu: boolean, complement?: boolean): void {
@@ -898,7 +904,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
             return val.toString();  // TODO
     }
 
-    public addRow(row : RowView, cds: ColumnDescription[]) : void {
+    public addRow(row : RowSnapshot, cds: IColumnDescription[]) : void {
         let trow = this.tBody.insertRow();
 
         let position = this.startPosition + this.dataRowsDisplayed;
@@ -1133,6 +1139,7 @@ class CorrelationMatrixReceiver extends RemoteTableRenderer {
         let rr = this.tv.createProjectToEigenVectorsRequest(
                 this.remoteObject, this.numComponents, this.projectionName);
         rr.chain(this.operation);
+        // TODO: this should use TableOperationCompleted
         rr.invoke(new RemoteTableReceiver(
             this.page, rr, "Data with PCA projection columns", true, this.tv.originalTableId));
     }

@@ -15,13 +15,12 @@
  * limitations under the License.
  */
 
-import {ColumnDescription, EqualityFilterDescription} from "../javaBridge";
+import {IColumnDescription, EqualityFilterDescription} from "../javaBridge";
 import {Dialog, FieldKind} from "../ui/dialog"
 import {Converters} from "../util";
 
-
 export class EqualityFilterDialog extends Dialog {
-    constructor(private columnDescription: ColumnDescription) {
+    constructor(private columnDescription: IColumnDescription) {
         super("Filter on " + columnDescription.name, "Eliminates data from a column according to its value.");
         this.addTextField("query", "Find:", FieldKind.String, null, "Value to search");
         this.addBooleanField("asRegEx", "Interpret as Regular Expression", false, "Select"

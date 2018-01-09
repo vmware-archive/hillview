@@ -217,16 +217,23 @@ export class Test {
                 (<HTMLSelectElement>findElement(".dialog #complement")).value = "Equality";
                 findElement(".dialog .confirm").click();
             }
-        },{
+        }, {
+            description: "Change buckets",
+            cond: () => findElement("#hillviewPage7 .idle") != null,
+            cont: () => {
+                let el2 = findElement("#hillviewPage6 #topMenu #__buckets___");
+                el2.click();
+                (<HTMLInputElement>findElement(".dialog #n_buckets")).value = "10";
+                findElement(".dialog .confirm").click();
+            }
+        }, {
             description: "Close some windows",
             cond: () => true,
             cont: () => {
-                /*
-                findSelectedElement("#hillviewPage2 .close").click();
-                findSelectedElement("#hillviewPage3 .close").click();
-                findSelectedElement("#hillviewPage4 .close").click();
-                findSelectedElement("#hillviewPage5 .close").click();
-                */
+                for (let i = 2; i < 8; i++) {
+                    let el = findElement("#hillviewPage" + i.toString() + " .close");
+                    //el.click();
+                }
             }
         }
         ]);

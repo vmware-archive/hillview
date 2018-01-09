@@ -308,8 +308,15 @@ export class TopMenu implements IHtmlElement {
         cell.id = makeId(mi.text);  // for testing
         cell.textContent = mi.text;
         cell.appendChild(mi.subMenu.getHTMLRepresentation());
-        cell.onclick = () => {this.hideSubMenus(); mi.subMenu.show()};
-        cell.onmouseleave = () => this.hideSubMenus();
+        cell.onclick = () => {
+            this.hideSubMenus();
+            cell.classList.add("selected");
+            mi.subMenu.show()
+        };
+        cell.onmouseleave = () => {
+            cell.classList.remove("selected");
+            this.hideSubMenus();
+        };
         if (mi.help != null)
             cell.title = mi.help;
         this.items.push(mi);

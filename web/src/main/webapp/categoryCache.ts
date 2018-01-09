@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-import {OnCompleteRenderer} from "./rpc";
-import {ICancellable} from "./util";
+import {OnCompleteRenderer, RpcRequest} from "./rpc";
+import {ICancellable, PartialResult} from "./util";
 import {FullPage} from "./ui/fullPage";
 import {DistinctStrings, IDistinctStrings} from "./distinctStrings";
 import {RemoteTableObject} from "./tableTarget";
@@ -94,7 +94,7 @@ class ReceiveCategory extends OnCompleteRenderer<IDistinctStrings[]> {
         protected columns: string[],
         protected continuation: (operation: ICancellable) => void,
         page: FullPage,
-        operation: ICancellable) {
+        operation: RpcRequest<PartialResult<IDistinctStrings[]>>) {
         super(page, operation, "Create converter");
     }
 

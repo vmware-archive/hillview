@@ -126,31 +126,13 @@ export interface IColumnDescription {
     readonly allowMissing: boolean;
 }
 
-export class ColumnDescription implements IColumnDescription {
-    readonly kind: ContentsKind;
-    readonly name: string;
-    readonly allowMissing: boolean;
-
-    constructor(v : IColumnDescription) {
-        this.kind = v.kind;
-        this.name = v.name;
-        this.allowMissing = v.allowMissing;
-    }
-}
-
 export function isNumeric(kind: ContentsKind): boolean {
     return kind == "Integer" || kind == "Double";
 }
 
-export interface Schema {
-    [index: number] : IColumnDescription;
-    length: number;
-}
+export type Schema = IColumnDescription[];
 
-/**
- * Serialization of a Java RowSnapshot.
- */
-export interface RowView {
+export interface RowSnapshot {
     count: number;
     values: any[];
 }
@@ -245,7 +227,7 @@ export class NextKList {
     // Total number of rows in the complete table
     public rowCount: number;
     public startPosition: number;
-    public rows: RowView[];
+    public rows: RowSnapshot[];
 }
 
 export class RecordOrder {

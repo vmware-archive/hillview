@@ -86,7 +86,7 @@ public class CreateColumnJSMap extends AppendColumnMap {
                         case Category:
                         case String:
                         case Json:
-                            col.set(r, (String)value);
+                            col.set(r, value.toString());
                             break;
                         case Date:
                             ScriptObjectMirror jsDate = (ScriptObjectMirror)value;
@@ -95,10 +95,22 @@ public class CreateColumnJSMap extends AppendColumnMap {
                             col.set(r, instant);
                             break;
                         case Integer:
-                            col.set(r, (int)(double)value);
+                            if (value instanceof Double)
+                                col.set(r, (int)(double)value);
+                            else if (value instanceof Integer)
+                                col.set(r, (int)value);
+                            else
+                                throw new RuntimeException("Expected a number for Javascript not " +
+                                        value.getClass().toString());
                             break;
                         case Double:
-                            col.set(r, (double)value);
+                            if (value instanceof Double)
+                                col.set(r, (double)value);
+                            else if (value instanceof Integer)
+                                col.set(r, (double)(int)value);
+                            else
+                                throw new RuntimeException("Expected a number for Javascript not " +
+                                        value.getClass().toString());
                             break;
                         case Duration:
                             // TODO

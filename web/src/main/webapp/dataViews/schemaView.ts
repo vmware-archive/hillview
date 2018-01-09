@@ -17,13 +17,14 @@
 
 import {FullPage} from "../ui/fullPage";
 import {
-    NextKList, ColumnDescription, RecordOrder, Schema, RemoteObjectId, allContentsKind
+    NextKList, IColumnDescription, RecordOrder, Schema, RemoteObjectId, allContentsKind
 } from "../javaBridge";
 import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
 import {TabularDisplay} from "../ui/tabularDisplay";
 import {TableView} from "./tableView";
 import {Dialog, FieldKind} from "../ui/dialog";
-import {TableViewBase} from "./TableViewBase";
+import {TableViewBase} from "./tableViewBase";
+import {combineMenu} from "../selectedObject";
 
 /**
  * This class is used to browse through the columns of a table schema
@@ -68,7 +69,9 @@ export class SchemaView extends TableViewBase {
         ]);
         let menu = new TopMenu([
             {text: "View", subMenu: subMenu, help: "Change the way the data is displayed."},
-            {text: "Select", subMenu: selectMenu, help: "Select columns based on attributes." }
+            {text: "Select", subMenu: selectMenu, help: "Select columns based on attributes." },
+            this.chartMenu(),
+            combineMenu(this, page.pageId)
             ]);
         this.page.setMenu(menu);
         this.topLevel.appendChild(document.createElement("br"));
@@ -221,7 +224,7 @@ export class SchemaView extends TableViewBase {
      * This method returns a Schema comprising of the selected columns.
      */
     private createSchema(): Schema {
-        let cds: ColumnDescription[] = [];
+        let cds: IColumnDescription[] = [];
         this.display.getSelectedRows().forEach(i => { cds.push(this.schema[i]) });
         return cds;
     }
