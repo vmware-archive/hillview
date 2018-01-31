@@ -219,7 +219,7 @@ public class IntSet {
         private int pos;
         private int c;
         private boolean mustReturnZero;
-        private int[] iteratorKey;
+        private final int[] iteratorKey;
 
         private IntSetIterator(IntSet set) {
             this.pos = set.n;

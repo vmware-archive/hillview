@@ -18,7 +18,6 @@
 package org.hillview.table.api;
 
 import net.openhft.hashing.LongHashFunction;
-import org.hillview.table.columns.DoubleArrayColumn;
 
 import javax.annotation.Nullable;
 

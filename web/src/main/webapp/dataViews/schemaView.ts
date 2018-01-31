@@ -140,30 +140,38 @@ export class SchemaView extends TableViewBase {
         for (let i = 0; i < schema.length; i++) {
             let row = this.display.addRow([(i + 1).toString(), schema[i].name,
                 schema[i].kind.toString(), schema[i].allowMissing.toString()]);
-            row.oncontextmenu = e => {
-                if (e.ctrlKey && (e.button == 1)) {
-                    // Ctrl + click is interpreted as a right-click on macOS.
-                    // This makes sure it's interpreted as a column click with Ctrl.
-                    return;
-                }
-                this.contextMenu.clear();
-                let selectedCount = this.display.selectedRows.size();
-                this.contextMenu.addItem({
-                    text: "Histogram",
-                    action: () => this.histogram(false),
-                    help: "Plot the data in the selected columns as a histogram.  Applies to one or two columns only. " +
-                    "The data cannot be of type String."
-                }, selectedCount >= 1 && selectedCount <= 2);
-                this.contextMenu.addItem({
-                    text: "Heatmap",
-                    action: () => this.heatMap(),
-                    help: "Plot the data in the selected columns as a heatmap or as a Trellis plot of heatmaps. " +
-                    "Applies to two or three columns only."
-                }, selectedCount >= 2 && selectedCount <= 3);
-                this.contextMenu.show(e);
-            };
+            row.oncontextmenu = e => this.createAndShowContextMenu(e);
         }
         this.topLevel.appendChild(this.display.getHTMLRepresentation());
+    }
+
+    createAndShowContextMenu(e: MouseEvent): void {
+        if (e.ctrlKey && (e.button == 1)) {
+            // Ctrl + click is interpreted as a right-click on macOS.
+            // This makes sure it's interpreted as a column click with Ctrl.
+            return;
+        }
+        this.contextMenu.clear();
+        let selectedCount = this.display.selectedRows.size();
+        this.contextMenu.addItem({
+            text: "Histogram",
+            action: () => this.histogram(false),
+            help: "Plot the data in the selected columns as a histogram.  Applies to one or two columns only. " +
+            "The data cannot be of type String."
+        }, selectedCount >= 1 && selectedCount <= 2);
+        this.contextMenu.addItem({
+            text: "Heatmap",
+            action: () => this.heatMap(),
+            help: "Plot the data in the selected columns as a heatmap or as a Trellis plot of heatmaps. " +
+            "Applies to two or three columns only."
+        }, selectedCount >= 2 && selectedCount <= 3);
+        this.contextMenu.addItem({
+            text: "Estimate distinct elements",
+            action: () => this.hLogLog(),
+            help: "Compute an estimate of the number of different values that appear in the selected column."
+        }, selectedCount == 1
+        );
+        this.contextMenu.show(e);
     }
 
     refresh(): void { }

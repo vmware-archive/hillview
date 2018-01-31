@@ -27,7 +27,6 @@ import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.Table;
 import org.hillview.table.api.*;
-import org.hillview.utils.HillviewLogger;
 
 import javax.annotation.Nullable;
 import java.io.*;
@@ -43,11 +42,11 @@ import java.util.*;
  * - all JSON objects have the same structure (schema)
  * - JSON objects generate a column for each property
  * TODO: add support for sparse data, with different schemas and hierarchical objects.
- * TODO: add suport for streaming reads
+ * TODO: add support for streaming reads
  */
 public class JsonFileLoader extends TextFileLoader {
     @Nullable
-    protected String schemaPath;
+    protected final String schemaPath;
 
     public JsonFileLoader(String filename, @Nullable String schemaPath) {
         super(filename);
@@ -65,13 +64,13 @@ public class JsonFileLoader extends TextFileLoader {
         JsonReader jReader = new JsonReader(file);
         JsonElement elem = Streams.parse(jReader);
         if (!elem.isJsonArray())
-            throw new RuntimeException("Expected a JSON array in file " + filename);
+            throw new RuntimeException("Expected a JSON array in " + filename);
         JsonArray array = elem.getAsJsonArray();
         if (array.size() == 0 && schema == null)
-            throw new RuntimeException("Empty JSON array in file " + filename);
+            throw new RuntimeException("Empty JSON array in " + filename);
 
         if (schema == null)
-            schema = this.guessSchema(filename, array);
+            schema = this.guessSchema(filename, array.iterator());
         IAppendableColumn[] columns = schema.createAppendableColumns();
 
         this.currentRow = 0;
@@ -96,12 +95,15 @@ public class JsonFileLoader extends TextFileLoader {
         throw new RuntimeException("Unexpected JSON value " + prim);
     }
 
-    Schema guessSchema(String filename, JsonArray array) {
+    Schema guessSchema(String filename, Iterator<JsonElement> collection) {
         Map<String, ContentsKind> colKind = new LinkedHashMap<String, ContentsKind>();
         Set<String> unknownColumns = new HashSet<String>();
 
+        if (!collection.hasNext())
+            throw new RuntimeException("Empty json collection in " + filename);
+
         // Try to guess schema based on first element
-        JsonElement el = array.get(0);
+        JsonElement el = collection.next();
         if (!el.isJsonObject())
             throw new RuntimeException("Expected a JSON array of JSON objects " + filename);
         JsonObject object = el.getAsJsonObject();
@@ -121,8 +123,9 @@ public class JsonFileLoader extends TextFileLoader {
         // If we could not guess schema scan the rest of the elements.
         this.currentRow = 1;
         List<String> found = new ArrayList<String>();
-        while (unknownColumns.size() != 0 && this.currentRow < array.size()) {
-            el = array.get(this.currentRow++);
+        while (unknownColumns.size() != 0 && collection.hasNext()) {
+            el = collection.next();
+            this.currentRow++;
             if (!el.isJsonObject())
                 this.error("Expected a JSON array of JSON objects");
             object = el.getAsJsonObject();

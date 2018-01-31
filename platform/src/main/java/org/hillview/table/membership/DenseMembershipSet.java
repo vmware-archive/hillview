@@ -57,7 +57,7 @@ public class DenseMembershipSet implements IMembershipSet, IMutableMembershipSet
 
         final Randomness psg = new Randomness(seed);
         int[] chosen = new int[k];
-        int i, row = -1;
+        int i, row;
 
         // Reservoir sampling from this current set of bits
         IRowIterator ri = this.getIterator();

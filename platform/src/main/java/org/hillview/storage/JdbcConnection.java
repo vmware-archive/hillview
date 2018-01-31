@@ -27,7 +27,7 @@ import java.util.HashMap;
 public abstract class JdbcConnection {
     public final char urlSeparator;
     public final JdbcConnectionInformation info;
-    HashMap<String, String> params = new HashMap<String, String>();
+    final HashMap<String, String> params = new HashMap<String, String>();
 
     static JdbcConnection create(JdbcConnectionInformation conn) {
         if (Utilities.isNullOrEmpty(conn.databaseKind))
@@ -69,7 +69,7 @@ public abstract class JdbcConnection {
     }
 
     /**
-     * Append all query parameters to a stringbuilder which is used
+     * Append all query parameters to a StringBuilder which is used
      * to construct a query url.
      * @param urlBuilder  StringBuilder used to construct the query url.
      */

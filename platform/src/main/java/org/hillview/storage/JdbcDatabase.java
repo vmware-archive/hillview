@@ -27,6 +27,7 @@ import org.hillview.table.columns.BaseListColumn;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Utilities;
+import rx.Observer;
 
 import javax.annotation.Nullable;
 import java.sql.*;
@@ -176,19 +177,30 @@ public class JdbcDatabase {
         }
     }
 
-    public static ITable getTable(ResultSet data) {
+    /**
+     * Convert a resultSet to a sequence of tables.
+     * @param data     Result set obtained from JDBC.
+     * @param maxRows  Maximum rows to use in a table.  If 0 there is no limit.
+     * @param observer Observer that receives the tables produced.
+     */
+    public static void getTables(ResultSet data, int maxRows, Observer<ITable> observer) {
         try {
             ResultSetMetaData meta = data.getMetaData();
-            List<IAppendableColumn> cols = new ArrayList<IAppendableColumn>();
-            for (int i = 0; i < meta.getColumnCount(); i++) {
-                ColumnDescription cd = JdbcDatabase.getDescription(meta, i);
-                BaseListColumn col = BaseListColumn.create(cd);
-                cols.add(col);
-            }
+            List<IAppendableColumn> cols = null;
 
             int rowsRead = 0;
             while (data.next()) {
                 rowsRead++;
+                if (cols == null) {
+                    // Allocate a new table
+                    cols = new ArrayList<IAppendableColumn>();
+                    for (int i = 0; i < meta.getColumnCount(); i++) {
+                        ColumnDescription cd = JdbcDatabase.getDescription(meta, i);
+                        BaseListColumn col = BaseListColumn.create(cd);
+                        cols.add(col);
+                    }
+                }
+
                 if (rowsRead % 50000 == 0)
                     System.out.print(".");
                 for (int i = 0; i < cols.size(); i++) {
@@ -268,10 +280,46 @@ public class JdbcDatabase {
                             throw new RuntimeException("Unhandled column type " + colType);
                     }
                 }
+
+                if (maxRows != 0 && rowsRead % maxRows == 0) {
+                    ITable table = new Table(cols);
+                    observer.onNext(table);
+                    // Force a new allocation for columns.
+                    cols = null;
+                }
             }
-            return new Table(cols);
+
+            // Create one last table
+            if (cols != null) {
+                ITable table = new Table(cols);
+                observer.onNext(table);
+            }
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            observer.onError(e);
         }
+    }
+
+    public static ITable getTable(ResultSet rs) {
+        final ITable[] result = {null};
+        final Throwable[] th = {null};
+        Observer<ITable> obs = new Observer<ITable>() {
+            @Override
+            public void onCompleted() { }
+
+            @Override
+            public void onError(Throwable throwable) {
+                th[0] = throwable;
+            }
+
+            @Override
+            public void onNext(ITable table) {
+                result[0] = table;
+            }
+        };
+
+        getTables(rs, 0, obs);
+        if (th[0] != null)
+            throw new RuntimeException(new Exception(th[0]));
+        return result[0];
     }
 }

@@ -75,6 +75,6 @@ public final class IntListColumn
         if ((s == null) || s.isEmpty())
             this.parseEmptyOrNull();
         else
-            this.append(Integer.parseInt(s));
+            this.append((int)Double.parseDouble(s));
     }
 }

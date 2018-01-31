@@ -463,7 +463,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
 
                 //this.contextMenu.addItem({text: "Drop", action: () => this.dropColumns() });
                 this.contextMenu.addItem({
-                    text: "Estimate Distinct Elements",
+                    text: "Estimate distinct elements",
                     action: () => this.hLogLog(),
                     help: "Compute an estimate of the number of different values that appear in the selected column."
                 }, selectedCount == 1);
@@ -685,9 +685,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
 
         let newPage = new FullPage(title, "Table", this.page);
         this.page.insertAfterMe(newPage);
-        let cd = TableView.findColumn(this.schema, filter.column);
-        let schema = this.schema.concat(cd);
-        rr.invoke(new TableOperationCompleted(newPage, schema, rr, this.order, this.originalTableId));
+        rr.invoke(new TableOperationCompleted(newPage, this.schema, rr, this.order, this.originalTableId));
     }
 
     private equalityFilter(colName: string, value: string, showMenu: boolean, complement?: boolean): void {
@@ -710,17 +708,6 @@ export class TableView extends TableViewBase implements IScrollTarget {
             };
             this.runFilter(efd, cd.kind);
         }
-    }
-
-    private hLogLog(): void {
-        if (this.selectedColumns.size() != 1) {
-            this.reportError("Only one column must be selected");
-            return;
-        }
-        let colName = this.getSelectedColNames()[0];
-        let rr = this.createHLogLogRequest(colName);
-        let rec = new CountReceiver(this.getPage(), rr, colName);
-        rr.invoke(rec);
     }
 
     public getSelectedColNames(): string[] {
@@ -969,20 +956,6 @@ export class TableView extends TableViewBase implements IScrollTarget {
     }
 }
 
-class CountReceiver extends OnCompleteRenderer<HLogLog> {
-    constructor(page: FullPage, operation: ICancellable,
-                protected colName: string) {
-        super(page, operation, "HyperLogLog");
-    }
-
-    run(data: HLogLog): void {
-        let timeInMs = this.elapsedMilliseconds();
-        this.page.reportError("Distinct values in column \'" +
-            this.colName + "\' " + SpecialChars.approx + String(data.distinctItemCount) + "\n" +
-            "Operation took " + significantDigits(timeInMs/1000) + " seconds");
-    }
-}
-
 /**
  * Receives the NextK rows from a table and displays them.
  */
@@ -1054,7 +1027,7 @@ class SchemaReceiver extends OnCompleteRenderer<TableSummary> {
         }
 
         if (summary.schema.length > 20 && this.title != null && !this.forceTableView) {
-            page = new FullPage("Schema of " + this.title, "Schema", this.page);
+            page = new FullPage("Schema " + this.title, "Schema", this.page);
             dataView = new SchemaView(this.remoteObject.remoteObjectId,
                 this.remoteObject.originalTableId, page, summary.schema, summary.rowCount);
         } else {

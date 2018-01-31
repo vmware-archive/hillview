@@ -28,7 +28,7 @@ import {Point, PointSet, Resolution} from "../ui/ui";
 import {FullPage} from "../ui/fullPage";
 import {HeatmapLegendPlot} from "../ui/legendPlot";
 import {TableView, NextKReceiver} from "./tableView";
-import {HeatMapArrayDialog} from "./trellisHeatMapView";
+import {TrellisPlotDialog} from "./trellisHeatMapView";
 import {RemoteTableObject, RemoteTableObjectView, RemoteTableRenderer} from "../tableTarget";
 import {PlottingSurface} from "../ui/plottingSurface";
 
@@ -499,7 +499,7 @@ class SchemaCollector extends OnCompleteRenderer<TableSummary> {
     run(): void {
         if (this.value == null)
             return;
-        let dialog = new HeatMapArrayDialog(
+        let dialog = new TrellisPlotDialog(
             this.lampColumnNames, this.page, this.value.schema, this.tableObject, true);
         dialog.show();
     }

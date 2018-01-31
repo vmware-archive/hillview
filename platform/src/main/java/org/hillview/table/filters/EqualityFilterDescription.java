@@ -64,7 +64,9 @@ public class EqualityFilterDescription implements ITableFilterDescription {
         int i;
         @Nullable
         String s;
+        @Nullable
         Pattern regEx;
+        @Nullable
         ContentsKind compareKind;
         private final ColumnAndConverter column;
 
@@ -76,7 +78,7 @@ public class EqualityFilterDescription implements ITableFilterDescription {
                 this.missing = true;
                 return;
             }
-            if (EqualityFilterDescription.this.asRegEx == true) {
+            if (EqualityFilterDescription.this.asRegEx) {
                 this.regEx = Pattern.compile(EqualityFilterDescription.this.compareValue);
                 return;
             }
@@ -107,17 +109,22 @@ public class EqualityFilterDescription implements ITableFilterDescription {
         public boolean test(int rowIndex) {
             boolean result;
 
-            if (EqualityFilterDescription.this.asRegEx == true) {
-                if (this.missing || column.isMissing(rowIndex))
-                    result = (this.missing == column.isMissing(rowIndex));
-                else
-                    result = this.regEx.matcher(this.column.asString(rowIndex)).matches();
-                return result^EqualityFilterDescription.this.complement;
-            } else {
+            if (EqualityFilterDescription.this.asRegEx) {
+                assert this.regEx != null;
                 if (this.missing || column.isMissing(rowIndex)) {
                     result = (this.missing == column.isMissing(rowIndex));
                 } else {
-                    switch (compareKind) {
+                    String value = this.column.asString(rowIndex);
+                    assert value != null;
+                    result = this.regEx.matcher(value).matches();
+                }
+                return result^EqualityFilterDescription.this.complement;
+            } else {
+                assert this.compareKind != null;
+                if (this.missing || column.isMissing(rowIndex)) {
+                    result = (this.missing == column.isMissing(rowIndex));
+                } else {
+                    switch (this.compareKind) {
                         case Duration:
                         case Double:
                         case Date:

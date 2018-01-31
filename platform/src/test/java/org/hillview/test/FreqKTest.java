@@ -29,6 +29,7 @@ import org.hillview.table.Table;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
 import org.hillview.utils.TestTables;
+import org.junit.Assert;
 import org.junit.Test;
 
 import javax.annotation.Nullable;
@@ -38,7 +39,6 @@ import java.util.List;
 import static org.junit.Assert.assertTrue;
 
 public class FreqKTest extends BaseTest {
-
     private void filterTest(@Nullable FreqKList fkList) {
         Converters.checkNull(fkList);
         fkList.filter(Boolean.TRUE);
@@ -52,6 +52,7 @@ public class FreqKTest extends BaseTest {
         FreqKList leftList  = shh.create(left);
         FreqKList rightList  = shh.create(right);
         FreqKList shhList = shh.add(leftList, rightList);
+        Assert.assertNotNull(shhList);
         shhList.rescale();
         System.out.println(shhList.toString());
         //return shhList;
@@ -62,6 +63,7 @@ public class FreqKTest extends BaseTest {
         FreqKList leftList = fk.create(left);
         FreqKList rightList = fk.create(right);
         FreqKList fkList = fk.add(leftList, rightList);
+        Assert.assertNotNull(fkList);
         fkList.filter(true);
         System.out.println(fkList.toString());
         //return fkList;

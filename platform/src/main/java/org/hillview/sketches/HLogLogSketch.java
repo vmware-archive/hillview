@@ -22,7 +22,6 @@ import org.hillview.table.api.ColumnAndConverter;
 import org.hillview.table.api.ColumnAndConverterDescription;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
-import org.hillview.utils.Randomness;
 
 import javax.annotation.Nullable;
 

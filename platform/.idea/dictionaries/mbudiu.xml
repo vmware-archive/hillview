@@ -19,9 +19,11 @@
       <w>iterable</w>
       <w>jblas</w>
       <w>jdbc</w>
+      <w>linq</w>
       <w>ltest</w>
       <w>memoized</w>
       <w>mnist</w>
+      <w>mongo</w>
       <w>perf</w>
       <w>proj</w>
       <w>protobuf</w>

@@ -205,7 +205,7 @@ public class InitialObjectTarget extends RpcTarget {
         FileSetDescription desc = request.parseArgs(FileSetDescription.class);
         CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
         config.allowMissingData = true;
-        config.allowFewerColumns = false;
+        config.allowFewerColumns = true;
         config.hasHeaderRow = desc.headerRow;
 
         String schemaPath = desc.getSchemaPath();

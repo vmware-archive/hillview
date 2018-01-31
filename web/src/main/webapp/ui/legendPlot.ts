@@ -187,6 +187,11 @@ export class HeatmapLegendPlot extends Plot {
         this.onColorMapChange = listener;
     }
 
+    public clear(): void {
+        super.clear();
+        this.colorMap = null;
+    }
+
     /**
      * The context menu is added only when a colormap change event listener is set.
      */

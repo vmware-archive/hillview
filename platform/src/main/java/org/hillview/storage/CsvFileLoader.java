@@ -61,7 +61,7 @@ public class CsvFileLoader extends TextFileLoader {
     @Nullable
     private Schema actualSchema;
     @Nullable
-    private String schemaPath;
+    private final String schemaPath;
 
     public CsvFileLoader(String path, CsvConfiguration configuration, @Nullable String schemaPath) {
         super(path);
@@ -93,7 +93,12 @@ public class CsvFileLoader extends TextFileLoader {
 
             if (this.configuration.hasHeaderRow) {
                 @Nullable
-                String[] line = reader.parseNext();
+                String[] line = null;
+                try {
+                    line = reader.parseNext();
+                } catch (Exception ex) {
+                    this.error(ex.getMessage());
+                }
                 if (line == null)
                     throw new RuntimeException("Missing header row " + this.filename);
                 if (this.actualSchema == null) {
@@ -137,7 +142,13 @@ public class CsvFileLoader extends TextFileLoader {
             if (firstLine != null)
                 this.append(firstLine);
             while (true) {
-                String[] line = reader.parseNext();
+                @Nullable
+                String[] line = null;
+                try {
+                    line = reader.parseNext();
+                } catch (Exception ex) {
+                    this.error(ex.getMessage());
+                }
                 if (line == null)
                     break;
                 this.append(line);

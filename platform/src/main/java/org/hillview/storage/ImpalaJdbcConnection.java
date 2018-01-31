@@ -52,6 +52,7 @@ public class ImpalaJdbcConnection extends JdbcConnection {
 
         this.addParameter("AuthMech", Integer.toString(authMech));
         this.addParameter("SSL", "1");
+        //this.addParameter("LogLevel", "3");
 
         StringBuilder builder = new StringBuilder();
         this.addBaseUrl(builder);

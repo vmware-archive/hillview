@@ -343,7 +343,7 @@ export class Dialog implements IHtmlElement {
         input.style.flexGrow = "100";
         input.id = makeId(fieldName);
         fieldDiv.appendChild(input);
-        this.fields.set(fieldName, {html: input});
+        this.fields.set(fieldName, {html: input, type: FieldKind.Boolean });
         if (value != null && value)
             input.checked = true;
         return input;
@@ -430,7 +430,11 @@ export class Dialog implements IHtmlElement {
      * @param {string} value  Value that is being set.
      */
     public setFieldValue(field: string, value: string): void {
-        this.fields.get(field).html.value = value;
+        let f = this.fields.get(field);
+        f.html.value = value;
+        if (f.type == FieldKind.Boolean && value == "on") {
+            (<HTMLInputElement>f.html).checked = true;
+        }
     }
 
     /**

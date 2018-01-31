@@ -77,6 +77,7 @@ public class NextKList implements Serializable, IJson {
         int nextRow = rowIt.getNextRow();
         int i = 0;
         while ((nextRow >= 0) && (i < rowsToDisplay)) {
+            //noinspection MismatchedQueryAndUpdateOfCollection
             RowSnapshot rs = new RowSnapshot(this.table, nextRow);
             builder.append(rs.toString()).append(": ").append(this.count.get(i));
             builder.append(System.getProperty("line.separator"));

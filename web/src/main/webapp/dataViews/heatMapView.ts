@@ -40,6 +40,9 @@ import {combineMenu, SelectedObject} from "../selectedObject";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {HeatmapPlot} from "../ui/heatmapPlot";
 import {HistogramPlot} from "../ui/histogramPlot";
+import {CategoryCache} from "../categoryCache";
+import {Dialog} from "../ui/dialog";
+import {Range2DRenderer, TrellisHeatMapView, TrellisPlotArgs} from "./trellisHeatMapView";
 
 /**
  * A HeatMapView renders information as a heatmap.
@@ -89,11 +92,13 @@ export class HeatMapView extends RemoteTableObjectView {
                     help: "Draw the heatmap with the same data by swapping the X and Y axes." },
                 { text: "table",
                     action: () => { this.showTable(); },
-                    help: "View the data underlying this view as a table."
-                },
+                    help: "View the data underlying this view as a table." },
                 { text: "histogram",
                     action: () => { this.histogram(); },
                     help: "Show this data as a two-dimensional histogram." },
+                { text: "group by",
+                    action: () => { this.trellis(); },
+                    help: "Group data by a third column." },
             ]) },
             combineMenu(this, page.pageId)
         ]);
@@ -186,6 +191,7 @@ export class HeatMapView extends RemoteTableObjectView {
             .attr("height", 0);
 
         this.pointDescription = new TextOverlay(this.surface.getChart(),
+            this.surface.getDefaultChartSize(),
             [xData.description.name, yData.description.name, "count"], 40);
         this.pointDescription.show(false);
         let summary = formatNumber(this.plot.getVisiblePoints()) + " data points";
@@ -201,14 +207,58 @@ export class HeatMapView extends RemoteTableObjectView {
         this.summary.innerHTML = summary;
     }
 
-
+    // Draw this as a 2-D histogram
     histogram(): void {
-        // Draw this as a 2-D histogram
         let rcol = new Range2DCollector([this.currentData.xData.description, this.currentData.yData.description],
                     this.tableSchema, [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
                     this.page, this, this.currentData.samplingRate >= 1, null, false);
         rcol.setValue({ first: this.currentData.xData.stats, second: this.currentData.yData.stats });
         rcol.onCompleted();
+    }
+
+    trellis(): void {
+        let columns : string[] = [];
+        for (let i = 0; i < this.tableSchema.length; i++) {
+            let col = this.tableSchema[i];
+            if (col.kind == "Category" && col.name != this.currentData.xData.description.name
+                && col.name != this.currentData.yData.description.name)
+                columns.push(col.name);
+        }
+        if (columns.length == 0) {
+            this.page.reportError("No acceptable columns found");
+            return;
+        }
+
+        let dialog = new Dialog("Choose column", "Select a column to group on.");
+        dialog.addSelectField("column", "column", columns, null,
+            "The categorical column that will be used to group on.");
+        dialog.setAction(() => this.showTrellis(dialog.getFieldValue("column")));
+        dialog.show();
+    }
+
+    private showTrellis(colName: string) {
+        let oc = TableView.findColumn(this.tableSchema, colName);
+        let cds: IColumnDescription[] = [this.currentData.xData.description,
+                                         this.currentData.yData.description, oc];
+        let catColumns: string[] = [colName];
+        let newPage = new FullPage("Heatmaps " + this.currentData.xData.description.name + ", " +
+            this.currentData.yData.description + " by " + oc.name, "Trellis", this.page);
+        this.page.insertAfterMe(newPage);
+
+        let args: TrellisPlotArgs = { cds: cds };
+        let trellisView = new TrellisHeatMapView(
+            this.remoteObjectId, this.originalTableId, newPage, args, this.tableSchema);
+        newPage.setDataView(trellisView);
+        let cont = (operation: ICancellable) => {
+            args.uniqueStrings = CategoryCache.instance.getDistinctStrings(
+                this.originalTableId, colName);
+            let rr = trellisView.createRange2DColsRequest(
+                this.currentData.xData.description.name,
+                this.currentData.yData.description.name);
+            rr.chain(operation);
+            rr.invoke(new Range2DRenderer(newPage, trellisView, rr));
+        };
+        CategoryCache.instance.retrieveCategoryValues(this, catColumns, this.getPage(), cont);
     }
 
     // combine two views according to some operation

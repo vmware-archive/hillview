@@ -191,10 +191,11 @@ export class Histogram2DView extends HistogramViewBase {
             .attr("height", 0);
 
         this.pointDescription = new TextOverlay(this.surface.getChart(),
+            this.surface.getDefaultChartSize(),
             [this.currentData.xData.description.name, "y",
                 this.currentData.yData.description.name, "count", "cdf"], 40);
         this.pointDescription.show(false);
-        let summary = formatNumber(this.plot.getVisiblePoints()) + " data points";
+        let summary = formatNumber(this.plot.getDisplayedPoints()) + " data points";
         if (heatmap.missingData != 0)
             summary += ", " + formatNumber(heatmap.missingData) + " missing both coordinates";
         if (heatmap.histogramMissingX.missingData != 0)

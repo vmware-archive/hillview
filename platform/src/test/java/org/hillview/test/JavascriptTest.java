@@ -22,7 +22,6 @@ import org.hillview.dataset.api.IDataSet;
 import org.hillview.maps.CreateColumnJSMap;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.ContentsKind;
-import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ITable;
 import org.hillview.table.membership.SparseMembershipSet;

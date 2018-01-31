@@ -105,6 +105,10 @@ public abstract class TextFileLoader implements IFileLoader {
     }
 
     protected void error(String message) {
+        if (message.length() > 2048) {
+            int lastIndex = message.length() - 48;
+            message = message.substring(0, 2000) + "..." + message.substring(lastIndex);
+        }
         throw new RuntimeException(this.errorMessage() + ": " + message);
     }
 

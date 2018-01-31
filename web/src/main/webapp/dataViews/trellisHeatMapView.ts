@@ -42,7 +42,7 @@ export class HeatMapArrayData {
     totalsize: number;
 }
 
-export interface HeatMapArrayArgs {
+export interface TrellisPlotArgs {
     cds: IColumnDescription[];
     uniqueStrings?: DistinctStrings;
     xStats?: BasicColStats;
@@ -56,7 +56,7 @@ class CompactHeatMapView {
         width: 200,
         height: 200 + Resolution.lineHeight
     };
-    private static maxTextLabelLength = 10;
+    private static maxTextLabelLength = 20;
     private static axesTicks = 3;
 
     // Size of the entire drawing (label + chart)
@@ -109,12 +109,14 @@ class CompactHeatMapView {
             .style("fill-opacity", 0)
             .style("stroke", "black");
 
-        binLabel = truncate(binLabel, CompactHeatMapView.maxTextLabelLength);
+        let shortLabel = truncate(binLabel, CompactHeatMapView.maxTextLabelLength);
         this.g.append("text")
-            .text(binLabel)
+            .text(shortLabel)
             .attr("text-anchor", "middle")
             .attr("x", this.size.width / 2)
-            .attr("y", Resolution.lineHeight);
+            .attr("y", Resolution.lineHeight)
+            .append("svg:title")
+            .text(binLabel);
 
         this.chart = this.g.append("g")
             .attr("transform", `translate(0, ${Resolution.lineHeight})`)
@@ -210,6 +212,7 @@ class CompactHeatMapView {
             .attr("stroke-dasharray", "5,5");
 
         this.pointDescription = new TextOverlay(this.axesG,
+            this.chartSize,
             [this.xAxisData.description.name, this.yAxisData.description.name, "value"],
             CompactHeatMapView.maxTextLabelLength);
     }
@@ -256,7 +259,7 @@ class CompactHeatMapView {
  */
 export class TrellisHeatMapView extends RemoteTableObjectView implements IScrollTarget {
     // TODO: handle categorical values
-    public args: HeatMapArrayArgs;
+    public args: TrellisPlotArgs;
     private offset: number; // Offset from the start of the set of unique z-values.
 
     // UI elements
@@ -271,7 +274,7 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
     private mouseOverHeatMap: CompactHeatMapView;
 
     constructor(remoteObjectId: RemoteObjectId, originalTableId: RemoteObjectId,
-                page: FullPage, args: HeatMapArrayArgs,  private tableSchema: Schema) {
+                page: FullPage, args: TrellisPlotArgs, private tableSchema: Schema) {
         super(remoteObjectId, originalTableId, page);
         this.args = args;
         this.offset = 0;
@@ -573,7 +576,7 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
 /**
  * Receives the data range and initiates a new rendering.
  */
-class Range2DRenderer extends Renderer<Pair<BasicColStats, BasicColStats>> {
+export class Range2DRenderer extends Renderer<Pair<BasicColStats, BasicColStats>> {
     constructor(page: FullPage, protected view: TrellisHeatMapView, operation: ICancellable) {
         super(page, operation, "Get stats");
     }
@@ -606,7 +609,7 @@ class HeatMap3DRenderer extends Renderer<HeatMapArrayData> {
 /**
  * Dialog to query user about parameters ot a Trellis plot of heatmaps.
  */
-export class HeatMapArrayDialog extends Dialog {
+export class TrellisPlotDialog extends Dialog {
     /**
      * Create a dialog to display a Trellis plot of heatmaps.
      * @param {string[]} selectedColumns  Columns selected by the user.
@@ -668,20 +671,20 @@ export class HeatMapArrayDialog extends Dialog {
         let newPage = new FullPage("Heatmaps by " + args.cds[2].name, "Trellis", this.page);
         this.page.insertAfterMe(newPage);
 
-        let heatMapArrayView = new TrellisHeatMapView(
+        let trellisView = new TrellisHeatMapView(
             this.remoteObject.remoteObjectId, this.remoteObject.originalTableId, newPage, args, this.schema);
-        newPage.setDataView(heatMapArrayView);
+        newPage.setDataView(trellisView);
         let cont = (operation: ICancellable) => {
             args.uniqueStrings = CategoryCache.instance.getDistinctStrings(
                 this.remoteObject.originalTableId, categCol.name);
-            let rr = heatMapArrayView.createRange2DColsRequest(args.cds[0].name, args.cds[1].name);
+            let rr = trellisView.createRange2DColsRequest(args.cds[0].name, args.cds[1].name);
             rr.chain(operation);
-            rr.invoke(new Range2DRenderer(newPage, heatMapArrayView, rr));
+            rr.invoke(new Range2DRenderer(newPage, trellisView, rr));
         };
         CategoryCache.instance.retrieveCategoryValues(this.remoteObject, [categCol.name], this.page, cont);
     }
 
-    private parseFields(): HeatMapArrayArgs {
+    private parseFields(): TrellisPlotArgs {
         let cd1 = TableView.findColumn(this.schema, this.getFieldValue("col1"));
         let cd2 = TableView.findColumn(this.schema, this.getFieldValue("col2"));
         let cd3 = TableView.findColumn(this.schema, this.getFieldValue("col3"));

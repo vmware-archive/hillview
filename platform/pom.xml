@@ -36,6 +36,12 @@
             <artifactId>httpclient</artifactId>
             <version>4.5.3</version>
         </dependency>
+        <!-- MongoDB connector. -->
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongodb-driver</artifactId>
+            <version>3.6.1</version>
+        </dependency>
         <!-- Impala JDBC connector.
              Uncomment and edit the following if you want to access Impala through JDBC.
              These assume a version of 2.5.29; you may need
@@ -314,7 +320,7 @@
                             <goal>single</goal>
                         </goals>
                     </execution>
-                    <!--
+                    <!-- This was used to run benchmarks for the paper.
                     <execution>
                         <id>build-histogram-benchmark</id>
                         <configuration>

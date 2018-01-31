@@ -46,7 +46,7 @@ public class FreqKList implements Serializable {
      * In MG it is the number of counters we store: the K in top-K heavy hitters.
      * In sampleHeavyHitters, it is used to store the number of samples taken
      */
-    public int maxSize;
+    public final int maxSize;
     /**
      * The number of times each row in the above table occurs in the original DataSet
      * (can be approximate depending on the context).
@@ -181,19 +181,17 @@ public class FreqKList implements Serializable {
     public Pair<List<RowSnapshot>, List<Integer>> getTop(int size, int type) {
         List<Pair<RowSnapshot, Integer>> pList = new
                 ArrayList<Pair<RowSnapshot, Integer>>(this.hMap.size());
-        if( type == 0) {
+        if (type == 0) {
             double threshold = this.epsilon * this.totalRows - this.getErrBound();
             this.hMap.forEach((rs, j) -> {
                 if (j >= threshold) pList.add(new Pair<RowSnapshot, Integer>(rs, j));
             });
-        }
-        else if (type == 1) {
+        } else if (type == 1) {
             double threshold = this.epsilon * this.totalRows;
             this.hMap.forEach((rs, j) -> {
                 if (j >= threshold) pList.add(new Pair<RowSnapshot, Integer>(rs, j));
             });
-        }
-        else {
+        } else {
             double threshold = 0.99* this.epsilon * this.maxSize;
             this.hMap.forEach((rs, j) -> {
                 if (j >= threshold)

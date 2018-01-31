@@ -163,7 +163,7 @@ export class Histogram2DPlot extends Plot {
             .attr("y", (d: number) => this.normalized ? 0 : this.getChartHeight() - (d * scale))
             .attr("text-anchor", "middle")
             .attr("dy", (d: number) => this.normalized ? 0 : d <= (9 * max / 10) ? "-.25em" : ".75em")
-            .text((d: number) => HistogramViewBase.boxHeight(d, this.samplingRate, this.visiblePoints))
+            .text((d: number) => HistogramViewBase.boxHeight(d, this.samplingRate, this.getDisplayedPoints()))
             .exit();
 
         let noX = 0;
@@ -196,7 +196,7 @@ export class Histogram2DPlot extends Plot {
     /**
      * The total count of points that correspond to displayed rectangles.
      */
-    public getVisiblePoints(): number {
+    public getDisplayedPoints(): number {
         return this.visiblePoints + this.missingDisplayed;
     }
 

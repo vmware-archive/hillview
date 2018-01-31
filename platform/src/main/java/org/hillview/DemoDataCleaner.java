@@ -23,14 +23,12 @@ import org.hillview.table.HashSubSchema;
 import org.hillview.table.Schema;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.HillviewLogger;
-import org.hillview.utils.TestTables;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
-import java.util.List;
 import java.util.stream.Stream;
 
 /**
@@ -84,10 +82,9 @@ public class DemoDataCleaner {
                     ITable p = tbl.project(proj);
 
                     String end = filename.replace(prefix, "");
-                    Path outPath = Paths.get(end);
-                    CsvFileWriter writer = new CsvFileWriter(outPath);
+                    CsvFileWriter writer = new CsvFileWriter(end);
                     try {
-                        System.out.println("Writing " + outPath);
+                        System.out.println("Writing " + end);
                         writer.writeTable(p);
                     } catch (IOException e) {
                         e.printStackTrace();

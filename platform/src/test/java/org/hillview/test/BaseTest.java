@@ -26,12 +26,12 @@ import org.junit.Ignore;
  * Base test class, used for global setup and teardown.
  * If your test is not thread-safe, use the following annotation
  * on the test class:
- * @net.jcip.annotations.NotThreadSafe
+ * "@net.jcip.annotations.NotThreadSafe"
  */
 @Ignore
 public class BaseTest {
     static boolean initialized = false;
-    static Randomness randomness = new Randomness(0);
+    static final Randomness randomness = new Randomness(0);
 
     @BeforeClass
     public static void setup() {

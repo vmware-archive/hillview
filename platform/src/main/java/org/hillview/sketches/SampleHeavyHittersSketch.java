@@ -32,12 +32,12 @@ public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKList> {
     /**
      * The size of the input table.
      */
-    private long totalRows;
+    private final long totalRows;
 
     /**
      * The rate at which we sample data.
      */
-    private double samplingRate;
+    private final double samplingRate;
     final long seed;
 
     public SampleHeavyHittersSketch(Schema schema, double epsilon, long totalRows, long seed) {

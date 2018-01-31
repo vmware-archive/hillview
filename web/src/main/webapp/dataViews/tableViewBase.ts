@@ -16,17 +16,19 @@
  */
 
 import {RemoteTableObjectView} from "../tableTarget";
-import {IColumnDescription, RangeInfo, RemoteObjectId, Schema} from "../javaBridge";
+import {HLogLog, IColumnDescription, RangeInfo, RemoteObjectId, Schema} from "../javaBridge";
 import {FullPage} from "../ui/fullPage";
 import {DistinctStrings} from "../distinctStrings";
-import {ICancellable} from "../util";
+import {ICancellable, significantDigits} from "../util";
 import {TableView} from "./tableView";
 import {CategoryCache} from "../categoryCache";
 import {HistogramDialog, RangeCollector} from "./histogramView";
 import {Range2DCollector} from "./heatMapView";
-import {HeatMapArrayDialog} from "./trellisHeatMapView";
+import {TrellisPlotDialog} from "./trellisHeatMapView";
 import {Histogram2DDialog} from "./histogram2DView";
 import {SubMenu, TopMenuItem} from "../ui/menu";
+import {SpecialChars} from "../ui/ui";
+import {OnCompleteRenderer} from "../rpc";
 
 /**
  * A base class for TableView and SchemaView
@@ -52,7 +54,7 @@ export abstract class TableViewBase extends RemoteTableObjectView {
 
     protected heatMap(): void {
         if (this.getSelectedColCount() == 3) {
-            this.heatMapArray();
+            this.trellisPlot();
             return;
         }
         if (this.getSelectedColCount() != 2) {
@@ -82,7 +84,7 @@ export abstract class TableViewBase extends RemoteTableObjectView {
         });
 
         if (cds.length != columns.length)
-        // some error occurred
+            // some error occurred
             return;
 
         let twoDimensional = (cds.length == 2);
@@ -138,9 +140,9 @@ export abstract class TableViewBase extends RemoteTableObjectView {
         this.histogramOrHeatmap(this.getSelectedColNames(), heatMap);
     }
 
-    protected heatMapArray(): void {
+    protected trellisPlot(): void {
         let colNames: string[] = this.getSelectedColNames();
-        let dialog = new HeatMapArrayDialog(colNames, this.getPage(), this.schema, this, false);
+        let dialog = new TrellisPlotDialog(colNames, this.getPage(), this.schema, this, false);
         dialog.show();
     }
 
@@ -163,6 +165,17 @@ export abstract class TableViewBase extends RemoteTableObjectView {
             }
         );
         dia.show();
+    }
+
+    protected hLogLog(): void {
+        if (this.getSelectedColCount() != 1) {
+            this.reportError("Only one column must be selected");
+            return;
+        }
+        let colName = this.getSelectedColNames()[0];
+        let rr = this.createHLogLogRequest(colName);
+        let rec = new CountReceiver(this.getPage(), rr, colName);
+        rr.invoke(rec);
     }
 
     oneDHistogramMenu(): void {
@@ -192,5 +205,20 @@ export abstract class TableViewBase extends RemoteTableObjectView {
                     help: "Draw a heatmap of the data in two columns."},
             ])
         };
+    }
+}
+
+
+class CountReceiver extends OnCompleteRenderer<HLogLog> {
+    constructor(page: FullPage, operation: ICancellable,
+                protected colName: string) {
+        super(page, operation, "HyperLogLog");
+    }
+
+    run(data: HLogLog): void {
+        let timeInMs = this.elapsedMilliseconds();
+        this.page.reportError("Distinct values in column \'" +
+            this.colName + "\' " + SpecialChars.approx + String(data.distinctItemCount) + "\n" +
+            "Operation took " + significantDigits(timeInMs/1000) + " seconds");
     }
 }

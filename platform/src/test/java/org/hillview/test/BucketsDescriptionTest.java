@@ -27,7 +27,7 @@ import static org.junit.Assert.assertFalse;
 
 public class BucketsDescriptionTest extends BaseTest {
     @Test
-    public void testEqSize() throws Exception {
+    public void testEqSize() {
         BucketsDescriptionEqSize bdEqSize = new BucketsDescriptionEqSize(0.5, 100.5, 100);
         assertEquals(bdEqSize.getNumOfBuckets(), 100);
         assertEquals(bdEqSize.indexOf(0.5), 0);
@@ -42,7 +42,7 @@ public class BucketsDescriptionTest extends BaseTest {
     }
 
     @Test
-    public void testGeneric1D() throws Exception {
+    public void testGeneric1D() {
         double[] boundaries = new double[101];
         for (int i = 0; i < 101; i++)
             boundaries[i] = i + 0.5;

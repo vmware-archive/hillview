@@ -144,7 +144,8 @@ export class HistogramView extends HistogramViewBase {
         let pointDesc = ["x", "y"];
         if (cdf != null)
             pointDesc.push("cdf");
-        this.pointDescription = new TextOverlay(this.surface.getChart(), pointDesc, 40);
+        this.pointDescription = new TextOverlay(this.surface.getChart(),
+            this.surface.getDefaultChartSize(), pointDesc, 40);
         this.pointDescription.show(false);
 
         let summary = "";

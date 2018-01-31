@@ -23,17 +23,18 @@ import com.univocity.parsers.csv.CsvWriterSettings;
 import org.hillview.table.Schema;
 import org.hillview.table.api.*;
 
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Writer;
-import java.nio.file.Path;
+import java.io.*;
+import java.util.zip.GZIPOutputStream;
 
 public class CsvFileWriter {
     private char separator = ',';
     private boolean writeHeaderRow = true;
-    private final Path file;
+    private final String fileName;
+    private boolean compress = false;
 
-    public CsvFileWriter(Path file) { this.file = file; }
+    public CsvFileWriter(String fileName) { this.fileName = fileName; }
+
+    public void setCompress(boolean compress) { this.compress = compress; }
 
     public void setSeparator(char separator) { this.separator = separator; }
 
@@ -51,27 +52,41 @@ public class CsvFileWriter {
         settings.setFormat(format);
         settings.setEmptyValue("\"\"");
         settings.setNullValue(null);
-        try (Writer fw = new FileWriter(this.file.toString())) {
-            CsvWriter writer = new CsvWriter(fw, settings);
 
-            String[] data = new String[schema.getColumnCount()];
-            int index = 0;
-            for (String c : schema.getColumnNames()) {
-                data[index] = c;
-                index++;
-            }
-            if (this.writeHeaderRow)
-                writer.writeHeaders(data);
-            IRowIterator rowIter = table.getMembershipSet().getIterator();
-            int nextRow = rowIter.getNextRow();
-            while (nextRow >= 0) {
-                for (index = 0; index < cols.length; index++) {
-                    String d = cols[index].isMissing(nextRow) ? null : cols[index].asString(nextRow);
-                    data[index] = d;
-                }
-                writer.writeRow(data);
-                nextRow = rowIter.getNextRow();
-            }
+        OutputStream output;
+        FileOutputStream fs = null;
+        if (this.compress) {
+            String fn = this.fileName;
+            if (!this.fileName.endsWith(".gz"))
+                fn += ".gz";
+            fs = new FileOutputStream(fn);
+            output = new GZIPOutputStream(fs);
+        } else {
+            output = new FileOutputStream(this.fileName);
         }
+        CsvWriter writer = new CsvWriter(output, settings);
+
+        String[] data = new String[schema.getColumnCount()];
+        int index = 0;
+        for (String c : schema.getColumnNames()) {
+            data[index] = c;
+            index++;
+        }
+        if (this.writeHeaderRow)
+            writer.writeHeaders(data);
+        IRowIterator rowIter = table.getMembershipSet().getIterator();
+        int nextRow = rowIter.getNextRow();
+        while (nextRow >= 0) {
+            for (index = 0; index < cols.length; index++) {
+                String d = cols[index].isMissing(nextRow) ? null : cols[index].asString(nextRow);
+                data[index] = d;
+            }
+            writer.writeRow(data);
+            nextRow = rowIter.getNextRow();
+        }
+        writer.close();
+        output.close();
+        if (fs != null)
+            fs.close();
     }
 }

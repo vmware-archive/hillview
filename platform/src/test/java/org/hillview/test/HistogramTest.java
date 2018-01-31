@@ -34,7 +34,7 @@ import org.junit.Test;
 
 public class HistogramTest extends BaseTest {
     @Test
-    public void testHistogram() throws Exception {
+    public void testHistogram() {
         final int bucketNum = 110;
         final int colSize = 10000;
         BucketsDescriptionEqSize buckDes = new BucketsDescriptionEqSize(0, 100, bucketNum);
