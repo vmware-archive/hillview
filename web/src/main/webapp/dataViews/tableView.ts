@@ -21,13 +21,12 @@ import {
     Converters, PartialResult, ICancellable, percent, formatNumber, significantDigits,
     formatDate
 } from "../util";
-import {EqualityFilterDialog} from "./equalityFilter";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {ColumnConverter, ConverterDialog} from "./columnConverter";
 import {DataRange} from "../ui/dataRange"
 import {IScrollTarget, ScrollBar} from "../ui/scroll";
 import {FullPage} from "../ui/fullPage";
-import {missingHtml, SpecialChars} from "../ui/ui";
+import {missingHtml} from "../ui/ui";
 import {SelectionStateMachine} from "../ui/selectionStateMachine";
 
 import {HeavyHittersView} from "./heavyHittersView";
@@ -36,8 +35,8 @@ import {LAMPDialog} from "./lampView";
 import {
     IColumnDescription, RecordOrder, RowSnapshot, Schema,
     ContentsKind, asContentsKind, ColumnSortOrientation, NextKList,
-    TopList, CombineOperators, TableSummary, HLogLog,
-    RemoteObjectId, allContentsKind, CreateColumnInfo, EqualityFilterDescription
+    TopList, CombineOperators, TableSummary, RemoteObjectId, allContentsKind,
+    CreateColumnInfo
 } from "../javaBridge";
 import {RemoteTableObject, RemoteTableRenderer, ZipReceiver} from "../tableTarget";
 import {combineMenu, SelectedObject} from "../selectedObject";
@@ -491,7 +490,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
                 }, selectedCount >= 2 && selectedCount <= 3);
                 this.contextMenu.addItem({
                     text: "Heavy hitters...",
-                    action: () => this.heavyHitters(false),
+                    action: () => this.heavyHitters(true),  // TODO: switch back to approximate
                     help: "Find the values that occur most frequently in the selected columns."
                 }, true);
                 this.contextMenu.addItem({
@@ -510,7 +509,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
                     this.getSelectedColNames().reduce( (a, b) => a && this.isNumericColumn(b), true) );
                 this.contextMenu.addItem({
                     text: "Filter...",
-                    action: () => this.equalityFilter(cd.name, null, true),
+                    action: () => this.equalityFilter(cd.name, null, true, this.order, null),
                     help: "Eliminate data that matches/does not match a specific value in a selected column."
                 }, selectedCount == 1);
                 this.contextMenu.addItem({
@@ -677,39 +676,6 @@ export class TableView extends TableViewBase implements IScrollTarget {
         return "col" + String(index);
     }
 
-    private runFilter(filter: EqualityFilterDescription, kind: ContentsKind): void {
-        let rr = this.createFilterEqualityRequest(filter);
-        let title = "Filtered: " + filter.column + " is " +
-            (filter.complement ? "not " : "") +
-            TableView.convert(filter.compareValue, kind);
-
-        let newPage = new FullPage(title, "Table", this.page);
-        this.page.insertAfterMe(newPage);
-        rr.invoke(new TableOperationCompleted(newPage, this.schema, rr, this.order, this.originalTableId));
-    }
-
-    private equalityFilter(colName: string, value: string, showMenu: boolean, complement?: boolean): void {
-        let cd = TableView.findColumn(this.schema, colName);
-        if (showMenu) {
-            let ef = new EqualityFilterDialog(cd);
-            ef.setAction(() => this.runFilter(ef.getFilter(), cd.kind));
-            ef.show();
-        } else {
-            if (value != null && cd.kind == "Date") {
-                // Parse the date in Javascript; the Java Date parser is very bad
-                let date = new Date(value);
-                value = Converters.doubleFromDate(date).toString();
-            }
-            let efd: EqualityFilterDescription = {
-                column: cd.name,
-                compareValue: value,
-                complement: (complement == null ? false : complement),
-                asRegEx: false
-            };
-            this.runFilter(efd, cd.kind);
-        }
-    }
-
     public getSelectedColNames(): string[] {
         let colNames: string[] = [];
         this.selectedColumns.getStates().forEach(i => colNames.push(this.schema[i].name));
@@ -835,7 +801,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
         this.page.insertAfterMe(newPage);
     }
 
-    private runHeavyHitters(percent: number, isMG: boolean) {
+    protected runHeavyHitters(percent: number, exact: boolean) {
         if (percent == null || percent < .1 || percent > 100) {
             this.reportError("Percentage must be between .1 and 100");
             return;
@@ -848,11 +814,11 @@ export class TableView extends TableViewBase implements IScrollTarget {
             cso.push({ columnDescription: colDesc, isAscending: true });
         });
         let order = new RecordOrder(cso);
-        let rr = this.createHeavyHittersRequest(columns, percent, this.getTotalRowCount(), isMG);
-        rr.invoke(new HeavyHittersReceiver(this.getPage(), this, rr, columns, order));
+        let rr = this.createHeavyHittersRequest(columns, percent, this.getTotalRowCount(), exact);
+        rr.invoke(new HeavyHittersReceiver(this.getPage(), this, rr, columns, order, exact));
     }
 
-    private heavyHitters(isMG: boolean): void {
+    protected heavyHitters(exact: boolean): void {
         let title = "Heavy hitters on ";
         let cols: string[] = this.getSelectedColNames();
         if (cols.length <= 1) {
@@ -867,7 +833,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
         d.setAction(() => {
             let amount = d.getFieldValueAsNumber("percent");
             if (amount != null)
-                this.runHeavyHitters(amount, isMG)
+                this.runHeavyHitters(amount, exact)
         });
         d.setCacheTitle("HeavyHittersDialog");
         d.show();
@@ -934,11 +900,11 @@ export class TableView extends TableViewBase implements IScrollTarget {
                 cell.oncontextmenu = e => {
                     this.contextMenu.clear();
                     this.contextMenu.addItem({text: "Filter for " + cellValue,
-                        action: () => this.equalityFilter(cd.name, value, false),
+                        action: () => this.equalityFilter(cd.name, value, false, this.order, false),
                         help: "Keep only the rows that have this value in this column."
                     }, true);
                     this.contextMenu.addItem({text: "Filter for not " + cellValue,
-                        action: () => this.equalityFilter(cd.name, value, false, true),
+                        action: () => this.equalityFilter(cd.name, value, false, this.order, true),
                         help: "Keep only the rows that have a different value in this column."
                     }, true);
                     this.contextMenu.show(e);
@@ -1027,7 +993,7 @@ class SchemaReceiver extends OnCompleteRenderer<TableSummary> {
         }
 
         if (summary.schema.length > 20 && this.title != null && !this.forceTableView) {
-            page = new FullPage("Schema " + this.title, "Schema", this.page);
+            page = new FullPage("Schema of " + this.title, "Schema", this.page);
             dataView = new SchemaView(this.remoteObject.remoteObjectId,
                 this.remoteObject.originalTableId, page, summary.schema, summary.rowCount);
         } else {
@@ -1073,20 +1039,21 @@ class QuantileReceiver extends OnCompleteRenderer<any[]> {
 }
 
 /**
- * This method handles the outcome of the Misra-Gries sketch for finding Heavy Hitters.
+ * This method handles the outcome of the sketch for finding Heavy Hitters.
  */
 class HeavyHittersReceiver extends OnCompleteRenderer<TopList> {
      public constructor(page: FullPage,
-                       protected tv: TableView,
-                       operation: ICancellable,
-                       protected schema: IColumnDescription[],
-                       protected order: RecordOrder) {
+                        protected tv: TableView,
+                        operation: ICancellable,
+                        protected schema: IColumnDescription[],
+                        protected order: RecordOrder,
+                        protected exact: boolean) {
         super(page, operation, "Heavy hitters");
     }
 
     run(data: TopList): void {
         let newPage = new FullPage("Heavy hitters", "HeavyHitters", this.page);
-        let hhv = new HeavyHittersView(data, newPage, this.tv, this.schema, this.order, true);
+        let hhv = new HeavyHittersView(data, newPage, this.tv, this.schema, this.order, !this.exact);
         newPage.setDataView(hhv);
         this.page.insertAfterMe(newPage);
         hhv.fill(data.top, this.elapsedMilliseconds());

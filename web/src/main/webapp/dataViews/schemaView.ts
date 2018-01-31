@@ -17,7 +17,7 @@
 
 import {FullPage} from "../ui/fullPage";
 import {
-    NextKList, IColumnDescription, RecordOrder, Schema, RemoteObjectId, allContentsKind
+    NextKList, IColumnDescription, RecordOrder, Schema, RemoteObjectId, allContentsKind, ColumnSortOrientation
 } from "../javaBridge";
 import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
 import {TabularDisplay} from "../ui/tabularDisplay";
@@ -44,7 +44,7 @@ export class SchemaView extends TableViewBase {
         this.contextMenu = new ContextMenu(this.topLevel);
         this.schema = schema;
 
-        let subMenu = new SubMenu([
+        let viewMenu = new SubMenu([
             {text: "Selected columns",
                 action: () => {this.showTable();},
                 help: "Show the data using a tabular view containing the selected columns."
@@ -68,7 +68,7 @@ export class SchemaView extends TableViewBase {
             }
         ]);
         let menu = new TopMenu([
-            {text: "View", subMenu: subMenu, help: "Change the way the data is displayed."},
+            {text: "View", subMenu: viewMenu, help: "Change the way the data is displayed."},
             {text: "Select", subMenu: selectMenu, help: "Select columns based on attributes." },
             this.chartMenu(),
             combineMenu(this, page.pageId)
@@ -154,6 +154,10 @@ export class SchemaView extends TableViewBase {
         this.contextMenu.clear();
         let selectedCount = this.display.selectedRows.size();
         this.contextMenu.addItem({
+            text: "Show as table",
+            action: () => this.showTable(),
+            help: "Show the data using a tabular view containing the selected columns." }, true);
+        this.contextMenu.addItem({
             text: "Histogram",
             action: () => this.histogram(false),
             help: "Plot the data in the selected columns as a histogram.  Applies to one or two columns only. " +
@@ -169,8 +173,19 @@ export class SchemaView extends TableViewBase {
             text: "Estimate distinct elements",
             action: () => this.hLogLog(),
             help: "Compute an estimate of the number of different values that appear in the selected column."
-        }, selectedCount == 1
-        );
+        }, selectedCount == 1);
+        this.contextMenu.addItem({
+            text: "Filter...",
+            action: () => {
+                let colName = this.getSelectedColNames()[0];
+                let cd = TableView.findColumn(this.schema, colName);
+                let so: ColumnSortOrientation = {
+                    columnDescription: cd, isAscending: true
+                };
+                this.equalityFilter(colName, null, true, new RecordOrder([so]), null);
+            },
+            help : "Eliminate data that matches/does not match a specific value."
+        }, selectedCount == 1);
         this.contextMenu.show(e);
     }
 

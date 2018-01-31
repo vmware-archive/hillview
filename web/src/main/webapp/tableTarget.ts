@@ -100,8 +100,8 @@ export class RemoteTableObject extends RemoteObject {
     public createHeavyHittersRequest(columns: IColumnDescription[],
                                      percent: number,
                                      totalRows: number,
-                                     isMG: boolean): RpcRequest<PartialResult<TopList>> {
-        if (isMG) {
+                                     exact: boolean): RpcRequest<PartialResult<TopList>> {
+        if (exact) {
             return this.createStreamingRpcRequest<TopList>("heavyHittersMG",
                 {columns: columns, amount: percent,
                     totalRows: totalRows, seed: Seed.instance.get() });
@@ -220,7 +220,13 @@ export abstract class RemoteTableObjectView extends RemoteTableObject implements
         if (page == null)
             throw("null FullPage");
         this.page = page;
+        if (this.topLevel != null) {
+            this.topLevel.ondragover = e => e.preventDefault();
+            this.topLevel.ondrop = e => this.drop(e);
+        }
     }
+
+    drop(e: DragEvent): void {}
 
     getPage() : FullPage {
         if (this.page == null)

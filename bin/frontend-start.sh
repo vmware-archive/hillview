@@ -1,3 +1,3 @@
 #!/bin/bash
 
-../apache-tomcat-8.5.8/bin/catalina.sh run
+../apache-tomcat-9.0.4/bin/catalina.sh run

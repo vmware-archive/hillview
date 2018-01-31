@@ -16,11 +16,14 @@
  */
 
 import {RemoteTableObjectView} from "../tableTarget";
-import {HLogLog, IColumnDescription, RangeInfo, RemoteObjectId, Schema} from "../javaBridge";
+import {
+    ContentsKind, EqualityFilterDescription, HLogLog, IColumnDescription, RangeInfo, RecordOrder, RemoteObjectId,
+    Schema
+} from "../javaBridge";
 import {FullPage} from "../ui/fullPage";
 import {DistinctStrings} from "../distinctStrings";
-import {ICancellable, significantDigits} from "../util";
-import {TableView} from "./tableView";
+import {Converters, ICancellable, significantDigits} from "../util";
+import {TableOperationCompleted, TableView} from "./tableView";
 import {CategoryCache} from "../categoryCache";
 import {HistogramDialog, RangeCollector} from "./histogramView";
 import {Range2DCollector} from "./heatMapView";
@@ -29,6 +32,7 @@ import {Histogram2DDialog} from "./histogram2DView";
 import {SubMenu, TopMenuItem} from "../ui/menu";
 import {SpecialChars} from "../ui/ui";
 import {OnCompleteRenderer} from "../rpc";
+import {EqualityFilterDialog} from "./equalityFilter";
 
 /**
  * A base class for TableView and SchemaView
@@ -205,6 +209,41 @@ export abstract class TableViewBase extends RemoteTableObjectView {
                     help: "Draw a heatmap of the data in two columns."},
             ])
         };
+    }
+
+    protected runFilter(filter: EqualityFilterDescription, kind: ContentsKind, order: RecordOrder): void {
+        let rr = this.createFilterEqualityRequest(filter);
+        let title = "Filtered: " + filter.column + " is " +
+            (filter.complement ? "not " : "") +
+            TableView.convert(filter.compareValue, kind);
+
+        let newPage = new FullPage(title, "Table", this.page);
+        this.page.insertAfterMe(newPage);
+        rr.invoke(new TableOperationCompleted(newPage, this.schema, rr, order, this.originalTableId));
+    }
+
+    protected equalityFilter(
+        colName: string, value: string, showMenu: boolean, order: RecordOrder,
+        complement?: boolean): void {
+        let cd = TableView.findColumn(this.schema, colName);
+        if (showMenu) {
+            let ef = new EqualityFilterDialog(cd);
+            ef.setAction(() => this.runFilter(ef.getFilter(), cd.kind, order));
+            ef.show();
+        } else {
+            if (value != null && cd.kind == "Date") {
+                // Parse the date in Javascript; the Java Date parser is very bad
+                let date = new Date(value);
+                value = Converters.doubleFromDate(date).toString();
+            }
+            let efd: EqualityFilterDescription = {
+                column: cd.name,
+                compareValue: value,
+                complement: (complement == null ? false : complement),
+                asRegEx: false
+            };
+            this.runFilter(efd, cd.kind, order);
+        }
     }
 }
 

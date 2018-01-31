@@ -333,11 +333,11 @@ export class Histogram2DView extends HistogramViewBase {
 
     public mouseEnter(): void {
         super.mouseEnter();
-        this.cdfDot.attr("visibility", true);
+        this.cdfDot.attr("visibility", "visible");
     }
 
     public mouseLeave(): void {
-        this.cdfDot.attr("visibility", false);
+        this.cdfDot.attr("visibility", "hidden");
         super.mouseLeave();
     }
 

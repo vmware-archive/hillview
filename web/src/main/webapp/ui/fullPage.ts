@@ -118,6 +118,8 @@ export class FullPage implements IHtmlElement {
         let pageId = document.createElement("span");
         pageId.textContent = "[" + this.pageId + "]";
         pageId.title = "Unique number of this view.";
+        pageId.draggable = true;
+        pageId.ondragstart = (e) => e.dataTransfer.setData("text", this.pageId.toString());
         this.addCell(titleRow, pageId, true);
 
         let close = document.createElement("span");

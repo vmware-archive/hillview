@@ -143,13 +143,6 @@ public final class RpcServer {
     @SuppressWarnings("unused")
     @OnClose
     public void onClose(final Session session, final CloseReason reason) {
-        Subscription sub = RpcObjectManager.instance.getSubscription(session);
-        if (sub != null) {
-            HillviewLogger.instance.info("Unsubscribing", "{0}", this.toString());
-            sub.unsubscribe();
-            RpcObjectManager.instance.removeSubscription(session);
-        }
-
         if (reason.getCloseCode() != CloseReason.CloseCodes.NORMAL_CLOSURE) {
             HillviewLogger.instance.error("Close connection for client",
                     "{0}, {1}", session.getId(), reason.toString());
@@ -157,6 +150,12 @@ public final class RpcServer {
         } else {
             HillviewLogger.instance.info("Normal connection closing for client",
                     "{0}", session.getId());
+        }
+        Subscription sub = RpcObjectManager.instance.getSubscription(session);
+        if (sub != null) {
+            HillviewLogger.instance.info("Unsubscribing", "{0}", this.toString());
+            sub.unsubscribe();
+            RpcObjectManager.instance.removeSubscription(session);
         }
         RpcObjectManager.instance.removeSession(session);
     }
