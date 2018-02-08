@@ -4,14 +4,15 @@
 # Bail out at first error
 set -e
 
-echo "Installing programs needed to build"
-sudo apt-get install maven nodejs-legacy ansible npm
-echo "Installing typescript tools"
-sudo npm install -g typescript ts-loader webpack
+source ./config.sh
 
-TOMCATVERSION="9.0.4"
+echo "Installing programs needed to build"
+${SUDO} ${INSTALL} install maven nodejs-legacy ansible npm
+echo "Installing typescript tools"
+${SUDO} npm install -g typescript ts-loader webpack
+
 cd ..
-if [ ! -f apache-tomcat-${TOMCATVERSION} ]; then
+if [ ! -d apache-tomcat-${TOMCATVERSION} ]; then
     echo "Installing apache Tomcat web server"
     wget http://archive.apache.org/dist/tomcat/tomcat-9/v${TOMCATVERSION}/bin/apache-tomcat-${TOMCATVERSION}.tar.gz
     tar xvfz apache-tomcat-${TOMCATVERSION}.tar.gz

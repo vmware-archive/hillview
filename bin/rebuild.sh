@@ -1,6 +1,8 @@
 #!/bin/bash
 # A small shell script which rebuilds both projects that compose Hillview
 
+source ./config.sh
+
 # Bail out on first error
 set -e
 

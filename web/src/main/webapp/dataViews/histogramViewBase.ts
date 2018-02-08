@@ -153,7 +153,7 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
 
     /**
      * Compute the string used to display the height of a box in a histogram
-     * @param  barSize         Bar size as reported by histogram.
+     * @param  barSize       Bar size as reported by histogram.
      * @param  samplingRate  Sampling rate that was used to compute the box height.
      * @param  totalPop      Total population which was sampled to get this box.
      */

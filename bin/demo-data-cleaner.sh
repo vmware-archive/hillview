@@ -1,4 +1,6 @@
 #!/bin/bash
+# This shell script downloads some testing data for Hillview and munges it
+# using a Java program
 
 set -e
 
