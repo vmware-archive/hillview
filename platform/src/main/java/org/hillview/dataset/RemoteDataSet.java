@@ -55,6 +55,13 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
     private final int remoteHandle;
     private final HostAndPort serverEndpoint;
     private final HillviewServerGrpc.HillviewServerStub stub;
+    // To avoid Epoll CPU utilization problems, we could use PollSelectorProvider().
+    // See: https://github.com/netty/netty/issues/327
+    private static final EventLoopGroup workerElg = new NioEventLoopGroup(1,
+            ExecutorUtils.newFastLocalThreadFactory("rds-shared-worker"));
+    private static final ExecutorService executorService =
+            ExecutorUtils.newNamedThreadPool("rds-shared-executor", 5);
+
 
     public RemoteDataSet(final HostAndPort serverEndpoint) {
         this(serverEndpoint, ROOT_DATASET_INDEX);
@@ -63,12 +70,6 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
     public RemoteDataSet(final HostAndPort serverEndpoint, final int remoteHandle) {
         this.serverEndpoint = serverEndpoint;
         this.remoteHandle = remoteHandle;
-        final ExecutorService executorService =
-                ExecutorUtils.newNamedThreadPool("remote-data-set:" + serverEndpoint, 5);
-        // Using PollSelectorProvider() to avoid Epoll CPU utilization problems.
-        // See: https://github.com/netty/netty/issues/327
-        final EventLoopGroup workerElg = new NioEventLoopGroup(1,
-                ExecutorUtils.newFastLocalThreadFactory("worker"), new PollSelectorProvider());
         this.stub = HillviewServerGrpc.newStub(NettyChannelBuilder
                 .forAddress(serverEndpoint.getHost(), serverEndpoint.getPort())
                 .maxInboundMessageSize(HillviewServer.MAX_MESSAGE_SIZE)

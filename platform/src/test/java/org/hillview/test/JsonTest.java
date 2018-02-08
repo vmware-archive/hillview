@@ -108,7 +108,7 @@ public class JsonTest extends BaseTest {
         Assert.assertEquals("Table[3x15]", table.toString());
     }
 
-    @Test
+//    @Test
     public void mongoDBTest() {
         try {
             JdbcConnectionInformation info = new JdbcConnectionInformation();
