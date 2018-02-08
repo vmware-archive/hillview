@@ -277,7 +277,8 @@ export class HeatmapLegendPlot extends Plot {
         if (this.legendRectangle != null) {
             this.legendRectangle.remove();
             this.axisElement.remove();
-            this.gradient.remove();
+            if (this.gradient != null)
+                this.gradient.remove();
             this.gradient = null;
         }
         let min = this.colorMap.min;

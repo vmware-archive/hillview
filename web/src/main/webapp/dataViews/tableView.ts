@@ -83,10 +83,11 @@ export class TableView extends TableViewBase implements IScrollTarget {
         let menu = new TopMenu([
             {
                 text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
+                    /*
                     { text: "Full dataset",
                         action: () => this.fullDataset(),
                         help: "Show the initial dataset, prior to any filtering operations."
-                    },
+                    },*/
                     { text: "Refresh",
                         action: () => this.refresh(),
                         help: "Redraw this view."

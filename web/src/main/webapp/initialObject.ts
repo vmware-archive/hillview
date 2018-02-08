@@ -18,7 +18,7 @@
 import {RemoteObject, OnCompleteRenderer} from "./rpc";
 import {RemoteTableReceiver} from "./dataViews/tableView";
 import {FullPage} from "./ui/fullPage";
-import {ICancellable} from "./util";
+import {ICancellable, uuidv4} from "./util";
 import {FileSetDescription, JdbcConnectionInformation, RemoteObjectId} from "./javaBridge";
 
 /**
@@ -67,7 +67,8 @@ export class InitialObject extends RemoteObject {
     }
 
     public loadLogs(menuPage: FullPage): void {
-        let rr = this.createStreamingRpcRequest<RemoteObjectId>("findLogs", null);
+        // Use a guid to force the request to reload every time
+        let rr = this.createStreamingRpcRequest<RemoteObjectId>("findLogs", uuidv4());
         let observer = new FileNamesReceiver(menuPage, rr, "Hillview logs");
         rr.invoke(observer);
     }

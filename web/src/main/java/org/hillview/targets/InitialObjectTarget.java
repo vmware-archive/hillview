@@ -129,12 +129,14 @@ public class InitialObjectTarget extends RpcTarget {
          */
         boolean headerRow;
 
+        @Nullable
         String getSchemaPath() {
             if (Utilities.isNullOrEmpty(this.schemaFile))
                 return null;
             return Paths.get(this.folder, this.schemaFile).toString();
         }
 
+        @Nullable
         String getRegexPattern() {
             if (this.fileNamePattern == null)
                 return null;

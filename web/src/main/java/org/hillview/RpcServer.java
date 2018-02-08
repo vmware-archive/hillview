@@ -144,7 +144,7 @@ public final class RpcServer {
     @OnClose
     public void onClose(final Session session, final CloseReason reason) {
         if (reason.getCloseCode() != CloseReason.CloseCodes.NORMAL_CLOSURE) {
-            HillviewLogger.instance.error("Close connection for client",
+            HillviewLogger.instance.error("Abnormal close of connection for client",
                     "{0}, {1}", session.getId(), reason.toString());
             HillviewLogger.instance.error("Stack trace from exception", new Exception());
         } else {

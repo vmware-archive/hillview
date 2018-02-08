@@ -92,7 +92,8 @@ export class Test {
      */
     public runNext(): void {
         if (this.testProgram.length <= this.programCounter) {
-            console.log("Tests are finished");
+            if (this.testProgram.length != 0)
+                console.log("Tests are finished");
             return;
         }
         let op = this.testProgram[this.programCounter];

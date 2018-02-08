@@ -42,7 +42,7 @@ Here is an example config.yaml file:
   # Folder where the hillview service is installed on remote machines
   service_folder: "~"
   # Version of Apache Tomcat to deploy
-  tomcat_version: "8.5.8"
+  tomcat_version: "9.0.4"
   # Tomcat installation folder name
   tomcat: "apache-tomcat-{{ tomcat_version }}"
 ```

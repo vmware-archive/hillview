@@ -87,7 +87,7 @@ export class FullPage implements IHtmlElement {
         titleRow.style.display = "flex";
         titleRow.style.width = "100%";
         titleRow.style.flexDirection = "row";
-        titleRow.style.flexWrap = "false";
+        titleRow.style.flexWrap = "nowrap";
         titleRow.style.alignItems = "center";
         this.pageTopLevel.appendChild(titleRow);
         this.menuSlot = document.createElement("div");

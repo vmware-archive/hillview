@@ -20,7 +20,7 @@ import {d3} from "../ui/d3-modules";
 import { Renderer } from "../rpc";
 import {
     IColumnDescription, Schema, RecordOrder, BasicColStats, FilterDescription,
-    Histogram2DArgs, CombineOperators, RemoteObjectId, HeatMap
+    Histogram2DArgs, CombineOperators, RemoteObjectId, HeatMap, isNumeric
 } from "../javaBridge";
 import {TableView, NextKReceiver} from "./tableView";
 import {
@@ -73,6 +73,7 @@ export class HeatMapView extends RemoteTableObjectView {
         samplingRate: number;
     };
     private menu: TopMenu;
+    protected viewMenu: SubMenu;
 
     constructor(remoteObjectId: RemoteObjectId, originalTableId: RemoteObjectId,
                 protected tableSchema: Schema, page: FullPage) {
@@ -82,24 +83,25 @@ export class HeatMapView extends RemoteTableObjectView {
         this.topLevel.onkeydown = e => this.keyDown(e);
         this.dragging = false;
         this.moved = false;
+        this.viewMenu = new SubMenu([
+            { text: "refresh",
+                action: () => { this.refresh(); },
+                help: "Redraw this view." },
+            { text: "swap axes",
+                action: () => { this.swapAxes(); },
+                help: "Draw the heatmap with the same data by swapping the X and Y axes." },
+            { text: "table",
+                action: () => { this.showTable(); },
+                help: "View the data underlying this view as a table." },
+            { text: "histogram",
+                action: () => { this.histogram(); },
+                help: "Show this data as a two-dimensional histogram." },
+            { text: "group by",
+                action: () => { this.trellis(); },
+                help: "Group data by a third column." },
+        ]);
         this.menu = new TopMenu( [
-            { text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
-                { text: "refresh",
-                    action: () => { this.refresh(); },
-                    help: "Redraw this view." },
-                { text: "swap axes",
-                    action: () => { this.swapAxes(); },
-                    help: "Draw the heatmap with the same data by swapping the X and Y axes." },
-                { text: "table",
-                    action: () => { this.showTable(); },
-                    help: "View the data underlying this view as a table." },
-                { text: "histogram",
-                    action: () => { this.histogram(); },
-                    help: "Show this data as a two-dimensional histogram." },
-                { text: "group by",
-                    action: () => { this.trellis(); },
-                    help: "Group data by a third column." },
-            ]) },
+            { text: "View", help: "Change the way the data is displayed.", subMenu:  this.viewMenu },
             combineMenu(this, page.pageId)
         ]);
 
@@ -138,6 +140,10 @@ export class HeatMapView extends RemoteTableObjectView {
             this.page.reportError("No data to display");
             return;
         }
+
+        // TODO: this should go away
+        if (!isNumeric(xData.description.kind) || !isNumeric(yData.description.kind))
+            this.viewMenu.enable("group by", false);
 
         let xPoints = heatmap.buckets.length;
         let yPoints = heatmap.buckets[0].length;
