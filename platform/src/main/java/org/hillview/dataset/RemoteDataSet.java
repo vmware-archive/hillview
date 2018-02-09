@@ -36,7 +36,6 @@ import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.JsonList;
 import rx.Observable;
 import rx.subjects.PublishSubject;
-import sun.nio.ch.PollSelectorProvider;
 
 import java.util.List;
 import java.util.UUID;

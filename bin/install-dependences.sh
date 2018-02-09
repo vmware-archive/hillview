@@ -4,7 +4,8 @@
 # Bail out at first error
 set -e
 
-source ./config.sh
+mydir="$(dirname "$0")"
+source $mydir/config.sh
 
 echo "Installing programs needed to build"
 ${SUDO} ${INSTALL} install maven nodejs-legacy ansible npm

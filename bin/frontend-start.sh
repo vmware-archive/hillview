@@ -1,7 +1,8 @@
 #!/bin/bash
 # This scripts starts the Hillview front-end service locally
 
-source ./config.sh
+mydir="$(dirname "$0")"
+source $mydir/config.sh
 
 # If you add this line the java process enables a remote debugger to be connected to it
 # on port 5005
