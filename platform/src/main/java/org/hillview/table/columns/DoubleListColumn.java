@@ -69,7 +69,13 @@ public class DoubleListColumn
     public void parseAndAppendString(@Nullable String s) {
         if ((s == null) || s.isEmpty())
             this.parseEmptyOrNull();
-        else
-            this.append(Double.parseDouble(s));
+        else {
+            try {
+                this.append(Double.parseDouble(s));
+            } catch (Exception ex) {
+                this.parsingExceptionCount++;
+                this.parseEmptyOrNull();
+            }
+        }
     }
 }

@@ -68,8 +68,13 @@ public class DateListColumn
             if (this.dateParser == null) {
                 this.dateParser = new DateParsing(s);
             }
-            Instant dt = this.dateParser.parse(s);
-            this.append(dt);
+            try {
+                Instant dt = this.dateParser.parse(s);
+                this.append(dt);
+            } catch (Exception e) {
+                this.parsingExceptionCount++;
+                this.parseEmptyOrNull();
+            }
         }
     }
 

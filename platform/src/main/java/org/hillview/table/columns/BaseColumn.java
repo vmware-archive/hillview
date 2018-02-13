@@ -29,6 +29,7 @@ import java.time.Instant;
  */
 abstract class BaseColumn implements IColumn {
     final ColumnDescription description;
+    int parsingExceptionCount;
 
     void checkKind(ContentsKind kind) {
         if (this.description.kind != kind)
@@ -37,6 +38,7 @@ abstract class BaseColumn implements IColumn {
 
     public BaseColumn(final ColumnDescription description) {
         this.description = description;
+        this.parsingExceptionCount = 0;
     }
 
     @Override
@@ -71,4 +73,6 @@ abstract class BaseColumn implements IColumn {
 
     @Override
     public boolean isMissing(final int rowIndex) { throw new UnsupportedOperationException(); }
+
+    public int getParsingExceptionCount() { return this.parsingExceptionCount; }
 }

@@ -46,6 +46,11 @@ public class GuessSchema {
         public SchemaInfo() {
             this(ContentsKind.None, false);
         }
+
+        public String toString() {
+            return this.kind.toString() + ", " +
+                    (this.allowMissing ? "allow missing" : "no missing");
+        }
     }
 
     enum CanParse {
@@ -70,15 +75,19 @@ public class GuessSchema {
         successor.put(ContentsKind.None, new ContentsKind[]{
                 ContentsKind.Integer, ContentsKind.Double,
                 ContentsKind.Duration, ContentsKind.Date,
-                ContentsKind.Json, ContentsKind.Category
+                ContentsKind.Json, ContentsKind.Category,
+                ContentsKind.String
         });
         successor.put(ContentsKind.Integer,
-                new ContentsKind[] { ContentsKind.Double, ContentsKind.Json, ContentsKind.Category
+                new ContentsKind[] { ContentsKind.Double, ContentsKind.Json,
+                        ContentsKind.Category, ContentsKind.String
         });
         successor.put(ContentsKind.Double,
-                new ContentsKind[] { ContentsKind.Json, ContentsKind.Category });
-        successor.put(ContentsKind.Date, new ContentsKind[] { ContentsKind.Category });
-        successor.put(ContentsKind.Duration, new ContentsKind[] { ContentsKind.Category });
+                new ContentsKind[] { ContentsKind.Json, ContentsKind.Category, ContentsKind.String });
+        successor.put(ContentsKind.Date, new ContentsKind[]
+                { ContentsKind.Category, ContentsKind.String });
+        successor.put(ContentsKind.Duration, new ContentsKind[]
+                { ContentsKind.Category, ContentsKind.String });
         successor.put(ContentsKind.Json, new ContentsKind[] { ContentsKind.String });
         successor.put(ContentsKind.Category, new ContentsKind[] { ContentsKind.String });
     }
@@ -121,7 +130,7 @@ public class GuessSchema {
                 return;
             }
         }
-        throw new RuntimeException("Could not guess kind of " + value);
+        throw new RuntimeException("Could not guess kind of `" + value + "' currently " + info);
     }
 
     public SchemaInfo guess(Iterable<String> values) {

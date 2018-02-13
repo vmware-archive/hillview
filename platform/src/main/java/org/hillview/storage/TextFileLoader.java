@@ -17,6 +17,8 @@
 
 package org.hillview.storage;
 
+import org.apache.commons.io.ByteOrderMark;
+import org.apache.commons.io.input.BOMInputStream;
 import org.hillview.table.api.IAppendableColumn;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
@@ -52,9 +54,16 @@ public abstract class TextFileLoader implements IFileLoader {
     Reader getFileReader() {
         try {
             HillviewLogger.instance.info("Reading file", "{0}", this.filename);
+            InputStream fis = new FileInputStream(this.filename);
             if (this.filename.toLowerCase().endsWith(".gz"))
-                return new InputStreamReader(new GZIPInputStream(new FileInputStream(this.filename)));
-            return new FileReader(this.filename);
+                fis = new GZIPInputStream(fis);
+            BOMInputStream bos = new BOMInputStream(fis,
+                    ByteOrderMark.UTF_8,
+                    ByteOrderMark.UTF_16LE, ByteOrderMark.UTF_16BE,
+                    ByteOrderMark.UTF_32LE, ByteOrderMark.UTF_32BE);
+            ByteOrderMark bom = bos.getBOM();
+            String charsetName = bom == null ? "UTF-8" : bom.getCharsetName();
+            return new InputStreamReader(bos, charsetName);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

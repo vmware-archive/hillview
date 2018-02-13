@@ -69,7 +69,7 @@ public final class RpcReply {
      * @param session If the context is null no reply is sent.
      * This method is synchronized because sendText() is not thread-safe.
      */
-    synchronized public void send(@Nullable Session session) {
+    public void send(@Nullable Session session) {
         HillviewLogger.instance.info("Sending reply", "{0}", this);
         try {
             if (session == null) {

@@ -36,6 +36,7 @@ import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.JsonList;
 import rx.Observable;
 import rx.subjects.PublishSubject;
+import rx.subjects.SerializedSubject;
 
 import java.util.List;
 import java.util.UUID;
@@ -78,6 +79,10 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
                 .build());
     }
 
+    static <T> SerializedSubject<T, T> createSerializedSubject() {
+        return PublishSubject.<T>create().toSerialized();
+    }
+
     /**
      * Map operations on a RemoteDataSet result in only one onNext
      * invocation that will return the final IDataSet.
@@ -93,7 +98,8 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
                                        .setHighId(operationId.getMostSignificantBits())
                                        .setLowId(operationId.getLeastSignificantBits())
                                        .build();
-        final PublishSubject<PartialResult<IDataSet<S>>> subj = PublishSubject.create();
+        final SerializedSubject<PartialResult<IDataSet<S>>, PartialResult<IDataSet<S>>> subj =
+                createSerializedSubject();
         final StreamObserver<PartialResponse> responseObserver = new NewDataSetObserver<S>(subj);
         return subj.doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
                                                  .map(command, responseObserver))
@@ -111,7 +117,8 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
                 .setHighId(operationId.getMostSignificantBits())
                 .setLowId(operationId.getLeastSignificantBits())
                 .build();
-        final PublishSubject<PartialResult<IDataSet<S>>> subj = PublishSubject.create();
+        final SerializedSubject<PartialResult<IDataSet<S>>, PartialResult<IDataSet<S>>> subj =
+                createSerializedSubject();
         final StreamObserver<PartialResponse> responseObserver = new NewDataSetObserver<S>(subj);
         return subj.doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
                 .flatMap(command, responseObserver))
@@ -132,8 +139,8 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
                                        .setHighId(operationId.getMostSignificantBits())
                                        .setLowId(operationId.getLeastSignificantBits())
                                        .build();
-        final PublishSubject<PartialResult<R>> subj = PublishSubject.create();
-        final StreamObserver<PartialResponse> responseObserver = new SketchObserver<>(subj);
+        final SerializedSubject<PartialResult<R>, PartialResult<R>> subj = createSerializedSubject();
+        final StreamObserver<PartialResponse> responseObserver = new SketchObserver<R>(subj);
         return subj.doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
                                                  .sketch(command, responseObserver))
                    .doOnUnsubscribe(() -> this.unsubscribe(operationId));
@@ -167,7 +174,8 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
                                          .setHighId(operationId.getMostSignificantBits())
                                          .setLowId(operationId.getLeastSignificantBits())
                                          .build();
-        final PublishSubject<PartialResult<IDataSet<Pair<T, S>>>> subj = PublishSubject.create();
+        final SerializedSubject<PartialResult<IDataSet<Pair<T, S>>>, PartialResult<IDataSet<Pair<T, S>>>> subj =
+                createSerializedSubject();
         final StreamObserver<PartialResponse> responseObserver =
                                                         new NewDataSetObserver<Pair<T, S>>(subj);
         return subj.doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
@@ -186,7 +194,9 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
                 .setHighId(operationId.getMostSignificantBits())
                 .setLowId(operationId.getLeastSignificantBits())
                 .build();
-        final PublishSubject<PartialResult<JsonList<ControlMessage.Status>>> subj = PublishSubject.create();
+        final SerializedSubject<PartialResult<JsonList<ControlMessage.Status>>,
+                PartialResult<JsonList<ControlMessage.Status>>> subj =
+                createSerializedSubject();
         final StreamObserver<PartialResponse> responseObserver =
                 new ManageObserver(subj, message, this);
         return subj.doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
@@ -225,15 +235,16 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
      * from a gRPC streaming call to that of a publish subject.
      */
     private abstract static class OperationObserver<T> implements StreamObserver<PartialResponse> {
-        final PublishSubject<T> subject;
+        final SerializedSubject<T, T> subject;
 
-        public OperationObserver(final PublishSubject<T> subject) {
+        public OperationObserver(final SerializedSubject<T, T> subject) {
             this.subject = subject;
         }
 
         @Override
         public void onNext(final PartialResponse response) {
-            this.subject.onNext(processResponse(response));
+            T result = this.processResponse(response);
+            this.subject.onNext(result);
         }
 
         @Override
@@ -256,7 +267,7 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
      * a new RemoteDataSet that points to a dataset on a remote server.
      */
     private class NewDataSetObserver<S> extends OperationObserver<PartialResult<IDataSet<S>>> {
-        public NewDataSetObserver(PublishSubject<PartialResult<IDataSet<S>>> subject) {
+        public NewDataSetObserver(SerializedSubject<PartialResult<IDataSet<S>>, PartialResult<IDataSet<S>>> subject) {
             super(subject);
         }
 
@@ -274,7 +285,7 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
      * StreamObserver used by sketch() implementations above.
      */
     private static class SketchObserver<S> extends OperationObserver<PartialResult<S>> {
-        public SketchObserver(final PublishSubject<PartialResult<S>> subject) {
+        public SketchObserver(final SerializedSubject<PartialResult<S>, PartialResult<S>> subject) {
             super(subject);
         }
 
@@ -294,7 +305,8 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
         private final ControlMessage message;
         private final RemoteDataSet  dataSet;
 
-        public ManageObserver(PublishSubject<PartialResult<JsonList<ControlMessage.Status>>> subject,
+        public ManageObserver(SerializedSubject<PartialResult<JsonList<ControlMessage.Status>>,
+                PartialResult<JsonList<ControlMessage.Status>>> subject,
                               ControlMessage message, RemoteDataSet dataSet) {
             super(subject);
             this.message = message;

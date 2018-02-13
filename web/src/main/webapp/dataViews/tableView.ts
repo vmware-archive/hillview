@@ -869,7 +869,6 @@ export class TableView extends TableViewBase implements IScrollTarget {
 
         cell = trow.insertCell(1);
         cell.style.textAlign = "right";
-        cell.classList.add("noselect");
         cell.textContent = significantDigits(row.count);
         cell.title = "Number of rows that have these values: " + formatNumber(row.count);
 
@@ -896,7 +895,6 @@ export class TableView extends TableViewBase implements IScrollTarget {
                     value = cellValue;
                 }
                 cell.textContent = cellValue;
-                cell.classList.add("noselect");
                 cell.title = "Right click will popup a menu.";
                 cell.oncontextmenu = e => {
                     this.contextMenu.clear();

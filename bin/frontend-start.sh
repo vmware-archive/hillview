@@ -2,6 +2,7 @@
 # This scripts starts the Hillview front-end service locally
 
 mydir="$(dirname "$0")"
+if [[ ! -d "$mydir" ]]; then mydir="$PWD"; fi
 source $mydir/config.sh
 
 # If you add this line the java process enables a remote debugger to be connected to it

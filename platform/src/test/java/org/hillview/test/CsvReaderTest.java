@@ -122,6 +122,19 @@ public class CsvReaderTest extends BaseTest {
         Assert.assertNotNull(t);
     }
 
+    @Test
+    public void readUTF16FileTest() {
+        Path path = Paths.get("../data/", "utf16-data.csv");
+        CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
+        config.allowFewerColumns = false;
+        config.hasHeaderRow = true;
+        config.allowMissingData = false;
+        CsvFileLoader r = new CsvFileLoader(path.toString(), config, null);
+        ITable t = r.load();
+        Assert.assertNotNull(t);
+        Assert.assertEquals("Table[3x5]", t.toString());
+    }
+
     private void writeReadTable(ITable table) throws IOException {
         UUID uid = UUID.randomUUID();
         String tmpFileName = uid.toString();

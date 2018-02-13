@@ -57,8 +57,14 @@ class DurationListColumn extends DoubleListColumn implements IDurationColumn {
     public void parseAndAppendString(@Nullable String s) {
         if ((s == null) || s.isEmpty())
             this.parseEmptyOrNull();
-        else
-            this.append(Duration.parse(s));
+        else {
+            try {
+                this.append(Duration.parse(s));
+            } catch (Exception ex) {
+                this.parsingExceptionCount++;
+                this.parseEmptyOrNull();
+            }
+        }
     }
 
     @Override

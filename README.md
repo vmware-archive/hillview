@@ -42,6 +42,9 @@ using a sample dataset.
 * First install all software required as described
   [below](#installing-the-software-needed).
 
+* Check/edit the file `./bin/config.sh` and select the appropriate
+  versions for the software dependences.
+
 * Build the software:
 
 ```

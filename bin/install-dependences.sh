@@ -5,6 +5,7 @@
 set -e
 
 mydir="$(dirname "$0")"
+if [[ ! -d "$mydir" ]]; then mydir="$PWD"; fi
 source $mydir/config.sh
 
 echo "Installing programs needed to build"

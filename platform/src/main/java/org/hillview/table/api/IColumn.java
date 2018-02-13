@@ -44,6 +44,10 @@ public interface IColumn extends Serializable {
     Instant getDate(int rowIndex);
     @Nullable
     Duration getDuration(int rowIndex);
+    /**
+     * Number of exceptions that have occurred during parsing.
+     */
+    int getParsingExceptionCount();
 
     /* This function is inefficient, it should be used sparingly. It
        will cast the value to an Object, boxing it if necessary. It returns null
