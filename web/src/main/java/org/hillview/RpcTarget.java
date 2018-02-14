@@ -124,8 +124,7 @@ public abstract class RpcTarget implements IJson {
     }
 
     private synchronized void saveSubscription(RpcRequestContext context, Subscription sub) {
-        if (context.session != null)
-            RpcObjectManager.instance.addSubscription(context.session, sub);
+        RpcObjectManager.instance.addSubscription(context, sub);
     }
 
     /**
@@ -152,6 +151,8 @@ public abstract class RpcTarget implements IJson {
      * - parsing the arguments of the RpcCall
      * - sending the replies, in any number they may be, using the context
      * - closing the context session on termination.
+     * The method will most often end by calling runSketch, runMap, etc --
+     * one of the methods below.
      */
     void execute(RpcRequest request, RpcRequestContext context) {
         /*

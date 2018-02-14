@@ -62,4 +62,9 @@ public final class RpcRequestContext {
         }
         return this.session;
     }
+
+    public String toString() {
+        return "RpcRequestContext: " + (this.session == null ? " no session " : this.session.toString()) +
+            "computation: " + (this.computation == null ? "no computation" : this.computation.toString());
+    }
 }

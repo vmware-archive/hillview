@@ -23,7 +23,6 @@ import com.google.gson.stream.JsonReader;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Utilities;
-import rx.Observer;
 import rx.Subscription;
 
 import javax.websocket.*;
@@ -68,14 +67,14 @@ public final class RpcServer {
             JsonElement elem = Streams.parse(jReader);
             HillviewLogger.instance.info("Decoded message", "{0}", elem.toString());
             req = new RpcRequest(elem);
-            if (RpcObjectManager.instance.getTarget(session) != null)
-                throw new RuntimeException("Session already associated with a request!");
         } catch (Exception ex) {
             HillviewLogger.instance.error("Error processing json", ex);
             this.replyWithError(ex, session);
             return;
         }
 
+        if (RpcObjectManager.instance.getTarget(session) != null)
+            throw new RuntimeException("Session already associated with a request!");
         RpcRequestContext context = new RpcRequestContext(session);
         RpcServer.execute(req, context);
     }
@@ -91,11 +90,9 @@ public final class RpcServer {
 
     public static void execute(RpcRequest rpcRequest, RpcRequestContext context) {
         HillviewLogger.instance.info("Executing request", "{0}", rpcRequest);
-        // Observable invoked when the source object has been obtained.
-        Observer<RpcTarget> obs = new Observer<RpcTarget>() {
-            @Override
-            public void onCompleted() {}
-
+        /* Observable invoked when the source object has been obtained.
+         * This observable will actually invoke the method on the object. */
+        SingleObserver<RpcTarget> obs = new SingleObserver<RpcTarget>() {
             @Override
             public void onError(Throwable throwable) {
                 HillviewLogger.instance.error("Return exception", throwable);
@@ -108,7 +105,7 @@ public final class RpcServer {
             }
 
             @Override
-            public void onNext(RpcTarget rpcTarget) {
+            public void onSuccess(RpcTarget rpcTarget) {
                 if (context.session != null)
                     RpcObjectManager.instance.addSession(context.session, rpcTarget);
                 try {
@@ -119,7 +116,8 @@ public final class RpcServer {
                 }
             }
         };
-        // Retrieve the source object on which the operation is executed
+        // Retrieve the source object on which the operation is executed.
+        // This works asynchronously - when the object is retrieved obs is invoked.
         RpcObjectManager.instance.retrieveTarget(rpcRequest.objectId, true, obs);
     }
 
