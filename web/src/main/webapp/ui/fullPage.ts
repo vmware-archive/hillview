@@ -60,6 +60,7 @@ export class FullPage implements IHtmlElement {
     static pageCounter: number = 0;
     public readonly pageId: number;
     private menuSlot: HTMLElement;
+    private h1: HTMLElement;
 
     /**
      * All visible pages are children of a div named 'top'.
@@ -106,6 +107,7 @@ export class FullPage implements IHtmlElement {
         h1.style.textOverflow = "ellipsis";
         h1.style.textAlign = "center";
         h1.style.margin = "0";
+        this.h1 = h1;
         this.addCell(titleRow, h1, false);
 
         if (sourcePage != null) {
@@ -134,6 +136,10 @@ export class FullPage implements IHtmlElement {
 
         this.bottomContainer.appendChild(this.progressManager.getHTMLRepresentation());
         this.bottomContainer.appendChild(this.console.getHTMLRepresentation());
+    }
+
+    getTitleElement(): HTMLElement {
+        return this.h1;
     }
 
     openInNewTab(url: string) {
