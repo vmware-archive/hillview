@@ -16,6 +16,6 @@
   ~ limitations under the License.
   -->
 
-<Context path="/">
-    <Resources cachingAllowed="true" cacheMaxSize="20000" />
+<Context>
+    <Resources cachingAllowed="true" cacheMaxSize="50000" />
 </Context>
