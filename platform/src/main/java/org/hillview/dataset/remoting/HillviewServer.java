@@ -116,10 +116,6 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     }
 
     //////////////////////
-    /// Dataset references
-    /// Ideally these methods would not need to be synchronized,
-    /// since the underlying Cache object is thread-safe,
-    /// but the deleteAllDatasets is not atomic...
 
     synchronized private int save(IDataSet dataSet) {
         int index = this.dsIndex.getAndIncrement();
@@ -155,7 +151,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
         long removed = this.dataSets.size();
         this.dataSets.invalidateAll();
         this.memoizedCommands.clear();
-        return (int)removed;
+        return (int) removed;
     }
 
     ////////////////////////
