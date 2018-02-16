@@ -169,7 +169,7 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
         let max = barSize + dev;
         let minString = significantDigits(min);
         let maxString = significantDigits(max);
-        if (minString == maxString)
+        if (minString == maxString && dev != 0)
             return minString;
         return SpecialChars.approx + significantDigits(barSize);
     }

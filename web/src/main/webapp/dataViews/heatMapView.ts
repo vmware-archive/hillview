@@ -436,10 +436,10 @@ export class HeatMapView extends RemoteTableObjectView {
      * Selection has been completed.  The mouse coordinates are within the canvas.
      */
     selectionCompleted(xl: number, xr: number, yl: number, yr: number): void {
-        xl -= PlottingSurface.leftMargin;
-        xr -= PlottingSurface.leftMargin;
-        yl -= PlottingSurface.topMargin;
-        yr -= PlottingSurface.topMargin;
+        xl -= this.surface.leftMargin;
+        xr -= this.surface.leftMargin;
+        yl -= this.surface.topMargin;
+        yr -= this.surface.topMargin;
 
         if (this.plot.xScale == null || this.plot.yScale == null)
             return;
