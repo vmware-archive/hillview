@@ -30,6 +30,11 @@ import java.util.List;
  * coming from the web browser UI.
  */
 public class HillviewComputation implements Serializable {
+    private static int currentId = 0;
+    /**
+     * Unique Id of this computation.
+     */
+    private final int id;
     /**
      * Request that triggered this computation.
      */
@@ -51,6 +56,7 @@ public class HillviewComputation implements Serializable {
     private List<Observer<RpcTarget>> onCreate;
 
     HillviewComputation(RpcTarget source, RpcRequest request) {
+        this.id = HillviewComputation.currentId++;
         this.request = request;
         this.sourceId = source.getId();
         this.resultId = RpcTarget.Id.freshId();
@@ -82,6 +88,8 @@ public class HillviewComputation implements Serializable {
             public void onSuccess(RpcTarget source) {
                 // Executing this function will probably create the
                 // target object, but we don't know when exactly.
+                HillviewLogger.instance.info("Source retrieved; invoking request", "Source={0}, Request={1}",
+                        source.toString(), HillviewComputation.this.request.toString());
                 source.execute(HillviewComputation.this.request,
                         new RpcRequestContext(HillviewComputation.this));
             }
@@ -95,7 +103,9 @@ public class HillviewComputation implements Serializable {
 
     @Override
     public String toString() {
-        return "Source: " + this.sourceId + ", request: " + this.request.toString();
+        return "[Id=" + this.id +
+                ", source RpcTarget=" + this.sourceId +
+                ", RpcRequest=" + this.request + "]";
     }
 
     @Override
@@ -119,6 +129,8 @@ public class HillviewComputation implements Serializable {
      */
     void objectCreated(RpcTarget target) {
         for (Observer<RpcTarget> o: this.onCreate) {
+            HillviewLogger.instance.info("Notifying observer of new object.",
+                    "Computation={0}", this.toString());
             o.onNext(target);
             o.onCompleted();
         }

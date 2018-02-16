@@ -520,7 +520,7 @@ public final class TableTarget extends RpcTarget {
 
     @Override
     public String toString() {
-        return "TableTarget object, " + super.toString();
+        return "TableTarget object=" + super.toString();
     }
 
     @HillviewRpc

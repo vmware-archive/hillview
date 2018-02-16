@@ -70,7 +70,7 @@ public final class RpcRequest {
 
     @Override
     public String toString() {
-        return "RpcRequest: " + this.objectId + "." + this.method + "()";
+        return this.objectId + "." + this.method + "()";
     }
 
     RpcReply createReply(IJson userResult) {

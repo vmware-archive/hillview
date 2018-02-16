@@ -95,8 +95,13 @@ public final class RpcObjectManager {
             return;
         HillviewLogger.instance.info("Saving subscription", "{0}", context.toString());
         if (this.sessionSubscription.get(session) != null)
-            throw new RuntimeException("Subscription already active on this context");
-        this.sessionSubscription.put(session, subscription);
+            // This can happen because we have started the operation, some part of the
+            // object was not found on a remote node, and then reconstruction started.
+            // The subscription was saved when the operation was initially initiated.
+            HillviewLogger.instance.info("Subscription already active on this context",
+                    "context={0}", context);
+        else
+            this.sessionSubscription.put(session, subscription);
     }
 
     synchronized void removeSubscription(Session session) {
@@ -162,10 +167,10 @@ public final class RpcObjectManager {
         HillviewComputation computation = this.generator.get(id);
         if (computation != null) {
             // The following may trigger a recursive reconstruction.
-            HillviewLogger.instance.info("Replaying", "{0}", computation);
+            HillviewLogger.instance.info("Replaying", "computation={0}", computation);
             computation.replay(toNotify);
         } else {
-            Exception ex = new RuntimeException("Cannot reconstruct " + id);
+            Exception ex = new RuntimeException("Don't know how to reconstruct " + id);
             HillviewLogger.instance.error("Could not locate computation", ex);
             toNotify.onError(ex);
         }

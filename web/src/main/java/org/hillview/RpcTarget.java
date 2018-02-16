@@ -109,6 +109,7 @@ public abstract class RpcTarget implements IJson {
     protected RpcTarget(HillviewComputation computation) {
         this.computation = computation;
         this.objectId = computation.resultId;
+        HillviewLogger.instance.info("Create RpcTarget", "{0}", computation.toString());
     }
 
     /**
@@ -167,7 +168,8 @@ public abstract class RpcTarget implements IJson {
             Method method = this.getMethod(request.method);
             if (method == null)
                 throw new RuntimeException(this.toString() + ": No such method " + request.method);
-            HillviewLogger.instance.info("Executing", "{0}", request);
+            HillviewLogger.instance.info("Executing", "request={0}, context={1}",
+                    request.toString(), context.toString());
             method.invoke(this, request, context);
         } catch (Exception ex) {
             HillviewLogger.instance.error("Exception while invoking method", ex);
