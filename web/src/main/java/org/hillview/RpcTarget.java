@@ -32,6 +32,8 @@ import javax.websocket.Session;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.BiFunction;
 
 /**
@@ -97,6 +99,11 @@ public abstract class RpcTarget implements IJson {
     public Id getId() {
         return this.objectId;
     }
+
+    /**
+     * Make sure to invoke all RPC responses on this thread
+     */
+    private static final ExecutorService replyExecutor = Executors.newFixedThreadPool(5);
 
     /**
      * This constructor is only called for the InitialObject.
@@ -216,8 +223,10 @@ public abstract class RpcTarget implements IJson {
             if (reconstructing ||
                     this.context.session == null ||
                     !this.context.session.isOpen()) return;
-            RpcReply reply = this.request.createReply(throwable);
-            reply.send(this.context.session);
+            replyExecutor.execute(() -> {
+                RpcReply reply = this.request.createReply(throwable);
+                reply.send(this.context.session);
+            });
         }
 
         HillviewComputation getComputation() {
@@ -264,7 +273,7 @@ public abstract class RpcTarget implements IJson {
                 return;
 
             RpcReply reply = this.request.createReply(Utilities.toJsonTree(pr));
-            reply.send(session);
+            replyExecutor.execute(() -> reply.send(session));
         }
     }
 
@@ -299,7 +308,7 @@ public abstract class RpcTarget implements IJson {
             // always send null data for partial results
             json.add("data", null);
             RpcReply reply = this.request.createReply(json);
-            reply.send(session);
+            replyExecutor.execute(() -> reply.send(session));
         }
 
         @Override
@@ -314,8 +323,10 @@ public abstract class RpcTarget implements IJson {
                 return;
             json.add("data", result.toJsonTree());
             RpcReply reply = this.request.createReply(json);
-            reply.send(this.context.session);
-            this.request.syncCloseSession(this.context.session);
+            replyExecutor.execute(() -> {
+                reply.send(this.context.session);
+                this.request.syncCloseSession(this.context.session);
+            });
         }
     }
 
@@ -350,8 +361,10 @@ public abstract class RpcTarget implements IJson {
             Session session = this.context.getSessionIfOpen();
             if (session == null)
                 return;
-            RpcReply reply = this.request.createReply(json);
-            reply.send(session);
+            replyExecutor.execute(() -> {
+                RpcReply reply = this.request.createReply(json);
+                reply.send(session);
+            });
         }
     }
 
@@ -379,7 +392,7 @@ public abstract class RpcTarget implements IJson {
     runSketch(IDataSet<T> data, ISketch<T, R> sketch,
               RpcRequest request, RpcRequestContext context) {
         // Run the sketch
-        Observable<PartialResult<R>> sketches = data.sketch(sketch);
+        Observable<PartialResult<R>> sketches = data.sketch(sketch).serialize();
         // Knows how to add partial results
         PartialResultMonoid<R> prm = new PartialResultMonoid<R>(sketch);
         // Prefix sum of the partial results
@@ -405,7 +418,7 @@ public abstract class RpcTarget implements IJson {
                       BiFunction<R, HillviewComputation, S> postprocessing,
                       RpcRequest request, RpcRequestContext context) {
         // Run the sketch
-        Observable<PartialResult<R>> sketches = data.sketch(sketch);
+        Observable<PartialResult<R>> sketches = data.sketch(sketch).serialize();
         // Knows how to add partial results
         PartialResultMonoid<R> prm = new PartialResultMonoid<R>(sketch);
         // Prefix sum of the partial results
@@ -432,7 +445,7 @@ public abstract class RpcTarget implements IJson {
            BiFunction<IDataSet<S>, HillviewComputation, RpcTarget> factory,
            RpcRequest request, RpcRequestContext context) {
         // Run the map
-        Observable<PartialResult<IDataSet<S>>> stream = data.map(map);
+        Observable<PartialResult<IDataSet<S>>> stream = data.map(map).serialize();
         // Knows how to add partial results
         PRDataSetMonoid<S> monoid = new PRDataSetMonoid<S>();
         // Prefix sum of the partial results
@@ -459,7 +472,7 @@ public abstract class RpcTarget implements IJson {
                BiFunction<IDataSet<S>, HillviewComputation, RpcTarget> factory,
                RpcRequest request, RpcRequestContext context) {
         // Run the flatMap
-        Observable<PartialResult<IDataSet<S>>> stream = data.flatMap(map);
+        Observable<PartialResult<IDataSet<S>>> stream = data.flatMap(map).serialize();
         // Knows how to add partial results
         PRDataSetMonoid<S> monoid = new PRDataSetMonoid<S>();
         // Prefix sum of the partial results
@@ -486,7 +499,7 @@ public abstract class RpcTarget implements IJson {
     runZip(IDataSet<T> data, IDataSet<S> other,
            BiFunction<IDataSet<Pair<T, S>>, HillviewComputation, RpcTarget> factory,
            RpcRequest request, RpcRequestContext context) {
-        Observable<PartialResult<IDataSet<Pair<T, S>>>> stream = data.zip(other);
+        Observable<PartialResult<IDataSet<Pair<T, S>>>> stream = data.zip(other).serialize();
         PRDataSetMonoid<Pair<T, S>> monoid = new PRDataSetMonoid<Pair<T, S>>();
         Observable<PartialResult<IDataSet<Pair<T, S>>>> add = stream.scan(monoid::add);
         // We can actually reuse the MapResultObserver
@@ -507,7 +520,7 @@ public abstract class RpcTarget implements IJson {
     runManage(IDataSet<T> data, ControlMessage command,
               RpcRequest request, RpcRequestContext context) {
         // Run the sketch
-        Observable<PartialResult<JsonList<ControlMessage.Status>>> sketches = data.manage(command);
+        Observable<PartialResult<JsonList<ControlMessage.Status>>> sketches = data.manage(command).serialize();
         // Knows how to add partial results
         PartialResultMonoid<JsonList<ControlMessage.Status>> prm =
                 new PartialResultMonoid<JsonList<ControlMessage.Status>>(
