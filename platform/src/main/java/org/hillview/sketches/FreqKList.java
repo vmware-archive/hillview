@@ -179,8 +179,7 @@ public class FreqKList implements Serializable {
      * @param size: Lets us specify how many of the top items to select from the FreqKList.
      */
     public Pair<List<RowSnapshot>, List<Integer>> getTop(int size, int type) {
-        List<Pair<RowSnapshot, Integer>> pList = new
-                ArrayList<Pair<RowSnapshot, Integer>>(this.hMap.size());
+        List<Pair<RowSnapshot, Integer>> pList = new ArrayList<Pair<RowSnapshot, Integer>>(this.hMap.size());
         if (type == 0) {
             double threshold = this.epsilon * this.totalRows - this.getErrBound();
             this.hMap.forEach((rs, j) -> {
@@ -196,12 +195,13 @@ public class FreqKList implements Serializable {
             this.hMap.forEach((rs, j) -> {
                 if (j >= threshold)
                 {
-                    int k = j*(int)this.totalRows/this.maxSize;
+                    int k = j* (int)this.totalRows/this.maxSize;
                     pList.add(new Pair<RowSnapshot, Integer>(rs, k));
                 }
             });
             double cutoff = 0.5* this.epsilon * this.maxSize;
-            for (ObjectIterator<Object2IntMap.Entry<RowSnapshot>> it = this.hMap.object2IntEntrySet().fastIterator();
+            for (ObjectIterator<Object2IntMap.Entry<RowSnapshot>> it =
+                 this.hMap.object2IntEntrySet().fastIterator();
                  it.hasNext(); ) {
                 final Object2IntMap.Entry<RowSnapshot> entry = it.next();
                 if (entry.getIntValue() < cutoff)
@@ -214,7 +214,7 @@ public class FreqKList implements Serializable {
         int minSize = Math.min(size, pList.size());
         List<RowSnapshot> listRows = new ArrayList<RowSnapshot>(minSize);
         List<Integer> listCounts = new ArrayList<Integer>(minSize);
-        for (int i = 0; i < minSize; i++ ) {
+        for (int i = 0; i < minSize; i++) {
             listRows.add(pList.get(i).first);
             listCounts.add(pList.get(i).second);
         }
