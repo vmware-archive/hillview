@@ -23,7 +23,6 @@ import org.hillview.dataset.ConcurrentSketch;
 import org.hillview.dataset.TripleSketch;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IJson;
-import org.hillview.dataset.api.Pair;
 import org.hillview.jsonObjects.Histogram2DArgs;
 import org.hillview.jsonObjects.Histogram3DArgs;
 import org.hillview.jsonObjects.HistogramArgs;
@@ -43,7 +42,6 @@ import rx.Observer;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
-import java.util.List;
 import java.util.function.BiFunction;
 
 /**
@@ -419,14 +417,12 @@ public final class TableTarget extends RpcTarget {
      * discard elements that are too low in (estimated) frequency.
      * @param fkList The list of candidate heavy hitters
      * @param schema The schema of the heavy hitters computation.
-     * @param type 0 represents MG, 1 represents SampleHeavyHitters
+     * @param type 0 represents MG, 1 represents exact, 2 represents SampleHeavyHitters
      * @return A TopList
      */
     private static TopList getLists(FreqKList fkList, Schema schema, int type, HillviewComputation computation) {
-        Pair<List<RowSnapshot>, List<Integer>> pair = fkList.getTop(type);
         TopList tl = new TopList();
-        SmallTable tbl = new SmallTable(schema, Converters.checkNull(pair.first));
-        tl.top = new NextKList(tbl, Converters.checkNull(pair.second), 0, fkList.totalRows);
+        tl.top = new NextKList(fkList.getTop(type), schema, fkList.totalRows);
         tl.heavyHittersId = new HeavyHittersTarget(fkList, computation).getId().toString();
         return tl;
     }

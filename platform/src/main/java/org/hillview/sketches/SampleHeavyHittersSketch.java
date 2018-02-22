@@ -45,7 +45,7 @@ public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKList> {
         this.epsilon = epsilon;
         this.totalRows= totalRows;
         this.seed = seed;
-        this.samplingRate = Math.max(1/(totalRows*epsilon*epsilon), 20000.0/totalRows);
+        this.samplingRate = Math.min(1, Math.max(10.0/(totalRows*epsilon*epsilon), 20000.0/totalRows));
     }
 
     @Nullable

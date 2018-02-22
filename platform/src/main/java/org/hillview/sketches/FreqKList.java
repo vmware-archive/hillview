@@ -31,11 +31,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A data structure to store the K heavy hitters our of N elements, computed by the Misra-Gries
- * algorithm. We use the mergeable version of MG, as described in the ACM TODS paper "Mergeable
- * Summaries" by Agarwal et al., which gives a good error bound.
+ * A data structure to store the K heavy hitters out of N elements.
  * It stores a hash-map which contains the elements and their counts, along with counts
- * of the size of the input and the number of counters (K).
+ * of the size of the input and some metadata about the algorithm (K).
  */
 public class FreqKList implements Serializable {
     /**
@@ -191,15 +189,15 @@ public class FreqKList implements Serializable {
                 if (j >= threshold) pList.add(new Pair<RowSnapshot, Integer>(rs, j));
             });
         } else {
-            double threshold = 0.99* this.epsilon * this.maxSize;
             this.hMap.forEach((rs, j) -> {
-                if (j >= threshold)
+                double frac = ((double) j)/this.maxSize;
+                if (frac >= this.epsilon)
                 {
-                    int k = j* (int)this.totalRows/this.maxSize;
+                    int k = (int) (frac * this.totalRows);
                     pList.add(new Pair<RowSnapshot, Integer>(rs, k));
                 }
             });
-            double cutoff = 0.5* this.epsilon * this.maxSize;
+            double cutoff = 0.5 * this.epsilon * this.maxSize;
             for (ObjectIterator<Object2IntMap.Entry<RowSnapshot>> it =
                  this.hMap.object2IntEntrySet().fastIterator();
                  it.hasNext(); ) {

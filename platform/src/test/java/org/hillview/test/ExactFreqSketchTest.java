@@ -44,7 +44,7 @@ public class ExactFreqSketchTest extends BaseTest {
         ExactFreqSketch ef = new ExactFreqSketch(table.getSchema(), fkList);
         FreqKList exactList = ef.create(table);
         int size = 10;
-        Pair<List<RowSnapshot>, List<Long>> pair = exactList.getTop(size);
+        Pair<List<RowSnapshot>, List<Integer>> pair = exactList.getTop(size);
         for (int i = 1; i < Converters.checkNull(pair.first).size(); i++) {
             Converters.checkNull(pair.second);
             assertTrue(pair.second.get(i - 1) >= pair.second.get(i));
