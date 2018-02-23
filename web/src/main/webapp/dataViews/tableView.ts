@@ -491,7 +491,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
                 }, selectedCount >= 2 && selectedCount <= 3);
                 this.contextMenu.addItem({
                     text: "Heavy hitters...",
-                    action: () => this.heavyHitters(false),  // TODO: switch back to approximate
+                    action: () => this.heavyHitters(false),  // currently set to approximate
                     help: "Find the values that occur most frequently in the selected columns."
                 }, true);
                 this.contextMenu.addItem({
