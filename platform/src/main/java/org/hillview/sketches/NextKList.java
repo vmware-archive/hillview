@@ -67,7 +67,9 @@ public class NextKList implements Serializable, IJson {
      * not meaningful in this context and is set to 0.
      * @param pair Pair of RowSnapshots and Counts returned from a FreqKList
      * @param schema The schema of the RowSnapshots
-     * @param totalRows The number of rows in the input.
+     * @param totalRows The number of rows the statistics are computed over. For MG or Exact, this
+     *                  equals the number of rows in the input tuple. Whereas for sample heavy
+     *                  hitters, it is the number of samples.
      */
     public NextKList(Pair<List<RowSnapshot>, List<Integer>> pair, Schema schema, long totalRows) {
         this.table = new SmallTable(schema, Converters.checkNull(pair.first));

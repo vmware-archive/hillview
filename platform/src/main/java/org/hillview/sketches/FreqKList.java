@@ -53,7 +53,6 @@ public class FreqKList implements Serializable {
 
     public final double epsilon;
 
-
     public FreqKList(long totalRows, double epsilon, int maxSize,
                      Object2IntOpenHashMap<RowSnapshot> hMap) {
             this.totalRows = totalRows;
@@ -164,47 +163,58 @@ public class FreqKList implements Serializable {
     }
 
     /**
-     * Type indicates which HeavyHitter Sketch is running.
-     * Type 0: the Misra-Gries sketch.
-     * Type 1: the exact Frequency sketch.
-     * Type 2: the Sampling frequency sketch.
+     * Helper method to discard values below a cutoff value.
      */
-    public Pair<List<RowSnapshot>, List<Integer>> getTop(int type) {
-        return getTop(this.hMap.size(), type);
+    private void trim(double cutoff) {
+        for (ObjectIterator<Object2IntMap.Entry<RowSnapshot>> it =
+             this.hMap.object2IntEntrySet().fastIterator(); it.hasNext();) {
+            final Object2IntMap.Entry<RowSnapshot> entry = it.next();
+            if (entry.getIntValue() < cutoff)
+                it.remove();
+        }
     }
 
     /**
+     * @param type indicates which HeavyHitter Sketch is running.
+     * Type 0: the Misra-Gries sketch.
+     * Type 1: the exact Frequency sketch.
+     * Type 2: the Sampling frequency sketch.
+     * @param schema Needed to form a table from the rowsnapshots.
+     */
+    public NextKList getTop(int type, Schema schema) {
+        return getTop(this.hMap.size(), type, schema);
+    }
+
+    /**
+     * Post-processing method applied to the result of a heavy hitters sketch before displaying the
+     * results. It will also discard elements that are too low in (estimated) frequency.
      * @param size: Lets us specify how many of the top items to select from the FreqKList.
      */
-    public Pair<List<RowSnapshot>, List<Integer>> getTop(int size, int type) {
+    public NextKList getTop(int size, int type, Schema schema) {
         List<Pair<RowSnapshot, Integer>> pList = new ArrayList<Pair<RowSnapshot, Integer>>(this.hMap.size());
         if (type == 0) {
             double threshold = this.epsilon * this.totalRows - this.getErrBound();
             this.hMap.forEach((rs, j) -> {
-                if (j >= threshold) pList.add(new Pair<RowSnapshot, Integer>(rs, j));
+                if ( j >= threshold)
+                    pList.add(new Pair<RowSnapshot, Integer>(rs, j));
             });
+            trim(0.5 * threshold);
         } else if (type == 1) {
             double threshold = this.epsilon * this.totalRows;
             this.hMap.forEach((rs, j) -> {
-                if (j >= threshold) pList.add(new Pair<RowSnapshot, Integer>(rs, j));
+                if (j >= threshold)
+                    pList.add(new Pair<RowSnapshot, Integer>(rs, j));
             });
-        } else {
+            trim(0.5 * threshold);
+        } else if (type == 2) {
             this.hMap.forEach((rs, j) -> {
                 double frac = ((double) j)/this.maxSize;
-                if (frac >= this.epsilon)
-                {
+                if ( frac >= epsilon) {
                     int k = (int) (frac * this.totalRows);
                     pList.add(new Pair<RowSnapshot, Integer>(rs, k));
                 }
             });
-            double cutoff = 0.5 * this.epsilon * this.maxSize;
-            for (ObjectIterator<Object2IntMap.Entry<RowSnapshot>> it =
-                 this.hMap.object2IntEntrySet().fastIterator();
-                 it.hasNext(); ) {
-                final Object2IntMap.Entry<RowSnapshot> entry = it.next();
-                if (entry.getIntValue() < cutoff)
-                    it.remove();
-            }
+            trim(0.5 * epsilon * this.maxSize);
         }
         pList.sort((p1, p2) -> Integer.compare(
                 Converters.checkNull(p2.second),
@@ -216,7 +226,8 @@ public class FreqKList implements Serializable {
             listRows.add(pList.get(i).first);
             listCounts.add(pList.get(i).second);
         }
-        return new Pair<List<RowSnapshot>, List<Integer>>(listRows, listCounts);
+        return new NextKList(new Pair<List<RowSnapshot>, List<Integer>>(listRows, listCounts),
+                schema, this.totalRows);
     }
 
     @SuppressWarnings("ConstantConditions")

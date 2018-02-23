@@ -422,7 +422,7 @@ public final class TableTarget extends RpcTarget {
      */
     private static TopList getLists(FreqKList fkList, Schema schema, int type, HillviewComputation computation) {
         TopList tl = new TopList();
-        tl.top = new NextKList(fkList.getTop(type), schema, fkList.totalRows);
+        tl.top = fkList.getTop(type, schema);
         tl.heavyHittersId = new HeavyHittersTarget(fkList, computation).getId().toString();
         return tl;
     }
