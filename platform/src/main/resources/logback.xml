@@ -1,3 +1,4 @@
+<!--suppress ALL -->
 <configuration level="OFF">
     <!-- We don't use logback, but some of the libraries we use do -->
 </configuration>

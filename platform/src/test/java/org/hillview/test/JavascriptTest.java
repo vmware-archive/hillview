@@ -65,8 +65,8 @@ public class JavascriptTest {
         while (r >= 0) {
             vrs.setRow(r);
             int age = vrs.getInt("Age");
-            Object jsage = invocable.invokeFunction("getField", vrs, "Age");
-            Assert.assertEquals(age, jsage);
+            Object jsAge = invocable.invokeFunction("getField", vrs, "Age");
+            Assert.assertEquals(age, jsAge);
             r = it.getNextRow();
         }
     }

@@ -36,7 +36,7 @@ public class ImpalaJdbcConnection extends JdbcConnection {
     public String getURL() {
         this.addParameter("UseNativeQuery", "1");
 
-        int authMech = 0;
+        int authMechanism = 0;
         boolean hasUser = false;
         boolean hasPassword = false;
 
@@ -46,11 +46,11 @@ public class ImpalaJdbcConnection extends JdbcConnection {
             hasPassword = true;
 
         if (hasUser && hasPassword)
-            authMech = 3;
+            authMechanism = 3;
         else if (hasUser)
-            authMech = 2;
+            authMechanism = 2;
 
-        this.addParameter("AuthMech", Integer.toString(authMech));
+        this.addParameter("AuthMech", Integer.toString(authMechanism));
         this.addParameter("SSL", "1");
         //this.addParameter("LogLevel", "3");
 

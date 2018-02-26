@@ -26,7 +26,7 @@ import org.hillview.dataset.remoting.HillviewServer;
  */
 public class PurgeMemoization extends ControlMessage {
     public Status remoteServerAction(HillviewServer server) {
-        server.purgeCache();
+        server.purgeMemoized();
         return new Status("caches purged");
     }
 }

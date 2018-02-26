@@ -44,8 +44,7 @@ public class TestUtils {
         config.allowMissingData = false;
         CsvFileLoader r = new CsvFileLoader(path.toString(), config, schemaPath.toString());
 
-        ITable table = r.load();
-        return table;
+        return r.load();
     }
 
     public static String[] getNumericColumnNames(ITable table) {

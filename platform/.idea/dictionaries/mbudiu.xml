@@ -2,12 +2,14 @@
   <dictionary name="mbudiu">
     <words>
       <w>blas</w>
+      <w>bson</w>
       <w>classname</w>
       <w>dest</w>
       <w>dists</w>
       <w>eigen</w>
       <w>eigenvector</w>
       <w>eigenvectors</w>
+      <w>epoll</w>
       <w>grpc</w>
       <w>gson</w>
       <w>hashmap</w>
@@ -24,12 +26,16 @@
       <w>memoized</w>
       <w>mnist</w>
       <w>mongo</w>
+      <w>nanos</w>
+      <w>nashorn</w>
+      <w>ontime</w>
       <w>perf</w>
       <w>proj</w>
       <w>protobuf</w>
       <w>protoc</w>
       <w>repr</w>
       <w>retval</w>
+      <w>succ</w>
       <w>teardown</w>
       <w>tvcg</w>
       <w>unsubscription</w>

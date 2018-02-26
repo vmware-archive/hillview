@@ -121,14 +121,14 @@ public class SparseMembershipSet implements IMembershipSet, IMutableMembershipSe
         final IntSet mMap;
         final double rate;
 
-        private SparseSampledRowIterator(final double rate, final long seed, IntSet mmap) {
-            this.mMap = mmap;
+        private SparseSampledRowIterator(final double rate, final long seed, IntSet mMap) {
+            this.mMap = mMap;
             psg = new Randomness(seed);
             double bias = psg.nextDouble();
             if (bias < rate)
-                this.sampleSize = (int) Math.floor(rate * mMap.size());
-            else this.sampleSize = (int) Math.ceil(rate * mMap.size());
-            currentCursor = psg.nextInt(mMap.arraySize());
+                this.sampleSize = (int) Math.floor(rate * this.mMap.size());
+            else this.sampleSize = (int) Math.ceil(rate * this.mMap.size());
+            currentCursor = psg.nextInt(this.mMap.arraySize());
             this.rate = rate;
         }
 

@@ -240,7 +240,7 @@ public class InitialObjectTarget extends RpcTarget {
 
     @Override
     public String toString() {
-        return "Initial object, " + super.toString();
+        return "Initial object=" + super.toString();
     }
 
     //--------------------------------------------

@@ -9,9 +9,9 @@ source $mydir/config.sh
 set -e
 
 export MAVEN_OPTS="-Xmx2048M"
-pushd ../platform
+pushd $mydir/../platform
 mvn install
 popd
-pushd ../web
+pushd $mydir/../web
 mvn package
 popd
