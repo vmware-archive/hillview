@@ -71,8 +71,10 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     private static final int NUM_THREADS = 5;
     public static final int MAX_MESSAGE_SIZE = 20971520;
     private final ExecutorService executorService = ExecutorUtils.newNamedThreadPool("server", NUM_THREADS);
+    private static final int EXPIRE_TIME_IN_HOURS = 2;
+    private boolean MEMOIZE = true;
 
-    // Using PollSelectorProvider() to avoid Epoll CPU utilization problems.
+    // Using PollSelectorProvider() to avoid epoll CPU utilization problems.
     // See: https://github.com/netty/netty/issues/327
     private final EventLoopGroup workerElg = new NioEventLoopGroup(1,
             ExecutorUtils.newFastLocalThreadFactory("worker"), new PollSelectorProvider());
@@ -87,11 +89,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             = new ConcurrentHashMap<UUID, Subscription>();
     private final HostAndPort listenAddress;
 
-    private MemoizedResults memoizedCommands;
-
-    @SuppressWarnings("CanBeFinal")
-    private boolean MEMOIZE = true;
-    private static final int expireTimeInHours = 2;
+    private final MemoizedResults memoizedCommands;
 
     public HillviewServer(final HostAndPort listenAddress, final IDataSet initialDataset) throws IOException {
         this.initialDataset = initialDataset;
@@ -107,15 +105,13 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                                         .build()
                                         .start();
         this.dataSets = CacheBuilder.<Integer, IDataSet>newBuilder()
-                .expireAfterAccess(expireTimeInHours, TimeUnit.HOURS)
+                .expireAfterAccess(EXPIRE_TIME_IN_HOURS, TimeUnit.HOURS)
                 .removalListener(
                         (RemovalListener<Integer, IDataSet>) removalNotification ->
                                 HillviewLogger.instance.info("Removing reference to dataset", "{0}: {1}",
                                     removalNotification.getKey(), removalNotification.getValue().toString()))
                 .build();
     }
-
-    //////////////////////
 
     synchronized private int save(IDataSet dataSet) {
         int index = this.dsIndex.getAndIncrement();
@@ -130,7 +126,6 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
      * @param observer  Observer that is notified if the dataset is not available.
      * @return          The dataset, or null if there is no such dataset.
      */
-    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     @Nullable
     synchronized private IDataSet getIfValid(final int index,
                                              final StreamObserver<PartialResponse> observer) {
@@ -153,8 +148,6 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
         this.memoizedCommands.clear();
         return (int) removed;
     }
-
-    ////////////////////////
 
     public void purgeMemoized() {
         this.memoizedCommands.clear();
