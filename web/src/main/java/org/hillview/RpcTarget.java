@@ -101,11 +101,6 @@ public abstract class RpcTarget implements IJson {
     }
 
     /**
-     * Make sure to invoke all RPC responses on this thread
-     */
-    private static final ExecutorService replyExecutor = Executors.newFixedThreadPool(5);
-
-    /**
      * This constructor is only called for the InitialObject.
      */
     protected RpcTarget() {
@@ -211,6 +206,10 @@ public abstract class RpcTarget implements IJson {
             this.target = target;
         }
 
+        void sendReply(final RpcReply reply) {
+            reply.send(this.context.session);
+        }
+
         @Override
         public void onCompleted() {
             HillviewLogger.instance.info("Computation completed", "for {0}", this.name);
@@ -225,10 +224,8 @@ public abstract class RpcTarget implements IJson {
             if (reconstructing ||
                     this.context.session == null ||
                     !this.context.session.isOpen()) return;
-            replyExecutor.execute(() -> {
-                RpcReply reply = this.request.createReply(throwable);
-                reply.send(this.context.session);
-            });
+            RpcReply reply = this.request.createReply(throwable);
+            this.sendReply(reply);
         }
 
         HillviewComputation getComputation() {
@@ -275,7 +272,7 @@ public abstract class RpcTarget implements IJson {
                 return;
 
             RpcReply reply = this.request.createReply(Utilities.toJsonTree(pr));
-            replyExecutor.execute(() -> reply.send(session));
+            this.sendReply(reply);
         }
     }
 
@@ -310,7 +307,7 @@ public abstract class RpcTarget implements IJson {
             // always send null data for partial results
             json.add("data", null);
             RpcReply reply = this.request.createReply(json);
-            replyExecutor.execute(() -> reply.send(session));
+            this.sendReply(reply);
         }
 
         @Override
@@ -325,10 +322,9 @@ public abstract class RpcTarget implements IJson {
                 return;
             json.add("data", result.toJsonTree());
             RpcReply reply = this.request.createReply(json);
-            replyExecutor.execute(() -> {
-                reply.send(this.context.session);
-                this.request.syncCloseSession(this.context.session);
-            });
+            this.sendReply(reply);
+            reply.send(this.context.session);
+            super.onCompleted();
         }
     }
 
@@ -363,10 +359,8 @@ public abstract class RpcTarget implements IJson {
             Session session = this.context.getSessionIfOpen();
             if (session == null)
                 return;
-            replyExecutor.execute(() -> {
-                RpcReply reply = this.request.createReply(json);
-                reply.send(session);
-            });
+            RpcReply reply = this.request.createReply(json);
+            this.sendReply(reply);
         }
     }
 

@@ -5,5 +5,5 @@ mydir="$(dirname "$0")"
 if [[ ! -d "$mydir" ]]; then mydir="$PWD"; fi
 source $mydir/config.sh
 
-cd ../platform/
+cd $mydir/../platform/
 java -server -jar target/hillview-server-jar-with-dependencies.jar 127.0.0.1:3569

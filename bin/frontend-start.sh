@@ -8,4 +8,4 @@ source $mydir/config.sh
 # If you add this line the java process enables a remote debugger to be connected to it
 # on port 5005
 #export JAVA_OPTS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
-../apache-tomcat-${TOMCATVERSION}/bin/catalina.sh run
+$mydir/../apache-tomcat-${TOMCATVERSION}/bin/catalina.sh run
