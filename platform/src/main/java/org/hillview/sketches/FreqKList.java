@@ -54,6 +54,7 @@ public abstract class FreqKList implements Serializable {
     }
 
     public int getSize() { return this.hMap.size(); }
+
     /**
      * @return The list of candidate heavy hitters. Used after running an approximate algorithm
      * to get candidates for computing exact counts.
