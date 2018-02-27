@@ -54,6 +54,10 @@ public abstract class FreqKList implements Serializable {
     }
 
 
+    public NextKList getTop(int size, Schema schema) {
+        return new NextKList(schema);
+    }
+
     /**
      * @return Total distinct rows that are heavy hitters.
      */
@@ -67,20 +71,26 @@ public abstract class FreqKList implements Serializable {
         return new ArrayList<RowSnapshot>(this.hMap.keySet());
     }
 
-    public static List<Object2ObjectMap.Entry<RowSnapshot, MutableInteger>> addLists(FreqKList left, FreqKList right) {
+    /**
+     * This is a helper method that takes two FreqKLists (left and right) and returns a hashmap with
+     * the union of their entries. If an element occurs in both, the frequencies add. This is used
+     * for both the Misra-Gries sketch and the sampling sketch. The hashmap is post-processed
+     * differently by each of them.
+     */
+    public static List<Object2ObjectMap.Entry<RowSnapshot, MutableInteger>>
+    addLists(FreqKList left, FreqKList right) {
         assert left != null;
         assert right != null;
         Object2ObjectOpenHashMap<RowSnapshot, MutableInteger> resultMap =
                 new Object2ObjectOpenHashMap<RowSnapshot, MutableInteger>(left.hMap.size() + right.hMap.size());
-        for (ObjectIterator<Object2IntMap.Entry<RowSnapshot>> it1 = left.hMap.object2IntEntrySet().fastIterator();
-             it1.hasNext(); ) {
+        for (ObjectIterator<Object2IntMap.Entry<RowSnapshot>> it1 = left.hMap.object2IntEntrySet().
+                fastIterator(); it1.hasNext(); ) {
             final Object2IntMap.Entry<RowSnapshot> it = it1.next();
             resultMap.put(it.getKey(), new MutableInteger(it.getIntValue()));
         }
-
         // Add values of right.hMap to resultMap
-        for (ObjectIterator<Object2IntMap.Entry<RowSnapshot>> it1 = right.hMap.object2IntEntrySet().fastIterator();
-             it1.hasNext(); ) {
+        for (ObjectIterator<Object2IntMap.Entry<RowSnapshot>> it1 = right.hMap.object2IntEntrySet().
+                fastIterator(); it1.hasNext(); ) {
             final Object2IntMap.Entry<RowSnapshot> it = it1.next();
             MutableInteger val = resultMap.get(it.getKey());
             if (val != null) {
@@ -101,22 +111,22 @@ public abstract class FreqKList implements Serializable {
      * a specified threshold.
      */
     public void fkFilter(double threshold) {
-        for (ObjectIterator<Object2IntMap.Entry<RowSnapshot>> it = this.hMap.object2IntEntrySet().fastIterator();
-             it.hasNext(); ) {
+        for (ObjectIterator<Object2IntMap.Entry<RowSnapshot>> it =
+             this.hMap.object2IntEntrySet().fastIterator(); it.hasNext(); ) {
             final Object2IntMap.Entry<RowSnapshot> entry = it.next();
             if (entry.getIntValue() < threshold) it.remove();
         }
     }
 
     /**
-     * Post-processing method applied to the result of a heavy hitters sketch before displaying the
-     * results. It will also discard elements that are too low in (estimated) frequency.
-     * @param size: Lets us specify how many of the top items to select from the FreqKList.
+     * Post-processing method that takes a List of <RowSnapShot, Integer> pairs and puts them into
+     * a NextKList.
+     * @param size: Lets us specify how many of the top items to select.
+     * @param pList: the list of <RowSnapShot, Integer>.
+     * @param schema: The schema for the RowSnapShots.
      */
     public NextKList getTopK(int size, List<Pair<RowSnapshot, Integer>> pList, Schema schema) {
-
-        pList.sort((p1, p2) -> Integer.compare(
-                Converters.checkNull(p2.second),
+        pList.sort((p1, p2) -> Integer.compare(Converters.checkNull(p2.second),
                 Converters.checkNull(p1.second)));
         int minSize = Math.min(size, pList.size());
         List<RowSnapshot> listRows = new ArrayList<RowSnapshot>(minSize);

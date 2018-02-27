@@ -22,6 +22,7 @@ public class FreqKListSample extends FreqKList {
         this.sampleSize = sampleSize;
     }
 
+    @Override
     public NextKList getTop(int size, Schema schema) {
         List<Pair<RowSnapshot, Integer>> pList = new ArrayList<Pair<RowSnapshot, Integer>>(this
                 .hMap.size());
@@ -37,10 +38,11 @@ public class FreqKListSample extends FreqKList {
     }
 
     public void rescale() {
-        for (ObjectIterator<Object2IntMap.Entry<RowSnapshot>> it = this.hMap.object2IntEntrySet().fastIterator();
-             it.hasNext(); ) {
+        for (ObjectIterator<Object2IntMap.Entry<RowSnapshot>> it = this.hMap.object2IntEntrySet().
+                fastIterator(); it.hasNext(); ) {
             final Object2IntMap.Entry<RowSnapshot> entry = it.next();
-            this.hMap.put(entry.getKey(), (int) (entry.getIntValue() * ((double) this.totalRows)/this.sampleSize));
+            this.hMap.put(entry.getKey(), (int) (entry.getIntValue() *
+                    ((double) this.totalRows)/this.sampleSize));
         }
     }
 }

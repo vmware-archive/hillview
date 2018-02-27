@@ -17,11 +17,13 @@
 
 package org.hillview.test;
 
+import junit.framework.TestCase;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.sketches.*;
 import org.hillview.table.HashSubSchema;
+import org.hillview.table.Schema;
 import org.hillview.table.SmallTable;
 import org.hillview.table.Table;
 import org.hillview.table.api.ITable;
@@ -37,6 +39,13 @@ import java.util.List;
 import static org.junit.Assert.assertTrue;
 
 public class FreqKTest extends BaseTest {
+
+    public void checkList(FreqKList fkList, Schema schema) {
+        NextKList nkList = fkList.getTop((int) fkList.totalRows, schema);
+        for (int i = 1; i < Converters.checkNull(nkList.count).size(); i++) {
+            TestCase.assertTrue(nkList.count.get(i - 1) >= nkList.count.get(i));
+        }
+    }
     private void filterTest(@Nullable FreqKListMG fkList) {
         Converters.checkNull(fkList);
         fkList.filter();
@@ -51,6 +60,7 @@ public class FreqKTest extends BaseTest {
         FreqKListSample rightList  = shh.create(right);
         FreqKList shhList = shh.add(leftList, rightList);
         Assert.assertNotNull(shhList);
+        checkList(shhList, left.getSchema());
     }
 
     private void fkAdd(ITable left, ITable right, double epsilon) {
@@ -60,6 +70,8 @@ public class FreqKTest extends BaseTest {
         FreqKListMG fkList = fk.add(leftList, rightList);
         Assert.assertNotNull(fkList);
         fkList.filter();
+        checkList(fkList, left.getSchema());
+
         //System.out.println(fkList.toString());
         //return fkList;
     }

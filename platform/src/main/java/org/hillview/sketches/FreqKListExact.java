@@ -47,6 +47,7 @@ public class FreqKListExact extends FreqKList {
         return this;
     }
 
+    @Override
     public NextKList getTop(int size, Schema schema) {
         List<Pair<RowSnapshot, Integer>> pList = new ArrayList<Pair<RowSnapshot, Integer>>(this.hMap.size());
         this.hMap.forEach((rs, j) -> {
@@ -54,10 +55,6 @@ public class FreqKListExact extends FreqKList {
                 pList.add(new Pair<RowSnapshot, Integer>(rs, j));
         });
         return getTopK(size, pList, schema);
-    }
-
-    public NextKList getTop(Schema schema) {
-        return getTop(this.hMap.size(), schema);
     }
 
     public void filter() {

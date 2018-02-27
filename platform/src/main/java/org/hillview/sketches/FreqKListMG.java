@@ -50,6 +50,7 @@ public class FreqKListMG extends FreqKList {
         this.fkFilter(threshold);
     }
 
+    @Override
     public NextKList getTop(int size, Schema schema) {
         List<Pair<RowSnapshot, Integer>> pList = new ArrayList<Pair<RowSnapshot, Integer>>(this.hMap.size());
         double threshold = this.epsilon * this.totalRows - this.getErrBound();
