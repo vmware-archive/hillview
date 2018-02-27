@@ -39,7 +39,6 @@ public class FreqKListExact extends FreqKList {
      * Since all counts computed by this sketch are exact, we discard everything less than epsilon
      * using filter and return the rest.
      */
-<<<<<<< 63f5f32835edf0a4eadcc151a5bad9a0ef6430e0
     @Override
     public NextKList getTop(Schema schema) {
         this.filter();
@@ -47,28 +46,6 @@ public class FreqKListExact extends FreqKList {
         this.hMap.forEach((rs, j) -> pList.add(new Pair<RowSnapshot, Integer>(rs, j)));
         return getTopK(pList, schema);
     }
-=======
-    public FreqKListExact add(FreqKListExact that) {
-        this.totalRows += that.totalRows;
-
-        for (Object2IntMap.Entry<RowSnapshot> entry : this.hMap.object2IntEntrySet()) {
-            int newVal = entry.getIntValue() + that.hMap.getOrDefault(entry.getKey(), 0);
-            entry.setValue(newVal);
-        }
-        return this;
-    }
-
-    @Override
-    public NextKList getTop(int size, Schema schema) {
-        List<Pair<RowSnapshot, Integer>> pList = new ArrayList<Pair<RowSnapshot, Integer>>(this.hMap.size());
-        this.hMap.forEach((rs, j) -> {
-            if (j >= this.epsilon * this.totalRows)
-                pList.add(new Pair<RowSnapshot, Integer>(rs, j));
-        });
-        return getTopK(size, pList, schema);
-    }
-
->>>>>>> Monday night
     public void filter() {
         double threshold = this.epsilon * this.totalRows;
         this.fkFilter(threshold);

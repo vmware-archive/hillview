@@ -118,7 +118,7 @@ public abstract class FreqKList implements Serializable {
      * differently by each of them.
      * (FeqKListExact implements its own addition and does not use this.)
      */
-    public static List<Object2ObjectMap.Entry<RowSnapshot, MutableInteger>>
+    protected static List<Object2ObjectMap.Entry<RowSnapshot, MutableInteger>>
     addLists(FreqKList left, FreqKList right) {
         assert left != null;
         assert right != null;
