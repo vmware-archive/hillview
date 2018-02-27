@@ -53,16 +53,7 @@ public abstract class FreqKList implements Serializable {
         this.hMap = hMap;
     }
 
-
-    public NextKList getTop(int size, Schema schema) {
-        return new NextKList(schema);
-    }
-
-    /**
-     * @return Total distinct rows that are heavy hitters.
-     */
-    public int getDistinctRowCount() { return this.hMap.size(); }
-
+    public int getSize() { return this.hMap.size(); }
     /**
      * @return The list of candidate heavy hitters. Used after running an approximate algorithm
      * to get candidates for computing exact counts.
@@ -72,12 +63,60 @@ public abstract class FreqKList implements Serializable {
     }
 
     /**
+     * The post-processing method that is used to extract the output of a Heavy Hitters sketch as a
+     * NextKList (SmallTable + Counts). Each implementation overrides this to do its own post-processing.
+     * @param schema The schema of the RowSnapShots so that we can form a SmallTable.
+     * @return A NextKList, which contains the top rows in sorted order of counts.
+     */
+    public NextKList getTop(Schema schema) { return new NextKList(schema); }
+
+    /**
+     * Helper method that takes a List of <RowSnapShot, Integer> pairs and puts them into
+     * a NextKList. This is used by all Heavy Hitters sketches.
+     * @param pList: the list of <RowSnapShot, Integer> pairs.
+     * @param schema: The schema for the RowSnapShots.
+     */
+    protected NextKList getTopK(List<Pair<RowSnapshot, Integer>> pList, Schema schema) {
+        pList.sort((p1, p2) -> Integer.compare(Converters.checkNull(p2.second),
+                Converters.checkNull(p1.second)));
+        List<RowSnapshot> listRows = new ArrayList<RowSnapshot>(pList.size());
+        List<Integer> listCounts = new ArrayList<Integer>(pList.size());
+        for (int i = 0; i < pList.size(); i++) {
+            listRows.add(pList.get(i).first);
+            listCounts.add(pList.get(i).second);
+        }
+        return new NextKList(listRows, listCounts, schema, this.totalRows);
+    }
+
+    /**
+     * Filters the hashmap to retain only those RowSnapshots that occur with frequency above
+     * a specified threshold.
+     */
+    protected void fkFilter(double threshold) {
+        for (ObjectIterator<Object2IntMap.Entry<RowSnapshot>> it =
+             this.hMap.object2IntEntrySet().fastIterator(); it.hasNext(); ) {
+            final Object2IntMap.Entry<RowSnapshot> entry = it.next();
+            if (entry.getIntValue() < threshold) it.remove();
+        }
+    }
+
+    /**
+     * Method used to filter the table and keep only those rows that match one of the heavy hitters.
+     * @param schema tells us which columns were used to compare with the heavy hitters.
+     * @return A table filter for only those rows that match one of the heavy hitters in Schema.
+     */
+    public RowSnapshotSet.SetTableFilterDescription getFilter(final Schema schema) {
+        RowSnapshotSet rss = new RowSnapshotSet(schema, this.hMap.keySet());
+        return new RowSnapshotSet.SetTableFilterDescription(rss);
+    }
+
+    /**
      * This is a helper method that takes two FreqKLists (left and right) and returns a hashmap with
      * the union of their entries. If an element occurs in both, the frequencies add. This is used
      * for both the Misra-Gries sketch and the sampling sketch. The hashmap is post-processed
      * differently by each of them.
      */
-    public static List<Object2ObjectMap.Entry<RowSnapshot, MutableInteger>>
+    protected static List<Object2ObjectMap.Entry<RowSnapshot, MutableInteger>>
     addLists(FreqKList left, FreqKList right) {
         assert left != null;
         assert right != null;
@@ -106,38 +145,6 @@ public abstract class FreqKList implements Serializable {
         return pList;
     }
 
-    /**
-     * Prunes the hashmap to retain only those RowSnapshots that occur with frequency above
-     * a specified threshold.
-     */
-    public void fkFilter(double threshold) {
-        for (ObjectIterator<Object2IntMap.Entry<RowSnapshot>> it =
-             this.hMap.object2IntEntrySet().fastIterator(); it.hasNext(); ) {
-            final Object2IntMap.Entry<RowSnapshot> entry = it.next();
-            if (entry.getIntValue() < threshold) it.remove();
-        }
-    }
-
-    /**
-     * Post-processing method that takes a List of <RowSnapShot, Integer> pairs and puts them into
-     * a NextKList.
-     * @param size: Lets us specify how many of the top items to select.
-     * @param pList: the list of <RowSnapShot, Integer>.
-     * @param schema: The schema for the RowSnapShots.
-     */
-    public NextKList getTopK(int size, List<Pair<RowSnapshot, Integer>> pList, Schema schema) {
-        pList.sort((p1, p2) -> Integer.compare(Converters.checkNull(p2.second),
-                Converters.checkNull(p1.second)));
-        int minSize = Math.min(size, pList.size());
-        List<RowSnapshot> listRows = new ArrayList<RowSnapshot>(minSize);
-        List<Integer> listCounts = new ArrayList<Integer>(minSize);
-        for (int i = 0; i < minSize; i++) {
-            listRows.add(pList.get(i).first);
-            listCounts.add(pList.get(i).second);
-        }
-        return new NextKList(listRows, listCounts, schema, this.totalRows);
-    }
-
     @SuppressWarnings("ConstantConditions")
     @Override
     public String toString() {
@@ -149,10 +156,5 @@ public abstract class FreqKList implements Serializable {
         pList.forEach(p ->  builder.append(p.first.toString()).append(": ").append(p.second)
                                    .append(System.getProperty("line.separator")));
         return builder.toString();
-    }
-
-    public RowSnapshotSet.SetTableFilterDescription heavyFilter(final Schema schema) {
-        RowSnapshotSet rss = new RowSnapshotSet(schema, this.hMap.keySet());
-        return new RowSnapshotSet.SetTableFilterDescription(rss);
     }
 }

@@ -23,7 +23,9 @@ public class FreqKListSample extends FreqKList {
     }
 
     @Override
-    public NextKList getTop(int size, Schema schema) {
+    public NextKList getTop(Schema schema) {
+        /* Needed here because this list is used for further filtering*/
+        this.fkFilter(0.5 * epsilon * this.sampleSize);
         List<Pair<RowSnapshot, Integer>> pList = new ArrayList<Pair<RowSnapshot, Integer>>(this
                 .hMap.size());
         this.hMap.forEach((rs, j) -> {
@@ -33,8 +35,7 @@ public class FreqKListSample extends FreqKList {
                 pList.add(new Pair<RowSnapshot, Integer>(rs, k));
             }
         });
-        this.fkFilter(0.5 * epsilon * this.sampleSize);
-        return getTopK(size, pList, schema);
+        return getTopK(pList, schema);
     }
 
     public void rescale() {

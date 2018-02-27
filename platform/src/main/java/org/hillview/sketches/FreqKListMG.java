@@ -51,14 +51,14 @@ public class FreqKListMG extends FreqKList {
     }
 
     @Override
-    public NextKList getTop(int size, Schema schema) {
+    public NextKList getTop(Schema schema) {
+        this.filter();
         List<Pair<RowSnapshot, Integer>> pList = new ArrayList<Pair<RowSnapshot, Integer>>(this.hMap.size());
         double threshold = this.epsilon * this.totalRows - this.getErrBound();
         this.hMap.forEach((rs, j) -> {
             if (j >= threshold)
                 pList.add(new Pair<RowSnapshot, Integer>(rs, j));
         });
-        this.fkFilter(0.5 * threshold);
-        return getTopK(size, pList, schema);
+        return getTopK(pList, schema);
     }
 }

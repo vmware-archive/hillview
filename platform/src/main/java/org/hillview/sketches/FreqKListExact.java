@@ -33,13 +33,11 @@ public class FreqKListExact extends FreqKList {
      * Used to add two Lists that have counts for the same set of RowSnapShots. Behavior is not
      * determined if it is called with two lists that have different sets of keys. Meant to be used
      * by ExactFreqSketch.
-     *
      * @param that The list to be added to the current one.
      * @return Updated counts (existing counts are overwritten).
      */
     public FreqKListExact add(FreqKListExact that) {
         this.totalRows += that.totalRows;
-
         for (Object2IntMap.Entry<RowSnapshot> entry : this.hMap.object2IntEntrySet()) {
             int newVal = entry.getIntValue() + that.hMap.getOrDefault(entry.getKey(), 0);
             entry.setValue(newVal);
@@ -48,13 +46,11 @@ public class FreqKListExact extends FreqKList {
     }
 
     @Override
-    public NextKList getTop(int size, Schema schema) {
-        List<Pair<RowSnapshot, Integer>> pList = new ArrayList<Pair<RowSnapshot, Integer>>(this.hMap.size());
-        this.hMap.forEach((rs, j) -> {
-            if (j >= this.epsilon * this.totalRows)
-                pList.add(new Pair<RowSnapshot, Integer>(rs, j));
-        });
-        return getTopK(size, pList, schema);
+    public NextKList getTop(Schema schema) {
+        this.filter();
+        List <Pair<RowSnapshot, Integer>> pList = new ArrayList<Pair<RowSnapshot, Integer>>(this.hMap.size());
+        this.hMap.forEach((rs, j) -> pList.add(new Pair<RowSnapshot, Integer>(rs, j)));
+        return getTopK(pList, schema);
     }
 
     public void filter() {

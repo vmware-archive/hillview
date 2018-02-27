@@ -46,7 +46,8 @@ public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKListSample
         this.epsilon = epsilon;
         this.totalRows= totalRows;
         this.seed = seed;
-        this.samplingRate = Math.min(1, Math.max(10.0/(totalRows*epsilon*epsilon), 20000.0/totalRows));
+        this.samplingRate = Math.min(1, Math.max(10.0/(totalRows*epsilon*epsilon),
+                20000.0/totalRows));
     }
 
     @Nullable
@@ -68,8 +69,10 @@ public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKListSample
 
     public FreqKListSample create(ITable data) {
         IntHash.Strategy hs = new IntHash.Strategy() {
-            final VirtualRowSnapshot vrs = new VirtualRowSnapshot(data, SampleHeavyHittersSketch.this.schema);
-            final VirtualRowSnapshot vrs1 = new VirtualRowSnapshot(data, SampleHeavyHittersSketch.this.schema);
+            final VirtualRowSnapshot vrs = new VirtualRowSnapshot(data,
+                    SampleHeavyHittersSketch.this.schema);
+            final VirtualRowSnapshot vrs1 = new VirtualRowSnapshot(data,
+                    SampleHeavyHittersSketch.this.schema);
 
             @Override
             public int hashCode(int index) {
@@ -100,8 +103,8 @@ public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKListSample
             i = rowIt.getNextRow();
         }
         Object2IntOpenHashMap<RowSnapshot> hm = new Object2IntOpenHashMap<RowSnapshot>(hMap.size());
-        for (ObjectIterator<Int2ObjectMap.Entry<MutableInteger>> it = hMap.int2ObjectEntrySet().fastIterator();
-             it.hasNext(); ) {
+        for (ObjectIterator<Int2ObjectMap.Entry<MutableInteger>> it =
+             hMap.int2ObjectEntrySet().fastIterator(); it.hasNext(); ) {
             final Int2ObjectMap.Entry<MutableInteger> entry = it.next();
             hm.put(new RowSnapshot(data, entry.getIntKey(), this.schema), entry.getValue().get());
         }
