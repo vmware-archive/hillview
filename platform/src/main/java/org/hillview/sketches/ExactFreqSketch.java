@@ -35,10 +35,10 @@ import java.util.List;
 
 /**
  * This sketch computes the true frequencies of a list of rowSnapshots in a data set. It can
- * be used right after the FreqKSketch which computes the list of heavy hitters, to compute their
+ * be used right after the FreqKSketchMG which computes the list of heavy hitters, to compute their
  * exact frequencies.
  */
-public class ExactFreqSketch implements ISketch<ITable, FreqKList> {
+public class ExactFreqSketch implements ISketch<ITable, FreqKListExact> {
     /**
      * The schema of the RowSnapshots
      */
@@ -47,11 +47,6 @@ public class ExactFreqSketch implements ISketch<ITable, FreqKList> {
      * The set of RowSnapshots whose frequencies we wish to compute.
      */
     private final List<RowSnapshot> rssList;
-    /**
-     * The K in top top-K. Is used as a threshold to eliminate items that do not occur with
-     * frequency 1/K.
-     */
-    private int maxSize;
     private final double epsilon;
 
     public ExactFreqSketch(Schema schema, FreqKList fk) {
@@ -62,19 +57,19 @@ public class ExactFreqSketch implements ISketch<ITable, FreqKList> {
 
     @Nullable
     @Override
-    public FreqKList zero() {
-        return new FreqKList(this.rssList, this.epsilon);
+    public FreqKListExact zero() {
+        return new FreqKListExact(this.rssList, this.epsilon);
     }
 
     @Override
-    public FreqKList add(@Nullable FreqKList left, @Nullable FreqKList right) {
+    public FreqKListExact add(@Nullable FreqKListExact left, @Nullable FreqKListExact right) {
         Converters.checkNull(left);
         Converters.checkNull(right);
         return left.add(right);
     }
 
     @Override
-    public FreqKList create(ITable data) {
+    public FreqKListExact create(ITable data) {
         data.getColumns(this.schema);
         Hash.Strategy<BaseRowSnapshot> hs = new Hash.Strategy<BaseRowSnapshot>() {
             @Override
@@ -112,6 +107,6 @@ public class ExactFreqSketch implements ISketch<ITable, FreqKList> {
         }
         Object2IntOpenHashMap<RowSnapshot> hm = new Object2IntOpenHashMap<RowSnapshot>(this.rssList.size());
         this.rssList.forEach(rss -> hm.put(rss, hMap.getInt(rss)));
-        return new FreqKList(data.getNumOfRows(), this.epsilon, hm);
+        return new FreqKListExact(data.getNumOfRows(), this.epsilon, hm);
     }
 }

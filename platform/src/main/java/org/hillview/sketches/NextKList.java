@@ -21,7 +21,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.hillview.dataset.api.IJson;
-import org.hillview.dataset.api.Pair;
 import org.hillview.table.Schema;
 import org.hillview.table.SmallTable;
 import org.hillview.table.api.IRowIterator;
@@ -65,15 +64,16 @@ public class NextKList implements Serializable, IJson {
     /**
      * We also use a NextKList to filter and display the result of a FreqKList.The start position is
      * not meaningful in this context and is set to 0.
-     * @param pair Pair of RowSnapshots and Counts returned from a FreqKList
+     * @param listRows List of RowSnapshots from a FreqKList
+     * @param listCounts List of Counts from a FreqKList
      * @param schema The schema of the RowSnapshots
      * @param totalRows The number of rows the statistics are computed over. For MG or Exact, this
      *                  equals the number of rows in the input tuple. Whereas for sample heavy
      *                  hitters, it is the number of samples.
      */
-    public NextKList(Pair<List<RowSnapshot>, List<Integer>> pair, Schema schema, long totalRows) {
-        this.table = new SmallTable(schema, Converters.checkNull(pair.first));
-        this.count = Converters.checkNull(pair.second);
+    public NextKList(List<RowSnapshot> listRows, List<Integer> listCounts, Schema schema, long totalRows) {
+        this.table = new SmallTable(schema, Converters.checkNull(listRows));
+        this.count = Converters.checkNull(listCounts);
         this.startPosition = 0;
         this.totalRows = totalRows;
     }

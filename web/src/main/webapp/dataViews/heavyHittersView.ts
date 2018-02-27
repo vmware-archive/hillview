@@ -114,10 +114,6 @@ export class HeavyHittersView extends RemoteTableObjectView {
                 table.addElementRow(row);
                 position += tdv.rows[i].count;
             }
-            /*if ((restPos == tdv.rows.length) && (restCount > 0)) {
-                k = tdv.rows.length + 1;
-                this.showRest(k, position, restCount, tdv.rowCount, table);
-            }*/
         }
         table.addFooter();
         this.topLevel.appendChild(table.getHTMLRepresentation());

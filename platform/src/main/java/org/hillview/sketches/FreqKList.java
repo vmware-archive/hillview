@@ -17,14 +17,13 @@
 
 package org.hillview.sketches;
 
-import it.unimi.dsi.fastutil.objects.Object2IntMap;
-import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ObjectIterator;
+import it.unimi.dsi.fastutil.objects.*;
 import org.hillview.dataset.api.Pair;
 import org.hillview.table.Schema;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.RowSnapshotSet;
 import org.hillview.utils.Converters;
+import org.hillview.utils.MutableInteger;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -35,63 +34,25 @@ import java.util.List;
  * It stores a hash-map which contains the elements and their counts, along with counts
  * of the size of the input and some metadata about the algorithm (K).
  */
-public class FreqKList implements Serializable {
+public abstract class FreqKList implements Serializable {
     /**
      * The size of the input table.
      */
     public long totalRows;
     /**
-     * In MG it is the number of counters we store: the K in top-K heavy hitters.
-     * In sampleHeavyHitters, it is used to store the number of samples taken
-     */
-    public final int maxSize;
-    /**
      * The number of times each row in the above table occurs in the original DataSet
      * (can be approximate depending on the context).
      */
-    public final Object2IntOpenHashMap<RowSnapshot> hMap;
+    public Object2IntOpenHashMap<RowSnapshot> hMap;
 
     public final double epsilon;
 
-    public FreqKList(long totalRows, double epsilon, int maxSize,
-                     Object2IntOpenHashMap<RowSnapshot> hMap) {
-            this.totalRows = totalRows;
-            this.epsilon = epsilon;
-            this.maxSize = maxSize;
-            this.hMap = hMap;
-    }
-
-    public FreqKList(long totalRows, double epsilon, Object2IntOpenHashMap<RowSnapshot> hMap) {
+    protected FreqKList(long totalRows, double epsilon, Object2IntOpenHashMap<RowSnapshot> hMap) {
         this.totalRows = totalRows;
         this.epsilon = epsilon;
         this.hMap = hMap;
-        this.maxSize = (int) Math.ceil(1/epsilon);
     }
 
-    public FreqKList(List<RowSnapshot> rssList, double epsilon) {
-        this.totalRows = 0;
-        this.hMap = new Object2IntOpenHashMap<RowSnapshot>();
-        rssList.forEach(rss -> this.hMap.put(rss, 0));
-        this.epsilon = epsilon;
-        this.maxSize= (int) Math.ceil(1/epsilon);
-    }
-
-    /**
-     * Used to add two Lists that have counts for the same set of RowSnapShots. Behavior is not
-     * determined if it is called with two lists that have different sets of keys. Meant to be used
-     * by ExactFreqSketch.
-     * @param that The list to be added to the current one.
-     * @return Updated counts (existing counts are overwritten).
-     */
-    public FreqKList add(FreqKList that) {
-        this.totalRows += that.totalRows;
-
-        for (Object2IntMap.Entry<RowSnapshot> entry : this.hMap.object2IntEntrySet()) {
-            int newVal = entry.getIntValue() + that.hMap.getOrDefault(entry.getKey(), 0);
-            entry.setValue(newVal);
-        }
-        return this;
-    }
 
     /**
      * @return Total distinct rows that are heavy hitters.
@@ -99,90 +60,52 @@ public class FreqKList implements Serializable {
     public int getDistinctRowCount() { return this.hMap.size(); }
 
     /**
-     * This method returns the sum of counts computed by the data structure. This is always less
-     * than totalRows, the number of rows in the table.
-     * @return The sum of all counts stored in the hash-map.
-     */
-    private int getTotalCount() {
-        return this.hMap.values().stream().reduce(0, Integer::sum);
-    }
-
-    /**
-     * The error bound guaranteed by the "Mergeable Summaries" paper. It holds if a particular
-     * sketch algorithm is applied to the Misra-Gries map. In particular, if the sum of observed
-     * frequencies equals the total length of the table, the error is zero. Two notable properties
-     * of this error bound:
-     * - The frequency f(i) in the table is always an underestimate
-     * - The true frequency lies between f(i) and f(i) + e, where e is the bound returned below.
-     * @return Integer e such that if an element i has a count f(i) in the data
-     * structure, then its true frequency in the range [f(i), f(i) +e].
-     */
-   public double getErrBound() {
-        return  (this.totalRows - this.getTotalCount())/(this.maxSize + 1.0);
-    }
-
-    /**
-     * @return The list of candidate heavy hitters. Used after running the Misra-Gries algorithm
-     * (FreqKSketch) to figure out candidates for the top K.
+     * @return The list of candidate heavy hitters. Used after running an approximate algorithm
+     * to get candidates for computing exact counts.
      */
     public List<RowSnapshot> getList() {
         return new ArrayList<RowSnapshot>(this.hMap.keySet());
     }
 
+    public static List<Object2ObjectMap.Entry<RowSnapshot, MutableInteger>> addLists(FreqKList left, FreqKList right) {
+        assert left != null;
+        assert right != null;
+        Object2ObjectOpenHashMap<RowSnapshot, MutableInteger> resultMap =
+                new Object2ObjectOpenHashMap<RowSnapshot, MutableInteger>(left.hMap.size() + right.hMap.size());
+        for (ObjectIterator<Object2IntMap.Entry<RowSnapshot>> it1 = left.hMap.object2IntEntrySet().fastIterator();
+             it1.hasNext(); ) {
+            final Object2IntMap.Entry<RowSnapshot> it = it1.next();
+            resultMap.put(it.getKey(), new MutableInteger(it.getIntValue()));
+        }
+
+        // Add values of right.hMap to resultMap
+        for (ObjectIterator<Object2IntMap.Entry<RowSnapshot>> it1 = right.hMap.object2IntEntrySet().fastIterator();
+             it1.hasNext(); ) {
+            final Object2IntMap.Entry<RowSnapshot> it = it1.next();
+            MutableInteger val = resultMap.get(it.getKey());
+            if (val != null) {
+                val.set(val.get() + it.getIntValue());
+            } else {
+                resultMap.put(it.getKey(), new MutableInteger(it.getIntValue()));
+            }
+        }
+        List<Object2ObjectMap.Entry<RowSnapshot, MutableInteger>> pList =
+                new ArrayList<Object2ObjectMap.Entry<RowSnapshot, MutableInteger>>(resultMap.size());
+        pList.addAll(resultMap.object2ObjectEntrySet());
+        pList.sort((p1, p2) -> Integer.compare(p2.getValue().get(), p1.getValue().get()));
+        return pList;
+    }
 
     /**
      * Prunes the hashmap to retain only those RowSnapshots that occur with frequency above
-     * 1/maxSize, and their frequencies.
+     * a specified threshold.
      */
-    public void filter(double threshold) {
+    public void fkFilter(double threshold) {
         for (ObjectIterator<Object2IntMap.Entry<RowSnapshot>> it = this.hMap.object2IntEntrySet().fastIterator();
              it.hasNext(); ) {
             final Object2IntMap.Entry<RowSnapshot> entry = it.next();
-            if (entry.getIntValue() < (threshold))
-                it.remove();
+            if (entry.getIntValue() < threshold) it.remove();
         }
-    }
-
-    public void filter(boolean isMG) {
-        double threshold = this.epsilon * this.totalRows;
-        if (isMG)
-            threshold -= this.getErrBound();
-        filter(threshold);
-    }
-
-    public void rescale() {
-        for (ObjectIterator<Object2IntMap.Entry<RowSnapshot>> it = this.hMap.object2IntEntrySet().fastIterator();
-             it.hasNext(); ) {
-            final Object2IntMap.Entry<RowSnapshot> entry = it.next();
-            if (entry.getIntValue() < (this.epsilon * this.maxSize /1.1))
-                it.remove();
-            else
-                this.hMap.put(entry.getKey(), (int) Math.ceil(entry
-                        .getIntValue() * this.totalRows / this.maxSize));
-        }
-    }
-
-    /**
-     * Helper method to discard values below a cutoff value.
-     */
-    private void trim(double cutoff) {
-        for (ObjectIterator<Object2IntMap.Entry<RowSnapshot>> it =
-             this.hMap.object2IntEntrySet().fastIterator(); it.hasNext();) {
-            final Object2IntMap.Entry<RowSnapshot> entry = it.next();
-            if (entry.getIntValue() < cutoff)
-                it.remove();
-        }
-    }
-
-    /**
-     * @param type indicates which HeavyHitter Sketch is running.
-     * Type 0: the Misra-Gries sketch.
-     * Type 1: the exact Frequency sketch.
-     * Type 2: the Sampling frequency sketch.
-     * @param schema Needed to form a table from the rowsnapshots.
-     */
-    public NextKList getTop(int type, Schema schema) {
-        return getTop(this.hMap.size(), type, schema);
     }
 
     /**
@@ -190,32 +113,8 @@ public class FreqKList implements Serializable {
      * results. It will also discard elements that are too low in (estimated) frequency.
      * @param size: Lets us specify how many of the top items to select from the FreqKList.
      */
-    public NextKList getTop(int size, int type, Schema schema) {
-        List<Pair<RowSnapshot, Integer>> pList = new ArrayList<Pair<RowSnapshot, Integer>>(this.hMap.size());
-        if (type == 0) {
-            double threshold = this.epsilon * this.totalRows - this.getErrBound();
-            this.hMap.forEach((rs, j) -> {
-                if ( j >= threshold)
-                    pList.add(new Pair<RowSnapshot, Integer>(rs, j));
-            });
-            trim(0.5 * threshold);
-        } else if (type == 1) {
-            double threshold = this.epsilon * this.totalRows;
-            this.hMap.forEach((rs, j) -> {
-                if (j >= threshold)
-                    pList.add(new Pair<RowSnapshot, Integer>(rs, j));
-            });
-            trim(0.5 * threshold);
-        } else if (type == 2) {
-            this.hMap.forEach((rs, j) -> {
-                double frac = ((double) j)/this.maxSize;
-                if ( frac >= epsilon) {
-                    int k = (int) (frac * this.totalRows);
-                    pList.add(new Pair<RowSnapshot, Integer>(rs, k));
-                }
-            });
-            trim(0.5 * epsilon * this.maxSize);
-        }
+    public NextKList getTopK(int size, List<Pair<RowSnapshot, Integer>> pList, Schema schema) {
+
         pList.sort((p1, p2) -> Integer.compare(
                 Converters.checkNull(p2.second),
                 Converters.checkNull(p1.second)));
@@ -226,8 +125,7 @@ public class FreqKList implements Serializable {
             listRows.add(pList.get(i).first);
             listCounts.add(pList.get(i).second);
         }
-        return new NextKList(new Pair<List<RowSnapshot>, List<Integer>>(listRows, listCounts),
-                schema, this.totalRows);
+        return new NextKList(listRows, listCounts, schema, this.totalRows);
     }
 
     @SuppressWarnings("ConstantConditions")
