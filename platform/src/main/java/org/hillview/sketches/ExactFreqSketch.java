@@ -35,8 +35,7 @@ import java.util.List;
 
 /**
  * This sketch computes the true frequencies of a list of rowSnapshots in a data set. It can
- * be used right after the FreqKSketchMG which computes the list of heavy hitters, to compute their
- * exact frequencies.
+ * be used right after any approximate sketch for Heavy Hitters to compute their exact frequencies.
  */
 public class ExactFreqSketch implements ISketch<ITable, FreqKListExact> {
     /**

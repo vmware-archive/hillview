@@ -22,6 +22,10 @@ public class FreqKListSample extends FreqKList {
         this.sampleSize = sampleSize;
     }
 
+    /**
+     * Since counts are approximate, we keep all elements that are have observed relative
+     * frequencies above 0.5*epsilon, but only report those that are above epsilon.
+     */
     @Override
     public NextKList getTop(Schema schema) {
         /* Needed here because this list is used for further filtering*/

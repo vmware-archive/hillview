@@ -30,9 +30,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A data structure to store the K heavy hitters out of N elements.
+ * A abstract data structure to store the K heavy hitters out of N elements.
  * It stores a hash-map which contains the elements and their counts, along with counts
- * of the size of the input and some metadata about the algorithm (K).
+ * of the size of the input and the desired accuracy parameter epsilon.
  */
 public abstract class FreqKList implements Serializable {
     /**
@@ -115,6 +115,7 @@ public abstract class FreqKList implements Serializable {
      * the union of their entries. If an element occurs in both, the frequencies add. This is used
      * for both the Misra-Gries sketch and the sampling sketch. The hashmap is post-processed
      * differently by each of them.
+     * (FeqKListExact implements its own addition and does not use this.)
      */
     protected static List<Object2ObjectMap.Entry<RowSnapshot, MutableInteger>>
     addLists(FreqKList left, FreqKList right) {

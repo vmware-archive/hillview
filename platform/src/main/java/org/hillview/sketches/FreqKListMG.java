@@ -50,15 +50,15 @@ public class FreqKListMG extends FreqKList {
         this.fkFilter(threshold);
     }
 
+    /**
+     * We return all elements whose fractional counts that could possibly be above epsilon, using
+     * the error bound calculation in getErrBound()
+     */
     @Override
     public NextKList getTop(Schema schema) {
         this.filter();
         List<Pair<RowSnapshot, Integer>> pList = new ArrayList<Pair<RowSnapshot, Integer>>(this.hMap.size());
-        double threshold = this.epsilon * this.totalRows - this.getErrBound();
-        this.hMap.forEach((rs, j) -> {
-            if (j >= threshold)
-                pList.add(new Pair<RowSnapshot, Integer>(rs, j));
-        });
+        this.hMap.forEach((rs, j) -> { pList.add(new Pair<RowSnapshot, Integer>(rs, j));});
         return getTopK(pList, schema);
     }
 }

@@ -45,6 +45,9 @@ public class FreqKListExact extends FreqKList {
         return this;
     }
 
+    /**
+     * Since all counts are correct, we discard small ones using filter and return the rest.
+     */
     @Override
     public NextKList getTop(Schema schema) {
         this.filter();
@@ -52,7 +55,6 @@ public class FreqKListExact extends FreqKList {
         this.hMap.forEach((rs, j) -> pList.add(new Pair<RowSnapshot, Integer>(rs, j)));
         return getTopK(pList, schema);
     }
-
     public void filter() {
         double threshold = this.epsilon * this.totalRows;
         this.fkFilter(threshold);
