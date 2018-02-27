@@ -18,12 +18,15 @@ import org.hillview.utils.MutableInteger;
 import javax.annotation.Nullable;
 import java.util.List;
 
+<<<<<<< 9dc2740d9c27c4a12ee166e88accf367492a8d59
 /**
  * A heavy hitters sketch where we sample each row in the database with a certain probability, and
  * then compute heavy hitters over this sample. Provided the sample size is O(1/epsilon^2), we
  * expect every element with relative frequency at least epsilon to appear in the sample with
  * approximately the right relative frequency.
  */
+=======
+>>>>>>> Refactored FreqKList
 public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKListSample> {
     /**
      * The schema specifies which columns are relevant in determining equality of records.
@@ -60,6 +63,7 @@ public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKListSample
                 new Object2IntOpenHashMap<RowSnapshot>(0));
     }
 
+<<<<<<< 9dc2740d9c27c4a12ee166e88accf367492a8d59
     /**
      * Add takes the union of the two lists, adding the frequencies for any common
      * elements.
@@ -67,6 +71,10 @@ public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKListSample
     public FreqKListSample add(@Nullable FreqKListSample left, @Nullable FreqKListSample right) {
         List<Object2ObjectMap.Entry<RowSnapshot, MutableInteger>> pList =
                 FreqKList.addLists(left, right);
+=======
+    public FreqKListSample add(@Nullable FreqKListSample left, @Nullable FreqKListSample right) {
+        List<Object2ObjectMap.Entry<RowSnapshot, MutableInteger>> pList = FreqKList.addLists(left, right);
+>>>>>>> Refactored FreqKList
         Object2IntOpenHashMap<RowSnapshot> hm = new Object2IntOpenHashMap<RowSnapshot>(pList.size());
         for (Object2ObjectMap.Entry<RowSnapshot, MutableInteger> aPList : pList) {
             hm.put(aPList.getKey(), aPList.getValue().get());
@@ -75,9 +83,12 @@ public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKListSample
                 left.sampleSize + right.sampleSize, hm);
     }
 
+<<<<<<< 9dc2740d9c27c4a12ee166e88accf367492a8d59
     /**
      * Create computes a histogram of RowSnapShots over the sample.
      */
+=======
+>>>>>>> Refactored FreqKList
     public FreqKListSample create(ITable data) {
         IntHash.Strategy hs = new IntHash.Strategy() {
             final VirtualRowSnapshot vrs = new VirtualRowSnapshot(data,
