@@ -38,7 +38,8 @@ export class SchemaView extends TableViewBase {
                 originalTableId: RemoteObjectId,
                 page: FullPage,
                 schema: Schema,
-                private rowCount: number) {
+                private rowCount: number,
+                elapsedMs: number) {
         super(remoteObjectId, originalTableId, page);
         this.topLevel = document.createElement("div");
         this.contextMenu = new ContextMenu(this.topLevel);
@@ -143,6 +144,7 @@ export class SchemaView extends TableViewBase {
             row.oncontextmenu = e => this.createAndShowContextMenu(e);
         }
         this.topLevel.appendChild(this.display.getHTMLRepresentation());
+        this.page.reportTime(elapsedMs);
     }
 
     createAndShowContextMenu(e: MouseEvent): void {

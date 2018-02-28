@@ -797,7 +797,8 @@ export class TableView extends TableViewBase implements IScrollTarget {
 
     public viewSchema(): void {
         let newPage = new FullPage("Schema of ", "Schema", this.page);
-        let sv = new SchemaView(this.remoteObjectId, this.originalTableId, newPage, this.schema, this.rowCount);
+        let sv = new SchemaView(this.remoteObjectId, this.originalTableId,
+            newPage, this.schema, this.rowCount, 0);
         newPage.setDataView(sv);
         this.page.insertAfterMe(newPage);
     }
@@ -994,7 +995,8 @@ class SchemaReceiver extends OnCompleteRenderer<TableSummary> {
         if (summary.schema.length > 20 && this.title != null && !this.forceTableView) {
             page = new FullPage("Schema of " + this.title, "Schema", this.page);
             dataView = new SchemaView(this.remoteObject.remoteObjectId,
-                this.remoteObject.originalTableId, page, summary.schema, summary.rowCount);
+                this.remoteObject.originalTableId, page, summary.schema,
+                summary.rowCount, this.elapsedMilliseconds());
         } else {
             if (this.title != null)
                 page = new FullPage(this.title, "Table", this.page);

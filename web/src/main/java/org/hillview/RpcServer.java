@@ -29,6 +29,8 @@ import javax.websocket.*;
 import javax.websocket.server.ServerEndpoint;
 import java.io.*;
 import java.nio.ByteBuffer;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.zip.InflaterInputStream;
 
 /**
@@ -43,6 +45,39 @@ import java.util.zip.InflaterInputStream;
 @ServerEndpoint(value = "/rpc")
 public final class RpcServer {
     static private final int version = 2;
+    /**
+     * There seems to be a significant but in RxJava: when onComplete is called,
+     * it may kill the consumer thread, even if that thread may not have finished
+     * processing the previous onNext.  So we use a different thread to do
+     * the actual message sending.  This thread pool must have exactly 1 thread,
+     * because we want all rpc replies to be sent in the same order as they are prepared.
+     */
+    private static final ExecutorService replyExecutor = Executors.newFixedThreadPool(1);
+
+    private static void sendReply(RpcReply reply, Session session) {
+        replyExecutor.execute(() -> {
+            try {
+                JsonElement json = reply.toJson();
+                session.getBasicRemote().sendText(json.toString());
+            } catch (Exception e) {
+                HillviewLogger.instance.error("Could not send reply", e);
+            }
+        });
+    }
+
+    public static void closeSession(final Session session) {
+        // We use replyExecutor to make sure that the session closing
+        // is performed after all replies on that session have been sent.
+        replyExecutor.execute( () -> {
+            try {
+                if (session.isOpen())
+                    session.close();
+                RpcObjectManager.instance.removeSession(session);
+            } catch (Exception ex) {
+                HillviewLogger.instance.error("Error closing context", ex);
+            }
+        });
+    }
 
     @SuppressWarnings("unused")
     @OnOpen
@@ -79,15 +114,6 @@ public final class RpcServer {
         RpcServer.execute(req, context);
     }
 
-    private static void sendReply(RpcReply reply, Session session) {
-        try {
-            JsonElement json = reply.toJson();
-            session.getBasicRemote().sendText(json.toString());
-        } catch (Exception e) {
-            HillviewLogger.instance.error("Could not send reply", e);
-        }
-    }
-
     public static void execute(RpcRequest rpcRequest, RpcRequestContext context) {
         HillviewLogger.instance.info("Executing request", "{0}", rpcRequest);
         /* Observable invoked when the source object has been obtained.
@@ -119,16 +145,6 @@ public final class RpcServer {
         // Retrieve the source object on which the operation is executed.
         // This works asynchronously - when the object is retrieved obs is invoked.
         RpcObjectManager.instance.retrieveTarget(rpcRequest.objectId, true, obs);
-    }
-
-    public static void closeSession(final Session session) {
-        try {
-            if (session.isOpen())
-                session.close();
-            RpcObjectManager.instance.removeSession(session);
-        } catch (Exception ex) {
-            HillviewLogger.instance.error("Error closing context", ex);
-        }
     }
 
     private void replyWithError(final Throwable th, final Session session) {

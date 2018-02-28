@@ -20,7 +20,6 @@ package org.hillview;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.hillview.dataset.api.IJson;
-import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
@@ -101,12 +100,7 @@ public final class RpcRequest {
     public void syncCloseSession(@Nullable Session session) {
         if (session == null)
             return;
-        try {
-            RpcObjectManager.instance.removeSubscription(session);
-            session.close();
-        } catch (Exception ex) {
-            HillviewLogger.instance.error("Error closing context");
-        }
+        RpcServer.closeSession(session);
     }
 
     @Override
