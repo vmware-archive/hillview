@@ -338,7 +338,7 @@ public final class TableTarget extends RpcTarget {
                 json.addProperty("done", 1.0);
                 json.add("data", controlPoints2D.toJsonTree());
                 RpcReply reply = request.createReply(json);
-                reply.send(session);
+                RpcServer.sendReply(reply, session);
                 request.syncCloseSession(session);
             }
         };

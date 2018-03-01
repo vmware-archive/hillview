@@ -32,8 +32,6 @@ import javax.websocket.Session;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.BiFunction;
 
 /**
@@ -207,7 +205,7 @@ public abstract class RpcTarget implements IJson {
         }
 
         void sendReply(final RpcReply reply) {
-            reply.send(this.context.session);
+            RpcServer.sendReply(reply, this.context.session);
         }
 
         @Override
@@ -323,7 +321,6 @@ public abstract class RpcTarget implements IJson {
             json.add("data", result.toJsonTree());
             RpcReply reply = this.request.createReply(json);
             this.sendReply(reply);
-            reply.send(this.context.session);
             super.onCompleted();
         }
     }

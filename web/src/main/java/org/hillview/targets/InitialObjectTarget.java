@@ -287,7 +287,7 @@ public class InitialObjectTarget extends RpcTarget {
         Session session = context.getSessionIfOpen();
         if (session == null)
             return;
-        reply.send(session);
+        RpcServer.sendReply(reply, session);
         request.syncCloseSession(session);
     }
 }

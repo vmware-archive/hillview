@@ -46,15 +46,15 @@ import java.util.zip.InflaterInputStream;
 public final class RpcServer {
     static private final int version = 2;
     /**
-     * There seems to be a significant but in RxJava: when onComplete is called,
+     * There seems to be a significant bug in RxJava: when onComplete is called,
      * it may kill the consumer thread, even if that thread may not have finished
      * processing the previous onNext.  So we use a different thread to do
      * the actual message sending.  This thread pool must have exactly 1 thread,
      * because we want all rpc replies to be sent in the same order as they are prepared.
      */
-    private static final ExecutorService replyExecutor = Executors.newFixedThreadPool(1);
+    private static final ExecutorService replyExecutor = Executors.newSingleThreadExecutor();
 
-    private static void sendReply(RpcReply reply, Session session) {
+    public static void sendReply(RpcReply reply, Session session) {
         replyExecutor.execute(() -> {
             try {
                 JsonElement json = reply.toJson();
@@ -68,7 +68,7 @@ public final class RpcServer {
     public static void closeSession(final Session session) {
         // We use replyExecutor to make sure that the session closing
         // is performed after all replies on that session have been sent.
-        replyExecutor.execute( () -> {
+        replyExecutor.execute(() -> {
             try {
                 if (session.isOpen())
                     session.close();

@@ -19,12 +19,7 @@ package org.hillview;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Utilities;
-
-import javax.annotation.Nullable;
-import javax.websocket.Session;
-import java.io.IOException;
 
 /**
  * Represents a reply that is sent from the web server to the web client.
@@ -62,25 +57,5 @@ public final class RpcReply {
         return "RpcReply to " + this.requestId + ": " +
                 (this.isError ? "Error" : "Normal") +
                 "Message: " + Utilities.truncateString(this.result);
-    }
-
-    /**
-     * Send a reply using the specified web sockets context.
-     * @param session If the context is null no reply is sent.
-     * This method is synchronized because sendText() is not thread-safe.
-     */
-    public void send(@Nullable Session session) {
-        HillviewLogger.instance.info("Sending reply", "{0}", this);
-        try {
-            if (session == null) {
-                HillviewLogger.instance.info("No session; reply skipped.");
-                return;
-            }
-            JsonElement json = this.toJson();
-            session.getBasicRemote().sendText(json.toString());
-            HillviewLogger.instance.info("Reply sent");
-        } catch (IOException e) {
-            HillviewLogger.instance.error("Could not send reply", e);
-        }
     }
 }
