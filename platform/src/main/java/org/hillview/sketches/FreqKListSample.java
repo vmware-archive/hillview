@@ -10,9 +10,12 @@ import org.hillview.table.rows.RowSnapshot;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A subclass of FreqKList that is used by the Sample Heavy Hitters Sketch.
+ */
 public class FreqKListSample extends FreqKList {
     /**
-     * In sampleHeavyHitters, it is used to store the number of samples taken
+     * In sampleHeavyHitters, it is used to store the number of samples taken.
      */
     public final int sampleSize;
 

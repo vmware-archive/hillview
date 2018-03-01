@@ -45,7 +45,11 @@ public class FreqKTest extends BaseTest {
         for (int i = 1; i < Converters.checkNull(nkList.count).size(); i++) {
             TestCase.assertTrue(nkList.count.get(i - 1) >= nkList.count.get(i));
         }
+        for (int i = 0; i < Converters.checkNull(nkList.count).size(); i++) {
+            TestCase.assertTrue(nkList.count.get(i) >= 0);
+        }
     }
+
     private void filterTest(@Nullable FreqKListMG fkList) {
         Converters.checkNull(fkList);
         fkList.filter();

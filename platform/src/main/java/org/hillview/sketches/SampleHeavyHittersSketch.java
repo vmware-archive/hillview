@@ -18,23 +18,26 @@ import org.hillview.utils.MutableInteger;
 import javax.annotation.Nullable;
 import java.util.List;
 
+/**
+ * A heavy hitters sketch where we sample each row in the database with a certain probability, and
+ * then compute heavy hitters over this sample. Provided the sample size is O(1/epsilon^2), we
+ * expect every element with relative frequency at least epsilon to appear in the sample with
+ * approximately the right relative frequency.
+ */
 public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKListSample> {
     /**
      * The schema specifies which columns are relevant in determining equality of records.
      */
     private final Schema schema;
-
     /**
-     * epsilon specifies the threshold for the fractional frequency: our goal is to find all elements
-     * that constitute more than an epsilon fraction of the total.
+     * epsilon specifies the threshold for the fractional frequency: our goal is to find all
+     * elements whose relative frequencies are at least an epsilon fraction of the total.
      */
     private final double epsilon;
-
     /**
      * The size of the input table.
      */
     private final long totalRows;
-
     /**
      * The rate at which we sample data.
      */
@@ -57,8 +60,13 @@ public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKListSample
                 new Object2IntOpenHashMap<RowSnapshot>(0));
     }
 
+    /**
+     * Add takes the union of the two lists, adding the frequencies for any common
+     * elements.
+     */
     public FreqKListSample add(@Nullable FreqKListSample left, @Nullable FreqKListSample right) {
-        List<Object2ObjectMap.Entry<RowSnapshot, MutableInteger>> pList = FreqKList.addLists(left, right);
+        List<Object2ObjectMap.Entry<RowSnapshot, MutableInteger>> pList =
+                FreqKList.addLists(left, right);
         Object2IntOpenHashMap<RowSnapshot> hm = new Object2IntOpenHashMap<RowSnapshot>(pList.size());
         for (Object2ObjectMap.Entry<RowSnapshot, MutableInteger> aPList : pList) {
             hm.put(aPList.getKey(), aPList.getValue().get());
@@ -67,6 +75,9 @@ public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKListSample
                 left.sampleSize + right.sampleSize, hm);
     }
 
+    /**
+     * Create computes a histogram of RowSnapShots over the sample.
+     */
     public FreqKListSample create(ITable data) {
         IntHash.Strategy hs = new IntHash.Strategy() {
             final VirtualRowSnapshot vrs = new VirtualRowSnapshot(data,

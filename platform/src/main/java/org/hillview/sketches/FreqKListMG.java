@@ -4,14 +4,18 @@ import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import org.hillview.dataset.api.Pair;
 import org.hillview.table.Schema;
 import org.hillview.table.rows.RowSnapshot;
-
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * This compute the Misra-Gries sketch for finding Heavy Hitters.
+ */
 public class FreqKListMG extends FreqKList {
 
     /**
-     * In MG it is the number of counters we store: the K in top-K heavy hitters.
+     * The number of counters we store, it is at least 1/epsilon, if the goal is to find all
+     * elements with relative frequency epsilon. Increasing K increases the accuracy of the
+     * approximate counts.
      **/
     public final int maxSize;
 
@@ -23,7 +27,6 @@ public class FreqKListMG extends FreqKList {
     /**
      * This method returns the sum of counts computed by the data structure. This is always less
      * than totalRows, the number of rows in the table.
-     *
      * @return The sum of all counts stored in the hash-map.
      */
     int getTotalCount() {
@@ -37,7 +40,6 @@ public class FreqKListMG extends FreqKList {
      * of this error bound:
      * - The frequency f(i) in the table is always an underestimate
      * - The true frequency lies between f(i) and f(i) + e, where e is the bound returned below.
-     *
      * @return Integer e such that if an element i has a count f(i) in the data
      * structure, then its true frequency in the range [f(i), f(i) +e].
      */

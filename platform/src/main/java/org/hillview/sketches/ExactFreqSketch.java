@@ -22,13 +22,12 @@ import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenCustomHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import org.hillview.dataset.api.ISketch;
-import org.hillview.table.rows.BaseRowSnapshot;
-import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.Schema;
-import org.hillview.table.rows.VirtualRowSnapshot;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ITable;
-import org.hillview.utils.Converters;
+import org.hillview.table.rows.BaseRowSnapshot;
+import org.hillview.table.rows.RowSnapshot;
+import org.hillview.table.rows.VirtualRowSnapshot;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -57,16 +56,23 @@ public class ExactFreqSketch implements ISketch<ITable, FreqKListExact> {
     @Nullable
     @Override
     public FreqKListExact zero() {
-        return new FreqKListExact(this.rssList, this.epsilon);
+        return new FreqKListExact(this.epsilon, this.rssList);
     }
 
+    /**
+     * Adds the frequencies for each row from the two lists.
+     */
     @Override
     public FreqKListExact add(@Nullable FreqKListExact left, @Nullable FreqKListExact right) {
-        Converters.checkNull(left);
-        Converters.checkNull(right);
-        return left.add(right);
+        Object2IntOpenHashMap<RowSnapshot> hm = new Object2IntOpenHashMap<RowSnapshot>(this.rssList.size());
+        this.rssList.forEach(rss -> hm.put(rss, left.hMap.getInt(rss) + right.hMap.getInt(rss)));
+        return new FreqKListExact(left.totalRows + right.totalRows,
+                this.epsilon, hm, this.rssList);
     }
 
+    /**
+     * Compute frequency for each RowSnapShot over a table.
+     */
     @Override
     public FreqKListExact create(ITable data) {
         data.getColumns(this.schema);
@@ -89,9 +95,7 @@ public class ExactFreqSketch implements ISketch<ITable, FreqKListExact> {
                 return brs1.compareForEquality(brs2, ExactFreqSketch.this.schema);
             }
         };
-
-        Object2IntMap<BaseRowSnapshot> hMap = new
-                Object2IntOpenCustomHashMap<BaseRowSnapshot>(hs);
+        Object2IntMap<BaseRowSnapshot> hMap = new Object2IntOpenCustomHashMap<BaseRowSnapshot>(hs);
         this.rssList.forEach(rss -> hMap.put(rss, 0));
         IRowIterator rowIt = data.getRowIterator();
         int i = rowIt.getNextRow();
@@ -106,6 +110,6 @@ public class ExactFreqSketch implements ISketch<ITable, FreqKListExact> {
         }
         Object2IntOpenHashMap<RowSnapshot> hm = new Object2IntOpenHashMap<RowSnapshot>(this.rssList.size());
         this.rssList.forEach(rss -> hm.put(rss, hMap.getInt(rss)));
-        return new FreqKListExact(data.getNumOfRows(), this.epsilon, hm);
+        return new FreqKListExact(data.getNumOfRows(), this.epsilon, hm, this.rssList);
     }
 }
