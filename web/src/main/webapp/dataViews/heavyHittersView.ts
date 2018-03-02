@@ -31,7 +31,7 @@ import {RemoteTableObjectView} from "../tableTarget";
  * order of counts. It also displays a menu that gives the option to
  * view the results as filtered version of the original
  * table. Clicking this option gives a table with the same rows, but
- *they are not in sorted order of counts.
+ * they are not in sorted order of counts.
  */
 export class HeavyHittersView extends RemoteTableObjectView {
     constructor(public data: TopList,
@@ -81,7 +81,8 @@ export class HeavyHittersView extends RemoteTableObjectView {
         let tips: string[] = ["Position in decreasing order of frequency."];
         this.schema.forEach(c => { header.push(c.name); tips.push("Column name"); });
         header = header.concat(["Count", "%", "Fraction"]);
-        tips = tips.concat(["Number of occurrences", "Frequency within the dataset", "Frequency and position within the sorted order"]);
+        tips = tips.concat(["Number of occurrences", "Frequency within the dataset", "Frequency and position within " +
+        "the sorted order"]);
         table.setColumns(header, tips);
 
         let restCount = this.getRestCount(tdv);
@@ -101,7 +102,6 @@ export class HeavyHittersView extends RemoteTableObjectView {
                     position += restCount;
                     k++;
                 }
-
                 let row: Element[] = [];
                 row.push(textToDiv(k.toString()));
                 for (let j = 0; j < this.schema.length; j++) {
@@ -114,14 +114,10 @@ export class HeavyHittersView extends RemoteTableObjectView {
                 table.addElementRow(row);
                 position += tdv.rows[i].count;
             }
-            if ((restPos == tdv.rows.length) && (restCount > 0)) {
-                k = tdv.rows.length + 1;
-                this.showRest(k, position, restCount, tdv.rowCount, table);
-            }
         }
         table.addFooter();
         this.topLevel.appendChild(table.getHTMLRepresentation());
-
+        this.page.scrollIntoView();
         this.page.reportTime(elapsedMs);
     }
 

@@ -23,7 +23,6 @@ import org.hillview.dataset.ConcurrentSketch;
 import org.hillview.dataset.TripleSketch;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IJson;
-import org.hillview.dataset.api.Pair;
 import org.hillview.jsonObjects.Histogram2DArgs;
 import org.hillview.jsonObjects.Histogram3DArgs;
 import org.hillview.jsonObjects.HistogramArgs;
@@ -43,7 +42,6 @@ import rx.Observer;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
-import java.util.List;
 import java.util.function.BiFunction;
 
 /**
@@ -419,26 +417,23 @@ public final class TableTarget extends RpcTarget {
      * discard elements that are too low in (estimated) frequency.
      * @param fkList The list of candidate heavy hitters
      * @param schema The schema of the heavy hitters computation.
-     * @param type 0 represents MG, 1 represents SampleHeavyHitters
      * @return A TopList
      */
-    private static TopList getLists(FreqKList fkList, Schema schema, int type, HillviewComputation computation) {
-        Pair<List<RowSnapshot>, List<Integer>> pair = fkList.getTop(type);
+    private static TopList getTopList(FreqKList fkList, Schema schema, HillviewComputation computation) {
         TopList tl = new TopList();
-        SmallTable tbl = new SmallTable(schema, Converters.checkNull(pair.first));
-        tl.top = new NextKList(tbl, Converters.checkNull(pair.second), 0, fkList.totalRows);
+        tl.top = fkList.getTop(schema);
         tl.heavyHittersId = new HeavyHittersTarget(fkList, computation).getId().toString();
         return tl;
     }
 
     /**
-     * Calls the Misra-Greis (streaming) heavy hitters routine.
+     * Calls the Misra-Gries (streaming) heavy hitters routine.
      */
     @HillviewRpc
     public void heavyHittersMG(RpcRequest request, RpcRequestContext context) {
         HeavyHittersInfo info = request.parseArgs(HeavyHittersInfo.class);
-        FreqKSketch sk = new FreqKSketch(info.columns, info.amount/100);
-        this.runCompleteSketch(this.table, sk, (x, c) -> TableTarget.getLists(x, info.columns, 0, c),
+        FreqKSketchMG sk = new FreqKSketchMG(info.columns, info.amount/100);
+        this.runCompleteSketch(this.table, sk, (x, c) -> TableTarget.getTopList(x, info.columns, c),
                 request, context);
     }
 
@@ -446,11 +441,11 @@ public final class TableTarget extends RpcTarget {
      * Calls the Sampling heavy hitters routine.
      */
     @HillviewRpc
-    public void heavyHitters(RpcRequest request, RpcRequestContext context) {
+    public void heavyHittersSampling(RpcRequest request, RpcRequestContext context) {
         HeavyHittersInfo info = request.parseArgs(HeavyHittersInfo.class);
         SampleHeavyHittersSketch shh = new SampleHeavyHittersSketch(info.columns,
                 info.amount/100, info.totalRows, info.seed);
-        this.runCompleteSketch(this.table, shh, (x, c) -> TableTarget.getLists(x, info.columns, 2, c),
+        this.runCompleteSketch(this.table, shh, (x, c) -> TableTarget.getTopList(x, info.columns, c),
                 request, context);
     }
 
@@ -472,7 +467,7 @@ public final class TableTarget extends RpcTarget {
                 HeavyHittersTarget hht = (HeavyHittersTarget)rpcTarget;
                 ExactFreqSketch efSketch = new ExactFreqSketch(hhi.schema, hht.heavyHitters);
                 TableTarget.this.runCompleteSketch(
-                        TableTarget.this.table, efSketch, (x, c) -> TableTarget.getLists(x, hhi.schema, 1, c),
+                        TableTarget.this.table, efSketch, (x, c) -> TableTarget.getTopList(x, hhi.schema, c),
                         request, context);
             }
         };
@@ -489,7 +484,7 @@ public final class TableTarget extends RpcTarget {
             @Override
             public void onSuccess(RpcTarget rpcTarget) {
                 HeavyHittersTarget hht = (HeavyHittersTarget)rpcTarget;
-                ITableFilterDescription filter = hht.heavyHitters.heavyFilter(hhi.schema);
+                ITableFilterDescription filter = hht.heavyHitters.getFilter(hhi.schema);
                 FilterMap fm = new FilterMap(filter);
                 TableTarget.this.runMap(TableTarget.this.table, fm, TableTarget::new, request, context);
             }

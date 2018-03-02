@@ -17,21 +17,15 @@
 
 package org.hillview.test;
 
-import org.hillview.dataset.api.Pair;
-import org.hillview.sketches.ExactFreqSketch;
-import org.hillview.sketches.FreqKList;
-import org.hillview.sketches.FreqKSketch;
+import org.hillview.sketches.*;
 import org.hillview.table.SmallTable;
 import org.hillview.table.Table;
 import org.hillview.table.api.ITable;
-import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.Converters;
 import org.hillview.utils.TestTables;
 import org.junit.Test;
 
-import java.util.List;
-
-import static org.junit.Assert.assertTrue;
+import static junit.framework.TestCase.assertTrue;
 
 
 public class ExactFreqSketchTest extends BaseTest {
@@ -39,17 +33,16 @@ public class ExactFreqSketchTest extends BaseTest {
     // Idea is complaining about the hMap.get calls below,
     // but it also complains if I add explicit casts.
     private void getFrequencies(ITable table, int maxSize) {
-        FreqKSketch fk = new FreqKSketch(table.getSchema(), maxSize);
-        FreqKList fkList = fk.create(table);
+        FreqKSketchMG fk = new FreqKSketchMG(table.getSchema(), maxSize);
+        FreqKListMG fkList = fk.create(table);
         ExactFreqSketch ef = new ExactFreqSketch(table.getSchema(), fkList);
-        FreqKList exactList = ef.create(table);
+        FreqKListExact exactList = ef.create(table);
         int size = 10;
-        Pair<List<RowSnapshot>, List<Integer>> pair = exactList.getTop(size);
-        for (int i = 1; i < Converters.checkNull(pair.first).size(); i++) {
-            Converters.checkNull(pair.second);
-            assertTrue(pair.second.get(i - 1) >= pair.second.get(i));
+        NextKList nkList = exactList.getTop(table.getSchema());
+        for (int i = 1; i < Converters.checkNull(nkList.count).size(); i++) {
+            assertTrue(nkList.count.get(i - 1) >= nkList.count.get(i));
         }
-        exactList.filter(false);
+        exactList.filter();
         exactList.getList().forEach(rss ->
                 assertTrue(exactList.hMap.getInt(rss) >= fkList.totalRows*fkList.epsilon));
     }
@@ -57,10 +50,10 @@ public class ExactFreqSketchTest extends BaseTest {
     @Test
     public void EFSTest1() {
         Table t1 = TestTables.testRepTable();
-        int maxSize1 = 20;
+        int maxSize1 = 10;
         getFrequencies(t1, maxSize1);
         SmallTable t2 = TestTables.getHeavyIntTable(2,10000,2,14);
-        int maxSize2 = 20;
+        int maxSize2 = 50;
         getFrequencies(t2, maxSize2);
         SmallTable t3 = TestTables.getHeavyIntTable(2,10000,1.4,20);
         int maxSize3 = 30;

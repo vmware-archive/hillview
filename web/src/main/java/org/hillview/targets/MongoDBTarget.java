@@ -17,17 +17,8 @@
 
 package org.hillview.targets;
 
-import com.mongodb.MongoClient;
-import com.mongodb.MongoClientOptions;
-import com.mongodb.MongoCredential;
-import com.mongodb.ServerAddress;
-import com.mongodb.client.MongoDatabase;
-import org.bson.Document;
 import org.hillview.HillviewComputation;
-import org.hillview.HillviewRpc;
 import org.hillview.RpcTarget;
-import org.hillview.storage.JdbcConnectionInformation;
-import org.hillview.utils.Converters;
 
 public class MongoDBTarget extends RpcTarget {
     MongoDBTarget(HillviewComputation computation) {
