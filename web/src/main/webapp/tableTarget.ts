@@ -119,7 +119,7 @@ export class RemoteTableObject extends RemoteObject {
                 {columns: columns, amount: percent,
                     totalRows: totalRows, seed: Seed.instance.get() });
         } else {
-            return this.createStreamingRpcRequest<TopList>("heavyHitters",
+            return this.createStreamingRpcRequest<TopList>("heavyHittersSampling",
                 {columns: columns, amount: percent,
                     totalRows: totalRows, seed: Seed.instance.get() });
         }
