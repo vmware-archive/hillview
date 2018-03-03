@@ -21,6 +21,7 @@ import org.hillview.table.Schema;
 import org.hillview.table.api.*;
 import org.hillview.utils.Converters;
 
+import javax.annotation.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
@@ -53,6 +54,7 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
     private final ITable table;
     /**
      * Index of the row in the table.
+     * Note that this can be -1 if there are no rows in the table.
      */
     protected int rowIndex = -1;
     private final Schema schema;
@@ -71,18 +73,29 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
         }
     }
 
+    public boolean exists() { return this.rowIndex >= 0; }
+
     public VirtualRowSnapshot(final ITable table) {
         this(table, table.getSchema());
     }
 
     public void setRow(final int rowIndex) {
+        if (rowIndex < 0)
+            throw new RuntimeException("Negative row index " + rowIndex);
         this.rowIndex = rowIndex;
     }
 
     public Schema getSchema() { return this.schema; }
 
+    /**
+     * Returns a real row snapshot corresponding to this virtual row snapshot.
+     * If there is no such row returns null.
+     */
+    @Nullable
     public RowSnapshot materialize() {
-        return new RowSnapshot(this.table, this.rowIndex, this.table.getSchema());
+        if (!this.exists())
+            return null;
+        return new RowSnapshot(this.table, this.rowIndex, this.schema);
     }
 
     @Override
@@ -132,6 +145,8 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
     }
 
     public boolean isMissing(String colName) {
+        if (!this.exists())
+            throw new RuntimeException("No such row.");
         return this.getColumn(colName).isMissing(this.rowIndex);
     }
 
@@ -152,7 +167,7 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
 
     @Override
     public String getString(String colName) {
-        return this.getColumn(colName).getString(this.rowIndex);
+        return this.getColumn(colName).asString(this.rowIndex);
     }
 
     @Override
@@ -173,5 +188,10 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
     @Override
     public Duration getDuration(String colName) {
         return this.getColumn(colName).getDuration(this.rowIndex);
+    }
+
+    @Override
+    public String toString() {
+        return super.toString();
     }
 }

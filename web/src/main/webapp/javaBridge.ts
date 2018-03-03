@@ -70,6 +70,12 @@ export interface ConvertColumnInfo {
     columnIndex: number
 }
 
+/// Same as FindSketch.Result
+export interface FindResult {
+    count: number;
+    firstRow: any[];
+}
+
 export interface JdbcConnectionInformation {
     host: string;
     database: string;

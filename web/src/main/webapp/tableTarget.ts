@@ -20,7 +20,7 @@
  */
 
 import {RpcRequest, RemoteObject, OnCompleteRenderer} from "./rpc";
-import {EqualityFilterDescription} from "./javaBridge";
+import {EqualityFilterDescription, FindResult} from "./javaBridge";
 import {ICancellable, Pair, PartialResult, Seed} from "./util";
 import {PointSet, Resolution} from "./ui/ui";
 import {IDataView} from "./ui/dataview";
@@ -53,6 +53,19 @@ export class RemoteTableObject extends RemoteObject {
 
     public createZipRequest(r: RemoteObject): RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<RemoteObjectId>("zip", r.remoteObjectId);
+    }
+
+    public createFindRequest(order: RecordOrder, topRow: any[], toFind: string, regex: boolean,
+                             subString: boolean, caseSensitive: boolean):
+        RpcRequest<PartialResult<FindResult>> {
+        return this.createStreamingRpcRequest<FindResult>("find", {
+            toFind: toFind,
+            regex: regex,
+            subString: subString,
+            topRow: topRow,
+            order: order,
+            caseSensitive: caseSensitive
+        });
     }
 
     public createQuantileRequest(rowCount: number, o: RecordOrder, position: number):

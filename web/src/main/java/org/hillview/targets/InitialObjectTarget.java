@@ -172,24 +172,6 @@ public class InitialObjectTarget extends RpcTarget {
         } else if (which == 4) {
             fileNamePattern = "segmentation.csv";
             schemaFile = "segmentation.schema";
-        } else if (which == 5) {
-            config.separator = '\t';
-            fileNamePattern = "criteoTab.gz";
-            schemaFile = "criteo.schema";
-        } else if (which == 6) {
-            dataFolder += "ontime/";
-            schemaFile = "short.schema";
-            fileNamePattern = "(\\d)+_(\\d)+\\.csv";
-            replicationFactor = 5;
-        } else if (which == 7) {
-            dataFolder += "ontime/";
-            schemaFile = "short.schema";
-            fileNamePattern = "(\\d)+_(\\d)+\\.csv";
-            replicationFactor = 10;
-        } else if (which == 8) {
-            dataFolder += "nycabs/";
-            schemaFile = "yellow.schema";
-            fileNamePattern = "yellow_tripdata_(\\d)+-(\\d)+\\.csv.gz";
         } else {
             throw new RuntimeException("Unexpected operation " + which);
 		}

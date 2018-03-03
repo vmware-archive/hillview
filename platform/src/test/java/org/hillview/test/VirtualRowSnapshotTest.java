@@ -20,6 +20,7 @@ package org.hillview.test;
 import it.unimi.dsi.fastutil.Hash;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenCustomHashMap;
+import org.hillview.table.Table;
 import org.hillview.table.rows.BaseRowSnapshot;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.Schema;
@@ -27,6 +28,7 @@ import org.hillview.table.rows.VirtualRowSnapshot;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.TestTables;
+import org.junit.Assert;
 import org.junit.Test;
 
 import javax.annotation.Nullable;
@@ -35,6 +37,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class VirtualRowSnapshotTest extends BaseTest {
+    @Test
+    public void stringTest() {
+        final Table table = TestTables.testTable();
+        VirtualRowSnapshot vrs = new VirtualRowSnapshot(table);
+        Assert.assertEquals("<no such row>", vrs.toString());
+        vrs.setRow(0);
+        Assert.assertEquals("Mike,20", vrs.toString());
+    }
+
     public void testSnapshots(ITable data) {
         VirtualRowSnapshot vrs = new VirtualRowSnapshot(data);
         IRowIterator rowIt = data.getRowIterator();
@@ -44,7 +55,7 @@ public class VirtualRowSnapshotTest extends BaseTest {
             RowSnapshot rs = new RowSnapshot(data, i);
             int a = vrs.hashCode();
             int b = rs.computeHashCode(data.getSchema());
-            assertEquals("Oops!", a, b);
+            assertEquals(a, b);
             assertTrue(rs.compareForEquality(vrs, data.getSchema()));
             i = rowIt.getNextRow();
         }
@@ -53,8 +64,8 @@ public class VirtualRowSnapshotTest extends BaseTest {
     @Test
     public void VRSTest1() {
         testSnapshots(TestTables.testRepTable());
-        testSnapshots(TestTables.getHeavyIntTable( 2, 10000, 1.4, 20));
-        testSnapshots(TestTables.getHeavyIntTable( 2, 10000, 2, 14));
+        testSnapshots(TestTables.getHeavyIntTable(2, 10000, 1.4, 20));
+        testSnapshots(TestTables.getHeavyIntTable(2, 10000, 2, 14));
     }
 
     @Test

@@ -15,13 +15,21 @@
  * limitations under the License.
  */
 
-import {d3} from "../ui/d3-modules";
 import {IColumnDescription, BasicColStats, RangeInfo, ColumnAndRange} from "../javaBridge";
-import {ScaleLinear, ScaleTime} from "d3";
 import {Converters, significantDigits} from "../util";
 import {DistinctStrings} from "../distinctStrings";
+import {
+    scaleLinear as d3scaleLinear,
+    scaleTime as d3scaleTime,
+    ScaleLinear as D3ScaleLinear,
+    ScaleTime as D3ScaleTime
+} from "d3-scale";
+import {
+    axisBottom as d3axisBottom,
+    axisLeft as d3axisLeft
+} from "d3-axis";
 
-export type AnyScale = ScaleLinear<number, number> | ScaleTime<number, number>;
+export type AnyScale = D3ScaleLinear<number, number> | D3ScaleTime<number, number>;
 
 /**
  * A D3 axis and an associated scale.
@@ -42,7 +50,7 @@ export class AxisData {
     {}
 
     public scaleAndAxis(length: number, bottom: boolean, legend: boolean): ScaleAndAxis {
-        let axisCreator = bottom ? d3.axisBottom : d3.axisLeft;
+        let axisCreator = bottom ? d3axisBottom : d3axisLeft;
 
         let actualMin = this.stats.min;
         let actualMax = this.stats.max;
@@ -62,7 +70,7 @@ export class AxisData {
         switch (this.description.kind) {
             case "Integer":
             case "Double": {
-                scale = d3.scaleLinear()
+                scale = d3scaleLinear()
                     .domain(domain)
                     .range([0, length]);
                 axis = axisCreator(scale);
@@ -93,10 +101,10 @@ export class AxisData {
                     labels.reverse();
 
                 // We manually control the ticks.
-                let manual = d3.scaleLinear()
+                let manual = d3scaleLinear()
                     .domain([0, length])
                     .range([0, length]);
-                scale = d3.scaleLinear()
+                scale = d3scaleLinear()
                     .domain(domain)
                     .range([0, length]);
                 axis = axisCreator(manual)
@@ -107,8 +115,7 @@ export class AxisData {
             case "Date": {
                 let minDate: Date = Converters.dateFromDouble(domain[0]);
                 let maxDate: Date = Converters.dateFromDouble(domain[1]);
-                scale = d3
-                    .scaleTime()
+                scale = d3scaleTime()
                     .domain([minDate, maxDate])
                     .range([0, length]);
                 axis = axisCreator(scale);

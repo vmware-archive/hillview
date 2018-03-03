@@ -18,9 +18,11 @@
 import {PlottingSurface} from "./plottingSurface";
 import {Histogram} from "../javaBridge";
 import {HistogramViewBase} from "../dataViews/histogramViewBase";
-import {d3} from "./d3-modules";
 import {Plot} from "./plot";
 import {AxisData} from "../dataViews/axisData";
+import {scaleLinear as d3scaleLinear} from "d3-scale";
+import {axisLeft as d3axisLeft} from "d3-axis";
+import {format as d3format} from "d3-format";
 
 /**
  * A HistogramPlot draws a 1D histogram on a PlottingSurface, including the axes.
@@ -69,7 +71,7 @@ export class HistogramPlot extends Plot {
             .enter().append("g")
             .attr("transform", (d, i) => `translate(${i * barWidth}, 0)`);
 
-        this.yScale = d3.scaleLinear()
+        this.yScale = d3scaleLinear()
             .domain([0, max])
             .range([chartHeight, 0]);
 
@@ -88,8 +90,8 @@ export class HistogramPlot extends Plot {
             .text(d => HistogramViewBase.boxHeight(d, this.samplingRate, this.axisData.stats.presentCount))
             .exit();
 
-        this.yAxis = d3.axisLeft(this.yScale)
-            .tickFormat(d3.format(".2s"));
+        this.yAxis = d3axisLeft(this.yScale)
+            .tickFormat(d3format(".2s"));
 
         let scaleAxis = this.axisData.scaleAndAxis(chartWidth, true, false);
         this.xScale = scaleAxis.scale;

@@ -15,13 +15,15 @@
  * limitations under the License.
  */
 
-import {d3} from "./d3-modules";
 import {Plot} from "./plot";
 import {HeatMap, Histogram} from "../javaBridge";
 import {PlottingSurface} from "./plottingSurface";
 import {AxisData} from "../dataViews/axisData";
 import {HistogramViewBase} from "../dataViews/histogramViewBase";
 import {Histogram2DView} from "../dataViews/histogram2DView";
+import {scaleLinear as d3scaleLinear} from "d3-scale";
+import {axisLeft as d3axisLeft} from "d3-axis";
+import {format as d3format} from "d3-format";
 
 /**
  * Represents an SVG rectangle drawn on the screen.
@@ -116,14 +118,14 @@ export class Histogram2DPlot extends Plot {
             counts.push(yTotal);
         }
 
-        this.yScale = d3.scaleLinear()
+        this.yScale = d3scaleLinear()
             .range([this.getChartHeight(), 0]);
         if (this.normalized)
             this.yScale.domain([0, 100]);
         else
             this.yScale.domain([0, max]);
-        this.yAxis = d3.axisLeft(this.yScale)
-            .tickFormat(d3.format(".2s"));
+        this.yAxis = d3axisLeft(this.yScale)
+            .tickFormat(d3format(".2s"));
 
         let bucketCount = xPoints;
         let scAxis = this.xAxisData.scaleAndAxis(this.getChartWidth(), true, false);

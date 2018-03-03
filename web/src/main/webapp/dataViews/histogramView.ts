@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-import { d3 } from "../ui/d3-modules";
 import { Renderer } from "../rpc";
 import {
     IColumnDescription, Schema, RecordOrder, RangeInfo, Histogram,
@@ -42,6 +41,8 @@ import {combineMenu, SelectedObject} from "../selectedObject";
 import {HistogramPlot} from "../ui/histogramPlot";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {CDFPlot} from "../ui/CDFPlot";
+import {drag as d3drag} from "d3-drag";
+import {mouse as d3mouse, event as d3event} from "d3-selection";
 
 /**
  * A HistogramView is responsible for showing a one-dimensional histogram on the screen.
@@ -114,7 +115,7 @@ export class HistogramView extends HistogramViewBase {
 
         let counts = h.buckets;
         let bucketCount = counts.length;
-        let drag = d3.drag()
+        let drag = d3drag()
             .on("start", () => this.dragStart())
             .on("drag", () => this.dragMove())
             .on("end", () => this.dragEnd());
@@ -275,7 +276,7 @@ export class HistogramView extends HistogramViewBase {
     }
 
     public mouseMove(): void {
-        let position = d3.mouse(this.surface.getChart().node());
+        let position = d3mouse(this.surface.getChart().node());
         let mouseX = position[0];
         let mouseY = position[1];
 
@@ -310,7 +311,7 @@ export class HistogramView extends HistogramViewBase {
         super.dragEnd();
         if (!dragging)
             return;
-        let position = d3.mouse(this.surface.getCanvas().node());
+        let position = d3mouse(this.surface.getCanvas().node());
         let x = position[0];
         this.selectionCompleted(this.selectionOrigin.x, x);
     }
@@ -328,7 +329,7 @@ export class HistogramView extends HistogramViewBase {
             isAscending: true
         } ]);
         let rr = table.createNextKRequest(order, null);
-        rr.invoke(new NextKReceiver(newPage, table, rr, false, order));
+        rr.invoke(new NextKReceiver(newPage, table, rr, false, order, null));
     }
 
     /**
@@ -366,7 +367,7 @@ export class HistogramView extends HistogramViewBase {
             max: max,
             kind: this.currentData.axisData.description.kind,
             columnName: this.currentData.axisData.description.name,
-            complement: d3.event.sourceEvent.ctrlKey,
+            complement: d3event.sourceEvent.ctrlKey,
             bucketBoundaries: boundaries
         };
 

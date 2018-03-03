@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
-import {d3} from "./d3-modules";
 import {IHtmlElement, Point} from "./ui"
 import {EditBox} from "./editBox";
 import {makeId} from "../util";
+import {drag as d3drag} from "d3-drag";
+import {event as d3event, select as d3select} from "d3-selection";
 
 export enum FieldKind {
     String,
@@ -132,27 +133,27 @@ export class Dialog implements IHtmlElement {
         let buttonsDiv = document.createElement("div");
         this.container.appendChild(buttonsDiv);
 
-        let nodrag = d3.drag()
+        let nodrag = d3drag()
             .on("start", () => this.dragEnd());
 
         let cancelButton = document.createElement("button");
         cancelButton.onclick = () => this.cancelAction();
         cancelButton.textContent = "Cancel";
         cancelButton.classList.add("cancel");
-        d3.select(cancelButton).call(nodrag);
+        d3select(cancelButton).call(nodrag);
         buttonsDiv.appendChild(cancelButton);
 
         this.confirmButton = document.createElement("button");
         this.confirmButton.textContent = "Confirm";
         this.confirmButton.classList.add("confirm");
-        d3.select(this.confirmButton).call(nodrag);
+        d3select(this.confirmButton).call(nodrag);
         buttonsDiv.appendChild(this.confirmButton);
 
-        let drag = d3.drag()
+        let drag = d3drag()
             .on("start", () => this.dragStart())
             .on("end", () => this.dragEnd())
             .on("drag", () => this.dragMove());
-        d3.select(this.container).call(drag);
+        d3select(this.container).call(drag);
     }
 
     /**
@@ -172,7 +173,7 @@ export class Dialog implements IHtmlElement {
 
     dragStart(): void {
         this.dragging = true;
-        this.dragMousePosition = { x: d3.event.x, y: d3.event.y };
+        this.dragMousePosition = { x: d3event.x, y: d3event.y };
         this.dialogPosition = this.container.getBoundingClientRect();
         this.container.style.transform = "";
         this.container.style.cursor = "move";
@@ -182,8 +183,8 @@ export class Dialog implements IHtmlElement {
     dragMove(): void {
         if (!this.dragging)
             return;
-        let dx = this.dragMousePosition.x - d3.event.x;
-        let dy = this.dragMousePosition.y - d3.event.y;
+        let dx = this.dragMousePosition.x - d3event.x;
+        let dy = this.dragMousePosition.y - d3event.y;
         this.container.style.left = (this.dialogPosition.left - dx).toString() + "px";
         this.container.style.top = (this.dialogPosition.top - dy).toString() + "px";
     }

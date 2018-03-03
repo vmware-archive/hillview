@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-import {d3} from "../ui/d3-modules";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {ContentsKind, Schema, BasicColStats, IColumnDescription, ColumnAndRange, RemoteObjectId} from "../javaBridge";
 import {Converters, formatDate, significantDigits} from "../util";
@@ -27,6 +26,7 @@ import {RemoteTableObjectView} from "../tableTarget";
 import {DistinctStrings} from "../distinctStrings";
 import {CDFPlot} from "../ui/CDFPlot";
 import {PlottingSurface} from "../ui/plottingSurface";
+import {mouse as d3mouse} from "d3-selection";
 
 /**
  * This is a base class that contains code common to various histogram renderings.
@@ -102,7 +102,7 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
     public dragStart(): void {
         this.dragging = true;
         this.moved = false;
-        let position = d3.mouse(this.surface.getCanvas().node());
+        let position = d3mouse(this.surface.getCanvas().node());
         this.selectionOrigin = {
             x: position[0],
             y: position[1] };
@@ -116,7 +116,7 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
             return;
         this.moved = true;
         let ox = this.selectionOrigin.x;
-        let position = d3.mouse(this.surface.getCanvas().node());
+        let position = d3mouse(this.surface.getCanvas().node());
         let x = position[0];
         let width = x - ox;
         let height = this.surface.getActualChartHeight();

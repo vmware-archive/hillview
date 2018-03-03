@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { d3 } from "./d3-modules";
+import {line as d3line} from "d3-shape";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {Histogram} from "../javaBridge";
@@ -50,7 +50,7 @@ export class CDFPlot extends Plot {
         // as the screen width.
         let chartWidth = this.getChartWidth();
         let chartHeight = this.getChartHeight();
-        let cdfLine = d3.line<number>()
+        let cdfLine = d3line<number>()
             .x((d, i) => {
                 let index = Math.floor(i / 2); // two points for each data point, for a zig-zag
                 return index * 2 * chartWidth / this.cdfData.length;

@@ -34,6 +34,7 @@ import org.hillview.table.api.*;
 import org.hillview.table.filters.EqualityFilterDescription;
 import org.hillview.table.filters.RangeFilterDescription;
 import org.hillview.table.filters.RangeFilterPair;
+import org.hillview.table.filters.StringFilterDescription;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.Converters;
 import org.hillview.utils.LinAlg;
@@ -65,22 +66,52 @@ public final class TableTarget extends RpcTarget {
     }
 
     static class NextKArgs {
-        final RecordOrder order = new RecordOrder();
+        /**
+         * If not null, start at first tuple which contains this string in one of the
+         * visible columns.
+         */
+        @Nullable
+        String toFind;
+        RecordOrder order = new RecordOrder();
         @Nullable
         Object[] firstRow;
         int rowsOnScreen;
     }
 
+    @Nullable
+    private static RowSnapshot asRowSnapshot(@Nullable Object[] data, RecordOrder order) {
+        if (data == null) return null;
+        RowSnapshot rs = null;
+        Schema schema = order.toSchema();
+        return RowSnapshot.parse(schema, data);
+    }
+
     @HillviewRpc
     public void getNextK(RpcRequest request, RpcRequestContext context) {
         NextKArgs nextKArgs = request.parseArgs(NextKArgs.class);
-        RowSnapshot rs = null;
-        if (nextKArgs.firstRow != null) {
-            Schema schema = nextKArgs.order.toSchema();
-            rs = RowSnapshot.parse(schema, nextKArgs.firstRow);
-        }
+        RowSnapshot rs = TableTarget.asRowSnapshot(nextKArgs.firstRow, nextKArgs.order);
         NextKSketch nk = new NextKSketch(nextKArgs.order, rs, nextKArgs.rowsOnScreen);
         this.runSketch(this.table, nk, request, context);
+    }
+
+    static class FindArgs {
+        RecordOrder order = new RecordOrder();
+        String toFind = "";
+        boolean caseSensitive;
+        boolean subString;
+        boolean regex;
+        @Nullable
+        Object[] topRow;
+    }
+
+    @HillviewRpc
+    public void find(RpcRequest request, RpcRequestContext context) {
+        FindArgs args = request.parseArgs(FindArgs.class);
+        RowSnapshot rs = TableTarget.asRowSnapshot(args.topRow, args.order);
+        StringFilterDescription filter = new StringFilterDescription(
+                args.toFind, !args.caseSensitive, args.regex, args.subString);
+        FindSketch sk = new FindSketch(filter, rs, args.order);
+        this.runCompleteSketch(this.table, sk, (e, c) -> e, request, context);
     }
 
     @HillviewRpc

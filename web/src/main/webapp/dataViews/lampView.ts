@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-import {d3} from "../ui/d3-modules";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {TopMenu, SubMenu} from "../ui/menu";
 import {
@@ -31,6 +30,8 @@ import {TableView, NextKReceiver} from "./tableView";
 import {TrellisPlotDialog} from "./trellisHeatMapView";
 import {RemoteTableObject, RemoteTableObjectView, RemoteTableRenderer} from "../tableTarget";
 import {PlottingSurface} from "../ui/plottingSurface";
+import {drag as d3drag} from "d3-drag";
+import {mouse as d3mouse, select as d3select} from "d3-selection";
 
 /**
  * This class displays the results of performing a local affine multi-dimensional projection.
@@ -103,7 +104,7 @@ class LampView extends RemoteTableObjectView {
         let chartSize = Math.min(
             PlottingSurface.getDefaultChartSize(this.getPage()).width,
             PlottingSurface.getDefaultChartSize(this.getPage()).height);
-        this.heatMapCanvas = d3.select(chartDiv).append("svg")
+        this.heatMapCanvas = d3select(chartDiv).append("svg")
             .attr("width", canvasSize)
             .attr("height", canvasSize)
             .attr("class", "heatMap");
@@ -111,7 +112,7 @@ class LampView extends RemoteTableObjectView {
             .attr("transform", `translate(${PlottingSurface.leftMargin}, ${PlottingSurface.topMargin})`)
             .attr("width", chartSize)
             .attr("height", chartSize);
-        this.controlPointsCanvas = d3.select(chartDiv).append("svg")
+        this.controlPointsCanvas = d3select(chartDiv).append("svg")
             .attr("width", canvasSize)
             .attr("height", canvasSize)
             .attr("class", "controlPoints");
@@ -297,14 +298,14 @@ class LampView extends RemoteTableObjectView {
                 .attr("class", "controlPoint")
                 .attr("stroke", "black")
                 .attr("vector-effect", "non-scaling-stroke")
-                .call(d3.drag()
+                .call(d3drag()
                     .on("drag", (p: Point, i: number, circles: Element[]) => {
-                        let mouse = d3.mouse(plot.node());
+                        let mouse = d3mouse(plot.node());
                         mouse[0] = clamp(mouse[0], this.minX, this.minX + range);
                         mouse[1] = clamp(mouse[1], this.minY, this.minY + range);
                         p.x = mouse[0];
                         p.y = mouse[1];
-                        d3.select(circles[i])
+                        d3select(circles[i])
                             .attr("cx", clamp(mouse[0], this.minX, this.minX + range))
                             .attr("cy", clamp(mouse[1], this.minY, this.minY + range));
                     })
@@ -320,7 +321,7 @@ class LampView extends RemoteTableObjectView {
         let table = new TableView(this.lampTableObject.remoteObjectId, this.lampTableObject.originalTableId, page);
         page.setDataView(table);
         let rr = this.lampTableObject.createGetSchemaRequest();
-        rr.invoke(new NextKReceiver(this.page, table, rr, false, new RecordOrder([])));
+        rr.invoke(new NextKReceiver(this.page, table, rr, false, new RecordOrder([]), null));
     }
 
     private heatMap3D() {

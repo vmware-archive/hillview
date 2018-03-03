@@ -95,8 +95,13 @@ th, td {
 
 .hillviewPage {
     border: 1px solid black;
-    margin: 5px 0;
+    margin: 3px 1px;
     padding: 0;
+}
+
+.hillviewPage:hover {
+    border: 2px solid green;
+    margin: 2px 0;
 }
 
 /* close button */

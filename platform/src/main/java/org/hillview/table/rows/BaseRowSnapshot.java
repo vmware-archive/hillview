@@ -22,6 +22,7 @@ import org.hillview.table.RecordOrder;
 import org.hillview.table.Schema;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IRow;
+import org.hillview.table.api.IStringFilter;
 import org.hillview.utils.HashUtil;
 
 import javax.annotation.Nullable;
@@ -41,6 +42,9 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
      */
     @SuppressWarnings("ConstantConditions")
     public boolean compareForEquality(BaseRowSnapshot other, Schema schema) {
+        if (!this.exists())
+            return false;
+
         String[] columns = schema.getColumnNames();
         ContentsKind[] kinds = schema.getColumnKinds();
         for (int i = 0; i < columns.length; i++) {
@@ -76,6 +80,9 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
     }
 
     public int computeHashCode(Schema schema) {
+        if (!this.exists())
+            return 0;
+
         int hashCode = 31;
         String[] columns = schema.getColumnNames();
         ContentsKind[] kinds = schema.getColumnKinds();
@@ -106,11 +113,31 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
     }
 
     /**
+     * Return true if the string representation of any of the fields in this
+     * row matches the specified filter.
+     */
+    public boolean matches(IStringFilter filter) {
+        if (!this.exists())
+            return false;
+
+        String[] columns = this.getColumnNames();
+        for (String column : columns) {
+            String field = this.getString(column);
+            if (filter.test(field))
+                return true;
+        }
+        return false;
+    }
+
+    /**
      * Compare this row to the other for ordering.
      * Only the fields in the schema are compared.
      */
     @SuppressWarnings("ConstantConditions")
     public int compareTo(BaseRowSnapshot other, RecordOrder ro) {
+        if (!this.exists() || !other.exists())
+            throw new RuntimeException("Comparing inexistent row.");
+
         for (int i = 0; i < ro.getSize(); i++) {
             ColumnSortOrientation cso = ro.getOrientation(i);
             String cn = cso.columnDescription.name;
@@ -154,6 +181,9 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
 
     @Override
     public String toString() {
+        if (!this.exists())
+            return "<no such row>";
+
         final StringBuilder builder = new StringBuilder();
         boolean first = true;
         for (String cn : this.getColumnNames()) {

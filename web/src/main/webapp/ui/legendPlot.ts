@@ -20,8 +20,12 @@ import {Rectangle, Resolution} from "./ui";
 import {AxisData} from "../dataViews/axisData";
 import {Histogram2DView} from "../dataViews/histogram2DView";
 import {ContextMenu} from "./menu";
-import {d3} from "./d3-modules";
 import {PlottingSurface} from "./plottingSurface";
+import {interpolateWarm as d3interpolateWarm,
+    interpolateCool as d3interpolateCool} from "d3-scale-chromatic";
+import {scaleLog as d3scaleLog, scaleLinear as d3scaleLinear} from "d3-scale";
+import {axisBottom as d3axisBottom} from "d3-axis";
+import {event as d3event} from "d3-selection";
 
 /**
  * Displays a legend for a 2D histogram.
@@ -133,7 +137,7 @@ class HeatmapColormap {
     protected map: (x) => string;
 
     constructor(public readonly min: number, public readonly max: number) {
-        this.setMap(d3.interpolateWarm);
+        this.setMap(d3interpolateWarm);
     }
 
     public setLogScale(logScale: boolean) {
@@ -206,14 +210,14 @@ export class HeatmapLegendPlot extends Plot {
                 text: "Cool",
                 help: "Use a color palette with cool colors.",
                 action: () => {
-                    this.colorMap.setMap(d3.interpolateCool);
+                    this.colorMap.setMap(d3interpolateCool);
                     this.mapUpdated();
                 }
             }, {
                 text: "Warm",
                 help: "Use a color palette with warm colors.",
                 action: () => {
-                    this.colorMap.setMap(d3.interpolateWarm);
+                    this.colorMap.setMap(d3interpolateWarm);
                     this.mapUpdated();
                 }
             }, {
@@ -261,14 +265,14 @@ export class HeatmapLegendPlot extends Plot {
         let logScale = useLogScale != null ? useLogScale : max > HeatmapColormap.logThreshold;
         this.colorMap.setLogScale(logScale);
         if (logScale) {
-            this.xScale = d3.scaleLog().base(base);
+            this.xScale = d3scaleLog().base(base);
         } else
-            this.xScale = d3.scaleLinear();
+            this.xScale = d3scaleLinear();
         this.xScale
             .domain([min, max])
             .range([0, Resolution.legendBarWidth]);
         let ticks = Math.min(max, 10);
-        this.xAxis = d3.axisBottom(this.xScale).ticks(ticks);
+        this.xAxis = d3axisBottom(this.xScale).ticks(ticks);
     }
 
     public getColor(v: number): any {
@@ -326,7 +330,7 @@ export class HeatmapLegendPlot extends Plot {
             .attr("width", Resolution.legendBarWidth)
             .attr("height", this.barHeight)
             .style("fill", this.gradient != null ? `url(#gradient${this.uniqueId})` : "none");
-        this.legendRectangle.on("contextmenu", () => this.showContextMenu(d3.event));
+        this.legendRectangle.on("contextmenu", () => this.showContextMenu(d3event));
         this.axisElement = canvas.append("g")
             .attr("transform", `translate(${x}, ${this.barHeight})`)
             .call(this.xAxis);

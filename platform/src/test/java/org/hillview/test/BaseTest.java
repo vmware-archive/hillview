@@ -35,12 +35,13 @@ public class BaseTest {
 
     @BeforeClass
     public static void setup() {
-        if (!initialized)
+        if (!initialized) {
             HillviewLogger.initialize("test", "test.log");
+        }
         initialized = true;
     }
 
     public Randomness getRandomness() {
-        return randomness;
+        return BaseTest.randomness;
     }
 }

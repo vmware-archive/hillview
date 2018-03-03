@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-import {d3} from "../ui/d3-modules";
-
 import { Renderer } from "../rpc";
 import {
     IColumnDescription, Schema, RecordOrder, BasicColStats, FilterDescription,
@@ -43,6 +41,8 @@ import {HistogramPlot} from "../ui/histogramPlot";
 import {CategoryCache} from "../categoryCache";
 import {Dialog} from "../ui/dialog";
 import {Range2DRenderer, TrellisHeatMapView, TrellisPlotArgs} from "./trellisHeatMapView";
+import {drag as d3drag} from "d3-drag";
+import {mouse as d3mouse, event as d3event} from "d3-selection";
 
 /**
  * A HeatMapView renders information as a heatmap.
@@ -161,7 +161,7 @@ export class HeatMapView extends RemoteTableObjectView {
             samplingRate: samplingRate
         };
 
-        let drag = d3.drag()
+        let drag = d3drag()
             .on("start", () => this.dragStart())
             .on("drag", () => this.dragMove())
             .on("end", () => this.dragEnd());
@@ -299,7 +299,7 @@ export class HeatMapView extends RemoteTableObjectView {
         table.setSchema(this.tableSchema);
         let rr = table.createNextKRequest(order, null);
         this.page.insertAfterMe(page);
-        rr.invoke(new NextKReceiver(page, table, rr, false, order));
+        rr.invoke(new NextKReceiver(page, table, rr, false, order, null));
     }
 
     protected keyDown(ev: KeyboardEvent): void {
@@ -368,7 +368,7 @@ export class HeatMapView extends RemoteTableObjectView {
             // not yet setup
             return;
 
-        let position = d3.mouse(this.surface.getChart().node());
+        let position = d3mouse(this.surface.getChart().node());
         let mouseX = position[0];
         let mouseY = position[1];
 
@@ -384,7 +384,7 @@ export class HeatMapView extends RemoteTableObjectView {
     dragStart(): void {
         this.dragging = true;
         this.moved = false;
-        let position = d3.mouse(this.surface.getCanvas().node());
+        let position = d3mouse(this.surface.getCanvas().node());
         this.selectionOrigin = {
             x: position[0],
             y: position[1] };
@@ -397,7 +397,7 @@ export class HeatMapView extends RemoteTableObjectView {
         this.moved = true;
         let ox = this.selectionOrigin.x;
         let oy = this.selectionOrigin.y;
-        let position = d3.mouse(this.surface.getCanvas().node());
+        let position = d3mouse(this.surface.getCanvas().node());
         let x = position[0];
         let y = position[1];
         let width = x - ox;
@@ -426,7 +426,7 @@ export class HeatMapView extends RemoteTableObjectView {
         this.selectionRectangle
             .attr("width", 0)
             .attr("height", 0);
-        let position = d3.mouse(this.surface.getCanvas().node());
+        let position = d3mouse(this.surface.getCanvas().node());
         let x = position[0];
         let y = position[1];
         this.selectionCompleted(this.selectionOrigin.x, x, this.selectionOrigin.y, y);
@@ -463,7 +463,7 @@ export class HeatMapView extends RemoteTableObjectView {
             kind: this.currentData.xData.description.kind,
             columnName: this.currentData.xData.description.name,
             bucketBoundaries: xBoundaries,
-            complement: d3.event.sourceEvent.ctrlKey
+            complement: d3event.sourceEvent.ctrlKey
         };
         let yRange : FilterDescription = {
             min: yMin,
@@ -471,7 +471,7 @@ export class HeatMapView extends RemoteTableObjectView {
             kind: this.currentData.yData.description.kind,
             columnName: this.currentData.yData.description.name,
             bucketBoundaries: yBoundaries,
-            complement: d3.event.sourceEvent.ctrlKey
+            complement: d3event.sourceEvent.ctrlKey
         };
         let rr = this.createFilter2DRequest(xRange, yRange);
         let renderer = new Filter2DReceiver(

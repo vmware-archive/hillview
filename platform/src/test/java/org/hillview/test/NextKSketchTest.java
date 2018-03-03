@@ -55,7 +55,6 @@ public class NextKSketchTest extends BaseTest {
         IndexComparator leftComp = cso.getComparator(leftK.table);
         for (int i = 0; i < (leftK.table.getNumOfRows() - 1); i++)
             Assert.assertTrue(leftComp.compare(i, i + 1) <= 0);
-        //System.out.println(leftK.toLongString(maxSize));
         Assert.assertEquals(leftK.toLongString(maxSize), "Table[2x5]\n" +
                 "14,4: 6\n" +
                 "14,5: 5\n" +
@@ -195,13 +194,23 @@ public class NextKSketchTest extends BaseTest {
         final int rightSize = 100;
         final int leftSize = 100;
         final ITable leftTable = TestTables.getMissingIntTable(leftSize, numCols);
-        System.out.println(leftTable.toString());
         RecordOrder cso = new RecordOrder();
         for (String colName : leftTable.getSchema().getColumnNames())
             cso.append(new ColumnSortOrientation(leftTable.getSchema().getDescription(colName), true));
         final RowSnapshot topRow = new RowSnapshot(leftTable, 80);
         final NextKSketch nk = new NextKSketch(cso, topRow, maxSize);
         final NextKList leftK = nk.create(leftTable);
-        System.out.println(leftK.toLongString(100));
+        String exp = "Table[2x10]\n" +
+                "80,80: 1\n" +
+                "81,81: 1\n" +
+                "82,82: 1\n" +
+                "83,83: 1\n" +
+                "84,84: 1\n" +
+                "85,85: 1\n" +
+                "86,86: 1\n" +
+                "87,87: 1\n" +
+                "88,88: 1\n" +
+                "89,89: 1\n";
+        Assert.assertEquals(exp, leftK.toLongString(100));
     }
 }

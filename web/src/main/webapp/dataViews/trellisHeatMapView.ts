@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-import {d3} from "../ui/d3-modules";
 import {Renderer} from "../rpc";
 import {Dialog} from "../ui/dialog";
 import {TopMenu, SubMenu} from "../ui/menu";
@@ -35,6 +34,7 @@ import {TableView, NextKReceiver} from "./tableView";
 import {DistinctStrings} from "../distinctStrings";
 import {RemoteTableObjectView, RemoteTableObject} from "../tableTarget";
 import {PlottingSurface} from "../ui/plottingSurface";
+import {mouse as d3mouse, select as d3select} from "d3-selection";
 
 export class HeatMapArrayData {
     buckets: number[][][];
@@ -219,7 +219,7 @@ class CompactHeatMapView {
 
     // Returns the value (count in the histogram) under the mouse.
     public updateAxes(): void {
-        let mouse = d3.mouse(this.chart.node());
+        let mouse = d3mouse(this.chart.node());
         if (mouse[1] < 0) {
             this.hideAxes();
             return null;
@@ -322,7 +322,7 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
         this.arrayAndScrollBar.appendChild(this.scrollBar.getHTMLRepresentation());
 
         let svgSize = this.actualDrawingSize();
-        this.heatMapsSvg = d3.select(this.arrayAndScrollBar).append("svg")
+        this.heatMapsSvg = d3select(this.arrayAndScrollBar).append("svg")
             .attr("width", svgSize.width)
             .attr("height", svgSize.height);
     }
@@ -392,7 +392,7 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
         let page = new FullPage("Table view", "Table", this.page);
         page.setDataView(table);
         this.page.insertAfterMe(page);
-        rr.invoke(new NextKReceiver(page, table, rr, false, order));
+        rr.invoke(new NextKReceiver(page, table, rr, false, order, null));
     }
 
     public scrolledTo(position: number): void {
@@ -495,7 +495,7 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
 
     private mouseMove() {
         // Calculate which heatmap is being moved over.
-        let mouse = d3.mouse(this.heatMapsSvg.node());
+        let mouse = d3mouse(this.heatMapsSvg.node());
         let [numCols, numRows] = this.numHeatMaps();
         let i = Math.floor(numCols * mouse[0] / this.heatMapsSvg.attr("width"));
         let j = Math.floor(numRows * mouse[1] / this.heatMapsSvg.attr("height"));

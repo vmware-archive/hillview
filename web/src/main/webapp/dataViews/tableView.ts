@@ -31,12 +31,12 @@ import {SelectionStateMachine} from "../ui/selectionStateMachine";
 
 import {HeavyHittersView} from "./heavyHittersView";
 import {SchemaView} from "./schemaView";
-import {LAMPDialog} from "./lampView";
+//import {LAMPDialog} from "./lampView";
 import {
     IColumnDescription, RecordOrder, RowSnapshot, Schema,
     ContentsKind, asContentsKind, ColumnSortOrientation, NextKList,
     TopList, CombineOperators, TableSummary, RemoteObjectId, allContentsKind,
-    CreateColumnInfo
+    CreateColumnInfo, FindResult
 } from "../javaBridge";
 import {RemoteTableObject, RemoteTableRenderer, ZipReceiver} from "../tableTarget";
 import {combineMenu, SelectedObject} from "../selectedObject";
@@ -63,6 +63,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
     protected contextMenu: ContextMenu;
     protected cellsPerColumn: Map<string, HTMLElement[]>;
     protected selectedColumns = new SelectionStateMachine();
+    protected messageBox: HTMLElement;
 
     public constructor(remoteObjectId: RemoteObjectId, originalTableId: RemoteObjectId, page: FullPage) {
         super(remoteObjectId, originalTableId, page);
@@ -107,6 +108,12 @@ export class TableView extends TableViewBase implements IScrollTarget {
                 ])
             },
             this.chartMenu(),
+            {
+                text: "Find", help: "Search a specific string in the visible columns", subMenu: new SubMenu([
+                    { text: "String", help: "Search for a string", action: () => this.find(false) },
+                    { text: "Regular expression", help: "Search for a regular expression", action: () => this.find(true) },
+                ])
+            },
             combineMenu(this, page.pageId)
         ]);
 
@@ -126,6 +133,36 @@ export class TableView extends TableViewBase implements IScrollTarget {
         this.topLevel.appendChild(tblAndBar);
         tblAndBar.appendChild(this.htmlTable);
         tblAndBar.appendChild(this.scrollBar.getHTMLRepresentation());
+
+        this.messageBox = document.createElement("div");
+        this.topLevel.appendChild(this.messageBox);
+    }
+
+    find(regex: boolean): void {
+        let kind = regex ? "regular expression" : "string";
+        let dialog = new Dialog("Find", "Search for a " + kind);
+        dialog.addTextField("string", "string to search", FieldKind.String, null, (regex ? "pattern" : "string") + " to look for");
+        dialog.addBooleanField("substring", "match substrings", false,
+            "If checked a substring will match.");
+        dialog.addBooleanField("caseSensitive", "case sensitive", true,
+            "if checked search will match uppercase/lowercase exactly.");
+        dialog.setAction(() => this.search(dialog.getFieldValue("string"), regex,
+            dialog.getBooleanValue("substring"), dialog.getBooleanValue("caseSensitive")));
+        dialog.show();
+    }
+
+    search(toFind: string, regex: boolean, substring: boolean, caseSensitive: boolean): void {
+        if (toFind == "") {
+            this.reportError("Search string cannot be empty");
+            return;
+        }
+        if (this.currentData.rows.length == 0) {
+            this.reportError("No data to search in");
+            return;
+        }
+        let o = this.order.clone();
+        let rr = this.createFindRequest(o, this.currentData.rows[0].values, toFind, regex, substring, caseSensitive);
+        rr.invoke(new FindReceiver(this.getPage(), this, rr, o));
     }
 
     /**
@@ -192,7 +229,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
         }
         let order = this.order.invert();
         let rr = this.createNextKRequest(order, this.currentData.rows[0].values);
-        rr.invoke(new NextKReceiver(this.getPage(), this, rr, true, order));
+        rr.invoke(new NextKReceiver(this.getPage(), this, rr, true, order, null));
     }
 
     protected begin(): void {
@@ -204,7 +241,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
         }
         let o = this.order.clone();
         let rr = this.createNextKRequest(o, null);
-        rr.invoke(new NextKReceiver(this.getPage(), this, rr, false, o));
+        rr.invoke(new NextKReceiver(this.getPage(), this, rr, false, o, null));
     }
 
     protected end(): void {
@@ -216,7 +253,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
         }
         let order = this.order.invert();
         let rr = this.createNextKRequest(order, null);
-        rr.invoke(new NextKReceiver(this.getPage(), this, rr, true, order));
+        rr.invoke(new NextKReceiver(this.getPage(), this, rr, true, order, null));
     }
 
     public pageDown(): void {
@@ -228,12 +265,12 @@ export class TableView extends TableViewBase implements IScrollTarget {
         }
         let o = this.order.clone();
         let rr = this.createNextKRequest(o, this.currentData.rows[this.currentData.rows.length - 1].values);
-        rr.invoke(new NextKReceiver(this.getPage(), this, rr, false, o));
+        rr.invoke(new NextKReceiver(this.getPage(), this, rr, false, o, null));
     }
 
     protected setOrder(o: RecordOrder): void {
         let rr = this.createNextKRequest(o, null);
-        rr.invoke(new NextKReceiver(this.getPage(), this, rr, false, o));
+        rr.invoke(new NextKReceiver(this.getPage(), this, rr, false, o, null));
     }
 
     protected showAllRows(): void {
@@ -250,13 +287,15 @@ export class TableView extends TableViewBase implements IScrollTarget {
         this.setOrder(o);
     }
 
-    // Navigate back to the first table known
+    /*
+     Navigate back to the first table known
     public fullDataset(): void {
         let table = new TableView(this.originalTableId, this.originalTableId, this.page);
         this.page.setDataView(table);
         let rr = table.createGetSchemaRequest();
         rr.invoke(new NextKReceiver(this.page, table, rr, false, new RecordOrder([])));
     }
+    */
 
     public static allColumnNames(schema: Schema): string[] {
         if (schema == null)
@@ -380,11 +419,12 @@ export class TableView extends TableViewBase implements IScrollTarget {
             this.reportError("Nothing to refresh");
             return;
         }
-        this.updateView(this.currentData, false, this.order, 0);
+        this.updateView(this.currentData, false, this.order, null, 0);
     }
 
     public updateView(data: NextKList, revert: boolean,
-                      order: RecordOrder, elapsedMs: number) : void {
+                      order: RecordOrder, foundCount: number,
+                      elapsedMs: number) : void {
         this.selectedColumns.clear();
         this.currentData = data;
         this.dataRowsDisplayed = 0;
@@ -501,6 +541,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
                     "This produces a smaller set of columns that preserve interesting properties of the data."
                 }, selectedCount > 1 &&
                     this.getSelectedColNames().reduce( (a, b) => a && this.isNumericColumn(b), true) );
+                /*
                 this.contextMenu.addItem({
                     text: "LAMP...",
                     action: () => this.lamp(),
@@ -508,6 +549,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
                     "This produces a 2D view of the data which can be manually adjusted.  Note: this operation is rather slow."
                 }, selectedCount > 1 &&
                     this.getSelectedColNames().reduce( (a, b) => a && this.isNumericColumn(b), true) );
+                    */
                 this.contextMenu.addItem({
                     text: "Filter...",
                     action: () => this.equalityFilter(cd.name, null, true, this.order, null),
@@ -538,12 +580,6 @@ export class TableView extends TableViewBase implements IScrollTarget {
                 this.addRow(data.rows[i], cds);
         }
 
-        // Create table footer
-        let footer = this.tBody.insertRow();
-        let cell = footer.insertCell(0);
-        cell.colSpan = this.schema.length + 2;
-        cell.className = "footer";
-
         let perc = "";
         if (this.rowCount > 0)
             perc = percent(this.dataRowsDisplayed / this.rowCount);
@@ -555,9 +591,12 @@ export class TableView extends TableViewBase implements IScrollTarget {
         if (perc != "")
             perc = " (" + perc + ")";
 
-        cell.textContent = "Showing on " + tableRowCount + " rows " +
+        let message = "Showing on " + tableRowCount + " rows " +
             formatNumber(this.dataRowsDisplayed) +
             "/" + formatNumber(this.rowCount) + " data rows" + perc;
+        if (foundCount != null)
+            message = foundCount.toString() + " matching rows<br>" + message;
+        this.messageBox.innerHTML = message;
 
         this.updateScrollBar();
         this.highlightSelectedColumns();
@@ -737,6 +776,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
         }
     }
 
+    /*
     private lamp(): void {
         let colNames = this.getSelectedColNames();
         let [valid, message] = this.checkNumericColumns(colNames);
@@ -747,6 +787,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
             this.reportError("Not valid for LAMP:" + message);
         }
     }
+    */
 
     private highlightSelectedColumns(): void {
         for (let i = 0; i < this.schema.length; i++) {
@@ -930,13 +971,15 @@ export class NextKReceiver extends Renderer<NextKList> {
                 protected table: TableView,
                 operation: ICancellable,
                 protected reverse: boolean,
-                protected order: RecordOrder) {
+                protected order: RecordOrder,
+                protected foundCount: number) {
         super(page, operation, "Getting table info");
     }
 
     onNext(value: PartialResult<NextKList>): void {
         super.onNext(value);
-        this.table.updateView(value.data, this.reverse, this.order, this.elapsedMilliseconds());
+        this.table.updateView(value.data, this.reverse, this.order,
+            this.foundCount, this.elapsedMilliseconds());
     }
 }
 
@@ -1012,7 +1055,7 @@ class SchemaReceiver extends OnCompleteRenderer<TableSummary> {
             let order = new RecordOrder([]);
             let table = new TableView(
                 this.remoteObject.remoteObjectId, this.remoteObject.originalTableId, page);
-            table.updateView(nk, false, order, this.elapsedMilliseconds());
+            table.updateView(nk, false, order, null, this.elapsedMilliseconds());
             dataView = table;
         }
         this.page.insertAfterMe(page);
@@ -1035,7 +1078,7 @@ class QuantileReceiver extends OnCompleteRenderer<any[]> {
     run(firstRow: any[]): void {
         let rr = this.tv.createNextKRequest(this.order, firstRow);
         rr.chain(this.operation);
-        rr.invoke(new NextKReceiver(this.page, this.tv, rr, false, this.order));
+        rr.invoke(new NextKReceiver(this.page, this.tv, rr, false, this.order, null));
     }
 }
 
@@ -1107,6 +1150,29 @@ export class TableOperationCompleted extends RemoteTableRenderer {
         this.page.setDataView(table);
         let rr = table.createNextKRequest(this.order, null);
         rr.chain(this.operation);
-        rr.invoke(new NextKReceiver(this.page, table, rr, false, this.order));
+        rr.invoke(new NextKReceiver(this.page, table, rr, false, this.order, null));
+    }
+}
+
+/**
+ * Receives a result from a remote table and initiates a NextK sketch
+ * if any result is found.
+ */
+export class FindReceiver extends OnCompleteRenderer<FindResult> {
+    public constructor(page: FullPage,
+                       protected tv: TableView,
+                       operation: ICancellable,
+                       protected order: RecordOrder) {
+        super(page, operation, "Compute quantiles");
+    }
+
+    run(result: FindResult): void {
+        if (result.count == 0) {
+            this.page.reportError("No matches found");
+            return;
+        }
+        let rr = this.tv.createNextKRequest(this.order, result.firstRow);
+        rr.chain(this.operation);
+        rr.invoke(new NextKReceiver(this.page, this.tv, rr, false, this.order, result.count));
     }
 }

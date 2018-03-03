@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-import {d3} from "../ui/d3-modules";
 import {
     IColumnDescription, Schema, RecordOrder, ColumnAndRange, FilterDescription,
     BasicColStats, RangeInfo, Histogram2DArgs, CombineOperators, RemoteObjectId, HeatMap, Histogram
@@ -40,6 +39,9 @@ import {PlottingSurface} from "../ui/plottingSurface";
 import {Histogram2DPlot} from "../ui/Histogram2DPlot";
 import {HistogramLegendPlot} from "../ui/legendPlot";
 import {Dialog} from "../ui/dialog";
+import {drag as d3drag} from "d3-drag";
+import {mouse as d3mouse, event as d3event} from "d3-selection";
+import {interpolateRainbow as d3interpolateRainbow} from "d3-scale-chromatic";
 
 /**
  * This class is responsible for rendering a 2D histogram.
@@ -148,14 +150,14 @@ export class Histogram2DView extends HistogramViewBase {
         let bucketCount = xPoints;
         let canvas = this.surface.getCanvas();
 
-        let legendDrag = d3.drag()
+        let legendDrag = d3drag()
             .on("start", () => this.dragLegendStart())
             .on("drag", () => this.dragLegendMove())
             .on("end", () => this.dragLegendEnd());
         this.legendSurface.getCanvas()
             .call(legendDrag);
 
-        let drag = d3.drag()
+        let drag = d3drag()
             .on("start", () => this.dragStart())
             .on("drag", () => this.dragMove())
             .on("end", () => this.dragCanvasEnd());
@@ -345,7 +347,7 @@ export class Histogram2DView extends HistogramViewBase {
      * Handles mouse movements in the canvas area only.
      */
     public mouseMove(): void {
-        let position = d3.mouse(this.surface.getChart().node());
+        let position = d3mouse(this.surface.getChart().node());
         // note: this position is within the chart
         let mouseX = position[0];
         let mouseY = position[1];
@@ -404,7 +406,7 @@ export class Histogram2DView extends HistogramViewBase {
         super.dragEnd();
         if (!dragging)
             return;
-        let position = d3.mouse(this.surface.getCanvas().node());
+        let position = d3mouse(this.surface.getCanvas().node());
         let x = position[0];
         this.selectionCompleted(this.selectionOrigin.x, x, false);
     }
@@ -413,7 +415,7 @@ export class Histogram2DView extends HistogramViewBase {
    protected dragLegendStart() {
        this.dragging = true;
        this.moved = false;
-       let position = d3.mouse(this.legendSurface.getCanvas().node());
+       let position = d3mouse(this.legendSurface.getCanvas().node());
        this.selectionOrigin = {
            x: position[0],
            y: position[1] };
@@ -424,7 +426,7 @@ export class Histogram2DView extends HistogramViewBase {
             return;
         this.moved = true;
         let ox = this.selectionOrigin.x;
-        let position = d3.mouse(this.legendSurface.getCanvas().node());
+        let position = d3mouse(this.legendSurface.getCanvas().node());
         let x = position[0];
         let width = x - ox;
         let height = this.legendRect.height();
@@ -461,7 +463,7 @@ export class Histogram2DView extends HistogramViewBase {
             .attr("width", 0)
             .attr("height", 0);
 
-        let position = d3.mouse(this.legendSurface.getCanvas().node());
+        let position = d3mouse(this.legendSurface.getCanvas().node());
         let x = position[0];
         this.selectionCompleted(this.selectionOrigin.x, x, true);
     }
@@ -518,7 +520,7 @@ export class Histogram2DView extends HistogramViewBase {
             kind: selectedAxis.description.kind,
             columnName: selectedAxis.description.name,
             bucketBoundaries: boundaries,
-            complement: d3.event.sourceEvent.ctrlKey
+            complement: d3event.sourceEvent.ctrlKey
         };
 
         let rr = this.createFilterRequest(filter);
@@ -536,7 +538,7 @@ export class Histogram2DView extends HistogramViewBase {
    static colorMap(d: number): string {
         // The rainbow color map starts and ends with a similar hue
         // so we skip the first 20% of it.
-        return d3.interpolateRainbow(d * .8 + .2);
+        return d3interpolateRainbow(d * .8 + .2);
     }
 
     // show the table corresponding to the data in the histogram
@@ -555,7 +557,7 @@ export class Histogram2DView extends HistogramViewBase {
         let rr = table.createNextKRequest(order, null);
         page.setDataView(table);
         this.page.insertAfterMe(page);
-        rr.invoke(new NextKReceiver(page, table, rr, false, order));
+        rr.invoke(new NextKReceiver(page, table, rr, false, order, null));
     }
 }
 

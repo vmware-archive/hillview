@@ -16,9 +16,9 @@
  */
 
 import {IHtmlElement, Size} from "./ui";
-import {d3} from "./d3-modules";
 import {TextOverlay} from "./textOverlay";
 import {FullPage} from "./fullPage";
+import {select as d3select} from "d3-selection";
 
 /**
  * A plotting surface contains an SVG element on top of which various charts are drawn.
@@ -96,7 +96,7 @@ export class PlottingSurface implements IHtmlElement {
         let size = PlottingSurface.getDefaultCanvasSize(this.page);
         this.size.width = Math.max(PlottingSurface.minCanvasWidth, size.width);
 
-        this.svgCanvas = d3.select(this.topLevel)
+        this.svgCanvas = d3select(this.topLevel)
             .append("svg")
             .attr("id", "canvas")
             .attr("border", 1)

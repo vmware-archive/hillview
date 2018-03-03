@@ -55,6 +55,8 @@ public interface IColumn extends Serializable {
      */
     @Nullable
     default Object getObject(final int rowIndex) {
+        if (rowIndex < 0)
+            throw new RuntimeException("Checking for negative row " + rowIndex);
         if (this.isMissing(rowIndex)) { return null; }
         switch (this.getDescription().kind) {
             case Json:

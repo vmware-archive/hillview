@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-import {d3} from "./ui/d3-modules";
 import Rx = require('rx');
 import Observer = Rx.Observer;
 import {ErrorReporter} from "./ui/errReporter";
@@ -25,6 +24,7 @@ import {FullPage} from "./ui/fullPage";
 import {CombineOperators, RemoteObjectId} from "./javaBridge";
 import {Test} from "./test";
 import pako = require('pako');
+import {timeMillisecond as d3timeMillisecond} from 'd3-time';
 
 /**
  * Path in server url for rpc web sockets.
@@ -339,7 +339,7 @@ export abstract class Renderer<T> implements Rx.Observer<PartialResult<T>> {
      * Note that the operation may have been 'chained' with another operation.
      */
     public elapsedMilliseconds(): number {
-        return d3.timeMillisecond.count(this.operation.startTime(), new Date());
+        return d3timeMillisecond.count(this.operation.startTime(), new Date());
     }
 }
 

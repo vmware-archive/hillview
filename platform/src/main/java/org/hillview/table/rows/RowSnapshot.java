@@ -57,6 +57,9 @@ public class RowSnapshot extends BaseRowSnapshot
         this.cachedHashcode = this.fields.hashCode();
     }
 
+    @Override
+    public boolean exists() { return true; }
+
     /**
      * Creates a row snapshot taking the data from the specified table.
      * @param data     Table storing the data.
