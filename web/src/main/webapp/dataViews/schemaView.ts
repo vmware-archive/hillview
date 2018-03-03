@@ -265,6 +265,6 @@ export class SchemaView extends TableViewBase {
         let nkl = new NextKList();
         nkl.schema = this.createSchema();
         nkl.rowCount = this.rowCount;
-        tv.updateView(nkl, false, new RecordOrder([]), 0);
+        tv.updateView(nkl, false, new RecordOrder([]), null, 0);
     }
 }
