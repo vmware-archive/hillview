@@ -35,7 +35,7 @@ import {SelectedObject} from "./selectedObject";
 import {HeatMapArrayData} from "./dataViews/trellisHeatMapView";
 
 /**
- * This class methods that correspond directly to TableTarget.java methods.
+ * This class has methods that correspond directly to TableTarget.java methods.
  */
 export class RemoteTableObject extends RemoteObject {
     /**

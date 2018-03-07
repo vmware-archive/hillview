@@ -44,7 +44,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
         this.topLevel = document.createElement("div");
         let subMenu = new SubMenu([
             { text: "As Table",
-                action: () => {this.showTable();},
+                action: () => {this.showTable(isApprox);},
                 help: "Show the data corresponding to the heavy elements as a tabular view." }
         ]);
         subMenu.addItem({
@@ -60,19 +60,25 @@ export class HeavyHittersView extends RemoteTableObjectView {
     refresh(): void {}
 
     // Method the creates the filtered table.
-    public showTable(): void {
-        let newPage2 = new FullPage("Frequent elements", "HeavyHitters", this.page);
-        this.page.insertAfterMe(newPage2);
-        let rr = this.tv.createStreamingRpcRequest<RemoteObjectId>("filterHeavy", {
+    public showTable(isApprox: boolean): void {
+        if(isApprox) {
+            let rr = this.tv.createCheckHeavyRequest(new RemoteObject(this.data.heavyHittersId), this.schema);
+            rr.invoke(new HeavyHittersReceiver3(this, rr));
+        }
+        else {
+            let newPage2 = new FullPage("Frequent elements", "HeavyHitters", this.page);
+            this.page.insertAfterMe(newPage2);
+            let rr = this.tv.createStreamingRpcRequest<RemoteObjectId>("filterHeavy", {
                 hittersId: this.data.heavyHittersId,
                 schema: this.schema
-        });
-        rr.invoke(new TableOperationCompleted(newPage2, this.tv.schema, rr, this.order, this.tv.originalTableId));
+            });
+            rr.invoke(new TableOperationCompleted(newPage2, this.tv.schema, rr, this.order, this.tv.originalTableId));
+        }
     }
 
     public exactCounts(): void {
         let rr = this.tv.createCheckHeavyRequest(new RemoteObject(this.data.heavyHittersId), this.schema);
-        rr.invoke(new HeavyHittersReceiver2(this, this.originalTableId, rr));
+        rr.invoke(new HeavyHittersReceiver2(this, rr));
     }
 
     public fill(tdv: NextKList, elapsedMs: number): void {
@@ -170,16 +176,31 @@ export class HeavyHittersView extends RemoteTableObjectView {
   */
 export class HeavyHittersReceiver2 extends OnCompleteRenderer<TopList> {
     public constructor(public hhv: HeavyHittersView,
-                       protected originalTableId: RemoteObjectId,
                        public operation: ICancellable) {
         super(hhv.page, operation, "Heavy hitters -- exact counts");
     }
 
     run(newData: TopList): void {
-        let newPage = new FullPage("Heavy hitters", "HeavyHitters", this.hhv.page);
-        let newHhv = new HeavyHittersView(newData, newPage, this.hhv.tv, this.hhv.schema, this.hhv.order, false);
-        newPage.setDataView(newHhv);
-        this.page.insertAfterMe(newPage);
+        let newHhv = new HeavyHittersView(newData, this.page, this.hhv.tv, this.hhv.schema, this.hhv.order, false);
+        this.page.setDataView(newHhv);
         newHhv.fill(newData.top, this.elapsedMilliseconds());
+    }
+}
+
+export class HeavyHittersReceiver3 extends OnCompleteRenderer<TopList> {
+    public constructor(public hhv: HeavyHittersView,
+                       public operation: ICancellable) {
+        super(hhv.page, operation, "This is never actually displayed");
+    }
+
+    run(exactList: TopList): void {
+        let newPage2 = new FullPage("Frequent elements", "HeavyHitters", this.hhv.page);
+        this.page.insertAfterMe(newPage2);
+        let rr = this.hhv.tv.createStreamingRpcRequest<RemoteObjectId>("filterHeavy", {
+            hittersId: exactList.heavyHittersId,
+            schema: this.hhv.schema
+        });
+        rr.invoke(new TableOperationCompleted(newPage2, this.hhv.tv.schema, rr, this.hhv.order,
+            this.hhv.tv.originalTableId));
     }
 }
