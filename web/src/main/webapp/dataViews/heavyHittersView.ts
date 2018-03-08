@@ -59,13 +59,15 @@ export class HeavyHittersView extends RemoteTableObjectView {
 
     refresh(): void {}
 
-    // Method the creates the filtered table.
+    /**
+     * Method the creates the filtered table. If isApprox is true, then there are two steps: we first compute the exact
+     * heavy hitters and then use that list to filter the table. If isApprox is false, we compute the table right away.
+     */
     public showTable(isApprox: boolean): void {
-        if(isApprox) {
+        if (isApprox) {
             let rr = this.tv.createCheckHeavyRequest(new RemoteObject(this.data.heavyHittersId), this.schema);
             rr.invoke(new HeavyHittersReceiver3(this, rr));
-        }
-        else {
+        } else {
             let newPage2 = new FullPage("Frequent elements", "HeavyHitters", this.page);
             this.page.insertAfterMe(newPage2);
             let rr = this.tv.createStreamingRpcRequest<RemoteObjectId>("filterHeavy", {
@@ -172,7 +174,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
 }
 
 /**
- * This class handles the reply of the "checkHeavy" method.
+ * This class handles the reply of the "checkHeavy" method when the goal is to to compute and display the Exact counts.
   */
 export class HeavyHittersReceiver2 extends OnCompleteRenderer<TopList> {
     public constructor(public hhv: HeavyHittersView,
@@ -187,10 +189,16 @@ export class HeavyHittersReceiver2 extends OnCompleteRenderer<TopList> {
     }
 }
 
+/**
+ * This class handles the reply of the "checkHeavy" method when the goal is to filter the table, starting from an
+ * approximate HeavyHitters sketch. It uses the TopList returned by Check Heavy to filter the table using the
+ * "filterHeavy" method.
+ * The code is fairly similar to that in showTable().
+ */
 export class HeavyHittersReceiver3 extends OnCompleteRenderer<TopList> {
     public constructor(public hhv: HeavyHittersView,
                        public operation: ICancellable) {
-        super(hhv.page, operation, "This is never actually displayed");
+        super(hhv.page, operation, "Computing exact heavy hitters");
     }
 
     run(exactList: TopList): void {
