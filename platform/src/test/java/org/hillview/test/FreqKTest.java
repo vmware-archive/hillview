@@ -75,9 +75,6 @@ public class FreqKTest extends BaseTest {
         Assert.assertNotNull(fkList);
         fkList.filter();
         checkList(fkList, left.getSchema());
-
-        //System.out.println(fkList.toString());
-        //return fkList;
     }
 
     private void shhCreate(ITable table, double epsilon) {
