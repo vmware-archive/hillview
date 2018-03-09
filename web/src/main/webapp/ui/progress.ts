@@ -59,7 +59,7 @@ export class ProgressBar implements IHtmlElement {
         cancelButton.textContent = "Stop";
         let label = document.createElement("div");
         label.textContent = description;
-        label.className = "label";
+        label.className = "progressLabel";
 
         let outer = document.createElement("div");
         outer.className = "progressBarOuter";

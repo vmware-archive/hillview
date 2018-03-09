@@ -12,6 +12,7 @@ for year in `seq 2016 2016`; do
             unzip -o $filename
             rm $filename
             rm -f readme.html
+            gzip "$basename.csv"
         fi
     done
 done

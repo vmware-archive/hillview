@@ -104,6 +104,10 @@ th, td {
     margin: 3px 1px;
 }
 
+.progressLabel {
+    margin: 1px;
+}
+
 /* close button */
 .close {
     font-size: 20px;
@@ -185,7 +189,6 @@ th, td {
 .noselect {
     -webkit-touch-callout: none;
     -webkit-user-select: none;
-    -khtml-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;

@@ -215,7 +215,7 @@ export class HistogramView extends HistogramViewBase {
             let rr = this.createRange2DRequest(r0, r1);
             rr.chain(operation);
             rr.invoke(new Range2DCollector(cds, this.tableSchema, distinct, this.getPage(), this,
-                this.currentData.samplingRate >=1, rr, false));
+                this.currentData.samplingRate >=1, rr, false, false));
         };
         CategoryCache.instance.retrieveCategoryValues(this, catColumns, this.getPage(), cont);
     }
