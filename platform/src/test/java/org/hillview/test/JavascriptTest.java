@@ -75,7 +75,7 @@ public class JavascriptTest {
     public void testMap() {
         ITable table = ToCatMapTest.tableWithStringColumn();
         LocalDataSet<ITable> lds = new LocalDataSet<ITable>(table);
-        ColumnDescription outCol = new ColumnDescription("IsAdult", ContentsKind.Category, false);
+        ColumnDescription outCol = new ColumnDescription("IsAdult", ContentsKind.Category);
         String function = "function map(row) { return row['Age'] > 18 ? 'true' : 'false'; }";
         CreateColumnJSMap map = new CreateColumnJSMap(function, table.getSchema(), outCol);
         IDataSet<ITable> mapped = lds.blockingMap(map);
@@ -91,7 +91,7 @@ public class JavascriptTest {
     public void testDate() {
         ITable table = ToCatMapTest.tableWithStringColumn();
         LocalDataSet<ITable> lds = new LocalDataSet<ITable>(table);
-        ColumnDescription outCol = new ColumnDescription("Date", ContentsKind.Date, false);
+        ColumnDescription outCol = new ColumnDescription("Date", ContentsKind.Date);
         String function = "function map(row) { return new Date(1970 + row['Age'], 1, 2); }";
         CreateColumnJSMap map = new CreateColumnJSMap(function, table.getSchema(), outCol);
         IDataSet<ITable> mapped = lds.blockingMap(map);
@@ -113,7 +113,7 @@ public class JavascriptTest {
     public void testInteger() {
         ITable table = ToCatMapTest.tableWithStringColumn();
         LocalDataSet<ITable> lds = new LocalDataSet<ITable>(table);
-        ColumnDescription outCol = new ColumnDescription("Older", ContentsKind.Integer, false);
+        ColumnDescription outCol = new ColumnDescription("Older", ContentsKind.Integer);
         String function = "function map(row) { return row['Age'] + 10; }";
         CreateColumnJSMap map = new CreateColumnJSMap(function, table.getSchema(), outCol);
         IDataSet<ITable> mapped = lds.blockingMap(map);
@@ -133,7 +133,7 @@ public class JavascriptTest {
         set.add(1);
         ITable tbl = table.selectRowsFromFullTable(set);
         LocalDataSet<ITable> lds = new LocalDataSet<ITable>(tbl);
-        ColumnDescription outCol = new ColumnDescription("Older", ContentsKind.Integer, false);
+        ColumnDescription outCol = new ColumnDescription("Older", ContentsKind.Integer);
         String function = "function map(row) { return row['Age'] + 10; }";
         CreateColumnJSMap map = new CreateColumnJSMap(function, table.getSchema(), outCol);
         IDataSet<ITable> mapped = lds.blockingMap(map);
@@ -149,12 +149,12 @@ public class JavascriptTest {
         ITable table = ToCatMapTest.tableWithStringColumn();
         LocalDataSet<ITable> lds = new LocalDataSet<ITable>(table);
         // Add a date column
-        ColumnDescription outCol = new ColumnDescription("Date", ContentsKind.Date, false);
+        ColumnDescription outCol = new ColumnDescription("Date", ContentsKind.Date);
         String function = "function map(row) { return new Date(1970 + row['Age'], 1, 2); }";
         CreateColumnJSMap map = new CreateColumnJSMap(function, table.getSchema(), outCol);
         IDataSet<ITable> mapped = lds.blockingMap(map);
         // Convert the date column
-        outCol = new ColumnDescription("Later", ContentsKind.Date, false);
+        outCol = new ColumnDescription("Later", ContentsKind.Date);
         function = "function map(row) { " +
                 "var d = row['Date']; " +
                 "d.setFullYear(d.getFullYear() + 10); " +

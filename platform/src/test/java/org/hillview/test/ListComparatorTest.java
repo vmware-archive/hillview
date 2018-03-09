@@ -34,8 +34,8 @@ public class ListComparatorTest extends BaseTest {
     public void ListComparatorZero() {
         final int size = 1000, maxRange = 100;
         final Randomness rn = this.getRandomness();
-        final ColumnDescription desc1 = new ColumnDescription("test", ContentsKind.Integer, false);
-        final ColumnDescription desc2 = new ColumnDescription("test", ContentsKind.String, false);
+        final ColumnDescription desc1 = new ColumnDescription("test", ContentsKind.Integer);
+        final ColumnDescription desc2 = new ColumnDescription("test", ContentsKind.String);
         final IntArrayColumn col1 = new IntArrayColumn(desc1, size);
         final StringArrayColumn col2 = new StringArrayColumn(desc2, size);
         final ArrayList<IndexComparator> listCompare = new ArrayList<IndexComparator>();
@@ -65,7 +65,7 @@ public class ListComparatorTest extends BaseTest {
     public void ListComparatorTestOne() {
         final int size = 1000, maxRange = 8, numCols = 3;
         final Randomness rn = this.getRandomness();
-        final ColumnDescription desc = new ColumnDescription("test", ContentsKind.Integer, false);
+        final ColumnDescription desc = new ColumnDescription("test", ContentsKind.Integer);
         final ArrayList<IColumn> cols = new ArrayList<IColumn>(numCols);
         final ArrayList<IndexComparator> listCompare = new ArrayList<IndexComparator>();
         for(int i = 0; i < numCols; i++) {

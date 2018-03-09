@@ -147,7 +147,7 @@ public class NextKSketchTest extends BaseTest {
 
     @Test
     public void testNextList() {
-        ColumnDescription cd = new ColumnDescription("X", ContentsKind.Integer, false);
+        ColumnDescription cd = new ColumnDescription("X", ContentsKind.Integer);
         Schema schema = new Schema();
         schema.append(cd);
         NextKList nkl = new NextKList(schema);

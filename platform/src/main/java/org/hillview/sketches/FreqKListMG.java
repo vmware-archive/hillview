@@ -60,7 +60,7 @@ public class FreqKListMG extends FreqKList {
     public NextKList getTop(Schema schema) {
         this.filter();
         List<Pair<RowSnapshot, Integer>> pList = new ArrayList<Pair<RowSnapshot, Integer>>(this.hMap.size());
-        this.hMap.forEach((rs, j) -> { pList.add(new Pair<RowSnapshot, Integer>(rs, j));});
+        this.hMap.forEach((rs, j) -> pList.add(new Pair<RowSnapshot, Integer>(rs, j)));
         return getTopK(pList, schema);
     }
 }

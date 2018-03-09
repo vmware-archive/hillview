@@ -13,6 +13,7 @@ import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ITable;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.VirtualRowSnapshot;
+import org.hillview.utils.Converters;
 import org.hillview.utils.MutableInteger;
 
 import javax.annotation.Nullable;
@@ -47,7 +48,7 @@ public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKListSample
     public SampleHeavyHittersSketch(Schema schema, double epsilon, long totalRows, long seed) {
         this.schema = schema;
         this.epsilon = epsilon;
-        this.totalRows= totalRows;
+        this.totalRows = totalRows;
         this.seed = seed;
         this.samplingRate = Math.min(1, Math.max(10.0/(totalRows*epsilon*epsilon),
                 20000.0/totalRows));
@@ -66,7 +67,7 @@ public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKListSample
      */
     public FreqKListSample add(@Nullable FreqKListSample left, @Nullable FreqKListSample right) {
         List<Object2ObjectMap.Entry<RowSnapshot, MutableInteger>> pList =
-                FreqKList.addLists(left, right);
+                FreqKList.addLists(Converters.checkNull(left), Converters.checkNull(right));
         Object2IntOpenHashMap<RowSnapshot> hm = new Object2IntOpenHashMap<RowSnapshot>(pList.size());
         for (Object2ObjectMap.Entry<RowSnapshot, MutableInteger> aPList : pList) {
             hm.put(aPList.getKey(), aPList.getValue().get());

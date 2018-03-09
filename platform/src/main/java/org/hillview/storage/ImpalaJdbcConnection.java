@@ -25,7 +25,7 @@ public class ImpalaJdbcConnection extends JdbcConnection {
     }
 
     @Override
-    public String getQuery(String table, int rowCount) {
+    public String getQueryToReadTable(String table, int rowCount) {
         String result = "SELECT * FROM " + table;
         if (rowCount >= 0)
             result += " LIMIT " + Integer.toString(rowCount);

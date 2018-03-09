@@ -40,8 +40,6 @@ import java.util.stream.Stream;
  */
 public class DemoDataCleaner {
     static final String dataFolder = "../data/ontime";
-    static final String csvFile = "On_Time_Sample.csv";
-    static final String schemaFile = "On_Time.schema";
 
     public static void main(String[] args) throws IOException {
         HillviewLogger.initialize("data cleaner", "hillview.log");
@@ -53,18 +51,15 @@ public class DemoDataCleaner {
         };
 
         System.out.println("Splitting files in folder " + dataFolder);
-        Path schemaPath = Paths.get(dataFolder, schemaFile);
-        Schema schema = Schema.readFromJsonFile(schemaPath);
-        HashSubSchema subSchema = new HashSubSchema(columns);
-        Schema proj = schema.project(subSchema);
-        proj.writeToJsonFile(Paths.get(dataFolder, "short.schema"));
-
         String prefix = "On_Time_On_Time_Performance_";
         Path folder = Paths.get(dataFolder);
         Stream<Path> files = Files.walk(folder, 1);
+        Schema[] schema = new Schema[1];
+        HashSubSchema subSchema = new HashSubSchema(columns);
+
         files.filter(f -> {
             String filename = f.getFileName().toString();
-            if (!filename.endsWith("csv")) return false;
+            if (!filename.contains("csv")) return false;
             //noinspection RedundantIfStatement
             if (!filename.startsWith(prefix)) return false;
             return true;
@@ -74,14 +69,23 @@ public class DemoDataCleaner {
                     CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
                     config.allowFewerColumns = false;
                     config.hasHeaderRow = true;
-                    config.allowMissingData = false;
-                    CsvFileLoader r = new CsvFileLoader(filename, config, schemaPath.toString());
+                    CsvFileLoader r = new CsvFileLoader(filename, config, null);
 
                     System.out.println("Reading " + f);
                     ITable tbl = r.load();
-                    ITable p = tbl.project(proj);
+
+                    if (schema[0] == null) {
+                        Schema fullSchema = tbl.getSchema();
+                        fullSchema.writeToJsonFile(Paths.get(dataFolder, "On_Time.schema"));
+                        schema[0] = fullSchema.project(subSchema);
+                        schema[0].writeToJsonFile(Paths.get(dataFolder, "short.schema"));
+                    }
+                    ITable p = tbl.project(schema[0]);
 
                     String end = filename.replace(prefix, "");
+                    if (end.endsWith(".gz"))
+                        // the output is uncompressed
+                        end = end.replace(".gz", "");
                     CsvFileWriter writer = new CsvFileWriter(end);
                     try {
                         System.out.println("Writing " + end);

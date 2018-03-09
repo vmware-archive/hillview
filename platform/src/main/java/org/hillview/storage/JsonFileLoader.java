@@ -148,7 +148,7 @@ public class JsonFileLoader extends TextFileLoader {
             if (kind == ContentsKind.None)
                 // This column is always null
                 kind = ContentsKind.Category;
-            ColumnDescription desc = new ColumnDescription(e.getKey(), kind, true);
+            ColumnDescription desc = new ColumnDescription(e.getKey(), kind);
             schema.append(desc);
         }
         return schema;

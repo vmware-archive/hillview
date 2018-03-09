@@ -129,7 +129,6 @@ export enum CombineOperators {
 export interface IColumnDescription {
     readonly kind: ContentsKind;
     readonly name: string;
-    readonly allowMissing: boolean;
 }
 
 export function isNumeric(kind: ContentsKind): boolean {
