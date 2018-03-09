@@ -20,6 +20,8 @@ package org.hillview.management;
 import org.hillview.dataset.api.ControlMessage;
 import org.hillview.dataset.remoting.HillviewServer;
 
+import java.text.NumberFormat;
+
 /**
  * This control message returns the memory used in a specific HillviewServer process JVM.
  */
@@ -27,6 +29,6 @@ public class MemoryUse extends ControlMessage {
     public Status remoteServerAction(HillviewServer server) {
         Runtime rt = Runtime.getRuntime();
         long usedMemory = rt.totalMemory() - rt.freeMemory();
-        return new Status(Long.toString(usedMemory));
+        return new Status(NumberFormat.getIntegerInstance().format(usedMemory));
     }
 }
