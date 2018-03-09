@@ -117,8 +117,7 @@ export class ColumnConverter  {
         rr.chain(operation);
         let cd: IColumnDescription = {
             kind: this.newKind,
-            name: this.newColumnName,
-            allowMissing: true
+            name: this.newColumnName
         };
         let schema = this.table.schema.concat(cd);
         let o = this.order.clone();

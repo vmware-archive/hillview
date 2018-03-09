@@ -127,9 +127,8 @@ public interface IColumn extends Serializable {
     }
 
     default IMutableColumn allocateConvertedColumn(
-        ContentsKind kind, IMembershipSet set, String newColName, boolean allowMissing) {
-        ColumnDescription cd = new ColumnDescription(
-                newColName, kind, allowMissing);
+        ContentsKind kind, IMembershipSet set, String newColName) {
+        ColumnDescription cd = new ColumnDescription(newColName, kind);
         if (set.useSparseColumn())
             return new SparseColumn(cd, this.sizeInRows());
 
@@ -175,11 +174,9 @@ public interface IColumn extends Serializable {
      * @param kind       The kind of the destination column.
      * @param newColName Name of the new column.
      * @param set        Set of elements that have to be converted.
-     * @param allowMissing If true the produced column will allow missing values.
      * @return An IColumn that is a copy of this column, converted to the specified kind.
      */
-    IColumn convertKind(ContentsKind kind, String newColName,
-                        IMembershipSet set, boolean allowMissing);
+    IColumn convertKind(ContentsKind kind, String newColName, IMembershipSet set);
 
     default String getName() {
         return this.getDescription().name;

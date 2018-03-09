@@ -74,7 +74,19 @@ public class JdbcDatabase {
      * @param rowCount  Maximum number of rows.  If negative, bring all rows.
      */
     public ResultSet getTable(String table, int rowCount) {
-        String query = this.conn.getQuery(table, rowCount);
+        String query = this.conn.getQueryToReadTable(table, rowCount);
+        try {
+            return this.getQueryResult(query);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Get the data produced by a query.
+     * @param query     Query to execute.
+     */
+    public ResultSet getQueryData(String query) {
         try {
             return this.getQueryResult(query);
         } catch (SQLException e) {
@@ -92,19 +104,7 @@ public class JdbcDatabase {
         colIndex = colIndex + 1;
 
         String name = meta.getColumnLabel(colIndex);
-        boolean allowMissing = false;
         ContentsKind kind;
-
-        switch (meta.isNullable(colIndex)) {
-            case ResultSetMetaData.columnNullable:
-            case ResultSetMetaData.columnNullableUnknown:
-                allowMissing = true;
-                break;
-            case ResultSetMetaData.columnNoNulls:
-                break;
-            default:
-                throw new RuntimeException("Unexpected isNullable value");
-        }
 
         int colType = meta.getColumnType(colIndex);
         switch (colType) {
@@ -160,7 +160,7 @@ public class JdbcDatabase {
             default:
                 throw new RuntimeException("Unhandled column type " + colType);
         }
-        return new ColumnDescription(name, kind, allowMissing);
+        return new ColumnDescription(name, kind);
     }
 
     static Schema getSchema(ResultSet data) {

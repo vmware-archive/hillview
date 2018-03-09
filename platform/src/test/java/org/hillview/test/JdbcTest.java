@@ -17,19 +17,14 @@
 
 package org.hillview.test;
 
-import org.hillview.storage.CsvFileWriter;
 import org.hillview.storage.JdbcConnectionInformation;
 import org.hillview.table.api.ITable;
 import org.hillview.storage.JdbcDatabase;
 import org.hillview.utils.Converters;
 import org.junit.Test;
-import rx.Observer;
 
 import javax.annotation.Nullable;
-import java.io.IOException;
-import java.nio.file.Paths;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 
 /**
  * Various tests for reading data from databases through JDBC.
@@ -77,53 +72,5 @@ public class JdbcTest extends BaseTest {
         conn.user = "user";
         conn.password = "password";
         ITable table = this.getTable(conn, -1);
-    }
-
-    // Downloads an impala table and splits it into pieces.
-    public void downloadSplitTable() {
-        JdbcConnectionInformation conn = new JdbcConnectionInformation();
-        conn.databaseKind = "impala";
-        conn.host = "vmware.com";
-        conn.port = 21050;
-        conn.database = "employees";
-        conn.table = "salaries";
-        conn.user = "user";
-        conn.password = "password";
-        JdbcDatabase db = new JdbcDatabase(conn);
-        try {
-            db.connect();
-            ResultSet dbTable = db.getTable(conn.table, -1);
-            Observer<ITable> obs = new Observer<ITable>() {
-                int index = 0;
-
-                @Override
-                public void onCompleted() {}
-
-                @Override
-                public void onError(Throwable throwable) {
-                    throwable.printStackTrace();
-                }
-
-                @Override
-                public void onNext(ITable tbl) {
-                    System.out.println("Received table " + index);
-                    String file = conn.table + index;
-                    if (index == 0)
-                        tbl.getSchema().writeToJsonFile(Paths.get(conn.table + ".schema"));
-                    CsvFileWriter fw = new CsvFileWriter(file + ".csv");
-                    fw.setCompress(true);
-                    try {
-                        fw.writeTable(tbl);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    index++;
-                }
-            };
-            JdbcDatabase.getTables(dbTable, 100000, obs);
-            db.disconnect();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
     }
 }

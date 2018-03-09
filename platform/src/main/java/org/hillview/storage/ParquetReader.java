@@ -151,7 +151,7 @@ public class ParquetReader extends TextFileLoader {
                 default:
                     throw new RuntimeException("Unexpected column kind " + cd.getType());
             }
-            ColumnDescription desc = new ColumnDescription(name, kind, true);
+            ColumnDescription desc = new ColumnDescription(name, kind);
             result[index++] = BaseListColumn.create(desc);
         }
         return result;

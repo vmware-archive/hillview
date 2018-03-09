@@ -78,7 +78,7 @@ public class IntArrayTest extends BaseTest {
         final int[] data = new int[size];
         for (int i = 0; i < size; i++)
             data[i] = i;
-        ColumnDescription desc = new ColumnDescription("A", ContentsKind.Integer, true);
+        ColumnDescription desc = new ColumnDescription("A", ContentsKind.Integer);
         final IntArrayColumn col = new IntArrayColumn(desc, data);
         for (int i = 0; i < size; i++)
             if ((i % 5) == 0)

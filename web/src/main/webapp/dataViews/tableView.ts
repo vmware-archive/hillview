@@ -454,12 +454,10 @@ export class TableView extends TableViewBase implements IScrollTarget {
         let cds : IColumnDescription[] = [];
         let posCd: IColumnDescription = {
             kind: "Integer",
-            name: "(position)",
-            allowMissing: false };
+            name: "(position)" };
         let ctCd: IColumnDescription = {
             kind: "Integer",
-            name: "(count)",
-            allowMissing: false };
+            name: "(count)" };
 
         // Create column headers
         let thd = this.addHeaderCell(thr, posCd, "Position within sorted order.");
@@ -472,7 +470,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
         for (let i = 0; i < this.schema.length; i++) {
             let cd = this.schema[i];
             cds.push(cd);
-            let title = "Column type is " + cd.kind + (cd.allowMissing ? ", can have missing data" : "") +
+            let title = "Column type is " + cd.kind +
                 ".\nA mouse click with the right button will open a menu.";
             let thd = this.addHeaderCell(thr, cd, title);
             thd.className = this.columnClass(cd.name);
@@ -637,8 +635,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
         this.page.insertAfterMe(newPage);
         let cd: IColumnDescription = {
             kind: arg.outputKind,
-            name: col,
-            allowMissing: true
+            name: col
         };
         let schema = this.schema.concat(cd);
         let o = this.order.clone();
@@ -990,7 +987,7 @@ export class NextKReceiver extends Renderer<NextKList> {
 export class RemoteTableReceiver extends RemoteTableRenderer {
     /**
      * Create a renderer for a new table.
-     * @param {FullPage} page   Parent page initiating this request.
+     * @param {FullPage} page            Parent page initiating this request.
      * @param {ICancellable} operation   Operation that will bring the results.
      * @param {string} title             Title to use for resulting page; if null the parent page is used.
      * @param forceTableView             If true the resulting view is always a table.
@@ -998,7 +995,7 @@ export class RemoteTableReceiver extends RemoteTableRenderer {
      */
     constructor(page: FullPage, operation: ICancellable, protected title: string,
                 protected forceTableView: boolean, originalTableId: RemoteObjectId) {
-        super(page, operation, "Get schema", originalTableId);
+        super(page, operation, "Get data", originalTableId);
     }
 
     public run(): void {

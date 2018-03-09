@@ -107,8 +107,8 @@ public class HistogramTest extends BaseTest {
     }
 
     static void testMissing() {
-        ColumnDescription c0 = new ColumnDescription("col0", ContentsKind.Double, true);
-        ColumnDescription c1 = new ColumnDescription("col1", ContentsKind.Double, true);
+        ColumnDescription c0 = new ColumnDescription("col0", ContentsKind.Double);
+        ColumnDescription c1 = new ColumnDescription("col1", ContentsKind.Double);
         IAppendableColumn col0 = BaseListColumn.create(c0);
         IAppendableColumn col1 = BaseListColumn.create(c1);
         for (int i=0; i < 3; i++) {

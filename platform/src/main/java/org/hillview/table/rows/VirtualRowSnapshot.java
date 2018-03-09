@@ -189,9 +189,4 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
     public Duration getDuration(String colName) {
         return this.getColumn(colName).getDuration(this.rowIndex);
     }
-
-    @Override
-    public String toString() {
-        return super.toString();
-    }
 }

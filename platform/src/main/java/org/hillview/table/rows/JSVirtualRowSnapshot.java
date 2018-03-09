@@ -46,6 +46,7 @@ public class JSVirtualRowSnapshot extends VirtualRowSnapshot {
             double dateEncoding = super.getDouble((String)key);
             // https://stackoverflow.com/questions/33110942/supply-javascript-date-to-nashorn-script
             try {
+                //noinspection RedundantCast
                 return (JSObject) this.engine.eval("new Date(" + Double.toString(dateEncoding) + ")");
             } catch (ScriptException e) {
                 throw new RuntimeException(e);

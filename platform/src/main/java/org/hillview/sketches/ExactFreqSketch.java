@@ -28,6 +28,7 @@ import org.hillview.table.api.ITable;
 import org.hillview.table.rows.BaseRowSnapshot;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.VirtualRowSnapshot;
+import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -64,9 +65,12 @@ public class ExactFreqSketch implements ISketch<ITable, FreqKListExact> {
      */
     @Override
     public FreqKListExact add(@Nullable FreqKListExact left, @Nullable FreqKListExact right) {
+        final FreqKListExact l = Converters.checkNull(left);
+        final FreqKListExact r = Converters.checkNull(right);
         Object2IntOpenHashMap<RowSnapshot> hm = new Object2IntOpenHashMap<RowSnapshot>(this.rssList.size());
-        this.rssList.forEach(rss -> hm.put(rss, left.hMap.getInt(rss) + right.hMap.getInt(rss)));
-        return new FreqKListExact(left.totalRows + right.totalRows,
+        this.rssList.forEach(rss -> hm.put(
+                rss, l.hMap.getInt(rss) + r.hMap.getInt(rss)));
+        return new FreqKListExact(l.totalRows + r.totalRows,
                 this.epsilon, hm, this.rssList);
     }
 
