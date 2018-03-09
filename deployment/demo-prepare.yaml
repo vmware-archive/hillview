@@ -17,5 +17,5 @@
       copy: src={{ item.src }} dest={{ item.dest }}
       with_items:
               - {src: '../platform/target/data-cleaner-jar-with-dependencies.jar', dest: 'hillview'}
-              - {src: '../data/On_Time.schema', dest: 'data'}
-              - {src: '../data/download.sh', dest: 'data'}
+              - {src: '../data/On_Time.schema', dest: 'data/ontime'}
+              - {src: '../data/download.sh', dest: 'data/ontime'}

@@ -51,7 +51,7 @@ import static org.hillview.dataset.remoting.HillviewServer.ROOT_DATASET_INDEX;
  * with a wrong value for either entry of the tuple will result in an exception.
  */
 public class RemoteDataSet<T> extends BaseDataSet<T> {
-    private final static int TIMEOUT = 60000 * 5;  // TODO: import via config file
+    private final static int TIMEOUT = 60000 * 10;  // TODO: import via config file
     private final int remoteHandle;
     private final HostAndPort serverEndpoint;
     private final HillviewServerGrpc.HillviewServerStub stub;
@@ -271,12 +271,14 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public PartialResult<IDataSet<S>> processResponse(final PartialResponse response) {
             final OperationResponse op = SerializationUtils.deserialize(response
                     .getSerializedOp().toByteArray());
-            final IDataSet<S> ids = (op.result == null) ? null :
-                    new RemoteDataSet<S>(RemoteDataSet.this.serverEndpoint, (int) op.result);
-            return new PartialResult<IDataSet<S>>(ids);
+            PartialResult<Integer> pr = Converters.checkNull((PartialResult<Integer>)op.result);
+            final IDataSet<S> ids = (pr.deltaValue == null) ? null :
+                    new RemoteDataSet<S>(RemoteDataSet.this.serverEndpoint, pr.deltaValue);
+            return new PartialResult<IDataSet<S>>(pr.deltaDone, ids);
         }
     }
 

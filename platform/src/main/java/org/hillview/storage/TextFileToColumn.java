@@ -36,7 +36,7 @@ class TextFileToColumn {
     }
 
     IColumn readFile(final String columnName) throws IOException {
-        final ColumnDescription desc = new ColumnDescription(columnName, ContentsKind.String, false);
+        final ColumnDescription desc = new ColumnDescription(columnName, ContentsKind.String);
         final StringListColumn result = new StringListColumn(desc);
         Files.lines(this.file).forEach(result::append);
         return result;

@@ -30,7 +30,7 @@ public class ColumnPerfTest extends BaseTest {
         final IntArrayColumn col;
         final int size = 1000000;
         final int testNum = 10;
-        final ColumnDescription desc = new ColumnDescription("test", ContentsKind.Integer, false);
+        final ColumnDescription desc = new ColumnDescription("test", ContentsKind.Integer);
 
         col = new IntArrayColumn(desc, size);
         for (int i=0; i < size; i++)

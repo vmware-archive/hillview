@@ -53,7 +53,7 @@ public abstract class JdbcConnection {
      * @param rowCount  Number of rows to read.
      * @return          A SQL query string that reads the specified number of rows.
      */
-    public abstract String getQuery(String table, int rowCount);
+    public abstract String getQueryToReadTable(String table, int rowCount);
 
     protected void addBaseUrl(StringBuilder urlBuilder) {
         urlBuilder.append("jdbc:");

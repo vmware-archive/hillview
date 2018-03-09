@@ -37,7 +37,7 @@ public class IntArrayGenerator {
      * @return A column of integers.
      */
     public static IntArrayColumn getMissingIntArray(String name, final int size, int mod) {
-        final ColumnDescription desc = new ColumnDescription(name, ContentsKind.Integer, true);
+        final ColumnDescription desc = new ColumnDescription(name, ContentsKind.Integer);
         final IntArrayColumn col = new IntArrayColumn(desc, size);
         for (int i = 0; i < size; i++) {
             if ((i % mod) == 0)
@@ -50,7 +50,7 @@ public class IntArrayGenerator {
 
     public static IntArrayColumn getRandIntArray(int size, int range,
                                                  String name, Randomness randomness) {
-        final ColumnDescription desc = new ColumnDescription(name, ContentsKind.Integer, false);
+        final ColumnDescription desc = new ColumnDescription(name, ContentsKind.Integer);
         final IntArrayColumn col = new IntArrayColumn(desc, size);
         for (int i = 0; i < size; i++)
             col.set(i, randomness.nextInt(range));
@@ -61,7 +61,7 @@ public class IntArrayGenerator {
      * @return An integer array containing numbers (1,.., range), where i occurs i^2 times.
      */
     public static IntArrayColumn getSqIntArray(int range) {
-        final ColumnDescription desc = new ColumnDescription("Squares", ContentsKind.Integer, false);
+        final ColumnDescription desc = new ColumnDescription("Squares", ContentsKind.Integer);
         final IntArrayColumn col = new IntArrayColumn(desc, (range * (range + 1)* (2 *range +1)/6));
         int k = 0;
         for (int i = 1; i <= range; i++)
@@ -87,7 +87,7 @@ public class IntArrayGenerator {
                                                   Randomness rn) {
         if(base <= 1)
             throw new InvalidParameterException("Base should be  greater than 1.");
-        final ColumnDescription desc = new ColumnDescription(name, ContentsKind.Integer, false);
+        final ColumnDescription desc = new ColumnDescription(name, ContentsKind.Integer);
         final IntArrayColumn col = new IntArrayColumn(desc, size);
         final int max = (int) Math.round(Math.pow(base,range));
         for (int i = 0; i < size; i++) {

@@ -217,7 +217,7 @@ export class HeatMapView extends RemoteTableObjectView {
     histogram(): void {
         let rcol = new Range2DCollector([this.currentData.xData.description, this.currentData.yData.description],
                     this.tableSchema, [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
-                    this.page, this, this.currentData.samplingRate >= 1, null, false);
+                    this.page, this, this.currentData.samplingRate >= 1, null, false, false);
         rcol.setValue({ first: this.currentData.xData.stats, second: this.currentData.yData.stats });
         rcol.onCompleted();
     }
@@ -279,7 +279,7 @@ export class HeatMapView extends RemoteTableObjectView {
                 page, operation,
                 [this.currentData.xData.description, this.currentData.yData.description],
                 [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
-                this.tableSchema, this.currentData.samplingRate >= 1, true, this.originalTableId);
+                this.tableSchema, this.currentData.samplingRate >= 1, true, this.originalTableId, false);
         };
         rr.invoke(new ZipReceiver(this.getPage(), rr, how, this.originalTableId, renderer));
     }
@@ -320,7 +320,7 @@ export class HeatMapView extends RemoteTableObjectView {
             [this.currentData.yData.description, this.currentData.xData.description],
             this.tableSchema,
             [this.currentData.yData.distinctStrings, this.currentData.xData.distinctStrings],
-            this.page, this, this.currentData.samplingRate >= 1, null, true);
+            this.page, this, this.currentData.samplingRate >= 1, null, true, false);
         collector.setValue( {
             first: this.currentData.yData.stats,
             second: this.currentData.xData.stats });
@@ -477,7 +477,8 @@ export class HeatMapView extends RemoteTableObjectView {
         let renderer = new Filter2DReceiver(
             this.currentData.xData.description, this.currentData.yData.description,
             this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings,
-            this.tableSchema, this.page, this.currentData.samplingRate >= 1, rr, true, this.originalTableId);
+            this.tableSchema, this.page, this.currentData.samplingRate >= 1, rr, true,
+            this.originalTableId, false);
         rr.invoke(renderer);
     }
 }
@@ -494,7 +495,8 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
                 protected remoteObject: RemoteTableObject,
                 protected exact: boolean,
                 operation: ICancellable,
-                protected drawHeatMap: boolean  // true - heatMap, false - histogram
+                protected drawHeatMap: boolean,  // true - heatMap, false - histogram
+                protected relative: boolean
     ) {
         super(page, operation, "range2d");
     }
@@ -560,7 +562,7 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
             let rr = this.remoteObject.createHistogram2DRequest(arg);
             let renderer = new Histogram2DRenderer(this.page,
                 this.remoteObject, this.tableSchema,
-                this.cds, [this.stats.first, this.stats.second], samplingRate, this.ds, rr);
+                this.cds, [this.stats.first, this.stats.second], samplingRate, this.ds, rr, this.relative);
             if (this.operation != null)
                 rr.setStartTime(this.operation.startTime());
             rr.invoke(renderer);

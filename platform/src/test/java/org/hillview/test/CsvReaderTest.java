@@ -57,7 +57,6 @@ public class CsvReaderTest extends BaseTest {
         CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
         config.allowFewerColumns = false;
         config.hasHeaderRow = false;
-        config.allowMissingData = true;
         CsvFileLoader r = new CsvFileLoader(path.toString(), config, null);
         return r.load();
     }
@@ -69,7 +68,6 @@ public class CsvReaderTest extends BaseTest {
         CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
         config.allowFewerColumns = false;
         config.hasHeaderRow = false;
-        config.allowMissingData = true;
          config.separator = '\t';
         CsvFileLoader r = new CsvFileLoader(path.toString(), config, schemaPath.toString());
         ITable t = r.load();
@@ -83,7 +81,6 @@ public class CsvReaderTest extends BaseTest {
         CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
         config.allowFewerColumns = false;
         config.hasHeaderRow = false;
-        config.allowMissingData = true;
         config.separator = '\t';
         CsvFileLoader r = new CsvFileLoader(path.toString(), config, schemaPath.toString());
         System.out.println(path.getFileName().toString());
@@ -104,7 +101,6 @@ public class CsvReaderTest extends BaseTest {
         CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
         config.allowFewerColumns = false;
         config.hasHeaderRow = true;
-        config.allowMissingData = false;
         CsvFileLoader r = new CsvFileLoader(path.toString(), config, schemaPath.toString());
         ITable t = r.load();
         Assert.assertNotNull(t);
@@ -116,7 +112,6 @@ public class CsvReaderTest extends BaseTest {
         CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
         config.allowFewerColumns = false;
         config.hasHeaderRow = true;
-        config.allowMissingData = false;
         CsvFileLoader r = new CsvFileLoader(path.toString(), config, null);
         ITable t = r.load();
         Assert.assertNotNull(t);
@@ -128,7 +123,6 @@ public class CsvReaderTest extends BaseTest {
         CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
         config.allowFewerColumns = false;
         config.hasHeaderRow = true;
-        config.allowMissingData = false;
         CsvFileLoader r = new CsvFileLoader(path.toString(), config, null);
         ITable t = r.load();
         Assert.assertNotNull(t);
@@ -153,7 +147,6 @@ public class CsvReaderTest extends BaseTest {
             CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
             config.allowFewerColumns = false;
             config.hasHeaderRow = true;
-            config.allowMissingData = false;
             CsvFileLoader r = new CsvFileLoader(path, config, schemaPath.toString());
             ITable t = r.load();
             Assert.assertNotNull(t);
@@ -175,15 +168,15 @@ public class CsvReaderTest extends BaseTest {
 
     @Test
     public void writeSmallFileTest() throws IOException {
-        ColumnDescription nulls = new ColumnDescription("AllNulls", ContentsKind.String, true);
+        ColumnDescription nulls = new ColumnDescription("AllNulls", ContentsKind.String);
         StringListColumn first = new StringListColumn(nulls);
         first.append((String)null);
         first.append((String)null);
-        ColumnDescription empty = new ColumnDescription("AllEmpty", ContentsKind.String, true);
+        ColumnDescription empty = new ColumnDescription("AllEmpty", ContentsKind.String);
         StringListColumn second = new StringListColumn(empty);
         second.append("");
         second.append("");
-        ColumnDescription integers = new ColumnDescription("Integers", ContentsKind.Integer, true);
+        ColumnDescription integers = new ColumnDescription("Integers", ContentsKind.Integer);
         IntListColumn third = new IntListColumn(integers);
         third.append(0);
         third.appendMissing();

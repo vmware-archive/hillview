@@ -38,12 +38,12 @@ public abstract class FreqKList implements Serializable {
     /**
      * The size of the input table.
      */
-    public long totalRows;
+    public final long totalRows;
     /**
      * The number of times each row in the above table occurs in the original DataSet
      * (can be approximate depending on the context).
      */
-    public Object2IntOpenHashMap<RowSnapshot> hMap;
+    public final Object2IntOpenHashMap<RowSnapshot> hMap;
 
     public final double epsilon;
 

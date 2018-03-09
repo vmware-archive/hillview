@@ -84,7 +84,7 @@ public final class DurationArrayColumn extends DoubleArrayColumn
 
     @Override
     public IColumn convertKind(
-            ContentsKind kind, String newColName, IMembershipSet set, boolean allowMissing) {
-        return IDurationColumn.super.convertKind(kind, newColName, set, allowMissing);
+            ContentsKind kind, String newColName, IMembershipSet set) {
+        return IDurationColumn.super.convertKind(kind, newColName, set);
     }
 }

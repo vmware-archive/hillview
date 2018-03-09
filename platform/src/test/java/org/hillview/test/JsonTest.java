@@ -39,19 +39,19 @@ import java.util.List;
 public class JsonTest extends BaseTest {
     @Test
     public void convert() {
-        ColumnDescription cd0 = new ColumnDescription("Age", ContentsKind.Integer, false);
+        ColumnDescription cd0 = new ColumnDescription("Age", ContentsKind.Integer);
         String s = cd0.toJson();
-        Assert.assertEquals(s, "{\"name\":\"Age\",\"kind\":\"Integer\",\"allowMissing\":false}");
+        Assert.assertEquals(s, "{\"name\":\"Age\",\"kind\":\"Integer\"}");
 
-        ColumnDescription cd1 = new ColumnDescription("Weight", ContentsKind.Double, false);
+        ColumnDescription cd1 = new ColumnDescription("Weight", ContentsKind.Double);
         Schema schema = new Schema();
         schema.append(cd0);
         schema.append(cd1);
         s = schema.toJson();
-        Assert.assertEquals(s, "[{\"name\":\"Age\",\"kind\":\"Integer\",\"allowMissing\":false}," +
-        "{\"name\":\"Weight\",\"kind\":\"Double\",\"allowMissing\":false}]");
+        Assert.assertEquals(s, "[{\"name\":\"Age\",\"kind\":\"Integer\"}," +
+        "{\"name\":\"Weight\",\"kind\":\"Double\"}]");
 
-        ColumnDescription cd2 = new ColumnDescription("Name", ContentsKind.String, false);
+        ColumnDescription cd2 = new ColumnDescription("Name", ContentsKind.String);
 
         IntArrayColumn iac = new IntArrayColumn(cd0, 2);
         iac.set(0, 10);
@@ -77,9 +77,9 @@ public class JsonTest extends BaseTest {
 
         s = t.toJson();
         Assert.assertEquals(s, "{" +
-                "\"schema\":[{\"name\":\"Age\",\"kind\":\"Integer\",\"allowMissing\":false}," +
-                "{\"name\":\"Weight\",\"kind\":\"Double\",\"allowMissing\":false}," +
-                        "{\"name\":\"Name\",\"kind\":\"String\",\"allowMissing\":false}]," +
+                "\"schema\":[{\"name\":\"Age\",\"kind\":\"Integer\"}," +
+                "{\"name\":\"Weight\",\"kind\":\"Double\"}," +
+                        "{\"name\":\"Name\",\"kind\":\"String\"}]," +
                 "\"rowCount\":2," +
                 "\"rows\":[[10,90.0,\"John\"],[20,120.0,\"Mike\"]]" +
         "}");
@@ -105,7 +105,7 @@ public class JsonTest extends BaseTest {
         final String jsonSample = "short.schema";
         JsonFileLoader reader = new JsonFileLoader(jsonFolder + "/" + jsonSample, null);
         ITable table = reader.load();
-        Assert.assertEquals("Table[3x15]", table.toString());
+        Assert.assertEquals("Table[2x15]", table.toString());
     }
 
 //    @Test
