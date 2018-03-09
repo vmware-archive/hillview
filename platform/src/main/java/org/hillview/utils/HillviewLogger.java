@@ -69,9 +69,6 @@ public class HillviewLogger {
 
         if (filename != null) {
             try {
-                Handler[] hs = logger.getHandlers();
-                for (Handler h : hs)
-                    logger.removeHandler(h);
                 FileHandler fh = new FileHandler(filename);
                 fh.setFormatter(new SimpleFormatter() {
                     final String[] components = new String[5];

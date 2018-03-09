@@ -40,7 +40,6 @@ import java.util.stream.Stream;
  */
 public class DemoDataCleaner {
     static final String dataFolder = "../data/ontime";
-    static final String csvFile = "On_Time_Sample.csv";
     static final String schemaFile = "On_Time.schema";
 
     public static void main(String[] args) throws IOException {
@@ -74,7 +73,6 @@ public class DemoDataCleaner {
                     CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
                     config.allowFewerColumns = false;
                     config.hasHeaderRow = true;
-                    config.allowMissingData = false;
                     CsvFileLoader r = new CsvFileLoader(filename, config, schemaPath.toString());
 
                     System.out.println("Reading " + f);

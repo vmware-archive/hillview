@@ -41,6 +41,7 @@ public class RowSnapShotEqualityTest extends BaseTest {
             if (vrs.compareForEquality(vrs2, vrs2.getSchema())) {
                 Assert.assertEquals(i, j);
             }
+            Assert.assertNotNull(rs);
             if (rs.compareForEquality(vrs2, vrs2.getSchema())) {
                 Assert.assertEquals(i, j);
             }

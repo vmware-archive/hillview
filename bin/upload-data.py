@@ -40,13 +40,19 @@ def execute_command(command):
     print command
     subprocess.call(command, shell=True)
 
+created_folders = set()
+
 def create_remote_folder(host, folder, user):
+    shortcut = "" + host.name + ":" + folder;
+    if shortcut in created_folders:
+        return
     if user is None:
         user = ""
     else:
         user = user + "@"
     command = "ssh " + user + host.name + " 'mkdir -p " + folder + "'"
     execute_command(command)
+    created_folders.add(shortcut)
 
 def copy_file_to_remote_host(source, host, folder, user):
     create_remote_folder(host, folder, user)
@@ -84,6 +90,8 @@ def main():
     user = options.user
     if user is None:
         user = getpass.getuser()
+    if options.folder == None:
+        usage(parser)
     if options.schema != None:
         copy_schema(options.schema, options.folder, workers, options.user)
     copy_files(args, options.folder, workers, options.user)

@@ -100,8 +100,8 @@ th, td {
 }
 
 .hillviewPage:hover {
-    border: 2px solid green;
-    margin: 2px 0;
+    border: 1px solid green;
+    margin: 3px 1px;
 }
 
 /* close button */

@@ -28,22 +28,15 @@ import java.io.Serializable;
 public class ColumnDescription implements Serializable, IJson {
     public final String name;
     public final ContentsKind kind;
-    /**
-     * If true the column can have missing values (called NULL in databases).
-     */
-    public final boolean allowMissing;
 
     public ColumnDescription() {
         this.name = "";
         this.kind = ContentsKind.Category;
-        this.allowMissing = false;
     }
 
-    public ColumnDescription(final String name, final ContentsKind kind,
-                             final boolean allowMissing) {
+    public ColumnDescription(final String name, final ContentsKind kind) {
         this.name = name;
         this.kind = kind;
-        this.allowMissing = allowMissing;
         if (name.isEmpty())
             throw new RuntimeException("Column names cannot be empty");
     }
@@ -65,8 +58,6 @@ public class ColumnDescription implements Serializable, IJson {
         if ((o == null) || (getClass() != o.getClass())) return false;
 
         final ColumnDescription that = (ColumnDescription) o;
-
-        if (this.allowMissing != that.allowMissing) return false;
         return this.name.equals(that.name) && (this.kind == that.kind);
     }
 
@@ -74,7 +65,6 @@ public class ColumnDescription implements Serializable, IJson {
     public int hashCode() {
         int result = this.name.hashCode();
         result = (31 * result) + this.kind.hashCode();
-        result = (31 * result) + (this.allowMissing ? 1 : 0);
         return result;
     }
 }

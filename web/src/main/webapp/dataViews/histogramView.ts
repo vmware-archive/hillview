@@ -241,7 +241,7 @@ export class HistogramView extends HistogramViewBase {
             +bucketCount);
         let renderer = new HistogramRenderer(this.currentData.title, this.page,
             this.remoteObjectId, this.tableSchema, axisData, rr, this.currentData.samplingRate,
-            this.originalTableId);
+            this.originalTableId, true);
         rr.invoke(renderer);
     }
 
@@ -270,7 +270,7 @@ export class HistogramView extends HistogramViewBase {
         if (this.currentData == null)
             return;
         let rc = new RangeCollector(this.currentData.title, this.currentData.axisData.description,
-            this.tableSchema, this.currentData.axisData.distinctStrings, this.page, this, true, null);
+            this.tableSchema, this.currentData.axisData.distinctStrings, this.page, this, true, null, true);
         rc.setValue(this.currentData.axisData.stats);
         rc.onCompleted();
     }
@@ -411,7 +411,7 @@ class FilterReceiver extends RemoteTableRenderer {
         rr.chain(this.operation);
         let title = this.filterDescription();
         rr.invoke(new RangeCollector(title, this.columnDescription, this.tableSchema,
-                  this.allStrings, this.page, this.remoteObject, this.exact, this.operation));
+                  this.allStrings, this.page, this.remoteObject, this.exact, this.operation, false));
     }
 }
 
@@ -427,7 +427,8 @@ export class RangeCollector extends Renderer<BasicColStats> {
                 page: FullPage,
                 protected remoteObject: RemoteTableObject,
                 protected exact: boolean,  // if true we should do no sampling
-                operation: ICancellable) {
+                operation: ICancellable,
+                protected reusePage: boolean) {
         super(page, operation, "histogram");
     }
 
@@ -471,7 +472,7 @@ export class RangeCollector extends Renderer<BasicColStats> {
         let axisData = new AxisData(this.cd, this.stats, this.allStrings, bucketCount);
         let renderer = new HistogramRenderer(this.title, this.page,
             this.remoteObject.remoteObjectId, this.tableSchema,
-            axisData, rr, samplingRate, this.remoteObject.originalTableId);
+            axisData, rr, samplingRate, this.remoteObject.originalTableId, this.reusePage);
         rr.invoke(renderer);
     }
 
@@ -508,9 +509,12 @@ export class HistogramRenderer extends Renderer<Pair<Histogram, Histogram>> {
                 protected axisData: AxisData,
                 operation: ICancellable,
                 protected samplingRate: number,
-                originalTableId: RemoteObjectId) {
-        super(new FullPage(title, "Histogram", sourcePage), operation, "histogram");
-        sourcePage.insertAfterMe(this.page);
+                originalTableId: RemoteObjectId,
+                reusePage: boolean) {
+        super(reusePage ? sourcePage : new FullPage(title, "Histogram", sourcePage),
+            operation, "histogram");
+        if (!reusePage)
+            sourcePage.insertAfterMe(this.page);
         this.histogram = new HistogramView(remoteTableId, originalTableId, schema, this.page);
         this.page.setDataView(this.histogram);
     }
@@ -604,7 +608,7 @@ class MakeHistogram extends RemoteTableRenderer {
                 let rr = this.remoteObject.createRangeRequest(ds.getRangeInfo(this.colDesc.name));
                 rr.chain(operation);
                 rr.invoke(new RangeCollector(this.title, this.colDesc, this.schema, ds,
-                    this.page, this.remoteObject, this.samplingRate >= 1, rr));
+                    this.page, this.remoteObject, this.samplingRate >= 1, rr, false));
             };
             // Get the categorical data and invoke the continuation
             CategoryCache.instance.retrieveCategoryValues(this.remoteObject, [this.colDesc.name], this.page, cont);
@@ -613,7 +617,7 @@ class MakeHistogram extends RemoteTableRenderer {
                 {columnName: this.colDesc.name, allNames: null, seed: Seed.instance.get()});
             rr.chain(this.operation);
             rr.invoke(new RangeCollector(this.title, this.colDesc, this.schema, this.allStrings,
-                this.page, this.remoteObject, this.samplingRate >= 1, rr));
+                this.page, this.remoteObject, this.samplingRate >= 1, rr, false));
         }
     }
 }

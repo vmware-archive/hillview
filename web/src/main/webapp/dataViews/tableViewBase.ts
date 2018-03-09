@@ -127,7 +127,7 @@ export abstract class TableViewBase extends RemoteTableObjectView {
                 rr.chain(operation);
                 let title = "Histogram " + cds[0].name;
                 rr.invoke(new RangeCollector(title, cds[0], this.schema, distinct[0],
-                    this.getPage(), this, false, rr));
+                    this.getPage(), this, false, rr, false));
             }
         };
 

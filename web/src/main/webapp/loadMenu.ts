@@ -43,7 +43,7 @@ export class LoadMenu extends RemoteObject implements IDataView {
         this.advanced = false;
         this.top = document.createElement("div");
         this.testDatasetsMenu = new SubMenu([
-            { text: "Flights (all)",
+            { text: "Flights",
                 action: () => init.testDataset(0, this.page),
                 help: "The US flights dataset." },
             /*
@@ -57,6 +57,9 @@ export class LoadMenu extends RemoteObject implements IDataView {
                 action: () => init.testDataset(4, this.page),
                 help: "High dimensional dataset with images (only on local machine)." }
             */
+            { text: "Flights (all columns)",
+                action: () => init.testDataset(5, this.page),
+                help: "The US flights dataset -- all 110 columns." },
         ]);
         this.loadMenu = new SubMenu([
             { text: "System logs",
@@ -219,7 +222,7 @@ class CSVFileDialog extends Dialog {
             "Folder on the remote machines where all the CSV files are found.");
         this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "*.csv",
             "Shell pattern that describes the names of the files to load.");
-        this.addTextField("schemaFile", "Schema file (optional)", FieldKind.String, "data.schema",
+        this.addTextField("schemaFile", "Schema file (optional)", FieldKind.String, "schema",
             "The name of a JSON file that contains the schema of the data (leave empty if no schema file exists).");
         this.addBooleanField("hasHeader", "Header row", false, "True if first row in each file is a header row");
         this.setCacheTitle("CSVFileDialog");

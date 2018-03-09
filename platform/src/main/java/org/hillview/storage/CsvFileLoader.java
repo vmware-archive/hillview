@@ -51,10 +51,6 @@ public class CsvFileLoader extends TextFileLoader {
          * If true the file is expected to have a header row.
          */
         public boolean hasHeaderRow;
-        /**
-         * If true columns are allowed to contain "nulls".
-         */
-        public boolean allowMissingData;
     }
 
     private final CsvConfiguration configuration;
@@ -110,8 +106,7 @@ public class CsvFileLoader extends TextFileLoader {
                             col = this.actualSchema.newColumnName("Column_" + Integer.toString(index));
                         col = this.actualSchema.newColumnName(col);
                         ColumnDescription cd = new ColumnDescription(col,
-                                ContentsKind.String,
-                                this.configuration.allowMissingData);
+                                ContentsKind.String);
                         this.actualSchema.append(cd);
                         index++;
                     }
@@ -131,7 +126,7 @@ public class CsvFileLoader extends TextFileLoader {
 
                 for (int i = 0; i < columnCount; i++) {
                     ColumnDescription cd = new ColumnDescription("Column " + Integer.toString(i),
-                            ContentsKind.String, this.configuration.allowMissingData);
+                            ContentsKind.String);
                     this.actualSchema.append(cd);
                 }
             }
@@ -168,7 +163,7 @@ public class CsvFileLoader extends TextFileLoader {
                     GuessSchema.SchemaInfo info = gs.guess((IStringColumn)s);
                     if (info.kind != ContentsKind.String &&
                             info.kind != ContentsKind.None)  // all elements are null
-                        sealed[ci] = s.convertKind(info.kind, c.getName(), ms, info.allowMissing);
+                        sealed[ci] = s.convertKind(info.kind, c.getName(), ms);
                     else
                         sealed[ci] = s;
                 } else {

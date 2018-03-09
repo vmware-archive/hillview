@@ -24,7 +24,6 @@ import {TabularDisplay} from "../ui/tabularDisplay";
 import {TableView} from "./tableView";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {TableViewBase} from "./tableViewBase";
-import {combineMenu} from "../selectedObject";
 
 /**
  * This class is used to browse through the columns of a table schema
@@ -61,26 +60,19 @@ export class SchemaView extends TableViewBase {
                 text: "By Type",
                 action: () => {typeDialog.show();},
                 help: "Select Columns by type."
-            },
-            {
-                text: "By Allows Missing",
-                action: () => {missingDialog.show();},
-                help: "Select Columns by whether missing values are allowed."
             }
         ]);
         let menu = new TopMenu([
             {text: "View", subMenu: viewMenu, help: "Change the way the data is displayed."},
             {text: "Select", subMenu: selectMenu, help: "Select columns based on attributes." },
-            this.chartMenu(),
-            combineMenu(this, page.pageId)
+            this.chartMenu()
             ]);
         this.page.setMenu(menu);
         this.topLevel.appendChild(document.createElement("br"));
 
         this.display = new TabularDisplay();
-        this.display.setColumns(["#", "Name", "Type", "Allows missing"],
-            ["Column number", "Column name", "Type of data stored within the column",
-            "If this is true then the column can have 'missing' values."]);
+        this.display.setColumns(["#", "Name", "Type"],
+            ["Column number", "Column name", "Type of data stored within the column"]);
 
         /* Dialog box for selecting columns based on name*/
         let nameDialog = new Dialog("Select by name",
@@ -119,28 +111,9 @@ export class SchemaView extends TableViewBase {
             typeDialog.show()
         });
 
-        /* Dialog box for selecting columns based on whether they allow missing values.*/
-        let missingDialog = new Dialog("Select by Allows Missing", "Allows " +
-            "selecting/deselecting columns based on the Allows missing attribute");
-        missingDialog.addBooleanField("allowsMissing", "Allows Missing",true,
-            "Type of columns you wish to select");
-        missingDialog.addSelectField("action", "Action", actions, "Add",
-            "Add to or Remove from current selection");
-        missingDialog.setCacheTitle("SchemaMissingDialog");
-        missingDialog.setAction(() => {
-            let missingType: boolean = missingDialog.getBooleanValue("allowsMissing");
-            let action: string = missingDialog.getFieldValue("action");
-            this.missingAction(missingType, action);
-            this.display.highlightSelectedRows();
-        });
-        this.display.addRightClickHandler("Allows missing", (e: MouseEvent) => {
-            e.preventDefault();
-            missingDialog.show()
-        });
-
         for (let i = 0; i < schema.length; i++) {
             let row = this.display.addRow([(i + 1).toString(), schema[i].name,
-                schema[i].kind.toString(), schema[i].allowMissing.toString()]);
+                schema[i].kind.toString()]);
             row.oncontextmenu = e => this.createAndShowContextMenu(e);
         }
         this.topLevel.appendChild(this.display.getHTMLRepresentation());
@@ -221,22 +194,6 @@ export class SchemaView extends TableViewBase {
     private typeAction(selectedType:string, action: string) {
         for (let i = 0; i < this.schema.length; i++) {
             if (this.schema[i].kind == selectedType) {
-                if (action == "Add")
-                    this.display.selectedRows.add(i);
-                else if (action = "Remove")
-                    this.display.selectedRows.delete(i);
-            }
-        }
-    }
-
-    /**
-     *
-     * This method updates the set of selected columns by adding/removing all columns with a given value of
-     * AllowsMissing (either true of false).
-     */
-    private missingAction(missingType: boolean, action: string) {
-        for (let i = 0; i < this.schema.length; i++) {
-            if (this.schema[i].allowMissing == missingType) {
                 if (action == "Add")
                     this.display.selectedRows.add(i);
                 else if (action = "Remove")

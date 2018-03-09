@@ -87,7 +87,7 @@ public class MatrixTest extends BaseTest {
 
         List<IColumn> columns = new ArrayList<IColumn>();
         for (int i = 0; i < numCols; i++) {
-            ColumnDescription description = new ColumnDescription("Column" + i, ContentsKind.Double, true);
+            ColumnDescription description = new ColumnDescription("Column" + i, ContentsKind.Double);
             DoubleArrayColumn column = new DoubleArrayColumn(description, numRows);
             for (int j = 0; j < missing[i]; j++) {
                 column.setMissing(j);
