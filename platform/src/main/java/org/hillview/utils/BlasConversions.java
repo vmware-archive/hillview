@@ -73,7 +73,7 @@ public class BlasConversions {
     public static Table toTable(DoubleMatrix mat, List<String> colNames) {
         IColumn[] columns = new IColumn[mat.columns];
         for (int i = 0; i < mat.columns; i++) {
-            ColumnDescription cd = new ColumnDescription(colNames.get(i), ContentsKind.Double, false);
+            ColumnDescription cd = new ColumnDescription(colNames.get(i), ContentsKind.Double);
             DoubleMatrix vector = mat.get(new AllRange(), new PointRange(i));
             IColumn column = new DoubleArrayColumn(cd, vector.data);
             columns[i] = column;

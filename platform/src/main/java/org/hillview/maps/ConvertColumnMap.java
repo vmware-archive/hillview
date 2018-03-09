@@ -44,7 +44,6 @@ public class ConvertColumnMap extends AppendColumnMap {
     public IColumn createColumn(ITable table) {
         ColumnAndConverterDescription ccd = new ColumnAndConverterDescription(this.inputColName);
         ColumnAndConverter ccv = table.getLoadedColumn(ccd);
-        return ccv.column.convertKind(this.newKind, this.newColName, table.getMembershipSet(),
-                ccv.column.getDescription().allowMissing);
+        return ccv.column.convertKind(this.newKind, this.newColName, table.getMembershipSet());
     }
 }

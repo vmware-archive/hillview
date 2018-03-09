@@ -162,6 +162,9 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
         return this.MEMOIZE;
     }
 
+    /**
+     * Subscriber that handles map, flatMap and zip.
+     */
     private Subscriber<PartialResult<IDataSet>> createSubscriber(final Command command,
             final UUID id, final StreamObserver<PartialResponse> responseObserver) {
         return new Subscriber<PartialResult<IDataSet>>() {
@@ -199,7 +202,9 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                     if (pr.deltaValue != null) {
                         idsIndex = HillviewServer.this.save(pr.deltaValue);
                     }
-                    final OperationResponse<Integer> res = new OperationResponse<Integer>(idsIndex);
+                    final OperationResponse<PartialResult<Integer>> res = new
+                            OperationResponse<PartialResult<Integer>>(new
+                            PartialResult<Integer>(pr.deltaDone, idsIndex));
                     final byte[] bytes = SerializationUtils.serialize(res);
                     final PartialResponse result = PartialResponse.newBuilder()
                             .setSerializedOp(ByteString.copyFrom(bytes)).build();

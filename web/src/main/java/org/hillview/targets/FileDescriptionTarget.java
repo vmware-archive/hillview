@@ -48,8 +48,8 @@ public class FileDescriptionTarget extends RpcTarget {
 
     @HillviewRpc
     public void loadTable(RpcRequest request, RpcRequestContext context) {
-        IMap<IFileLoader, ITable> logReader = new LoadFilesMapper();
-        this.runMap(this.files, logReader, TableTarget::new, request, context);
+        IMap<IFileLoader, ITable> loader = new LoadFilesMapper();
+        this.runMap(this.files, loader, TableTarget::new, request, context);
     }
 }
 

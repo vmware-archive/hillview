@@ -21,7 +21,7 @@ import javax.annotation.Nullable;
 import java.io.Serializable;
 
 /**
- * Class used to wrap responses of map and sketch executions.
+ * Class used to wrap responses of the IDataSet methods.
  * @param <T> Return type of the result
  */
 public class OperationResponse<T> implements Serializable {

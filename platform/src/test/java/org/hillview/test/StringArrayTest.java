@@ -29,7 +29,7 @@ import static org.junit.Assert.*;
 */
 public class StringArrayTest extends BaseTest {
     private final int size = 100;
-    private final ColumnDescription desc = new ColumnDescription("test", ContentsKind.String, true);
+    private final ColumnDescription desc = new ColumnDescription("test", ContentsKind.String);
 
     private void checkContents(StringArrayColumn col) {
         for (int i = 0; i < col.sizeInRows(); i++) {

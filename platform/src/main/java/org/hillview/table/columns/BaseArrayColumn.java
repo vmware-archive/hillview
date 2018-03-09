@@ -20,31 +20,36 @@ package org.hillview.table.columns;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.IMutableColumn;
 
+import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.security.InvalidParameterException;
 import java.util.BitSet;
 
 /**
- * Adds a missing bit vector to BaseColumn (if missing values are allowed)
+ * Adds a missing bit vector to BaseColumn.
  */
 public abstract class BaseArrayColumn extends BaseColumn implements Serializable {
-    protected BitSet missing = new BitSet();
+    @Nullable
+    protected final BitSet missing;
 
     public BaseArrayColumn(final ColumnDescription description, final int size) {
         super(description);
         if (size < 0)
             throw new InvalidParameterException("Size must be positive: " + size);
-        if (description.allowMissing) {
+        if (!description.kind.isObject())
             this.missing = new BitSet(size);
-        }
+        else
+            this.missing = null;
     }
 
     @Override
     public boolean isMissing(final int rowIndex) {
+        assert this.missing != null;
         return this.missing.get(rowIndex);
     }
 
     public void setMissing(final int rowIndex) {
+        assert this.missing != null;
         this.missing.set(rowIndex);
     }
 

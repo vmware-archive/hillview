@@ -82,7 +82,7 @@ class TestUtil {
     }
 
     private static IColumn getRandDateArray(int size, String colName) {
-        final ColumnDescription desc = new ColumnDescription(colName, ContentsKind.Date, false);
+        final ColumnDescription desc = new ColumnDescription(colName, ContentsKind.Date);
         Instant[] data = new Instant[size];
         final Randomness rn = new Randomness(0);
         for (int i = 0; i < size; i++) {
@@ -94,7 +94,7 @@ class TestUtil {
     }
 
     private static IColumn getStringArray(int size, String colName) {
-        final ColumnDescription desc = new ColumnDescription(colName, ContentsKind.String, false);
+        final ColumnDescription desc = new ColumnDescription(colName, ContentsKind.String);
         final StringArrayColumn col = new StringArrayColumn(desc, size);
         final String[] firstNames = new String[] {"Emma", "Noah", "Liam", "Olivia", "Mason",
                                             "Sophia", "Yossarian", "Jacob", "Emily", "Charlotte"};
@@ -107,7 +107,7 @@ class TestUtil {
     }
 
     private static DoubleArrayColumn generateDoubleArray(final int size, String colName) {
-        final ColumnDescription desc = new ColumnDescription(colName, ContentsKind.Double, false);
+        final ColumnDescription desc = new ColumnDescription(colName, ContentsKind.Double);
         final DoubleArrayColumn col = new DoubleArrayColumn(desc, size);
         Randomness rn = new Randomness(0);
         for (int i = 0; i < size; i++) {

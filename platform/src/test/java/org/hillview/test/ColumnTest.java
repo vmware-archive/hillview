@@ -34,7 +34,7 @@ public class ColumnTest extends BaseTest {
         final IntArrayColumn col;
         final int size = 100;
 
-        final ColumnDescription desc = new ColumnDescription("test", ContentsKind.Integer, false);
+        final ColumnDescription desc = new ColumnDescription("test", ContentsKind.Integer);
         col = new IntArrayColumn(desc, size);
         for (int i = 0; i < size; i++)
             col.set(i, i);
@@ -51,7 +51,7 @@ public class ColumnTest extends BaseTest {
         final DoubleListColumn col;
         final int size = 10000000;
 
-        final ColumnDescription desc = new ColumnDescription("test", ContentsKind.Double, false);
+        final ColumnDescription desc = new ColumnDescription("test", ContentsKind.Double);
         col = new DoubleListColumn(desc);
         for (int i = 0; i < size; i++)
             col.append((double) i);
@@ -65,7 +65,7 @@ public class ColumnTest extends BaseTest {
 
     @Test
     public void testCategoryColumn() {
-        ColumnDescription desc = new ColumnDescription("Cat", ContentsKind.Category, true);
+        ColumnDescription desc = new ColumnDescription("Cat", ContentsKind.Category);
         CategoryListColumn col = new CategoryListColumn(desc);
         col.append("First");
         col.append("First");

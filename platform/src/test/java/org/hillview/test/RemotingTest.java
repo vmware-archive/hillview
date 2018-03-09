@@ -171,7 +171,7 @@ public class RemotingTest extends BaseTest {
     }
 
     @Test
-    public void testRaceSerialized() throws InterruptedException, ExecutionException {
+    public void testRaceSerialized() throws InterruptedException {
         final ExecutorService es = Executors.newFixedThreadPool(10);
         final SerializedSubject<Integer, Integer> obs1 = PublishSubject.<Integer>create().toSerialized();
         final SerializedSubject<Integer, Integer> obs2 = PublishSubject.<Integer>create().toSerialized();

@@ -24,6 +24,7 @@ import org.hillview.utils.Converters;
 import org.junit.Assert;
 import org.junit.Test;
 import rx.Observable;
+import rx.Observer;
 import rx.observers.TestSubscriber;
 
 import javax.annotation.Nullable;
@@ -90,7 +91,7 @@ public class DataSetTest extends BaseTest {
 
     // This test explores the semantics of publish/connect.
     @Test
-    public void RxJavaTest() {
+    public void rxJavaTest() {
         Observable<String> o = Observable
                 .just("a", "b", "c")
                 .map(s -> {
@@ -113,7 +114,7 @@ public class DataSetTest extends BaseTest {
         final ArrayList<IDataSet<Integer>> elements = new ArrayList<IDataSet<Integer>>(2);
         elements.add(ld1);
         elements.add(ld2);
-        final ParallelDataSet<Integer> par = new ParallelDataSet<>(elements);
+        final ParallelDataSet<Integer> par = new ParallelDataSet<Integer>(elements);
         final Increment increment = new Increment();
 
         final IDataSet<Integer> r1 = par.blockingMap(increment);
@@ -124,6 +125,43 @@ public class DataSetTest extends BaseTest {
         final IDataSet<Integer> r2 = r1.blockingMap(increment);
         final int result1 = r2.blockingSketch(sketch);
         Assert.assertEquals(result1, 13);
+    }
+
+    @Test
+    public void parallelProgressTest() {
+        int partitions = 10;
+        final ArrayList<IDataSet<Integer>> outer = new ArrayList<IDataSet<Integer>>(partitions);
+        for (int i=0; i < partitions; i++) {
+            final LocalDataSet<Integer> ld1 = new LocalDataSet<Integer>(4);
+            final LocalDataSet<Integer> ld2 = new LocalDataSet<Integer>(5);
+            final ArrayList<IDataSet<Integer>> elements = new ArrayList<IDataSet<Integer>>(2);
+            elements.add(ld1);
+            elements.add(ld2);
+            final ParallelDataSet<Integer> par = new ParallelDataSet<Integer>(elements);
+            par.setBundleInterval(0);
+            outer.add(par);
+        }
+
+        final ParallelDataSet<Integer> outd = new ParallelDataSet<Integer>(outer);
+        outd.setBundleInterval(0);
+        final Increment increment = new Increment();
+
+        Observable<PartialResult<IDataSet<Integer>>> flat = outd.map(increment);
+        Observer<PartialResult<IDataSet<Integer>>> obs = new
+                Observer<PartialResult<IDataSet<Integer>>>() {
+                    @Override
+                    public void onCompleted() { }
+
+                    @Override
+                    public void onError(Throwable throwable) { }
+
+                    @Override
+                    public void onNext(PartialResult<IDataSet<Integer>> pr) {
+                        // progress should never be greater than this.
+                        Assert.assertTrue(.05 >= pr.deltaDone);
+                    }
+                };
+        flat.toBlocking().subscribe(obs);
     }
 
     private class Sum implements ISketch<int[], Integer> {

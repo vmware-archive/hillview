@@ -574,7 +574,7 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     public void createColumn(RpcRequest request, RpcRequestContext context) {
         CreateColumnInfo info = request.parseArgs(CreateColumnInfo.class);
-        ColumnDescription desc = new ColumnDescription(info.outputColumn, info.outputKind, true);
+        ColumnDescription desc = new ColumnDescription(info.outputColumn, info.outputKind);
         CreateColumnJSMap map = new CreateColumnJSMap(info.jsFunction, info.schema, desc);
         this.runMap(this.table, map, TableTarget::new, request, context);
     }

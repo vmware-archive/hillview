@@ -17,6 +17,8 @@
 
 package org.hillview.test;
 
+import org.hillview.table.ColumnDescription;
+import org.hillview.table.Schema;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.rows.GuessSchema;
 import org.junit.Assert;
@@ -25,6 +27,15 @@ import org.junit.Test;
 import java.util.Arrays;
 
 public class SchemaTest extends BaseTest {
+    @Test
+    public void serializeSchemaTest() {
+        Schema schema = new Schema();
+        schema.append(new ColumnDescription("First", ContentsKind.Integer));
+        schema.append(new ColumnDescription("Second", ContentsKind.Date));
+        String string = schema.toJson();
+        Assert.assertEquals("[{\"name\":\"First\",\"kind\":\"Integer\"},{\"name\":\"Second\",\"kind\":\"Date\"}]", string);
+    }
+
     @Test
     public void guessSchemaTest() {
         String[] data = new String[] { "1", "3", "0", "1", "2", "1023" };
