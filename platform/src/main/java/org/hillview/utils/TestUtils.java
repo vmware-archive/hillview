@@ -41,7 +41,6 @@ public class TestUtils {
         CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
         config.allowFewerColumns = false;
         config.hasHeaderRow = true;
-        config.allowMissingData = false;
         CsvFileLoader r = new CsvFileLoader(path.toString(), config, schemaPath.toString());
 
         return r.load();

@@ -62,10 +62,9 @@ public interface IDoubleColumn extends IColumn {
     }
 
     @Override
-    default IColumn convertKind(ContentsKind kind, String newColName, IMembershipSet set,
-                                boolean allowMissing) {
+    default IColumn convertKind(ContentsKind kind, String newColName, IMembershipSet set) {
         IMutableColumn newColumn = this.allocateConvertedColumn(
-                kind, set, newColName, allowMissing);
+                kind, set, newColName);
         switch(kind) {
             case Category:
             case Json:

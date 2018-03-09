@@ -9,6 +9,7 @@
     <name>platform</name>
     <url>http://maven.apache.org</url>
 
+
     <!-- Generates findbugs report -->
     <reporting>
         <plugins>

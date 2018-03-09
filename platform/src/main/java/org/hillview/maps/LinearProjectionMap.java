@@ -76,7 +76,7 @@ public class LinearProjectionMap implements IMap<ITable, ITable> {
         // BlasConversions here.)
         for (int j = 0; j < this.numProjections; j++) {
             ColumnDescription colDesc = new ColumnDescription(
-                    this.newColNames[j], ContentsKind.Double, true);
+                    this.newColNames[j], ContentsKind.Double);
             IMembershipSet set = table.getMembershipSet();
             int colSize = table.getMembershipSet().getMax();
             IMutableColumn column;

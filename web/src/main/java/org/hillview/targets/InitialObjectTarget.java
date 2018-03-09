@@ -150,7 +150,6 @@ public class InitialObjectTarget extends RpcTarget {
         String dataFolder = "../data/";
         String fileNamePattern;
         CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
-        config.allowMissingData = true;
         config.allowFewerColumns = false;
         config.hasHeaderRow = true;
         String schemaFile;
@@ -163,15 +162,16 @@ public class InitialObjectTarget extends RpcTarget {
             dataFolder += "ontime/";
             schemaFile = "short.schema";
             fileNamePattern = "(\\d)+_(\\d)+\\.csv";
-        } else if (which == 2) {
-            fileNamePattern = "vrops.csv";
-            schemaFile = "vrops.schema";
         } else if (which == 3) {
             fileNamePattern = "mnist.csv";
             schemaFile = "mnist.schema";
         } else if (which == 4) {
             fileNamePattern = "segmentation.csv";
             schemaFile = "segmentation.schema";
+        } else if (which == 5) {
+            dataFolder += "ontime_big/";
+            fileNamePattern = ".*.csv.gz";
+            schemaFile = "schema";
         } else {
             throw new RuntimeException("Unexpected operation " + which);
 		}
@@ -188,7 +188,6 @@ public class InitialObjectTarget extends RpcTarget {
     public void findCsvFiles(RpcRequest request, RpcRequestContext context) {
         FileSetDescription desc = request.parseArgs(FileSetDescription.class);
         CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
-        config.allowMissingData = true;
         config.allowFewerColumns = true;
         config.hasHeaderRow = desc.headerRow;
 

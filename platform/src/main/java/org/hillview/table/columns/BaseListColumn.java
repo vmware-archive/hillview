@@ -42,7 +42,7 @@ public abstract class BaseListColumn extends BaseColumn implements IAppendableCo
 
     BaseListColumn(final ColumnDescription desc) {
         super(desc);
-        if (desc.allowMissing && !desc.kind.isObject())
+        if (!desc.kind.isObject())
             this.missing = new ArrayList<BitSet>();
         this.size = 0;
     }
@@ -109,8 +109,6 @@ public abstract class BaseListColumn extends BaseColumn implements IAppendableCo
     }
 
     void parseEmptyOrNull() {
-        if (!this.description.allowMissing)
-            throw new RuntimeException("Appending missing data to column " + this.toString());
         this.appendMissing();
     }
 

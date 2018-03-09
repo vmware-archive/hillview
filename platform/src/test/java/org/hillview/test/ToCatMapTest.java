@@ -38,8 +38,8 @@ import java.util.Set;
 
 public class ToCatMapTest extends BaseTest {
     public static Table tableWithStringColumn() {
-        ColumnDescription c0 = new ColumnDescription("Name", ContentsKind.String, false);
-        ColumnDescription c1 = new ColumnDescription("Age", ContentsKind.Integer, false);
+        ColumnDescription c0 = new ColumnDescription("Name", ContentsKind.String);
+        ColumnDescription c1 = new ColumnDescription("Age", ContentsKind.Integer);
         StringArrayColumn sac = new StringArrayColumn(c0,
                 new String[] { "Mike", "John", "Tom", "Bill", "Bill", "Smith", "Donald", "Bruce",
                         "Bob", "Frank", "Richard", "Steve", "Dave", "Mike", "Ed" });

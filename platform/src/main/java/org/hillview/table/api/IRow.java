@@ -32,6 +32,7 @@ public interface IRow extends Map<String, Object> {
     /**
      * Sometimes an IRow can be a sentinel value - a row that does not really exist.
      */
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     boolean exists();
 
     /**

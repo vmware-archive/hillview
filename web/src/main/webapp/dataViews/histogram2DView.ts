@@ -57,7 +57,7 @@ export class Histogram2DView extends HistogramViewBase {
         yPoints: number;
         samplingRate: number;
     };
-    protected normalized: boolean;  // true when bars are normalized to 100%
+    protected relative: boolean;  // true when bars are normalized to 100%
     protected legendRect: Rectangle;  // legend position on the screen; relative to canvas
     protected menu: TopMenu;
     protected legendSelectionRectangle: any;
@@ -107,19 +107,20 @@ export class Histogram2DView extends HistogramViewBase {
                 help: "Plot this data as a heatmap view."
             }, {
                 text: "relative/absolute",
-                action: () => { this.normalized = !this.normalized; this.refresh(); },
+                action: () => { this.relative = !this.relative; this.refresh(); },
                 help: "In an absolute plot the Y axis represents the size for a bucket. " +
                 "In a relative plot all bars are normalized to 100% on the Y axis."
             }]) },
             combineMenu(this, page.pageId)
         ]);
 
-        this.normalized = false;
+        this.relative = false;
         this.page.setMenu(this.menu);
     }
 
     public updateView(heatmap: HeatMap, xData: AxisData, yData: AxisData, cdf: Histogram,
-                      samplingRate: number, elapsedMs: number) : void {
+                      samplingRate: number, relative: boolean, elapsedMs: number) : void {
+        this.relative = relative;
         this.page.reportTime(elapsedMs);
         this.plot.clear();
         this.legendPlot.clear();
@@ -162,7 +163,7 @@ export class Histogram2DView extends HistogramViewBase {
             .on("drag", () => this.dragMove())
             .on("end", () => this.dragCanvasEnd());
 
-        this.plot.setData(heatmap, cdf, xData, yData, samplingRate, this.normalized);
+        this.plot.setData(heatmap, cdf, xData, yData, samplingRate, this.relative);
         this.plot.draw();
         this.cdfPlot.setData(cdf);
         this.cdfPlot.draw();
@@ -213,7 +214,7 @@ export class Histogram2DView extends HistogramViewBase {
     heatmap(): void {
         let rcol = new Range2DCollector([this.currentData.xData.description, this.currentData.yData.description],
             this.tableSchema, [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
-            this.page, this, this.currentData.samplingRate >= 1, null, true);
+            this.page, this, this.currentData.samplingRate >= 1, null, true, false);
         rcol.setValue({ first: this.currentData.xData.stats, second: this.currentData.yData.stats });
         rcol.onCompleted();
     }
@@ -230,7 +231,8 @@ export class Histogram2DView extends HistogramViewBase {
                 page, operation,
                 [this.currentData.xData.description, this.currentData.yData.description],
                 [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
-                this.tableSchema, this.currentData.samplingRate >= 1, false, this.originalTableId);
+                this.tableSchema, this.currentData.samplingRate >= 1, false, this.originalTableId,
+                this.relative);
         };
         rr.invoke(new ZipReceiver(this.getPage(), rr, how, this.originalTableId, renderer));
     }
@@ -242,7 +244,7 @@ export class Histogram2DView extends HistogramViewBase {
             [this.currentData.yData.description, this.currentData.xData.description],
             this.tableSchema,
             [this.currentData.yData.distinctStrings, this.currentData.xData.distinctStrings],
-            this.page, this, true, null, false);
+            this.page, this, true, null, false, this.relative);
         rc.setValue({ first: this.currentData.yData.stats, second: this.currentData.xData.stats });
         rc.onCompleted();
     }
@@ -254,7 +256,7 @@ export class Histogram2DView extends HistogramViewBase {
             [this.currentData.xData.description, this.currentData.yData.description],
             this.tableSchema,
             [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
-            this.page, this, true, null, false);
+            this.page, this, true, null, false, this.relative);
         rc.setValue({ first: this.currentData.xData.stats,
             second: this.currentData.yData.stats });
         rc.onCompleted();
@@ -307,7 +309,7 @@ export class Histogram2DView extends HistogramViewBase {
             [this.currentData.xData.stats, this.currentData.yData.stats],
             samplingRate,
             [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
-            rr);
+            rr, this.relative);
         rr.invoke(renderer);
     }
 
@@ -329,6 +331,7 @@ export class Histogram2DView extends HistogramViewBase {
             this.currentData.yData,
             this.currentData.cdf,
             this.currentData.samplingRate,
+            this.relative,
             0);
         this.page.scrollIntoView();
     }
@@ -357,7 +360,7 @@ export class Histogram2DView extends HistogramViewBase {
         let y = Math.round(this.plot.yScale.invert(mouseY));
         let ys = significantDigits(y);
         let scale = 1.0;
-        if (this.normalized)
+        if (this.relative)
             ys += "%";
 
         // Find out the rectangle where the mouse is
@@ -373,7 +376,7 @@ export class Histogram2DView extends HistogramViewBase {
             total += this.currentData.heatMap.histogramMissingY.buckets[xIndex];
             if (total > 0) {
                 // There could be no data for this specific x value
-                if (this.normalized)
+                if (this.relative)
                     scale = 100 / total;
 
                 let yTotal = 0;
@@ -531,7 +534,8 @@ export class Histogram2DView extends HistogramViewBase {
             this.currentData.yData.distinctStrings,
             this.tableSchema,
             this.page, this.currentData.samplingRate >= 1.0, rr, false,
-            this.originalTableId);
+            this.originalTableId,
+            this.relative);
         rr.invoke(renderer);
     }
 
@@ -576,7 +580,8 @@ export class Filter2DReceiver extends RemoteTableRenderer {
                 protected exact: boolean,
                 operation: ICancellable,
                 protected heatMap: boolean,
-                originalTableId: RemoteObjectId) {
+                originalTableId: RemoteObjectId,
+                protected relative: boolean) {
         super(page, operation, "Filter", originalTableId);
     }
 
@@ -587,7 +592,7 @@ export class Filter2DReceiver extends RemoteTableRenderer {
         let rx = new RangeInfo(this.xColumn.name, this.xDs != null ? this.xDs.uniqueStrings : null);
         let ry = new RangeInfo(this.yColumn.name, this.yDs != null ? this.yDs.uniqueStrings : null);
         let rr = this.remoteObject.createRange2DRequest(rx, ry);
-        rr.invoke(new Range2DCollector(cds, this.tableSchema, ds, this.page, this.remoteObject, this.exact, rr, this.heatMap));
+        rr.invoke(new Range2DCollector(cds, this.tableSchema, ds, this.page, this.remoteObject, this.exact, rr, this.heatMap, this.relative));
     }
 }
 
@@ -603,7 +608,8 @@ export class Make2DHistogram extends RemoteTableRenderer {
                        private schema: Schema,
                        private exact: boolean,
                        private heatMap: boolean,
-                       originalTableId: RemoteObjectId) {
+                       originalTableId: RemoteObjectId,
+                       private relative: boolean) {
         super(page, operation, "Reload", originalTableId);
     }
 
@@ -614,7 +620,8 @@ export class Make2DHistogram extends RemoteTableRenderer {
         let rr = this.remoteObject.createRange2DRequest(rx, ry);
         rr.chain(this.operation);
         rr.invoke(new Range2DCollector(
-            this.colDesc, this.schema, this.ds, this.page, this.remoteObject, this.exact, rr, this.heatMap));
+            this.colDesc, this.schema, this.ds, this.page, this.remoteObject,
+            this.exact, rr, this.heatMap, this.relative));
     }
 }
 
@@ -632,7 +639,8 @@ export class Histogram2DRenderer extends Renderer<Pair<HeatMap, Histogram>> {
                 protected stats: BasicColStats[],
                 protected samplingRate: number,
                 protected uniqueStrings: DistinctStrings[],
-                operation: RpcRequest<PartialResult<Pair<HeatMap, Histogram>>>) {
+                operation: RpcRequest<PartialResult<Pair<HeatMap, Histogram>>>,
+                protected relative: boolean) {
         super(new FullPage("2D Histogram " + cds[0].name + ", " + cds[1].name, "2DHistogram", page),
             operation, "histogram");
         page.insertAfterMe(this.page);
@@ -660,7 +668,7 @@ export class Histogram2DRenderer extends Renderer<Pair<HeatMap, Histogram>> {
         let xAxisData = new AxisData(this.cds[0], this.stats[0], this.uniqueStrings[0], xPoints);
         let yAxisData = new AxisData(this.cds[1], this.stats[1], this.uniqueStrings[1], yPoints);
         this.histogram.updateView(heatMap, xAxisData, yAxisData, cdf,
-            this.samplingRate, this.elapsedMilliseconds());
+            this.samplingRate, this.relative, this.elapsedMilliseconds());
     }
 }
 
