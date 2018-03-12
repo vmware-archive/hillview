@@ -17,6 +17,8 @@
 
 package org.hillview.test;
 
+import jdk.nashorn.api.scripting.NashornScriptEngineFactory;
+import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.maps.CreateColumnJSMap;
@@ -27,14 +29,12 @@ import org.hillview.table.api.ITable;
 import org.hillview.table.membership.SparseMembershipSet;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.VirtualRowSnapshot;
+import org.hillview.utils.Converters;
 import org.hillview.utils.DateParsing;
 import org.junit.Assert;
 import org.junit.Test;
 
-import javax.script.Invocable;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
+import javax.script.*;
 import java.time.Instant;
 
 /**
@@ -43,9 +43,25 @@ import java.time.Instant;
 public class JavascriptTest {
     @Test
     public void helloWorldTest() throws ScriptException {
+        System.out.println("Nahorn engine version " +
+                        new NashornScriptEngineFactory().getEngineVersion());
         ScriptEngineManager factory = new ScriptEngineManager();
         ScriptEngine engine = factory.getEngineByName("nashorn");
         engine.eval("print('Hello, World from JavaScript!');");
+    }
+
+    @Test
+    public void testJSDate() throws ScriptException {
+        ScriptEngineManager factory = new ScriptEngineManager();
+        ScriptEngine engine = factory.getEngineByName("nashorn");
+        Object obj = engine.eval("new Date(2010, 1, 2);");
+        ScriptObjectMirror jsDate = (ScriptObjectMirror)obj;
+        double timestampLocal = (double)jsDate.callMember("getTime");
+        Instant instant = Converters.toDate(timestampLocal);
+        String someDate = "2010-02-02";
+        DateParsing parsing = new DateParsing(someDate);
+        Instant expected = parsing.parse(someDate);
+        Assert.assertEquals(expected, instant);
     }
 
     @Test
@@ -92,21 +108,21 @@ public class JavascriptTest {
         ITable table = ToCatMapTest.tableWithStringColumn();
         LocalDataSet<ITable> lds = new LocalDataSet<ITable>(table);
         ColumnDescription outCol = new ColumnDescription("Date", ContentsKind.Date);
-        String function = "function map(row) { return new Date(1970 + row['Age'], 1, 2); }";
+        String function = "function map(row) { return new Date(1970 + row['Age'], 0, 1); }";
         CreateColumnJSMap map = new CreateColumnJSMap(function, table.getSchema(), outCol);
         IDataSet<ITable> mapped = lds.blockingMap(map);
         ITable outTable = ((LocalDataSet<ITable>)mapped).data;
         String data = outTable.toLongString(3);
 
-        String someDate = "1990-02-02";
+        String someDate = "1990-01-01";
         DateParsing parsing = new DateParsing(someDate);
         Instant someInstant = parsing.parse(someDate);
         String s = someInstant.toString();
         String suffix = s.substring(s.indexOf('T'));
         Assert.assertEquals("Table[3x15]\n" +
-                "Mike,20,1990-02-02" + suffix + "\n" +
-                "John,30,2000-02-02" + suffix + "\n" +
-                "Tom,10,1980-02-02" + suffix + "\n", data);
+                "Mike,20,1990-01-01" + suffix + "\n" +
+                "John,30,2000-01-01" + suffix + "\n" +
+                "Tom,10,1980-01-01" + suffix + "\n", data);
     }
 
     @Test
@@ -150,7 +166,7 @@ public class JavascriptTest {
         LocalDataSet<ITable> lds = new LocalDataSet<ITable>(table);
         // Add a date column
         ColumnDescription outCol = new ColumnDescription("Date", ContentsKind.Date);
-        String function = "function map(row) { return new Date(1970 + row['Age'], 1, 2); }";
+        String function = "function map(row) { return new Date(1970 + row['Age'], 0, 1); }";
         CreateColumnJSMap map = new CreateColumnJSMap(function, table.getSchema(), outCol);
         IDataSet<ITable> mapped = lds.blockingMap(map);
         // Convert the date column
@@ -165,14 +181,14 @@ public class JavascriptTest {
         ITable outTable = ((LocalDataSet<ITable>)mapped).data;
         String data = outTable.toLongString(3);
 
-        String someDate = "1990-02-02";
+        String someDate = "1990-01-01";
         DateParsing parsing = new DateParsing(someDate);
         Instant someInstant = parsing.parse(someDate);
         String s = someInstant.toString();
         String suffix = s.substring(s.indexOf('T'));
         Assert.assertEquals("Table[4x15]\n" +
-                "Mike,20,1990-02-02" + suffix + ",2000-02-02" + suffix + "\n" +
-                "John,30,2000-02-02" + suffix + ",2010-02-02" + suffix + "\n" +
-                "Tom,10,1980-02-02" + suffix + ",1990-02-02" + suffix + "\n", data);
+                "Mike,20,1990-01-01" + suffix + ",2000-01-01" + suffix + "\n" +
+                "John,30,2000-01-01" + suffix + ",2010-01-01" + suffix + "\n" +
+                "Tom,10,1980-01-01" + suffix + ",1990-01-01" + suffix + "\n", data);
     }
 }

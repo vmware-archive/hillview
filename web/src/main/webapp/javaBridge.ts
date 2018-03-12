@@ -19,8 +19,6 @@
 // TypeScript and Java.  These must be changed carefully, and usually in both parts, or
 // subtle bugs may happen.  Most often these classes have the same name in Java and TypeScript.
 
-import {Seed} from "./util";
-
 export type RemoteObjectId = string;
 
 export type ContentsKind = "Category" | "Json" | "String" | "Integer" |
@@ -142,18 +140,20 @@ export interface RowSnapshot {
     values: any[];
 }
 
+export interface FileSizeSketchInfo {
+    fileCount: number;
+    totalSize: number;
+}
+
 export interface ColumnSortOrientation {
     columnDescription: IColumnDescription;
     isAscending: boolean;
 }
 
 export class RangeInfo {
-    seed: number;
     constructor(public columnName: string,
                 // The following is only used for categorical columns
-                public allNames?: string[]) {
-        this.seed = Seed.instance.get();
-    }
+                public allNames?: string[]) {}
 }
 
 export interface Histogram {

@@ -27,4 +27,9 @@ public interface IFileLoader {
      * Read the file, return a table.
      */
     ITable load();
+
+    /**
+     * The size of the file in bytes.
+     */
+    long getSizeInBytes();
 }

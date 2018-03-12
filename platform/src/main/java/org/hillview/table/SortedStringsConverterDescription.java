@@ -45,8 +45,6 @@ public class SortedStringsConverterDescription implements IStringConverterDescri
     public SortedStringsConverterDescription(String[] boundaries, int min, int max) {
         this.min = min;
         this.max = max;
-        if (boundaries.length < 1)
-            throw new RuntimeException("Cannot have empty boundaries");
         this.boundaries = boundaries;
     }
 
@@ -66,7 +64,7 @@ public class SortedStringsConverterDescription implements IStringConverterDescri
 
         public Converter() {
             this.memoizedResults = new Object2DoubleOpenHashMap<String>();
-            this.keyNotFound = (boundaries.length) + 2;
+            this.keyNotFound = boundaries.length + 2;
         }
 
         @Override
@@ -82,6 +80,9 @@ public class SortedStringsConverterDescription implements IStringConverterDescri
 
         public double computeIndex(@Nullable String string) {
             SortedStringsConverterDescription desc = SortedStringsConverterDescription.this;
+            if (desc.boundaries.length < 1)
+                throw new RuntimeException("Looking up string when there are no boundaries: " +
+                        string);
             int index = Arrays.binarySearch(desc.boundaries, string);
             // This method returns index of the search key, if it is contained in the array,
             // else it returns (-(insertion point) - 1). The insertion point is the point

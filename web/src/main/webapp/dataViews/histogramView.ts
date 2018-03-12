@@ -613,8 +613,7 @@ class MakeHistogram extends RemoteTableRenderer {
             // Get the categorical data and invoke the continuation
             CategoryCache.instance.retrieveCategoryValues(this.remoteObject, [this.colDesc.name], this.page, cont);
         } else {
-            let rr = this.remoteObject.createRangeRequest(
-                {columnName: this.colDesc.name, allNames: null, seed: Seed.instance.get()});
+            let rr = this.remoteObject.createRangeRequest({columnName: this.colDesc.name, allNames: null});
             rr.chain(this.operation);
             rr.invoke(new RangeCollector(this.title, this.colDesc, this.schema, this.allStrings,
                 this.page, this.remoteObject, this.samplingRate >= 1, rr, false));

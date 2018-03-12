@@ -38,7 +38,7 @@ Here is an example config.yaml file:
   backend_port: 3569
   # Java heap size for Hillview service
   # Can be overridden for each machine
-  default_heap_size: "5000m"
+  default_heap_size: "5g"
   # Folder where the hillview service is installed on remote machines
   service_folder: "~"
   # Version of Apache Tomcat to deploy

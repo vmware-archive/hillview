@@ -21,6 +21,7 @@ import org.hillview.*;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IMap;
 import org.hillview.maps.LoadFilesMapper;
+import org.hillview.sketches.FileSizeSketch;
 import org.hillview.storage.IFileLoader;
 import org.hillview.table.api.ITable;
 
@@ -44,6 +45,12 @@ public class FileDescriptionTarget extends RpcTarget {
         @Nullable
         String schemaFilename;
         boolean headerRow;
+    }
+
+    @HillviewRpc
+    public void getFileSize(RpcRequest request, RpcRequestContext context) {
+        FileSizeSketch sk = new FileSizeSketch();
+        this.runCompleteSketch(this.files, sk, (e, c) -> e, request, context);
     }
 
     @HillviewRpc

@@ -183,7 +183,6 @@ public final class TableTarget extends RpcTarget {
         // The following are only used for categorical columns
         @Nullable
         String[] allNames;
-        long seed;
 
         ColumnAndConverterDescription getColumn() {
             IStringConverterDescription converter;
@@ -196,14 +195,14 @@ public final class TableTarget extends RpcTarget {
         }
 
         BasicColStatSketch getBasicStatsSketch() {
-            return new BasicColStatSketch(this.getColumn(), 0, 1.0, this.seed);
+            return new BasicColStatSketch(this.getColumn(), 0, 1.0, 0);
         }
     }
 
     @HillviewRpc
     public void range(RpcRequest request, RpcRequestContext context) {
         RangeInfo info = request.parseArgs(RangeInfo.class);
-        BasicColStatSketch sk = new BasicColStatSketch(info.getColumn(), 0, 1.0, info.seed);
+        BasicColStatSketch sk = info.getBasicStatsSketch();
         this.runSketch(this.table, sk, request, context);
     }
 
@@ -523,9 +522,14 @@ public final class TableTarget extends RpcTarget {
         RpcObjectManager.instance.retrieveTarget(new RpcTarget.Id(hhi.hittersId), true, observer);
     }
 
+    static class HLogLogInfo {
+        String columnName = "";
+        long seed;
+    }
+
     @HillviewRpc
     public void hLogLog(RpcRequest request, RpcRequestContext context) {
-        RangeInfo col = request.parseArgs(RangeInfo.class);
+        HLogLogInfo col = request.parseArgs(HLogLogInfo.class);
         HLogLogSketch sketch = new HLogLogSketch(col.columnName, col.seed);
         this.runSketch(this.table, sketch, request, context);
     }

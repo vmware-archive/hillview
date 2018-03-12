@@ -114,7 +114,7 @@ export class Test {
         this.addProgram([{
             description: "Load all flights",
             cond: () => true,
-            cont: () => findElement("#hillviewPage0 #topMenu #Flights__all_").click()
+            cont: () => findElement("#hillviewPage0 #topMenu #Flights").click()
         }, {
             description: "Show all columns",
             cond: () => findElement("#hillviewPage1 .idle") != null,

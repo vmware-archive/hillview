@@ -990,12 +990,13 @@ export class RemoteTableReceiver extends RemoteTableRenderer {
      * @param {FullPage} page            Parent page initiating this request.
      * @param {ICancellable} operation   Operation that will bring the results.
      * @param {string} title             Title to use for resulting page; if null the parent page is used.
+     * @param progressInfo               Description of the files that are being loaded.
      * @param forceTableView             If true the resulting view is always a table.
      * @param originalTableId            Id of original table from which everything derives.
      */
     constructor(page: FullPage, operation: ICancellable, protected title: string,
-                protected forceTableView: boolean, originalTableId: RemoteObjectId) {
-        super(page, operation, "Get data", originalTableId);
+                progressInfo: string, protected forceTableView: boolean, originalTableId: RemoteObjectId) {
+        super(page, operation, progressInfo, originalTableId);
     }
 
     public run(): void {
@@ -1122,7 +1123,7 @@ class CorrelationMatrixReceiver extends RemoteTableRenderer {
         rr.chain(this.operation);
         // TODO: this should use TableOperationCompleted
         rr.invoke(new RemoteTableReceiver(
-            this.page, rr, "Data with PCA projection columns", true, this.tv.originalTableId));
+            this.page, rr, "Data with PCA projection columns", "Reading", true, this.tv.originalTableId));
     }
 }
 

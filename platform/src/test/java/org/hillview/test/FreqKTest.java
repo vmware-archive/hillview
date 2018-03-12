@@ -39,7 +39,6 @@ import java.util.List;
 import static org.junit.Assert.assertTrue;
 
 public class FreqKTest extends BaseTest {
-
     public void checkList(FreqKList fkList, Schema schema) {
         NextKList nkList = fkList.getTop(schema);
         for (int i = 1; i < Converters.checkNull(nkList.count).size(); i++) {

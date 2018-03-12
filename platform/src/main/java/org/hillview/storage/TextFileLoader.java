@@ -51,6 +51,14 @@ public abstract class TextFileLoader implements IFileLoader {
         this.currentToken = null;
     }
 
+    @Override
+    public long getSizeInBytes() {
+        File file = new File(this.filename);
+        if (file.exists())
+            return file.length();
+        return 0;
+    }
+
     Reader getFileReader() {
         try {
             HillviewLogger.instance.info("Reading file", "{0}", this.filename);
