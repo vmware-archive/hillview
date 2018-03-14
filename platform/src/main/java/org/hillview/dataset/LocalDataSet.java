@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * A LocalDataSet is an implementation of IDataSet which contains exactly one
@@ -49,6 +50,9 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
      */
     private final boolean separateThread;
 
+    /**
+     * Work is executed on this thread.
+     */
     private static final Scheduler scheduler;
 
     static {
@@ -102,8 +106,13 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
     @Override
     public <S> Observable<PartialResult<IDataSet<S>>> map(final IMap<T, S> mapper) {
         // Actual map computation performed lazily when observable is subscribed to.
+        final AtomicBoolean interrupted = new AtomicBoolean(false);
         final Callable<IDataSet<S>> callable = () -> {
             try {
+                if (interrupted.get()) {
+                    HillviewLogger.instance.info("Map interrupted", "{0}", this);
+                    throw new InterruptedException("Unsubscribed");
+                }
                 HillviewLogger.instance.info("Starting map", "{0}", mapper.asString());
                 S result = mapper.apply(LocalDataSet.this.data);
                 HillviewLogger.instance.info("Completed map", "{0}", mapper.asString());
@@ -112,7 +121,13 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
                 throw new Exception(t);
             }
         };
-        final Observable<IDataSet<S>> mapped = Observable.fromCallable(callable);
+        final Observable<IDataSet<S>> mapped = Observable.fromCallable(callable)
+                .doOnUnsubscribe(
+                        () -> {
+                            HillviewLogger.instance.info("Unsubscribed map",
+                                    "{0}", this);
+                            interrupted.set(true);
+                        });
         // Wrap the produced data in a PartialResult
         Observable<PartialResult<IDataSet<S>>> data = mapped.map(PartialResult::new);
         return this.schedule(data);

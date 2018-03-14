@@ -184,6 +184,7 @@ public class ParquetReader extends TextFileLoader {
 
             for (IAppendableColumn c: cols)
                 c.seal();
+            this.close(null);
             return new Table(cols);
         } catch (IOException ex) {
             throw new RuntimeException(ex);

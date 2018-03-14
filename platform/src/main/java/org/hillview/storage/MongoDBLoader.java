@@ -73,28 +73,6 @@ public class MongoDBLoader extends JsonFileLoader {
         return el;
     }
 
-    static final int partitionSize = 50 * 1000 * 1000;
-
-    /**
-     * Returns a JSON document that describes a series of parallel cursors
-     * that can be used to read from this database.
-    public List<Cursor> getParallelCursors() {
-        Document command = new Document("collStats", info.table);
-        Document stats = this.database.runCommand(command);
-        int size = stats.getInteger("size");
-        int partitionCount = 2; // (int)Math.ceil((double)size / partitionSize);
-
-        DBCollection coll = this.oldDatabase.getCollection(info.table);
-        ParallelScanOptions options = ParallelScanOptions
-                .builder()
-                //.numCursors(partitionCount)
-                .batchSize(1)
-                .build();
-        List<Cursor> cursors = coll.parallelScan(options);
-        return cursors;
-    }
-     */
-
     public ITable load(int offset, int count) {
         MongoCollection<Document> collection = this.database.getCollection(info.table);
         Iterable<Document> cursor = collection.find().skip(offset).limit(count);
@@ -109,6 +87,8 @@ public class MongoDBLoader extends JsonFileLoader {
         // reopen the iterator
         for (JsonElement e: Linq.map(cursor, MongoDBLoader::convert))
             this.append(columns, e);
-        return new Table(columns);
+        ITable table = new Table(columns);
+        this.close(null);
+        return table;
     }
 }

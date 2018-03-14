@@ -174,13 +174,7 @@ public class CsvFileLoader extends TextFileLoader {
 
             return new Table(sealed);
         } finally {
-            try {
-                if (file != null)
-                    file.close();
-            } catch (IOException e) {
-                //noinspection ThrowFromFinallyBlock
-                throw new RuntimeException(e);
-            }
+            this.close(file);
         }
     }
 }

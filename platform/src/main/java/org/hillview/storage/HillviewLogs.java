@@ -87,6 +87,7 @@ public class HillviewLogs {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
+            this.close(null);
             return new Table(this.columns);
         }
     }

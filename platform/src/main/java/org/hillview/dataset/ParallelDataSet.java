@@ -166,6 +166,8 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
                         .map(e -> new PartialResult<IDataSet<S>>(e, null));
         Observable<PartialResult<IDataSet<S>>> result = dones.mergeWith(mapResult);
         result = bundle(result, new PRDataSetMonoid<S>());
+        result.doOnUnsubscribe(() -> HillviewLogger.instance.info("Map has been unsubscribed",
+                "{0}", this));
         return result;
     }
 

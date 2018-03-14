@@ -464,6 +464,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             final UnsubscribeOperation unsubscribeOp = SerializationUtils.deserialize(bytes);
             final Subscription subscription = this.operationToObservable.remove(unsubscribeOp.id);
             if (subscription != null) {
+                HillviewLogger.instance.info("Unsubscribing", "{0}", unsubscribeOp.id);
                 subscription.unsubscribe();
             }
         } catch (final Exception e) {

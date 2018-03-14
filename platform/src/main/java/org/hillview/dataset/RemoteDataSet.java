@@ -208,6 +208,7 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
      * logic on the remote end is idempotent.
      */
     private void unsubscribe(final UUID id) {
+        HillviewLogger.instance.info("Unsubscribe called", "{0}", id);
         final UnsubscribeOperation op = new UnsubscribeOperation(id);
         final byte[] serializedOp = SerializationUtils.serialize(op);
         final Command command = Command.newBuilder()

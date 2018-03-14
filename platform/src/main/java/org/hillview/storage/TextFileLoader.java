@@ -43,6 +43,14 @@ public abstract class TextFileLoader implements IFileLoader {
     private String currentToken;
     protected boolean allowFewerColumns;
 
+    // Some of these may be null
+    @Nullable
+    private InputStream inputStream = null;
+    @Nullable
+    private GZIPInputStream gzipStream = null;
+    @Nullable
+    private BOMInputStream bomStream = null;
+
     public TextFileLoader(String path) {
         this.filename = path;
         this.currentRow = 0;
@@ -62,18 +70,40 @@ public abstract class TextFileLoader implements IFileLoader {
     Reader getFileReader() {
         try {
             HillviewLogger.instance.info("Reading file", "{0}", this.filename);
-            InputStream fis = new FileInputStream(this.filename);
-            if (this.filename.toLowerCase().endsWith(".gz"))
-                fis = new GZIPInputStream(fis);
-            BOMInputStream bos = new BOMInputStream(fis,
+            this.inputStream = new FileInputStream(this.filename);
+            InputStream fis = this.inputStream;
+            if (this.filename.toLowerCase().endsWith(".gz")) {
+                this.gzipStream = new GZIPInputStream(this.inputStream);
+                fis = this.gzipStream;
+            }
+            this.bomStream = new BOMInputStream(fis,
                     ByteOrderMark.UTF_8,
                     ByteOrderMark.UTF_16LE, ByteOrderMark.UTF_16BE,
                     ByteOrderMark.UTF_32LE, ByteOrderMark.UTF_32BE);
-            ByteOrderMark bom = bos.getBOM();
+            ByteOrderMark bom = this.bomStream.getBOM();
             String charsetName = bom == null ? "UTF-8" : bom.getCharsetName();
-            return new InputStreamReader(bos, charsetName);
+            return new InputStreamReader(this.bomStream, charsetName);
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Relinquishes all resources used.
+     * @param reader   Reader that was created by getFileReader, or null.
+     */
+    public void close(@Nullable Reader reader) {
+        try {
+            if (reader != null)
+                reader.close();
+            if (this.bomStream != null)
+                this.bomStream.close();
+            if (this.gzipStream != null)
+                this.gzipStream.close();
+            if (this.inputStream != null)
+                this.inputStream.close();
+        } catch (IOException e) {
+            HillviewLogger.instance.error("Error closing input streams", e);
         }
     }
 

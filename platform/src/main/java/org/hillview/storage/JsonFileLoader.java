@@ -77,6 +77,7 @@ public class JsonFileLoader extends TextFileLoader {
         for (JsonElement e : array)
             this.append(columns, e);
 
+        this.close(file);
         return new Table(columns);
     }
 
