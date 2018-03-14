@@ -278,6 +278,29 @@ export function uuidv4(): string {
     });
 }
 
+export function readableTime(millisec: number) {
+    let seconds = Math.floor(millisec / 1000);
+    let minutes = Math.floor(seconds / 60);
+    let hours = Math.floor(seconds / 3600);
+    seconds = seconds % 60;
+    minutes = minutes % 60;
+
+    function pad(n: number): string {
+        if (n < 10)
+            return "0" + n;
+        else
+            return n.toString();
+    }
+
+    let min = pad(minutes);
+    let sec = pad(seconds);
+
+    if (hours > 0) {
+        return `${hours}:${min}:${sec}`;
+    }
+    return `${min}:${sec}`;
+}
+
 /**
  * Convert a set to an array
  */

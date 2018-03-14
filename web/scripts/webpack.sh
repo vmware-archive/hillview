@@ -6,7 +6,8 @@ set -e
 
 pushd src/main/webapp/
 echo "Installing npm packages"
-npm install --dev
+npm install
+npm install --only=dev
 rm -rf bundle*
 echo "Running webpack command in src/main/webapp"
 webpack --display-modules

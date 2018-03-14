@@ -284,6 +284,7 @@ export abstract class Renderer<T> implements Rx.Observer<PartialResult<T>> {
                        public description: string) {
         this.progressBar = page.progressManager.newProgressBar(operation, description);
         this.reporter = page.getErrorReporter();
+        this.reporter.clear();
     }
 
     //noinspection JSUnusedLocalSymbols
