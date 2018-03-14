@@ -3,7 +3,7 @@
   # Network port where the servers listen for requests
   backend_port: 3569
   # Java heap size for Hillview service
-  default_heap_size: "28g"
+  default_heap_size: "25g"
   # Folder where the hillview service is installed on remote machines
   service_folder: "~"
   # Version of Apache Tomcat to deploy

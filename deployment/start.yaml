@@ -1,6 +1,7 @@
 ---
 # Starts the hillview service and the web server
 - hosts: backends
+  gather_facts: false
   tasks:
    - name: Load variables from configuration file
      include_vars: config.yaml
@@ -11,6 +12,7 @@
        chdir: "{{service_folder}}/hillview"
 
 - hosts: web
+  gather_facts: false
   tasks:
    - name: Load variables from configuration file
      include_vars: config.yaml
