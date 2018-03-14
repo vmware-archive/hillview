@@ -17,9 +17,15 @@
 
 package org.hillview.storage;
 
+import org.apache.commons.io.ByteOrderMark;
+import org.apache.commons.io.input.BOMInputStream;
 import org.hillview.table.api.IAppendableColumn;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
+<<<<<<< HEAD
+=======
+import org.hillview.utils.Utilities;
+>>>>>>> ac04b5ac5bc3a778fc7a23aeb0929c0d4db37ff2
 
 import javax.annotation.Nullable;
 import java.io.*;
@@ -32,7 +38,7 @@ import java.util.zip.GZIPInputStream;
 public abstract class TextFileLoader implements IFileLoader {
     protected final String filename;
     protected int currentRow;
-    private int currentColumn;
+    protected int currentColumn;
     @Nullable
     protected IAppendableColumn[] columns;
     private long currentField;
@@ -48,12 +54,27 @@ public abstract class TextFileLoader implements IFileLoader {
         this.currentToken = null;
     }
 
+    @Override
+    public long getSizeInBytes() {
+        File file = new File(this.filename);
+        if (file.exists())
+            return file.length();
+        return 0;
+    }
+
     Reader getFileReader() {
         try {
             HillviewLogger.instance.info("Reading file", "{0}", this.filename);
+            InputStream fis = new FileInputStream(this.filename);
             if (this.filename.toLowerCase().endsWith(".gz"))
-                return new InputStreamReader(new GZIPInputStream(new FileInputStream(this.filename)));
-            return new FileReader(this.filename);
+                fis = new GZIPInputStream(fis);
+            BOMInputStream bos = new BOMInputStream(fis,
+                    ByteOrderMark.UTF_8,
+                    ByteOrderMark.UTF_16LE, ByteOrderMark.UTF_16BE,
+                    ByteOrderMark.UTF_32LE, ByteOrderMark.UTF_32BE);
+            ByteOrderMark bom = bos.getBOM();
+            String charsetName = bom == null ? "UTF-8" : bom.getCharsetName();
+            return new InputStreamReader(bos, charsetName);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -97,12 +118,17 @@ public abstract class TextFileLoader implements IFileLoader {
                     (" (" + this.columns[this.currentColumn].getName() + ")") : "";
         }
 
-        return "Error while parsing file " + this.filename +
-                " line " + this.currentRow + " column " + this.currentColumn +
-                columnName + (this.currentToken != null ? " token " + this.currentToken : "");
+        return "Error while parsing file " + this.filename + "@" + Utilities.getHostName() +
+                " line " + this.currentRow + (this.currentColumn > 0 ?
+                " column " + this.currentColumn + columnName : "")
+                + (this.currentToken != null ? " token " + this.currentToken : "");
     }
 
     protected void error(String message) {
+        if (message.length() > 2048) {
+            int lastIndex = message.length() - 48;
+            message = message.substring(0, 2000) + "..." + message.substring(lastIndex);
+        }
         throw new RuntimeException(this.errorMessage() + ": " + message);
     }
 

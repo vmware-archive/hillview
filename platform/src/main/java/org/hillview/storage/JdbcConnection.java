@@ -27,7 +27,7 @@ import java.util.HashMap;
 public abstract class JdbcConnection {
     public final char urlSeparator;
     public final JdbcConnectionInformation info;
-    HashMap<String, String> params = new HashMap<String, String>();
+    final HashMap<String, String> params = new HashMap<String, String>();
 
     static JdbcConnection create(JdbcConnectionInformation conn) {
         if (Utilities.isNullOrEmpty(conn.databaseKind))
@@ -53,7 +53,7 @@ public abstract class JdbcConnection {
      * @param rowCount  Number of rows to read.
      * @return          A SQL query string that reads the specified number of rows.
      */
-    public abstract String getQuery(String table, int rowCount);
+    public abstract String getQueryToReadTable(String table, int rowCount);
 
     protected void addBaseUrl(StringBuilder urlBuilder) {
         urlBuilder.append("jdbc:");
@@ -69,7 +69,7 @@ public abstract class JdbcConnection {
     }
 
     /**
-     * Append all query parameters to a stringbuilder which is used
+     * Append all query parameters to a StringBuilder which is used
      * to construct a query url.
      * @param urlBuilder  StringBuilder used to construct the query url.
      */

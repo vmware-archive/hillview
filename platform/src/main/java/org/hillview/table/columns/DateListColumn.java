@@ -68,8 +68,13 @@ public class DateListColumn
             if (this.dateParser == null) {
                 this.dateParser = new DateParsing(s);
             }
-            Instant dt = this.dateParser.parse(s);
-            this.append(dt);
+            try {
+                Instant dt = this.dateParser.parse(s);
+                this.append(dt);
+            } catch (Exception e) {
+                this.parsingExceptionCount++;
+                this.parseEmptyOrNull();
+            }
         }
     }
 
@@ -99,8 +104,8 @@ public class DateListColumn
 
     @Override
     public IColumn convertKind(
-            ContentsKind kind, String newColName, IMembershipSet set, boolean allowMissing) {
-        return IDateColumn.super.convertKind(kind, newColName, set, allowMissing);
+            ContentsKind kind, String newColName, IMembershipSet set) {
+        return IDateColumn.super.convertKind(kind, newColName, set);
     }
 }
 

@@ -23,7 +23,6 @@ import org.hillview.dataset.ConcurrentSketch;
 import org.hillview.dataset.TripleSketch;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IJson;
-import org.hillview.dataset.api.Pair;
 import org.hillview.jsonObjects.Histogram2DArgs;
 import org.hillview.jsonObjects.Histogram3DArgs;
 import org.hillview.jsonObjects.HistogramArgs;
@@ -34,6 +33,7 @@ import org.hillview.table.api.*;
 import org.hillview.table.filters.EqualityFilterDescription;
 import org.hillview.table.filters.RangeFilterDescription;
 import org.hillview.table.filters.RangeFilterPair;
+import org.hillview.table.filters.StringFilterDescription;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.Converters;
 import org.hillview.utils.LinAlg;
@@ -43,7 +43,6 @@ import rx.Observer;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
-import java.util.List;
 import java.util.function.BiFunction;
 
 /**
@@ -65,22 +64,52 @@ public final class TableTarget extends RpcTarget {
     }
 
     static class NextKArgs {
-        final RecordOrder order = new RecordOrder();
+        /**
+         * If not null, start at first tuple which contains this string in one of the
+         * visible columns.
+         */
+        @Nullable
+        String toFind;
+        RecordOrder order = new RecordOrder();
         @Nullable
         Object[] firstRow;
         int rowsOnScreen;
     }
 
+    @Nullable
+    private static RowSnapshot asRowSnapshot(@Nullable Object[] data, RecordOrder order) {
+        if (data == null) return null;
+        RowSnapshot rs = null;
+        Schema schema = order.toSchema();
+        return RowSnapshot.parse(schema, data);
+    }
+
     @HillviewRpc
     public void getNextK(RpcRequest request, RpcRequestContext context) {
         NextKArgs nextKArgs = request.parseArgs(NextKArgs.class);
-        RowSnapshot rs = null;
-        if (nextKArgs.firstRow != null) {
-            Schema schema = nextKArgs.order.toSchema();
-            rs = RowSnapshot.parse(schema, nextKArgs.firstRow);
-        }
+        RowSnapshot rs = TableTarget.asRowSnapshot(nextKArgs.firstRow, nextKArgs.order);
         NextKSketch nk = new NextKSketch(nextKArgs.order, rs, nextKArgs.rowsOnScreen);
         this.runSketch(this.table, nk, request, context);
+    }
+
+    static class FindArgs {
+        RecordOrder order = new RecordOrder();
+        String toFind = "";
+        boolean caseSensitive;
+        boolean subString;
+        boolean regex;
+        @Nullable
+        Object[] topRow;
+    }
+
+    @HillviewRpc
+    public void find(RpcRequest request, RpcRequestContext context) {
+        FindArgs args = request.parseArgs(FindArgs.class);
+        RowSnapshot rs = TableTarget.asRowSnapshot(args.topRow, args.order);
+        StringFilterDescription filter = new StringFilterDescription(
+                args.toFind, !args.caseSensitive, args.regex, args.subString);
+        FindSketch sk = new FindSketch(filter, rs, args.order);
+        this.runCompleteSketch(this.table, sk, (e, c) -> e, request, context);
     }
 
     @HillviewRpc
@@ -115,6 +144,24 @@ public final class TableTarget extends RpcTarget {
     }
 
     @HillviewRpc
+    public void histogram2D(RpcRequest request, RpcRequestContext context) {
+        Histogram2DArgs info = request.parseArgs(Histogram2DArgs.class);
+        assert info.first != null;
+        assert info.second != null;
+        HeatMapSketch sk = new HeatMapSketch(
+                info.first.getBuckets(info.xBucketCount),
+                info.second.getBuckets(info.yBucketCount),
+                info.first.getDescription(),
+                info.second.getDescription(),
+                info.samplingRate, info.seed);
+        IBucketsDescription buckets = info.first.getBuckets(info.cdfBucketCount);
+        HistogramSketch cdf = new HistogramSketch(buckets, info.first.getDescription(), info.cdfSamplingRate, info.seed);
+        ConcurrentSketch<ITable, HeatMap, Histogram> csk =
+                new ConcurrentSketch<ITable, HeatMap, Histogram>(sk, cdf);
+        this.runSketch(this.table, csk, request, context);
+    }
+
+    @HillviewRpc
     public void heatMap3D(RpcRequest request, RpcRequestContext context) {
         Histogram3DArgs info = request.parseArgs(Histogram3DArgs.class);
         assert info.first != null;
@@ -136,7 +183,6 @@ public final class TableTarget extends RpcTarget {
         // The following are only used for categorical columns
         @Nullable
         String[] allNames;
-        long seed;
 
         ColumnAndConverterDescription getColumn() {
             IStringConverterDescription converter;
@@ -149,14 +195,14 @@ public final class TableTarget extends RpcTarget {
         }
 
         BasicColStatSketch getBasicStatsSketch() {
-            return new BasicColStatSketch(this.getColumn(), 0, 1.0, this.seed);
+            return new BasicColStatSketch(this.getColumn(), 0, 1.0, 0);
         }
     }
 
     @HillviewRpc
     public void range(RpcRequest request, RpcRequestContext context) {
         RangeInfo info = request.parseArgs(RangeInfo.class);
-        BasicColStatSketch sk = new BasicColStatSketch(info.getColumn(), 0, 1.0, info.seed);
+        BasicColStatSketch sk = info.getBasicStatsSketch();
         this.runSketch(this.table, sk, request, context);
     }
 
@@ -320,7 +366,7 @@ public final class TableTarget extends RpcTarget {
                 json.addProperty("done", 1.0);
                 json.add("data", controlPoints2D.toJsonTree());
                 RpcReply reply = request.createReply(json);
-                reply.send(session);
+                RpcServer.sendReply(reply, session);
                 request.syncCloseSession(session);
             }
         };
@@ -401,26 +447,23 @@ public final class TableTarget extends RpcTarget {
      * discard elements that are too low in (estimated) frequency.
      * @param fkList The list of candidate heavy hitters
      * @param schema The schema of the heavy hitters computation.
-     * @param type 0 represents MG, 1 represents SampleHeavyHitters
      * @return A TopList
      */
-    private static TopList getLists(FreqKList fkList, Schema schema, int type, HillviewComputation computation) {
-        Pair<List<RowSnapshot>, List<Integer>> pair = fkList.getTop(type);
+    private static TopList getTopList(FreqKList fkList, Schema schema, HillviewComputation computation) {
         TopList tl = new TopList();
-        SmallTable tbl = new SmallTable(schema, Converters.checkNull(pair.first));
-        tl.top = new NextKList(tbl, Converters.checkNull(pair.second), 0, fkList.totalRows);
+        tl.top = fkList.getTop(schema);
         tl.heavyHittersId = new HeavyHittersTarget(fkList, computation).getId().toString();
         return tl;
     }
 
     /**
-     * Calls the Misra-Greis (streaming) heavy hitters routine.
+     * Calls the Misra-Gries (streaming) heavy hitters routine.
      */
     @HillviewRpc
     public void heavyHittersMG(RpcRequest request, RpcRequestContext context) {
         HeavyHittersInfo info = request.parseArgs(HeavyHittersInfo.class);
-        FreqKSketch sk = new FreqKSketch(info.columns, info.amount/100);
-        this.runCompleteSketch(this.table, sk, (x, c) -> TableTarget.getLists(x, info.columns, 0, c),
+        FreqKSketchMG sk = new FreqKSketchMG(info.columns, info.amount/100);
+        this.runCompleteSketch(this.table, sk, (x, c) -> TableTarget.getTopList(x, info.columns, c),
                 request, context);
     }
 
@@ -428,11 +471,11 @@ public final class TableTarget extends RpcTarget {
      * Calls the Sampling heavy hitters routine.
      */
     @HillviewRpc
-    public void heavyHitters(RpcRequest request, RpcRequestContext context) {
+    public void heavyHittersSampling(RpcRequest request, RpcRequestContext context) {
         HeavyHittersInfo info = request.parseArgs(HeavyHittersInfo.class);
         SampleHeavyHittersSketch shh = new SampleHeavyHittersSketch(info.columns,
                 info.amount/100, info.totalRows, info.seed);
-        this.runCompleteSketch(this.table, shh, (x, c) -> TableTarget.getLists(x, info.columns, 2, c),
+        this.runCompleteSketch(this.table, shh, (x, c) -> TableTarget.getTopList(x, info.columns, c),
                 request, context);
     }
 
@@ -454,7 +497,7 @@ public final class TableTarget extends RpcTarget {
                 HeavyHittersTarget hht = (HeavyHittersTarget)rpcTarget;
                 ExactFreqSketch efSketch = new ExactFreqSketch(hhi.schema, hht.heavyHitters);
                 TableTarget.this.runCompleteSketch(
-                        TableTarget.this.table, efSketch, (x, c) -> TableTarget.getLists(x, hhi.schema, 1, c),
+                        TableTarget.this.table, efSketch, (x, c) -> TableTarget.getTopList(x, hhi.schema, c),
                         request, context);
             }
         };
@@ -471,7 +514,7 @@ public final class TableTarget extends RpcTarget {
             @Override
             public void onSuccess(RpcTarget rpcTarget) {
                 HeavyHittersTarget hht = (HeavyHittersTarget)rpcTarget;
-                ITableFilterDescription filter = hht.heavyHitters.heavyFilter(hhi.schema);
+                ITableFilterDescription filter = hht.heavyHitters.getFilter(hhi.schema);
                 FilterMap fm = new FilterMap(filter);
                 TableTarget.this.runMap(TableTarget.this.table, fm, TableTarget::new, request, context);
             }
@@ -479,9 +522,14 @@ public final class TableTarget extends RpcTarget {
         RpcObjectManager.instance.retrieveTarget(new RpcTarget.Id(hhi.hittersId), true, observer);
     }
 
+    static class HLogLogInfo {
+        String columnName = "";
+        long seed;
+    }
+
     @HillviewRpc
     public void hLogLog(RpcRequest request, RpcRequestContext context) {
-        RangeInfo col = request.parseArgs(RangeInfo.class);
+        HLogLogInfo col = request.parseArgs(HLogLogInfo.class);
         HLogLogSketch sketch = new HLogLogSketch(col.columnName, col.seed);
         this.runSketch(this.table, sketch, request, context);
     }
@@ -502,7 +550,7 @@ public final class TableTarget extends RpcTarget {
 
     @Override
     public String toString() {
-        return "TableTarget object, " + super.toString();
+        return "TableTarget object=" + super.toString();
     }
 
     @HillviewRpc
@@ -530,7 +578,7 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     public void createColumn(RpcRequest request, RpcRequestContext context) {
         CreateColumnInfo info = request.parseArgs(CreateColumnInfo.class);
-        ColumnDescription desc = new ColumnDescription(info.outputColumn, info.outputKind, true);
+        ColumnDescription desc = new ColumnDescription(info.outputColumn, info.outputKind);
         CreateColumnJSMap map = new CreateColumnJSMap(info.jsFunction, info.schema, desc);
         this.runMap(this.table, map, TableTarget::new, request, context);
     }

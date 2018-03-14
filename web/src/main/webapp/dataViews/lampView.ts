@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-import {d3} from "../ui/d3-modules";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {TopMenu, SubMenu} from "../ui/menu";
 import {
@@ -26,10 +25,13 @@ import {Renderer, RpcRequest, OnCompleteRenderer} from "../rpc";
 import {PartialResult, clamp, Pair, ICancellable, Seed} from "../util";
 import {Point, PointSet, Resolution} from "../ui/ui";
 import {FullPage} from "../ui/fullPage";
-import {ColorLegend, ColorMap} from "../ui/colorLegend";
+import {HeatmapLegendPlot} from "../ui/legendPlot";
 import {TableView, NextKReceiver} from "./tableView";
-import {HeatMapArrayDialog} from "./trellisHeatMapView";
+import {TrellisPlotDialog} from "./trellisHeatMapView";
 import {RemoteTableObject, RemoteTableObjectView, RemoteTableRenderer} from "../tableTarget";
+import {PlottingSurface} from "../ui/plottingSurface";
+import {drag as d3drag} from "d3-drag";
+import {mouse as d3mouse, select as d3select} from "d3-selection";
 
 /**
  * This class displays the results of performing a local affine multi-dimensional projection.
@@ -52,9 +54,9 @@ class LampView extends RemoteTableObjectView {
     private xDots: number;
     private yDots: number;
     private lampTableObject: RemoteTableObject;
-    private colorMap: ColorMap;
-    private colorLegend: ColorLegend;
+    private colorLegend: HeatmapLegendPlot;
     private lampColNames: string[];
+    private legendSurface: PlottingSurface;
 
     constructor(private tableObject: RemoteTableObject, private originalSchema,
                 page: FullPage, private controlPointsId, private selectedColumns) {
@@ -86,31 +88,36 @@ class LampView extends RemoteTableObjectView {
         ]);
         this.page.setMenu(menu);
 
-        this.colorMap = new ColorMap(0, 1);
-        this.colorLegend = new ColorLegend(this.colorMap);
+        this.legendSurface = new PlottingSurface(this.topLevel, page);
+        //this.legendSurface.setMargins(0, 0, 0, 0);
+        this.legendSurface.setHeight(Resolution.legendSpaceHeight);
+        this.colorLegend = new HeatmapLegendPlot(this.legendSurface);
         this.colorLegend.setColorMapChangeEventListener(() => {
             this.refresh();
         });
-        this.topLevel.appendChild(this.colorLegend.getHTMLRepresentation());
         let chartDiv = document.createElement("div");
         this.topLevel.appendChild(chartDiv);
 
-        let canvasSize = Math.min(Resolution.getCanvasSize(this.getPage()).width, Resolution.getCanvasSize(this.getPage()).height);
-        let chartSize = Math.min(Resolution.getChartSize(this.getPage()).width, Resolution.getChartSize(this.getPage()).height);
-        this.heatMapCanvas = d3.select(chartDiv).append("svg")
+        let canvasSize = Math.min(
+            PlottingSurface.getDefaultCanvasSize(this.getPage()).width,
+            PlottingSurface.getDefaultCanvasSize(this.getPage()).height);
+        let chartSize = Math.min(
+            PlottingSurface.getDefaultChartSize(this.getPage()).width,
+            PlottingSurface.getDefaultChartSize(this.getPage()).height);
+        this.heatMapCanvas = d3select(chartDiv).append("svg")
             .attr("width", canvasSize)
             .attr("height", canvasSize)
             .attr("class", "heatMap");
         this.heatMapChart = this.heatMapCanvas.append("g")
-            .attr("transform", `translate(${Resolution.leftMargin}, ${Resolution.topMargin})`)
+            .attr("transform", `translate(${PlottingSurface.leftMargin}, ${PlottingSurface.topMargin})`)
             .attr("width", chartSize)
             .attr("height", chartSize);
-        this.controlPointsCanvas = d3.select(chartDiv).append("svg")
+        this.controlPointsCanvas = d3select(chartDiv).append("svg")
             .attr("width", canvasSize)
             .attr("height", canvasSize)
             .attr("class", "controlPoints");
         this.controlPointsChart = this.controlPointsCanvas.append("g")
-            .attr("transform", `translate(${Resolution.leftMargin}, ${Resolution.topMargin})`)
+            .attr("transform", `translate(${PlottingSurface.leftMargin}, ${PlottingSurface.topMargin})`)
             .attr("width", chartSize)
             .attr("height", chartSize);
         page.setDataView(this);
@@ -122,20 +129,20 @@ class LampView extends RemoteTableObjectView {
     }
 
     public refresh() {
-        let canvasSize = Math.min(Resolution.getCanvasSize(this.getPage()).width, Resolution.getCanvasSize(this.getPage()).height);
-        let chartSize = Math.min(Resolution.getChartSize(this.getPage()).width, Resolution.getChartSize(this.getPage()).height);
+        let canvasSize = Math.min(PlottingSurface.getDefaultCanvasSize(this.getPage()).width, PlottingSurface.getDefaultCanvasSize(this.getPage()).height);
+        let chartSize = Math.min(PlottingSurface.getDefaultChartSize(this.getPage()).width, PlottingSurface.getDefaultChartSize(this.getPage()).height);
         this.controlPointsCanvas
             .attr("width", canvasSize)
             .attr("height", canvasSize);
         this.controlPointsChart
-            .attr("transform", `translate(${Resolution.leftMargin}, ${Resolution.topMargin})`)
+            .attr("transform", `translate(${PlottingSurface.leftMargin}, ${PlottingSurface.topMargin})`)
             .attr("width", chartSize)
             .attr("height", chartSize);
         this.heatMapCanvas
             .attr("width", canvasSize)
             .attr("height", canvasSize);
         this.heatMapChart
-            .attr("transform", `translate(${Resolution.leftMargin}, ${Resolution.topMargin})`)
+            .attr("transform", `translate(${PlottingSurface.leftMargin}, ${PlottingSurface.topMargin})`)
             .attr("width", chartSize)
             .attr("height", chartSize);
         this.updateControlPointsView();
@@ -177,18 +184,17 @@ class LampView extends RemoteTableObjectView {
                 }
             }
         }
-        this.colorMap.min = 1;
-        this.colorMap.max = this.maxVal;
-        this.colorMap.setLogScale(this.maxVal > ColorMap.logThreshold);
-
+        this.colorLegend.setData(1, this.maxVal);
         this.updateHeatMapView();
     }
+
     public updateHeatMapView() {
         if (this.heatMapDots == null)
             return;
         let chartWidth = this.heatMapChart.attr("width");
         let chartHeight = this.heatMapChart.attr("height");
 
+        this.colorLegend.clear();
         this.heatMapChart.selectAll("*").remove();
         this.heatMapChart.append("rect")
             .attr("x", 0)
@@ -198,7 +204,7 @@ class LampView extends RemoteTableObjectView {
             .style("fill", "none")
             .style("stroke", "black");
 
-        this.colorLegend.redraw();
+        this.colorLegend.draw();
         this.heatMapChart.selectAll()
             .data(this.heatMapDots)
             .enter()
@@ -209,7 +215,7 @@ class LampView extends RemoteTableObjectView {
             .attr("width", chartWidth / this.xDots)
             .attr("height", chartHeight / this.yDots)
             .style("stroke-width", 0)
-            .style("fill", d => this.colorMap.apply(d.v));
+            .style("fill", d => this.colorLegend.getColor(d.v));
     }
 
     public applyLAMP() {
@@ -233,7 +239,9 @@ class LampView extends RemoteTableObjectView {
             samplingRate: 1.0,  // TODO
             seed: Seed.instance.get(),
             xBucketCount: xBuckets,
-            yBucketCount: yBuckets
+            yBucketCount: yBuckets,
+            cdfBucketCount: 0,
+            cdfSamplingRate: 1.0
         };
         let rr = this.tableObject.createLAMPMapRequest(this.controlPointsId, this.selectedColumns, this.controlPoints, this.lampColNames);
         rr.invoke(new LAMPMapReceiver(this.page, rr, this, arg));
@@ -262,6 +270,7 @@ class LampView extends RemoteTableObjectView {
     }
 
     private updateControlPointsView() {
+        this.colorLegend.clear();
         if (this.controlPoints == null)
             return; // Control points are not yet set.
         this.controlPointsChart.selectAll("*").remove();
@@ -289,14 +298,14 @@ class LampView extends RemoteTableObjectView {
                 .attr("class", "controlPoint")
                 .attr("stroke", "black")
                 .attr("vector-effect", "non-scaling-stroke")
-                .call(d3.drag()
+                .call(d3drag()
                     .on("drag", (p: Point, i: number, circles: Element[]) => {
-                        let mouse = d3.mouse(plot.node());
+                        let mouse = d3mouse(plot.node());
                         mouse[0] = clamp(mouse[0], this.minX, this.minX + range);
                         mouse[1] = clamp(mouse[1], this.minY, this.minY + range);
                         p.x = mouse[0];
                         p.y = mouse[1];
-                        d3.select(circles[i])
+                        d3select(circles[i])
                             .attr("cx", clamp(mouse[0], this.minX, this.minX + range))
                             .attr("cy", clamp(mouse[1], this.minY, this.minY + range));
                     })
@@ -312,7 +321,7 @@ class LampView extends RemoteTableObjectView {
         let table = new TableView(this.lampTableObject.remoteObjectId, this.lampTableObject.originalTableId, page);
         page.setDataView(table);
         let rr = this.lampTableObject.createGetSchemaRequest();
-        rr.invoke(new NextKReceiver(this.page, table, rr, false, new RecordOrder([])));
+        rr.invoke(new NextKReceiver(this.page, table, rr, false, new RecordOrder([]), null));
     }
 
     private heatMap3D() {
@@ -491,7 +500,7 @@ class SchemaCollector extends OnCompleteRenderer<TableSummary> {
     run(): void {
         if (this.value == null)
             return;
-        let dialog = new HeatMapArrayDialog(
+        let dialog = new TrellisPlotDialog(
             this.lampColumnNames, this.page, this.value.schema, this.tableObject, true);
         dialog.show();
     }

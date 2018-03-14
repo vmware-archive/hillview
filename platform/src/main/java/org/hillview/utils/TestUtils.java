@@ -21,7 +21,6 @@ import org.hillview.storage.CsvFileLoader;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.ITable;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -36,17 +35,15 @@ public class TestUtils {
         System.out.println(table.toLongString(0));
     }
 
-    public static ITable loadTableFromCSV(String dataFolder, String csvFile, String schemaFile) throws IOException {
+    public static ITable loadTableFromCSV(String dataFolder, String csvFile, String schemaFile) {
         Path schemaPath = Paths.get(dataFolder, schemaFile);
         Path path = Paths.get(dataFolder, csvFile);
         CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
         config.allowFewerColumns = false;
         config.hasHeaderRow = true;
-        config.allowMissingData = false;
         CsvFileLoader r = new CsvFileLoader(path.toString(), config, schemaPath.toString());
 
-        ITable table = r.load();
-        return table;
+        return r.load();
     }
 
     public static String[] getNumericColumnNames(ITable table) {

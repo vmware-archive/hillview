@@ -33,4 +33,8 @@
         <param-name>org.apache.tomcat.websocket.textBufferSize</param-name>
         <param-value>32768</param-value>
     </context-param>
+    <context-param>
+        <param-name>org.apache.tomcat.websocket.binaryBufferSize</param-name>
+        <param-value>32768</param-value>
+    </context-param>
 </web-app>

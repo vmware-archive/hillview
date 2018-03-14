@@ -21,7 +21,7 @@ import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.api.*;
-import org.hillview.table.columns.BaseListColumn;
+import org.hillview.table.columns.BaseArrayColumn;
 import org.hillview.table.rows.JSVirtualRowSnapshot;
 import org.hillview.utils.Converters;
 
@@ -66,7 +66,8 @@ public class CreateColumnJSMap extends AppendColumnMap {
             engine.eval(this.jsFunction);
             Invocable invocable = (Invocable)engine;
 
-            IAppendableColumn col = BaseListColumn.create(this.outputColumn);
+            IMutableColumn col = BaseArrayColumn.create(this.outputColumn,
+                    table.getMembershipSet().getMax());
             // TODO: ensure that the input columns are loaded.
             ContentsKind kind = this.outputColumn.kind;
 
@@ -77,31 +78,43 @@ public class CreateColumnJSMap extends AppendColumnMap {
                 vrs.setRow(r);
                 Object value = invocable.invokeFunction("map", vrs);
                 if (value == null)
-                    col.appendMissing();
+                    col.setMissing(r);
                 else {
                     switch (kind) {
                         case None:
-                            col.append(value);
+                            col.set(r, value);
                         case Category:
                         case String:
                         case Json:
-                            col.append((String)value);
+                            col.set(r, value.toString());
                             break;
                         case Date:
                             ScriptObjectMirror jsDate = (ScriptObjectMirror)value;
                             double timestampLocal = (double)jsDate.callMember("getTime");
                             Instant instant = Converters.toDate(timestampLocal);
-                            col.append(instant);
+                            col.set(r, instant);
                             break;
                         case Integer:
-                            col.append((int)(double)value);
+                            if (value instanceof Double)
+                                col.set(r, (int)(double)value);
+                            else if (value instanceof Integer)
+                                col.set(r, (int)value);
+                            else
+                                throw new RuntimeException("Expected a number for Javascript not " +
+                                        value.getClass().toString());
                             break;
                         case Double:
-                            col.append((double)value);
+                            if (value instanceof Double)
+                                col.set(r, (double)value);
+                            else if (value instanceof Integer)
+                                col.set(r, (double)(int)value);
+                            else
+                                throw new RuntimeException("Expected a number for Javascript not " +
+                                        value.getClass().toString());
                             break;
                         case Duration:
                             // TODO
-                            col.append(value);
+                            col.set(r, value);
                             break;
                     }
                 }

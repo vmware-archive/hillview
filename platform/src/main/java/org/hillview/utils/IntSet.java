@@ -18,6 +18,10 @@
 package org.hillview.utils;
 
 
+import org.hillview.table.membership.SparseMembershipSet;
+
+import java.util.Arrays;
+
 /**
  * A set of integers.
  * A simplified version of IntOpenHash from fastutil http://fastutil.di.unimi.it
@@ -98,16 +102,15 @@ public class IntSet {
     }
 
     /**
-     *
      * @param pos a location in the key[] array
-     * @return the location of the next full slot after cursor.
+     * @return the location of the next full slot after cursor. Operates on the iteratorKey array
      */
     public int getNext(int pos) {
-        while ( key[pos & this.mask] == 0) { pos++; }
+        while ( this.key[pos & this.mask] == 0) { pos++; }
         return (pos & this.mask);
-        }
+    }
 
-    public int probe(int index) { return key[index & mask]; }
+    public int probe(int index) { return this.key[index & mask]; }
 
     public boolean contains(final int k) {
         if (k == 0) {
@@ -208,19 +211,26 @@ public class IntSet {
     }
 
     public IntSetIterator getIterator() {
-        return new IntSetIterator();
+        return new IntSetIterator(this);
     }
 
     /* Iterator for IntSet. Returns -1 when done. Assumes IntSet is not mutated */
-    public class IntSetIterator {
+    public static class IntSetIterator {
         private int pos;
         private int c;
         private boolean mustReturnZero;
+        private final int[] iteratorKey;
 
-        private IntSetIterator() {
-            this.pos = IntSet.this.n;
-            this.c = IntSet.this.size;
-            this.mustReturnZero = IntSet.this.containsZero;
+        private IntSetIterator(IntSet set) {
+            this.pos = set.n;
+            this.c = set.size;
+            this.mustReturnZero = set.containsZero;
+            if (this.c < SparseMembershipSet.thresholdSortedIterator) {
+                this.iteratorKey = set.key;
+            } else {
+                this.iteratorKey = Arrays.copyOf(set.key, set.key.length);
+                Arrays.sort(this.iteratorKey);
+            }
         }
 
         public boolean hasNext() {
@@ -235,9 +245,12 @@ public class IntSet {
                 this.mustReturnZero = false;
                 return 0;
             }
-            while (--this.pos >= 0) {
-                if (IntSet.this.key[this.pos] != 0)
-                    return IntSet.this.key[this.pos];
+            while (this.pos >= 0) {
+                if (this.iteratorKey[this.pos] != 0) {
+                    this.pos--;
+                    return this.iteratorKey[this.pos + 1];
+                }
+                this.pos--;
             }
             return -1;
         }

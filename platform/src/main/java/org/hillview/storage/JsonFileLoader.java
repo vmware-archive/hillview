@@ -43,15 +43,17 @@ import java.util.*;
  * - all JSON objects have the same structure (schema)
  * - JSON objects generate a column for each property
  * TODO: add support for sparse data, with different schemas and hierarchical objects.
- * TODO: add suport for streaming reads
+ * TODO: add support for streaming reads
  */
 public class JsonFileLoader extends TextFileLoader {
     @Nullable
-    protected String schemaPath;
+    protected final String schemaPath;
 
     public JsonFileLoader(String filename, @Nullable String schemaPath) {
         super(filename);
         this.schemaPath = schemaPath;
+        this.currentRow = 0;
+        this.currentColumn = -1;
     }
 
     public ITable load() {
@@ -63,18 +65,18 @@ public class JsonFileLoader extends TextFileLoader {
         JsonReader jReader = new JsonReader(file);
         JsonElement elem = Streams.parse(jReader);
         if (!elem.isJsonArray())
-            throw new RuntimeException("Expected a JSON array in file " + filename);
+            throw new RuntimeException("Expected a JSON array in " + filename);
         JsonArray array = elem.getAsJsonArray();
-        if (array.size() == 0)
-            throw new RuntimeException("Empty JSON array in file " + filename);
+        if (array.size() == 0 && schema == null)
+            throw new RuntimeException("Empty JSON array in " + filename);
 
         if (schema == null)
-            schema = this.guessSchema(filename, array);
+            schema = this.guessSchema(filename, array.iterator());
         IAppendableColumn[] columns = schema.createAppendableColumns();
 
-        int row = 0;
+        this.currentRow = 0;
         for (JsonElement e : array)
-            this.append(columns, e, row++);
+            this.append(columns, e);
 
         return new Table(columns);
     }
@@ -94,12 +96,15 @@ public class JsonFileLoader extends TextFileLoader {
         throw new RuntimeException("Unexpected JSON value " + prim);
     }
 
-    Schema guessSchema(String filename, JsonArray array) {
+    Schema guessSchema(String filename, Iterator<JsonElement> collection) {
         Map<String, ContentsKind> colKind = new LinkedHashMap<String, ContentsKind>();
         Set<String> unknownColumns = new HashSet<String>();
 
+        if (!collection.hasNext())
+            throw new RuntimeException("Empty json collection in " + filename);
+
         // Try to guess schema based on first element
-        JsonElement el = array.get(0);
+        JsonElement el = collection.next();
         if (!el.isJsonObject())
             throw new RuntimeException("Expected a JSON array of JSON objects " + filename);
         JsonObject object = el.getAsJsonObject();
@@ -117,12 +122,13 @@ public class JsonFileLoader extends TextFileLoader {
         }
 
         // If we could not guess schema scan the rest of the elements.
-        int row = 1;
+        this.currentRow = 1;
         List<String> found = new ArrayList<String>();
-        while (unknownColumns.size() != 0 && row < array.size()) {
-            el = array.get(row++);
+        while (unknownColumns.size() != 0 && collection.hasNext()) {
+            el = collection.next();
+            this.currentRow++;
             if (!el.isJsonObject())
-                throw new RuntimeException("Expected a JSON array of JSON objects " + filename);
+                this.error("Expected a JSON array of JSON objects");
             object = el.getAsJsonObject();
 
             for (String u: unknownColumns) {
@@ -143,15 +149,15 @@ public class JsonFileLoader extends TextFileLoader {
             if (kind == ContentsKind.None)
                 // This column is always null
                 kind = ContentsKind.Category;
-            ColumnDescription desc = new ColumnDescription(e.getKey(), kind, true);
+            ColumnDescription desc = new ColumnDescription(e.getKey(), kind);
             schema.append(desc);
         }
         return schema;
     }
 
-    void append(IAppendableColumn[] columns, JsonElement e, int row) {
+    void append(IAppendableColumn[] columns, JsonElement e) {
         if (!e.isJsonObject())
-            throw new RuntimeException("Row " + row + " is not a JsonObject");
+            this.error("JSON array element is not a JsonObject");
         JsonObject obj = e.getAsJsonObject();
         for (IAppendableColumn col: columns) {
             JsonElement el = obj.get(col.getName());
@@ -161,7 +167,7 @@ public class JsonFileLoader extends TextFileLoader {
             }
 
             if (!el.isJsonPrimitive())
-                throw new RuntimeException("Row " + row + " contains a non-primitive field");
+                this.error("JSON array element is a non-primitive field");
             JsonPrimitive prim = el.getAsJsonPrimitive();
 
             if (prim.isBoolean()) {
@@ -171,7 +177,7 @@ public class JsonFileLoader extends TextFileLoader {
             } else if (prim.isString()) {
                 col.parseAndAppendString(prim.getAsString());
             } else {
-                throw new RuntimeException("Unexpected Json value on row " + row);
+                this.error("Unexpected Json value" + prim.toString());
             }
         }
     }

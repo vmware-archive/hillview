@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {Resolution} from "./ui";
+import {Resolution, Size} from "./ui";
 import {truncate} from "../util";
 
 /**
@@ -33,11 +33,13 @@ export class TextOverlay {
 
     /**
      * Create a textOverlay.
+     * TODO: change parent to be a PlottingSurface
      * @param parent     Parent is really d3 svg element.
      * @param keys       Keys whose values will be updated.
      * @param maxLength  Maximum rendered key length.
      */
-    constructor(private parent: any, private keys: string[], maxLength: number) {
+    constructor(private readonly parent: any, private readonly parentSize: Size,
+                private readonly keys: string[], maxLength: number) {
         this.height = keys.length * Resolution.lineHeight;
         this.rect = this.parent.append("rect")
             .attr("height", this.height)
@@ -49,7 +51,7 @@ export class TextOverlay {
             this.lines.push(
                 this.parent.append("text")
                     .attr("dominant-baseline", "text-before-edge")
-                    .attr("text-anchor", "left"));
+                    .attr("text-anchor", "start"));
         }
     }
 
@@ -73,9 +75,9 @@ export class TextOverlay {
             maxWidth = Math.max(maxWidth, this.lines[index].node().getBBox().width);
 
         // If too close to the margin move it a bit
-        if (window.innerWidth < x + maxWidth)
+        if (this.parentSize.width < x + maxWidth)
             x -= maxWidth;
-        if (Resolution.canvasHeight - Resolution.bottomMargin < y + this.height)
+        if (this.parentSize.height < y + this.height)
             y -= this.height;
 
         let index = 0;

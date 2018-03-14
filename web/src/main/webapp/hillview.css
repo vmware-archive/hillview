@@ -95,8 +95,17 @@ th, td {
 
 .hillviewPage {
     border: 1px solid black;
-    margin: 5px 0;
+    margin: 3px 1px;
     padding: 0;
+}
+
+.hillviewPage:hover {
+    border: 1px solid green;
+    margin: 3px 1px;
+}
+
+.progressLabel {
+    margin: 1px;
 }
 
 /* close button */
@@ -149,7 +158,7 @@ th, td {
     border: 1px solid black;
     width: auto;
     height: auto;
-    background: #f1f1f1;,
+    background: #f1f1f1;
 }
 
 .dialog h1 {
@@ -180,7 +189,6 @@ th, td {
 .noselect {
     -webkit-touch-callout: none;
     -webkit-user-select: none;
-    -khtml-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;

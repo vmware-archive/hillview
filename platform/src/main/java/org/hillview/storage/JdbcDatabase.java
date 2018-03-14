@@ -27,6 +27,7 @@ import org.hillview.table.columns.BaseListColumn;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Utilities;
+import rx.Observer;
 
 import javax.annotation.Nullable;
 import java.sql.*;
@@ -73,7 +74,19 @@ public class JdbcDatabase {
      * @param rowCount  Maximum number of rows.  If negative, bring all rows.
      */
     public ResultSet getTable(String table, int rowCount) {
-        String query = this.conn.getQuery(table, rowCount);
+        String query = this.conn.getQueryToReadTable(table, rowCount);
+        try {
+            return this.getQueryResult(query);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Get the data produced by a query.
+     * @param query     Query to execute.
+     */
+    public ResultSet getQueryData(String query) {
         try {
             return this.getQueryResult(query);
         } catch (SQLException e) {
@@ -91,19 +104,7 @@ public class JdbcDatabase {
         colIndex = colIndex + 1;
 
         String name = meta.getColumnLabel(colIndex);
-        boolean allowMissing = false;
         ContentsKind kind;
-
-        switch (meta.isNullable(colIndex)) {
-            case ResultSetMetaData.columnNullable:
-            case ResultSetMetaData.columnNullableUnknown:
-                allowMissing = true;
-                break;
-            case ResultSetMetaData.columnNoNulls:
-                break;
-            default:
-                throw new RuntimeException("Unexpected isNullable value");
-        }
 
         int colType = meta.getColumnType(colIndex);
         switch (colType) {
@@ -159,7 +160,7 @@ public class JdbcDatabase {
             default:
                 throw new RuntimeException("Unhandled column type " + colType);
         }
-        return new ColumnDescription(name, kind, allowMissing);
+        return new ColumnDescription(name, kind);
     }
 
     static Schema getSchema(ResultSet data) {
@@ -176,19 +177,30 @@ public class JdbcDatabase {
         }
     }
 
-    public static ITable getTable(ResultSet data) {
+    /**
+     * Convert a resultSet to a sequence of tables.
+     * @param data     Result set obtained from JDBC.
+     * @param maxRows  Maximum rows to use in a table.  If 0 there is no limit.
+     * @param observer Observer that receives the tables produced.
+     */
+    public static void getTables(ResultSet data, int maxRows, Observer<ITable> observer) {
         try {
             ResultSetMetaData meta = data.getMetaData();
-            List<IAppendableColumn> cols = new ArrayList<IAppendableColumn>();
-            for (int i = 0; i < meta.getColumnCount(); i++) {
-                ColumnDescription cd = JdbcDatabase.getDescription(meta, i);
-                BaseListColumn col = BaseListColumn.create(cd);
-                cols.add(col);
-            }
+            List<IAppendableColumn> cols = null;
 
             int rowsRead = 0;
             while (data.next()) {
                 rowsRead++;
+                if (cols == null) {
+                    // Allocate a new table
+                    cols = new ArrayList<IAppendableColumn>();
+                    for (int i = 0; i < meta.getColumnCount(); i++) {
+                        ColumnDescription cd = JdbcDatabase.getDescription(meta, i);
+                        BaseListColumn col = BaseListColumn.create(cd);
+                        cols.add(col);
+                    }
+                }
+
                 if (rowsRead % 50000 == 0)
                     System.out.print(".");
                 for (int i = 0; i < cols.size(); i++) {
@@ -268,10 +280,46 @@ public class JdbcDatabase {
                             throw new RuntimeException("Unhandled column type " + colType);
                     }
                 }
+
+                if (maxRows != 0 && rowsRead % maxRows == 0) {
+                    ITable table = new Table(cols);
+                    observer.onNext(table);
+                    // Force a new allocation for columns.
+                    cols = null;
+                }
             }
-            return new Table(cols);
+
+            // Create one last table
+            if (cols != null) {
+                ITable table = new Table(cols);
+                observer.onNext(table);
+            }
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            observer.onError(e);
         }
+    }
+
+    public static ITable getTable(ResultSet rs) {
+        final ITable[] result = {null};
+        final Throwable[] th = {null};
+        Observer<ITable> obs = new Observer<ITable>() {
+            @Override
+            public void onCompleted() { }
+
+            @Override
+            public void onError(Throwable throwable) {
+                th[0] = throwable;
+            }
+
+            @Override
+            public void onNext(ITable table) {
+                result[0] = table;
+            }
+        };
+
+        getTables(rs, 0, obs);
+        if (th[0] != null)
+            throw new RuntimeException(new Exception(th[0]));
+        return result[0];
     }
 }

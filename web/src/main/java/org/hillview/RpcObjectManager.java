@@ -82,14 +82,26 @@ public final class RpcObjectManager {
         return this.sessionSubscription.get(session);
     }
 
-    synchronized void addSubscription(Session session, Subscription subscription) {
+    synchronized void addSubscription(RpcRequestContext context, Subscription subscription) {
         if (subscription.isUnsubscribed())
             // The computation may have already finished by the time we get here!
             return;
-        HillviewLogger.instance.info("Saving subscription", "{0}", this.toString());
+        Session session = context.session;
+        if (session == null)
+            return;
+        if (context.computation != null)
+            // This means that we are replaying the computation; the subscription is
+            // probably already saved.
+            return;
+        HillviewLogger.instance.info("Saving subscription", "{0}", context.toString());
         if (this.sessionSubscription.get(session) != null)
-            throw new RuntimeException("Subscription already active on this context");
-        this.sessionSubscription.put(session, subscription);
+            // This can happen because we have started the operation, some part of the
+            // object was not found on a remote node, and then reconstruction started.
+            // The subscription was saved when the operation was initially initiated.
+            HillviewLogger.instance.info("Subscription already active on this context",
+                    "context={0}", context);
+        else
+            this.sessionSubscription.put(session, subscription);
     }
 
     synchronized void removeSubscription(Session session) {
@@ -130,11 +142,14 @@ public final class RpcObjectManager {
     public void retrieveTarget(RpcTarget.Id id, boolean rebuild, Observer<RpcTarget> toNotify) {
         RpcTarget target = this.getObject(id);
         if (target != null) {
+            // Object found: notify the observer right away.
             toNotify.onNext(target);
             toNotify.onCompleted();
             return;
         }
+        // Object not found.
         if (rebuild) {
+            // Attempt to rebuild the object.
             this.rebuild(id, toNotify);
         } else {
             toNotify.onError(new RuntimeException("Cannot find object " + id));
@@ -147,15 +162,15 @@ public final class RpcObjectManager {
      * @param id  Id of object to reconstruct.
      * @param toNotify An observer that is notified when the object is available.
      */
-    void rebuild(RpcTarget.Id id, Observer<RpcTarget> toNotify) {
+    private void rebuild(RpcTarget.Id id, Observer<RpcTarget> toNotify) {
         HillviewLogger.instance.info("Attempt to reconstruct", "{0}", id);
         HillviewComputation computation = this.generator.get(id);
         if (computation != null) {
             // The following may trigger a recursive reconstruction.
-            HillviewLogger.instance.info("Replaying", "{0}", computation);
+            HillviewLogger.instance.info("Replaying", "computation={0}", computation);
             computation.replay(toNotify);
         } else {
-            Exception ex = new RuntimeException("Cannot reconstruct " + id);
+            Exception ex = new RuntimeException("Don't know how to reconstruct " + id);
             HillviewLogger.instance.error("Could not locate computation", ex);
             toNotify.onError(ex);
         }

@@ -30,13 +30,13 @@
 
         function loaded() {
             window.addEventListener("resize", function() { hillview.FullPage.onResize() });
-            hillview.createLoadMenu(true);
+            hillview.createLoadMenu();
         }
     </script>
 </head>
 <body onload="loaded()">
     <H1>Hillview <a href="https://github.com/vmware/hillview/blob/master/docs/userManual.md">big data spreadsheet</a></H1>
-    <img src="hillview-logo.png">
+    <img src="hillview-logo.png" id="hillview-logo">
     <div id="top"></div>
 </body>
 </html>

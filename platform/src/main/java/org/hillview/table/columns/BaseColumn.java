@@ -20,8 +20,6 @@ package org.hillview.table.columns;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
-import org.hillview.table.api.IRowIterator;
-import org.hillview.table.api.IRowOrder;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -31,6 +29,7 @@ import java.time.Instant;
  */
 abstract class BaseColumn implements IColumn {
     final ColumnDescription description;
+    int parsingExceptionCount;
 
     void checkKind(ContentsKind kind) {
         if (this.description.kind != kind)
@@ -39,6 +38,7 @@ abstract class BaseColumn implements IColumn {
 
     public BaseColumn(final ColumnDescription description) {
         this.description = description;
+        this.parsingExceptionCount = 0;
     }
 
     @Override
@@ -73,4 +73,6 @@ abstract class BaseColumn implements IColumn {
 
     @Override
     public boolean isMissing(final int rowIndex) { throw new UnsupportedOperationException(); }
+
+    public int getParsingExceptionCount() { return this.parsingExceptionCount; }
 }

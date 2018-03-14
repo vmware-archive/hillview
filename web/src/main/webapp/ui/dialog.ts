@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
-import {d3} from "./d3-modules";
 import {IHtmlElement, Point} from "./ui"
 import {EditBox} from "./editBox";
 import {makeId} from "../util";
+import {drag as d3drag} from "d3-drag";
+import {event as d3event, select as d3select} from "d3-selection";
 
 export enum FieldKind {
     String,
@@ -91,6 +92,7 @@ export class Dialog implements IHtmlElement {
      * populate a dialog with its previous values.
      */
     private dialogTitle: string;
+    private dragging: boolean;
 
     /**
      * This is a cache that can map a dialog title to a set of dialog values.
@@ -110,6 +112,7 @@ export class Dialog implements IHtmlElement {
         // in tab order in the whole DOM.  Probably the right solution is to handle the
         // tab keypress in an event handler.
         this.tabIndex = 10;
+        this.dragging = false;
         this.dialogTitle = null;
         this.line = new Map<string, HTMLElement>();
         this.onConfirm = null;
@@ -130,22 +133,27 @@ export class Dialog implements IHtmlElement {
         let buttonsDiv = document.createElement("div");
         this.container.appendChild(buttonsDiv);
 
+        let nodrag = d3drag()
+            .on("start", () => this.dragEnd());
+
         let cancelButton = document.createElement("button");
         cancelButton.onclick = () => this.cancelAction();
         cancelButton.textContent = "Cancel";
         cancelButton.classList.add("cancel");
+        d3select(cancelButton).call(nodrag);
         buttonsDiv.appendChild(cancelButton);
 
         this.confirmButton = document.createElement("button");
         this.confirmButton.textContent = "Confirm";
         this.confirmButton.classList.add("confirm");
+        d3select(this.confirmButton).call(nodrag);
         buttonsDiv.appendChild(this.confirmButton);
 
-        let drag = d3.drag()
+        let drag = d3drag()
             .on("start", () => this.dragStart())
             .on("end", () => this.dragEnd())
             .on("drag", () => this.dragMove());
-        d3.select(this.container).call(drag);
+        d3select(this.container).call(drag);
     }
 
     /**
@@ -164,7 +172,8 @@ export class Dialog implements IHtmlElement {
     }
 
     dragStart(): void {
-        this.dragMousePosition = { x: d3.event.x, y: d3.event.y };
+        this.dragging = true;
+        this.dragMousePosition = { x: d3event.x, y: d3event.y };
         this.dialogPosition = this.container.getBoundingClientRect();
         this.container.style.transform = "";
         this.container.style.cursor = "move";
@@ -172,13 +181,16 @@ export class Dialog implements IHtmlElement {
     }
 
     dragMove(): void {
-        let dx = this.dragMousePosition.x - d3.event.x;
-        let dy = this.dragMousePosition.y - d3.event.y;
+        if (!this.dragging)
+            return;
+        let dx = this.dragMousePosition.x - d3event.x;
+        let dy = this.dragMousePosition.y - d3event.y;
         this.container.style.left = (this.dialogPosition.left - dx).toString() + "px";
         this.container.style.top = (this.dialogPosition.top - dy).toString() + "px";
     }
 
     dragEnd(): void {
+        this.dragging = false;
         this.container.style.cursor = "default";
     }
 
@@ -332,7 +344,7 @@ export class Dialog implements IHtmlElement {
         input.style.flexGrow = "100";
         input.id = makeId(fieldName);
         fieldDiv.appendChild(input);
-        this.fields.set(fieldName, {html: input});
+        this.fields.set(fieldName, {html: input, type: FieldKind.Boolean });
         if (value != null && value)
             input.checked = true;
         return input;
@@ -419,7 +431,11 @@ export class Dialog implements IHtmlElement {
      * @param {string} value  Value that is being set.
      */
     public setFieldValue(field: string, value: string): void {
-        this.fields.get(field).html.value = value;
+        let f = this.fields.get(field);
+        f.html.value = value;
+        if (f.type == FieldKind.Boolean && value == "on") {
+            (<HTMLInputElement>f.html).checked = true;
+        }
     }
 
     /**

@@ -86,6 +86,8 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
     /**
      * Can be used to change the time interval in which partial results are aggregated.
      * This should be done only once after construction; datasets are supposed to be immutable.
+     * @param timeIntervalInMilliseconds The datasets waits this much to receive results and
+     *                                   aggregates them.  If 0 all results are sent immediately.
      */
     public void setBundleInterval(int timeIntervalInMilliseconds) {
         this.bundleInterval = timeIntervalInMilliseconds;

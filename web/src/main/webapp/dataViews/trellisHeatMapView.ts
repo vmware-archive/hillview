@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-import {d3} from "../ui/d3-modules";
 import {Renderer} from "../rpc";
 import {Dialog} from "../ui/dialog";
 import {TopMenu, SubMenu} from "../ui/menu";
@@ -29,11 +28,13 @@ import {CategoryCache} from "../categoryCache";
 import {Point, Resolution, Size} from "../ui/ui";
 import {IScrollTarget, ScrollBar} from "../ui/scroll";
 import {FullPage} from "../ui/fullPage";
-import {ColorLegend, ColorMap} from "../ui/colorLegend";
+import {HeatmapLegendPlot} from "../ui/legendPlot";
 import {TextOverlay} from "../ui/textOverlay";
 import {TableView, NextKReceiver} from "./tableView";
 import {DistinctStrings} from "../distinctStrings";
 import {RemoteTableObjectView, RemoteTableObject} from "../tableTarget";
+import {PlottingSurface} from "../ui/plottingSurface";
+import {mouse as d3mouse, select as d3select} from "d3-selection";
 
 export class HeatMapArrayData {
     buckets: number[][][];
@@ -41,7 +42,7 @@ export class HeatMapArrayData {
     totalsize: number;
 }
 
-export interface HeatMapArrayArgs {
+export interface TrellisPlotArgs {
     cds: IColumnDescription[];
     uniqueStrings?: DistinctStrings;
     xStats?: BasicColStats;
@@ -55,7 +56,7 @@ class CompactHeatMapView {
         width: 200,
         height: 200 + Resolution.lineHeight
     };
-    private static maxTextLabelLength = 10;
+    private static maxTextLabelLength = 20;
     private static axesTicks = 3;
 
     // Size of the entire drawing (label + chart)
@@ -108,12 +109,14 @@ class CompactHeatMapView {
             .style("fill-opacity", 0)
             .style("stroke", "black");
 
-        binLabel = truncate(binLabel, CompactHeatMapView.maxTextLabelLength);
+        let shortLabel = truncate(binLabel, CompactHeatMapView.maxTextLabelLength);
         this.g.append("text")
-            .text(binLabel)
+            .text(shortLabel)
             .attr("text-anchor", "middle")
             .attr("x", this.size.width / 2)
-            .attr("y", Resolution.lineHeight);
+            .attr("y", Resolution.lineHeight)
+            .append("svg:title")
+            .text(binLabel);
 
         this.chart = this.g.append("g")
             .attr("transform", `translate(0, ${Resolution.lineHeight})`)
@@ -123,8 +126,8 @@ class CompactHeatMapView {
         this.dotSize = {width: this.chartSize.width / this.xDim, height: this.chartSize.height / this.yDim};
         this.data = new Map<number, number>();
 
-        this.xAxisData = new AxisData(null, cds[0], xStats, null, this.xDim);
-        this.yAxisData = new AxisData(null, cds[1], yStats, null, this.yDim);
+        this.xAxisData = new AxisData(cds[0], xStats, null, this.xDim);
+        this.yAxisData = new AxisData(cds[1], yStats, null, this.yDim);
         this.xAxis = this.xAxisData.scaleAndAxis(this.chartSize.width, true, false).axis;
         this.yAxis = this.yAxisData.scaleAndAxis(this.chartSize.height, false, false).axis;
         this.xAxis.ticks(CompactHeatMapView.axesTicks);
@@ -150,10 +153,10 @@ class CompactHeatMapView {
         return val == null ? 0 : val;
     }
 
-    public setColors(colorMap: ColorMap) {
+    public setColors(colorLegend: HeatmapLegendPlot) {
         this.chart.selectAll("rect")
             .datum(function() {return this.dataset;})
-            .style("fill", (rect) => colorMap.apply(rect.val));
+            .style("fill", (rect) => colorLegend.getColor(rect.val));
     }
 
     public getG() {
@@ -166,16 +169,16 @@ class CompactHeatMapView {
             .attr("transform", `translate(${this.pos.x}, ${this.pos.y + Resolution.lineHeight})`);
         // Draw semi-tranparent rectangles s.t. the axes are readable.
         this.axesG.append("rect")
-            .attr("x", -Resolution.leftMargin)
+            .attr("x", -PlottingSurface.leftMargin)
             .attr("y", 0)
-            .attr("width", Resolution.leftMargin)
+            .attr("width", PlottingSurface.leftMargin)
             .attr("height", this.chartSize.height)
             .attr("fill", "rgba(255, 255, 255, 0.9)");
         this.axesG.append("rect")
             .attr("x", 0)
             .attr("y", this.chartSize.height)
             .attr("width", this.chartSize.width)
-            .attr("height", Resolution.bottomMargin)
+            .attr("height", PlottingSurface.bottomMargin)
             .attr("fill", "rgba(255, 255, 255, 0.9)");
 
         // Draw the x and y axes
@@ -209,13 +212,14 @@ class CompactHeatMapView {
             .attr("stroke-dasharray", "5,5");
 
         this.pointDescription = new TextOverlay(this.axesG,
+            this.chartSize,
             [this.xAxisData.description.name, this.yAxisData.description.name, "value"],
             CompactHeatMapView.maxTextLabelLength);
     }
 
     // Returns the value (count in the histogram) under the mouse.
     public updateAxes(): void {
-        let mouse = d3.mouse(this.chart.node());
+        let mouse = d3mouse(this.chart.node());
         if (mouse[1] < 0) {
             this.hideAxes();
             return null;
@@ -255,22 +259,22 @@ class CompactHeatMapView {
  */
 export class TrellisHeatMapView extends RemoteTableObjectView implements IScrollTarget {
     // TODO: handle categorical values
-    public args: HeatMapArrayArgs;
+    public args: TrellisPlotArgs;
     private offset: number; // Offset from the start of the set of unique z-values.
 
     // UI elements
     private heatMaps: CompactHeatMapView[];
     private scrollBar: ScrollBar;
     private arrayAndScrollBar: HTMLDivElement;
-    private colorMap: ColorMap;
-    private colorLegend: ColorLegend;
+    private colorLegend: HeatmapLegendPlot;
     private heatMapsSvg: any; // svg containing all heatmaps.
+    private legendSurface: PlottingSurface;
 
     // Holds the state of which heatmap is hovered over.
     private mouseOverHeatMap: CompactHeatMapView;
 
     constructor(remoteObjectId: RemoteObjectId, originalTableId: RemoteObjectId,
-                page: FullPage, args: HeatMapArrayArgs,  private tableSchema: Schema) {
+                page: FullPage, args: TrellisPlotArgs, private tableSchema: Schema) {
         super(remoteObjectId, originalTableId, page);
         this.args = args;
         this.offset = 0;
@@ -296,14 +300,15 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
             ]) }
         ]);
         this.page.setMenu(menu);
+        this.legendSurface = new PlottingSurface(this.topLevel, page);
+        //this.legendSurface.setMargins(0, 0, 0, 0);
+        this.legendSurface.setHeight(Resolution.legendSpaceHeight);
 
-        this.colorMap = new ColorMap();
-        this.colorLegend = new ColorLegend(this.colorMap);
+        this.colorLegend = new HeatmapLegendPlot(this.legendSurface);
         // Add a listener that updates the heatmaps when the color map changes.
         this.colorLegend.setColorMapChangeEventListener(() => {
             this.reapplyColorMap();
         });
-        this.topLevel.appendChild(this.colorLegend.getHTMLRepresentation());
 
         // Div containing the array and the scrollbar
         this.arrayAndScrollBar = document.createElement("div");
@@ -311,20 +316,20 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
         this.topLevel.appendChild(this.arrayAndScrollBar);
 
         // Elements are added in this order so the scrollbars svg doesn't overlap
-        // the value-indicator. They're drawin from right to left using reverse flex
+        // the value-indicator. They're drawn from right to left using reverse flex
         // in css.
         this.scrollBar = new ScrollBar(this);
         this.arrayAndScrollBar.appendChild(this.scrollBar.getHTMLRepresentation());
 
         let svgSize = this.actualDrawingSize();
-        this.heatMapsSvg = d3.select(this.arrayAndScrollBar).append("svg")
+        this.heatMapsSvg = d3select(this.arrayAndScrollBar).append("svg")
             .attr("width", svgSize.width)
             .attr("height", svgSize.height);
     }
 
     // Returns the maximum size that the canvas is allowed to use
     private maxDrawingSize(): Size {
-        let canvasSize = Resolution.getCanvasSize(this.getPage());
+        let canvasSize = PlottingSurface.getDefaultCanvasSize(this.getPage());
         return {
             width: canvasSize.width - ScrollBar.barWidth,
             height: canvasSize.height
@@ -387,7 +392,7 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
         let page = new FullPage("Table view", "Table", this.page);
         page.setDataView(table);
         this.page.insertAfterMe(page);
-        rr.invoke(new NextKReceiver(page, table, rr, false, order));
+        rr.invoke(new NextKReceiver(page, table, rr, false, order, null));
     }
 
     public scrolledTo(position: number): void {
@@ -417,6 +422,7 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
             return;
         }
 
+        this.colorLegend.clear();
         // Clear the heatmap svg, and resize it.
         this.heatMapsSvg.selectAll("*").remove();
         let svgSize = this.actualDrawingSize();
@@ -468,15 +474,9 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
             this.heatMaps[z] = heatMap;
         }
         // Update the color map based on the new values
-        this.colorMap.min = 1;
-        this.colorMap.max = max;
-        if (max > ColorMap.logThreshold)
-            this.colorMap.setLogScale(true);
-        else
-            this.colorMap.setLogScale(false);
-
+        this.colorLegend.setData(1, max);
         this.reapplyColorMap();
-        this.colorLegend.redraw();
+        this.colorLegend.draw();
 
         this.scrollBar.setPosition(this.offset / this.args.uniqueStrings.size(),
             (this.offset + zBins.length) / this.args.uniqueStrings.size());
@@ -490,14 +490,12 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
 
     // Use the color map to set the colors in the heatmaps
     private reapplyColorMap() {
-        this.heatMaps.forEach((heatMap) => {
-            heatMap.setColors(this.colorMap);
-        });
+        this.heatMaps.forEach((heatMap) => heatMap.setColors(this.colorLegend));
     }
 
     private mouseMove() {
         // Calculate which heatmap is being moved over.
-        let mouse = d3.mouse(this.heatMapsSvg.node());
+        let mouse = d3mouse(this.heatMapsSvg.node());
         let [numCols, numRows] = this.numHeatMaps();
         let i = Math.floor(numCols * mouse[0] / this.heatMapsSvg.attr("width"));
         let j = Math.floor(numRows * mouse[1] / this.heatMapsSvg.attr("height"));
@@ -578,7 +576,7 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
 /**
  * Receives the data range and initiates a new rendering.
  */
-class Range2DRenderer extends Renderer<Pair<BasicColStats, BasicColStats>> {
+export class Range2DRenderer extends Renderer<Pair<BasicColStats, BasicColStats>> {
     constructor(page: FullPage, protected view: TrellisHeatMapView, operation: ICancellable) {
         super(page, operation, "Get stats");
     }
@@ -611,7 +609,7 @@ class HeatMap3DRenderer extends Renderer<HeatMapArrayData> {
 /**
  * Dialog to query user about parameters ot a Trellis plot of heatmaps.
  */
-export class HeatMapArrayDialog extends Dialog {
+export class TrellisPlotDialog extends Dialog {
     /**
      * Create a dialog to display a Trellis plot of heatmaps.
      * @param {string[]} selectedColumns  Columns selected by the user.
@@ -673,20 +671,20 @@ export class HeatMapArrayDialog extends Dialog {
         let newPage = new FullPage("Heatmaps by " + args.cds[2].name, "Trellis", this.page);
         this.page.insertAfterMe(newPage);
 
-        let heatMapArrayView = new TrellisHeatMapView(
+        let trellisView = new TrellisHeatMapView(
             this.remoteObject.remoteObjectId, this.remoteObject.originalTableId, newPage, args, this.schema);
-        newPage.setDataView(heatMapArrayView);
+        newPage.setDataView(trellisView);
         let cont = (operation: ICancellable) => {
             args.uniqueStrings = CategoryCache.instance.getDistinctStrings(
                 this.remoteObject.originalTableId, categCol.name);
-            let rr = heatMapArrayView.createRange2DColsRequest(args.cds[0].name, args.cds[1].name);
+            let rr = trellisView.createRange2DColsRequest(args.cds[0].name, args.cds[1].name);
             rr.chain(operation);
-            rr.invoke(new Range2DRenderer(newPage, heatMapArrayView, rr));
+            rr.invoke(new Range2DRenderer(newPage, trellisView, rr));
         };
         CategoryCache.instance.retrieveCategoryValues(this.remoteObject, [categCol.name], this.page, cont);
     }
 
-    private parseFields(): HeatMapArrayArgs {
+    private parseFields(): TrellisPlotArgs {
         let cd1 = TableView.findColumn(this.schema, this.getFieldValue("col1"));
         let cd2 = TableView.findColumn(this.schema, this.getFieldValue("col2"));
         let cd3 = TableView.findColumn(this.schema, this.getFieldValue("col3"));

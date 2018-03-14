@@ -60,6 +60,8 @@ public class HillviewLogger {
     }
 
     private HillviewLogger(String role, @Nullable String filename) {
+        // Disable all default logging
+        LogManager.getLogManager().reset();
         this.logger = Logger.getLogger("Hillview");
         this.machine = this.checkCommas(Utilities.getHostName());
         this.role = this.checkCommas(role);
@@ -67,9 +69,6 @@ public class HillviewLogger {
 
         if (filename != null) {
             try {
-                Handler[] hs = logger.getHandlers();
-                for (Handler h : hs)
-                    logger.removeHandler(h);
                 FileHandler fh = new FileHandler(filename);
                 fh.setFormatter(new SimpleFormatter() {
                     final String[] components = new String[5];

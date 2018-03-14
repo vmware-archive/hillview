@@ -36,7 +36,7 @@ import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.JsonList;
 import rx.Observable;
 import rx.subjects.PublishSubject;
-import sun.nio.ch.PollSelectorProvider;
+import rx.subjects.SerializedSubject;
 
 import java.util.List;
 import java.util.UUID;
@@ -51,10 +51,16 @@ import static org.hillview.dataset.remoting.HillviewServer.ROOT_DATASET_INDEX;
  * with a wrong value for either entry of the tuple will result in an exception.
  */
 public class RemoteDataSet<T> extends BaseDataSet<T> {
-    private final static int TIMEOUT = 60000 * 5;  // TODO: import via config file
+    private final static int TIMEOUT = 60000 * 10;  // TODO: import via config file
     private final int remoteHandle;
     private final HostAndPort serverEndpoint;
     private final HillviewServerGrpc.HillviewServerStub stub;
+    // To avoid epoll CPU utilization problems, we could use PollSelectorProvider().
+    // See: https://github.com/netty/netty/issues/327
+    private static final EventLoopGroup workerElg = new NioEventLoopGroup(1,
+            ExecutorUtils.newFastLocalThreadFactory("rds-shared-worker"));
+    private static final ExecutorService executorService =
+            ExecutorUtils.newNamedThreadPool("rds-shared-executor", 5);
 
     public RemoteDataSet(final HostAndPort serverEndpoint) {
         this(serverEndpoint, ROOT_DATASET_INDEX);
@@ -63,12 +69,6 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
     public RemoteDataSet(final HostAndPort serverEndpoint, final int remoteHandle) {
         this.serverEndpoint = serverEndpoint;
         this.remoteHandle = remoteHandle;
-        final ExecutorService executorService =
-                ExecutorUtils.newNamedThreadPool("remote-data-set:" + serverEndpoint, 5);
-        // Using PollSelectorProvider() to avoid Epoll CPU utilization problems.
-        // See: https://github.com/netty/netty/issues/327
-        final EventLoopGroup workerElg = new NioEventLoopGroup(1,
-                ExecutorUtils.newFastLocalThreadFactory("worker"), new PollSelectorProvider());
         this.stub = HillviewServerGrpc.newStub(NettyChannelBuilder
                 .forAddress(serverEndpoint.getHost(), serverEndpoint.getPort())
                 .maxInboundMessageSize(HillviewServer.MAX_MESSAGE_SIZE)
@@ -76,6 +76,10 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
                 .eventLoopGroup(workerElg)
                 .usePlaintext(true)   // channel is unencrypted.
                 .build());
+    }
+
+    static <T> SerializedSubject<T, T> createSerializedSubject() {
+        return PublishSubject.<T>create().toSerialized();
     }
 
     /**
@@ -93,7 +97,8 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
                                        .setHighId(operationId.getMostSignificantBits())
                                        .setLowId(operationId.getLeastSignificantBits())
                                        .build();
-        final PublishSubject<PartialResult<IDataSet<S>>> subj = PublishSubject.create();
+        final SerializedSubject<PartialResult<IDataSet<S>>, PartialResult<IDataSet<S>>> subj =
+                createSerializedSubject();
         final StreamObserver<PartialResponse> responseObserver = new NewDataSetObserver<S>(subj);
         return subj.doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
                                                  .map(command, responseObserver))
@@ -111,7 +116,8 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
                 .setHighId(operationId.getMostSignificantBits())
                 .setLowId(operationId.getLeastSignificantBits())
                 .build();
-        final PublishSubject<PartialResult<IDataSet<S>>> subj = PublishSubject.create();
+        final SerializedSubject<PartialResult<IDataSet<S>>, PartialResult<IDataSet<S>>> subj =
+                createSerializedSubject();
         final StreamObserver<PartialResponse> responseObserver = new NewDataSetObserver<S>(subj);
         return subj.doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
                 .flatMap(command, responseObserver))
@@ -132,8 +138,8 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
                                        .setHighId(operationId.getMostSignificantBits())
                                        .setLowId(operationId.getLeastSignificantBits())
                                        .build();
-        final PublishSubject<PartialResult<R>> subj = PublishSubject.create();
-        final StreamObserver<PartialResponse> responseObserver = new SketchObserver<>(subj);
+        final SerializedSubject<PartialResult<R>, PartialResult<R>> subj = createSerializedSubject();
+        final StreamObserver<PartialResponse> responseObserver = new SketchObserver<R>(subj);
         return subj.doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
                                                  .sketch(command, responseObserver))
                    .doOnUnsubscribe(() -> this.unsubscribe(operationId));
@@ -167,7 +173,8 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
                                          .setHighId(operationId.getMostSignificantBits())
                                          .setLowId(operationId.getLeastSignificantBits())
                                          .build();
-        final PublishSubject<PartialResult<IDataSet<Pair<T, S>>>> subj = PublishSubject.create();
+        final SerializedSubject<PartialResult<IDataSet<Pair<T, S>>>, PartialResult<IDataSet<Pair<T, S>>>> subj =
+                createSerializedSubject();
         final StreamObserver<PartialResponse> responseObserver =
                                                         new NewDataSetObserver<Pair<T, S>>(subj);
         return subj.doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
@@ -186,7 +193,9 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
                 .setHighId(operationId.getMostSignificantBits())
                 .setLowId(operationId.getLeastSignificantBits())
                 .build();
-        final PublishSubject<PartialResult<JsonList<ControlMessage.Status>>> subj = PublishSubject.create();
+        final SerializedSubject<PartialResult<JsonList<ControlMessage.Status>>,
+                PartialResult<JsonList<ControlMessage.Status>>> subj =
+                createSerializedSubject();
         final StreamObserver<PartialResponse> responseObserver =
                 new ManageObserver(subj, message, this);
         return subj.doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
@@ -225,15 +234,16 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
      * from a gRPC streaming call to that of a publish subject.
      */
     private abstract static class OperationObserver<T> implements StreamObserver<PartialResponse> {
-        final PublishSubject<T> subject;
+        final SerializedSubject<T, T> subject;
 
-        public OperationObserver(final PublishSubject<T> subject) {
+        public OperationObserver(final SerializedSubject<T, T> subject) {
             this.subject = subject;
         }
 
         @Override
         public void onNext(final PartialResponse response) {
-            this.subject.onNext(processResponse(response));
+            T result = this.processResponse(response);
+            this.subject.onNext(result);
         }
 
         @Override
@@ -256,17 +266,19 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
      * a new RemoteDataSet that points to a dataset on a remote server.
      */
     private class NewDataSetObserver<S> extends OperationObserver<PartialResult<IDataSet<S>>> {
-        public NewDataSetObserver(PublishSubject<PartialResult<IDataSet<S>>> subject) {
+        public NewDataSetObserver(SerializedSubject<PartialResult<IDataSet<S>>, PartialResult<IDataSet<S>>> subject) {
             super(subject);
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public PartialResult<IDataSet<S>> processResponse(final PartialResponse response) {
             final OperationResponse op = SerializationUtils.deserialize(response
                     .getSerializedOp().toByteArray());
-            final IDataSet<S> ids = (op.result == null) ? null :
-                    new RemoteDataSet<S>(RemoteDataSet.this.serverEndpoint, (int) op.result);
-            return new PartialResult<IDataSet<S>>(ids);
+            PartialResult<Integer> pr = Converters.checkNull((PartialResult<Integer>)op.result);
+            final IDataSet<S> ids = (pr.deltaValue == null) ? null :
+                    new RemoteDataSet<S>(RemoteDataSet.this.serverEndpoint, pr.deltaValue);
+            return new PartialResult<IDataSet<S>>(pr.deltaDone, ids);
         }
     }
 
@@ -274,7 +286,7 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
      * StreamObserver used by sketch() implementations above.
      */
     private static class SketchObserver<S> extends OperationObserver<PartialResult<S>> {
-        public SketchObserver(final PublishSubject<PartialResult<S>> subject) {
+        public SketchObserver(final SerializedSubject<PartialResult<S>, PartialResult<S>> subject) {
             super(subject);
         }
 
@@ -294,7 +306,8 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
         private final ControlMessage message;
         private final RemoteDataSet  dataSet;
 
-        public ManageObserver(PublishSubject<PartialResult<JsonList<ControlMessage.Status>>> subject,
+        public ManageObserver(SerializedSubject<PartialResult<JsonList<ControlMessage.Status>>,
+                PartialResult<JsonList<ControlMessage.Status>>> subject,
                               ControlMessage message, RemoteDataSet dataSet) {
             super(subject);
             this.message = message;

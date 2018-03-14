@@ -22,18 +22,30 @@ import com.google.common.net.HostAndPort;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.RemoteDataSet;
-import org.hillview.dataset.api.*;
+import org.hillview.dataset.api.IDataSet;
+import org.hillview.dataset.api.IMap;
+import org.hillview.dataset.api.ISketch;
+import org.hillview.dataset.api.Pair;
+import org.hillview.dataset.api.PartialResult;
 import org.hillview.dataset.remoting.HillviewServer;
 import org.hillview.utils.Converters;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import rx.Observable;
+import rx.Subscriber;
+import rx.Subscription;
 import rx.observers.TestSubscriber;
+import rx.subjects.PublishSubject;
+import rx.subjects.SerializedSubject;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static junit.framework.TestCase.assertEquals;
@@ -157,6 +169,47 @@ public class RemotingTest extends BaseTest {
                                        .last();
         assertEquals(50005000, result);
     }
+
+    @Test
+    public void testRaceSerialized() throws InterruptedException {
+        final ExecutorService es = Executors.newFixedThreadPool(10);
+        final SerializedSubject<Integer, Integer> obs1 = PublishSubject.<Integer>create().toSerialized();
+        final SerializedSubject<Integer, Integer> obs2 = PublishSubject.<Integer>create().toSerialized();
+        final Observable<List<Integer>> merge = Observable.merge(obs1, obs2)
+                .buffer(100, TimeUnit.MILLISECONDS)
+                .filter(e -> !e.isEmpty());
+
+        final Subscription sub = merge.subscribe(new Subscriber<List<Integer>>() {
+            @Override
+            public void onCompleted() {
+                System.out.println("OC");
+            }
+
+            @Override
+            public void onError(final Throwable throwable) {
+                System.out.println("OE");
+            }
+
+            @Override
+            public void onNext(final List<Integer> integer) {
+                System.out.println("ON " + integer);
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                System.out.println("ON end " + integer);
+            }
+        });
+        es.execute(() -> obs1.onNext(1));
+        es.execute(() -> obs2.onNext(2));
+        es.execute(() -> obs1.onNext(3));
+        es.execute(() -> obs2.onNext(4));
+        Thread.sleep(100);
+        obs1.onCompleted();
+        obs2.onCompleted();
+    }
+
 
     @Test
     public void testMapSketchThroughClientUsingMemoization() {

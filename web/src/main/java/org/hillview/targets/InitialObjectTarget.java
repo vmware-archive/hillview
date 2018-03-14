@@ -129,12 +129,14 @@ public class InitialObjectTarget extends RpcTarget {
          */
         boolean headerRow;
 
+        @Nullable
         String getSchemaPath() {
             if (Utilities.isNullOrEmpty(this.schemaFile))
                 return null;
             return Paths.get(this.folder, this.schemaFile).toString();
         }
 
+        @Nullable
         String getRegexPattern() {
             if (this.fileNamePattern == null)
                 return null;
@@ -148,7 +150,6 @@ public class InitialObjectTarget extends RpcTarget {
         String dataFolder = "../data/";
         String fileNamePattern;
         CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
-        config.allowMissingData = true;
         config.allowFewerColumns = false;
         config.hasHeaderRow = true;
         String schemaFile;
@@ -161,9 +162,6 @@ public class InitialObjectTarget extends RpcTarget {
             dataFolder += "ontime/";
             schemaFile = "short.schema";
             fileNamePattern = "(\\d)+_(\\d)+\\.csv";
-        } else if (which == 2) {
-            fileNamePattern = "vrops.csv";
-            schemaFile = "vrops.schema";
         } else if (which == 3) {
             fileNamePattern = "mnist.csv";
             schemaFile = "mnist.schema";
@@ -171,23 +169,9 @@ public class InitialObjectTarget extends RpcTarget {
             fileNamePattern = "segmentation.csv";
             schemaFile = "segmentation.schema";
         } else if (which == 5) {
-            config.separator = '\t';
-            fileNamePattern = "criteoTab.gz";
-            schemaFile = "criteo.schema";
-        } else if (which == 6) {
-            dataFolder += "ontime/";
-            schemaFile = "short.schema";
-            fileNamePattern = "(\\d)+_(\\d)+\\.csv";
-            replicationFactor = 5;
-        } else if (which == 7) {
-            dataFolder += "ontime/";
-            schemaFile = "short.schema";
-            fileNamePattern = "(\\d)+_(\\d)+\\.csv";
-            replicationFactor = 10;
-        } else if (which == 8) {
-            dataFolder += "nycabs/";
-            schemaFile = "yellow.schema";
-            fileNamePattern = "yellow_tripdata_(\\d)+-(\\d)+\\.csv.gz";
+            dataFolder += "ontime_big/";
+            fileNamePattern = ".*.csv.gz";
+            schemaFile = "schema";
         } else {
             throw new RuntimeException("Unexpected operation " + which);
 		}
@@ -204,8 +188,7 @@ public class InitialObjectTarget extends RpcTarget {
     public void findCsvFiles(RpcRequest request, RpcRequestContext context) {
         FileSetDescription desc = request.parseArgs(FileSetDescription.class);
         CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
-        config.allowMissingData = true;
-        config.allowFewerColumns = false;
+        config.allowFewerColumns = true;
         config.hasHeaderRow = desc.headerRow;
 
         String schemaPath = desc.getSchemaPath();
@@ -238,7 +221,7 @@ public class InitialObjectTarget extends RpcTarget {
 
     @Override
     public String toString() {
-        return "Initial object, " + super.toString();
+        return "Initial object=" + super.toString();
     }
 
     //--------------------------------------------
@@ -285,7 +268,7 @@ public class InitialObjectTarget extends RpcTarget {
         Session session = context.getSessionIfOpen();
         if (session == null)
             return;
-        reply.send(session);
+        RpcServer.sendReply(reply, session);
         request.syncCloseSession(session);
     }
 }

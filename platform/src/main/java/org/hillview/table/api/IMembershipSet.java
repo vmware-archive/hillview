@@ -69,6 +69,9 @@ public interface IMembershipSet extends IRowOrder {
      * Returns an iterator that runs over the sampled data.
      * @param rate  Sampling rate.
      * @param seed  Random seed.
+     * @param enforceRate   If true the sampling rate given must be used; otherwise the result
+     *                      may use a different sampling rate if it is more efficient to do so.
+     *                      The resulting iterator has information about the sampling rate used.
      * @return      An iterator over the sampled data.
      */
     ISampledRowIterator getIteratorOverSample(double rate, long seed, boolean enforceRate);

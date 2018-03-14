@@ -21,6 +21,7 @@ cpp/main
 */.idea/copyright
 */.idea/libraries
 */.idea/uiDesigner.xml
+*/.idea/codeStyles
 platform/platform.iml
 web/web.iml
 

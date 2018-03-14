@@ -18,23 +18,44 @@
 import {RemoteObject, OnCompleteRenderer} from "./rpc";
 import {RemoteTableReceiver} from "./dataViews/tableView";
 import {FullPage} from "./ui/fullPage";
-import {ICancellable} from "./util";
-import {FileSetDescription, JdbcConnectionInformation, RemoteObjectId} from "./javaBridge";
+import {ICancellable, significantDigits, uuidv4} from "./util";
+import {FileSetDescription, FileSizeSketchInfo, JdbcConnectionInformation, RemoteObjectId} from "./javaBridge";
 
 /**
  * A renderer which receives a remote object id that denotes a set of files.
- * It initiates a loadTable RPC request to load data from these files as a table.
+ * Initiates an RPC to get the file size.
  */
 class FileNamesReceiver extends OnCompleteRenderer<RemoteObjectId> {
     constructor(page: FullPage, operation: ICancellable, protected title: string) {
-        super(page, operation, "Load files");
+        super(page, operation, "Get file info");
     }
 
     public run(remoteObjId: RemoteObjectId): void {
         let fn = new RemoteObject(remoteObjId);
+        let rr = fn.createStreamingRpcRequest<FileSizeSketchInfo>("getFileSize", null);
+        rr.chain(this.operation);
+        let observer = new FileSizeReceiver(this.page, rr, this.title, remoteObjId);
+        rr.invoke(observer);
+    }
+}
+
+/**
+ * Receives the file size.
+ * It initiates a loadTable RPC request to load data from these files as a table.
+ */
+class FileSizeReceiver extends OnCompleteRenderer<FileSizeSketchInfo> {
+    constructor(page: FullPage, operation: ICancellable, protected title: string,
+                protected remoteObjId: RemoteObjectId) {
+        super(page, operation, "Load data");
+    }
+
+    public run(size: FileSizeSketchInfo): void {
+        let fileSize = "Loading " + size.fileCount + " file(s), total size " +
+            significantDigits(size.totalSize);
+        let fn = new RemoteObject(this.remoteObjId);
         let rr = fn.createStreamingRpcRequest<RemoteObjectId>("loadTable", null);
         rr.chain(this.operation);
-        let observer = new RemoteTableReceiver(this.page, rr, this.title, false, null);
+        let observer = new RemoteTableReceiver(this.page, rr, this.title, fileSize, false, null);
         rr.invoke(observer);
     }
 }
@@ -67,7 +88,8 @@ export class InitialObject extends RemoteObject {
     }
 
     public loadLogs(menuPage: FullPage): void {
-        let rr = this.createStreamingRpcRequest<RemoteObjectId>("findLogs", null);
+        // Use a guid to force the request to reload every time
+        let rr = this.createStreamingRpcRequest<RemoteObjectId>("findLogs", uuidv4());
         let observer = new FileNamesReceiver(menuPage, rr, "Hillview logs");
         rr.invoke(observer);
     }
@@ -81,7 +103,7 @@ export class InitialObject extends RemoteObject {
     public loadDBTable(conn: JdbcConnectionInformation, menuPage: FullPage): void {
         let rr = this.createStreamingRpcRequest<RemoteObjectId>("loadDBTable", conn);
         let title = "DB " + conn.database + ":" + conn.table;
-        let observer = new RemoteTableReceiver(menuPage, rr, title, false, null);
+        let observer = new RemoteTableReceiver(menuPage, rr, title, "Reading " + conn.table, false, null);
         rr.invoke(observer);
     }
 }

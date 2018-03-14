@@ -68,6 +68,16 @@ public class Utilities {
         return(s.toString());
     }
 
+    /**
+     * Return a prefix of the argument if it is too long.
+     */
+    @Nullable
+    public static String truncateString(@Nullable String s) {
+        if (s == null || s.length() < 100)
+            return s;
+        return s.substring(0, 99) + "...";
+    }
+
     public static boolean isNullOrEmpty(@Nullable String s) {
         return s == null || s.isEmpty();
     }

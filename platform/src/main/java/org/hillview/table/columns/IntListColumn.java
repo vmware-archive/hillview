@@ -74,7 +74,13 @@ public final class IntListColumn
     public void parseAndAppendString(@Nullable String s) {
         if ((s == null) || s.isEmpty())
             this.parseEmptyOrNull();
-        else
-            this.append(Integer.parseInt(s));
+        else {
+            try {
+                this.append((int) Double.parseDouble(s));
+            } catch (Exception ex) {
+                this.parsingExceptionCount++;
+                this.parseEmptyOrNull();
+            }
+        }
     }
 }

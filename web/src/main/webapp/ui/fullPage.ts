@@ -60,6 +60,7 @@ export class FullPage implements IHtmlElement {
     static pageCounter: number = 0;
     public readonly pageId: number;
     private menuSlot: HTMLElement;
+    private h1: HTMLElement;
 
     /**
      * All visible pages are children of a div named 'top'.
@@ -87,7 +88,7 @@ export class FullPage implements IHtmlElement {
         titleRow.style.display = "flex";
         titleRow.style.width = "100%";
         titleRow.style.flexDirection = "row";
-        titleRow.style.flexWrap = "false";
+        titleRow.style.flexWrap = "nowrap";
         titleRow.style.alignItems = "center";
         this.pageTopLevel.appendChild(titleRow);
         this.menuSlot = document.createElement("div");
@@ -106,6 +107,7 @@ export class FullPage implements IHtmlElement {
         h1.style.textOverflow = "ellipsis";
         h1.style.textAlign = "center";
         h1.style.margin = "0";
+        this.h1 = h1;
         this.addCell(titleRow, h1, false);
 
         if (sourcePage != null) {
@@ -118,12 +120,14 @@ export class FullPage implements IHtmlElement {
         let pageId = document.createElement("span");
         pageId.textContent = "[" + this.pageId + "]";
         pageId.title = "Unique number of this view.";
+        pageId.draggable = true;
+        pageId.ondragstart = (e) => e.dataTransfer.setData("text", this.pageId.toString());
         this.addCell(titleRow, pageId, true);
 
         let close = document.createElement("span");
         close.className = "close";
         close.innerHTML = "&times;";
-        close.onclick = (e) => this.remove();
+        close.onclick = () => this.remove();
         close.title = "Close this view.";
         this.addCell(titleRow, close, true);
 
@@ -132,6 +136,10 @@ export class FullPage implements IHtmlElement {
 
         this.bottomContainer.appendChild(this.progressManager.getHTMLRepresentation());
         this.bottomContainer.appendChild(this.console.getHTMLRepresentation());
+    }
+
+    getTitleElement(): HTMLElement {
+        return this.h1;
     }
 
     openInNewTab(url: string) {

@@ -27,6 +27,7 @@ import org.junit.Test;
 import java.util.List;
 
 public class Issue46Test extends BaseTest {
+    @SuppressWarnings("ObviousNullCheck")
     @Test
     public void createBug() {
         // Creating Int Table

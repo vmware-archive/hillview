@@ -51,17 +51,13 @@ public class CsvFileLoader extends TextFileLoader {
          * If true the file is expected to have a header row.
          */
         public boolean hasHeaderRow;
-        /**
-         * If true columns are allowed to contain "nulls".
-         */
-        public boolean allowMissingData;
     }
 
     private final CsvConfiguration configuration;
     @Nullable
     private Schema actualSchema;
     @Nullable
-    private String schemaPath;
+    private final String schemaPath;
 
     public CsvFileLoader(String path, CsvConfiguration configuration, @Nullable String schemaPath) {
         super(path);
@@ -93,7 +89,12 @@ public class CsvFileLoader extends TextFileLoader {
 
             if (this.configuration.hasHeaderRow) {
                 @Nullable
-                String[] line = reader.parseNext();
+                String[] line = null;
+                try {
+                    line = reader.parseNext();
+                } catch (Exception ex) {
+                    this.error(ex.getMessage());
+                }
                 if (line == null)
                     throw new RuntimeException("Missing header row " + this.filename);
                 if (this.actualSchema == null) {
@@ -105,8 +106,7 @@ public class CsvFileLoader extends TextFileLoader {
                             col = this.actualSchema.newColumnName("Column_" + Integer.toString(index));
                         col = this.actualSchema.newColumnName(col);
                         ColumnDescription cd = new ColumnDescription(col,
-                                ContentsKind.String,
-                                this.configuration.allowMissingData);
+                                ContentsKind.String);
                         this.actualSchema.append(cd);
                         index++;
                     }
@@ -126,7 +126,7 @@ public class CsvFileLoader extends TextFileLoader {
 
                 for (int i = 0; i < columnCount; i++) {
                     ColumnDescription cd = new ColumnDescription("Column " + Integer.toString(i),
-                            ContentsKind.String, this.configuration.allowMissingData);
+                            ContentsKind.String);
                     this.actualSchema.append(cd);
                 }
             }
@@ -137,7 +137,13 @@ public class CsvFileLoader extends TextFileLoader {
             if (firstLine != null)
                 this.append(firstLine);
             while (true) {
-                String[] line = reader.parseNext();
+                @Nullable
+                String[] line = null;
+                try {
+                    line = reader.parseNext();
+                } catch (Exception ex) {
+                    this.error(ex.getMessage());
+                }
                 if (line == null)
                     break;
                 this.append(line);
@@ -157,7 +163,7 @@ public class CsvFileLoader extends TextFileLoader {
                     GuessSchema.SchemaInfo info = gs.guess((IStringColumn)s);
                     if (info.kind != ContentsKind.String &&
                             info.kind != ContentsKind.None)  // all elements are null
-                        sealed[ci] = s.convertKind(info.kind, c.getName(), ms, info.allowMissing);
+                        sealed[ci] = s.convertKind(info.kind, c.getName(), ms);
                     else
                         sealed[ci] = s;
                 } else {

@@ -36,8 +36,8 @@ public class JdbcTest extends BaseTest {
         JdbcDatabase db = new JdbcDatabase(conn);
         try {
             db.connect();
-            ResultSet dbtable = db.getTable(conn.table, rowLimit);
-            ITable table = JdbcDatabase.getTable(dbtable);
+            ResultSet dbTable = db.getTable(conn.table, rowLimit);
+            ITable table = JdbcDatabase.getTable(dbTable);
             db.disconnect();
             return table;
         } catch (Exception e) {

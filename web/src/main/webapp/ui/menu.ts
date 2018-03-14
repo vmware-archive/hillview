@@ -21,7 +21,7 @@ import {makeId} from "../util";
 /**
  * One item in a menu.
  */
-export interface MenuItem {
+export interface BaseMenuItem {
     /**
      * Text that is written on screen when menu is displayed.
      */
@@ -30,14 +30,18 @@ export interface MenuItem {
      * String that is displayed as a help popup.
      */
     readonly help: string;
+
+}
+
+export interface MenuItem extends BaseMenuItem {
     /**
      * Action that is executed when the item is selected by the user.
      */
     readonly action: () => void;
 }
 
-abstract class BaseMenu implements IHtmlElement {
-    items: MenuItem[];
+abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
+    items: MI[];
     /**
      * Actual html representations corresponding to the submenu items.
      * They are stored in the same order as the items.
@@ -47,7 +51,7 @@ abstract class BaseMenu implements IHtmlElement {
     cells: HTMLTableDataCellElement[];
     selectedIndex: number;  // -1 if no item is selected
 
-    constructor(mis: MenuItem[]) {
+    constructor() {
         this.items = [];
         this.cells = [];
         this.selectedIndex = -1;
@@ -55,13 +59,16 @@ abstract class BaseMenu implements IHtmlElement {
         this.outer.classList.add("menu", "hidden");
         this.tableBody = this.outer.createTBody();
         this.outer.onkeydown = e => this.keyAction(e);
+    }
+
+    protected addItems(mis: MI[]): void {
         if (mis != null) {
             for (let mi of mis)
                 this.addItem(mi, true);
         }
     }
 
-    abstract setAction(mi: MenuItem, enabled: boolean): void;
+    abstract setAction(mi: MI, enabled: boolean): void;
 
     keyAction(e: KeyboardEvent): void {
         if (e.code == "ArrowDown" && this.selectedIndex < this.cells.length - 1) {
@@ -95,14 +102,14 @@ abstract class BaseMenu implements IHtmlElement {
         this.outer.classList.add("hidden");
     }
 
-    getCell(mi: MenuItem): HTMLTableCellElement {
+    getCell(mi: MI): HTMLTableCellElement {
         let index = this.find(mi.text);
         if (index < 0)
             throw "Cannot find menu item";
         return this.cells[index];
     }
 
-    public addItem(mi: MenuItem, enabled: boolean): HTMLTableDataCellElement {
+    public addItem(mi: MI, enabled: boolean): HTMLTableDataCellElement {
         let index = this.items.length;
         this.items.push(mi);
         let trow = this.tableBody.insertRow();
@@ -158,7 +165,7 @@ abstract class BaseMenu implements IHtmlElement {
         this.setAction(this.items[index], enabled);
     }
 
-    enableItem(mi: MenuItem, enabled: boolean): void {
+    enableItem(mi: MI, enabled: boolean): void {
         this.enable(mi.text, enabled);
     }
 
@@ -189,14 +196,15 @@ abstract class BaseMenu implements IHtmlElement {
 /**
  * A context menu is displayed on right-click on some displayed element.
  */
-export class ContextMenu extends BaseMenu implements IHtmlElement {
+export class ContextMenu extends BaseMenu<MenuItem> implements IHtmlElement {
     /**
      * Create a context menu.
      * @param parent            HTML element where this is inserted.
      * @param {MenuItem[]} mis  List of menu items in the context menu.
      */
     constructor(parent: HTMLElement, mis?: MenuItem[]) {
-        super(mis);
+        super();
+        this.addItems(mis);
         this.outer.classList.add("dropdown");
         this.outer.classList.add("menu");
         this.outer.onmouseleave = () => { this.hide() };
@@ -240,13 +248,14 @@ export class ContextMenu extends BaseMenu implements IHtmlElement {
  * A sub-menu is a menu displayed when selecting an item
  * from a topmenu.
  */
-export class SubMenu extends BaseMenu implements IHtmlElement {
+export class SubMenu extends BaseMenu<MenuItem> implements IHtmlElement {
     /**
      * Build a submenu.
      * @param {MenuItem[]} mis  List of items to display.
      */
     constructor(mis: MenuItem[]) {
-        super(mis);
+        super();
+        this.addItems(mis);
         this.outer.id = "topMenu";
     }
 
@@ -268,51 +277,57 @@ export class SubMenu extends BaseMenu implements IHtmlElement {
  * A topmenu is composed only of submenus.
  * TODO: allow a topmenu to also have simple items.
  */
-export interface TopMenuItem {
-    readonly text: string;
+export interface TopMenuItem extends BaseMenuItem {
     readonly subMenu: SubMenu;
-    readonly help: string;
 }
 
 /**
  * A TopMenu is a two-level menu.
  */
-export class TopMenu implements IHtmlElement {
-    items: TopMenuItem[];
-    private outer: HTMLTableElement;
-    private tableBody: HTMLTableSectionElement;
-
+export class TopMenu extends BaseMenu<TopMenuItem> {
     /**
      * Create a topmenu.
      * @param {TopMenuItem[]} mis  List of top menu items to display.
      */
     constructor(mis: TopMenuItem[]) {
-        this.outer = document.createElement("table");
-        this.outer.classList.add("menu");
+        super();
         this.outer.classList.add("topMenu");
-        this.tableBody = this.outer.createTBody();
+        this.outer.classList.remove("hidden");
         this.tableBody.insertRow();
-        this.items = [];
-        if (mis != null) {
-            for (let mi of mis)
-                this.addItem(mi);
-        }
+        this.addItems(mis);
     }
 
     hideSubMenus(): void {
         this.items.forEach((mi) => mi.subMenu.hide());
     }
 
-    addItem(mi: TopMenuItem): void {
+    public addItem(mi: TopMenuItem, enabled: boolean): HTMLTableDataCellElement {
         let cell = this.tableBody.rows.item(0).insertCell();
         cell.id = makeId(mi.text);  // for testing
         cell.textContent = mi.text;
         cell.appendChild(mi.subMenu.getHTMLRepresentation());
-        cell.onclick = () => {this.hideSubMenus(); mi.subMenu.show()};
-        cell.onmouseleave = () => this.hideSubMenus();
+        cell.classList.add("menuItem");
         if (mi.help != null)
             cell.title = mi.help;
         this.items.push(mi);
+        this.cells.push(cell);
+        this.setAction(mi, true);
+        return cell;
+    }
+
+    setAction(mi: TopMenuItem, enabled: boolean): void {
+        let cell = this.getCell(mi);
+        cell.onclick = enabled ? () => {
+            this.hideSubMenus();
+            cell.classList.add("selected");
+            mi.subMenu.show()
+        } : () => {
+            this.hideSubMenus();
+        };
+        cell.onmouseleave = () => {
+            cell.classList.remove("selected");
+            this.hideSubMenus();
+        };
     }
 
     getHTMLRepresentation(): HTMLElement {

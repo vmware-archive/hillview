@@ -57,8 +57,14 @@ class DurationListColumn extends DoubleListColumn implements IDurationColumn {
     public void parseAndAppendString(@Nullable String s) {
         if ((s == null) || s.isEmpty())
             this.parseEmptyOrNull();
-        else
-            this.append(Duration.parse(s));
+        else {
+            try {
+                this.append(Duration.parse(s));
+            } catch (Exception ex) {
+                this.parsingExceptionCount++;
+                this.parseEmptyOrNull();
+            }
+        }
     }
 
     @Override
@@ -87,7 +93,7 @@ class DurationListColumn extends DoubleListColumn implements IDurationColumn {
 
     @Override
     public IColumn convertKind(
-            ContentsKind kind, String newColName, IMembershipSet set, boolean allowMissing) {
-        return IDurationColumn.super.convertKind(kind, newColName, set, allowMissing);
+            ContentsKind kind, String newColName, IMembershipSet set) {
+        return IDurationColumn.super.convertKind(kind, newColName, set);
     }
 }

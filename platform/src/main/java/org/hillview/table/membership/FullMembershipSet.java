@@ -125,7 +125,7 @@ public class FullMembershipSet implements IMembershipSet {
         private int cursor = 0;
         private final int range;
         private final double rate;
-        private Randomness prg;
+        private final Randomness prg;
 
         public FullSampledRowIterator(final int range, double rate, long seed) {
             this.rate = rate;

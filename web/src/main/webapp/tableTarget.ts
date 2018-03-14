@@ -20,7 +20,7 @@
  */
 
 import {RpcRequest, RemoteObject, OnCompleteRenderer} from "./rpc";
-import {EqualityFilterDescription} from "./dataViews/equalityFilter";
+import {EqualityFilterDescription, FindResult} from "./javaBridge";
 import {ICancellable, Pair, PartialResult, Seed} from "./util";
 import {PointSet, Resolution} from "./ui/ui";
 import {IDataView} from "./ui/dataview";
@@ -35,7 +35,7 @@ import {SelectedObject} from "./selectedObject";
 import {HeatMapArrayData} from "./dataViews/trellisHeatMapView";
 
 /**
- * This class methods that correspond directly to TableTarget.java methods.
+ * This class has methods that correspond directly to TableTarget.java methods.
  */
 export class RemoteTableObject extends RemoteObject {
     /**
@@ -53,6 +53,19 @@ export class RemoteTableObject extends RemoteObject {
 
     public createZipRequest(r: RemoteObject): RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<RemoteObjectId>("zip", r.remoteObjectId);
+    }
+
+    public createFindRequest(order: RecordOrder, topRow: any[], toFind: string, regex: boolean,
+                             subString: boolean, caseSensitive: boolean):
+        RpcRequest<PartialResult<FindResult>> {
+        return this.createStreamingRpcRequest<FindResult>("find", {
+            toFind: toFind,
+            regex: regex,
+            subString: subString,
+            topRow: topRow,
+            order: order,
+            caseSensitive: caseSensitive
+        });
     }
 
     public createQuantileRequest(rowCount: number, o: RecordOrder, position: number):
@@ -100,13 +113,13 @@ export class RemoteTableObject extends RemoteObject {
     public createHeavyHittersRequest(columns: IColumnDescription[],
                                      percent: number,
                                      totalRows: number,
-                                     isMG: boolean): RpcRequest<PartialResult<TopList>> {
-        if (isMG) {
+                                     exact: boolean): RpcRequest<PartialResult<TopList>> {
+        if (exact) {
             return this.createStreamingRpcRequest<TopList>("heavyHittersMG",
                 {columns: columns, amount: percent,
                     totalRows: totalRows, seed: Seed.instance.get() });
         } else {
-            return this.createStreamingRpcRequest<TopList>("heavyHitters",
+            return this.createStreamingRpcRequest<TopList>("heavyHittersSampling",
                 {columns: columns, amount: percent,
                     totalRows: totalRows, seed: Seed.instance.get() });
         }
@@ -155,6 +168,10 @@ RpcRequest<PartialResult<RemoteObjectId>> {
     public createFilter2DRequest(xRange: FilterDescription, yRange: FilterDescription):
             RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<RemoteObjectId>("filter2DRange", {first: xRange, second: yRange});
+    }
+
+    public createHistogram2DRequest(info: Histogram2DArgs): RpcRequest<PartialResult<Pair<HeatMap, Histogram>>> {
+        return this.createStreamingRpcRequest<Pair<HeatMap, Histogram>>("histogram2D", info);
     }
 
     public createHeatMapRequest(info: Histogram2DArgs): RpcRequest<PartialResult<HeatMap>> {
@@ -216,7 +233,13 @@ export abstract class RemoteTableObjectView extends RemoteTableObject implements
         if (page == null)
             throw("null FullPage");
         this.page = page;
+        if (this.topLevel != null) {
+            this.topLevel.ondragover = e => e.preventDefault();
+            this.topLevel.ondrop = e => this.drop(e);
+        }
     }
+
+    drop(e: DragEvent): void {}
 
     getPage() : FullPage {
         if (this.page == null)

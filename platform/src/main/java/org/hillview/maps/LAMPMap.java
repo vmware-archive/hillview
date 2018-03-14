@@ -65,7 +65,7 @@ public class LAMPMap implements IMap<ITable, ITable> {
         int colSize = set.getMax();
         for (int i = 0; i < this.lowDims; i++) {
             ColumnDescription cd = new ColumnDescription(
-                    this.newColNames[i], ContentsKind.Double, true);
+                    this.newColNames[i], ContentsKind.Double);
             if (set.useSparseColumn(set.getSize()))
                 newColumns[i] = new SparseColumn(cd, colSize);
             else

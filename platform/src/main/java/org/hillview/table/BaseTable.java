@@ -63,7 +63,7 @@ public abstract class BaseTable implements ITable, Serializable {
         this.columns = new HashMap<String, IColumn>();
         for (final String c : schema.getColumnNames()) {
             ColumnDescription cd = schema.getDescription(c);
-            this.columns.put(c, BaseArrayColumn.create(cd));
+            this.columns.put(c, BaseArrayColumn.create(cd, 0));
         }
     }
 
@@ -167,7 +167,7 @@ public abstract class BaseTable implements ITable, Serializable {
             nextRow = rowIt.getNextRow();
         int count = 0;
         while ((nextRow >= 0) && (count < rowsToDisplay)) {
-            RowSnapshot rs = new RowSnapshot(this, nextRow);
+            @SuppressWarnings("MismatchedQueryAndUpdateOfCollection") RowSnapshot rs = new RowSnapshot(this, nextRow);
             builder.append(rs.toString());
             builder.append(System.getProperty("line.separator"));
             nextRow = rowIt.getNextRow();

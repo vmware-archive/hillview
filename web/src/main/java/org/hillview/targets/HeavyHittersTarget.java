@@ -32,7 +32,7 @@ final class HeavyHittersTarget extends RpcTarget {
     HeavyHittersTarget(final FreqKList heavyHitters, final HillviewComputation computation) {
         super(computation);
         this.heavyHitters = heavyHitters;
-        HillviewLogger.instance.info("Heavy hitters", "{0}", heavyHitters.getDistinctRowCount());
+        HillviewLogger.instance.info("Heavy hitters", "{0}", heavyHitters.getSize());
         this.registerObject();
     }
 }

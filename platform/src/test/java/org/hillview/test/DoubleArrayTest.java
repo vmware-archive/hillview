@@ -32,7 +32,7 @@ import static org.junit.Assert.assertTrue;
 public class DoubleArrayTest extends BaseTest {
     private final int size = 100;
     private static final ColumnDescription desc = new
-            ColumnDescription("SQRT", ContentsKind.Double, true);
+            ColumnDescription("SQRT", ContentsKind.Double);
 
     /**
      * Generates a double array with every fifth entry missing

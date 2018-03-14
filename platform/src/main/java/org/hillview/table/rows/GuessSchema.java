@@ -20,6 +20,7 @@ package org.hillview.table.rows;
 import com.google.gson.internal.Streams;
 import com.google.gson.stream.JsonReader;
 import org.hillview.table.api.ContentsKind;
+import org.hillview.table.api.ICategoryColumn;
 import org.hillview.table.api.IStringColumn;
 import org.hillview.utils.DateParsing;
 
@@ -27,6 +28,7 @@ import javax.annotation.Nullable;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.HashMap;
+import java.util.HashSet;
 
 /**
  * Helper class to guess the schema of data given a set of strings.
@@ -44,6 +46,11 @@ public class GuessSchema {
         public SchemaInfo() {
             this(ContentsKind.None, false);
         }
+
+        public String toString() {
+            return this.kind.toString() + ", " +
+                    (this.allowMissing ? "allow missing" : "no missing");
+        }
     }
 
     enum CanParse {
@@ -58,29 +65,52 @@ public class GuessSchema {
     static final HashMap<ContentsKind, ContentsKind[]> successor =
             new HashMap<ContentsKind, ContentsKind[]>();
 
+    /**
+     * All strings seen so far - used to detect categories.
+     */
+    HashSet<String> stringSet;
+    boolean canBeCategory;
+
     static {
         successor.put(ContentsKind.None, new ContentsKind[]{
                 ContentsKind.Integer, ContentsKind.Double,
-                ContentsKind.Duration, ContentsKind.Date, ContentsKind.Json, ContentsKind.String });
+                ContentsKind.Duration, ContentsKind.Date,
+                ContentsKind.Json, ContentsKind.Category,
+                ContentsKind.String
+        });
         successor.put(ContentsKind.Integer,
-                new ContentsKind[] { ContentsKind.Double, ContentsKind.Json, ContentsKind.String });
+                new ContentsKind[] { ContentsKind.Double, ContentsKind.Json,
+                        ContentsKind.Category, ContentsKind.String
+        });
         successor.put(ContentsKind.Double,
-                new ContentsKind[] { ContentsKind.Json, ContentsKind.String });
-        successor.put(ContentsKind.Date, new ContentsKind[] { ContentsKind.String });
-        successor.put(ContentsKind.Duration, new ContentsKind[] { ContentsKind.String });
+                new ContentsKind[] { ContentsKind.Json, ContentsKind.Category, ContentsKind.String });
+        successor.put(ContentsKind.Date, new ContentsKind[]
+                { ContentsKind.Category, ContentsKind.String });
+        successor.put(ContentsKind.Duration, new ContentsKind[]
+                { ContentsKind.Category, ContentsKind.String });
         successor.put(ContentsKind.Json, new ContentsKind[] { ContentsKind.String });
+        successor.put(ContentsKind.Category, new ContentsKind[] { ContentsKind.String });
     }
 
     @Nullable
-    DateParsing parser;
+    DateParsing dateParser;
 
     public GuessSchema() {
-        this.parser = null;
+        this.dateParser = null;
+        this.stringSet = new HashSet<String>();
+        this.canBeCategory = true;
     }
 
     void guess(@Nullable String value, SchemaInfo info) {
         if (info.kind == ContentsKind.String)
             return;
+
+        if (this.canBeCategory) {
+            this.stringSet.add(value);
+            if (this.stringSet.size() > ICategoryColumn.maxDistinctCount / 2)
+                this.canBeCategory = false;
+        }
+
         CanParse cp = this.canParse(value, info.kind);
         if (cp == CanParse.Yes)
             return;
@@ -100,7 +130,7 @@ public class GuessSchema {
                 return;
             }
         }
-        throw new RuntimeException("Could not guess kind of " + value);
+        throw new RuntimeException("Could not guess kind of `" + value + "' currently " + info);
     }
 
     public SchemaInfo guess(Iterable<String> values) {
@@ -130,13 +160,14 @@ public class GuessSchema {
             case None:
                 return CanParse.No;
             case Category:
+                return this.canBeCategory ? CanParse.Yes : CanParse.No;
             case String:
                 return CanParse.Yes;
             case Date:
                 try {
-                    if (this.parser == null)
-                        this.parser = new DateParsing(value);
-                    this.parser.parse(value);
+                    if (this.dateParser == null)
+                        this.dateParser = new DateParsing(value);
+                    this.dateParser.parse(value);
                     return CanParse.Yes;
                 } catch (Exception ex) {
                     return CanParse.No;

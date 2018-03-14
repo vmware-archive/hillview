@@ -43,7 +43,8 @@ public class Randomness {
     public long nextLong() { return this.myPrg.nextLong(); }
 
     /**
-     * @return the next pseudarandum Geometric with distribution parameter p. Should be more efficient than using logs.
+     * @return the next pseudorandom Geometric with distribution parameter p. Should be more
+     * efficient than using logs.
      */
     public int nextGeometric(double p) {
         if (p <= 0) throw new IllegalArgumentException("parameter of Geometric Distribution must be positive");

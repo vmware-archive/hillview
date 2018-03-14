@@ -41,8 +41,8 @@ public class TestTables {
      * @return A small table with some interesting contents.
      */
     public static Table testTable() {
-        ColumnDescription c0 = new ColumnDescription("Name", ContentsKind.Category, false);
-        ColumnDescription c1 = new ColumnDescription("Age", ContentsKind.Integer, false);
+        ColumnDescription c0 = new ColumnDescription("Name", ContentsKind.Category);
+        ColumnDescription c1 = new ColumnDescription("Age", ContentsKind.Integer);
         CategoryArrayColumn sac = new CategoryArrayColumn(c0,
                 new String[] { "Mike", "John", "Tom", "Bill", "Bill", "Smith", "Donald", "Bruce",
                                "Bob", "Frank", "Richard", "Steve", "Dave" });
@@ -55,8 +55,8 @@ public class TestTables {
      * @return A small table with some repeated content.
      */
     public static Table testRepTable() {
-        ColumnDescription c0 = new ColumnDescription("Name", ContentsKind.Category, false);
-        ColumnDescription c1 = new ColumnDescription("Age", ContentsKind.Integer, false);
+        ColumnDescription c0 = new ColumnDescription("Name", ContentsKind.Category);
+        ColumnDescription c1 = new ColumnDescription("Age", ContentsKind.Integer);
         CategoryArrayColumn sac = new CategoryArrayColumn(c0,
                 new String[] { "Mike", "John", "Tom", "Bill", "Bill", "Smith", "Donald", "Bruce",
                         "Bob", "Frank", "Richard", "Steve", "Dave", "Mike", "Ed" });
@@ -74,11 +74,11 @@ public class TestTables {
      * @return A table with an arbitrary number of rows. It contains 'count' rows that have 'test' in the Name column.
      */
     public static Table testLargeStringTable(int size, String[] others, int count, String test) {
-        ColumnDescription c0 = new ColumnDescription("Name", ContentsKind.Category, false);
-        ColumnDescription c1 = new ColumnDescription("Age", ContentsKind.Integer, false);
+        ColumnDescription c0 = new ColumnDescription("Name", ContentsKind.Category);
+        ColumnDescription c1 = new ColumnDescription("Age", ContentsKind.Integer);
 
         //Assert.assertTrue(!Arrays.asList(others).contains(test));
-        Random random = new Random();
+        Random random = new Random(0);
         ArrayList<String> names = new ArrayList<String>();
         ArrayList<Integer> ages = new ArrayList<Integer>();
         for (int i = 0; i < size - count; i++) {
@@ -216,7 +216,7 @@ public class TestTables {
         IntArrayColumn[] intCol = new IntArrayColumn[numCols];
         for (int i =0; i<  numCols; i++) {
             name[i] = "Col" + String.valueOf(i);
-            desc[i] = new ColumnDescription(name[i], ContentsKind.Integer, false);
+            desc[i] = new ColumnDescription(name[i], ContentsKind.Integer);
             intCol[i] = new IntArrayColumn(desc[i], size);
             rho[i] = ((i==0) ? 1 : (rho[i-1]*0.8));
             //System.out.printf("Rho %d = %f\n",i, rho[i]);
@@ -262,15 +262,15 @@ public class TestTables {
 
     public static ITable getCentroidTestTable() {
         DoubleArrayColumn colX = new DoubleArrayColumn(
-                new ColumnDescription("x", ContentsKind.Double, false),
+                new ColumnDescription("x", ContentsKind.Double),
                 new double[]{1, 2, 2, 3, 4, 5, 5, 6}
         );
         DoubleArrayColumn colY = new DoubleArrayColumn(
-                new ColumnDescription("y", ContentsKind.Double, false),
+                new ColumnDescription("y", ContentsKind.Double),
                 new double[]{11, 10, 12, 11, 26, 25, 27, 26}
         );
         CategoryArrayColumn fruitType = new CategoryArrayColumn(
-                new ColumnDescription("FruitType", ContentsKind.Category, false),
+                new ColumnDescription("FruitType", ContentsKind.Category),
                 new String[]{"Banana", "Banana", "Banana", "Banana", "Orange", "Orange", "Orange", "Orange"}
         );
         return new Table(Arrays.asList(colX, colY, fruitType));

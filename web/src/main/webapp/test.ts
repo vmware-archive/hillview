@@ -92,7 +92,8 @@ export class Test {
      */
     public runNext(): void {
         if (this.testProgram.length <= this.programCounter) {
-            console.log("Tests are finished");
+            if (this.testProgram.length != 0)
+                console.log("Tests are finished");
             return;
         }
         let op = this.testProgram[this.programCounter];
@@ -113,7 +114,7 @@ export class Test {
         this.addProgram([{
             description: "Load all flights",
             cond: () => true,
-            cont: () => findElement("#hillviewPage0 #topMenu #Flights__all_").click()
+            cont: () => findElement("#hillviewPage0 #topMenu #Flights").click()
         }, {
             description: "Show all columns",
             cond: () => findElement("#hillviewPage1 .idle") != null,
@@ -217,16 +218,23 @@ export class Test {
                 (<HTMLSelectElement>findElement(".dialog #complement")).value = "Equality";
                 findElement(".dialog .confirm").click();
             }
-        },{
+        }, {
+            description: "Change buckets",
+            cond: () => findElement("#hillviewPage7 .idle") != null,
+            cont: () => {
+                let el2 = findElement("#hillviewPage6 #topMenu #__buckets___");
+                el2.click();
+                (<HTMLInputElement>findElement(".dialog #n_buckets")).value = "10";
+                findElement(".dialog .confirm").click();
+            }
+        }, {
             description: "Close some windows",
             cond: () => true,
             cont: () => {
-                /*
-                findSelectedElement("#hillviewPage2 .close").click();
-                findSelectedElement("#hillviewPage3 .close").click();
-                findSelectedElement("#hillviewPage4 .close").click();
-                findSelectedElement("#hillviewPage5 .close").click();
-                */
+                for (let i = 2; i < 8; i++) {
+                    let el = findElement("#hillviewPage" + i.toString() + " .close");
+                    //el.click();
+                }
             }
         }
         ]);

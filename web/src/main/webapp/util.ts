@@ -141,7 +141,7 @@ export function significantDigits(n: number): string {
     } else if (absn > 1e6) {
         suffix = "M";
         n = n / 1e6;
-    } else if (absn > 5e3) {
+    } else if (absn > 10e4) {
         // This will prevent many year values from being converted
         suffix = "K";
         n = n / 1e3;
@@ -268,6 +268,14 @@ export function isInteger(n: number) {
  */
 export function cloneArray<T>(arr: T[]): T[] {
     return arr.slice(0);
+}
+
+export function uuidv4(): string {
+    // From https://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        let r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
 }
 
 /**

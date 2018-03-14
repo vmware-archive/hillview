@@ -26,6 +26,8 @@ import javax.websocket.Session;
  * This class models the context in which an RpcRequest is executed.
  */
 public final class RpcRequestContext {
+    private static int currentId = 0;
+    private final int id;
     /**
      * If non-null this request is being executed within the context of a web transaction
      * initiated by a user.
@@ -39,11 +41,13 @@ public final class RpcRequestContext {
     final HillviewComputation computation;
 
     RpcRequestContext(Session session) {
+        this.id = currentId++;
         this.session = session;
         this.computation = null;
     }
 
     RpcRequestContext(HillviewComputation computation) {
+        this.id = currentId++;
         this.session = null;
         this.computation = computation;
     }
@@ -61,5 +65,9 @@ public final class RpcRequestContext {
             return null;
         }
         return this.session;
+    }
+
+    public String toString() {
+        return "[Id=" + this.id + ", Session=" + this.session + ", Computation=" + this.computation + "]";
     }
 }

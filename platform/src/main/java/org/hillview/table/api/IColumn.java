@@ -44,6 +44,10 @@ public interface IColumn extends Serializable {
     Instant getDate(int rowIndex);
     @Nullable
     Duration getDuration(int rowIndex);
+    /**
+     * Number of exceptions that have occurred during parsing.
+     */
+    int getParsingExceptionCount();
 
     /* This function is inefficient, it should be used sparingly. It
        will cast the value to an Object, boxing it if necessary. It returns null
@@ -51,6 +55,8 @@ public interface IColumn extends Serializable {
      */
     @Nullable
     default Object getObject(final int rowIndex) {
+        if (rowIndex < 0)
+            throw new RuntimeException("Checking for negative row " + rowIndex);
         if (this.isMissing(rowIndex)) { return null; }
         switch (this.getDescription().kind) {
             case Json:
@@ -121,9 +127,8 @@ public interface IColumn extends Serializable {
     }
 
     default IMutableColumn allocateConvertedColumn(
-        ContentsKind kind, IMembershipSet set, String newColName, boolean allowMissing) {
-        ColumnDescription cd = new ColumnDescription(
-                newColName, kind, allowMissing);
+        ContentsKind kind, IMembershipSet set, String newColName) {
+        ColumnDescription cd = new ColumnDescription(newColName, kind);
         if (set.useSparseColumn())
             return new SparseColumn(cd, this.sizeInRows());
 
@@ -169,11 +174,9 @@ public interface IColumn extends Serializable {
      * @param kind       The kind of the destination column.
      * @param newColName Name of the new column.
      * @param set        Set of elements that have to be converted.
-     * @param allowMissing If true the produced column will allow missing values.
      * @return An IColumn that is a copy of this column, converted to the specified kind.
      */
-    IColumn convertKind(ContentsKind kind, String newColName,
-                        IMembershipSet set, boolean allowMissing);
+    IColumn convertKind(ContentsKind kind, String newColName, IMembershipSet set);
 
     default String getName() {
         return this.getDescription().name;

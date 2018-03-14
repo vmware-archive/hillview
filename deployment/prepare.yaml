@@ -1,5 +1,82 @@
 ---
 
+# Sets up the web server by installing Tomcat and updating the ROOT war with the Hillview Web server war.
+- hosts: web
+  tasks:
+    - name: Load variables from configuration file
+      include_vars: config.yaml
+
+    - stat:
+         path: "{{service_folder}}"
+      register: folder
+
+    - name: Create root service folder
+      file:
+        path: "{{service_folder}}"
+        state: directory
+        mode: 0755
+        owner: "{{ansible_user}}"
+      become: yes
+      when: folder.stat.isdir is not defined
+
+    - stat:
+         path: "{{service_folder}}/{{tomcat_version}}"
+      register: p
+
+    - name: Download and unpack Tomcat
+      unarchive:
+        creates: "{{service_folder}}/{{tomcat}}"
+        src: "http://archive.apache.org/dist/tomcat/tomcat-9/v{{tomcat_version}}/bin/{{tomcat}}.tar.gz"
+        dest: "{{service_folder}}"
+        remote_src: yes
+        copy: no
+      when: p.stat.isdir is not defined or p.stat.isdir == False
+
+    - name: Remove previous ROOT
+      file:
+        path: "{{service_folder}}//{{tomcat}}/webapps/ROOT"
+        state: absent
+
+    - name: Remove previous ROOT.war
+      file:
+        path: "{{service_folder}}/{{tomcat}}/webapps/ROOT.war"
+        state: absent
+
+    - name: Copy files
+      copy: src={{item.src}} dest={{item.dest}}
+      with_items:
+              - {src: '../web/target/web-1.0-SNAPSHOT.war', dest: "{{service_folder}}/{{tomcat}}/webapps/ROOT.war" }
+
+    - name: Create file with list of servers
+      copy:
+        content: ""
+        dest: "{{service_folder}}/serverlist"
+        force: yes
+        mode: 0755
+
+    - name: Create file with list of backend servers
+      lineinfile: dest="{{service_folder}}/serverlist" line="{{item}}:{{backend_port}}"
+      with_items: "{{groups.backends}}"
+
+    - name: Delete old log files
+      shell:
+        chdir: "{{service_folder}}"
+        cmd: rm -f hillview-web.log hillview-web.log.* hillview-web.log*.lck
+      when: cleanup
+
+    - name: Create code directory
+      file:
+        path: "{{service_folder}}/hillview"
+        state: directory
+        mode: 0755
+
+    - name: Create link to web server log file
+      file:
+        state=link
+        force=yes
+        src="{{service_folder}}/hillview-web.log"
+        path="{{service_folder}}/hillview/hillview-web.log"
+
 # Sets up the backend servers by copying over the hillview server jars
 - hosts: backends
   tasks:
@@ -39,79 +116,5 @@
     - name: Delete old log files
       shell:
         chdir: "{{service_folder}}/hillview"
-        cmd: rm -f *.log *.log.* *.log*.lck
-
-# Sets up the web server by installing Tomcat and updating the ROOT war with the Hillview Web server war.
-- hosts: web
-  tasks:
-    - name: Load variables from configuration file
-      include_vars: config.yaml
-
-    - stat:
-         path: "{{service_folder}}"
-      register: folder
-
-    - name: Create root service folder
-      file:
-        path: "{{service_folder}}"
-        state: directory
-        mode: 0755
-        owner: "{{ansible_user}}"
-      become: yes
-      when: folder.stat.isdir is not defined
-
-    - stat:
-         path: "{{service_folder}}/{{tomcat_version}}"
-      register: p
-
-    - name: Download and unpack Tomcat
-      unarchive:
-        creates: "{{service_folder}}/{{tomcat}}"
-        src: "http://archive.apache.org/dist/tomcat/tomcat-8/v{{tomcat_version}}/bin/{{tomcat}}.tar.gz"
-        dest: "{{service_folder}}"
-        remote_src: yes
-      when: p.stat.isdir is not defined or p.stat.isdir == False
-
-    - name: Remove previous ROOT
-      file:
-        path: "{{service_folder}}//{{tomcat}}/webapps/ROOT"
-        state: absent
-
-    - name: Remove previous ROOT.war
-      file:
-        path: "{{service_folder}}/{{tomcat}}/webapps/ROOT.war"
-        state: absent
-
-    - name: Copy files
-      copy: src={{item.src}} dest={{item.dest}}
-      with_items:
-              - {src: '../web/target/web-1.0-SNAPSHOT.war', dest: "{{service_folder}}/{{tomcat}}/webapps/ROOT.war" }
-
-    - name: Create file with list of servers
-      copy:
-        content: ""
-        dest: "{{service_folder}}/serverlist"
-        force: yes
-        mode: 0755
-
-    - name: Create file with list of backend servers
-      lineinfile: dest="{{service_folder}}/serverlist" line="{{item}}:{{backend_port}}"
-      with_items: "{{groups.backends}}"
-
-    - name: Delete old log files
-      shell:
-        chdir: "{{service_folder}}"
-        cmd: rm -f *.log *.log.* *.log*.lck
-
-    - name: Create code directory
-      file:
-        path: "{{service_folder}}/hillview"
-        state: directory
-        mode: 0755
-
-    - name: Create link to web server log file
-      file:
-        state=link
-        force=yes
-        src="{{service_folder}}/hillview-web.log"
-        path="{{service_folder}}/hillview/hillview-web.log"
+        cmd: rm -f hillview.log hillview.log.* hillview.log*.lck
+      when: cleanup

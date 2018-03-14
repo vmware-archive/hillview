@@ -24,7 +24,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class IntListTest extends BaseTest {
-    private final ColumnDescription desc = new ColumnDescription("test", ContentsKind.Integer, true);
+    private final ColumnDescription desc = new ColumnDescription("test", ContentsKind.Integer);
 
     /* Test for constructor using length and no arrays*/
     @Test

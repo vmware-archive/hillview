@@ -35,7 +35,7 @@ import java.util.stream.IntStream;
  */
 public class HistogramBenchmark {
     private static final ColumnDescription desc = new
-            ColumnDescription("SQRT", ContentsKind.Double, true);
+            ColumnDescription("SQRT", ContentsKind.Double);
 
     /**
      * Generates a double array with every fifth entry missing
@@ -58,7 +58,7 @@ public class HistogramBenchmark {
         return col;
     }
 
-    static long time(Runnable runnable) {
+    public static long time(Runnable runnable) {
         long start = System.nanoTime();
         runnable.run();
         long end = System.nanoTime();

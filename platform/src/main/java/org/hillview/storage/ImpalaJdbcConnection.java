@@ -25,7 +25,7 @@ public class ImpalaJdbcConnection extends JdbcConnection {
     }
 
     @Override
-    public String getQuery(String table, int rowCount) {
+    public String getQueryToReadTable(String table, int rowCount) {
         String result = "SELECT * FROM " + table;
         if (rowCount >= 0)
             result += " LIMIT " + Integer.toString(rowCount);
@@ -36,7 +36,7 @@ public class ImpalaJdbcConnection extends JdbcConnection {
     public String getURL() {
         this.addParameter("UseNativeQuery", "1");
 
-        int authMech = 0;
+        int authMechanism = 0;
         boolean hasUser = false;
         boolean hasPassword = false;
 
@@ -46,12 +46,13 @@ public class ImpalaJdbcConnection extends JdbcConnection {
             hasPassword = true;
 
         if (hasUser && hasPassword)
-            authMech = 3;
+            authMechanism = 3;
         else if (hasUser)
-            authMech = 2;
+            authMechanism = 2;
 
-        this.addParameter("AuthMech", Integer.toString(authMech));
+        this.addParameter("AuthMech", Integer.toString(authMechanism));
         this.addParameter("SSL", "1");
+        //this.addParameter("LogLevel", "3");
 
         StringBuilder builder = new StringBuilder();
         this.addBaseUrl(builder);

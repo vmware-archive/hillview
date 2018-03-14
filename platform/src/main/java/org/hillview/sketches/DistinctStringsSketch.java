@@ -70,7 +70,8 @@ public class DistinctStringsSketch implements ISketch<ITable, JsonList<DistinctS
             int row = it.getNextRow();
             while (row >= 0) {
                 String s = col.getString(row);
-                ri.add(s);
+                if (s != null)
+                    ri.add(s);
                 row = it.getNextRow();
             }
         }

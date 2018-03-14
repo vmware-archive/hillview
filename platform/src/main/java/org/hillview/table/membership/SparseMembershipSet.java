@@ -32,6 +32,10 @@ import org.hillview.utils.Randomness;
  */
 public class SparseMembershipSet implements IMembershipSet, IMutableMembershipSet {
     private final IntSet membershipMap;
+    /* If the IntSet is smaller than this then the class would ask the IntSet to sort its array
+    for the iterator.
+     * The sorting takes time but makes the iterator faster */
+    public static final int thresholdSortedIterator = 50000000;
     private final int max;
 
     @Override
@@ -93,10 +97,7 @@ public class SparseMembershipSet implements IMembershipSet, IMutableMembershipSe
     }
 
     @Override
-    public IRowIterator getIterator() {
-        return new SparseIterator(this.membershipMap);
-    }
-
+    public IRowIterator getIterator() { return new SparseIterator(this.membershipMap); }
 
     /**
      * Returns an iterator that runs over the sampled data.
@@ -120,14 +121,14 @@ public class SparseMembershipSet implements IMembershipSet, IMutableMembershipSe
         final IntSet mMap;
         final double rate;
 
-        private SparseSampledRowIterator(final double rate, final long seed, IntSet mmap) {
-            this.mMap = mmap;
+        private SparseSampledRowIterator(final double rate, final long seed, IntSet mMap) {
+            this.mMap = mMap;
             psg = new Randomness(seed);
             double bias = psg.nextDouble();
             if (bias < rate)
-                this.sampleSize = (int) Math.floor(rate * mMap.size());
-            else this.sampleSize = (int) Math.ceil(rate * mMap.size());
-            currentCursor = psg.nextInt(mMap.arraySize());
+                this.sampleSize = (int) Math.floor(rate * this.mMap.size());
+            else this.sampleSize = (int) Math.ceil(rate * this.mMap.size());
+            currentCursor = psg.nextInt(this.mMap.arraySize());
             this.rate = rate;
         }
 
@@ -153,9 +154,7 @@ public class SparseMembershipSet implements IMembershipSet, IMutableMembershipSe
     private static class SparseIterator implements IRowIterator {
         final private IntSet.IntSetIterator mySetIterator;
 
-        private SparseIterator(final IntSet mySet) {
-            this.mySetIterator = mySet.getIterator();
-        }
+        private SparseIterator(final IntSet mySet) { this.mySetIterator = mySet.getIterator(); }
 
         @Override
         public int getNextRow() {

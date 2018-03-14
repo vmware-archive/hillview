@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-import {d3} from "./d3-modules";
 import {IHtmlElement} from "./ui";
 import {percent} from "../util";
+import {drag as d3drag} from "d3-drag";
+import {mouse as d3mouse, select as d3select} from "d3-selection";
 
 /**
  * A scroll target is an object which supports scrolling.  These are events
@@ -71,12 +72,12 @@ export class ScrollBar implements IHtmlElement {
         this.topLevel.classList.add("hidden");
         this.height = 0;
 
-        let drag = d3.drag()
+        let drag = d3drag()
             .on("start", () => this.dragStart())
             .on("drag", () => this.dragMove())
             .on("end", () => this.dragEnd());
 
-        this.svg = d3.select(this.topLevel)
+        this.svg = d3select(this.topLevel)
             .append("svg")
             .attr("width", ScrollBar.barWidth)
             .attr("height", "100%");
@@ -151,7 +152,7 @@ export class ScrollBar implements IHtmlElement {
     }
 
     dragMove(): void {
-        let position = d3.mouse(this.svg.node());
+        let position = d3mouse(this.svg.node());
         let y = position[1];
         if (y < 0)
             y = 0;

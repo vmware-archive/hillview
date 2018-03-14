@@ -19,8 +19,11 @@ import {Dialog, FieldKind} from "../ui/dialog";
 import {OnCompleteRenderer} from "../rpc";
 import {ICancellable} from "../util";
 import {FullPage} from "../ui/fullPage";
-import {TableView, RemoteTableReceiver} from "./tableView";
-import {allContentsKind, ContentsKind, ConvertColumnInfo, HLogLog} from "../javaBridge";
+import {TableView, TableOperationCompleted} from "./tableView";
+import {
+    allContentsKind, ContentsKind, ConvertColumnInfo, HLogLog, IColumnDescription,
+    RecordOrder
+} from "../javaBridge";
 
 /**
  * A dialog to find out information about how to perform the conversion of the data in a column.
@@ -72,7 +75,9 @@ export class ColumnConverter  {
     constructor(private columnName: string,
         private newKind: ContentsKind,
         private newColumnName: string,
-        private table: TableView) {
+        private table: TableView,
+        private order: RecordOrder,
+        private page: FullPage) {
         this.columnIndex = TableView.allColumnNames(this.table.schema).indexOf(this.columnName);
     }
 
@@ -106,10 +111,19 @@ export class ColumnConverter  {
             newKind: this.newKind,
             columnIndex: this.columnIndex
         };
+        let newPage = new FullPage("New column " + this.newColumnName, "Table", this.page);
+        this.page.insertAfterMe(newPage);
         let rr = this.table.createStreamingRpcRequest<string>("convertColumnMap", args);
         rr.chain(operation);
-        rr.invoke(new RemoteTableReceiver(
-            this.table.getPage(), rr, "New column " + this.newColumnName, true, this.table.originalTableId));
+        let cd: IColumnDescription = {
+            kind: this.newKind,
+            name: this.newColumnName
+        };
+        let schema = this.table.schema.concat(cd);
+        let o = this.order.clone();
+        o.show({columnDescription: cd, isAscending: true});
+        rr.invoke(new TableOperationCompleted(
+            newPage, schema, rr, o, this.table.originalTableId));
     }
 }
 

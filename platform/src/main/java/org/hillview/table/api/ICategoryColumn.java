@@ -25,4 +25,9 @@ public interface ICategoryColumn extends IStringColumn {
      * @param action: Action invoked for each distinct string.
      */
     void allDistinctStrings(Consumer<String> action);
+
+    /**
+     * A categorical column should not have more than this many distinct values.
+     */
+    int maxDistinctCount = 10000;
 }

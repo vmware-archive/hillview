@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-import {d3} from "./ui/d3-modules";
 import Rx = require('rx');
 import Observer = Rx.Observer;
 import {ErrorReporter} from "./ui/errReporter";
@@ -24,6 +23,8 @@ import {ProgressBar} from "./ui/progress";
 import {FullPage} from "./ui/fullPage";
 import {CombineOperators, RemoteObjectId} from "./javaBridge";
 import {Test} from "./test";
+import pako = require('pako');
+import {timeMillisecond as d3timeMillisecond} from 'd3-time';
 
 /**
  * Path in server url for rpc web sockets.
@@ -113,7 +114,7 @@ export class RpcRequest<T> implements ICancellable {
         this.rpcTime = null;
     }
 
-    serialize() : string {
+    serialize() : Uint8Array {
         let argString = "";
         if (this.args == null)
             argString = JSON.stringify(null);
@@ -128,7 +129,9 @@ export class RpcRequest<T> implements ICancellable {
             "requestId": this.requestId,
             "protoVersion": this.protoVersion
         };
-        return JSON.stringify(result);
+        let str = JSON.stringify(result);
+        console.log(formatDate() + " Sending message " + str);
+        return pako.deflate(str);
     }
 
     /**
@@ -180,6 +183,7 @@ export class RpcRequest<T> implements ICancellable {
             // Create a web socked and send the request
             let rpcRequestUrl = "ws://" + window.location.hostname + ":" + window.location.port + "/" + RpcRequestPath;
             this.socket = new WebSocket(rpcRequestUrl);
+            this.socket.binaryType = "arraybuffer";
             this.socket.onerror = function (ev: ErrorEvent) {
                 console.log("socket error " + ev);
                 let msg = ev.message;
@@ -208,9 +212,8 @@ export class RpcRequest<T> implements ICancellable {
             };
             this.socket.onopen = () => {
                 this.closed = false;
-                let reqStr: string = this.serialize();
-                console.log(formatDate() + " Sending message " + reqStr);
-                this.socket.send(reqStr);
+                let reqStr: Uint8Array = this.serialize();
+                this.socket.send(reqStr.buffer);
             };
             this.socket.onclose = (e: CloseEvent) => {
                 console.log("Socket closed");
@@ -281,8 +284,6 @@ export abstract class Renderer<T> implements Rx.Observer<PartialResult<T>> {
                        public description: string) {
         this.progressBar = page.progressManager.newProgressBar(operation, description);
         this.reporter = page.getErrorReporter();
-        // TODO: This may be too eager.
-        this.reporter.clear();
     }
 
     //noinspection JSUnusedLocalSymbols
@@ -336,7 +337,7 @@ export abstract class Renderer<T> implements Rx.Observer<PartialResult<T>> {
      * Note that the operation may have been 'chained' with another operation.
      */
     public elapsedMilliseconds(): number {
-        return d3.timeMillisecond.count(this.operation.startTime(), new Date());
+        return d3timeMillisecond.count(this.operation.startTime(), new Date());
     }
 }
 

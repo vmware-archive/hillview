@@ -18,7 +18,6 @@
 package org.hillview.table.api;
 
 import net.openhft.hashing.LongHashFunction;
-import org.hillview.table.columns.IntArrayColumn;
 
 import javax.annotation.Nullable;
 
@@ -67,9 +66,9 @@ public interface IIntColumn extends IColumn {
 
     @Override
     default IColumn convertKind(
-            ContentsKind kind, String newColName, IMembershipSet set, boolean allowMissing) {
+            ContentsKind kind, String newColName, IMembershipSet set) {
         IMutableColumn newColumn = this.allocateConvertedColumn(
-                kind, set, newColName, allowMissing);
+                kind, set, newColName);
         switch(kind) {
             case Category:
             case Json:

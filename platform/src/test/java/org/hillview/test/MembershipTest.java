@@ -25,7 +25,6 @@ import org.hillview.table.membership.DenseMembershipSet;
 import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.table.membership.MembershipSetFactory;
 import org.hillview.utils.IntSet;
-import org.hillview.utils.Randomness;
 import org.junit.Test;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;

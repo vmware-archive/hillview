@@ -109,6 +109,7 @@ public abstract class RpcTarget implements IJson {
     protected RpcTarget(HillviewComputation computation) {
         this.computation = computation;
         this.objectId = computation.resultId;
+        HillviewLogger.instance.info("Create RpcTarget", "{0}", computation.toString());
     }
 
     /**
@@ -124,8 +125,7 @@ public abstract class RpcTarget implements IJson {
     }
 
     private synchronized void saveSubscription(RpcRequestContext context, Subscription sub) {
-        if (context.session != null)
-            RpcObjectManager.instance.addSubscription(context.session, sub);
+        RpcObjectManager.instance.addSubscription(context, sub);
     }
 
     /**
@@ -152,6 +152,8 @@ public abstract class RpcTarget implements IJson {
      * - parsing the arguments of the RpcCall
      * - sending the replies, in any number they may be, using the context
      * - closing the context session on termination.
+     * The method will most often end by calling runSketch, runMap, etc --
+     * one of the methods below.
      */
     void execute(RpcRequest request, RpcRequestContext context) {
         /*
@@ -166,7 +168,8 @@ public abstract class RpcTarget implements IJson {
             Method method = this.getMethod(request.method);
             if (method == null)
                 throw new RuntimeException(this.toString() + ": No such method " + request.method);
-            HillviewLogger.instance.info("Executing", "{0}", request);
+            HillviewLogger.instance.info("Executing", "request={0}, context={1}",
+                    request.toString(), context.toString());
             method.invoke(this, request, context);
         } catch (Exception ex) {
             HillviewLogger.instance.error("Exception while invoking method", ex);
@@ -201,6 +204,10 @@ public abstract class RpcTarget implements IJson {
             this.target = target;
         }
 
+        void sendReply(final RpcReply reply) {
+            RpcServer.sendReply(reply, this.context.session);
+        }
+
         @Override
         public void onCompleted() {
             HillviewLogger.instance.info("Computation completed", "for {0}", this.name);
@@ -216,7 +223,7 @@ public abstract class RpcTarget implements IJson {
                     this.context.session == null ||
                     !this.context.session.isOpen()) return;
             RpcReply reply = this.request.createReply(throwable);
-            reply.send(this.context.session);
+            this.sendReply(reply);
         }
 
         HillviewComputation getComputation() {
@@ -263,7 +270,7 @@ public abstract class RpcTarget implements IJson {
                 return;
 
             RpcReply reply = this.request.createReply(Utilities.toJsonTree(pr));
-            reply.send(session);
+            this.sendReply(reply);
         }
     }
 
@@ -298,7 +305,7 @@ public abstract class RpcTarget implements IJson {
             // always send null data for partial results
             json.add("data", null);
             RpcReply reply = this.request.createReply(json);
-            reply.send(session);
+            this.sendReply(reply);
         }
 
         @Override
@@ -313,8 +320,8 @@ public abstract class RpcTarget implements IJson {
                 return;
             json.add("data", result.toJsonTree());
             RpcReply reply = this.request.createReply(json);
-            reply.send(this.context.session);
-            this.request.syncCloseSession(this.context.session);
+            this.sendReply(reply);
+            super.onCompleted();
         }
     }
 
@@ -350,7 +357,7 @@ public abstract class RpcTarget implements IJson {
             if (session == null)
                 return;
             RpcReply reply = this.request.createReply(json);
-            reply.send(session);
+            this.sendReply(reply);
         }
     }
 
@@ -378,7 +385,7 @@ public abstract class RpcTarget implements IJson {
     runSketch(IDataSet<T> data, ISketch<T, R> sketch,
               RpcRequest request, RpcRequestContext context) {
         // Run the sketch
-        Observable<PartialResult<R>> sketches = data.sketch(sketch);
+        Observable<PartialResult<R>> sketches = data.sketch(sketch).serialize();
         // Knows how to add partial results
         PartialResultMonoid<R> prm = new PartialResultMonoid<R>(sketch);
         // Prefix sum of the partial results
@@ -404,7 +411,7 @@ public abstract class RpcTarget implements IJson {
                       BiFunction<R, HillviewComputation, S> postprocessing,
                       RpcRequest request, RpcRequestContext context) {
         // Run the sketch
-        Observable<PartialResult<R>> sketches = data.sketch(sketch);
+        Observable<PartialResult<R>> sketches = data.sketch(sketch).serialize();
         // Knows how to add partial results
         PartialResultMonoid<R> prm = new PartialResultMonoid<R>(sketch);
         // Prefix sum of the partial results
@@ -431,7 +438,7 @@ public abstract class RpcTarget implements IJson {
            BiFunction<IDataSet<S>, HillviewComputation, RpcTarget> factory,
            RpcRequest request, RpcRequestContext context) {
         // Run the map
-        Observable<PartialResult<IDataSet<S>>> stream = data.map(map);
+        Observable<PartialResult<IDataSet<S>>> stream = data.map(map).serialize();
         // Knows how to add partial results
         PRDataSetMonoid<S> monoid = new PRDataSetMonoid<S>();
         // Prefix sum of the partial results
@@ -458,7 +465,7 @@ public abstract class RpcTarget implements IJson {
                BiFunction<IDataSet<S>, HillviewComputation, RpcTarget> factory,
                RpcRequest request, RpcRequestContext context) {
         // Run the flatMap
-        Observable<PartialResult<IDataSet<S>>> stream = data.flatMap(map);
+        Observable<PartialResult<IDataSet<S>>> stream = data.flatMap(map).serialize();
         // Knows how to add partial results
         PRDataSetMonoid<S> monoid = new PRDataSetMonoid<S>();
         // Prefix sum of the partial results
@@ -485,7 +492,7 @@ public abstract class RpcTarget implements IJson {
     runZip(IDataSet<T> data, IDataSet<S> other,
            BiFunction<IDataSet<Pair<T, S>>, HillviewComputation, RpcTarget> factory,
            RpcRequest request, RpcRequestContext context) {
-        Observable<PartialResult<IDataSet<Pair<T, S>>>> stream = data.zip(other);
+        Observable<PartialResult<IDataSet<Pair<T, S>>>> stream = data.zip(other).serialize();
         PRDataSetMonoid<Pair<T, S>> monoid = new PRDataSetMonoid<Pair<T, S>>();
         Observable<PartialResult<IDataSet<Pair<T, S>>>> add = stream.scan(monoid::add);
         // We can actually reuse the MapResultObserver
@@ -506,7 +513,7 @@ public abstract class RpcTarget implements IJson {
     runManage(IDataSet<T> data, ControlMessage command,
               RpcRequest request, RpcRequestContext context) {
         // Run the sketch
-        Observable<PartialResult<JsonList<ControlMessage.Status>>> sketches = data.manage(command);
+        Observable<PartialResult<JsonList<ControlMessage.Status>>> sketches = data.manage(command).serialize();
         // Knows how to add partial results
         PartialResultMonoid<JsonList<ControlMessage.Status>> prm =
                 new PartialResultMonoid<JsonList<ControlMessage.Status>>(

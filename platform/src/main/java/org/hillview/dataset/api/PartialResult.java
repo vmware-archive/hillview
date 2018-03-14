@@ -17,6 +17,8 @@
 
 package org.hillview.dataset.api;
 
+import org.hillview.utils.HillviewLogger;
+
 import javax.annotation.Nullable;
 import java.io.Serializable;
 
@@ -48,9 +50,8 @@ public class PartialResult<T> implements Serializable {
     public PartialResult(double deltaDone, @Nullable T deltaValue) {
         if (deltaDone < 0) {
             throw new RuntimeException("Illegal value for deltaDone");
-        } else if (deltaDone > 1) {
-            // This can happen due to double addition imprecision.
-            deltaDone = 1.0;
+        } else if (deltaDone > 1.5) {
+            HillviewLogger.instance.warn("Large delta", "{0}:{1}", deltaDone, this);
         }
         this.deltaDone = deltaDone;
         this.deltaValue = deltaValue;

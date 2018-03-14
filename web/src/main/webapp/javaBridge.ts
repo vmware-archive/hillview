@@ -19,8 +19,6 @@
 // TypeScript and Java.  These must be changed carefully, and usually in both parts, or
 // subtle bugs may happen.  Most often these classes have the same name in Java and TypeScript.
 
-import {Seed} from "./util";
-
 export type RemoteObjectId = string;
 
 export type ContentsKind = "Category" | "Json" | "String" | "Integer" |
@@ -70,6 +68,12 @@ export interface ConvertColumnInfo {
     columnIndex: number
 }
 
+/// Same as FindSketch.Result
+export interface FindResult {
+    count: number;
+    firstRow: any[];
+}
+
 export interface JdbcConnectionInformation {
     host: string;
     database: string;
@@ -102,9 +106,9 @@ export interface CreateColumnInfo {
 export class HeatMap {
     buckets: number[][];
     missingData: number;
-    histogramMissingD1: Histogram;
-    histogramMissingD2: Histogram;
-    totalsize: number;
+    histogramMissingX: Histogram;
+    histogramMissingY: Histogram;
+    totalSize: number;
 }
 
 /**
@@ -123,36 +127,22 @@ export enum CombineOperators {
 export interface IColumnDescription {
     readonly kind: ContentsKind;
     readonly name: string;
-    readonly allowMissing: boolean;
-}
-
-export class ColumnDescription implements IColumnDescription {
-    readonly kind: ContentsKind;
-    readonly name: string;
-    readonly allowMissing: boolean;
-
-    constructor(v : IColumnDescription) {
-        this.kind = v.kind;
-        this.name = v.name;
-        this.allowMissing = v.allowMissing;
-    }
 }
 
 export function isNumeric(kind: ContentsKind): boolean {
     return kind == "Integer" || kind == "Double";
 }
 
-export interface Schema {
-    [index: number] : IColumnDescription;
-    length: number;
-}
+export type Schema = IColumnDescription[];
 
-/**
- * Serialization of a Java RowSnapshot.
- */
-export interface RowView {
+export interface RowSnapshot {
     count: number;
     values: any[];
+}
+
+export interface FileSizeSketchInfo {
+    fileCount: number;
+    totalSize: number;
 }
 
 export interface ColumnSortOrientation {
@@ -161,12 +151,9 @@ export interface ColumnSortOrientation {
 }
 
 export class RangeInfo {
-    seed: number;
     constructor(public columnName: string,
                 // The following is only used for categorical columns
-                public allNames?: string[]) {
-        this.seed = Seed.instance.get();
-    }
+                public allNames?: string[]) {}
 }
 
 export interface Histogram {
@@ -207,6 +194,8 @@ export class Histogram2DArgs {
     yBucketCount: number;
     samplingRate: number;
     seed:         number;
+    cdfBucketCount: number;
+    cdfSamplingRate: number;
 }
 
 export class Histogram3DArgs {
@@ -243,7 +232,7 @@ export class NextKList {
     // Total number of rows in the complete table
     public rowCount: number;
     public startPosition: number;
-    public rows: RowView[];
+    public rows: RowSnapshot[];
 }
 
 export class RecordOrder {
@@ -308,4 +297,26 @@ export class RecordOrder {
             result += RecordOrder.coToString(this.sortOrientationList[i]);
         return result;
     }
+}
+
+/**
+ * Describes the a filter that checks for (in)equality.
+ */
+export class EqualityFilterDescription {
+    /**
+     * Column that is being filtered.
+     */
+    column: string;
+    /**
+     * Value to look for (represented as a string).
+     */
+    compareValue: string;
+    /**
+     * True if we are looking for anything that is not equal.
+     */
+    complement: boolean;
+    /**
+     * True if we are looking to do regular expression matching.
+     */
+    asRegEx: boolean;
 }

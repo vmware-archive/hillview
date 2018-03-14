@@ -64,17 +64,15 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
         IndexComparator comp = this.recordOrder.getComparator(data);
         IntTreeTopK topK = new IntTreeTopK(this.maxSize, comp);
         IRowIterator rowIt = data.getRowIterator();
-        int i = rowIt.getNextRow();
         int position = 0;
         VirtualRowSnapshot vw = new VirtualRowSnapshot(data);
-        while (i >= 0) {
+        for (int i = rowIt.getNextRow(); i >= 0; i = rowIt.getNextRow()) {
             vw.setRow(i);
             if ((this.topRow == null) ||
                     (this.topRow.compareTo(vw, this.recordOrder) <= 0))
                 topK.push(i);
             else
                 position++;
-            i = rowIt.getNextRow();
         }
         Int2IntSortedMap topKList = topK.getTopK();
         IRowOrder rowOrder = new ArrayRowOrder(topKList.keySet());

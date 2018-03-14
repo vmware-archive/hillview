@@ -27,7 +27,7 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 
 /**
- * This class is an adapator around the VirtualRowSnapshot which is used by the JavaScript
+ * This class is an adaptor around the VirtualRowSnapshot which is used by the JavaScript
  * Nashorn engine.  When it retrieves an Instant, it gets a JavaScript date instead.
  */
 public class JSVirtualRowSnapshot extends VirtualRowSnapshot {
@@ -46,9 +46,8 @@ public class JSVirtualRowSnapshot extends VirtualRowSnapshot {
             double dateEncoding = super.getDouble((String)key);
             // https://stackoverflow.com/questions/33110942/supply-javascript-date-to-nashorn-script
             try {
-                JSObject object =
-                        (JSObject)this.engine.eval("new Date(" + Double.toString(dateEncoding) + ")");
-                return object;
+                //noinspection RedundantCast
+                return (JSObject) this.engine.eval("new Date(" + Double.toString(dateEncoding) + ")");
             } catch (ScriptException e) {
                 throw new RuntimeException(e);
             }
@@ -56,7 +55,7 @@ public class JSVirtualRowSnapshot extends VirtualRowSnapshot {
 
         Object result = super.get(key);
         if (result == null)
-            return result;
+            return null;
         return result;
     }
 }

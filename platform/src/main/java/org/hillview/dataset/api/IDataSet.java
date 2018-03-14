@@ -122,6 +122,17 @@ public interface IDataSet<T> {
     }
 
     /**
+     * Applies a flatmap and then reduces the result immediately.
+     * @param mapper  Mapper to apply to data.
+     * @param <S>     Type of data in the result.
+     * @return        An observable with a single element.
+     */
+    default <S> Observable<IDataSet<S>> singleFlatMap(
+            final IMap<T, List<S>> mapper) {
+        return reduce(this.flatMap(mapper));
+    }
+
+    /**
      * Applies a zip and then reduces the result immediately.
      * @param <S>     Type of data in the result.
      * @return        An observable with a single element.
@@ -150,6 +161,16 @@ public interface IDataSet<T> {
      */
     default <S> IDataSet<S> blockingMap(final IMap<T, S> mapper) {
         return this.singleMap(mapper).toBlocking().single();
+    }
+
+    /**
+     * Run a flapmap synchronously.
+     * @param mapper  Mapper to run.
+     * @param <S>     Type of data produced.
+     * @return        An IDataSet containing the final result of the flatmap.
+     */
+    default <S> IDataSet<S> blockingFlatMap(final IMap<T, List<S>> mapper) {
+        return this.singleFlatMap(mapper).toBlocking().single();
     }
 
     /**

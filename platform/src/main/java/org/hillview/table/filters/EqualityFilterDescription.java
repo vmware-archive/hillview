@@ -21,12 +21,14 @@ import org.hillview.table.api.*;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 public class EqualityFilterDescription implements ITableFilterDescription {
     public final String column;
     @Nullable
     public final String compareValue;
     public final boolean complement;
+    public final boolean asRegEx;
 
     /**
      * Make a filter that accepts rows that (do not) have a specified value in the specified
@@ -36,14 +38,15 @@ public class EqualityFilterDescription implements ITableFilterDescription {
      * @param complement If true, invert the filter such that it checks for inequality.
      */
     public EqualityFilterDescription(
-            String column, @Nullable String compareValue, boolean complement) {
+            String column, @Nullable String compareValue, boolean complement, boolean asRegEx) {
         this.column = column;
         this.compareValue = compareValue;
         this.complement = complement;
+        this.asRegEx = asRegEx;
     }
 
     public EqualityFilterDescription(String column, @Nullable String compareValue) {
-        this(column, compareValue, false);
+        this(column, compareValue, false, false);
     }
 
     @Override
@@ -57,23 +60,29 @@ public class EqualityFilterDescription implements ITableFilterDescription {
      */
     public class EqualityFilter implements ITableFilter {
         boolean missing;  // if true we look for missing values;
-        double  d;
-        int     i;
+        double d;
+        int i;
         @Nullable
-        String  s;
+        String s;
+        @Nullable
+        Pattern regEx;
+        @Nullable
+        ContentsKind compareKind;
         private final ColumnAndConverter column;
-        private final ContentsKind compareKind;
 
         public EqualityFilter(ITable table) {
             ColumnAndConverterDescription ccd = new ColumnAndConverterDescription
                     (EqualityFilterDescription.this.column);
             this.column = table.getLoadedColumn(ccd);
-            this.compareKind = this.column.column.getKind();
-
             if (EqualityFilterDescription.this.compareValue == null) {
                 this.missing = true;
                 return;
             }
+            if (EqualityFilterDescription.this.asRegEx) {
+                this.regEx = Pattern.compile(EqualityFilterDescription.this.compareValue);
+                return;
+            }
+            this.compareKind = this.column.column.getKind();
             switch (compareKind) {
                 case Category:
                 case String:
@@ -99,20 +108,30 @@ public class EqualityFilterDescription implements ITableFilterDescription {
         @Override
         public boolean test(int rowIndex) {
             boolean result;
-            if (column.isMissing(rowIndex)) {
-                result = this.missing;
-            } else {
-                if (this.missing) {
-                    result = false;
+
+            if (EqualityFilterDescription.this.asRegEx) {
+                assert this.regEx != null;
+                if (this.missing || column.isMissing(rowIndex)) {
+                    result = (this.missing == column.isMissing(rowIndex));
                 } else {
-                    switch (compareKind) {
+                    String value = this.column.asString(rowIndex);
+                    assert value != null;
+                    result = this.regEx.matcher(value).matches();
+                }
+                return result^EqualityFilterDescription.this.complement;
+            } else {
+                assert this.compareKind != null;
+                if (this.missing || column.isMissing(rowIndex)) {
+                    result = (this.missing == column.isMissing(rowIndex));
+                } else {
+                    switch (this.compareKind) {
                         case Duration:
                         case Double:
                         case Date:
-                            result = column.asDouble(rowIndex) == this.d;
+                            result = (column.asDouble(rowIndex) == this.d);
                             break;
                         case Integer:
-                            result = column.getInt(rowIndex) == this.i;
+                            result = (column.getInt(rowIndex) == this.i);
                             break;
                         case Category:
                         case String:
@@ -123,9 +142,8 @@ public class EqualityFilterDescription implements ITableFilterDescription {
                             throw new RuntimeException("Unexpected kind " + this.compareKind);
                     }
                 }
+                return EqualityFilterDescription.this.complement^result;
             }
-
-            return EqualityFilterDescription.this.complement != result;
         }
     }
 }
