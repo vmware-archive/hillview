@@ -22,10 +22,8 @@ import org.apache.commons.io.input.BOMInputStream;
 import org.hillview.table.api.IAppendableColumn;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
-<<<<<<< HEAD
-=======
 import org.hillview.utils.Utilities;
->>>>>>> ac04b5ac5bc3a778fc7a23aeb0929c0d4db37ff2
+
 
 import javax.annotation.Nullable;
 import java.io.*;
