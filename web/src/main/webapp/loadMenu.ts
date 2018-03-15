@@ -310,7 +310,8 @@ class DBDialog extends Dialog {
             table: this.getFieldValue("table"),
             user: this.getFieldValue("user"),
             password: this.getFieldValue("password"),
-            databaseKind: this.getFieldValue("databaseKind")
+            databaseKind: this.getFieldValue("databaseKind"),
+            lazyLoading: true
         }
     }
 }

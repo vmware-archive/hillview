@@ -55,6 +55,10 @@ public abstract class JdbcConnection {
      */
     public abstract String getQueryToReadTable(String table, int rowCount);
 
+    public String getQueryToReadSize(String table) {
+        return "SELECT COUNT(*) FROM " + table;
+    }
+
     protected void addBaseUrl(StringBuilder urlBuilder) {
         urlBuilder.append("jdbc:");
         urlBuilder.append(info.databaseKind);
@@ -74,8 +78,12 @@ public abstract class JdbcConnection {
      * @param urlBuilder  StringBuilder used to construct the query url.
      */
     protected void appendParametersToUrl(StringBuilder urlBuilder) {
+        urlBuilder.append("?");
+        boolean first = true;
         for (String p: this.params.keySet()) {
-            urlBuilder.append(this.urlSeparator);
+            if (!first)
+                urlBuilder.append(this.urlSeparator);
+            first = false;
             urlBuilder.append(p);
             urlBuilder.append("=");
             urlBuilder.append(this.params.get(p));

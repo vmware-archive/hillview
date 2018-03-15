@@ -18,12 +18,10 @@
 package org.hillview.storage;
 
 import org.hillview.table.ColumnDescription;
-import org.hillview.table.Schema;
 import org.hillview.table.Table;
-import org.hillview.table.api.ContentsKind;
-import org.hillview.table.api.IAppendableColumn;
-import org.hillview.table.api.ITable;
+import org.hillview.table.api.*;
 import org.hillview.table.columns.BaseListColumn;
+import org.hillview.table.columns.LazyColumn;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Utilities;
@@ -32,7 +30,6 @@ import rx.Observer;
 import javax.annotation.Nullable;
 import java.sql.*;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -68,44 +65,99 @@ public class JdbcDatabase {
         this.connection = null;
     }
 
+    public ITable readTable() {
+        try {
+            Converters.checkNull(this.conn.info.table);
+            if (this.conn.info.lazyLoading) {
+                String query = this.conn.getQueryToReadSize(this.conn.info.table);
+                ResultSet rs = this.getQueryResult(query);
+                if (!rs.next())
+                    throw new RuntimeException("Could not retrieve table size for " + this.conn.info.table);
+                int rowCount = rs.getInt(1);
+
+                IColumnLoader loader = new JdbcLoader(this.conn.info);
+
+                ResultSetMetaData meta = this.getSchema();
+                LazyColumn[] cols = new LazyColumn[meta.getColumnCount()];
+                for (int i = 0; i < meta.getColumnCount(); i++) {
+                    ColumnDescription cd = JdbcDatabase.getDescription(meta, i);
+                    LazyColumn col = new LazyColumn(cd, rowCount, loader);
+                    cols[i] = col;
+                }
+                Table result = new Table(cols);
+                result.setColumnLoader(loader);
+                return result;
+            } else {
+                ResultSet rs = this.getDataInTable(-1);
+                IAppendableColumn[] columns = JdbcDatabase.convertResultSet(rs);
+                return new Table(columns);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public ResultSetMetaData getSchema() {
+        try {
+            ResultSet rs = this.getDataInTable(0);
+            return rs.getMetaData();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
-     * Get the data in a table.
-     * @param table     Table to get data for.
+     * This class knows how to read a set of columns from a database.
+     */
+    static class JdbcLoader implements IColumnLoader {
+        private final JdbcConnectionInformation connInfo;
+
+        public JdbcLoader(final JdbcConnectionInformation connInfo) {
+            this.connInfo = connInfo;
+        }
+
+        @Override
+        public IColumn[] loadColumns(List<String> names) {
+            try {
+                JdbcDatabase db = new JdbcDatabase(this.connInfo);
+                db.connect();
+                String cols = String.join(",", names);
+                String query = "SELECT " + cols + " FROM " + this.connInfo.table;
+                ResultSet rs = db.getQueryResult(query);
+                IAppendableColumn[] columns = JdbcDatabase.convertResultSet(rs);
+                db.disconnect();
+                return columns;
+            } catch (SQLException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+    }
+
+    /**
+     * Get the data in the JDBC database table.
      * @param rowCount  Maximum number of rows.  If negative, bring all rows.
      */
-    public ResultSet getTable(String table, int rowCount) {
-        String query = this.conn.getQueryToReadTable(table, rowCount);
-        try {
-            return this.getQueryResult(query);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+    ResultSet getDataInTable(int rowCount) {
+        Converters.checkNull(this.conn.info.table);
+        String query = this.conn.getQueryToReadTable(this.conn.info.table, rowCount);
+        return this.getQueryResult(query);
     }
 
-    /**
-     * Get the data produced by a query.
-     * @param query     Query to execute.
-     */
-    public ResultSet getQueryData(String query) {
+    ResultSet getQueryResult(String query) {
         try {
-            return this.getQueryResult(query);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+            HillviewLogger.instance.info("Executing SQL query", "{0}", query);
+            Statement st = Converters.checkNull(this.connection).createStatement();
+            return st.executeQuery(query);
+        } catch (SQLException ex) {
+            throw new RuntimeException(ex);
         }
-    }
-
-    public ResultSet getQueryResult(String query) throws SQLException {
-        Statement st = Converters.checkNull(this.connection).createStatement();
-        return st.executeQuery(query);
     }
 
     static ColumnDescription getDescription(ResultSetMetaData meta, int colIndex)
             throws SQLException {
         colIndex = colIndex + 1;
-
         String name = meta.getColumnLabel(colIndex);
         ContentsKind kind;
-
         int colType = meta.getColumnType(colIndex);
         switch (colType) {
             case Types.BOOLEAN:
@@ -163,146 +215,136 @@ public class JdbcDatabase {
         return new ColumnDescription(name, kind);
     }
 
-    static Schema getSchema(ResultSet data) {
-        try {
-            ResultSetMetaData meta = data.getMetaData();
-            Schema result = new Schema();
-            for (int i = 0; i < meta.getColumnCount(); i++) {
-                ColumnDescription cd = JdbcDatabase.getDescription(meta, i);
-                result.append(cd);
+    private static void appendNext(IAppendableColumn[] cols, ResultSetMetaData meta, ResultSet data)
+            throws SQLException {
+        for (int i = 0; i < cols.length; i++) {
+            int colIndex = i + 1;
+            IAppendableColumn col = cols[i];
+            int colType = meta.getColumnType(colIndex);
+            switch (colType) {
+                case Types.BOOLEAN:
+                case Types.BIT:
+                    boolean b = data.getBoolean(colIndex);
+                    if (data.wasNull())
+                        col.appendMissing();
+                    else
+                        col.append(b ? "true" : "false");
+                    break;
+                case Types.TINYINT:
+                case Types.SMALLINT:
+                case Types.INTEGER:
+                    int integer = data.getInt(colIndex);
+                    if (data.wasNull())
+                        col.appendMissing();
+                    else
+                        col.append(integer);
+                    break;
+                case Types.BIGINT:
+                case Types.FLOAT:
+                case Types.REAL:
+                case Types.DOUBLE:
+                case Types.NUMERIC:
+                case Types.DECIMAL:
+                    double d = data.getDouble(colIndex);
+                    if (data.wasNull())
+                        col.appendMissing();
+                    else
+                        col.append(d);
+                    break;
+                case Types.CHAR:
+                case Types.VARCHAR:
+                case Types.LONGVARCHAR:
+                case Types.NCHAR:
+                case Types.NVARCHAR:
+                case Types.LONGNVARCHAR:
+                case Types.SQLXML:
+                    String s = data.getString(colIndex);
+                    col.append(s);
+                    break;
+                case Types.DATE:
+                case Types.TIME:
+                case Types.TIMESTAMP:
+                case Types.TIME_WITH_TIMEZONE:
+                case Types.TIMESTAMP_WITH_TIMEZONE:
+                    Timestamp ts = data.getTimestamp(colIndex);
+                    if (ts == null) {
+                        col.appendMissing();
+                    } else {
+                        Instant instant = ts.toInstant();
+                        col.append(instant);
+                    }
+                    break;
+                case Types.BINARY:
+                case Types.VARBINARY:
+                case Types.LONGVARBINARY:
+                case Types.NULL:
+                case Types.OTHER:
+                case Types.JAVA_OBJECT:
+                case Types.DISTINCT:
+                case Types.STRUCT:
+                case Types.ARRAY:
+                case Types.BLOB:
+                case Types.CLOB:
+                case Types.REF:
+                case Types.DATALINK:
+                case Types.ROWID:
+                case Types.NCLOB:
+                case Types.REF_CURSOR:
+                default:
+                    throw new RuntimeException("Unhandled column type " + colType);
             }
-            return result;
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
         }
     }
 
+    static IAppendableColumn[] createColumns(ResultSetMetaData meta) throws SQLException {
+        IAppendableColumn[] cols = new IAppendableColumn[meta.getColumnCount()];
+        for (int i = 0; i < meta.getColumnCount(); i++) {
+            ColumnDescription cd = JdbcDatabase.getDescription(meta, i);
+            BaseListColumn col = BaseListColumn.create(cd);
+            cols[i] = col;
+        }
+        return cols;
+    }
+
     /**
-     * Convert a resultSet to a sequence of tables.
+     * Convert a resultSet to a sequence of arrays of columns.
      * @param data     Result set obtained from JDBC.
      * @param maxRows  Maximum rows to use in a table.  If 0 there is no limit.
      * @param observer Observer that receives the tables produced.
      */
-    public static void getTables(ResultSet data, int maxRows, Observer<ITable> observer) {
+    static void convertResultSet(ResultSet data, int maxRows,
+                                 Observer<IAppendableColumn[]> observer) {
         try {
             ResultSetMetaData meta = data.getMetaData();
-            List<IAppendableColumn> cols = null;
+            IAppendableColumn[] cols = createColumns(meta);
 
             int rowsRead = 0;
+            int rowsInLastBatch = 0;
             while (data.next()) {
                 rowsRead++;
-                if (cols == null) {
-                    // Allocate a new table
-                    cols = new ArrayList<IAppendableColumn>();
-                    for (int i = 0; i < meta.getColumnCount(); i++) {
-                        ColumnDescription cd = JdbcDatabase.getDescription(meta, i);
-                        BaseListColumn col = BaseListColumn.create(cd);
-                        cols.add(col);
-                    }
-                }
-
+                rowsInLastBatch++;
+                appendNext(cols, meta, data);
                 if (rowsRead % 50000 == 0)
                     System.out.print(".");
-                for (int i = 0; i < cols.size(); i++) {
-                    int colIndex = i + 1;
-                    IAppendableColumn col = cols.get(i);
-                    int colType = meta.getColumnType(colIndex);
-                    switch (colType) {
-                        case Types.BOOLEAN:
-                        case Types.BIT:
-                            boolean b = data.getBoolean(colIndex);
-                            if (data.wasNull())
-                                col.appendMissing();
-                            else
-                                col.append(b ? "true" : "false");
-                            break;
-                        case Types.TINYINT:
-                        case Types.SMALLINT:
-                        case Types.INTEGER:
-                            int integer = data.getInt(colIndex);
-                            if (data.wasNull())
-                                col.appendMissing();
-                            else
-                                col.append(integer);
-                            break;
-                        case Types.BIGINT:
-                        case Types.FLOAT:
-                        case Types.REAL:
-                        case Types.DOUBLE:
-                        case Types.NUMERIC:
-                        case Types.DECIMAL:
-                            double d = data.getDouble(colIndex);
-                            if (data.wasNull())
-                                col.appendMissing();
-                            else
-                                col.append(d);
-                            break;
-                        case Types.CHAR:
-                        case Types.VARCHAR:
-                        case Types.LONGVARCHAR:
-                        case Types.NCHAR:
-                        case Types.NVARCHAR:
-                        case Types.LONGNVARCHAR:
-                        case Types.SQLXML:
-                            String s = data.getString(colIndex);
-                            col.append(s);
-                            break;
-                        case Types.DATE:
-                        case Types.TIME:
-                        case Types.TIMESTAMP:
-                        case Types.TIME_WITH_TIMEZONE:
-                        case Types.TIMESTAMP_WITH_TIMEZONE:
-                            Timestamp ts = data.getTimestamp(colIndex);
-                            if (ts == null) {
-                                col.appendMissing();
-                            } else {
-                                Instant instant = ts.toInstant();
-                                col.append(instant);
-                            }
-                            break;
-                        case Types.BINARY:
-                        case Types.VARBINARY:
-                        case Types.LONGVARBINARY:
-                        case Types.NULL:
-                        case Types.OTHER:
-                        case Types.JAVA_OBJECT:
-                        case Types.DISTINCT:
-                        case Types.STRUCT:
-                        case Types.ARRAY:
-                        case Types.BLOB:
-                        case Types.CLOB:
-                        case Types.REF:
-                        case Types.DATALINK:
-                        case Types.ROWID:
-                        case Types.NCLOB:
-                        case Types.REF_CURSOR:
-                        default:
-                            throw new RuntimeException("Unhandled column type " + colType);
-                    }
-                }
-
                 if (maxRows != 0 && rowsRead % maxRows == 0) {
-                    ITable table = new Table(cols);
-                    observer.onNext(table);
+                    observer.onNext(cols);
                     // Force a new allocation for columns.
-                    cols = null;
+                    cols = createColumns(meta);
+                    rowsInLastBatch = 0;
                 }
             }
 
-            // Create one last table
-            if (cols != null) {
-                ITable table = new Table(cols);
-                observer.onNext(table);
-            }
+            if (rowsInLastBatch > 0 || rowsRead == 0)
+                observer.onNext(cols);
         } catch (SQLException e) {
             observer.onError(e);
         }
     }
 
-    public static ITable getTable(ResultSet rs) {
-        final ITable[] result = {null};
-        final Throwable[] th = {null};
-        Observer<ITable> obs = new Observer<ITable>() {
+    static IAppendableColumn[] convertResultSet(ResultSet rs) {
+        final IAppendableColumn[][] result = { { null } };
+        final Throwable[] th = { null };
+        Observer<IAppendableColumn[]> obs = new Observer<IAppendableColumn[]>() {
             @Override
             public void onCompleted() { }
 
@@ -312,12 +354,10 @@ public class JdbcDatabase {
             }
 
             @Override
-            public void onNext(ITable table) {
-                result[0] = table;
-            }
+            public void onNext(IAppendableColumn[] cols) { result[0] = cols; }
         };
 
-        getTables(rs, 0, obs);
+        convertResultSet(rs, 0, obs);
         if (th[0] != null)
             throw new RuntimeException(new Exception(th[0]));
         return result[0];

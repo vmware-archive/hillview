@@ -35,9 +35,7 @@ import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.Type;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Table;
-import org.hillview.table.api.ContentsKind;
-import org.hillview.table.api.IAppendableColumn;
-import org.hillview.table.api.ITable;
+import org.hillview.table.api.*;
 import org.hillview.table.columns.BaseListColumn;
 
 import java.io.IOException;

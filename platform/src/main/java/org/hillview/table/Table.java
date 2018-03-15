@@ -21,12 +21,18 @@ import org.hillview.table.api.*;
 import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.utils.Utilities;
 
+import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * This is a simple table held entirely in RAM.
  */
 public class Table extends BaseTable {
     private final Schema schema;
     private final IMembershipSet members;
+    @Nullable
+    private IColumnLoader columnLoader = null;
 
     /**
      * Create an empty table with the specified schema.
@@ -72,6 +78,10 @@ public class Table extends BaseTable {
         this(Utilities.arrayToIterable(columns), set);
     }
 
+    public void setColumnLoader(IColumnLoader loader) {
+        this.columnLoader = loader;
+    }
+
     @Override
     public ITable project(Schema schema) {
         IColumn[] cols = this.getColumns(schema);
@@ -84,13 +94,27 @@ public class Table extends BaseTable {
     }
 
     @Override
-    public ColumnAndConverter[] getLoadedColumns(ColumnAndConverterDescription[] columns) {
+    synchronized public ColumnAndConverter[] getLoadedColumns(ColumnAndConverterDescription[] columns) {
+        List<String> toLoad = new ArrayList<String>();
         ColumnAndConverter[] result = new ColumnAndConverter[columns.length];
+        for (ColumnAndConverterDescription column : columns) {
+            String name = column.columnName;
+            IColumn col = this.columns.get(name);
+            if (col == null || !col.isLoaded())
+                toLoad.add(name);
+        }
+        if (!toLoad.isEmpty()) {
+            if (this.columnLoader == null)
+                throw new RuntimeException("Cannot load columns dynamically");
+            IColumn[] cols = this.columnLoader.loadColumns(toLoad);
+            for (IColumn c: cols)
+                this.columns.put(c.getName(), c);
+        }
         for (int i=0; i < columns.length; i++) {
             String name = columns[i].columnName;
             IColumn col = this.columns.get(name);
             if (col == null)
-                throw new RuntimeException("Could not find column " + name);
+                throw new RuntimeException("Cannot get column " + name);
             result[i] = new ColumnAndConverter(col, columns[i].getConverter());
         }
         return result;
