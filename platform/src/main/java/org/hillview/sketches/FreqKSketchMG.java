@@ -92,7 +92,7 @@ public class FreqKSketchMG implements ISketch<ITable, FreqKListMG> {
      */
     @SuppressWarnings("ConstantConditions")
     public FreqKListMG add(@Nullable FreqKListMG left, @Nullable FreqKListMG right) {
-        List<Object2ObjectMap.Entry<RowSnapshot, MutableInteger>> pList = FreqKList.add                                                                                                                                                                                                                                         Lists(left, right);
+        List<Object2ObjectMap.Entry<RowSnapshot, MutableInteger>> pList = FreqKList.addLists(left, right);
         int k = 0;
         if (pList.size() >= (this.maxSize + 1))
             k = pList.get(this.maxSize).getValue().get();
