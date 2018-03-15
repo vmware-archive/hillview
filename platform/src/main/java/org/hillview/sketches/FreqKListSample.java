@@ -7,9 +7,6 @@ import org.hillview.dataset.api.Pair;
 import org.hillview.table.Schema;
 import org.hillview.table.rows.RowSnapshot;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * A subclass of FreqKList that is used by the Sample Heavy Hitters Sketch.
  */
@@ -33,16 +30,14 @@ public class FreqKListSample extends FreqKList {
     public NextKList getTop(Schema schema) {
         /* Needed here because this list is used for further filtering*/
         this.fkFilter(0.5 * epsilon * this.sampleSize);
-        List<Pair<RowSnapshot, Integer>> pList = new ArrayList<Pair<RowSnapshot, Integer>>(this
-                .hMap.size());
         this.hMap.forEach((rs, j) -> {
             double frac = ((double) j) / this.sampleSize;
             if (frac >= epsilon) {
                 int k = (int) (frac * this.totalRows);
-                pList.add(new Pair<RowSnapshot, Integer>(rs, k));
+                this.pList.add(new Pair<RowSnapshot, Integer>(rs, k));
             }
         });
-        return getTopK(pList, schema);
+        return sortTopK(schema);
     }
 
     public void rescale() {
