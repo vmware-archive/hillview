@@ -20,7 +20,6 @@ public class NumItemsThreshold implements IJson {
     private final int bitThreshold; // the threshold in terms of number of set bits
     private final int logSize; // log the size of the bitSet
 
-
     public NumItemsThreshold(int logThreshold, long seed) {
         if ((logThreshold < 1) || (logThreshold > maxLogThreshold))
             throw new IllegalArgumentException("NumItemsThreshold called with illegal size");

@@ -24,7 +24,6 @@ import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Utilities;
 
-
 import javax.annotation.Nullable;
 import java.io.*;
 import java.util.zip.GZIPInputStream;
