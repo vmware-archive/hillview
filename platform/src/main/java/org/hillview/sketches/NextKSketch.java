@@ -65,7 +65,8 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
         IntTreeTopK topK = new IntTreeTopK(this.maxSize, comp);
         IRowIterator rowIt = data.getRowIterator();
         int position = 0;
-        VirtualRowSnapshot vw = new VirtualRowSnapshot(data);
+        Schema toBring = this.recordOrder.toSchema();
+        VirtualRowSnapshot vw = new VirtualRowSnapshot(data, toBring);
         for (int i = rowIt.getNextRow(); i >= 0; i = rowIt.getNextRow()) {
             vw.setRow(i);
             if ((this.topRow == null) ||

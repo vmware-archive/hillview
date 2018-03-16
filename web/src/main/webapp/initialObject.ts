@@ -100,6 +100,12 @@ export class InitialObject extends RemoteObject {
         rr.invoke(observer);
     }
 
+    public loadParquetFiles(files: FileSetDescription, menuPage: FullPage): void {
+        let rr = this.createStreamingRpcRequest<RemoteObjectId>("findParquetFiles", files);
+        let observer = new FileNamesReceiver(menuPage, rr, files.fileNamePattern);
+        rr.invoke(observer);
+    }
+
     public loadDBTable(conn: JdbcConnectionInformation, menuPage: FullPage): void {
         let rr = this.createStreamingRpcRequest<RemoteObjectId>("loadDBTable", conn);
         let title = "DB " + conn.database + ":" + conn.table;

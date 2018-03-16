@@ -26,6 +26,8 @@ import org.apache.parquet.example.data.simple.NanoTime;
 import org.apache.parquet.example.data.simple.convert.GroupRecordConverter;
 import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import org.apache.parquet.hadoop.ParquetFileReader;
+import org.apache.parquet.hadoop.metadata.BlockMetaData;
+import org.apache.parquet.hadoop.metadata.FileMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.io.ColumnIOFactory;
 import org.apache.parquet.io.MessageColumnIO;
@@ -37,14 +39,33 @@ import org.hillview.table.ColumnDescription;
 import org.hillview.table.Table;
 import org.hillview.table.api.*;
 import org.hillview.table.columns.BaseListColumn;
+import org.hillview.table.columns.LazyColumn;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
-public class ParquetReader extends TextFileLoader {
-    public ParquetReader(String path) {
-        super(path);
+public class ParquetFileLoader extends TextFileLoader {
+    private final boolean lazy;
+    private final Path path;
+    private final Configuration configuration;
+    private final ParquetMetadata metadata;
+
+    public ParquetFileLoader(String filename, boolean lazy) {
+        super(filename);
+        this.path = new Path(this.filename);
+        this.lazy = lazy;
+        this.configuration = new Configuration();
+        System.setProperty("hadoop.home.dir", "/");
+        this.configuration.set("hadoop.security.authentication", "simple");
+        this.configuration.set("hadoop.security.authorization", "false");
+        try {
+            this.metadata = ParquetFileReader.readFooter(this.configuration, this.path,
+                    ParquetMetadataConverter.NO_FILTER);
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     private static void appendGroup(
@@ -60,7 +81,6 @@ public class ParquetReader extends TextFileLoader {
                 throw new RuntimeException("Repeated values not supported");
 
             Type fieldType = g.getType().getType(field);
-            String fieldName = fieldType.getName();
             if (!fieldType.isPrimitive())
                 throw new RuntimeException("Non-primitive field not supported");
             switch (cds.get(field).getType()) {
@@ -119,54 +139,73 @@ public class ParquetReader extends TextFileLoader {
         }
     }
 
-    IAppendableColumn[] createColumns(ParquetMetadata md) {
-        List<ColumnDescriptor> cols = md.getFileMetaData().getSchema().getColumns();
+    private static ColumnDescription getColumnDescription(ColumnDescriptor cd) {
+        String name = String.join("", cd.getPath());  // this should contain a single String
+        ContentsKind kind;
+        switch (cd.getType()) {
+            case INT64:
+            case FLOAT:
+            case DOUBLE:
+                kind = ContentsKind.Double;
+                break;
+            case INT32:
+                kind = ContentsKind.Integer;
+                break;
+            case BOOLEAN:
+                kind = ContentsKind.Category;
+                break;
+            case BINARY:
+            case FIXED_LEN_BYTE_ARRAY:
+                kind = ContentsKind.String;
+                break;
+            case INT96:
+                kind = ContentsKind.Date;
+                break;
+            default:
+                throw new RuntimeException("Unexpected column kind " + cd.getType());
+        }
+        return new ColumnDescription(name, kind);
+    }
+
+    private static IAppendableColumn[] createColumns(ParquetMetadata md) {
+        MessageType schema = md.getFileMetaData().getSchema();
+        List<ColumnDescriptor> cols = schema.getColumns();
         IAppendableColumn[] result = new IAppendableColumn[cols.size()];
 
-        int index = 0;
-        for (ColumnDescriptor cd: md.getFileMetaData().getSchema().getColumns()) {
-            String name = cd.toString();
-            ContentsKind kind;
-            switch (cd.getType()) {
-                case INT64:
-                case FLOAT:
-                case DOUBLE:
-                    kind = ContentsKind.Double;
-                    break;
-                case INT32:
-                    kind = ContentsKind.Integer;
-                    break;
-                case BOOLEAN:
-                    kind = ContentsKind.Category;
-                    break;
-                case BINARY:
-                case FIXED_LEN_BYTE_ARRAY:
-                    kind = ContentsKind.String;
-                    break;
-                case INT96:
-                    kind = ContentsKind.Date;
-                    break;
-                default:
-                    throw new RuntimeException("Unexpected column kind " + cd.getType());
-            }
-            ColumnDescription desc = new ColumnDescription(name, kind);
-            result[index++] = BaseListColumn.create(desc);
+        for (int i = 0; i < cols.size(); i++) {
+            ColumnDescriptor cd = cols.get(i);
+            ColumnDescription desc = getColumnDescription(cd);
+            result[i] = BaseListColumn.create(desc);
         }
         return result;
     }
 
-    public ITable load() {
+    public class ParquetColumnLoader implements IColumnLoader {
+        @Override
+        public IColumn[] loadColumns(List<String> names) {
+            FileMetaData fm = ParquetFileLoader.this.metadata.getFileMetaData();
+            MessageType schema = fm.getSchema();
+            List<Type> list = new ArrayList<Type>();
+            for (Type col : schema.getFields()) {
+                String colName = col.getName();
+                if (names.contains(colName))
+                    list.add(col);
+            }
+            assert list.size() > 0;
+            MessageType newSchema = new MessageType(schema.getName(), list);
+            FileMetaData nfm = new FileMetaData(
+                    newSchema, fm.getKeyValueMetaData(), fm.getCreatedBy());
+            List<BlockMetaData> blocks = ParquetFileLoader.this.metadata.getBlocks();
+            ParquetMetadata md = new ParquetMetadata(nfm, blocks);
+            return ParquetFileLoader.this.loadColumns(md);
+        }
+    }
+
+    private IColumn[] loadColumns(ParquetMetadata md) {
         try {
-            Configuration conf = new Configuration();
-            System.setProperty("hadoop.home.dir", "/");
-            conf.set("hadoop.security.authentication", "simple");
-            conf.set("hadoop.security.authorization", "false");
-            Path path = new Path(this.filename);
-            ParquetMetadata md = ParquetFileReader.readFooter(conf, path,
-                    ParquetMetadataConverter.NO_FILTER);
             MessageType schema = md.getFileMetaData().getSchema();
-            ParquetFileReader r = new ParquetFileReader(conf, path, md);
-            IAppendableColumn[] cols = this.createColumns(md);
+            IAppendableColumn[] cols = createColumns(md);
+            ParquetFileReader r = ParquetFileReader.open(this.configuration, this.path);
             MessageColumnIO columnIO = new ColumnIOFactory().getColumnIO(schema);
 
             PageReadStore pages;
@@ -180,12 +219,42 @@ public class ParquetReader extends TextFileLoader {
                 }
             }
 
-            for (IAppendableColumn c: cols)
+            for (IAppendableColumn c : cols)
                 c.seal();
-            this.close(null);
-            return new Table(cols);
+            r.close();
+            return cols;
         } catch (IOException ex) {
             throw new RuntimeException(ex);
+        }
+    }
+
+    private int getNumRows() {
+        List<BlockMetaData> blocks = this.metadata.getBlocks();
+        long rowCount = 0;
+        for (BlockMetaData bm : blocks)
+            rowCount += bm.getRowCount();
+        return (int)rowCount;
+    }
+
+    public ITable load() {
+        ParquetMetadata md = this.metadata;
+        if (this.lazy) {
+            ParquetColumnLoader loader = new ParquetColumnLoader();
+            List<ColumnDescriptor> cds = md.getFileMetaData().getSchema().getColumns();
+            LazyColumn[] cols = new LazyColumn[cds.size()];
+            int size = this.getNumRows();
+
+            int index = 0;
+            for (ColumnDescriptor cd: cds) {
+                ColumnDescription desc = getColumnDescription(cd);
+                cols[index++] = new LazyColumn(desc, size, loader);
+            }
+            this.close(null);
+            return new Table(cols, loader);
+        } else {
+            IColumn[] cols = this.loadColumns(md);
+            this.close(null);
+            return new Table(cols, null);
         }
     }
 }

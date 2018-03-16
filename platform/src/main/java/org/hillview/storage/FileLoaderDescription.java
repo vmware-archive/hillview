@@ -20,6 +20,10 @@ package org.hillview.storage;
 import javax.annotation.Nullable;
 import java.io.Serializable;
 
+/**
+ * This class knows how to create a file loader given a path to a file name.
+ * This is a base class with several implementations in this file.
+ */
 public abstract class FileLoaderDescription implements Serializable {
     public abstract IFileLoader createLoader(String path);
 
@@ -29,6 +33,10 @@ public abstract class FileLoaderDescription implements Serializable {
         }
     }
 
+    /**
+     * A loader description that knows how to create a class
+     * that can load a CSV (comma-separated value) file.
+     */
     public static class CsvFile extends FileLoaderDescription {
         @Nullable
         private final String schemaPath;
@@ -45,6 +53,10 @@ public abstract class FileLoaderDescription implements Serializable {
         }
     }
 
+    /**
+     * A loader description that knows how to create a loader that
+     * can read a JSON file.
+     */
     public static class JsonFile extends FileLoaderDescription {
         @Nullable
         private final String schemaPath;
@@ -55,6 +67,22 @@ public abstract class FileLoaderDescription implements Serializable {
 
         public IFileLoader createLoader(String path) {
             return new JsonFileLoader(path, this.schemaPath);
+        }
+    }
+
+    /**
+     * A loader description that knows how to create a loader that can
+     * read a Parquet file.
+     */
+    public static class ParquetFile extends FileLoaderDescription {
+        private final boolean lazy;
+
+        public ParquetFile(boolean lazy) {
+            this.lazy = lazy;
+        }
+
+        public IFileLoader createLoader(String path) {
+            return new ParquetFileLoader(path, this.lazy);
         }
     }
 }

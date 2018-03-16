@@ -47,7 +47,7 @@ public class TestTables {
                 new String[] { "Mike", "John", "Tom", "Bill", "Bill", "Smith", "Donald", "Bruce",
                                "Bob", "Frank", "Richard", "Steve", "Dave" });
         IntArrayColumn iac = new IntArrayColumn(c1, new int[] { 20, 30, 10, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
-        return new Table(Arrays.asList(sac, iac));
+        return new Table(Arrays.asList(sac, iac), null);
     }
 
     /**
@@ -62,7 +62,7 @@ public class TestTables {
                         "Bob", "Frank", "Richard", "Steve", "Dave", "Mike", "Ed" });
         IntArrayColumn iac = new IntArrayColumn(c1, new int[] { 20, 30, 10, 10, 20, 30, 20, 30, 10,
                 40, 40, 20, 10, 50, 60 });
-        return new Table(Arrays.asList(sac, iac));
+        return new Table(Arrays.asList(sac, iac), null);
     }
 
     /**
@@ -101,7 +101,7 @@ public class TestTables {
         StringArrayColumn sac = new StringArrayColumn(c0, names.toArray(new String[0]));
         IntArrayColumn iac = new IntArrayColumn(c1, ages.stream().mapToInt(i -> i).toArray());
 
-        return new Table(Arrays.asList(sac, iac));
+        return new Table(Arrays.asList(sac, iac), null);
     }
 
     /**
@@ -175,7 +175,7 @@ public class TestTables {
             columns.add(IntArrayGenerator.getRandIntArray(size, range, colName, rn));
         }
         final FullMembershipSet full = new FullMembershipSet(size);
-        return new Table(columns, full);
+        return new Table(columns, full, null);
     }
 
     /**
@@ -277,7 +277,7 @@ public class TestTables {
                 new ColumnDescription("FruitType", ContentsKind.Category),
                 new String[]{"Banana", "Banana", "Banana", "Banana", "Orange", "Orange", "Orange", "Orange"}
         );
-        return new Table(Arrays.asList(colX, colY, fruitType));
+        return new Table(Arrays.asList(colX, colY, fruitType), null);
     }
 
     /**

@@ -11,7 +11,7 @@ source $mydir/config.sh
 echo "Installing programs needed to build"
 ${SUDO} ${INSTALL} install maven nodejs-legacy ansible npm
 echo "Installing typescript tools"
-${SUDO} npm install -g typescript ts-loader webpack
+${SUDO} npm install -g typescript ts-loader webpack@3.6.0
 
 cd ..
 if [ ! -d apache-tomcat-${TOMCATVERSION} ]; then

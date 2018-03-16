@@ -45,7 +45,7 @@ public class ToCatMapTest extends BaseTest {
                         "Bob", "Frank", "Richard", "Steve", "Dave", "Mike", "Ed" });
         IntArrayColumn iac = new IntArrayColumn(c1, new int[] { 20, 30, 10, 10, 20, 30, 20, 30, 10,
                 40, 40, 20, 10, 50, 60 });
-        return new Table(Arrays.asList(sac, iac));
+        return new Table(Arrays.asList(sac, iac), null);
     }
 
     @Test

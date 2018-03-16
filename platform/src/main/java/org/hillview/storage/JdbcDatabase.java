@@ -84,13 +84,11 @@ public class JdbcDatabase {
                     LazyColumn col = new LazyColumn(cd, rowCount, loader);
                     cols[i] = col;
                 }
-                Table result = new Table(cols);
-                result.setColumnLoader(loader);
-                return result;
+                return new Table(cols, loader);
             } else {
                 ResultSet rs = this.getDataInTable(-1);
                 IAppendableColumn[] columns = JdbcDatabase.convertResultSet(rs);
-                return new Table(columns);
+                return new Table(columns, null);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);

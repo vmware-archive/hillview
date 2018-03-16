@@ -184,7 +184,7 @@ public class CsvReaderTest extends BaseTest {
         cols.add(first);
         cols.add(second);
         cols.add(third);
-        ITable table = new Table(cols);
+        ITable table = new Table(cols, null);
         writeReadTable(table);
     }
 

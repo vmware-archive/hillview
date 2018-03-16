@@ -61,7 +61,7 @@ public class TableTest extends BaseTest {
         columns.add(generateDoubleArray(size, 100));
         FullMembershipSet full = new FullMembershipSet(size);
         IMembershipSet partial = full.filter(row -> (row % 2) == 0);
-        Table myTable = new Table(columns, partial);
+        Table myTable = new Table(columns, partial, null);
         assertEquals(myTable.toString(), "Table[2x50]");
         ITable smallTable = myTable.compress();
         assertEquals(smallTable.toString(), "Table[2x50]");
@@ -85,7 +85,7 @@ public class TableTest extends BaseTest {
         columns.add(generateDoubleArray(size, 100));
         final FullMembershipSet full = new FullMembershipSet(size);
         final IMembershipSet partial = full.filter(row -> (row % 2) == 0);
-        final Table myTable = new Table(columns, partial);
+        final Table myTable = new Table(columns, partial, null);
         assertEquals(myTable.toString(), "Table[2x50]");
         HashSubSchema filter = new HashSubSchema();
         filter.add(columns.get(1).getDescription().name);

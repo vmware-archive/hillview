@@ -205,7 +205,17 @@ public class InitialObjectTarget extends RpcTarget {
         String schemaPath = desc.getSchemaPath();
         FileLoaderDescription.JsonFile loader = new FileLoaderDescription.JsonFile(schemaPath);
         IMap<Empty, List<IFileLoader>> finder = new FindFilesMapper(desc.folder, 0, desc.getRegexPattern(), loader);
-        HillviewLogger.instance.info("Finding json files");
+        HillviewLogger.instance.info("Finding JSON files");
+        assert this.emptyDataset != null;
+        this.runFlatMap(this.emptyDataset, finder, FileDescriptionTarget::new, request, context);
+    }
+
+    @HillviewRpc
+    public void findParquetFiles(RpcRequest request, RpcRequestContext context) {
+        FileSetDescription desc = request.parseArgs(FileSetDescription.class);
+        FileLoaderDescription.ParquetFile loader = new FileLoaderDescription.ParquetFile(true);
+        IMap<Empty, List<IFileLoader>> finder = new FindFilesMapper(desc.folder, 0, desc.getRegexPattern(), loader);
+        HillviewLogger.instance.info("Finding Parquet files");
         assert this.emptyDataset != null;
         this.runFlatMap(this.emptyDataset, finder, FileDescriptionTarget::new, request, context);
     }

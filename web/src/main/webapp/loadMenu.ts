@@ -70,7 +70,10 @@ export class LoadMenu extends RemoteObject implements IDataView {
                 help: "A set of comma-separated value files residing on the worker machines." },
             { text: "JSON files...",
                 action: () => this.showJSONFileDialog(),
-                help: "A set of files containing JSOn values residing on the worker machines." },
+                help: "A set of files containing JSON values residing on the worker machines." },
+            { text: "Parquet files...",
+                action: () => this.showParquetFileDialog(),
+                help: "A set of Parquet files residing on the worker machines." },
             { text: "DB tables...",
                 action: () => this.showDBDialog(),
                 help: "A set of database tables residing in databases on each worker machine." }
@@ -183,6 +186,12 @@ export class LoadMenu extends RemoteObject implements IDataView {
         dialog.show();
     }
 
+    showParquetFileDialog(): void {
+        let dialog = new ParquetFileDialog();
+        dialog.setAction(() => this.init.loadParquetFiles(dialog.getFiles(), this.page));
+        dialog.show();
+    }
+
     getHTMLRepresentation(): HTMLElement {
         return this.top;
     }
@@ -260,6 +269,30 @@ class JsonFileDialog extends Dialog {
             schemaFile: this.getFieldValue("schemaFile"),
             fileNamePattern: this.getFieldValue("fileNamePattern"),
             headerRow: false,
+            folder: this.getFieldValue("folder")
+        }
+    }
+}
+
+/**
+ * Dialog that asks the user which Parquet files to load.
+ */
+class ParquetFileDialog extends Dialog {
+    constructor() {
+        super("Load Parquet files", "Loads Parquet files from all machines that are part of the service." +
+            "The schema of all Parquet files loaded should be the same.");
+        this.addTextField("folder", "Folder", FieldKind.String, "/",
+            "Folder on the remote machines where all the CSV files are found.");
+        this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "*.parquet",
+            "Shell pattern that describes the names of the files to load.");
+        this.setCacheTitle("ParquetFileDialog");
+    }
+
+    public getFiles(): FileSetDescription {
+        return {
+            schemaFile: null,  // not used
+            fileNamePattern: this.getFieldValue("fileNamePattern"),
+            headerRow: false,  // not used
             folder: this.getFieldValue("folder")
         }
     }
