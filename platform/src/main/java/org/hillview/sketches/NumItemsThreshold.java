@@ -17,25 +17,34 @@ public class NumItemsThreshold implements IJson {
     public final int maxLogThreshold = 15;
     private final BitSet bits;
     public final long seed;
-    private final int bitThreshold; // the threshold in terms of number of set bits
-    private final int logSize; // log the size of the bitSet
+    /**
+     * The threshold in terms of number of set bits
+     */
+    private final int bitThreshold;
+    /**
+     * log the size of the bitSet
+     */
+    private final int logSize;
 
     public NumItemsThreshold(int logThreshold, long seed) {
         if ((logThreshold < 1) || (logThreshold > maxLogThreshold))
-            throw new IllegalArgumentException("NumItemsThreshold called with illegal size");
+            throw new IllegalArgumentException("NumItemsThreshold called with illegal size of " + logThreshold);
         this.seed = seed;
         this.logThreshold = logThreshold;
         this.threshold = 1 << logThreshold;
         if (threshold >= 1024) {
             logSize = logThreshold;
             bits = new BitSet(threshold);
+            /**
+             * When the number of bits is equal to the threshold we expect 1-1/e = 0.6322 of the bits to be set. On top
+             * of that we add sqrt of the threshold for a high probability bound.
+             */
             bitThreshold = (int) Math.round(0.6322 * threshold + Math.sqrt(threshold));
-        }
-        else {  //if the threshold is small we want the bitSet still to be large enough to provide sufficient accuracy
+        } else {  // if the threshold is small we want the bitSet still to be large enough to provide sufficient accuracy
             logSize = 10;
             bits = new BitSet(1024);
             double expo = -threshold / 1024.0;
-            bitThreshold = (int) Math.round(((1 - Math.pow(2.7182, expo)) * 1024) + 32);
+            bitThreshold = (int) Math.round(((1 - Math.pow(2.7182, expo)) * 1024) + Math.sqrt(threshold));
         }
     }
 
@@ -46,7 +55,7 @@ public class NumItemsThreshold implements IJson {
         LongHashFunction hash = LongHashFunction.xx(this.seed);
         int currRow = myIter.getNextRow();
         int cardinality = 0;
-        while ((currRow >= 0) && (cardinality < bitThreshold)) { //if threshold reached stop iterating
+        while ((currRow >= 0) && (cardinality < bitThreshold)) { // if threshold reached stop iterating
             if (!column.isMissing(currRow)) {
                 long itemHash = column.hashCode64(currRow, hash);
                 int index =  (int) itemHash >>> (Long.SIZE - this.logSize);
