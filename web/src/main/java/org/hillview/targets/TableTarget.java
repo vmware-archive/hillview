@@ -504,7 +504,7 @@ public final class TableTarget extends RpcTarget {
         RpcObjectManager.instance.retrieveTarget(new RpcTarget.Id(hhi.hittersId), true, observer);
     }
 
-    static class HeavyHittersListFilterInfo extends HeavyHittersFilterInfo{
+    static class HeavyHittersListFilterInfo extends HeavyHittersFilterInfo {
         int[] rowIndices;
     }
 

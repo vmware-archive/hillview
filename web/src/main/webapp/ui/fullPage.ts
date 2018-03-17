@@ -48,8 +48,8 @@ let helpUrl = {
  * |                                               |
  * -------------------------------------------------
  * | progress manager (reports progress)           |
- * | console          (reports errors              |
- * --------------------------------------------------
+ * | console          (reports errors)             |
+ * -------------------------------------------------
  */
 export class FullPage implements IHtmlElement {
     public dataDisplay: DataDisplay;
@@ -254,6 +254,10 @@ export class FullPage implements IHtmlElement {
     public reportError(error: string) {
         this.getErrorReporter().clear();
         this.getErrorReporter().reportError(error);
+    }
+
+    public clearError() {
+        this.getErrorReporter().clear();
     }
 
     public reportTime(timeInMs: number) {

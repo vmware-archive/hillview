@@ -44,24 +44,20 @@ export class SchemaView extends TableViewBase {
         this.contextMenu = new ContextMenu(this.topLevel);
         this.schema = schema;
 
-        let viewMenu = new SubMenu([
-            {text: "Selected columns",
-                action: () => {this.showTable();},
-                help: "Show the data using a tabular view containing the selected columns."
-            }
-        ]);
-        let selectMenu = new SubMenu([
-            {
-                text: "By Name",
-                action: () => {nameDialog.show();},
-                help: "Select Columns by name."
-            },
-            {
-                text: "By Type",
-                action: () => {typeDialog.show();},
-                help: "Select Columns by type."
-            }
-        ]);
+        let viewMenu = new SubMenu([{
+            text: "Selected columns",
+            action: () => this.showTable(),
+            help: "Show the data using a tabular view containing the selected columns."
+            }]);
+        let selectMenu = new SubMenu([{
+            text: "By Name",
+            action: () => nameDialog.show(),
+            help: "Select Columns by name."
+        }, {
+            text: "By Type",
+            action: () => {typeDialog.show();},
+            help: "Select Columns by type."
+        }]);
         let menu = new TopMenu([
             {text: "View", subMenu: viewMenu, help: "Change the way the data is displayed."},
             {text: "Select", subMenu: selectMenu, help: "Select columns based on attributes." },

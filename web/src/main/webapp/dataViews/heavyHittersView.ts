@@ -47,32 +47,20 @@ export class HeavyHittersView extends RemoteTableObjectView {
         super(data.heavyHittersId, tv.originalTableId, page);
         this.topLevel = document.createElement("div");
         this.contextMenu = new ContextMenu(this.topLevel);
-        let subMenu = new SubMenu([
-            {
+        let subMenu = new SubMenu([{
                 text: "All Frequent Elements as a Table",
-                action: () => {
-                    this.showTable(isApprox);
-                },
-                help: "Show the data corresponding to all frequent elements as a table."
-            }
-        ]);
+                action: () => this.showTable(isApprox),
+                help: "Show the data corresponding to all frequent elements as a table."}]);
         subMenu.addItem({
                 text: "Selected Frequent Elements as Table",
-                action: () => {
-                    this.showSelected();
-                },
-                help: "Filter by the selected frequent elements and show the result as a table."
-            },
+                action: () => this.showSelected(),
+                help: "Filter by the selected frequent elements and show the result as a table."},
             true);
         subMenu.addItem({
                 text: "Get exact counts",
-                action: () => {
-                    this.exactCounts();
-                },
-                help: "Show the exact frequency of each item."
-            },
-            isApprox
-        );
+                action: () => this.exactCounts(),
+                help: "Show the exact frequency of each item."},
+            isApprox);
         let menu = new TopMenu([{text: "View", help: "Change the way the data is displayed.", subMenu}]);
         this.page.setMenu(menu);
 
@@ -90,9 +78,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
         this.topLevel.appendChild(this.table.getHTMLRepresentation());
     }
 
-    refresh(): void {
-    }
-
+    refresh(): void {}
     /**
      * Method the creates the filtered table. If isApprox is true, then there are two steps: we first compute the exact
      * heavy hitters and then use that list to filter the table. If isApprox is false, we compute the table right away.
@@ -123,20 +109,20 @@ export class HeavyHittersView extends RemoteTableObjectView {
         rr.invoke(new TableOperationCompleted(newPage2, this.tv.schema, rr, this.order, this.tv.originalTableId));
     }
 
-
     private getSelectedRows(): number[] {
         let sRows: number[] = cloneSet(this.table.getSelectedRows());
         if (this.restPos == -1)
             return sRows;
         else {
             let tRows: Set<number> = new Set<number>();
-            for (let j of sRows)
+            for (let j of sRows) {
                 if (j < this.restPos)
                     tRows.add(j);
                 else if (j > this.restPos)
                     tRows.add(j - 1);
-            return cloneSet(tRows);
             }
+            return cloneSet(tRows);
+        }
     }
 
     public exactCounts(): void {
@@ -166,12 +152,11 @@ export class HeavyHittersView extends RemoteTableObjectView {
                 row.push(textToDiv(this.valueToString((tdv.rows[i].count / tdv.rowCount) * 100)));
                 row.push(new DataRange(position, tdv.rows[i].count, tdv.rowCount).getDOMRepresentation());
                 let tRow : HTMLTableRowElement = this.table.addElementRow(row);
-                tRow.oncontextmenu = e => this.createAndShowContextMenu(tRow, e);
+                tRow.oncontextmenu = e => this.clickThenShowContextMenu(tRow, e);
                 position += tdv.rows[i].count;
             }
-            if (this.restPos == tdv.rows.length) {
+            if (this.restPos == tdv.rows.length)
                 this.showRest(tdv.rows.length, position, this.restCount, tdv.rowCount, this.table);
-            }
         }
         this.table.addFooter();
         this.page.scrollIntoView();
@@ -179,13 +164,9 @@ export class HeavyHittersView extends RemoteTableObjectView {
     }
 
 
-    private createAndShowContextMenu(tRow: HTMLTableRowElement,  e: MouseEvent): void {
-        if (e.ctrlKey && (e.button == 1)) {
-            // Ctrl + click is interpreted as a right-click on macOS.
-            // This makes sure it's interpreted as a column click with Ctrl.
-            return;
-        }
+    private clickThenShowContextMenu(tRow: HTMLTableRowElement, e: MouseEvent): void {
         this.table.clickRow(tRow, e);
+        if(e.button == 1) return; //If it was in fact a CTRL+ leftClick on a Mac, don't show the context menu.
         let selectedCount = this.table.selectedRows.size();
         this.contextMenu.clear();
         this.contextMenu.addItem({

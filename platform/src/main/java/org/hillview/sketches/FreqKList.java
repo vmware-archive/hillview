@@ -117,7 +117,6 @@ public abstract class FreqKList implements Serializable {
     }
 
     public RowSnapshotSet.SetTableFilterDescription getFilter(Schema schema, int[] rowIndices) {
-        System.out.println(rowIndices.toString());
         List<RowSnapshot> rsList = new ArrayList<RowSnapshot>();
         for (int i = 0; i < rowIndices.length; i++)
             rsList.add(this.pList.get(rowIndices[i]).first);

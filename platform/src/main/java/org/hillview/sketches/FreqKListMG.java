@@ -4,8 +4,6 @@ import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import org.hillview.dataset.api.Pair;
 import org.hillview.table.Schema;
 import org.hillview.table.rows.RowSnapshot;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * This compute the Misra-Gries sketch for finding Heavy Hitters.
@@ -59,8 +57,7 @@ public class FreqKListMG extends FreqKList {
     @Override
     public NextKList getTop(Schema schema) {
         this.filter();
-        List<Pair<RowSnapshot, Integer>> pList = new ArrayList<Pair<RowSnapshot, Integer>>(this.hMap.size());
         this.hMap.forEach((rs, j) -> this.pList.add(new Pair<RowSnapshot, Integer>(rs, j)));
-        return sortTopK(schema);
+        return this.sortTopK(schema);
     }
 }
