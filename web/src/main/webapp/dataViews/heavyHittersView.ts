@@ -225,7 +225,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
 
     private reportNoClick(e: MouseEvent) {
         e.preventDefault();
-        this.page.reportError("Cannot select this row");
+        //this.page.reportError("Cannot select this row");
     }
 
     private valueToString(n: number): string {
