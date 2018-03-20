@@ -504,9 +504,28 @@ public final class TableTarget extends RpcTarget {
         RpcObjectManager.instance.retrieveTarget(new RpcTarget.Id(hhi.hittersId), true, observer);
     }
 
+    static class HeavyHittersListFilterInfo extends HeavyHittersFilterInfo {
+        int[] rowIndices;
+    }
+
     /**
      * Creates a table containing only the heavy hitters.
      */
+    @HillviewRpc
+    public void filterListHeavy(RpcRequest request, RpcRequestContext context) {
+        HeavyHittersListFilterInfo hhl = request.parseArgs(HeavyHittersListFilterInfo.class);
+        Observer<RpcTarget> observer = new SingleObserver<RpcTarget>() {
+            @Override
+            public void onSuccess(RpcTarget rpcTarget) {
+                HeavyHittersTarget hht = (HeavyHittersTarget)rpcTarget;
+                ITableFilterDescription filter = hht.heavyHitters.getFilter(hhl.schema, hhl.rowIndices);
+                FilterMap fm = new FilterMap(filter);
+                TableTarget.this.runMap(TableTarget.this.table, fm, TableTarget::new, request, context);
+            }
+        };
+        RpcObjectManager.instance.retrieveTarget(new RpcTarget.Id(hhl.hittersId), true, observer);
+    }
+
     @HillviewRpc
     public void filterHeavy(RpcRequest request, RpcRequestContext context) {
         HeavyHittersFilterInfo hhi = request.parseArgs(HeavyHittersFilterInfo.class);

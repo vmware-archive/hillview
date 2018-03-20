@@ -528,7 +528,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
                     "Applies to two or three columns only."
                 }, selectedCount >= 2 && selectedCount <= 3);
                 this.contextMenu.addItem({
-                    text: "Heavy hitters...",
+                    text: "Frequent Elements...",
                     action: () => this.heavyHitters(false),  // currently set to approximate
                     help: "Find the values that occur most frequently in the selected columns."
                 }, true);
@@ -855,11 +855,11 @@ export class TableView extends TableViewBase implements IScrollTarget {
         });
         let order = new RecordOrder(cso);
         let rr = this.createHeavyHittersRequest(columns, percent, this.getTotalRowCount(), exact);
-        rr.invoke(new HeavyHittersReceiver(this.getPage(), this, rr, columns, order, exact));
+        rr.invoke(new HeavyHittersReceiver(this.getPage(), this, rr, columns, order, exact, percent));
     }
 
     protected heavyHitters(exact: boolean): void {
-        let title = "Heavy hitters on ";
+        let title = "Frequent Elements from ";
         let cols: string[] = this.getSelectedColNames();
         if (cols.length <= 1) {
             title += " " + cols[0];
@@ -868,8 +868,8 @@ export class TableView extends TableViewBase implements IScrollTarget {
         }
         let d = new Dialog(title, "Find the most frequent values in the selected columns.");
         d.addTextField("percent", "Threshold (%)", FieldKind.Double, "1",
-            "All values that appear in a dataset with a frequency above this value (as a percent) " +
-            "will be included in the heavy hitters set.  Must be a number between 0.1 and 100.");
+            "All values that appear in the dataset with a frequency above this value (as a percent) " +
+            "will be considered frequent elements.  Must be a number between 0.1 and 100.");
         d.setAction(() => {
             let amount = d.getFieldValueAsNumber("percent");
             if (amount != null)
@@ -1089,13 +1089,14 @@ class HeavyHittersReceiver extends OnCompleteRenderer<TopList> {
                         operation: ICancellable,
                         protected schema: IColumnDescription[],
                         protected order: RecordOrder,
-                        protected exact: boolean) {
-        super(page, operation, "Heavy hitters");
+                        protected exact: boolean,
+                        protected percent: number) {
+        super(page, operation, "Frequent Elements");
     }
 
     run(data: TopList): void {
-        let newPage = new FullPage("Heavy hitters", "HeavyHitters", this.page);
-        let hhv = new HeavyHittersView(data, newPage, this.tv, this.schema, this.order, !this.exact);
+        let newPage = new FullPage("Frequent Elements", "HeavyHitters", this.page);
+        let hhv = new HeavyHittersView(data, newPage, this.tv, this.schema, this.order, !this.exact, this.percent);
         newPage.setDataView(hhv);
         this.page.insertAfterMe(newPage);
         hhv.fill(data.top, this.elapsedMilliseconds());

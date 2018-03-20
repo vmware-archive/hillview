@@ -4,7 +4,7 @@ import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import org.hillview.dataset.api.Pair;
 import org.hillview.table.Schema;
 import org.hillview.table.rows.RowSnapshot;
-import java.util.ArrayList;
+
 import java.util.List;
 
 /**
@@ -39,15 +39,15 @@ public class FreqKListExact extends FreqKList {
      * Since all counts computed by this sketch are exact, we discard everything less than epsilon
      * using filter and return the rest.
      */
-    @Override
-    public NextKList getTop(Schema schema) {
-        this.filter();
-        List <Pair<RowSnapshot, Integer>> pList = new ArrayList<Pair<RowSnapshot, Integer>>(this.hMap.size());
-        this.hMap.forEach((rs, j) -> pList.add(new Pair<RowSnapshot, Integer>(rs, j)));
-        return getTopK(pList, schema);
-    }
     public void filter() {
         double threshold = this.epsilon * this.totalRows;
         this.fkFilter(threshold);
+    }
+
+    @Override
+    public NextKList getTop(Schema schema) {
+        this.filter();
+        this.hMap.forEach((rs, j) -> this.pList.add(new Pair<RowSnapshot, Integer>(rs, j)));
+        return sortTopK(schema);
     }
 }
