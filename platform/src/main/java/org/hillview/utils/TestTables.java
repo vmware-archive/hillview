@@ -123,10 +123,14 @@ public class TestTables {
      * @return A table of random integers.
      */
     public static SmallTable getIntTable(final int size, final int numCols) {
+        final double exp = 1.0/numCols;
+        final int range =  5*((int)Math.pow(size, exp));
+        return getIntTable(size, numCols, range);
+    }
+
+    public static SmallTable getIntTable(final int size, final int numCols, int range) {
         Randomness rn = new Randomness(2); // we want deterministic random numbers for testing
         final IColumn[] columns = new IColumn[numCols];
-        double exp = 1.0/numCols;
-        final int range =  5*((int)Math.pow(size, exp));
         for (int i = 0; i < numCols; i++) {
             final String colName = "Column" + String.valueOf(i);
             columns[i] = IntArrayGenerator.getRandIntArray(size, range, colName, rn);
