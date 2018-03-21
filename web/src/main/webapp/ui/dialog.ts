@@ -271,7 +271,6 @@ export class Dialog implements IHtmlElement {
         fieldDiv.title = toolTip;
         fieldDiv.onmousedown = e => e.stopPropagation();
         this.fieldsDiv.appendChild(fieldDiv);
-
         let label = document.createElement("label");
         label.textContent = labelText;
         fieldDiv.appendChild(label);
@@ -325,6 +324,10 @@ export class Dialog implements IHtmlElement {
         fieldDiv.appendChild(input.getHTMLRepresentation());
 
         this.fields.set(fieldName, {html: input});
+    }
+
+    public addText(textString: string): void{
+        this.createRowContainer("message", textString, null);
     }
 
     /**

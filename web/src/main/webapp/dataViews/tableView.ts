@@ -55,9 +55,9 @@ export class TableView extends TableViewBase implements IScrollTarget {
     protected order: RecordOrder;
     // Logical number of data rows displayed; includes count of each data row
     protected dataRowsDisplayed: number;
-    protected scrollBar : ScrollBar;
-    protected htmlTable : HTMLTableElement;
-    protected tHead : HTMLTableSectionElement;
+    protected scrollBar: ScrollBar;
+    protected htmlTable: HTMLTableElement;
+    protected tHead: HTMLTableSectionElement;
     protected tBody: HTMLTableSectionElement;
     protected currentData: NextKList;
     protected contextMenu: ContextMenu;
@@ -113,9 +113,9 @@ export class TableView extends TableViewBase implements IScrollTarget {
             this.chartMenu(),
             {
                 text: "Find", help: "Search a specific string in the visible columns", subMenu: new SubMenu([
-                    { text: "String", help: "Search for a string", action: () => this.find(false) },
-                    { text: "Regular expression", help: "Search for a regular expression", action: () => this.find(true) },
-                ])
+                {text: "String", help: "Search for a string", action: () => this.find(false)},
+                {text: "Regular expression", help: "Search for a regular expression", action: () => this.find(true)},
+            ])
             },
             combineMenu(this, page.pageId)
         ]);
@@ -178,8 +178,9 @@ export class TableView extends TableViewBase implements IScrollTarget {
 
         let rr = this.createZipRequest(r);
         let o = this.order.clone();
-        let finalRenderer = (page: FullPage, operation: ICancellable) =>
-            { return new TableOperationCompleted(page, this.schema, operation, o, this.originalTableId); };
+        let finalRenderer = (page: FullPage, operation: ICancellable) => {
+            return new TableOperationCompleted(page, this.schema, operation, o, this.originalTableId);
+        };
         rr.invoke(new ZipReceiver(this.getPage(), rr, how, this.originalTableId, finalRenderer));
     }
 
@@ -201,7 +202,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
         } else {
             let o = this.order.clone();
             let rr = this.createQuantileRequest(this.currentData.rowCount, o, position);
-                console.log("expecting quantile: " + String(position));
+            console.log("expecting quantile: " + String(position));
             rr.invoke(new QuantileReceiver(this.getPage(), this, rr, o));
         }
     }
@@ -285,7 +286,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
         let o = this.order.clone();
         for (let i = 0; i < this.schema.length; i++) {
             let c = this.schema[i];
-            o.showIfNotVisible({ columnDescription: c, isAscending: true });
+            o.showIfNotVisible({columnDescription: c, isAscending: true});
         }
         this.setOrder(o);
     }
@@ -338,7 +339,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
 
     public static dropColumns(schema: Schema, filter: (IColumnDescription) => boolean): Schema {
         let cols: IColumnDescription[] = [];
-        for (let i=0; i < schema.length; i++) {
+        for (let i = 0; i < schema.length; i++) {
             let c = schema[i];
             if (!filter(c))
                 cols.push(c);
@@ -358,7 +359,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
     public isVisible(column: string): boolean {
         let so = this.getSortOrder(column);
         return so != null;
-     }
+    }
 
     public isAscending(column: string): boolean {
         let so = this.getSortOrder(column);
@@ -382,7 +383,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
             return "&uArr;";
     }
 
-    private addHeaderCell(thr: Node, cd: IColumnDescription, help: string) : HTMLElement {
+    private addHeaderCell(thr: Node, cd: IColumnDescription, help: string): HTMLElement {
         let thd = document.createElement("th");
         thd.classList.add("noselect");
         let label = cd.name;
@@ -398,7 +399,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
         return thd;
     }
 
-    public showColumns(order: number, first: boolean) : void {
+    public showColumns(order: number, first: boolean): void {
         // order is 0 to hide
         //         -1 to sort descending
         //          1 to sort ascending
@@ -427,7 +428,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
 
     public updateView(data: NextKList, revert: boolean,
                       order: RecordOrder, foundCount: number,
-                      elapsedMs: number) : void {
+                      elapsedMs: number): void {
         this.selectedColumns.clear();
         this.currentData = data;
         this.dataRowsDisplayed = 0;
@@ -439,7 +440,9 @@ export class TableView extends TableViewBase implements IScrollTarget {
             if (data.rows != null) {
                 data.rows.reverse();
                 rowsDisplayed = data.rows.map(r => r.count)
-                    .reduce( (a, b) => { return a + b; }, 0 );
+                    .reduce((a, b) => {
+                        return a + b;
+                    }, 0);
             }
             this.startPosition = this.rowCount - this.startPosition - rowsDisplayed;
             this.order = this.order.invert();
@@ -454,19 +457,23 @@ export class TableView extends TableViewBase implements IScrollTarget {
         let thr = this.tHead.appendChild(document.createElement("tr"));
 
         // These two columns are always shown
-        let cds : IColumnDescription[] = [];
+        let cds: IColumnDescription[] = [];
         let posCd: IColumnDescription = {
             kind: "Integer",
-            name: "(position)" };
+            name: "(position)"
+        };
         let ctCd: IColumnDescription = {
             kind: "Integer",
-            name: "(count)" };
+            name: "(count)"
+        };
 
         // Create column headers
         let thd = this.addHeaderCell(thr, posCd, "Position within sorted order.");
-        thd.oncontextmenu = () => {};
+        thd.oncontextmenu = () => {
+        };
         thd = this.addHeaderCell(thr, ctCd, "Number of occurrences.");
-        thd.oncontextmenu = () => {};
+        thd.oncontextmenu = () => {
+        };
         if (this.schema == null)
             return;
 
@@ -541,7 +548,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
                     help: "Perform Principal Component Analysis on a set of numeric columns. " +
                     "This produces a smaller set of columns that preserve interesting properties of the data."
                 }, selectedCount > 1 &&
-                    this.getSelectedColNames().reduce( (a, b) => a && this.isNumericColumn(b), true) );
+                    this.getSelectedColNames().reduce((a, b) => a && this.isNumericColumn(b), true));
                 /*
                 this.contextMenu.addItem({
                     text: "LAMP...",
@@ -681,9 +688,9 @@ export class TableView extends TableViewBase implements IScrollTarget {
     private columnClick(colNum: number, e: MouseEvent): void {
         e.preventDefault();
         if (e.ctrlKey || e.metaKey)
-            this.selectedColumns.changeState( "Ctrl", colNum);
+            this.selectedColumns.changeState("Ctrl", colNum);
         else if (e.shiftKey)
-            this.selectedColumns.changeState( "Shift", colNum);
+            this.selectedColumns.changeState("Shift", colNum);
         else {
             if (e.button == 2) {
                 // right button
@@ -737,7 +744,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
         colNames.forEach((colName) => {
             if (!this.isNumericColumn(colName)) {
                 valid = false;
-                message += "\n  * Column '" + colName  + "' is not numeric.";
+                message += "\n  * Column '" + colName + "' is not numeric.";
             }
         });
 
@@ -749,7 +756,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
         let [valid, message] = this.checkNumericColumns(colNames);
         if (valid) {
             let pcaDialog = new Dialog("Principal Component Analysis",
-                "Projects a set of numeric columns to a smaller set of numeric columns while preserving the 'shape' "+
+                "Projects a set of numeric columns to a smaller set of numeric columns while preserving the 'shape' " +
                 " of the data as much as possible.");
             pcaDialog.addTextField("numComponents", "Number of components", FieldKind.Integer, "2",
                 "Number of dimensions to project to.  Must be an integer bigger than 1 and " +
@@ -817,22 +824,22 @@ export class TableView extends TableViewBase implements IScrollTarget {
         if (this.startPosition == null || this.rowCount == null)
             return;
         if (this.rowCount <= 0 || this.dataRowsDisplayed <= 0)
-            // we show everything
+        // we show everything
             this.setScroll(0, 1);
         else
             this.setScroll(this.startPosition / this.rowCount,
                 (this.startPosition + this.dataRowsDisplayed) / this.rowCount);
     }
 
-    public getTotalRowCount() : number {
+    public getTotalRowCount(): number {
         return this.rowCount;
     }
 
-    public getRowCount() : number {
+    public getRowCount(): number {
         return this.tBody.childNodes.length;
     }
 
-    public getColumnCount() : number {
+    public getColumnCount(): number {
         return this.schema.length;
     }
 
@@ -844,17 +851,17 @@ export class TableView extends TableViewBase implements IScrollTarget {
         this.page.insertAfterMe(newPage);
     }
 
-    protected runHeavyHitters(percent: number, exact: boolean) {
+    public runHeavyHitters(percent: number, exact: boolean) {
         if (percent == null || percent < .1 || percent > 100) {
             this.reportError("Percentage must be between .1 and 100");
             return;
         }
         let columns: IColumnDescription[] = [];
-        let cso : ColumnSortOrientation[] = [];
+        let cso: ColumnSortOrientation[] = [];
         this.getSelectedColNames().forEach(v => {
             let colDesc = TableView.findColumn(this.schema, v);
             columns.push(colDesc);
-            cso.push({ columnDescription: colDesc, isAscending: true });
+            cso.push({columnDescription: colDesc, isAscending: true});
         });
         let order = new RecordOrder(cso);
         let rr = this.createHeavyHittersRequest(columns, percent, this.getTotalRowCount(), exact);
@@ -900,7 +907,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
             return val.toString();  // TODO
     }
 
-    public addRow(row : RowSnapshot, cds: IColumnDescription[]) : void {
+    public addRow(row: RowSnapshot, cds: IColumnDescription[]): void {
         let trow = this.tBody.insertRow();
 
         let position = this.startPosition + this.dataRowsDisplayed;
@@ -928,7 +935,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
             if (this.isVisible(cd.name)) {
                 let value = row.values[dataIndex];
 
-                let cellValue : string;
+                let cellValue: string;
                 if (value == null) {
                     cell.classList.add("missingData");
                     cellValue = "missing";
@@ -940,11 +947,13 @@ export class TableView extends TableViewBase implements IScrollTarget {
                 cell.title = "Right click will popup a menu.";
                 cell.oncontextmenu = e => {
                     this.contextMenu.clear();
-                    this.contextMenu.addItem({text: "Filter for " + cellValue,
+                    this.contextMenu.addItem({
+                        text: "Filter for " + cellValue,
                         action: () => this.equalityFilter(cd.name, value, false, this.order, false),
                         help: "Keep only the rows that have this value in this column."
                     }, true);
-                    this.contextMenu.addItem({text: "Filter for not " + cellValue,
+                    this.contextMenu.addItem({
+                        text: "Filter for not " + cellValue,
                         action: () => this.equalityFilter(cd.name, value, false, this.order, true),
                         help: "Keep only the rows that have a different value in this column."
                     }, true);
@@ -958,7 +967,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
         this.dataRowsDisplayed += row.count;
     }
 
-    public setScroll(top: number, bottom: number) : void {
+    public setScroll(top: number, bottom: number): void {
         this.scrollBar.setPosition(top, bottom);
     }
 
@@ -1088,13 +1097,13 @@ class QuantileReceiver extends OnCompleteRenderer<any[]> {
  * This method handles the outcome of the sketch for finding Heavy Hitters.
  */
 class HeavyHittersReceiver extends OnCompleteRenderer<TopList> {
-     public constructor(page: FullPage,
-                        protected tv: TableView,
-                        operation: ICancellable,
-                        protected schema: IColumnDescription[],
-                        protected order: RecordOrder,
-                        protected exact: boolean,
-                        protected percent: number) {
+    public constructor(page: FullPage,
+                       protected tv: TableView,
+                       operation: ICancellable,
+                       protected schema: IColumnDescription[],
+                       protected order: RecordOrder,
+                       protected exact: boolean,
+                       protected percent: number) {
         super(page, operation, "Frequent Elements");
     }
 
@@ -1104,6 +1113,28 @@ class HeavyHittersReceiver extends OnCompleteRenderer<TopList> {
         newPage.setDataView(hhv);
         this.page.insertAfterMe(newPage);
         hhv.fill(data.top, this.elapsedMilliseconds());
+        if (data.top.rows.length == 0)
+            this.showEmptyDialog();
+    }
+
+    protected showEmptyDialog(): void {
+        let min: number = 0.1;
+        let minString: string = min.toString() + "%";
+        let percentDialog = new Dialog("No Frequent Elements found", "");
+        percentDialog.addText("No Elements found with frequency above " + this.percent.toString() + "%.");
+        if (this.percent > min) {
+            percentDialog.addText("Lower the threshold? Can take any value above " + minString);
+            percentDialog.addTextField("newPercent", "Threshold (%)", FieldKind.Double, min.toString(),
+                "All values that appear in the dataset with a frequency above this value (as a percent) " +
+                "will be considered frequent elements.  Must be at least " + minString);
+            percentDialog.setAction(() => {
+                let newPercent = percentDialog.getFieldValueAsNumber("newPercent");
+                if (newPercent != null)
+                    this.tv.runHeavyHitters(newPercent, false);
+            });
+        }
+        percentDialog.setCacheTitle("NoHeavyHittersDialog");
+        percentDialog.show();
     }
 }
 

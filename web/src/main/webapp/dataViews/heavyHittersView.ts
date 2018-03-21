@@ -25,6 +25,7 @@ import {SpecialChars, textToDiv} from "../ui/ui";
 import {DataRange} from "../ui/dataRange";
 import {TabularDisplay} from "../ui/tabularDisplay";
 import {RemoteTableObjectView} from "../tableTarget";
+import {Dialog, FieldKind} from "../ui/dialog";
 
 /**
  * Class that renders a table containing the heavy hitters in sorted
@@ -47,31 +48,45 @@ export class HeavyHittersView extends RemoteTableObjectView {
         super(data.heavyHittersId, tv.originalTableId, page);
         this.topLevel = document.createElement("div");
         this.contextMenu = new ContextMenu(this.topLevel);
-        let subMenu = new SubMenu([{
+        this.table = new TabularDisplay();
+
+        let tableMenu = new SubMenu([]);
+        tableMenu.addItem({
                 text: "All Frequent Elements as a Table",
                 action: () => this.showTable(isApprox),
-                help: "Show the data corresponding to all frequent elements as a table."}]);
-        subMenu.addItem({
+                help: "Show the data corresponding to all frequent elements as a table."},
+            true);
+        tableMenu.addItem({
                 text: "Selected Frequent Elements as Table",
                 action: () => this.showSelected(),
                 help: "Filter by the selected frequent elements and show the result as a table."},
-            true);
-        subMenu.addItem({
+            true );
+
+        let modifyMenu = new SubMenu([]);
+        modifyMenu.addItem({
                 text: "Get exact counts",
                 action: () => this.exactCounts(),
                 help: "Show the exact frequency of each item."},
             isApprox);
-        let menu = new TopMenu([{text: "View", help: "Change the way the data is displayed.", subMenu}]);
+        modifyMenu.addItem( {
+            text: "Change the threshold",
+            action: () => this.changeThreshold(),
+            help: "Change the frequency threshold for an element to be included"
+        }, true);
+
+        let menu = new TopMenu([
+            { text: "View as Table",  subMenu: tableMenu, help: "Display frequent elements in a table."},
+            { text: "Modify",  subMenu: modifyMenu, help: "Change how frequent elements are computed."},
+        ]);
         this.page.setMenu(menu);
 
-        this.table = new TabularDisplay;
         let header: string[] = ["Rank"];
         let tips: string[] = ["Position in decreasing order of frequency."];
         this.schema.forEach(c => {
             header.push(c.name);
             tips.push("Column name");
         });
-        header = header.concat(["Count", "%", "Fraction"]);
+        header = header.concat(["Count", "% (Above " + this.percent.toString() + ")", "Fraction"]);
         tips = tips.concat(["Number of occurrences", "Frequency within the dataset", "Frequency and position within " +
         "the sorted order"]);
         this.table.setColumns(header, tips);
@@ -99,6 +114,8 @@ export class HeavyHittersView extends RemoteTableObjectView {
     }
 
     public showSelected(): void {
+        if (this.table.getSelectedRows().size == 0)
+            return;
         let newPage2 = new FullPage("Frequent elements", "HeavyHitters", this.page);
         this.page.insertAfterMe(newPage2);
         let rr = this.tv.createStreamingRpcRequest<RemoteObjectId>("filterListHeavy", {
@@ -218,13 +235,8 @@ export class HeavyHittersView extends RemoteTableObjectView {
         row.push(textToDiv(this.valueToString((restCount / total) * 100)));
         row.push(new DataRange(position, restCount, total).getDOMRepresentation());
         let tRow: HTMLTableRowElement = table.addElementRow(row, false);
-        tRow.onclick = e => this.reportNoClick(e);
-        tRow.oncontextmenu = e => this.reportNoClick(e);
-    }
-
-    private reportNoClick(e: MouseEvent) {
-        e.preventDefault();
-        //this.page.reportError("Cannot select this row");
+        tRow.onclick = e => e.preventDefault();
+        tRow.oncontextmenu = e => e.preventDefault();
     }
 
     private valueToString(n: number): string {
@@ -232,6 +244,24 @@ export class HeavyHittersView extends RemoteTableObjectView {
         if (this.isApprox)
             str = SpecialChars.approx + str;
         return str;
+    }
+
+    private changeThreshold(): void {
+        let min: number = 0.1;
+        let minString: string = min.toString() + "%";
+        let percentDialog = new Dialog("Change the frequency threshold", "Changes the frequency threshold above which " +
+            "elements are considered frequent");
+        percentDialog.addText("Enter a percentage between " + minString +" and 100%");
+        percentDialog.addTextField("newPercent", "Threshold (%)", FieldKind.Double,
+            this.percent.toString(), "All values that appear with a frequency above this value " +
+            "(as a percent) will be considered frequent elements.  Must be at least " + minString);
+        percentDialog.setAction(() => {
+            let newPercent = percentDialog.getFieldValueAsNumber("newPercent");
+            if (newPercent != null)
+                    this.tv.runHeavyHitters(newPercent, false);
+            });
+        percentDialog.setCacheTitle("ChangeHeavyHittersDialog");
+        percentDialog.show();
     }
 }
 
