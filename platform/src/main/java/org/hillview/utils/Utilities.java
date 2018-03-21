@@ -25,7 +25,7 @@ import org.hillview.dataset.api.PartialResult;
 import javax.annotation.Nullable;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.Iterator;
+import java.util.List;
 
 /**
  * This class has some useful static helper methods.
@@ -78,8 +78,21 @@ public class Utilities {
         return s.substring(0, 99) + "...";
     }
 
+    /**
+     * Checks if the argument string is null or empty.
+     */
     public static boolean isNullOrEmpty(@Nullable String s) {
         return s == null || s.isEmpty();
+    }
+
+    /**
+     * Returns null if the argument is null or empty.
+     */
+    @Nullable
+    public static String nullIfEmpty(@Nullable String s) {
+        if (s == null || s.isEmpty())
+            return null;
+        return s;
     }
 
     /**
@@ -124,21 +137,7 @@ public class Utilities {
         return json;
     }
 
-    public static <T> Iterable<T> arrayToIterable(T[] data) {
-        return () -> new Iterator<T>() {
-            private int pos = 0;
-
-            public boolean hasNext() {
-                return data.length > pos;
-            }
-
-            public T next() {
-                return data[pos++];
-            }
-
-            public void remove() {
-                throw new UnsupportedOperationException("Cannot remove an element of an array.");
-            }
-        };
+    public static String[] toArray(List<String> list) {
+        return list.toArray(new String[list.size()]);
     }
 }

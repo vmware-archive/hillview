@@ -43,7 +43,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public class CsvReaderTest extends BaseTest {
+/**
+ * Test read/write access to CSV files.
+ */
+public class CsvFileTest extends BaseTest {
     private static final String ontimeFolder = "../data/ontime";
     private static final String criteoFolder = "../data/criteo";
     private static final String csvFile = "On_Time_Sample.csv";
@@ -188,7 +191,7 @@ public class CsvReaderTest extends BaseTest {
         writeReadTable(table);
     }
 
-    //@Test
+    @Test
     public void csvWriterTest() throws IOException {
         // The Csv writer we are using has a bug, reproduced with this test.
         String[] data = new String[]{ "", null };

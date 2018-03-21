@@ -22,24 +22,27 @@ import org.hillview.maps.LAMPMap;
 import org.hillview.sketches.RandomSamplingSketch;
 import org.hillview.table.SmallTable;
 import org.hillview.table.api.ITable;
-import org.hillview.utils.BlasConversions;
-import org.hillview.utils.MetricMDS;
-import org.hillview.utils.TestTables;
-import org.hillview.utils.TestUtils;
+import org.hillview.utils.*;
 import org.jblas.DoubleMatrix;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class LAMPMapTest extends BaseTest {
     private void testLAMPMap(ITable table, int numSamples, int fragmentSize) {
         long seed = 1;
         IDataSet<ITable> dataset = TestTables.makeParallel(table, fragmentSize);
-        String[] colNames = TestUtils.getNumericColumnNames(table);
+        String[] colNames = Utilities.toArray(TestUtils.getNumericColumnNames(table));
         double samplingRate = ((double) numSamples) / table.getNumOfRows();
-        RandomSamplingSketch sketch = new RandomSamplingSketch(samplingRate, seed, colNames, false);
+        RandomSamplingSketch sketch = new RandomSamplingSketch(
+                samplingRate, seed, colNames, false);
         SmallTable sampling = dataset.blockingSketch(sketch);
         sampling = sampling.compress(sampling.getMembershipSet().sample(numSamples, 0));
 
-        DoubleMatrix ndControlPoints = BlasConversions.toDoubleMatrix(sampling, colNames);
+        DoubleMatrix ndControlPoints = BlasConversions.toDoubleMatrix(sampling,
+                Arrays.asList(colNames));
         MetricMDS mds = new MetricMDS(ndControlPoints);
         DoubleMatrix proj = mds.computeEmbedding(3);
 
@@ -49,10 +52,11 @@ public class LAMPMapTest extends BaseTest {
         System.out.println("\tMin y: " + proj.getColumn(1).min());
         System.out.println("\tMax y: " + proj.getColumn(1).max());
 
-        String[] newColNames = new String[2];
-        newColNames[0] = "LAMP1";
-        newColNames[1] = "LAMP2";
-        LAMPMap map = new LAMPMap(ndControlPoints, proj, colNames, newColNames);
+        List<String> newColNames = new ArrayList<String>(2);
+        newColNames.add("LAMP1");
+        newColNames.add("LAMP2");
+        LAMPMap map = new LAMPMap(ndControlPoints, proj, colNames,
+                Utilities.toArray(newColNames));
         ITable result = map.apply(table);
         IDataSet<ITable> datasetResult = dataset.blockingMap(map);
 

@@ -87,12 +87,8 @@ public class DemoDataCleaner {
                         // the output is uncompressed
                         end = end.replace(".gz", "");
                     CsvFileWriter writer = new CsvFileWriter(end);
-                    try {
-                        System.out.println("Writing " + end);
-                        writer.writeTable(p);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                    System.out.println("Writing " + end);
+                    writer.writeTable(p);
                 });
     }
 }

@@ -106,6 +106,12 @@ export class InitialObject extends RemoteObject {
         rr.invoke(observer);
     }
 
+    public loadOrcFiles(files: FileSetDescription, menuPage: FullPage): void {
+        let rr = this.createStreamingRpcRequest<RemoteObjectId>("findOrcFiles", files);
+        let observer = new FileNamesReceiver(menuPage, rr, files.fileNamePattern);
+        rr.invoke(observer);
+    }
+
     public loadDBTable(conn: JdbcConnectionInformation, menuPage: FullPage): void {
         let rr = this.createStreamingRpcRequest<RemoteObjectId>("loadDBTable", conn);
         let title = "DB " + conn.database + ":" + conn.table;

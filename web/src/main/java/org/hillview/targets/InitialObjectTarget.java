@@ -177,9 +177,16 @@ public class InitialObjectTarget extends RpcTarget {
 		}
 
         String schemaPath = Paths.get(dataFolder, schemaFile).toString();
-        FileLoaderDescription.CsvFile loader = new FileLoaderDescription.CsvFile(schemaPath, config);
+        FileLoaderDescription loader = new FileLoaderDescription.CsvFile(schemaPath, config);
         finder = new FindFilesMapper(dataFolder, limit, fileNamePattern, loader);
         HillviewLogger.instance.info("Finding csv files");
+        assert this.emptyDataset != null;
+        this.runFlatMap(this.emptyDataset, finder, FileDescriptionTarget::new, request, context);
+    }
+
+    private void findFilesCommon(RpcRequest request, RpcRequestContext context,
+                                FileSetDescription desc, FileLoaderDescription loader) {
+        IMap<Empty, List<IFileLoader>> finder = new FindFilesMapper(desc.folder, 0, desc.getRegexPattern(), loader);
         assert this.emptyDataset != null;
         this.runFlatMap(this.emptyDataset, finder, FileDescriptionTarget::new, request, context);
     }
@@ -192,32 +199,35 @@ public class InitialObjectTarget extends RpcTarget {
         config.hasHeaderRow = desc.headerRow;
 
         String schemaPath = desc.getSchemaPath();
-        FileLoaderDescription.CsvFile loader = new FileLoaderDescription.CsvFile(schemaPath, config);
-        IMap<Empty, List<IFileLoader>> finder = new FindFilesMapper(desc.folder, 0, desc.getRegexPattern(), loader);
+        FileLoaderDescription loader = new FileLoaderDescription.CsvFile(schemaPath, config);
         HillviewLogger.instance.info("Finding csv files");
-        assert this.emptyDataset != null;
-        this.runFlatMap(this.emptyDataset, finder, FileDescriptionTarget::new, request, context);
+        this.findFilesCommon(request, context, desc, loader);
     }
 
     @HillviewRpc
     public void findJsonFiles(RpcRequest request, RpcRequestContext context) {
         FileSetDescription desc = request.parseArgs(FileSetDescription.class);
         String schemaPath = desc.getSchemaPath();
-        FileLoaderDescription.JsonFile loader = new FileLoaderDescription.JsonFile(schemaPath);
-        IMap<Empty, List<IFileLoader>> finder = new FindFilesMapper(desc.folder, 0, desc.getRegexPattern(), loader);
+        FileLoaderDescription loader = new FileLoaderDescription.JsonFile(schemaPath);
         HillviewLogger.instance.info("Finding JSON files");
-        assert this.emptyDataset != null;
-        this.runFlatMap(this.emptyDataset, finder, FileDescriptionTarget::new, request, context);
+        this.findFilesCommon(request, context, desc, loader);
     }
 
     @HillviewRpc
     public void findParquetFiles(RpcRequest request, RpcRequestContext context) {
         FileSetDescription desc = request.parseArgs(FileSetDescription.class);
-        FileLoaderDescription.ParquetFile loader = new FileLoaderDescription.ParquetFile(true);
-        IMap<Empty, List<IFileLoader>> finder = new FindFilesMapper(desc.folder, 0, desc.getRegexPattern(), loader);
+        FileLoaderDescription loader = new FileLoaderDescription.ParquetFile(true);
         HillviewLogger.instance.info("Finding Parquet files");
-        assert this.emptyDataset != null;
-        this.runFlatMap(this.emptyDataset, finder, FileDescriptionTarget::new, request, context);
+        this.findFilesCommon(request, context, desc, loader);
+    }
+
+    @HillviewRpc
+    public void findOrcFiles(RpcRequest request, RpcRequestContext context) {
+        FileSetDescription desc = request.parseArgs(FileSetDescription.class);
+        String schemaPath = desc.getSchemaPath();
+        FileLoaderDescription loader = new FileLoaderDescription.OrcFile(schemaPath, true);
+        HillviewLogger.instance.info("Finding Orc files");
+        this.findFilesCommon(request, context, desc, loader);
     }
 
     @HillviewRpc

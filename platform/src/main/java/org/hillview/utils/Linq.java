@@ -17,7 +17,10 @@
 
 package org.hillview.utils;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.function.Function;
 
 /**
@@ -63,5 +66,20 @@ public class Linq {
 
     public static <T, S> Iterator<S> map(Iterator<T> data, Function<T, S> function) {
         return new MapIterator<T, S>(data, function);
+    }
+
+    public static <T, S> List<S> map(List<T> data, Function<T, S> function) {
+        List<S> result = new ArrayList<S>(data.size());
+        for (int i=0; i < data.size(); i++)
+            result.add(function.apply(data.get(i)));
+        return result;
+    }
+
+    public static <T, S> S[] map(T[] data, Function<T, S> function, Class<S> sc) {
+        @SuppressWarnings("unchecked")
+        S[] result = (S[])Array.newInstance(sc, data.length);
+        for (int i=0; i < data.length; i++)
+            result[i] = function.apply(data[i]);
+        return result;
     }
 }

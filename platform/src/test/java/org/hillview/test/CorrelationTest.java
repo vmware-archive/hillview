@@ -24,12 +24,15 @@ import org.hillview.table.api.ITable;
 import org.hillview.utils.BlasConversions;
 import org.hillview.utils.LinAlg;
 import org.hillview.utils.TestTables;
+import org.hillview.utils.Utilities;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
 import org.jblas.ranges.AllRange;
 import org.jblas.util.Random;
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.util.List;
 
 public class CorrelationTest extends BaseTest {
     public CorrelationTest() {}
@@ -38,8 +41,8 @@ public class CorrelationTest extends BaseTest {
     public void testCorrelation() {
         DoubleMatrix mat = new DoubleMatrix(new double[][]{{9, 8, 4, 1, 6}, {5, 8, 2, 10, 1}, {6, 4, 1, 6, 5}});
         ITable table = BlasConversions.toTable(mat);
-        String[] colNames = table.getSchema().getColumnNames();
-        PCACorrelationSketch fcs = new PCACorrelationSketch(colNames);
+        List<String> colNames = table.getSchema().getColumnNames();
+        PCACorrelationSketch fcs = new PCACorrelationSketch(Utilities.toArray(colNames));
         CorrMatrix cm = fcs.create(table);
 
         DoubleMatrix corrMatrix = new DoubleMatrix(cm.getCorrelationMatrix());
@@ -64,14 +67,14 @@ public class CorrelationTest extends BaseTest {
         DoubleMatrix mat = DoubleMatrix.rand(20000, 5);
         mat.muli(4.3);
         ITable bigTable = BlasConversions.toTable(mat);
-        String[] colNames = bigTable.getSchema().getColumnNames();
+        List<String> colNames = bigTable.getSchema().getColumnNames();
         IDataSet<ITable> dataset = TestTables.makeParallel(bigTable, 10);
 
-        PCACorrelationSketch fcs = new PCACorrelationSketch(colNames);
+        PCACorrelationSketch fcs = new PCACorrelationSketch(Utilities.toArray(colNames));
         CorrMatrix cm = dataset.blockingSketch(fcs);
 
         // Construct the correlation matrix that we compare against by using pure JBLAS.
-        DoubleMatrix cmCheck = new DoubleMatrix(colNames.length, colNames.length);
+        DoubleMatrix cmCheck = new DoubleMatrix(colNames.size(), colNames.size());
         DoubleMatrix means = mat.columnMeans();
         DoubleMatrix sigmas = MatrixFunctions.sqrt(
                 mat.subRowVector(means).mul(mat.subRowVector(means)).columnMeans()

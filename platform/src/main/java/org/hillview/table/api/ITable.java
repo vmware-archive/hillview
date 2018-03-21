@@ -20,6 +20,9 @@ package org.hillview.table.api;
 import org.hillview.table.Schema;
 import org.hillview.table.SmallTable;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * An ITable object has a schema, a set of columns, and a MembershipSet.
  * All columns have the same size.
@@ -52,7 +55,7 @@ public interface ITable {
      * The columns must have already been loaded.
      * @param schema  Schema indicating which columns to load.
      */
-    IColumn[] getColumns(Schema schema);
+    List<IColumn> getColumns(Schema schema);
 
     /**
      * Creates a new table which has the same data with this one except the
@@ -75,25 +78,27 @@ public interface ITable {
      * with the membershipSet of the original one.
      * @param columns  Set of columns for new table.
      */
-    ITable replace(IColumn[] columns);
+    <T extends IColumn> ITable replace(List<T> columns);
 
     /**
      * Append a bunch of columns to this table.
      */
-    ITable append(IColumn[] columns);
+    <T extends IColumn> ITable append(List<T> columns);
 
     /**
      * Returns the specified columns.  Ensures that the columns are loaded.
      */
-    ColumnAndConverter[] getLoadedColumns(ColumnAndConverterDescription[] columns);
+    List<ColumnAndConverter> getLoadedColumns(List<ColumnAndConverterDescription> columns);
 
     /**
      * Returns the specified column.  Ensures that the column is loaded.
      */
     default ColumnAndConverter getLoadedColumn(ColumnAndConverterDescription column) {
-        ColumnAndConverterDescription[] cols = new ColumnAndConverterDescription[] { column };
-        ColumnAndConverter[] result = this.getLoadedColumns(cols);
-        return result[0];
+        List<ColumnAndConverterDescription> cols = new ArrayList<ColumnAndConverterDescription>(1);
+        cols.add(column);
+        List<ColumnAndConverter> result = this.getLoadedColumns(cols);
+        assert result.size() == 1;
+        return result.get(0);
     }
 
     default ColumnAndConverter getLoadedColumn(String columnName) {

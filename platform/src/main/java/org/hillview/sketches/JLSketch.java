@@ -24,6 +24,7 @@ import org.hillview.utils.Randomness;
 
 import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
+import java.util.List;
 
 /**
  * Implements the Johnson-Lindenstrauss (JL) sketch. It projects a column of doubles down to low
@@ -93,8 +94,8 @@ public class JLSketch implements ISketch<ITable, JLProjection>{
                         "integer or double: " + col);
         }
 
-        ColumnAndConverterDescription[] ccds = ColumnAndConverterDescription.create(this.colNames);
-        ColumnAndConverter[] cols = data.getLoadedColumns(ccds);
+        List<ColumnAndConverterDescription> ccds = ColumnAndConverterDescription.create(this.colNames);
+        List<ColumnAndConverter> cols = data.getLoadedColumns(ccds);
 
         JLProjection jlProj = new JLProjection(this.colNames, this.lowDim);
         Randomness rn = new Randomness(this.seed);

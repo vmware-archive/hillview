@@ -60,6 +60,6 @@ public class ParquetTest extends BaseTest {
         ColumnAndConverter first = table.getLoadedColumn("java_version");
         Assert.assertEquals(first.getString(0), "1.8.0_91");
         Table tbl = (Table)table;
-        Assert.assertFalse(tbl.getColumns()[1].isLoaded());
+        Assert.assertFalse(tbl.getColumns().get(1).isLoaded());
     }
 }

@@ -21,15 +21,15 @@ import org.hillview.table.ColumnDescription;
 import org.hillview.table.Table;
 import org.hillview.table.api.*;
 import org.hillview.table.columns.BaseListColumn;
-import org.hillview.table.columns.LazyColumn;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
+import org.hillview.utils.Linq;
 import org.hillview.utils.Utilities;
-import rx.Observer;
 
 import javax.annotation.Nullable;
 import java.sql.*;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -76,18 +76,17 @@ public class JdbcDatabase {
                 int rowCount = rs.getInt(1);
 
                 IColumnLoader loader = new JdbcLoader(this.conn.info);
-
                 ResultSetMetaData meta = this.getSchema();
-                LazyColumn[] cols = new LazyColumn[meta.getColumnCount()];
+                List<ColumnDescription> cds = new ArrayList<ColumnDescription>(
+                        meta.getColumnCount());
                 for (int i = 0; i < meta.getColumnCount(); i++) {
                     ColumnDescription cd = JdbcDatabase.getDescription(meta, i);
-                    LazyColumn col = new LazyColumn(cd, rowCount, loader);
-                    cols[i] = col;
+                    cds.add(cd);
                 }
-                return new Table(cols, loader);
+                return Table.createLazyTable(cds, rowCount, loader);
             } else {
                 ResultSet rs = this.getDataInTable(-1);
-                IAppendableColumn[] columns = JdbcDatabase.convertResultSet(rs);
+                List<IAppendableColumn> columns = JdbcDatabase.convertResultSet(rs);
                 return new Table(columns, null);
             }
         } catch (SQLException e) {
@@ -115,16 +114,16 @@ public class JdbcDatabase {
         }
 
         @Override
-        public IColumn[] loadColumns(List<String> names) {
+        public List<IColumn> loadColumns(List<String> names) {
             try {
                 JdbcDatabase db = new JdbcDatabase(this.connInfo);
                 db.connect();
                 String cols = String.join(",", names);
                 String query = "SELECT " + cols + " FROM " + this.connInfo.table;
                 ResultSet rs = db.getQueryResult(query);
-                IAppendableColumn[] columns = JdbcDatabase.convertResultSet(rs);
+                List<IAppendableColumn> columns = JdbcDatabase.convertResultSet(rs);
                 db.disconnect();
-                return columns;
+                return Linq.map(columns, c -> c);
             } catch (SQLException ex) {
                 throw new RuntimeException(ex);
             }
@@ -149,6 +148,12 @@ public class JdbcDatabase {
         } catch (SQLException ex) {
             throw new RuntimeException(ex);
         }
+    }
+
+    public ITable getQueryData(String query) {
+        ResultSet rs = this.getQueryResult(query);
+        List<IAppendableColumn> columns = JdbcDatabase.convertResultSet(rs);
+        return new Table(columns, null);
     }
 
     static ColumnDescription getDescription(ResultSetMetaData meta, int colIndex)
@@ -213,11 +218,12 @@ public class JdbcDatabase {
         return new ColumnDescription(name, kind);
     }
 
-    private static void appendNext(IAppendableColumn[] cols, ResultSetMetaData meta, ResultSet data)
+    private static void appendNext(List<IAppendableColumn> cols,
+                                   ResultSetMetaData meta, ResultSet data)
             throws SQLException {
-        for (int i = 0; i < cols.length; i++) {
+        for (int i = 0; i < cols.size(); i++) {
             int colIndex = i + 1;
-            IAppendableColumn col = cols[i];
+            IAppendableColumn col = cols.get(i);
             int colType = meta.getColumnType(colIndex);
             switch (colType) {
                 case Types.BOOLEAN:
@@ -294,70 +300,31 @@ public class JdbcDatabase {
         }
     }
 
-    static IAppendableColumn[] createColumns(ResultSetMetaData meta) throws SQLException {
-        IAppendableColumn[] cols = new IAppendableColumn[meta.getColumnCount()];
+    static List<IAppendableColumn> createColumns(ResultSetMetaData meta) throws SQLException {
+        List<IAppendableColumn> cols = new ArrayList<IAppendableColumn>(meta.getColumnCount());
         for (int i = 0; i < meta.getColumnCount(); i++) {
             ColumnDescription cd = JdbcDatabase.getDescription(meta, i);
             BaseListColumn col = BaseListColumn.create(cd);
-            cols[i] = col;
+            cols.add(col);
         }
         return cols;
     }
 
-    /**
-     * Convert a resultSet to a sequence of arrays of columns.
-     * @param data     Result set obtained from JDBC.
-     * @param maxRows  Maximum rows to use in a table.  If 0 there is no limit.
-     * @param observer Observer that receives the tables produced.
-     */
-    static void convertResultSet(ResultSet data, int maxRows,
-                                 Observer<IAppendableColumn[]> observer) {
+    static List<IAppendableColumn> convertResultSet(ResultSet data) {
         try {
             ResultSetMetaData meta = data.getMetaData();
-            IAppendableColumn[] cols = createColumns(meta);
+            List<IAppendableColumn> cols = createColumns(meta);
 
             int rowsRead = 0;
-            int rowsInLastBatch = 0;
             while (data.next()) {
                 rowsRead++;
-                rowsInLastBatch++;
                 appendNext(cols, meta, data);
                 if (rowsRead % 50000 == 0)
                     System.out.print(".");
-                if (maxRows != 0 && rowsRead % maxRows == 0) {
-                    observer.onNext(cols);
-                    // Force a new allocation for columns.
-                    cols = createColumns(meta);
-                    rowsInLastBatch = 0;
-                }
             }
-
-            if (rowsInLastBatch > 0 || rowsRead == 0)
-                observer.onNext(cols);
+            return cols;
         } catch (SQLException e) {
-            observer.onError(e);
+            throw new RuntimeException(e);
         }
-    }
-
-    static IAppendableColumn[] convertResultSet(ResultSet rs) {
-        final IAppendableColumn[][] result = { { null } };
-        final Throwable[] th = { null };
-        Observer<IAppendableColumn[]> obs = new Observer<IAppendableColumn[]>() {
-            @Override
-            public void onCompleted() { }
-
-            @Override
-            public void onError(Throwable throwable) {
-                th[0] = throwable;
-            }
-
-            @Override
-            public void onNext(IAppendableColumn[] cols) { result[0] = cols; }
-        };
-
-        convertResultSet(rs, 0, obs);
-        if (th[0] != null)
-            throw new RuntimeException(new Exception(th[0]));
-        return result[0];
     }
 }

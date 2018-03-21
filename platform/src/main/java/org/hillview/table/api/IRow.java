@@ -20,6 +20,7 @@ package org.hillview.table.api;
 import javax.annotation.Nullable;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -43,7 +44,7 @@ public interface IRow extends Map<String, Object> {
     /**
      * @return The list of columns present in the row.
      */
-    String[] getColumnNames();
+    List<String> getColumnNames();
 
     @Nullable
     Object getObject(final String colName);

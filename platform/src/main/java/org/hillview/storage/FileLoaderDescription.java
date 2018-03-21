@@ -17,6 +17,8 @@
 
 package org.hillview.storage;
 
+import org.hillview.utils.Utilities;
+
 import javax.annotation.Nullable;
 import java.io.Serializable;
 
@@ -44,7 +46,7 @@ public abstract class FileLoaderDescription implements Serializable {
 
         public CsvFile(@Nullable String schemaPath,
                        CsvFileLoader.CsvConfiguration config) {
-            this.schemaPath = schemaPath;
+            this.schemaPath = Utilities.nullIfEmpty(schemaPath);
             this.config = config;
         }
 
@@ -62,7 +64,7 @@ public abstract class FileLoaderDescription implements Serializable {
         private final String schemaPath;
 
         public JsonFile(@Nullable String schemaPath) {
-            this.schemaPath = schemaPath;
+            this.schemaPath = Utilities.nullIfEmpty(schemaPath);
         }
 
         public IFileLoader createLoader(String path) {
@@ -83,6 +85,25 @@ public abstract class FileLoaderDescription implements Serializable {
 
         public IFileLoader createLoader(String path) {
             return new ParquetFileLoader(path, this.lazy);
+        }
+    }
+
+    /**
+     * A loader description that knows how to create a loader that can
+     * read an Orc file.
+     */
+    public static class OrcFile extends FileLoaderDescription {
+        @Nullable
+        private final String schemaPath;
+        private final boolean lazy;
+
+        public OrcFile(@Nullable String schemaPath, boolean lazy) {
+            this.schemaPath = Utilities.nullIfEmpty(schemaPath);
+            this.lazy = lazy;
+        }
+
+        public IFileLoader createLoader(String path) {
+            return new OrcFileLoader(path, this.schemaPath, this.lazy);
         }
     }
 }

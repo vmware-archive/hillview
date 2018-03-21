@@ -18,11 +18,13 @@
 package org.hillview.table;
 
 import org.hillview.table.api.*;
+import org.hillview.table.columns.LazyColumn;
 import org.hillview.table.membership.FullMembershipSet;
-import org.hillview.utils.Utilities;
+import org.hillview.utils.Linq;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -53,7 +55,7 @@ public class Table extends BaseTable {
      * @param loader   Loader that knows how to load column data.
      */
     protected <C extends IColumn> Table(
-            final Iterable<C> columns, final IMembershipSet members,
+            final List<C> columns, final IMembershipSet members,
             final Schema schema, @Nullable final IColumnLoader loader) {
         super(columns);
         this.members = members;
@@ -61,7 +63,7 @@ public class Table extends BaseTable {
         this.columnLoader = loader;
     }
 
-    public <C extends IColumn> Table(final Iterable<C> columns, final IMembershipSet members,
+    public <C extends IColumn> Table(final List<C> columns, final IMembershipSet members,
                                      @Nullable final IColumnLoader loader) {
         super(columns);
         final Schema s = new Schema();
@@ -72,36 +74,53 @@ public class Table extends BaseTable {
         this.columnLoader = loader;
     }
 
-    public <C extends IColumn> Table(final Iterable<C> columns,
+    public <C extends IColumn> Table(final C[] columns,
+                                     @Nullable final IColumnLoader loader) {
+        this(Arrays.asList(columns),
+                new FullMembershipSet(columnSize(Arrays.asList(columns))), loader);
+    }
+
+    public <C extends IColumn> Table(final List<C> columns,
                                      @Nullable final IColumnLoader loader) {
         this(columns, new FullMembershipSet(columnSize(columns)), loader);
     }
 
-    public <C extends IColumn> Table(final C[] columns,
-                                     @Nullable final IColumnLoader loader) {
-        this(Utilities.arrayToIterable(columns), loader);
+    /**
+     * Creates a table where all columns are lazy.
+     * @param desc    A collection column descriptions.
+     * @param loader  Loader that knows how to load a column.
+     * @param rowCount Number of rows of the table.
+     */
+    public static Table createLazyTable(ColumnDescription[] desc,
+                                        int rowCount, IColumnLoader loader) {
+        LazyColumn[] cols = Linq.map(desc, d -> new LazyColumn(d, rowCount, loader),
+                LazyColumn.class);
+        return new Table(cols, loader);
     }
 
-    public <C extends IColumn> Table(final C[] columns, IMembershipSet set,
-                                     @Nullable final IColumnLoader loader) {
-        this(Utilities.arrayToIterable(columns), set, loader);
+    public static Table createLazyTable(List<ColumnDescription> desc,
+                                        int rowCount, IColumnLoader loader) {
+        List<LazyColumn> cols = Linq.map(desc, d -> new LazyColumn(d, rowCount, loader));
+        return new Table(cols, loader);
     }
+
 
     @Override
     public ITable project(Schema schema) {
-        IColumn[] cols = this.getColumns(schema);
+        List<IColumn> cols = this.getColumns(schema);
         return new Table(cols, this.members, this.columnLoader);
     }
 
     @Override
-    public ITable replace(IColumn[] columns) {
+    public <T extends IColumn> ITable replace(List<T> columns) {
         return new Table(columns, this.getMembershipSet(), this.columnLoader);
     }
 
     @Override
-    synchronized public ColumnAndConverter[] getLoadedColumns(ColumnAndConverterDescription[] columns) {
+    synchronized public List<ColumnAndConverter> getLoadedColumns(
+            List<ColumnAndConverterDescription> columns) {
         List<String> toLoad = new ArrayList<String>();
-        ColumnAndConverter[] result = new ColumnAndConverter[columns.length];
+        List<ColumnAndConverter> result = new ArrayList<ColumnAndConverter>(columns.size());
         for (ColumnAndConverterDescription column : columns) {
             String name = column.columnName;
             IColumn col = this.columns.get(name);
@@ -113,16 +132,16 @@ public class Table extends BaseTable {
         if (!toLoad.isEmpty()) {
             if (this.columnLoader == null)
                 throw new RuntimeException("Cannot load columns dynamically");
-            IColumn[] cols = this.columnLoader.loadColumns(toLoad);
+            List<IColumn> cols = this.columnLoader.loadColumns(toLoad);
             for (IColumn c: cols)
                 this.columns.put(c.getName(), c);
         }
-        for (int i=0; i < columns.length; i++) {
-            String name = columns[i].columnName;
+        for (ColumnAndConverterDescription column : columns) {
+            String name = column.columnName;
             IColumn col = this.columns.get(name);
             if (col == null)
                 throw new RuntimeException("Cannot get column " + name);
-            result[i] = new ColumnAndConverter(col, columns[i].getConverter());
+            result.add(new ColumnAndConverter(col, column.getConverter()));
         }
         return result;
     }

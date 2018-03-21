@@ -32,6 +32,7 @@ import {TableViewBase} from "./tableViewBase";
 export class SchemaView extends TableViewBase {
     protected display: TabularDisplay;
     protected contextMenu: ContextMenu;
+    protected summary: HTMLElement;
 
     constructor(remoteObjectId: RemoteObjectId,
                 originalTableId: RemoteObjectId,
@@ -65,6 +66,10 @@ export class SchemaView extends TableViewBase {
             ]);
         this.page.setMenu(menu);
         this.topLevel.appendChild(document.createElement("br"));
+
+        let para = document.createElement("p");
+        para.textContent = "Select the columns that you would like to browse";
+        this.topLevel.appendChild(para);
 
         this.display = new TabularDisplay();
         this.display.setColumns(["#", "Name", "Type"],
@@ -113,6 +118,11 @@ export class SchemaView extends TableViewBase {
             row.oncontextmenu = e => this.createAndShowContextMenu(e);
         }
         this.topLevel.appendChild(this.display.getHTMLRepresentation());
+        this.display.getHTMLRepresentation().setAttribute("overflow-x", "hidden");
+        this.summary = document.createElement("div");
+        this.topLevel.appendChild(this.summary);
+        if (this.rowCount != null)
+            this.summary.textContent = this.rowCount.toString() + " rows";
         this.page.reportTime(elapsedMs);
     }
 
@@ -127,7 +137,7 @@ export class SchemaView extends TableViewBase {
         this.contextMenu.addItem({
             text: "Show as table",
             action: () => this.showTable(),
-            help: "Show the data using a tabular view containing the selected columns." }, true);
+            help: "Show the selected columns in a tabular view." }, true);
         this.contextMenu.addItem({
             text: "Histogram",
             action: () => this.histogram(false),

@@ -27,6 +27,7 @@ import org.hillview.utils.HashUtil;
 
 import javax.annotation.Nullable;
 import java.io.Serializable;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -45,10 +46,10 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
         if (!this.exists())
             return false;
 
-        String[] columns = schema.getColumnNames();
-        ContentsKind[] kinds = schema.getColumnKinds();
-        for (int i = 0; i < columns.length; i++) {
-            String cn = columns[i];
+        List<String> columns = schema.getColumnNames();
+        List<ContentsKind> kinds = schema.getColumnKinds();
+        for (int i = 0; i < columns.size(); i++) {
+            String cn = columns.get(i);
             boolean thisMissing = this.isMissing(cn);
             boolean otherMissing = other.isMissing(cn);
             if (thisMissing && otherMissing)
@@ -56,7 +57,7 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
             if (thisMissing || otherMissing)
                 return false;
             boolean same;
-            switch (kinds[i]) {
+            switch (kinds.get(i)) {
                 case Category:
                 case String:
                 case Json:
@@ -84,13 +85,13 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
             return 0;
 
         int hashCode = 31;
-        String[] columns = schema.getColumnNames();
-        ContentsKind[] kinds = schema.getColumnKinds();
-        for (int i = 0; i < columns.length; i++) {
-            String cn = columns[i];
+        List<String> columns = schema.getColumnNames();
+        List<ContentsKind> kinds = schema.getColumnKinds();
+        for (int i = 0; i < columns.size(); i++) {
+            String cn = columns.get(i);
             if (this.isMissing(cn))
                 continue;
-            switch (kinds[i]) {
+            switch (kinds.get(i)) {
                 case Category:
                 case String:
                 case Json:
@@ -119,8 +120,7 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
     public boolean matches(IStringFilter filter) {
         if (!this.exists())
             return false;
-
-        String[] columns = this.getColumnNames();
+        List<String> columns = this.getColumnNames();
         for (String column : columns) {
             String field = this.getString(column);
             if (filter.test(field))

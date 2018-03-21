@@ -42,16 +42,16 @@ public class RowSnapshot extends BaseRowSnapshot
      */
     private final LinkedHashMap<String, Object> fields =
             new LinkedHashMap<String, Object>();
-    private String[] fieldNames = new String[0];
+    private List<String> fieldNames = new ArrayList<String>(0);
     private final int cachedHashcode;
 
     public RowSnapshot(final ITable data, final int rowIndex, final Schema schema) {
-        IColumn[] columns = data.getColumns(schema);
-        this.fieldNames = new String[columns.length];
+        List<IColumn> columns = data.getColumns(schema);
+        this.fieldNames = new ArrayList<String>(columns.size());
         int i = 0;
         for (IColumn c: columns) {
             this.fields.put(c.getName(), c.getObject(rowIndex));
-            this.fieldNames[i] = c.getName();
+            this.fieldNames.add(c.getName());
             i++;
         }
         this.cachedHashcode = this.fields.hashCode();
@@ -78,10 +78,10 @@ public class RowSnapshot extends BaseRowSnapshot
         if (schema.getColumnCount() != data.length)
             throw new RuntimeException("Mismatched schema");
         int index = 0;
-        this.fieldNames = new String[schema.getColumnCount()];
+        this.fieldNames = new ArrayList<String>(schema.getColumnCount());
         for (String col: schema.getColumnNames()) {
             this.fields.put(col, data[index]);
-            this.fieldNames[index] = col;
+            this.fieldNames.add(col);
             index++;
         }
         this.cachedHashcode = this.fields.hashCode();
@@ -95,7 +95,7 @@ public class RowSnapshot extends BaseRowSnapshot
     }
 
     @Override
-    public String[] getColumnNames() {
+    public List<String> getColumnNames() {
         return this.fieldNames;
     }
 
@@ -133,7 +133,7 @@ public class RowSnapshot extends BaseRowSnapshot
     public static RowSnapshot parse(Schema schema, Object[] data) {
         Object[] converted = new Object[data.length];
         List<String> cols = new ArrayList<String>(data.length);
-        cols.addAll(Arrays.asList(schema.getColumnNames()));
+        cols.addAll(schema.getColumnNames());
         for (int i = 0; i < data.length; i++) {
             String c = cols.get(i);
             ColumnDescription cd = schema.getDescription(c);

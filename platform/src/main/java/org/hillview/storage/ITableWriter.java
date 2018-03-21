@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * Copyright (c) 2018 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,15 +15,13 @@
  * limitations under the License.
  */
 
-package org.hillview.table.api;
+package org.hillview.storage;
 
-import java.util.List;
+import org.hillview.table.api.ITable;
 
-public interface IColumnLoader {
+public interface ITableWriter {
     /**
-     * Load the columns with the specified names.
-     * @param names  Column names to load.
-     * @return       The loaded columns.
+     * Write the data in the specified table to a storage medium.
      */
-    List<IColumn> loadColumns(List<String> names);
+    void writeTable(ITable table);
 }

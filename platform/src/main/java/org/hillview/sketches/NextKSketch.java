@@ -159,14 +159,12 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
         if (!left.table.getSchema().equals(right.table.getSchema()))
             throw new RuntimeException("The schemas do not match.");
         int width = left.table.getSchema().getColumnCount();
-        IColumn[] mergedCol = new IColumn[width];
+        List<IColumn> mergedCol = new ArrayList<IColumn>(width);
         List<Integer> mergeOrder = this.recordOrder.getIntMergeOrder(left.table, right.table);
-        int index = 0;
         for (String colName : left.table.getSchema().getColumnNames()) {
             IColumn newCol = this.mergeColumns(left.table.getColumn(colName),
                     right.table.getColumn(colName), mergeOrder);
-            mergedCol[index] = newCol;
-            index++;
+            mergedCol.add(newCol);
         }
         List<Integer> mergedCounts = this.mergeCounts(left.count, right.count, mergeOrder);
         final SmallTable mergedTable = new SmallTable(mergedCol);

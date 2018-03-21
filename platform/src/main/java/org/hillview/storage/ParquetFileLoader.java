@@ -39,7 +39,7 @@ import org.hillview.table.ColumnDescription;
 import org.hillview.table.Table;
 import org.hillview.table.api.*;
 import org.hillview.table.columns.BaseListColumn;
-import org.hillview.table.columns.LazyColumn;
+import org.hillview.utils.Linq;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -69,12 +69,13 @@ public class ParquetFileLoader extends TextFileLoader {
     }
 
     private static void appendGroup(
-            IAppendableColumn[] cols, Group g, List<ColumnDescriptor> cds) {
+            List<IAppendableColumn> cols, Group g, List<ColumnDescriptor> cds) {
         int fieldCount = g.getType().getFieldCount();
         for (int field = 0; field < fieldCount; field++) {
             int valueCount = g.getFieldRepetitionCount(field);
+            IAppendableColumn col = cols.get(field);
             if (valueCount == 0) {
-                cols[field].appendMissing();
+                col.appendMissing();
                 continue;
             }
             if (valueCount > 1)
@@ -86,38 +87,38 @@ public class ParquetFileLoader extends TextFileLoader {
             switch (cds.get(field).getType()) {
                 case INT64: {
                     long l = g.getLong(field, 0);
-                    cols[field].append((double) l);
+                    col.append((double) l);
                     break;
                 }
                 case FLOAT: {
                     float f = g.getFloat(field, 0);
-                    cols[field].append((double) f);
+                    col.append((double) f);
                     break;
                 }
                 case DOUBLE: {
                     double d = g.getDouble(field, 0);
-                    cols[field].append(d);
+                    col.append(d);
                     break;
                 }
                 case INT32: {
                     int i = g.getInteger(field, 0);
-                    cols[field].append(i);
+                    col.append(i);
                     break;
                 }
                 case BOOLEAN: {
                     boolean b = g.getBoolean(field, 0);
-                    cols[field].append(b ? "true" : "false");
+                    col.append(b ? "true" : "false");
                     break;
                 }
                 case BINARY: {
                     Binary b = g.getBinary(field, 0);
                     String s = b.toStringUsingUTF8();
-                    cols[field].append(s);
+                    col.append(s);
                     break;
                 }
                 case FIXED_LEN_BYTE_ARRAY: {
                     String s = g.getString(field, 0);
-                    cols[field].append(s);
+                    col.append(s);
                     break;
                 }
                 case INT96: {
@@ -130,7 +131,7 @@ public class ParquetFileLoader extends TextFileLoader {
                     long nanosOfDay = nt.getTimeOfDayNanos();
                     long epochSeconds = (julianDay - JULIAN_DAY_NUMBER_FOR_UNIX_EPOCH) * 24 * 60 * 60;
                     Instant inst = Instant.ofEpochSecond(epochSeconds, nanosOfDay);
-                    cols[field].append(inst);
+                    col.append(inst);
                     break;
                 }
                 default:
@@ -167,22 +168,21 @@ public class ParquetFileLoader extends TextFileLoader {
         return new ColumnDescription(name, kind);
     }
 
-    private static IAppendableColumn[] createColumns(ParquetMetadata md) {
+    private static List<IAppendableColumn> createColumns(ParquetMetadata md) {
         MessageType schema = md.getFileMetaData().getSchema();
         List<ColumnDescriptor> cols = schema.getColumns();
-        IAppendableColumn[] result = new IAppendableColumn[cols.size()];
+        List<IAppendableColumn> result = new ArrayList<IAppendableColumn>(cols.size());
 
-        for (int i = 0; i < cols.size(); i++) {
-            ColumnDescriptor cd = cols.get(i);
+        for (ColumnDescriptor cd : cols) {
             ColumnDescription desc = getColumnDescription(cd);
-            result[i] = BaseListColumn.create(desc);
+            result.add(BaseListColumn.create(desc));
         }
         return result;
     }
 
     public class ParquetColumnLoader implements IColumnLoader {
         @Override
-        public IColumn[] loadColumns(List<String> names) {
+        public List<IColumn> loadColumns(List<String> names) {
             FileMetaData fm = ParquetFileLoader.this.metadata.getFileMetaData();
             MessageType schema = fm.getSchema();
             List<Type> list = new ArrayList<Type>();
@@ -201,10 +201,10 @@ public class ParquetFileLoader extends TextFileLoader {
         }
     }
 
-    private IColumn[] loadColumns(ParquetMetadata md) {
+    private List<IColumn> loadColumns(ParquetMetadata md) {
         try {
             MessageType schema = md.getFileMetaData().getSchema();
-            IAppendableColumn[] cols = createColumns(md);
+            List<IAppendableColumn> cols = createColumns(md);
             ParquetFileReader r = ParquetFileReader.open(this.configuration, this.path);
             MessageColumnIO columnIO = new ColumnIOFactory().getColumnIO(schema);
 
@@ -222,7 +222,7 @@ public class ParquetFileLoader extends TextFileLoader {
             for (IAppendableColumn c : cols)
                 c.seal();
             r.close();
-            return cols;
+            return Linq.map(cols, e -> e);
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
@@ -241,18 +241,14 @@ public class ParquetFileLoader extends TextFileLoader {
         if (this.lazy) {
             ParquetColumnLoader loader = new ParquetColumnLoader();
             List<ColumnDescriptor> cds = md.getFileMetaData().getSchema().getColumns();
-            LazyColumn[] cols = new LazyColumn[cds.size()];
             int size = this.getNumRows();
-
-            int index = 0;
-            for (ColumnDescriptor cd: cds) {
-                ColumnDescription desc = getColumnDescription(cd);
-                cols[index++] = new LazyColumn(desc, size, loader);
-            }
+            List<ColumnDescription> desc = Linq.map(cds,
+                    ParquetFileLoader::getColumnDescription);
+            Table result = Table.createLazyTable(desc, size, loader);
             this.close(null);
-            return new Table(cols, loader);
+            return result;
         } else {
-            IColumn[] cols = this.loadColumns(md);
+            List<IColumn> cols = this.loadColumns(md);
             this.close(null);
             return new Table(cols, null);
         }

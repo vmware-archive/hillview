@@ -18,7 +18,9 @@
 package org.hillview.test;
 
 import org.hillview.storage.JdbcConnectionInformation;
+import org.hillview.storage.OrcFileWriter;
 import org.hillview.table.api.ColumnAndConverter;
+import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.storage.JdbcDatabase;
 import org.hillview.utils.Converters;
@@ -26,6 +28,9 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import javax.annotation.Nullable;
+import java.sql.SQLException;
+import java.time.Instant;
+import java.util.List;
 
 /**
  * Various tests for reading data from databases through JDBC.
@@ -104,4 +109,6 @@ public class JdbcTest extends BaseTest {
             Assert.assertEquals(10001, empno);
         }
     }
+
+    //////////////////////////////
 }

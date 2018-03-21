@@ -37,7 +37,7 @@ public class CDFTest extends BaseTest {
         final int bigSize = 30000000;
         final int numCols = 1;
         final SmallTable bigTable = getIntTable(bigSize, numCols);
-        this.colName = bigTable.getSchema().getColumnNames()[0];
+        this.colName = bigTable.getSchema().getColumnNames().get(0);
         this.dataSet = new LocalDataSet<ITable>(bigTable);
         this.colStat = this.dataSet.blockingSketch(
                        new BasicColStatSketch(

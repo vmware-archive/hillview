@@ -3,24 +3,26 @@
 [Hillview](https://github.com/vmware/hillview) is a simple cloud-based
 spreadsheet program for browsing large data collections.  Currently
 the data manipulated is read-only.  Users can sort, find, filter,
-transform, query, and chart data in simple ways;
+transform, query, zoom-in/out, and chart data in simple ways;
 operations are performed easily using direct manipulation in the GUI.
 Hillview is designed to work on very large data sets (billions of
-rows), with an interactive spreadsheet-like interaction style, complementing sophisticated analytic engines.  Hillview can also be
-executed as a stand-alone executable on a local machine, but then the
+rows), with an interactive spreadsheet-like interaction style,
+complementing sophisticated analytic engines.  Hillview can also be
+executed as a stand-alone executable on a local machine (but then the
 data size it can manipulate is limited by the available machine
-resources.
+resources).
 
-Hillview attempts to provide fast data manipulation.  The speed is obtained by deferring work: Hillview only
-computes as much of the data as must be shown to the user.  For
-example, when sorting a dataset, it only sorts the rows currently
-visible on the screen.  Hillview performs all operations using a class
-of very efficient algorithms, called “sketches”, which are constrained
-to compute with bounded memory over distributed data.
+Hillview attempts to provide fast data manipulation.  The speed is
+obtained by deferring work: Hillview only computes as much of the data
+as must be shown to the user.  For example, when sorting a dataset, it
+only sorts the rows currently visible on the screen.  Hillview
+performs all operations using a class of very efficient algorithms,
+called “sketches”, which are constrained to compute with bounded
+memory over distributed data.
 
 ## System architecture
 
-The tool is a three-tier system, as shown in the following figure:
+Hillview's architecture is shown in the following figure:
 
 ![System architecture](system-architecture.png)
 
@@ -29,17 +31,19 @@ The tool is a three-tier system, as shown in the following figure:
 * The service is exposed by a web server which runs in a datacenter on
   a head node.
 
-* The service runs on a collection of servers in the datacenter;
-  ideally these servers also store the data that is being browsed.
+* The service runs on a collection of worker servers in the
+  datacenter.  These servers must be able to read the browsed data in
+  parallel independently; ideally they store the data that is
+  being browsed locally.
 
 The Hillview service is implemented in Java.  The UI is written in
 TypeScript.
 
-Hillview can run as a federated system or loosely interconnected
-components; the head node only sends small queries to the servers, and
-it receivers small results from these.  The data on the server is
-never sent over the network; the servers locally compute all results
-that are needed.
+Hillview can run as a federated system of loosely interconnected
+components; the head node only sends small queries to the workers, and
+it receives small results from these.  The data on the workers is
+never sent over the network; the worker locally compute all views that
+are needed to produce the final result.
 
 ## Streaming interaction
 
@@ -58,17 +62,19 @@ currently-executing operation.
 ## Data model
 
 The Hillview data model is a large table, with a relatively small
-number of columns (currently tens but would increase to hundreds soon) and many rows (millions to billions).
+number of columns (currently tens or hundreds) and many rows (millions
+to billions).
 
 The data in each column is typed; Hillview supports the following data
 types:
-  * String
-  * Category (represented as strings)
-  * JSON (represented as strings)
-  * Double
+  * String (Unicode strings)
+  * Category (categorical columns are string columns but with few distinct values)
+  * JSON (strings that represent JSON values)
+  * Double (64-bit floating point)
   * Integer (32-bit)
-  * Dates and times
-  * Time intervals
+  * Date+time (the Java Instant class is used to represent such date+time values
+    on the server side; dates include time zone information)
+  * Time intervals (represented using the Java Duration class)
 
 Hillview supports a special value "missing" which indicates that a
 value is not present.  This is similar to NULL values in databases.
@@ -116,23 +122,55 @@ storage.
 
 * System logs: when this option is selected Hillview loads the logs
   produced by the Hillview system itself as a table with 9 columns.
-  This is mostly useful to debug the performance of the Hillview
-  system itself.
+  This is used to debug the Hillview system itself.
 
 * CSV files: allows the user to [read data from a set of CSV
   files](#reading-csv-files).
 
-* JSON files: allow the user to [read the data from a set of JSON
+* JSON files: allows the user to [read the data from a set of JSON
   files](#reading-json-files).
 
+* Parquet files: allows the user to [read the data from a set of
+  Parquet files](#reading-parquet-files).
+
+* Orc files: allows the user to [read the data from a set of ORC
+  files](#reading-orc-files).
+
 * DB tables: allows the user to [read data from a set of federated
-  databases](#reading-data-from-sql-databases).
+  databases using JDBC](#reading-data-from-sql-databases).
 
 After the data loading is initiated the user will be presented with a
 view of the loaded table.  If the table has relatively few columns,
 the user is shown directly a [Tabular view](#table-views).  Otherwise
 the user is shown a [Schema view](#data-schema-views), which can be
 used to select a smaller set of columns to browse.
+
+### Specifying the data schema
+
+For many file formats Hillview uses a `schema` file to specify the
+format of the data.  The following is an example of a schema
+specification in JSON for a table with 2 columns.
+
+```JSON
+[{
+    "name": "DayOfWeek"
+    "kind": "Integer"
+}, {
+    "name": "FlightDate"
+    "kind": "Date"
+}]
+```
+
+The schema is an array of JSON objects each describing a column.  A
+column description has three fields:
+
+* name: A string describing the column name.  All column names in a
+  schema must be unique.
+
+* kind: A string describing the type of data in the column,
+  corresponding to the types in the [data model](#data-model).  The
+  kind is one of: "String", "Category", "JSON", "Double", "Integer",
+  "Date", and "Interval".
 
 #### Reading CSV files
 
@@ -158,39 +196,10 @@ is deployed*.
   first row is just ignored.
 
 All the CSV files must have the same schema (and the same number of
-columns).  CSV files may be compressed.  CSV fields may be quoted
-using double quotes, and then they may contain newlines.  An empty
-field (contained between two consecutive commas, or between a comma
-and a newline) is translated to a 'missing' data value.
-
-The following is an example of a schema specification in JSON for a
-table with 2 columns.
-
-```JSON
-[{
-    "name": "DayOfWeek"
-    "kind": "Integer",
-    "allowMissing": true
-}, {
-    "name": "FlightDate"
-    "kind": "Date",
-    "allowMissing": false
-}]
-```
-
-The schema is an array of JSON objects each describing a column.  A
-column description has three fields:
-
-* name: A string describing the column name.  All column names in a
-  schema must be unique.
-
-* allowMissing: A Boolean value which indicates whether the column can
-  contain 'missing' values.
-
-* kind: A string describing the type of data in the column,
-  corresponding to the types in the [data model](#data-model).  The
-  kind is one of: "String", "Category", "JSON", "Double", "Integer",
-  "Date", and "Interval".
+columns).  CSV files may be compressed using gzip.  CSV fields may be
+quoted using double quotes, and then they may contain newlines.  An
+empty field (contained between two consecutive commas, or between a
+comma and a newline) is translated to a 'missing' data value.
 
 #### Reading JSON files
 

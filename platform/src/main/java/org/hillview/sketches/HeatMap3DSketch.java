@@ -23,6 +23,8 @@ import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 
 public class HeatMap3DSketch implements ISketch<ITable, HeatMap3D> {
     private final IBucketsDescription bucketDescD1;
@@ -53,11 +55,13 @@ public class HeatMap3DSketch implements ISketch<ITable, HeatMap3D> {
 
     @Override
     public HeatMap3D create(final ITable data) {
-        ColumnAndConverter[] cols = data.getLoadedColumns(new ColumnAndConverterDescription[] {
-                this.col1, this.col2, this.col3
-        });
+        List<ColumnAndConverterDescription> ccds = new ArrayList<ColumnAndConverterDescription>(3);
+        ccds.add(this.col1);
+        ccds.add(this.col2);
+        ccds.add(this.col3);
+        List<ColumnAndConverter> cols = data.getLoadedColumns(ccds);
         HeatMap3D result = this.getZero();
-        result.createHeatMap(cols[0], cols[1], cols[2],
+        result.createHeatMap(cols.get(0), cols.get(1), cols.get(2),
                 data.getMembershipSet(), this.rate, this.seed, true);
         return result;
     }

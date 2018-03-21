@@ -21,6 +21,7 @@ import net.openhft.hashing.LongHashFunction;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.*;
 import org.hillview.utils.Converters;
+import org.hillview.utils.HillviewLogger;
 
 import javax.annotation.Nullable;
 import java.time.Duration;
@@ -111,13 +112,14 @@ public class LazyColumn extends BaseColumn {
     synchronized private IColumn ensureLoaded() {
         if (this.data != null)
             return this.data;
+        HillviewLogger.instance.info("Loading data for lazy column", "{0}", this);
         List<String> toLoad = new ArrayList<String>();
         toLoad.add(this.getName());
-        IColumn[] loaded = this.loader.loadColumns(toLoad);
+        List<IColumn> loaded = this.loader.loadColumns(toLoad);
         Converters.checkNull(loaded);
-        if (loaded.length != 1)
-            throw new RuntimeException("Expected 1 column to be loaded, not " + loaded.length);
-        this.data = loaded[0];
+        if (loaded.size() != 1)
+            throw new RuntimeException("Expected 1 column to be loaded, not " + loaded.size());
+        this.data = loaded.get(0);
         return Converters.checkNull(this.data);
     }
 }

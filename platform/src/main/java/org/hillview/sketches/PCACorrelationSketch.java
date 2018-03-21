@@ -25,6 +25,8 @@ import org.jblas.DoubleMatrix;
 
 import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * This class computes the correlations between different columns in the table.
@@ -63,16 +65,16 @@ public class PCACorrelationSketch implements ISketch<ITable, CorrMatrix> {
         if (this.samplingRate >= 1)
             table = data;
         else {
-            ColumnAndConverterDescription[] ccds = ColumnAndConverterDescription.create(
+            List<ColumnAndConverterDescription> ccds = ColumnAndConverterDescription.create(
                     this.colNames);
-            ColumnAndConverter[] iCols = data.getLoadedColumns(ccds);
+            List<ColumnAndConverter> iCols = data.getLoadedColumns(ccds);
             IMembershipSet mm = data.getMembershipSet().sample(this.samplingRate, this.seed);
             table = data.compress(mm);
         }
         int nRows = table.getNumOfRows();
         int nCols = this.colNames.length;
         // Convert the columns to a DoubleMatrix.
-        DoubleMatrix mat = BlasConversions.toDoubleMatrix(table, this.colNames);
+        DoubleMatrix mat = BlasConversions.toDoubleMatrix(table, Arrays.asList(this.colNames));
 
         // The number of non-missing values per column pair
         corrMatrix.nonMissing = DoubleMatrix.ones(nCols, nCols).mul(nRows);

@@ -23,6 +23,7 @@ import org.hillview.table.api.IRowIterator;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.List;
 import java.util.function.Function;
 
 /**
@@ -63,7 +64,8 @@ public class Centroids<T> implements Serializable {
      * @param keyFunc Function that can determine the partition key of a row entry.
      * @param columns Column that define the nD space.
      */
-    public Centroids(IMembershipSet members, Function<Integer, T> keyFunc, ColumnAndConverter[] columns) {
+    public Centroids(IMembershipSet members, Function<Integer, T> keyFunc,
+                     List<ColumnAndConverter> columns) {
         this();
         int colIndex = 0;
         for (ColumnAndConverter column : columns) {
@@ -77,8 +79,8 @@ public class Centroids<T> implements Serializable {
                 }
                 T key = keyFunc.apply(row);
                 // Get the arrays for this partition from the HashMap (or create them if absent).
-                double[] sums = this.sums.computeIfAbsent(key, k -> new double[columns.length]);
-                long[] counts = this.counts.computeIfAbsent(key, k -> new long[columns.length]);
+                double[] sums = this.sums.computeIfAbsent(key, k -> new double[columns.size()]);
+                long[] counts = this.counts.computeIfAbsent(key, k -> new long[columns.size()]);
                 // Update the sum and count of this partition in this column
                 sums[colIndex] += column.asDouble(row);
                 counts[colIndex]++;

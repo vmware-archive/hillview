@@ -46,7 +46,7 @@ public class TestUtils {
         return r.load();
     }
 
-    public static String[] getNumericColumnNames(ITable table) {
+    public static List<String> getNumericColumnNames(ITable table) {
         List<String> numericColNames = new ArrayList<String>();
         for (String colName : table.getSchema().getColumnNames()) {
             ContentsKind kind = table.getSchema().getDescription(colName).kind;
@@ -54,6 +54,6 @@ public class TestUtils {
                 numericColNames.add(colName);
             }
         }
-        return numericColNames.toArray(new String[numericColNames.size()]);
+        return numericColNames;
     }
 }
