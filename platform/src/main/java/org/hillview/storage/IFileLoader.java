@@ -21,6 +21,7 @@ import org.hillview.table.api.ITable;
 
 /**
  * This class loads a file from disk and converts it into an ITable.
+ * Instances of this class are not serializable; they are all created where the data resides.
  */
 public interface IFileLoader {
     /**

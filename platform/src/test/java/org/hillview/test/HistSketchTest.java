@@ -40,7 +40,8 @@ public class HistSketchTest extends BaseTest {
         final Table myTable = TestTables.getRepIntTable(tableSize, numCols);
         final BucketsDescriptionEqSize buckets = new BucketsDescriptionEqSize(1, 50, 10);
         final HistogramSketch mySketch = new HistogramSketch(buckets,
-                new ColumnAndConverterDescription(myTable.getSchema().getColumnNames()[0]), 1, 0);
+                new ColumnAndConverterDescription(myTable.getSchema().getColumnNames().get(0)),
+                1, 0);
         Histogram result = mySketch.create(myTable);
         int size = 0;
         int bucketNum = result.getNumOfBuckets();
@@ -56,7 +57,7 @@ public class HistSketchTest extends BaseTest {
         final int bigSize = 100000;
         final SmallTable bigTable = TestTables.getIntTable(bigSize, numCols);
         double min, max;
-        final String colName = bigTable.getSchema().getColumnNames()[0];
+        final String colName = bigTable.getSchema().getColumnNames().get(0);
         IColumn col = bigTable.getColumn(colName);
         min = col.getInt(0);
         max = col.getInt(0);
@@ -91,8 +92,8 @@ public class HistSketchTest extends BaseTest {
         final BucketsDescriptionEqSize buckets1 = new BucketsDescriptionEqSize(1, 50, 10);
         final BucketsDescriptionEqSize buckets2 = new BucketsDescriptionEqSize(1, 50, 15);
         final SmallTable bigTable = TestTables.getIntTable(bigSize, numCols);
-        final String colName1 = bigTable.getSchema().getColumnNames()[0];
-        final String colName2 = bigTable.getSchema().getColumnNames()[1];
+        final String colName1 = bigTable.getSchema().getColumnNames().get(0);
+        final String colName2 = bigTable.getSchema().getColumnNames().get(1);
         final ParallelDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize/10);
         final HeatMap hm = all.blockingSketch(
                 new HeatMapSketch(buckets1, buckets2,

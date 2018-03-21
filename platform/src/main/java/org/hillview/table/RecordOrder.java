@@ -20,6 +20,7 @@ package org.hillview.table;
 import org.hillview.sketches.ColumnSortOrientation;
 import org.hillview.table.api.*;
 import org.hillview.table.rows.VirtualRowSnapshot;
+import org.hillview.utils.Linq;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -84,17 +85,14 @@ public class RecordOrder implements Serializable {
      */
     public IndexComparator getComparator(final ITable table) {
         final ArrayList<IndexComparator> comparatorList = new ArrayList<IndexComparator>();
-        ColumnAndConverterDescription[] ccds =
-                new ColumnAndConverterDescription[this.sortOrientationList.size()];
-        for (int i=0; i < this.sortOrientationList.size(); i++) {
-            ColumnSortOrientation ordCol = this.sortOrientationList.get(i);
-            ccds[i] = new ColumnAndConverterDescription(ordCol.columnDescription.name);
-        }
-        ColumnAndConverter[] cols = table.getLoadedColumns(ccds);
+        List<ColumnAndConverterDescription> ccds =
+                Linq.map(this.sortOrientationList,
+                        ordCol -> new ColumnAndConverterDescription(ordCol.columnDescription.name));
+        List<ColumnAndConverter> cols = table.getLoadedColumns(ccds);
 
         for (int i=0; i < this.sortOrientationList.size(); i++) {
             ColumnSortOrientation ordCol = this.sortOrientationList.get(i);
-            ColumnAndConverter col = cols[i];
+            ColumnAndConverter col = cols.get(i);
             if (ordCol.isAscending) {
                 comparatorList.add(col.column.getComparator());
             } else {

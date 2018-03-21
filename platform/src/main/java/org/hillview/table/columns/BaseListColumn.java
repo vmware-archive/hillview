@@ -54,6 +54,9 @@ public abstract class BaseListColumn extends BaseColumn implements IAppendableCo
     }
 
     @Override
+    public boolean isLoaded() { return true; }
+
+    @Override
     public int sizeInRows() {
         return this.size;
     }

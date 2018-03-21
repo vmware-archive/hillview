@@ -17,11 +17,13 @@
 
 package org.hillview.table.api;
 
+import java.util.List;
+
 public interface IColumnLoader {
     /**
      * Load the columns with the specified names.
      * @param names  Column names to load.
      * @return       The loaded columns.
      */
-    IColumn[] loadColumns(String[] names);
+    List<IColumn> loadColumns(List<String> names);
 }

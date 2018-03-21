@@ -82,6 +82,7 @@ export interface JdbcConnectionInformation {
     user: string;
     password: string;
     databaseKind: string;  // e.g. mysql; part of url for connection
+    lazyLoading: boolean;
 }
 
 export interface FileSetDescription {

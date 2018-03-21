@@ -41,13 +41,13 @@ public class BlasConversions {
      * @param colNames Names of columns in the table that have to be converted.
      * @return DoubleMatrix with the table's columns interpreted as doubles.
      */
-    public static DoubleMatrix toDoubleMatrix(ITable table, String[] colNames) {
-        ColumnAndConverterDescription[] ccds = ColumnAndConverterDescription.create(colNames);
-        ColumnAndConverter[] cols = table.getLoadedColumns(ccds);
+    public static DoubleMatrix toDoubleMatrix(ITable table, List<String> colNames) {
+        List<ColumnAndConverterDescription> ccds = ColumnAndConverterDescription.create(colNames);
+        List<ColumnAndConverter> cols = table.getLoadedColumns(ccds);
 
-        DoubleMatrix mat = new DoubleMatrix(table.getNumOfRows(), colNames.length);
-        for (int j = 0; j < colNames.length; j++) {
-            IColumn col = cols[j].column;
+        DoubleMatrix mat = new DoubleMatrix(table.getNumOfRows(), colNames.size());
+        for (int j = 0; j < colNames.size(); j++) {
+            IColumn col = cols.get(j).column;
             IRowIterator iter = table.getRowIterator();
             int row = iter.getNextRow();
             int i = 0;
@@ -78,7 +78,7 @@ public class BlasConversions {
             IColumn column = new DoubleArrayColumn(cd, vector.data);
             columns[i] = column;
         }
-        return new Table(Arrays.asList(columns));
+        return new Table(Arrays.asList(columns), null);
     }
 
     /**

@@ -313,12 +313,16 @@ public abstract class RpcTarget implements IJson {
             HillviewLogger.instance.info("Computation completed", "for {0}", this.name);
             JsonObject json = new JsonObject();
             json.addProperty("done", 1.0);
+            @Nullable
             S result = this.postprocessing.apply(this.last, this.getComputation());
 
             Session session = this.context.getSessionIfOpen();
             if (session == null)
                 return;
-            json.add("data", result.toJsonTree());
+            if (result == null)
+                json.add("data", null);
+            else
+                json.add("data", result.toJsonTree());
             RpcReply reply = this.request.createReply(json);
             this.sendReply(reply);
             super.onCompleted();
@@ -384,12 +388,15 @@ public abstract class RpcTarget implements IJson {
     protected <T, R extends IJson> void
     runSketch(IDataSet<T> data, ISketch<T, R> sketch,
               RpcRequest request, RpcRequestContext context) {
+        R zero = sketch.getZero();
+        Observable<PartialResult<R>> zeroObs = Observable.just(new PartialResult<R>(0, zero));
         // Run the sketch
         Observable<PartialResult<R>> sketches = data.sketch(sketch);
+        Observable<PartialResult<R>> concat = zeroObs.concatWith(sketches);
         // Knows how to add partial results
         PartialResultMonoid<R> prm = new PartialResultMonoid<R>(sketch);
         // Prefix sum of the partial results
-        Observable<PartialResult<R>> add = sketches.scan(prm::add);
+        Observable<PartialResult<R>> add = concat.scan(prm::add);
         // Send the partial results back
         SketchResultObserver<R> robs = new SketchResultObserver<R>(
                 sketch.asString(), this, request, context);
@@ -410,12 +417,15 @@ public abstract class RpcTarget implements IJson {
     runCompleteSketch(IDataSet<T> data, ISketch<T, R> sketch,
                       BiFunction<R, HillviewComputation, S> postprocessing,
                       RpcRequest request, RpcRequestContext context) {
+        R zero = sketch.getZero();
+        Observable<PartialResult<R>> zeroObs = Observable.just(new PartialResult<R>(0, zero));
         // Run the sketch
         Observable<PartialResult<R>> sketches = data.sketch(sketch);
+        Observable<PartialResult<R>> concat = zeroObs.concatWith(sketches);
         // Knows how to add partial results
         PartialResultMonoid<R> prm = new PartialResultMonoid<R>(sketch);
         // Prefix sum of the partial results
-        Observable<PartialResult<R>> add = sketches.scan(prm::add);
+        Observable<PartialResult<R>> add = concat.scan(prm::add);
         // Send the partial results back
         CompleteSketchResultObserver<T, R, S> robs = new CompleteSketchResultObserver<T, R, S>(
                 sketch.asString(), this, request, context, postprocessing);

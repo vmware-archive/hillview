@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * Copyright (c) 2018 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,28 +17,11 @@
 
 package org.hillview.storage;
 
-import javax.annotation.Nullable;
-import java.io.Serializable;
+import org.hillview.table.api.ITable;
 
-/**
- * This information is required to open a database connection.
- */
-public class JdbcConnectionInformation implements Serializable {
-    @Nullable
-    public String host;
-    @Nullable
-    public String database;
-    @Nullable
-    public String table;
-    public int port;
-    @Nullable
-    public String user;
-    @Nullable
-    public String password;
-    @Nullable
-    public String databaseKind;
+public interface ITableWriter {
     /**
-     * If true data is loaded lazily - on demand.
+     * Write the data in the specified table to a storage medium.
      */
-    public boolean lazyLoading;
+    void writeTable(ITable table);
 }

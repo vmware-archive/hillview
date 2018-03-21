@@ -25,6 +25,7 @@ import org.hillview.table.api.*;
 import org.hillview.table.columns.ObjectArrayColumn;
 import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.table.rows.RowSnapshot;
+import org.hillview.utils.Linq;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -54,7 +55,7 @@ public class SmallTable extends BaseTable implements Serializable, IJson {
      * @param columns  List of columns.
      * @param schema   The schema of the result; it must match the list of columns.
      */
-    SmallTable(final IColumn[] columns, final Schema schema) {
+    <T extends IColumn> SmallTable(final List<T> columns, final Schema schema) {
         super(columns);
         this.rowCount = BaseTable.columnSize(this.columns.values());
         final Schema s = new Schema();
@@ -66,7 +67,7 @@ public class SmallTable extends BaseTable implements Serializable, IJson {
         this.check();
     }
 
-    public SmallTable(final IColumn[] columns) {
+    public <T extends IColumn> SmallTable(final List<T> columns) {
         super(columns);
         this.rowCount = BaseTable.columnSize(this.columns.values());
         final Schema s = new Schema();
@@ -117,21 +118,18 @@ public class SmallTable extends BaseTable implements Serializable, IJson {
 
     @Override
     public ITable project(Schema schema) {
-        IColumn[] cols = this.getColumns(schema);
+        List<IColumn> cols = this.getColumns(schema);
         return new SmallTable(cols, schema);
     }
 
     @Override
-    public ColumnAndConverter[] getLoadedColumns(ColumnAndConverterDescription[] columns) {
-        ColumnAndConverter[] cols = new ColumnAndConverter[columns.length];
-        for (int i=0; i < columns.length; i++)
-            cols[i] = new ColumnAndConverter(this.columns.get(columns[i].columnName),
-                    columns[i].getConverter());
-        return cols;
+    public List<ColumnAndConverter> getLoadedColumns(List<ColumnAndConverterDescription> columns) {
+        return Linq.map(columns, c -> new ColumnAndConverter(
+                this.columns.get(c.columnName), c.getConverter()));
     }
 
     @Override
-    public ITable replace(IColumn[] columns) {
+    public <T extends IColumn> ITable replace(List<T> columns) {
         return new SmallTable(columns);
     }
 

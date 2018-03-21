@@ -91,7 +91,7 @@ public class FindSketchTest extends BaseTest {
     public void testFind5() {
         final Table table = TestTables.testTable();
         RecordOrder cso = new RecordOrder();
-        String colName = table.getSchema().getColumnNames()[0];
+        String colName = table.getSchema().getColumnNames().get(0);
         cso.append(new ColumnSortOrientation(table.getSchema().getDescription(colName), true));
 
         // start at row with index 2, which is larger than the first one in cso
@@ -107,7 +107,7 @@ public class FindSketchTest extends BaseTest {
     public void testFind6() {
         final Table table = TestTables.testTable();
         RecordOrder cso = new RecordOrder();
-        String colName = table.getSchema().getColumnNames()[1];
+        String colName = table.getSchema().getColumnNames().get(1);
         cso.append(new ColumnSortOrientation(table.getSchema().getDescription(colName), true));
 
         StringFilterDescription sf = new StringFilterDescription("Mike", false, false, false);
@@ -122,7 +122,7 @@ public class FindSketchTest extends BaseTest {
     public void testFind7() {
         final Table table = TestTables.testTable();
         RecordOrder cso = new RecordOrder();
-        String colName = table.getSchema().getColumnNames()[0];
+        String colName = table.getSchema().getColumnNames().get(0);
         cso.append(new ColumnSortOrientation(table.getSchema().getDescription(colName), true));
 
         // Search substring "i".

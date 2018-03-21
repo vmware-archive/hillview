@@ -17,21 +17,49 @@
 
 package org.hillview.test;
 
-import org.hillview.storage.ParquetReader;
+import org.hillview.storage.ParquetFileLoader;
+import org.hillview.table.Table;
+import org.hillview.table.api.ColumnAndConverter;
 import org.hillview.table.api.ITable;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class ParquetTest extends BaseTest {
+    // Not yet checked-in into the repository
+    static String path = "../data/parquet/" +
+            "part-r-00000-9d5cd245-a2e4-4002-9d58-0efdfb0fb962.gz.parquet";
+
     @Test
     public void readTest() {
+        ITable table;
         try {
-            // This is an Impala-produced file which is not yet checked-in into the repository
-            String path = "../data/parquet/" +
-            "part-r-00000-9d5cd245-a2e4-4002-9d58-0efdfb0fb962.gz.parquet";
-            ParquetReader pr = new ParquetReader(path);
-            ITable table = pr.load();
+            ParquetFileLoader pr = new ParquetFileLoader(path, false);
+            table = pr.load();
         } catch (Exception ex) {
             // If the file is not present do not fail the test.
+            return;
         }
+
+        Assert.assertEquals("Table[18x4214]", table.toString());
+        ColumnAndConverter first = table.getLoadedColumn("java_version");
+        Assert.assertEquals(first.getString(0), "1.8.0_91");
+    }
+
+    @Test
+    public void lazyReadTest() {
+        ITable table;
+        try {
+            ParquetFileLoader pr = new ParquetFileLoader(path, true);
+            table = pr.load();
+        } catch (Exception ex) {
+            // If the file is not present do not fail the test.
+            return;
+        }
+
+        Assert.assertEquals("Table[18x4214]", table.toString());
+        ColumnAndConverter first = table.getLoadedColumn("java_version");
+        Assert.assertEquals(first.getString(0), "1.8.0_91");
+        Table tbl = (Table)table;
+        Assert.assertFalse(tbl.getColumns().get(1).isLoaded());
     }
 }

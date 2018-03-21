@@ -23,6 +23,7 @@ import org.hillview.utils.Converters;
 import org.hillview.utils.JsonList;
 
 import javax.annotation.Nullable;
+import java.util.List;
 
 /**
  * For each of the specified column names it computes the set of
@@ -59,12 +60,13 @@ public class DistinctStringsSketch implements ISketch<ITable, JsonList<DistinctS
 
     @Override
     public JsonList<DistinctStrings> create(final ITable data) {
-        ColumnAndConverterDescription[] ccd = ColumnAndConverterDescription.create(this.colNames);
-        ColumnAndConverter[] cols = data.getLoadedColumns(ccd);
+        List<ColumnAndConverterDescription> ccd =
+                ColumnAndConverterDescription.create(this.colNames);
+        List<ColumnAndConverter> cols = data.getLoadedColumns(ccd);
         JsonList<DistinctStrings> result = this.getZero();
         for (int i = 0; i < this.colNames.length; i++) {
             final DistinctStrings ri = result.get(i);
-            IColumn col = cols[i].column;
+            IColumn col = cols.get(i).column;
             ri.setColumnSize(col.sizeInRows());
             IRowIterator it = data.getMembershipSet().getIterator();
             int row = it.getNextRow();

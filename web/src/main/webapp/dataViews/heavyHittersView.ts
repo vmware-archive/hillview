@@ -163,7 +163,6 @@ export class HeavyHittersView extends RemoteTableObjectView {
         this.page.reportTime(elapsedMs);
     }
 
-
     private clickThenShowContextMenu(tRow: HTMLTableRowElement, e: MouseEvent): void {
         this.table.clickRow(tRow, e);
         if(e.button == 1) return; //If it was in fact a CTRL+ leftClick on a Mac, don't show the context menu.

@@ -77,6 +77,11 @@ public interface IColumn extends Serializable {
     }
 
     /**
+     * True if the data for the column is already present in memory.
+     */
+    boolean isLoaded();
+
+    /**
      * @param rowIndex Row to check
      * @return True if the data in the specified row is missing.
      */

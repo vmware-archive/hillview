@@ -29,6 +29,7 @@ import org.jblas.DoubleMatrix;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Set;
 
@@ -41,7 +42,7 @@ public final class ControlPointsTarget extends RpcTarget {
 
     ControlPointsTarget(SmallTable table, String[] colNames, HillviewComputation computation) {
         super(computation);
-        this.highDimData = BlasConversions.toDoubleMatrix(table, colNames);
+        this.highDimData = BlasConversions.toDoubleMatrix(table, Arrays.asList(colNames));
         this.registerObject();
     }
 

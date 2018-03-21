@@ -17,27 +17,35 @@
 
 package org.hillview.test;
 
+import org.hillview.storage.CsvFileWriter;
 import org.hillview.storage.JdbcConnectionInformation;
+import org.hillview.storage.OrcFileWriter;
+import org.hillview.table.api.ColumnAndConverter;
+import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.storage.JdbcDatabase;
 import org.hillview.utils.Converters;
+import org.junit.Assert;
 import org.junit.Test;
 
 import javax.annotation.Nullable;
-import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.Instant;
+import java.util.List;
 
 /**
  * Various tests for reading data from databases through JDBC.
+ * The MSSQL tests assume that the MySQL test_db from https://github.com/datacharmer/test_db has
+ * been loaded.
  */
 public class JdbcTest extends BaseTest {
     @Nullable
-    ITable getTable(JdbcConnectionInformation conn, int rowLimit) {
+    ITable getTable(JdbcConnectionInformation conn) {
         Converters.checkNull(conn.table);
         JdbcDatabase db = new JdbcDatabase(conn);
         try {
             db.connect();
-            ResultSet dbTable = db.getTable(conn.table, rowLimit);
-            ITable table = JdbcDatabase.getTable(dbTable);
+            ITable table = db.readTable();
             db.disconnect();
             return table;
         } catch (Exception e) {
@@ -58,7 +66,9 @@ public class JdbcTest extends BaseTest {
         conn.table = "salaries";
         conn.user = "user";
         conn.password = "password";
-        ITable table = this.getTable(conn, 10);
+        ITable table = this.getTable(conn);
+        if (table != null)
+            Assert.assertEquals("Table[4x2844047]", table.toString());
     }
 
     @Test
@@ -71,6 +81,33 @@ public class JdbcTest extends BaseTest {
         conn.table = "salaries";
         conn.user = "user";
         conn.password = "password";
-        ITable table = this.getTable(conn, -1);
+        ITable table = this.getTable(conn);
+    }
+
+    @Test
+    public void testMysqlLazy() {
+        JdbcConnectionInformation conn = new JdbcConnectionInformation();
+        conn.databaseKind = "mysql";
+        conn.port = 3306;
+        conn.host = "localhost";
+        conn.database = "employees";
+        conn.table = "salaries";
+        conn.user = "user";
+        conn.password = "password";
+        conn.lazyLoading = true;
+        ITable table = this.getTable(conn);
+        if (table != null) {
+            Assert.assertEquals("Table[4x2844047]", table.toString());
+            System.out.println(table.getSchema());
+            ColumnAndConverter col = table.getLoadedColumn("salary");
+            int firstSalary = col.column.getInt(0);
+            System.out.println("First salary " + firstSalary);
+            Assert.assertEquals(60117, firstSalary);
+
+            ColumnAndConverter emp = table.getLoadedColumn("emp_no");
+            int empno = emp.column.getInt(0);
+            System.out.println("First employee " + empno);
+            Assert.assertEquals(10001, empno);
+        }
     }
 }

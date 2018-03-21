@@ -25,6 +25,7 @@ import org.hillview.table.api.ITable;
 import org.hillview.utils.LinAlg;
 import org.hillview.utils.TestTables;
 import org.hillview.utils.TestUtils;
+import org.hillview.utils.Utilities;
 import org.jblas.DoubleMatrix;
 import org.junit.Assert;
 import org.junit.Test;
@@ -37,7 +38,7 @@ public class PCATest extends BaseTest {
         int numCols  = 3;
         ITable table = TestTables.getLinearTable(size, numCols);
         //ITable table = TestTables.getMissingIntTable(size, numCols);
-        String[] colNames = table.getSchema().getColumnNames();
+        String[] colNames = Utilities.toArray(table.getSchema().getColumnNames());
         IDataSet<ITable> dataset = TestTables.makeParallel(table, size/numFrags);
 
         PCACorrelationSketch fcs = new PCACorrelationSketch(colNames, size, 30202);
@@ -77,7 +78,7 @@ public class PCATest extends BaseTest {
     public void testMNIST(){
         try {
             ITable table = TestUtils.loadTableFromCSV("../data", "mnist.csv", "mnist.schema");
-            String[] numericColNames = TestUtils.getNumericColumnNames(table);
+            String[] numericColNames = Utilities.toArray(TestUtils.getNumericColumnNames(table));
             PCACorrelationSketch fcs = new PCACorrelationSketch(numericColNames);
             CorrMatrix cm = fcs.create(table);
             DoubleMatrix corrMatrix = new DoubleMatrix(cm.getCorrelationMatrix());

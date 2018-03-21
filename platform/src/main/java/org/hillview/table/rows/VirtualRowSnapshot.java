@@ -26,6 +26,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -64,9 +65,9 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
         this.table = table;
         this.schema = schema;
         this.columns = new HashMap<String, IColumn>();
-        ColumnAndConverterDescription[] ccds = ColumnAndConverterDescription.create(
+        List<ColumnAndConverterDescription> ccds = ColumnAndConverterDescription.create(
                 schema.getColumnNames());
-        ColumnAndConverter[] cols = table.getLoadedColumns(ccds);
+        List<ColumnAndConverter> cols = table.getLoadedColumns(ccds);
         for (ColumnAndConverter col: cols) {
             Converters.checkNull(col);
             this.columns.put(col.getName(), Converters.checkNull(col.column));
@@ -156,7 +157,7 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
     }
 
     @Override
-    public String[] getColumnNames() {
+    public List<String> getColumnNames() {
         return this.schema.getColumnNames();
     }
 

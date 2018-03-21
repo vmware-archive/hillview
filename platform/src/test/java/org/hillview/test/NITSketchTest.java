@@ -33,19 +33,19 @@ public class NITSketchTest extends BaseTest {
         final int numCols = 1;
         final int bigSize = 100000;
         final SmallTable bigTable = TestTables.getIntTable(bigSize, numCols, 8700);
-        final String colName = bigTable.getSchema().getColumnNames()[0];
+        final String colName = bigTable.getSchema().getColumnNames().get(0);
         final ParallelDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize / 10);
         final NumItemsThreshold nit = all.blockingSketch(new NIThresholdSketch(colName, 13, 12345678));
         assertTrue(nit.exceedThreshold());
 
         final SmallTable bigTable1 = TestTables.getIntTable(bigSize, numCols, 8000);
-        final String colName1= bigTable1.getSchema().getColumnNames()[0];
+        final String colName1= bigTable1.getSchema().getColumnNames().get(0);
         final ParallelDataSet<ITable> all1 = TestTables.makeParallel(bigTable1, bigSize / 10);
         final NumItemsThreshold nit1 = all1.blockingSketch(new NIThresholdSketch(colName1,13,12345678));
         assertTrue(!nit1.exceedThreshold());
 
         final SmallTable bigTable2 = TestTables.getIntTable(bigSize, numCols, 150);
-        final String colName2= bigTable2.getSchema().getColumnNames()[0];
+        final String colName2= bigTable2.getSchema().getColumnNames().get(0);
         final ParallelDataSet<ITable> all2 = TestTables.makeParallel(bigTable2, bigSize / 10);
         final NumItemsThreshold nit2 = all2.blockingSketch(new NIThresholdSketch(colName2, 7, 12345678));
         assertTrue(nit2.exceedThreshold());

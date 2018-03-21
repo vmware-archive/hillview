@@ -19,8 +19,11 @@ package org.hillview.table.api;
 
 import org.hillview.dataset.api.IJson;
 import org.hillview.table.NoStringConverter;
+import org.hillview.utils.Linq;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ColumnAndConverterDescription implements Serializable, IJson {
     public final String columnName;
@@ -35,11 +38,18 @@ public class ColumnAndConverterDescription implements Serializable, IJson {
     /**
      * Create ColumnAndConverterDescription when no string converters are needed.
      */
-    public static ColumnAndConverterDescription[] create(String[] colNames) {
-        ColumnAndConverterDescription[] result =
-                new ColumnAndConverterDescription[colNames.length];
-        for (int i=0; i < colNames.length; i++)
-            result[i] = new ColumnAndConverterDescription(colNames[i]);
+    public static List<ColumnAndConverterDescription> create(List<String> colNames) {
+        return Linq.map(colNames, ColumnAndConverterDescription::new);
+    }
+
+    /**
+     * Create ColumnAndConverterDescription when no string converters are needed.
+     */
+    public static List<ColumnAndConverterDescription> create(String[] colNames) {
+        List<ColumnAndConverterDescription> result = new ArrayList<ColumnAndConverterDescription>
+                (colNames.length);
+        for (String c : colNames)
+            result.add(new ColumnAndConverterDescription(c));
         return result;
     }
 

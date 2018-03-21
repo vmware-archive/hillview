@@ -21,7 +21,7 @@ import org.hillview.utils.Utilities;
 
 public class ImpalaJdbcConnection extends JdbcConnection {
     public ImpalaJdbcConnection(JdbcConnectionInformation conn) {
-        super(';', conn);
+        super(';', ';', conn);
     }
 
     @Override
