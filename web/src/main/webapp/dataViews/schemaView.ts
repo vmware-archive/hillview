@@ -122,7 +122,7 @@ export class SchemaView extends TableViewBase {
         this.summary = document.createElement("div");
         this.topLevel.appendChild(this.summary);
         if (this.rowCount != null)
-            this.summary.textContent = this.rowCount.toString() + " rows";
+            this.summary.textContent = significantDigits(this.rowCount) + " rows";
         this.page.reportTime(elapsedMs);
     }
 

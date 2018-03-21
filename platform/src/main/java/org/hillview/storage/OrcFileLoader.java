@@ -161,8 +161,13 @@ public class OrcFileLoader extends TextFileLoader {
     @SuppressWarnings("ConstantConditions")
     private static void appendColumn(IAppendableColumn to, ColumnVector vec,
                                      TypeDescription.Category simple, int count) {
-        for (int row=0; row < count; row++) {
-            if (vec.isNull[row]) {
+        // See for example
+        // https://github.com/apache/orc/blob/master/java/mapreduce/src/java/org/apache/orc/mapred/OrcMapredRecordReader.java
+        for (int irow=0; irow < count; irow++) {
+            int row = irow;
+            if (vec.isRepeating)
+                row = 0;
+            if (!vec.noNulls && vec.isNull[row]) {
                 to.appendMissing();
                 continue;
             }
@@ -210,13 +215,14 @@ public class OrcFileLoader extends TextFileLoader {
                     TimestampColumnVector tcv = (TimestampColumnVector) vec;
                     long time = tcv.time[row];
                     int nanos = tcv.nanos[row];
-                    Instant instant = Instant.ofEpochSecond(time, nanos);
+                    Instant instant = Instant.ofEpochMilli(time);
+                    instant = instant.plusNanos(nanos);
                     to.append(instant);
                     break;
                 }
                 case BINARY:
                 case DECIMAL:
-                case VARCHAR:
+                case VARCHAR:;
                 case CHAR:
                 case LIST:
                 case MAP:

@@ -33,6 +33,7 @@ import org.hillview.utils.Converters;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
@@ -200,11 +201,15 @@ public class CsvFileTest extends BaseTest {
         settings.setFormat(format);
         settings.setEmptyValue("\"\"");
         settings.setNullValue("");
-        Writer fw = new FileWriter("tmp");
+        String fileName = "tmp.csv";
+        Writer fw = new FileWriter(fileName);
         CsvWriter writer = new CsvWriter(fw, settings);
         writer.writeRow(data);
         writer.close();
         fw.close();
+        File file = new File(fileName);
+        if (file.exists())
+            file.delete();
     }
 
     @Test

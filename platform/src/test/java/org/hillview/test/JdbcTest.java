@@ -17,6 +17,7 @@
 
 package org.hillview.test;
 
+import org.hillview.storage.CsvFileWriter;
 import org.hillview.storage.JdbcConnectionInformation;
 import org.hillview.storage.OrcFileWriter;
 import org.hillview.table.api.ColumnAndConverter;
@@ -109,6 +110,4 @@ public class JdbcTest extends BaseTest {
             Assert.assertEquals(10001, empno);
         }
     }
-
-    //////////////////////////////
 }

@@ -55,6 +55,7 @@ web/src/main/webapp/loadMenu.js
 web/src/main/webapp/test.js
 web/src/main/webapp/node_modules/
 web/.idea/typescript-compiler.xml
+web/.idea/vcs.xml
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
