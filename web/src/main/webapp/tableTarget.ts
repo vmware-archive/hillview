@@ -33,6 +33,7 @@ import {
 import {Histogram2DArgs} from "./javaBridge";
 import {SelectedObject} from "./selectedObject";
 import {HeatMapArrayData} from "./dataViews/trellisHeatMapView";
+import {HeavyHittersView} from "./dataViews/heavyHittersView";
 
 /**
  * This class has methods that correspond directly to TableTarget.java methods.
@@ -112,9 +113,8 @@ export class RemoteTableObject extends RemoteObject {
 
     public createHeavyHittersRequest(columns: IColumnDescription[],
                                      percent: number,
-                                     totalRows: number,
-                                     exact: boolean): RpcRequest<PartialResult<TopList>> {
-        if (exact) {
+                                     totalRows: number): RpcRequest<PartialResult<TopList>> {
+        if (percent < HeavyHittersView.switchToMG) {
             return this.createStreamingRpcRequest<TopList>("heavyHittersMG",
                 {columns: columns, amount: percent,
                     totalRows: totalRows, seed: Seed.instance.get() });
