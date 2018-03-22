@@ -191,17 +191,18 @@ export class HeavyHittersView extends RemoteTableObjectView {
     }
 
     private showLongDialog(): void {
-        let longListDialog = new Dialog("Too Many Frequent Elements found", "");
+        let longListDialog = new Dialog("Too Many Frequent Elements", "");
         longListDialog.addText("Showing the top " + HeavyHittersView.maxDisplay.toString() +" elements, " +
-            "there might be more. Use the 'View as Table' menu option to see the entire list");
+            "there could be more.");
+        longListDialog.addText("Use the 'View as Table' menu option to see the entire list");
         longListDialog.setAction(() => {});
         longListDialog.setCacheTitle("longListDialog");
         longListDialog.show();
     }
 
     private showEmptyDialog(): void {
-        let percentDialog = new Dialog("No Frequent Elements found", "");
-        percentDialog.addText("No Elements found with frequency above " + this.percent.toString() + "%.");
+        let percentDialog = new Dialog("No Frequent Elements", "");
+        percentDialog.addText("No elements found with frequency above " + this.percent.toString() + "%.");
         if (this.percent > HeavyHittersView.min) {
             percentDialog.addText("Lower the threshold? Can take any value above " + HeavyHittersView.minString);
             percentDialog.addTextField("newPercent", "Threshold (%)", FieldKind.Double,
@@ -216,7 +217,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
         }
         else
             percentDialog.setAction(() => {});
-        percentDialog.setCacheTitle("NoHeavyHittersDialog");
+        percentDialog.setCacheTitle("noHeavyHittersDialog");
         percentDialog.show();
     }
 
