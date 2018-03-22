@@ -133,7 +133,7 @@ storage.
 * Parquet files: allows the user to [read the data from a set of
   Parquet files](#reading-parquet-files).
 
-* Orc files: allows the user to [read the data from a set of ORC
+* ORC files: allows the user to [read the data from a set of ORC
   files](#reading-orc-files).
 
 * DB tables: allows the user to [read data from a set of federated
@@ -162,7 +162,7 @@ specification in JSON for a table with 2 columns.
 ```
 
 The schema is an array of JSON objects each describing a column.  A
-column description has three fields:
+column description has two fields:
 
 * name: A string describing the column name.  All column names in a
   schema must be unique.
@@ -176,7 +176,7 @@ column description has three fields:
 
 Hillview can read data from comma- or tab-separated files. The
 following menu allows the users to specify the files to load.  *The
-files must be resident on the same machines where the Hillview service
+files must be resident on the worker machines where the Hillview service
 is deployed*.
 
 ![Specifying CSV files](csv-menu.png)
@@ -186,9 +186,10 @@ is deployed*.
 * File name pattern: A shell expansion pattern that names the files to
   load.  Multiple files may be loaded on each machine.
 
-* Schema file: An optional file in JSON format that describes the
-  schema of the data.  In the absence of a schema file Hillview
-  attempts to guess the type of data in each column.
+* Schema file: An optional [schema file](specifying-the-data-schema)
+  in JSON format that describes the schema of the data.  In the
+  absence of a schema file Hillview attempts to guess the type of data
+  in each column.  The schema file must reside in same folder.
 
 * Header row: select this option if the first row in each CSV file is
   a header row; the first row is used to generate names for the
@@ -196,16 +197,17 @@ is deployed*.
   first row is just ignored.
 
 All the CSV files must have the same schema (and the same number of
-columns).  CSV files may be compressed using gzip.  CSV fields may be
-quoted using double quotes, and then they may contain newlines.  An
-empty field (contained between two consecutive commas, or between a
-comma and a newline) is translated to a 'missing' data value.
+columns).  CSV files may be compressed (e.g., using gzip or other
+compression tools).  CSV fields may be quoted using double quotes, and
+then they may contain newlines.  An empty field (contained between two
+consecutive commas, or between a comma and a newline) is translated to
+a 'missing' data value.
 
 #### Reading JSON files
 
 Hillview can read data from JSON files. The following menu allows the
 users to specify the files to load.  *The files must be resident on
-the same machines where the Hillview service is deployed*.
+the worker where the Hillview service is deployed*.
 
 ![Specifying JSON files](json-menu.png)
 
@@ -223,6 +225,26 @@ The assumed format is as follows:
 
 All the JSON files must have the same schema.  JSON files may be
 compressed.
+
+#### Reading ORC files
+
+Hillview can read data from [Apache ORC
+files](https://github.com/apache/orc), a columnar storage format.
+*The files must be resident on the worker machines where the Hillview
+service is deployed*.  Hillview only supports files whose ORC schema
+is an ORC struct with scalar types as fields.
+
+![Specifying ORC files](orc-menu.png)
+
+* Folder: Folder containing the files to load.
+
+* File name pattern: A shell expansion pattern that names the files to
+  load.  Multiple files may be loaded on each machine.
+
+* Schema file: An optional [schema file](specifying-the-data-schema)
+  in JSON format that describes the schema of the data.  The schema
+  file must reside in same folder, and it must be compatible with the
+  ORC schema.
 
 #### Reading data from SQL databases
 
@@ -262,17 +284,25 @@ Numeric values are converted either to integers (if they fit into
 32-bits) or to doubles.  Boolean values are read as categories
 containing two values, "true" and "false".
 
-#### Reading data from Parquet files
+#### Reading Parquet files
 
-Hillview can read data directly from
-[Parquet](https://parquet.apache.org/) files on disk.  The
+Hillview can read data from [Apache Parquet
+files](http://parquet.apache.org), a columnar storage format.  The
 [Impala](https://impala.apache.org/) database uses Parquet to store
-data.
+data.  *The files must be resident on the worker machines where the
+Hillview service is deployed*.
+
+![Specifying Parquet files](parquet-menu.png)
+
+* Folder: Folder containing the files to load.
+
+* File name pattern: A shell expansion pattern that names the files to
+  load.  Multiple files may be loaded on each machine.
 
 Parquet Int96 data types are read as Datetime values.  Boolean values
-are read as categories containing two values, "true" and "false".
-
-*TODO*
+are read as categories containing two values, "true" and "false"; byte
+arrays are read as strings.  Hillview will reject Parquet files that
+contain nested types (e.g., arrays).
 
 ### User interface organization
 
@@ -307,6 +337,26 @@ there are three rows selected.
 
 ![Schema view](schema-view.png)
 
+The schema view allows users to view the columns of the dataset and to
+select a subset of columns to browse in detail.  The schema view has a
+menu with the following options:
+
+![Schema menu](schema-menu.png)
+
+* Save as: allows the user to [save the data](#saving-data) in a
+  different format
+
+* View: allows the user to [change the way data is
+  displayed](#schema-view-menu)
+
+* Chart: allows users to [draw charts](#the-chart-menu) of one or two
+  colums
+
+* Combine: allows users to [combine data in two
+  views](#combining-two-views)
+
+#### Selecting columns
+
 There are two ways to modify the selection:
 1. By [using the mouse](#mouse-base-selection).
 
@@ -315,12 +365,12 @@ right-clicking on the **Name**, **Type** or **Allows Missing** column
 headers, or by clicking on the **Select** menu option at the top left
 as shown below.
 
-![Column selection menu](schema-browser.png)
+![Column selection menu](schema-select-menu.png)
 
-Columns can be un/selected using either the name, type or Allows Missing
-fields. We describe the search criteria allowed in detail below. In
-all cases, the search returns a subset of column descriptions, which
-can be added to or removed from the current selection.
+Columns can be un/selected using either the name or type.  We describe
+the search criteria allowed in detail below.  In all cases, the search
+returns a subset of column descriptions, which can be added to or
+removed from the current selection.
 
 * By Name: allows regular expression matching against the name of the column.
 
@@ -330,13 +380,10 @@ can be added to or removed from the current selection.
 
 ![Select by type Menu](type-selection.png)
 
-* By Allows Missing: allows choosing only those columns that allow/disallow
-  missing values.
-
-![Select by allows missing menu](allows-missing-selection.png)
-
 Once the user selects a set of column descriptions, they can display a view of the
 data table restricted to the selected columns using the View/Selected columns menu.
+
+#### The schema view menu
 
 ![Schema view menu](schema-view-menu.png)
 
@@ -366,6 +413,22 @@ of columns using the chart menu:
   select two columns whose data will be drawn as a [heatmap](#heatmap-views).
 
 ![Heatmap dialog](heatmap-dialog.png)
+
+#### Saving data
+
+* This menu allows users to save the data in a different format as
+  files on the worker machines.
+
+![Save-as menu](saveas-menu.png)
+
+* Save as ORC files: allows users to specify how data should be saved
+  in the [ORC file format](#reading-orc-files).
+
+![Save-as ORC menu](saveas-orc-menu.png)
+
+The user can specify a folder on the remote worker machines.  Each
+file in the current dataset will be saved as a new file in ORC format
+in the specified folder.
 
 ### Table views
 
@@ -516,13 +579,12 @@ the current state of the display.
   histograms see [Two-dimensional
   histograms](#two-dimensional-histograms).
 
-* Heavy hitters...: This will initiate a heavy hitters computation on
-  the selected columns; this computation finds the most frequent
-  values that appear in the selected columns.  The user is presented
-  with a dialog requesting the threshold parameter for the heavy hitters
+* Frequent elements...: finds the most frequent values that appear in
+  the selected columns.  The user is presented with a dialog
+  requesting the threshold parameter for the heavy hitters
   computation.
 
-  ![Heavy hitters menu](heavy-hitters-menu.png)
+  ![Frequent elements menu](heavy-hitters-menu.png)
 
   The user has to specify a percentage, between .1 (1/1000 of the
   data) and 100 (the whole data).  The result is all items whose frequency
@@ -556,12 +618,6 @@ the current state of the display.
   containing the result of the PCA analysis.  The name of each
   appended column will indicate the amount of variance in the original
   data that is captured by the column (0-100%).
-
-* LAMP...: local affine multidimensional projection (experimental).
-  This is another method to project a high-dimensional space to a
-  low-dimensional space.  This method is currently not very scalable
-  to large datasets; we are exploring methods to speed it up.  For
-  more details see [LAMP](#lamp-projection).
 
 * Convert...: convert the type of data in a column.  Only one column
   must be selected.
@@ -603,14 +659,7 @@ operations:
 
 ![View menu](table-view-menu.png)
 
-* Full dataset: selecting this option will open the table with the
-  full dataset, as it looked when first loaded; all selected columns
-  and filtering operations are undone.
-
 * Refresh: this redraws the current view of the table.
-
-* All columns: all columns will become visible by being added to the
-  current sort order in order from left to right.
 
 * No columns: all columns will be hidden.
 
@@ -621,13 +670,13 @@ a [schema view](#schema-view).
 
 For a description of the combine menu see [combining two views](#combining-two-views).
 
-### Heavy hitter views
+### Frequent elements views
 
-A heavy hitters view shows the most frequent values that appear in the
+A frequent elements view shows the most frequent values that appear in the
 dataset in a set of selected columns (above a certain user-specified
 threshold).
 
-![Heavy hitters view](heavy-hitters-view.png)
+![Frequent elements view](heavy-hitters-view.png)
 
 The data is sorted in decreasing order of frequency.  Each row
 displays a combination of values and its count and relative frequency
@@ -635,16 +684,20 @@ within the dataset.  A special value that may appear is "Everything else",
 which indicates the estimated number of rows that do not appear
 frequently enough to be above the chosen threshold.
 
-The following operations may be performed on a heavy hitters view:
+The following operations may be performed on a frequent elements view:
 
-![Heavy hitters view menu](heavy-hitters-view-menu.png)
+![Frequent elements view menu](heavy-hitters-view-menu.png)
 
-* As table: switches back to a [table view](#table-views), but where
-  the table only contains the rows with values in the set of heavy
-  hitters.
+* All frequent elements as table: switches back to a [table
+  view](#table-views), but where the table only contains the rows
+  corresponding to the frequent values.
+
+* Selected frequent elements As table: switches back to a [table
+  view](#table-views), but where the table only contains the rows
+  corresponding to the frequent values currently selected.
 
 * Get exact counts: runs a more expensive but more precise
-  heavy-hitters computation which computes the exact frequency for
+  frequent elements computation which computes the exact frequency for
   each value.
 
 ### Uni-dimensional histogram views
@@ -684,8 +737,10 @@ The CDF is drawn on a different implicit vertical scale ranging
 between 0 and 100%.  A point on the CDF curve at coordinate X shows
 how many of the data points in the displayed column are smaller than X.
 
-The window also displays the current coordinates of the mouse and the
-position of a blue dot that is closest to the mouse on the CDF curve.
+Next to the mouse an overlay box displays three different values:
+* the mouse's position on the X axis
+* the mouse's position on the Y axis
+* the value of the CDF function at the current X coordinate of the mouse, in percents
 
 ![View menu](histogram-view-menu.png)
 
@@ -751,11 +806,18 @@ distribution in a second column.
 
 ![A two-dimensional histogram](hillview-histogram2d.png)
 
-Next to the mouse an overlay box displays four different values:
+The thin blue line shown is the cumulative distribution function
+([CDF](https://en.wikipedia.org/wiki/Cumulative_distribution_function)).
+The CDF is drawn on a different implicit vertical scale ranging
+between 0 and 100%.  A point on the CDF curve at coordinate X shows
+how many of the data points in the displayed column are smaller than X.
+
+Next to the mouse an overlay box displays five different values:
 * the mouse's position on the X axis
 * the mouse's position on the Y axis
 * the range of values corresponding to the bar where the mouse is placed
 * the size of the bar (the number of rows corresponding to the bar)
+* the value of the CDF function at the current mouse X coordinate
 
 For example, in this figure we see a 2D histogram where the X axis has
 the airline carriers.  For each carrier the bar is divided into
@@ -903,12 +965,13 @@ The operations are as follows:
 
 ### LAMP projection
 
-(This is an experimental feature, which currently is too slow to
-apply to large datasets.)  This is another method to project a
-high-dimensional space to a low-dimensional space, called local affine
-multidimensional projection.  This is based on the paper
-[Local Affine Multidimensional Projection](http://ieeexplore.ieee.org/document/6065024/)
-from IEEE Transactions on Visualization and Computer Graphics, vol 17, issue 12,
+(This is an experimental feature, which currently disabled because is
+too slow to apply to large datasets.)  This is another method to
+project a high-dimensional space to a low-dimensional space, called
+local affine multidimensional projection.  This is based on the paper
+[Local Affine Multidimensional
+Projection](http://ieeexplore.ieee.org/document/6065024/) from IEEE
+Transactions on Visualization and Computer Graphics, vol 17, issue 12,
 Dec 2011, by Paulo Joia, Danilo Coimbra, Jose A Cuminato, Fernando V
 Paulovich, and Luis G Nonato.
 
