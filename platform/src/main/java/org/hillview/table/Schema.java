@@ -19,6 +19,7 @@ package org.hillview.table;
 
 import com.google.gson.*;
 import org.hillview.dataset.api.IJson;
+import org.hillview.table.api.ColumnAndConverterDescription;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IAppendableColumn;
 import org.hillview.table.api.ISubSchema;
@@ -34,6 +35,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.security.InvalidParameterException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A schema is an ordering of the columns, plus a map from a column name to a column description.
@@ -46,9 +48,17 @@ public final class Schema
     // if the schema is supposed to be immutable.
     // cachedColumnNames is also used as a boolean flag.
     @Nullable
-    private String[] cachedColumnNames;
+    private List<String> cachedColumnNames;
     @Nullable
-    private ContentsKind[] cachedKinds;
+    private List<ContentsKind> cachedKinds;
+    @Nullable
+    private List<ColumnDescription> cachedDescriptions;
+
+    /**
+     * Canonical name for schema files.  Most useful when there is only one
+     * schema file expected in a folder.
+     */
+    public static final String schemaFileName = "schema";
 
     public static class Serializer implements JsonSerializer<Schema> {
         public JsonElement serialize(Schema schema, Type typeOfSchema,
@@ -79,6 +89,7 @@ public final class Schema
         this.columns = new LinkedHashMap<String, ColumnDescription>();
         this.cachedColumnNames = null;
         this.cachedKinds = null;
+        this.cachedDescriptions = null;
     }
 
     public void append(final ColumnDescription desc) {
@@ -119,28 +130,37 @@ public final class Schema
             // This is a benign race
             return;
 
-        String[] cols = new String[this.columns.size()];
-        this.cachedKinds = new ContentsKind[this.columns.size()];
+        List<String> cols = new ArrayList<String>(this.columns.size());
+        this.cachedKinds = new ArrayList<ContentsKind>(this.columns.size());
+        this.cachedDescriptions = new ArrayList<ColumnDescription>(this.columns.size());
         int index = 0;
         for (Map.Entry<String, ColumnDescription> c: this.columns.entrySet()) {
-            cols[index] = c.getKey();
-            this.cachedKinds[index] = c.getValue().kind;
+            cols.add(c.getKey());
+            ColumnDescription desc = c.getValue();
+            this.cachedKinds.add(desc.kind);
+            this.cachedDescriptions.add(desc);
             index++;
         }
         // Important: this assignment must be made last
         this.cachedColumnNames = cols;
     }
 
-    public String[] getColumnNames() {
+    public List<String> getColumnNames() {
         if (this.cachedColumnNames == null)
             this.seal();
         return this.cachedColumnNames;
     }
 
-    public ContentsKind[] getColumnKinds() {
+    public List<ContentsKind> getColumnKinds() {
          if (this.cachedColumnNames == null)
              this.seal();
          return Converters.checkNull(this.cachedKinds);
+    }
+
+    public List<ColumnDescription> getColumnDescriptions() {
+        if (this.cachedColumnNames == null)
+            this.seal();
+        return Converters.checkNull(this.cachedDescriptions);
     }
 
     public boolean containsColumnName(String columnName) {
@@ -222,13 +242,20 @@ public final class Schema
         return IJson.gsonInstance.fromJson(json, Schema.class);
     }
 
+    private static final ConcurrentHashMap<Path, Schema> loadedFiles =
+            new ConcurrentHashMap<Path, Schema>();
+
     public static Schema readFromJsonFile(Path file) {
-        try {
-            String s = new String(Files.readAllBytes(file));
-            return Schema.fromJson(s);
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
+        return loadedFiles.computeIfAbsent(file,
+            p -> {
+                try {
+                    String s = new String(Files.readAllBytes(p));
+                    return Schema.fromJson(s);
+                } catch (Exception ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+        );
     }
 
     public void writeToJsonFile(Path file) {
@@ -249,5 +276,17 @@ public final class Schema
             cols[index++] = col;
         }
         return cols;
+    }
+
+    /**
+     * Create a ColumnAndConverter description for each column in the schema.
+     * The string converters will all be null.
+     */
+    public List<ColumnAndConverterDescription> getColumnAndConverterDescriptions() {
+        List<ColumnAndConverterDescription> result =
+                new ArrayList<ColumnAndConverterDescription>(this.getColumnCount());
+        for (ColumnDescription desc: this.columns.values())
+            result.add(new ColumnAndConverterDescription(desc.name));
+        return result;
     }
 }

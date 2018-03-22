@@ -368,8 +368,9 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             final byte[] bytes = command.getSerializedOp().toByteArray();
             final ManageOperation manage = SerializationUtils.deserialize(bytes);
             final UUID commandId = new UUID(command.getHighId(), command.getLowId());
-            Observable<PartialResult<JsonList<ControlMessage.Status>>> observable = dataset.manage(manage.message);
-            final Callable<JsonList<ControlMessage.Status>> callable = () -> {
+            Observable<PartialResult<ControlMessage.StatusList>> observable = dataset.manage(manage
+                    .message);
+            final Callable<ControlMessage.StatusList> callable = () -> {
                 HillviewLogger.instance.info("Starting manage", "{0}", manage.message.toString());
                 ControlMessage.Status status;
                 try {
@@ -377,9 +378,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                 } catch (final Throwable t) {
                     status = new ControlMessage.Status("Exception", t);
                 }
-                JsonList<ControlMessage.Status> result = new JsonList<ControlMessage.Status>();
-                if (status != null)
-                    result.add(status);
+                ControlMessage.StatusList result = new ControlMessage.StatusList(status);
                 HillviewLogger.instance.info("Completed manage", "{0}", manage.message.toString());
                 return result;
             };
@@ -388,7 +387,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
 
             // Results of management commands are never memoized.
             final Subscription sub = observable.subscribe(
-                    new Subscriber<PartialResult<JsonList<ControlMessage.Status>>>() {
+                    new Subscriber<PartialResult<ControlMessage.StatusList>>() {
                         @Override
                         public void onCompleted() {
                             responseObserver.onCompleted();
@@ -464,6 +463,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             final UnsubscribeOperation unsubscribeOp = SerializationUtils.deserialize(bytes);
             final Subscription subscription = this.operationToObservable.remove(unsubscribeOp.id);
             if (subscription != null) {
+                HillviewLogger.instance.info("Unsubscribing", "{0}", unsubscribeOp.id);
                 subscription.unsubscribe();
             }
         } catch (final Exception e) {

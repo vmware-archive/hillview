@@ -70,7 +70,13 @@ export class LoadMenu extends RemoteObject implements IDataView {
                 help: "A set of comma-separated value files residing on the worker machines." },
             { text: "JSON files...",
                 action: () => this.showJSONFileDialog(),
-                help: "A set of files containing JSOn values residing on the worker machines." },
+                help: "A set of files containing JSON values residing on the worker machines." },
+            { text: "Parquet files...",
+                action: () => this.showParquetFileDialog(),
+                help: "A set of Parquet files residing on the worker machines." },
+            { text: "ORC files...",
+                action: () => this.showOrcFileDialog(),
+                help: "A set of Orc files residing on the worker machines." },
             { text: "DB tables...",
                 action: () => this.showDBDialog(),
                 help: "A set of database tables residing in databases on each worker machine." }
@@ -183,6 +189,18 @@ export class LoadMenu extends RemoteObject implements IDataView {
         dialog.show();
     }
 
+    showParquetFileDialog(): void {
+        let dialog = new ParquetFileDialog();
+        dialog.setAction(() => this.init.loadParquetFiles(dialog.getFiles(), this.page));
+        dialog.show();
+    }
+
+    showOrcFileDialog(): void {
+        let dialog = new OrcFileDialog();
+        dialog.setAction(() => this.init.loadOrcFiles(dialog.getFiles(), this.page));
+        dialog.show();
+    }
+
     getHTMLRepresentation(): HTMLElement {
         return this.top;
     }
@@ -266,6 +284,56 @@ class JsonFileDialog extends Dialog {
 }
 
 /**
+ * Dialog that asks the user which Parquet files to load.
+ */
+class ParquetFileDialog extends Dialog {
+    constructor() {
+        super("Load Parquet files", "Loads Parquet files from all machines that are part of the service." +
+            "The schema of all Parquet files loaded should be the same.");
+        this.addTextField("folder", "Folder", FieldKind.String, "/",
+            "Folder on the remote machines where all the CSV files are found.");
+        this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "*.parquet",
+            "Shell pattern that describes the names of the files to load.");
+        this.setCacheTitle("ParquetFileDialog");
+    }
+
+    public getFiles(): FileSetDescription {
+        return {
+            schemaFile: null,  // not used
+            fileNamePattern: this.getFieldValue("fileNamePattern"),
+            headerRow: false,  // not used
+            folder: this.getFieldValue("folder")
+        }
+    }
+}
+
+/**
+ * Dialog that asks the user which Orc files to load.
+ */
+class OrcFileDialog extends Dialog {
+    constructor() {
+        super("Load ORC files", "Loads ORC files from all machines that are part of the service." +
+            "The schema of all ORC files loaded should be the same.");
+        this.addTextField("folder", "Folder", FieldKind.String, "/",
+            "Folder on the remote machines where all the CSV files are found.");
+        this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "*.orc",
+            "Shell pattern that describes the names of the files to load.");
+        this.addTextField("schemaFile", "Schema file (optional)", FieldKind.String, "schema",
+            "The name of a JSON file that contains the schema of the data (if empty the ORC file schema will be used).");
+        this.setCacheTitle("OrcFileDialog");
+    }
+
+    public getFiles(): FileSetDescription {
+        return {
+            schemaFile: this.getFieldValue("schemaFile"),
+            fileNamePattern: this.getFieldValue("fileNamePattern"),
+            headerRow: false,  // not used
+            folder: this.getFieldValue("folder")
+        }
+    }
+}
+
+/**
  * Dialog asking the user which DB table to load.
  */
 class DBDialog extends Dialog {
@@ -310,7 +378,8 @@ class DBDialog extends Dialog {
             table: this.getFieldValue("table"),
             user: this.getFieldValue("user"),
             password: this.getFieldValue("password"),
-            databaseKind: this.getFieldValue("databaseKind")
+            databaseKind: this.getFieldValue("databaseKind"),
+            lazyLoading: true
         }
     }
 }

@@ -24,6 +24,9 @@ import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * For every unique category in the given column name, this sketch computes the centroid of all
@@ -41,16 +44,19 @@ public class CategoryCentroidsSketch implements ISketch<ITable,Centroids<String>
 
     @Override
     public Centroids<String> create(ITable data) {
-        String[] allColumns = new String[this.columns.length + 1];
-        allColumns[0] = this.catColName;
-        System.arraycopy(this.columns, 0, allColumns, 1, this.columns.length);
+        List<String> allColumns = new ArrayList<String>(this.columns.length + 1);
+        allColumns.add(this.catColName);
+        allColumns.addAll(Arrays.asList(this.columns));
 
-        ColumnAndConverterDescription[] ccds = ColumnAndConverterDescription.create(allColumns);
-        ColumnAndConverter[] cols = data.getLoadedColumns(ccds);
-        ColumnAndConverter[] numericColumns = new ColumnAndConverter[this.columns.length];
-        System.arraycopy(cols, 1, numericColumns, 0, this.columns.length);
+        List<ColumnAndConverterDescription> ccds = ColumnAndConverterDescription.create(allColumns);
+        List<ColumnAndConverter> cols = data.getLoadedColumns(ccds);
+        List<ColumnAndConverter> numericColumns =
+                new ArrayList<ColumnAndConverter>(this.columns.length);
+        for (int i=1; i < cols.size(); i++)
+            numericColumns.add(cols.get(i));
 
-        return new Centroids<String>(data.getMembershipSet(), cols[0]::asString, numericColumns);
+        return new Centroids<String>(data.getMembershipSet(),
+                cols.get(0)::asString, numericColumns);
     }
 
     @Override

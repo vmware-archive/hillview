@@ -17,6 +17,8 @@
 
 package org.hillview.storage;
 
+import org.apache.commons.compress.compressors.CompressorException;
+import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.io.ByteOrderMark;
 import org.apache.commons.io.input.BOMInputStream;
 import org.hillview.table.api.IAppendableColumn;
@@ -27,11 +29,11 @@ import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import java.io.*;
-import java.util.zip.GZIPInputStream;
 
 /**
  * Abstract class for a reader that reads data from a text file and keeps
- * track of the current position within the file.
+ * track of the current position within the file.  These loaders are
+ * only allocated where the data is, they are not serializable.
  */
 public abstract class TextFileLoader implements IFileLoader {
     protected final String filename;
@@ -43,6 +45,16 @@ public abstract class TextFileLoader implements IFileLoader {
     @Nullable
     private String currentToken;
     protected boolean allowFewerColumns;
+
+    // Some of these may be null
+    @Nullable
+    private InputStream inputStream = null;
+    @Nullable
+    private InputStream bufferedInputStream = null;
+    @Nullable
+    private InputStream compressedStream = null;
+    @Nullable
+    private BOMInputStream bomStream = null;
 
     public TextFileLoader(String path) {
         this.filename = path;
@@ -63,18 +75,47 @@ public abstract class TextFileLoader implements IFileLoader {
     Reader getFileReader() {
         try {
             HillviewLogger.instance.info("Reading file", "{0}", this.filename);
-            InputStream fis = new FileInputStream(this.filename);
-            if (this.filename.toLowerCase().endsWith(".gz"))
-                fis = new GZIPInputStream(fis);
-            BOMInputStream bos = new BOMInputStream(fis,
+            this.inputStream = new FileInputStream(this.filename);
+            this.bufferedInputStream = new BufferedInputStream(inputStream);
+            // The buffered input stream is needed by the CompressorStream
+            // to detect the compression method at runtime.
+            InputStream fis = this.bufferedInputStream;
+
+            if (Utilities.isCompressed(this.filename)) {
+                this.compressedStream = new CompressorStreamFactory()
+                        .createCompressorInputStream(fis);
+                fis = this.compressedStream;
+            }
+            this.bomStream = new BOMInputStream(fis,
                     ByteOrderMark.UTF_8,
                     ByteOrderMark.UTF_16LE, ByteOrderMark.UTF_16BE,
                     ByteOrderMark.UTF_32LE, ByteOrderMark.UTF_32BE);
-            ByteOrderMark bom = bos.getBOM();
+            ByteOrderMark bom = this.bomStream.getBOM();
             String charsetName = bom == null ? "UTF-8" : bom.getCharsetName();
-            return new InputStreamReader(bos, charsetName);
-        } catch (IOException e) {
+            return new InputStreamReader(this.bomStream, charsetName);
+        } catch (IOException|CompressorException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Relinquishes all resources used.
+     * @param reader   Reader that was created by getFileReader, or null.
+     */
+    public void close(@Nullable Reader reader) {
+        try {
+            if (reader != null)
+                reader.close();
+            if (this.bomStream != null)
+                this.bomStream.close();
+            if (this.compressedStream != null)
+                this.compressedStream.close();
+            if (this.bufferedInputStream != null)
+                this.bufferedInputStream.close();
+            if (this.inputStream != null)
+                this.inputStream.close();
+        } catch (IOException e) {
+            HillviewLogger.instance.error("Error closing input streams", e);
         }
     }
 

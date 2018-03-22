@@ -43,6 +43,9 @@ public abstract class BaseArrayColumn extends BaseColumn implements Serializable
     }
 
     @Override
+    public boolean isLoaded() { return true; }
+
+    @Override
     public boolean isMissing(final int rowIndex) {
         assert this.missing != null;
         return this.missing.get(rowIndex);

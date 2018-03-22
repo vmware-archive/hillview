@@ -73,15 +73,17 @@ export class TabularDisplay implements IHtmlElement {
         }
     }
 
-    insertRow(): HTMLTableRowElement {
+    insertRow(canClick: boolean = true): HTMLTableRowElement {
         let trow = this.tbody.insertRow();
         let rowNo = this.rowCount;
         trow.id = "row" + this.rowCount;
-        trow.onclick = e => this.rowClick(rowNo, e);
+        if (canClick)
+            trow.onclick = e => this.clickRowIndex(rowNo, e);
         this.rows.push(trow);
         this.rowCount++;
         return trow;
     }
+
 
     addRowCell(trow: HTMLTableRowElement): HTMLTableCellElement {
         let cell = trow.insertCell(trow.cells.length);
@@ -97,8 +99,8 @@ export class TabularDisplay implements IHtmlElement {
     /**
      * Add a row of values; these are set as the innerHTML values of the cells.
      */
-    public addRow(data: string[]): HTMLTableRowElement {
-        let trow = this.insertRow();
+    public addRow(data: string[], canClick: boolean= true): HTMLTableRowElement {
+        let trow = this.insertRow(canClick);
         for (let d of data) {
             let cell = this.addRowCell(trow);
             cell.innerHTML = d;
@@ -116,13 +118,18 @@ export class TabularDisplay implements IHtmlElement {
     /**
      * Add a row of values; these are set as the dom children of the table cells
      */
-    public addElementRow(data: Element[]): void {
-        let trow = this.insertRow();
+    public addElementRow(data: Element[], canClick: boolean = true): HTMLTableRowElement  {
+        let trow = this.insertRow(canClick);
         for (let d of data) {
             let cell = this.addRowCell(trow);
             cell.appendChild(d);
             d.classList.add("noselect");
         }
+        return trow;
+    }
+
+    public excludeRow(val: number) {
+        this.selectedRows.exclude(val);
     }
 
     public getSelectedRows(): Set<number> {
@@ -133,15 +140,27 @@ export class TabularDisplay implements IHtmlElement {
      * This method handles the transitions in the set of selected rows resulting from mouse clicks,
      * combined with various kinds of key selections
      */
-    private rowClick(rowIndex: number, e: MouseEvent): void {
+    private clickRowIndex(rowIndex: number, e: MouseEvent): void {
         e.preventDefault();
-        if (e.ctrlKey || e.metaKey) {
-            this.selectedRows.changeState("Ctrl", rowIndex);
-        } else if (e.shiftKey) {
-            this.selectedRows.changeState("Shift", rowIndex);
-        } else
-            this.selectedRows.changeState("NoKey", rowIndex);
+        if (e.button == 2) {// right button
+            if (!this.selectedRows.has(rowIndex))// Add the row if not already present.
+                this.selectedRows.changeState("Ctrl", rowIndex);
+        } else {
+            if (e.ctrlKey || e.metaKey) {
+                this.selectedRows.changeState("Ctrl", rowIndex);
+            } else if (e.shiftKey) {
+                this.selectedRows.changeState("Shift", rowIndex);
+            } else
+                this.selectedRows.changeState("NoKey", rowIndex);
+        }
         this.highlightSelectedRows();
+    }
+
+    public clickRow(htmlRow: HTMLTableRowElement, e: MouseEvent): void {
+        let i: number = this.rows.indexOf(htmlRow);
+        if(i != -1)
+           this.clickRowIndex(i, e);
+        return;
     }
 
     public highlightSelectedRows(): void {

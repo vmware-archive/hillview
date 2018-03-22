@@ -33,7 +33,6 @@ import org.hillview.dataset.remoting.*;
 import org.hillview.utils.Converters;
 import org.hillview.utils.ExecutorUtils;
 import org.hillview.utils.HillviewLogger;
-import org.hillview.utils.JsonList;
 import rx.Observable;
 import rx.subjects.PublishSubject;
 import rx.subjects.SerializedSubject;
@@ -183,7 +182,7 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
     }
 
     @Override
-    public Observable<PartialResult<JsonList<ControlMessage.Status>>> manage(ControlMessage message) {
+    public Observable<PartialResult<ControlMessage.StatusList>> manage(ControlMessage message) {
         final ManageOperation manageOp = new ManageOperation(message);
         final byte[] serializedOp = SerializationUtils.serialize(manageOp);
         final UUID operationId = UUID.randomUUID();
@@ -193,8 +192,8 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
                 .setHighId(operationId.getMostSignificantBits())
                 .setLowId(operationId.getLeastSignificantBits())
                 .build();
-        final SerializedSubject<PartialResult<JsonList<ControlMessage.Status>>,
-                PartialResult<JsonList<ControlMessage.Status>>> subj =
+        final SerializedSubject<PartialResult<ControlMessage.StatusList>,
+                PartialResult<ControlMessage.StatusList>> subj =
                 createSerializedSubject();
         final StreamObserver<PartialResponse> responseObserver =
                 new ManageObserver(subj, message, this);
@@ -208,6 +207,7 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
      * logic on the remote end is idempotent.
      */
     private void unsubscribe(final UUID id) {
+        HillviewLogger.instance.info("Unsubscribe called", "{0}", id);
         final UnsubscribeOperation op = new UnsubscribeOperation(id);
         final byte[] serializedOp = SerializationUtils.serialize(op);
         final Command command = Command.newBuilder()
@@ -302,12 +302,13 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
     /**
      * StreamObserver used by manage() implementations above.
      */
-    private static class ManageObserver extends OperationObserver<PartialResult<JsonList<ControlMessage.Status>>> {
+    private static class ManageObserver extends
+            OperationObserver<PartialResult<ControlMessage.StatusList>> {
         private final ControlMessage message;
         private final RemoteDataSet  dataSet;
 
-        public ManageObserver(SerializedSubject<PartialResult<JsonList<ControlMessage.Status>>,
-                PartialResult<JsonList<ControlMessage.Status>>> subject,
+        public ManageObserver(SerializedSubject<PartialResult<ControlMessage.StatusList>,
+                PartialResult<ControlMessage.StatusList>> subject,
                               ControlMessage message, RemoteDataSet dataSet) {
             super(subject);
             this.message = message;
@@ -316,11 +317,11 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
 
         @Override
         @SuppressWarnings("unchecked")
-        public PartialResult<JsonList<ControlMessage.Status>> processResponse(
+        public PartialResult<ControlMessage.StatusList> processResponse(
                 final PartialResponse response) {
             final OperationResponse op = SerializationUtils.deserialize(response
                     .getSerializedOp().toByteArray());
-            return (PartialResult<JsonList<ControlMessage.Status>>)Converters.checkNull(op.result);
+            return (PartialResult<ControlMessage.StatusList>)Converters.checkNull(op.result);
         }
 
         @Override
@@ -328,9 +329,8 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
         public void onCompleted() {
             ControlMessage.Status status = this.message.remoteAction(this.dataSet);
             if (status != null) {
-                JsonList<ControlMessage.Status> list = new JsonList<ControlMessage.Status>();
-                list.add(status);
-                this.subject.onNext(new PartialResult<JsonList<ControlMessage.Status>>(0, list));
+                ControlMessage.StatusList list = new ControlMessage.StatusList(status);
+                this.subject.onNext(new PartialResult<ControlMessage.StatusList>(0, list));
             }
             this.subject.onCompleted();
         }

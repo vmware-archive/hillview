@@ -24,9 +24,10 @@ import org.hillview.table.Schema;
 import org.hillview.table.api.*;
 
 import java.io.*;
+import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
-public class CsvFileWriter {
+public class CsvFileWriter implements ITableWriter {
     private char separator = ',';
     private boolean writeHeaderRow = true;
     private final String fileName;
@@ -40,53 +41,58 @@ public class CsvFileWriter {
 
     public void setWriteHeaderRow(boolean write) { this.writeHeaderRow = write; }
 
-    public void writeTable(ITable table) throws IOException {
-        Schema schema = table.getSchema();
-        ColumnAndConverterDescription[] ccds =
-                ColumnAndConverterDescription.create(schema.getColumnNames());
-        ColumnAndConverter[] cols = table.getLoadedColumns(ccds);
+    public void writeTable(ITable table) {
+        try {
+            Schema schema = table.getSchema();
+            List<ColumnAndConverterDescription> ccds =
+                    ColumnAndConverterDescription.create(schema.getColumnNames());
+            List<ColumnAndConverter> cols = table.getLoadedColumns(ccds);
 
-        CsvWriterSettings settings = new CsvWriterSettings();
-        CsvFormat format = new CsvFormat();
-        format.setDelimiter(this.separator);
-        settings.setFormat(format);
-        settings.setEmptyValue("\"\"");
-        settings.setNullValue(null);
+            CsvWriterSettings settings = new CsvWriterSettings();
+            CsvFormat format = new CsvFormat();
+            format.setDelimiter(this.separator);
+            settings.setFormat(format);
+            settings.setEmptyValue("\"\"");
+            settings.setNullValue(null);
 
-        OutputStream output;
-        FileOutputStream fs = null;
-        if (this.compress) {
-            String fn = this.fileName;
-            if (!this.fileName.endsWith(".gz"))
-                fn += ".gz";
-            fs = new FileOutputStream(fn);
-            output = new GZIPOutputStream(fs);
-        } else {
-            output = new FileOutputStream(this.fileName);
-        }
-        CsvWriter writer = new CsvWriter(output, settings);
-
-        String[] data = new String[schema.getColumnCount()];
-        int index = 0;
-        for (String c : schema.getColumnNames()) {
-            data[index] = c;
-            index++;
-        }
-        if (this.writeHeaderRow)
-            writer.writeHeaders(data);
-        IRowIterator rowIter = table.getMembershipSet().getIterator();
-        int nextRow = rowIter.getNextRow();
-        while (nextRow >= 0) {
-            for (index = 0; index < cols.length; index++) {
-                String d = cols[index].isMissing(nextRow) ? null : cols[index].asString(nextRow);
-                data[index] = d;
+            OutputStream output;
+            FileOutputStream fs = null;
+            if (this.compress) {
+                String fn = this.fileName;
+                if (!this.fileName.endsWith(".gz"))
+                    fn += ".gz";
+                fs = new FileOutputStream(fn);
+                output = new GZIPOutputStream(fs);
+            } else {
+                output = new FileOutputStream(this.fileName);
             }
-            writer.writeRow(data);
-            nextRow = rowIter.getNextRow();
+            CsvWriter writer = new CsvWriter(output, settings);
+
+            String[] data = new String[schema.getColumnCount()];
+            int index = 0;
+            for (String c : schema.getColumnNames()) {
+                data[index] = c;
+                index++;
+            }
+            if (this.writeHeaderRow)
+                writer.writeHeaders(data);
+            IRowIterator rowIter = table.getMembershipSet().getIterator();
+            int nextRow = rowIter.getNextRow();
+            while (nextRow >= 0) {
+                for (index = 0; index < cols.size(); index++) {
+                    ColumnAndConverter colI = cols.get(index);
+                    String d = colI.isMissing(nextRow) ? null : colI.asString(nextRow);
+                    data[index] = d;
+                }
+                writer.writeRow(data);
+                nextRow = rowIter.getNextRow();
+            }
+            writer.close();
+            output.close();
+            if (fs != null)
+                fs.close();
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
         }
-        writer.close();
-        output.close();
-        if (fs != null)
-            fs.close();
     }
 }

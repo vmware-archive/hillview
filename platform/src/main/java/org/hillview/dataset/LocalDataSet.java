@@ -20,7 +20,6 @@ package org.hillview.dataset;
 import org.hillview.dataset.api.*;
 import org.hillview.utils.ExecutorUtils;
 import org.hillview.utils.HillviewLogger;
-import org.hillview.utils.JsonList;
 import rx.Observable;
 import rx.Scheduler;
 import rx.schedulers.Schedulers;
@@ -29,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * A LocalDataSet is an implementation of IDataSet which contains exactly one
@@ -49,6 +49,9 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
      */
     private final boolean separateThread;
 
+    /**
+     * Work is executed on this thread.
+     */
     private static final Scheduler scheduler;
 
     static {
@@ -102,8 +105,13 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
     @Override
     public <S> Observable<PartialResult<IDataSet<S>>> map(final IMap<T, S> mapper) {
         // Actual map computation performed lazily when observable is subscribed to.
+        final AtomicBoolean interrupted = new AtomicBoolean(false);
         final Callable<IDataSet<S>> callable = () -> {
             try {
+                if (interrupted.get()) {
+                    HillviewLogger.instance.info("Map interrupted", "{0}", this);
+                    throw new InterruptedException("Unsubscribed");
+                }
                 HillviewLogger.instance.info("Starting map", "{0}", mapper.asString());
                 S result = mapper.apply(LocalDataSet.this.data);
                 HillviewLogger.instance.info("Completed map", "{0}", mapper.asString());
@@ -112,7 +120,13 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
                 throw new Exception(t);
             }
         };
-        final Observable<IDataSet<S>> mapped = Observable.fromCallable(callable);
+        final Observable<IDataSet<S>> mapped = Observable.fromCallable(callable)
+                .doOnUnsubscribe(
+                        () -> {
+                            HillviewLogger.instance.info("Unsubscribed map",
+                                    "{0}", this);
+                            interrupted.set(true);
+                        });
         // Wrap the produced data in a PartialResult
         Observable<PartialResult<IDataSet<S>>> data = mapped.map(PartialResult::new);
         return this.schedule(data);
@@ -154,8 +168,8 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
     }
 
     @Override
-    public Observable<PartialResult<JsonList<ControlMessage.Status>>> manage(ControlMessage message) {
-        final Callable<JsonList<ControlMessage.Status>> callable = () -> {
+    public Observable<PartialResult<ControlMessage.StatusList>> manage(ControlMessage message) {
+        final Callable<ControlMessage.StatusList> callable = () -> {
             HillviewLogger.instance.info("Starting manage", "{0}", message.toString());
             ControlMessage.Status status;
             try {
@@ -164,13 +178,11 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
                 status = new ControlMessage.Status("Exception", t);
                 HillviewLogger.instance.error("Exception during manage", t);
             }
-            JsonList<ControlMessage.Status> result = new JsonList<ControlMessage.Status>();
-            if (status != null)
-                result.add(status);
+            ControlMessage.StatusList result = new ControlMessage.StatusList(status);
             HillviewLogger.instance.info("Completed manage", "{0}", message.toString());
             return result;
         };
-        final Observable<JsonList<ControlMessage.Status>> executed = Observable.fromCallable(callable);
+        final Observable<ControlMessage.StatusList> executed = Observable.fromCallable(callable);
         return executed.map(PartialResult::new);
     }
 

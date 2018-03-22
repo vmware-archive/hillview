@@ -17,11 +17,9 @@
 
 package org.hillview.storage;
 
-import org.hillview.utils.Utilities;
-
 public class MySqlJdbcConnection extends JdbcConnection {
     public MySqlJdbcConnection(JdbcConnectionInformation conn) {
-        super('&', conn);
+        super('&', '?', conn);
     }
 
     @Override
@@ -36,13 +34,7 @@ public class MySqlJdbcConnection extends JdbcConnection {
     public String getURL() {
         // TODO: I don't know how to discover this information
         this.addParameter("serverTimeZone", "PDT");
-
         this.addParameter("useSSL", "false");
-        if (!Utilities.isNullOrEmpty(info.user))
-            this.addParameter("user", info.user);
-        if (!Utilities.isNullOrEmpty(info.password))
-            this.addParameter("password", info.password);
-
         StringBuilder builder = new StringBuilder();
         this.addBaseUrl(builder);
         this.appendParametersToUrl(builder);

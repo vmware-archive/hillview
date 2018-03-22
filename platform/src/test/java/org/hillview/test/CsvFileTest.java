@@ -33,6 +33,7 @@ import org.hillview.utils.Converters;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
@@ -43,7 +44,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public class CsvReaderTest extends BaseTest {
+/**
+ * Test read/write access to CSV files.
+ */
+public class CsvFileTest extends BaseTest {
     private static final String ontimeFolder = "../data/ontime";
     private static final String criteoFolder = "../data/criteo";
     private static final String csvFile = "On_Time_Sample.csv";
@@ -184,11 +188,11 @@ public class CsvReaderTest extends BaseTest {
         cols.add(first);
         cols.add(second);
         cols.add(third);
-        ITable table = new Table(cols);
+        ITable table = new Table(cols, null, null);
         writeReadTable(table);
     }
 
-    //@Test
+    @Test
     public void csvWriterTest() throws IOException {
         // The Csv writer we are using has a bug, reproduced with this test.
         String[] data = new String[]{ "", null };
@@ -197,11 +201,16 @@ public class CsvReaderTest extends BaseTest {
         settings.setFormat(format);
         settings.setEmptyValue("\"\"");
         settings.setNullValue("");
-        Writer fw = new FileWriter("tmp");
+        String fileName = "tmp.csv";
+        Writer fw = new FileWriter(fileName);
         CsvWriter writer = new CsvWriter(fw, settings);
         writer.writeRow(data);
         writer.close();
         fw.close();
+        File file = new File(fileName);
+        if (file.exists()) {
+            boolean ignored = file.delete();
+        }
     }
 
     @Test

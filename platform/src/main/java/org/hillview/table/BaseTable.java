@@ -20,10 +20,12 @@ package org.hillview.table;
 import org.hillview.table.api.*;
 import org.hillview.table.columns.BaseArrayColumn;
 import org.hillview.table.rows.RowSnapshot;
-import org.hillview.utils.Utilities;
+import org.hillview.utils.Linq;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  * Base class for in-memory tables.
@@ -43,17 +45,12 @@ public abstract class BaseTable implements ITable, Serializable {
         return this.getMembershipSet().getIterator();
     }
 
-    <C extends IColumn> BaseTable(Iterable<C> columns) {
+    <C extends IColumn> BaseTable(List<C> columns) {
         BaseTable.columnSize(columns);  // validate column sizes
         sealColumns(columns);
         this.columns = new HashMap<String, IColumn>();
         for (final IColumn c : columns)
             this.columns.put(c.getName(), c);
-    }
-
-
-    <C extends IColumn> BaseTable(C[] columns) {
-        this(Utilities.arrayToIterable(columns));
     }
 
     /**
@@ -74,30 +71,21 @@ public abstract class BaseTable implements ITable, Serializable {
     /**
      * Returns columns in the order they appear in the schema.
      */
-    public IColumn[] getColumns(Schema schema) {
-        IColumn[] cols = new IColumn[schema.getColumnCount()];
-        String[] colNames = schema.getColumnNames();
-        for (int i=0; i < colNames.length; i++) {
-            String col = colNames[i];
-            IColumn myCol = this.columns.get(col);
-            cols[i] = myCol;
-        }
-        return cols;
+    public List<IColumn> getColumns(Schema schema) {
+        return Linq.map(schema.getColumnNames(), this.columns::get);
     }
 
     /**
      * Returns columns in the order they appear in the schema.
      */
-    public IColumn[] getColumns() {
+    public List<IColumn> getColumns() {
         return this.getColumns(this.getSchema());
     }
 
     @Override
-    public ITable append(IColumn[] columns) {
-        IColumn[] cols = new IColumn[this.columns.size() + columns.length];
-        IColumn[] old = this.getColumns();
-        System.arraycopy(old, 0, cols, 0, old.length);
-        System.arraycopy(columns, 0, cols, old.length, columns.length);
+    public <T extends IColumn> ITable append(List<T> columns) {
+        List<IColumn> cols = new ArrayList<IColumn>(this.getColumns());
+        cols.addAll(columns);
         return this.replace(cols);
     }
 
@@ -136,14 +124,9 @@ public abstract class BaseTable implements ITable, Serializable {
     @Override public SmallTable compress(final ISubSchema subSchema,
                                          final IRowOrder rowOrder) {
         Schema newSchema = this.getSchema().project(subSchema);
-        String[] colNames = newSchema.getColumnNames();
-
-        IColumn[] compressedCols = new IColumn[newSchema.getColumnCount()];
-        for (int i=0; i < colNames.length; i++) {
-            String s = colNames[i];
-            IColumn c = this.columns.get(s).compress(rowOrder);
-            compressedCols[i] = c;
-        }
+        List<String> colNames = newSchema.getColumnNames();
+        List<IColumn> compressedCols =
+                Linq.map(colNames, s -> this.columns.get(s).compress(rowOrder));
         return new SmallTable(compressedCols, newSchema);
     }
 
@@ -167,7 +150,8 @@ public abstract class BaseTable implements ITable, Serializable {
             nextRow = rowIt.getNextRow();
         int count = 0;
         while ((nextRow >= 0) && (count < rowsToDisplay)) {
-            @SuppressWarnings("MismatchedQueryAndUpdateOfCollection") RowSnapshot rs = new RowSnapshot(this, nextRow);
+            @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
+            RowSnapshot rs = new RowSnapshot(this, nextRow);
             builder.append(rs.toString());
             builder.append(System.getProperty("line.separator"));
             nextRow = rowIt.getNextRow();
@@ -178,22 +162,19 @@ public abstract class BaseTable implements ITable, Serializable {
 
     @Override
     public ITable insertColumn(IColumn column, int index) {
-        IColumn[] result = new IColumn[this.columns.size() + 1];
-        int insertIndex = 0;
-        String[] colNames = this.getSchema().getColumnNames();
-        for (int i = 0; i < colNames.length; i++) {
-            if (i == index) {
-                result[i] = column;
-                insertIndex++;
-            }
-            result[insertIndex++] = this.columns.get(colNames[i]);
+        List<IColumn> result = new ArrayList<IColumn>(this.columns.size() + 1);
+        List<String> colNames = this.getSchema().getColumnNames();
+        for (int i = 0; i < colNames.size(); i++) {
+            if (i == index)
+                result.add(column);
+            result.add(this.columns.get(colNames.get(i)));
         }
         if (index == -1)
-            result[insertIndex] = column;
+            result.add(column);
         return this.replace(result);
     }
 
-    static <C extends IColumn> void sealColumns(Iterable<C> columns) {
+    static <C extends IColumn> void sealColumns(List<C> columns) {
         for (C c: columns) {
             if (c instanceof IMutableColumn) {
                 ((IMutableColumn)c).seal();

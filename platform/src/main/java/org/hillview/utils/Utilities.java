@@ -19,13 +19,15 @@ package org.hillview.utils;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import org.apache.commons.io.FilenameUtils;
 import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.PartialResult;
 
 import javax.annotation.Nullable;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.Iterator;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * This class has some useful static helper methods.
@@ -78,8 +80,21 @@ public class Utilities {
         return s.substring(0, 99) + "...";
     }
 
+    /**
+     * Checks if the argument string is null or empty.
+     */
     public static boolean isNullOrEmpty(@Nullable String s) {
         return s == null || s.isEmpty();
+    }
+
+    /**
+     * Returns null if the argument is null or empty.
+     */
+    @Nullable
+    public static String nullIfEmpty(@Nullable String s) {
+        if (s == null || s.isEmpty())
+            return null;
+        return s;
     }
 
     /**
@@ -124,21 +139,28 @@ public class Utilities {
         return json;
     }
 
-    public static <T> Iterable<T> arrayToIterable(T[] data) {
-        return () -> new Iterator<T>() {
-            private int pos = 0;
+    public static String[] toArray(List<String> list) {
+        return list.toArray(new String[list.size()]);
+    }
 
-            public boolean hasNext() {
-                return data.length > pos;
-            }
+    static final List<String> compressionSuffixes = Arrays.asList(
+            "gz", "bz", "bzip2", "xz", "Z", "arj");
 
-            public T next() {
-                return data[pos++];
-            }
+    /**
+     * Detect whether a file is compressed based on the file name.
+     */
+    public static boolean isCompressed(String filename) {
+        String suffix = FilenameUtils.getExtension(filename).toLowerCase();
+        return compressionSuffixes.contains(suffix);
+    }
 
-            public void remove() {
-                throw new UnsupportedOperationException("Cannot remove an element of an array.");
-            }
-        };
+    /**
+     * This function strips the extension of a file name.
+     * It also removes known compression suffixes.
+     */
+    public static String getBasename(String filename) {
+        if (isCompressed(filename))
+            filename = FilenameUtils.removeExtension(filename);
+        return FilenameUtils.removeExtension(filename);
     }
 }

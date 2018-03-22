@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * Copyright (c) 2018 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,24 +15,13 @@
  * limitations under the License.
  */
 
-package org.hillview.utils;
+package org.hillview.storage;
 
-import org.hillview.dataset.api.IMonoid;
+import org.hillview.table.api.ITable;
 
-import javax.annotation.Nullable;
-
-public class JsonListMonoid<T> implements IMonoid<JsonList<T>> {
-    @Nullable
-    @Override
-    public JsonList<T> zero() {
-        return new JsonList<T>();
-    }
-
-    @Nullable
-    @Override
-    public JsonList<T> add(@Nullable JsonList<T> left, @Nullable JsonList<T> right) {
-        JsonList<T> result = new JsonList<T>(Converters.checkNull(left));
-        result.addAll(right);
-        return result;
-    }
+public interface ITableWriter {
+    /**
+     * Write the data in the specified table to a storage medium.
+     */
+    void writeTable(ITable table);
 }

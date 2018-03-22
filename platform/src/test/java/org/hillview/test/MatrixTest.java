@@ -56,20 +56,22 @@ public class MatrixTest extends BaseTest {
     @Test
     public void testMatrixFetch() {
         ITable table = TestTables.getIntTable(100, 3);
-        String[] colNames = new String[] { "Column0", "Column1" };
-        ColumnAndConverterDescription[] desc = ColumnAndConverterDescription.create(colNames);
+        List<String> colNames = new ArrayList<String>(2);
+        colNames.add("Column0");
+        colNames.add("Column1");
+        List<ColumnAndConverterDescription> desc = ColumnAndConverterDescription.create(colNames);
 
         DoubleMatrix mat = BlasConversions.toDoubleMatrix(table, colNames);
         IRowIterator it = table.getRowIterator();
         int row = it.getNextRow();
         int i = 0;
-        ColumnAndConverter[] cols = table.getLoadedColumns(desc);
+        List<ColumnAndConverter> cols = table.getLoadedColumns(desc);
 
         while (row >= 0) {
-            for (int j = 0; j < colNames.length; j++) {
+            for (int j = 0; j < colNames.size(); j++) {
                 Assert.assertEquals(
                         mat.get(i, j),
-                        cols[j].asDouble(row),
+                        cols.get(j).asDouble(row),
                         Math.ulp(mat.get(i, j))
                 );
             }
@@ -95,8 +97,8 @@ public class MatrixTest extends BaseTest {
             columns.add(column);
         }
 
-        ITable table = new Table(columns);
-        String[] colNames = table.getSchema().getColumnNames();
+        ITable table = new Table(columns, null, null);
+        List<String> colNames = table.getSchema().getColumnNames();
         DoubleMatrix mat = BlasConversions.toDoubleMatrix(table, colNames);
         DoubleMatrix missingCount = mat.isNaN().columnSums();
         for (int i = 0; i < numCols; i++) {

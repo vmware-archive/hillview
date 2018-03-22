@@ -28,6 +28,7 @@ import org.junit.Ignore;
  * on the test class:
  * "@net.jcip.annotations.NotThreadSafe"
  */
+@SuppressWarnings("SpellCheckingInspection")
 @Ignore
 public class BaseTest {
     static boolean initialized = false;

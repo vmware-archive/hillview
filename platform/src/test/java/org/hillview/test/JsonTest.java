@@ -33,6 +33,7 @@ import org.hillview.table.rows.RowSnapshot;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -65,10 +66,10 @@ public class JsonTest extends BaseTest {
         sac.set(0, "John");
         sac.set(1, "Mike");
 
-        IColumn[] l = new IColumn[3];
-        l[0] = iac;
-        l[1] = dac;
-        l[2] = sac;
+        List<IColumn> l = new ArrayList<IColumn>(3);
+        l.add(iac);
+        l.add(dac);
+        l.add(sac);
         SmallTable t = new SmallTable(l);
         @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
         RowSnapshot rs = new RowSnapshot(t, 0);

@@ -2,6 +2,7 @@
 
 # Sets up the web server by installing Tomcat and updating the ROOT war with the Hillview Web server war.
 - hosts: web
+  gather_facts: false
   tasks:
     - name: Load variables from configuration file
       include_vars: config.yaml
@@ -79,6 +80,7 @@
 
 # Sets up the backend servers by copying over the hillview server jars
 - hosts: backends
+  gather_facts: false
   tasks:
     - name: Load variables from configuration file
       include_vars: config.yaml

@@ -25,7 +25,14 @@ import java.util.HashMap;
  * Base abstract class that handles various specifics of JDBC driver requirements.
  */
 public abstract class JdbcConnection {
-    public final char urlSeparator;
+    /**
+     * Separates options from each other in rul.
+     */
+    public final char urlOptionsSeparator;
+    /**
+     * Separates options from the rest of the url.
+     */
+    public final char urlOptionsBegin;
     public final JdbcConnectionInformation info;
     final HashMap<String, String> params = new HashMap<String, String>();
 
@@ -55,6 +62,10 @@ public abstract class JdbcConnection {
      */
     public abstract String getQueryToReadTable(String table, int rowCount);
 
+    public String getQueryToReadSize(String table) {
+        return "SELECT COUNT(*) FROM " + table;
+    }
+
     protected void addBaseUrl(StringBuilder urlBuilder) {
         urlBuilder.append("jdbc:");
         urlBuilder.append(info.databaseKind);
@@ -74,8 +85,12 @@ public abstract class JdbcConnection {
      * @param urlBuilder  StringBuilder used to construct the query url.
      */
     protected void appendParametersToUrl(StringBuilder urlBuilder) {
+        urlBuilder.append(this.urlOptionsBegin);
+        boolean first = true;
         for (String p: this.params.keySet()) {
-            urlBuilder.append(this.urlSeparator);
+            if (!first)
+                urlBuilder.append(this.urlOptionsSeparator);
+            first = false;
             urlBuilder.append(p);
             urlBuilder.append("=");
             urlBuilder.append(this.params.get(p));
@@ -86,8 +101,10 @@ public abstract class JdbcConnection {
         this.params.put(param, value);
     }
 
-    public JdbcConnection(char urlSeparator, JdbcConnectionInformation info) {
-        this.urlSeparator = urlSeparator;
+    public JdbcConnection(char urlOptionsSeparator, char urlOptionsBegin,
+                          JdbcConnectionInformation info) {
+        this.urlOptionsSeparator = urlOptionsSeparator;
+        this.urlOptionsBegin = urlOptionsBegin;
         this.info = info;
     }
 }

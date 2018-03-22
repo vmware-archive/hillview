@@ -45,12 +45,18 @@ public abstract class FreqKList implements Serializable {
      */
     public final Object2IntOpenHashMap<RowSnapshot> hMap;
 
+    /**
+     * Stores a filtered and sorted version of the hashmap. Created during post-processing.
+     */
+    public final List<Pair<RowSnapshot, Integer>> pList;
+
     public final double epsilon;
 
     protected FreqKList(long totalRows, double epsilon, Object2IntOpenHashMap<RowSnapshot> hMap) {
         this.totalRows = totalRows;
         this.epsilon = epsilon;
         this.hMap = hMap;
+        this.pList = new ArrayList<Pair<RowSnapshot, Integer>>(this.hMap.size());
     }
 
     public int getSize() { return this.hMap.size(); }
@@ -65,26 +71,25 @@ public abstract class FreqKList implements Serializable {
 
     /**
      * The post-processing method that is used to extract the output of a Heavy Hitters sketch as a
-     * NextKList (SmallTable + Counts). Each implementation overrides this to do its own post-processing.
+     * NextKList (SmallTable + Counts). Each implementation does its own post-processing.
      * @param schema The schema of the RowSnapShots so that we can form a SmallTable.
      * @return A NextKList, which contains the top rows in sorted order of counts.
      */
-    public NextKList getTop(Schema schema) { return new NextKList(schema); }
+    public abstract NextKList getTop(Schema schema);
 
     /**
-     * Helper method that takes a List of <RowSnapShot, Integer> pairs and puts them into
-     * a NextKList. This is used by all Heavy Hitters sketches.
-     * @param pList: the list of <RowSnapShot, Integer> pairs.
+     * Helper method that takes a List of <RowSnapShot, Integer> pairs, sorts them and puts them
+     * into a NextKList. This is used by all Heavy Hitters sketches.
      * @param schema: The schema for the RowSnapShots.
      */
-    protected NextKList getTopK(List<Pair<RowSnapshot, Integer>> pList, Schema schema) {
-        pList.sort((p1, p2) -> Integer.compare(Converters.checkNull(p2.second),
+    public NextKList sortTopK(Schema schema) {
+        this.pList.sort((p1, p2) -> Integer.compare(Converters.checkNull(p2.second),
                 Converters.checkNull(p1.second)));
         List<RowSnapshot> listRows = new ArrayList<RowSnapshot>(pList.size());
         List<Integer> listCounts = new ArrayList<Integer>(pList.size());
-        for (int i = 0; i < pList.size(); i++) {
-            listRows.add(pList.get(i).first);
-            listCounts.add(pList.get(i).second);
+        for (Pair<RowSnapshot, Integer> aPList : pList) {
+            listRows.add(aPList.first);
+            listCounts.add(aPList.second);
         }
         return new NextKList(listRows, listCounts, schema, this.totalRows);
     }
@@ -111,8 +116,17 @@ public abstract class FreqKList implements Serializable {
         return new RowSnapshotSet.SetTableFilterDescription(rss);
     }
 
+    public RowSnapshotSet.SetTableFilterDescription getFilter(Schema schema, int[] rowIndices) {
+        List<RowSnapshot> rsList = new ArrayList<RowSnapshot>();
+        for (int rowIndex : rowIndices)
+            rsList.add(this.pList.get(rowIndex).first);
+        RowSnapshotSet rss = new RowSnapshotSet(schema, rsList);
+        return new RowSnapshotSet.SetTableFilterDescription(rss);
+    }
+
+
     /**
-     * This is a helper method that takes two FreqKLists (left and right) and returns a hashmap with
+     * This is a helper method that takes two FreqKLists (left and right) and returns a list
      * the union of their entries. If an element occurs in both, the frequencies add. This is used
      * for both the Misra-Gries sketch and the sampling sketch. The hashmap is post-processed
      * differently by each of them.

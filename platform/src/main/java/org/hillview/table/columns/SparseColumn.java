@@ -41,6 +41,9 @@ public class SparseColumn extends BaseColumn
     }
 
     @Override
+    public boolean isLoaded() { return true; }
+
+    @Override
     public IColumn seal() { return this; }
 
     @Override

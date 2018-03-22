@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {ICancellable} from "../util";
+import {ICancellable, readableTime} from "../util";
 import {IHtmlElement} from "./ui";
 
 /**
@@ -30,6 +30,9 @@ export class ProgressBar implements IHtmlElement {
     private finished: boolean;
     private bar: HTMLElement;
     private topLevel: HTMLElement;
+    private estimate: HTMLElement;
+    private firstUpdate: Date;
+    private firstPosition: number;
 
     /**
      * Create a progressbar.
@@ -46,6 +49,8 @@ export class ProgressBar implements IHtmlElement {
             throw "Null label";
         if (manager == null)
             throw "Null ProgressManager";
+        this.firstUpdate = null;
+        this.firstPosition = 0;
 
         this.finished = false;
         let top = document.createElement("table");
@@ -84,6 +89,11 @@ export class ProgressBar implements IHtmlElement {
 
         this.setPosition(0.0);
         cancelButton.onclick = () => this.cancel();
+
+        this.estimate = document.createElement("div");
+        let estimateCell = row.insertCell(3);
+        estimateCell.className = "noBorder";
+        estimateCell.appendChild(this.estimate);
     }
 
     getHTMLRepresentation(): HTMLElement {
@@ -101,6 +111,18 @@ export class ProgressBar implements IHtmlElement {
             end = 1;
         if (end < this.end)
             console.log("Progress bar moves backward:" + this.end + " to " + end);
+        let time = new Date();
+        if (this.firstUpdate == null) {
+            this.firstUpdate = time;
+            this.firstPosition = end;
+        } else {
+            let elapsed = time.getTime() - this.firstUpdate.getTime();
+            let progress = end - this.firstPosition;
+            if (progress > 0 && elapsed > 2000) {
+                let estimated = elapsed / progress - elapsed;
+                this.estimate.textContent = "Remaining time: " + readableTime(estimated);
+            }
+        }
         this.end = end;
         this.computePosition();
     }

@@ -17,9 +17,15 @@
 
 package org.hillview.storage;
 
+import org.hillview.utils.Utilities;
+
 import javax.annotation.Nullable;
 import java.io.Serializable;
 
+/**
+ * This class knows how to create a file loader given a path to a file name.
+ * This is a base class with several implementations in this file.
+ */
 public abstract class FileLoaderDescription implements Serializable {
     public abstract IFileLoader createLoader(String path);
 
@@ -29,6 +35,10 @@ public abstract class FileLoaderDescription implements Serializable {
         }
     }
 
+    /**
+     * A loader description that knows how to create a class
+     * that can load a CSV (comma-separated value) file.
+     */
     public static class CsvFile extends FileLoaderDescription {
         @Nullable
         private final String schemaPath;
@@ -36,7 +46,7 @@ public abstract class FileLoaderDescription implements Serializable {
 
         public CsvFile(@Nullable String schemaPath,
                        CsvFileLoader.CsvConfiguration config) {
-            this.schemaPath = schemaPath;
+            this.schemaPath = Utilities.nullIfEmpty(schemaPath);
             this.config = config;
         }
 
@@ -45,16 +55,55 @@ public abstract class FileLoaderDescription implements Serializable {
         }
     }
 
+    /**
+     * A loader description that knows how to create a loader that
+     * can read a JSON file.
+     */
     public static class JsonFile extends FileLoaderDescription {
         @Nullable
         private final String schemaPath;
 
         public JsonFile(@Nullable String schemaPath) {
-            this.schemaPath = schemaPath;
+            this.schemaPath = Utilities.nullIfEmpty(schemaPath);
         }
 
         public IFileLoader createLoader(String path) {
             return new JsonFileLoader(path, this.schemaPath);
+        }
+    }
+
+    /**
+     * A loader description that knows how to create a loader that can
+     * read a Parquet file.
+     */
+    public static class ParquetFile extends FileLoaderDescription {
+        private final boolean lazy;
+
+        public ParquetFile(boolean lazy) {
+            this.lazy = lazy;
+        }
+
+        public IFileLoader createLoader(String path) {
+            return new ParquetFileLoader(path, this.lazy);
+        }
+    }
+
+    /**
+     * A loader description that knows how to create a loader that can
+     * read an Orc file.
+     */
+    public static class OrcFile extends FileLoaderDescription {
+        @Nullable
+        private final String schemaPath;
+        private final boolean lazy;
+
+        public OrcFile(@Nullable String schemaPath, boolean lazy) {
+            this.schemaPath = Utilities.nullIfEmpty(schemaPath);
+            this.lazy = lazy;
+        }
+
+        public IFileLoader createLoader(String path) {
+            return new OrcFileLoader(path, this.schemaPath, this.lazy);
         }
     }
 }

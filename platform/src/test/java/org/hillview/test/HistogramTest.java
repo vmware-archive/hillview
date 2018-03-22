@@ -128,7 +128,7 @@ public class HistogramTest extends BaseTest {
         IColumn[] cols = new IColumn[2];
         cols[0] = col0;
         cols[1] = col1;
-        Table t = new Table(cols);
+        Table t = new Table(cols, null, null);
         BucketsDescriptionEqSize buckDes1 = new BucketsDescriptionEqSize(0, 2, 3);
         BucketsDescriptionEqSize buckDes2 = new BucketsDescriptionEqSize(0, 1, 2);
         HeatMap hm = new HeatMap(buckDes1, buckDes2);

@@ -37,4 +37,8 @@ public class JdbcConnectionInformation implements Serializable {
     public String password;
     @Nullable
     public String databaseKind;
+    /**
+     * If true data is loaded lazily - on demand.
+     */
+    public boolean lazyLoading;
 }

@@ -78,7 +78,8 @@ public class JsonFileLoader extends TextFileLoader {
         for (JsonElement e : array)
             this.append(columns, e);
 
-        return new Table(columns);
+        this.close(file);
+        return new Table(columns, this.filename, null);
     }
 
     static ContentsKind getKind(@Nullable JsonElement e) {

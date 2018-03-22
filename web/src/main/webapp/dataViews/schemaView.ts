@@ -24,6 +24,7 @@ import {TabularDisplay} from "../ui/tabularDisplay";
 import {TableView} from "./tableView";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {TableViewBase} from "./tableViewBase";
+import {significantDigits} from "../util";
 
 /**
  * This class is used to browse through the columns of a table schema
@@ -32,6 +33,7 @@ import {TableViewBase} from "./tableViewBase";
 export class SchemaView extends TableViewBase {
     protected display: TabularDisplay;
     protected contextMenu: ContextMenu;
+    protected summary: HTMLElement;
 
     constructor(remoteObjectId: RemoteObjectId,
                 originalTableId: RemoteObjectId,
@@ -44,31 +46,32 @@ export class SchemaView extends TableViewBase {
         this.contextMenu = new ContextMenu(this.topLevel);
         this.schema = schema;
 
-        let viewMenu = new SubMenu([
-            {text: "Selected columns",
-                action: () => {this.showTable();},
-                help: "Show the data using a tabular view containing the selected columns."
-            }
-        ]);
-        let selectMenu = new SubMenu([
-            {
-                text: "By Name",
-                action: () => {nameDialog.show();},
-                help: "Select Columns by name."
-            },
-            {
-                text: "By Type",
-                action: () => {typeDialog.show();},
-                help: "Select Columns by type."
-            }
-        ]);
+        let viewMenu = new SubMenu([{
+            text: "Selected columns",
+            action: () => this.showTable(),
+            help: "Show the data using a tabular view containing the selected columns."
+            }]);
+        let selectMenu = new SubMenu([{
+            text: "By Name",
+            action: () => nameDialog.show(),
+            help: "Select Columns by name."
+        }, {
+            text: "By Type",
+            action: () => {typeDialog.show();},
+            help: "Select Columns by type."
+        }]);
         let menu = new TopMenu([
+            this.saveAsMenu(),
             {text: "View", subMenu: viewMenu, help: "Change the way the data is displayed."},
             {text: "Select", subMenu: selectMenu, help: "Select columns based on attributes." },
             this.chartMenu()
             ]);
         this.page.setMenu(menu);
         this.topLevel.appendChild(document.createElement("br"));
+
+        let para = document.createElement("p");
+        para.textContent = "Select the columns that you would like to browse";
+        this.topLevel.appendChild(para);
 
         this.display = new TabularDisplay();
         this.display.setColumns(["#", "Name", "Type"],
@@ -117,6 +120,11 @@ export class SchemaView extends TableViewBase {
             row.oncontextmenu = e => this.createAndShowContextMenu(e);
         }
         this.topLevel.appendChild(this.display.getHTMLRepresentation());
+        this.display.getHTMLRepresentation().setAttribute("overflow-x", "hidden");
+        this.summary = document.createElement("div");
+        this.topLevel.appendChild(this.summary);
+        if (this.rowCount != null)
+            this.summary.textContent = significantDigits(this.rowCount) + " rows";
         this.page.reportTime(elapsedMs);
     }
 
@@ -131,7 +139,7 @@ export class SchemaView extends TableViewBase {
         this.contextMenu.addItem({
             text: "Show as table",
             action: () => this.showTable(),
-            help: "Show the data using a tabular view containing the selected columns." }, true);
+            help: "Show the selected columns in a tabular view." }, true);
         this.contextMenu.addItem({
             text: "Histogram",
             action: () => this.histogram(false),

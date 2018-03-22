@@ -149,12 +149,20 @@
             <artifactId>parquet-hadoop</artifactId>
             <version>1.9.0</version>
         </dependency>
-        <!-- gRPC -->
+        <!-- Apache ORC: Columnar storage.  This also requires hadoop,
+            but Hadoop is listed above for Parquet. -->
+        <dependency>
+            <groupId>org.apache.orc</groupId>
+            <artifactId>orc-mapreduce</artifactId>
+            <version>1.1.0</version>
+        </dependency>
+        <!-- Guava caching library -->
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>20.0</version>
         </dependency>
+        <!-- gRPC -->
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-netty</artifactId>
@@ -169,6 +177,12 @@
             <groupId>io.grpc</groupId>
             <artifactId>grpc-stub</artifactId>
             <version>1.6.1</version>
+        </dependency>
+        <!-- bzip support -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-compress</artifactId>
+            <version>1.16</version>
         </dependency>
         <!-- Used for serialization utils and string quoting -->
         <dependency>

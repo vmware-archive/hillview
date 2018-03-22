@@ -29,16 +29,16 @@ public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKListSample
     /**
      * The schema specifies which columns are relevant in determining equality of records.
      */
-    private final Schema schema;
+    public final Schema schema;
     /**
      * epsilon specifies the threshold for the fractional frequency: our goal is to find all
      * elements whose relative frequencies are at least an epsilon fraction of the total.
      */
-    private final double epsilon;
+    public final double epsilon;
     /**
      * The size of the input table.
      */
-    private final long totalRows;
+    public final long totalRows;
     /**
      * The rate at which we sample data.
      */

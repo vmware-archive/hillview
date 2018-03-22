@@ -263,6 +263,10 @@ td.menuItem.disabled {
     color: grey;
 }
 
+td.menuItem.disabled.selected {
+    color: grey;
+}
+
 table.menu td.selected {
     background-color: rgb(126, 126, 126);
     color: rgb(255, 255, 255);

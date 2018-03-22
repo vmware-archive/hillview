@@ -23,6 +23,7 @@ import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
+import java.util.List;
 
 /**
  * A sketch to compute correlations between columns, using sampling.
@@ -81,9 +82,9 @@ public class SampleCorrelationSketch implements ISketch<ITable, CorrMatrix> {
                 throw new InvalidParameterException("Correlation Sketch requires column to be " +
                         "integer or double: " + col);
         }
-        ColumnAndConverterDescription[] ccds = ColumnAndConverterDescription.create(
-                this.colNames);
-        ColumnAndConverter[] iCols = data.getLoadedColumns(ccds);
+
+        List<ColumnAndConverterDescription> ccds = ColumnAndConverterDescription.create(this.colNames);
+        List<ColumnAndConverter> iCols = data.getLoadedColumns(ccds);
         CorrMatrix cm = new CorrMatrix(this.colNames);
         IMembershipSet mm = data.getMembershipSet();
         IRowIterator rowIt = mm.getIteratorOverSample(this.samplingRate, this.seed, true);
@@ -91,10 +92,10 @@ public class SampleCorrelationSketch implements ISketch<ITable, CorrMatrix> {
         double valJ, valK;
         while (i != -1) {
             for (int j = 0; j < this.colNames.length; j++) {
-                valJ = iCols[j].asDouble(i);
+                valJ = iCols.get(j).asDouble(i);
                 cm.update(j, j, valJ * valJ);
                 for (int k = j + 1; k < this.colNames.length; k++) {
-                    valK = iCols[k].asDouble(i);
+                    valK = iCols.get(k).asDouble(i);
                     cm.update(j, k, valJ * valK);
                 }
             }

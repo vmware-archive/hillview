@@ -29,6 +29,9 @@ import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.hillview.table.columns.ObjectArrayColumn.mergeColumns;
 
 public class SampleQuantileSketch  implements ISketch<ITable, SampleList> {
@@ -87,14 +90,12 @@ public class SampleQuantileSketch  implements ISketch<ITable, SampleList> {
         right.table.check();
         if (!left.table.getSchema().equals(right.table.getSchema()))
             throw new RuntimeException("The schemas do not match.");
-        final IColumn[] mergedCol = new IColumn[left.table.getSchema().getColumnCount()];
-        final boolean[] mergeLeft = this.colSortOrder.getMergeOrder(left.table, right.table);
-        int index = 0;
+        List<IColumn> mergedCol = new ArrayList<IColumn>(left.table.getSchema().getColumnCount());
+        boolean[] mergeLeft = this.colSortOrder.getMergeOrder(left.table, right.table);
         for (String colName: left.table.getSchema().getColumnNames()) {
             IColumn newCol = mergeColumns(left.table.getColumn(colName),
                     right.table.getColumn(colName), mergeLeft);
-            mergedCol[index] = newCol;
-            index++;
+            mergedCol.add(newCol);
         }
         return new SampleList(new SmallTable(mergedCol));
     }

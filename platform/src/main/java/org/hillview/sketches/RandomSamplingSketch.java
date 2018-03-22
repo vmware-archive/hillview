@@ -24,6 +24,7 @@ import org.hillview.table.api.*;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
+import java.util.List;
 
 /**
  * This sketch selects random rows from the table, and gives as a result a SmallTable. The rows in the table are
@@ -68,12 +69,12 @@ public class RandomSamplingSketch implements ISketch<ITable, SmallTable> {
 
     @Override
     public SmallTable create(ITable data) {
-        ColumnAndConverterDescription[] ccds;
+        List<ColumnAndConverterDescription> ccds;
         if (this.columnNames.length != 0)
             ccds = ColumnAndConverterDescription.create(this.columnNames);
         else
             ccds = ColumnAndConverterDescription.create(data.getSchema().getColumnNames());
-        ColumnAndConverter[] cols = data.getLoadedColumns(ccds);
+        List<ColumnAndConverter> cols = data.getLoadedColumns(ccds);
 
         IMembershipSet sample;
         if (this.allowMissing) {

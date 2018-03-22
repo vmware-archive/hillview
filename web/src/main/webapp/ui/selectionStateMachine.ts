@@ -24,12 +24,25 @@ type TransitionType = "NoKey" | "Ctrl" | "Shift";
  * for various combinations of operations (e.g., column selection).
  */
 export class SelectionStateMachine {
+    /**
+     * The current set of Selected States.
+     */
     protected selected: Set<number>;
     protected curState: number;
+    /**
+     * A set of states that is excluded from being Selected.
+     */
+    protected excluded: Set<number>;
 
     constructor() {
         this.selected = new Set<number>();
         this.curState = null;
+        this.excluded = new Set<number>();
+    }
+
+    public exclude(val: number) {
+        this.excluded.add(val);
+        this.delete(val);
     }
 
     public size(): number {
@@ -50,14 +63,15 @@ export class SelectionStateMachine {
     }
 
     private toggle(val: number) {
-        if(this.selected.has(val))
-            this.selected.delete(val);
+        if (this.has(val))
+            this.delete(val);
         else
-            this.selected.add(val);
+            this.add(val);
     }
 
     public add(val: number) {
-        this.selected.add(val);
+        if(!this.excluded.has(val))
+            this.selected.add(val);
     }
 
     public delete(val: number) {
@@ -72,9 +86,9 @@ export class SelectionStateMachine {
     private rangeChange(a: number, b: number, to: boolean) {
         for (let i = a; i <= b; i++) {
             if (to)
-                this.selected.add(i);
+                this.add(i);
             else
-                this.selected.delete(i);
+                this.delete(i);
         }
     }
 
@@ -94,7 +108,7 @@ export class SelectionStateMachine {
             let isPresent: boolean = this.has(val);
             this.selected.clear();
             if (!isPresent)
-                this.selected.add(val);
+                this.add(val);
             this.curState = val;
         }
         else if (type == "Ctrl") { //Ctrl or Esc pressed, keep everything else, toggle val
@@ -103,7 +117,7 @@ export class SelectionStateMachine {
         }
         else if (type == "Shift") { //Shift pressed, toggle states in the open interval
             // curState to val
-            let current: boolean = this.selected.has(val);
+            let current: boolean = this.has(val);
             if (val > this.curState)
                 this.rangeChange(this.curState + 1, val, !current);
             else if (val < this.curState)

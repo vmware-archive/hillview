@@ -27,6 +27,9 @@ import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
 import org.jblas.Singular;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * This map receives a set of high- and low-dimensional control points, and computes a mapping of the rest of the
  * point in the table. For every row x in the table, a transformation is sought that maps nD control points close x,
@@ -56,20 +59,20 @@ public class LAMPMap implements IMap<ITable, ITable> {
 
     @Override
     public ITable apply(ITable data) {
-        ColumnAndConverterDescription[] ccds =
+        List<ColumnAndConverterDescription> ccds =
                 ColumnAndConverterDescription.create(this.numColNames);
-        ColumnAndConverter[] columns = data.getLoadedColumns(ccds);
+        List<ColumnAndConverter> columns = data.getLoadedColumns(ccds);
 
-        IMutableColumn[] newColumns = new IMutableColumn[this.lowDims];
+        List<IMutableColumn> newColumns = new ArrayList<IMutableColumn>(this.lowDims);
         IMembershipSet set = data.getMembershipSet();
         int colSize = set.getMax();
         for (int i = 0; i < this.lowDims; i++) {
             ColumnDescription cd = new ColumnDescription(
                     this.newColNames[i], ContentsKind.Double);
             if (set.useSparseColumn(set.getSize()))
-                newColumns[i] = new SparseColumn(cd, colSize);
+                newColumns.add(new SparseColumn(cd, colSize));
             else
-                newColumns[i] = new DoubleArrayColumn(cd, colSize);
+                newColumns.add(new DoubleArrayColumn(cd, colSize));
         }
 
         IRowIterator rowIt = data.getRowIterator();
@@ -78,12 +81,12 @@ public class LAMPMap implements IMap<ITable, ITable> {
             DoubleMatrix x = new DoubleMatrix(1, this.highDims);
             boolean missing = false;
             for (int i = 0 ; i < this.highDims; i++) {
-                if (columns[i].isMissing(row)){
+                if (columns.get(i).isMissing(row)){
                     missing = true;
                     break;
                 }
                 else
-                    x.put(i, columns[i].asDouble(row));
+                    x.put(i, columns.get(i).asDouble(row));
             }
             if (!missing) {
                 DoubleMatrix y = computeMapping(x);
@@ -96,11 +99,11 @@ public class LAMPMap implements IMap<ITable, ITable> {
                 }
                 if (!missing) {
                     for (int i = 0; i < this.lowDims; i++) {
-                        newColumns[i].set(row, y.get(i));
+                        newColumns.get(i).set(row, y.get(i));
                     }
                 } else {
                     for (int i = 0; i < this.lowDims; i++) {
-                        newColumns[i].setMissing(row);
+                        newColumns.get(i).setMissing(row);
                     }
                 }
             }

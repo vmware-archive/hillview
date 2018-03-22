@@ -3,24 +3,26 @@
 [Hillview](https://github.com/vmware/hillview) is a simple cloud-based
 spreadsheet program for browsing large data collections.  Currently
 the data manipulated is read-only.  Users can sort, find, filter,
-transform, query, and chart data in simple ways;
+transform, query, zoom-in/out, and chart data in simple ways;
 operations are performed easily using direct manipulation in the GUI.
 Hillview is designed to work on very large data sets (billions of
-rows), with an interactive spreadsheet-like interaction style, complementing sophisticated analytic engines.  Hillview can also be
-executed as a stand-alone executable on a local machine, but then the
+rows), with an interactive spreadsheet-like interaction style,
+complementing sophisticated analytic engines.  Hillview can also be
+executed as a stand-alone executable on a local machine (but then the
 data size it can manipulate is limited by the available machine
-resources.
+resources).
 
-Hillview attempts to provide fast data manipulation.  The speed is obtained by deferring work: Hillview only
-computes as much of the data as must be shown to the user.  For
-example, when sorting a dataset, it only sorts the rows currently
-visible on the screen.  Hillview performs all operations using a class
-of very efficient algorithms, called “sketches”, which are constrained
-to compute with bounded memory over distributed data.
+Hillview attempts to provide fast data manipulation.  The speed is
+obtained by deferring work: Hillview only computes as much of the data
+as must be shown to the user.  For example, when sorting a dataset, it
+only sorts the rows currently visible on the screen.  Hillview
+performs all operations using a class of very efficient algorithms,
+called “sketches”, which are constrained to compute with bounded
+memory over distributed data.
 
 ## System architecture
 
-The tool is a three-tier system, as shown in the following figure:
+Hillview's architecture is shown in the following figure:
 
 ![System architecture](system-architecture.png)
 
@@ -29,17 +31,19 @@ The tool is a three-tier system, as shown in the following figure:
 * The service is exposed by a web server which runs in a datacenter on
   a head node.
 
-* The service runs on a collection of servers in the datacenter;
-  ideally these servers also store the data that is being browsed.
+* The service runs on a collection of worker servers in the
+  datacenter.  These servers must be able to read the browsed data in
+  parallel independently; ideally they store the data that is
+  being browsed locally.
 
 The Hillview service is implemented in Java.  The UI is written in
 TypeScript.
 
-Hillview can run as a federated system or loosely interconnected
-components; the head node only sends small queries to the servers, and
-it receivers small results from these.  The data on the server is
-never sent over the network; the servers locally compute all results
-that are needed.
+Hillview can run as a federated system of loosely interconnected
+components; the head node only sends small queries to the workers, and
+it receives small results from these.  The data on the workers is
+never sent over the network; the worker locally compute all views that
+are needed to produce the final result.
 
 ## Streaming interaction
 
@@ -58,17 +62,19 @@ currently-executing operation.
 ## Data model
 
 The Hillview data model is a large table, with a relatively small
-number of columns (currently tens but would increase to hundreds soon) and many rows (millions to billions).
+number of columns (currently tens or hundreds) and many rows (millions
+to billions).
 
 The data in each column is typed; Hillview supports the following data
 types:
-  * String
-  * Category (represented as strings)
-  * JSON (represented as strings)
-  * Double
+  * String (Unicode strings)
+  * Category (categorical columns are string columns but with few distinct values)
+  * JSON (strings that represent JSON values)
+  * Double (64-bit floating point)
   * Integer (32-bit)
-  * Dates and times
-  * Time intervals
+  * Date+time (the Java Instant class is used to represent such date+time values
+    on the server side; dates include time zone information)
+  * Time intervals (represented using the Java Duration class)
 
 Hillview supports a special value "missing" which indicates that a
 value is not present.  This is similar to NULL values in databases.
@@ -116,17 +122,22 @@ storage.
 
 * System logs: when this option is selected Hillview loads the logs
   produced by the Hillview system itself as a table with 9 columns.
-  This is mostly useful to debug the performance of the Hillview
-  system itself.
+  This is used to debug the Hillview system itself.
 
 * CSV files: allows the user to [read data from a set of CSV
   files](#reading-csv-files).
 
-* JSON files: allow the user to [read the data from a set of JSON
+* JSON files: allows the user to [read the data from a set of JSON
   files](#reading-json-files).
 
+* Parquet files: allows the user to [read the data from a set of
+  Parquet files](#reading-parquet-files).
+
+* ORC files: allows the user to [read the data from a set of ORC
+  files](#reading-orc-files).
+
 * DB tables: allows the user to [read data from a set of federated
-  databases](#reading-data-from-sql-databases).
+  databases using JDBC](#reading-data-from-sql-databases).
 
 After the data loading is initiated the user will be presented with a
 view of the loaded table.  If the table has relatively few columns,
@@ -134,11 +145,38 @@ the user is shown directly a [Tabular view](#table-views).  Otherwise
 the user is shown a [Schema view](#data-schema-views), which can be
 used to select a smaller set of columns to browse.
 
+### Specifying the data schema
+
+For many file formats Hillview uses a `schema` file to specify the
+format of the data.  The following is an example of a schema
+specification in JSON for a table with 2 columns.
+
+```JSON
+[{
+    "name": "DayOfWeek"
+    "kind": "Integer"
+}, {
+    "name": "FlightDate"
+    "kind": "Date"
+}]
+```
+
+The schema is an array of JSON objects each describing a column.  A
+column description has two fields:
+
+* name: A string describing the column name.  All column names in a
+  schema must be unique.
+
+* kind: A string describing the type of data in the column,
+  corresponding to the types in the [data model](#data-model).  The
+  kind is one of: "String", "Category", "JSON", "Double", "Integer",
+  "Date", and "Interval".
+
 #### Reading CSV files
 
 Hillview can read data from comma- or tab-separated files. The
 following menu allows the users to specify the files to load.  *The
-files must be resident on the same machines where the Hillview service
+files must be resident on the worker machines where the Hillview service
 is deployed*.
 
 ![Specifying CSV files](csv-menu.png)
@@ -148,9 +186,10 @@ is deployed*.
 * File name pattern: A shell expansion pattern that names the files to
   load.  Multiple files may be loaded on each machine.
 
-* Schema file: An optional file in JSON format that describes the
-  schema of the data.  In the absence of a schema file Hillview
-  attempts to guess the type of data in each column.
+* Schema file: An optional [schema file](specifying-the-data-schema)
+  in JSON format that describes the schema of the data.  In the
+  absence of a schema file Hillview attempts to guess the type of data
+  in each column.  The schema file must reside in same folder.
 
 * Header row: select this option if the first row in each CSV file is
   a header row; the first row is used to generate names for the
@@ -158,45 +197,17 @@ is deployed*.
   first row is just ignored.
 
 All the CSV files must have the same schema (and the same number of
-columns).  CSV files may be compressed.  CSV fields may be quoted
-using double quotes, and then they may contain newlines.  An empty
-field (contained between two consecutive commas, or between a comma
-and a newline) is translated to a 'missing' data value.
-
-The following is an example of a schema specification in JSON for a
-table with 2 columns.
-
-```JSON
-[{
-    "name": "DayOfWeek"
-    "kind": "Integer",
-    "allowMissing": true
-}, {
-    "name": "FlightDate"
-    "kind": "Date",
-    "allowMissing": false
-}]
-```
-
-The schema is an array of JSON objects each describing a column.  A
-column description has three fields:
-
-* name: A string describing the column name.  All column names in a
-  schema must be unique.
-
-* allowMissing: A Boolean value which indicates whether the column can
-  contain 'missing' values.
-
-* kind: A string describing the type of data in the column,
-  corresponding to the types in the [data model](#data-model).  The
-  kind is one of: "String", "Category", "JSON", "Double", "Integer",
-  "Date", and "Interval".
+columns).  CSV files may be compressed (e.g., using gzip or other
+compression tools).  CSV fields may be quoted using double quotes, and
+then they may contain newlines.  An empty field (contained between two
+consecutive commas, or between a comma and a newline) is translated to
+a 'missing' data value.
 
 #### Reading JSON files
 
 Hillview can read data from JSON files. The following menu allows the
 users to specify the files to load.  *The files must be resident on
-the same machines where the Hillview service is deployed*.
+the worker where the Hillview service is deployed*.
 
 ![Specifying JSON files](json-menu.png)
 
@@ -214,6 +225,26 @@ The assumed format is as follows:
 
 All the JSON files must have the same schema.  JSON files may be
 compressed.
+
+#### Reading ORC files
+
+Hillview can read data from [Apache ORC
+files](https://github.com/apache/orc), a columnar storage format.
+*The files must be resident on the worker machines where the Hillview
+service is deployed*.  Hillview only supports files whose ORC schema
+is an ORC struct with scalar types as fields.
+
+![Specifying ORC files](orc-menu.png)
+
+* Folder: Folder containing the files to load.
+
+* File name pattern: A shell expansion pattern that names the files to
+  load.  Multiple files may be loaded on each machine.
+
+* Schema file: An optional [schema file](specifying-the-data-schema)
+  in JSON format that describes the schema of the data.  The schema
+  file must reside in same folder, and it must be compatible with the
+  ORC schema.
 
 #### Reading data from SQL databases
 
@@ -253,17 +284,25 @@ Numeric values are converted either to integers (if they fit into
 32-bits) or to doubles.  Boolean values are read as categories
 containing two values, "true" and "false".
 
-#### Reading data from Parquet files
+#### Reading Parquet files
 
-Hillview can read data directly from
-[Parquet](https://parquet.apache.org/) files on disk.  The
+Hillview can read data from [Apache Parquet
+files](http://parquet.apache.org), a columnar storage format.  The
 [Impala](https://impala.apache.org/) database uses Parquet to store
-data.
+data.  *The files must be resident on the worker machines where the
+Hillview service is deployed*.
+
+![Specifying Parquet files](parquet-menu.png)
+
+* Folder: Folder containing the files to load.
+
+* File name pattern: A shell expansion pattern that names the files to
+  load.  Multiple files may be loaded on each machine.
 
 Parquet Int96 data types are read as Datetime values.  Boolean values
-are read as categories containing two values, "true" and "false".
-
-*TODO*
+are read as categories containing two values, "true" and "false"; byte
+arrays are read as strings.  Hillview will reject Parquet files that
+contain nested types (e.g., arrays).
 
 ### User interface organization
 
@@ -298,6 +337,26 @@ there are three rows selected.
 
 ![Schema view](schema-view.png)
 
+The schema view allows users to view the columns of the dataset and to
+select a subset of columns to browse in detail.  The schema view has a
+menu with the following options:
+
+![Schema menu](schema-menu.png)
+
+* Save as: allows the user to [save the data](#saving-data) in a
+  different format
+
+* View: allows the user to [change the way data is
+  displayed](#schema-view-menu)
+
+* Chart: allows users to [draw charts](#the-chart-menu) of one or two
+  colums
+
+* Combine: allows users to [combine data in two
+  views](#combining-two-views)
+
+#### Selecting columns
+
 There are two ways to modify the selection:
 1. By [using the mouse](#mouse-base-selection).
 
@@ -306,12 +365,12 @@ right-clicking on the **Name**, **Type** or **Allows Missing** column
 headers, or by clicking on the **Select** menu option at the top left
 as shown below.
 
-![Column selection menu](schema-browser.png)
+![Column selection menu](schema-select-menu.png)
 
-Columns can be un/selected using either the name, type or Allows Missing
-fields. We describe the search criteria allowed in detail below. In
-all cases, the search returns a subset of column descriptions, which
-can be added to or removed from the current selection.
+Columns can be un/selected using either the name or type.  We describe
+the search criteria allowed in detail below.  In all cases, the search
+returns a subset of column descriptions, which can be added to or
+removed from the current selection.
 
 * By Name: allows regular expression matching against the name of the column.
 
@@ -321,13 +380,10 @@ can be added to or removed from the current selection.
 
 ![Select by type Menu](type-selection.png)
 
-* By Allows Missing: allows choosing only those columns that allow/disallow
-  missing values.
-
-![Select by allows missing menu](allows-missing-selection.png)
-
 Once the user selects a set of column descriptions, they can display a view of the
 data table restricted to the selected columns using the View/Selected columns menu.
+
+#### The schema view menu
 
 ![Schema view menu](schema-view-menu.png)
 
@@ -357,6 +413,22 @@ of columns using the chart menu:
   select two columns whose data will be drawn as a [heatmap](#heatmap-views).
 
 ![Heatmap dialog](heatmap-dialog.png)
+
+#### Saving data
+
+* This menu allows users to save the data in a different format as
+  files on the worker machines.
+
+![Save-as menu](saveas-menu.png)
+
+* Save as ORC files: allows users to specify how data should be saved
+  in the [ORC file format](#reading-orc-files).
+
+![Save-as ORC menu](saveas-orc-menu.png)
+
+The user can specify a folder on the remote worker machines.  Each
+file in the current dataset will be saved as a new file in ORC format
+in the specified folder.
 
 ### Table views
 
@@ -507,13 +579,12 @@ the current state of the display.
   histograms see [Two-dimensional
   histograms](#two-dimensional-histograms).
 
-* Heavy hitters...: This will initiate a heavy hitters computation on
-  the selected columns; this computation finds the most frequent
-  values that appear in the selected columns.  The user is presented
-  with a dialog requesting the threshold parameter for the heavy hitters
+* Frequent elements...: finds the most frequent values that appear in
+  the selected columns.  The user is presented with a dialog
+  requesting the threshold parameter for the heavy hitters
   computation.
 
-  ![Heavy hitters menu](heavy-hitters-menu.png)
+  ![Frequent elements menu](heavy-hitters-menu.png)
 
   The user has to specify a percentage, between .1 (1/1000 of the
   data) and 100 (the whole data).  The result is all items whose frequency
@@ -547,12 +618,6 @@ the current state of the display.
   containing the result of the PCA analysis.  The name of each
   appended column will indicate the amount of variance in the original
   data that is captured by the column (0-100%).
-
-* LAMP...: local affine multidimensional projection (experimental).
-  This is another method to project a high-dimensional space to a
-  low-dimensional space.  This method is currently not very scalable
-  to large datasets; we are exploring methods to speed it up.  For
-  more details see [LAMP](#lamp-projection).
 
 * Convert...: convert the type of data in a column.  Only one column
   must be selected.
@@ -594,14 +659,7 @@ operations:
 
 ![View menu](table-view-menu.png)
 
-* Full dataset: selecting this option will open the table with the
-  full dataset, as it looked when first loaded; all selected columns
-  and filtering operations are undone.
-
 * Refresh: this redraws the current view of the table.
-
-* All columns: all columns will become visible by being added to the
-  current sort order in order from left to right.
 
 * No columns: all columns will be hidden.
 
@@ -612,13 +670,13 @@ a [schema view](#schema-view).
 
 For a description of the combine menu see [combining two views](#combining-two-views).
 
-### Heavy hitter views
+### Frequent elements views
 
-A heavy hitters view shows the most frequent values that appear in the
+A frequent elements view shows the most frequent values that appear in the
 dataset in a set of selected columns (above a certain user-specified
 threshold).
 
-![Heavy hitters view](heavy-hitters-view.png)
+![Frequent elements view](heavy-hitters-view.png)
 
 The data is sorted in decreasing order of frequency.  Each row
 displays a combination of values and its count and relative frequency
@@ -626,16 +684,20 @@ within the dataset.  A special value that may appear is "Everything else",
 which indicates the estimated number of rows that do not appear
 frequently enough to be above the chosen threshold.
 
-The following operations may be performed on a heavy hitters view:
+The following operations may be performed on a frequent elements view:
 
-![Heavy hitters view menu](heavy-hitters-view-menu.png)
+![Frequent elements view menu](heavy-hitters-view-menu.png)
 
-* As table: switches back to a [table view](#table-views), but where
-  the table only contains the rows with values in the set of heavy
-  hitters.
+* All frequent elements as table: switches back to a [table
+  view](#table-views), but where the table only contains the rows
+  corresponding to the frequent values.
+
+* Selected frequent elements As table: switches back to a [table
+  view](#table-views), but where the table only contains the rows
+  corresponding to the frequent values currently selected.
 
 * Get exact counts: runs a more expensive but more precise
-  heavy-hitters computation which computes the exact frequency for
+  frequent elements computation which computes the exact frequency for
   each value.
 
 ### Uni-dimensional histogram views
@@ -675,8 +737,10 @@ The CDF is drawn on a different implicit vertical scale ranging
 between 0 and 100%.  A point on the CDF curve at coordinate X shows
 how many of the data points in the displayed column are smaller than X.
 
-The window also displays the current coordinates of the mouse and the
-position of a blue dot that is closest to the mouse on the CDF curve.
+Next to the mouse an overlay box displays three different values:
+* the mouse's position on the X axis
+* the mouse's position on the Y axis
+* the value of the CDF function at the current X coordinate of the mouse, in percents
 
 ![View menu](histogram-view-menu.png)
 
@@ -742,11 +806,18 @@ distribution in a second column.
 
 ![A two-dimensional histogram](hillview-histogram2d.png)
 
-Next to the mouse an overlay box displays four different values:
+The thin blue line shown is the cumulative distribution function
+([CDF](https://en.wikipedia.org/wiki/Cumulative_distribution_function)).
+The CDF is drawn on a different implicit vertical scale ranging
+between 0 and 100%.  A point on the CDF curve at coordinate X shows
+how many of the data points in the displayed column are smaller than X.
+
+Next to the mouse an overlay box displays five different values:
 * the mouse's position on the X axis
 * the mouse's position on the Y axis
 * the range of values corresponding to the bar where the mouse is placed
 * the size of the bar (the number of rows corresponding to the bar)
+* the value of the CDF function at the current mouse X coordinate
 
 For example, in this figure we see a 2D histogram where the X axis has
 the airline carriers.  For each carrier the bar is divided into
@@ -894,12 +965,13 @@ The operations are as follows:
 
 ### LAMP projection
 
-(This is an experimental feature, which currently is too slow to
-apply to large datasets.)  This is another method to project a
-high-dimensional space to a low-dimensional space, called local affine
-multidimensional projection.  This is based on the paper
-[Local Affine Multidimensional Projection](http://ieeexplore.ieee.org/document/6065024/)
-from IEEE Transactions on Visualization and Computer Graphics, vol 17, issue 12,
+(This is an experimental feature, which currently disabled because is
+too slow to apply to large datasets.)  This is another method to
+project a high-dimensional space to a low-dimensional space, called
+local affine multidimensional projection.  This is based on the paper
+[Local Affine Multidimensional
+Projection](http://ieeexplore.ieee.org/document/6065024/) from IEEE
+Transactions on Visualization and Computer Graphics, vol 17, issue 12,
 Dec 2011, by Paulo Joia, Danilo Coimbra, Jose A Cuminato, Fernando V
 Paulovich, and Luis G Nonato.
 

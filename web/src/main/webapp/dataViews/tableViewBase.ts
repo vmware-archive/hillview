@@ -33,6 +33,7 @@ import {SubMenu, TopMenuItem} from "../ui/menu";
 import {SpecialChars} from "../ui/ui";
 import {OnCompleteRenderer} from "../rpc";
 import {EqualityFilterDialog} from "./equalityFilter";
+import {Dialog, FieldKind} from "../ui/dialog";
 
 /**
  * A base class for TableView and SchemaView
@@ -71,6 +72,36 @@ export abstract class TableViewBase extends RemoteTableObjectView {
 
     reportError(s: string) {
         this.page.reportError(s);
+    }
+
+    saveAsOrc(schema: Schema): void {
+        let dialog = new Dialog("Save as ORC files",
+            "Describe the set of ORC files where data will be saved.");
+        dialog.addTextField("folderName", "Folder", FieldKind.String, "/",
+            "All ORC files will be written to this folder on each of the remote machines.");
+        dialog.setCacheTitle("saveAs");
+
+        class SaveReceiver extends OnCompleteRenderer<boolean> {
+            constructor (page: FullPage, operation: ICancellable) {
+                super(page, operation, "Save as ORC files");
+            }
+
+            run(value: boolean): void {
+                if (value)
+                    this.page.reportError("Save succeeded.");
+            }
+        }
+
+        dialog.setAction(() => {
+            let folder = dialog.getFieldValue("folderName");
+            let rr = this.createStreamingRpcRequest<boolean>("saveAsOrc", {
+                folder: folder,
+                schema: schema
+            });
+            let renderer = new SaveReceiver(this.page, rr);
+            rr.invoke(renderer);
+        });
+        dialog.show();
     }
 
     protected histogramOrHeatmap(columns: string[], heatMap: boolean): void {
@@ -197,6 +228,18 @@ export abstract class TableViewBase extends RemoteTableObjectView {
             }
         );
         dia.show();
+    }
+
+    saveAsMenu(): TopMenuItem {
+        return {
+            text: "Save as", help: "Save the data to persistent storage.", subMenu: new SubMenu([
+                {
+                    text: "Save as ORC files...",
+                    action: () => this.saveAsOrc(this.schema),
+                    help: "Save the data to a set of ORC files on the remote machines."
+                }
+            ]),
+        };
     }
 
     chartMenu(): TopMenuItem {
