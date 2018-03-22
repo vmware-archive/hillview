@@ -114,9 +114,9 @@ export class TableView extends TableViewBase implements IScrollTarget {
             this.chartMenu(),
             {
                 text: "Find", help: "Search a specific string in the visible columns", subMenu: new SubMenu([
-                {text: "String", help: "Search for a string", action: () => this.find(false)},
-                {text: "Regular expression", help: "Search for a regular expression", action: () => this.find(true)},
-            ])
+                    {text: "String", help: "Search for a string", action: () => this.find(false)},
+                    {text: "Regular expression", help: "Search for a regular expression",
+                        action: () => this.find(true)},])
             },
             combineMenu(this, page.pageId)
         ]);
@@ -441,10 +441,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
             let rowsDisplayed = 0;
             if (data.rows != null) {
                 data.rows.reverse();
-                rowsDisplayed = data.rows.map(r => r.count)
-                    .reduce((a, b) => {
-                        return a + b;
-                    }, 0);
+                rowsDisplayed = data.rows.map(r => r.count).reduce( (a, b) => {return a + b;}, 0 );
             }
             this.startPosition = this.rowCount - this.startPosition - rowsDisplayed;
             this.order = this.order.invert();
@@ -548,7 +545,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
                     help: "Perform Principal Component Analysis on a set of numeric columns. " +
                     "This produces a smaller set of columns that preserve interesting properties of the data."
                 }, selectedCount > 1 &&
-                    this.getSelectedColNames().reduce( (a, b) => a && this.isNumericColumn(b), true));
+                    this.getSelectedColNames().reduce( (a, b) => a && this.isNumericColumn(b), true) );
                 /*
                 this.contextMenu.addItem({
                     text: "LAMP...",
