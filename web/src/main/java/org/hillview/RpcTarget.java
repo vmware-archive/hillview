@@ -523,16 +523,16 @@ public abstract class RpcTarget implements IJson {
     runManage(IDataSet<T> data, ControlMessage command,
               RpcRequest request, RpcRequestContext context) {
         // Run the sketch
-        Observable<PartialResult<JsonList<ControlMessage.Status>>> sketches = data.manage(command);
+        Observable<PartialResult<ControlMessage.StatusList>> sketches = data.manage(command);
         // Knows how to add partial results
-        PartialResultMonoid<JsonList<ControlMessage.Status>> prm =
-                new PartialResultMonoid<JsonList<ControlMessage.Status>>(
-                        new JsonListMonoid<ControlMessage.Status>());
+        PartialResultMonoid<ControlMessage.StatusList> prm =
+                new PartialResultMonoid<ControlMessage.StatusList>(
+                        new ControlMessage.StatusListMonoid());
         // Prefix sum of the partial results
-        Observable<PartialResult<JsonList<ControlMessage.Status>>> add = sketches.scan(prm::add);
+        Observable<PartialResult<ControlMessage.StatusList>> add = sketches.scan(prm::add);
         // Send the partial results back
-        SketchResultObserver<JsonList<ControlMessage.Status>> robs =
-                new SketchResultObserver<JsonList<ControlMessage.Status>>(
+        SketchResultObserver<ControlMessage.StatusList> robs =
+                new SketchResultObserver<ControlMessage.StatusList>(
                     command.toString(), this, request, context);
         Subscription sub = add.subscribe(robs);
         this.saveSubscription(context, sub);

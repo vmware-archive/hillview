@@ -31,10 +31,24 @@ import java.util.List;
  * This is a simple table held entirely in RAM.
  */
 public class Table extends BaseTable {
+    /**
+     * The table schema: the set of columns.
+     */
     private final Schema schema;
+    /**
+     * The list of rows that belongs to this table.
+     */
     private final IMembershipSet members;
+    /**
+     * A loader that can be invoked to load columns that are lazily loaded.
+     */
     @Nullable
     private final IColumnLoader columnLoader;
+    /**
+     * Path to the local (worker-resident) file that was used to load this table.
+     */
+    @Nullable
+    private final String sourceFile;
 
     /**
      * Create an empty table with the specified schema.
@@ -44,6 +58,7 @@ public class Table extends BaseTable {
         super(schema);
         this.schema = schema;
         this.columnLoader = null;
+        this.sourceFile = null;
         this.members = new FullMembershipSet(0);
     }
 
@@ -53,36 +68,44 @@ public class Table extends BaseTable {
      * @param members  Membership set (rows in the table).
      * @param schema   Schema; must match the set of columns.
      * @param loader   Loader that knows how to load column data.
+     * @param sourceFile  The file where the data is loaded from.
      */
     protected <C extends IColumn> Table(
-            final List<C> columns, final IMembershipSet members,
-            final Schema schema, @Nullable final IColumnLoader loader) {
+            final List<C> columns, final IMembershipSet members, final Schema schema,
+            @Nullable final String sourceFile,
+            @Nullable final IColumnLoader loader) {
         super(columns);
         this.members = members;
         this.schema = schema;
         this.columnLoader = loader;
+        this.sourceFile = sourceFile;
     }
 
     public <C extends IColumn> Table(final List<C> columns, final IMembershipSet members,
+                                     @Nullable final String sourceFile,
                                      @Nullable final IColumnLoader loader) {
         super(columns);
         final Schema s = new Schema();
         for (final IColumn c : columns)
             s.append(c.getDescription());
         this.schema = s;
+        this.sourceFile = sourceFile;
         this.members = members;
         this.columnLoader = loader;
     }
 
     public <C extends IColumn> Table(final C[] columns,
+                                     @Nullable final String sourceFile,
                                      @Nullable final IColumnLoader loader) {
         this(Arrays.asList(columns),
-                new FullMembershipSet(columnSize(Arrays.asList(columns))), loader);
+                new FullMembershipSet(columnSize(Arrays.asList(columns))),
+                sourceFile, loader);
     }
 
     public <C extends IColumn> Table(final List<C> columns,
+                                     @Nullable final String sourceFile,
                                      @Nullable final IColumnLoader loader) {
-        this(columns, new FullMembershipSet(columnSize(columns)), loader);
+        this(columns, new FullMembershipSet(columnSize(columns)), sourceFile, loader);
     }
 
     /**
@@ -90,30 +113,35 @@ public class Table extends BaseTable {
      * @param desc    A collection column descriptions.
      * @param loader  Loader that knows how to load a column.
      * @param rowCount Number of rows of the table.
+     * @param sourceFile  File where this data was loaded from.
      */
-    public static Table createLazyTable(ColumnDescription[] desc,
-                                        int rowCount, IColumnLoader loader) {
-        LazyColumn[] cols = Linq.map(desc, d -> new LazyColumn(d, rowCount, loader),
-                LazyColumn.class);
-        return new Table(cols, loader);
-    }
-
-    public static Table createLazyTable(List<ColumnDescription> desc,
-                                        int rowCount, IColumnLoader loader) {
+    public static Table createLazyTable(List<ColumnDescription> desc, int rowCount,
+                                        @Nullable String sourceFile, IColumnLoader loader) {
         List<LazyColumn> cols = Linq.map(desc, d -> new LazyColumn(d, rowCount, loader));
-        return new Table(cols, loader);
+        return new Table(cols, sourceFile, loader);
     }
 
 
+    /**
+     * Creates a new table that only has the columns specified in the schema.
+     * @param schema: Schema of the resulting table.  Must be a subset of the
+     *              columns of the existing table.
+     */
     @Override
     public ITable project(Schema schema) {
         List<IColumn> cols = this.getColumns(schema);
-        return new Table(cols, this.members, this.columnLoader);
+        return new Table(cols, this.members, this.sourceFile, this.columnLoader);
     }
 
+    /**
+     * Creates a new table that has a different list of columns, but the same
+     * membership set and the same source file.
+     * @param columns  Set of columns for new table.
+     */
     @Override
     public <T extends IColumn> ITable replace(List<T> columns) {
-        return new Table(columns, this.getMembershipSet(), this.columnLoader);
+        return new Table(columns, this.getMembershipSet(),
+                this.sourceFile, this.columnLoader);
     }
 
     @Override
@@ -146,6 +174,12 @@ public class Table extends BaseTable {
         return result;
     }
 
+    @Nullable
+    @Override
+    public String getSourceFile() {
+        return this.sourceFile;
+    }
+
     @Override
     public Schema getSchema() {
         return this.schema;
@@ -167,9 +201,13 @@ public class Table extends BaseTable {
         return this.members.getSize();
     }
 
+    /**
+     * Creates a new table that has the same columns but a different set of rows.
+     * @param set: Membership set of the resulting table.
+     */
     @Override
     public ITable selectRowsFromFullTable(IMembershipSet set) {
-        return new Table(this.getColumns(), set, this.columnLoader);
+        return new Table(this.getColumns(), set, this.sourceFile, this.columnLoader);
     }
 
     /**

@@ -78,7 +78,7 @@ public class BlasConversions {
             IColumn column = new DoubleArrayColumn(cd, vector.data);
             columns[i] = column;
         }
-        return new Table(Arrays.asList(columns), null);
+        return new Table(Arrays.asList(columns), null, null);
     }
 
     /**

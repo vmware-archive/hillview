@@ -20,7 +20,6 @@ package org.hillview.dataset;
 import org.hillview.dataset.api.*;
 import org.hillview.utils.ExecutorUtils;
 import org.hillview.utils.HillviewLogger;
-import org.hillview.utils.JsonList;
 import rx.Observable;
 import rx.Scheduler;
 import rx.schedulers.Schedulers;
@@ -169,8 +168,8 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
     }
 
     @Override
-    public Observable<PartialResult<JsonList<ControlMessage.Status>>> manage(ControlMessage message) {
-        final Callable<JsonList<ControlMessage.Status>> callable = () -> {
+    public Observable<PartialResult<ControlMessage.StatusList>> manage(ControlMessage message) {
+        final Callable<ControlMessage.StatusList> callable = () -> {
             HillviewLogger.instance.info("Starting manage", "{0}", message.toString());
             ControlMessage.Status status;
             try {
@@ -179,13 +178,11 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
                 status = new ControlMessage.Status("Exception", t);
                 HillviewLogger.instance.error("Exception during manage", t);
             }
-            JsonList<ControlMessage.Status> result = new JsonList<ControlMessage.Status>();
-            if (status != null)
-                result.add(status);
+            ControlMessage.StatusList result = new ControlMessage.StatusList(status);
             HillviewLogger.instance.info("Completed manage", "{0}", message.toString());
             return result;
         };
-        final Observable<JsonList<ControlMessage.Status>> executed = Observable.fromCallable(callable);
+        final Observable<ControlMessage.StatusList> executed = Observable.fromCallable(callable);
         return executed.map(PartialResult::new);
     }
 

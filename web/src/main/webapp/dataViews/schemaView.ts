@@ -24,6 +24,7 @@ import {TabularDisplay} from "../ui/tabularDisplay";
 import {TableView} from "./tableView";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {TableViewBase} from "./tableViewBase";
+import {significantDigits} from "../util";
 
 /**
  * This class is used to browse through the columns of a table schema
@@ -60,6 +61,7 @@ export class SchemaView extends TableViewBase {
             help: "Select Columns by type."
         }]);
         let menu = new TopMenu([
+            this.saveAsMenu(),
             {text: "View", subMenu: viewMenu, help: "Change the way the data is displayed."},
             {text: "Select", subMenu: selectMenu, help: "Select columns based on attributes." },
             this.chartMenu()

@@ -87,7 +87,7 @@ public class MongoDBLoader extends JsonFileLoader {
         // reopen the iterator
         for (JsonElement e: Linq.map(cursor, MongoDBLoader::convert))
             this.append(columns, e);
-        ITable table = new Table(columns, null);
+        ITable table = new Table(columns, this.info.table, null);
         this.close(null);
         return table;
     }

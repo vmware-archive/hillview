@@ -83,11 +83,11 @@ public class JdbcDatabase {
                     ColumnDescription cd = JdbcDatabase.getDescription(meta, i);
                     cds.add(cd);
                 }
-                return Table.createLazyTable(cds, rowCount, loader);
+                return Table.createLazyTable(cds, rowCount, this.conn.info.table, loader);
             } else {
                 ResultSet rs = this.getDataInTable(-1);
                 List<IAppendableColumn> columns = JdbcDatabase.convertResultSet(rs);
-                return new Table(columns, null);
+                return new Table(columns, this.conn.info.table, null);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -153,7 +153,7 @@ public class JdbcDatabase {
     public ITable getQueryData(String query) {
         ResultSet rs = this.getQueryResult(query);
         List<IAppendableColumn> columns = JdbcDatabase.convertResultSet(rs);
-        return new Table(columns, null);
+        return new Table(columns, null, null);
     }
 
     static ColumnDescription getDescription(ResultSetMetaData meta, int colIndex)

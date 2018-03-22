@@ -82,6 +82,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
         this.topLevel.style.alignItems = "stretch";
 
         let menu = new TopMenu([
+            this.saveAsMenu(),
             {
                 text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
                     /*
@@ -93,10 +94,12 @@ export class TableView extends TableViewBase implements IScrollTarget {
                         action: () => this.refresh(),
                         help: "Redraw this view."
                     },
+                    /*
                     { text: "All columns",
-                        action: () => this.showAllRows(),
+                        action: () => this.showAllColumns(),
                         help: "Make all columns visible."
                     },
+                    */
                     { text: "No columns",
                         action: () => this.setOrder(new RecordOrder([])),
                         help: "Make all columns invisible"
@@ -273,7 +276,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
         rr.invoke(new NextKReceiver(this.getPage(), this, rr, false, o, null));
     }
 
-    protected showAllRows(): void {
+    protected showAllColumns(): void {
         if (this.schema == null) {
             this.reportError("No data loaded");
             return;
@@ -958,6 +961,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
     public setScroll(top: number, bottom: number) : void {
         this.scrollBar.setPosition(top, bottom);
     }
+
 }
 
 /**

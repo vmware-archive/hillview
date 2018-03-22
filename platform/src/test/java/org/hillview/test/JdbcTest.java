@@ -17,11 +17,8 @@
 
 package org.hillview.test;
 
-import org.hillview.storage.CsvFileWriter;
 import org.hillview.storage.JdbcConnectionInformation;
-import org.hillview.storage.OrcFileWriter;
 import org.hillview.table.api.ColumnAndConverter;
-import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.storage.JdbcDatabase;
 import org.hillview.utils.Converters;
@@ -29,14 +26,12 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import javax.annotation.Nullable;
-import java.sql.SQLException;
-import java.time.Instant;
-import java.util.List;
 
 /**
  * Various tests for reading data from databases through JDBC.
- * The MSSQL tests assume that the MySQL test_db from https://github.com/datacharmer/test_db has
- * been loaded.
+ * The MySQL tests assume that the MySQL test_db from
+ * https://github.com/datacharmer/test_db has
+ * been loaded into MySQL.
  */
 public class JdbcTest extends BaseTest {
     @Nullable
@@ -105,9 +100,9 @@ public class JdbcTest extends BaseTest {
             Assert.assertEquals(60117, firstSalary);
 
             ColumnAndConverter emp = table.getLoadedColumn("emp_no");
-            int empno = emp.column.getInt(0);
-            System.out.println("First employee " + empno);
-            Assert.assertEquals(10001, empno);
+            int empNo = emp.column.getInt(0);
+            System.out.println("First employee " + empNo);
+            Assert.assertEquals(10001, empNo);
         }
     }
 }

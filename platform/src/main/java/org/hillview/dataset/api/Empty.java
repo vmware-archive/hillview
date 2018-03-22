@@ -19,8 +19,9 @@ package org.hillview.dataset.api;
 
 /**
  * Represents a type used to bring up empty IDataSets.
+ * It is serializable because it is sometimes used as results of sketches.
  */
-public class Empty {
+public class Empty implements IJson {
     private static final Empty instance = new Empty();
 
     public static Empty getInstance() {

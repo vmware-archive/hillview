@@ -54,6 +54,12 @@ public final class Schema
     @Nullable
     private List<ColumnDescription> cachedDescriptions;
 
+    /**
+     * Canonical name for schema files.  Most useful when there is only one
+     * schema file expected in a folder.
+     */
+    public static final String schemaFileName = "schema";
+
     public static class Serializer implements JsonSerializer<Schema> {
         public JsonElement serialize(Schema schema, Type typeOfSchema,
                                      JsonSerializationContext context) {
@@ -236,7 +242,7 @@ public final class Schema
         return IJson.gsonInstance.fromJson(json, Schema.class);
     }
 
-    private static ConcurrentHashMap<Path, Schema> loadedFiles =
+    private static final ConcurrentHashMap<Path, Schema> loadedFiles =
             new ConcurrentHashMap<Path, Schema>();
 
     public static Schema readFromJsonFile(Path file) {

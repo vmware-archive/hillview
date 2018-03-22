@@ -80,8 +80,8 @@ public class CsvFileWriter implements ITableWriter {
             int nextRow = rowIter.getNextRow();
             while (nextRow >= 0) {
                 for (index = 0; index < cols.size(); index++) {
-                    ColumnAndConverter coli = cols.get(index);
-                    String d = coli.isMissing(nextRow) ? null : coli.asString(nextRow);
+                    ColumnAndConverter colI = cols.get(index);
+                    String d = colI.isMissing(nextRow) ? null : colI.asString(nextRow);
                     data[index] = d;
                 }
                 writer.writeRow(data);

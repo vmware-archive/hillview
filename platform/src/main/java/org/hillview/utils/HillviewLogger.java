@@ -61,7 +61,7 @@ public class HillviewLogger {
 
     private HillviewLogger(String role, @Nullable String filename) {
         // Disable all default logging
-        //LogManager.getLogManager().reset();
+        LogManager.getLogManager().reset();
         this.logger = Logger.getLogger("Hillview");
         this.machine = this.checkCommas(Utilities.getHostName());
         this.role = this.checkCommas(role);

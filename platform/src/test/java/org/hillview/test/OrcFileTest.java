@@ -85,7 +85,7 @@ public class OrcFileTest extends BaseTest {
         strCol.set(1, (String)null);
         List<IColumn> cols = new ArrayList<IColumn>();
         cols.add(strCol);
-        Table tbl = new Table(cols, null);
+        Table tbl = new Table(cols, null, null);
 
         OrcFileWriter ofw = new OrcFileWriter(orcFile);
         ofw.writeTable(tbl);

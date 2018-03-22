@@ -74,7 +74,7 @@ export class LoadMenu extends RemoteObject implements IDataView {
             { text: "Parquet files...",
                 action: () => this.showParquetFileDialog(),
                 help: "A set of Parquet files residing on the worker machines." },
-            { text: "Orc files...",
+            { text: "ORC files...",
                 action: () => this.showOrcFileDialog(),
                 help: "A set of Orc files residing on the worker machines." },
             { text: "DB tables...",
@@ -312,8 +312,8 @@ class ParquetFileDialog extends Dialog {
  */
 class OrcFileDialog extends Dialog {
     constructor() {
-        super("Load Orc files", "Loads Orc files from all machines that are part of the service." +
-            "The schema of all Orc files loaded should be the same.");
+        super("Load ORC files", "Loads ORC files from all machines that are part of the service." +
+            "The schema of all ORC files loaded should be the same.");
         this.addTextField("folder", "Folder", FieldKind.String, "/",
             "Folder on the remote machines where all the CSV files are found.");
         this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "*.orc",

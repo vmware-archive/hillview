@@ -48,7 +48,7 @@ public abstract class FreqKList implements Serializable {
     /**
      * Stores a filtered and sorted version of the hashmap. Created during post-processing.
      */
-    public List<Pair<RowSnapshot, Integer>> pList;
+    public final List<Pair<RowSnapshot, Integer>> pList;
 
     public final double epsilon;
 
@@ -87,9 +87,9 @@ public abstract class FreqKList implements Serializable {
                 Converters.checkNull(p1.second)));
         List<RowSnapshot> listRows = new ArrayList<RowSnapshot>(pList.size());
         List<Integer> listCounts = new ArrayList<Integer>(pList.size());
-        for (int i = 0; i < pList.size(); i++) {
-            listRows.add(pList.get(i).first);
-            listCounts.add(pList.get(i).second);
+        for (Pair<RowSnapshot, Integer> aPList : pList) {
+            listRows.add(aPList.first);
+            listCounts.add(aPList.second);
         }
         return new NextKList(listRows, listCounts, schema, this.totalRows);
     }
@@ -118,8 +118,8 @@ public abstract class FreqKList implements Serializable {
 
     public RowSnapshotSet.SetTableFilterDescription getFilter(Schema schema, int[] rowIndices) {
         List<RowSnapshot> rsList = new ArrayList<RowSnapshot>();
-        for (int i = 0; i < rowIndices.length; i++)
-            rsList.add(this.pList.get(rowIndices[i]).first);
+        for (int rowIndex : rowIndices)
+            rsList.add(this.pList.get(rowIndex).first);
         RowSnapshotSet rss = new RowSnapshotSet(schema, rsList);
         return new RowSnapshotSet.SetTableFilterDescription(rss);
     }

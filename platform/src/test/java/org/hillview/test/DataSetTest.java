@@ -142,11 +142,11 @@ public class DataSetTest extends BaseTest {
             outer.add(par);
         }
 
-        final ParallelDataSet<Integer> outd = new ParallelDataSet<Integer>(outer);
-        outd.setBundleInterval(0);
+        final ParallelDataSet<Integer> out = new ParallelDataSet<Integer>(outer);
+        out.setBundleInterval(0);
         final Increment increment = new Increment();
 
-        Observable<PartialResult<IDataSet<Integer>>> flat = outd.map(increment);
+        Observable<PartialResult<IDataSet<Integer>>> flat = out.map(increment);
         Observer<PartialResult<IDataSet<Integer>>> obs = new
                 Observer<PartialResult<IDataSet<Integer>>>() {
                     @Override

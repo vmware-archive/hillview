@@ -20,8 +20,6 @@ package org.hillview.dataset;
 import org.hillview.dataset.api.*;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
-import org.hillview.utils.JsonList;
-import org.hillview.utils.JsonListMonoid;
 import rx.Observable;
 
 import java.util.ArrayList;
@@ -103,7 +101,6 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
      * @return  A shorter stream, in which some of the values in the data stream have been
      * added together.
      */
-
     <R> Observable<R> bundle(final Observable<R> data, IMonoid<R> adder) {
         if (this.bundleInterval > 0) {
             // If a time interval has no data we don't want to produce a zero.
@@ -266,20 +263,21 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
     }
 
     @Override
-    public Observable<PartialResult<JsonList<ControlMessage.Status>>> manage(ControlMessage message) {
+    public Observable<PartialResult<ControlMessage.StatusList>> manage(ControlMessage message) {
         HillviewLogger.instance.info("Invoked manage", "target={0}", this);
-        List<Observable<PartialResult<JsonList<ControlMessage.Status>>>> obs =
-                new ArrayList<Observable<PartialResult<JsonList<ControlMessage.Status>>>>();
+        List<Observable<PartialResult<ControlMessage.StatusList>>> obs =
+                new ArrayList<Observable<PartialResult<ControlMessage.StatusList>>>();
         final int mySize = this.size();
         // Run over each child separately
         for (int i = 0; i < mySize; i++) {
             IDataSet<T> child = this.children.get(i);
-            Observable<PartialResult<JsonList<ControlMessage.Status>>> sk = child.manage(message);
-            sk = sk.map(e -> new PartialResult<JsonList<ControlMessage.Status>>(e.deltaDone / mySize, e.deltaValue));
+            Observable<PartialResult<ControlMessage.StatusList>> sk = child.manage(message);
+            sk = sk.map(e -> new PartialResult<ControlMessage.StatusList>(
+                    e.deltaDone / mySize, e.deltaValue));
             obs.add(sk);
         }
 
-        final Callable<JsonList<ControlMessage.Status>> callable = () -> {
+        final Callable<ControlMessage.StatusList> callable = () -> {
             HillviewLogger.instance.info("Starting manage", "{0}", message.toString());
             ControlMessage.Status status;
             try {
@@ -287,20 +285,20 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
             } catch (final Throwable t) {
                 status = new ControlMessage.Status("Exception", t);
             }
-            JsonList<ControlMessage.Status> result = new JsonList<ControlMessage.Status>();
+            ControlMessage.StatusList result = new ControlMessage.StatusList();
             if (status != null)
                 result.add(status);
             HillviewLogger.instance.info("Completed manage", "{0}", message.toString());
             return result;
         };
-        final Observable<JsonList<ControlMessage.Status>> executed = Observable.fromCallable(callable);
-        final Observable<PartialResult<JsonList<ControlMessage.Status>>> pr = executed.map
-                (l -> new PartialResult<JsonList<ControlMessage.Status>>(0, l));
+        final Observable<ControlMessage.StatusList> executed = Observable.fromCallable(callable);
+        final Observable<PartialResult<ControlMessage.StatusList>> pr = executed.map
+                (l -> new PartialResult<ControlMessage.StatusList>(0, l));
         obs.add(pr);
 
-        Observable<PartialResult<JsonList<ControlMessage.Status>>> merged = Observable.merge(obs);
-        merged = this.bundle(merged, new PartialResultMonoid<JsonList<ControlMessage.Status>>(new
-                JsonListMonoid<ControlMessage.Status>()));
+        Observable<PartialResult<ControlMessage.StatusList>> merged = Observable.merge(obs);
+        merged = this.bundle(merged, new PartialResultMonoid<ControlMessage.StatusList>(new
+                ControlMessage.StatusListMonoid()));
         return merged;
     }
 

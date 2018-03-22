@@ -18,7 +18,6 @@
 package org.hillview.dataset.api;
 
 import org.hillview.dataset.PRDataSetMonoid;
-import org.hillview.utils.JsonList;
 import rx.Observable;
 
 import java.util.List;
@@ -73,7 +72,7 @@ public interface IDataSet<T> {
      * @param message  Message to execute.
      * @return         A stream of partial results containing the status of all operations executed.
      */
-    Observable<PartialResult<JsonList<ControlMessage.Status>>> manage(ControlMessage message);
+    Observable<PartialResult<ControlMessage.StatusList>> manage(ControlMessage message);
 
     // The following are various helper methods.
 
@@ -122,7 +121,7 @@ public interface IDataSet<T> {
     }
 
     /**
-     * Applies a flatmap and then reduces the result immediately.
+     * Applies a flatMap and then reduces the result immediately.
      * @param mapper  Mapper to apply to data.
      * @param <S>     Type of data in the result.
      * @return        An observable with a single element.
@@ -164,10 +163,10 @@ public interface IDataSet<T> {
     }
 
     /**
-     * Run a flapmap synchronously.
+     * Run a flapMap synchronously.
      * @param mapper  Mapper to run.
      * @param <S>     Type of data produced.
-     * @return        An IDataSet containing the final result of the flatmap.
+     * @return        An IDataSet containing the final result of the flatMap.
      */
     default <S> IDataSet<S> blockingFlatMap(final IMap<T, List<S>> mapper) {
         return this.singleFlatMap(mapper).toBlocking().single();

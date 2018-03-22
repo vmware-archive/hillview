@@ -159,7 +159,7 @@ public class InitialObjectTarget extends RpcTarget {
         IMap<Empty, List<IFileLoader>> finder;
         if (which >= 0 && which <= 1) {
             limit = which == 0 ? 0 : 1;
-            dataFolder += "ontime/";
+            dataFolder += "ontime";
             schemaFile = "short.schema";
             fileNamePattern = "(\\d)+_(\\d)+\\.csv";
         } else if (which == 3) {
@@ -169,7 +169,7 @@ public class InitialObjectTarget extends RpcTarget {
             fileNamePattern = "segmentation.csv";
             schemaFile = "segmentation.schema";
         } else if (which == 5) {
-            dataFolder += "ontime_big/";
+            dataFolder += "ontime_big";
             fileNamePattern = ".*.csv.gz";
             schemaFile = "schema";
         } else {

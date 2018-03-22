@@ -19,12 +19,14 @@ package org.hillview.utils;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import org.apache.commons.io.FilenameUtils;
 import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.PartialResult;
 
 import javax.annotation.Nullable;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -139,5 +141,26 @@ public class Utilities {
 
     public static String[] toArray(List<String> list) {
         return list.toArray(new String[list.size()]);
+    }
+
+    static final List<String> compressionSuffixes = Arrays.asList(
+            "gz", "bz", "bzip2", "xz", "Z", "arj");
+
+    /**
+     * Detect whether a file is compressed based on the file name.
+     */
+    public static boolean isCompressed(String filename) {
+        String suffix = FilenameUtils.getExtension(filename).toLowerCase();
+        return compressionSuffixes.contains(suffix);
+    }
+
+    /**
+     * This function strips the extension of a file name.
+     * It also removes known compression suffixes.
+     */
+    public static String getBasename(String filename) {
+        if (isCompressed(filename))
+            filename = FilenameUtils.removeExtension(filename);
+        return FilenameUtils.removeExtension(filename);
     }
 }

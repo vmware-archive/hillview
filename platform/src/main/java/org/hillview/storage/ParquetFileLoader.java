@@ -244,13 +244,13 @@ public class ParquetFileLoader extends TextFileLoader {
             int size = this.getNumRows();
             List<ColumnDescription> desc = Linq.map(cds,
                     ParquetFileLoader::getColumnDescription);
-            Table result = Table.createLazyTable(desc, size, loader);
+            Table result = Table.createLazyTable(desc, size, this.filename, loader);
             this.close(null);
             return result;
         } else {
             List<IColumn> cols = this.loadColumns(md);
             this.close(null);
-            return new Table(cols, null);
+            return new Table(cols, this.filename, null);
         }
     }
 }

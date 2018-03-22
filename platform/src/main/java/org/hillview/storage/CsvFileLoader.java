@@ -172,7 +172,7 @@ public class CsvFileLoader extends TextFileLoader {
                 Converters.checkNull(sealed[ci]);
             }
 
-            return new Table(sealed, null);
+            return new Table(sealed, this.filename, null);
         } finally {
             this.close(file);
         }

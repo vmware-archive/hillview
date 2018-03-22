@@ -75,15 +75,34 @@ export class InitialObject extends RemoteObject {
         super("0");
     }
 
+    fileNames(files: FileSetDescription): string {
+        return files.folder + "/" + files.fileNamePattern;
+    }
+
     public testDataset(which: number, menuPage: FullPage): void {
+        let name: string;
+        switch (which) {
+            case 0:
+                name = "Flights"; break;
+            case 1:
+                name = "Flights (subset)"; break;
+            case 3:
+                name = "MNIST"; break;
+            case 4:
+                name = "Image segmentation"; break;
+            case 5:
+                name = "Flights (all columns)"; break;
+            default:
+                name = "?"; break;
+        }
         let rr = this.createStreamingRpcRequest<RemoteObjectId>("testDataset", which);
-        let observer = new FileNamesReceiver(menuPage, rr, "Test data set");
+        let observer = new FileNamesReceiver(menuPage, rr, name);
         rr.invoke(observer);
     }
 
     public loadCSVFiles(files: FileSetDescription, menuPage: FullPage): void {
         let rr = this.createStreamingRpcRequest<RemoteObjectId>("findCsvFiles", files);
-        let observer = new FileNamesReceiver(menuPage, rr, files.fileNamePattern);
+        let observer = new FileNamesReceiver(menuPage, rr, this.fileNames(files));
         rr.invoke(observer);
     }
 
@@ -96,19 +115,19 @@ export class InitialObject extends RemoteObject {
 
     public loadJsonFiles(files: FileSetDescription, menuPage: FullPage): void {
         let rr = this.createStreamingRpcRequest<RemoteObjectId>("findJsonFiles", files);
-        let observer = new FileNamesReceiver(menuPage, rr, files.fileNamePattern);
+        let observer = new FileNamesReceiver(menuPage, rr, this.fileNames(files));
         rr.invoke(observer);
     }
 
     public loadParquetFiles(files: FileSetDescription, menuPage: FullPage): void {
         let rr = this.createStreamingRpcRequest<RemoteObjectId>("findParquetFiles", files);
-        let observer = new FileNamesReceiver(menuPage, rr, files.fileNamePattern);
+        let observer = new FileNamesReceiver(menuPage, rr, this.fileNames(files));
         rr.invoke(observer);
     }
 
     public loadOrcFiles(files: FileSetDescription, menuPage: FullPage): void {
         let rr = this.createStreamingRpcRequest<RemoteObjectId>("findOrcFiles", files);
-        let observer = new FileNamesReceiver(menuPage, rr, files.fileNamePattern);
+        let observer = new FileNamesReceiver(menuPage, rr, this.fileNames(files));
         rr.invoke(observer);
     }
 

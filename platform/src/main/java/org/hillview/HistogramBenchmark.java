@@ -92,7 +92,7 @@ public class HistogramBenchmark {
         FullMembershipSet fMap = new FullMembershipSet(colSize);
         List<IColumn> cols = new ArrayList<IColumn>();
         cols.add(col);
-        return new Table(cols, fMap, null);
+        return new Table(cols, fMap, null, null);
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {

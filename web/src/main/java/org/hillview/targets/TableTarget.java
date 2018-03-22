@@ -112,6 +112,18 @@ public final class TableTarget extends RpcTarget {
         this.runCompleteSketch(this.table, sk, (e, c) -> e, request, context);
     }
 
+    static class SaveAsArgs {
+        String folder = "";
+        Schema schema;
+    }
+
+    @HillviewRpc
+    public void saveAsOrc(RpcRequest request, RpcRequestContext context) {
+        SaveAsArgs args = request.parseArgs(SaveAsArgs.class);
+        SaveAsOrcSketch sk = new SaveAsOrcSketch(args.folder, args.schema, true);
+        this.runCompleteSketch(this.table, sk, (e, c) -> e, request, context);
+    }
+
     @HillviewRpc
     public void uniqueStrings(RpcRequest request, RpcRequestContext context) {
         String[] columnNames = request.parseArgs(String[].class);
@@ -505,7 +517,7 @@ public final class TableTarget extends RpcTarget {
     }
 
     static class HeavyHittersListFilterInfo extends HeavyHittersFilterInfo {
-        int[] rowIndices;
+        int[] rowIndices = new int[0];
     }
 
     /**

@@ -70,8 +70,8 @@ public class Linq {
 
     public static <T, S> List<S> map(List<T> data, Function<T, S> function) {
         List<S> result = new ArrayList<S>(data.size());
-        for (int i=0; i < data.size(); i++)
-            result.add(function.apply(data.get(i)));
+        for (T aData : data)
+            result.add(function.apply(aData));
         return result;
     }
 

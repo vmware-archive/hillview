@@ -188,7 +188,7 @@ public class CsvFileTest extends BaseTest {
         cols.add(first);
         cols.add(second);
         cols.add(third);
-        ITable table = new Table(cols, null);
+        ITable table = new Table(cols, null, null);
         writeReadTable(table);
     }
 
@@ -208,8 +208,9 @@ public class CsvFileTest extends BaseTest {
         writer.close();
         fw.close();
         File file = new File(fileName);
-        if (file.exists())
-            file.delete();
+        if (file.exists()) {
+            boolean ignored = file.delete();
+        }
     }
 
     @Test

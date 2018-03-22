@@ -31,9 +31,9 @@ public class FreqKListSample extends FreqKList {
         /* Needed here because this list is used for further filtering*/
         this.fkFilter(0.5 * epsilon * this.sampleSize);
         this.hMap.forEach((rs, j) -> {
-            double frac = ((double) j) / this.sampleSize;
-            if (frac >= epsilon) {
-                int k = (int) (frac * this.totalRows);
+            double fraction = ((double) j) / this.sampleSize;
+            if (fraction >= epsilon) {
+                int k = (int) (fraction * this.totalRows);
                 this.pList.add(new Pair<RowSnapshot, Integer>(rs, k));
             }
         });

@@ -69,7 +69,7 @@ class TestUtil {
         columns.add(getStringArray(size, "Name"));
         columns.add(generateDoubleArray(size, "Income"));
         final FullMembershipSet full = new FullMembershipSet(size);
-        return new Table(columns, full, null);
+        return new Table(columns, full, null, null);
     }
 
     static public SmallTable createSmallTable(int size) {

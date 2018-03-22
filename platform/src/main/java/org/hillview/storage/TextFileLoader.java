@@ -17,6 +17,8 @@
 
 package org.hillview.storage;
 
+import org.apache.commons.compress.compressors.CompressorException;
+import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.io.ByteOrderMark;
 import org.apache.commons.io.input.BOMInputStream;
 import org.hillview.table.api.IAppendableColumn;
@@ -26,7 +28,6 @@ import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import java.io.*;
-import java.util.zip.GZIPInputStream;
 
 /**
  * Abstract class for a reader that reads data from a text file and keeps
@@ -48,7 +49,9 @@ public abstract class TextFileLoader implements IFileLoader {
     @Nullable
     private InputStream inputStream = null;
     @Nullable
-    private GZIPInputStream gzipStream = null;
+    private InputStream bufferedInputStream = null;
+    @Nullable
+    private InputStream compressedStream = null;
     @Nullable
     private BOMInputStream bomStream = null;
 
@@ -72,10 +75,15 @@ public abstract class TextFileLoader implements IFileLoader {
         try {
             HillviewLogger.instance.info("Reading file", "{0}", this.filename);
             this.inputStream = new FileInputStream(this.filename);
-            InputStream fis = this.inputStream;
-            if (this.filename.toLowerCase().endsWith(".gz")) {
-                this.gzipStream = new GZIPInputStream(this.inputStream);
-                fis = this.gzipStream;
+            this.bufferedInputStream = new BufferedInputStream(inputStream);
+            // The buffered input stream is needed by the CompressorStream
+            // to detect the compression method at runtime.
+            InputStream fis = this.bufferedInputStream;
+
+            if (Utilities.isCompressed(this.filename)) {
+                this.compressedStream = new CompressorStreamFactory()
+                        .createCompressorInputStream(fis);
+                fis = this.compressedStream;
             }
             this.bomStream = new BOMInputStream(fis,
                     ByteOrderMark.UTF_8,
@@ -84,7 +92,7 @@ public abstract class TextFileLoader implements IFileLoader {
             ByteOrderMark bom = this.bomStream.getBOM();
             String charsetName = bom == null ? "UTF-8" : bom.getCharsetName();
             return new InputStreamReader(this.bomStream, charsetName);
-        } catch (IOException e) {
+        } catch (IOException|CompressorException e) {
             throw new RuntimeException(e);
         }
     }
@@ -99,8 +107,10 @@ public abstract class TextFileLoader implements IFileLoader {
                 reader.close();
             if (this.bomStream != null)
                 this.bomStream.close();
-            if (this.gzipStream != null)
-                this.gzipStream.close();
+            if (this.compressedStream != null)
+                this.compressedStream.close();
+            if (this.bufferedInputStream != null)
+                this.bufferedInputStream.close();
             if (this.inputStream != null)
                 this.inputStream.close();
         } catch (IOException e) {

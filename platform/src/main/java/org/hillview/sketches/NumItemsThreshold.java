@@ -35,10 +35,8 @@ public class NumItemsThreshold implements IJson {
         if (threshold >= 1024) {
             logSize = logThreshold;
             bits = new BitSet(threshold);
-            /**
-             * When the number of bits is equal to the threshold we expect 1-1/e = 0.6322 of the bits to be set. On top
-             * of that we add sqrt of the threshold for a high probability bound.
-             */
+            // When the number of bits is equal to the threshold we expect 1-1/e = 0.6322 of the bits to be set. On top
+            // of that we add sqrt of the threshold for a high probability bound.
             bitThreshold = (int) Math.round(0.6322 * threshold + Math.sqrt(threshold));
         } else {  // if the threshold is small we want the bitSet still to be large enough to provide sufficient accuracy
             logSize = 10;

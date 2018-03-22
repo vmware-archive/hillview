@@ -23,6 +23,8 @@ import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.remoting.HillviewServer;
+import org.hillview.utils.Converters;
+import org.hillview.utils.JsonList;
 import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
@@ -72,6 +74,39 @@ public class ControlMessage implements Serializable {
             result.addProperty("result", this.result);
             result.addProperty("exception", Utilities.throwableToString(this.exception));
             return result;
+        }
+    }
+
+    public static class StatusList extends JsonList<Status> {
+        public StatusList() {}
+
+        public StatusList(@Nullable Status status) {
+            if (status != null)
+                this.add(status);
+        }
+
+        public StatusList(StatusList other) {
+            super(other);
+        }
+
+        public StatusList concat(StatusList other) {
+            StatusList result = new StatusList(this);
+            result.addAll(other);
+            return result;
+        }
+    }
+
+    public static class StatusListMonoid implements IMonoid<StatusList> {
+        @Nullable
+        @Override
+        public StatusList zero() {
+            return new StatusList();
+        }
+
+        @Nullable
+        @Override
+        public StatusList add(@Nullable StatusList left, @Nullable StatusList right) {
+           return Converters.checkNull(left).concat(Converters.checkNull(right));
         }
     }
 

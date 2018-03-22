@@ -178,6 +178,12 @@
             <artifactId>grpc-stub</artifactId>
             <version>1.6.1</version>
         </dependency>
+        <!-- bzip support -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-compress</artifactId>
+            <version>1.16</version>
+        </dependency>
         <!-- Used for serialization utils and string quoting -->
         <dependency>
             <groupId>org.apache.commons</groupId>

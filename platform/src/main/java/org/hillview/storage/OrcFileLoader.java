@@ -163,8 +163,8 @@ public class OrcFileLoader extends TextFileLoader {
                                      TypeDescription.Category simple, int count) {
         // See for example
         // https://github.com/apache/orc/blob/master/java/mapreduce/src/java/org/apache/orc/mapred/OrcMapredRecordReader.java
-        for (int irow=0; irow < count; irow++) {
-            int row = irow;
+        for (int iRow=0; iRow < count; iRow++) {
+            int row = iRow;
             if (vec.isRepeating)
                 row = 0;
             if (!vec.noNulls && vec.isNull[row]) {
@@ -222,7 +222,7 @@ public class OrcFileLoader extends TextFileLoader {
                 }
                 case BINARY:
                 case DECIMAL:
-                case VARCHAR:;
+                case VARCHAR:
                 case CHAR:
                 case LIST:
                 case MAP:
@@ -292,12 +292,12 @@ public class OrcFileLoader extends TextFileLoader {
                     desc = imposed;
                 }
                 long rowCount = reader.getNumberOfRows();
-                result = Table.createLazyTable(desc, (int)rowCount, lazyLoader);
+                result = Table.createLazyTable(desc, (int)rowCount, this.filename, lazyLoader);
             } else {
                 Reader.Options options = new Reader.Options();
                 List<IAppendableColumn> cols = readColumns(reader, options, this.hillviewSchema);
                 this.close(null);
-                result = new Table(cols, null);
+                result = new Table(cols, this.filename, null);
             }
             return result;
         } catch (IOException ex) {

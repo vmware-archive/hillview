@@ -27,6 +27,7 @@ import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.Linq;
 
+import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,6 +39,14 @@ import java.util.List;
 public class SmallTable extends BaseTable implements Serializable, IJson {
     final Schema schema;
     private final int rowCount;
+
+    @Nullable
+    @Override
+    public String getSourceFile() {
+        /* TODO: We could also keep track of files for some small tables,
+          but it is not clear it's worth it. */
+        return null;
+    }
 
     @Override
     public Schema getSchema() {

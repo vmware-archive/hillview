@@ -20,6 +20,7 @@ package org.hillview.table.api;
 import org.hillview.table.Schema;
 import org.hillview.table.SmallTable;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,8 +29,21 @@ import java.util.List;
  * All columns have the same size.
  */
 public interface ITable {
+    /**
+     * The local name of the file where this table was loaded from.
+     * This returns null if the table is not associated with a file.
+     */
+    @Nullable
+    String getSourceFile();
+
+    /**
+     * The schema of the table, describing the set of columns.
+     */
     Schema getSchema();
 
+    /**
+     * An iterator over the rows that are present in this table.
+     */
     IRowIterator getRowIterator();
 
     /**
@@ -37,17 +51,23 @@ public interface ITable {
      */
     IMembershipSet getMembershipSet();
 
+    /**
+     * The number of rows in the table.
+     */
     int getNumOfRows();
 
     /**
      * Creates a small table by keeping only the rows in the IRowOrder and
      * the columns in the subSchema.
-     *
      * @param subSchema Indicates columns to keep.
      * @param rowOrder  Indicates rows to keep.
      */
     SmallTable compress(ISubSchema subSchema, IRowOrder rowOrder);
 
+    /**
+     * Creates a small table by keeping only the rows in rowOrder.
+     * @param rowOrder  Indicates rows to keep.
+     */
     SmallTable compress(IRowOrder rowOrder);
 
     /**
