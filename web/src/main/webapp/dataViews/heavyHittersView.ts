@@ -17,7 +17,7 @@
 
 import {IColumnDescription, RecordOrder, NextKList, TopList, RemoteObjectId} from "../javaBridge";
 import {TopMenu, SubMenu, ContextMenu} from "../ui/menu";
-import {TableView, TableOperationCompleted} from "./tableView";
+import {TableView, TableOperationCompleted, HeavyHittersReceiver} from "./tableView";
 import {RemoteObject, OnCompleteRenderer} from "../rpc";
 import {significantDigits, ICancellable, cloneSet} from "../util";
 import {FullPage} from "../ui/fullPage";
@@ -27,12 +27,18 @@ import {TabularDisplay} from "../ui/tabularDisplay";
 import {RemoteTableObjectView} from "../tableTarget";
 import {Dialog, FieldKind} from "../ui/dialog";
 
+
 /**
  * Class that renders a table containing the heavy hitters in sorted
  * order of counts. It also displays a menu that gives various option to
  * filter and view the results.
  */
 export class HeavyHittersView extends RemoteTableObjectView {
+    public static min: number = 0.01;
+    public static minString: string = HeavyHittersView.min.toString() + "%";
+    public static switchToMG: number = 0.9;
+    public static maxDisplay: number = 200; //Should match parameter maxDisplay in FreqKList.java
+
     contextMenu: ContextMenu;
     protected table: TabularDisplay;
     protected restCount: number;
@@ -103,7 +109,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
             let rr = this.tv.createCheckHeavyRequest(new RemoteObject(this.data.heavyHittersId), this.schema);
             rr.invoke(new HeavyHittersReceiver3(this, rr));
         } else {
-            let newPage2 = new FullPage("Frequent elements", "HeavyHitters", this.page);
+            let newPage2 = new FullPage("All frequent elements", "HeavyHitters", this.page);
             this.page.insertAfterMe(newPage2);
             let rr = this.tv.createStreamingRpcRequest<RemoteObjectId>("filterHeavy", {
                 hittersId: this.data.heavyHittersId,
@@ -116,7 +122,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
     public showSelected(): void {
         if (this.table.getSelectedRows().size == 0)
             return;
-        let newPage2 = new FullPage("Frequent elements", "HeavyHitters", this.page);
+        let newPage2 = new FullPage("Selected frequent elements", "HeavyHitters", this.page);
         this.page.insertAfterMe(newPage2);
         let rr = this.tv.createStreamingRpcRequest<RemoteObjectId>("filterListHeavy", {
             hittersId: this.data.heavyHittersId,
@@ -148,36 +154,70 @@ export class HeavyHittersView extends RemoteTableObjectView {
     }
 
     public fill(tdv: NextKList, elapsedMs: number): void {
-        this.setRest(tdv);
-        if (tdv.rows != null) {
-            let k = 0;
-            let position = 0;
-            for (let i = 0; i < tdv.rows.length; i++) {
-                k++;
-                if (i == this.restPos) {
-                    this.showRest(k, position, this.restCount, tdv.rowCount, this.table);
-                    position += this.restCount;
+        if (tdv.rows.length == 0) this.showEmptyDialog();
+        else {
+            this.setRest(tdv);
+            if (tdv.rows != null) {
+                let k = 0;
+                let position = 0;
+                for (let i = 0; i < tdv.rows.length; i++) {
                     k++;
+                    if (i == this.restPos) {
+                        this.showRest(k, position, this.restCount, tdv.rowCount, this.table);
+                        position += this.restCount;
+                        k++;
+                    }
+                    let row: Element[] = [];
+                    row.push(textToDiv(k.toString()));
+                    for (let j = 0; j < this.schema.length; j++) {
+                        let value = tdv.rows[i].values[j];
+                        row.push(textToDiv(TableView.convert(value, this.schema[j].kind)));
+                    }
+                    row.push(textToDiv(this.valueToString(tdv.rows[i].count)));
+                    row.push(textToDiv(this.valueToString((tdv.rows[i].count / tdv.rowCount) * 100)));
+                    row.push(new DataRange(position, tdv.rows[i].count, tdv.rowCount).getDOMRepresentation());
+                    let tRow: HTMLTableRowElement = this.table.addElementRow(row);
+                    tRow.oncontextmenu = e => this.clickThenShowContextMenu(tRow, e);
+                    position += tdv.rows[i].count;
                 }
-                let row: Element[] = [];
-                row.push(textToDiv(k.toString()));
-                for (let j = 0; j < this.schema.length; j++) {
-                    let value = tdv.rows[i].values[j];
-                    row.push(textToDiv(TableView.convert(value, this.schema[j].kind)));
-                }
-                row.push(textToDiv(this.valueToString(tdv.rows[i].count)));
-                row.push(textToDiv(this.valueToString((tdv.rows[i].count / tdv.rowCount) * 100)));
-                row.push(new DataRange(position, tdv.rows[i].count, tdv.rowCount).getDOMRepresentation());
-                let tRow : HTMLTableRowElement = this.table.addElementRow(row);
-                tRow.oncontextmenu = e => this.clickThenShowContextMenu(tRow, e);
-                position += tdv.rows[i].count;
+                if (this.restPos == tdv.rows.length)
+                    this.showRest(tdv.rows.length, position, this.restCount, tdv.rowCount, this.table);
             }
-            if (this.restPos == tdv.rows.length)
-                this.showRest(tdv.rows.length, position, this.restCount, tdv.rowCount, this.table);
+            this.table.addFooter();
+            this.page.scrollIntoView();
+            this.page.reportTime(elapsedMs);
+            if (tdv.rows.length >=  HeavyHittersView.maxDisplay) this.showLongDialog();
         }
-        this.table.addFooter();
-        this.page.scrollIntoView();
-        this.page.reportTime(elapsedMs);
+    }
+
+    private showLongDialog(): void {
+        let longListDialog = new Dialog("Too Many Frequent Elements found", "");
+        longListDialog.addText("Showing the top " + HeavyHittersView.maxDisplay.toString() +" elements, " +
+            "there might be more. Use the 'View as Table' menu option to see the entire list");
+        longListDialog.setAction(() => {});
+        longListDialog.setCacheTitle("longListDialog");
+        longListDialog.show();
+    }
+
+    private showEmptyDialog(): void {
+        let percentDialog = new Dialog("No Frequent Elements found", "");
+        percentDialog.addText("No Elements found with frequency above " + this.percent.toString() + "%.");
+        if (this.percent > HeavyHittersView.min) {
+            percentDialog.addText("Lower the threshold? Can take any value above " + HeavyHittersView.minString);
+            percentDialog.addTextField("newPercent", "Threshold (%)", FieldKind.Double,
+                HeavyHittersView.min.toString(),
+                "All values that appear in the dataset with a frequency above this value (as a percent) " +
+                "will be considered frequent elements.  Must be at least " + HeavyHittersView.minString);
+            percentDialog.setAction(() => {
+                let newPercent = percentDialog.getFieldValueAsNumber("newPercent");
+                if (newPercent != null)
+                    this.runWithThreshold(newPercent);
+            });
+        }
+        else
+            percentDialog.setAction(() => {});
+        percentDialog.setCacheTitle("NoHeavyHittersDialog");
+        percentDialog.show();
     }
 
     private clickThenShowContextMenu(tRow: HTMLTableRowElement, e: MouseEvent): void {
@@ -246,19 +286,21 @@ export class HeavyHittersView extends RemoteTableObjectView {
         return str;
     }
 
+    private runWithThreshold(newPercent: number) {
+        let rr = this.tv.createHeavyHittersRequest(this.schema, newPercent, this.tv.getTotalRowCount());
+        rr.invoke(new HeavyHittersReceiver(this.tv.getPage(), this.tv, rr, this.schema, this.order, true, newPercent));
+    }
+
     private changeThreshold(): void {
-        let min: number = 0.1;
-        let minString: string = min.toString() + "%";
         let percentDialog = new Dialog("Change the frequency threshold", "Changes the frequency threshold above which " +
             "elements are considered frequent");
-        percentDialog.addText("Enter a percentage between " + minString +" and 100%");
+        percentDialog.addText("Enter a percentage between " + HeavyHittersView.minString +" and 100%");
         percentDialog.addTextField("newPercent", "Threshold (%)", FieldKind.Double,
             this.percent.toString(), "All values that appear with a frequency above this value " +
-            "(as a percent) will be considered frequent elements.  Must be at least " + minString);
+            "(as a percent) will be considered frequent elements.  Must be at least " + HeavyHittersView.minString);
         percentDialog.setAction(() => {
             let newPercent = percentDialog.getFieldValueAsNumber("newPercent");
-            if (newPercent != null)
-                    this.tv.runHeavyHitters(newPercent, false);
+            if (newPercent != null) this.runWithThreshold(newPercent);
             });
         percentDialog.setCacheTitle("ChangeHeavyHittersDialog");
         percentDialog.show();

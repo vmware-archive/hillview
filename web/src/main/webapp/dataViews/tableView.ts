@@ -1,3 +1,4 @@
+///<reference path="../tableTarget.ts"/>
 /*
  * Copyright (c) 2017 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
@@ -144,7 +145,8 @@ export class TableView extends TableViewBase implements IScrollTarget {
     find(regex: boolean): void {
         let kind = regex ? "regular expression" : "string";
         let dialog = new Dialog("Find", "Search for a " + kind);
-        dialog.addTextField("string", "string to search", FieldKind.String, null, (regex ? "pattern" : "string") + " to look for");
+        dialog.addTextField("string", "string to search", FieldKind.String, null,
+            (regex ? "pattern" : "string") + " to look for");
         dialog.addBooleanField("substring", "match substrings", false,
             "If checked a substring will match.");
         dialog.addBooleanField("caseSensitive", "case sensitive", true,
@@ -469,11 +471,9 @@ export class TableView extends TableViewBase implements IScrollTarget {
 
         // Create column headers
         let thd = this.addHeaderCell(thr, posCd, "Position within sorted order.");
-        thd.oncontextmenu = () => {
-        };
+        thd.oncontextmenu = () => {};
         thd = this.addHeaderCell(thr, ctCd, "Number of occurrences.");
-        thd.oncontextmenu = () => {
-        };
+        thd.oncontextmenu = () => {};
         if (this.schema == null)
             return;
 
@@ -539,7 +539,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
                 }, selectedCount >= 2 && selectedCount <= 3);
                 this.contextMenu.addItem({
                     text: "Frequent Elements...",
-                    action: () => this.heavyHitters(false),  // currently set to approximate
+                    action: () => this.heavyHittersDialog(),  // switch between Sampling/MG based on HeavyHittersView.switchToMG
                     help: "Find the values that occur most frequently in the selected columns."
                 }, true);
                 this.contextMenu.addItem({
@@ -548,7 +548,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
                     help: "Perform Principal Component Analysis on a set of numeric columns. " +
                     "This produces a smaller set of columns that preserve interesting properties of the data."
                 }, selectedCount > 1 &&
-                    this.getSelectedColNames().reduce((a, b) => a && this.isNumericColumn(b), true));
+                    this.getSelectedColNames().reduce( (a, b) => a && this.isNumericColumn(b), true));
                 /*
                 this.contextMenu.addItem({
                     text: "LAMP...",
@@ -851,11 +851,12 @@ export class TableView extends TableViewBase implements IScrollTarget {
         this.page.insertAfterMe(newPage);
     }
 
-    public runHeavyHitters(percent: number, exact: boolean) {
-        if (percent == null || percent < .1 || percent > 100) {
-            this.reportError("Percentage must be between .1 and 100");
+    protected runHeavyHitters(percent: number) {
+        if (percent == null || percent < HeavyHittersView.min || percent > 100) {
+            this.reportError("Percentage must be between " + HeavyHittersView.min.toString() + " and 100");
             return;
         }
+        let isApprox: boolean = true;
         let columns: IColumnDescription[] = [];
         let cso: ColumnSortOrientation[] = [];
         this.getSelectedColNames().forEach(v => {
@@ -864,11 +865,11 @@ export class TableView extends TableViewBase implements IScrollTarget {
             cso.push({columnDescription: colDesc, isAscending: true});
         });
         let order = new RecordOrder(cso);
-        let rr = this.createHeavyHittersRequest(columns, percent, this.getTotalRowCount(), exact);
-        rr.invoke(new HeavyHittersReceiver(this.getPage(), this, rr, columns, order, exact, percent));
+        let rr = this.createHeavyHittersRequest(columns, percent, this.getTotalRowCount());
+        rr.invoke(new HeavyHittersReceiver(this.getPage(), this, rr, columns, order, isApprox, percent));
     }
 
-    protected heavyHitters(exact: boolean): void {
+    protected heavyHittersDialog(): void {
         let title = "Frequent Elements from ";
         let cols: string[] = this.getSelectedColNames();
         if (cols.length <= 1) {
@@ -879,11 +880,12 @@ export class TableView extends TableViewBase implements IScrollTarget {
         let d = new Dialog(title, "Find the most frequent values in the selected columns.");
         d.addTextField("percent", "Threshold (%)", FieldKind.Double, "1",
             "All values that appear in the dataset with a frequency above this value (as a percent) " +
-            "will be considered frequent elements.  Must be a number between 0.1 and 100.");
+            "will be considered frequent elements.  Must be a number between " + HeavyHittersView.minString +
+            " and 100%.");
         d.setAction(() => {
             let amount = d.getFieldValueAsNumber("percent");
             if (amount != null)
-                this.runHeavyHitters(amount, exact)
+                this.runHeavyHitters(amount)
         });
         d.setCacheTitle("HeavyHittersDialog");
         d.show();
@@ -1096,45 +1098,23 @@ class QuantileReceiver extends OnCompleteRenderer<any[]> {
 /**
  * This method handles the outcome of the sketch for finding Heavy Hitters.
  */
-class HeavyHittersReceiver extends OnCompleteRenderer<TopList> {
+export class HeavyHittersReceiver extends OnCompleteRenderer<TopList> {
     public constructor(page: FullPage,
                        protected tv: TableView,
                        operation: ICancellable,
                        protected schema: IColumnDescription[],
                        protected order: RecordOrder,
-                       protected exact: boolean,
+                       protected isApprox: boolean,
                        protected percent: number) {
         super(page, operation, "Frequent Elements");
     }
 
     run(data: TopList): void {
         let newPage = new FullPage("Frequent Elements", "HeavyHitters", this.page);
-        let hhv = new HeavyHittersView(data, newPage, this.tv, this.schema, this.order, !this.exact, this.percent);
+        let hhv = new HeavyHittersView(data, newPage, this.tv, this.schema, this.order, this.isApprox, this.percent);
         newPage.setDataView(hhv);
         this.page.insertAfterMe(newPage);
         hhv.fill(data.top, this.elapsedMilliseconds());
-        if (data.top.rows.length == 0)
-            this.showEmptyDialog();
-    }
-
-    protected showEmptyDialog(): void {
-        let min: number = 0.1;
-        let minString: string = min.toString() + "%";
-        let percentDialog = new Dialog("No Frequent Elements found", "");
-        percentDialog.addText("No Elements found with frequency above " + this.percent.toString() + "%.");
-        if (this.percent > min) {
-            percentDialog.addText("Lower the threshold? Can take any value above " + minString);
-            percentDialog.addTextField("newPercent", "Threshold (%)", FieldKind.Double, min.toString(),
-                "All values that appear in the dataset with a frequency above this value (as a percent) " +
-                "will be considered frequent elements.  Must be at least " + minString);
-            percentDialog.setAction(() => {
-                let newPercent = percentDialog.getFieldValueAsNumber("newPercent");
-                if (newPercent != null)
-                    this.tv.runHeavyHitters(newPercent, false);
-            });
-        }
-        percentDialog.setCacheTitle("NoHeavyHittersDialog");
-        percentDialog.show();
     }
 }
 
