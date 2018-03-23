@@ -586,7 +586,7 @@ the current state of the display.
 
   ![Frequent elements menu](heavy-hitters-menu.png)
 
-  The user has to specify a percentage, between .1 (1/1000 of the
+  The user has to specify a percentage, between .01 (1/1000 of the
   data) and 100 (the whole data).  The result is all items whose frequency
   in the selected columns is above the threshold. the result is shown in a [heavy
   hitter view](#heavy-hitter-views).
@@ -681,12 +681,15 @@ threshold).
 The data is sorted in decreasing order of frequency.  Each row
 displays a combination of values and its count and relative frequency
 within the dataset.  A special value that may appear is "Everything else",
-which indicates the estimated number of rows that do not appear
-frequently enough to be above the chosen threshold.
+which indicates the total over all rows corresponding to elements  that do not appear
+frequently enough individually to be above the chosen threshold. This value only appears 
+if the total over all these rows is itself above the threshold.
 
-The following operations may be performed on a frequent elements view:
+There are two menu options offered from this view: [View as table](#View-as-a-table) and [Modify](#Modify).
 
-![Frequent elements view menu](heavy-hitters-view-menu.png)
+#### View as a Table
+Clicking this button gives the user two options:
+![View as a Table](heavy-hitters-tableMenu.png)
 
 * All frequent elements as table: switches back to a [table
   view](#table-views), but where the table only contains the rows
@@ -696,9 +699,26 @@ The following operations may be performed on a frequent elements view:
   view](#table-views), but where the table only contains the rows
   corresponding to the frequent values currently selected.
 
+#### Modify
+Clicking this button gives the user two options:
+![Modify](heavy-hitters-modifyMenu.png)
 * Get exact counts: runs a more expensive but more precise
   frequent elements computation which computes the exact frequency for
-  each value.
+  each value. This operation replaces the approximate counts in the display 
+  by the precise ones.
+  
+* Change the threshold: Recall the the user specifies a frequency threshold above 
+which elements are considered to be frequent. Clicking this menu pops up a dialog 
+box like the one shown below that allows the user to modify the threshold. This can 
+be useful to see a larger list for instance.
+
+
+![Change Threshold Dialog](heavy-hitters-changeThreshold.png)
+
+Note that if the threshold is set very low, then the number of results can be very large. HillView 
+only displays the 200 most frequent elements results, and alerts the user to the possible existence 
+of further frequent elements. These can be viewed using the All frequent elements option from the 
+ [View as a table](#view-as-a-table) menu option.
 
 ### Uni-dimensional histogram views
 
