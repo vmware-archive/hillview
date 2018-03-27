@@ -881,7 +881,7 @@ axes of a plot, then the screen is divided into small patches a few
 pixels wide and the number of data points that falls within each patch
 is counted.  The number of values that falls within each patch is
 displayed as a heatmap, where the color intensity indicates the number
-of points. The mapping between the color intencity and the count could be in log scale if the range is large or linear if the range is smaller. Next to the mouse an overlay box displays the x value, the y value and the count. A heatmap where the Y axis is not categorical will also
+of points. The mapping between the color intensity and the count could be in log scale if the range is large or linear if the range is smaller. Next to the mouse an overlay box displays the x value, the y value and the count. A heatmap where the Y axis is not categorical will also
 display a line that gives the best [linear
 regression](https://en.wikipedia.org/wiki/Linear_regression).  between
 the values in the two columns.
