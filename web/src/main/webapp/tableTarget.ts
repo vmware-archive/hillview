@@ -113,8 +113,8 @@ export class RemoteTableObject extends RemoteObject {
     public createHeavyHittersRequest(columns: IColumnDescription[],
                                      percent: number,
                                      totalRows: number,
-                                     exact: boolean): RpcRequest<PartialResult<TopList>> {
-        if (exact) {
+                                     threshold: number): RpcRequest<PartialResult<TopList>> {
+        if (percent < threshold) {
             return this.createStreamingRpcRequest<TopList>("heavyHittersMG",
                 {columns: columns, amount: percent,
                     totalRows: totalRows, seed: Seed.instance.get() });

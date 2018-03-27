@@ -271,7 +271,6 @@ export class Dialog implements IHtmlElement {
         fieldDiv.title = toolTip;
         fieldDiv.onmousedown = e => e.stopPropagation();
         this.fieldsDiv.appendChild(fieldDiv);
-
         let label = document.createElement("label");
         label.textContent = labelText;
         fieldDiv.appendChild(label);
@@ -325,6 +324,16 @@ export class Dialog implements IHtmlElement {
         fieldDiv.appendChild(input.getHTMLRepresentation());
 
         this.fields.set(fieldName, {html: input});
+    }
+
+    /**
+     * Adds a simple text to the dialog.
+     * @param textString  Text to show in the dialog.
+     * @returns           A reference to the HTML element holding the text.
+     */
+    public addText(textString: string): HTMLElement {
+        let fieldDiv = this.createRowContainer("message", textString, null);
+        return <HTMLElement>fieldDiv.children[0];
     }
 
     /**

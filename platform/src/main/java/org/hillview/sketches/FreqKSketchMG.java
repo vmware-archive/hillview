@@ -105,7 +105,7 @@ public class FreqKSketchMG implements ISketch<ITable, FreqKListMG> {
     }
 
     /**
-     * Creates the MG sketch, by the Misra-Gries algorithm.
+     * Creates the MG sketch, by the Misra-Gries algor  ithm.
      * @param data  Data to sketch.
      * @return A FreqKList.
      */

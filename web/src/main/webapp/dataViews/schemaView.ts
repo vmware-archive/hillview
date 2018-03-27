@@ -189,7 +189,7 @@ export class SchemaView extends TableViewBase {
         }, true);
         this.contextMenu.addItem({
             text: "Frequent Elements...",
-            action: () => this.heavyHitters(false),  // currently set to approximate
+            action: () => this.heavyHittersDialog(),
             help: "Find the values that occur most frequently in the selected columns."
         }, true);
         this.contextMenu.show(e);

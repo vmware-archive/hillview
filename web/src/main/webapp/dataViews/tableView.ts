@@ -1,3 +1,4 @@
+///<reference path="../tableTarget.ts"/>
 /*
  * Copyright (c) 2017 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
@@ -51,9 +52,9 @@ export class TableView extends TableViewBase implements IScrollTarget {
     protected order: RecordOrder;
     // Logical number of data rows displayed; includes count of each data row
     protected dataRowsDisplayed: number;
-    protected scrollBar : ScrollBar;
-    protected htmlTable : HTMLTableElement;
-    protected tHead : HTMLTableSectionElement;
+    protected scrollBar: ScrollBar;
+    protected htmlTable: HTMLTableElement;
+    protected tHead: HTMLTableSectionElement;
     protected tBody: HTMLTableSectionElement;
     protected currentData: NextKList;
     protected contextMenu: ContextMenu;
@@ -151,13 +152,14 @@ export class TableView extends TableViewBase implements IScrollTarget {
             return;
         }
         let dialog = new Dialog("Find", "Find a string/pattern");
-        dialog.addTextField("string", "String to search", FieldKind.String, null, "Ppattern to look for");
+        dialog.addTextField("string", "String to search", FieldKind.String, null, "Pattern to look for");
         dialog.addBooleanField("substring", "Match substrings", false,
             "If checked a substring will match.");
         dialog.addBooleanField("regex", "Treat as regular expression", false,
             "If true the string is treated as a regular expression");
         dialog.addBooleanField("caseSensitive", "case sensitive", true,
             "if checked search will match uppercase/lowercase exactly.");
+        dialog.setCacheTitle("FindMenu");
 
         dialog.setAction(() => this.search(dialog.getFieldValue("string"),
             dialog.getBooleanValue("regex"),
@@ -190,8 +192,9 @@ export class TableView extends TableViewBase implements IScrollTarget {
 
         let rr = this.createZipRequest(r);
         let o = this.order.clone();
-        let finalRenderer = (page: FullPage, operation: ICancellable) =>
-            { return new TableOperationCompleted(page, this.schema, operation, o, this.originalTableId); };
+        let finalRenderer = (page: FullPage, operation: ICancellable) => {
+            return new TableOperationCompleted(page, this.schema, operation, o, this.originalTableId);
+        };
         rr.invoke(new ZipReceiver(this.getPage(), rr, how, this.originalTableId, finalRenderer));
     }
 
@@ -213,7 +216,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
         } else {
             let o = this.order.clone();
             let rr = this.createQuantileRequest(this.currentData.rowCount, o, position);
-                console.log("expecting quantile: " + String(position));
+            console.log("expecting quantile: " + String(position));
             rr.invoke(new QuantileReceiver(this.getPage(), this, rr, o));
         }
     }
@@ -352,7 +355,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
 
     public static dropColumns(schema: Schema, filter: (IColumnDescription) => boolean): Schema {
         let cols: IColumnDescription[] = [];
-        for (let i=0; i < schema.length; i++) {
+        for (let i = 0; i < schema.length; i++) {
             let c = schema[i];
             if (!filter(c))
                 cols.push(c);
@@ -372,7 +375,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
     public isVisible(column: string): boolean {
         let so = this.getSortOrder(column);
         return so != null;
-     }
+    }
 
     public isAscending(column: string): boolean {
         let so = this.getSortOrder(column);
@@ -396,7 +399,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
             return "&uArr;";
     }
 
-    private addHeaderCell(thr: Node, cd: IColumnDescription, help: string) : HTMLElement {
+    private addHeaderCell(thr: Node, cd: IColumnDescription, help: string): HTMLElement {
         let thd = document.createElement("th");
         thd.classList.add("noselect");
         let label = cd.name;
@@ -412,7 +415,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
         return thd;
     }
 
-    public showColumns(order: number, first: boolean) : void {
+    public showColumns(order: number, first: boolean): void {
         // order is 0 to hide
         //         -1 to sort descending
         //          1 to sort ascending
@@ -441,7 +444,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
 
     public updateView(data: NextKList, revert: boolean,
                       order: RecordOrder, foundCount: number,
-                      elapsedMs: number) : void {
+                      elapsedMs: number): void {
         this.selectedColumns.clear();
         this.currentData = data;
         this.dataRowsDisplayed = 0;
@@ -452,8 +455,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
             let rowsDisplayed = 0;
             if (data.rows != null) {
                 data.rows.reverse();
-                rowsDisplayed = data.rows.map(r => r.count)
-                    .reduce( (a, b) => { return a + b; }, 0 );
+                rowsDisplayed = data.rows.map(r => r.count).reduce( (a, b) => {return a + b;}, 0 );
             }
             this.startPosition = this.rowCount - this.startPosition - rowsDisplayed;
             this.order = this.order.invert();
@@ -468,13 +470,15 @@ export class TableView extends TableViewBase implements IScrollTarget {
         let thr = this.tHead.appendChild(document.createElement("tr"));
 
         // These two columns are always shown
-        let cds : IColumnDescription[] = [];
+        let cds: IColumnDescription[] = [];
         let posCd: IColumnDescription = {
             kind: "Integer",
-            name: "(position)" };
+            name: "(position)"
+        };
         let ctCd: IColumnDescription = {
             kind: "Integer",
-            name: "(count)" };
+            name: "(count)"
+        };
 
         // Create column headers
         let thd = this.addHeaderCell(thr, posCd, "Position within sorted order.");
@@ -546,7 +550,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
                 }, selectedCount >= 2 && selectedCount <= 3);
                 this.contextMenu.addItem({
                     text: "Frequent Elements...",
-                    action: () => this.heavyHitters(false),  // currently set to approximate
+                    action: () => this.heavyHittersDialog(),  // switch between Sampling/MG based on HeavyHittersView.switchToMG
                     help: "Find the values that occur most frequently in the selected columns."
                 }, true);
                 this.contextMenu.addItem({
@@ -678,9 +682,9 @@ export class TableView extends TableViewBase implements IScrollTarget {
     private columnClick(colNum: number, e: MouseEvent): void {
         e.preventDefault();
         if (e.ctrlKey || e.metaKey)
-            this.selectedColumns.changeState( "Ctrl", colNum);
+            this.selectedColumns.changeState("Ctrl", colNum);
         else if (e.shiftKey)
-            this.selectedColumns.changeState( "Shift", colNum);
+            this.selectedColumns.changeState("Shift", colNum);
         else {
             if (e.button == 2) {
                 // right button
@@ -734,7 +738,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
         colNames.forEach((colName) => {
             if (!this.isNumericColumn(colName)) {
                 valid = false;
-                message += "\n  * Column '" + colName  + "' is not numeric.";
+                message += "\n  * Column '" + colName + "' is not numeric.";
             }
         });
 
@@ -746,7 +750,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
         let [valid, message] = this.checkNumericColumns(colNames);
         if (valid) {
             let pcaDialog = new Dialog("Principal Component Analysis",
-                "Projects a set of numeric columns to a smaller set of numeric columns while preserving the 'shape' "+
+                "Projects a set of numeric columns to a smaller set of numeric columns while preserving the 'shape' " +
                 " of the data as much as possible.");
             pcaDialog.addTextField("numComponents", "Number of components", FieldKind.Integer, "2",
                 "Number of dimensions to project to.  Must be an integer bigger than 1 and " +
@@ -814,7 +818,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
         if (this.startPosition == null || this.rowCount == null)
             return;
         if (this.rowCount <= 0 || this.dataRowsDisplayed <= 0)
-            // we show everything
+        // we show everything
             this.setScroll(0, 1);
         else
             this.setScroll(this.startPosition / this.rowCount,
@@ -825,7 +829,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
         return this.tBody.childNodes.length;
     }
 
-    public getColumnCount() : number {
+    public getColumnCount(): number {
         return this.schema.length;
     }
 
@@ -855,7 +859,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
             return val.toString();  // TODO
     }
 
-    public addRow(row : RowSnapshot, cds: IColumnDescription[]) : void {
+    public addRow(row: RowSnapshot, cds: IColumnDescription[]): void {
         let trow = this.tBody.insertRow();
 
         let position = this.startPosition + this.dataRowsDisplayed;
@@ -883,7 +887,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
             if (this.isVisible(cd.name)) {
                 let value = row.values[dataIndex];
 
-                let cellValue : string;
+                let cellValue: string;
                 if (value == null) {
                     cell.classList.add("missingData");
                     cellValue = "missing";
@@ -932,7 +936,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
         this.dataRowsDisplayed += row.count;
     }
 
-    public setScroll(top: number, bottom: number) : void {
+    public setScroll(top: number, bottom: number): void {
         this.scrollBar.setPosition(top, bottom);
     }
 

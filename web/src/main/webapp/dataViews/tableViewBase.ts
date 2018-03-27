@@ -357,32 +357,33 @@ export abstract class TableViewBase extends RemoteTableObjectView {
         o.addColumn(so);
 
         let rr = this.createFilterComparisonRequest(filter);
-        let title = "Filtered: " + filter.column + " is " +
-            filter.comparison + TableView.convert(filter.compareValue, kind);
+        let title = "Filtered: " +
+            TableView.convert(filter.compareValue, kind) + " " + filter.comparison + " " + filter.column;
 
         let newPage = new FullPage(title, "Table", this.page);
         this.page.insertAfterMe(newPage);
         rr.invoke(new TableOperationCompleted(newPage, this.schema, rr, o, this.originalTableId))
     }
 
-    protected runHeavyHitters(percent: number, exact: boolean) {
-        if (percent == null || percent < .1 || percent > 100) {
-            this.reportError("Percentage must be between .1 and 100");
+    protected runHeavyHitters(percent: number) {
+        if (percent == null || percent < HeavyHittersView.min || percent > 100) {
+            this.reportError("Percentage must be between " + HeavyHittersView.min.toString() + " and 100");
             return;
         }
+        let isApprox: boolean = true;
         let columns: IColumnDescription[] = [];
-        let cso : ColumnSortOrientation[] = [];
+        let cso: ColumnSortOrientation[] = [];
         this.getSelectedColNames().forEach(v => {
             let colDesc = TableView.findColumn(this.schema, v);
             columns.push(colDesc);
-            cso.push({ columnDescription: colDesc, isAscending: true });
+            cso.push({columnDescription: colDesc, isAscending: true});
         });
         let order = new RecordOrder(cso);
-        let rr = this.createHeavyHittersRequest(columns, percent, this.getTotalRowCount(), exact);
-        rr.invoke(new HeavyHittersReceiver(this.getPage(), this, rr, columns, order, exact, percent));
+        let rr = this.createHeavyHittersRequest(columns, percent, this.getTotalRowCount(), HeavyHittersView.switchToMG);
+        rr.invoke(new HeavyHittersReceiver(this.getPage(), this, rr, columns, order, isApprox, percent));
     }
 
-    protected heavyHitters(exact: boolean): void {
+    protected heavyHittersDialog(): void {
         let title = "Frequent Elements from ";
         let cols: string[] = this.getSelectedColNames();
         if (cols.length <= 1) {
@@ -393,11 +394,12 @@ export abstract class TableViewBase extends RemoteTableObjectView {
         let d = new Dialog(title, "Find the most frequent values in the selected columns.");
         d.addTextField("percent", "Threshold (%)", FieldKind.Double, "1",
             "All values that appear in the dataset with a frequency above this value (as a percent) " +
-            "will be considered frequent elements.  Must be a number between 0.1 and 100.");
+            "will be considered frequent elements.  Must be a number between " + HeavyHittersView.minString +
+            " and 100%.");
         d.setAction(() => {
             let amount = d.getFieldValueAsNumber("percent");
             if (amount != null)
-                this.runHeavyHitters(amount, exact)
+                this.runHeavyHitters(amount)
         });
         d.setCacheTitle("HeavyHittersDialog");
         d.show();
@@ -446,8 +448,11 @@ class EqualityFilterDialog extends Dialog {
 }
 
 class ComparisonFilterDialog extends Dialog {
+    private explanation: HTMLElement;
+
     constructor(private columnDescription: IColumnDescription, private schema: Schema) {
-        super("Compare", "Keep rows where (row[Column] Compare value) is true");
+        super("Compare", "Compare values");
+        this.explanation = this.addText("Value == row[Column]");
 
         if (columnDescription == null) {
             let cols = this.schema.map(c => c.name);
@@ -456,52 +461,56 @@ class ComparisonFilterDialog extends Dialog {
             let col = this.addSelectField("column", "Column", cols, null, "Column that is filtered");
             col.onchange = () => this.selectionChanged();
         }
-        this.addTextField("query", "Value:", FieldKind.String, null, "Value to compare");
+        let val = this.addTextField("value", "Value", FieldKind.String, "?", "Value to compare");
+        val.onchange = () => this.selectionChanged();
         let op = this.addSelectField("operation", "Compare", ["==", "!=", "<", ">", "<=", ">="], "<",
             "Operation that is used to compare; the value is used at the right in the comparison.");
         op.onchange = () => this.selectionChanged();
     }
 
     protected selectionChanged(): void {
-        let filter = this.getFilter();
+        this.explanation.textContent = this.getFieldValue("value") + " " +
+            this.getFieldValue("operation") +
+            " row[" + this.getFieldValue("column") + "]";
     }
 
     public getFilter(): ComparisonFilterDescription {
-        let textQuery: string = this.getFieldValue("query");
+        let value: string = this.getFieldValue("value");
         if (this.columnDescription == null) {
             let colName = this.getFieldValue("column");
             this.columnDescription = TableView.findColumn(this.schema, colName);
         }
         if (this.columnDescription.kind == "Date") {
-            let date = new Date(textQuery);
-            textQuery = Converters.doubleFromDate(date).toString();
+            let date = new Date(value);
+            value = Converters.doubleFromDate(date).toString();
         }
         let comparison = <Comparison>this.getFieldValue("operation");
         return {
             column: this.columnDescription.name,
-            compareValue: textQuery,
+            compareValue: value,
             comparison: comparison
         };
     }
 }
 
+
 /**
  * This method handles the outcome of the sketch for finding Heavy Hitters.
  */
-class HeavyHittersReceiver extends OnCompleteRenderer<TopList> {
+export class HeavyHittersReceiver extends OnCompleteRenderer<TopList> {
     public constructor(page: FullPage,
                        protected tv: TableViewBase,
                        operation: ICancellable,
                        protected schema: IColumnDescription[],
                        protected order: RecordOrder,
-                       protected exact: boolean,
+                       protected isApprox: boolean,
                        protected percent: number) {
         super(page, operation, "Frequent Elements");
     }
 
     run(data: TopList): void {
         let newPage = new FullPage("Frequent Elements", "HeavyHitters", this.page);
-        let hhv = new HeavyHittersView(data, newPage, this.tv, this.schema, this.order, !this.exact, this.percent);
+        let hhv = new HeavyHittersView(data, newPage, this.tv, this.schema, this.order, this.isApprox, this.percent);
         newPage.setDataView(hhv);
         this.page.insertAfterMe(newPage);
         hhv.fill(data.top, this.elapsedMilliseconds());
