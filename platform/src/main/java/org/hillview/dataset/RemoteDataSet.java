@@ -295,7 +295,8 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
         public PartialResult<S> processResponse(final PartialResponse response) {
             final OperationResponse op = SerializationUtils.deserialize(response
                     .getSerializedOp().toByteArray());
-            return (PartialResult<S>) Converters.checkNull(op.result);
+            assert op.result != null;
+            return (PartialResult<S>)op.result;
         }
     }
 

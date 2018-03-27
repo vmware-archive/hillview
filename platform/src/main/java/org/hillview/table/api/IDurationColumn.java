@@ -29,14 +29,17 @@ public interface IDurationColumn extends IColumn {
     default double asDouble(final int rowIndex, final IStringConverter unused) {
         assert !this.isMissing(rowIndex);
         final Duration tmp = this.getDuration(rowIndex);
-        return Converters.toDouble(Converters.checkNull(tmp));
+        assert tmp != null;
+        return Converters.toDouble(tmp);
     }
 
     @Nullable
     @Override
     default String asString(final int rowIndex) {
         assert !this.isMissing(rowIndex);
-        return Converters.checkNull(this.getDuration(rowIndex)).toString();
+        Duration iv = this.getDuration(rowIndex);
+        assert iv != null;
+        return iv.toString();
     }
 
     @Override
@@ -53,8 +56,11 @@ public interface IDurationColumn extends IColumn {
                 } else if (jMissing) {
                     return -1;
                 } else {
-                    return Converters.checkNull(IDurationColumn.this.getDuration(i)).
-                            compareTo(Converters.checkNull(IDurationColumn.this.getDuration(j)));
+                    Duration di = IDurationColumn.this.getDuration(i);
+                    Duration dj = IDurationColumn.this.getDuration(j);
+                    assert di != null;
+                    assert dj != null;
+                    return di.compareTo(dj);
                 }
             }
         };

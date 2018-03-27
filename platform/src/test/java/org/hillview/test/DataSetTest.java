@@ -47,7 +47,9 @@ public class DataSetTest extends BaseTest {
 
         @Override
         public Integer add(@Nullable final Integer left, @Nullable final Integer right) {
-            return Converters.checkNull(left) + Converters.checkNull(right);
+            Assert.assertNotNull(left);
+            Assert.assertNotNull(right);
+            return left + right;
         }
 
         @Override

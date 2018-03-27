@@ -19,6 +19,8 @@
  * This file contains various useful functions and classes.
  */
 
+export type Comparison = "==" | "!=" | "<" | ">" | "<=" | ">=";
+
 export interface Pair<T1, T2> {
     first: T1;
     second: T2;

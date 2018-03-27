@@ -19,7 +19,6 @@ package org.hillview.table.columns;
 
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.IAppendableColumn;
-import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.time.Duration;
@@ -101,7 +100,7 @@ public abstract class BaseListColumn extends BaseColumn implements IAppendableCo
 
     @Override
     public void appendMissing() {
-        Converters.checkNull(this.missing);
+        assert this.missing != null;
         final int segmentId = this.size >> LogSegmentSize;
         final int localIndex = this.size & SegmentMask;
         if (this.missing.size() <= segmentId) {

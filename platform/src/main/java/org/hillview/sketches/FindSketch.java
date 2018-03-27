@@ -29,8 +29,6 @@ import org.hillview.table.api.ITable;
 import org.hillview.table.filters.StringFilterDescription;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.VirtualRowSnapshot;
-import org.hillview.utils.Converters;
-
 import javax.annotation.Nullable;
 
 public class FindSketch implements ISketch<ITable, FindSketch.Result> {
@@ -151,6 +149,8 @@ public class FindSketch implements ISketch<ITable, FindSketch.Result> {
     @Nullable
     @Override
     public Result add(@Nullable Result left, @Nullable Result right) {
-        return Converters.checkNull(left).add(Converters.checkNull(right), this.recordOrder);
+        assert left != null;
+        assert right != null;
+        return left.add(right, this.recordOrder);
     }
 }

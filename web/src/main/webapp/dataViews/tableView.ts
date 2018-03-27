@@ -19,7 +19,7 @@ import {Renderer, OnCompleteRenderer} from "../rpc";
 import {TopMenu, SubMenu, ContextMenu} from "../ui/menu";
 import {
     Converters, PartialResult, ICancellable, percent, formatNumber, significantDigits,
-    formatDate
+    formatDate, Comparison
 } from "../util";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {ColumnConverter, ConverterDialog} from "./columnConverter";
@@ -29,19 +29,17 @@ import {FullPage} from "../ui/fullPage";
 import {missingHtml} from "../ui/ui";
 import {SelectionStateMachine} from "../ui/selectionStateMachine";
 
-import {HeavyHittersView} from "./heavyHittersView";
 import {SchemaView} from "./schemaView";
-//import {LAMPDialog} from "./lampView";
 import {
     IColumnDescription, RecordOrder, RowSnapshot, Schema,
-    ContentsKind, asContentsKind, ColumnSortOrientation, NextKList,
-    TopList, CombineOperators, TableSummary, RemoteObjectId, allContentsKind,
-    CreateColumnInfo, FindResult
+    ContentsKind, asContentsKind, NextKList,
+    CombineOperators, TableSummary, RemoteObjectId, FindResult, ComparisonFilterDescription
 } from "../javaBridge";
 import {RemoteTableObject, RemoteTableRenderer, ZipReceiver} from "../tableTarget";
 import {combineMenu, SelectedObject} from "../selectedObject";
 import {IDataView} from "../ui/dataview";
 import {TableViewBase} from "./tableViewBase";
+//import {LAMPDialog} from "./lampView";
 
 /**
  * Displays a table in the browser.
@@ -50,8 +48,6 @@ export class TableView extends TableViewBase implements IScrollTarget {
     // Data view part: received from remote site
     // Logical position of first row displayed
     protected startPosition?: number;
-    // Total rows in the table
-    protected rowCount?: number;
     protected order: RecordOrder;
     // Logical number of data rows displayed; includes count of each data row
     protected dataRowsDisplayed: number;
@@ -112,9 +108,17 @@ export class TableView extends TableViewBase implements IScrollTarget {
             },
             this.chartMenu(),
             {
-                text: "Find", help: "Search a specific string in the visible columns", subMenu: new SubMenu([
-                    { text: "String", help: "Search for a string", action: () => this.find(false) },
-                    { text: "Regular expression", help: "Search for a regular expression", action: () => this.find(true) },
+                text: "Filter", help: "Search specific values",
+                subMenu: new SubMenu([{
+                    text: "Find...",
+                    help: "Search for a string in the visible columns",
+                    action: () => this.find() }, {
+                    text: "Filter...",
+                    help: "Filter rows that contain a specific value",
+                    action: () => this.showFilterDialog(null, this.order) }, {
+                    text: "Compare...",
+                    help: "Filter rows by comparing with a specific value",
+                    action: () => this.showCompareDialog(null, this.order) },
                 ])
             },
             combineMenu(this, page.pageId)
@@ -141,16 +145,24 @@ export class TableView extends TableViewBase implements IScrollTarget {
         this.topLevel.appendChild(this.messageBox);
     }
 
-    find(regex: boolean): void {
-        let kind = regex ? "regular expression" : "string";
-        let dialog = new Dialog("Find", "Search for a " + kind);
-        dialog.addTextField("string", "string to search", FieldKind.String, null, (regex ? "pattern" : "string") + " to look for");
-        dialog.addBooleanField("substring", "match substrings", false,
+    find(): void {
+        if (this.order.length() == 0) {
+            this.reportError("Find operates in the displayed column, but no column is currently visible.");
+            return;
+        }
+        let dialog = new Dialog("Find", "Find a string/pattern");
+        dialog.addTextField("string", "String to search", FieldKind.String, null, "Ppattern to look for");
+        dialog.addBooleanField("substring", "Match substrings", false,
             "If checked a substring will match.");
+        dialog.addBooleanField("regex", "Treat as regular expression", false,
+            "If true the string is treated as a regular expression");
         dialog.addBooleanField("caseSensitive", "case sensitive", true,
             "if checked search will match uppercase/lowercase exactly.");
-        dialog.setAction(() => this.search(dialog.getFieldValue("string"), regex,
-            dialog.getBooleanValue("substring"), dialog.getBooleanValue("caseSensitive")));
+
+        dialog.setAction(() => this.search(dialog.getFieldValue("string"),
+            dialog.getBooleanValue("regex"),
+            dialog.getBooleanValue("substring"),
+            dialog.getBooleanValue("caseSensitive")));
         dialog.show();
     }
 
@@ -285,7 +297,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
         let o = this.order.clone();
         for (let i = 0; i < this.schema.length; i++) {
             let c = this.schema[i];
-            o.showIfNotVisible({ columnDescription: c, isAscending: true });
+            o.addColumnIfNotVisible({ columnDescription: c, isAscending: true });
         }
         this.setOrder(o);
     }
@@ -330,6 +342,8 @@ export class TableView extends TableViewBase implements IScrollTarget {
     }
 
     public static findColumn(schema: Schema, colName: string): IColumnDescription {
+        if (colName == null)
+            return null;
         let colIndex = TableView.columnIndex(schema, colName);
         if (colIndex != null)
             return schema[colIndex];
@@ -410,7 +424,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
                 if (first)
                     o.sortFirst({columnDescription: col, isAscending: order > 0});
                 else
-                    o.show({columnDescription: col, isAscending: order > 0});
+                    o.addColumn({columnDescription: col, isAscending: order > 0});
             } else
                 o.hide(colName);
         });
@@ -553,8 +567,20 @@ export class TableView extends TableViewBase implements IScrollTarget {
                     */
                 this.contextMenu.addItem({
                     text: "Filter...",
-                    action: () => this.equalityFilter(cd.name, null, true, this.order, null),
-                    help: "Eliminate data that matches/does not match a specific value in a selected column."
+                    action: () => {
+                        let colName = this.getSelectedColNames()[0];
+                        let cd = TableView.findColumn(this.schema, colName);
+                        this.showFilterDialog(cd.name, this.order);
+                    },
+                    help: "Eliminate data that matches/does not match a specific value."
+                }, selectedCount == 1);
+                this.contextMenu.addItem({
+                    text: "Compare...",
+                    action: () => {
+                        let colName = this.getSelectedColNames()[0];
+                        this.showCompareDialog(colName, this.order);
+                    },
+                    help : "Eliminate data that matches/does not match a specific value."
                 }, selectedCount == 1);
                 this.contextMenu.addItem({
                     text: "Convert...",
@@ -563,7 +589,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
                 }, selectedCount == 1);
                 this.contextMenu.addItem({
                     text: "Create column...",
-                    action: () => this.addColumn(),
+                    action: () => this.addColumn(this.order),
                     help: "Add a new column computed from the selected columns."
                 }, true);
                 this.contextMenu.show(e);
@@ -604,48 +630,19 @@ export class TableView extends TableViewBase implements IScrollTarget {
         this.page.reportTime(elapsedMs);
     }
 
-    addColumn(): void {
-        let dialog = new Dialog(
-            "Add column", "Specify a JavaScript function which computes the values in a new column.");
-        dialog.addTextField(
-            "outColName", "Column name", FieldKind.String, null, "Name to use for the generated column.");
-        dialog.addSelectField(
-            "outColKind", "Data type", allContentsKind, "Category", "Type of data in the generated column.");
-        dialog.addMultiLineTextField("function", "Function",
-            "function map(row) {", "  return row['col'];", "}",
-            "A JavaScript function that computes the values for each row of the generated column." +
-            "The function has a single argument 'row'.  The row is a JavaScript map that can be indexed with " +
-            "a column name (a string) and which produces a value.");
-        dialog.setCacheTitle("CreateDialog");
-        dialog.setAction(() => this.createColumn(dialog));
-        dialog.show();
-    }
-
-    createColumn(dialog: Dialog): void {
-        let col = dialog.getFieldValue("outColName");
-        let kind = dialog.getFieldValue("outColKind");
-        let fun = "function map(row) {" + dialog.getFieldValue("function") + "}";
-        let selColumns = this.getSelectedColNames();
-        let subSchema = TableView.dropColumns(this.schema, c => (selColumns.indexOf(c) < 0));
-        let arg: CreateColumnInfo = {
-            jsFunction: fun,
-            outputColumn: col,
-            outputKind: asContentsKind(kind),
-            schema: subSchema
+    filterOnValue(colName: string, value: string, comparison: Comparison): void {
+        let cd = TableView.findColumn(this.schema, colName);
+        if (value != null && cd.kind == "Date") {
+            // Parse the date in Javascript; the Java Date parser is very bad
+            let date = new Date(value);
+            value = Converters.doubleFromDate(date).toString();
+        }
+        let cfd: ComparisonFilterDescription = {
+            column: colName,
+            compareValue: value,
+            comparison: comparison,
         };
-        let rr = this.createCreateColumnRequest(arg);
-        let newPage = new FullPage("New column " + col, "Table", this.page);
-        this.page.insertAfterMe(newPage);
-        let cd: IColumnDescription = {
-            kind: arg.outputKind,
-            name: col
-        };
-        let schema = this.schema.concat(cd);
-        let o = this.order.clone();
-        o.show({columnDescription: cd, isAscending: true});
-        let rec = new TableOperationCompleted(
-            newPage, schema, rr, this.order, this.originalTableId);
-        rr.invoke(rec);
+        this.runComparisonFilter(cfd, this.order);
     }
 
     /**
@@ -824,10 +821,6 @@ export class TableView extends TableViewBase implements IScrollTarget {
                 (this.startPosition + this.dataRowsDisplayed) / this.rowCount);
     }
 
-    public getTotalRowCount() : number {
-        return this.rowCount;
-    }
-
     public getRowCount() : number {
         return this.tBody.childNodes.length;
     }
@@ -842,44 +835,6 @@ export class TableView extends TableViewBase implements IScrollTarget {
             newPage, this.schema, this.rowCount, 0);
         newPage.setDataView(sv);
         this.page.insertAfterMe(newPage);
-    }
-
-    protected runHeavyHitters(percent: number, exact: boolean) {
-        if (percent == null || percent < .1 || percent > 100) {
-            this.reportError("Percentage must be between .1 and 100");
-            return;
-        }
-        let columns: IColumnDescription[] = [];
-        let cso : ColumnSortOrientation[] = [];
-        this.getSelectedColNames().forEach(v => {
-            let colDesc = TableView.findColumn(this.schema, v);
-            columns.push(colDesc);
-            cso.push({ columnDescription: colDesc, isAscending: true });
-        });
-        let order = new RecordOrder(cso);
-        let rr = this.createHeavyHittersRequest(columns, percent, this.getTotalRowCount(), exact);
-        rr.invoke(new HeavyHittersReceiver(this.getPage(), this, rr, columns, order, exact, percent));
-    }
-
-    protected heavyHitters(exact: boolean): void {
-        let title = "Frequent Elements from ";
-        let cols: string[] = this.getSelectedColNames();
-        if (cols.length <= 1) {
-            title += " " + cols[0];
-        } else {
-            title += cols.length + " columns";
-        }
-        let d = new Dialog(title, "Find the most frequent values in the selected columns.");
-        d.addTextField("percent", "Threshold (%)", FieldKind.Double, "1",
-            "All values that appear in the dataset with a frequency above this value (as a percent) " +
-            "will be considered frequent elements.  Must be a number between 0.1 and 100.");
-        d.setAction(() => {
-            let amount = d.getFieldValueAsNumber("percent");
-            if (amount != null)
-                this.runHeavyHitters(amount, exact)
-        });
-        d.setCacheTitle("HeavyHittersDialog");
-        d.show();
     }
 
     /**
@@ -940,13 +895,32 @@ export class TableView extends TableViewBase implements IScrollTarget {
                 cell.title = "Right click will popup a menu.";
                 cell.oncontextmenu = e => {
                     this.contextMenu.clear();
+                    // This menu shows the value to the right, but the filter
+                    // takes the value to the left, so we have to flip all
+                    // comparison signs.
                     this.contextMenu.addItem({text: "Filter for " + cellValue,
-                        action: () => this.equalityFilter(cd.name, value, false, this.order, false),
+                        action: () => this.filterOnValue(cd.name, value, "=="),
                         help: "Keep only the rows that have this value in this column."
                     }, true);
-                    this.contextMenu.addItem({text: "Filter for not " + cellValue,
-                        action: () => this.equalityFilter(cd.name, value, false, this.order, true),
+                    this.contextMenu.addItem({text: "Filter for different from " + cellValue,
+                        action: () => this.filterOnValue(cd.name, value, "!="),
                         help: "Keep only the rows that have a different value in this column."
+                    }, true);
+                    this.contextMenu.addItem({text: "Filter for < " + cellValue,
+                        action: () => this.filterOnValue(cd.name, value, ">"),
+                        help: "Keep only the rows that have a a smaller value in this column."
+                    }, true);
+                    this.contextMenu.addItem({text: "Filter for > " + cellValue,
+                        action: () => this.filterOnValue(cd.name, value, "<"),
+                        help: "Keep only the rows that have a larger value in this column."
+                    }, true);
+                    this.contextMenu.addItem({text: "Filter for <= " + cellValue,
+                        action: () => this.filterOnValue(cd.name, value, ">="),
+                        help: "Keep only the rows that have a smaller or equal value in this column."
+                    }, true);
+                    this.contextMenu.addItem({text: "Filter for >= " + cellValue,
+                        action: () => this.filterOnValue(cd.name, value, "<="),
+                        help: "Keep only the rows that have a larger or equal in this column."
                     }, true);
                     this.contextMenu.show(e);
                 };
@@ -1081,29 +1055,6 @@ class QuantileReceiver extends OnCompleteRenderer<any[]> {
         let rr = this.tv.createNextKRequest(this.order, firstRow);
         rr.chain(this.operation);
         rr.invoke(new NextKReceiver(this.page, this.tv, rr, false, this.order, null));
-    }
-}
-
-/**
- * This method handles the outcome of the sketch for finding Heavy Hitters.
- */
-class HeavyHittersReceiver extends OnCompleteRenderer<TopList> {
-     public constructor(page: FullPage,
-                        protected tv: TableView,
-                        operation: ICancellable,
-                        protected schema: IColumnDescription[],
-                        protected order: RecordOrder,
-                        protected exact: boolean,
-                        protected percent: number) {
-        super(page, operation, "Frequent Elements");
-    }
-
-    run(data: TopList): void {
-        let newPage = new FullPage("Frequent Elements", "HeavyHitters", this.page);
-        let hhv = new HeavyHittersView(data, newPage, this.tv, this.schema, this.order, !this.exact, this.percent);
-        newPage.setDataView(hhv);
-        this.page.insertAfterMe(newPage);
-        hhv.fill(data.top, this.elapsedMilliseconds());
     }
 }
 

@@ -22,7 +22,6 @@ import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.io.ByteOrderMark;
 import org.apache.commons.io.input.BOMInputStream;
 import org.hillview.table.api.IAppendableColumn;
-import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Utilities;
 
@@ -120,7 +119,7 @@ public abstract class TextFileLoader implements IFileLoader {
 
     protected void append(String[] data) {
         try {
-            Converters.checkNull(this.columns);
+            assert this.columns != null;
             int columnCount = this.columns.length;
             this.currentColumn = 0;
             if (data.length > columnCount)

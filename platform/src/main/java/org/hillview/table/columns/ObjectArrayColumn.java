@@ -53,16 +53,21 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
             case Category:
             case Json:
             case String:
-                IStringConverter c = Converters.checkNull(converter);
-                return c.asDouble(Converters.checkNull(this.getString(rowIndex)));
+                assert converter != null;
+                String str = this.getString(rowIndex);
+                return converter.asDouble(str);
             case Date:
-                return Converters.toDouble(Converters.checkNull(this.getDate(rowIndex)));
+                Instant date = this.getDate(rowIndex);
+                assert date != null;
+                return Converters.toDouble(date);
             case Integer:
                 return this.getInt(rowIndex);
             case Double:
                 return this.getDouble(rowIndex);
             case Duration:
-                return Converters.toDouble(Converters.checkNull(this.getDuration(rowIndex)));
+                Duration duration = this.getDuration(rowIndex);
+                assert duration != null;
+                return Converters.toDouble(duration);
             default:
                 throw new RuntimeException("Unexpected data type");
         }
@@ -91,20 +96,29 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
                         case Json:
                         case Category:
                         case String:
-                            return Converters.checkNull(ObjectArrayColumn.this.getString(i)).compareTo(
-                                    Converters.checkNull(ObjectArrayColumn.this.getString(j)));
+                            String si = ObjectArrayColumn.this.getString(i);
+                            String sj = ObjectArrayColumn.this.getString(j);
+                            assert si != null;
+                            assert sj != null;
+                            return si.compareTo(sj);
                         case Date:
-                            return Converters.checkNull(ObjectArrayColumn.this.getDate(i)).compareTo(
-                                    Converters.checkNull(ObjectArrayColumn.this.getDate(j)));
+                            Instant ii = ObjectArrayColumn.this.getDate(i);
+                            Instant ij = ObjectArrayColumn.this.getDate(j);
+                            assert ii != null;
+                            assert ij != null;
+                            return ii.compareTo(ij);
                         case Integer:
-                            return Integer.compare(Converters.checkNull(ObjectArrayColumn.this.getInt(i)),
-                                    Converters.checkNull(ObjectArrayColumn.this.getInt(j)));
+                            return Integer.compare(ObjectArrayColumn.this.getInt(i),
+                                    ObjectArrayColumn.this.getInt(j));
                         case Double:
-                            return Double.compare(Converters.checkNull(ObjectArrayColumn.this.getDouble(i)),
-                                    Converters.checkNull(ObjectArrayColumn.this.getDouble(j)));
+                            return Double.compare(ObjectArrayColumn.this.getDouble(i),
+                                    ObjectArrayColumn.this.getDouble(j));
                         case Duration:
-                            return Converters.checkNull(ObjectArrayColumn.this.getDuration(i)).
-                                    compareTo(Converters.checkNull(ObjectArrayColumn.this.getDuration(j)));
+                            Duration di = ObjectArrayColumn.this.getDuration(i);
+                            Duration dj = ObjectArrayColumn.this.getDuration(j);
+                            assert di != null;
+                            assert dj != null;
+                            return di.compareTo(dj);
                         default:
                             throw new RuntimeException("Unexpected data type");
                     }
@@ -192,17 +206,21 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
             case Category:
             case Json:
             case String:
-                return hash.hashChars(Converters.checkNull(this.getString(rowIndex)));
+                String str = this.getString(rowIndex);
+                assert str != null;
+                return hash.hashChars(str);
             case Date:
-                return hash.hashLong(Double.doubleToLongBits(Converters.toDouble(
-                        Converters.checkNull(this.getDate(rowIndex)))));
+                Instant inst = this.getDate(rowIndex);
+                assert inst != null;
+                return hash.hashLong(Double.doubleToLongBits(Converters.toDouble(inst)));
             case Integer:
                 return hash.hashInt(this.getInt(rowIndex));
             case Double:
                 return hash.hashLong(Double.doubleToLongBits(this.getDouble(rowIndex)));
             case Duration:
-                return hash.hashLong(Double.doubleToLongBits(Converters.toDouble(
-                        Converters.checkNull(this.getDuration(rowIndex)))));
+                Duration d = this.getDuration(rowIndex);
+                assert d != null;
+                return hash.hashLong(Double.doubleToLongBits(Converters.toDouble(d)));
             default:
                 throw new RuntimeException("Unexpected data type");
         }

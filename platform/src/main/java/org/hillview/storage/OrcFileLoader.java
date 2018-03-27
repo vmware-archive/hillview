@@ -71,7 +71,8 @@ public class OrcFileLoader extends TextFileLoader {
     }
 
     private boolean[] project(List<String> columns) {
-        List<String> fields = Converters.checkNull(this.schema).getFieldNames();
+        assert this.schema != null;
+        List<String> fields = this.schema.getFieldNames();
         boolean[] toInclude = new boolean[fields.size() + 1];
         // 1 for the Category.STRUCT TypeDescription, which has index 0.
         // This does not seem to be documented in the Orc file format...
@@ -176,29 +177,72 @@ public class OrcFileLoader extends TextFileLoader {
                     break;
                 case BYTE:
                 case SHORT:
-                case INT: {
-                    LongColumnVector lcv = (LongColumnVector) vec;
-                    long l = lcv.vector[row];
-                    to.append((int) l);
-                    break;
-                }
+                case INT:
                 case LONG: {
                     LongColumnVector lcv = (LongColumnVector) vec;
                     long l = lcv.vector[row];
-                    to.append((double)l);
+                    switch (to.getKind()) {
+                        case None:
+                        case Category:
+                        case Date:
+                        case Duration:
+                            throw new RuntimeException("Cannot convert long to " + to.getKind());
+                        case Json:
+                        case String:
+                            to.append(Long.toString(l));
+                            break;
+                        case Integer:
+                            to.append((int) l);
+                            break;
+                        case Double:
+                            to.append((double) l);
+                            break;
+                    }
                     break;
                 }
                 case FLOAT:
                 case DOUBLE: {
                     DoubleColumnVector dcv = (DoubleColumnVector) vec;
                     double d = dcv.vector[row];
-                    to.append(d);
+                    switch (to.getKind()) {
+                        case None:
+                        case Category:
+                        case Date:
+                        case Duration:
+                            throw new RuntimeException("Cannot convert double to " + to.getKind());
+                        case Json:
+                        case String:
+                            to.append(Double.toString(d));
+                            break;
+                        case Integer:
+                            to.append((int)d);
+                            break;
+                        case Double:
+                            to.append(d);
+                            break;
+                    }
                     break;
                 }
                 case STRING: {
                     BytesColumnVector bcv = (BytesColumnVector) vec;
                     String str = new String(bcv.vector[row], bcv.start[row], bcv.length[row]);
-                    to.append(str);
+                    switch (to.getKind()) {
+                        case None:
+                        case Date:
+                        case Duration:
+                            throw new RuntimeException("Cannot convert string to " + to.getKind());
+                        case Category:
+                        case Json:
+                        case String:
+                            to.append(str);
+                            break;
+                        case Integer:
+                            to.append(Integer.parseInt(str));
+                            break;
+                        case Double:
+                            to.append(Double.parseDouble(str));
+                            break;
+                    }
                     break;
                 }
                 case DATE: {
@@ -208,7 +252,24 @@ public class OrcFileLoader extends TextFileLoader {
                     // Dates do not have hours/minutes, just a number of days
                     Instant instant = Instant.ofEpochSecond(0);
                     Instant value = instant.plus(l, ChronoUnit.DAYS);
-                    to.append(value);
+                    switch (to.getKind()) {
+                        case None:
+                        case Integer:
+                        case Duration:
+                            throw new RuntimeException("Cannot convert ORC date to "
+                                    + to.getKind());
+                        case Category:
+                        case Json:
+                        case String:
+                            to.append(value.toString());
+                            break;
+                        case Double:
+                            to.append(Converters.toDouble(value));
+                            break;
+                        case Date:
+                            to.append(value);
+                            break;
+                    }
                     break;
                 }
                 case TIMESTAMP: {
@@ -217,7 +278,24 @@ public class OrcFileLoader extends TextFileLoader {
                     int nanos = tcv.nanos[row];
                     Instant instant = Instant.ofEpochMilli(time);
                     instant = instant.plusNanos(nanos);
-                    to.append(instant);
+                    switch (to.getKind()) {
+                        case None:
+                        case Integer:
+                        case Duration:
+                            throw new RuntimeException("Cannot convert ORC timestamp to "
+                                    + to.getKind());
+                        case Category:
+                        case Json:
+                        case String:
+                            to.append(instant.toString());
+                            break;
+                        case Double:
+                            to.append(Converters.toDouble(instant));
+                            break;
+                        case Date:
+                            to.append(instant);
+                            break;
+                    }
                     break;
                 }
                 case BINARY:
@@ -279,7 +357,8 @@ public class OrcFileLoader extends TextFileLoader {
                 this.hillviewSchema = Schema.readFromJsonFile(Paths.get(this.schemaPath));
             Reader reader = OrcFile.createReader(new Path(this.filename),
                     OrcFile.readerOptions(conf));
-            this.schema = Converters.checkNull(reader.getSchema());
+            this.schema = reader.getSchema();
+            assert this.schema != null;
             Table result;
 
             if (this.lazy) {

@@ -17,12 +17,14 @@
 
 import {RemoteTableObjectView} from "../tableTarget";
 import {
-    ContentsKind, EqualityFilterDescription, HLogLog, IColumnDescription, RangeInfo, RecordOrder, RemoteObjectId,
-    Schema
+    allContentsKind, asContentsKind, ColumnSortOrientation, ComparisonFilterDescription,
+    CreateColumnInfo, EqualityFilterDescription, HLogLog, IColumnDescription, RangeInfo, RecordOrder,
+    RemoteObjectId,
+    Schema, TopList
 } from "../javaBridge";
 import {FullPage} from "../ui/fullPage";
 import {DistinctStrings} from "../distinctStrings";
-import {Converters, ICancellable, significantDigits} from "../util";
+import {Comparison, Converters, ICancellable, significantDigits} from "../util";
 import {TableOperationCompleted, TableView} from "./tableView";
 import {CategoryCache} from "../categoryCache";
 import {HistogramDialog, RangeCollector} from "./histogramView";
@@ -32,14 +34,16 @@ import {Histogram2DDialog} from "./histogram2DView";
 import {SubMenu, TopMenuItem} from "../ui/menu";
 import {SpecialChars} from "../ui/ui";
 import {OnCompleteRenderer} from "../rpc";
-import {EqualityFilterDialog} from "./equalityFilter";
 import {Dialog, FieldKind} from "../ui/dialog";
+import {HeavyHittersView} from "./heavyHittersView";
 
 /**
  * A base class for TableView and SchemaView
  */
 export abstract class TableViewBase extends RemoteTableObjectView {
-    public schema?: Schema;
+    public schema: Schema;
+    // Total rows in the table
+    protected rowCount: number;
 
     constructor(remoteObjectId: RemoteObjectId, originalTableId: RemoteObjectId, page: FullPage) {
         super(remoteObjectId, originalTableId, page);
@@ -102,6 +106,51 @@ export abstract class TableViewBase extends RemoteTableObjectView {
             rr.invoke(renderer);
         });
         dialog.show();
+    }
+
+    addColumn(order: RecordOrder): void {
+        let dialog = new Dialog(
+            "Add column", "Specify a JavaScript function which computes the values in a new column.");
+        dialog.addTextField(
+            "outColName", "Column name", FieldKind.String, null, "Name to use for the generated column.");
+        dialog.addSelectField(
+            "outColKind", "Data type", allContentsKind, "Category", "Type of data in the generated column.");
+        dialog.addMultiLineTextField("function", "Function",
+            "function map(row) {", "  return row['col'];", "}",
+            "A JavaScript function that computes the values for each row of the generated column." +
+            "The function has a single argument 'row'.  The row is a JavaScript map that can be indexed with " +
+            "a column name (a string) and which produces a value.");
+        dialog.setCacheTitle("CreateDialog");
+        dialog.setAction(() => this.createColumn(dialog, order));
+        dialog.show();
+    }
+
+    createColumn(dialog: Dialog, order: RecordOrder): void {
+        let col = dialog.getFieldValue("outColName");
+        let kind = dialog.getFieldValue("outColKind");
+        let fun = "function map(row) {" + dialog.getFieldValue("function") + "}";
+        let selColumns = this.getSelectedColNames();
+        let subSchema = TableView.dropColumns(this.schema, c => (selColumns.indexOf(c) < 0));
+        let arg: CreateColumnInfo = {
+            jsFunction: fun,
+            outputColumn: col,
+            outputKind: asContentsKind(kind),
+            schema: subSchema
+        };
+        let rr = this.createCreateColumnRequest(arg);
+        let newPage = new FullPage("New column " + col, "Table", this.page);
+        this.page.insertAfterMe(newPage);
+        let cd: IColumnDescription = {
+            kind: arg.outputKind,
+            name: col
+        };
+        let schema = this.schema.concat(cd);
+        let o = order.clone();
+        o.addColumn({columnDescription: cd, isAscending: true});
+
+        let rec = new TableOperationCompleted(
+            newPage, schema, rr, o, this.originalTableId);
+        rr.invoke(rec);
     }
 
     protected histogramOrHeatmap(columns: string[], heatMap: boolean): void {
@@ -255,42 +304,209 @@ export abstract class TableViewBase extends RemoteTableObjectView {
         };
     }
 
-    protected runFilter(filter: EqualityFilterDescription, kind: ContentsKind, order: RecordOrder): void {
-        let rr = this.createFilterEqualityRequest(filter);
+    /**
+     * Show a dialog to compare values on the specified column.
+     * @param {string} colName     Column name.  If null the user will select the column.
+     * @param {RecordOrder} order  Current record ordering.
+     */
+    protected showFilterDialog(
+        colName: string, order: RecordOrder): void {
+        let cd = TableView.findColumn(this.schema, colName);
+        let ef = new EqualityFilterDialog(cd, this.schema);
+        ef.setAction(() => {
+            let filter = ef.getFilter();
+            let desc = TableView.findColumn(this.schema, filter.column);
+            let o = order.clone();
+            let so: ColumnSortOrientation = {
+                columnDescription: desc,
+                isAscending: true
+            };
+            o.addColumn(so);
+            let rr = this.createFilterEqualityRequest(filter);
+            let title = "Filtered: " + filter.column + " is " +
+                (filter.complement ? "not " : "") +
+                TableView.convert(filter.compareValue, desc.kind);
+
+            let newPage = new FullPage(title, "Table", this.page);
+            this.page.insertAfterMe(newPage);
+            rr.invoke(new TableOperationCompleted(newPage, this.schema, rr, o, this.originalTableId));
+        });
+        ef.show();
+    }
+
+    /**
+     * Show a dialog to compare values on the specified column.
+     * @param {string} colName     Column name.  If null the user will select the column.
+     * @param {RecordOrder} order  Current record ordering.
+     */
+    protected showCompareDialog(
+        colName: string, order: RecordOrder): void {
+        let cd = TableView.findColumn(this.schema, colName);
+        let cfd = new ComparisonFilterDialog(cd, this.schema);
+        cfd.setAction(() => this.runComparisonFilter(cfd.getFilter(), order));
+        cfd.show();
+    }
+
+    protected runComparisonFilter(filter: ComparisonFilterDescription, order: RecordOrder): void {
+        let cd = TableView.findColumn(this.schema, filter.column);
+        let kind = cd.kind;
+        let so: ColumnSortOrientation = {
+            columnDescription: cd, isAscending: true
+        };
+        let o = order.clone();
+        o.addColumn(so);
+
+        let rr = this.createFilterComparisonRequest(filter);
         let title = "Filtered: " + filter.column + " is " +
-            (filter.complement ? "not " : "") +
-            TableView.convert(filter.compareValue, kind);
+            filter.comparison + TableView.convert(filter.compareValue, kind);
 
         let newPage = new FullPage(title, "Table", this.page);
         this.page.insertAfterMe(newPage);
-        rr.invoke(new TableOperationCompleted(newPage, this.schema, rr, order, this.originalTableId));
+        rr.invoke(new TableOperationCompleted(newPage, this.schema, rr, o, this.originalTableId))
     }
 
-    protected equalityFilter(
-        colName: string, value: string, showMenu: boolean, order: RecordOrder,
-        complement?: boolean): void {
-        let cd = TableView.findColumn(this.schema, colName);
-        if (showMenu) {
-            let ef = new EqualityFilterDialog(cd);
-            ef.setAction(() => this.runFilter(ef.getFilter(), cd.kind, order));
-            ef.show();
-        } else {
-            if (value != null && cd.kind == "Date") {
-                // Parse the date in Javascript; the Java Date parser is very bad
-                let date = new Date(value);
-                value = Converters.doubleFromDate(date).toString();
-            }
-            let efd: EqualityFilterDescription = {
-                column: cd.name,
-                compareValue: value,
-                complement: (complement == null ? false : complement),
-                asRegEx: false
-            };
-            this.runFilter(efd, cd.kind, order);
+    protected runHeavyHitters(percent: number, exact: boolean) {
+        if (percent == null || percent < .1 || percent > 100) {
+            this.reportError("Percentage must be between .1 and 100");
+            return;
         }
+        let columns: IColumnDescription[] = [];
+        let cso : ColumnSortOrientation[] = [];
+        this.getSelectedColNames().forEach(v => {
+            let colDesc = TableView.findColumn(this.schema, v);
+            columns.push(colDesc);
+            cso.push({ columnDescription: colDesc, isAscending: true });
+        });
+        let order = new RecordOrder(cso);
+        let rr = this.createHeavyHittersRequest(columns, percent, this.getTotalRowCount(), exact);
+        rr.invoke(new HeavyHittersReceiver(this.getPage(), this, rr, columns, order, exact, percent));
+    }
+
+    protected heavyHitters(exact: boolean): void {
+        let title = "Frequent Elements from ";
+        let cols: string[] = this.getSelectedColNames();
+        if (cols.length <= 1) {
+            title += " " + cols[0];
+        } else {
+            title += cols.length + " columns";
+        }
+        let d = new Dialog(title, "Find the most frequent values in the selected columns.");
+        d.addTextField("percent", "Threshold (%)", FieldKind.Double, "1",
+            "All values that appear in the dataset with a frequency above this value (as a percent) " +
+            "will be considered frequent elements.  Must be a number between 0.1 and 100.");
+        d.setAction(() => {
+            let amount = d.getFieldValueAsNumber("percent");
+            if (amount != null)
+                this.runHeavyHitters(amount, exact)
+        });
+        d.setCacheTitle("HeavyHittersDialog");
+        d.show();
+    }
+
+    public getTotalRowCount() : number {
+        return this.rowCount;
     }
 }
 
+class EqualityFilterDialog extends Dialog {
+    constructor(private columnDescription: IColumnDescription, private schema: Schema) {
+        super("Filter", "Eliminates data from a column according to its value.");
+        if (columnDescription == null) {
+            let cols = this.schema.map(c => c.name);
+            if (cols.length == 0)
+                return;
+            this.addSelectField("column", "Column", cols, null, "Column that is filtered");
+        }
+        this.addTextField("query", "Find", FieldKind.String, null, "Value to search");
+        this.addBooleanField("asRegEx", "Interpret as Regular Expression", false, "Select "
+            + "checkbox to interpret the search query as a regular expression");
+        this.addBooleanField("complement", "Exclude matches", false, "Select checkbox to "
+            + "filter out all matches");
+    }
+
+    public getFilter(): EqualityFilterDescription {
+        let textQuery: string = this.getFieldValue("query");
+        if (this.columnDescription == null) {
+            let colName = this.getFieldValue("column");
+            this.columnDescription = TableView.findColumn(this.schema, colName);
+        }
+        if (this.columnDescription.kind == "Date") {
+            let date = new Date(textQuery);
+            textQuery = Converters.doubleFromDate(date).toString();
+        }
+        let asRegEx = this.getBooleanValue("asRegEx");
+        let complement = this.getBooleanValue("complement");
+        return {
+            column: this.columnDescription.name,
+            compareValue: textQuery,
+            complement: complement,
+            asRegEx: asRegEx
+        };
+    }
+}
+
+class ComparisonFilterDialog extends Dialog {
+    constructor(private columnDescription: IColumnDescription, private schema: Schema) {
+        super("Compare", "Keep rows where (row[Column] Compare value) is true");
+
+        if (columnDescription == null) {
+            let cols = this.schema.map(c => c.name);
+            if (cols.length == 0)
+                return;
+            let col = this.addSelectField("column", "Column", cols, null, "Column that is filtered");
+            col.onchange = () => this.selectionChanged();
+        }
+        this.addTextField("query", "Value:", FieldKind.String, null, "Value to compare");
+        let op = this.addSelectField("operation", "Compare", ["==", "!=", "<", ">", "<=", ">="], "<",
+            "Operation that is used to compare; the value is used at the right in the comparison.");
+        op.onchange = () => this.selectionChanged();
+    }
+
+    protected selectionChanged(): void {
+        let filter = this.getFilter();
+    }
+
+    public getFilter(): ComparisonFilterDescription {
+        let textQuery: string = this.getFieldValue("query");
+        if (this.columnDescription == null) {
+            let colName = this.getFieldValue("column");
+            this.columnDescription = TableView.findColumn(this.schema, colName);
+        }
+        if (this.columnDescription.kind == "Date") {
+            let date = new Date(textQuery);
+            textQuery = Converters.doubleFromDate(date).toString();
+        }
+        let comparison = <Comparison>this.getFieldValue("operation");
+        return {
+            column: this.columnDescription.name,
+            compareValue: textQuery,
+            comparison: comparison
+        };
+    }
+}
+
+/**
+ * This method handles the outcome of the sketch for finding Heavy Hitters.
+ */
+class HeavyHittersReceiver extends OnCompleteRenderer<TopList> {
+    public constructor(page: FullPage,
+                       protected tv: TableViewBase,
+                       operation: ICancellable,
+                       protected schema: IColumnDescription[],
+                       protected order: RecordOrder,
+                       protected exact: boolean,
+                       protected percent: number) {
+        super(page, operation, "Frequent Elements");
+    }
+
+    run(data: TopList): void {
+        let newPage = new FullPage("Frequent Elements", "HeavyHitters", this.page);
+        let hhv = new HeavyHittersView(data, newPage, this.tv, this.schema, this.order, !this.exact, this.percent);
+        newPage.setDataView(hhv);
+        this.page.insertAfterMe(newPage);
+        hhv.fill(data.top, this.elapsedMilliseconds());
+    }
+}
 
 class CountReceiver extends OnCompleteRenderer<HLogLog> {
     constructor(page: FullPage, operation: ICancellable,

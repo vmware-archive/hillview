@@ -19,7 +19,6 @@ package org.hillview.sketches;
 
 import org.hillview.dataset.api.ISketch;
 import org.hillview.table.api.*;
-import org.hillview.utils.Converters;
 import org.hillview.utils.Randomness;
 
 import javax.annotation.Nullable;
@@ -64,8 +63,8 @@ public class JLSketch implements ISketch<ITable, JLProjection>{
     @Nullable
     @Override
     public JLProjection add(@Nullable JLProjection left, @Nullable JLProjection right) {
-        left = Converters.checkNull(left);
-        right = Converters.checkNull(right);
+        assert left != null;
+        assert right != null;
         for (String s: left.colNames) {
             double a[] = left.hMap.get(s);
             double b[] = right.hMap.get(s);

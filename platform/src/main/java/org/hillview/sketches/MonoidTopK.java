@@ -18,7 +18,6 @@
 package org.hillview.sketches;
 
 import org.hillview.dataset.api.IMonoid;
-import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.util.Comparator;
@@ -59,8 +58,8 @@ public class MonoidTopK<T> implements IMonoid<SortedMap<T, Integer>> {
     public SortedMap<T, Integer> add(
             @Nullable SortedMap<T, Integer> left,
             @Nullable SortedMap<T, Integer> right) {
-        left = Converters.checkNull(left);
-        right = Converters.checkNull(right);
+        assert left != null;
+        assert right != null;
 
         final Iterator<T> itLeft = left.keySet().iterator();
         final Iterator<T> itRight = right.keySet().iterator();

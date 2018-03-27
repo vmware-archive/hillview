@@ -19,7 +19,6 @@ package org.hillview.dataset;
 
 import org.hillview.dataset.api.IMonoid;
 import org.hillview.dataset.api.PartialResult;
-import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 
@@ -46,8 +45,8 @@ public class PartialResultMonoid<T> implements IMonoid<PartialResult<T>> {
     @Override @Nullable
     public PartialResult<T> add(@Nullable PartialResult<T> left,
                                 @Nullable PartialResult<T> right) {
-        left = Converters.checkNull(left);
-        right = Converters.checkNull(right);
+        assert left != null;
+        assert right != null;
         return new PartialResult<T>(left.deltaDone + right.deltaDone,
                 this.monoid.add(left.deltaValue, right.deltaValue));
     }

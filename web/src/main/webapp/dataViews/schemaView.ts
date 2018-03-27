@@ -39,9 +39,10 @@ export class SchemaView extends TableViewBase {
                 originalTableId: RemoteObjectId,
                 page: FullPage,
                 schema: Schema,
-                private rowCount: number,
+                rowCount: number,
                 elapsedMs: number) {
         super(remoteObjectId, originalTableId, page);
+        this.rowCount = rowCount;
         this.topLevel = document.createElement("div");
         this.contextMenu = new ContextMenu(this.topLevel);
         this.schema = schema;
@@ -69,7 +70,7 @@ export class SchemaView extends TableViewBase {
         this.page.setMenu(menu);
         this.topLevel.appendChild(document.createElement("br"));
 
-        let para = document.createElement("p");
+        let para = document.createElement("div");
         para.textContent = "Select the columns that you would like to browse";
         this.topLevel.appendChild(para);
 
@@ -165,10 +166,32 @@ export class SchemaView extends TableViewBase {
                 let so: ColumnSortOrientation = {
                     columnDescription: cd, isAscending: true
                 };
-                this.equalityFilter(colName, null, true, new RecordOrder([so]), null);
+                this.showFilterDialog(colName, new RecordOrder([so]));
             },
             help : "Eliminate data that matches/does not match a specific value."
         }, selectedCount == 1);
+        this.contextMenu.addItem({
+            text: "Compare...",
+            action: () => {
+                let colName = this.getSelectedColNames()[0];
+                let cd = TableView.findColumn(this.schema, colName);
+                let so: ColumnSortOrientation = {
+                    columnDescription: cd, isAscending: true
+                };
+                this.showCompareDialog(colName, new RecordOrder([so]));
+            },
+            help : "Eliminate data that matches/does not match a specific value."
+        }, selectedCount == 1);
+        this.contextMenu.addItem({
+            text: "Create column...",
+            action: () => this.addColumn(new RecordOrder([])),
+            help: "Add a new column computed from the selected columns."
+        }, true);
+        this.contextMenu.addItem({
+            text: "Frequent Elements...",
+            action: () => this.heavyHitters(false),  // currently set to approximate
+            help: "Find the values that occur most frequently in the selected columns."
+        }, true);
         this.contextMenu.show(e);
     }
 

@@ -18,7 +18,6 @@
 package org.hillview.management;
 
 import org.hillview.dataset.api.ISketch;
-import org.hillview.utils.Converters;
 import org.hillview.utils.JsonList;
 import org.hillview.utils.Utilities;
 
@@ -42,10 +41,12 @@ public class PingSketch<T> implements ISketch<T, JsonList<String>> {
     public JsonList<String> add(@Nullable JsonList<String> left, @Nullable JsonList<String> right) {
         HashSet<String> added = new HashSet<String>();
         JsonList<String> result = new JsonList<String>();
-        for (String s : Converters.checkNull(left))
+        assert left != null;
+        assert right != null;
+        for (String s : left)
             if (added.add(s))
                 result.add(s);
-        for (String s : Converters.checkNull(right))
+        for (String s : right)
             if (added.add(s))
                 result.add(s);
         return result;

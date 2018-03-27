@@ -25,7 +25,6 @@ import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.IRowOrder;
 import org.hillview.table.api.ITable;
-import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 
@@ -84,10 +83,8 @@ public class SampleQuantileSketch  implements ISketch<ITable, SampleList> {
      */
     @Override
     public SampleList add(@Nullable SampleList left, @Nullable SampleList right) {
-        left = Converters.checkNull(left);
-        right = Converters.checkNull(right);
-        left.table.check();
-        right.table.check();
+        assert left != null;
+        assert right != null;
         if (!left.table.getSchema().equals(right.table.getSchema()))
             throw new RuntimeException("The schemas do not match.");
         List<IColumn> mergedCol = new ArrayList<IColumn>(left.table.getSchema().getColumnCount());

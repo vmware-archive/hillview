@@ -21,12 +21,10 @@ import org.hillview.sketches.*;
 import org.hillview.table.SmallTable;
 import org.hillview.table.Table;
 import org.hillview.table.api.ITable;
-import org.hillview.utils.Converters;
 import org.hillview.utils.TestTables;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertTrue;
-
 
 public class ExactFreqSketchTest extends BaseTest {
     @SuppressWarnings("SuspiciousMethodCalls")
@@ -39,7 +37,7 @@ public class ExactFreqSketchTest extends BaseTest {
         FreqKListExact exactList = ef.create(table);
         int size = 10;
         NextKList nkList = exactList.getTop(table.getSchema());
-        for (int i = 1; i < Converters.checkNull(nkList.count).size(); i++) {
+        for (int i = 1; i < nkList.count.size(); i++) {
             assertTrue(nkList.count.get(i - 1) >= nkList.count.get(i));
         }
         exactList.filter();

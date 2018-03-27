@@ -19,6 +19,8 @@
 // TypeScript and Java.  These must be changed carefully, and usually in both parts, or
 // subtle bugs may happen.  Most often these classes have the same name in Java and TypeScript.
 
+import {Comparison} from "./util";
+
 export type RemoteObjectId = string;
 
 export type ContentsKind = "Category" | "Json" | "String" | "Integer" |
@@ -262,13 +264,13 @@ export class RecordOrder {
             this.sortOrientationList.splice(index, 1);
         this.sortOrientationList.splice(0, 0, cso);
     }
-    public show(cso: ColumnSortOrientation) {
+    public addColumn(cso: ColumnSortOrientation) {
         let index = this.find(cso.columnDescription.name);
         if (index != -1)
             this.sortOrientationList.splice(index, 1);
         this.sortOrientationList.push(cso);
     }
-    public showIfNotVisible(cso: ColumnSortOrientation) {
+    public addColumnIfNotVisible(cso: ColumnSortOrientation) {
         let index = this.find(cso.columnDescription.name);
         if (index == -1)
             this.sortOrientationList.push(cso);
@@ -309,7 +311,7 @@ export class EqualityFilterDescription {
      */
     column: string;
     /**
-     * Value to look for (represented as a string).
+     * Column that is being filtered.
      */
     compareValue: string;
     /**
@@ -320,4 +322,16 @@ export class EqualityFilterDescription {
      * True if we are looking to do regular expression matching.
      */
     asRegEx: boolean;
+}
+
+export class ComparisonFilterDescription {
+    /**
+     * Column that is being filtered.
+     */
+    column: string;
+    /**
+     * Column that is being filtered.
+     */
+    compareValue: string;
+    comparison: Comparison;
 }

@@ -169,6 +169,15 @@ export class RpcRequest<T> implements ICancellable {
         return false;
     }
 
+    static simplifyExceptions(errorMessage: string): string {
+        let lines = errorMessage.split(/\r?\n/);
+        lines = lines
+            .filter(v => !v.match(
+                /^\s+at ((rx\.)|(io\.grpc)|(java\.lang\.Thread\.run)|(java\.util\.concurrent\.ThreadPoolExecutor))/))
+            .map(v => v.replace("io.grpc.StatusRuntimeException: INTERNAL: ", ""));
+        return lines.join("\n");
+    }
+
     /**
      * Execute the RPC request and pass the results received to the specified observer.
      * @param onReply  An observer which is invoked for each result received by
@@ -196,7 +205,7 @@ export class RpcRequest<T> implements ICancellable {
                 console.log(formatDate() + ' reply received: ' + r.data);
                 let reply = <RpcReply>JSON.parse(r.data);
                 if (reply.isError) {
-                    onReply.onError(reply.result);
+                    onReply.onError(RpcRequest.simplifyExceptions(reply.result));
                 } else {
                     let success = false;
                     let response: any;
@@ -327,7 +336,7 @@ export abstract class Renderer<T> implements Rx.Observer<PartialResult<T>> {
      * this method; otherwise the progress bar will not advance.
      */
     public onNext(value: PartialResult<T>) {
-        this.page.scrollIntoView();
+        //this.page.scrollIntoView();
         this.progressBar.setPosition(value.done);
         if (this.operation != null)
             console.log("onNext after " + this.elapsedMilliseconds());

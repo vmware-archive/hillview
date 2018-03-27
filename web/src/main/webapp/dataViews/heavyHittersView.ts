@@ -25,6 +25,7 @@ import {SpecialChars, textToDiv} from "../ui/ui";
 import {DataRange} from "../ui/dataRange";
 import {TabularDisplay} from "../ui/tabularDisplay";
 import {RemoteTableObjectView} from "../tableTarget";
+import {TableViewBase} from "./tableViewBase";
 
 /**
  * Class that renders a table containing the heavy hitters in sorted
@@ -39,7 +40,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
 
     constructor(public data: TopList,
                 public page: FullPage,
-                public tv: TableView,
+                public tv: TableViewBase,
                 public schema: IColumnDescription[],
                 public order: RecordOrder,
                 private isApprox: boolean,

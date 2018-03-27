@@ -19,7 +19,6 @@ package org.hillview.dataset;
 
 import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.api.Pair;
-import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 
@@ -41,8 +40,8 @@ public class ConcurrentSketch<T, R1, R2> implements ISketch<T, Pair<R1, R2>> {
     @Nullable
     @Override
     public Pair<R1, R2> add(@Nullable Pair<R1, R2> left, @Nullable Pair<R1, R2> right) {
-        left = Converters.checkNull(left);
-        right = Converters.checkNull(right);
+        assert left != null;
+        assert right != null;
         R1 first = this.first.add(left.first, right.first);
         R2 second = this.second.add(left.second, right.second);
         return new Pair<R1, R2>(first, second);

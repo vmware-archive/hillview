@@ -20,7 +20,7 @@
  */
 
 import {RpcRequest, RemoteObject, OnCompleteRenderer} from "./rpc";
-import {EqualityFilterDescription, FindResult} from "./javaBridge";
+import {ComparisonFilterDescription, EqualityFilterDescription, FindResult} from "./javaBridge";
 import {ICancellable, Pair, PartialResult, Seed} from "./util";
 import {PointSet, Resolution} from "./ui/ui";
 import {IDataView} from "./ui/dataview";
@@ -147,6 +147,11 @@ export class RemoteTableObject extends RemoteObject {
         return this.createStreamingRpcRequest<RemoteObjectId>("filterEquality", filter);
     }
 
+    public createFilterComparisonRequest(filter: ComparisonFilterDescription):
+    RpcRequest<PartialResult<RemoteObjectId>> {
+        return this.createStreamingRpcRequest<RemoteObjectId>("filterComparison", filter);
+    }
+
     public createCorrelationMatrixRequest(columnNames: string[], totalRows: number, toSample: boolean):
 RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<RemoteObjectId>("correlationMatrix", {
@@ -239,7 +244,7 @@ export abstract class RemoteTableObjectView extends RemoteTableObject implements
         }
     }
 
-    drop(e: DragEvent): void {}
+    drop(e: DragEvent): void { console.log(e); }
 
     getPage() : FullPage {
         if (this.page == null)

@@ -20,7 +20,6 @@ package org.hillview.sketches;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.table.api.*;
 import org.hillview.utils.BlasConversions;
-import org.hillview.utils.Converters;
 import org.jblas.DoubleMatrix;
 
 import javax.annotation.Nullable;
@@ -118,9 +117,8 @@ public class PCACorrelationSketch implements ISketch<ITable, CorrMatrix> {
     @Nullable
     @Override
     public CorrMatrix add(@Nullable CorrMatrix left, @Nullable CorrMatrix right) {
-        left = Converters.checkNull(left);
-        right = Converters.checkNull(right);
-
+        assert left != null;
+        assert right != null;
         CorrMatrix result = new CorrMatrix(this.colNames);
 
         for (int i = 0; i < this.colNames.length; i++) {

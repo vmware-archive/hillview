@@ -154,13 +154,15 @@ public final class Schema
     public List<ContentsKind> getColumnKinds() {
          if (this.cachedColumnNames == null)
              this.seal();
-         return Converters.checkNull(this.cachedKinds);
+         assert this.cachedKinds != null;
+         return this.cachedKinds;
     }
 
     public List<ColumnDescription> getColumnDescriptions() {
         if (this.cachedColumnNames == null)
             this.seal();
-        return Converters.checkNull(this.cachedDescriptions);
+        assert this.cachedDescriptions != null;
+        return this.cachedDescriptions;
     }
 
     public boolean containsColumnName(String columnName) {

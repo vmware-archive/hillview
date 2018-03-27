@@ -25,7 +25,6 @@ import org.hillview.table.Schema;
 import org.hillview.table.SmallTable;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.rows.RowSnapshot;
-import org.hillview.utils.Converters;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -72,8 +71,8 @@ public class NextKList implements Serializable, IJson {
      *                  hitters, it is the number of samples.
      */
     public NextKList(List<RowSnapshot> listRows, List<Integer> listCounts, Schema schema, long totalRows) {
-        this.table = new SmallTable(schema, Converters.checkNull(listRows));
-        this.count = Converters.checkNull(listCounts);
+        this.table = new SmallTable(schema, listRows);
+        this.count = listCounts;
         this.startPosition = 0;
         this.totalRows = totalRows;
     }

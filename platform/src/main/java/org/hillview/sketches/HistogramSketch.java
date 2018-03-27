@@ -19,7 +19,6 @@ package org.hillview.sketches;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.table.api.ColumnAndConverterDescription;
 import org.hillview.table.api.ITable;
-import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 
@@ -48,7 +47,9 @@ public class HistogramSketch implements ISketch<ITable, Histogram> {
     @Override
     public Histogram add(@Nullable final Histogram left,
                          @Nullable final Histogram right) {
-        return Converters.checkNull(left).union(Converters.checkNull(right));
+        assert left != null;
+        assert right != null;
+        return left.union(right);
     }
 
     @Override

@@ -121,7 +121,7 @@ export class ColumnConverter  {
         };
         let schema = this.table.schema.concat(cd);
         let o = this.order.clone();
-        o.show({columnDescription: cd, isAscending: true});
+        o.addColumn({columnDescription: cd, isAscending: true});
         rr.invoke(new TableOperationCompleted(
             newPage, schema, rr, o, this.table.originalTableId));
     }

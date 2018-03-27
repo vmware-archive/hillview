@@ -29,7 +29,6 @@ import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.table.columns.IntListColumn;
 import org.hillview.table.columns.StringListColumn;
-import org.hillview.utils.Converters;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -216,7 +215,8 @@ public class CsvFileTest extends BaseTest {
     @Test
     public void writeCsvFileTest() throws IOException {
         ITable tbl = this.readTable(ontimeFolder, csvFile);
-        writeReadTable(Converters.checkNull(tbl));
+        Assert.assertNotNull(tbl);
+        writeReadTable(tbl);
     }
 }
 

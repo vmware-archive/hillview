@@ -20,7 +20,7 @@ package org.hillview.sketches;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.table.api.ColumnAndConverterDescription;
 import org.hillview.table.api.ITable;
-import org.hillview.utils.Converters;
+
 import javax.annotation.Nullable;
 
 public class BasicColStatSketch implements ISketch<ITable, BasicColStats> {
@@ -50,6 +50,8 @@ public class BasicColStatSketch implements ISketch<ITable, BasicColStats> {
 
     @Override
     public BasicColStats add(@Nullable final BasicColStats left, @Nullable final BasicColStats right) {
-        return Converters.checkNull(left).union(Converters.checkNull(right));
+        assert left != null;
+        assert right != null;
+        return left.union(right);
     }
 }
