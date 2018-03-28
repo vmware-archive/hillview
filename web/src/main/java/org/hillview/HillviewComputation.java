@@ -19,6 +19,7 @@ package org.hillview;
 import org.hillview.utils.HillviewLogger;
 import rx.Observer;
 
+import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,11 +39,8 @@ public class HillviewComputation implements Serializable {
     /**
      * Request that triggered this computation.
      */
-    private final RpcRequest request;
-    /**
-     * The id of the target on which the request was executed.
-     */
-    private final RpcTarget.Id sourceId;
+    public final RpcRequest request;
+
     /**
      * The id of the result produced by the computation.
      * Today all RpcRequests can produce at most one result.
@@ -55,12 +53,16 @@ public class HillviewComputation implements Serializable {
      */
     private List<Observer<RpcTarget>> onCreate;
 
-    HillviewComputation(RpcTarget source, RpcRequest request) {
+    HillviewComputation(@Nullable RpcTarget.Id resultId, RpcRequest request) {
         this.id = HillviewComputation.currentId++;
         this.request = request;
-        this.sourceId = source.getId();
-        this.resultId = RpcTarget.Id.freshId();
+        assert resultId != request.objectId;
+        this.resultId = resultId == null ? RpcTarget.Id.freshId() : resultId;
         this.onCreate = new ArrayList<Observer<RpcTarget>>();
+    }
+
+    private RpcTarget.Id getSourceId() {
+        return this.request.objectId;
     }
 
     private synchronized void registerOnCreate(Observer<RpcTarget> toNotify) {
@@ -98,13 +100,13 @@ public class HillviewComputation implements Serializable {
         // Tell this guy when the destination is done
         this.registerOnCreate(toNotify);
         // Trigger the computation by retrieving the source
-        RpcObjectManager.instance.retrieveTarget(this.sourceId, true, sourceNotify);
+        RpcObjectManager.instance.retrieveTarget(this.getSourceId(), true, sourceNotify);
     }
 
     @Override
     public String toString() {
         return "[Id=" + this.id +
-                ", source RpcTarget=" + this.sourceId +
+                ", destination=" + this.resultId +
                 ", RpcRequest=" + this.request + "]";
     }
 
@@ -113,13 +115,13 @@ public class HillviewComputation implements Serializable {
         if (this == o) return true;
         if (o == null || this.getClass() != o.getClass()) return false;
         HillviewComputation that = (HillviewComputation) o;
-        return this.request.equals(that.request) && this.sourceId.equals(that.sourceId);
+        return this.request.equals(that.request) && this.resultId.equals(that.resultId);
     }
 
     @Override
     public int hashCode() {
         int result = this.request.hashCode();
-        result = 31 * result + this.sourceId.hashCode();
+        result = 31 * result + this.resultId.hashCode();
         return result;
     }
 

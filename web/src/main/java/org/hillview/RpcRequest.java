@@ -25,7 +25,7 @@ import org.hillview.utils.Utilities;
 import javax.annotation.Nullable;
 import javax.websocket.Session;
 
-public final class RpcRequest {
+public final class RpcRequest implements IJson {
     /**
      * Each pair request-response uses a matching id.
      */
@@ -42,10 +42,15 @@ public final class RpcRequest {
      * The method arguments, encoded as JSON; the method will decode these itself.
      */
     @Nullable
-    private final String arguments;  // A JSON string
+    private final String arguments;
+    /**
+     * Original encoding of the request as JSON.
+     */
+    private final JsonElement element;
 
     public RpcRequest(JsonElement element) {
         final JsonObject obj = element.getAsJsonObject();
+        this.element = element;
         this.requestId = obj.get("requestId").getAsInt();
         this.objectId = new RpcTarget.Id(obj.get("objectId").getAsString());
         this.method = obj.get("method").getAsString();
@@ -101,6 +106,11 @@ public final class RpcRequest {
         if (session == null)
             return;
         RpcServer.closeSession(session);
+    }
+
+    @Override
+    public JsonElement toJsonTree() {
+        return this.element;
     }
 
     @Override

@@ -229,7 +229,7 @@ public abstract class RpcTarget implements IJson {
         HillviewComputation getComputation() {
             if (this.context.computation != null)
                 return this.context.computation;
-            return new HillviewComputation(this.target, this.request);
+            return new HillviewComputation(null, this.request);
         }
 
         /**
