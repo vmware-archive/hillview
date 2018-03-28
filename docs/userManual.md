@@ -586,7 +586,7 @@ the current state of the display.
 
   ![Frequent elements menu](heavy-hitters-menu.png)
 
-  The user has to specify a percentage, between .01 (1/1000 of the
+  The user has to specify a percentage, between .01 (1/10,000 of the
   data) and 100 (the whole data).  The result is all items whose frequency
   in the selected columns is above the threshold. the result is shown in a [heavy
   hitter view](#heavy-hitter-views).
