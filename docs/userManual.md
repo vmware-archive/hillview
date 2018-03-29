@@ -824,16 +824,9 @@ the airline carriers.  For each carrier the bar is divided into
 sub-bars, each of which corresponding to a range of departure delays.
 The color legend at the top shows the encoding of values into colors.
 
-The handling of missing values is as follows:
+For each bucket a transparent rectangle at the top of the bucket is used to represent the missing data.  
 
-* The count of rows values that have a missing value for the X axis is
-shown at the bottom.
-
-* For each bucket a transparent rectangle is used for the missing
-  data.  The following image shows a 2D histogram where some buckets
-  contain missing data.
-
-![2D histogram with missing data](2d-histogram-missing.png)
+By default a histogram is computed over sampled data. The sampling rate is presented at the bottom.
 
 The "view" menu for a 2D histogram offers the following operations:
 
@@ -888,7 +881,7 @@ axes of a plot, then the screen is divided into small patches a few
 pixels wide and the number of data points that falls within each patch
 is counted.  The number of values that falls within each patch is
 displayed as a heatmap, where the color intensity indicates the number
-of points.  A heatmap where the Y axis is not categorical will also
+of points. The mapping between the color intensity and the count could be in log scale if the range is large or linear if the range is smaller. Next to the mouse an overlay box displays the x value, the y value and the count. A heatmap where the Y axis is not categorical will also
 display a line that gives the best [linear
 regression](https://en.wikipedia.org/wiki/Linear_regression).  between
 the values in the two columns.
@@ -898,7 +891,7 @@ the values in the two columns.
 ![A heatmap](hillview-heatmap.png)
 
 The colormap of a heatmap can be adjusted using a drop-down menu that
-appears when clicking the colormap.
+appears when right-clicking the colormap. The drop down menu also allows to togle between a log scale color scheme and a linear color scheme.
 
 ![Colormap menu](colormap-menu.png)
 
@@ -912,11 +905,12 @@ The heatmap view menu has the following operations:
 
 * table: Displays the data in the current heatmap in a tabular form.
 
-* exact: Redraws the heatmap exactly.
-
 * Histogram: Draws a [2D histogram](two-dimensional-histogram-views)
   of the data in the two columns that are used for the heatmap
   display.
+  
+* group by: Groups data by a third column creating a [Trellis plot] (#trelis-plot-views).
+
 
 For a description of the combine menu see [combining two views](#combining-two-views).
 
@@ -965,7 +959,7 @@ The operations are as follows:
 
 ### LAMP projection
 
-(This is an experimental feature, which currently disabled because is
+(This is an experimental feature, which is currently disabled because it is
 too slow to apply to large datasets.)  This is another method to
 project a high-dimensional space to a low-dimensional space, called
 local affine multidimensional projection.  This is based on the paper
