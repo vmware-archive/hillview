@@ -586,7 +586,7 @@ the current state of the display.
 
   ![Frequent elements menu](heavy-hitters-menu.png)
 
-  The user has to specify a percentage, between .1 (1/1000 of the
+  The user has to specify a percentage, between .01 (1/10,000 of the
   data) and 100 (the whole data).  The result is all items whose frequency
   in the selected columns is above the threshold. the result is shown in a [heavy
   hitter view](#heavy-hitter-views).
@@ -681,12 +681,15 @@ threshold).
 The data is sorted in decreasing order of frequency.  Each row
 displays a combination of values and its count and relative frequency
 within the dataset.  A special value that may appear is "Everything else",
-which indicates the estimated number of rows that do not appear
-frequently enough to be above the chosen threshold.
+which indicates the total over all rows corresponding to elements  that do not appear
+frequently enough individually to be above the chosen threshold. This value only appears 
+if the total over all these rows is itself above the threshold.
 
-The following operations may be performed on a frequent elements view:
+There are two menu options offered from this view: [View as table](#View-as-a-table) and [Modify](#Modify).
 
-![Frequent elements view menu](heavy-hitters-view-menu.png)
+#### View as a Table
+Clicking this button gives the user two options:
+![View as a Table](heavy-hitters-tableMenu.png)
 
 * All frequent elements as table: switches back to a [table
   view](#table-views), but where the table only contains the rows
@@ -696,9 +699,26 @@ The following operations may be performed on a frequent elements view:
   view](#table-views), but where the table only contains the rows
   corresponding to the frequent values currently selected.
 
+#### Modify
+Clicking this button gives the user two options:
+![Modify](heavy-hitters-modifyMenu.png)
 * Get exact counts: runs a more expensive but more precise
   frequent elements computation which computes the exact frequency for
-  each value.
+  each value. This operation replaces the approximate counts in the display 
+  by the precise ones.
+  
+* Change the threshold: Recall the the user specifies a frequency threshold above 
+which elements are considered to be frequent. Clicking this menu pops up a dialog 
+box like the one shown below that allows the user to modify the threshold. This can 
+be useful to see a larger list for instance.
+
+
+![Change Threshold Dialog](heavy-hitters-changeThreshold.png)
+
+Note that if the threshold is set very low, then the number of results can be very large. HillView 
+only displays the 200 most frequent elements results, and alerts the user to the possible existence 
+of further frequent elements. These can be viewed using the All frequent elements option from the 
+ [View as a table](#view-as-a-table) menu option.
 
 ### Uni-dimensional histogram views
 
@@ -824,16 +844,9 @@ the airline carriers.  For each carrier the bar is divided into
 sub-bars, each of which corresponding to a range of departure delays.
 The color legend at the top shows the encoding of values into colors.
 
-The handling of missing values is as follows:
+For each bucket a transparent rectangle at the top of the bucket is used to represent the missing data.  
 
-* The count of rows values that have a missing value for the X axis is
-shown at the bottom.
-
-* For each bucket a transparent rectangle is used for the missing
-  data.  The following image shows a 2D histogram where some buckets
-  contain missing data.
-
-![2D histogram with missing data](2d-histogram-missing.png)
+By default a histogram is computed over sampled data. The sampling rate is presented at the bottom.
 
 The "view" menu for a 2D histogram offers the following operations:
 
@@ -888,7 +901,7 @@ axes of a plot, then the screen is divided into small patches a few
 pixels wide and the number of data points that falls within each patch
 is counted.  The number of values that falls within each patch is
 displayed as a heatmap, where the color intensity indicates the number
-of points.  A heatmap where the Y axis is not categorical will also
+of points. The mapping between the color intensity and the count could be in log scale if the range is large or linear if the range is smaller. Next to the mouse an overlay box displays the x value, the y value and the count. A heatmap where the Y axis is not categorical will also
 display a line that gives the best [linear
 regression](https://en.wikipedia.org/wiki/Linear_regression).  between
 the values in the two columns.
@@ -898,7 +911,7 @@ the values in the two columns.
 ![A heatmap](hillview-heatmap.png)
 
 The colormap of a heatmap can be adjusted using a drop-down menu that
-appears when clicking the colormap.
+appears when right-clicking the colormap. The drop down menu also allows to togle between a log scale color scheme and a linear color scheme.
 
 ![Colormap menu](colormap-menu.png)
 
@@ -912,11 +925,12 @@ The heatmap view menu has the following operations:
 
 * table: Displays the data in the current heatmap in a tabular form.
 
-* exact: Redraws the heatmap exactly.
-
 * Histogram: Draws a [2D histogram](two-dimensional-histogram-views)
   of the data in the two columns that are used for the heatmap
   display.
+  
+* group by: Groups data by a third column creating a [Trellis plot] (#trelis-plot-views).
+
 
 For a description of the combine menu see [combining two views](#combining-two-views).
 
@@ -965,7 +979,7 @@ The operations are as follows:
 
 ### LAMP projection
 
-(This is an experimental feature, which currently disabled because is
+(This is an experimental feature, which is currently disabled because it is
 too slow to apply to large datasets.)  This is another method to
 project a high-dimensional space to a low-dimensional space, called
 local affine multidimensional projection.  This is based on the paper
