@@ -58,8 +58,10 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
     // See: https://github.com/netty/netty/issues/327
     private static final EventLoopGroup workerElg = new NioEventLoopGroup(1,
             ExecutorUtils.newFastLocalThreadFactory("rds-shared-worker"));
+    // The high priority for the executor is needed to handle unsubscription
+    // requests with high priority.
     private static final ExecutorService executorService =
-            ExecutorUtils.newNamedThreadPool("rds-shared-executor", 5);
+            ExecutorUtils.newNamedThreadPool("rds-shared-executor", 5, Thread.MAX_PRIORITY);
 
     public RemoteDataSet(final HostAndPort serverEndpoint) {
         this(serverEndpoint, ROOT_DATASET_INDEX);
@@ -99,9 +101,10 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
         final SerializedSubject<PartialResult<IDataSet<S>>, PartialResult<IDataSet<S>>> subj =
                 createSerializedSubject();
         final StreamObserver<PartialResponse> responseObserver = new NewDataSetObserver<S>(subj);
-        return subj.doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
-                                                 .map(command, responseObserver))
-                   .doOnUnsubscribe(() -> this.unsubscribe(operationId));
+        return subj.unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
+                .doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
+                        .map(command, responseObserver))
+                .doOnUnsubscribe(() -> this.unsubscribe(operationId));
     }
 
     @Override
@@ -118,8 +121,9 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
         final SerializedSubject<PartialResult<IDataSet<S>>, PartialResult<IDataSet<S>>> subj =
                 createSerializedSubject();
         final StreamObserver<PartialResponse> responseObserver = new NewDataSetObserver<S>(subj);
-        return subj.doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
-                .flatMap(command, responseObserver))
+        return subj.unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
+                .doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
+                        .flatMap(command, responseObserver))
                 .doOnUnsubscribe(() -> this.unsubscribe(operationId));
     }
 
@@ -139,9 +143,11 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
                                        .build();
         final SerializedSubject<PartialResult<R>, PartialResult<R>> subj = createSerializedSubject();
         final StreamObserver<PartialResponse> responseObserver = new SketchObserver<R>(subj);
-        return subj.doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
-                                                 .sketch(command, responseObserver))
-                   .doOnUnsubscribe(() -> this.unsubscribe(operationId));
+        return subj
+                .doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
+                        .sketch(command, responseObserver))
+                .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
+                .doOnUnsubscribe(() -> this.unsubscribe(operationId));
     }
 
     /**
@@ -176,9 +182,10 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
                 createSerializedSubject();
         final StreamObserver<PartialResponse> responseObserver =
                                                         new NewDataSetObserver<Pair<T, S>>(subj);
-        return subj.doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
-                                                 .zip(command, responseObserver))
-                   .doOnUnsubscribe(() -> this.unsubscribe(operationId));
+        return subj.unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
+                .doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
+                        .zip(command, responseObserver))
+                .doOnUnsubscribe(() -> this.unsubscribe(operationId));
     }
 
     @Override
@@ -197,8 +204,9 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
                 createSerializedSubject();
         final StreamObserver<PartialResponse> responseObserver =
                 new ManageObserver(subj, message, this);
-        return subj.doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
-                .manage(command, responseObserver))
+        return subj.unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
+                .doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
+                        .manage(command, responseObserver))
                 .doOnUnsubscribe(() -> this.unsubscribe(operationId));
     }
 

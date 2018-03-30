@@ -28,6 +28,7 @@ web/web.iml
 TAGS
 *.log
 *.log.*
+hillview.redo
 *.log.lck
 *.log.lck.*
 out

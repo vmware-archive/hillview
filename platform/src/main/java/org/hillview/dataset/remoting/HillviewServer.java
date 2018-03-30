@@ -56,9 +56,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Server that transfers map(), sketch(), zip() and unsubscribe() RPCs from a RemoteDataSet
- * object to locally managed IDataSet objects, and streams back results.
- *
+ * Server that transfers map(), sketch(), zip(), manage(), and unsubscribe() RPCs from a
+ * RemoteDataSet object to locally managed IDataSet objects, and streams back results.
  * If memoization is enabled, it caches the results of (operation, dataset-index) types.
  */
 public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
@@ -70,7 +69,10 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     private static final String LOCALHOST = "127.0.0.1";
     private static final int NUM_THREADS = 5;
     public static final int MAX_MESSAGE_SIZE = 20971520;
-    private final ExecutorService executorService = ExecutorUtils.newNamedThreadPool("server", NUM_THREADS);
+    // We run the executor service with high priority mainly so that
+    // it can propagate unsubscriptions quickly.
+    private final ExecutorService executorService =
+            ExecutorUtils.newNamedThreadPool("server", NUM_THREADS, Thread.MAX_PRIORITY);
     private static final int EXPIRE_TIME_IN_HOURS = 2;
     private boolean MEMOIZE = true;
 
@@ -84,9 +86,27 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     private final AtomicInteger dsIndex = new AtomicInteger(ROOT_DATASET_INDEX + 1);
 
     private final IDataSet initialDataset;
+    /**
+     * Maps a dataset number to the actual dataset.  This is the only handle that
+     * one can hold to an IDataSet on the server-side, so once an entry is removed
+     * from the cache it can be GC-ed.  This is how memory is reclaimed.
+     */
     private final Cache<Integer, IDataSet> dataSets;
     private final ConcurrentHashMap<UUID, Subscription> operationToObservable
             = new ConcurrentHashMap<UUID, Subscription>();
+    /**
+     * The timeline of a command can look like this:
+     * --------#-------|------------#-----------|---------#----------
+     *      unsub    received     unsub     completed   unsub
+     * I.e., the unsubscribe request can be actually received before or
+     * after the command.  We store information about unsubscribe requests
+     * and commands in this cache for a while, to enable matching the
+     * ones that show up out of order.
+     *
+     * Moreover, the unsub and receive messages can be processed on
+     * separate threads, so we have to be careful with TOCTOU.
+     */
+    private final Cache<UUID, Boolean> toUnsubscribe;
     private final HostAndPort listenAddress;
 
     private final MemoizedResults memoizedCommands;
@@ -111,6 +131,47 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                                 HillviewLogger.instance.info("Removing reference to dataset", "{0}: {1}",
                                     removalNotification.getKey(), removalNotification.getValue().toString()))
                 .build();
+        this.toUnsubscribe = CacheBuilder.<UUID, Boolean>newBuilder()
+                .expireAfterAccess(EXPIRE_TIME_IN_HOURS, TimeUnit.HOURS)
+                .build();
+    }
+
+    private UUID getId(Command command) {
+        return new UUID(command.getHighId(), command.getLowId());
+    }
+
+    /**
+     * Save the RxJava subscription for a command; allows it to be cancelled.
+     * @param id              Command id.
+     * @param subscription    RxJava subscription.
+     * @param reason          Logging message.
+     * @return                True if the operation is already cancelled.
+     */
+    synchronized private boolean saveSubscription(
+            UUID id, Subscription subscription, String reason) {
+        HillviewLogger.instance.info("Saving subscription", "{0}:{1}", reason, id);
+        Boolean unsub = this.toUnsubscribe.getIfPresent(id);
+        this.operationToObservable.put(id, subscription);
+        if (unsub == null) {
+            this.toUnsubscribe.put(id, false);
+            return false;
+        } else if (!unsub) {
+            this.toUnsubscribe.invalidate(id);
+        } else {
+            this.toUnsubscribe.put(id, true);
+        }
+        return unsub;
+    }
+
+    @Nullable
+    synchronized private Subscription removeSubscription(UUID id, String reason) {
+        HillviewLogger.instance.info("Removing subscription", "{0}:{1}", reason, id);
+        Boolean b = this.toUnsubscribe.getIfPresent(id);
+        if (b != null)
+            this.toUnsubscribe.invalidate(id);
+        else
+            this.toUnsubscribe.put(id, true);
+        return this.operationToObservable.remove(id);
     }
 
     synchronized private int save(IDataSet dataSet) {
@@ -146,7 +207,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
         long removed = this.dataSets.size();
         this.dataSets.invalidateAll();
         this.memoizedCommands.clear();
-        return (int) removed;
+        return (int)removed;
     }
 
     public void purgeMemoized() {
@@ -165,8 +226,9 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     /**
      * Subscriber that handles map, flatMap and zip.
      */
-    private Subscriber<PartialResult<IDataSet>> createSubscriber(final Command command,
-            final UUID id, final StreamObserver<PartialResponse> responseObserver) {
+    private Subscriber<PartialResult<IDataSet>> createSubscriber(
+            final Command command, final UUID id, final String operation,
+            final StreamObserver<PartialResponse> responseObserver) {
         return new Subscriber<PartialResult<IDataSet>>() {
             @Nullable private PartialResponse memoizedResult = null;
             @Nullable private Integer memoizedDatasetIndex = null;
@@ -176,7 +238,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             public void onCompleted() {
                 queue = queue.thenRunAsync(() -> {
                     responseObserver.onCompleted();
-                    HillviewServer.this.operationToObservable.remove(id);
+                    HillviewServer.this.removeSubscription(id, operation + " completed");
                     if (MEMOIZE && this.memoizedResult != null) {
                         HillviewServer.this.memoizedCommands.insert(
                                 command, this.memoizedResult,
@@ -191,7 +253,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                     HillviewLogger.instance.error("Error when creating subscriber", e);
                     e.printStackTrace();
                     responseObserver.onError(asStatusRuntimeException(e));
-                    HillviewServer.this.operationToObservable.remove(id);
+                    HillviewServer.this.removeSubscription(id, operation + " on error");
                 }, executorService);
             }
 
@@ -225,6 +287,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     @SuppressWarnings("unchecked")
     public void map(final Command command, final StreamObserver<PartialResponse> responseObserver) {
         try {
+            final UUID commandId = this.getId(command);
             final IDataSet dataset = this.getIfValid(command.getIdsIndex(), responseObserver);
             if (dataset == null)
                 return;
@@ -236,11 +299,15 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             }
 
             final MapOperation mapOp = SerializationUtils.deserialize(bytes);
-            final UUID commandId = new UUID(command.getHighId(), command.getLowId());
             final Observable<PartialResult<IDataSet>> observable = dataset.map(mapOp.mapper);
-            final Subscription sub = observable.subscribe(
-                    this.createSubscriber(command, commandId, responseObserver));
-            this.operationToObservable.put(commandId, sub);
+            Subscriber subscriber = this.createSubscriber(
+                    command, commandId, "map", responseObserver);
+            final Subscription sub = observable
+                    .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
+                    .subscribe(subscriber);
+            boolean unsub = this.saveSubscription(commandId, sub, "map");
+            if (unsub)
+                sub.unsubscribe();
         } catch (final Exception e) {
             HillviewLogger.instance.error("Exception in map", e);
             e.printStackTrace();
@@ -256,6 +323,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     public void flatMap(final Command command, final StreamObserver<PartialResponse>
             responseObserver) {
         try {
+            final UUID commandId = this.getId(command);
             final IDataSet dataset = this.getIfValid(command.getIdsIndex(), responseObserver);
             if (dataset == null)
                 return;
@@ -267,11 +335,15 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                 return;
             }
             final FlatMapOperation mapOp = SerializationUtils.deserialize(bytes);
-            final UUID commandId = new UUID(command.getHighId(), command.getLowId());
             final Observable<PartialResult<IDataSet>> observable = dataset.flatMap(mapOp.mapper);
-            final Subscription sub = observable.subscribe(
-                    this.createSubscriber(command, commandId, responseObserver));
-            this.operationToObservable.put(commandId, sub);
+            Subscriber subscriber = this.createSubscriber(
+                    command, commandId, "flatMap", responseObserver);
+            final Subscription sub = observable
+                    .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
+                    .subscribe(subscriber);
+            boolean unsub = this.saveSubscription(commandId, sub, "flatMap");
+            if (unsub)
+                sub.unsubscribe();
         } catch (final Exception e) {
             HillviewLogger.instance.error("Exception in flatMap", e);
             e.printStackTrace();
@@ -286,6 +358,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     @SuppressWarnings("unchecked")
     public void sketch(final Command command, final StreamObserver<PartialResponse> responseObserver) {
         try {
+            final UUID commandId = this.getId(command);
             boolean memoize = MEMOIZE;  // The value may change while we execute
             final IDataSet dataset = this.getIfValid(command.getIdsIndex(), responseObserver);
             if (dataset == null)
@@ -298,20 +371,21 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             final byte[] bytes = command.getSerializedOp().toByteArray();
             final SketchOperation sketchOp = SerializationUtils.deserialize(bytes);
             final Observable<PartialResult> observable = dataset.sketch(sketchOp.sketch);
-            final UUID commandId = new UUID(command.getHighId(), command.getLowId());
-            final Subscription sub = observable.subscribe(new Subscriber<PartialResult>() {
-                @Nullable private Object sketchResultAccumulator = memoize ? sketchOp.sketch.getZero(): null;
+            Subscriber subscriber = new Subscriber<PartialResult>() {
+                @Nullable private Object sketchResultAccumulator =
+                        memoize ? sketchOp.sketch.getZero(): null;
                 private CompletableFuture queue = CompletableFuture.completedFuture(null);
 
                 @Override
                 public void onCompleted() {
                     queue = queue.thenRunAsync(() -> {
                         responseObserver.onCompleted();
-                        HillviewServer.this.operationToObservable.remove(commandId);
+                        HillviewServer.this.removeSubscription(commandId, "sketch completed");
 
                         if (memoize && this.sketchResultAccumulator != null) {
                             final OperationResponse<PartialResult> res =
-                                    new OperationResponse<PartialResult>(new PartialResult(1.0, this.sketchResultAccumulator));
+                                    new OperationResponse<PartialResult>(
+                                            new PartialResult(1.0, this.sketchResultAccumulator));
                             final byte[] bytes = SerializationUtils.serialize(res);
                             final PartialResponse memoizedResult = PartialResponse.newBuilder()
                                     .setSerializedOp(ByteString.copyFrom(bytes))
@@ -327,7 +401,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                         HillviewLogger.instance.error("Exception in sketch", e);
                         e.printStackTrace();
                         responseObserver.onError(asStatusRuntimeException(e));
-                        HillviewServer.this.operationToObservable.remove(commandId);
+                        HillviewServer.this.removeSubscription(commandId, "sketch onError");
                     }, executorService);
                 }
 
@@ -345,8 +419,13 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                                 .build());
                     }, executorService);
                 }
-            });
-            this.operationToObservable.put(commandId, sub);
+            };
+            final Subscription sub = observable
+                    .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
+                    .subscribe(subscriber);
+            boolean unsub = this.saveSubscription(commandId, sub, "sketch");
+            if (unsub)
+                sub.unsubscribe();
         } catch (final Exception e) {
             HillviewLogger.instance.error("Exception in sketch", e);
             e.printStackTrace();
@@ -361,13 +440,13 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     @SuppressWarnings("unchecked")
     public void manage(Command command, StreamObserver<PartialResponse> responseObserver) {
         try {
+            final UUID commandId = this.getId(command);
             // TODO: handle errors in a better way in manage commands
             final IDataSet dataset = this.getIfValid(command.getIdsIndex(), responseObserver);
             if (dataset == null)
                 return;
             final byte[] bytes = command.getSerializedOp().toByteArray();
             final ManageOperation manage = SerializationUtils.deserialize(bytes);
-            final UUID commandId = new UUID(command.getHighId(), command.getLowId());
             Observable<PartialResult<ControlMessage.StatusList>> observable = dataset.manage(manage
                     .message);
             final Callable<ControlMessage.StatusList> callable = () -> {
@@ -385,34 +464,38 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             Observable<JsonList<ControlMessage.Status>> executed = Observable.fromCallable(callable);
             observable = observable.mergeWith(executed.map(l -> new PartialResult(0, l)));
 
+            Subscriber subscriber = new Subscriber<PartialResult<ControlMessage.StatusList>>() {
+                @Override
+                public void onCompleted() {
+                    responseObserver.onCompleted();
+                    HillviewServer.this.removeSubscription(commandId, "manage completed");
+                }
+
+                @Override
+                public void onError(final Throwable e) {
+                    HillviewLogger.instance.error("Exception in manage operation", e);
+                    e.printStackTrace();
+                    responseObserver.onError(e);
+                    HillviewServer.this.removeSubscription(commandId, "manage onError");
+                }
+
+                @Override
+                public void onNext(final PartialResult pr) {
+                    final OperationResponse<PartialResult> res =
+                            new OperationResponse<PartialResult>(pr);
+                    final byte[] bytes = SerializationUtils.serialize(res);
+                    responseObserver.onNext(PartialResponse.newBuilder()
+                            .setSerializedOp(ByteString.copyFrom(bytes))
+                            .build());
+                }
+            };
             // Results of management commands are never memoized.
-            final Subscription sub = observable.subscribe(
-                    new Subscriber<PartialResult<ControlMessage.StatusList>>() {
-                        @Override
-                        public void onCompleted() {
-                            responseObserver.onCompleted();
-                            HillviewServer.this.operationToObservable.remove(commandId);
-                        }
-
-                        @Override
-                        public void onError(final Throwable e) {
-                            HillviewLogger.instance.error("Exception in manage operation", e);
-                            e.printStackTrace();
-                            responseObserver.onError(e);
-                            HillviewServer.this.operationToObservable.remove(commandId);
-                        }
-
-                        @Override
-                        public void onNext(final PartialResult pr) {
-                            final OperationResponse<PartialResult> res =
-                                    new OperationResponse<PartialResult>(pr);
-                            final byte[] bytes = SerializationUtils.serialize(res);
-                            responseObserver.onNext(PartialResponse.newBuilder()
-                                    .setSerializedOp(ByteString.copyFrom(bytes))
-                                    .build());
-                        }
-            });
-            this.operationToObservable.put(commandId, sub);
+            final Subscription sub = observable
+                    .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
+                    .subscribe(subscriber);
+            boolean unsub = this.saveSubscription(commandId, sub, "manage");
+            if (unsub)
+                sub.unsubscribe();
         } catch (final Exception e) {
             HillviewLogger.instance.error("Exception in manage", e);
             e.printStackTrace();
@@ -426,6 +509,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     @SuppressWarnings("unchecked")
     public void zip(final Command command, final StreamObserver<PartialResponse> responseObserver) {
         try {
+            final UUID commandId = this.getId(command);
             final byte[] bytes = command.getSerializedOp().toByteArray();
             final ZipOperation zipOp = SerializationUtils.deserialize(bytes);
             final IDataSet left = this.getIfValid(command.getIdsIndex(), responseObserver);
@@ -442,10 +526,14 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             }
 
             final Observable<PartialResult<IDataSet>> observable = left.zip(right);
-            final UUID commandId = new UUID(command.getHighId(), command.getLowId());
-            final Subscription sub = observable.subscribe(
-                    this.createSubscriber(command, commandId, responseObserver));
-            this.operationToObservable.put(commandId, sub);
+            Subscriber subscriber = this.createSubscriber(
+                    command, commandId, "zip", responseObserver);
+            final Subscription sub = observable
+                    .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
+                    .subscribe(subscriber);
+            boolean unsub = this.saveSubscription(commandId, sub, "zip");
+            if (unsub)
+                sub.unsubscribe();
         } catch (final Exception e) {
             HillviewLogger.instance.error("Exception in zip", e);
             e.printStackTrace();
@@ -461,10 +549,15 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
         try {
             final byte[] bytes = command.getSerializedOp().toByteArray();
             final UnsubscribeOperation unsubscribeOp = SerializationUtils.deserialize(bytes);
-            final Subscription subscription = this.operationToObservable.remove(unsubscribeOp.id);
+            HillviewLogger.instance.info("Unsubscribing", "{0}", unsubscribeOp.id);
+            @Nullable
+            final Subscription subscription = this.removeSubscription(unsubscribeOp.id,
+                    "unsubscribe request");
             if (subscription != null) {
-                HillviewLogger.instance.info("Unsubscribing", "{0}", unsubscribeOp.id);
                 subscription.unsubscribe();
+            } else {
+                HillviewLogger.instance.warn("Could not find subscription", "{0}", unsubscribeOp.id);
+                this.toUnsubscribe.put(unsubscribeOp.id, true);
             }
         } catch (final Exception e) {
             HillviewLogger.instance.error("Exception in unsubscribe", e);

@@ -167,7 +167,7 @@ public final class RpcServer {
         }
         Subscription sub = RpcObjectManager.instance.getSubscription(session);
         if (sub != null) {
-            HillviewLogger.instance.info("Unsubscribing", "{0}", this.toString());
+            HillviewLogger.instance.info("Unsubscribing", "{0}:{1}", this, sub);
             sub.unsubscribe();
             RpcObjectManager.instance.removeSubscription(session);
         }

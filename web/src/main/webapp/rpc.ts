@@ -162,6 +162,7 @@ export class RpcRequest<T> implements ICancellable {
      */
     public cancel(): boolean {
         if (!this.closed) {
+            console.log(formatDate() + ' cancelling ' + this.toString());
             this.closed = true;
             this.socket.close();
             return true;
@@ -176,6 +177,10 @@ export class RpcRequest<T> implements ICancellable {
                 /^\s+at ((rx\.)|(io\.grpc)|(java\.lang\.Thread\.run)|(java\.util\.concurrent\.ThreadPoolExecutor))/))
             .map(v => v.replace("io.grpc.StatusRuntimeException: INTERNAL: ", ""));
         return lines.join("\n");
+    }
+
+    public toString(): string {
+        return this.objectId + "." + this.method + "()";
     }
 
     /**

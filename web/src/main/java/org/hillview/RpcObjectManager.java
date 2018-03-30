@@ -95,7 +95,8 @@ public final class RpcObjectManager {
             // This means that we are replaying the computation; the subscription is
             // probably already saved.
             return;
-        HillviewLogger.instance.info("Saving subscription", "{0}", context.toString());
+        HillviewLogger.instance.info("Saving subscription", "{0}:{1}",
+                context, subscription);
         if (this.sessionSubscription.get(session) != null)
             // This can happen because we have started the operation, some part of the
             // object was not found on a remote node, and then reconstruction started.

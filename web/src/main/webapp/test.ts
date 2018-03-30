@@ -115,13 +115,14 @@ export class Test {
             description: "Load all flights",
             cond: () => true,
             cont: () => findElement("#hillviewPage0 #topMenu #Flights").click()
-        }, {
+        }, /* {
+        This menu has been disabled.
             description: "Show all columns",
             cond: () => findElement("#hillviewPage1 .idle") != null,
             cont: () => findElement("#hillviewPage1 #topMenu #All_columns").click()
-        }, {
+        }, */ {
             description: "Show no columns",
-            cond: () => true,
+            cond: () => findElement("#hillviewPage1 .idle") != null,
             cont: () => findElement("#hillviewPage1 #topMenu #No_columns").click()
         }, {
             description: "show column 0",

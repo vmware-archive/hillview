@@ -59,6 +59,12 @@ public class HillviewLogger {
         NETTY_LOGGER.setLevel(Level.INFO);
     }
 
+    /**
+     * Create a Hillview logger.
+     * @param role      Who is doing the logging: web server, worker, test, etc.
+     * @param filename  File where logs are to be written.  If null logs will be written to the
+     *                  console.
+     */
     private HillviewLogger(String role, @Nullable String filename) {
         // Disable all default logging
         LogManager.getLogManager().reset();
@@ -67,35 +73,40 @@ public class HillviewLogger {
         this.role = this.checkCommas(role);
         this.logger.setLevel(Level.INFO);
 
+        Formatter form = new SimpleFormatter() {
+            final String[] components = new String[5];
+            final String newline = System.lineSeparator();
+            private final DateFormat df = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss.SSS");
+            @Override
+            public synchronized String format(LogRecord record) {
+                this.components[0] = HillviewLogger.this.checkCommas(
+                        df.format(new Date(record.getMillis())));
+                this.components[1] = HillviewLogger.this.role;
+                this.components[2] = HillviewLogger.this.checkCommas(
+                        record.getLevel().toString());
+                this.components[3] = HillviewLogger.this.machine;
+                this.components[4] = record.getMessage();
+                String result = String.join(",", components);
+                return result + this.newline;
+            }
+        };
+
+        Handler handler;
         if (filename != null) {
             try {
-                FileHandler fh = new FileHandler(filename);
-                fh.setFormatter(new SimpleFormatter() {
-                    final String[] components = new String[5];
-                    final String newline = System.lineSeparator();
-                    private final DateFormat df = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss.SSS");
-                    @Override
-                    public synchronized String format(LogRecord record) {
-                        this.components[0] = HillviewLogger.this.checkCommas(
-                                df.format(new Date(record.getMillis())));
-                        this.components[1] = HillviewLogger.this.role;
-                        this.components[2] = HillviewLogger.this.checkCommas(
-                                record.getLevel().toString());
-                        this.components[3] = HillviewLogger.this.machine;
-                        this.components[4] = record.getMessage();
-                        String result = String.join(",", components);
-                        return result + this.newline;
-                    }
-                });
-                logger.addHandler(fh);
+                handler = new FileHandler(filename);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
+        } else {
+            handler = new ConsoleHandler();
         }
+        handler.setFormatter(form);
+        logger.addHandler(handler);
         this.info("Starting logger", "Working directory: {0}", System.getProperty("user.dir"));
     }
 
-    public static void initialize(String role, String filename) {
+    public static void initialize(String role, @Nullable String filename) {
         instance = new HillviewLogger(role, filename);
     }
 
