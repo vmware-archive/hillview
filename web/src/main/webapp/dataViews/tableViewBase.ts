@@ -24,7 +24,7 @@ import {
 } from "../javaBridge";
 import {FullPage} from "../ui/fullPage";
 import {DistinctStrings} from "../distinctStrings";
-import {Comparison, Converters, ICancellable, significantDigits} from "../util";
+import {cloneToSet, Comparison, Converters, ICancellable, significantDigits} from "../util";
 import {TableOperationCompleted, TableView} from "./tableView";
 import {CategoryCache} from "../categoryCache";
 import {HistogramDialog, RangeCollector} from "./histogramView";
@@ -129,8 +129,8 @@ export abstract class TableViewBase extends RemoteTableObjectView {
         let col = dialog.getFieldValue("outColName");
         let kind = dialog.getFieldValue("outColKind");
         let fun = "function map(row) {" + dialog.getFieldValue("function") + "}";
-        let selColumns = this.getSelectedColNames();
-        let subSchema = TableView.dropColumns(this.schema, c => (selColumns.indexOf(c) < 0));
+        let selColumns = cloneToSet(this.getSelectedColNames());
+        let subSchema = this.schema.filter(c => selColumns.has(c.name));
         let arg: CreateColumnInfo = {
             jsFunction: fun,
             outputColumn: col,
@@ -232,7 +232,7 @@ export abstract class TableViewBase extends RemoteTableObjectView {
     }
 
     twoDHistogramMenu(heatmap: boolean): void {
-        let eligible = TableView.dropColumns(this.schema, d => d.kind == "String");
+        let eligible = this.schema.filter(d => d.kind != "String");
         if (eligible.length < 2) {
             this.reportError("Could not find two columns that can be charted.");
             return;
@@ -264,7 +264,7 @@ export abstract class TableViewBase extends RemoteTableObjectView {
     }
 
     oneDHistogramMenu(): void {
-        let eligible = TableView.dropColumns(this.schema, d => d.kind == "String");
+        let eligible = this.schema.filter(d => d.kind != "String");
         if (eligible.length == 0) {
             this.reportError("No columns that can be histogrammed found.");
             return;

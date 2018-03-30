@@ -20,7 +20,7 @@ import {Renderer, OnCompleteRenderer} from "../rpc";
 import {TopMenu, SubMenu, ContextMenu} from "../ui/menu";
 import {
     Converters, PartialResult, ICancellable, percent, formatNumber, significantDigits,
-    formatDate, Comparison
+    formatDate, Comparison, cloneToSet
 } from "../util";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {ColumnConverter, ConverterDialog} from "./columnConverter";
@@ -34,7 +34,7 @@ import {SchemaView} from "./schemaView";
 import {
     IColumnDescription, RecordOrder, RowSnapshot, Schema,
     ContentsKind, asContentsKind, NextKList,
-    CombineOperators, TableSummary, RemoteObjectId, FindResult, ComparisonFilterDescription
+    CombineOperators, TableSummary, RemoteObjectId, FindResult, ComparisonFilterDescription, ColumnSortOrientation
 } from "../javaBridge";
 import {RemoteTableObject, RemoteTableRenderer, ZipReceiver} from "../tableTarget";
 import {combineMenu, SelectedObject} from "../selectedObject";
@@ -353,16 +353,6 @@ export class TableView extends TableViewBase implements IScrollTarget {
         return null;
     }
 
-    public static dropColumns(schema: Schema, filter: (IColumnDescription) => boolean): Schema {
-        let cols: IColumnDescription[] = [];
-        for (let i = 0; i < schema.length; i++) {
-            let c = schema[i];
-            if (!filter(c))
-                cols.push(c);
-        }
-        return cols;
-    }
-
     getSortOrder(column: string): [boolean, number] {
         for (let i = 0; i < this.order.length(); i++) {
             let o = this.order.get(i);
@@ -520,7 +510,11 @@ export class TableView extends TableViewBase implements IScrollTarget {
                     }, true);
                 }
 
-                //this.contextMenu.addItem({text: "Drop", action: () => this.dropColumns() });
+                this.contextMenu.addItem({
+                    text: "Drop",
+                    action: () => this.dropColumns(),
+                    help: "Eliminate the selected columns from the view."
+                }, selectedCount != 0);
                 this.contextMenu.addItem({
                     text: "Estimate distinct elements",
                     action: () => this.hLogLog(),
@@ -666,12 +660,19 @@ export class TableView extends TableViewBase implements IScrollTarget {
         cd.show();
     }
 
-    /*
     dropColumns(): void {
-        this.currentData.schema = TableView.dropColumns(this.schema,
-                c => (this.getSelectedColNames().indexOf(c.name) != -1));
-        this.refresh();
-    }*/
+        let selected = cloneToSet(this.getSelectedColNames());
+        let schema = this.schema.filter(c => !selected.has(c.name));
+        let so: ColumnSortOrientation[] = [];
+        for (let i = 0; i < this.order.length(); i++) {
+            let cso = this.order.get(i);
+            if (!selected.has(cso.columnDescription.name))
+                so.push(cso);
+        }
+        let order = new RecordOrder(so);
+        this.schema = schema;
+        this.setOrder(order);
+    }
 
     public setSchema(schema: Schema): void {
         if (schema != null)

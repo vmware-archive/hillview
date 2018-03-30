@@ -24,7 +24,7 @@ import {TabularDisplay} from "../ui/tabularDisplay";
 import {TableView} from "./tableView";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {TableViewBase} from "./tableViewBase";
-import {significantDigits} from "../util";
+import {cloneToSet, significantDigits} from "../util";
 
 /**
  * This class is used to browse through the columns of a table schema
@@ -43,30 +43,37 @@ export class SchemaView extends TableViewBase {
                 elapsedMs: number) {
         super(remoteObjectId, originalTableId, page);
         this.rowCount = rowCount;
+        this.schema = schema;
+        this.show();
+        this.page.reportTime(elapsedMs);
+    }
+
+    show(): void {
         this.topLevel = document.createElement("div");
         this.contextMenu = new ContextMenu(this.topLevel);
-        this.schema = schema;
 
         let viewMenu = new SubMenu([{
             text: "Selected columns",
             action: () => this.showTable(),
             help: "Show the data using a tabular view containing the selected columns."
-            }]);
+        }]);
         let selectMenu = new SubMenu([{
             text: "By Name",
             action: () => nameDialog.show(),
             help: "Select Columns by name."
         }, {
             text: "By Type",
-            action: () => {typeDialog.show();},
+            action: () => {
+                typeDialog.show();
+            },
             help: "Select Columns by type."
         }]);
         let menu = new TopMenu([
             this.saveAsMenu(),
             {text: "View", subMenu: viewMenu, help: "Change the way the data is displayed."},
-            {text: "Select", subMenu: selectMenu, help: "Select columns based on attributes." },
+            {text: "Select", subMenu: selectMenu, help: "Select columns based on attributes."},
             this.chartMenu()
-            ]);
+        ]);
         this.page.setMenu(menu);
         this.topLevel.appendChild(document.createElement("br"));
 
@@ -78,16 +85,16 @@ export class SchemaView extends TableViewBase {
         this.display.setColumns(["#", "Name", "Type"],
             ["Column number", "Column name", "Type of data stored within the column"]);
 
-        /* Dialog box for selecting columns based on name*/
+        /* Dialog box for selecting columns based on name */
         let nameDialog = new Dialog("Select by name",
             "Allows selecting/deselecting columns by name using regular expressions");
         nameDialog.addTextField("selected", "Name", FieldKind.String, "",
             "Names of columns to select (regular expressions allowed)");
-        let actions: string[] =  ["Add", "Remove"];
+        let actions: string[] = ["Add", "Remove"];
         nameDialog.addSelectField("action", "Action", actions, "Add",
             "Add to or Remove from current selection");
         nameDialog.setAction(() => {
-            let regExp: RegExp= new RegExp(nameDialog.getFieldValue("selected"));
+            let regExp: RegExp = new RegExp(nameDialog.getFieldValue("selected"));
             let action: string = nameDialog.getFieldValue("action");
             this.nameAction(regExp, action);
             this.display.highlightSelectedRows();
@@ -115,9 +122,9 @@ export class SchemaView extends TableViewBase {
             typeDialog.show()
         });
 
-        for (let i = 0; i < schema.length; i++) {
-            let row = this.display.addRow([(i + 1).toString(), schema[i].name,
-                schema[i].kind.toString()]);
+        for (let i = 0; i < this.schema.length; i++) {
+            let row = this.display.addRow([(i + 1).toString(), this.schema[i].name,
+                this.schema[i].kind.toString()]);
             row.oncontextmenu = e => this.createAndShowContextMenu(e);
         }
         this.topLevel.appendChild(this.display.getHTMLRepresentation());
@@ -126,7 +133,7 @@ export class SchemaView extends TableViewBase {
         this.topLevel.appendChild(this.summary);
         if (this.rowCount != null)
             this.summary.textContent = significantDigits(this.rowCount) + " rows";
-        this.page.reportTime(elapsedMs);
+        this.page.setDataView(this);
     }
 
     createAndShowContextMenu(e: MouseEvent): void {
@@ -137,6 +144,10 @@ export class SchemaView extends TableViewBase {
         }
         this.contextMenu.clear();
         let selectedCount = this.display.selectedRows.size();
+        this.contextMenu.addItem({
+            text: "Drop",
+            action: () => this.dropColumns(),
+            help: "Drop the selected columns from the view." }, true);
         this.contextMenu.addItem({
             text: "Show as table",
             action: () => this.showTable(),
@@ -196,6 +207,12 @@ export class SchemaView extends TableViewBase {
     }
 
     refresh(): void { }
+
+    private dropColumns(): void {
+        let selected = cloneToSet(this.getSelectedColNames());
+        this.schema = this.schema.filter(c => !selected.has(c.name));
+        this.show();
+    }
 
     private nameAction(regExp: RegExp, action: string) {
         for (let i = 0; i < this.schema.length; i++) {
