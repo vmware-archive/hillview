@@ -32,14 +32,14 @@ import {SelectionStateMachine} from "../ui/selectionStateMachine";
 
 import {SchemaView} from "./schemaView";
 import {
-    IColumnDescription, RecordOrder, RowSnapshot, Schema,
-    ContentsKind, asContentsKind, NextKList,
+    IColumnDescription, RecordOrder, RowSnapshot, Schema, ContentsKind, asContentsKind, NextKList,
     CombineOperators, TableSummary, RemoteObjectId, FindResult, ComparisonFilterDescription, ColumnSortOrientation
 } from "../javaBridge";
 import {RemoteTableObject, RemoteTableRenderer, ZipReceiver} from "../tableTarget";
-import {combineMenu, SelectedObject} from "../selectedObject";
 import {IDataView} from "../ui/dataview";
 import {TableViewBase} from "./tableViewBase";
+import {Dataset} from "../dataset";
+import {SchemaClass} from "../schemaClass";
 //import {LAMPDialog} from "./lampView";
 
 /**
@@ -62,8 +62,8 @@ export class TableView extends TableViewBase implements IScrollTarget {
     protected selectedColumns = new SelectionStateMachine();
     protected messageBox: HTMLElement;
 
-    public constructor(remoteObjectId: RemoteObjectId, originalTableId: RemoteObjectId, page: FullPage) {
-        super(remoteObjectId, originalTableId, page);
+    public constructor(remoteObjectId: RemoteObjectId, dataset: Dataset, page: FullPage) {
+        super(remoteObjectId, dataset, page);
 
         this.selectedColumns = new SelectionStateMachine();
         this.order = new RecordOrder([]);
@@ -122,13 +122,14 @@ export class TableView extends TableViewBase implements IScrollTarget {
                     action: () => this.showCompareDialog(null, this.order) },
                 ])
             },
-            combineMenu(this, page.pageId)
+            dataset.combineMenu(this, page.pageId)
         ]);
 
         this.page.setMenu(menu);
         this.contextMenu = new ContextMenu(this.topLevel);
         this.topLevel.appendChild(document.createElement("hr"));
         this.htmlTable = document.createElement("table");
+        this.htmlTable.className = "tabularDisplay";
         this.scrollBar = new ScrollBar(this);
 
         // to force the scroll bar next to the table we put them in yet another div
@@ -186,16 +187,16 @@ export class TableView extends TableViewBase implements IScrollTarget {
      * Combine two views according to some operation: intersection, union, etc.
      */
     combine(how: CombineOperators): void {
-        let r = SelectedObject.instance.getSelected(this, this.getPage().getErrorReporter());
-        if (r == null)
+        let r = this.dataset.getSelected();
+        if (r.first == null)
             return;
 
-        let rr = this.createZipRequest(r);
+        let rr = this.createZipRequest(r.first);
         let o = this.order.clone();
         let finalRenderer = (page: FullPage, operation: ICancellable) => {
-            return new TableOperationCompleted(page, this.schema, operation, o, this.originalTableId);
+            return new TableOperationCompleted(page, this.schema, operation, o, this.dataset);
         };
-        rr.invoke(new ZipReceiver(this.getPage(), rr, how, this.originalTableId, finalRenderer));
+        rr.invoke(new ZipReceiver(this.getPage(), rr, how, this.dataset, finalRenderer));
     }
 
     getSelectedColCount(): number {
@@ -299,7 +300,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
 
         let o = this.order.clone();
         for (let i = 0; i < this.schema.length; i++) {
-            let c = this.schema[i];
+            let c = this.schema.get(i);
             o.addColumnIfNotVisible({ columnDescription: c, isAscending: true });
         }
         this.setOrder(o);
@@ -314,44 +315,6 @@ export class TableView extends TableViewBase implements IScrollTarget {
         rr.invoke(new NextKReceiver(this.page, table, rr, false, new RecordOrder([])));
     }
     */
-
-    public static allColumnNames(schema: Schema): string[] {
-        if (schema == null)
-            return null;
-        let colNames = [];
-        for (let i = 0; i < schema.length; i++)
-            colNames.push(schema[i].name)
-        return colNames;
-    }
-
-    public static uniqueColumnName(schema: Schema, prefix: string): string {
-        let existingNames = TableView.allColumnNames(schema);
-        let name = prefix;
-        let i = 0;
-        while (existingNames.indexOf(name) >= 0) {
-            name = prefix + `_${i}`;
-            i++;
-        }
-        return name;
-    }
-
-    public static columnIndex(schema: Schema, colName: string): number {
-        if (schema == null)
-            return null;
-        for (let i = 0; i < schema.length; i++)
-            if (schema[i].name == colName)
-                return i;
-        return null;
-    }
-
-    public static findColumn(schema: Schema, colName: string): IColumnDescription {
-        if (colName == null)
-            return null;
-        let colIndex = TableView.columnIndex(schema, colName);
-        if (colIndex != null)
-            return schema[colIndex];
-        return null;
-    }
 
     getSortOrder(column: string): [boolean, number] {
         for (let i = 0; i < this.order.length(); i++) {
@@ -412,7 +375,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
         let o = this.order.clone();
         // The set iterator did not seem to work correctly...
         this.getSelectedColNames().forEach(colName => {
-            let col = TableView.findColumn(this.schema, colName);
+            let col = this.schema.find(colName);
             if (order != 0 && col != null) {
                 if (first)
                     o.sortFirst({columnDescription: col, isAscending: order > 0});
@@ -479,7 +442,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
             return;
 
         for (let i = 0; i < this.schema.length; i++) {
-            let cd = this.schema[i];
+            let cd = this.schema.get(i);
             cds.push(cd);
             let title = "Column type is " + cd.kind +
                 ".\nA mouse click with the right button will open a menu.";
@@ -567,7 +530,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
                     text: "Filter...",
                     action: () => {
                         let colName = this.getSelectedColNames()[0];
-                        let cd = TableView.findColumn(this.schema, colName);
+                        let cd = this.schema.find(colName);
                         this.showFilterDialog(cd.name, this.order);
                     },
                     help: "Eliminate data that matches/does not match a specific value."
@@ -629,7 +592,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
     }
 
     filterOnValue(colName: string, value: string, comparison: Comparison): void {
-        let cd = TableView.findColumn(this.schema, colName);
+        let cd = this.schema.find(colName);
         if (value != null && cd.kind == "Date") {
             // Parse the date in Javascript; the Java Date parser is very bad
             let date = new Date(value);
@@ -647,7 +610,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
      * Convert the data in a column to a different column kind.
      */
     convert(colName: string): void {
-        let cd = new ConverterDialog(colName, TableView.allColumnNames(this.schema));
+        let cd = new ConverterDialog(colName, this.schema.columnNames);
         cd.setAction(
             () => {
                 let kindStr = cd.getFieldValue("newKind");
@@ -674,9 +637,10 @@ export class TableView extends TableViewBase implements IScrollTarget {
         this.setOrder(order);
     }
 
-    public setSchema(schema: Schema): void {
-        if (schema != null)
-            this.schema = schema;
+    setSchema(schema: IColumnDescription[]): void {
+        if (schema == null)
+            return;
+        this.schema = new SchemaClass(schema);
     }
 
     // mouse click on a column
@@ -703,7 +667,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
         this.selectedColumns.clear();
         let count = 0;
         for (let i = 0; i < this.schema.length; i++) {
-            let kind = this.schema[i].kind;
+            let kind = this.schema.get(i).kind;
             if (kind == "Integer" || kind == "Double") {
                 this.selectedColumns.add(i);
                 count++;
@@ -714,18 +678,18 @@ export class TableView extends TableViewBase implements IScrollTarget {
     }
 
     private columnClass(colName: string): string {
-        let index = TableView.columnIndex(this.schema, colName);
+        let index = this.schema.columnIndex(colName);
         return "col" + String(index);
     }
 
     public getSelectedColNames(): string[] {
         let colNames: string[] = [];
-        this.selectedColumns.getStates().forEach(i => colNames.push(this.schema[i].name));
+        this.selectedColumns.getStates().forEach(i => colNames.push(this.schema.get(i).name));
         return colNames;
     }
 
     private isNumericColumn(colName: string): boolean {
-        let kind = TableView.findColumn(this.schema, colName).kind;
+        let kind = this.schema.find(colName).kind;
         return kind == "Double" || kind == "Integer";
     }
 
@@ -770,7 +734,8 @@ export class TableView extends TableViewBase implements IScrollTarget {
                     return;
                 }
                 let rr = this.createCorrelationMatrixRequest(colNames, this.getTotalRowCount(), toSample);
-                rr.invoke(new CorrelationMatrixReceiver(this.getPage(), this, rr, this.order, numComponents, projectionName));
+                rr.invoke(new CorrelationMatrixReceiver(this.getPage(), this, rr, this.order,
+                    numComponents, projectionName));
             });
             pcaDialog.show();
         } else {
@@ -793,7 +758,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
 
     private highlightSelectedColumns(): void {
         for (let i = 0; i < this.schema.length; i++) {
-            let name = this.schema[i].name;
+            let name = this.schema.get(i).name;
             let cls = this.columnClass(name);
             let headers = this.tHead.getElementsByClassName(cls);
             let cells = this.cellsPerColumn.get(name);
@@ -836,7 +801,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
 
     public viewSchema(): void {
         let newPage = new FullPage("Schema of ", "Schema", this.page);
-        let sv = new SchemaView(this.remoteObjectId, this.originalTableId,
+        let sv = new SchemaView(this.remoteObjectId, this.dataset,
             newPage, this.schema, this.rowCount, 0);
         newPage.setDataView(sv);
         this.page.insertAfterMe(newPage);
@@ -940,7 +905,6 @@ export class TableView extends TableViewBase implements IScrollTarget {
     public setScroll(top: number, bottom: number): void {
         this.scrollBar.setPosition(top, bottom);
     }
-
 }
 
 /**
@@ -970,23 +934,23 @@ export class NextKReceiver extends Renderer<NextKList> {
 export class RemoteTableReceiver extends RemoteTableRenderer {
     /**
      * Create a renderer for a new table.
-     * @param {FullPage} page            Parent page initiating this request.
-     * @param {ICancellable} operation   Operation that will bring the results.
-     * @param {string} title             Title to use for resulting page; if null the parent page is used.
-     * @param progressInfo               Description of the files that are being loaded.
-     * @param forceTableView             If true the resulting view is always a table.
-     * @param originalTableId            Id of original table from which everything derives.
+     * @param page            Parent page initiating this request.
+     * @param operation       Operation that will bring the results.
+     * @param title           Title to use for resulting page; if null the parent page is used.
+     * @param progressInfo    Description of the files that are being loaded.
+     * @param forceTableView  If true the resulting view is always a table.
      */
     constructor(page: FullPage, operation: ICancellable, protected title: string,
-                progressInfo: string, protected forceTableView: boolean, originalTableId: RemoteObjectId) {
-        super(page, operation, progressInfo, originalTableId);
+                progressInfo: string, protected forceTableView: boolean) {
+        super(page, operation, progressInfo, null);
     }
 
     public run(): void {
         super.run();
         let rr = this.remoteObject.createGetSchemaRequest();
         rr.chain(this.operation);
-        rr.invoke(new SchemaReceiver(this.page, rr, this.remoteObject,
+        let dataset = new Dataset(this.remoteObject.remoteObjectId);
+        rr.invoke(new SchemaReceiver(this.page, rr, this.remoteObject, dataset,
             this.title, this.forceTableView));
     }
 }
@@ -997,15 +961,18 @@ export class RemoteTableReceiver extends RemoteTableRenderer {
 class SchemaReceiver extends OnCompleteRenderer<TableSummary> {
     /**
      * Create a schema receiver for a new table.
-     * @param {FullPage} page            Parent page initiating this request.
-     * @param {ICancellable} operation   Operation that will bring the results.
-     * @param remoteObject               Table object.
-     * @param {string} title             Title to use for resulting page; if null the parent page is used.
-     * @param forceTableView             If true the resulting view is always a table.
+     * @param page            Parent page initiating this request.
+     * @param operation       Operation that will bring the results.
+     * @param remoteObject    Table object.
+     * @param dataset         Dataset that this is a part of.
+     * @param title           Title to use for resulting page; if null the parent page is used.
+     * @param forceTableView  If true the resulting view is always a table.
      */
-    constructor(page: FullPage, operation: ICancellable, protected remoteObject: RemoteTableObject,
+    constructor(page: FullPage, operation: ICancellable,
+                protected remoteObject: RemoteTableObject,
+                protected dataset: Dataset,
                 protected title: string, protected forceTableView) {
-        super(page, operation, "")
+        super(page, operation, "Get schema")
     }
 
     run(summary: TableSummary): void {
@@ -1019,7 +986,7 @@ class SchemaReceiver extends OnCompleteRenderer<TableSummary> {
         if (summary.schema.length > 20 && this.title != null && !this.forceTableView) {
             page = new FullPage("Schema of " + this.title, "Schema", this.page);
             dataView = new SchemaView(this.remoteObject.remoteObjectId,
-                this.remoteObject.originalTableId, page, summary.schema,
+                this.dataset, page, new SchemaClass(summary.schema),
                 summary.rowCount, this.elapsedMilliseconds());
         } else {
             if (this.title != null)
@@ -1035,7 +1002,7 @@ class SchemaReceiver extends OnCompleteRenderer<TableSummary> {
 
             let order = new RecordOrder([]);
             let table = new TableView(
-                this.remoteObject.remoteObjectId, this.remoteObject.originalTableId, page);
+                this.remoteObject.remoteObjectId, this.dataset, page);
             table.updateView(nk, false, order, null, this.elapsedMilliseconds());
             dataView = table;
         }
@@ -1074,7 +1041,7 @@ class CorrelationMatrixReceiver extends RemoteTableRenderer {
                        protected order: RecordOrder,
                        private numComponents: number,
                        private projectionName: string) {
-        super(page, operation, "Correlation matrix", tv.originalTableId);
+        super(page, operation, "Correlation matrix", tv.dataset);
     }
 
     run(): void {
@@ -1082,9 +1049,63 @@ class CorrelationMatrixReceiver extends RemoteTableRenderer {
         let rr = this.tv.createProjectToEigenVectorsRequest(
                 this.remoteObject, this.numComponents, this.projectionName);
         rr.chain(this.operation);
-        // TODO: this should use TableOperationCompleted
-        rr.invoke(new RemoteTableReceiver(
-            this.page, rr, "Data with PCA projection columns", "Reading", true, this.tv.originalTableId));
+        rr.invoke(new PCATableReceiver(
+            this.page, rr, "Data with PCA projection columns", "Reading", this.tv, this.order, this.numComponents));
+    }
+}
+
+// Receives the ID of a table that contains additional eigen vector projection columns.
+// Invokes a sketch to get the schema of this new table.
+class PCATableReceiver extends RemoteTableRenderer {
+    constructor(page: FullPage, operation: ICancellable, protected title: string, progressInfo: string,
+                protected tv: TableViewBase, protected order: RecordOrder, protected numComponents: number) {
+        super(page, operation, progressInfo, tv.dataset);
+    }
+
+    public run(): void {
+        super.run();
+        let rr = this.remoteObject.createGetSchemaRequest();
+        rr.chain(this.operation);
+        rr.invoke(new PCASchemaReceiver(this.page, rr, this.remoteObject, this.tv,
+            this.title, this.order, this.numComponents));
+    }
+}
+
+// Receives the schema after a PCA computation; computes the additional columns
+// and adds these to the previous view
+class PCASchemaReceiver extends OnCompleteRenderer<TableSummary> {
+    constructor(page: FullPage, operation: ICancellable,
+                protected remoteObject: RemoteTableObject,
+                protected tv: TableViewBase,
+                protected title: string,
+                protected order: RecordOrder,
+                protected numComponents: number) {
+        super(page, operation, "Get schema")
+    }
+
+    run(summary: TableSummary): void {
+        if (summary.schema == null) {
+            this.page.reportError("No schema received; empty dataset?");
+            return;
+        }
+
+        let newCols: IColumnDescription[] = [];
+        let o = this.order.clone();
+        // we rely on the fact that the last numComponents columns are added by the PCA
+        // computation.
+        for (let i = 0; i < this.numComponents; i++) {
+            let cd = summary.schema[summary.schema.length - this.numComponents + i];
+            newCols.push(cd);
+            o.addColumn({ columnDescription: cd, isAscending: true });
+        }
+
+        let table = new TableView(
+            this.remoteObject.remoteObjectId, this.tv.dataset, this.page);
+        table.schema = this.tv.schema.concat(newCols);
+        this.page.setDataView(table);
+        let rr = table.createNextKRequest(o, null);
+        rr.chain(this.operation);
+        rr.invoke(new NextKReceiver(this.page, table, rr, false, o, null));
     }
 }
 
@@ -1094,18 +1115,18 @@ class CorrelationMatrixReceiver extends RemoteTableRenderer {
  */
 export class TableOperationCompleted extends RemoteTableRenderer {
     public constructor(page: FullPage,
-                       protected schema: Schema,
+                       protected schema: SchemaClass,
                        operation: ICancellable,
                        protected order: RecordOrder,
-                       originalTableId: RemoteObjectId) {
-        super(page, operation, "Table operation", originalTableId);
+                       dataset: Dataset) {
+        super(page, operation, "Table operation", dataset);
     }
 
     run(): void {
         super.run();
         let table = new TableView(
-            this.remoteObject.remoteObjectId, this.remoteObject.originalTableId, this.page);
-        table.setSchema(this.schema);
+            this.remoteObject.remoteObjectId, this.dataset, this.page);
+        table.schema = this.schema;
         this.page.setDataView(table);
         let rr = table.createNextKRequest(this.order, null);
         rr.chain(this.operation);

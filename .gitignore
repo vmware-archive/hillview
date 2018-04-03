@@ -41,16 +41,15 @@ web/src/main/webapp/dataViews/*.js
 *.js.map
 
 web/src/main/webapp/bundle.js
+web/src/main/webapp/dataset.js
 web/src/main/webapp/columnConverter.js
 web/src/main/webapp/distinctStrings.js
 web/src/main/webapp/initialObject.js
 web/src/main/webapp/rpc.js
 web/src/main/webapp/tableTarget.js
-web/src/main/webapp/categoryCache.js
 web/src/main/webapp/controlMenu.js
 web/src/main/webapp/hillview.js
 web/src/main/webapp/javaBridge.js
-web/src/main/webapp/selectedObject.js
 web/src/main/webapp/util.js
 web/src/main/webapp/loadMenu.js
 web/src/main/webapp/test.js

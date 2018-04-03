@@ -21,7 +21,7 @@ import {ErrorReporter} from "./ui/errReporter";
 import {PartialResult, ICancellable, RpcReply, formatDate} from "./util";
 import {ProgressBar} from "./ui/progress";
 import {FullPage} from "./ui/fullPage";
-import {CombineOperators, RemoteObjectId} from "./javaBridge";
+import {RemoteObjectId} from "./javaBridge";
 import {Test} from "./test";
 import pako = require('pako');
 import {timeMillisecond as d3timeMillisecond} from 'd3-time';
@@ -61,15 +61,6 @@ export class RemoteObject {
     createStreamingRpcRequest<T>(method: string, args: any) : RpcRequest<PartialResult<T>> {
         return this.createRpcRequest<PartialResult<T>>(method, args);
     }
-
-    /**
-     * Combines the current RemoteObject with the currently
-     * selected object (SelectedObject.current.getSelected)
-     * according to the specified operation.  Should be overridden
-     * in subclasses.
-     * TODO: this seems out of place here.
-     */
-    combine(how: CombineOperators): void {}
 
     public toString(): string {
         return this.remoteObjectId;

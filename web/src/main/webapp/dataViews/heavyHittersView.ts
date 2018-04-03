@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {IColumnDescription, RecordOrder, NextKList, TopList, RemoteObjectId} from "../javaBridge";
+import {IColumnDescription, RecordOrder, NextKList, TopList, RemoteObjectId, CombineOperators} from "../javaBridge";
 import {TopMenu, SubMenu, ContextMenu} from "../ui/menu";
 import {TableView, TableOperationCompleted} from "./tableView";
 import {RemoteObject, OnCompleteRenderer} from "../rpc";
@@ -51,7 +51,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
                 public order: RecordOrder,
                 private isApprox: boolean,
                 public percent: number) {
-        super(data.heavyHittersId, tv.originalTableId, page);
+        super(data.heavyHittersId, tv.dataset, page);
         this.topLevel = document.createElement("div");
         this.contextMenu = new ContextMenu(this.topLevel);
         this.table = new TabularDisplay();
@@ -115,7 +115,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
                 hittersId: this.data.heavyHittersId,
                 schema: this.schema
             });
-            rr.invoke(new TableOperationCompleted(newPage2, this.tv.schema, rr, this.order, this.tv.originalTableId));
+            rr.invoke(new TableOperationCompleted(newPage2, this.tv.schema, rr, this.order, this.tv.dataset));
         }
     }
 
@@ -129,7 +129,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
             schema: this.schema,
             rowIndices: this.getSelectedRows()
         });
-        rr.invoke(new TableOperationCompleted(newPage2, this.tv.schema, rr, this.order, this.tv.originalTableId));
+        rr.invoke(new TableOperationCompleted(newPage2, this.tv.schema, rr, this.order, this.tv.dataset));
     }
 
     private getSelectedRows(): number[] {
@@ -307,6 +307,10 @@ export class HeavyHittersView extends RemoteTableObjectView {
         percentDialog.setCacheTitle("ChangeHeavyHittersDialog");
         percentDialog.show();
     }
+
+    public combine(how: CombineOperators): void {
+        // not used
+    }
 }
 
 /**
@@ -346,6 +350,6 @@ export class HeavyHittersReceiver3 extends OnCompleteRenderer<TopList> {
             schema: this.hhv.schema
         });
         rr.invoke(new TableOperationCompleted(newPage2, this.hhv.tv.schema, rr, this.hhv.order,
-            this.hhv.tv.originalTableId));
+            this.hhv.tv.dataset));
     }
 }

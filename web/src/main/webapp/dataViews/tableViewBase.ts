@@ -19,14 +19,12 @@ import {RemoteTableObjectView} from "../tableTarget";
 import {
     allContentsKind, asContentsKind, ColumnSortOrientation, ComparisonFilterDescription,
     CreateColumnInfo, EqualityFilterDescription, HLogLog, IColumnDescription, RangeInfo, RecordOrder,
-    RemoteObjectId,
-    Schema, TopList
+    RemoteObjectId, TopList
 } from "../javaBridge";
 import {FullPage} from "../ui/fullPage";
 import {DistinctStrings} from "../distinctStrings";
 import {cloneToSet, Comparison, Converters, ICancellable, significantDigits} from "../util";
 import {TableOperationCompleted, TableView} from "./tableView";
-import {CategoryCache} from "../categoryCache";
 import {HistogramDialog, RangeCollector} from "./histogramView";
 import {Range2DCollector} from "./heatMapView";
 import {TrellisPlotDialog} from "./trellisHeatMapView";
@@ -36,17 +34,19 @@ import {SpecialChars} from "../ui/ui";
 import {OnCompleteRenderer} from "../rpc";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {HeavyHittersView} from "./heavyHittersView";
+import {Dataset} from "../dataset";
+import {SchemaClass} from "../schemaClass";
 
 /**
  * A base class for TableView and SchemaView
  */
 export abstract class TableViewBase extends RemoteTableObjectView {
-    public schema: Schema;
+    public schema: SchemaClass;
     // Total rows in the table
     protected rowCount: number;
 
-    constructor(remoteObjectId: RemoteObjectId, originalTableId: RemoteObjectId, page: FullPage) {
-        super(remoteObjectId, originalTableId, page);
+    constructor(remoteObjectId: RemoteObjectId, dataset: Dataset, page: FullPage) {
+        super(remoteObjectId, dataset, page);
     }
 
     /**
@@ -78,7 +78,7 @@ export abstract class TableViewBase extends RemoteTableObjectView {
         this.page.reportError(s);
     }
 
-    saveAsOrc(schema: Schema): void {
+    saveAsOrc(schema: SchemaClass): void {
         let dialog = new Dialog("Save as ORC files",
             "Describe the set of ORC files where data will be saved.");
         dialog.addTextField("folderName", "Folder", FieldKind.String, "/",
@@ -100,7 +100,7 @@ export abstract class TableViewBase extends RemoteTableObjectView {
             let folder = dialog.getFieldValue("folderName");
             let rr = this.createStreamingRpcRequest<boolean>("saveAsOrc", {
                 folder: folder,
-                schema: schema
+                schema: schema.schema
             });
             let renderer = new SaveReceiver(this.page, rr);
             rr.invoke(renderer);
@@ -135,7 +135,7 @@ export abstract class TableViewBase extends RemoteTableObjectView {
             jsFunction: fun,
             outputColumn: col,
             outputKind: asContentsKind(kind),
-            schema: subSchema
+            schema: subSchema.schema
         };
         let rr = this.createCreateColumnRequest(arg);
         let newPage = new FullPage("New column " + col, "Table", this.page);
@@ -144,12 +144,12 @@ export abstract class TableViewBase extends RemoteTableObjectView {
             kind: arg.outputKind,
             name: col
         };
-        let schema = this.schema.concat(cd);
+        let schema = this.schema.append(cd);
         let o = order.clone();
         o.addColumn({columnDescription: cd, isAscending: true});
 
         let rec = new TableOperationCompleted(
-            newPage, schema, rr, o, this.originalTableId);
+            newPage, schema, rr, o, this.dataset);
         rr.invoke(rec);
     }
 
@@ -157,7 +157,7 @@ export abstract class TableViewBase extends RemoteTableObjectView {
         let cds: IColumnDescription[] = [];
         let catColumns: string[] = [];  // categorical columns
         columns.forEach(v => {
-            let colDesc = TableView.findColumn(this.schema, v);
+            let colDesc = this.schema.find(v);
             if (colDesc.kind == "String") {
                 this.reportError("Histograms not supported for string columns " + colDesc.name);
                 return;
@@ -181,7 +181,7 @@ export abstract class TableViewBase extends RemoteTableObjectView {
                 let colName = v.name;
                 let ri: RangeInfo;
                 if (v.kind == "Category") {
-                    let ds = CategoryCache.instance.getDistinctStrings(this.originalTableId, colName);
+                    let ds = this.dataset.getDistinctStrings(colName);
                     if (ds == null)
                     // Probably an error has occurred
                         return;
@@ -213,7 +213,7 @@ export abstract class TableViewBase extends RemoteTableObjectView {
         };
 
         // Get the categorical data and invoke the continuation
-        CategoryCache.instance.retrieveCategoryValues(this, catColumns, this.getPage(), cont);
+        this.dataset.retrieveCategoryValues(catColumns, this.getPage(), cont);
     }
 
     protected histogram(heatMap: boolean): void {
@@ -237,7 +237,7 @@ export abstract class TableViewBase extends RemoteTableObjectView {
             this.reportError("Could not find two columns that can be charted.");
             return;
         }
-        let dia = new Histogram2DDialog(eligible.map(e => e.name), heatmap);
+        let dia = new Histogram2DDialog(eligible.columnNames, heatmap);
         dia.setAction(
             () => {
                 let col0 = dia.getColumn(false);
@@ -269,7 +269,7 @@ export abstract class TableViewBase extends RemoteTableObjectView {
             this.reportError("No columns that can be histogrammed found.");
             return;
         }
-        let dia = new HistogramDialog(eligible.map(e => e.name));
+        let dia = new HistogramDialog(eligible.columnNames);
         dia.setAction(
             () => {
                 let col = dia.getColumn();
@@ -311,11 +311,11 @@ export abstract class TableViewBase extends RemoteTableObjectView {
      */
     protected showFilterDialog(
         colName: string, order: RecordOrder): void {
-        let cd = TableView.findColumn(this.schema, colName);
+        let cd = this.schema.find(colName);
         let ef = new EqualityFilterDialog(cd, this.schema);
         ef.setAction(() => {
             let filter = ef.getFilter();
-            let desc = TableView.findColumn(this.schema, filter.column);
+            let desc = this.schema.find(filter.column);
             let o = order.clone();
             let so: ColumnSortOrientation = {
                 columnDescription: desc,
@@ -329,7 +329,7 @@ export abstract class TableViewBase extends RemoteTableObjectView {
 
             let newPage = new FullPage(title, "Table", this.page);
             this.page.insertAfterMe(newPage);
-            rr.invoke(new TableOperationCompleted(newPage, this.schema, rr, o, this.originalTableId));
+            rr.invoke(new TableOperationCompleted(newPage, this.schema, rr, o, this.dataset));
         });
         ef.show();
     }
@@ -341,14 +341,14 @@ export abstract class TableViewBase extends RemoteTableObjectView {
      */
     protected showCompareDialog(
         colName: string, order: RecordOrder): void {
-        let cd = TableView.findColumn(this.schema, colName);
+        let cd = this.schema.find(colName);
         let cfd = new ComparisonFilterDialog(cd, this.schema);
         cfd.setAction(() => this.runComparisonFilter(cfd.getFilter(), order));
         cfd.show();
     }
 
     protected runComparisonFilter(filter: ComparisonFilterDescription, order: RecordOrder): void {
-        let cd = TableView.findColumn(this.schema, filter.column);
+        let cd = this.schema.find(filter.column);
         let kind = cd.kind;
         let so: ColumnSortOrientation = {
             columnDescription: cd, isAscending: true
@@ -362,7 +362,7 @@ export abstract class TableViewBase extends RemoteTableObjectView {
 
         let newPage = new FullPage(title, "Table", this.page);
         this.page.insertAfterMe(newPage);
-        rr.invoke(new TableOperationCompleted(newPage, this.schema, rr, o, this.originalTableId))
+        rr.invoke(new TableOperationCompleted(newPage, this.schema, rr, o, this.dataset))
     }
 
     protected runHeavyHitters(percent: number) {
@@ -374,7 +374,7 @@ export abstract class TableViewBase extends RemoteTableObjectView {
         let columns: IColumnDescription[] = [];
         let cso: ColumnSortOrientation[] = [];
         this.getSelectedColNames().forEach(v => {
-            let colDesc = TableView.findColumn(this.schema, v);
+            let colDesc = this.schema.find(v);
             columns.push(colDesc);
             cso.push({columnDescription: colDesc, isAscending: true});
         });
@@ -411,10 +411,10 @@ export abstract class TableViewBase extends RemoteTableObjectView {
 }
 
 class EqualityFilterDialog extends Dialog {
-    constructor(private columnDescription: IColumnDescription, private schema: Schema) {
+    constructor(private columnDescription: IColumnDescription, private schema: SchemaClass) {
         super("Filter", "Eliminates data from a column according to its value.");
         if (columnDescription == null) {
-            let cols = this.schema.map(c => c.name);
+            let cols = this.schema.columnNames;
             if (cols.length == 0)
                 return;
             this.addSelectField("column", "Column", cols, null, "Column that is filtered");
@@ -430,7 +430,7 @@ class EqualityFilterDialog extends Dialog {
         let textQuery: string = this.getFieldValue("query");
         if (this.columnDescription == null) {
             let colName = this.getFieldValue("column");
-            this.columnDescription = TableView.findColumn(this.schema, colName);
+            this.columnDescription = this.schema.find(colName);
         }
         if (this.columnDescription.kind == "Date") {
             let date = new Date(textQuery);
@@ -450,12 +450,12 @@ class EqualityFilterDialog extends Dialog {
 class ComparisonFilterDialog extends Dialog {
     private explanation: HTMLElement;
 
-    constructor(private columnDescription: IColumnDescription, private schema: Schema) {
+    constructor(private columnDescription: IColumnDescription, private schema: SchemaClass) {
         super("Compare", "Compare values");
         this.explanation = this.addText("Value == row[Column]");
 
         if (columnDescription == null) {
-            let cols = this.schema.map(c => c.name);
+            let cols = this.schema.columnNames;
             if (cols.length == 0)
                 return;
             let col = this.addSelectField("column", "Column", cols, null, "Column that is filtered");
@@ -478,7 +478,7 @@ class ComparisonFilterDialog extends Dialog {
         let value: string = this.getFieldValue("value");
         if (this.columnDescription == null) {
             let colName = this.getFieldValue("column");
-            this.columnDescription = TableView.findColumn(this.schema, colName);
+            this.columnDescription = this.schema.find(colName);
         }
         if (this.columnDescription.kind == "Date") {
             let date = new Date(value);

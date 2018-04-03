@@ -251,6 +251,7 @@ export class RecordOrder {
                 return i;
         return -1;
     }
+
     public hide(col: string): void {
         let index = this.find(col);
         if (index == -1)
@@ -258,26 +259,31 @@ export class RecordOrder {
             return;
         this.sortOrientationList.splice(index, 1);
     }
+
     public sortFirst(cso: ColumnSortOrientation) {
         let index = this.find(cso.columnDescription.name);
         if (index != -1)
             this.sortOrientationList.splice(index, 1);
         this.sortOrientationList.splice(0, 0, cso);
     }
+
     public addColumn(cso: ColumnSortOrientation) {
         let index = this.find(cso.columnDescription.name);
         if (index != -1)
             this.sortOrientationList.splice(index, 1);
         this.sortOrientationList.push(cso);
     }
+
     public addColumnIfNotVisible(cso: ColumnSortOrientation) {
         let index = this.find(cso.columnDescription.name);
         if (index == -1)
             this.sortOrientationList.push(cso);
     }
+
     public clone(): RecordOrder {
         return new RecordOrder(this.sortOrientationList.slice(0));
     }
+
     // Returns a new object
     public invert(): RecordOrder {
         let result = new Array<ColumnSortOrientation>(this.sortOrientationList.length);
@@ -294,6 +300,7 @@ export class RecordOrder {
     protected static coToString(cso: ColumnSortOrientation): string {
         return cso.columnDescription.name + " " + (cso.isAscending ? "up" : "down");
     }
+
     public toString(): string {
         let result = "";
         for (let i = 0; i < this.sortOrientationList.length; i++)

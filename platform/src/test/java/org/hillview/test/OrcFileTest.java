@@ -24,6 +24,7 @@ import org.apache.orc.OrcFile;
 import org.apache.orc.Reader;
 import org.apache.orc.RecordReader;
 import org.apache.orc.TypeDescription;
+import org.hillview.storage.CsvFileLoader;
 import org.hillview.storage.OrcFileLoader;
 import org.hillview.storage.OrcFileWriter;
 import org.hillview.table.ColumnDescription;
@@ -66,6 +67,24 @@ public class OrcFileTest extends BaseTest {
 
         if (file.exists()) {
             boolean success = file.delete();
+            Assert.assertTrue(success);
+        }
+    }
+
+    @Test
+    public void convertCsvFileTest() {
+        String file = CsvFileTest.ontimeFolder + "/" + CsvFileTest.csvFile;
+        CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
+        CsvFileLoader loader = new CsvFileLoader(file, config, null);
+        ITable table = loader.load();
+        String orcFile = "./tmpX.orc";
+        OrcFileWriter writer = new OrcFileWriter(orcFile);
+        table.getSchema().writeToJsonFile(Paths.get("./schema"));
+        writer.writeTable(table);
+
+        File f = new File(orcFile);
+        if (f.exists()) {
+            boolean success = f.delete();
             Assert.assertTrue(success);
         }
     }

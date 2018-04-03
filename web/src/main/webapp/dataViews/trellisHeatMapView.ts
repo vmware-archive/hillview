@@ -22,9 +22,8 @@ import {Pair, truncate, significantDigits, ICancellable, PartialResult, Seed} fr
 import {AxisData} from "./axisData";
 import {
     IColumnDescription, BasicColStats,
-    ColumnAndRange, Schema, isNumeric, Histogram3DArgs, RecordOrder, RemoteObjectId
+    ColumnAndRange, isNumeric, Histogram3DArgs, RecordOrder, RemoteObjectId, CombineOperators
 } from "../javaBridge";
-import {CategoryCache} from "../categoryCache";
 import {Point, Resolution, Size} from "../ui/ui";
 import {IScrollTarget, ScrollBar} from "../ui/scroll";
 import {FullPage} from "../ui/fullPage";
@@ -35,6 +34,8 @@ import {DistinctStrings} from "../distinctStrings";
 import {RemoteTableObjectView, RemoteTableObject} from "../tableTarget";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {mouse as d3mouse, select as d3select} from "d3-selection";
+import {Dataset} from "../dataset";
+import {SchemaClass} from "../schemaClass";
 
 export class HeatMapArrayData {
     buckets: number[][][];
@@ -273,9 +274,9 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
     // Holds the state of which heatmap is hovered over.
     private mouseOverHeatMap: CompactHeatMapView;
 
-    constructor(remoteObjectId: RemoteObjectId, originalTableId: RemoteObjectId,
-                page: FullPage, args: TrellisPlotArgs, private tableSchema: Schema) {
-        super(remoteObjectId, originalTableId, page);
+    constructor(remoteObjectId: RemoteObjectId, dataset: Dataset,
+                page: FullPage, args: TrellisPlotArgs, private schema: SchemaClass) {
+        super(remoteObjectId, dataset, page);
         this.args = args;
         this.offset = 0;
         if (this.args.cds.length != 3)
@@ -327,6 +328,10 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
             .attr("height", svgSize.height);
     }
 
+    public combine(how: CombineOperators): void {
+        // not yet used. TODO: add this menu
+    }
+
     // Returns the maximum size that the canvas is allowed to use
     private maxDrawingSize(): Size {
         let canvasSize = PlottingSurface.getDefaultCanvasSize(this.getPage());
@@ -375,8 +380,8 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
     }
 
     public showTable() {
-        let table = new TableView(this.remoteObjectId, this.originalTableId, this.page);
-        table.setSchema(this.tableSchema);
+        let table = new TableView(this.remoteObjectId, this.dataset, this.page);
+        table.schema = this.schema;
 
         let order =  new RecordOrder([ {
             columnDescription: this.args.cds[0],
@@ -612,15 +617,15 @@ class HeatMap3DRenderer extends Renderer<HeatMapArrayData> {
 export class TrellisPlotDialog extends Dialog {
     /**
      * Create a dialog to display a Trellis plot of heatmaps.
-     * @param {string[]} selectedColumns  Columns selected by the user.
-     * @param {FullPage} page             Page containing the original dataset.
-     * @param {Schema} schema             Data schema.
-     * @param {RemoteTableObject} remoteObject  Remote table object.
-     * @param {boolean} fixedColumns      If true do not allow the user to change the
-     *                                    first two selected columns.
+     * @param selectedColumns  Columns selected by the user.
+     * @param page             Page containing the original dataset.
+     * @param schema           Data schema.
+     * @param remoteObject     Remote table object.
+     * @param fixedColumns     If true do not allow the user to change the
+     *                         first two selected columns.
      */
     constructor(private selectedColumns: string[], private page: FullPage,
-                private schema: Schema, private remoteObject: RemoteTableObject,
+                private schema: SchemaClass, private remoteObject: RemoteTableObject,
                 fixedColumns: boolean) {
         super("Heatmap array", "Draws a set of heatmap displays, one for each value in a categorical column.");
         let selectedNumColumns: string[] = [];
@@ -628,10 +633,10 @@ export class TrellisPlotDialog extends Dialog {
         let catColumns = [];
         let numColumns = [];
         for (let i = 0; i < schema.length; i++) {
-            if (schema[i].kind == "Category")
-                catColumns.push(schema[i].name);
-            if (schema[i].kind == "Double" || schema[i].kind == "Integer")
-                numColumns.push(schema[i].name)
+            if (schema.get(i).kind == "Category")
+                catColumns.push(schema.get(i).name);
+            if (schema.get(i).kind == "Double" || schema.get(i).kind == "Integer")
+                numColumns.push(schema.get(i).name)
         }
         selectedColumns.forEach((selectedColumn) => {
             if (catColumns.indexOf(selectedColumn) >= 0)
@@ -672,22 +677,21 @@ export class TrellisPlotDialog extends Dialog {
         this.page.insertAfterMe(newPage);
 
         let trellisView = new TrellisHeatMapView(
-            this.remoteObject.remoteObjectId, this.remoteObject.originalTableId, newPage, args, this.schema);
+            this.remoteObject.remoteObjectId, this.remoteObject.dataset, newPage, args, this.schema);
         newPage.setDataView(trellisView);
         let cont = (operation: ICancellable) => {
-            args.uniqueStrings = CategoryCache.instance.getDistinctStrings(
-                this.remoteObject.originalTableId, categCol.name);
+            args.uniqueStrings = this.remoteObject.dataset.getDistinctStrings(categCol.name);
             let rr = trellisView.createRange2DColsRequest(args.cds[0].name, args.cds[1].name);
             rr.chain(operation);
             rr.invoke(new Range2DRenderer(newPage, trellisView, rr));
         };
-        CategoryCache.instance.retrieveCategoryValues(this.remoteObject, [categCol.name], this.page, cont);
+        this.remoteObject.dataset.retrieveCategoryValues([categCol.name], this.page, cont);
     }
 
     private parseFields(): TrellisPlotArgs {
-        let cd1 = TableView.findColumn(this.schema, this.getFieldValue("col1"));
-        let cd2 = TableView.findColumn(this.schema, this.getFieldValue("col2"));
-        let cd3 = TableView.findColumn(this.schema, this.getFieldValue("col3"));
+        let cd1 = this.schema.find(this.getFieldValue("col1"));
+        let cd2 = this.schema.find(this.getFieldValue("col2"));
+        let cd3 = this.schema.find(this.getFieldValue("col3"));
         return {
             cds: [cd1, cd2, cd3],
         };

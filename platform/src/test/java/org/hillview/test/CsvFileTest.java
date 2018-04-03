@@ -47,9 +47,9 @@ import java.util.UUID;
  * Test read/write access to CSV files.
  */
 public class CsvFileTest extends BaseTest {
-    private static final String ontimeFolder = "../data/ontime";
+    public static final String ontimeFolder = "../data/ontime";
     private static final String criteoFolder = "../data/criteo";
-    private static final String csvFile = "On_Time_Sample.csv";
+    public static final String csvFile = "On_Time_Sample.csv";
     private static final String schemaFile = "On_Time.schema";
     private static final String criteoFile = "criteoTab.csv";
     private static final String criteoSchema = "criteo.schema";

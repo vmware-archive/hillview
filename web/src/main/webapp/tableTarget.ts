@@ -31,8 +31,8 @@ import {
     IColumnDescription, NextKList, RangeInfo, RecordOrder, RemoteObjectId, Schema, TableSummary, TopList
 } from "./javaBridge";
 import {Histogram2DArgs} from "./javaBridge";
-import {SelectedObject} from "./selectedObject";
 import {HeatMapArrayData} from "./dataViews/trellisHeatMapView";
+import {Dataset} from "./dataset";
 
 /**
  * This class has methods that correspond directly to TableTarget.java methods.
@@ -40,10 +40,10 @@ import {HeatMapArrayData} from "./dataViews/trellisHeatMapView";
 export class RemoteTableObject extends RemoteObject {
     /**
      * Create a reference to a remote table target.
-     * @param {RemoteObjectId} remoteObjectId   Id of remote table on the web server.
-     * @param originalTableId                   Id of the table that this one is derived from.
+     * @param remoteObjectId   Id of remote table on the web server.
+     * @param dataset          Dataset that this table object belongs to.
      */
-    constructor(remoteObjectId: RemoteObjectId, public originalTableId: RemoteObjectId) {
+    constructor(remoteObjectId: RemoteObjectId, public dataset: Dataset) {
         super(remoteObjectId);
     }
 
@@ -229,8 +229,8 @@ RpcRequest<PartialResult<RemoteObjectId>> {
 export abstract class RemoteTableObjectView extends RemoteTableObject implements IDataView {
     protected topLevel: HTMLElement;
 
-    constructor(remoteObjectId: RemoteObjectId, originalTableId: RemoteObjectId, protected page: FullPage) {
-        super(remoteObjectId, originalTableId);
+    constructor(remoteObjectId: RemoteObjectId, dataset: Dataset, protected page: FullPage) {
+        super(remoteObjectId, dataset);
         this.setPage(page);
     }
 
@@ -253,7 +253,7 @@ export abstract class RemoteTableObjectView extends RemoteTableObject implements
     }
 
     selectCurrent(): void {
-        SelectedObject.instance.select(this, this.page.pageId);
+        this.dataset.select(this, this.page.pageId);
     }
 
     public abstract refresh(): void;
@@ -261,6 +261,8 @@ export abstract class RemoteTableObjectView extends RemoteTableObject implements
     public getHTMLRepresentation(): HTMLElement {
         return this.topLevel;
     }
+
+    public abstract combine(op: CombineOperators);
 }
 
 /**
@@ -272,7 +274,7 @@ export abstract class RemoteTableRenderer extends OnCompleteRenderer<RemoteObjec
     public constructor(public page: FullPage,
                        public operation: ICancellable,
                        public description: string,
-                       protected originalTableId: RemoteObjectId) { // may be null for the first table
+                       protected dataset: Dataset) { // may be null for the first table
         super(page, operation, description);
         this.remoteObject = null;
     }
@@ -280,8 +282,8 @@ export abstract class RemoteTableRenderer extends OnCompleteRenderer<RemoteObjec
     run(): void {
         if (this.value != null) {
             // If the originalTableId is null, this must be the first table we are receiving
-            let originalTableId = this.originalTableId == null ? this.value : this.originalTableId;
-            this.remoteObject = new RemoteTableObject(this.value, originalTableId);
+            let dataset = this.dataset == null ? new Dataset(this.value) : this.dataset;
+            this.remoteObject = new RemoteTableObject(this.value, dataset);
         }
     }
 }
@@ -295,11 +297,11 @@ export class ZipReceiver extends RemoteTableRenderer {
     public constructor(page: FullPage,
                        operation: ICancellable,
                        protected setOp: CombineOperators,
-                       protected originalTableId: RemoteObjectId,
+                       protected dataset: Dataset,
                        // receiver constructs the renderer that is used to display
                        // the result after combining
                        protected receiver: (page: FullPage, operation: ICancellable) => RemoteTableRenderer) {
-        super(page, operation, "zip", originalTableId);
+        super(page, operation, "zip", dataset);
     }
 
     run(): void {

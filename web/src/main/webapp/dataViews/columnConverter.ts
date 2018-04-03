@@ -78,11 +78,11 @@ export class ColumnConverter  {
         private table: TableView,
         private order: RecordOrder,
         private page: FullPage) {
-        this.columnIndex = TableView.allColumnNames(this.table.schema).indexOf(this.columnName);
+        this.columnIndex = this.table.schema.columnIndex(this.columnName);
     }
 
     public run(): void {
-        if (TableView.allColumnNames(this.table.schema).indexOf(this.newColumnName) >= 0) {
+        if (this.table.schema.columnIndex(this.newColumnName) >= 0) {
             this.table.reportError(`Column name ${this.newColumnName} already exists in table.`);
             return;
         }
@@ -119,11 +119,11 @@ export class ColumnConverter  {
             kind: this.newKind,
             name: this.newColumnName
         };
-        let schema = this.table.schema.concat(cd);
+        let schema = this.table.schema.append(cd);
         let o = this.order.clone();
         o.addColumn({columnDescription: cd, isAscending: true});
         rr.invoke(new TableOperationCompleted(
-            newPage, schema, rr, o, this.table.originalTableId));
+            newPage, schema, rr, o, this.table.dataset));
     }
 }
 

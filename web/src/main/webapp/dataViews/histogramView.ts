@@ -17,7 +17,7 @@
 
 import { Renderer } from "../rpc";
 import {
-    IColumnDescription, Schema, RecordOrder, RangeInfo, Histogram,
+    IColumnDescription, RecordOrder, RangeInfo, Histogram,
     BasicColStats, FilterDescription, HistogramArgs, CombineOperators, RemoteObjectId
 } from "../javaBridge";
 import {TopMenu, SubMenu} from "../ui/menu";
@@ -27,7 +27,6 @@ import {
     formatDate, exponentialDistribution
 } from "../util";
 import {Dialog} from "../ui/dialog";
-import {CategoryCache} from "../categoryCache";
 import {FullPage} from "../ui/fullPage";
 import {Resolution} from "../ui/ui";
 import {TextOverlay} from "../ui/textOverlay";
@@ -37,12 +36,13 @@ import {Range2DCollector} from "./heatMapView";
 import {NextKReceiver, TableView} from "./tableView";
 import {RemoteTableObject, RemoteTableRenderer, ZipReceiver} from "../tableTarget";
 import {DistinctStrings} from "../distinctStrings";
-import {combineMenu, SelectedObject} from "../selectedObject";
 import {HistogramPlot} from "../ui/histogramPlot";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {CDFPlot} from "../ui/CDFPlot";
 import {drag as d3drag} from "d3-drag";
 import {mouse as d3mouse, event as d3event} from "d3-selection";
+import {Dataset} from "../dataset";
+import {SchemaClass} from "../schemaClass";
 
 /**
  * A HistogramView is responsible for showing a one-dimensional histogram on the screen.
@@ -58,8 +58,8 @@ export class HistogramView extends HistogramViewBase {
     protected menu: TopMenu;
     protected plot: HistogramPlot;
 
-    constructor(remoteObjectId: RemoteObjectId, originalTableId: RemoteObjectId, protected tableSchema: Schema, page: FullPage) {
-        super(remoteObjectId, originalTableId, tableSchema, page);
+    constructor(remoteObjectId: RemoteObjectId, dataset: Dataset, protected schema: SchemaClass, page: FullPage) {
+        super(remoteObjectId, dataset, schema, page);
         this.surface = new PlottingSurface(this.chartDiv, page);
         this.plot = new HistogramPlot(this.surface);
         this.cdfPlot = new CDFPlot(this.surface);
@@ -88,7 +88,7 @@ export class HistogramView extends HistogramViewBase {
                     help: "Draw a 2-dimensional histogram using this data and another column."
                 },
             ]) },
-            combineMenu(this, page.pageId)
+            dataset.combineMenu(this, page.pageId)
         ]);
 
         this.page.setMenu(this.menu);
@@ -163,24 +163,24 @@ export class HistogramView extends HistogramViewBase {
 
     // combine two views according to some operation
     combine(how: CombineOperators): void {
-        let r = SelectedObject.instance.getSelected(this, this.getPage().getErrorReporter());
-        if (r == null)
+        let r = this.dataset.getSelected();
+        if (r.first == null)
             return;
 
-        let title = "[" + SelectedObject.instance.getPage() + "] " + CombineOperators[how];
-        let rr = this.createZipRequest(r);
+        let title = "[" + r.second + "] " + CombineOperators[how];
+        let rr = this.createZipRequest(r.first);
         let finalRenderer = (page: FullPage, operation: ICancellable) => {
             return new MakeHistogram(title, page, operation, this.currentData.axisData.description,
-                this.tableSchema, this.currentData.samplingRate, this.currentData.axisData.distinctStrings,
-                this.originalTableId);
+                this.schema, this.currentData.samplingRate, this.currentData.axisData.distinctStrings,
+                this.dataset);
         };
-        rr.invoke(new ZipReceiver(this.getPage(), rr, how, this.originalTableId, finalRenderer));
+        rr.invoke(new ZipReceiver(this.getPage(), rr, how, this.dataset, finalRenderer));
     }
 
     chooseSecondColumn(): void {
         let columns : string[] = [];
-        for (let i = 0; i < this.tableSchema.length; i++) {
-            let col = this.tableSchema[i];
+        for (let i = 0; i < this.schema.length; i++) {
+            let col = this.schema.get(i);
             if (col.kind == "String" || col.kind == "Json")
                 continue;
             if (col.name == this.currentData.axisData.description.name)
@@ -201,7 +201,7 @@ export class HistogramView extends HistogramViewBase {
     }
 
     private showSecondColumn(colName: string) {
-        let oc = TableView.findColumn(this.tableSchema, colName);
+        let oc = this.schema.find(colName);
         let cds: IColumnDescription[] = [this.currentData.axisData.description, oc];
         let catColumns: string[] = [];
         if (oc.kind == "Category")
@@ -209,15 +209,15 @@ export class HistogramView extends HistogramViewBase {
 
         let cont = (operation: ICancellable) => {
             let r0 = this.currentData.axisData.getRangeInfo();
-            let ds = CategoryCache.instance.getDistinctStrings(this.originalTableId, colName);
+            let ds = this.dataset.getDistinctStrings(colName);
             let r1 = new RangeInfo(colName, ds != null ? ds.uniqueStrings : null);
             let distinct: DistinctStrings[] = [this.currentData.axisData.distinctStrings, ds];
             let rr = this.createRange2DRequest(r0, r1);
             rr.chain(operation);
-            rr.invoke(new Range2DCollector(cds, this.tableSchema, distinct, this.getPage(), this,
+            rr.invoke(new Range2DCollector(cds, this.schema, distinct, this.getPage(), this,
                 this.currentData.samplingRate >=1, rr, false, false));
         };
-        CategoryCache.instance.retrieveCategoryValues(this, catColumns, this.getPage(), cont);
+        this.dataset.retrieveCategoryValues(catColumns, this.getPage(), cont);
     }
 
     changeBuckets(bucketCount: number): void {
@@ -240,8 +240,8 @@ export class HistogramView extends HistogramViewBase {
             this.currentData.axisData.stats, this.currentData.axisData.distinctStrings,
             +bucketCount);
         let renderer = new HistogramRenderer(this.currentData.title, this.page,
-            this.remoteObjectId, this.tableSchema, axisData, rr, this.currentData.samplingRate,
-            this.originalTableId, true);
+            this.remoteObjectId, this.schema, axisData, rr, this.currentData.samplingRate,
+            this.dataset, true);
         rr.invoke(renderer);
     }
 
@@ -270,7 +270,7 @@ export class HistogramView extends HistogramViewBase {
         if (this.currentData == null)
             return;
         let rc = new RangeCollector(this.currentData.title, this.currentData.axisData.description,
-            this.tableSchema, this.currentData.axisData.distinctStrings, this.page, this, true, null, true);
+            this.schema, this.currentData.axisData.distinctStrings, this.page, this, true, null, true);
         rc.setValue(this.currentData.axisData.stats);
         rc.onCompleted();
     }
@@ -319,10 +319,10 @@ export class HistogramView extends HistogramViewBase {
     // show the table corresponding to the data in the histogram
     protected showTable(): void {
         let newPage = new FullPage("Table view", "Table", this.page);
-        let table = new TableView(this.remoteObjectId, this.originalTableId, newPage);
+        let table = new TableView(this.remoteObjectId, this.dataset, newPage);
         newPage.setDataView(table);
         this.page.insertAfterMe(newPage);
-        table.setSchema(this.tableSchema);
+        table.schema = this.schema;
 
         let order =  new RecordOrder([ {
             columnDescription: this.currentData.axisData.description,
@@ -373,9 +373,9 @@ export class HistogramView extends HistogramViewBase {
 
         let rr = this.createFilterRequest(filter);
         let renderer = new FilterReceiver(
-            filter, this.currentData.axisData.description, this.tableSchema,
+            filter, this.currentData.axisData.description, this.schema,
             this.currentData.axisData.distinctStrings, this.currentData.samplingRate >= 1.0,
-            this.page, rr, this.originalTableId);
+            this.page, rr, this.dataset);
         rr.invoke(renderer);
     }
 }
@@ -388,13 +388,13 @@ class FilterReceiver extends RemoteTableRenderer {
     constructor(
         protected filter: FilterDescription,
         protected columnDescription: IColumnDescription,
-        protected tableSchema: Schema,
+        protected tableSchema: SchemaClass,
         protected allStrings: DistinctStrings,
         protected exact: boolean,
         page: FullPage,
         operation: ICancellable,
-        originalTableId: RemoteObjectId) {
-        super(page, operation, "Filter", originalTableId);
+        dataset: Dataset) {
+        super(page, operation, "Filter", dataset);
     }
 
     private filterDescription() {
@@ -422,7 +422,7 @@ export class RangeCollector extends Renderer<BasicColStats> {
     protected stats: BasicColStats;
     constructor(protected title: string,  // title of the resulting display
                 protected cd: IColumnDescription,
-                protected tableSchema: Schema,
+                protected tableSchema: SchemaClass,
                 protected allStrings: DistinctStrings,  // for categorical columns only
                 page: FullPage,
                 protected remoteObject: RemoteTableObject,
@@ -472,7 +472,7 @@ export class RangeCollector extends Renderer<BasicColStats> {
         let axisData = new AxisData(this.cd, this.stats, this.allStrings, bucketCount);
         let renderer = new HistogramRenderer(this.title, this.page,
             this.remoteObject.remoteObjectId, this.tableSchema,
-            axisData, rr, samplingRate, this.remoteObject.originalTableId, this.reusePage);
+            axisData, rr, samplingRate, this.remoteObject.dataset, this.reusePage);
         rr.invoke(renderer);
     }
 
@@ -505,17 +505,17 @@ export class HistogramRenderer extends Renderer<Pair<Histogram, Histogram>> {
     constructor(protected title: string,
                 sourcePage: FullPage,
                 remoteTableId: string,
-                protected schema: Schema,
+                protected schema: SchemaClass,
                 protected axisData: AxisData,
                 operation: ICancellable,
                 protected samplingRate: number,
-                originalTableId: RemoteObjectId,
+                dataset: Dataset,
                 reusePage: boolean) {
         super(reusePage ? sourcePage : new FullPage(title, "Histogram", sourcePage),
             operation, "histogram");
         if (!reusePage)
             sourcePage.insertAfterMe(this.page);
-        this.histogram = new HistogramView(remoteTableId, originalTableId, schema, this.page);
+        this.histogram = new HistogramView(remoteTableId, dataset, schema, this.page);
         this.page.setDataView(this.histogram);
     }
 
@@ -589,11 +589,11 @@ class MakeHistogram extends RemoteTableRenderer {
                        page: FullPage,
                        operation: ICancellable,
                        private colDesc: IColumnDescription,
-                       private schema: Schema,
+                       private schema: SchemaClass,
                        protected samplingRate: number,
                        private allStrings: DistinctStrings,
-                       originalTableId: RemoteObjectId) {
-        super(page, operation, "Reload", originalTableId);
+                       dataset: Dataset) {
+        super(page, operation, "Reload", dataset);
     }
 
     run(): void {
@@ -601,7 +601,7 @@ class MakeHistogram extends RemoteTableRenderer {
         if (this.colDesc.kind == "Category") {
             // Continuation invoked after the distinct strings have been obtained
             let cont = (operation: ICancellable) => {
-                let ds = CategoryCache.instance.getDistinctStrings(this.originalTableId, this.colDesc.name);
+                let ds = this.dataset.getDistinctStrings(this.colDesc.name);
                 if (ds == null)
                 // Probably an error has occurred
                     return;
@@ -611,7 +611,7 @@ class MakeHistogram extends RemoteTableRenderer {
                     this.page, this.remoteObject, this.samplingRate >= 1, rr, false));
             };
             // Get the categorical data and invoke the continuation
-            CategoryCache.instance.retrieveCategoryValues(this.remoteObject, [this.colDesc.name], this.page, cont);
+            this.dataset.retrieveCategoryValues([this.colDesc.name], this.page, cont);
         } else {
             let rr = this.remoteObject.createRangeRequest({columnName: this.colDesc.name, allNames: null});
             rr.chain(this.operation);

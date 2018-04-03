@@ -61,6 +61,8 @@ export class FullPage implements IHtmlElement {
     public readonly pageId: number;
     private menuSlot: HTMLElement;
     private h1: HTMLElement;
+    private minimized: boolean;
+    private displayHolder: HTMLElement;
 
     /**
      * All visible pages are children of a div named 'top'.
@@ -78,6 +80,7 @@ export class FullPage implements IHtmlElement {
         this.console = new ConsoleDisplay();
         this.progressManager = new ProgressManager();
         this.dataDisplay = new DataDisplay();
+        this.minimized = false;
 
         this.pageTopLevel = document.createElement("div");
         this.pageTopLevel.className = "hillviewPage";
@@ -124,6 +127,13 @@ export class FullPage implements IHtmlElement {
         pageId.ondragstart = (e) => e.dataTransfer.setData("text", this.pageId.toString());
         this.addCell(titleRow, pageId, true);
 
+        let minimize = document.createElement("span");
+        minimize.className = "minimize";
+        minimize.innerHTML = "&uarr;";
+        minimize.onclick = () => this.minimize(minimize);
+        minimize.title = "Minimize this view.";
+        this.addCell(titleRow, minimize, true);
+
         let close = document.createElement("span");
         close.className = "close";
         close.innerHTML = "&times;";
@@ -131,7 +141,9 @@ export class FullPage implements IHtmlElement {
         close.title = "Close this view.";
         this.addCell(titleRow, close, true);
 
-        this.pageTopLevel.appendChild(this.dataDisplay.getHTMLRepresentation());
+        this.displayHolder = document.createElement("div");
+        this.pageTopLevel.appendChild(this.displayHolder);
+        this.displayHolder.appendChild(this.dataDisplay.getHTMLRepresentation());
         this.pageTopLevel.appendChild(this.bottomContainer);
 
         this.bottomContainer.appendChild(this.progressManager.getHTMLRepresentation());
@@ -220,6 +232,19 @@ export class FullPage implements IHtmlElement {
             top.appendChild(pageRepresentation);
         else
             top.insertBefore(pageRepresentation, top.children[index+1]);
+    }
+
+    public minimize(span: HTMLElement): void {
+        if (this.minimized) {
+            this.displayHolder.appendChild(this.dataDisplay.getHTMLRepresentation());
+            this.minimized = false;
+            span.innerHTML = "&uarr;";
+        } else {
+            removeAllChildren(this.displayHolder);
+            this.clearError();
+            this.minimized = true;
+            span.innerHTML = "&darr;";
+        }
     }
 
     public remove(): void {

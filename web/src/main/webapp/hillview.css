@@ -108,7 +108,12 @@ th, td {
     margin: 1px;
 }
 
-/* close button */
+.tabularDisplay {
+    display: block;
+    overflow-x: auto;
+}
+
+/* close and minimize buttons button */
 .close {
     font-size: 20px;
     font-weight: bold;
@@ -116,8 +121,10 @@ th, td {
     cursor: pointer;
 }
 
-.close :hover {
-    background: red;
+.minimize {
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
 }
 
 .noBorder {
