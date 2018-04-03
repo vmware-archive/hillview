@@ -24,7 +24,6 @@ import org.hillview.table.api.*;
 import org.hillview.table.columns.ObjectArrayColumn;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.VirtualRowSnapshot;
-import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -154,8 +153,8 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
      */
     @Override @Nullable
     public NextKList add(@Nullable NextKList left, @Nullable NextKList right) {
-        left = Converters.checkNull(left);
-        right = Converters.checkNull(right);
+        assert left != null;
+        assert right != null;
         if (!left.table.getSchema().equals(right.table.getSchema()))
             throw new RuntimeException("The schemas do not match.");
         int width = left.table.getSchema().getColumnCount();

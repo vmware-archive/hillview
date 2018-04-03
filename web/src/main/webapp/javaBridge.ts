@@ -19,6 +19,8 @@
 // TypeScript and Java.  These must be changed carefully, and usually in both parts, or
 // subtle bugs may happen.  Most often these classes have the same name in Java and TypeScript.
 
+import {Comparison} from "./util";
+
 export type RemoteObjectId = string;
 
 export type ContentsKind = "Category" | "Json" | "String" | "Integer" |
@@ -249,6 +251,7 @@ export class RecordOrder {
                 return i;
         return -1;
     }
+
     public hide(col: string): void {
         let index = this.find(col);
         if (index == -1)
@@ -256,26 +259,31 @@ export class RecordOrder {
             return;
         this.sortOrientationList.splice(index, 1);
     }
+
     public sortFirst(cso: ColumnSortOrientation) {
         let index = this.find(cso.columnDescription.name);
         if (index != -1)
             this.sortOrientationList.splice(index, 1);
         this.sortOrientationList.splice(0, 0, cso);
     }
-    public show(cso: ColumnSortOrientation) {
+
+    public addColumn(cso: ColumnSortOrientation) {
         let index = this.find(cso.columnDescription.name);
         if (index != -1)
             this.sortOrientationList.splice(index, 1);
         this.sortOrientationList.push(cso);
     }
-    public showIfNotVisible(cso: ColumnSortOrientation) {
+
+    public addColumnIfNotVisible(cso: ColumnSortOrientation) {
         let index = this.find(cso.columnDescription.name);
         if (index == -1)
             this.sortOrientationList.push(cso);
     }
+
     public clone(): RecordOrder {
         return new RecordOrder(this.sortOrientationList.slice(0));
     }
+
     // Returns a new object
     public invert(): RecordOrder {
         let result = new Array<ColumnSortOrientation>(this.sortOrientationList.length);
@@ -292,6 +300,7 @@ export class RecordOrder {
     protected static coToString(cso: ColumnSortOrientation): string {
         return cso.columnDescription.name + " " + (cso.isAscending ? "up" : "down");
     }
+
     public toString(): string {
         let result = "";
         for (let i = 0; i < this.sortOrientationList.length; i++)
@@ -309,7 +318,7 @@ export class EqualityFilterDescription {
      */
     column: string;
     /**
-     * Value to look for (represented as a string).
+     * Column that is being filtered.
      */
     compareValue: string;
     /**
@@ -320,4 +329,16 @@ export class EqualityFilterDescription {
      * True if we are looking to do regular expression matching.
      */
     asRegEx: boolean;
+}
+
+export class ComparisonFilterDescription {
+    /**
+     * Column that is being filtered.
+     */
+    column: string;
+    /**
+     * Column that is being filtered.
+     */
+    compareValue: string;
+    comparison: Comparison;
 }

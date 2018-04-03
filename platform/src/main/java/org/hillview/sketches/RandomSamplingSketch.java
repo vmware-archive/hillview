@@ -21,7 +21,6 @@ import org.hillview.dataset.api.ISketch;
 import org.hillview.table.HashSubSchema;
 import org.hillview.table.SmallTable;
 import org.hillview.table.api.*;
-import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -99,8 +98,8 @@ public class RandomSamplingSketch implements ISketch<ITable, SmallTable> {
 
     @Override
     public SmallTable add(@Nullable SmallTable left, @Nullable SmallTable right) {
-        left = Converters.checkNull(left);
-        right = Converters.checkNull(right);
+        assert left != null;
+        assert right != null;
         if (left.getNumOfRows() > 0) {
             return left.concatenate(right);
         } else if (right.getNumOfRows() > 0) {

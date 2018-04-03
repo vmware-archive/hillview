@@ -23,7 +23,6 @@ import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.remoting.HillviewServer;
-import org.hillview.utils.Converters;
 import org.hillview.utils.JsonList;
 import org.hillview.utils.Utilities;
 
@@ -106,7 +105,9 @@ public class ControlMessage implements Serializable {
         @Nullable
         @Override
         public StatusList add(@Nullable StatusList left, @Nullable StatusList right) {
-           return Converters.checkNull(left).concat(Converters.checkNull(right));
+            assert left != null;
+            assert right != null;
+            return left.concat(right);
         }
     }
 

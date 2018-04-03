@@ -21,7 +21,6 @@ import org.hillview.dataset.api.ISketch;
 import org.hillview.table.api.ColumnAndConverter;
 import org.hillview.table.api.ColumnAndConverterDescription;
 import org.hillview.table.api.ITable;
-import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -66,6 +65,8 @@ public class CategoryCentroidsSketch implements ISketch<ITable,Centroids<String>
 
     @Override
     public Centroids<String> add(@Nullable Centroids<String> left, @Nullable Centroids<String> right) {
-        return Converters.checkNull(left).union(Converters.checkNull(right));
+        assert left != null;
+        assert right != null;
+        return left.union(right);
     }
 }

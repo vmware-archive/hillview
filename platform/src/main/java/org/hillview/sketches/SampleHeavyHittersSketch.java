@@ -13,7 +13,6 @@ import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ITable;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.VirtualRowSnapshot;
-import org.hillview.utils.Converters;
 import org.hillview.utils.MutableInteger;
 
 import javax.annotation.Nullable;
@@ -66,8 +65,10 @@ public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKListSample
      * elements.
      */
     public FreqKListSample add(@Nullable FreqKListSample left, @Nullable FreqKListSample right) {
+        assert left != null;
+        assert right != null;
         List<Object2ObjectMap.Entry<RowSnapshot, MutableInteger>> pList =
-                FreqKList.addLists(Converters.checkNull(left), Converters.checkNull(right));
+                FreqKList.addLists(left, right);
         Object2IntOpenHashMap<RowSnapshot> hm = new Object2IntOpenHashMap<RowSnapshot>(pList.size());
         for (Object2ObjectMap.Entry<RowSnapshot, MutableInteger> aPList : pList) {
             hm.put(aPList.getKey(), aPList.getValue().get());

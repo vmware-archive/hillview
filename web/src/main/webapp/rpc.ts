@@ -21,7 +21,7 @@ import {ErrorReporter} from "./ui/errReporter";
 import {PartialResult, ICancellable, RpcReply, formatDate} from "./util";
 import {ProgressBar} from "./ui/progress";
 import {FullPage} from "./ui/fullPage";
-import {CombineOperators, RemoteObjectId} from "./javaBridge";
+import {RemoteObjectId} from "./javaBridge";
 import {Test} from "./test";
 import pako = require('pako');
 import {timeMillisecond as d3timeMillisecond} from 'd3-time';
@@ -61,15 +61,6 @@ export class RemoteObject {
     createStreamingRpcRequest<T>(method: string, args: any) : RpcRequest<PartialResult<T>> {
         return this.createRpcRequest<PartialResult<T>>(method, args);
     }
-
-    /**
-     * Combines the current RemoteObject with the currently
-     * selected object (SelectedObject.current.getSelected)
-     * according to the specified operation.  Should be overridden
-     * in subclasses.
-     * TODO: this seems out of place here.
-     */
-    combine(how: CombineOperators): void {}
 
     public toString(): string {
         return this.remoteObjectId;
@@ -162,11 +153,25 @@ export class RpcRequest<T> implements ICancellable {
      */
     public cancel(): boolean {
         if (!this.closed) {
+            console.log(formatDate() + ' cancelling ' + this.toString());
             this.closed = true;
             this.socket.close();
             return true;
         }
         return false;
+    }
+
+    static simplifyExceptions(errorMessage: string): string {
+        let lines = errorMessage.split(/\r?\n/);
+        lines = lines
+            .filter(v => !v.match(
+                /^\s+at ((rx\.)|(io\.grpc)|(java\.lang\.Thread\.run)|(java\.util\.concurrent\.ThreadPoolExecutor))/))
+            .map(v => v.replace("io.grpc.StatusRuntimeException: INTERNAL: ", ""));
+        return lines.join("\n");
+    }
+
+    public toString(): string {
+        return this.objectId + "." + this.method + "()";
     }
 
     /**
@@ -196,7 +201,7 @@ export class RpcRequest<T> implements ICancellable {
                 console.log(formatDate() + ' reply received: ' + r.data);
                 let reply = <RpcReply>JSON.parse(r.data);
                 if (reply.isError) {
-                    onReply.onError(reply.result);
+                    onReply.onError(RpcRequest.simplifyExceptions(reply.result));
                 } else {
                     let success = false;
                     let response: any;
@@ -327,7 +332,7 @@ export abstract class Renderer<T> implements Rx.Observer<PartialResult<T>> {
      * this method; otherwise the progress bar will not advance.
      */
     public onNext(value: PartialResult<T>) {
-        this.page.scrollIntoView();
+        //this.page.scrollIntoView();
         this.progressBar.setPosition(value.done);
         if (this.operation != null)
             console.log("onNext after " + this.elapsedMilliseconds());

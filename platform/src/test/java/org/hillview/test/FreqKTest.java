@@ -27,7 +27,6 @@ import org.hillview.table.Schema;
 import org.hillview.table.SmallTable;
 import org.hillview.table.Table;
 import org.hillview.table.api.ITable;
-import org.hillview.utils.Converters;
 import org.hillview.utils.TestTables;
 import org.junit.Assert;
 import org.junit.Test;
@@ -41,16 +40,16 @@ import static org.junit.Assert.assertTrue;
 public class FreqKTest extends BaseTest {
     public void checkList(FreqKList fkList, Schema schema) {
         NextKList nkList = fkList.sortTopK(schema);
-        for (int i = 1; i < Converters.checkNull(nkList.count).size(); i++) {
+        for (int i = 1; i < nkList.count.size(); i++) {
             TestCase.assertTrue(nkList.count.get(i - 1) >= nkList.count.get(i));
         }
-        for (int i = 0; i < Converters.checkNull(nkList.count).size(); i++) {
+        for (int i = 0; i < nkList.count.size(); i++) {
             TestCase.assertTrue(nkList.count.get(i) >= 0);
         }
     }
 
     private void filterTest(@Nullable FreqKListMG fkList) {
-        Converters.checkNull(fkList);
+        Assert.assertNotNull(fkList);
         fkList.filter();
         fkList.getList().forEach(rss -> assertTrue(fkList.hMap.getInt(rss) >=
                 fkList.totalRows*fkList.epsilon - fkList.getErrBound()));

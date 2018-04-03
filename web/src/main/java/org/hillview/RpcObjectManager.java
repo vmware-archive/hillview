@@ -24,10 +24,8 @@ import rx.Subscription;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
-
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
 
 /**
  * The RpcObjectManager manages a pool of objects that are the targets of RPC calls
@@ -51,9 +49,6 @@ public final class RpcObjectManager {
     // the unique global instance.
     public static final RpcObjectManager instance;
 
-    // Map object id to object.
-    private final HashMap<RpcTarget.Id, RpcTarget> objects;
-
     // Map the session to the targetId object that is replying to the request, if any.
     private final HashMap<Session, RpcTarget> sessionRequest =
             new HashMap<Session, RpcTarget>(10);
@@ -61,10 +56,17 @@ public final class RpcObjectManager {
     private final HashMap<Session, Subscription> sessionSubscription =
             new HashMap<Session, Subscription>(10);
 
-    // TODO: persist object history into persistent storage.
-    // For each object id the computation that has produced it.
-    private final HashMap<RpcTarget.Id, HillviewComputation> generator =
-            new HashMap<RpcTarget.Id, HillviewComputation>();
+    /**
+     * Objects currently under reconstruction.
+     */
+    private final HashSet<RpcTarget.Id> reconstructing;
+    private final RedoLog objectLog;
+
+    // Private constructor
+    private RpcObjectManager() {
+        this.objectLog = new RedoLog();
+        this.reconstructing = new HashSet<RpcTarget.Id>();
+    }
 
     synchronized void addSession(Session session, @Nullable RpcTarget target) {
         this.sessionRequest.put(session, target);
@@ -93,7 +95,8 @@ public final class RpcObjectManager {
             // This means that we are replaying the computation; the subscription is
             // probably already saved.
             return;
-        HillviewLogger.instance.info("Saving subscription", "{0}", context.toString());
+        HillviewLogger.instance.info("Saving subscription", "{0}:{1}",
+                context, subscription);
         if (this.sessionSubscription.get(session) != null)
             // This can happen because we have started the operation, some part of the
             // object was not found on a remote node, and then reconstruction started.
@@ -114,23 +117,19 @@ public final class RpcObjectManager {
         new InitialObjectTarget();  // indirectly registers this object with the RpcObjectManager
     }
 
-    // Private constructor
-    private RpcObjectManager() {
-        this.objects = new HashMap<RpcTarget.Id, RpcTarget>();
-    }
-
-    public synchronized void addObject(RpcTarget target) {
-        if (this.objects.containsKey(target.getId()))
-            throw new RuntimeException("Object with id " + target.getId() + " already in map");
+    public void addObject(RpcTarget target) {
         HillviewLogger.instance.info("Object generated", "{0} from {1}", target.getId(), target.computation);
-        this.generator.put(target.getId(), target.computation);
-        HillviewLogger.instance.info("Inserting targetId", "{0}", target.toString());
-        this.objects.put(target.getId(), target);
+        this.objectLog.addObject(target);
+        // If we have the object we are definitely not reconstructing it.
+        this.reconstructing.remove(target.getId());
     }
 
-    synchronized @Nullable RpcTarget getObject(RpcTarget.Id id) {
-        HillviewLogger.instance.info("Getting object", "{0}", id);
-        return this.objects.get(id);
+    @Nullable RpcTarget getObject(RpcTarget.Id id) {
+        return this.objectLog.getObject(id);
+    }
+
+    void deleteObject(RpcTarget.Id id) {
+        this.objectLog.deleteObject(id);
     }
 
     /**
@@ -164,7 +163,14 @@ public final class RpcObjectManager {
      */
     private void rebuild(RpcTarget.Id id, Observer<RpcTarget> toNotify) {
         HillviewLogger.instance.info("Attempt to reconstruct", "{0}", id);
-        HillviewComputation computation = this.generator.get(id);
+        if (this.reconstructing.contains(id)) {
+            Exception ex = new RuntimeException("Recursive dependences while reconstructing " + id);
+            HillviewLogger.instance.error("Recursion in reconstruction", ex);
+            toNotify.onError(ex);
+            return;
+        }
+        this.reconstructing.add(id);
+        HillviewComputation computation = this.objectLog.getComputation(id);
         if (computation != null) {
             // The following may trigger a recursive reconstruction.
             HillviewLogger.instance.info("Replaying", "computation={0}", computation);
@@ -176,30 +182,11 @@ public final class RpcObjectManager {
         }
     }
 
-    @SuppressWarnings("unused")
-    synchronized void deleteObject(RpcTarget.Id id) {
-        if (id.isInitial()) {
-            HillviewLogger.instance.error("Cannot delete object 0");
-            return;
-        }
-        if (!this.objects.containsKey(id))
-            throw new RuntimeException("Object with id " + id + " does not exist");
-        this.objects.remove(id);
-    }
-
     /**
      * Removes all RemoteObjects from the cache, except the initial object.
      * @return  The number of objects removed.
      */
     public int removeAllObjects() {
-        List<RpcTarget.Id> toDelete = new ArrayList<RpcTarget.Id>();
-        for (RpcTarget.Id k: this.objects.keySet()) {
-            if (!k.equals(initialObjectId))
-                toDelete.add(k);
-        }
-
-        for (RpcTarget.Id k: toDelete)
-            this.deleteObject(k);
-        return toDelete.size();
+        return this.objectLog.removeAllObjects(initialObjectId);
     }
 }

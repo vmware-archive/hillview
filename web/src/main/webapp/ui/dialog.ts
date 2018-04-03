@@ -326,8 +326,14 @@ export class Dialog implements IHtmlElement {
         this.fields.set(fieldName, {html: input});
     }
 
-    public addText(textString: string): void{
-        this.createRowContainer("message", textString, null);
+    /**
+     * Adds a simple text to the dialog.
+     * @param textString  Text to show in the dialog.
+     * @returns           A reference to the HTML element holding the text.
+     */
+    public addText(textString: string): HTMLElement {
+        let fieldDiv = this.createRowContainer("message", textString, null);
+        return <HTMLElement>fieldDiv.children[0];
     }
 
     /**

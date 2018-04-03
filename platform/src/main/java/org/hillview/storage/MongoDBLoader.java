@@ -50,10 +50,11 @@ public class MongoDBLoader extends JsonFileLoader {
     public MongoDBLoader(JdbcConnectionInformation info) {
         super(Converters.checkNull(info.table), null);
         this.info = info;
+        assert info.database != null;
+        assert info.password != null;
 
         MongoCredential credential = MongoCredential.createCredential(
-                info.user, Converters.checkNull(info.database),
-                Converters.checkNull(info.password).toCharArray());
+                info.user, info.database, info.password.toCharArray());
         ServerAddress address = new ServerAddress(info.host, info.port);
         MongoClientOptions options = MongoClientOptions.builder().build();
         MongoClient client = new MongoClient(address); //, credential, options);

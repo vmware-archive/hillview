@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * A LocalDataSet is an implementation of IDataSet which contains exactly one
@@ -52,11 +51,11 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
     /**
      * Work is executed on this thread.
      */
-    private static final Scheduler scheduler;
+    private static final Scheduler workScheduler;
 
     static {
         ExecutorService executor = ExecutorUtils.getComputeExecutorService();
-        scheduler = Schedulers.from(executor);
+        workScheduler = Schedulers.from(executor);
     }
 
     /**
@@ -74,12 +73,14 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
     }
 
     /**
-     * Schedule the computation using the LocalDataSet.scheduler.
+     * Schedule the computation using the LocalDataSet.workScheduler.
      * @param data  Data whose computation is scheduled
      */
     <S> Observable<S> schedule(Observable<S> data) {
-        if (this.separateThread)
-            return data.subscribeOn(LocalDataSet.scheduler);
+        if (this.separateThread) {
+            return data.subscribeOn(LocalDataSet.workScheduler)
+                    .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler());
+        }
         return data;
     }
 
@@ -105,30 +106,22 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
     @Override
     public <S> Observable<PartialResult<IDataSet<S>>> map(final IMap<T, S> mapper) {
         // Actual map computation performed lazily when observable is subscribed to.
-        final AtomicBoolean interrupted = new AtomicBoolean(false);
         final Callable<IDataSet<S>> callable = () -> {
             try {
-                if (interrupted.get()) {
-                    HillviewLogger.instance.info("Map interrupted", "{0}", this);
-                    throw new InterruptedException("Unsubscribed");
-                }
-                HillviewLogger.instance.info("Starting map", "{0}", mapper.asString());
+                HillviewLogger.instance.info("Starting map", "{0}:{1}",
+                        this, mapper.asString());
                 S result = mapper.apply(LocalDataSet.this.data);
-                HillviewLogger.instance.info("Completed map", "{0}", mapper.asString());
+                HillviewLogger.instance.info("Completed map", "{0}:{1}",
+                        this, mapper.asString());
                 return new LocalDataSet<S>(result);
             } catch (final Throwable t) {
                 throw new Exception(t);
             }
         };
-        final Observable<IDataSet<S>> mapped = Observable.fromCallable(callable)
-                .doOnUnsubscribe(
-                        () -> {
-                            HillviewLogger.instance.info("Unsubscribed map",
-                                    "{0}", this);
-                            interrupted.set(true);
-                        });
+        final Observable<IDataSet<S>> mapped = Observable.fromCallable(callable);
         // Wrap the produced data in a PartialResult
-        Observable<PartialResult<IDataSet<S>>> data = mapped.map(PartialResult::new);
+        Observable<PartialResult<IDataSet<S>>> data = mapped
+                .map(PartialResult::new);
         return this.schedule(data);
     }
 
@@ -140,9 +133,11 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
                 List<S> list = mapper.apply(LocalDataSet.this.data);
                 List<IDataSet<S>> locals = new ArrayList<IDataSet<S>>();
                 for (S s : list) {
-                    HillviewLogger.instance.info("Starting flatMap", "{0}", mapper.asString());
+                    HillviewLogger.instance.info("Starting flatMap", "{0}:{1}",
+                            this, mapper.asString());
                     IDataSet<S> ds = new LocalDataSet<S>(s);
-                    HillviewLogger.instance.info("Completed flatMap", "{0}", mapper.asString());
+                    HillviewLogger.instance.info("Completed flatMap", "{0}:{1}",
+                            this, mapper.asString());
                     locals.add(ds);
                 }
                 return (IDataSet<S>) new ParallelDataSet<S>(locals);
@@ -170,7 +165,8 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
     @Override
     public Observable<PartialResult<ControlMessage.StatusList>> manage(ControlMessage message) {
         final Callable<ControlMessage.StatusList> callable = () -> {
-            HillviewLogger.instance.info("Starting manage", "{0}", message.toString());
+            HillviewLogger.instance.info("Starting manage", "{0}:{1}",
+                    this, message.toString());
             ControlMessage.Status status;
             try {
                 status = message.localAction(this);
@@ -179,7 +175,8 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
                 HillviewLogger.instance.error("Exception during manage", t);
             }
             ControlMessage.StatusList result = new ControlMessage.StatusList(status);
-            HillviewLogger.instance.info("Completed manage", "{0}", message.toString());
+            HillviewLogger.instance.info("Completed manage", "{0}:{1}",
+                    this, message.toString());
             return result;
         };
         final Observable<ControlMessage.StatusList> executed = Observable.fromCallable(callable);
@@ -190,12 +187,13 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
     public <R> Observable<PartialResult<R>> sketch(final ISketch<T, R> sketch) {
         // Immediately return a zero partial result
         final Observable<PartialResult<R>> zero = this.zero(sketch::zero);
-        // Actual computation performed lazily when observable is subscribed to.
         final Callable<R> callable = () -> {
             try {
-                HillviewLogger.instance.info("Starting sketch", "{0}", sketch.asString());
+                HillviewLogger.instance.info("Starting sketch", "{0}:{0}",
+                        this, sketch.asString());
                 R result = sketch.create(this.data);
-                HillviewLogger.instance.info("Completed sketch", "{0}", sketch.asString());
+                HillviewLogger.instance.info("Completed sketch", "{0}:{1}",
+                        this, sketch.asString());
                 return result;
             } catch (final Throwable t) {
                 throw new Exception(t);

@@ -20,7 +20,6 @@ package org.hillview.sketches;
 import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.storage.IFileLoader;
-import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 
@@ -39,8 +38,8 @@ public class FileSizeSketch implements ISketch<IFileLoader, FileSizeSketch.Info>
     @Nullable
     @Override
     public Info add(@Nullable Info left, @Nullable Info right) {
-        Converters.checkNull(left);
-        Converters.checkNull(right);
+        assert left != null;
+        assert right != null;
         return new Info(left.fileCount + right.fileCount, left.totalSize + right.totalSize);
     }
 

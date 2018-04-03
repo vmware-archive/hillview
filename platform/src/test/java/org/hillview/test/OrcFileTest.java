@@ -24,6 +24,7 @@ import org.apache.orc.OrcFile;
 import org.apache.orc.Reader;
 import org.apache.orc.RecordReader;
 import org.apache.orc.TypeDescription;
+import org.hillview.storage.CsvFileLoader;
 import org.hillview.storage.OrcFileLoader;
 import org.hillview.storage.OrcFileWriter;
 import org.hillview.table.ColumnDescription;
@@ -47,6 +48,19 @@ public class OrcFileTest extends BaseTest {
     private static final String orcFolder = "../data/orc/";
     private static final String orcOutFile = "test.orc";
 
+    void deleteOrcFile(String folder, String file) {
+        File f = new File(Paths.get(folder, file).toString());
+        if (f.exists()) {
+            boolean success = f.delete();
+            Assert.assertTrue(success);
+        }
+        f = new File(Paths.get(folder, "." + file + ".crc").toString());
+        if (f.exists()) {
+            boolean success = f.delete();
+            Assert.assertTrue(success);
+        }
+    }
+
     @Test
     public void writeSmallFileTest() {
         String orcFile = orcFolder + "tmp.orc";
@@ -63,11 +77,19 @@ public class OrcFileTest extends BaseTest {
         OrcFileLoader loader = new OrcFileLoader(orcFile, null, false);
         ITable table = loader.load();
         Assert.assertEquals(t.toLongString(20), table.toLongString(20));
+        deleteOrcFile(orcFolder, "tmp.orc");
+    }
 
-        if (file.exists()) {
-            boolean success = file.delete();
-            Assert.assertTrue(success);
-        }
+    @Test
+    public void convertCsvFileTest() {
+        String file = CsvFileTest.ontimeFolder + "/" + CsvFileTest.csvFile;
+        CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
+        CsvFileLoader loader = new CsvFileLoader(file, config, null);
+        ITable table = loader.load();
+        String orcFile = "tmpX.orc";
+        OrcFileWriter writer = new OrcFileWriter(orcFile);
+        writer.writeTable(table);
+        deleteOrcFile(".", orcFile);
     }
 
     @Test
@@ -93,11 +115,7 @@ public class OrcFileTest extends BaseTest {
         OrcFileLoader loader = new OrcFileLoader(orcFile, null, false);
         ITable table = loader.load();
         Assert.assertEquals(tbl.toLongString(20), table.toLongString(20));
-
-        if (file.exists()) {
-            boolean success = file.delete();
-            Assert.assertTrue(success);
-        }
+        deleteOrcFile(orcFolder, "tmp.orc");
     }
 
     @Test

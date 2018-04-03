@@ -20,7 +20,6 @@ import org.hillview.dataset.api.ISketch;
 import org.hillview.table.api.ColumnAndConverter;
 import org.hillview.table.api.ColumnAndConverterDescription;
 import org.hillview.table.api.ITable;
-import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -73,6 +72,8 @@ public class HeatMap3DSketch implements ISketch<ITable, HeatMap3D> {
 
     @Override
     public HeatMap3D add(@Nullable final HeatMap3D left, @Nullable final HeatMap3D right) {
-        return Converters.checkNull(left).union(Converters.checkNull(right));
+        assert left != null;
+        assert right != null;
+        return left.union(right);
     }
 }

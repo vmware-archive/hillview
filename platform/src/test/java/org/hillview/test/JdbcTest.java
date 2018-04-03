@@ -21,7 +21,6 @@ import org.hillview.storage.JdbcConnectionInformation;
 import org.hillview.table.api.ColumnAndConverter;
 import org.hillview.table.api.ITable;
 import org.hillview.storage.JdbcDatabase;
-import org.hillview.utils.Converters;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -36,7 +35,7 @@ import javax.annotation.Nullable;
 public class JdbcTest extends BaseTest {
     @Nullable
     ITable getTable(JdbcConnectionInformation conn) {
-        Converters.checkNull(conn.table);
+        Assert.assertNotNull(conn.table);
         JdbcDatabase db = new JdbcDatabase(conn);
         try {
             db.connect();

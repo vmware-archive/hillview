@@ -19,6 +19,8 @@
  * This file contains various useful functions and classes.
  */
 
+export type Comparison = "==" | "!=" | "<" | ">" | "<=" | ">=";
+
 export interface Pair<T1, T2> {
     first: T1;
     second: T2;
@@ -264,10 +266,16 @@ export function isInteger(n: number) {
 }
 
 /**
- * Convert a copy of an array.
+ * Copy an array.
  */
 export function cloneArray<T>(arr: T[]): T[] {
     return arr.slice(0);
+}
+
+export function cloneToSet<T>(arr: T[]): Set<T> {
+    let result = new Set<T>();
+    arr.forEach(e => result.add(e));
+    return result;
 }
 
 export function uuidv4(): string {

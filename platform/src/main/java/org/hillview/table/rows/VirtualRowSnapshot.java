@@ -19,7 +19,6 @@ package org.hillview.table.rows;
 
 import org.hillview.table.Schema;
 import org.hillview.table.api.*;
-import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.time.Duration;
@@ -69,8 +68,7 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
                 schema.getColumnNames());
         List<ColumnAndConverter> cols = table.getLoadedColumns(ccds);
         for (ColumnAndConverter col: cols) {
-            Converters.checkNull(col);
-            this.columns.put(col.getName(), Converters.checkNull(col.column));
+            this.columns.put(col.getName(), col.column);
         }
     }
 

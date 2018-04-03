@@ -30,10 +30,7 @@ import org.hillview.maps.*;
 import org.hillview.sketches.*;
 import org.hillview.table.*;
 import org.hillview.table.api.*;
-import org.hillview.table.filters.EqualityFilterDescription;
-import org.hillview.table.filters.RangeFilterDescription;
-import org.hillview.table.filters.RangeFilterPair;
-import org.hillview.table.filters.StringFilterDescription;
+import org.hillview.table.filters.*;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.Converters;
 import org.hillview.utils.LinAlg;
@@ -114,6 +111,7 @@ public final class TableTarget extends RpcTarget {
 
     static class SaveAsArgs {
         String folder = "";
+        @Nullable
         Schema schema;
     }
 
@@ -246,6 +244,13 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     public void filterEquality(RpcRequest request, RpcRequestContext context) {
         EqualityFilterDescription filter = request.parseArgs(EqualityFilterDescription.class);
+        FilterMap filterMap = new FilterMap(filter);
+        this.runMap(this.table, filterMap, TableTarget::new, request, context);
+    }
+
+    @HillviewRpc
+    public void filterComparison(RpcRequest request, RpcRequestContext context) {
+        ComparisonFilterDescription filter = request.parseArgs(ComparisonFilterDescription.class);
         FilterMap filterMap = new FilterMap(filter);
         this.runMap(this.table, filterMap, TableTarget::new, request, context);
     }

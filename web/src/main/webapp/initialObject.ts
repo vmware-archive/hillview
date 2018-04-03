@@ -34,7 +34,7 @@ class FileNamesReceiver extends OnCompleteRenderer<RemoteObjectId> {
         let fn = new RemoteObject(remoteObjId);
         let rr = fn.createStreamingRpcRequest<FileSizeSketchInfo>("getFileSize", null);
         rr.chain(this.operation);
-        let observer = new FileSizeReceiver(this.page, rr, this.title, remoteObjId);
+        let observer = new FileSizeReceiver(this.page, rr, this.title, fn);
         rr.invoke(observer);
     }
 }
@@ -45,17 +45,16 @@ class FileNamesReceiver extends OnCompleteRenderer<RemoteObjectId> {
  */
 class FileSizeReceiver extends OnCompleteRenderer<FileSizeSketchInfo> {
     constructor(page: FullPage, operation: ICancellable, protected title: string,
-                protected remoteObjId: RemoteObjectId) {
+                protected remoteObj: RemoteObject) {
         super(page, operation, "Load data");
     }
 
     public run(size: FileSizeSketchInfo): void {
         let fileSize = "Loading " + size.fileCount + " file(s), total size " +
             significantDigits(size.totalSize);
-        let fn = new RemoteObject(this.remoteObjId);
-        let rr = fn.createStreamingRpcRequest<RemoteObjectId>("loadTable", null);
+        let rr = this.remoteObj.createStreamingRpcRequest<RemoteObjectId>("loadTable", null);
         rr.chain(this.operation);
-        let observer = new RemoteTableReceiver(this.page, rr, this.title, fileSize, false, null);
+        let observer = new RemoteTableReceiver(this.page, rr, this.title, fileSize, false);
         rr.invoke(observer);
     }
 }
@@ -134,7 +133,7 @@ export class InitialObject extends RemoteObject {
     public loadDBTable(conn: JdbcConnectionInformation, menuPage: FullPage): void {
         let rr = this.createStreamingRpcRequest<RemoteObjectId>("loadDBTable", conn);
         let title = "DB " + conn.database + ":" + conn.table;
-        let observer = new RemoteTableReceiver(menuPage, rr, title, "Reading " + conn.table, false, null);
+        let observer = new RemoteTableReceiver(menuPage, rr, title, "Reading " + conn.table, false);
         rr.invoke(observer);
     }
 }

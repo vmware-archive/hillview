@@ -21,6 +21,7 @@ import org.hillview.dataset.api.*;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
 import rx.Observable;
+import rx.Subscription;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -123,6 +124,10 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
     @Override
     public <S> Observable<PartialResult<IDataSet<S>>> map(
              final IMap<T, S> mapper) {
+        // Autoconnect does not propagate unsubscriptions so we
+        // have to do it manually.  We save the subscription
+        // here so we can disconnect it when necessary.
+        Subscription savedSubscription[] = new Subscription[1];
         HillviewLogger.instance.info("Invoked map", "target={0}", this);
         final List<Observable<Pair<Integer, PartialResult<IDataSet<S>>>>> obs =
                 new ArrayList<Observable<Pair<Integer, PartialResult<IDataSet<S>>>>>(this.size());
@@ -141,7 +146,9 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
                 // publish().autoConnect(2) ensures that the two consumers
                 // of this stream pull from the *same* stream, and not from
                 // two different copies.
-                Observable.merge(obs).publish().autoConnect(2);
+                Observable.merge(obs)
+                        .publish()
+                        .autoConnect(2, s -> savedSubscription[0] = s);
         // We split the merged stream of PartialResults into two separate streams
         // - mapResult for the actual PartialResult.deltaValue
         // - dones for the PartialResult.doneValue
@@ -162,14 +169,20 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
                 merged.map(p -> Converters.checkNull(p.second).deltaDone / this.size())
                         .map(e -> new PartialResult<IDataSet<S>>(e, null));
         Observable<PartialResult<IDataSet<S>>> result = dones.mergeWith(mapResult);
-        result = bundle(result, new PRDataSetMonoid<S>());
-        result.doOnUnsubscribe(() -> HillviewLogger.instance.info("Map has been unsubscribed",
-                "{0}", this));
+        result = bundle(result, new PRDataSetMonoid<S>())
+            .doOnUnsubscribe(() -> {
+                if (savedSubscription[0] != null)
+                    savedSubscription[0].unsubscribe();
+            });
         return result;
     }
 
     @Override
     public <S> Observable<PartialResult<IDataSet<S>>> flatMap(IMap<T, List<S>> mapper) {
+        // Autoconnect does not propagate unsubscriptions so we
+        // have to do it manually.  We save the subscription
+        // here so we can disconnect it when necessary.
+        Subscription savedSubscription[] = new Subscription[1];
         HillviewLogger.instance.info("Invoked flatMap", "target={0}", this);
         final List<Observable<Pair<Integer, PartialResult<IDataSet<S>>>>> obs =
                 new ArrayList<Observable<Pair<Integer, PartialResult<IDataSet<S>>>>>(this.size());
@@ -188,7 +201,9 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
                 // publish().autoConnect(2) ensures that the two consumers
                 // of this stream pull from the *same* stream, and not from
                 // two different copies.
-                Observable.merge(obs).publish().autoConnect(2);
+                Observable.merge(obs)
+                        .publish()
+                        .autoConnect(2, s -> savedSubscription[0] = s);
         // We split the merged stream of PartialResults into two separate streams
         // - mapResult for the actual PartialResult.deltaValue
         // - dones for the PartialResult.doneValue
@@ -209,13 +224,22 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
                 merged.map(p -> Converters.checkNull(p.second).deltaDone / this.size())
                         .map(e -> new PartialResult<IDataSet<S>>(e, null));
         Observable<PartialResult<IDataSet<S>>> result = dones.mergeWith(mapResult);
-        result = bundle(result, new PRDataSetMonoid<S>());
+        result = bundle(result, new PRDataSetMonoid<S>())
+                .doOnUnsubscribe(() -> {
+                    if (savedSubscription[0] != null)
+                        savedSubscription[0].unsubscribe();
+                });
         return result;
     }
 
     @Override
     public <S> Observable<PartialResult<IDataSet<Pair<T, S>>>> zip(
             final IDataSet<S> other) {
+        // Autoconnect does not propagate unsubscriptions so we
+        // have to do it manually.  We save the subscription
+        // here so we can disconnect it when necessary.
+        Subscription savedSubscription[] = new Subscription[1];
+
         HillviewLogger.instance.info("Invoked zip", "target={0}", this);
         if (!(other instanceof ParallelDataSet<?>))
             throw new RuntimeException("Expected a ParallelDataSet " + other);
@@ -239,7 +263,9 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
                 // publish().autoConnect(2) ensures that the two consumers
                 // of this stream pull from the *same* stream, and not from
                 // two different copies.
-                Observable.merge(obs).publish().autoConnect(2);
+                Observable.merge(obs)
+                        .publish()
+                        .autoConnect(2, s -> savedSubscription[0] = s);
         // We split the merged stream of PartialResults into two separate streams
         // - zipResult for the actual PartialResult.deltaValue
         // - dones for the PartialResult.doneValue
@@ -258,7 +284,11 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
                       .map(e -> new PartialResult<IDataSet<Pair<T, S>>>(e, null));
         Observable<PartialResult<IDataSet<Pair<T, S>>>> result = dones.mergeWith(zipResult);
         PRDataSetMonoid<Pair<T, S>> prm = new PRDataSetMonoid<Pair<T, S>>();
-        result = bundle(result, prm);
+        result = bundle(result, prm)
+                .doOnUnsubscribe(() -> {
+                    if (savedSubscription[0] != null)
+                        savedSubscription[0].unsubscribe();
+                });
         return result;
     }
 
@@ -322,7 +352,10 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
         if (useLogging)
             result = result.map(e -> this.logPipe(e, "after merge " + sketch.toString()));
         PartialResultMonoid<R> prm = new PartialResultMonoid<R>(sketch);
-        result = this.bundle(result, prm);
+        result = this.bundle(result, prm)
+            .doOnUnsubscribe(
+                    () -> HillviewLogger.instance.info("Sketch unsubscribe", "{0}:{1}",
+                            this, sketch));
         if (useLogging)
             result = result.map(e -> this.logPipe(e, "after bundle " + sketch.toString()));
         return result;
@@ -330,6 +363,6 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
 
     @Override
     public String toString() {
-        return "ParallelDataSet of size " + this.size();
+        return super.toString() + ", size " + this.size();
     }
 }

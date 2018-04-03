@@ -78,6 +78,19 @@
         src="{{service_folder}}/hillview-web.log"
         path="{{service_folder}}/hillview/hillview-web.log"
 
+# Install native libraries
+# This requires us to gather facts, so we do it separately
+#- hosts: backends
+#  tasks:
+#    - name: Load variables from configuration file
+#      include_vars: config.yaml
+#
+#    - name: Install native libraries
+#      apt:
+#         name: libgfortran3
+#      become: yes
+#      become_method: sudo
+
 # Sets up the backend servers by copying over the hillview server jars
 - hosts: backends
   gather_facts: false

@@ -67,7 +67,7 @@ public class JdbcDatabase {
 
     public ITable readTable() {
         try {
-            Converters.checkNull(this.conn.info.table);
+            assert this.conn.info.table != null;
             if (this.conn.info.lazyLoading) {
                 String query = this.conn.getQueryToReadSize(this.conn.info.table);
                 ResultSet rs = this.getQueryResult(query);
@@ -135,7 +135,7 @@ public class JdbcDatabase {
      * @param rowCount  Maximum number of rows.  If negative, bring all rows.
      */
     ResultSet getDataInTable(int rowCount) {
-        Converters.checkNull(this.conn.info.table);
+        assert this.conn.info.table != null;
         String query = this.conn.getQueryToReadTable(this.conn.info.table, rowCount);
         return this.getQueryResult(query);
     }

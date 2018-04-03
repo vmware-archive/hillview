@@ -17,14 +17,17 @@
 
 import {FullPage} from "../ui/fullPage";
 import {
-    NextKList, IColumnDescription, RecordOrder, Schema, RemoteObjectId, allContentsKind, ColumnSortOrientation
+    NextKList, IColumnDescription, RecordOrder, Schema, RemoteObjectId, allContentsKind, ColumnSortOrientation,
+    CombineOperators
 } from "../javaBridge";
 import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
 import {TabularDisplay} from "../ui/tabularDisplay";
 import {TableView} from "./tableView";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {TableViewBase} from "./tableViewBase";
-import {significantDigits} from "../util";
+import {cloneToSet, significantDigits} from "../util";
+import {Dataset} from "../dataset";
+import {SchemaClass} from "../schemaClass";
 
 /**
  * This class is used to browse through the columns of a table schema
@@ -36,40 +39,48 @@ export class SchemaView extends TableViewBase {
     protected summary: HTMLElement;
 
     constructor(remoteObjectId: RemoteObjectId,
-                originalTableId: RemoteObjectId,
+                dataset: Dataset,
                 page: FullPage,
-                schema: Schema,
-                private rowCount: number,
+                schema: SchemaClass,
+                rowCount: number,
                 elapsedMs: number) {
-        super(remoteObjectId, originalTableId, page);
+        super(remoteObjectId, dataset, page);
+        this.rowCount = rowCount;
+        this.schema = schema;
+        this.show();
+        this.page.reportTime(elapsedMs);
+    }
+
+    show(): void {
         this.topLevel = document.createElement("div");
         this.contextMenu = new ContextMenu(this.topLevel);
-        this.schema = schema;
 
         let viewMenu = new SubMenu([{
             text: "Selected columns",
             action: () => this.showTable(),
             help: "Show the data using a tabular view containing the selected columns."
-            }]);
+        }]);
         let selectMenu = new SubMenu([{
             text: "By Name",
             action: () => nameDialog.show(),
             help: "Select Columns by name."
         }, {
             text: "By Type",
-            action: () => {typeDialog.show();},
+            action: () => {
+                typeDialog.show();
+            },
             help: "Select Columns by type."
         }]);
         let menu = new TopMenu([
             this.saveAsMenu(),
             {text: "View", subMenu: viewMenu, help: "Change the way the data is displayed."},
-            {text: "Select", subMenu: selectMenu, help: "Select columns based on attributes." },
+            {text: "Select", subMenu: selectMenu, help: "Select columns based on attributes."},
             this.chartMenu()
-            ]);
+        ]);
         this.page.setMenu(menu);
         this.topLevel.appendChild(document.createElement("br"));
 
-        let para = document.createElement("p");
+        let para = document.createElement("div");
         para.textContent = "Select the columns that you would like to browse";
         this.topLevel.appendChild(para);
 
@@ -77,16 +88,16 @@ export class SchemaView extends TableViewBase {
         this.display.setColumns(["#", "Name", "Type"],
             ["Column number", "Column name", "Type of data stored within the column"]);
 
-        /* Dialog box for selecting columns based on name*/
+        /* Dialog box for selecting columns based on name */
         let nameDialog = new Dialog("Select by name",
             "Allows selecting/deselecting columns by name using regular expressions");
         nameDialog.addTextField("selected", "Name", FieldKind.String, "",
             "Names of columns to select (regular expressions allowed)");
-        let actions: string[] =  ["Add", "Remove"];
+        let actions: string[] = ["Add", "Remove"];
         nameDialog.addSelectField("action", "Action", actions, "Add",
             "Add to or Remove from current selection");
         nameDialog.setAction(() => {
-            let regExp: RegExp= new RegExp(nameDialog.getFieldValue("selected"));
+            let regExp: RegExp = new RegExp(nameDialog.getFieldValue("selected"));
             let action: string = nameDialog.getFieldValue("action");
             this.nameAction(regExp, action);
             this.display.highlightSelectedRows();
@@ -114,9 +125,9 @@ export class SchemaView extends TableViewBase {
             typeDialog.show()
         });
 
-        for (let i = 0; i < schema.length; i++) {
-            let row = this.display.addRow([(i + 1).toString(), schema[i].name,
-                schema[i].kind.toString()]);
+        for (let i = 0; i < this.schema.length; i++) {
+            let row = this.display.addRow([(i + 1).toString(), this.schema.get(i).name,
+                this.schema.get(i).kind.toString()]);
             row.oncontextmenu = e => this.createAndShowContextMenu(e);
         }
         this.topLevel.appendChild(this.display.getHTMLRepresentation());
@@ -125,7 +136,7 @@ export class SchemaView extends TableViewBase {
         this.topLevel.appendChild(this.summary);
         if (this.rowCount != null)
             this.summary.textContent = significantDigits(this.rowCount) + " rows";
-        this.page.reportTime(elapsedMs);
+        this.page.setDataView(this);
     }
 
     createAndShowContextMenu(e: MouseEvent): void {
@@ -136,6 +147,10 @@ export class SchemaView extends TableViewBase {
         }
         this.contextMenu.clear();
         let selectedCount = this.display.selectedRows.size();
+        this.contextMenu.addItem({
+            text: "Drop",
+            action: () => this.dropColumns(),
+            help: "Drop the selected columns from the view." }, true);
         this.contextMenu.addItem({
             text: "Show as table",
             action: () => this.showTable(),
@@ -161,22 +176,50 @@ export class SchemaView extends TableViewBase {
             text: "Filter...",
             action: () => {
                 let colName = this.getSelectedColNames()[0];
-                let cd = TableView.findColumn(this.schema, colName);
+                let cd = this.schema.find(colName);
                 let so: ColumnSortOrientation = {
                     columnDescription: cd, isAscending: true
                 };
-                this.equalityFilter(colName, null, true, new RecordOrder([so]), null);
+                this.showFilterDialog(colName, new RecordOrder([so]));
             },
             help : "Eliminate data that matches/does not match a specific value."
         }, selectedCount == 1);
+        this.contextMenu.addItem({
+            text: "Compare...",
+            action: () => {
+                let colName = this.getSelectedColNames()[0];
+                let cd = this.schema.find(colName);
+                let so: ColumnSortOrientation = {
+                    columnDescription: cd, isAscending: true
+                };
+                this.showCompareDialog(colName, new RecordOrder([so]));
+            },
+            help : "Eliminate data that matches/does not match a specific value."
+        }, selectedCount == 1);
+        this.contextMenu.addItem({
+            text: "Create column...",
+            action: () => this.addColumn(new RecordOrder([])),
+            help: "Add a new column computed from the selected columns."
+        }, true);
+        this.contextMenu.addItem({
+            text: "Frequent Elements...",
+            action: () => this.heavyHittersDialog(),
+            help: "Find the values that occur most frequently in the selected columns."
+        }, true);
         this.contextMenu.show(e);
     }
 
     refresh(): void { }
 
+    private dropColumns(): void {
+        let selected = cloneToSet(this.getSelectedColNames());
+        this.schema = this.schema.filter(c => !selected.has(c.name));
+        this.show();
+    }
+
     private nameAction(regExp: RegExp, action: string) {
         for (let i = 0; i < this.schema.length; i++) {
-            if (this.schema[i].name.match(regExp)) {
+            if (this.schema.get(i).name.match(regExp)) {
                 if (action == "Add")
                     this.display.selectedRows.add(i);
                 else if (action = "Remove")
@@ -185,13 +228,17 @@ export class SchemaView extends TableViewBase {
         }
     }
 
+    public combine(how: CombineOperators): void {
+        // not used
+    }
+
     public getSelectedColCount(): number {
         return this.display.selectedRows.size();
     }
 
     public getSelectedColNames(): string[] {
         let colNames: string[] = [];
-        this.display.selectedRows.getStates().forEach(i => colNames.push(this.schema[i].name));
+        this.display.selectedRows.getStates().forEach(i => colNames.push(this.schema.get(i).name));
         return colNames;
     }
     /**
@@ -201,7 +248,7 @@ export class SchemaView extends TableViewBase {
      */
     private typeAction(selectedType:string, action: string) {
         for (let i = 0; i < this.schema.length; i++) {
-            if (this.schema[i].kind == selectedType) {
+            if (this.schema.get(i).kind == selectedType) {
                 if (action == "Add")
                     this.display.selectedRows.add(i);
                 else if (action = "Remove")
@@ -215,7 +262,7 @@ export class SchemaView extends TableViewBase {
      */
     private createSchema(): Schema {
         let cds: IColumnDescription[] = [];
-        this.display.getSelectedRows().forEach(i => { cds.push(this.schema[i]) });
+        this.display.getSelectedRows().forEach(i => cds.push(this.schema.get(i)));
         return cds;
     }
 
@@ -225,11 +272,14 @@ export class SchemaView extends TableViewBase {
     private showTable(): void {
         let newPage = new FullPage("Table with selected columns", "Table", this.page);
         this.page.insertAfterMe(newPage);
-        let tv = new TableView(this.remoteObjectId, this.originalTableId, newPage);
+        let tv = new TableView(this.remoteObjectId, this.dataset, newPage);
         newPage.setDataView(tv);
-        let nkl = new NextKList();
-        nkl.schema = this.createSchema();
-        nkl.rowCount = this.rowCount;
+        let nkl: NextKList = {
+            schema: this.createSchema(),
+            rowCount: this.rowCount,
+            startPosition: 0,
+            rows: []
+        };
         tv.updateView(nkl, false, new RecordOrder([]), null, 0);
     }
 }

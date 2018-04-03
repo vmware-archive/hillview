@@ -19,7 +19,6 @@ package org.hillview.dataset;
 
 import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.api.Triple;
-import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 
@@ -44,8 +43,8 @@ public class TripleSketch<T, R1, R2, R3> implements ISketch<T, Triple<R1, R2, R3
     @Nullable
     @Override
     public Triple<R1, R2, R3> add(@Nullable Triple<R1, R2, R3> left, @Nullable Triple<R1, R2, R3> right) {
-        left = Converters.checkNull(left);
-        right = Converters.checkNull(right);
+        assert left != null;
+        assert right != null;
         R1 first = this.first.add(left.first, right.first);
         R2 second = this.second.add(left.second, right.second);
         R3 third = this.third.add(left.third, right.third);

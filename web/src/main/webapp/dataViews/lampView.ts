@@ -18,8 +18,8 @@
 import {Dialog, FieldKind} from "../ui/dialog";
 import {TopMenu, SubMenu} from "../ui/menu";
 import {
-    RangeInfo, BasicColStats, Schema, RecordOrder, ColumnAndRange, Histogram2DArgs, TableSummary, RemoteObjectId,
-    HeatMap
+    RangeInfo, BasicColStats, RecordOrder, ColumnAndRange, Histogram2DArgs, TableSummary, RemoteObjectId,
+    HeatMap, CombineOperators
 } from "../javaBridge";
 import {Renderer, RpcRequest, OnCompleteRenderer} from "../rpc";
 import {PartialResult, clamp, Pair, ICancellable, Seed} from "../util";
@@ -32,6 +32,7 @@ import {RemoteTableObject, RemoteTableObjectView, RemoteTableRenderer} from "../
 import {PlottingSurface} from "../ui/plottingSurface";
 import {drag as d3drag} from "d3-drag";
 import {mouse as d3mouse, select as d3select} from "d3-selection";
+import {SchemaClass} from "../schemaClass";
 
 /**
  * This class displays the results of performing a local affine multi-dimensional projection.
@@ -58,9 +59,9 @@ class LampView extends RemoteTableObjectView {
     private lampColNames: string[];
     private legendSurface: PlottingSurface;
 
-    constructor(private tableObject: RemoteTableObject, private originalSchema,
+    constructor(private tableObject: RemoteTableObject, private originalSchema: SchemaClass,
                 page: FullPage, private controlPointsId, private selectedColumns) {
-        super(tableObject.remoteObjectId, tableObject.originalTableId, page);
+        super(tableObject.remoteObjectId, tableObject.dataset, page);
         this.topLevel = document.createElement("div");
         this.topLevel.classList.add("chart");
         this.topLevel.classList.add("lampView");
@@ -123,9 +124,13 @@ class LampView extends RemoteTableObjectView {
         page.setDataView(this);
 
         this.lampColNames = [
-            TableView.uniqueColumnName(this.originalSchema, "LAMP1"),
-            TableView.uniqueColumnName(this.originalSchema, "LAMP2")
+            this.originalSchema.uniqueColumnName("LAMP1"),
+            this.originalSchema.uniqueColumnName("LAMP2")
         ];
+    }
+
+    public combine(how: CombineOperators): void {
+        // not used
     }
 
     public refresh() {
@@ -318,7 +323,7 @@ class LampView extends RemoteTableObjectView {
     private showTable() {
         let page = new FullPage("Table", "Table", this.page);
         this.getPage().insertAfterMe(page);
-        let table = new TableView(this.lampTableObject.remoteObjectId, this.lampTableObject.originalTableId, page);
+        let table = new TableView(this.lampTableObject.remoteObjectId, this.dataset, page);
         page.setDataView(table);
         let rr = this.lampTableObject.createGetSchemaRequest();
         rr.invoke(new NextKReceiver(this.page, table, rr, false, new RecordOrder([]), null));
@@ -339,7 +344,7 @@ export class LAMPDialog extends Dialog {
     public static maxNumSamples = 100;
 
     constructor(private selectedColumns: string[], private page: FullPage,
-                private schema: Schema, private remoteObject: TableView) {
+                private schema: SchemaClass, private remoteObject: TableView) {
         super("LAMP", "Computes a 2D projection of the data based on a set of control-points that the user can control.");
         let sel = this.addSelectField("controlPointSelection", "Control point selection",
             ["Random samples", "Category centroids"], "Random samples",
@@ -349,8 +354,8 @@ export class LAMPDialog extends Dialog {
             "The number of control points to select.");
         let catColumns = [""];
         for (let i = 0; i < schema.length; i++)
-            if (schema[i].kind == "Category")
-                catColumns.push(schema[i].name);
+            if (schema.get(i).kind == "Category")
+                catColumns.push(schema.get(i).name);
         this.addSelectField("category", "Category for centroids", catColumns, "",
             "A column name with categorical data that will be used to defined the control points." +
             "There will be one control point for each categorical value.");
@@ -421,7 +426,7 @@ export class LAMPDialog extends Dialog {
 
 class ControlPointsProjector extends RemoteTableRenderer {
     constructor(page, operation, private tableObject: RemoteTableObject, private selectedColumns, private schema) {
-        super(page, operation, "Sampling control points", tableObject.originalTableId);
+        super(page, operation, "Sampling control points", tableObject.dataset);
     }
 
     run() {
@@ -453,7 +458,7 @@ class ControlPointsRenderer extends Renderer<PointSet> {
 class LAMPMapReceiver extends RemoteTableRenderer {
     constructor(page: FullPage, operation: ICancellable, private cpView: LampView,
                 private arg: Histogram2DArgs) {
-        super(page, operation, "Computing LAMP", cpView.originalTableId);
+        super(page, operation, "Computing LAMP", cpView.dataset);
     }
 
     run() {
@@ -501,7 +506,8 @@ class SchemaCollector extends OnCompleteRenderer<TableSummary> {
         if (this.value == null)
             return;
         let dialog = new TrellisPlotDialog(
-            this.lampColumnNames, this.page, this.value.schema, this.tableObject, true);
+            this.lampColumnNames, this.page, new SchemaClass(this.value.schema),
+            this.tableObject, true);
         dialog.show();
     }
 }

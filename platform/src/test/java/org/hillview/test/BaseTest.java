@@ -32,17 +32,19 @@ import org.junit.Ignore;
 @Ignore
 public class BaseTest {
     static boolean initialized = false;
-    static final Randomness randomness = new Randomness(0);
 
     @BeforeClass
     public static void setup() {
         if (!initialized) {
-            HillviewLogger.initialize("test", "test.log");
+            HillviewLogger.initialize("test", null);
         }
         initialized = true;
     }
 
+    /**
+     * Randomness is actually not thread-safe!
+     */
     public Randomness getRandomness() {
-        return BaseTest.randomness;
+        return new Randomness(0);
     }
 }

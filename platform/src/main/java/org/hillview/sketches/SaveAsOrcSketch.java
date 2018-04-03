@@ -17,13 +17,13 @@
 
 package org.hillview.sketches;
 
-import org.apache.commons.io.FilenameUtils;
 import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.storage.OrcFileWriter;
 import org.hillview.table.Schema;
 import org.hillview.table.api.ColumnAndConverterDescription;
 import org.hillview.table.api.ITable;
+import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import java.io.File;
@@ -75,7 +75,7 @@ public class SaveAsOrcSketch implements ISketch<ITable, Empty> {
             String tableFile = data.getSourceFile();
             if (tableFile == null)
                 throw new RuntimeException("I don't know how to generate file names for the data");
-            String baseName = FilenameUtils.getBaseName(tableFile);
+            String baseName = Utilities.getBasename(tableFile);
             String path = Paths.get(this.folder, baseName + ".orc").toString();
             OrcFileWriter writer = new OrcFileWriter(path);
             writer.writeTable(data);

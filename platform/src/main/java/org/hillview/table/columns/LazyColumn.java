@@ -20,7 +20,6 @@ package org.hillview.table.columns;
 import net.openhft.hashing.LongHashFunction;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.*;
-import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
 
 import javax.annotation.Nullable;
@@ -116,10 +115,10 @@ public class LazyColumn extends BaseColumn {
         List<String> toLoad = new ArrayList<String>();
         toLoad.add(this.getName());
         List<IColumn> loaded = this.loader.loadColumns(toLoad);
-        Converters.checkNull(loaded);
         if (loaded.size() != 1)
             throw new RuntimeException("Expected 1 column to be loaded, not " + loaded.size());
         this.data = loaded.get(0);
-        return Converters.checkNull(this.data);
+        assert this.data != null;
+        return this.data;
     }
 }

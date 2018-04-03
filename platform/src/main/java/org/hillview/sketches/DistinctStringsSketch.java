@@ -19,7 +19,6 @@ package org.hillview.sketches;
 
 import org.hillview.dataset.api.ISketch;
 import org.hillview.table.api.*;
-import org.hillview.utils.Converters;
 import org.hillview.utils.JsonList;
 
 import javax.annotation.Nullable;
@@ -52,9 +51,11 @@ public class DistinctStringsSketch implements ISketch<ITable, JsonList<DistinctS
     public JsonList<DistinctStrings> add(
             @Nullable JsonList<DistinctStrings> left,
             @Nullable JsonList<DistinctStrings> right) {
+        assert left != null;
+        assert right != null;
         JsonList<DistinctStrings> result = new JsonList<DistinctStrings>(this.colNames.length);
         for (int i = 0; i < this.colNames.length; i++)
-            result.add(Converters.checkNull(left).get(i).union(Converters.checkNull(right).get(i)));
+            result.add(left.get(i).union(right.get(i)));
         return result;
     }
 

@@ -26,7 +26,6 @@ import org.hillview.table.Schema;
 import org.hillview.table.Table;
 import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.table.rows.GuessSchema;
-import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Utilities;
 
@@ -131,7 +130,7 @@ public class CsvFileLoader extends TextFileLoader {
                 }
             }
 
-            Converters.checkNull(this.actualSchema);
+            assert this.actualSchema != null;
             this.columns = this.actualSchema.createAppendableColumns();
 
             if (firstLine != null)
@@ -169,7 +168,7 @@ public class CsvFileLoader extends TextFileLoader {
                 } else {
                     sealed[ci] = s;
                 }
-                Converters.checkNull(sealed[ci]);
+                assert sealed[ci] != null;
             }
 
             return new Table(sealed, this.filename, null);

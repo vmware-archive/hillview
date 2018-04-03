@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-import {IColumnDescription, RecordOrder, NextKList, TopList, RemoteObjectId} from "../javaBridge";
+import {IColumnDescription, RecordOrder, NextKList, TopList, RemoteObjectId, CombineOperators} from "../javaBridge";
 import {TopMenu, SubMenu, ContextMenu} from "../ui/menu";
-import {TableView, TableOperationCompleted, HeavyHittersReceiver} from "./tableView";
+import {TableView, TableOperationCompleted} from "./tableView";
 import {RemoteObject, OnCompleteRenderer} from "../rpc";
 import {significantDigits, ICancellable, cloneSet} from "../util";
 import {FullPage} from "../ui/fullPage";
@@ -25,8 +25,8 @@ import {SpecialChars, textToDiv} from "../ui/ui";
 import {DataRange} from "../ui/dataRange";
 import {TabularDisplay} from "../ui/tabularDisplay";
 import {RemoteTableObjectView} from "../tableTarget";
+import {HeavyHittersReceiver, TableViewBase} from "./tableViewBase";
 import {Dialog, FieldKind} from "../ui/dialog";
-
 
 /**
  * Class that renders a table containing the heavy hitters in sorted
@@ -35,7 +35,7 @@ import {Dialog, FieldKind} from "../ui/dialog";
  */
 export class HeavyHittersView extends RemoteTableObjectView {
     public static min: number = 0.01;
-    public static minString: string = HeavyHittersView.min.toString() + "%";
+    public static minString: string = "0.01%";
     public static switchToMG: number = 0.9;
     public static maxDisplay: number = 200; //Should match parameter maxDisplay in FreqKList.java
 
@@ -46,12 +46,12 @@ export class HeavyHittersView extends RemoteTableObjectView {
 
     constructor(public data: TopList,
                 public page: FullPage,
-                public tv: TableView,
+                public tv: TableViewBase,
                 public schema: IColumnDescription[],
                 public order: RecordOrder,
                 private isApprox: boolean,
                 public percent: number) {
-        super(data.heavyHittersId, tv.originalTableId, page);
+        super(data.heavyHittersId, tv.dataset, page);
         this.topLevel = document.createElement("div");
         this.contextMenu = new ContextMenu(this.topLevel);
         this.table = new TabularDisplay();
@@ -115,7 +115,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
                 hittersId: this.data.heavyHittersId,
                 schema: this.schema
             });
-            rr.invoke(new TableOperationCompleted(newPage2, this.tv.schema, rr, this.order, this.tv.originalTableId));
+            rr.invoke(new TableOperationCompleted(newPage2, this.tv.schema, rr, this.order, this.tv.dataset));
         }
     }
 
@@ -129,7 +129,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
             schema: this.schema,
             rowIndices: this.getSelectedRows()
         });
-        rr.invoke(new TableOperationCompleted(newPage2, this.tv.schema, rr, this.order, this.tv.originalTableId));
+        rr.invoke(new TableOperationCompleted(newPage2, this.tv.schema, rr, this.order, this.tv.dataset));
     }
 
     private getSelectedRows(): number[] {
@@ -288,7 +288,8 @@ export class HeavyHittersView extends RemoteTableObjectView {
     }
 
     private runWithThreshold(newPercent: number) {
-        let rr = this.tv.createHeavyHittersRequest(this.schema, newPercent, this.tv.getTotalRowCount());
+        let rr = this.tv.createHeavyHittersRequest(this.schema, newPercent,
+            this.tv.getTotalRowCount(), HeavyHittersView.switchToMG);
         rr.invoke(new HeavyHittersReceiver(this.tv.getPage(), this.tv, rr, this.schema, this.order, true, newPercent));
     }
 
@@ -305,6 +306,10 @@ export class HeavyHittersView extends RemoteTableObjectView {
             });
         percentDialog.setCacheTitle("ChangeHeavyHittersDialog");
         percentDialog.show();
+    }
+
+    public combine(how: CombineOperators): void {
+        // not used
     }
 }
 
@@ -345,6 +350,6 @@ export class HeavyHittersReceiver3 extends OnCompleteRenderer<TopList> {
             schema: this.hhv.schema
         });
         rr.invoke(new TableOperationCompleted(newPage2, this.hhv.tv.schema, rr, this.hhv.order,
-            this.hhv.tv.originalTableId));
+            this.hhv.tv.dataset));
     }
 }

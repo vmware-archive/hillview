@@ -29,7 +29,8 @@ public interface IDateColumn extends IColumn {
     default double asDouble(final int rowIndex, final IStringConverter unused) {
         assert !isMissing(rowIndex);
         final Instant tmp = this.getDate(rowIndex);
-        return Converters.toDouble(Converters.checkNull(tmp));
+        assert tmp != null;
+        return Converters.toDouble(tmp);
     }
 
     @Nullable
@@ -53,8 +54,11 @@ public interface IDateColumn extends IColumn {
                 } else if (jMissing) {
                     return -1;
                 } else {
-                    return Converters.checkNull(IDateColumn.this.getDate(i))
-                                     .compareTo(Converters.checkNull(IDateColumn.this.getDate(j)));
+                    Instant di = IDateColumn.this.getDate(i);
+                    Instant dj = IDateColumn.this.getDate(j);
+                    assert di != null;
+                    assert dj != null;
+                    return di.compareTo(dj);
                 }
             }
         };

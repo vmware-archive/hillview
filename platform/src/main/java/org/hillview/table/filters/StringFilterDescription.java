@@ -18,7 +18,6 @@
 package org.hillview.table.filters;
 
 import org.hillview.table.api.IStringFilter;
-import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.io.Serializable;
@@ -55,8 +54,10 @@ public class StringFilterDescription implements Serializable {
     }
 
     public IStringFilter getFilter() {
-        if (this.asRegex)
-            return new RegexStringFilter(Converters.checkNull(this.toFind), this.caseSensitive);
+        if (this.asRegex) {
+            assert this.toFind != null;
+            return new RegexStringFilter(this.toFind, this.caseSensitive);
+        }
         if (this.subString)
             return new SubStringFilter(this.toFind, this.caseSensitive);
         return new ExactStringFilter(this.toFind, this.caseSensitive);

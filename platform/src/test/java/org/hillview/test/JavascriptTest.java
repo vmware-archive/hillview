@@ -23,9 +23,7 @@ import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.maps.CreateColumnJSMap;
 import org.hillview.table.ColumnDescription;
-import org.hillview.table.api.ContentsKind;
-import org.hillview.table.api.IRowIterator;
-import org.hillview.table.api.ITable;
+import org.hillview.table.api.*;
 import org.hillview.table.membership.SparseMembershipSet;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.VirtualRowSnapshot;
@@ -112,17 +110,21 @@ public class JavascriptTest {
         CreateColumnJSMap map = new CreateColumnJSMap(function, table.getSchema(), outCol);
         IDataSet<ITable> mapped = lds.blockingMap(map);
         ITable outTable = ((LocalDataSet<ITable>)mapped).data;
-        String data = outTable.toLongString(3);
 
+        ColumnAndConverter dateColumn = outTable.getLoadedColumn("Date");
+        Instant instant = dateColumn.getDate(0);
+        String expectedDate = "1990-01-01";
+        DateParsing simple = new DateParsing(expectedDate);
+        Instant expected = simple.parse(expectedDate);
+        Assert.assertEquals(expected, instant);
+
+        String data = outTable.toLongString(3);
         String someDate = "1990-01-01";
         DateParsing parsing = new DateParsing(someDate);
-        Instant someInstant = parsing.parse(someDate);
-        String s = someInstant.toString();
-        String suffix = s.substring(s.indexOf('T'));
         Assert.assertEquals("Table[3x15]\n" +
-                "Mike,20,1990-01-01" + suffix + "\n" +
-                "John,30,2000-01-01" + suffix + "\n" +
-                "Tom,10,1980-01-01" + suffix + "\n", data);
+                "Mike,20," + parsing.parse("1990-01-01") + "\n" +
+                "John,30," + parsing.parse("2000-01-01") + "\n" +
+                "Tom,10," + parsing.parse("1980-01-01") + "\n", data);
     }
 
     @Test
@@ -182,13 +184,10 @@ public class JavascriptTest {
         String data = outTable.toLongString(3);
 
         String someDate = "1990-01-01";
-        DateParsing parsing = new DateParsing(someDate);
-        Instant someInstant = parsing.parse(someDate);
-        String s = someInstant.toString();
-        String suffix = s.substring(s.indexOf('T'));
+        DateParsing p = new DateParsing(someDate);
         Assert.assertEquals("Table[4x15]\n" +
-                "Mike,20,1990-01-01" + suffix + ",2000-01-01" + suffix + "\n" +
-                "John,30,2000-01-01" + suffix + ",2010-01-01" + suffix + "\n" +
-                "Tom,10,1980-01-01" + suffix + ",1990-01-01" + suffix + "\n", data);
+                "Mike,20," + p.parse("1990-01-01") + "," + p.parse("2000-01-01") + "\n" +
+                "John,30," + p.parse("2000-01-01") + "," + p.parse("2010-01-01") + "\n" +
+                "Tom,10," + p.parse("1980-01-01") + ","+ p.parse("1990-01-01") + "\n", data);
     }
 }

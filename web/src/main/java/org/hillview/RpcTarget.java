@@ -229,7 +229,7 @@ public abstract class RpcTarget implements IJson {
         HillviewComputation getComputation() {
             if (this.context.computation != null)
                 return this.context.computation;
-            return new HillviewComputation(this.target, this.request);
+            return new HillviewComputation(null, this.request);
         }
 
         /**
@@ -400,7 +400,9 @@ public abstract class RpcTarget implements IJson {
         // Send the partial results back
         SketchResultObserver<R> robs = new SketchResultObserver<R>(
                 sketch.asString(), this, request, context);
-        Subscription sub = add.subscribe(robs);
+        Subscription sub = add
+                .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
+                .subscribe(robs);
         this.saveSubscription(context, sub);
     }
 
@@ -429,7 +431,9 @@ public abstract class RpcTarget implements IJson {
         // Send the partial results back
         CompleteSketchResultObserver<T, R, S> robs = new CompleteSketchResultObserver<T, R, S>(
                 sketch.asString(), this, request, context, postprocessing);
-        Subscription sub = add.subscribe(robs);
+        Subscription sub = add
+                .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
+                .subscribe(robs);
         this.saveSubscription(context, sub);
     }
 
@@ -456,7 +460,9 @@ public abstract class RpcTarget implements IJson {
         // Send the partial results back
         MapResultObserver<S> robs = new MapResultObserver<S>(
                 map.asString(), this, request, context, factory);
-        Subscription sub = add.subscribe(robs);
+        Subscription sub = add
+                .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
+                .subscribe(robs);
         this.saveSubscription(context, sub);
     }
 
@@ -484,7 +490,9 @@ public abstract class RpcTarget implements IJson {
         MapResultObserver<S> robs = new MapResultObserver<S>(
                 map.asString(), this, request, context, factory);
         HillviewLogger.instance.info("Subscribing to flatMap");
-        Subscription sub = add.subscribe(robs);
+        Subscription sub = add
+                .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
+                .subscribe(robs);
         this.saveSubscription(context, sub);
     }
 
@@ -508,7 +516,9 @@ public abstract class RpcTarget implements IJson {
         // We can actually reuse the MapResultObserver
         MapResultObserver<Pair<T, S>> robs = new MapResultObserver<Pair<T, S>>(
                                 "zip", this, request, context, factory);
-        Subscription sub = add.subscribe(robs);
+        Subscription sub = add
+                .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
+                .subscribe(robs);
         this.saveSubscription(context, sub);
     }
 
@@ -534,7 +544,9 @@ public abstract class RpcTarget implements IJson {
         SketchResultObserver<ControlMessage.StatusList> robs =
                 new SketchResultObserver<ControlMessage.StatusList>(
                     command.toString(), this, request, context);
-        Subscription sub = add.subscribe(robs);
+        Subscription sub = add
+                .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
+                .subscribe(robs);
         this.saveSubscription(context, sub);
     }
 }

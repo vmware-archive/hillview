@@ -29,7 +29,6 @@ import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.table.columns.IntListColumn;
 import org.hillview.table.columns.StringListColumn;
-import org.hillview.utils.Converters;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -48,9 +47,9 @@ import java.util.UUID;
  * Test read/write access to CSV files.
  */
 public class CsvFileTest extends BaseTest {
-    private static final String ontimeFolder = "../data/ontime";
+    public static final String ontimeFolder = "../data/ontime";
     private static final String criteoFolder = "../data/criteo";
-    private static final String csvFile = "On_Time_Sample.csv";
+    public static final String csvFile = "On_Time_Sample.csv";
     private static final String schemaFile = "On_Time.schema";
     private static final String criteoFile = "criteoTab.csv";
     private static final String criteoSchema = "criteo.schema";
@@ -216,7 +215,8 @@ public class CsvFileTest extends BaseTest {
     @Test
     public void writeCsvFileTest() throws IOException {
         ITable tbl = this.readTable(ontimeFolder, csvFile);
-        writeReadTable(Converters.checkNull(tbl));
+        Assert.assertNotNull(tbl);
+        writeReadTable(tbl);
     }
 }
 
