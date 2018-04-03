@@ -102,14 +102,13 @@ capabilities only available in the paid version of Intellij IDEA.
 
 ### Loading into IntelliJ IDEA
 
-To load the project that you want to contribute to, move to the
+One solution is to load only the module that you want to contribute to: move to the
 corresponding folder: `cd platform` or `cd web` and start
 intellij there.
 
-The first time you start Intellij you must import the project: on the
-welcome screen, select the "import project" option, point to the
-"pom.xml" file inside the hillview folder, click "next" a few times and
-you're good to go.
+Alternatively, if you have IntelliJ Ultimate you can create an empty project
+in the hillview folder, and then import three modules (from File/Project structure/Modules, 
+add three modules: web/pom.xml, platform/pom.xml, and the root folder hillview itself).
 
 ### Using git to contribute
 

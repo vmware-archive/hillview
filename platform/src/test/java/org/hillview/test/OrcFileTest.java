@@ -48,6 +48,19 @@ public class OrcFileTest extends BaseTest {
     private static final String orcFolder = "../data/orc/";
     private static final String orcOutFile = "test.orc";
 
+    void deleteOrcFile(String folder, String file) {
+        File f = new File(Paths.get(folder, file).toString());
+        if (f.exists()) {
+            boolean success = f.delete();
+            Assert.assertTrue(success);
+        }
+        f = new File(Paths.get(folder, "." + file + ".crc").toString());
+        if (f.exists()) {
+            boolean success = f.delete();
+            Assert.assertTrue(success);
+        }
+    }
+
     @Test
     public void writeSmallFileTest() {
         String orcFile = orcFolder + "tmp.orc";
@@ -64,11 +77,7 @@ public class OrcFileTest extends BaseTest {
         OrcFileLoader loader = new OrcFileLoader(orcFile, null, false);
         ITable table = loader.load();
         Assert.assertEquals(t.toLongString(20), table.toLongString(20));
-
-        if (file.exists()) {
-            boolean success = file.delete();
-            Assert.assertTrue(success);
-        }
+        deleteOrcFile(orcFolder, "tmp.orc");
     }
 
     @Test
@@ -77,16 +86,10 @@ public class OrcFileTest extends BaseTest {
         CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
         CsvFileLoader loader = new CsvFileLoader(file, config, null);
         ITable table = loader.load();
-        String orcFile = "./tmpX.orc";
+        String orcFile = "tmpX.orc";
         OrcFileWriter writer = new OrcFileWriter(orcFile);
-        table.getSchema().writeToJsonFile(Paths.get("./schema"));
         writer.writeTable(table);
-
-        File f = new File(orcFile);
-        if (f.exists()) {
-            boolean success = f.delete();
-            Assert.assertTrue(success);
-        }
+        deleteOrcFile(".", orcFile);
     }
 
     @Test
@@ -112,11 +115,7 @@ public class OrcFileTest extends BaseTest {
         OrcFileLoader loader = new OrcFileLoader(orcFile, null, false);
         ITable table = loader.load();
         Assert.assertEquals(tbl.toLongString(20), table.toLongString(20));
-
-        if (file.exists()) {
-            boolean success = file.delete();
-            Assert.assertTrue(success);
-        }
+        deleteOrcFile(orcFolder, "tmp.orc");
     }
 
     @Test

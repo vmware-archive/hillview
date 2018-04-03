@@ -153,10 +153,10 @@ specification in JSON for a table with 2 columns.
 
 ```JSON
 [{
-    "name": "DayOfWeek"
+    "name": "DayOfWeek",
     "kind": "Integer"
 }, {
-    "name": "FlightDate"
+    "name": "FlightDate",
     "kind": "Date"
 }]
 ```
@@ -186,7 +186,7 @@ is deployed*.
 * File name pattern: A shell expansion pattern that names the files to
   load.  Multiple files may be loaded on each machine.
 
-* Schema file: An optional [schema file](specifying-the-data-schema)
+* Schema file: An optional [schema file](#specifying-the-data-schema)
   in JSON format that describes the schema of the data.  In the
   absence of a schema file Hillview attempts to guess the type of data
   in each column.  The schema file must reside in same folder.
@@ -241,7 +241,7 @@ is an ORC struct with scalar types as fields.
 * File name pattern: A shell expansion pattern that names the files to
   load.  Multiple files may be loaded on each machine.
 
-* Schema file: An optional [schema file](specifying-the-data-schema)
+* Schema file: An optional [schema file](#specifying-the-data-schema)
   in JSON format that describes the schema of the data.  The schema
   file must reside in same folder, and it must be compatible with the
   ORC schema.
@@ -347,7 +347,7 @@ menu with the following options:
   different format
 
 * View: allows the user to [change the way data is
-  displayed](#schema-view-menu)
+  displayed](#the-schema-view-menu)
 
 * Chart: allows users to [draw charts](#the-chart-menu) of one or two
   colums
@@ -358,7 +358,7 @@ menu with the following options:
 #### Selecting columns
 
 There are two ways to modify the selection:
-1. By [using the mouse](#mouse-base-selection).
+1. By [using the mouse](#mouse-based-selection).
 
 2. Using the selection menus, which can be accessed either by
 right-clicking on the **Name**, **Type** or **Allows Missing** column
@@ -405,7 +405,7 @@ of columns using the chart menu:
 
 * 2D Histogram.  Selecting this menu presents a dialog allowing the
   user to select two columns whose data will be drawn as a
-  [two-dimensional histogram view](#two-dimensional-histograms).
+  [two-dimensional histogram view](#two-dimensional-histogram-views).
 
 ![2D histogram dialog](2d-histogram-dialog.png)
 
@@ -464,7 +464,7 @@ This display is equivalent to the output of the following SQL query:
 SELECT COUNT(*), Origin, UniqueCarrier, Cancelled FROM data
 GROUP BY Origin, UniqueCarrier, Cancelled
 ORDER BY Origin ASC, UniqueCarrier ASC, Cancelled ASC
-TOP 20
+LIMIT 20
 ```
 
 Initially a table view displays no columns.  The user can choose which
@@ -577,11 +577,11 @@ the current state of the display.
   If two columns are selected this menu will draw a two-dimensional
   histogram of the data in the selected columns.  For two-dimensional
   histograms see [Two-dimensional
-  histograms](#two-dimensional-histograms).
+  histograms](#two-dimensional-histogram-views).
 
 * Frequent elements...: finds the most frequent values that appear in
   the selected columns.  The user is presented with a dialog
-  requesting the threshold parameter for the heavy hitters
+  requesting the threshold parameter for the frequent elements
   computation.
 
   ![Frequent elements menu](heavy-hitters-menu.png)
@@ -589,7 +589,7 @@ the current state of the display.
   The user has to specify a percentage, between .01 (1/10,000 of the
   data) and 100 (the whole data).  The result is all items whose frequency
   in the selected columns is above the threshold. the result is shown in a [heavy
-  hitter view](#heavy-hitter-views).
+  hitter view](#frequent-elements-views).
 
 * Filter...: this option will pop-up a dialog window that allows the user
   to filter the data in the selected column (this option requires only
@@ -665,8 +665,8 @@ operations:
 
 * Schema: displays [the table schema](#data-schema-views).
 
-The [chart menu](#chart-menu) operates in the same way as it does for
-a [schema view](#schema-view).
+The [chart menu](#the-chart-menu) operates in the same way as it does for
+a [schema view](#data-schema-views).
 
 For a description of the combine menu see [combining two views](#combining-two-views).
 
@@ -685,9 +685,11 @@ which indicates the total over all rows corresponding to elements  that do not a
 frequently enough individually to be above the chosen threshold. This value only appears 
 if the total over all these rows is itself above the threshold.
 
-There are two menu options offered from this view: [View as table](#View-as-a-table) and [Modify](#Modify).
+There are two menu options offered from this view: [View as table](#view-as-a-table) and [Modify]
+(#Modify).
 
 #### View as a Table
+
 Clicking this button gives the user two options:
 ![View as a Table](heavy-hitters-tableMenu.png)
 
@@ -925,7 +927,7 @@ The heatmap view menu has the following operations:
 
 * table: Displays the data in the current heatmap in a tabular form.
 
-* Histogram: Draws a [2D histogram](two-dimensional-histogram-views)
+* Histogram: Draws a [2D histogram](#two-dimensional-histogram-views)
   of the data in the two columns that are used for the heatmap
   display.
   
