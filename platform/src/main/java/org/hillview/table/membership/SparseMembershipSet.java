@@ -103,7 +103,7 @@ public class SparseMembershipSet implements IMembershipSet, IMutableMembershipSe
      * Returns an iterator that runs over the sampled data.
      * @param rate  Sampling rate.
      * @param seed  Random seed.
-     * @return      An iterator over the sampled data.
+     * @return      An iterator over the sampled data. The iterator is not thread-safe.
      */
     @Override
     public ISampledRowIterator getIteratorOverSample(double rate, long seed, boolean enforceRate) {
@@ -113,6 +113,10 @@ public class SparseMembershipSet implements IMembershipSet, IMutableMembershipSe
         return new SparseMembershipSet.SparseSampledRowIterator(rate, seed, this.membershipMap);
     }
 
+    /**
+     * An implementation of an iterator that iterates through a sample of the row. The class has a Randomness object
+     * as a member which makes it non thread-safe.
+     */
     private static class SparseSampledRowIterator implements ISampledRowIterator {
         final int sampleSize;
         final Randomness psg;
