@@ -93,7 +93,7 @@ public class FullMembershipSet implements IMembershipSet {
      * Returns an iterator that runs over the sampled data.
      * @param rate  Sampling rate.
      * @param seed  Random seed.
-     * @return      An iterator over the sampled data.
+     * @return      An iterator over the sampled data. The iterator is not thread-safe.
      */
     @Override
     public ISampledRowIterator getIteratorOverSample(double rate, long seed, boolean enforceRate) {
@@ -121,6 +121,10 @@ public class FullMembershipSet implements IMembershipSet {
             return 1;
     }
 
+    /**
+     * An implementation of an iterator that iterates through a sample of the row. The class has a Randomness object
+     * as a member which makes it non thread-safe.
+     */
     private static class FullSampledRowIterator implements ISampledRowIterator {
         private int cursor = 0;
         private final int range;

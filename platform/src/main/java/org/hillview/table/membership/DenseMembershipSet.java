@@ -123,6 +123,15 @@ public class DenseMembershipSet implements IMembershipSet, IMutableMembershipSet
         return new DenseMembershipIterator(this.membershipMap);
     }
 
+    /**
+     *
+     * @param rate  Sampling rate.
+     * @param seed  Random seed.
+     * @param enforceRate   If true the sampling rate given must be used; otherwise the result
+     *                      may use a different sampling rate if it is more efficient to do so.
+     *                      The resulting iterator has information about the sampling rate used.
+     * @return an iterator which iterates over a sample of the rows. The iterator is not thread-safe.
+     */
     @Override
     public ISampledRowIterator getIteratorOverSample(double rate, long seed, boolean enforceRate) {
         double usedRate;
@@ -143,6 +152,10 @@ public class DenseMembershipSet implements IMembershipSet, IMutableMembershipSet
         else return 1;
     }
 
+    /**
+     * An implementation of an iterator that iterates through a sample of the row. The class has a Randomness object
+     * as a member which makes it non thread-safe.
+     */
     private static class DenseSampledRowIterator implements ISampledRowIterator {
         private final BitSet bits;
         private final Randomness prg;
