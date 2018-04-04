@@ -28,7 +28,6 @@ import org.hillview.table.Schema;
 import org.hillview.table.Table;
 import org.hillview.table.api.*;
 
-
 import javax.annotation.Nullable;
 import java.io.*;
 import java.nio.file.Paths;
