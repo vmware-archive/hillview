@@ -36,7 +36,6 @@ import java.util.List;
 public class PCACorrelationSketch implements ISketch<ITable, CorrMatrix> {
     private final String[] colNames;
     private final long seed;
-    private long totalRows;
     private final double samplingRate;
 
     public PCACorrelationSketch(String[] colNames, long totalRows, long seed) {

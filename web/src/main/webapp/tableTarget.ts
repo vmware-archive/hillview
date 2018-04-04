@@ -20,7 +20,7 @@
  */
 
 import {RpcRequest, RemoteObject, OnCompleteRenderer} from "./rpc";
-import {ComparisonFilterDescription, EqualityFilterDescription, FindResult} from "./javaBridge";
+import {ComparisonFilterDescription, EigenVal, EqualityFilterDescription, FindResult} from "./javaBridge";
 import {ICancellable, Pair, PartialResult, Seed} from "./util";
 import {PointSet, Resolution} from "./ui/ui";
 import {IDataView} from "./ui/dataview";
@@ -155,6 +155,16 @@ export class RemoteTableObject extends RemoteObject {
     public createCorrelationMatrixRequest(columnNames: string[], totalRows: number, toSample: boolean):
 RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<RemoteObjectId>("correlationMatrix", {
+            columnNames: columnNames,
+            totalRows: totalRows,
+            seed: Seed.instance.get(),
+            toSample: toSample
+        });
+    }
+
+    public createSpectrumRequest(columnNames: string[], totalRows: number, toSample: boolean):
+    RpcRequest<PartialResult<EigenVal>> {
+        return this.createStreamingRpcRequest<EigenVal>("spectrum", {
             columnNames: columnNames,
             totalRows: totalRows,
             seed: Seed.instance.get(),

@@ -32,12 +32,16 @@ import {SelectionStateMachine} from "../ui/selectionStateMachine";
 
 import {SchemaView} from "./schemaView";
 import {
-    IColumnDescription, RecordOrder, RowSnapshot, Schema, ContentsKind, asContentsKind, NextKList,
-    CombineOperators, TableSummary, RemoteObjectId, FindResult, ComparisonFilterDescription, ColumnSortOrientation
+    IColumnDescription, RecordOrder, RowSnapshot, Schema,
+    ContentsKind, asContentsKind, NextKList,
+    CombineOperators, TableSummary, RemoteObjectId, FindResult, ComparisonFilterDescription, EigenVal, Histogram,
+    BasicColStats, ColumnSortOrientation
 } from "../javaBridge";
 import {RemoteTableObject, RemoteTableRenderer, ZipReceiver} from "../tableTarget";
 import {IDataView} from "../ui/dataview";
 import {TableViewBase} from "./tableViewBase";
+import {SpectrumView} from "./spectrumView";
+import {AxisData} from "./axisData";
 import {Dataset} from "../dataset";
 import {SchemaClass} from "../schemaClass";
 //import {LAMPDialog} from "./lampView";
@@ -517,6 +521,12 @@ export class TableView extends TableViewBase implements IScrollTarget {
                     "This produces a smaller set of columns that preserve interesting properties of the data."
                 }, selectedCount > 1 &&
                     this.getSelectedColNames().reduce( (a, b) => a && this.isNumericColumn(b), true) );
+                this.contextMenu.addItem({
+                    text: "Plot Singular Value Spectrum",
+                    action: () => this.spectrum(true),
+                    help: "Plot singular values for the selected columns. "
+                }, selectedCount > 1 &&
+                    this.getSelectedColNames().reduce( (a, b) => a && this.isNumericColumn(b), true) );
                 /*
                 this.contextMenu.addItem({
                     text: "LAMP...",
@@ -738,6 +748,17 @@ export class TableView extends TableViewBase implements IScrollTarget {
                     numComponents, projectionName));
             });
             pcaDialog.show();
+        } else {
+            this.reportError("Not valid for PCA:" + message);
+        }
+    }
+
+    private spectrum(toSample: boolean): void {
+        let colNames = this.getSelectedColNames();
+        let [valid, message] = this.checkNumericColumns(colNames);
+        if (valid) {
+            let rr = this.createSpectrumRequest(colNames, this.getTotalRowCount(), toSample);
+            rr.invoke(new SpectrumReceiver(this.getPage(), this, rr, this.order));
         } else {
             this.reportError("Not valid for PCA:" + message);
         }
@@ -1106,6 +1127,36 @@ class PCASchemaReceiver extends OnCompleteRenderer<TableSummary> {
         let rr = table.createNextKRequest(o, null);
         rr.chain(this.operation);
         rr.invoke(new NextKReceiver(this.page, table, rr, false, o, null));
+    }
+}
+
+/**
+ * Receives the result of a PCA computation and plots the singular values
+ */
+class SpectrumReceiver extends OnCompleteRenderer<EigenVal> {
+    public specView: SpectrumView;
+    public constructor(page: FullPage,
+                       protected tv: TableView,
+                       operation: ICancellable,
+                       protected order: RecordOrder,
+                       private numComponents?: number) {
+        super(page, operation, "Singular Value Spectrum");
+    }
+
+    run(eVals: EigenVal): void {
+        let newPage = new FullPage("Singular Value Spectrum", "Histogram", this.page);
+        this.specView = new SpectrumView(this.tv.remoteObjectId, this.tv.originalTableId, newPage);
+        newPage.setDataView(this.specView);
+        this.page.insertAfterMe(newPage);
+
+        let ev: number [] = eVals.eigenValues;
+        let histogram: Histogram = { buckets: ev, missingData: 0, outOfRange: 0 };
+        let icd: IColumnDescription = {kind: "Integer", name: "Singular Values" };
+        let stats: BasicColStats = {momentCount: 0, min: 0, max: ev[0], moments: null, presentCount: 0, missingCount: 0};
+        let axisData = new AxisData(icd, stats, null, ev.length);
+        this.specView.updateView("Spectrum", histogram, axisData, this.elapsedMilliseconds());
+        newPage.reportError("Showing top " + eVals.eigenValues.length + " singular values, Total Variance: "
+            + eVals.totalVar.toString() + ", Explained Variance: " + eVals.explainedVar.toString());
     }
 }
 
