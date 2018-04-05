@@ -15,10 +15,8 @@
  * limitations under the License.
  */
 
-import { Renderer } from "../rpc";
 import {
-    IColumnDescription, Schema, RecordOrder, RangeInfo, Histogram,
-    BasicColStats, FilterDescription, HistogramArgs, CombineOperators, RemoteObjectId
+    Histogram, CombineOperators, RemoteObjectId, BasicColStats, IColumnDescription, EigenVal, RecordOrder
 } from "../javaBridge";
 import {TopMenu, SubMenu} from "../ui/menu";
 // noinspection ES6UnusedImports
@@ -26,26 +24,51 @@ import {
     Pair, reorder, significantDigits, formatNumber, percent, ICancellable, PartialResult, Seed,
     formatDate, exponentialDistribution
 } from "../util";
-import {Dialog} from "../ui/dialog";
-import {CategoryCache} from "../categoryCache";
+
 import {FullPage} from "../ui/fullPage";
-import {Resolution} from "../ui/ui";
-import {TextOverlay} from "../ui/textOverlay";
 import {AxisData} from "./axisData";
-import {HistogramViewBase, BucketDialog} from "./histogramViewBase";
-import {Range2DCollector} from "./heatMapView";
-import {NextKReceiver, TableView} from "./tableView";
-import {RemoteTableObject, RemoteTableObjectView, RemoteTableRenderer, ZipReceiver} from "../tableTarget";
-import {DistinctStrings} from "../distinctStrings";
-import {combineMenu, SelectedObject} from "../selectedObject";
+import {RemoteTableObjectView} from "../tableTarget";
 import {HistogramPlot} from "../ui/histogramPlot";
 import {PlottingSurface} from "../ui/plottingSurface";
-import {CDFPlot} from "../ui/CDFPlot";
-import {drag as d3drag} from "d3-drag";
-import {mouse as d3mouse, event as d3event} from "d3-selection";
+import {Dataset} from "../dataset";
+import {TableView} from "./tableView";
+import {OnCompleteRenderer} from "../rpc";
+
 
 /**
- * A HistogramView is responsible for showing a one-dimensional histogram on the screen.
+ * Receives the result of a PCA computation and plots the singular values
+ */
+export class SpectrumReceiver extends OnCompleteRenderer<EigenVal> {
+    public specView: SpectrumView;
+    public constructor(page: FullPage,
+                       protected tv: TableView,
+                       operation: ICancellable,
+                       protected order: RecordOrder,
+                       private numComponents?: number) {
+        super(page, operation, "Singular Value Spectrum");
+    }
+
+    run(eVals: EigenVal): void {
+        let newPage = new FullPage("Singular Value Spectrum", "Histogram", this.page);
+        this.specView = new SpectrumView(this.tv.remoteObjectId, this.tv.dataset, newPage);
+        newPage.setDataView(this.specView);
+        this.page.insertAfterMe(newPage);
+
+        let ev: number [] = eVals.eigenValues;
+        let histogram: Histogram = { buckets: ev, missingData: 0, outOfRange: 0 };
+        let icd: IColumnDescription = {kind: "Integer", name: "Singular Values" };
+        let stats: BasicColStats = {momentCount: 0, min: 0, max: ev[0], moments: null, presentCount: 0, missingCount: 0};
+        let axisData = new AxisData(icd, stats, null, ev.length);
+        this.specView.updateView("Spectrum", histogram, axisData, this.elapsedMilliseconds());
+        newPage.reportError("Showing top " + eVals.eigenValues.length + " singular values, Total Variance: "
+            + eVals.totalVar.toString() + ", Explained Variance: " + eVals.explainedVar.toString());
+    }
+}
+
+
+
+/**
+ * A SpectrumView plots a one-dimensional bar-chart showing the top singular values.
  */
 export class SpectrumView extends RemoteTableObjectView {
     protected currentData: {
@@ -59,8 +82,8 @@ export class SpectrumView extends RemoteTableObjectView {
     protected chartDiv: HTMLElement;
     protected summary: HTMLElement;
 
-    constructor(remoteObjectId: RemoteObjectId, originalTableId: RemoteObjectId, page: FullPage) {
-        super(remoteObjectId, originalTableId, page);
+    constructor(remoteObjectId: RemoteObjectId, dataset: Dataset, page: FullPage) {
+        super(remoteObjectId, dataset, page);
 
         this.topLevel = document.createElement("div");
         this.topLevel.className = "chart";
@@ -115,20 +138,7 @@ export class SpectrumView extends RemoteTableObjectView {
             0);
     }
 
-    public mouseMove(): void {
-        let position = d3mouse(this.surface.getChart().node());
-        let mouseX = position[0];
-        let mouseY = position[1];
-
-        let xs = "";
-        if (this.plot.xScale != null) {
-            xs = HistogramViewBase.invert(
-                position[0], this.plot.xScale, this.currentData.axisData.description.kind, this.currentData.axisData.distinctStrings)
-        }
-        let y = Math.round(this.plot.yScale.invert(position[1]));
-        let ys = significantDigits(y);
-        let mouseLabel = [xs, ys];
-
-        //this.pointDescription.update(mouseLabel, mouseX, mouseY);
+    public combine(how: CombineOperators): void {
+        // not used
     }
 }

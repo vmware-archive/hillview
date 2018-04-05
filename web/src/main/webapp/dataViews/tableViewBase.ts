@@ -17,9 +17,17 @@
 
 import {RemoteTableObjectView} from "../tableTarget";
 import {
-    allContentsKind, asContentsKind, ColumnSortOrientation, ComparisonFilterDescription,
-    CreateColumnInfo, EqualityFilterDescription, HLogLog, IColumnDescription, RangeInfo, RecordOrder,
-    RemoteObjectId, TopList
+    allContentsKind,
+    asContentsKind,
+    ColumnSortOrientation,
+    ComparisonFilterDescription,
+    CreateColumnInfo,
+    EqualityFilterDescription,
+    HLogLog,
+    IColumnDescription,
+    RangeInfo,
+    RecordOrder,
+    RemoteObjectId
 } from "../javaBridge";
 import {FullPage} from "../ui/fullPage";
 import {DistinctStrings} from "../distinctStrings";
@@ -33,7 +41,7 @@ import {SubMenu, TopMenuItem} from "../ui/menu";
 import {SpecialChars} from "../ui/ui";
 import {OnCompleteRenderer} from "../rpc";
 import {Dialog, FieldKind} from "../ui/dialog";
-import {HeavyHittersView} from "./heavyHittersView";
+import {HeavyHittersReceiver, HeavyHittersView} from "./heavyHittersView";
 import {Dataset} from "../dataset";
 import {SchemaClass} from "../schemaClass";
 
@@ -493,29 +501,6 @@ class ComparisonFilterDialog extends Dialog {
     }
 }
 
-
-/**
- * This method handles the outcome of the sketch for finding Heavy Hitters.
- */
-export class HeavyHittersReceiver extends OnCompleteRenderer<TopList> {
-    public constructor(page: FullPage,
-                       protected tv: TableViewBase,
-                       operation: ICancellable,
-                       protected schema: IColumnDescription[],
-                       protected order: RecordOrder,
-                       protected isApprox: boolean,
-                       protected percent: number) {
-        super(page, operation, "Frequent Elements");
-    }
-
-    run(data: TopList): void {
-        let newPage = new FullPage("Frequent Elements", "HeavyHitters", this.page);
-        let hhv = new HeavyHittersView(data, newPage, this.tv, this.schema, this.order, this.isApprox, this.percent);
-        newPage.setDataView(hhv);
-        this.page.insertAfterMe(newPage);
-        hhv.fill(data.top, this.elapsedMilliseconds());
-    }
-}
 
 class CountReceiver extends OnCompleteRenderer<HLogLog> {
     constructor(page: FullPage, operation: ICancellable,

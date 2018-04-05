@@ -30,15 +30,31 @@ import static org.jblas.Eigen.symmetricEigenvalues;
 final class CorrelationMatrixTarget extends RpcTarget {
     final CorrMatrix corrMatrix;
 
+    /**
+     * This class contains a pointer to the Correlation matrix, and the top singular values, along
+     * with some metadata about them.
+     */
     public static class EigenVal implements IJson {
+        /**
+         * The top few singular values in descending order. The cutoff is (top SV)/100.
+         */
         final double [] eigenValues;
+        /**
+         * The variance accounted for by the above singular values.
+         */
         double explainedVar = 0;
+        /**
+         * The total variance.
+         */
         double totalVar = 0;
+        /**
+         * Id of the correlation matrix. Can be used for performing PCA on the data.
+         */
         final RpcTarget.Id correlationMatrixTargetId;
 
         public EigenVal(double [] data, RpcTarget.Id matrixId) {
             this.correlationMatrixTargetId = matrixId;
-            double cutOff = data[data.length - 1]* 0.05;
+            double cutOff = data[data.length - 1]* 0.01;
             int numLarge = 0;
             for (int i = 0; (i < data.length); i++) {
                 double thisEigen = data[data.length - 1 - i];

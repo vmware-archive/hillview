@@ -14,7 +14,6 @@ hadoop-*
 target/
 cpp/main
 data/code
-data/orc
 data/passport
 
 # Idea files

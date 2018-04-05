@@ -16,11 +16,18 @@
  * limitations under the License.
  */
 
-import {Renderer, OnCompleteRenderer} from "../rpc";
-import {TopMenu, SubMenu, ContextMenu} from "../ui/menu";
+import {OnCompleteRenderer, Renderer} from "../rpc";
+import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
 import {
-    Converters, PartialResult, ICancellable, percent, formatNumber, significantDigits,
-    formatDate, Comparison, cloneToSet
+    cloneToSet,
+    Comparison,
+    Converters,
+    formatDate,
+    formatNumber,
+    ICancellable,
+    PartialResult,
+    percent,
+    significantDigits
 } from "../util";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {ColumnConverter, ConverterDialog} from "./columnConverter";
@@ -32,18 +39,28 @@ import {SelectionStateMachine} from "../ui/selectionStateMachine";
 
 import {SchemaView} from "./schemaView";
 import {
-    IColumnDescription, RecordOrder, RowSnapshot, Schema,
-    ContentsKind, asContentsKind, NextKList,
-    CombineOperators, TableSummary, RemoteObjectId, FindResult, ComparisonFilterDescription, EigenVal, Histogram,
-    BasicColStats, ColumnSortOrientation
+    asContentsKind,
+    ColumnSortOrientation,
+    CombineOperators,
+    ComparisonFilterDescription,
+    ContentsKind,
+    FindResult,
+    Histogram,
+    IColumnDescription,
+    NextKList,
+    RecordOrder,
+    RemoteObjectId,
+    RowSnapshot,
+    Schema,
+    TableSummary
 } from "../javaBridge";
 import {RemoteTableObject, RemoteTableRenderer, ZipReceiver} from "../tableTarget";
 import {IDataView} from "../ui/dataview";
 import {TableViewBase} from "./tableViewBase";
-import {SpectrumView} from "./spectrumView";
-import {AxisData} from "./axisData";
+import {SpectrumReceiver} from "./spectrumView";
 import {Dataset} from "../dataset";
 import {SchemaClass} from "../schemaClass";
+
 //import {LAMPDialog} from "./lampView";
 
 /**
@@ -1130,35 +1147,6 @@ class PCASchemaReceiver extends OnCompleteRenderer<TableSummary> {
     }
 }
 
-/**
- * Receives the result of a PCA computation and plots the singular values
- */
-class SpectrumReceiver extends OnCompleteRenderer<EigenVal> {
-    public specView: SpectrumView;
-    public constructor(page: FullPage,
-                       protected tv: TableView,
-                       operation: ICancellable,
-                       protected order: RecordOrder,
-                       private numComponents?: number) {
-        super(page, operation, "Singular Value Spectrum");
-    }
-
-    run(eVals: EigenVal): void {
-        let newPage = new FullPage("Singular Value Spectrum", "Histogram", this.page);
-        this.specView = new SpectrumView(this.tv.remoteObjectId, this.tv.originalTableId, newPage);
-        newPage.setDataView(this.specView);
-        this.page.insertAfterMe(newPage);
-
-        let ev: number [] = eVals.eigenValues;
-        let histogram: Histogram = { buckets: ev, missingData: 0, outOfRange: 0 };
-        let icd: IColumnDescription = {kind: "Integer", name: "Singular Values" };
-        let stats: BasicColStats = {momentCount: 0, min: 0, max: ev[0], moments: null, presentCount: 0, missingCount: 0};
-        let axisData = new AxisData(icd, stats, null, ev.length);
-        this.specView.updateView("Spectrum", histogram, axisData, this.elapsedMilliseconds());
-        newPage.reportError("Showing top " + eVals.eigenValues.length + " singular values, Total Variance: "
-            + eVals.totalVar.toString() + ", Explained Variance: " + eVals.explainedVar.toString());
-    }
-}
 
 /**
  * Receives the id of a remote table and
