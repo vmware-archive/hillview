@@ -277,8 +277,7 @@ public final class TableTarget extends RpcTarget {
         boolean toSample;
     }
 
-    @HillviewRpc
-    public void correlationMatrix(RpcRequest request, RpcRequestContext context) {
+    private PCACorrelationSketch getPCASketch(RpcRequest request, RpcRequestContext context) {
         CorrelationMatrixRequest pcaReq = request.parseArgs(CorrelationMatrixRequest.class);
         String[] colNames = Converters.checkNull(pcaReq.columnNames);
         PCACorrelationSketch pcaSketch;
@@ -286,7 +285,19 @@ public final class TableTarget extends RpcTarget {
             pcaSketch = new PCACorrelationSketch(colNames, pcaReq.totalRows, pcaReq.seed);
         else
             pcaSketch = new PCACorrelationSketch(colNames);
+        return pcaSketch;
+    }
+    @HillviewRpc
+    public void correlationMatrix(RpcRequest request, RpcRequestContext context) {
+        PCACorrelationSketch pcaSketch = this.getPCASketch(request, context);
         this.runCompleteSketch(this.table, pcaSketch, CorrelationMatrixTarget::new, request, context);
+    }
+
+    @HillviewRpc
+    public void spectrum(RpcRequest request, RpcRequestContext context) {
+        PCACorrelationSketch pcaSketch = this.getPCASketch(request, context);
+        this.runCompleteSketch(this.table, pcaSketch, (x, c) ->
+            new CorrelationMatrixTarget(x, c).eigenValues(), request, context);
     }
 
     static class ProjectToEigenVectorsInfo {

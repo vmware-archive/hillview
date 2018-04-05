@@ -15,18 +15,41 @@
  * limitations under the License.
  */
 
-import {IColumnDescription, RecordOrder, NextKList, TopList, RemoteObjectId, CombineOperators} from "../javaBridge";
-import {TopMenu, SubMenu, ContextMenu} from "../ui/menu";
-import {TableView, TableOperationCompleted} from "./tableView";
-import {RemoteObject, OnCompleteRenderer} from "../rpc";
-import {significantDigits, ICancellable, cloneSet} from "../util";
+import {CombineOperators, IColumnDescription, NextKList, RecordOrder, RemoteObjectId, TopList} from "../javaBridge";
+import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
+import {TableOperationCompleted, TableView} from "./tableView";
+import {OnCompleteRenderer, RemoteObject} from "../rpc";
+import {cloneSet, ICancellable, significantDigits} from "../util";
 import {FullPage} from "../ui/fullPage";
 import {SpecialChars, textToDiv} from "../ui/ui";
 import {DataRange} from "../ui/dataRange";
 import {TabularDisplay} from "../ui/tabularDisplay";
 import {RemoteTableObjectView} from "../tableTarget";
-import {HeavyHittersReceiver, TableViewBase} from "./tableViewBase";
+import {TableViewBase} from "./tableViewBase";
 import {Dialog, FieldKind} from "../ui/dialog";
+
+/**
+ * This method handles the outcome of the sketch for finding Heavy Hitters.
+ */
+export class HeavyHittersReceiver extends OnCompleteRenderer<TopList> {
+    public constructor(page: FullPage,
+                       protected tv: TableViewBase,
+                       operation: ICancellable,
+                       protected schema: IColumnDescription[],
+                       protected order: RecordOrder,
+                       protected isApprox: boolean,
+                       protected percent: number) {
+        super(page, operation, "Frequent Elements");
+    }
+
+    run(data: TopList): void {
+        let newPage = new FullPage("Frequent Elements", "HeavyHitters", this.page);
+        let hhv = new HeavyHittersView(data, newPage, this.tv, this.schema, this.order, this.isApprox, this.percent);
+        newPage.setDataView(hhv);
+        this.page.insertAfterMe(newPage);
+        hhv.fill(data.top, this.elapsedMilliseconds());
+    }
+}
 
 /**
  * Class that renders a table containing the heavy hitters in sorted

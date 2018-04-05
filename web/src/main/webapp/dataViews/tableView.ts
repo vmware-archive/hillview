@@ -16,11 +16,18 @@
  * limitations under the License.
  */
 
-import {Renderer, OnCompleteRenderer} from "../rpc";
-import {TopMenu, SubMenu, ContextMenu} from "../ui/menu";
+import {OnCompleteRenderer, Renderer} from "../rpc";
+import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
 import {
-    Converters, PartialResult, ICancellable, percent, formatNumber, significantDigits,
-    formatDate, Comparison, cloneToSet
+    cloneToSet,
+    Comparison,
+    Converters,
+    formatDate,
+    formatNumber,
+    ICancellable,
+    PartialResult,
+    percent,
+    significantDigits
 } from "../util";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {ColumnConverter, ConverterDialog} from "./columnConverter";
@@ -32,14 +39,28 @@ import {SelectionStateMachine} from "../ui/selectionStateMachine";
 
 import {SchemaView} from "./schemaView";
 import {
-    IColumnDescription, RecordOrder, RowSnapshot, Schema, ContentsKind, asContentsKind, NextKList,
-    CombineOperators, TableSummary, RemoteObjectId, FindResult, ComparisonFilterDescription, ColumnSortOrientation
+    asContentsKind,
+    ColumnSortOrientation,
+    CombineOperators,
+    ComparisonFilterDescription,
+    ContentsKind,
+    FindResult,
+    Histogram,
+    IColumnDescription,
+    NextKList,
+    RecordOrder,
+    RemoteObjectId,
+    RowSnapshot,
+    Schema,
+    TableSummary
 } from "../javaBridge";
 import {RemoteTableObject, RemoteTableRenderer, ZipReceiver} from "../tableTarget";
 import {IDataView} from "../ui/dataview";
 import {TableViewBase} from "./tableViewBase";
+import {SpectrumReceiver} from "./spectrumView";
 import {Dataset} from "../dataset";
 import {SchemaClass} from "../schemaClass";
+
 //import {LAMPDialog} from "./lampView";
 
 /**
@@ -517,6 +538,12 @@ export class TableView extends TableViewBase implements IScrollTarget {
                     "This produces a smaller set of columns that preserve interesting properties of the data."
                 }, selectedCount > 1 &&
                     this.getSelectedColNames().reduce( (a, b) => a && this.isNumericColumn(b), true) );
+                this.contextMenu.addItem({
+                    text: "Plot Singular Value Spectrum",
+                    action: () => this.spectrum(true),
+                    help: "Plot singular values for the selected columns. "
+                }, selectedCount > 1 &&
+                    this.getSelectedColNames().reduce( (a, b) => a && this.isNumericColumn(b), true) );
                 /*
                 this.contextMenu.addItem({
                     text: "LAMP...",
@@ -738,6 +765,17 @@ export class TableView extends TableViewBase implements IScrollTarget {
                     numComponents, projectionName));
             });
             pcaDialog.show();
+        } else {
+            this.reportError("Not valid for PCA:" + message);
+        }
+    }
+
+    private spectrum(toSample: boolean): void {
+        let colNames = this.getSelectedColNames();
+        let [valid, message] = this.checkNumericColumns(colNames);
+        if (valid) {
+            let rr = this.createSpectrumRequest(colNames, this.getTotalRowCount(), toSample);
+            rr.invoke(new SpectrumReceiver(this.getPage(), this, rr, this.order));
         } else {
             this.reportError("Not valid for PCA:" + message);
         }
@@ -1108,6 +1146,7 @@ class PCASchemaReceiver extends OnCompleteRenderer<TableSummary> {
         rr.invoke(new NextKReceiver(this.page, table, rr, false, o, null));
     }
 }
+
 
 /**
  * Receives the id of a remote table and

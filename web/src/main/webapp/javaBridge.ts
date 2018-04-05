@@ -224,7 +224,14 @@ export interface FilterDescription {
 
 export interface TopList {
     top: NextKList;
-    heavyHittersId: string;
+    heavyHittersId: RemoteObjectId;
+}
+
+export class EigenVal {
+    eigenValues: number [];
+    explainedVar: number;
+    totalVar: number;
+    correlationMatrixTargetId: RemoteObjectId;
 }
 
 /**

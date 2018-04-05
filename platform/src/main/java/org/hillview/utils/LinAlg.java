@@ -46,6 +46,7 @@ public class LinAlg {
         return eigenVectors.get(new AllRange(), new IndicesRange(largestN)).transpose();
     }
 
+
     /**
      * @param symmetricMat The (symmetric!) matrix of which the eigenvalues have to be computed.
      * @param n The number of eigenvectors to return.
