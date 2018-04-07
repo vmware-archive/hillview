@@ -29,9 +29,11 @@ import {
  * A dialog to find out information about how to perform the conversion of the data in a column.
  */
 export class ConverterDialog extends Dialog {
+    // noinspection TypeScriptFieldCanBeMadeReadonly
     private columnNameFixed: boolean = false;
 
-    constructor(protected columnName: string, protected allColumns: string[]) {
+    constructor(protected readonly columnName: string,
+                protected readonly allColumns: string[]) {
         super("Convert column", "Creates a new column by converting the data in an existing column to a new type.");
         let cn = this.addSelectField("columnName", "Column: ", allColumns, columnName,
             "Column whose type is converted");
@@ -70,7 +72,7 @@ export class ConverterDialog extends Dialog {
  */
 export class ColumnConverter  {
     public static maxCategoricalCount = 1e4;
-    private columnIndex: number;  // index of original column in schema
+    private readonly columnIndex: number;  // index of original column in schema
 
     constructor(private columnName: string,
         private newKind: ContentsKind,
@@ -111,8 +113,7 @@ export class ColumnConverter  {
             newKind: this.newKind,
             columnIndex: this.columnIndex
         };
-        let newPage = new FullPage("New column " + this.newColumnName, "Table", this.page);
-        this.page.insertAfterMe(newPage);
+        let newPage = this.table.dataset.newPage("Converted " + this.newColumnName, this.page);
         let rr = this.table.createStreamingRpcRequest<string>("convertColumnMap", args);
         rr.chain(operation);
         let cd: IColumnDescription = {

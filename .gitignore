@@ -42,6 +42,7 @@ web/src/main/webapp/ui/*.js
 web/src/main/webapp/dataViews/*.js
 *.js.map
 
+web/src/main/webapp/toplevel.js
 web/src/main/webapp/bundle.js
 web/src/main/webapp/dataset.js
 web/src/main/webapp/columnConverter.js

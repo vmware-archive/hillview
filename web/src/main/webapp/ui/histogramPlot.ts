@@ -25,7 +25,7 @@ import {axisLeft as d3axisLeft} from "d3-axis";
 import {format as d3format} from "d3-format";
 
 /**
- * A HistogramPlot draws a 1D histogram on a PlottingSurface, including the axes.
+ * A HistogramPlot draws a  bar chart on a PlottingSurface, including the axes.
  */
 export class HistogramPlot extends Plot {
     /**
@@ -45,8 +45,10 @@ export class HistogramPlot extends Plot {
         super(plottingSurface);
     }
 
-    public setHistogram(histogram: Histogram, samplingRate: number, axisData: AxisData): void {
-        this.histogram = histogram;
+    // While the data has histogram type, nothing prevents the values in the histogram
+    // from being non-integers, so this class can be used to draw more general bar-charts.
+    public setHistogram(bars: Histogram, samplingRate: number, axisData: AxisData): void {
+        this.histogram = bars;
         this.samplingRate = samplingRate;
         this.axisData = axisData;
     }

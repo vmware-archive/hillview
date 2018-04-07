@@ -22,7 +22,7 @@
 import {RpcRequest, RemoteObject, OnCompleteRenderer} from "./rpc";
 import {ComparisonFilterDescription, EigenVal, EqualityFilterDescription, FindResult} from "./javaBridge";
 import {ICancellable, Pair, PartialResult, Seed} from "./util";
-import {PointSet, Resolution} from "./ui/ui";
+import {PointSet, Resolution, ViewKind} from "./ui/ui";
 import {IDataView} from "./ui/dataview";
 import {FullPage} from "./ui/fullPage";
 import {
@@ -239,8 +239,9 @@ RpcRequest<PartialResult<RemoteObjectId>> {
 export abstract class RemoteTableObjectView extends RemoteTableObject implements IDataView {
     protected topLevel: HTMLElement;
 
-    constructor(remoteObjectId: RemoteObjectId, dataset: Dataset, protected page: FullPage) {
-        super(remoteObjectId, dataset);
+    protected constructor(remoteObjectId: RemoteObjectId, protected page: FullPage,
+                public readonly viewKind: ViewKind) {
+        super(remoteObjectId, page.dataset);
         this.setPage(page);
     }
 
@@ -254,6 +255,7 @@ export abstract class RemoteTableObjectView extends RemoteTableObject implements
         }
     }
 
+    // noinspection JSMethodCanBeStatic
     drop(e: DragEvent): void { console.log(e); }
 
     getPage() : FullPage {
@@ -281,20 +283,17 @@ export abstract class RemoteTableObjectView extends RemoteTableObject implements
 export abstract class RemoteTableRenderer extends OnCompleteRenderer<RemoteObjectId> {
     protected remoteObject: RemoteTableObject;
 
-    public constructor(public page: FullPage,
-                       public operation: ICancellable,
-                       public description: string,
-                       protected dataset: Dataset) { // may be null for the first table
+    protected constructor(public page: FullPage,
+                          public operation: ICancellable,
+                          public description: string,
+                          protected dataset: Dataset) { // may be null for the first table
         super(page, operation, description);
         this.remoteObject = null;
     }
 
     run(): void {
-        if (this.value != null) {
-            // If the originalTableId is null, this must be the first table we are receiving
-            let dataset = this.dataset == null ? new Dataset(this.value) : this.dataset;
-            this.remoteObject = new RemoteTableObject(this.value, dataset);
-        }
+        if (this.value != null)
+            this.remoteObject = new RemoteTableObject(this.value, this.dataset);
     }
 }
 

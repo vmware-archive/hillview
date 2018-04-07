@@ -17,7 +17,7 @@
 
 import {IHtmlElement, Point} from "./ui"
 import {EditBox} from "./editBox";
-import {makeId} from "../util";
+import {cloneArray, makeId} from "../util";
 import {drag as d3drag} from "d3-drag";
 import {event as d3event, select as d3select} from "d3-selection";
 
@@ -371,13 +371,16 @@ export class Dialog implements IHtmlElement {
     public addSelectField(fieldName: string, labelText: string,
                           options: string[], value: string,
                           toolTip: string): HTMLSelectElement {
+        let sortOptions = cloneArray(options);
+        sortOptions.sort();
+
         let fieldDiv = this.createRowContainer(fieldName, labelText, toolTip);
         let select = document.createElement("select");
         select.tabIndex = this.tabIndex++;
         select.style.flexGrow = "100";
         select.id = makeId(fieldName);
         fieldDiv.appendChild(select);
-        options.forEach(option => {
+        sortOptions.forEach(option => {
             let optionElement = document.createElement("option");
             optionElement.value = option;
             optionElement.text = option;
@@ -386,13 +389,13 @@ export class Dialog implements IHtmlElement {
 
         if (value != null) {
             let i;
-            for (i = 0; i < options.length; i++) {
-                if (options[i] == value) {
+            for (i = 0; i < sortOptions.length; i++) {
+                if (sortOptions[i] == value) {
                     select.selectedIndex = i;
                     break;
                 }
             }
-            if (i == options.length)
+            if (i == sortOptions.length)
                 throw new Error(`Given default value ${value} not found in options.`);
         }
         this.fields.set(fieldName, {html: select, type: FieldKind.String });

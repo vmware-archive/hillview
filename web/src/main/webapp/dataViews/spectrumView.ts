@@ -16,21 +16,16 @@
  */
 
 import {
-    Histogram, CombineOperators, RemoteObjectId, BasicColStats, IColumnDescription, EigenVal, RecordOrder
+    Histogram, CombineOperators, RemoteObjectId, BasicColStats, IColumnDescription,
+    EigenVal, RecordOrder
 } from "../javaBridge";
-import {TopMenu, SubMenu} from "../ui/menu";
-// noinspection ES6UnusedImports
-import {
-    Pair, reorder, significantDigits, formatNumber, percent, ICancellable, PartialResult, Seed,
-    formatDate, exponentialDistribution
-} from "../util";
-
+import {TopMenu} from "../ui/menu";
+import {formatNumber, ICancellable} from "../util";
 import {FullPage} from "../ui/fullPage";
 import {AxisData} from "./axisData";
 import {RemoteTableObjectView} from "../tableTarget";
 import {HistogramPlot} from "../ui/histogramPlot";
 import {PlottingSurface} from "../ui/plottingSurface";
-import {Dataset} from "../dataset";
 import {TableView} from "./tableView";
 import {OnCompleteRenderer} from "../rpc";
 
@@ -43,16 +38,14 @@ export class SpectrumReceiver extends OnCompleteRenderer<EigenVal> {
     public constructor(page: FullPage,
                        protected tv: TableView,
                        operation: ICancellable,
-                       protected order: RecordOrder,
-                       private numComponents?: number) {
+                       protected order: RecordOrder) {
         super(page, operation, "Singular Value Spectrum");
     }
 
     run(eVals: EigenVal): void {
-        let newPage = new FullPage("Singular Value Spectrum", "Histogram", this.page);
-        this.specView = new SpectrumView(this.tv.remoteObjectId, this.tv.dataset, newPage);
+        let newPage = this.tv.dataset.newPage("Singular Value Spectrum", this.page);
+        this.specView = new SpectrumView(this.tv.remoteObjectId, newPage);
         newPage.setDataView(this.specView);
-        this.page.insertAfterMe(newPage);
 
         let ev: number [] = eVals.eigenValues;
         let histogram: Histogram = { buckets: ev, missingData: 0, outOfRange: 0 };
@@ -64,8 +57,6 @@ export class SpectrumReceiver extends OnCompleteRenderer<EigenVal> {
             + eVals.totalVar.toString() + ", Explained Variance: " + eVals.explainedVar.toString());
     }
 }
-
-
 
 /**
  * A SpectrumView plots a one-dimensional bar-chart showing the top singular values.
@@ -82,8 +73,8 @@ export class SpectrumView extends RemoteTableObjectView {
     protected chartDiv: HTMLElement;
     protected summary: HTMLElement;
 
-    constructor(remoteObjectId: RemoteObjectId, dataset: Dataset, page: FullPage) {
-        super(remoteObjectId, dataset, page);
+    constructor(remoteObjectId: RemoteObjectId, page: FullPage) {
+        super(remoteObjectId, page, "SVD Spectrum");
 
         this.topLevel = document.createElement("div");
         this.topLevel.className = "chart";
@@ -116,7 +107,6 @@ export class SpectrumView extends RemoteTableObjectView {
 
         this.plot.setHistogram(h, 1, axisData);
         this.plot.draw();
-        let canvas = this.surface.getCanvas();
 
         let summary = "";
         if (h.missingData != 0)

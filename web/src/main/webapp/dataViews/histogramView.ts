@@ -59,7 +59,7 @@ export class HistogramView extends HistogramViewBase {
     protected plot: HistogramPlot;
 
     constructor(remoteObjectId: RemoteObjectId, dataset: Dataset, protected schema: SchemaClass, page: FullPage) {
-        super(remoteObjectId, dataset, schema, page);
+        super(remoteObjectId, schema, page, "Histogram");
         this.surface = new PlottingSurface(this.chartDiv, page);
         this.plot = new HistogramPlot(this.surface);
         this.cdfPlot = new CDFPlot(this.surface);
@@ -318,10 +318,9 @@ export class HistogramView extends HistogramViewBase {
 
     // show the table corresponding to the data in the histogram
     protected showTable(): void {
-        let newPage = new FullPage("Table view", "Table", this.page);
-        let table = new TableView(this.remoteObjectId, this.dataset, newPage);
+        let newPage = this.dataset.newPage("Table", this.page);
+        let table = new TableView(this.remoteObjectId, newPage);
         newPage.setDataView(table);
-        this.page.insertAfterMe(newPage);
         table.schema = this.schema;
 
         let order =  new RecordOrder([ {
@@ -511,10 +510,8 @@ export class HistogramRenderer extends Renderer<Pair<Histogram, Histogram>> {
                 protected samplingRate: number,
                 dataset: Dataset,
                 reusePage: boolean) {
-        super(reusePage ? sourcePage : new FullPage(title, "Histogram", sourcePage),
+        super(reusePage ? sourcePage : sourcePage.dataset.newPage(title, sourcePage),
             operation, "histogram");
-        if (!reusePage)
-            sourcePage.insertAfterMe(this.page);
         this.histogram = new HistogramView(remoteTableId, dataset, schema, this.page);
         this.page.setDataView(this.histogram);
     }

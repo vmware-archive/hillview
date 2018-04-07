@@ -41,7 +41,6 @@ import {Dialog} from "../ui/dialog";
 import {Range2DRenderer, TrellisHeatMapView, TrellisPlotArgs} from "./trellisHeatMapView";
 import {drag as d3drag} from "d3-drag";
 import {mouse as d3mouse, event as d3event} from "d3-selection";
-import {Dataset} from "../dataset";
 import {SchemaClass} from "../schemaClass";
 
 /**
@@ -72,12 +71,11 @@ export class HeatMapView extends RemoteTableObjectView {
         yPoints: number;
         samplingRate: number;
     };
-    private menu: TopMenu;
-    protected viewMenu: SubMenu;
+    private readonly menu: TopMenu;
+    protected readonly viewMenu: SubMenu;
 
-    constructor(remoteObjectId: RemoteObjectId, dataset: Dataset,
-                protected schema: SchemaClass, page: FullPage) {
-        super(remoteObjectId, dataset, page);
+    constructor(remoteObjectId: RemoteObjectId, protected schema: SchemaClass, page: FullPage) {
+        super(remoteObjectId, page, "Heatmap");
         this.topLevel = document.createElement("div");
         this.topLevel.className = "chart";
         this.topLevel.onkeydown = e => this.keyDown(e);
@@ -102,7 +100,7 @@ export class HeatMapView extends RemoteTableObjectView {
         ]);
         this.menu = new TopMenu( [
             { text: "View", help: "Change the way the data is displayed.", subMenu:  this.viewMenu },
-            dataset.combineMenu(this, page.pageId)
+            this.dataset.combineMenu(this, page.pageId)
         ]);
 
         this.page.setMenu(this.menu);
@@ -247,13 +245,13 @@ export class HeatMapView extends RemoteTableObjectView {
         let cds: IColumnDescription[] = [this.currentData.xData.description,
                                          this.currentData.yData.description, oc];
         let catColumns: string[] = [colName];
-        let newPage = new FullPage("Heatmaps " + this.currentData.xData.description.name + ", " +
-            this.currentData.yData.description + " by " + oc.name, "Trellis", this.page);
-        this.page.insertAfterMe(newPage);
+        let newPage = this.dataset.newPage(
+            "Heatmaps " + this.currentData.xData.description.name + ", " +
+            this.currentData.yData.description + " by " + oc.name, this.page);
 
         let args: TrellisPlotArgs = { cds: cds };
         let trellisView = new TrellisHeatMapView(
-            this.remoteObjectId, this.dataset, newPage, args, this.schema);
+            this.remoteObjectId, newPage, args, this.schema);
         newPage.setDataView(trellisView);
         let cont = (operation: ICancellable) => {
             args.uniqueStrings = this.dataset.getDistinctStrings(colName);
@@ -292,12 +290,11 @@ export class HeatMapView extends RemoteTableObjectView {
             columnDescription: this.currentData.yData.description,
             isAscending: true
         }]);
-        let page = new FullPage("Table view ", "Table", this.page);
-        let table = new TableView(this.remoteObjectId, this.dataset, page);
+        let page = this.dataset.newPage("Table", this.page);
+        let table = new TableView(this.remoteObjectId, page);
         page.setDataView(table);
         table.schema = this.schema;
         let rr = table.createNextKRequest(order, null);
-        this.page.insertAfterMe(page);
         rr.invoke(new NextKReceiver(page, table, rr, false, order, null));
     }
 
@@ -591,10 +588,9 @@ export class HeatMapRenderer extends Renderer<HeatMap> {
                 protected samplingRate: number,
                 protected ds: DistinctStrings[],
                 operation: ICancellable) {
-        super(new FullPage("Heatmap " + cds[0].name + ", " + cds[1].name, "Heatmap", page), operation, "histogram");
-        page.insertAfterMe(this.page);
-        this.heatMap = new HeatMapView(remoteTable.remoteObjectId, remoteTable.dataset,
-            schema, this.page);
+        super(page.dataset.newPage("Heatmap " + cds[0].name + ", " + cds[1].name, page),
+            operation, "histogram");
+        this.heatMap = new HeatMapView(remoteTable.remoteObjectId, schema, this.page);
         this.page.setDataView(this.heatMap);
         if (cds.length != 2)
             throw "Expected 2 columns, got " + cds.length;

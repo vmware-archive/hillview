@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {IHtmlElement, removeAllChildren} from "./ui";
+import {IHtmlElement, removeAllChildren, ViewKind} from "./ui";
 import {FullPage} from "./fullPage";
 
 /**
@@ -36,6 +36,7 @@ export interface IDataView extends IHtmlElement {
      * being resized, or it can be called as a result of a user action.
      */
     refresh(): void;
+    viewKind: ViewKind;
 }
 
 /**

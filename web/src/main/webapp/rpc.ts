@@ -284,7 +284,7 @@ export abstract class Renderer<T> implements Rx.Observer<PartialResult<T>> {
      * @param {string} description       A description of the operation being performed that is shown
      *                                   next to the progress bar.
      */
-    public constructor(public page: FullPage,
+    protected constructor(public page: FullPage,
                        public operation: ICancellable,
                        public description: string) {
         this.progressBar = page.progressManager.newProgressBar(operation, description);
@@ -355,7 +355,7 @@ export abstract class Renderer<T> implements Rx.Observer<PartialResult<T>> {
 export abstract class OnCompleteRenderer<T> extends Renderer<T> {
     protected value: T = null;
 
-    public constructor(public page: FullPage,
+    protected constructor(public page: FullPage,
                        public operation: ICancellable,
                        public description: string) {
         super(page, operation, description);

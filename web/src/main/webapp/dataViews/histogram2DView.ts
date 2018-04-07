@@ -68,7 +68,7 @@ export class Histogram2DView extends HistogramViewBase {
 
     constructor(remoteObjectId: RemoteObjectId, dataset: Dataset,
                 protected schema: SchemaClass, page: FullPage) {
-        super(remoteObjectId, dataset, schema, page);
+        super(remoteObjectId, schema, page, "2DHistogram");
 
         this.legendSurface = new PlottingSurface(this.chartDiv, page);
         //this.legendSurface.setMargins(0, 0, 0, 0);
@@ -556,12 +556,11 @@ export class Histogram2DView extends HistogramViewBase {
             isAscending: true
         } ]);
 
-        let page = new FullPage("Table", "Table", this.page);
-        let table = new TableView(this.remoteObjectId, this.dataset, page);
+        let page = this.dataset.newPage("Table", this.page);
+        let table = new TableView(this.remoteObjectId, page);
         table.schema = this.schema;
         let rr = table.createNextKRequest(order, null);
         page.setDataView(table);
-        this.page.insertAfterMe(page);
         rr.invoke(new NextKReceiver(page, table, rr, false, order, null));
     }
 }
@@ -642,9 +641,9 @@ export class Histogram2DRenderer extends Renderer<Pair<HeatMap, Histogram>> {
                 protected uniqueStrings: DistinctStrings[],
                 operation: RpcRequest<PartialResult<Pair<HeatMap, Histogram>>>,
                 protected relative: boolean) {
-        super(new FullPage("2D Histogram " + cds[0].name + ", " + cds[1].name, "2DHistogram", page),
+        super(
+            page.dataset.newPage("Histogram(" + cds[0].name + ", " + cds[1].name + ")", page),
             operation, "histogram");
-        page.insertAfterMe(this.page);
         this.histogram = new Histogram2DView(
             this.remoteObject.remoteObjectId, this.remoteObject.dataset, schema, this.page);
         this.page.setDataView(this.histogram);
