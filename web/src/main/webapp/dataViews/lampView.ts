@@ -56,12 +56,12 @@ class LampView extends RemoteTableObjectView {
     private yDots: number;
     private lampTableObject: RemoteTableObject;
     private colorLegend: HeatmapLegendPlot;
-    private lampColNames: string[];
-    private legendSurface: PlottingSurface;
+    private readonly lampColNames: string[];
+    private readonly legendSurface: PlottingSurface;
 
     constructor(private tableObject: RemoteTableObject, private originalSchema: SchemaClass,
                 page: FullPage, private controlPointsId, private selectedColumns) {
-        super(tableObject.remoteObjectId, tableObject.dataset, page);
+        super(tableObject.remoteObjectId, page, "LAMP");
         this.topLevel = document.createElement("div");
         this.topLevel.classList.add("chart");
         this.topLevel.classList.add("lampView");
@@ -321,9 +321,8 @@ class LampView extends RemoteTableObjectView {
     }
 
     private showTable() {
-        let page = new FullPage("Table", "Table", this.page);
-        this.getPage().insertAfterMe(page);
-        let table = new TableView(this.lampTableObject.remoteObjectId, this.dataset, page);
+        let page = this.dataset.newPage("Table", this.page);
+        let table = new TableView(this.lampTableObject.remoteObjectId, page);
         page.setDataView(table);
         let rr = this.lampTableObject.createGetSchemaRequest();
         rr.invoke(new NextKReceiver(this.page, table, rr, false, new RecordOrder([]), null));
@@ -408,9 +407,7 @@ export class LAMPDialog extends Dialog {
             }
         }
 
-        let newPage = new FullPage("LAMP", "LAMP", this.page);
-        this.page.insertAfterMe(newPage);
-
+        let newPage = this.page.dataset.newPage("LAMP", this.page);
         switch (projection) {
             case "MDS": {
                 rr.invoke(new ControlPointsProjector(

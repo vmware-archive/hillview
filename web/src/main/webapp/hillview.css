@@ -23,6 +23,7 @@ html {
 
 body {
     font-family: sans-serif;
+    margin: 1px;
 }
 
 #container {
@@ -94,14 +95,18 @@ th, td {
 }
 
 .hillviewPage {
-    border: 1px solid black;
+    border: 2px solid grey;
     margin: 3px 1px;
     padding: 0;
 }
 
 .hillviewPage:hover {
-    border: 1px solid green;
+    border: 2px solid red;
     margin: 3px 1px;
+}
+
+.hillviewPage #hillviewPage0 {
+    border: 0;
 }
 
 .progressLabel {
@@ -227,7 +232,7 @@ th, td {
     stroke: black;
     fill: pink;
     fill-opacity: 0.2;
-    stroke-width: 1;
+    stroke-width: 1px;
     stroke-dasharray: 5,5
 }
 
@@ -248,7 +253,8 @@ textarea:focus, input:focus {
 table.menu {
     box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.5);
     border: 1px solid grey;
-    font-size:small
+    font-size:small;
+    z-index: 10;
 }
 
 table.menu.topMenu {
@@ -288,6 +294,11 @@ table.dropdown {
 
 .hidden {
     display: none;
+}
+
+.help {
+    margin: 0;
+    padding: 0;
 }
 
 .heatMapArray {
@@ -330,4 +341,53 @@ div.colorLegend {
 
 div.colorLegend > svg {
     overflow: visible
+}
+
+/* Tabbed browsing */
+.tabs-strip {
+    height: 30px;
+    clear: both;
+}
+
+.tabs-strip .tab input {
+    background-color: darkslategray;
+}
+
+.tabs-strip .tab {
+    height: 30px;
+    line-height: 30px;
+    float: left;
+    background-color: darkslategray;
+    border-top: 1px solid black;
+    border-right: 1px solid black;
+    border-left: 1px solid black;
+    margin-right: 5px;
+}
+
+.tabs-strip .tab.current input {
+    background-color: white;
+}
+
+.tabs-strip .tab.current {
+    position: relative;
+    border-bottom: 1px solid #fff;
+    z-index: 1;
+    background-color: white;
+}
+
+table.tab td {
+    table-layout: fixed;
+    border: 0;
+}
+
+table.tab td:nth-child(1) {
+    width: 130px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    display: block;
+}
+
+.dataset {
+    border: 1px solid black;
 }

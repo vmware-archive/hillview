@@ -43,10 +43,9 @@ export class HeavyHittersReceiver extends OnCompleteRenderer<TopList> {
     }
 
     run(data: TopList): void {
-        let newPage = new FullPage("Frequent Elements", "HeavyHitters", this.page);
+        let newPage = this.tv.dataset.newPage("Frequent Elements", this.page);
         let hhv = new HeavyHittersView(data, newPage, this.tv, this.schema, this.order, this.isApprox, this.percent);
         newPage.setDataView(hhv);
-        this.page.insertAfterMe(newPage);
         hhv.fill(data.top, this.elapsedMilliseconds());
     }
 }
@@ -74,7 +73,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
                 public order: RecordOrder,
                 private isApprox: boolean,
                 public percent: number) {
-        super(data.heavyHittersId, tv.dataset, page);
+        super(data.heavyHittersId, page, "HeavyHitters");
         this.topLevel = document.createElement("div");
         this.contextMenu = new ContextMenu(this.topLevel);
         this.table = new TabularDisplay();
@@ -132,27 +131,25 @@ export class HeavyHittersView extends RemoteTableObjectView {
             let rr = this.tv.createCheckHeavyRequest(new RemoteObject(this.data.heavyHittersId), this.schema);
             rr.invoke(new HeavyHittersReceiver3(this, rr));
         } else {
-            let newPage2 = new FullPage("All frequent elements", "HeavyHitters", this.page);
-            this.page.insertAfterMe(newPage2);
+            let newPage = this.dataset.newPage("All frequent elements", this.page);
             let rr = this.tv.createStreamingRpcRequest<RemoteObjectId>("filterHeavy", {
                 hittersId: this.data.heavyHittersId,
                 schema: this.schema
             });
-            rr.invoke(new TableOperationCompleted(newPage2, this.tv.schema, rr, this.order, this.tv.dataset));
+            rr.invoke(new TableOperationCompleted(newPage, this.tv.schema, rr, this.order, this.tv.dataset));
         }
     }
 
     public showSelected(): void {
         if (this.table.getSelectedRows().size == 0)
             return;
-        let newPage2 = new FullPage("Selected frequent elements", "HeavyHitters", this.page);
-        this.page.insertAfterMe(newPage2);
+        let newPage = this.dataset.newPage("Selected frequent elements", this.page);
         let rr = this.tv.createStreamingRpcRequest<RemoteObjectId>("filterListHeavy", {
             hittersId: this.data.heavyHittersId,
             schema: this.schema,
             rowIndices: this.getSelectedRows()
         });
-        rr.invoke(new TableOperationCompleted(newPage2, this.tv.schema, rr, this.order, this.tv.dataset));
+        rr.invoke(new TableOperationCompleted(newPage, this.tv.schema, rr, this.order, this.tv.dataset));
     }
 
     private getSelectedRows(): number[] {
@@ -209,14 +206,15 @@ export class HeavyHittersView extends RemoteTableObjectView {
             this.table.addFooter();
             this.page.scrollIntoView();
             this.page.reportTime(elapsedMs);
-            if (tdv.rows.length >=  HeavyHittersView.maxDisplay) this.showLongDialog();
+            if (tdv.rows.length >=  HeavyHittersView.maxDisplay)
+                HeavyHittersView.showLongDialog(tdv.rows.length);
         }
     }
 
-    private showLongDialog(): void {
+    private static showLongDialog(total: number): void {
         let longListDialog = new Dialog("Too Many Frequent Elements", "");
-        longListDialog.addText("Showing the top " + HeavyHittersView.maxDisplay.toString() +" elements, " +
-            "there could be more.");
+        longListDialog.addText("Showing the top " + HeavyHittersView.maxDisplay.toString() +
+            " elements out of " + total);
         longListDialog.addText("Use the 'View as Table' menu option to see the entire list");
         longListDialog.setAction(() => {});
         longListDialog.setCacheTitle("longListDialog");
@@ -366,13 +364,12 @@ export class HeavyHittersReceiver3 extends OnCompleteRenderer<TopList> {
     }
 
     run(exactList: TopList): void {
-        let newPage2 = new FullPage("Frequent elements", "HeavyHitters", this.hhv.page);
-        this.page.insertAfterMe(newPage2);
+        let newPage = this.hhv.dataset.newPage("Frequent elements", this.hhv.page);
         let rr = this.hhv.tv.createStreamingRpcRequest<RemoteObjectId>("filterHeavy", {
             hittersId: exactList.heavyHittersId,
             schema: this.hhv.schema
         });
-        rr.invoke(new TableOperationCompleted(newPage2, this.hhv.tv.schema, rr, this.hhv.order,
+        rr.invoke(new TableOperationCompleted(newPage, this.hhv.tv.schema, rr, this.hhv.order,
             this.hhv.tv.dataset));
     }
 }

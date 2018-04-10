@@ -18,7 +18,7 @@
 import {Dialog, FieldKind} from "../ui/dialog";
 import {ContentsKind, BasicColStats, IColumnDescription, ColumnAndRange, RemoteObjectId} from "../javaBridge";
 import {Converters, formatDate, significantDigits} from "../util";
-import {Point, Resolution, SpecialChars} from "../ui/ui";
+import {Point, Resolution, SpecialChars, ViewKind} from "../ui/ui";
 import {FullPage} from "../ui/fullPage";
 import {TextOverlay} from "../ui/textOverlay";
 import {AnyScale} from "./axisData";
@@ -27,7 +27,6 @@ import {DistinctStrings} from "../distinctStrings";
 import {CDFPlot} from "../ui/CDFPlot";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {mouse as d3mouse} from "d3-selection";
-import {Dataset} from "../dataset";
 import {SchemaClass} from "../schemaClass";
 
 /**
@@ -53,9 +52,9 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
     protected cdfPlot: CDFPlot;
     protected surface: PlottingSurface;
 
-    constructor(remoteObjectId: RemoteObjectId, dataset: Dataset,
-                protected tableSchema: SchemaClass, page: FullPage) {
-        super(remoteObjectId, dataset, page);
+    protected constructor(remoteObjectId: RemoteObjectId, protected tableSchema: SchemaClass,
+                page: FullPage, viewKind: ViewKind) {
+        super(remoteObjectId, page, viewKind);
         this.topLevel = document.createElement("div");
         this.topLevel.className = "chart";
         this.topLevel.onkeydown = e => this.keyDown(e);

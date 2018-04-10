@@ -29,8 +29,8 @@ interface TestOperation {
 
 /**
  * Retrieves a node from the DOM starting from a CSS selector specification.
- * @param {string} cssselector  Node specification as a CSS selector.
- * @returns {Node}              The unique selected node.
+ * @param cssselector  Node specification as a CSS selector.
+ * @returns The unique selected node.
  */
 function findElement(cssselector: string): HTMLElement {
     let val = document.querySelector(cssselector);

@@ -38,11 +38,10 @@ import {Range2DCollector} from "./heatMapView";
 import {TrellisPlotDialog} from "./trellisHeatMapView";
 import {Histogram2DDialog} from "./histogram2DView";
 import {SubMenu, TopMenuItem} from "../ui/menu";
-import {SpecialChars} from "../ui/ui";
+import {SpecialChars, ViewKind} from "../ui/ui";
 import {OnCompleteRenderer} from "../rpc";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {HeavyHittersReceiver, HeavyHittersView} from "./heavyHittersView";
-import {Dataset} from "../dataset";
 import {SchemaClass} from "../schemaClass";
 
 /**
@@ -53,8 +52,8 @@ export abstract class TableViewBase extends RemoteTableObjectView {
     // Total rows in the table
     protected rowCount: number;
 
-    constructor(remoteObjectId: RemoteObjectId, dataset: Dataset, page: FullPage) {
-        super(remoteObjectId, dataset, page);
+    protected constructor(remoteObjectId: RemoteObjectId, page: FullPage, viewKind: ViewKind) {
+        super(remoteObjectId, page, viewKind);
     }
 
     /**
@@ -146,8 +145,7 @@ export abstract class TableViewBase extends RemoteTableObjectView {
             schema: subSchema.schema
         };
         let rr = this.createCreateColumnRequest(arg);
-        let newPage = new FullPage("New column " + col, "Table", this.page);
-        this.page.insertAfterMe(newPage);
+        let newPage = this.dataset.newPage("New column " + col, this.page);
         let cd: IColumnDescription = {
             kind: arg.outputKind,
             name: col
@@ -335,8 +333,7 @@ export abstract class TableViewBase extends RemoteTableObjectView {
                 (filter.complement ? "not " : "") +
                 TableView.convert(filter.compareValue, desc.kind);
 
-            let newPage = new FullPage(title, "Table", this.page);
-            this.page.insertAfterMe(newPage);
+            let newPage = this.dataset.newPage(title, this.page);
             rr.invoke(new TableOperationCompleted(newPage, this.schema, rr, o, this.dataset));
         });
         ef.show();
@@ -368,8 +365,7 @@ export abstract class TableViewBase extends RemoteTableObjectView {
         let title = "Filtered: " +
             TableView.convert(filter.compareValue, kind) + " " + filter.comparison + " " + filter.column;
 
-        let newPage = new FullPage(title, "Table", this.page);
-        this.page.insertAfterMe(newPage);
+        let newPage = this.dataset.newPage(title, this.page);
         rr.invoke(new TableOperationCompleted(newPage, this.schema, rr, o, this.dataset))
     }
 
@@ -500,7 +496,6 @@ class ComparisonFilterDialog extends Dialog {
         };
     }
 }
-
 
 class CountReceiver extends OnCompleteRenderer<HLogLog> {
     constructor(page: FullPage, operation: ICancellable,

@@ -18,9 +18,10 @@
 import {IHtmlElement, removeAllChildren, ViewKind} from "./ui";
 import {ProgressManager} from "./progress";
 import {TopMenu} from "./menu";
-import {significantDigits} from "../util";
+import {openInNewTab, significantDigits} from "../util";
 import {ConsoleDisplay, ErrorReporter} from "./errReporter";
 import {DataDisplay, IDataView} from "./dataview";
+import {Dataset} from "../dataset";
 
 /**
  * Maps each ViewKind to a url anchor in the github userManual.
@@ -34,17 +35,21 @@ let helpUrl = {
     "HeavyHitters": "heavy-hitter-views",
     "LAMP": "lamp-projection",
     "Schema": "data-schema-views",
-    "Load": "loading-data"
+    "Load": "loading-data",
+    "SVD Spectrum": "svd-spectrum"
 };
+
+const minus = "&#8722;";
+const plus = "+";
 
 /**
  * A FullPage is the main unit of display in Hillview, storing on rendering.
  * The page layout is as follows:
  * -------------------------------------------------
- * | menu  help         Title                     x|
+ * | menu           Title                 ? - [2] x|  titleRow
  * |-----------------------------------------------|
  * |                                               |
- * |                 data display                  |
+ * |                 data display                  |  displayHolder
  * |                                               |
  * -------------------------------------------------
  * | progress manager (reports progress)           |
@@ -57,26 +62,22 @@ export class FullPage implements IHtmlElement {
     public progressManager: ProgressManager;
     protected console: ConsoleDisplay;
     pageTopLevel: HTMLElement;
-    static pageCounter: number = 0;
-    public readonly pageId: number;
-    private menuSlot: HTMLElement;
-    private h1: HTMLElement;
+    private readonly menuSlot: HTMLElement;
+    private readonly h1: HTMLElement;
     private minimized: boolean;
-    private displayHolder: HTMLElement;
-
-    /**
-     * All visible pages are children of a div named 'top'.
-      */
-    static allPages: FullPage[] = [];  // should be the same as the children of top 'div'
+    private readonly displayHolder: HTMLElement;
+    protected titleRow: HTMLDivElement;
+    protected help: HTMLElement;
 
     /**
      * Creates a page which will be used to display some rendering.
-     * @param {string} title         Title to use for page.
-     * @param {ViewKind} viewKind    Kind of view that is being displayed.
-     * @param {FullPage} sourcePage  Page which initiated the creation of this one.
+     * @param pageId      Page number within dataset.
+     * @param title       Title to use for page.
+     * @param sourcePage  Page which initiated the creation of this one.
+     * @param dataset     Parent dataset; only null for the toplevel menu.
      */
-    public constructor(title: string, viewKind: ViewKind, sourcePage: FullPage) {
-        this.pageId = FullPage.pageCounter++;
+    public constructor(public readonly pageId: number, public readonly title: string,
+                       sourcePage: FullPage, public readonly dataset: Dataset) {
         this.console = new ConsoleDisplay();
         this.progressManager = new ProgressManager();
         this.dataDisplay = new DataDisplay();
@@ -87,31 +88,24 @@ export class FullPage implements IHtmlElement {
         this.pageTopLevel.id = "hillviewPage" + this.pageId.toString();
         this.bottomContainer = document.createElement("div");
 
-        let titleRow = document.createElement("div");
-        titleRow.style.display = "flex";
-        titleRow.style.width = "100%";
-        titleRow.style.flexDirection = "row";
-        titleRow.style.flexWrap = "nowrap";
-        titleRow.style.alignItems = "center";
-        this.pageTopLevel.appendChild(titleRow);
+        this.titleRow = document.createElement("div");
+        this.titleRow.style.display = "flex";
+        this.titleRow.style.width = "100%";
+        this.titleRow.style.flexDirection = "row";
+        this.titleRow.style.flexWrap = "nowrap";
+        this.titleRow.style.alignItems = "center";
+        this.pageTopLevel.appendChild(this.titleRow);
         this.menuSlot = document.createElement("div");
-        this.addCell(titleRow, this.menuSlot, true);
-
-        let help = document.createElement("div");
-        help.onclick = () => this.openInNewTab(this.helpUrl(viewKind));
-        help.textContent = "help";
-        help.className = "external-link";
-        help.style.cursor = "help";
-        help.title = "Open help documentation related to this view.";
-        this.addCell(titleRow, help, true);
+        this.addCell(this.menuSlot, true);
 
         let h1 = document.createElement("h1");
-        h1.innerHTML = title;
+        if (title != null)
+            h1.innerHTML = (this.pageId > 0 ? (this.pageId.toString() + ". ") : "") + title;
         h1.style.textOverflow = "ellipsis";
         h1.style.textAlign = "center";
         h1.style.margin = "0";
         this.h1 = h1;
-        this.addCell(titleRow, h1, false);
+        this.addCell(h1, false);
 
         if (sourcePage != null) {
             h1.innerHTML += " from ";
@@ -120,26 +114,37 @@ export class FullPage implements IHtmlElement {
             h1.appendChild(refLink);
         }
 
-        let pageId = document.createElement("span");
-        pageId.textContent = "[" + this.pageId + "]";
-        pageId.title = "Unique number of this view.";
-        pageId.draggable = true;
-        pageId.ondragstart = (e) => e.dataTransfer.setData("text", this.pageId.toString());
-        this.addCell(titleRow, pageId, true);
+        this.help = document.createElement("button");
+        this.help.textContent = "?";
+        this.help.className = "help";
+        this.help.title = "Open help documentation related to this view.";
+        this.addCell(this.help, true);
 
-        let minimize = document.createElement("span");
-        minimize.className = "minimize";
-        minimize.innerHTML = "&uarr;";
-        minimize.onclick = () => this.minimize(minimize);
-        minimize.title = "Minimize this view.";
-        this.addCell(titleRow, minimize, true);
+        if (this.dataset != null) {
+            // The load menu does not have these decorative elements
+            let minimize = document.createElement("span");
+            minimize.className = "minimize";
+            minimize.innerHTML = minus;
+            minimize.onclick = () => this.minimize(minimize);
+            minimize.title = "Minimize this view.";
+            this.addCell(minimize, true);
 
-        let close = document.createElement("span");
-        close.className = "close";
-        close.innerHTML = "&times;";
-        close.onclick = () => this.remove();
-        close.title = "Close this view.";
-        this.addCell(titleRow, close, true);
+            /*
+            let pageIdSpan = document.createElement("span");
+            pageIdSpan.textContent = "[" + this.pageId + "]";
+            pageIdSpan.title = "Unique number of this view.";
+            pageIdSpan.draggable = true;
+            pageIdSpan.ondragstart = (e) => e.dataTransfer.setData("text", this.pageId.toString());
+            this.addCell(pageIdSpan, true);
+            */
+
+            let close = document.createElement("span");
+            close.className = "close";
+            close.innerHTML = "&times;";
+            close.onclick = () => this.dataset.remove(this);
+            close.title = "Close this view.";
+            this.addCell(close, true);
+        }
 
         this.displayHolder = document.createElement("div");
         this.pageTopLevel.appendChild(this.displayHolder);
@@ -150,20 +155,19 @@ export class FullPage implements IHtmlElement {
         this.bottomContainer.appendChild(this.console.getHTMLRepresentation());
     }
 
-    getTitleElement(): HTMLElement {
-        return this.h1;
+    public setViewKind(viewKind: ViewKind): void {
+        this.help.onclick = () => openInNewTab(FullPage.helpUrl(viewKind));
     }
 
-    openInNewTab(url: string) {
-        let win = window.open(url, "_blank");
-        win.focus();
+    getTitleElement(): HTMLElement {
+        return this.h1;
     }
 
     /**
      * Returns a URL to a section in the user manual.
      * @param {ViewKind} viewKind  Kind of view that help is sought for.
      */
-    helpUrl(viewKind: ViewKind): string {
+    static helpUrl(viewKind: ViewKind): string {
         let ref = helpUrl[viewKind];
         return "https://github.com/vmware/hillview/blob/master/docs/userManual.md#" + ref;
     }
@@ -174,8 +178,13 @@ export class FullPage implements IHtmlElement {
     pageReference(pageId: number): HTMLElement {
         let refLink = document.createElement("a");
         refLink.href = "#";
-        refLink.textContent = "[" + pageId + "]";
-        refLink.onclick = () => this.navigateToPage(pageId);
+        refLink.textContent = pageId.toString();
+        refLink.onclick = () => {
+            if (!this.dataset.scrollIntoView(pageId))
+                this.reportError("Page " + pageId + " no longer exists");
+            // return false to prevent the url from being followed.
+            return false;
+        };
         return refLink;
     }
 
@@ -184,84 +193,29 @@ export class FullPage implements IHtmlElement {
         this.menuSlot.appendChild(c.getHTMLRepresentation());
     }
 
-    addCell(row: HTMLElement, c: HTMLElement, minSize: boolean): void {
+    addCell(c: HTMLElement, minSize: boolean): void {
         if (minSize != null && minSize)
             c.style.flexGrow = "1";
         else
             c.style.flexGrow = "100";
-        row.appendChild(c);
-    }
-
-    protected navigateToPage(pageId: number): boolean {
-        let found = false;
-        for (let p of FullPage.allPages) {
-            if (p.pageId == pageId) {
-                p.scrollIntoView();
-                found = true;
-            }
-        }
-        // return false to prevent the url from being followed.
-        if (!found)
-            this.reportError("Page [" + pageId + "] no longer exists");
-        return false;
-    }
-
-    protected static getTop(): HTMLElement {
-        return document.getElementById('top');
-    }
-
-    public append(): void {
-        let top = FullPage.getTop();
-        FullPage.allPages.push(this);
-        top.appendChild(this.getHTMLRepresentation());
-    }
-
-    public findIndex(): number {
-        let index = FullPage.allPages.indexOf(this);
-        if (index < 0)
-            throw "Page to insert after not found";
-        return index;
-    }
-
-    public insertAfterMe(page: FullPage): void {
-        let index = this.findIndex();
-        FullPage.allPages.splice(index+1, 0, page);
-        let top = FullPage.getTop();
-        let pageRepresentation = page.getHTMLRepresentation();
-        if (index >= top.children.length - 1)
-            top.appendChild(pageRepresentation);
-        else
-            top.insertBefore(pageRepresentation, top.children[index+1]);
+        this.titleRow.appendChild(c);
     }
 
     public minimize(span: HTMLElement): void {
         if (this.minimized) {
             this.displayHolder.appendChild(this.dataDisplay.getHTMLRepresentation());
             this.minimized = false;
-            span.innerHTML = "&uarr;";
+            span.innerHTML = minus;
         } else {
             removeAllChildren(this.displayHolder);
             this.clearError();
             this.minimized = true;
-            span.innerHTML = "&darr;";
+            span.innerHTML = plus;
         }
-    }
-
-    public remove(): void {
-        let index = this.findIndex();
-        FullPage.allPages.splice(index, 1);
-        let top = FullPage.getTop();
-        top.removeChild(top.children[index]);
     }
 
     public onResize(): void {
         this.dataDisplay.onResize();
-    }
-
-    public static onResize(): void {
-        if (FullPage.allPages != null)
-            for (let p of FullPage.allPages)
-                p.onResize();
     }
 
     public getHTMLRepresentation(): HTMLElement {
@@ -274,6 +228,7 @@ export class FullPage implements IHtmlElement {
 
     public setDataView(hdv: IDataView): void {
         this.dataDisplay.setDataView(hdv);
+        this.setViewKind(hdv.viewKind);
     }
 
     public reportError(error: string) {

@@ -34,7 +34,6 @@ import {DistinctStrings} from "../distinctStrings";
 import {RemoteTableObjectView, RemoteTableObject} from "../tableTarget";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {mouse as d3mouse, select as d3select} from "d3-selection";
-import {Dataset} from "../dataset";
 import {SchemaClass} from "../schemaClass";
 
 export class HeatMapArrayData {
@@ -71,12 +70,12 @@ class CompactHeatMapView {
     private xAxisData;
     private yAxisData;
     // Elements
-    private g: any; // g element with the drawing
+    private readonly g: any; // g element with the drawing
     private chart: any; // chart on which the heatmap is drawn
 
     private axesG: any; // g element that will contain the axes
-    private xAxis;
-    private yAxis;
+    private readonly xAxis;
+    private readonly yAxis;
     private marker: any; // Marker that will indicate the x, y pair.
     // Lines that assist the marker.
     private xLine: any;
@@ -266,17 +265,17 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
     // UI elements
     private heatMaps: CompactHeatMapView[];
     private scrollBar: ScrollBar;
-    private arrayAndScrollBar: HTMLDivElement;
-    private colorLegend: HeatmapLegendPlot;
-    private heatMapsSvg: any; // svg containing all heatmaps.
-    private legendSurface: PlottingSurface;
+    private readonly arrayAndScrollBar: HTMLDivElement;
+    private readonly colorLegend: HeatmapLegendPlot;
+    private readonly heatMapsSvg: any; // svg containing all heatmaps.
+    private readonly legendSurface: PlottingSurface;
 
     // Holds the state of which heatmap is hovered over.
     private mouseOverHeatMap: CompactHeatMapView;
 
-    constructor(remoteObjectId: RemoteObjectId, dataset: Dataset,
+    constructor(remoteObjectId: RemoteObjectId,
                 page: FullPage, args: TrellisPlotArgs, private schema: SchemaClass) {
-        super(remoteObjectId, dataset, page);
+        super(remoteObjectId, page, "Trellis");
         this.args = args;
         this.offset = 0;
         if (this.args.cds.length != 3)
@@ -371,7 +370,9 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
 
     public swapAxes() {
         let xStats = this.args.xStats;
+        // noinspection JSSuspiciousNameCombination
         this.args.xStats = this.args.yStats;
+        // noinspection JSSuspiciousNameCombination
         this.args.yStats = xStats;
         let cdX = this.args.cds[0];
         this.args.cds[0] = this.args.cds[1];
@@ -380,7 +381,7 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
     }
 
     public showTable() {
-        let table = new TableView(this.remoteObjectId, this.dataset, this.page);
+        let table = new TableView(this.remoteObjectId, this.page);
         table.schema = this.schema;
 
         let order =  new RecordOrder([ {
@@ -394,9 +395,8 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
             isAscending: true
         }]);
         let rr = table.createNextKRequest(order, null);
-        let page = new FullPage("Table view", "Table", this.page);
+        let page = this.dataset.newPage("Table", this.page);
         page.setDataView(table);
-        this.page.insertAfterMe(page);
         rr.invoke(new NextKReceiver(page, table, rr, false, order, null));
     }
 
@@ -673,11 +673,9 @@ export class TrellisPlotDialog extends Dialog {
             return;
         }
 
-        let newPage = new FullPage("Heatmaps by " + args.cds[2].name, "Trellis", this.page);
-        this.page.insertAfterMe(newPage);
-
+        let newPage = this.page.dataset.newPage("Heatmaps by " + args.cds[2].name, this.page);
         let trellisView = new TrellisHeatMapView(
-            this.remoteObject.remoteObjectId, this.remoteObject.dataset, newPage, args, this.schema);
+            this.remoteObject.remoteObjectId, newPage, args, this.schema);
         newPage.setDataView(trellisView);
         let cont = (operation: ICancellable) => {
             args.uniqueStrings = this.remoteObject.dataset.getDistinctStrings(categCol.name);

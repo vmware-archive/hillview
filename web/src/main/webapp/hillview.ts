@@ -15,9 +15,7 @@
  * limitations under the License.
  */
 
-import {InitialObject} from "./initialObject";
-import {FullPage} from "./ui/fullPage";
-import {createLoadMenu} from "./loadMenu";
+import {createHillview} from "./toplevel";
 
 /**
  * This file exports all TypeScript classes which can be used directly
@@ -29,8 +27,7 @@ import {createLoadMenu} from "./loadMenu";
  * by making them fields of the window object.
  */
 let public_symbols = {
-    createLoadMenu,
-    FullPage   // used for resizing
+    createHillview,
 };
 
 window["hillview"] = public_symbols;

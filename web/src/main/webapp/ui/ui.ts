@@ -24,7 +24,7 @@
  * The list of rendering kinds supported by Hillview.
  */
 export type ViewKind = "Table" | "Histogram" | "2DHistogram" | "Heatmap" |
-    "Trellis" | "HeavyHitters" | "LAMP" | "Schema" | "Load";
+    "Trellis" | "HeavyHitters" | "LAMP" | "Schema" | "Load" | "SVD Spectrum";
 
 /**
  * Interface implemented by TypeScript objects that have an HTML rendering.

@@ -246,6 +246,11 @@ export function regression(data: number[][]) : number[] {
     return [alpha, beta];
 }
 
+export function openInNewTab(url: string): void {
+    let win = window.open(url, "_blank");
+    win.focus();
+}
+
 /**
  * Truncate a string to the specified length, adding ellipses if it was too long.
   */

@@ -144,46 +144,6 @@ public class InitialObjectTarget extends RpcTarget {
         }
     }
 
-    @HillviewRpc
-    public void testDataset(RpcRequest request, RpcRequestContext context) {
-        int which = request.parseArgs(Integer.class);
-        String dataFolder = "../data/";
-        String fileNamePattern;
-        CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
-        config.allowFewerColumns = false;
-        config.hasHeaderRow = true;
-        String schemaFile;
-        int limit = 0;
-        int replicationFactor = 1;
-
-        IMap<Empty, List<IFileLoader>> finder;
-        if (which >= 0 && which <= 1) {
-            limit = which == 0 ? 0 : 1;
-            dataFolder += "ontime";
-            schemaFile = "short.schema";
-            fileNamePattern = "(\\d)+_(\\d)+\\.csv";
-        } else if (which == 3) {
-            fileNamePattern = "mnist.csv";
-            schemaFile = "mnist.schema";
-        } else if (which == 4) {
-            fileNamePattern = "segmentation.csv";
-            schemaFile = "segmentation.schema";
-        } else if (which == 5) {
-            dataFolder += "ontime_big";
-            fileNamePattern = ".*.csv.gz";
-            schemaFile = "schema";
-        } else {
-            throw new RuntimeException("Unexpected operation " + which);
-		}
-
-        String schemaPath = Paths.get(dataFolder, schemaFile).toString();
-        FileLoaderDescription loader = new FileLoaderDescription.CsvFile(schemaPath, config);
-        finder = new FindFilesMapper(dataFolder, limit, fileNamePattern, loader);
-        HillviewLogger.instance.info("Finding csv files");
-        assert this.emptyDataset != null;
-        this.runFlatMap(this.emptyDataset, finder, FileDescriptionTarget::new, request, context);
-    }
-
     private void findFilesCommon(RpcRequest request, RpcRequestContext context,
                                 FileSetDescription desc, FileLoaderDescription loader) {
         IMap<Empty, List<IFileLoader>> finder = new FindFilesMapper(desc.folder, 0, desc.getRegexPattern(), loader);

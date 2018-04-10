@@ -15,33 +15,60 @@
  * limitations under the License.
  */
 
-import {CombineOperators, RemoteObjectId} from "./javaBridge";
+import {
+    CombineOperators,
+    RemoteObjectId
+} from "./javaBridge";
 import {OnCompleteRenderer, RemoteObject, RpcRequest} from "./rpc";
 import {DistinctStrings, IDistinctStrings} from "./distinctStrings";
 import {FullPage} from "./ui/fullPage";
 import {EnumIterators, ICancellable, Pair, PartialResult} from "./util";
 import {RemoteTableObjectView} from "./tableTarget";
 import {MenuItem, SubMenu, TopMenuItem} from "./ui/menu";
+import {IHtmlElement} from "./ui/ui";
+import {DataLoaded} from "./initialObject";
+import {HillviewToplevel} from "./toplevel";
+
 
 /**
  * A dataset holds all information related to a loaded dataset.
  * A dataset represents the original (remote) data loaded from some storage medium.
  * A dataset will then have many views.
  */
-export class Dataset {
+export class Dataset implements IHtmlElement {
     public readonly remoteObject: RemoteObject;
     private categoryCache: Map<string, DistinctStrings>;
-    private selected: RemoteTableObjectView;
+    private selected: RemoteTableObjectView; // participates in a combine operation
     private selectedPageId: number;  // id of page containing the selected object (if any)
+    private readonly topLevel: HTMLElement;
+    private pageCounter: number;
+    public readonly allPages: FullPage[];
 
     /**
      * Build a dataset object.
      * @param remoteObjectId  Id of the remote object containing the dataset data.
+     * @param name            A name to display for this dataset.
+     * @param loaded          A description of the data that was loaded.
      */
-    constructor(public readonly remoteObjectId: RemoteObjectId) {
+    constructor(public readonly remoteObjectId: RemoteObjectId,
+                public name: string,
+                public readonly loaded: DataLoaded) {
         this.remoteObject = new RemoteObject(remoteObjectId);
         this.categoryCache = new Map<string, DistinctStrings>();
         this.selected = null;
+        this.pageCounter = 1;
+        this.allPages = [];
+        this.topLevel = document.createElement("div");
+        this.topLevel.className = "dataset";
+        HillviewToplevel.instance.addDataset(this);
+    }
+
+    public getHTMLRepresentation(): HTMLElement {
+        return this.topLevel;
+    }
+
+    public rename(name: string): void {
+        this.name = name;
     }
 
     public select(object: RemoteTableObjectView, pageId: number): void {
@@ -50,7 +77,7 @@ export class Dataset {
     }
 
     public toString(): string {
-        return this.remoteObjectId;
+        return this.name;
     }
 
     /// Retrieves the category values for all specified column names
@@ -110,6 +137,62 @@ export class Dataset {
             help: "Combine data from two separate views.",
             subMenu: new SubMenu(combineMenu)
         };
+    }
+
+    findIndex(page: FullPage): number {
+        let index = this.allPages.indexOf(page);
+        if (index < 0)
+            throw "Page not found";
+        return index;
+    }
+
+    public append(page: FullPage): void {
+        this.allPages.push(page);
+        this.topLevel.appendChild(page.getHTMLRepresentation());
+    }
+
+    public insertAfterMe(toInsert: FullPage, me: FullPage): void {
+        console.assert(toInsert != null);
+        let pageRepresentation = toInsert.getHTMLRepresentation();
+        if (me == null) {
+            this.topLevel.appendChild(pageRepresentation);
+            this.allPages.push(toInsert);
+        } else {
+            let index = this.findIndex(me);
+            this.allPages.splice(index + 1, 0, toInsert);
+            if (index >= this.topLevel.children.length - 1)
+                this.topLevel.appendChild(pageRepresentation);
+            else
+                this.topLevel.insertBefore(pageRepresentation, this.topLevel.children[index + 1]);
+        }
+    }
+
+    public remove(page: FullPage): void {
+        let index = this.findIndex(page);
+        this.allPages.splice(index, 1);
+        this.topLevel.removeChild(this.topLevel.children[index]);
+    }
+
+    public newPage(title: string, sourcePage: FullPage): FullPage {
+        let number = this.pageCounter++;
+        let page = new FullPage(number, title, sourcePage, this);
+        this.insertAfterMe(page, sourcePage);
+        return page;
+    }
+
+    public scrollIntoView(pageId: number): boolean {
+        for (let p of this.allPages) {
+            if (p.pageId == pageId) {
+                p.scrollIntoView();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public resize(): void {
+        for (let p of this.allPages)
+            p.onResize();
     }
 }
 

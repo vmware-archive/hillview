@@ -83,9 +83,8 @@ export class TableView extends TableViewBase implements IScrollTarget {
     protected selectedColumns = new SelectionStateMachine();
     protected messageBox: HTMLElement;
 
-    public constructor(remoteObjectId: RemoteObjectId, dataset: Dataset, page: FullPage) {
-        super(remoteObjectId, dataset, page);
-
+    public constructor(remoteObjectId: RemoteObjectId, page: FullPage) {
+        super(remoteObjectId, page, "Table");
         this.selectedColumns = new SelectionStateMachine();
         this.order = new RecordOrder([]);
         this.topLevel = document.createElement("div");
@@ -143,7 +142,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
                     action: () => this.showCompareDialog(null, this.order) },
                 ])
             },
-            dataset.combineMenu(this, page.pageId)
+            this.dataset.combineMenu(this, page.pageId)
         ]);
 
         this.page.setMenu(menu);
@@ -838,11 +837,9 @@ export class TableView extends TableViewBase implements IScrollTarget {
     }
 
     public viewSchema(): void {
-        let newPage = new FullPage("Schema of ", "Schema", this.page);
-        let sv = new SchemaView(this.remoteObjectId, this.dataset,
-            newPage, this.schema, this.rowCount, 0);
+        let newPage = this.dataset.newPage("Schema", this.page);
+        let sv = new SchemaView(this.remoteObjectId, newPage, this.schema, this.rowCount, 0);
         newPage.setDataView(sv);
-        this.page.insertAfterMe(newPage);
     }
 
     /**
@@ -966,71 +963,37 @@ export class NextKReceiver extends Renderer<NextKList> {
 }
 
 /**
- * Receives the ID for a remote table and initiates a request to get the
- * table schema.
- */
-export class RemoteTableReceiver extends RemoteTableRenderer {
-    /**
-     * Create a renderer for a new table.
-     * @param page            Parent page initiating this request.
-     * @param operation       Operation that will bring the results.
-     * @param title           Title to use for resulting page; if null the parent page is used.
-     * @param progressInfo    Description of the files that are being loaded.
-     * @param forceTableView  If true the resulting view is always a table.
-     */
-    constructor(page: FullPage, operation: ICancellable, protected title: string,
-                progressInfo: string, protected forceTableView: boolean) {
-        super(page, operation, progressInfo, null);
-    }
-
-    public run(): void {
-        super.run();
-        let rr = this.remoteObject.createGetSchemaRequest();
-        rr.chain(this.operation);
-        let dataset = new Dataset(this.remoteObject.remoteObjectId);
-        rr.invoke(new SchemaReceiver(this.page, rr, this.remoteObject, dataset,
-            this.title, this.forceTableView));
-    }
-}
-
-/**
  * Receives a Schema and displays the resulting table.
  */
-class SchemaReceiver extends OnCompleteRenderer<TableSummary> {
+export class SchemaReceiver extends OnCompleteRenderer<TableSummary> {
     /**
      * Create a schema receiver for a new table.
-     * @param page            Parent page initiating this request.
+     * @param page            Page where result should be displayed.
      * @param operation       Operation that will bring the results.
      * @param remoteObject    Table object.
      * @param dataset         Dataset that this is a part of.
-     * @param title           Title to use for resulting page; if null the parent page is used.
      * @param forceTableView  If true the resulting view is always a table.
      */
     constructor(page: FullPage, operation: ICancellable,
                 protected remoteObject: RemoteTableObject,
                 protected dataset: Dataset,
-                protected title: string, protected forceTableView) {
+                protected forceTableView) {
         super(page, operation, "Get schema")
     }
 
     run(summary: TableSummary): void {
-        let page: FullPage;
         let dataView: IDataView;
+
         if (summary.schema == null) {
             this.page.reportError("No schema received; empty dataset?");
             return;
         }
 
-        if (summary.schema.length > 20 && this.title != null && !this.forceTableView) {
-            page = new FullPage("Schema of " + this.title, "Schema", this.page);
+        if (summary.schema.length > 20 && !this.forceTableView) {
             dataView = new SchemaView(this.remoteObject.remoteObjectId,
-                this.dataset, page, new SchemaClass(summary.schema),
+                this.page, new SchemaClass(summary.schema),
                 summary.rowCount, this.elapsedMilliseconds());
         } else {
-            if (this.title != null)
-                page = new FullPage(this.title, "Table", this.page);
-            else
-                page = this.page;
             let nk: NextKList = {
                 schema: this.value.schema,
                 rowCount: this.value.rowCount,
@@ -1039,13 +1002,11 @@ class SchemaReceiver extends OnCompleteRenderer<TableSummary> {
             };
 
             let order = new RecordOrder([]);
-            let table = new TableView(
-                this.remoteObject.remoteObjectId, this.dataset, page);
+            let table = new TableView(this.remoteObject.remoteObjectId, this.page);
             table.updateView(nk, false, order, null, this.elapsedMilliseconds());
             dataView = table;
         }
-        this.page.insertAfterMe(page);
-        page.setDataView(dataView);
+        this.page.setDataView(dataView);
     }
 }
 
@@ -1137,8 +1098,7 @@ class PCASchemaReceiver extends OnCompleteRenderer<TableSummary> {
             o.addColumn({ columnDescription: cd, isAscending: true });
         }
 
-        let table = new TableView(
-            this.remoteObject.remoteObjectId, this.tv.dataset, this.page);
+        let table = new TableView(this.remoteObject.remoteObjectId, this.page);
         table.schema = this.tv.schema.concat(newCols);
         this.page.setDataView(table);
         let rr = table.createNextKRequest(o, null);
@@ -1163,8 +1123,7 @@ export class TableOperationCompleted extends RemoteTableRenderer {
 
     run(): void {
         super.run();
-        let table = new TableView(
-            this.remoteObject.remoteObjectId, this.dataset, this.page);
+        let table = new TableView(this.remoteObject.remoteObjectId, this.page);
         table.schema = this.schema;
         this.page.setDataView(table);
         let rr = table.createNextKRequest(this.order, null);

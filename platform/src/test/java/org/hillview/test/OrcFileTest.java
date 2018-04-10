@@ -48,7 +48,7 @@ public class OrcFileTest extends BaseTest {
     private static final String orcFolder = "../data/orc/";
     private static final String orcOutFile = "test.orc";
 
-    void deleteOrcFile(String folder, String file) {
+    private void deleteOrcFile(String folder, String file) {
         File f = new File(Paths.get(folder, file).toString());
         if (f.exists()) {
             boolean success = f.delete();

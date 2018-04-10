@@ -26,7 +26,6 @@ import {TableView} from "./tableView";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {TableViewBase} from "./tableViewBase";
 import {cloneToSet, significantDigits} from "../util";
-import {Dataset} from "../dataset";
 import {SchemaClass} from "../schemaClass";
 
 /**
@@ -39,12 +38,11 @@ export class SchemaView extends TableViewBase {
     protected summary: HTMLElement;
 
     constructor(remoteObjectId: RemoteObjectId,
-                dataset: Dataset,
                 page: FullPage,
                 schema: SchemaClass,
                 rowCount: number,
                 elapsedMs: number) {
-        super(remoteObjectId, dataset, page);
+        super(remoteObjectId, page, "Schema");
         this.rowCount = rowCount;
         this.schema = schema;
         this.show();
@@ -270,9 +268,8 @@ export class SchemaView extends TableViewBase {
      * This method displays the table consisting of only the columns contained in the schema above.
      */
     private showTable(): void {
-        let newPage = new FullPage("Table with selected columns", "Table", this.page);
-        this.page.insertAfterMe(newPage);
-        let tv = new TableView(this.remoteObjectId, this.dataset, newPage);
+        let newPage = this.dataset.newPage(this.page.title, this.page);
+        let tv = new TableView(this.remoteObjectId, newPage);
         newPage.setDataView(tv);
         let nkl: NextKList = {
             schema: this.createSchema(),
