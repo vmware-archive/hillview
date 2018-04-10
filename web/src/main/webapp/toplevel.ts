@@ -32,13 +32,17 @@ export class HillviewToplevel implements IHtmlElement {
     private readonly strip: HTMLDivElement;
     private readonly tabs: HTMLElement[];
     private readonly content: HTMLDivElement;
+    protected datasetCounter: number;
+    protected current: Dataset;
 
     public static readonly instance = new HillviewToplevel();
 
     private constructor() {
         this.datasets = [];
+        this.datasetCounter = 0;
+        this.current = null;
         this.topLevel = document.createElement("div");
-        let page = new FullPage(0, null, null, null);
+        let page = new FullPage(0, "Load data", null, null);
 
         this.topLevel.appendChild(page.getHTMLRepresentation());
         let menu = new LoadMenu(InitialObject.instance, page);
@@ -67,57 +71,103 @@ export class HillviewToplevel implements IHtmlElement {
     }
 
     public addDataset(dataset: Dataset): void {
+        // tab names never change once tabs are created.  They are also unique.
+        // The tab name is not the dataset name; the dataset name is displayed in the tab.
+        let tabName = "tab" + this.datasetCounter++;
         this.datasets.push(dataset);
 
         let tab = document.createElement("table");
         tab.className = "tab";
+        tab.id = tabName;
         let row = tab.insertRow();
 
         this.strip.appendChild(tab);
         this.tabs.push(tab);
         let cell = row.insertCell();
-        cell.innerText = dataset.name;
+        cell.textContent = dataset.name;
         cell.title = dataset.name;
-        cell.onclick = () => this.select(dataset.name);
+        cell.onclick = () => { if (this.select(tabName)) this.rename(tabName); };
+        cell.className = "dataset-name";
 
         let close = document.createElement("span");
         close.className = "close";
         close.innerHTML = "&times;";
         close.setAttribute("float", "right");
-        close.onclick = () => this.remove(dataset.name);
+        close.onclick = () => this.remove(tabName);
         close.title = "Close this dataset.";
         cell = row.insertCell();
         cell.appendChild(close);
-        this.select(dataset.name);
+        this.select(tabName);
     }
 
-    remove(name: string): void {
-        let index = this.datasets.map(d => d.name).lastIndexOf(name);
+    index(tabName: string): number {
+        let index = this.tabs.map(d => d.id).lastIndexOf(tabName);
+        console.assert(index >= 0);
+        return index;
+    }
+
+    rename(tabName: string): void {
+        let index = this.index(tabName);
+        let cell = <HTMLElement>this.tabs[index].querySelector(".dataset-name");
+        cell.onclick = null;
+        let oldName = cell.textContent;
+        let input = document.createElement("input");
+        cell.textContent = "";
+        cell.insertBefore(input, cell.children[0]);
+        input.value = oldName;
+        input.type = "text";
+        input.onblur = input.onchange = () => this.renamed(cell, input, tabName);
+    }
+
+    renamed(cell: HTMLElement, input: HTMLInputElement, tabName: string): void {
+        let newName = input.value;
+        let index = this.index(tabName);
+        this.datasets[index].rename(newName);
+        cell.textContent = newName;
+        cell.onclick = () => { if (this.select(tabName)) this.rename(tabName); };
+    }
+
+    remove(tabName: string): void {
+        let index = this.index(tabName);
         this.strip.removeChild(this.tabs[index]);
         this.datasets.splice(index, 1);
         this.tabs.splice(index, 1);
-        if (this.tabs.length >= 1)
-            this.select(this.datasets[0].name);
+        if (this.tabs.length >= 1) {
+            this.select(this.tabs[0].id);
+        } else {
+            removeAllChildren(this.content);
+            this.current = null;
+        }
     }
 
-    select(name: string): void {
-        let index = this.datasets.map(d => d.name).lastIndexOf(name);
+    /**
+     * Select the tab with the specified name (a string like tabXXX).
+     * @param tabName    Name of tab to select.
+     * @returns True if the same tab was already selected.
+     */
+    select(tabName: string): boolean {
+        let index = this.index(tabName);
+        let selected: boolean = false;
         for (let i = 0; i < this.strip.childElementCount; i++) {
             let child: HTMLElement = this.tabs[i];
-            if (i != index)
+            if (i != index) {
                 child.classList.remove("current");
-            else
+            } else {
+                if (child.classList.contains("current"))
+                    selected = true;
                 child.classList.add("current");
+            }
         }
 
         removeAllChildren(this.content);
         let dataset = this.datasets[index];
+        this.current = dataset;
         this.content.appendChild(dataset.getHTMLRepresentation());
+        return selected;
     }
 
     resize(): void {
-        // Called when the view is resized.
-        // TODO.
+        this.current.resize();
     }
 }
 

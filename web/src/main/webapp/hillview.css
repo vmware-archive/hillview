@@ -349,6 +349,10 @@ div.colorLegend > svg {
     clear: both;
 }
 
+.tabs-strip .tab input {
+    background-color: darkslategray;
+}
+
 .tabs-strip .tab {
     height: 30px;
     line-height: 30px;
@@ -358,6 +362,10 @@ div.colorLegend > svg {
     border-right: 1px solid black;
     border-left: 1px solid black;
     margin-right: 5px;
+}
+
+.tabs-strip .tab.current input {
+    background-color: white;
 }
 
 .tabs-strip .tab.current {

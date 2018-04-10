@@ -51,7 +51,7 @@ export class Dataset implements IHtmlElement {
      * @param loaded          A description of the data that was loaded.
      */
     constructor(public readonly remoteObjectId: RemoteObjectId,
-                public readonly name: string,
+                public name: string,
                 public readonly loaded: DataLoaded) {
         this.remoteObject = new RemoteObject(remoteObjectId);
         this.categoryCache = new Map<string, DistinctStrings>();
@@ -67,13 +67,17 @@ export class Dataset implements IHtmlElement {
         return this.topLevel;
     }
 
+    public rename(name: string): void {
+        this.name = name;
+    }
+
     public select(object: RemoteTableObjectView, pageId: number): void {
         this.selected = object;
         this.selectedPageId = pageId;
     }
 
     public toString(): string {
-        return this.remoteObjectId;
+        return this.name;
     }
 
     /// Retrieves the category values for all specified column names
@@ -184,6 +188,11 @@ export class Dataset implements IHtmlElement {
             }
         }
         return false;
+    }
+
+    public resize(): void {
+        for (let p of this.allPages)
+            p.onResize();
     }
 }
 
