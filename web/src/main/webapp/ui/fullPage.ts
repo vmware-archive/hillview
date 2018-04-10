@@ -100,7 +100,7 @@ export class FullPage implements IHtmlElement {
 
         let h1 = document.createElement("h1");
         if (title != null)
-            h1.innerHTML = title;
+            h1.innerHTML = (this.pageId > 0 ? (this.pageId.toString() + ". ") : "") + title;
         h1.style.textOverflow = "ellipsis";
         h1.style.textAlign = "center";
         h1.style.margin = "0";
@@ -129,12 +129,14 @@ export class FullPage implements IHtmlElement {
             minimize.title = "Minimize this view.";
             this.addCell(minimize, true);
 
+            /*
             let pageIdSpan = document.createElement("span");
             pageIdSpan.textContent = "[" + this.pageId + "]";
             pageIdSpan.title = "Unique number of this view.";
             pageIdSpan.draggable = true;
             pageIdSpan.ondragstart = (e) => e.dataTransfer.setData("text", this.pageId.toString());
             this.addCell(pageIdSpan, true);
+            */
 
             let close = document.createElement("span");
             close.className = "close";
@@ -176,10 +178,10 @@ export class FullPage implements IHtmlElement {
     pageReference(pageId: number): HTMLElement {
         let refLink = document.createElement("a");
         refLink.href = "#";
-        refLink.textContent = "[" + pageId + "]";
+        refLink.textContent = pageId.toString();
         refLink.onclick = () => {
-            if (!this.dataset.scrollIntoView(this.pageId))
-                this.reportError("Page [" + this.pageId + "] no longer exists");
+            if (!this.dataset.scrollIntoView(pageId))
+                this.reportError("Page " + pageId + " no longer exists");
             // return false to prevent the url from being followed.
             return false;
         };

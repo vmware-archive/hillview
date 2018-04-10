@@ -43,9 +43,14 @@ export class CDFPlot extends Plot {
             this.cdfData.push(point);
         }
         this.max = point;
+        if (this.max == 0)
+            // To prevent division by zero below.  It won't matter anyway
+            this.max = 1;
     }
 
     public draw(): void {
+        if (this.cdfData.length == 0)
+            return;
         // After resizing the line may not have the exact number of points
         // as the screen width.
         let chartWidth = this.getChartWidth();
