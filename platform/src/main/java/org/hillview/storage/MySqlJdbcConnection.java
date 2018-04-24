@@ -32,8 +32,7 @@ public class MySqlJdbcConnection extends JdbcConnection {
 
     @Override
     public String getURL() {
-        // TODO: I don't know how to discover this information
-        this.addParameter("serverTimeZone", "PDT");
+        this.addParameter("useLegacyDatetimeCode", "true");
         this.addParameter("useSSL", "false");
         StringBuilder builder = new StringBuilder();
         this.addBaseUrl(builder);

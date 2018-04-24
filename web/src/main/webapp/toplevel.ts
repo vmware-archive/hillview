@@ -116,7 +116,7 @@ export class HillviewToplevel implements IHtmlElement {
         cell.insertBefore(input, cell.children[0]);
         input.value = oldName;
         input.type = "text";
-        input.onblur = input.onchange = () => this.renamed(cell, input, tabName);
+        input.onmouseout = input.onchange = () => this.renamed(cell, input, tabName);
     }
 
     renamed(cell: HTMLElement, input: HTMLInputElement, tabName: string): void {

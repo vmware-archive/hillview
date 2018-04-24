@@ -20,12 +20,15 @@ package org.hillview.sketches;
 import org.hillview.dataset.api.IJson;
 import org.hillview.table.api.*;
 
+import javax.annotation.Nullable;
+
 /**
  * A class that scans a column and collects basic statistics: maximum, minimum,
  * number of non-empty rows and the moments of asDouble values.
  */
 public class BasicColStats implements IJson {
     private final int momentCount;
+    private final boolean computeStringMax;
     // Number of values that have been used to compute the stats.
     private long presentCount;
     // Number of missing elements
@@ -33,10 +36,13 @@ public class BasicColStats implements IJson {
     // The following values are meaningful only if presentCount > 0.
     private double min;
     private double max;
+    @Nullable
+    private String minString;
+    @Nullable
+    private String maxString;
     private final double moments[];
-    private double usedRate;
 
-    public BasicColStats(int momentCount) {
+    public BasicColStats(int momentCount, boolean computeStringMax) {
         if (momentCount < 0)
             throw new IllegalArgumentException("number of moments cannot be negative");
         this.momentCount = momentCount;
@@ -44,7 +50,9 @@ public class BasicColStats implements IJson {
         this.min = 0;  // we cannot use infinity, since that cannot be serialized as JSON
         this.max = 0;
         this.presentCount = 0;
-        this.usedRate = 1;
+        this.minString = null;
+        this.maxString = null;
+        this.computeStringMax = computeStringMax;
     }
 
     public double getMin() { return this.min; }
@@ -64,40 +72,67 @@ public class BasicColStats implements IJson {
     public long getPresentCount() { return this.presentCount; }
     public long getRowCount() { return this.presentCount + this.missingCount; }
 
-    public void createStats(final ColumnAndConverter column,
-                            final IMembershipSet membershipSet,
-                            double rate, long seed) {
-        final ISampledRowIterator myIter = membershipSet.getIteratorOverSample(rate, seed, false);
-        this.usedRate = myIter.rate();
+    void createStats(final ColumnAndConverter column,
+                            final IMembershipSet membershipSet) {
+        final IRowIterator myIter = membershipSet.getIterator();
         int currRow = myIter.getNextRow();
+
+        boolean extractString = false;
+        switch (column.column.getKind()) {
+            case Category:
+            case String:
+            case Json:
+                extractString = this.computeStringMax;
+                break;
+            default:
+                break;
+        }
         while (currRow >= 0) {
-            if (!column.column.isMissing(currRow)) {
-                double val = column.asDouble(currRow);
-                if (this.presentCount == 0) {
-                    this.min = val;
-                    this.max = val;
-                } else if (val < this.min) {
-                    this.min = val;
-                } else if (val > this.max) {
-                    this.max = val;
-                }
-                if (this.momentCount > 0) {
-                    double tmpMoment = val;
-                    double alpha = (double) this.presentCount / (double) (this.presentCount + 1);
-                    double beta = 1.0 - alpha;
-                    this.moments[0] = (alpha * this.moments[0]) + (beta * val);
-                    for (int i = 1; i < this.momentCount; i++) {
-                        tmpMoment = tmpMoment * val;
-                        this.moments[i] = (alpha * this.moments[i]) + (beta * tmpMoment);
-                    }
-                }
-                this.presentCount++;
-            } else {
+            if (column.column.isMissing(currRow)) {
                 this.missingCount++;
+                currRow = myIter.getNextRow();
+                continue;
             }
+
+            String strVal = null;
+            double val = column.asDouble(currRow);
+            if (extractString)
+                strVal = column.getString(currRow);
+            if (this.presentCount == 0) {
+                this.min = val;
+                this.max = val;
+                if (extractString) {
+                    this.minString = strVal;
+                    this.maxString = strVal;
+                }
+            } else if (val < this.min) {
+                this.min = val;
+            } else if (val > this.max) {
+                this.max = val;
+            }
+            if (extractString) {
+                assert this.minString != null;
+                assert strVal != null;
+                if (this.minString.compareTo(strVal) < 0)
+                    this.minString = strVal;
+                assert this.maxString != null;
+                if (this.maxString.compareTo(strVal) < 0)
+                    this.maxString = strVal;
+            }
+
+            if (this.momentCount > 0) {
+                double tmpMoment = val;
+                double alpha = (double) this.presentCount / (double) (this.presentCount + 1);
+                double beta = 1.0 - alpha;
+                this.moments[0] = (alpha * this.moments[0]) + (beta * val);
+                for (int i = 1; i < this.momentCount; i++) {
+                    tmpMoment = tmpMoment * val;
+                    this.moments[i] = (alpha * this.moments[i]) + (beta * tmpMoment);
+                }
+            }
+            this.presentCount++;
             currRow = myIter.getNextRow();
         }
-        this.presentCount = (long) Math.floor((double) this.presentCount / usedRate);
     }
 
     /**
@@ -105,25 +140,33 @@ public class BasicColStats implements IJson {
      * @return The merge of the two.
      */
     public BasicColStats union(final BasicColStats otherStat) {
-        BasicColStats result = new BasicColStats(this.momentCount);
-        if (this.presentCount == 0)
-            return otherStat;
-        if (otherStat.presentCount == 0)
-            return this;
-
-        if (this.min < otherStat.min) {
-            result.min = this.min;
-        } else {
-            result.min = otherStat.min;
-        }
-
-        if (this.max > otherStat.max) {
-            result.max = this.max;
-        } else {
-            result.max = otherStat.max;
-        }
+        BasicColStats result = new BasicColStats(this.momentCount, this.computeStringMax);
         result.presentCount = this.presentCount + otherStat.presentCount;
         result.missingCount = this.missingCount + otherStat.missingCount;
+
+        if (this.presentCount == 0) {
+            result.min = otherStat.min;
+            result.max = otherStat.max;
+            result.minString = otherStat.minString;
+            result.maxString = otherStat.maxString;
+        } else if (otherStat.presentCount == 0) {
+            result.min = this.min;
+            result.max = this.max;
+            result.minString = this.minString;
+            result.maxString = this.maxString;
+        } else {
+            if (this.min < otherStat.min) {
+                result.min = this.min;
+            } else {
+                result.min = otherStat.min;
+            }
+
+            if (this.max > otherStat.max) {
+                result.max = this.max;
+            } else {
+                result.max = otherStat.max;
+            }
+        }
         if (result.presentCount > 0) {
             double alpha = (double) this.presentCount / ((double) result.presentCount);
             double beta = 1.0 - alpha;

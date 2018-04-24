@@ -18,8 +18,11 @@
 package org.hillview.utils;
 
 import org.hillview.dataset.api.IJson;
+import org.hillview.dataset.api.Pair;
 
 import java.util.*;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 /**
  * Wrapper around a list which makes it serializable as JSON.
@@ -153,6 +156,29 @@ public class JsonList<T> implements IJson, List<T> {
     @Override
     public List<T> subList(int fromIndex, int toIndex) {
         return new JsonList<T>(this.data.subList(fromIndex, toIndex));
+    }
+
+    public <S> JsonList<Pair<T, S>> zip(JsonList<S> other) {
+        int len = Math.min(this.size(), other.size());
+        JsonList<Pair<T, S>> result = new JsonList<Pair<T, S>>(len);
+        for (int i=0; i < len; i++)
+            result.add(new Pair<T, S>(this.get(i), other.get(i)));
+        return result;
+    }
+
+    public <S, U> JsonList<U> zip(JsonList<S> other, BiFunction<T, S, U> func) {
+        int len = Math.min(this.size(), other.size());
+        JsonList<U> result = new JsonList<U>(len);
+        for (int i=0; i < len; i++)
+            result.add(func.apply(this.get(i), other.get(i)));
+        return result;
+    }
+
+    public <S> JsonList<S> map(Function<T, S> func) {
+        JsonList<S> result = new JsonList<S>(this.size());
+        for (int i=0; i < this.size(); i++)
+            result.add(func.apply(this.get(i)));
+        return result;
     }
 
     @Override

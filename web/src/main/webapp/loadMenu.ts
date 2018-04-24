@@ -30,7 +30,7 @@ import {ViewKind} from "./ui/ui";
 /**
  * The load menu is the first menu that is displayed on the screen.
  * This is not really an IDataView, but it is convenient to
- * reuse this inferface for embedding into a page.
+ * reuse this interface for embedding into a page.
  */
 export class LoadMenu extends RemoteObject implements IDataView {
     private readonly top: HTMLElement;

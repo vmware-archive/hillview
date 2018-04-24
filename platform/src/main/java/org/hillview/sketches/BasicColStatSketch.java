@@ -25,28 +25,22 @@ import javax.annotation.Nullable;
 
 public class BasicColStatSketch implements ISketch<ITable, BasicColStats> {
     private final ColumnAndConverterDescription col;
-    private final double rate;
-    private final long seed;
     private final int momentNum;
 
-    public BasicColStatSketch(ColumnAndConverterDescription col, int momentNum,
-                              double rate, long seed) {
+    public BasicColStatSketch(ColumnAndConverterDescription col, int momentNum) {
         this.col = col;
-        this.rate = rate;
         this.momentNum = momentNum;
-        this.seed = seed;
     }
 
     @Override
     public BasicColStats create(final ITable data) {
         BasicColStats result = this.getZero();
-        result.createStats(data.getLoadedColumn(this.col),
-                data.getMembershipSet(), this.rate, this.seed);
+        result.createStats(data.getLoadedColumn(this.col), data.getMembershipSet());
         return result;
     }
 
     @Override
-    public BasicColStats zero() { return new BasicColStats(this.momentNum); }
+    public BasicColStats zero() { return new BasicColStats(this.momentNum, false); }
 
     @Override
     public BasicColStats add(@Nullable final BasicColStats left, @Nullable final BasicColStats right) {

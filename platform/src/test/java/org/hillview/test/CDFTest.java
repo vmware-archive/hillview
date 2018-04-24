@@ -41,7 +41,7 @@ public class CDFTest extends BaseTest {
         this.dataSet = new LocalDataSet<ITable>(bigTable);
         this.colStat = this.dataSet.blockingSketch(
                        new BasicColStatSketch(
-                               new ColumnAndConverterDescription(this.colName), 0, 1, 0));
+                               new ColumnAndConverterDescription(this.colName), 0));
     }
 
     private Histogram prepareCDF(int width, int height, boolean useSampling) {

@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import {Dialog} from "./ui/dialog";
+
 interface TestOperation {
     /**
      * Condition which is evaluated to see whether the test can executed.
@@ -234,8 +236,10 @@ export class Test {
             cont: () => {
                 for (let i = 2; i < 8; i++) {
                     let el = findElement("#hillviewPage" + i.toString() + " .close");
-                    //el.click();
+                    el.click();
                 }
+                let dialog = new Dialog("Tests are completed", "Done.");
+                dialog.show();
             }
         }
         ]);

@@ -350,17 +350,18 @@ div.colorLegend > svg {
 }
 
 .tabs-strip .tab input {
-    background-color: darkslategray;
+    background-color: grey;
 }
 
 .tabs-strip .tab {
     height: 30px;
     line-height: 30px;
     float: left;
-    background-color: darkslategray;
+    background-color: grey;
     border-top: 1px solid black;
     border-right: 1px solid black;
     border-left: 1px solid black;
+    border-radius: 3px 3px 0 0;
     margin-right: 5px;
 }
 

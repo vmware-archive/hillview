@@ -91,7 +91,7 @@ public class LinearProjectionTest extends BaseTest {
 
         for (int i = 0; i < numProjections; i++) {
             BasicColStatSketch b = new BasicColStatSketch(
-                    new ColumnAndConverterDescription(String.format("LP%d", i)), 1, 1, 0);
+                    new ColumnAndConverterDescription(String.format("LP%d", i)), 1);
             BasicColStats bcs = result.blockingSketch(b);
             double expectedMean = projectionCheck.get(new AllRange(), i).mean();
             double actualMean = bcs.getMoment(1);

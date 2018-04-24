@@ -76,7 +76,6 @@ public final class TableTarget extends RpcTarget {
     @Nullable
     private static RowSnapshot asRowSnapshot(@Nullable Object[] data, RecordOrder order) {
         if (data == null) return null;
-        RowSnapshot rs = null;
         Schema schema = order.toSchema();
         return RowSnapshot.parse(schema, data);
     }
@@ -205,7 +204,7 @@ public final class TableTarget extends RpcTarget {
         }
 
         BasicColStatSketch getBasicStatsSketch() {
-            return new BasicColStatSketch(this.getColumn(), 0, 1.0, 0);
+            return new BasicColStatSketch(this.getColumn(), 0);
         }
     }
 
@@ -277,7 +276,7 @@ public final class TableTarget extends RpcTarget {
         boolean toSample;
     }
 
-    private PCACorrelationSketch getPCASketch(RpcRequest request, RpcRequestContext context) {
+    private PCACorrelationSketch getPCASketch(RpcRequest request) {
         CorrelationMatrixRequest pcaReq = request.parseArgs(CorrelationMatrixRequest.class);
         String[] colNames = Converters.checkNull(pcaReq.columnNames);
         PCACorrelationSketch pcaSketch;
@@ -289,13 +288,13 @@ public final class TableTarget extends RpcTarget {
     }
     @HillviewRpc
     public void correlationMatrix(RpcRequest request, RpcRequestContext context) {
-        PCACorrelationSketch pcaSketch = this.getPCASketch(request, context);
+        PCACorrelationSketch pcaSketch = this.getPCASketch(request);
         this.runCompleteSketch(this.table, pcaSketch, CorrelationMatrixTarget::new, request, context);
     }
 
     @HillviewRpc
     public void spectrum(RpcRequest request, RpcRequestContext context) {
-        PCACorrelationSketch pcaSketch = this.getPCASketch(request, context);
+        PCACorrelationSketch pcaSketch = this.getPCASketch(request);
         this.runCompleteSketch(this.table, pcaSketch, (x, c) ->
             new CorrelationMatrixTarget(x, c).eigenValues(), request, context);
     }

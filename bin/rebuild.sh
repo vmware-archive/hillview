@@ -14,7 +14,7 @@ mydir="$(dirname "$0")"
 if [[ ! -d "$mydir" ]]; then mydir="$PWD"; fi
 source $mydir/config.sh
 
-# Bail out on first errorl verbose
+# Bail out on first error; verbose
 set -ex
 
 SKIP="0"

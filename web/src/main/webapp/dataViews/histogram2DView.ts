@@ -310,7 +310,7 @@ export class Histogram2DView extends HistogramViewBase {
             [this.currentData.xData.stats, this.currentData.yData.stats],
             samplingRate,
             [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
-            rr, this.relative);
+            rr, this.relative, true);
         rr.invoke(renderer);
     }
 
@@ -640,9 +640,11 @@ export class Histogram2DRenderer extends Renderer<Pair<HeatMap, Histogram>> {
                 protected samplingRate: number,
                 protected uniqueStrings: DistinctStrings[],
                 operation: RpcRequest<PartialResult<Pair<HeatMap, Histogram>>>,
-                protected relative: boolean) {
+                protected relative: boolean,
+                protected reusePage: boolean) {
         super(
-            page.dataset.newPage("Histogram(" + cds[0].name + ", " + cds[1].name + ")", page),
+            reusePage ? page : page.dataset.newPage(
+                "Histogram(" + cds[0].name + ", " + cds[1].name + ")", page),
             operation, "histogram");
         this.histogram = new Histogram2DView(
             this.remoteObject.remoteObjectId, this.remoteObject.dataset, schema, this.page);

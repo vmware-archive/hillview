@@ -558,7 +558,7 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
             let rr = this.remoteObject.createHistogram2DRequest(arg);
             let renderer = new Histogram2DRenderer(this.page,
                 this.remoteObject, this.schema,
-                this.cds, [this.stats.first, this.stats.second], samplingRate, this.ds, rr, this.relative);
+                this.cds, [this.stats.first, this.stats.second], samplingRate, this.ds, rr, this.relative, false);
             if (this.operation != null)
                 rr.setStartTime(this.operation.startTime());
             rr.invoke(renderer);

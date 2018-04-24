@@ -34,7 +34,7 @@ import javax.annotation.Nullable;
  */
 public class JdbcTest extends BaseTest {
     @Nullable
-    ITable getTable(JdbcConnectionInformation conn) {
+    private ITable getTable(JdbcConnectionInformation conn) {
         Assert.assertNotNull(conn.table);
         JdbcDatabase db = new JdbcDatabase(conn);
         try {
@@ -75,7 +75,7 @@ public class JdbcTest extends BaseTest {
         conn.table = "salaries";
         conn.user = "user";
         conn.password = "password";
-        ITable table = this.getTable(conn);
+        this.getTable(conn);
     }
 
     @Test
@@ -95,12 +95,10 @@ public class JdbcTest extends BaseTest {
             System.out.println(table.getSchema());
             ColumnAndConverter col = table.getLoadedColumn("salary");
             int firstSalary = col.column.getInt(0);
-            System.out.println("First salary " + firstSalary);
             Assert.assertEquals(60117, firstSalary);
 
             ColumnAndConverter emp = table.getLoadedColumn("emp_no");
             int empNo = emp.column.getInt(0);
-            System.out.println("First employee " + empNo);
             Assert.assertEquals(10001, empNo);
         }
     }

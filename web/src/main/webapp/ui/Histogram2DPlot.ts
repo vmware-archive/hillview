@@ -140,7 +140,7 @@ export class Histogram2DPlot extends Plot {
             .attr("dominant-baseline", "text-before-edge");
 
         this.barWidth = this.getChartWidth() / bucketCount;
-        let scale = this.getChartHeight() / max;
+        let scale = max <= 0 ? 1 : this.getChartHeight() / max;
 
         this.plottingSurface.getChart()
             .selectAll("g")
