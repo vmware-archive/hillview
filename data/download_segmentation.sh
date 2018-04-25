@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -x
+
 wget http://archive.ics.uci.edu/ml/machine-learning-databases/image/segmentation.data
 wget http://archive.ics.uci.edu/ml/machine-learning-databases/image/segmentation.test
 wget http://archive.ics.uci.edu/ml/machine-learning-databases/image/segmentation.names

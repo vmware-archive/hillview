@@ -1,4 +1,7 @@
 #!/bin/sh
+
+set -x
+
 echo 'Downloading MNIST data...'
 wget http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz
 gunzip train-images-idx3-ubyte.gz

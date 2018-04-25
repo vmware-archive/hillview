@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -x
+
 # First seq is the year; legal values are currently 1988-2016
 # Second seq is the month; legal values are 1-12
 for year in `seq 2016 2016`; do

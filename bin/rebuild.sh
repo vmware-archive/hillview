@@ -12,7 +12,7 @@ usage() {
 
 mydir="$(dirname "$0")"
 if [[ ! -d "$mydir" ]]; then mydir="$PWD"; fi
-source $mydir/config.sh
+source $mydir/lib.sh
 
 # Bail out on first error; verbose
 set -ex

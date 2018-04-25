@@ -51,18 +51,20 @@ public class InitialObjectTarget extends RpcTarget {
     private IDataSet<Empty> emptyDataset = null;
 
     public InitialObjectTarget() {
-        Empty empty = new Empty();
         // Get the base naming context
-        final String value = System.getenv(ENV_VARIABLE);
+        final String clusterFile = System.getenv(ENV_VARIABLE);
         final ClusterDescription desc;
-        if (value == null) {
+        if (clusterFile == null) {
+            HillviewLogger.instance.info(
+                    "No cluster description file specified; creating singleton");
             desc = new ClusterDescription(Collections.singletonList(HostAndPort.fromParts(LOCALHOST,
                                                                     HillviewServer.DEFAULT_PORT)));
             this.initialize(desc);
         } else {
             try {
-                HillviewLogger.instance.info("Initializing cluster descriptor from file");
-                final List<String> lines = Files.readAllLines(Paths.get(value), Charset.defaultCharset());
+                HillviewLogger.instance.info(
+                        "Initializing cluster descriptor from file", "{0}", clusterFile);
+                final List<String> lines = Files.readAllLines(Paths.get(clusterFile), Charset.defaultCharset());
                 final List<HostAndPort> hostAndPorts = lines.stream()
                                                             .map(HostAndPort::fromString)
                                                             .collect(Collectors.toList());
@@ -87,12 +89,6 @@ public class InitialObjectTarget extends RpcTarget {
         final ArrayList<IDataSet<Empty>> emptyDatasets = new ArrayList<IDataSet<Empty>>(numServers);
         description.getServerList().forEach(server -> emptyDatasets.add(new RemoteDataSet<Empty>(server)));
         this.emptyDataset = new ParallelDataSet<Empty>(emptyDatasets);
-    }
-
-    @HillviewRpc
-    public void initializeCluster(RpcRequest request, RpcRequestContext context) {
-        ClusterDescription description = request.parseArgs(ClusterDescription.class);
-        this.initialize(description);
     }
 
     @HillviewRpc

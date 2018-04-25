@@ -1,4 +1,5 @@
 *.class
+__pycache__
 
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
@@ -18,6 +19,7 @@ data/passport
 
 # Idea files
 # see https://intellij-support.jetbrains.com/hc/en-us/articles/206544839-How-to-manage-projects-under-Version-Control-Systems
+.idea
 */.idea/workspace.xml
 */.idea/tasks.xml
 */.idea/copyright
@@ -26,6 +28,7 @@ data/passport
 */.idea/codeStyles
 platform/platform.iml
 web/web.iml
+hillview.iml
 
 TAGS
 *.log
@@ -73,6 +76,9 @@ data/segmentation.csv
 data/segmentation.readme
 
 *.DS_Store
+
+# Configuration for various clusters
+bin/config-*.py
 
 # Hosts file for ansible
 deployment/hosts

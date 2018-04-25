@@ -86,31 +86,111 @@ $ ./frontend-start.sh
 * when you are done stop the two services by killing the
   frontend-start.sh and backend-start.sh jobs.
 
-## Deploying the Hillview service
+# Deploying the Hillview service on a cluster
 
-Instructions for managing the Hillview cloud service are given
-[here](deployment/README.md).
+*Please note that Hillview allows arbitrary access to files on the
+worker nodes from the client application.  The worker nodes should be
+deployed within a restricted secure environment (e.g. containers).*
 
-## Contributing code
+Before you run these commands, make sure you've built both `platform`
+and `web` projects.  The deployment scripts are in the `bin`
+folder.
 
-### Setup IntelliJ IDEA
+```
+$: cd bin
+```
+
+## Service configuration
+
+The fixed configuration of the Hillview service is obtained from a
+configuration file; there is a sample file `bin/config.py`.  This is a
+Python file with global variables that describe the setup of the
+Hillview service.
+
+```Python
+# This file is a Python program that defines the configuration for a
+# Hillview deployment.  It is imported as a Python module by other
+# Python files that handle the deployment.
+
+# Name of machine hosting the web server
+webserver = "web.server.name"
+
+# Names of the machines hosting the workers; the web
+# server machine can also act as a worker
+backends = [
+    "worker1.name",
+    "worker2.name" # etc.
+}
+
+# This is a Python map which can be used to override the
+# default_heap_size value below for specific machines.
+backends_heapsize = {
+    "worker1.name": "25G"
+}
+
+# Network port where the servers listen for requests
+backend_port = 3569
+# Java heap size for Hillview service
+default_heap_size = "25G"
+# User account for running the Hillview service
+user = "hillview"
+# Folder where the hillview service is installed on remote machines
+service_folder = "/home/hillview"
+# Version of Apache Tomcat to deploy
+tomcat_version = "9.0.4"
+# Tomcat installation folder name
+tomcat = "apache-tomcat-" + tomcat_version
+# If true delete old log files
+cleanup = False
+```
+
+## Deployment scripts
+
+The following command installs the software on the machines:
+
+```
+$: deploy.py config.py
+```
+
+The service is started by running the following command:
+
+```
+$: start.py config.py
+```
+
+To connect to the service open `http://<webserver>:8080` in your web
+browser.
+
+To stop the services you can run:
+
+```
+$: stop.py config.py
+```
+
+# Contributing code
+
+You will need to sign a CLA (Contributor License Agreement) to
+contribute code to Hillview under an Apache-2 license.  This is very
+standard.
+
+## Setup IntelliJ IDEA
 
 Download and install Intellij IDEA: https://www.jetbrains.com/idea/.
 You can just untar the linux binary in a place of your choice and run
 the shell script `ideaXXX/bin/idea.sh`.  The web projects uses
 capabilities only available in the paid version of Intellij IDEA.
 
-### Loading into IntelliJ IDEA
+## Loading into IntelliJ IDEA
 
 One solution is to load only the module that you want to contribute to: move to the
 corresponding folder: `cd platform` or `cd web` and start
 intellij there.
 
 Alternatively, if you have IntelliJ Ultimate you can create an empty project
-in the hillview folder, and then import three modules (from File/Project structure/Modules, 
+in the hillview folder, and then import three modules (from File/Project structure/Modules,
 add three modules: web/pom.xml, platform/pom.xml, and the root folder hillview itself).
 
-### Using git to contribute
+## Using git to contribute
 
 * Fork the repository using the "fork" button on github, by following these instructions:
 https://help.github.com/articles/fork-a-repo/
@@ -133,7 +213,8 @@ In more detail, here is a step-by-step guide to committing your changes:
     to `git add` the files you have merged, and then you may need to use
     `git rebase --continue` or `git rebase --skip`)
 7. Test, analyze merged version.
-8. `git push -f origin yourBranchName`
+8. `git push -f origin yourBranchName`.  You won't need the `-f` if you are
+   not updating a previous push to this branch.
 9. Create a pull request to merge your new branch into master (using the web ui).
 10. Delete your branch after the merging has been done `git branch -D yourBranchName`
 11. To run the program you should try the master branch:
@@ -142,7 +223,7 @@ In more detail, here is a step-by-step guide to committing your changes:
   - `git rebase upstream/master`
   - `git push origin master`
 
-### Guidance in writing code
+## Guidance in writing code
 
 * The pseudorandom generator is implemented in the class
   Randomness.java and uses Mersenne Twister.  Do not use the
@@ -158,9 +239,9 @@ In more detail, here is a step-by-step guide to committing your changes:
   not introduce any violations.  A subset of these checks is also
   done by the IDEA code inspection tool.
 
-## Installing the software needed
+# Software needed for deployment
 
-### Installing Java
+## Installing Java
 
 We use Java 8.
 
@@ -179,16 +260,17 @@ the following to your ~/.bashrc or ~/.zshrc.
 $ export JAVA_HOME="<path-to-jdk-folder>"
 ```
 
-### Installing other tools
+## Installing other software needed
 
-The following shell script will install the other required dependences.
+The following shell script will install the other required dependences
+for building and testing.
 
 ```
 $ cd bin
 $ ./install-dependences.sh
 ```
 
-### Impala Java libraries
+## Impala Java libraries
 
 If you want to access the ![Impala](https://impala.apache.org/)
 database you will need to download and install the JDBC connectors for
