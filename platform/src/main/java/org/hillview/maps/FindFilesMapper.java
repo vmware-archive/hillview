@@ -44,6 +44,31 @@ public class FindFilesMapper implements IMap<Empty, List<IFileLoader>> {
     @Nullable
     private final String fileNamePattern;
     private final FileLoaderDescription loaderDescription;
+    /**
+     * The cookie can be used to prevent memoization, by using a different value
+     * every time.
+     */
+    @SuppressWarnings("FieldCanBeLocal")
+    @Nullable
+    private final String cookie;
+
+    /**
+     * Create an object to find all file names that match the specification.
+     * @param folder   Folder where files are sought.
+     * @param maxCount Maximum number of files to find.  If 0 there is no limit.
+     * @param fileNamePattern  Regex for file names to search.  If null all file names match.
+     * @param cookie   This string is not used except to disable memoization.
+     */
+    public FindFilesMapper(String folder, int maxCount,
+                           @Nullable String fileNamePattern,
+                           FileLoaderDescription loader,
+                           @Nullable String cookie) {
+        this.folder = folder;
+        this.maxCount = maxCount;
+        this.fileNamePattern = fileNamePattern;
+        this.loaderDescription = loader;
+        this.cookie = cookie;
+    }
 
     /**
      * Create an object to find all file names that match the specification.
@@ -54,10 +79,7 @@ public class FindFilesMapper implements IMap<Empty, List<IFileLoader>> {
     public FindFilesMapper(String folder, int maxCount,
                            @Nullable String fileNamePattern,
                            FileLoaderDescription loader) {
-        this.folder = folder;
-        this.maxCount = maxCount;
-        this.fileNamePattern = fileNamePattern;
-        this.loaderDescription = loader;
+        this(folder, maxCount, fileNamePattern, loader, null);
     }
 
     @Override

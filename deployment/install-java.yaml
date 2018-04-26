@@ -1,5 +1,5 @@
 ---
-# Installs Oracle Java on the remote machines
+# Installs Oracle Java on the remote machines using Ansible
 # From https://github.com/malk/ansible-java8-oracle
 
 - hosts: backends web

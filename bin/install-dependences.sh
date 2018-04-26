@@ -6,10 +6,10 @@ set -e
 
 mydir="$(dirname "$0")"
 if [[ ! -d "$mydir" ]]; then mydir="$PWD"; fi
-source $mydir/config.sh
+source $mydir/lib.sh
 
 echo "Installing programs needed to build"
-${SUDO} ${INSTALL} install maven nodejs-legacy ansible npm libgfortran3
+${SUDO} ${INSTALL} install maven nodejs-legacy ansible npm libgfortran3 unzip gzip
 echo "Installing typescript tools"
 ${SUDO} npm install -g typescript@2.7.1 ts-loader@3.5.0 webpack@3.6.0
 

@@ -22,6 +22,7 @@ import io.netty.util.internal.logging.JdkLoggerFactory;
 import org.apache.commons.lang.StringEscapeUtils;
 
 import javax.annotation.Nullable;
+import java.io.File;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.MessageFormat;
@@ -103,7 +104,8 @@ public class HillviewLogger {
         }
         handler.setFormatter(form);
         logger.addHandler(handler);
-        this.info("Starting logger", "Working directory: {0}", System.getProperty("user.dir"));
+        File currentDirectory = new File(new File(".").getAbsolutePath());
+        this.info("Starting logger", "Working directory: {0}", currentDirectory);
     }
 
     public static void initialize(String role, @Nullable String filename) {
@@ -114,6 +116,7 @@ public class HillviewLogger {
         this.logger.setLevel(level);
     }
 
+    @SuppressWarnings("unused")
     public void shutdown() {
         Handler[] hs = this.logger.getHandlers();
         for (Handler h : hs)
@@ -157,7 +160,7 @@ public class HillviewLogger {
         return str;
     }
 
-    protected String createMessage(String message, String format, Object... arguments) {
+    private String createMessage(String message, String format, Object... arguments) {
         message = this.checkCommas(message);
         String text = MessageFormat.format(format, arguments);
         Thread current = Thread.currentThread();
@@ -168,7 +171,7 @@ public class HillviewLogger {
                 caller.getMethodName(), message, quoted);
     }
 
-    protected String quote(String message) {
+    private String quote(String message) {
         message = message.replace("\n", "\\n");
         return StringEscapeUtils.escapeCsv(message);
     }

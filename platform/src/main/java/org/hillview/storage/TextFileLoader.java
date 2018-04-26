@@ -36,14 +36,14 @@ import java.io.*;
  */
 public abstract class TextFileLoader implements IFileLoader {
     protected final String filename;
-    protected int currentRow;
-    protected int currentColumn;
+    int currentRow;
+    int currentColumn;
     @Nullable
     protected IAppendableColumn[] columns;
     private long currentField;
     @Nullable
     private String currentToken;
-    protected boolean allowFewerColumns;
+    boolean allowFewerColumns;
 
     // Some of these may be null
     @Nullable
