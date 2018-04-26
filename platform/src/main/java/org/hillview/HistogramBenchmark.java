@@ -97,12 +97,15 @@ public class HistogramBenchmark {
 
     public static void main(String[] args) throws IOException, InterruptedException {
         // Testing the performance of histogram computations
-        final int bucketNum = 40;
-        final int mega = 1024 * 1024;
-        final int colSize = 100 * mega;
+        System.out.println(Arrays.toString(args));
         final int runCount = Integer.parseInt(args[1]);
         final int parallelism = Integer.parseInt(args[3]);
+        final double rateParameter = Double.parseDouble(args[4]);
+        final int datasetScalingParameter = Integer.parseInt(args[5]);
         HillviewLogger.instance.setLogLevel(Level.OFF);
+        final int bucketNum = 40;
+        final int mega = 1024 * 1024;
+        final int colSize = 100 * mega / datasetScalingParameter;
         final DoubleArrayColumn col = generateDoubleArray(colSize, 100);
 
         BucketsDescriptionEqSize buckDes = new BucketsDescriptionEqSize(0, 100, bucketNum);
@@ -110,7 +113,7 @@ public class HistogramBenchmark {
 
         ITable table = createTable(colSize, col);
         ISketch<ITable, Histogram> sk = new HistogramSketch(
-                        buckDes, new ColumnAndConverterDescription(col.getName()), 1, 0);
+                        buckDes, new ColumnAndConverterDescription(col.getName()), rateParameter, 0);
 
         if (args[0].equals("noseparatethread")) {
             final IDataSet<ITable> ds = new LocalDataSet<ITable>(table, false);
