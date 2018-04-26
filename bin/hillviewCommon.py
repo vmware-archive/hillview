@@ -34,13 +34,23 @@ def execute_command(command):
         print("Exit code returned:", exitcode)
         exit(exitcode)
 
+def run_on_all_backends(config, function):
+    """Run a lambda on all back-ends.  function is a lambda that takes a
+    RemoteHost object as an argument"""
+    for h in config.backends:
+        rh = RemoteHost(config.user, h)
+        function(rh)
+
 class RemoteHost:
     """Abstraction for a remote host"""
     def __init__(self, user, host):
+        assert isinstance(user, str)
+        assert isinstance(host, str)
         self.host = host
         self.user = user
 
     def uh(self):
+        """user@host"""
         if self.user is not None:
             return self.user + "@" + self.host
         else:
@@ -77,3 +87,6 @@ class RemoteHost:
             u = self.user + "@"
         command = "scp -C " + source + " " + u + self.host + ":" + dest
         execute_command(command)
+
+    def __str__(self):
+        return self.host

@@ -117,9 +117,6 @@ public class InitialObjectTarget extends RpcTarget {
          */
         @Nullable
         String schemaFile;
-        /** Used to prevent caching */
-        @Nullable
-        String cookie;
         /**
          * If true the files are expected to have a header row.
          */
@@ -188,8 +185,10 @@ public class InitialObjectTarget extends RpcTarget {
 
     @HillviewRpc
     public void findLogs(RpcRequest request, RpcRequestContext context) {
+        @Nullable String cookie = request.parseArgs(String.class);
         FileLoaderDescription.LogFile loader = new FileLoaderDescription.LogFile();
-        IMap<Empty, List<IFileLoader>> finder = new FindFilesMapper(".", 0, "hillview.*\\.log", loader);
+        IMap<Empty, List<IFileLoader>> finder =
+                new FindFilesMapper(".", 0, "hillview.*\\.log", loader, cookie);
         HillviewLogger.instance.info("Finding log files");
         assert this.emptyDataset != null;
         this.runFlatMap(this.emptyDataset, finder, FileDescriptionTarget::new, request, context);

@@ -167,7 +167,8 @@ export class HillviewToplevel implements IHtmlElement {
     }
 
     resize(): void {
-        this.current.resize();
+        if (this.current != null)
+            this.current.resize();
     }
 }
 

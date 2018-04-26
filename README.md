@@ -54,12 +54,13 @@ $ ./rebuild.sh
 
 * Download and prepare the sample data.  The download script will
   download and decompress some CSV files with flights data from FAA.
-  You can edit the script to change the range of data that will be
-  downloaded; the default is to download 2 months of data.  The
-  dataset has 110 columns; we can use them all, but for the demo we
-  have stripped the dataset to 15 columns to better fit on the screen.
-  The following command creates the smaller files from the downloaded
-  data; this has to be done only once, after downloading the data.
+  You can edit the program `data/ontime/download.py` to change the
+  range of data that will be downloaded; the default is to download 2
+  months of data.  The dataset has 110 columns; we can use them all,
+  but for the demo we have stripped the dataset to 15 columns to
+  better fit on the screen.  The following command creates the smaller
+  files from the downloaded data; this has to be done only once, after
+  downloading the data.
 
 ```
 $ ./demo-data-cleaner.sh
@@ -120,7 +121,7 @@ webserver = "web.server.name"
 backends = [
     "worker1.name",
     "worker2.name" # etc.
-}
+]
 
 # This is a Python map which can be used to override the
 # default_heap_size value below for specific machines.

@@ -25,27 +25,25 @@ while getopts sph FLAG; do
          ;;
    esac
 done
-shift $OPTIND-1
+shift $((OPTIND-1))
 
-if [ $* -ne 0 ]; then
-    usage()
-fi
-
-CONFIG=$0
+CONFIG=$1
+shift
+echo Using configuration $CONFIG
 
 if [ -z $SKIP ]; then
     cd ../platform
     mvn -DskipTets install
     cd ../web
     mvn package
-    cd ../deployment
+    cd ../bin
 fi
 
 echo "Stopping services"
-stop.py $CONFIG
+./stop.py $CONFIG
 if [ -z $NOREDEPLOY ]; then
     echo "Installing software"
-    deploy.py $CONFIG
+    ./deploy.py $CONFIG
 fi
 echo "Starting services"
-start.py $CONFIG
+./start.py $CONFIG

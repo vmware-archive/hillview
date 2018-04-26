@@ -45,10 +45,9 @@ def prepare_webserver(config):
     rh.run_remote_shell_command("ln -sf " + config.service_folder + "/hillview-web.log " + \
                                 config.service_folder + "/hillview/hillview-web.log")
 
-def prepare_backend(config, host):
+def prepare_backend(config, rh):
     """Prepares files needed by a Hillview service on a remote machine"""
-    print("Preparing backend", host)
-    rh = RemoteHost(config.user, host)
+    print("Preparing backend", rh)
 #    rh.run_remote_shell_command("sudo apt-get install libgfortran3")
     rh.create_remote_folder(config.service_folder)
     rh.run_remote_shell_command("chown " + config.user + " " + config.service_folder)
@@ -62,8 +61,7 @@ def prepare_backend(config, host):
 
 def prepare_backends(config):
     """Prepares all Hillview backend workers"""
-    for h in config.backends:
-        prepare_backend(config, h)
+    run_on_all_backends(config, lambda rh: prepare_backend(config, rh))
 
 def main():
     parser = OptionParser(usage="%prog config_file")

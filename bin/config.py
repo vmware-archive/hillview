@@ -10,7 +10,7 @@ webserver = "web.server.name"
 backends = [
     "worker1.name",
     "worker2.name" # etc.
-}
+]
 
 # This is a Python map which can be used to override the
 # default_heap_size value below for specific machines.

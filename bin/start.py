@@ -14,15 +14,15 @@ def start_webserver(config):
         "export WEB_CLUSTER_DESCRIPTOR=serverlist; cd " + config.service_folder + "; nohup " + \
         config.tomcat + "/bin/startup.sh &")
 
-def start_backend(config, host):
+def start_backend(config, rh):
     """Starts the Hillview service on a remote machine"""
-    print("Starting backend", host)
+    assert isinstance(rh, RemoteHost)
+    print("Starting backend", rh)
     gclog = config.service_folder + "/hillview/gc.log"
-    if host in config.backends_heapsize:
-        heapsize = config.backends_heapsize[host]
+    if rh.host in config.backends_heapsize:
+        heapsize = config.backends_heapsize[rh.host]
     else:
         heapsize = config.default_heap_size
-    rh = RemoteHost(config.user, host)
     rh.run_remote_shell_command(
         "cd " + config.service_folder + "/hillview; " + \
         "nohup java -Dlog4j.configurationFile=./log4j.properties -server -Xms" + heapsize + \
@@ -32,8 +32,7 @@ def start_backend(config, host):
 
 def start_backends(config):
     """Starts all Hillview backend workers"""
-    for h in config.backends:
-        start_backend(config, h)
+    run_on_all_backends(config, lambda rh: start_backend(config, rh))
 
 def main():
     parser = OptionParser(usage="%prog config_file")

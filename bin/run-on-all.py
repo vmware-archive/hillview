@@ -9,14 +9,14 @@ from optparse import OptionParser
 
 def execute_command_on_all(config, command):
     print("Executing `", command, "' on", len(config.backends), "hosts")
-    for host in config.backends:
-        rh = RemoteHost(config.user, host)
-        rh.run_remote_shell_command(command)
+    lam = lambda rh: rh.run_remote_shell_command(command)
+    run_on_all_backends(config,  lam)
 
 def main():
     parser = OptionParser(usage="%prog [options] configfile command")
     (options, args) = parser.parse_args()
     if len(args) < 2:
+        print("You must specify a config file and a command to run")
         usage(parser)
     config = load_config(parser, args[0])
     command = " ".join(args[1:])

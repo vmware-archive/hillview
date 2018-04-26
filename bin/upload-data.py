@@ -25,9 +25,7 @@ def copy_file_to_remote_host(rh, source, folder):
 
 def copy_schema(config, schema, folder):
     print("Copying", schema, "to all hosts")
-    for w in config.backends:
-        rh = RemoteHost(config.user, w)
-        copy_file_to_remote_host(rh, schema, folder)
+    run_on_all_backends(config, lambda rh: copy_file_to_remote_host(rh, schema, folder))
 
 def copy_files(config, folder, filelist):
     print("Copying", len(filelist), "files to all hosts")
@@ -35,7 +33,7 @@ def copy_files(config, folder, filelist):
     for f in filelist:
         host = config.backends[index]
         index = (index + 1) % len(config.backends)
-        rh = RemoteHost(host, config.user)
+        rh = RemoteHost(config.user, host)
         copy_file_to_remote_host(rh, f, folder)
 
 def main():
