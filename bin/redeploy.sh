@@ -5,9 +5,9 @@
 set -e
 
 usage() {
-    echo "redeploy.sh [-shp] config.py"
+    echo "redeploy.sh [-shd] config.py"
     echo "Rebuild and redeploy program on a cluster"
-    echo "-p: skip deploying software, just stop and start"
+    echo "-d: skip deploying software, just stop and start"
     echo "-s: skip rebuilding, just redeploy"
     echo "-h: help"
     exit 1
@@ -15,17 +15,22 @@ usage() {
 
 SKIP=""
 NOREDEPLOY=""
-while getopts sph FLAG; do
+while getopts sdh FLAG; do
    case $FLAG in
       s) SKIP="1"
          ;;
-      p) NOREDEPLOY="1"
+      d) NOREDEPLOY="1"
          ;;
       *) usage
          ;;
    esac
 done
 shift $((OPTIND-1))
+
+if [ $# -ne 1 ]; then 
+   echo "You must supply a config.py argument"
+   usage
+fi
 
 CONFIG=$1
 shift

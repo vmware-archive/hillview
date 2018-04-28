@@ -67,6 +67,7 @@ public class SaveAsOrcSketch implements ISketch<ITable, Empty> {
                     .getColumnAndConverterDescriptions();
             data.getLoadedColumns(ccds);
             File file = new File(this.folder);
+            @SuppressWarnings("unused")
             boolean ignored = file.mkdir();
             // There is a race here: multiple workers may try to create the
             // folder at the same time, so we don't bother if the creation fails.

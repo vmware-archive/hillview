@@ -140,10 +140,12 @@ public class Utilities {
     }
 
     public static String[] toArray(List<String> list) {
-        return list.toArray(new String[list.size()]);
+        // Apparently using an empty array is fast enough, we don't need
+        // to pre-allocate the array.
+        return list.toArray(new String[0]);
     }
 
-    static final List<String> compressionSuffixes = Arrays.asList(
+    private static final List<String> compressionSuffixes = Arrays.asList(
             "gz", "bz", "bzip2", "xz", "Z", "arj");
 
     /**
@@ -155,12 +157,13 @@ public class Utilities {
     }
 
     /**
-     * This function strips the extension of a file name.
+     * This function strips the path and the extension of a file name.
      * It also removes known compression suffixes.
      */
     public static String getBasename(String filename) {
-        if (isCompressed(filename))
-            filename = FilenameUtils.removeExtension(filename);
-        return FilenameUtils.removeExtension(filename);
+        String basename = FilenameUtils.getBaseName(filename);
+        if (isCompressed(basename))
+            basename = FilenameUtils.removeExtension(basename);
+        return FilenameUtils.removeExtension(basename);
     }
 }

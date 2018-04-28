@@ -194,9 +194,7 @@ export class FullPage implements IHtmlElement {
     }
 
     addCell(c: HTMLElement, minSize: boolean): void {
-        if (minSize != null && minSize)
-            c.style.flexGrow = "1";
-        else
+        if (!minSize)
             c.style.flexGrow = "100";
         this.titleRow.appendChild(c);
     }

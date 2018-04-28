@@ -30,6 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -48,9 +49,10 @@ public class FindFilesMapper implements IMap<Empty, List<IFileLoader>> {
      * The cookie can be used to prevent memoization, by using a different value
      * every time.
      */
-    @SuppressWarnings("FieldCanBeLocal")
+    @SuppressWarnings({"FieldCanBeLocal", "unused"})
     @Nullable
     private final String cookie;
+    private final int repeats;
 
     /**
      * Create an object to find all file names that match the specification.
@@ -58,28 +60,19 @@ public class FindFilesMapper implements IMap<Empty, List<IFileLoader>> {
      * @param maxCount Maximum number of files to find.  If 0 there is no limit.
      * @param fileNamePattern  Regex for file names to search.  If null all file names match.
      * @param cookie   This string is not used except to disable memoization.
+     * @param repeats  Used for benchmarking: load each file this many times.
      */
     public FindFilesMapper(String folder, int maxCount,
                            @Nullable String fileNamePattern,
                            FileLoaderDescription loader,
-                           @Nullable String cookie) {
+                           @Nullable String cookie,
+                           int repeats) {
         this.folder = folder;
         this.maxCount = maxCount;
         this.fileNamePattern = fileNamePattern;
         this.loaderDescription = loader;
         this.cookie = cookie;
-    }
-
-    /**
-     * Create an object to find all file names that match the specification.
-     * @param folder   Folder where files are sought.
-     * @param maxCount Maximum number of files to find.  If 0 there is no limit.
-     * @param fileNamePattern  Regex for file names to search.  If null all file names match.
-     */
-    public FindFilesMapper(String folder, int maxCount,
-                           @Nullable String fileNamePattern,
-                           FileLoaderDescription loader) {
-        this(folder, maxCount, fileNamePattern, loader, null);
+        this.repeats = repeats;
     }
 
     @Override
@@ -101,6 +94,8 @@ public class FindFilesMapper implements IMap<Empty, List<IFileLoader>> {
             return filename.matches(this.fileNamePattern);
         });
         Stream<String> fileNames = files.map(Path::toString).sorted();
+        if (this.repeats > 1)
+            fileNames = fileNames.flatMap(n -> Collections.nCopies(this.repeats, n).stream());
         if (this.maxCount > 0)
             fileNames = fileNames.limit(this.maxCount);
         List<String> list = fileNames.collect(Collectors.toList());

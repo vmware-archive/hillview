@@ -27,6 +27,9 @@ import java.text.NumberFormat;
  */
 public class MemoryUse extends ControlMessage {
     public Status remoteServerAction(HillviewServer server) {
+        // This is not a reliable way to force GC.  The results
+        // may still include dead memory.
+        System.gc();
         Runtime rt = Runtime.getRuntime();
         long usedMemory = rt.totalMemory() - rt.freeMemory();
         return new Status(NumberFormat.getIntegerInstance().format(usedMemory));

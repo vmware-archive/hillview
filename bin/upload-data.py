@@ -37,11 +37,12 @@ def copy_files(config, folder, filelist):
         copy_file_to_remote_host(rh, f, folder)
 
 def main():
-    parser = OptionParser(usage="%prog [options] config fileList")
+    parser = OptionParser(usage="%prog [options] config fileList\n" + \
+                          "files in the list are uploaded in round-robin to the worker machines in the cluster")
     parser.add_option("-d", help="destination folder where output is written" +\
                       "  (if relative it is with respect to config.service_folder)",
                       dest="folder")
-    parser.add_option("-s", help="optional JSON file describing the data schema", dest="schema")
+    parser.add_option("-s", help="File that is loaded to all machines", dest="schema")
     (options, args) = parser.parse_args()
     if len(args) < 1:
         print("Not enough arguments supplied")

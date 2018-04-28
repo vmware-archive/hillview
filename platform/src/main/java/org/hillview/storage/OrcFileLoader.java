@@ -106,7 +106,7 @@ public class OrcFileLoader extends TextFileLoader {
     /**
      * For simple ORC TypeDescriptions it returns the corresponding ColumnKind.
      */
-    static ContentsKind getKind(TypeDescription desc) {
+    private static ContentsKind getKind(TypeDescription desc) {
         switch (desc.getCategory()) {
             case BOOLEAN:
                 return ContentsKind.Category;
@@ -137,7 +137,7 @@ public class OrcFileLoader extends TextFileLoader {
         }
     }
 
-    static List<ColumnDescription> getDescriptions(TypeDescription complex) {
+    private static List<ColumnDescription> getDescriptions(TypeDescription complex) {
         if (complex.getCategory() != TypeDescription.Category.STRUCT)
             throw new RuntimeException("Expected a Struct TypeDescription, got " + complex);
         List<String> fields = complex.getFieldNames();

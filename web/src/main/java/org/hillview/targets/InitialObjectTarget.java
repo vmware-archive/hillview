@@ -121,6 +121,15 @@ public class InitialObjectTarget extends RpcTarget {
          * If true the files are expected to have a header row.
          */
         boolean headerRow;
+        /**
+         * Used to circumvent caching.
+         */
+        @Nullable
+        String cookie;
+        /**
+         * Used for testing: allows reading the same data multiple times.
+         */
+        int repeat;
 
         @Nullable
         String getSchemaPath() {
@@ -138,8 +147,10 @@ public class InitialObjectTarget extends RpcTarget {
     }
 
     private void findFilesCommon(RpcRequest request, RpcRequestContext context,
-                                FileSetDescription desc, FileLoaderDescription loader) {
-        IMap<Empty, List<IFileLoader>> finder = new FindFilesMapper(desc.folder, 0, desc.getRegexPattern(), loader);
+                                 FileSetDescription desc, FileLoaderDescription loader) {
+        IMap<Empty, List<IFileLoader>> finder =
+                new FindFilesMapper(desc.folder, 0, desc.getRegexPattern(), loader,
+                        desc.cookie, desc.repeat);
         assert this.emptyDataset != null;
         this.runFlatMap(this.emptyDataset, finder, FileDescriptionTarget::new, request, context);
     }
@@ -188,7 +199,7 @@ public class InitialObjectTarget extends RpcTarget {
         @Nullable String cookie = request.parseArgs(String.class);
         FileLoaderDescription.LogFile loader = new FileLoaderDescription.LogFile();
         IMap<Empty, List<IFileLoader>> finder =
-                new FindFilesMapper(".", 0, "hillview.*\\.log", loader, cookie);
+                new FindFilesMapper(".", 0, "hillview.*\\.log", loader, cookie, 1);
         HillviewLogger.instance.info("Finding log files");
         assert this.emptyDataset != null;
         this.runFlatMap(this.emptyDataset, finder, FileDescriptionTarget::new, request, context);

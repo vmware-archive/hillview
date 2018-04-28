@@ -65,7 +65,7 @@ public class PCACorrelationSketch implements ISketch<ITable, CorrMatrix> {
         else {
             List<ColumnAndConverterDescription> ccds = ColumnAndConverterDescription.create(
                     this.colNames);
-            List<ColumnAndConverter> iCols = data.getLoadedColumns(ccds);
+            data.getLoadedColumns(ccds);
             IMembershipSet mm = data.getMembershipSet().sample(this.samplingRate, this.seed);
             table = data.compress(mm);
         }

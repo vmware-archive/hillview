@@ -72,7 +72,7 @@ public class HillviewLogger {
         this.logger = Logger.getLogger("Hillview");
         this.machine = this.checkCommas(Utilities.getHostName());
         this.role = this.checkCommas(role);
-        this.logger.setLevel(Level.INFO);
+        this.logger.setLevel(Level.WARNING);
 
         Formatter form = new SimpleFormatter() {
             final String[] components = new String[5];

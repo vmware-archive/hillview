@@ -93,6 +93,8 @@ export interface FileSetDescription {
     schemaFile: string;
     headerRow?: boolean;
     cookie?: string;
+    repeat: number;
+    name: string;  // not used on the Java side
 }
 
 export interface HLogLog {

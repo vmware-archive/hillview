@@ -47,7 +47,10 @@ export type DataLoaded = FilesLoaded | TablesLoaded | HillviewLogs;
 export function getDescription(data: DataLoaded): string {
     switch (data.kind) {
         case "Files":
-            return data.description.folder + "/" + data.description.fileNamePattern;
+            if (data.description.name != null)
+                return data.description.name;
+            else
+                return data.description.folder + "/" + data.description.fileNamePattern;
         case "DB":
             return data.description.database + "/" + data.description.table;
         case "Hillview logs":

@@ -47,13 +47,15 @@ export class LoadMenu extends RemoteObject implements IDataView {
         this.advanced = false;
         this.top = document.createElement("div");
         this.testDatasetsMenu = new SubMenu([
-            { text: "Flights",
+            { text: "Flights (15 columns)",
                 action: () => {
                     let files = {
                         folder: "../data/ontime",
                         fileNamePattern: "????_*.csv",
                         schemaFile: "short.schema",
-                        headerRow: true
+                        headerRow: true,
+                        repeat: 1,
+                        name: "Flights (15 columns)"
                     };
                     this.init.loadCSVFiles(files, this.page);
                 },
@@ -65,11 +67,52 @@ export class LoadMenu extends RemoteObject implements IDataView {
                         folder: "../data/ontime_big",
                         fileNamePattern: "*.csv.gz",
                         schemaFile: "schema",
-                        headerRow: true
+                        headerRow: true,
+                        repeat: 1,
+                        name: "Flights"
                     };
                     this.init.loadCSVFiles(files, this.page);
                 },
                 help: "The US flights dataset -- all 110 columns." },
+            { text: "10 x Flights",
+                action: () => {
+                    let files = {
+                        folder: "../data/ontime_big",
+                        fileNamePattern: "*.csv.gz",
+                        schemaFile: "schema",
+                        headerRow: true,
+                        repeat: 10,
+                        name: "10 x Flights"
+                    };
+                    this.init.loadCSVFiles(files, this.page);
+                },
+                help: "10 times the US flights dataset." },
+            { text: "10 x Flights (ORC)",
+                action: () => {
+                    let files = {
+                        folder: "../data/ontime_orc",
+                        fileNamePattern: "*.orc",
+                        schemaFile: "schema",
+                        headerRow: true,
+                        repeat: 10,
+                        name: "10 x Flights (ORC)"
+                    };
+                    this.init.loadOrcFiles(files, this.page);
+                },
+                help: "10 times the US flights dataset (from ORC files)." },
+            { text: "100 x Flights (ORC)",
+                action: () => {
+                    let files = {
+                        folder: "../data/ontime_orc",
+                        fileNamePattern: "*.orc",
+                        schemaFile: "schema",
+                        headerRow: true,
+                        repeat: 100,
+                        name: "100 x Flights (ORC)"
+                    };
+                    this.init.loadOrcFiles(files, this.page);
+                },
+                help: "100 times the US flights dataset (from ORC files)." },
         ]);
         this.loadMenu = new SubMenu([
             { text: "System logs",
@@ -259,7 +302,9 @@ class CSVFileDialog extends Dialog {
             schemaFile: this.getFieldValue("schemaFile"),
             fileNamePattern: this.getFieldValue("fileNamePattern"),
             headerRow: this.getBooleanValue("hasHeader"),
-            folder: this.getFieldValue("folder")
+            folder: this.getFieldValue("folder"),
+            repeat: 1,
+            name: null
         }
     }
 }
@@ -286,7 +331,9 @@ class JsonFileDialog extends Dialog {
             schemaFile: this.getFieldValue("schemaFile"),
             fileNamePattern: this.getFieldValue("fileNamePattern"),
             headerRow: false,
-            folder: this.getFieldValue("folder")
+            folder: this.getFieldValue("folder"),
+            repeat: 1,
+            name: null
         }
     }
 }
@@ -310,7 +357,9 @@ class ParquetFileDialog extends Dialog {
             schemaFile: null,  // not used
             fileNamePattern: this.getFieldValue("fileNamePattern"),
             headerRow: false,  // not used
-            folder: this.getFieldValue("folder")
+            folder: this.getFieldValue("folder"),
+            repeat: 1,
+            name: null
         }
     }
 }
@@ -336,7 +385,9 @@ class OrcFileDialog extends Dialog {
             schemaFile: this.getFieldValue("schemaFile"),
             fileNamePattern: this.getFieldValue("fileNamePattern"),
             headerRow: false,  // not used
-            folder: this.getFieldValue("folder")
+            folder: this.getFieldValue("folder"),
+            repeat: 1,
+            name: null
         }
     }
 }

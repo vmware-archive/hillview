@@ -31,7 +31,7 @@ import java.util.List;
  * samples is specified in the constructor too.
  */
 public class RandomSamplingSketch implements ISketch<ITable, SmallTable> {
-    public static final double overSampling = 1.5;
+    private static final double overSampling = 1.5;
     private final double rate;
     private final long seed;
     private final String[] columnNames;

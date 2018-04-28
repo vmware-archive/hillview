@@ -13,14 +13,16 @@ def stop_webserver(config):
     rh.run_remote_shell_command(
         config.service_folder + "/" + config.tomcat + "/bin/shutdown.sh")
     rh.run_remote_shell_command(
-        "ps -ax | grep Bootstrap | grep -v grep | awk '{print $1}' | xargs -r kill")
+        # The echo is there to ignore the exit code of pkill
+        "pkill -f Bootstrap; echo")
 
 def stop_backend(config, host):
     """Stops a Hillview service on a remote machine"""
     print("Stopping backend", host)
     rh = RemoteHost(config.user, host)
     rh.run_remote_shell_command(
-        "ps -ax | grep hillview-server | grep -v grep | awk '{print $1}' | xargs -r kill")
+        # The echo is there to ignore the exit code of pkill
+        "pkill -f hillview-server; echo")
 
 def stop_backends(config):
     """Stops all Hillview backend workers"""

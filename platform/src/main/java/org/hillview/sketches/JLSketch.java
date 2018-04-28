@@ -100,7 +100,6 @@ public class JLSketch implements ISketch<ITable, JLProjection>{
         Randomness rn = new Randomness(this.seed);
         int i, bit;
         double val;
-        String name;
         IRowIterator rowIt = data.getRowIterator();
         i = rowIt.getNextRow();
         while (i != -1) {

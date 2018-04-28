@@ -33,6 +33,7 @@ import org.hillview.dataset.remoting.*;
 import org.hillview.utils.Converters;
 import org.hillview.utils.ExecutorUtils;
 import org.hillview.utils.HillviewLogger;
+import org.hillview.utils.Utilities;
 import rx.Observable;
 import rx.subjects.PublishSubject;
 import rx.subjects.SerializedSubject;
@@ -79,8 +80,12 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
                 .build());
     }
 
-    static <T> SerializedSubject<T, T> createSerializedSubject() {
+    private static <T> SerializedSubject<T, T> createSerializedSubject() {
         return PublishSubject.<T>create().toSerialized();
+    }
+
+    public String toString() {
+        return this.serverEndpoint.toString();
     }
 
     /**
@@ -241,23 +246,24 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
      * A StreamObserver that transfers incoming onNext, onError and onCompleted invocations
      * from a gRPC streaming call to that of a publish subject.
      */
-    private abstract static class OperationObserver<T> implements StreamObserver<PartialResponse> {
-        final SerializedSubject<T, T> subject;
+    private abstract class OperationObserver<S> implements StreamObserver<PartialResponse> {
+        final SerializedSubject<S, S> subject;
 
-        public OperationObserver(final SerializedSubject<T, T> subject) {
+        OperationObserver(final SerializedSubject<S, S> subject) {
             this.subject = subject;
         }
 
         @Override
         public void onNext(final PartialResponse response) {
-            T result = this.processResponse(response);
+            S result = this.processResponse(response);
             this.subject.onNext(result);
         }
 
         @Override
         public void onError(final Throwable throwable) {
-            HillviewLogger.instance.error("Caught exception", throwable);
-            throwable.printStackTrace();
+            HillviewLogger.instance.error("RemoteDataSet Observer received exception",
+                    "{0}:{1}", RemoteDataSet.this.toString(),
+                    Utilities.throwableToString(throwable));
             this.subject.onError(throwable);
         }
 
@@ -266,7 +272,7 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
             this.subject.onCompleted();
         }
 
-        public abstract T processResponse(final PartialResponse response);
+        public abstract S processResponse(final PartialResponse response);
     }
 
     /**
@@ -274,7 +280,7 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
      * a new RemoteDataSet that points to a dataset on a remote server.
      */
     private class NewDataSetObserver<S> extends OperationObserver<PartialResult<IDataSet<S>>> {
-        public NewDataSetObserver(SerializedSubject<PartialResult<IDataSet<S>>, PartialResult<IDataSet<S>>> subject) {
+        NewDataSetObserver(SerializedSubject<PartialResult<IDataSet<S>>, PartialResult<IDataSet<S>>> subject) {
             super(subject);
         }
 
@@ -293,8 +299,8 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
     /**
      * StreamObserver used by sketch() implementations above.
      */
-    private static class SketchObserver<S> extends OperationObserver<PartialResult<S>> {
-        public SketchObserver(final SerializedSubject<PartialResult<S>, PartialResult<S>> subject) {
+    private class SketchObserver<S> extends OperationObserver<PartialResult<S>> {
+        SketchObserver(final SerializedSubject<PartialResult<S>, PartialResult<S>> subject) {
             super(subject);
         }
 
@@ -311,12 +317,12 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
     /**
      * StreamObserver used by manage() implementations above.
      */
-    private static class ManageObserver extends
+    private class ManageObserver extends
             OperationObserver<PartialResult<ControlMessage.StatusList>> {
         private final ControlMessage message;
         private final RemoteDataSet  dataSet;
 
-        public ManageObserver(SerializedSubject<PartialResult<ControlMessage.StatusList>,
+        ManageObserver(SerializedSubject<PartialResult<ControlMessage.StatusList>,
                 PartialResult<ControlMessage.StatusList>> subject,
                               ControlMessage message, RemoteDataSet dataSet) {
             super(subject);

@@ -69,12 +69,10 @@ public class RowSnapshotSet implements Serializable {
     static class SpecializedTableFilter implements ITableFilter {
         private final RowSnapshotSet set;
         private final VirtualRowSnapshot vrs;
-        private final ITable table;
 
         SpecializedTableFilter(RowSnapshotSet set, ITable table) {
             this.set = set;
-            this.table = table;
-            this.vrs = new VirtualRowSnapshot(table);
+            this.vrs = new VirtualRowSnapshot(table, this.set.schema);
         }
 
         @Override
