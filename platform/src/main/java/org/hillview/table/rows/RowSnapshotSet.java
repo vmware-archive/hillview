@@ -38,11 +38,7 @@ public class RowSnapshotSet implements Serializable {
     private final Schema schema;
     private final ObjectSet<BaseRowSnapshot> rowSet;
 
-    public RowSnapshotSet() {
-        this(new Schema());
-    }
-
-    public RowSnapshotSet(Schema schema) {
+    private RowSnapshotSet(Schema schema) {
         this.schema = schema;
         this.rowSet = new ObjectOpenCustomHashSet<BaseRowSnapshot>(
                           new BaseRowSnapshotHashingStrategy(schema));
@@ -99,7 +95,7 @@ public class RowSnapshotSet implements Serializable {
             Hash.Strategy<BaseRowSnapshot>, Serializable {
         private final Schema schema;
 
-        public BaseRowSnapshotHashingStrategy(final Schema schema) {
+        BaseRowSnapshotHashingStrategy(final Schema schema) {
             this.schema = schema;
         }
 

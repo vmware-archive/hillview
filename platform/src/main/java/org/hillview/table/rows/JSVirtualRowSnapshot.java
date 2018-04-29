@@ -18,6 +18,7 @@
 package org.hillview.table.rows;
 
 import jdk.nashorn.api.scripting.JSObject;
+import org.hillview.table.Schema;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
@@ -31,10 +32,10 @@ import javax.script.ScriptException;
  * Nashorn engine.  When it retrieves an Instant, it gets a JavaScript date instead.
  */
 public class JSVirtualRowSnapshot extends VirtualRowSnapshot {
-    final ScriptEngine engine;
+    private final ScriptEngine engine;
 
-    public JSVirtualRowSnapshot(ITable table, ScriptEngine engine) {
-        super(table);
+    public JSVirtualRowSnapshot(ITable table, Schema schema, ScriptEngine engine) {
+        super(table, schema);
         this.engine = engine;
     }
 

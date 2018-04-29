@@ -45,7 +45,7 @@ public class RankInTable {
     private int getRank(BaseRowSnapshot brs) {
         int rank = 0;
         IRowIterator rowIt = this.table.getRowIterator();
-        VirtualRowSnapshot vrs = new VirtualRowSnapshot(this.table);
+        VirtualRowSnapshot vrs = new VirtualRowSnapshot(this.table, this.table.getSchema());
         int i = rowIt.getNextRow();
         while (i!= -1) {
             vrs.setRow(i);
@@ -63,7 +63,7 @@ public class RankInTable {
      */
     public int[] getRank(SmallTable st) {
         int [] rank = new int[st.getNumOfRows()];
-        VirtualRowSnapshot vr = new VirtualRowSnapshot(st);
+        VirtualRowSnapshot vr = new VirtualRowSnapshot(st, st.getSchema());
         for (int j =0; j < st.getNumOfRows(); j++) {
             vr.setRow(j);
             rank[j] = this.getRank(vr);

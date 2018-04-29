@@ -139,8 +139,8 @@ public class RecordOrder implements Serializable {
         final boolean[] mergeLeft = new boolean[length];
         int i = 0, j = 0, k = 0;
 
-        VirtualRowSnapshot vrsLeft = new VirtualRowSnapshot(left);
-        VirtualRowSnapshot vrsRight = new VirtualRowSnapshot(right);
+        VirtualRowSnapshot vrsLeft = new VirtualRowSnapshot(left, left.schema);
+        VirtualRowSnapshot vrsRight = new VirtualRowSnapshot(right, right.schema);
         while ((i < leftLength) && (j < rightLength)) {
             vrsLeft.setRow(i);
             vrsRight.setRow(j);
@@ -193,8 +193,8 @@ public class RecordOrder implements Serializable {
         final int rightLength = right.getNumOfRows();
         final List<Integer> merge = new ArrayList<>();
         int i = 0, j = 0;
-        VirtualRowSnapshot vrsLeft = new VirtualRowSnapshot(left);
-        VirtualRowSnapshot vrsRight = new VirtualRowSnapshot(right);
+        VirtualRowSnapshot vrsLeft = new VirtualRowSnapshot(left, left.schema);
+        VirtualRowSnapshot vrsRight = new VirtualRowSnapshot(right, right.schema);
         while ((i < leftLength) && (j < rightLength)) {
             vrsLeft.setRow(i);
             vrsRight.setRow(j);

@@ -74,10 +74,6 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
 
     public boolean exists() { return this.rowIndex >= 0; }
 
-    public VirtualRowSnapshot(final ITable table) {
-        this(table, table.getSchema());
-    }
-
     public void setRow(final int rowIndex) {
         if (rowIndex < 0)
             throw new RuntimeException("Negative row index " + rowIndex);

@@ -44,7 +44,7 @@ public class CreateColumnJSMap extends AppendColumnMap {
     /**
      * Set of columns that the function can access.
      */
-    public final Schema inputColumns;
+    private final Schema inputColumns;
     /**
      * Description of the output column to produce.
      */
@@ -71,7 +71,7 @@ public class CreateColumnJSMap extends AppendColumnMap {
             // TODO: ensure that the input columns are loaded.
             ContentsKind kind = this.outputColumn.kind;
 
-            JSVirtualRowSnapshot vrs = new JSVirtualRowSnapshot(table, engine);
+            JSVirtualRowSnapshot vrs = new JSVirtualRowSnapshot(table, this.inputColumns, engine);
             IRowIterator it = table.getMembershipSet().getIterator();
             int r = it.getNextRow();
             while (r >= 0) {
