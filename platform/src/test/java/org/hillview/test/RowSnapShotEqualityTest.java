@@ -30,12 +30,12 @@ public class RowSnapShotEqualityTest extends BaseTest {
     public void rowSnapShotEqualityTest() {
         Table t = TestTables.testRepTable();
         int j = 9;
-        VirtualRowSnapshot vrs = new VirtualRowSnapshot(t);
+        VirtualRowSnapshot vrs = new VirtualRowSnapshot(t, t.getSchema());
         vrs.setRow(j);
         RowSnapshot rs = vrs.materialize();
         IRowIterator rowIt = t.getRowIterator();
         int i = rowIt.getNextRow();
-        VirtualRowSnapshot vrs2 = new VirtualRowSnapshot(t);
+        VirtualRowSnapshot vrs2 = new VirtualRowSnapshot(t, t.getSchema());
         while (i != -1) {
             vrs2.setRow(i);
             if (vrs.compareForEquality(vrs2, vrs2.getSchema())) {

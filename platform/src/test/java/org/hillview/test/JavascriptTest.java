@@ -73,7 +73,7 @@ public class JavascriptTest {
         Object value = invocable.invokeFunction("getField", row, "Name");
         Assert.assertEquals(value, "Mike");
 
-        VirtualRowSnapshot vrs = new VirtualRowSnapshot(table);
+        VirtualRowSnapshot vrs = new VirtualRowSnapshot(table, table.getSchema());
         IRowIterator it = table.getMembershipSet().getIterator();
         int r = it.getNextRow();
         while (r >= 0) {

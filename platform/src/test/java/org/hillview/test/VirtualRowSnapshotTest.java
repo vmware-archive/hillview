@@ -40,14 +40,14 @@ public class VirtualRowSnapshotTest extends BaseTest {
     @Test
     public void stringTest() {
         final Table table = TestTables.testTable();
-        VirtualRowSnapshot vrs = new VirtualRowSnapshot(table);
+        VirtualRowSnapshot vrs = new VirtualRowSnapshot(table, table.getSchema());
         Assert.assertEquals("<no such row>", vrs.toString());
         vrs.setRow(0);
         Assert.assertEquals("Mike,20", vrs.toString());
     }
 
-    public void testSnapshots(ITable data) {
-        VirtualRowSnapshot vrs = new VirtualRowSnapshot(data);
+    private void testSnapshots(ITable data) {
+        VirtualRowSnapshot vrs = new VirtualRowSnapshot(data, data.getSchema());
         IRowIterator rowIt = data.getRowIterator();
         int i = rowIt.getNextRow();
         while (i != -1) {
@@ -98,8 +98,7 @@ public class VirtualRowSnapshotTest extends BaseTest {
             BaseRowSnapshot rs = new RowSnapshot(data, i);
             hMap.put(rs, 0);
         }
-        VirtualRowSnapshot vrs = new VirtualRowSnapshot(data);
-        IRowIterator rowIt = data.getRowIterator();
+        VirtualRowSnapshot vrs = new VirtualRowSnapshot(data, data.getSchema());
         vrs.setRow(0);
         if (hMap.containsKey(vrs)) {
             System.out.println("A hit!\n");
