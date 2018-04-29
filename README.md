@@ -19,7 +19,7 @@ system in action.
   (Maven will manage the libraries)
 * Front-end: Typescript, webpack, Tomcat app server, node.js;
   some JavaScript libraries: d3, pako, and rx-js
-* Cloud service management: Ansible
+* Cloud service management: Python3
 * IDEA Intellij for development (optional)
 
 ## Project structure
@@ -88,6 +88,11 @@ $ ./frontend-start.sh
   frontend-start.sh and backend-start.sh jobs.
 
 # Deploying the Hillview service on a cluster
+
+Hillview uses `ssh` to deploy code on the cluster.  Prior to
+deployment you must setup `ssh` on the cluster to use password-less
+access to the cluster machines, as described here:
+https://www.ssh.com/ssh/copy-id
 
 *Please note that Hillview allows arbitrary access to files on the
 worker nodes from the client application.  The worker nodes should be
