@@ -93,6 +93,8 @@ public final class Schema
     }
 
     public void append(final ColumnDescription desc) {
+        if (this.cachedColumnNames != null)
+            throw new RuntimeException("Mutating sealed schema");
         desc.validate();
         if (this.columns.containsKey(desc.name))
             throw new InvalidParameterException("Column with name " +
@@ -100,6 +102,13 @@ public final class Schema
         this.columns.put(desc.name, desc);
         if (this.cachedColumnNames != null)
             throw new RuntimeException("Changing immutable schema");
+    }
+
+    public Schema clone() {
+        Schema result = new Schema();
+        for (ColumnDescription cd: this.getColumnDescriptions())
+            result.append(cd);
+        return result;
     }
 
     public int getColumnIndex(String columnName) {

@@ -23,6 +23,7 @@ import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.maps.CreateColumnJSMap;
 import org.hillview.table.ColumnDescription;
+import org.hillview.table.Schema;
 import org.hillview.table.api.*;
 import org.hillview.table.membership.SparseMembershipSet;
 import org.hillview.table.rows.RowSnapshot;
@@ -172,13 +173,15 @@ public class JavascriptTest {
         CreateColumnJSMap map = new CreateColumnJSMap(function, table.getSchema(), outCol);
         IDataSet<ITable> mapped = lds.blockingMap(map);
         // Convert the date column
-        outCol = new ColumnDescription("Later", ContentsKind.Date);
+        ColumnDescription outCol1 = new ColumnDescription("Later", ContentsKind.Date);
         function = "function map(row) { " +
                 "var d = row['Date']; " +
                 "d.setFullYear(d.getFullYear() + 10); " +
                 "return d;" +
                 " }";
-        map = new CreateColumnJSMap(function, table.getSchema(), outCol);
+        Schema outSchema = table.getSchema().clone();
+        outSchema.append(outCol);
+        map = new CreateColumnJSMap(function, outSchema, outCol1);
         mapped = mapped.blockingMap(map);
         ITable outTable = ((LocalDataSet<ITable>)mapped).data;
         String data = outTable.toLongString(3);
