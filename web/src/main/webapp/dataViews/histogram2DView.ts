@@ -360,7 +360,7 @@ export class Histogram2DView extends HistogramViewBase {
         let xs = HistogramViewBase.invert(position[0], this.plot.xScale,
             this.currentData.xData.description.kind, this.currentData.xData.distinctStrings);
         let y = Math.round(this.plot.yScale.invert(mouseY));
-        let ys = significantDigits(y);
+        let ys = this.relative ? significantDigits(y) : formatNumber(y);
         let scale = 1.0;
         if (this.relative)
             ys += "%";
@@ -369,6 +369,8 @@ export class Histogram2DView extends HistogramViewBase {
         let value = "", size = "";
         let xIndex = Math.floor(mouseX / this.plot.getBarWidth());
         let perc: number = 0;
+        let colorIndex: number = null;
+        let found = false;
         if (xIndex >= 0 && xIndex < this.currentData.heatMap.buckets.length &&
             y >= 0 && mouseY < this.surface.getActualChartHeight()) {
             let values: number[] = this.currentData.heatMap.buckets[xIndex];
@@ -384,23 +386,26 @@ export class Histogram2DView extends HistogramViewBase {
 
                 let yTotalScaled = 0;
                 let yTotal = 0;
-                let found = false;
                 for (let i = 0; i < values.length; i++) {
                     yTotalScaled += values[i] * scale;
                     yTotal += values[i];
                     if (yTotalScaled >= y && !found) {
                         found = true;
-                        size = significantDigits(values[i]);
+                        size = formatNumber(values[i]);
                         perc = values[i];
                         value = this.currentData.yData.bucketDescription(i);
+                        colorIndex = i;
                     }
                 }
-                let missing = this.currentData.heatMap.histogramMissingY.buckets[xIndex] * scale;
+                let missing = this.currentData.heatMap.histogramMissingY.buckets[xIndex];
                 yTotal += missing;
+                yTotalScaled += missing * scale;
                 if (!found && yTotalScaled >= y) {
                     value = "missing";
-                    size = significantDigits(missing);
+                    size = formatNumber(missing);
                     perc = missing;
+                    colorIndex = -1;
+                    found = true;
                 }
                 if (yTotal > 0)
                     perc = 100 * perc / yTotal;
@@ -413,6 +418,7 @@ export class Histogram2DView extends HistogramViewBase {
         this.cdfDot.attr("cy", (1 - pos) * this.surface.getActualChartHeight() + this.surface.topMargin);
         let cdf = percent(pos);
         this.pointDescription.update([xs, value, ys, size, significantDigits(perc) + "%", cdf], mouseX, mouseY);
+        this.legendPlot.hilight(colorIndex);
     }
 
     protected dragCanvasEnd() {

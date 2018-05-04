@@ -34,6 +34,16 @@ export class HistogramLegendPlot extends Plot {
     protected axisData: AxisData;
     protected legendRect: Rectangle;
     protected missingLegend: boolean;  // if true display legend for missing
+    protected hilightRect: any;
+    protected missingX: number;
+    protected missingY: number;
+    protected readonly missingGap = 30;
+    protected readonly missingWidth = 20;
+    protected readonly height = 15;
+    protected colorWidth: number;
+    protected x: number;
+    protected y: number;
+    protected width: number;
 
     public constructor(surface) {
         super(surface);
@@ -47,17 +57,17 @@ export class HistogramLegendPlot extends Plot {
             .attr("text-anchor", "middle")
             .attr("dominant-baseline", "text-before-edge");
 
-        let width = Resolution.legendBarWidth;
-        if (width > this.getChartWidth())
-            width = this.getChartWidth();
-        let height = 15;
+        this.width = Resolution.legendBarWidth;
+        if (this.width > this.getChartWidth())
+            this.width = this.getChartWidth();
 
-        let x = (this.getChartWidth() - width) / 2;
-        let y = Resolution.legendSpaceHeight / 3;
-        this.legendRect = new Rectangle({ x: x, y: y }, { width: width, height: height });
+        this.x = (this.getChartWidth() - this.width) / 2;
+        this.y = Resolution.legendSpaceHeight / 3;
+        let x = this.x;
+        this.legendRect = new Rectangle({ x: this.x, y: this.y }, { width: this.width, height: this.height });
         let canvas = this.plottingSurface.getCanvas();
 
-        let colorWidth = width / this.axisData.bucketCount;
+        this.colorWidth = this.width / this.axisData.bucketCount;
         for (let i = 0; i < this.axisData.bucketCount; i++) {
             let color: string;
             if (this.axisData.bucketCount == 1)
@@ -65,12 +75,12 @@ export class HistogramLegendPlot extends Plot {
             else
                 color = Histogram2DView.colorMap(i / (this.axisData.bucketCount - 1));
             canvas.append("rect")
-                .attr("width", colorWidth)
-                .attr("height", height)
+                .attr("width", this.colorWidth)
+                .attr("height", this.height)
                 .style("fill", color)
                 .attr("x", x)
-                .attr("y", y);
-            x += colorWidth;
+                .attr("y", this.y);
+            x += this.colorWidth;
         }
 
         let scaleAxis = this.axisData.scaleAndAxis(this.legendRect.width(), true, true);
@@ -83,34 +93,61 @@ export class HistogramLegendPlot extends Plot {
             .call(this.xAxis);
 
         if (this.missingLegend) {
-            let missingGap = 30;
-            let missingWidth = 20;
-            let missingHeight = 15;
-            let missingX = 0;
-            let missingY = 0;
             if (this.legendRect != null) {
-                missingX = this.legendRect.upperRight().x + missingGap;
-                missingY = this.legendRect.upperRight().y;
+                this.missingX = this.legendRect.upperRight().x + this.missingGap;
+                this.missingY = this.legendRect.upperRight().y;
             } else {
-                missingX = this.getChartWidth() / 2;
-                missingY = Resolution.legendSpaceHeight / 3;
+                this.missingX = this.getChartWidth() / 2;
+                this.missingY = Resolution.legendSpaceHeight / 3;
             }
 
             canvas.append("rect")
-                .attr("width", missingWidth)
-                .attr("height", missingHeight)
-                .attr("x", missingX)
-                .attr("y", missingY)
+                .attr("width", this.missingWidth)
+                .attr("height", this.height)
+                .attr("x", this.missingX)
+                .attr("y", this.missingY)
                 .attr("stroke", "black")
                 .attr("fill", "none")
                 .attr("stroke-width", 1);
 
             canvas.append("text")
                 .text("missing")
-                .attr("transform", `translate(${missingX + missingWidth / 2}, ${missingY + missingHeight + 7})`)
+                .attr("transform", `translate(${this.missingX + this.missingWidth / 2}, 
+                                              ${this.missingY + this.height + 7})`)
                 .attr("text-anchor", "middle")
                 .attr("font-size", 10)
                 .attr("dominant-baseline", "text-before-edge");
+        }
+
+        this.hilightRect = canvas.append("rect")
+            .attr("class", "dashed")
+            .attr("height", this.height)
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("stroke-dasharray", "5,5")
+            .attr("stroke", "cyan")
+            .attr("fill", "none");
+    }
+
+    /**
+     * Hilight the color with the specified index.  Special values:
+     * - colorIndex is < 0: missing box
+     * - colorIndex is null: nothing
+     */
+    hilight(colorIndex: number): void {
+        if (colorIndex == null) {
+            this.hilightRect
+                .attr("width", 0);
+        } else if (colorIndex < 0) {
+            this.hilightRect
+                .attr("x", this.missingX)
+                .attr("y", this.missingY)
+                .attr("width", this.missingWidth);
+        } else {
+            this.hilightRect
+                .attr("width", this.colorWidth)
+                .attr("x", this.x + colorIndex * this.colorWidth)
+                .attr("y", this.y);
         }
     }
 

@@ -142,7 +142,7 @@ export class HistogramView extends HistogramViewBase {
             .attr("width", 0)
             .attr("height", 0);
 
-        let pointDesc = ["x", "y"];
+        let pointDesc = ["x", "y", "size"];
         if (cdf != null)
             pointDesc.push("cdf");
         this.pointDescription = new TextOverlay(this.surface.getChart(),
@@ -286,8 +286,9 @@ export class HistogramView extends HistogramViewBase {
                 position[0], this.plot.xScale, this.currentData.axisData.description.kind, this.currentData.axisData.distinctStrings)
         }
         let y = Math.round(this.plot.yScale.invert(position[1]));
-        let ys = significantDigits(y);
-        let mouseLabel = [xs, ys];
+        let ys = formatNumber(y);
+        let size = this.plot.get(mouseX);
+        let pointDesc = [xs, ys, formatNumber(size)];
 
         if (this.cdfPlot != null) {
             let pos = this.cdfPlot.getY(mouseX);
@@ -295,9 +296,9 @@ export class HistogramView extends HistogramViewBase {
             this.cdfDot.attr("cy", (1 - pos) *
                 this.surface.getActualChartHeight() + this.surface.topMargin);
             let perc = percent(pos);
-            mouseLabel.push(perc);
+            pointDesc.push(perc);
         }
-        this.pointDescription.update(mouseLabel, mouseX, mouseY);
+        this.pointDescription.update(pointDesc, mouseX, mouseY);
     }
 
     // override

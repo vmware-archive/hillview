@@ -40,6 +40,7 @@ export class HistogramPlot extends Plot {
      * Data used to draw the X axis.
      */
     axisData: AxisData;
+    barWidth: number;
 
     public constructor(protected plottingSurface: PlottingSurface) {
         super(plottingSurface);
@@ -51,6 +52,9 @@ export class HistogramPlot extends Plot {
         this.histogram = bars;
         this.samplingRate = samplingRate;
         this.axisData = axisData;
+        let chartWidth = this.getChartWidth();
+        let bucketCount = this.histogram.buckets.length;
+        this.barWidth = chartWidth / bucketCount;
     }
 
     public draw(): void {
@@ -65,13 +69,12 @@ export class HistogramPlot extends Plot {
         let chartWidth = this.getChartWidth();
         let chartHeight = this.getChartHeight();
 
-        let barWidth = chartWidth / bucketCount;
         let bars = this.plottingSurface
             .getChart()
             .selectAll("g")
             .data(counts)
             .enter().append("g")
-            .attr("transform", (d, i) => `translate(${i * barWidth}, 0)`);
+            .attr("transform", (d, i) => `translate(${i * this.barWidth}, 0)`);
 
         this.yScale = d3scaleLinear()
             .domain([0, max])
@@ -81,11 +84,11 @@ export class HistogramPlot extends Plot {
             .attr("y", d => this.yScale(d))
             .attr("fill", "darkcyan")
             .attr("height", d => chartHeight - this.yScale(d))
-            .attr("width", barWidth - 1);
+            .attr("width", this.barWidth - 1);
 
         bars.append("text")
             .attr("class", "histogramBoxLabel")
-            .attr("x", barWidth / 2)
+            .attr("x", this.barWidth / 2)
             .attr("y", d => this.yScale(d))
             .attr("text-anchor", "middle")
             .attr("dy", d => d <= (9 * max / 10) ? "-.25em" : ".75em")
@@ -100,6 +103,14 @@ export class HistogramPlot extends Plot {
         this.xAxis = scaleAxis.axis;
 
         this.drawAxes();
+    }
+
+    public get(x: number): number {
+        let bucket = Math.floor(x / this.barWidth);
+        if (bucket < 0 || bucket >= this.histogram.buckets.length)
+            return 0;
+        let value = this.histogram.buckets[bucket];
+        return value;
     }
 }
 
