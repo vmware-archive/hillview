@@ -40,15 +40,17 @@ public class HistogramBenchmark {
     /**
      * Generates a double array with every fifth entry missing
      */
-    public static DoubleArrayColumn generateDoubleArray(final int size, final int max) {
+    @SuppressWarnings("SameParameterValue")
+    private static DoubleArrayColumn generateDoubleArray(final int size, final int max) {
         return generateDoubleArray(size, max, 5);
     }
 
     /**
      * Generates a double array with every skip entry missing
      */
-    public static DoubleArrayColumn generateDoubleArray(final int size, final int max, int
-            skip) {
+    @SuppressWarnings("SameParameterValue")
+    private static DoubleArrayColumn generateDoubleArray(
+            final int size, final int max, int skip) {
         final DoubleArrayColumn col = new DoubleArrayColumn(desc, size);
         for (int i = 0; i < size; i++) {
             col.set(i, Math.sqrt(i + 1) % max);
@@ -65,11 +67,11 @@ public class HistogramBenchmark {
         return end - start;
     }
 
-    static String twoDigits(double d) {
+    private static String twoDigits(double d) {
         return String.format("%.2f", d);
     }
 
-    static void runNTimes(Runnable runnable, int count, String message, int elemCount) {
+    private static void runNTimes(Runnable runnable, int count, String message, int elemCount) {
         long[] times = new long[count];
         for (int i=0; i < count; i++) {
             long t = time(runnable);
@@ -109,8 +111,6 @@ public class HistogramBenchmark {
         final DoubleArrayColumn col = generateDoubleArray(colSize, 100);
 
         BucketsDescriptionEqSize buckDes = new BucketsDescriptionEqSize(0, 100, bucketNum);
-        final Histogram hist = new Histogram(buckDes);
-
         ITable table = createTable(colSize, col);
         ISketch<ITable, Histogram> sk = new HistogramSketch(
                         buckDes, new ColumnAndConverterDescription(col.getName()), rateParameter, 0);
@@ -135,7 +135,7 @@ public class HistogramBenchmark {
                             generateDoubleArray(colSize, 100))))
                     .collect(Collectors.toList());
             final IDataSet<ITable> lds = new ParallelDataSet<>(tables);
-            final HillviewServer server = new HillviewServer(serverAddress, lds);
+            new HillviewServer(serverAddress, lds);
 
             // Setup client
             final IDataSet<ITable> remoteIds = new RemoteDataSet<ITable>(serverAddress);
@@ -178,14 +178,14 @@ public class HistogramBenchmark {
         }
 
         if (args[0].equals("remote-nw-server")) {
-            final HostAndPort serverAddress = HostAndPort.fromParts(args[2],1234);
             // Setup server
+            final HostAndPort serverAddress = HostAndPort.fromParts(args[2],1234);
             final List<IDataSet<ITable>> tables =  IntStream.range(0, parallelism)
                     .mapToObj((i) -> new LocalDataSet<ITable>(createTable(colSize,
                             generateDoubleArray(colSize, 100))))
                     .collect(Collectors.toList());
-            final IDataSet<ITable> lds = new ParallelDataSet<>(tables);
-            final HillviewServer server = new HillviewServer(serverAddress, lds);
+            final IDataSet<ITable> lds = new ParallelDataSet<ITable>(tables);
+            new HillviewServer(serverAddress, lds);
             Thread.currentThread().join();
         }
 
@@ -196,7 +196,7 @@ public class HistogramBenchmark {
                     .map(RemoteDataSet<ITable>::new)
                     .collect(Collectors.toList());
             // Setup client
-            final IDataSet<ITable> remoteIds = new ParallelDataSet<>(dataSets);
+            final IDataSet<ITable> remoteIds = new ParallelDataSet<ITable>(dataSets);
             Runnable r = () -> remoteIds.blockingSketch(sk);
             runNTimes(r, runCount, "Dataset histogram (separate thread)", colSize);
         }

@@ -196,8 +196,9 @@ export class Histogram2DView extends HistogramViewBase {
 
         this.pointDescription = new TextOverlay(this.surface.getChart(),
             this.surface.getDefaultChartSize(),
-            [this.currentData.xData.description.name, "y",
-                this.currentData.yData.description.name, "count", "cdf"], 40);
+            [   this.currentData.xData.description.name,
+                this.currentData.yData.description.name,
+                "y", "count", "%", "cdf"], 40);
         this.pointDescription.show(false);
         let summary = formatNumber(this.plot.getDisplayedPoints()) + " data points";
         if (heatmap.missingData != 0)
@@ -367,6 +368,7 @@ export class Histogram2DView extends HistogramViewBase {
         // Find out the rectangle where the mouse is
         let value = "", size = "";
         let xIndex = Math.floor(mouseX / this.plot.getBarWidth());
+        let perc: number = 0;
         if (xIndex >= 0 && xIndex < this.currentData.heatMap.buckets.length &&
             y >= 0 && mouseY < this.surface.getActualChartHeight()) {
             let values: number[] = this.currentData.heatMap.buckets[xIndex];
@@ -380,20 +382,28 @@ export class Histogram2DView extends HistogramViewBase {
                 if (this.relative)
                     scale = 100 / total;
 
+                let yTotalScaled = 0;
                 let yTotal = 0;
+                let found = false;
                 for (let i = 0; i < values.length; i++) {
-                    yTotal += values[i] * scale;
-                    if (yTotal >= y) {
+                    yTotalScaled += values[i] * scale;
+                    yTotal += values[i];
+                    if (yTotalScaled >= y && !found) {
+                        found = true;
                         size = significantDigits(values[i]);
+                        perc = values[i];
                         value = this.currentData.yData.bucketDescription(i);
-                        break;
                     }
                 }
                 let missing = this.currentData.heatMap.histogramMissingY.buckets[xIndex] * scale;
-                if (value == "" && yTotal + missing >= y) {
+                yTotal += missing;
+                if (!found && yTotalScaled >= y) {
                     value = "missing";
                     size = significantDigits(missing);
+                    perc = missing;
                 }
+                if (yTotal > 0)
+                    perc = 100 * perc / yTotal;
             }
             // else value is ""
         }
@@ -401,8 +411,8 @@ export class Histogram2DView extends HistogramViewBase {
         let pos = this.cdfPlot.getY(mouseX);
         this.cdfDot.attr("cx", mouseX + this.surface.leftMargin);
         this.cdfDot.attr("cy", (1 - pos) * this.surface.getActualChartHeight() + this.surface.topMargin);
-        let perc = percent(pos);
-        this.pointDescription.update([xs, ys, value, size, perc], mouseX, mouseY);
+        let cdf = percent(pos);
+        this.pointDescription.update([xs, value, ys, size, significantDigits(perc) + "%", cdf], mouseX, mouseY);
     }
 
     protected dragCanvasEnd() {
