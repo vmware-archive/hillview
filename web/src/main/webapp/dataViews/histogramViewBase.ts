@@ -17,7 +17,7 @@
 
 import {Dialog, FieldKind} from "../ui/dialog";
 import {ContentsKind, BasicColStats, IColumnDescription, ColumnAndRange, RemoteObjectId} from "../javaBridge";
-import {Converters, formatDate, significantDigits} from "../util";
+import {Converters, formatDate, formatNumber, significantDigits} from "../util";
 import {Point, Resolution, SpecialChars, ViewKind} from "../ui/ui";
 import {FullPage} from "../ui/fullPage";
 import {TextOverlay} from "../ui/textOverlay";
@@ -222,15 +222,17 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
     static invert(v: number, scale: AnyScale, kind: ContentsKind,
                   allStrings: DistinctStrings): string {
         let inv = scale.invert(v);
+        let result: string;
         if (kind == "Integer")
-            inv = Math.round(<number>inv);
-        let result = String(inv);
+            result = formatNumber(Math.round(<number>inv));
         if (kind == "Category")
             result = allStrings.get(<number>inv);
         else if (kind == "Integer" || kind == "Double")
-            result = significantDigits(<number>inv);
+            result = formatNumber(<number>inv);
         else if (kind == "Date")
             result = formatDate(<Date>inv);
+        else
+            result = inv.toString();
         return result;
     }
 

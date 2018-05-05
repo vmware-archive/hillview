@@ -65,6 +65,7 @@ export class Histogram2DView extends HistogramViewBase {
     protected plot: Histogram2DPlot;
     protected legendPlot: HistogramLegendPlot;
     protected legendSurface: PlottingSurface;
+    protected samplingRate: number;
 
     constructor(remoteObjectId: RemoteObjectId, dataset: Dataset,
                 protected schema: SchemaClass, page: FullPage) {
@@ -108,7 +109,7 @@ export class Histogram2DView extends HistogramViewBase {
                 help: "Plot this data as a heatmap view."
             }, {
                 text: "relative/absolute",
-                action: () => { this.relative = !this.relative; this.refresh(); },
+                action: () => this.toggleNormalize(),
                 help: "In an absolute plot the Y axis represents the size for a bucket. " +
                 "In a relative plot all bars are normalized to 100% on the Y axis."
             }]) },
@@ -122,6 +123,7 @@ export class Histogram2DView extends HistogramViewBase {
     public updateView(heatmap: HeatMap, xData: AxisData, yData: AxisData, cdf: Histogram,
                       samplingRate: number, relative: boolean, elapsedMs: number) : void {
         this.relative = relative;
+        this.samplingRate = samplingRate;
         this.page.reportTime(elapsedMs);
         this.plot.clear();
         this.legendPlot.clear();
@@ -196,8 +198,9 @@ export class Histogram2DView extends HistogramViewBase {
 
         this.pointDescription = new TextOverlay(this.surface.getChart(),
             this.surface.getDefaultChartSize(),
-            [this.currentData.xData.description.name, "y",
-                this.currentData.yData.description.name, "count", "cdf"], 40);
+            [   this.currentData.xData.description.name,
+                this.currentData.yData.description.name,
+                "y", "count", "%", "cdf"], 40);
         this.pointDescription.show(false);
         let summary = formatNumber(this.plot.getDisplayedPoints()) + " data points";
         if (heatmap.missingData != 0)
@@ -212,10 +215,20 @@ export class Histogram2DView extends HistogramViewBase {
         this.summary.innerHTML = summary;
     }
 
+    toggleNormalize(): void {
+        this.relative = !this.relative;
+        if (this.relative && this.samplingRate < 1) {
+            // We cannot use sampling when we display relative views.
+            this.exactHistogram();
+        } else {
+            this.refresh();
+        }
+    }
+
     heatmap(): void {
         let rcol = new Range2DCollector([this.currentData.xData.description, this.currentData.yData.description],
             this.schema, [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
-            this.page, this, this.currentData.samplingRate >= 1, null, true, false);
+            this.page, this, this.currentData.samplingRate >= 1, null, true, false, false);
         rcol.setValue({ first: this.currentData.xData.stats, second: this.currentData.yData.stats });
         rcol.onCompleted();
     }
@@ -245,7 +258,7 @@ export class Histogram2DView extends HistogramViewBase {
             [this.currentData.yData.description, this.currentData.xData.description],
             this.schema,
             [this.currentData.yData.distinctStrings, this.currentData.xData.distinctStrings],
-            this.page, this, true, null, false, this.relative);
+            this.page, this, true, null, false, this.relative, false);
         rc.setValue({ first: this.currentData.yData.stats, second: this.currentData.xData.stats });
         rc.onCompleted();
     }
@@ -257,7 +270,7 @@ export class Histogram2DView extends HistogramViewBase {
             [this.currentData.xData.description, this.currentData.yData.description],
             this.schema,
             [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
-            this.page, this, true, null, false, this.relative);
+            this.page, this, true, null, false, this.relative, true);
         rc.setValue({ first: this.currentData.xData.stats,
             second: this.currentData.yData.stats });
         rc.onCompleted();
@@ -359,7 +372,7 @@ export class Histogram2DView extends HistogramViewBase {
         let xs = HistogramViewBase.invert(position[0], this.plot.xScale,
             this.currentData.xData.description.kind, this.currentData.xData.distinctStrings);
         let y = Math.round(this.plot.yScale.invert(mouseY));
-        let ys = significantDigits(y);
+        let ys = this.relative ? significantDigits(y) : formatNumber(y);
         let scale = 1.0;
         if (this.relative)
             ys += "%";
@@ -367,6 +380,9 @@ export class Histogram2DView extends HistogramViewBase {
         // Find out the rectangle where the mouse is
         let value = "", size = "";
         let xIndex = Math.floor(mouseX / this.plot.getBarWidth());
+        let perc: number = 0;
+        let colorIndex: number = null;
+        let found = false;
         if (xIndex >= 0 && xIndex < this.currentData.heatMap.buckets.length &&
             y >= 0 && mouseY < this.surface.getActualChartHeight()) {
             let values: number[] = this.currentData.heatMap.buckets[xIndex];
@@ -380,20 +396,30 @@ export class Histogram2DView extends HistogramViewBase {
                 if (this.relative)
                     scale = 100 / total;
 
+                let yTotalScaled = 0;
                 let yTotal = 0;
                 for (let i = 0; i < values.length; i++) {
-                    yTotal += values[i] * scale;
-                    if (yTotal >= y) {
-                        size = significantDigits(values[i]);
+                    yTotalScaled += values[i] * scale;
+                    yTotal += values[i];
+                    if (yTotalScaled >= y && !found) {
+                        size = formatNumber(values[i]);
+                        perc = values[i];
                         value = this.currentData.yData.bucketDescription(i);
-                        break;
+                        colorIndex = i;
+                        found = true;
                     }
                 }
-                let missing = this.currentData.heatMap.histogramMissingY.buckets[xIndex] * scale;
-                if (value == "" && yTotal + missing >= y) {
+                let missing = this.currentData.heatMap.histogramMissingY.buckets[xIndex];
+                yTotal += missing;
+                yTotalScaled += missing * scale;
+                if (!found && yTotalScaled >= y) {
                     value = "missing";
-                    size = significantDigits(missing);
+                    size = formatNumber(missing);
+                    perc = missing;
+                    colorIndex = -1;
                 }
+                if (yTotal > 0)
+                    perc = 100 * perc / yTotal;
             }
             // else value is ""
         }
@@ -401,8 +427,9 @@ export class Histogram2DView extends HistogramViewBase {
         let pos = this.cdfPlot.getY(mouseX);
         this.cdfDot.attr("cx", mouseX + this.surface.leftMargin);
         this.cdfDot.attr("cy", (1 - pos) * this.surface.getActualChartHeight() + this.surface.topMargin);
-        let perc = percent(pos);
-        this.pointDescription.update([xs, ys, value, size, perc], mouseX, mouseY);
+        let cdf = percent(pos);
+        this.pointDescription.update([xs, value, ys, size, significantDigits(perc) + "%", cdf], mouseX, mouseY);
+        this.legendPlot.hilight(colorIndex);
     }
 
     protected dragCanvasEnd() {
@@ -592,7 +619,8 @@ export class Filter2DReceiver extends RemoteTableRenderer {
         let rx = new RangeInfo(this.xColumn.name, this.xDs != null ? this.xDs.uniqueStrings : null);
         let ry = new RangeInfo(this.yColumn.name, this.yDs != null ? this.yDs.uniqueStrings : null);
         let rr = this.remoteObject.createRange2DRequest(rx, ry);
-        rr.invoke(new Range2DCollector(cds, this.schema, ds, this.page, this.remoteObject, this.exact, rr, this.heatMap, this.relative));
+        rr.invoke(new Range2DCollector(cds, this.schema, ds, this.page, this.remoteObject, this.exact,
+            rr, this.heatMap, this.relative, false));
     }
 }
 
@@ -621,7 +649,7 @@ export class Make2DHistogram extends RemoteTableRenderer {
         rr.chain(this.operation);
         rr.invoke(new Range2DCollector(
             this.colDesc, this.schema, this.ds, this.page, this.remoteObject,
-            this.exact, rr, this.heatMap, this.relative));
+            this.exact, rr, this.heatMap, this.relative, false));
     }
 }
 

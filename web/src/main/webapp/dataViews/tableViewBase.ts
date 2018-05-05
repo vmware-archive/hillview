@@ -208,7 +208,7 @@ export abstract class TableViewBase extends RemoteTableObjectView {
                 let rr = this.createRange2DRequest(rangeInfo[0], rangeInfo[1]);
                 rr.chain(operation);
                 rr.invoke(new Range2DCollector(
-                    cds, this.schema, distinct, this.getPage(), this, false, rr, heatMap, false));
+                    cds, this.schema, distinct, this.getPage(), this, false, rr, heatMap, false, false));
             } else {
                 let rr = this.createRangeRequest(rangeInfo[0]);
                 rr.chain(operation);
