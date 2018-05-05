@@ -65,6 +65,7 @@ export class Histogram2DView extends HistogramViewBase {
     protected plot: Histogram2DPlot;
     protected legendPlot: HistogramLegendPlot;
     protected legendSurface: PlottingSurface;
+    protected samplingRate: number;
 
     constructor(remoteObjectId: RemoteObjectId, dataset: Dataset,
                 protected schema: SchemaClass, page: FullPage) {
@@ -108,7 +109,7 @@ export class Histogram2DView extends HistogramViewBase {
                 help: "Plot this data as a heatmap view."
             }, {
                 text: "relative/absolute",
-                action: () => { this.relative = !this.relative; this.refresh(); },
+                action: () => this.toggleNormalize(),
                 help: "In an absolute plot the Y axis represents the size for a bucket. " +
                 "In a relative plot all bars are normalized to 100% on the Y axis."
             }]) },
@@ -122,6 +123,7 @@ export class Histogram2DView extends HistogramViewBase {
     public updateView(heatmap: HeatMap, xData: AxisData, yData: AxisData, cdf: Histogram,
                       samplingRate: number, relative: boolean, elapsedMs: number) : void {
         this.relative = relative;
+        this.samplingRate = samplingRate;
         this.page.reportTime(elapsedMs);
         this.plot.clear();
         this.legendPlot.clear();
@@ -213,10 +215,20 @@ export class Histogram2DView extends HistogramViewBase {
         this.summary.innerHTML = summary;
     }
 
+    toggleNormalize(): void {
+        this.relative = !this.relative;
+        if (this.relative && this.samplingRate < 1) {
+            // We cannot use sampling when we display relative views.
+            this.exactHistogram();
+        } else {
+            this.refresh();
+        }
+    }
+
     heatmap(): void {
         let rcol = new Range2DCollector([this.currentData.xData.description, this.currentData.yData.description],
             this.schema, [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
-            this.page, this, this.currentData.samplingRate >= 1, null, true, false);
+            this.page, this, this.currentData.samplingRate >= 1, null, true, false, false);
         rcol.setValue({ first: this.currentData.xData.stats, second: this.currentData.yData.stats });
         rcol.onCompleted();
     }
@@ -246,7 +258,7 @@ export class Histogram2DView extends HistogramViewBase {
             [this.currentData.yData.description, this.currentData.xData.description],
             this.schema,
             [this.currentData.yData.distinctStrings, this.currentData.xData.distinctStrings],
-            this.page, this, true, null, false, this.relative);
+            this.page, this, true, null, false, this.relative, false);
         rc.setValue({ first: this.currentData.yData.stats, second: this.currentData.xData.stats });
         rc.onCompleted();
     }
@@ -258,7 +270,7 @@ export class Histogram2DView extends HistogramViewBase {
             [this.currentData.xData.description, this.currentData.yData.description],
             this.schema,
             [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
-            this.page, this, true, null, false, this.relative);
+            this.page, this, true, null, false, this.relative, true);
         rc.setValue({ first: this.currentData.xData.stats,
             second: this.currentData.yData.stats });
         rc.onCompleted();
@@ -390,11 +402,11 @@ export class Histogram2DView extends HistogramViewBase {
                     yTotalScaled += values[i] * scale;
                     yTotal += values[i];
                     if (yTotalScaled >= y && !found) {
-                        found = true;
                         size = formatNumber(values[i]);
                         perc = values[i];
                         value = this.currentData.yData.bucketDescription(i);
                         colorIndex = i;
+                        found = true;
                     }
                 }
                 let missing = this.currentData.heatMap.histogramMissingY.buckets[xIndex];
@@ -405,7 +417,6 @@ export class Histogram2DView extends HistogramViewBase {
                     size = formatNumber(missing);
                     perc = missing;
                     colorIndex = -1;
-                    found = true;
                 }
                 if (yTotal > 0)
                     perc = 100 * perc / yTotal;
@@ -608,7 +619,8 @@ export class Filter2DReceiver extends RemoteTableRenderer {
         let rx = new RangeInfo(this.xColumn.name, this.xDs != null ? this.xDs.uniqueStrings : null);
         let ry = new RangeInfo(this.yColumn.name, this.yDs != null ? this.yDs.uniqueStrings : null);
         let rr = this.remoteObject.createRange2DRequest(rx, ry);
-        rr.invoke(new Range2DCollector(cds, this.schema, ds, this.page, this.remoteObject, this.exact, rr, this.heatMap, this.relative));
+        rr.invoke(new Range2DCollector(cds, this.schema, ds, this.page, this.remoteObject, this.exact,
+            rr, this.heatMap, this.relative, false));
     }
 }
 
@@ -637,7 +649,7 @@ export class Make2DHistogram extends RemoteTableRenderer {
         rr.chain(this.operation);
         rr.invoke(new Range2DCollector(
             this.colDesc, this.schema, this.ds, this.page, this.remoteObject,
-            this.exact, rr, this.heatMap, this.relative));
+            this.exact, rr, this.heatMap, this.relative, false));
     }
 }
 
