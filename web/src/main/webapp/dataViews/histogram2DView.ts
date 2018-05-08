@@ -266,6 +266,7 @@ export class Histogram2DView extends HistogramViewBase {
             let by = this.currentData.yData.bucketDescription(y);
             line += "," + JSON.stringify(this.currentData.yData.description.name + " " + by);
         }
+        line += ",missing";
         lines.push(line);
         for (let x=0; x < this.currentData.xData.bucketCount; x++) {
             let data = this.currentData.heatMap.buckets[x];
@@ -273,8 +274,13 @@ export class Histogram2DView extends HistogramViewBase {
             let line = JSON.stringify(this.currentData.xData.description.name + " " + bx);
             for (let y = 0; y < data.length; y++)
                 line += "," + data[y];
+            line += "," + this.currentData.heatMap.histogramMissingY.buckets[x];
             lines.push(line);
         }
+        line = "mising";
+        for (let y = 0; y < this.currentData.heatMap.histogramMissingX.buckets.length; y++)
+            line += "," + this.currentData.heatMap.histogramMissingX.buckets[y];
+        lines.push(line);
         return lines;
     }
 

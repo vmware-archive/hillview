@@ -78,14 +78,15 @@ class RemoteHost:
         """Ensures that a folder exists on the remote host"""
         self.run_remote_shell_command("mkdir -p " + folder)
 
-    def copy_file_to_remote(self, source, dest):
-        """Copy a file to the remote host as the specified destination if not changed"""
+    def copy_file_to_remote(self, source, dest, copyOption):
+        """Copy a file to the remote host as the specified destination if not changed.
+           copyOption can be -L to follow symlinks."""
         u = self.user
         if u is None:
             user = ""
         else:
             u = self.user + "@"
-        command = "rsync -u " + source + " " + u + self.host + ":" + dest
+        command = "rsync -u " + copyOption + " " + source + " " + u + self.host + ":" + dest
         execute_command(command)
 
     def __str__(self):

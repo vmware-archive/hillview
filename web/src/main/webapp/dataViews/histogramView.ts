@@ -227,6 +227,8 @@ export class HistogramView extends HistogramViewBase {
             let line = "" + JSON.stringify(bx) + "," + this.currentData.histogram.buckets[x];
             lines.push(line);
         }
+        line = "missing," + this.currentData.histogram.missingData;
+        lines.push(line);
         return lines;
     }
 

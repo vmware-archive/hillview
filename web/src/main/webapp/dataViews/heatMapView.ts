@@ -262,10 +262,12 @@ export class HeatMapView extends RemoteTableObjectView {
      */
     public asCSV(): string[] {
         let lines: string[] = [
-            this.currentData.xData.description.name + "_min," +
-            this.currentData.xData.description.name + "_max," +
-            this.currentData.yData.description.name + "_min," +
-            this.currentData.yData.description.name + "_max," +
+            JSON.stringify(this.currentData.xData.description.name + "_min") + "," +
+            JSON.stringify(this.currentData.xData.description.name + "_max") + "," +
+            JSON.stringify(this.currentData.xData.description.name) + "," +
+            JSON.stringify(this.currentData.yData.description.name + "_min") + "," +
+            JSON.stringify(this.currentData.yData.description.name + "_max") + "," +
+            JSON.stringify(this.currentData.yData.description.name) + "," +
                 "count"
         ];
         for (let x=0; x < this.currentData.heatMap.buckets.length; x++) {

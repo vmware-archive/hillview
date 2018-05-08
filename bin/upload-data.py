@@ -19,22 +19,22 @@ def create_remote_folder(remoteHost, folder):
     remoteHost.create_remote_folder(folder)
     created_folders.add(shortcut)
 
-def copy_file_to_remote_host(rh, source, folder):
+def copy_file_to_remote_host(rh, source, folder, copyOption):
     create_remote_folder(rh, folder)
-    rh.copy_file_to_remote(source, folder)
+    rh.copy_file_to_remote(source, folder, copyOption)
 
-def copy_schema(config, schema, folder):
+def copy_schema(config, schema, folder, copyOption):
     print("Copying", schema, "to all hosts")
-    run_on_all_backends(config, lambda rh: copy_file_to_remote_host(rh, schema, folder))
+    run_on_all_backends(config, lambda rh: copy_file_to_remote_host(rh, schema, folder, copyOption))
 
-def copy_files(config, folder, filelist):
+def copy_files(config, folder, filelist, copyOption):
     print("Copying", len(filelist), "files to all hosts")
     index = 0
     for f in filelist:
         host = config.backends[index]
         index = (index + 1) % len(config.backends)
         rh = RemoteHost(config.user, host)
-        copy_file_to_remote_host(rh, f, folder)
+        copy_file_to_remote_host(rh, f, folder, copyOption)
 
 def main():
     parser = OptionParser(usage="%prog [options] config fileList\n" + \
@@ -42,6 +42,8 @@ def main():
     parser.add_option("-d", help="destination folder where output is written" +\
                       "  (if relative it is with respect to config.service_folder)",
                       dest="folder")
+    parser.add_option("-L", help="Follow symlinks instead of ignoring them",
+                      action="store_const", const="-L", dest="copyOption");
     parser.add_option("-s", help="File that is loaded to all machines", dest="schema")
     (options, args) = parser.parse_args()
     if len(args) < 1:
@@ -55,8 +57,8 @@ def main():
     if not os.path.isabs(folder):
         folder = os.path.join(config.service_folder, folder)
     if options.schema != None:
-        copy_schema(config, options.schema, folder)
-    copy_files(config, folder, args[1:])
+        copy_schema(config, options.schema, folder, options.copyOption)
+    copy_files(config, folder, args[1:], options.copyOption)
     print("Done.")
 
 if __name__ == "__main__":
