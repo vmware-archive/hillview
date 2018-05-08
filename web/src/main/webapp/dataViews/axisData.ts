@@ -167,15 +167,27 @@ export class AxisData {
     }
 
     /**
+     * Get the boundaries of the specified bucket.
+     * @param {number} bucket  Bucket number.
+     * @returns {[number]}     The left and right margins of this bucket.
+     */
+    boundaries(bucket: number): [number, number] {
+        if (bucket < 0 || bucket >= this.bucketCount)
+            return null;
+        let interval = (this.stats.max - this.stats.min) / this.bucketCount;
+        let start = this.stats.min + interval * bucket;
+        let end = start + interval;
+        return [start, end];
+    }
+
+    /**
      * @param {number} bucket  Bucket number.
      * @returns {string}  A description of the boundaries of the specified bucket.
      */
     bucketDescription(bucket: number): string {
         if (bucket < 0 || bucket >= this.bucketCount)
             return "empty";
-        let interval = (this.stats.max - this.stats.min) / this.bucketCount;
-        let start = this.stats.min + interval * bucket;
-        let end = start + interval;
+        let [start, end] = this.boundaries(bucket);
         let closeBracket = ")";
         if (end >= this.stats.max)
             closeBracket = "]";

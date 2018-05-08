@@ -21,7 +21,15 @@ import {
 } from "../javaBridge";
 import {TopMenu, SubMenu} from "../ui/menu";
 import {
-    reorder, significantDigits, formatNumber, ICancellable, PartialResult, Seed, Pair, percent
+    reorder,
+    significantDigits,
+    formatNumber,
+    ICancellable,
+    PartialResult,
+    Seed,
+    Pair,
+    percent,
+    saveAs
 } from "../util";
 import {Renderer, RpcRequest} from "../rpc";
 import {Rectangle, Resolution} from "../ui/ui";
@@ -72,7 +80,6 @@ export class Histogram2DView extends HistogramViewBase {
         super(remoteObjectId, schema, page, "2DHistogram");
 
         this.legendSurface = new PlottingSurface(this.chartDiv, page);
-        //this.legendSurface.setMargins(0, 0, 0, 0);
         this.legendSurface.setHeight(Resolution.legendSpaceHeight);
         this.legendPlot = new HistogramLegendPlot(this.legendSurface);
         this.surface = new PlottingSurface(this.chartDiv, page);
@@ -80,6 +87,14 @@ export class Histogram2DView extends HistogramViewBase {
         this.cdfPlot = new CDFPlot(this.surface);
 
         this.menu = new TopMenu( [{
+           text: "Export",
+           help: "Save the information in this view in a local file.",
+           subMenu: new SubMenu([{
+               text: "As CSV",
+               help: "Saves the data in this view in a CSV file.",
+               action: () => { this.export(); }
+           }])
+        }, {
             text: "View",
             help: "Change the way the data is displayed.",
             subMenu: new SubMenu([{
@@ -231,6 +246,36 @@ export class Histogram2DView extends HistogramViewBase {
             this.page, this, this.currentData.samplingRate >= 1, null, true, false, false);
         rcol.setValue({ first: this.currentData.xData.stats, second: this.currentData.yData.stats });
         rcol.onCompleted();
+    }
+
+    export(): void {
+        let lines: string[] = this.asCSV();
+        let fileName = "histogram2d.csv";
+        saveAs(fileName, lines.join("\n"));
+        this.page.reportError("Check the downloads folder for a file named '" + fileName + "'");
+    }
+
+    /**
+     * Convert the data to text.
+     * @returns {string[]}  An array of lines describing the data.
+     */
+    public asCSV(): string[] {
+        let lines: string[] = [];
+        let line = "";
+        for (let y=0; y < this.currentData.yData.bucketCount; y++) {
+            let by = this.currentData.yData.bucketDescription(y);
+            line += "," + JSON.stringify(this.currentData.yData.description.name + " " + by);
+        }
+        lines.push(line);
+        for (let x=0; x < this.currentData.xData.bucketCount; x++) {
+            let data = this.currentData.heatMap.buckets[x];
+            let bx = this.currentData.xData.bucketDescription(x);
+            let line = JSON.stringify(this.currentData.xData.description.name + " " + bx);
+            for (let y = 0; y < data.length; y++)
+                line += "," + data[y];
+            lines.push(line);
+        }
+        return lines;
     }
 
     // combine two views according to some operation

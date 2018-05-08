@@ -24,7 +24,7 @@ import {TopMenu, SubMenu} from "../ui/menu";
 // noinspection ES6UnusedImports
 import {
     Pair, reorder, significantDigits, formatNumber, percent, ICancellable, PartialResult, Seed,
-    formatDate, exponentialDistribution
+    formatDate, exponentialDistribution, saveAs
 } from "../util";
 import {Dialog} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
@@ -64,8 +64,15 @@ export class HistogramView extends HistogramViewBase {
         this.plot = new HistogramPlot(this.surface);
         this.cdfPlot = new CDFPlot(this.surface);
 
-        this.menu = new TopMenu( [
-            { text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
+        this.menu = new TopMenu( [{
+            text: "Export",
+            help: "Save the information in this view in a local file.",
+            subMenu: new SubMenu([{
+                text: "As CSV",
+                help: "Saves the data in this view in a CSV file.",
+                action: () => { this.export(); }
+            }])
+            }, { text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
                 { text: "refresh",
                     action: () => { this.refresh(); },
                     help: "Redraw this view."
@@ -198,6 +205,29 @@ export class HistogramView extends HistogramViewBase {
             "for drawing a two-dimensional histogram.");
         dialog.setAction(() => this.showSecondColumn(dialog.getFieldValue("column")));
         dialog.show();
+    }
+
+    export(): void {
+        let lines: string[] = this.asCSV();
+        let fileName = "histogram.csv";
+        saveAs(fileName, lines.join("\n"));
+        this.page.reportError("Check the downloads folder for a file named '" + fileName + "'");
+    }
+
+    /**
+     * Convert the data to text.
+     * @returns {string[]}  An array of lines describing the data.
+     */
+    public asCSV(): string[] {
+        let lines: string[] = [];
+        let line = this.currentData.axisData.description.name + ",count";
+        lines.push(line);
+        for (let x=0; x < this.currentData.histogram.buckets.length; x++) {
+            let bx = this.currentData.axisData.bucketDescription(x);
+            let line = "" + JSON.stringify(bx) + "," + this.currentData.histogram.buckets[x];
+            lines.push(line);
+        }
+        return lines;
     }
 
     private showSecondColumn(colName: string) {

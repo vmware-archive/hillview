@@ -22,7 +22,7 @@ import {
 } from "../javaBridge";
 import {TableView, NextKReceiver} from "./tableView";
 import {
-    Pair, significantDigits, formatNumber, reorder, ICancellable, PartialResult, Seed
+    Pair, significantDigits, formatNumber, reorder, ICancellable, PartialResult, Seed, saveAs
 } from "../util";
 import {HistogramViewBase} from "./histogramViewBase";
 import {TopMenu, SubMenu} from "../ui/menu";
@@ -99,6 +99,15 @@ export class HeatMapView extends RemoteTableObjectView {
                 help: "Group data by a third column." },
         ]);
         this.menu = new TopMenu( [
+            {
+                text: "Export",
+                help: "Save the information in this view in a local file.",
+                subMenu: new SubMenu([{
+                    text: "As CSV",
+                    help: "Saves the data in this view in a CSV file.",
+                    action: () => { this.export(); }
+                }])
+            },
             { text: "View", help: "Change the way the data is displayed.", subMenu:  this.viewMenu },
             this.dataset.combineMenu(this, page.pageId)
         ]);
@@ -240,6 +249,42 @@ export class HeatMapView extends RemoteTableObjectView {
         dialog.show();
     }
 
+    export(): void {
+        let lines: string[] = this.asCSV();
+        let fileName = "heatmap.csv";
+        saveAs(fileName, lines.join("\n"));
+        this.page.reportError("Check the downloads folder for a file named '" + fileName + "'");
+    }
+
+    /**
+     * Convert the data to text.
+     * @returns {string[]}  An array of lines describing the data.
+     */
+    public asCSV(): string[] {
+        let lines: string[] = [
+            this.currentData.xData.description.name + "_min," +
+            this.currentData.xData.description.name + "_max," +
+            this.currentData.yData.description.name + "_min," +
+            this.currentData.yData.description.name + "_max," +
+                "count"
+        ];
+        for (let x=0; x < this.currentData.heatMap.buckets.length; x++) {
+            let data = this.currentData.heatMap.buckets[x];
+            let bx = this.currentData.xData.boundaries(x);
+            let bdx = JSON.stringify(this.currentData.xData.bucketDescription(x));
+            for (let y = 0; y < data.length; y++) {
+                if (data[y] == 0)
+                    continue;
+                let by = this.currentData.yData.boundaries(y);
+                let bdy = JSON.stringify(this.currentData.yData.bucketDescription(y));
+                let line = bx[0].toString() + "," + bx[1].toString() + "," + bdx + "," +
+                    by[0].toString() + "," + by[1].toString() + "," + bdy + "," + data[y];
+                lines.push(line);
+            }
+        }
+        return lines;
+    }
+
     private showTrellis(colName: string) {
         let oc = this.schema.find(colName);
         let cds: IColumnDescription[] = [this.currentData.xData.description,
@@ -322,21 +367,6 @@ export class HeatMapView extends RemoteTableObjectView {
             second: this.currentData.xData.stats });
         collector.onCompleted();
     }
-
-    /*
-    public exactHistogram(): void {
-        if (this.currentData == null)
-            return;
-        let rc = new Range2DCollector(
-            [this.currentData.xData.description, this.currentData.yData.description],
-            this.tableSchema,
-            [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
-            this.page, this, true, null, true);
-        rc.setValue({ first: this.currentData.xData.stats,
-            second: this.currentData.yData.stats });
-        rc.onCompleted();
-    }
-    */
 
     public refresh(): void {
         if (this.currentData == null)

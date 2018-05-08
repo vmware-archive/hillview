@@ -108,7 +108,7 @@ export interface CreateColumnInfo {
     outputKind: ContentsKind;
 }
 
-export class HeatMap {
+export interface HeatMap {
     buckets: number[][];
     missingData: number;
     histogramMissingX: Histogram;
@@ -183,7 +183,7 @@ export interface ColumnAndRange {
     bucketBoundaries: string[];
 }
 
-export class HistogramArgs {
+export interface HistogramArgs {
     column: ColumnAndRange;
     cdfBucketCount: number;
     bucketCount: number;
@@ -192,7 +192,7 @@ export class HistogramArgs {
     seed: number;
 }
 
-export class Histogram2DArgs {
+export interface Histogram2DArgs {
     first: ColumnAndRange;
     second: ColumnAndRange;
     xBucketCount: number;
@@ -203,7 +203,7 @@ export class Histogram2DArgs {
     cdfSamplingRate: number;
 }
 
-export class Histogram3DArgs {
+export interface Histogram3DArgs {
     first: ColumnAndRange;
     second: ColumnAndRange;
     third: ColumnAndRange;
@@ -223,13 +223,12 @@ export interface FilterDescription {
     bucketBoundaries: string[];
 }
 
-
 export interface TopList {
     top: NextKList;
     heavyHittersId: RemoteObjectId;
 }
 
-export class EigenVal {
+export interface EigenVal {
     eigenValues: number [];
     explainedVar: number;
     totalVar: number;
@@ -239,12 +238,12 @@ export class EigenVal {
 /**
  * The serialization of a NextKList Java object
  */
-export class NextKList {
-    public schema: Schema;
+export interface NextKList {
+    schema: Schema;
     // Total number of rows in the complete table
-    public rowCount: number;
-    public startPosition: number;
-    public rows: RowSnapshot[];
+    rowCount: number;
+    startPosition: number;
+    rows: RowSnapshot[];
 }
 
 export class RecordOrder {
@@ -321,7 +320,7 @@ export class RecordOrder {
 /**
  * Describes the a filter that checks for (in)equality.
  */
-export class EqualityFilterDescription {
+export interface EqualityFilterDescription {
     /**
      * Column that is being filtered.
      */
@@ -340,7 +339,7 @@ export class EqualityFilterDescription {
     asRegEx: boolean;
 }
 
-export class ComparisonFilterDescription {
+export interface ComparisonFilterDescription {
     /**
      * Column that is being filtered.
      */

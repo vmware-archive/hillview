@@ -40,6 +40,18 @@ export class Converters {
 }
 
 /**
+ * Save data in a file on the local filesystem.
+ * @param {string} filename  File to save data to.
+ * @param {string} contents  Contents to write in file.
+ */
+export function saveAs(filename: string, contents: string) {
+   let pom = document.createElement('a');
+   pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(contents));
+   pom.setAttribute('download', filename);
+   pom.click();
+}
+
+/**
  * Random seed management
   */
 export class Seed {

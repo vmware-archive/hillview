@@ -26,7 +26,8 @@ export enum FieldKind {
     Integer,
     Double,
     Boolean,
-    Password
+    Password,
+    File
 }
 
 /**
@@ -308,13 +309,33 @@ export class Dialog implements IHtmlElement {
     }
 
     /**
+     * Add a field used to select a file name on the local filesystem.
+     * @param {string} fieldName   Name of the field.
+     * @param {string} labelText   Text in the dialog for this field.
+     * @param {string} toolTip     Help message to show as a tooltip.
+     * @return       The input element created for the user to type the text.
+     */
+    public addFileField(
+        fieldName: string, labelText: string, toolTip: string): HTMLInputElement {
+        let fieldDiv = this.createRowContainer(fieldName, labelText, toolTip);
+        let input: HTMLInputElement = document.createElement("input");
+        input.tabIndex = this.tabIndex++;
+        input.style.flexGrow = "100";
+        input.id = makeId(fieldName);
+        input.type = "file";
+        fieldDiv.appendChild(input);
+        this.fields.set(fieldName, {html: input, type: FieldKind.File});
+        return input;
+    }
+
+    /**
      * Add a multi-line text field with the given internal name, label, and data type.
-     * @param fieldName: Internal name. Has to be used when parsing the input.
-     * @param labelText: Text in the dialog for this field.
-     * @param pre:   String to write before editable field.
-     * @param value: Initial default value.
-     * @param post:  String to write after editable field.
-     * @param toolTip:  Help message to show as a tool-tip.
+     * @param fieldName Internal name. Has to be used when parsing the input.
+     * @param labelText Text in the dialog for this field.
+     * @param pre       String to write before editable field.
+     * @param value     Initial default value.
+     * @param post      String to write after editable field.
+     * @param toolTip   Help message to show as a tool-tip.
      */
     public addMultiLineTextField(fieldName: string, labelText: string, pre: string,
                                  value: string, post: string, toolTip: string): void {
