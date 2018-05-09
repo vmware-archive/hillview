@@ -143,6 +143,24 @@ public interface IMembershipSet extends IRowOrder {
     }
 
     /**
+     * Return all the rows in this membership set in an array.
+     * The membership set should be small.
+     */
+    default int[] getRows() {
+        final int size = this.getSize();
+        final int[] result = new int[size];
+        IRowIterator ri = this.getIterator();
+        int row = ri.getNextRow();
+        int index = 0;
+        while (row >= 0) {
+            result[index++] = row;
+            row = ri.getNextRow();
+        }
+        assert index == size;
+        return result;
+    }
+
+    /**
      * Policy which indicates when to use a sparse column when
      * storing only `size` elements.
      * @param size: Expected number of elements in a target column.

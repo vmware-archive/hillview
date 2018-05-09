@@ -17,6 +17,7 @@
 
 package org.hillview.table;
 
+import it.unimi.dsi.fastutil.ints.IntArrays;
 import org.hillview.sketches.ColumnSortOrientation;
 import org.hillview.table.api.*;
 import org.hillview.table.rows.VirtualRowSnapshot;
@@ -24,7 +25,6 @@ import org.hillview.utils.Linq;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -103,19 +103,16 @@ public class RecordOrder implements Serializable {
     }
 
     /**
-     * Returns an array containing rows indices of a Table in sorted order, using the getComparator
-     * method above. The table and the RecordOrder need to be compatible.
-     * Should only be applied to very small tables.
+     * Considers only the rows in the table given by the membership set.
+     * Returns an array containing rows indices of a Table in sorted order,
+     * using the getComparator method above. The table and the RecordOrder need to be compatible.
+     * Should only be applied to very small membership sets.
      * @param table The Table we wish to sort.
-     * @return A Comparator that compares two rows based on the Sort Order specified.
+     * @param set   Membership set of the table containing the rows to consider.
      */
-    public Integer[] getSortedRowOrder(final SmallTable table) {
-        final int size = table.getNumOfRows();
-        final Integer[] order = new Integer[size];
-        for (int i = 0; i < size; i++) {
-            order[i] = i;
-        }
-        Arrays.sort(order, this.getComparator(table));
+    public int[] getSortedRowOrder(final ITable table, IMembershipSet set) {
+        int[] order = set.getRows();
+        IntArrays.quickSort(order, this.getComparator(table));
         return order;
     }
 
