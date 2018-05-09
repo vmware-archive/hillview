@@ -43,8 +43,8 @@ def main():
                       "  (if relative it is with respect to config.service_folder)",
                       dest="folder")
     parser.add_option("-L", help="Follow symlinks instead of ignoring them",
-                      action="store_const", const="-L", dest="copyOption");
-    parser.add_option("-s", help="File that is loaded to all machines", dest="schema")
+                      action="store_const", const="-L", dest="copyOption", default="");
+    parser.add_option("-s", help="File that is loaded to all machines", dest="everywhere")
     (options, args) = parser.parse_args()
     if len(args) < 1:
         print("Not enough arguments supplied")
@@ -56,8 +56,8 @@ def main():
         usage(parser)
     if not os.path.isabs(folder):
         folder = os.path.join(config.service_folder, folder)
-    if options.schema != None:
-        copy_schema(config, options.schema, folder, options.copyOption)
+    if options.everywhere != None:
+        copy_schema(config, options.everywhere, folder, options.copyOption)
     copy_files(config, folder, args[1:], options.copyOption)
     print("Done.")
 

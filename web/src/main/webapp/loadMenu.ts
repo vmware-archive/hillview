@@ -61,6 +61,20 @@ export class LoadMenu extends RemoteObject implements IDataView {
                 },
                 help: "The US flights dataset."
             },
+            { text: "Flights (15 columns, ORC)",
+                action: () => {
+                    let files = {
+                        folder: "../data/ontime_small_orc",
+                        fileNamePattern: "*.orc",
+                        schemaFile: "schema",
+                        headerRow: true,
+                        repeat: 1,
+                        name: "Flights (15 columns, ORC)"
+                    };
+                    this.init.loadOrcFiles(files, this.page);
+                },
+                help: "The US flights dataset."
+            },
             { text: "Flights (all columns)",
                 action: () => {
                     let files = {
@@ -72,6 +86,19 @@ export class LoadMenu extends RemoteObject implements IDataView {
                         name: "Flights"
                     };
                     this.init.loadCSVFiles(files, this.page);
+                },
+                help: "The US flights dataset -- all 110 columns." },
+            { text: "Flights (all columns, ORC)",
+                action: () => {
+                    let files = {
+                        folder: "../data/ontime_orc",
+                        fileNamePattern: "*.orc",
+                        schemaFile: "schema",
+                        headerRow: true,
+                        repeat: 1,
+                        name: "Flights (ORC)"
+                    };
+                    this.init.loadOrcFiles(files, this.page);
                 },
                 help: "The US flights dataset -- all 110 columns." },
             { text: "10 x Flights",

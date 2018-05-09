@@ -5,10 +5,11 @@ TOMCATVERSION="9.0.4"
 
 # Detect operating system
 # Sets "INSTALL" to the program that can install software
-# Sets "sudo" to whatever necessary to install software with enough priviledges
+# Sets "SUDO" to whatever necessary to install software with enough priviledges
+# Sets various variables to the names of the software packages needed
 
 case "$OSTYPE" in
-    linux*) INSTALL="apt-get"; SUDO="sudo" ;;
-    darwin*) INSTALL="brew"; SUDO="" ;;
+    linux*) INSTALL="apt-get"; SUDO="sudo"; NODEJS="nodejs-legacy"; NPM="npm" ;;
+    darwin*) INSTALL="brew"; SUDO=""; NODEJS="node"; NPM="" ;;
     *) echo "Unhandled operating system $OSTYPE"; exit 1;;
 esac

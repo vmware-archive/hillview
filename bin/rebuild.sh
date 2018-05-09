@@ -35,7 +35,7 @@ if [ $SKIP -eq "1" ]; then
 fi
 
 pushd $mydir/../platform
-mvn $EXTRAARGS install
+mvn $EXTRAARGS clean install
 popd
 pushd $mydir/../web
 mvn $EXTRAARGS clean package

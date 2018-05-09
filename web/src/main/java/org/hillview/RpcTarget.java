@@ -26,10 +26,12 @@ import org.hillview.utils.*;
 import rx.Observable;
 import rx.Observer;
 import rx.Subscription;
+import rx.exceptions.CompositeException;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.BiFunction;
@@ -241,8 +243,27 @@ public abstract class RpcTarget implements IJson {
             if (!(throwable instanceof StatusRuntimeException))
                 return false;
             StatusRuntimeException sre = (StatusRuntimeException)throwable;
-            String description = sre.getStatus().getDescription();
-            if (description != null && description.contains("DatasetMissing")) {
+            Throwable cause = sre.getStatus().getCause();
+            List<Throwable> causes;
+
+            if (cause instanceof CompositeException) {
+                // Sometimes RxJava catches several exceptions and bundles
+                // them together into a CompositeException
+                CompositeException composite = (CompositeException) cause;
+                causes = composite.getExceptions();
+            } else {
+                causes = new ArrayList<Throwable>();
+                causes.add(cause);
+            }
+            boolean datasetMissing = false;
+            for (Throwable th: causes) {
+                if (th instanceof DatasetMissing) {
+                    datasetMissing = true;
+                    break;
+                }
+            }
+
+            if (datasetMissing) {
                 RpcTarget.Id[] toDelete = this.request.getDatasetSourceIds();
                 for (RpcTarget.Id s: toDelete) {
                     HillviewLogger.instance.info("Trying to fix missing remote object", "{0}", s);
