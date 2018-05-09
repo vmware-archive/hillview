@@ -104,21 +104,12 @@ public final class Schema
             throw new RuntimeException("Changing immutable schema");
     }
 
+    @SuppressWarnings("MethodDoesntCallSuperMethod")
     public Schema clone() {
         Schema result = new Schema();
         for (ColumnDescription cd: this.getColumnDescriptions())
             result.append(cd);
         return result;
-    }
-
-    public int getColumnIndex(String columnName) {
-        int index = 0;
-        for (String c: this.columns.keySet()) {
-            if (c.equals(columnName))
-                break;
-            index++;
-        }
-        return index;
     }
 
     public ColumnDescription getDescription(final String columnName) {
@@ -142,13 +133,11 @@ public final class Schema
         List<String> cols = new ArrayList<String>(this.columns.size());
         this.cachedKinds = new ArrayList<ContentsKind>(this.columns.size());
         this.cachedDescriptions = new ArrayList<ColumnDescription>(this.columns.size());
-        int index = 0;
         for (Map.Entry<String, ColumnDescription> c: this.columns.entrySet()) {
             cols.add(c.getKey());
             ColumnDescription desc = c.getValue();
             this.cachedKinds.add(desc.kind);
             this.cachedDescriptions.add(desc);
-            index++;
         }
         // Important: this assignment must be made last
         this.cachedColumnNames = cols;
@@ -249,7 +238,7 @@ public final class Schema
         return this.getDescription(colName).kind;
     }
 
-    public static Schema fromJson(String json) {
+    private static Schema fromJson(String json) {
         return IJson.gsonInstance.fromJson(json, Schema.class);
     }
 

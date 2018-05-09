@@ -26,8 +26,8 @@ import javax.annotation.Nullable;
  * Returns true if a string contains a given string.
  */
 public class SubStringFilter implements IStringFilter {
-    final String toFind;
-    final boolean caseSensitive;
+    private final String toFind;
+    private final boolean caseSensitive;
 
     SubStringFilter(@Nullable String toFind, boolean caseSensitive) {
         // we do not allow null sub-strings

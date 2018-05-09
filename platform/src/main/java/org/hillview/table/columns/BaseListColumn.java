@@ -36,7 +36,7 @@ public abstract class BaseListColumn extends BaseColumn implements IAppendableCo
     static final int SegmentMask = SegmentSize - 1;
 
     @Nullable
-    protected ArrayList<BitSet> missing = null;
+    private ArrayList<BitSet> missing = null;
     int size;
 
     BaseListColumn(final ColumnDescription desc) {
@@ -46,7 +46,7 @@ public abstract class BaseListColumn extends BaseColumn implements IAppendableCo
         this.size = 0;
     }
 
-    protected void checkMissingSize(int size) {
+    void checkMissingSize(int size) {
         if (this.missing != null && this.missing.size() != size)
             throw new RuntimeException("Missing size does not match column data: " +
                     this.missing.size() + " vs. " + size);
@@ -139,10 +139,5 @@ public abstract class BaseListColumn extends BaseColumn implements IAppendableCo
             default:
                 throw new RuntimeException("Unexpected description " + desc.toString());
         }
-    }
-
-    @Override
-    public String toString() {
-        return this.getDescription().toString();
     }
 }

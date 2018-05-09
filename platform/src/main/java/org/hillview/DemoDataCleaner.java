@@ -38,8 +38,8 @@ import java.util.stream.Stream;
  * removes some columns from them.  Optionally, it can also split these into
  * smaller files each.
  */
-public class DemoDataCleaner {
-    static final String dataFolder = "../data/ontime";
+class DemoDataCleaner {
+    private static final String dataFolder = "../data/ontime";
 
     public static void main(String[] args) throws IOException {
         HillviewLogger.initialize("data cleaner", "hillview.log");

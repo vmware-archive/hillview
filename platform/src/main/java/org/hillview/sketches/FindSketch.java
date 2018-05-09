@@ -53,7 +53,7 @@ public class FindSketch implements ISketch<ITable, FindSketch.Result> {
             this.firstRow = firstRow;
         }
 
-        public Result add(Result other, RecordOrder order) {
+        Result add(Result other, RecordOrder order) {
             @Nullable RowSnapshot fr;
             if (this.firstRow == null) {
                 fr = other.firstRow;

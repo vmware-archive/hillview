@@ -54,7 +54,7 @@ public final class DateArrayColumn
         this.set(rowIndex, (Instant)value);
     }
 
-    public void set(final int rowIndex, @Nullable final Instant value) {
+    private void set(final int rowIndex, @Nullable final Instant value) {
         if (value == null)
             this.setMissing(rowIndex);
         else

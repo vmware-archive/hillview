@@ -48,7 +48,7 @@ export class ScrollBar implements IHtmlElement {
      */
     end : number;
 
-    private topLevel: HTMLElement;
+    private readonly topLevel: HTMLElement;
     private beforeG: any;
     private before: any;
     private afterG: any;
@@ -59,7 +59,7 @@ export class ScrollBar implements IHtmlElement {
     private handle: any;
     private svg: any;
     private height: number;
-    private target: IScrollTarget;
+    private readonly target: IScrollTarget;
 
     /**
      * Build a scroll-bar.

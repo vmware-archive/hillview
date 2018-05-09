@@ -84,11 +84,11 @@ public class ControlMessage implements Serializable {
                 this.add(status);
         }
 
-        public StatusList(StatusList other) {
+        StatusList(StatusList other) {
             super(other);
         }
 
-        public StatusList concat(StatusList other) {
+        StatusList concat(StatusList other) {
             StatusList result = new StatusList(this);
             result.addAll(other);
             return result;

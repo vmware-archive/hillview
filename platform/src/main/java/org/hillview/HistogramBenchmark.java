@@ -33,7 +33,7 @@ import java.util.stream.IntStream;
  * These form a separate main entry point, and should be built into a separate binary.
  * They are meant only for measurements, and are not part of the actual Hillview service.
  */
-public class HistogramBenchmark {
+class HistogramBenchmark {
     private static final ColumnDescription desc = new
             ColumnDescription("SQRT", ContentsKind.Double);
 
@@ -60,7 +60,7 @@ public class HistogramBenchmark {
         return col;
     }
 
-    public static long time(Runnable runnable) {
+    private static long time(Runnable runnable) {
         long start = System.nanoTime();
         runnable.run();
         long end = System.nanoTime();

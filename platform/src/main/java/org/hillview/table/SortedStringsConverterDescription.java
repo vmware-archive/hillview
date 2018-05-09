@@ -62,7 +62,7 @@ public class SortedStringsConverterDescription implements IStringConverterDescri
         // The smallest value given by computeIndex is -1.
         private final double keyNotFound;
 
-        public Converter() {
+        Converter() {
             this.memoizedResults = new Object2DoubleOpenHashMap<String>();
             this.keyNotFound = boundaries.length + 2;
         }
@@ -78,7 +78,7 @@ public class SortedStringsConverterDescription implements IStringConverterDescri
             return index;
         }
 
-        public double computeIndex(@Nullable String string) {
+        double computeIndex(@Nullable String string) {
             SortedStringsConverterDescription desc = SortedStringsConverterDescription.this;
             if (desc.boundaries.length < 1)
                 throw new RuntimeException("Looking up string when there are no boundaries: " +

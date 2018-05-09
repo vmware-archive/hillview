@@ -78,8 +78,8 @@ public class FindFilesMapper implements IMap<Empty, List<IFileLoader>> {
     @Override
     public List<IFileLoader> apply(Empty empty) {
         Path dir = Paths.get(this.folder);
-        HillviewLogger.instance.info("Find files", "folder: {0}, pattern: {1}",
-                dir.toAbsolutePath().toString(), this.fileNamePattern);
+        HillviewLogger.instance.info("Find files", "folder: {0}, absfolder: {1}, pattern: {2}",
+                this.folder, dir.toAbsolutePath().toString(), this.fileNamePattern);
 
         Stream<Path> files;
         try {

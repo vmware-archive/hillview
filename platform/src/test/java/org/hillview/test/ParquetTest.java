@@ -26,7 +26,7 @@ import org.junit.Test;
 
 public class ParquetTest extends BaseTest {
     // Not yet checked-in into the repository
-    static final String path = "../data/parquet/" +
+    private static final String path = "../data/parquet/" +
             "part-r-00000-9d5cd245-a2e4-4002-9d58-0efdfb0fb962.gz.parquet";
 
     @Test

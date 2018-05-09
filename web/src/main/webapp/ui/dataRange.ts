@@ -23,7 +23,7 @@ import {select as d3select} from "d3-selection";
  * A horizontal rectangle that displays a data range within an interval 0-max.
  */
 export class DataRange implements IElement {
-    private topLevel: Element;
+    private readonly topLevel: Element;
 
     /**
      * @param position: Beginning of data range.

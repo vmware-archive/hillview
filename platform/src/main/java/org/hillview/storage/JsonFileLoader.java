@@ -46,7 +46,7 @@ import java.util.*;
  */
 public class JsonFileLoader extends TextFileLoader {
     @Nullable
-    protected final String schemaPath;
+    private final String schemaPath;
 
     public JsonFileLoader(String filename, @Nullable String schemaPath) {
         super(filename);
@@ -81,7 +81,7 @@ public class JsonFileLoader extends TextFileLoader {
         return new Table(columns, this.filename, null);
     }
 
-    static ContentsKind getKind(@Nullable JsonElement e) {
+    private static ContentsKind getKind(@Nullable JsonElement e) {
         if (e == null || e.isJsonNull())
             return ContentsKind.None;
         if (e.isJsonArray() || e.isJsonObject())

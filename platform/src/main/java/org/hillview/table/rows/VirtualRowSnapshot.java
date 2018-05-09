@@ -56,7 +56,7 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
      * Index of the row in the table.
      * Note that this can be -1 if there are no rows in the table.
      */
-    protected int rowIndex = -1;
+    private int rowIndex = -1;
     private final Schema schema;
     private final HashMap<String, IColumn> columns;
 
@@ -135,7 +135,7 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
         return compareForEquality((BaseRowSnapshot)o, this.schema);
     }
 
-    protected IColumn getColumn(String colName) {
+    IColumn getColumn(String colName) {
         return this.columns.get(colName);
     }
 

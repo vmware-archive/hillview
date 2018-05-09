@@ -26,10 +26,10 @@ import java.util.function.Predicate;
  * A filter that describes how values in a column should be compared with a constant.
  */
 public class ComparisonFilterDescription implements ITableFilterDescription {
-    public final String column;
+    private final String column;
     @Nullable
-    public final String compareValue;
-    public final String comparison;
+    private final String compareValue;
+    private final String comparison;
 
     /**
      * Make a filter that accepts rows that (do not) have a specified value in the specified
@@ -58,7 +58,7 @@ public class ComparisonFilterDescription implements ITableFilterDescription {
         private final ColumnAndConverter column;
         private final Predicate<Integer> comparator;
 
-        public ComparisonFilter(ITable table) {
+        ComparisonFilter(ITable table) {
             ColumnAndConverterDescription ccd = new ColumnAndConverterDescription
                     (ComparisonFilterDescription.this.column);
             this.column = table.getLoadedColumn(ccd);

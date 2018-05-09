@@ -15,7 +15,7 @@ public class FreqKListMG extends FreqKList {
      * elements with relative frequency epsilon. Increasing K increases the accuracy of the
      * approximate counts.
      **/
-    public final int maxSize;
+    private final int maxSize;
 
     public FreqKListMG(long totalRows, double epsilon, int maxSize, Object2IntOpenHashMap<RowSnapshot> hMap) {
         super(totalRows, epsilon, hMap);
@@ -27,7 +27,7 @@ public class FreqKListMG extends FreqKList {
      * than totalRows, the number of rows in the table.
      * @return The sum of all counts stored in the hash-map.
      */
-    int getTotalCount() {
+    private int getTotalCount() {
         return this.hMap.values().stream().reduce(0, Integer::sum);
     }
 

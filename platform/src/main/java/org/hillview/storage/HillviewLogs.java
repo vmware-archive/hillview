@@ -34,8 +34,8 @@ import java.util.regex.Matcher;
  * Reads Hillview logs into ITable objects.
  */
 public class HillviewLogs {
-    static final Schema schema = new Schema();
-    static final Pattern pattern = Pattern.compile("([^,]*),([^,]*),([^,]*),([^,]*),([^,]*)," +
+    private static final Schema schema = new Schema();
+    private static final Pattern pattern = Pattern.compile("([^,]*),([^,]*),([^,]*),([^,]*),([^,]*)," +
             "([^,]*),([^,]*),([^,]*),?(.*)");
 
     static {
@@ -55,7 +55,7 @@ public class HillviewLogs {
             super(path);
         }
 
-        public void parse(String line, String[] output) {
+        void parse(String line, String[] output) {
             Matcher m = pattern.matcher(line);
             if (!m.find())
                 this.error("Could not parse line");

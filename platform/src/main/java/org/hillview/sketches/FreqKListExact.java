@@ -16,9 +16,9 @@ public class FreqKListExact extends FreqKList {
     /**
      * The list of RowSnapShots whose frequencies we wish to compute.
      */
-    final List<RowSnapshot> rssList;
+    private final List<RowSnapshot> rssList;
 
-    static Object2IntOpenHashMap<RowSnapshot> buildHashMap(List<RowSnapshot> rssList) {
+    private static Object2IntOpenHashMap<RowSnapshot> buildHashMap(List<RowSnapshot> rssList) {
         Object2IntOpenHashMap<RowSnapshot> hMap = new Object2IntOpenHashMap<RowSnapshot>();
         rssList.forEach(rss -> hMap.put(rss, 0));
         return hMap;

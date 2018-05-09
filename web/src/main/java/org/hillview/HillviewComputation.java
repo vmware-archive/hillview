@@ -23,6 +23,7 @@ import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Represents information that has led to the creation of an RpcTarget object.
@@ -31,7 +32,7 @@ import java.util.List;
  * coming from the web browser UI.
  */
 public class HillviewComputation implements Serializable {
-    private static int currentId = 0;
+    private static final AtomicInteger currentId = new AtomicInteger(0);
     /**
      * Unique Id of this computation.
      */
@@ -54,7 +55,7 @@ public class HillviewComputation implements Serializable {
     private List<Observer<RpcTarget>> onCreate;
 
     HillviewComputation(@Nullable RpcTarget.Id resultId, RpcRequest request) {
-        this.id = HillviewComputation.currentId++;
+        this.id = HillviewComputation.currentId.getAndIncrement();
         this.request = request;
         assert resultId != request.objectId;
         this.resultId = resultId == null ? RpcTarget.Id.freshId() : resultId;

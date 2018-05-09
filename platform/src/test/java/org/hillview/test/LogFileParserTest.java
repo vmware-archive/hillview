@@ -32,7 +32,7 @@ import java.nio.file.Paths;
 import java.time.*;
 
 public class LogFileParserTest extends BaseTest {
-    Object getValue(ITable table, String col) {
+    private Object getValue(ITable table, String col) {
         ColumnAndConverter cc = table.getLoadedColumn(col);
         return Converters.checkNull(cc.getObject(0));
     }

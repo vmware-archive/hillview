@@ -102,7 +102,7 @@ public class SmallTable extends BaseTable implements Serializable, IJson {
         return this.columns.get(column);
     }
 
-    static List<IColumn> colsFromRows(Schema schema, List<RowSnapshot> rows) {
+    private static List<IColumn> colsFromRows(Schema schema, List<RowSnapshot> rows) {
         List<IColumn> colList = new ArrayList<IColumn>();
         for (String cn : schema.getColumnNames()) {
             ObjectArrayColumn col = new ObjectArrayColumn(schema.getDescription(cn), rows.size());

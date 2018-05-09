@@ -174,7 +174,7 @@ public abstract class BaseTable implements ITable, Serializable {
         return this.replace(result);
     }
 
-    static <C extends IColumn> void sealColumns(List<C> columns) {
+    private static <C extends IColumn> void sealColumns(List<C> columns) {
         for (C c: columns) {
             if (c instanceof IMutableColumn) {
                 ((IMutableColumn)c).seal();

@@ -12,11 +12,11 @@ import java.util.BitSet;
  * items into a bit array. Once enough bits are set the threshold had been crossed and the iterator may stop
  */
 public class NumItemsThreshold implements IJson {
-    public final int logThreshold;
-    public final int threshold;
-    public final int maxLogThreshold = 15;
+    private final int logThreshold;
+    private final int threshold;
+    private final int maxLogThreshold = 15;
     private final BitSet bits;
-    public final long seed;
+    private final long seed;
     /**
      * The threshold in terms of number of set bits
      */

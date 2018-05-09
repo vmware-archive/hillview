@@ -21,12 +21,13 @@ import org.hillview.utils.HillviewLogger;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * This class models the context in which an RpcRequest is executed.
  */
 public final class RpcRequestContext {
-    private static int currentId = 0;
+    private static final AtomicInteger currentId = new AtomicInteger(0);
     private final int id;
     /**
      * If non-null this request is being executed within the context of a web transaction
@@ -41,13 +42,13 @@ public final class RpcRequestContext {
     final HillviewComputation computation;
 
     RpcRequestContext(Session session) {
-        this.id = currentId++;
+        this.id = currentId.getAndIncrement();
         this.session = session;
         this.computation = null;
     }
 
     RpcRequestContext(HillviewComputation computation) {
-        this.id = currentId++;
+        this.id = currentId.getAndIncrement();
         this.session = null;
         this.computation = computation;
     }

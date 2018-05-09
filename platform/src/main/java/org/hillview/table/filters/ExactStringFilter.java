@@ -26,8 +26,8 @@ import javax.annotation.Nullable;
  */
 public class ExactStringFilter implements IStringFilter {
     @Nullable
-    final String toFind;
-    final boolean caseSensitive;
+    private final String toFind;
+    private final boolean caseSensitive;
 
     ExactStringFilter(@Nullable String toFind, final boolean caseSensitive) {
         this.caseSensitive = caseSensitive;

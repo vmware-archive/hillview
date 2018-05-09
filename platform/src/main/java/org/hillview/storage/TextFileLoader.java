@@ -35,11 +35,11 @@ import java.io.*;
  * only allocated where the data is, they are not serializable.
  */
 public abstract class TextFileLoader implements IFileLoader {
-    protected final String filename;
+    final String filename;
     int currentRow;
     int currentColumn;
     @Nullable
-    protected IAppendableColumn[] columns;
+    IAppendableColumn[] columns;
     private long currentField;
     @Nullable
     private String currentToken;
@@ -55,7 +55,7 @@ public abstract class TextFileLoader implements IFileLoader {
     @Nullable
     private BOMInputStream bomStream = null;
 
-    public TextFileLoader(String path) {
+    TextFileLoader(String path) {
         this.filename = path;
         this.currentRow = 0;
         this.currentColumn = 0;
@@ -101,7 +101,7 @@ public abstract class TextFileLoader implements IFileLoader {
      * Relinquishes all resources used.
      * @param reader   Reader that was created by getFileReader, or null.
      */
-    public void close(@Nullable Reader reader) {
+    void close(@Nullable Reader reader) {
         try {
             if (reader != null)
                 reader.close();
@@ -118,7 +118,7 @@ public abstract class TextFileLoader implements IFileLoader {
         }
     }
 
-    protected void append(String[] data) {
+    void append(String[] data) {
         try {
             assert this.columns != null;
             int columnCount = this.columns.length;
@@ -149,7 +149,7 @@ public abstract class TextFileLoader implements IFileLoader {
         }
     }
 
-    protected String errorMessage() {
+    private String errorMessage() {
         String columnName = "";
         if (this.columns != null) {
             columnName = (this.currentColumn < this.columns.length) ?
@@ -162,7 +162,7 @@ public abstract class TextFileLoader implements IFileLoader {
                 + (this.currentToken != null ? " token " + this.currentToken : "");
     }
 
-    protected void error(String message) {
+    void error(String message) {
         if (message.length() > 2048) {
             int lastIndex = message.length() - 48;
             message = message.substring(0, 2000) + "..." + message.substring(lastIndex);
@@ -170,7 +170,7 @@ public abstract class TextFileLoader implements IFileLoader {
         throw new RuntimeException(this.errorMessage() + ": " + message);
     }
 
-    protected void error(Exception ex) {
+    private void error(Exception ex) {
         throw new RuntimeException(this.errorMessage(), ex);
     }
 }

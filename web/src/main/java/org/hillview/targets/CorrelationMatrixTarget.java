@@ -52,7 +52,7 @@ final class CorrelationMatrixTarget extends RpcTarget {
          */
         final RpcTarget.Id correlationMatrixTargetId;
 
-        public EigenVal(double [] data, RpcTarget.Id matrixId) {
+        EigenVal(double[] data, RpcTarget.Id matrixId) {
             this.correlationMatrixTargetId = matrixId;
             double cutOff = data[data.length - 1]* 0.01;
             int numLarge = 0;

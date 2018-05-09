@@ -26,7 +26,7 @@ import java.util.function.Consumer;
 /**
  * This class is used to compress categorical data.
  */
-public class CategoryEncoding {
+class CategoryEncoding {
     // Map categorical value to a small integer
     private final Object2IntOpenHashMap<String> intEncoding;
     // Decode small integer into categorical value
@@ -51,7 +51,7 @@ public class CategoryEncoding {
         return encoding;
     }
 
-    public void allDistinctStrings(Consumer<String> action) {
+    void allDistinctStrings(Consumer<String> action) {
         this.intEncoding.keySet().forEach(action);
     }
 }

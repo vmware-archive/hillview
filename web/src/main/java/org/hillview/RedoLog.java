@@ -37,7 +37,7 @@ import java.util.List;
  * On start-up the log is read from persistent storage allowing sessions
  * to persist across system restarts.
  */
-public class RedoLog {
+class RedoLog {
     private static final String defaultStorageFile = "hillview.redo";
 
     /**

@@ -94,7 +94,7 @@ public class JdbcDatabase {
         }
     }
 
-    public ResultSetMetaData getSchema() {
+    private ResultSetMetaData getSchema() {
         try {
             ResultSet rs = this.getDataInTable(0);
             return rs.getMetaData();
@@ -109,7 +109,7 @@ public class JdbcDatabase {
     static class JdbcLoader implements IColumnLoader {
         private final JdbcConnectionInformation connInfo;
 
-        public JdbcLoader(final JdbcConnectionInformation connInfo) {
+        JdbcLoader(final JdbcConnectionInformation connInfo) {
             this.connInfo = connInfo;
         }
 
@@ -134,13 +134,13 @@ public class JdbcDatabase {
      * Get the data in the JDBC database table.
      * @param rowCount  Maximum number of rows.  If negative, bring all rows.
      */
-    ResultSet getDataInTable(int rowCount) {
+    private ResultSet getDataInTable(int rowCount) {
         assert this.conn.info.table != null;
         String query = this.conn.getQueryToReadTable(this.conn.info.table, rowCount);
         return this.getQueryResult(query);
     }
 
-    ResultSet getQueryResult(String query) {
+    private ResultSet getQueryResult(String query) {
         try {
             HillviewLogger.instance.info("Executing SQL query", "{0}", query);
             Statement st = Converters.checkNull(this.connection).createStatement();
@@ -156,7 +156,7 @@ public class JdbcDatabase {
         return new Table(columns, null, null);
     }
 
-    static ColumnDescription getDescription(ResultSetMetaData meta, int colIndex)
+    private static ColumnDescription getDescription(ResultSetMetaData meta, int colIndex)
             throws SQLException {
         colIndex = colIndex + 1;
         String name = meta.getColumnLabel(colIndex);
@@ -300,7 +300,7 @@ public class JdbcDatabase {
         }
     }
 
-    static List<IAppendableColumn> createColumns(ResultSetMetaData meta) throws SQLException {
+    private static List<IAppendableColumn> createColumns(ResultSetMetaData meta) throws SQLException {
         List<IAppendableColumn> cols = new ArrayList<IAppendableColumn>(meta.getColumnCount());
         for (int i = 0; i < meta.getColumnCount(); i++) {
             ColumnDescription cd = JdbcDatabase.getDescription(meta, i);
@@ -310,7 +310,7 @@ public class JdbcDatabase {
         return cols;
     }
 
-    static List<IAppendableColumn> convertResultSet(ResultSet data) {
+    private static List<IAppendableColumn> convertResultSet(ResultSet data) {
         try {
             ResultSetMetaData meta = data.getMetaData();
             List<IAppendableColumn> cols = createColumns(meta);

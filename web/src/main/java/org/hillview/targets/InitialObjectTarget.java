@@ -102,7 +102,7 @@ public class InitialObjectTarget extends RpcTarget {
     /**
      * Describes a set of files to load.  Not all fields are always used.
      */
-    public static class FileSetDescription {
+    static class FileSetDescription {
         /**
          * Folder where files are looked up.
          */
@@ -148,9 +148,10 @@ public class InitialObjectTarget extends RpcTarget {
 
     private void findFilesCommon(RpcRequest request, RpcRequestContext context,
                                  FileSetDescription desc, FileLoaderDescription loader) {
+        String rep = desc.getRegexPattern();
+        HillviewLogger.instance.info("Loading files", "{0}/{1}", desc.folder, rep);
         IMap<Empty, List<IFileLoader>> finder =
-                new FindFilesMapper(desc.folder, 0, desc.getRegexPattern(), loader,
-                        desc.cookie, desc.repeat);
+                new FindFilesMapper(desc.folder, 0, rep, loader, desc.cookie, desc.repeat);
         assert this.emptyDataset != null;
         this.runFlatMap(this.emptyDataset, finder, FileDescriptionTarget::new, request, context);
     }

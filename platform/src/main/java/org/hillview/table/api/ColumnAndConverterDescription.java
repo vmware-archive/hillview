@@ -27,7 +27,7 @@ import java.util.List;
 
 public class ColumnAndConverterDescription implements Serializable, IJson {
     public final String columnName;
-    public final IStringConverterDescription converter;
+    private final IStringConverterDescription converter;
 
     public ColumnAndConverterDescription(String columnName,
                                          IStringConverterDescription converter) {

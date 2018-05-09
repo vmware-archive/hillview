@@ -54,7 +54,7 @@ public class RowSnapshotSet implements Serializable {
         this.rowSet.add(row);
     }
 
-    public boolean contains(final BaseRowSnapshot row) {
+    private boolean contains(final BaseRowSnapshot row) {
         return this.rowSet.contains(row);
     }
 

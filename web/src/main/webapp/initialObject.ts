@@ -88,6 +88,10 @@ class FileSizeReceiver extends OnCompleteRenderer<FileSizeSketchInfo> {
     }
 
     public run(size: FileSizeSketchInfo): void {
+        if (size.fileCount == 0) {
+            this.page.reportError("No files matching " + getDescription(this.data));
+            return;
+        }
         let fileSize = "Loading " + size.fileCount + " file(s), total size " +
             significantDigits(size.totalSize);
         let rr = this.remoteObj.createStreamingRpcRequest<RemoteObjectId>("loadTable", null);

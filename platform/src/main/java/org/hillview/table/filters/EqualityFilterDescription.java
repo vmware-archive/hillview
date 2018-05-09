@@ -24,11 +24,11 @@ import java.util.Objects;
 import java.util.regex.Pattern;
 
 public class EqualityFilterDescription implements ITableFilterDescription {
-    public final String column;
+    private final String column;
     @Nullable
-    public final String compareValue;
-    public final boolean complement;
-    public final boolean asRegEx;
+    private final String compareValue;
+    private final boolean complement;
+    private final boolean asRegEx;
 
     /**
      * Make a filter that accepts rows that (do not) have a specified value in the specified
@@ -70,7 +70,7 @@ public class EqualityFilterDescription implements ITableFilterDescription {
         ContentsKind compareKind;
         private final ColumnAndConverter column;
 
-        public EqualityFilter(ITable table) {
+        EqualityFilter(ITable table) {
             ColumnAndConverterDescription ccd = new ColumnAndConverterDescription
                     (EqualityFilterDescription.this.column);
             this.column = table.getLoadedColumn(ccd);

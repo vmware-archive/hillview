@@ -28,8 +28,8 @@ export class TextOverlay {
      * An SVG rectangle.
      */
     private rect: any;
-    private height: number;
-    private lines: any[];
+    private readonly height: number;
+    private readonly lines: any[];
 
     /**
      * Create a textOverlay.

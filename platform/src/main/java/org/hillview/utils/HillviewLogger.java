@@ -55,9 +55,9 @@ public class HillviewLogger {
     static {
         InternalLoggerFactory.setDefaultFactory(JdkLoggerFactory.INSTANCE);
         GRPC_LOGGER = Logger.getLogger("io.grpc");
-        GRPC_LOGGER.setLevel(Level.INFO);
+        GRPC_LOGGER.setLevel(Level.WARNING);
         NETTY_LOGGER = Logger.getLogger("io.grpc.netty.NettyServerHandler");
-        NETTY_LOGGER.setLevel(Level.INFO);
+        NETTY_LOGGER.setLevel(Level.WARNING);
     }
 
     /**
@@ -72,7 +72,7 @@ public class HillviewLogger {
         this.logger = Logger.getLogger("Hillview");
         this.machine = this.checkCommas(Utilities.getHostName());
         this.role = this.checkCommas(role);
-        this.logger.setLevel(Level.WARNING);
+        this.logger.setLevel(Level.INFO);
 
         Formatter form = new SimpleFormatter() {
             final String[] components = new String[5];
@@ -137,7 +137,7 @@ public class HillviewLogger {
         this.logger.warning(text);
     }
 
-    public void debug(String message, String format, Object... arguments) {
+    private void debug(String message, String format, Object... arguments) {
         if (!this.logger.isLoggable(Level.INFO))
             return;
         String text = this.createMessage(message, format, arguments);

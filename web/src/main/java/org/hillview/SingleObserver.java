@@ -29,7 +29,7 @@ public abstract class SingleObserver<T> implements Observer<T> {
         throw new RuntimeException(t);
     }
 
-    public abstract void onSuccess(T t);
+    protected abstract void onSuccess(T t);
 
     @Override
     public void onCompleted() {

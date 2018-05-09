@@ -20,16 +20,18 @@ package org.hillview.dataset.api;
 import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Utilities;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * Base class for all IDataSets.
  * @param <T>  Type of data in dataset.
  */
 public abstract class BaseDataSet<T> implements IDataSet<T> {
-    static int uniqueId = 0;
-    protected final int id;
+    private static final AtomicInteger uniqueId = new AtomicInteger(0);
+    private final int id;
 
-    public BaseDataSet() {
-        this.id = BaseDataSet.uniqueId++;
+    protected BaseDataSet() {
+        this.id = BaseDataSet.uniqueId.getAndIncrement();
     }
 
     @Override

@@ -29,11 +29,11 @@ public abstract class AppendColumnMap implements IMap<ITable, ITable> {
     /**
      * Name for the new column.
      */
-    protected final String newColName;
+    final String newColName;
     /**
      * Where to insert the new column; if -1 the column is inserted at the end.
      */
-    protected final int    insertionIndex;
+    private final int    insertionIndex;
 
     AppendColumnMap(String newColName, int insertionIndex) {
         this.newColName = newColName;

@@ -24,7 +24,7 @@ import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
 public class RegexStringFilter implements IStringFilter {
-    public final Pattern pattern;
+    private final Pattern pattern;
 
     public RegexStringFilter(String pattern, boolean caseSensitive) {
         this.pattern = Pattern.compile(pattern, caseSensitive ? 0 : Pattern.CASE_INSENSITIVE);

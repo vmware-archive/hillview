@@ -25,12 +25,12 @@ import javax.annotation.Nullable;
 
 @SuppressWarnings("CanBeFinal")
 public class RangeFilterDescription implements ITableFilterDescription {
-    public String columnName = "";
-    public double min;
-    public double max;
-    public boolean complement;
+    private String columnName = "";
+    private double min;
+    private double max;
+    private boolean complement;
     @Nullable
-    public String[] bucketBoundaries;  // only used for Categorical columns
+    private String[] bucketBoundaries;  // only used for Categorical columns
 
     @Override
     public ITableFilter getFilter(ITable table) {
@@ -47,7 +47,7 @@ public class RangeFilterDescription implements ITableFilterDescription {
     public class RangeFilter implements ITableFilter {
         final ColumnAndConverter column;
 
-        public RangeFilter(ColumnAndConverter column) {
+        RangeFilter(ColumnAndConverter column) {
             this.column = column;
         }
 

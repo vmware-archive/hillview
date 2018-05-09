@@ -34,9 +34,10 @@ public class DateListColumn
         extends DoubleListColumn
         implements IDateColumn {
     @Nullable
+    private
     DateParsing dateParser;
 
-    public DateListColumn(final ColumnDescription desc) {
+    DateListColumn(final ColumnDescription desc) {
         super(desc);
         this.checkKind(ContentsKind.Date);
         this.dateParser = null;

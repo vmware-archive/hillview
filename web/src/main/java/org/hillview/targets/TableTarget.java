@@ -458,7 +458,7 @@ public final class TableTarget extends RpcTarget {
      * This serializes the result of heavyHitterSketch for the front end.
      */
     @SuppressWarnings("NullableProblems")
-    public static class TopList implements IJson {
+    static class TopList implements IJson {
         /**
          * The NextKList stores the fields to display and their counts.
          */

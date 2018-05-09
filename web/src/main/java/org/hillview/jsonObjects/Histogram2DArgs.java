@@ -20,7 +20,7 @@ package org.hillview.jsonObjects;
 import javax.annotation.Nullable;
 
 @SuppressWarnings("CanBeFinal")
-public class Histogram2DArgs implements RpcArguments {
+public class Histogram2DArgs {
     // fields are never really null, but we have no default initializer
     @Nullable
     public ColumnAndRange first;

@@ -38,7 +38,7 @@ import java.util.List;
 import static org.junit.Assert.assertTrue;
 
 public class FreqKTest extends BaseTest {
-    public void checkList(FreqKList fkList, Schema schema) {
+    private void checkList(FreqKList fkList, Schema schema) {
         NextKList nkList = fkList.sortTopK(schema);
         for (int i = 1; i < nkList.count.size(); i++) {
             TestCase.assertTrue(nkList.count.get(i - 1) >= nkList.count.get(i));

@@ -23,6 +23,7 @@ import org.hillview.table.api.IColumn;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Base class for all columns.
@@ -30,15 +31,18 @@ import java.time.Instant;
 abstract class BaseColumn implements IColumn {
     final ColumnDescription description;
     int parsingExceptionCount;
+    private static final AtomicInteger uniqueId = new AtomicInteger(0);
+    private final int id;
 
     void checkKind(ContentsKind kind) {
         if (this.description.kind != kind)
             throw new RuntimeException("Expected " + kind + " but have " + this.getDescription().kind);
     }
 
-    public BaseColumn(final ColumnDescription description) {
+    BaseColumn(final ColumnDescription description) {
         this.description = description;
         this.parsingExceptionCount = 0;
+        this.id = uniqueId.getAndIncrement();
     }
 
     @Override
@@ -75,4 +79,9 @@ abstract class BaseColumn implements IColumn {
     public boolean isMissing(final int rowIndex) { throw new UnsupportedOperationException(); }
 
     public int getParsingExceptionCount() { return this.parsingExceptionCount; }
+
+    @Override
+    public String toString() {
+        return this.description.toString() + "[id=" + id + "]";
+    }
 }

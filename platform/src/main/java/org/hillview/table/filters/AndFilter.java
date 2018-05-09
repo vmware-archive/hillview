@@ -23,8 +23,8 @@ import org.hillview.table.api.ITableFilter;
  * This filter execute two other filters and returns true only when both return true.
  */
 public class AndFilter implements ITableFilter {
-    final ITableFilter first;
-    final ITableFilter second;
+    private final ITableFilter first;
+    private final ITableFilter second;
 
     AndFilter(ITableFilter first, ITableFilter second) {
         this.first = first;

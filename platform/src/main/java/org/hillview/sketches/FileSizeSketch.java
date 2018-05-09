@@ -50,18 +50,18 @@ public class FileSizeSketch implements ISketch<IFileLoader, FileSizeSketch.Info>
         /**
          * Total number of files.
          */
-        public final int fileCount;
+        final int fileCount;
         /**
          * Total bytes in all the files.
          */
-        public final long totalSize;
+        final long totalSize;
 
-        public Info(int count, long size) {
+        Info(int count, long size) {
             this.fileCount = count;
             this.totalSize = size;
         }
 
-        public Info() {
+        Info() {
             this(0, 0);
         }
     }

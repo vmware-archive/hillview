@@ -27,9 +27,9 @@ import org.hillview.utils.HillviewLogger;
 /**
  * Brings up a single instance of a HillviewServer
  */
-public class HillviewServerRunner {
+class HillviewServerRunner {
 
-    static void usage() {
+    private static void usage() {
         System.out.println("Invalid number of arguments.\n" +
                 "Usage: java -jar <jarname> <port listen address>");
     }

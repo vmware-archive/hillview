@@ -48,7 +48,7 @@ public abstract class FreqKList implements Serializable {
     /**
      * Stores a filtered and sorted version of the hashmap. Created during post-processing.
      */
-    public final List<Pair<RowSnapshot, Integer>> pList;
+    final List<Pair<RowSnapshot, Integer>> pList;
 
     public final double epsilon;
 
@@ -56,9 +56,9 @@ public abstract class FreqKList implements Serializable {
      * The maximum number of rows that we would like to display. We return only these many entries
      * from the sorted list of Heavy Hitters.
      */
-    public final int maxDisplay = 200;
+    private final int maxDisplay = 200;
 
-    protected FreqKList(long totalRows, double epsilon, Object2IntOpenHashMap<RowSnapshot> hMap) {
+    FreqKList(long totalRows, double epsilon, Object2IntOpenHashMap<RowSnapshot> hMap) {
         this.totalRows = totalRows;
         this.epsilon = epsilon;
         this.hMap = hMap;
@@ -105,7 +105,7 @@ public abstract class FreqKList implements Serializable {
      * Filters the list to retain only those RowSnapshots that occur with frequency above
      * a specified threshold.
      */
-    protected void fkFilter(double threshold) {
+    void fkFilter(double threshold) {
         for (ObjectIterator<Object2IntMap.Entry<RowSnapshot>> it =
              this.hMap.object2IntEntrySet().fastIterator(); it.hasNext(); ) {
             final Object2IntMap.Entry<RowSnapshot> entry = it.next();

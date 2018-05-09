@@ -70,7 +70,7 @@ public class BlasConversions {
      * @param colNames A list with the column names of the newly created table.
      * @return Table with the numeric data from mat. Column names are set to '{columnNames[i]}'.
      */
-    public static Table toTable(DoubleMatrix mat, List<String> colNames) {
+    private static Table toTable(DoubleMatrix mat, List<String> colNames) {
         IColumn[] columns = new IColumn[mat.columns];
         for (int i = 0; i < mat.columns; i++) {
             ColumnDescription cd = new ColumnDescription(colNames.get(i), ContentsKind.Double);

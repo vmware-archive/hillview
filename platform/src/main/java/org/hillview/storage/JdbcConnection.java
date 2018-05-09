@@ -24,17 +24,17 @@ import java.util.HashMap;
 /**
  * Base abstract class that handles various specifics of JDBC driver requirements.
  */
-public abstract class JdbcConnection {
+abstract class JdbcConnection {
     /**
      * Separates options from each other in rul.
      */
-    public final char urlOptionsSeparator;
+    private final char urlOptionsSeparator;
     /**
      * Separates options from the rest of the url.
      */
-    public final char urlOptionsBegin;
+    private final char urlOptionsBegin;
     public final JdbcConnectionInformation info;
-    final HashMap<String, String> params = new HashMap<String, String>();
+    private final HashMap<String, String> params = new HashMap<String, String>();
 
     static JdbcConnection create(JdbcConnectionInformation conn) {
         if (Utilities.isNullOrEmpty(conn.databaseKind))
@@ -66,7 +66,7 @@ public abstract class JdbcConnection {
         return "SELECT COUNT(*) FROM " + table;
     }
 
-    protected void addBaseUrl(StringBuilder urlBuilder) {
+    void addBaseUrl(StringBuilder urlBuilder) {
         urlBuilder.append("jdbc:");
         urlBuilder.append(info.databaseKind);
         urlBuilder.append("://");
@@ -84,7 +84,7 @@ public abstract class JdbcConnection {
      * to construct a query url.
      * @param urlBuilder  StringBuilder used to construct the query url.
      */
-    protected void appendParametersToUrl(StringBuilder urlBuilder) {
+    void appendParametersToUrl(StringBuilder urlBuilder) {
         urlBuilder.append(this.urlOptionsBegin);
         boolean first = true;
         for (String p: this.params.keySet()) {
@@ -101,8 +101,8 @@ public abstract class JdbcConnection {
         this.params.put(param, value);
     }
 
-    public JdbcConnection(char urlOptionsSeparator, char urlOptionsBegin,
-                          JdbcConnectionInformation info) {
+    JdbcConnection(char urlOptionsSeparator, char urlOptionsBegin,
+                   JdbcConnectionInformation info) {
         this.urlOptionsSeparator = urlOptionsSeparator;
         this.urlOptionsBegin = urlOptionsBegin;
         this.info = info;

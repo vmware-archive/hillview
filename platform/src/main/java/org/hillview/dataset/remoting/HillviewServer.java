@@ -66,7 +66,6 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
      */
     public static final int ROOT_DATASET_INDEX = 0;
     public static final int DEFAULT_PORT = 3569;
-    private static final String LOCALHOST = "127.0.0.1";
     private static final int NUM_THREADS = 5;
     public static final int MAX_MESSAGE_SIZE = 20971520;
     // We run the executor service with high priority mainly so that
@@ -271,10 +270,6 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                     final PartialResponse result = PartialResponse.newBuilder()
                             .setSerializedOp(ByteString.copyFrom(bytes)).build();
                     responseObserver.onNext(result);
-                    if (MEMOIZE) {
-                        this.memoizedResult = result;
-                        this.memoizedDatasetIndex = idsIndex;
-                    }
                 }, executorService);
             }
         };

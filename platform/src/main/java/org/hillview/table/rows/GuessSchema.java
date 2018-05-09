@@ -38,7 +38,7 @@ public class GuessSchema {
         public ContentsKind kind;
         public boolean      allowMissing;
 
-        public SchemaInfo(ContentsKind kind, boolean allowMissing) {
+        SchemaInfo(ContentsKind kind, boolean allowMissing) {
             this.kind = kind;
             this.allowMissing = allowMissing;
         }
@@ -62,14 +62,14 @@ public class GuessSchema {
     /**
      * A lattice of contents kind.  Things can move only up in the lattice.
      */
-    static final HashMap<ContentsKind, ContentsKind[]> successor =
+    private static final HashMap<ContentsKind, ContentsKind[]> successor =
             new HashMap<ContentsKind, ContentsKind[]>();
 
     /**
      * All strings seen so far - used to detect categories.
      */
-    HashSet<String> stringSet;
-    boolean canBeCategory;
+    private HashSet<String> stringSet;
+    private boolean canBeCategory;
 
     static {
         successor.put(ContentsKind.None, new ContentsKind[]{
@@ -93,6 +93,7 @@ public class GuessSchema {
     }
 
     @Nullable
+    private
     DateParsing dateParser;
 
     public GuessSchema() {
@@ -101,7 +102,7 @@ public class GuessSchema {
         this.canBeCategory = true;
     }
 
-    void guess(@Nullable String value, SchemaInfo info) {
+    private void guess(@Nullable String value, SchemaInfo info) {
         if (info.kind == ContentsKind.String)
             return;
 
@@ -153,7 +154,7 @@ public class GuessSchema {
         return current;
     }
 
-    CanParse canParse(@Nullable String value, final ContentsKind with) {
+    private CanParse canParse(@Nullable String value, final ContentsKind with) {
         if (value == null)
             return CanParse.AsNull;
         switch (with) {

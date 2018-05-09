@@ -31,19 +31,19 @@ public class StringFilterDescription implements Serializable {
      * String to look for.
      */
     @Nullable
-    final String toFind;
+    private final String toFind;
     /**
      * If true the comparison will be made case-insensitive.
      */
-    final boolean caseSensitive;
+    private final boolean caseSensitive;
     /**
      * If true the toFind string is interpreted as a regular expression.
      */
-    final boolean asRegex;
+    private final boolean asRegex;
     /**
      * If true the search will match substrings.
      */
-    final boolean subString;
+    private final boolean subString;
 
     public StringFilterDescription(@Nullable String toFind, boolean caseSensitive,
                                    boolean asRegex, boolean subString) {

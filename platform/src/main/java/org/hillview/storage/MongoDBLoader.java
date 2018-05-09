@@ -41,10 +41,10 @@ public class MongoDBLoader extends JsonFileLoader {
     /**
      * We don't really use JDBC, but this data structure is handy.
      */
-    final JdbcConnectionInformation info;
-    int currentRow;
-    static final JsonParser parser = new JsonParser();
-    final MongoDatabase database;
+    private final JdbcConnectionInformation info;
+    private int currentRow;
+    private static final JsonParser parser = new JsonParser();
+    private final MongoDatabase database;
     //final DB oldDatabase;
 
     public MongoDBLoader(JdbcConnectionInformation info) {

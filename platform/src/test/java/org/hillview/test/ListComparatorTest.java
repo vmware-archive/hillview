@@ -94,11 +94,11 @@ public class ListComparatorTest extends BaseTest {
     static class RowsAsStrings {
         private final ArrayList<IColumn> cols;
 
-        public RowsAsStrings(final ArrayList<IColumn> cols){
+        RowsAsStrings(final ArrayList<IColumn> cols){
             this.cols = cols;
         }
 
-        public String getRow(final Integer rowIndex){
+        String getRow(final Integer rowIndex){
             StringBuilder row = new StringBuilder();
             for(final IColumn thisCol: this.cols){
                 row.append((thisCol.asString(rowIndex) == null) ? " " : thisCol.asString(rowIndex));

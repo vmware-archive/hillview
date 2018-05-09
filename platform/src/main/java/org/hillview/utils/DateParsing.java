@@ -30,14 +30,14 @@ public class DateParsing {
      * and used subsequently.
      */
     @Nullable
-    public DateTimeFormatter parserFormatter;
+    private DateTimeFormatter parserFormatter;
     /**
      * Used in conjunction with the parseFormatter.  If true
      * parse the strings as LocalDate. Java is really stupid in this respect,
      * and the spec is unclear about this.
      * @see <a href="http://stackoverflow.com/questions/27454025/unable-to-obtain-localdatetime-from-temporalaccessor-when-parsing-localdatetime">Parsing LocalDateTime</a>
      */
-    public boolean parseAsDate;
+    private boolean parseAsDate;
 
     private static final LinkedHashMap<String, String> DATE_FORMAT_REGEXPS =
             new LinkedHashMap<String, String>() {{

@@ -28,9 +28,9 @@ export class ProgressBar implements IHtmlElement {
     end: number;
 
     private finished: boolean;
-    private bar: HTMLElement;
-    private topLevel: HTMLElement;
-    private estimate: HTMLElement;
+    private readonly bar: HTMLElement;
+    private readonly topLevel: HTMLElement;
+    private readonly estimate: HTMLElement;
     private firstUpdate: Date;
     private firstPosition: number;
 

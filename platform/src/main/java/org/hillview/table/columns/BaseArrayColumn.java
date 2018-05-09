@@ -30,9 +30,9 @@ import java.util.BitSet;
  */
 public abstract class BaseArrayColumn extends BaseColumn implements Serializable {
     @Nullable
-    protected final BitSet missing;
+    private final BitSet missing;
 
-    public BaseArrayColumn(final ColumnDescription description, final int size) {
+    BaseArrayColumn(final ColumnDescription description, final int size) {
         super(description);
         if (size < 0)
             throw new InvalidParameterException("Size must be positive: " + size);

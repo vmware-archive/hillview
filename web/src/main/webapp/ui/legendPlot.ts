@@ -212,7 +212,7 @@ export class HeatmapLegendPlot extends Plot {
     /* Static counter that increments to assign every ColorLegend object
        a unique ID for the gradient element. */
     private static nextUniqueId: number = 0;
-    private uniqueId: number;
+    private readonly uniqueId: number;
     private gradient: any; // Element that contains the definitions for the colors in the color map
 
     private onColorMapChange: (ColorMap) => void; // Function that is called to update other elements when the color map changes.

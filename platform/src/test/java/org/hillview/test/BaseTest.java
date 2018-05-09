@@ -28,10 +28,9 @@ import org.junit.Ignore;
  * on the test class:
  * "@net.jcip.annotations.NotThreadSafe"
  */
-@SuppressWarnings("SpellCheckingInspection")
 @Ignore
 public class BaseTest {
-    static boolean initialized = false;
+    private static boolean initialized = false;
 
     @BeforeClass
     public static void setup() {
@@ -44,7 +43,7 @@ public class BaseTest {
     /**
      * Randomness is actually not thread-safe!
      */
-    public Randomness getRandomness() {
+    Randomness getRandomness() {
         return new Randomness(0);
     }
 }

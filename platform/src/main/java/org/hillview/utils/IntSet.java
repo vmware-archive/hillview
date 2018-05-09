@@ -233,7 +233,7 @@ public class IntSet {
             }
         }
 
-        public boolean hasNext() {
+        boolean hasNext() {
             return this.c != 0;
         }
 

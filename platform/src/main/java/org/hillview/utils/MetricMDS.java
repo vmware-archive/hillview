@@ -36,14 +36,14 @@ import java.util.logging.Logger;
  */
 public class MetricMDS {
     private static final Logger LOG = Logger.getLogger(MetricMDS.class.getName());
-    public static final int maxIterations = (int) 1e3;
-    public static final double defaultLearningRate = 1;
-    public static final double defaultLearningRateDecay = 0.999;
-    public static final double tolerance = 1e-5;
+    private static final int maxIterations = (int) 1e3;
+    private static final double defaultLearningRate = 1;
+    private static final double defaultLearningRateDecay = 0.999;
+    private static final double tolerance = 1e-5;
     private static final double eps = 1e-9;
-    public static final BiFunction<DoubleMatrix, DoubleMatrix, Double> squaredEuclid =
+    private static final BiFunction<DoubleMatrix, DoubleMatrix, Double> squaredEuclid =
             (x1, x2) -> MatrixFunctions.pow(x1.sub(x2),2).sum();
-    public static final BiFunction<DoubleMatrix, DoubleMatrix, Double> euclid =
+    private static final BiFunction<DoubleMatrix, DoubleMatrix, Double> euclid =
             (x1, x2) -> Math.sqrt(MetricMDS.squaredEuclid.apply(x1, x2));
 
     /**
@@ -57,8 +57,8 @@ public class MetricMDS {
     /**
      * Learning rate to use in the optimization. It is decreased over time to find a more accurate minimum.
      */
-    public double learningRate = MetricMDS.defaultLearningRate;
-    public final double learningRateDecay = MetricMDS.defaultLearningRateDecay;
+    private double learningRate = MetricMDS.defaultLearningRate;
+    private final double learningRateDecay = MetricMDS.defaultLearningRateDecay;
     /**
      * If the magnitude of the gradient is smaller than this value, we consider the optimization converged.
      */
@@ -95,7 +95,7 @@ public class MetricMDS {
      * @param lowDims The target dimensionality of the embedding. Commonly 2.
      * @param highDimDist The distance function for nD observations.
      */
-    public MetricMDS(DoubleMatrix dataHighDim, int lowDims, BiFunction<DoubleMatrix, DoubleMatrix, Double> highDimDist) {
+    private MetricMDS(DoubleMatrix dataHighDim, int lowDims, BiFunction<DoubleMatrix, DoubleMatrix, Double> highDimDist) {
         this.numObservations = dataHighDim.rows;
         this.lowDims = lowDims;
         this.distsHighDim = this.computeHighDimDistances(dataHighDim, highDimDist);
@@ -103,7 +103,7 @@ public class MetricMDS {
         this.distsLowDim = new DoubleMatrix();
     }
 
-    public MetricMDS(DoubleMatrix dataHighDim, int lowDims) {
+    private MetricMDS(DoubleMatrix dataHighDim, int lowDims) {
         this(dataHighDim, lowDims, MetricMDS.euclid);
     }
 
@@ -169,7 +169,7 @@ public class MetricMDS {
      * @param dataLowDimInit Initial value for the projection.
      * @return Projection of the high-dimensional data, computed with metric mds.
      */
-    public DoubleMatrix computeEmbedding(DoubleMatrix dataLowDimInit) {
+    private DoubleMatrix computeEmbedding(DoubleMatrix dataLowDimInit) {
         this.dataLowDim.copy(dataLowDimInit);
         this.distsLowDim.copy(this.computeLowDimDistances(this.dataLowDim));
 
@@ -266,7 +266,7 @@ public class MetricMDS {
         return gradient;
     }
 
-    public double cost() {
+    private double cost() {
         return MatrixFunctions.pow(this.distsHighDim.sub(this.distsLowDim), 2).sum();
     }
 

@@ -25,7 +25,7 @@ import org.hillview.utils.Converters;
 import javax.annotation.Nullable;
 
 @SuppressWarnings("WeakerAccess")
-public class HistogramArgs implements RpcArguments {
+public class HistogramArgs {
     @Nullable
     public ColumnAndRange column;
     public int cdfBucketCount;

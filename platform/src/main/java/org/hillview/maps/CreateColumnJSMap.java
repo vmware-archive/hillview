@@ -40,7 +40,7 @@ public class CreateColumnJSMap extends AppendColumnMap {
      * It has a single input, which is a row in the table, and it produces a single output,
      * a value that is written to the destination column.
      */
-    public final String jsFunction;
+    private final String jsFunction;
     /**
      * Set of columns that the function can access.
      */
@@ -48,7 +48,7 @@ public class CreateColumnJSMap extends AppendColumnMap {
     /**
      * Description of the output column to produce.
      */
-    public final ColumnDescription outputColumn;
+    private final ColumnDescription outputColumn;
 
     public CreateColumnJSMap(String jsFunction, Schema inputColumns, ColumnDescription outputColumn) {
         super(outputColumn.name, -1);

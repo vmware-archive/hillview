@@ -44,7 +44,7 @@ public class DoubleArrayTest extends BaseTest {
     /**
      * Generates a double array with every skip entry missing
      */
-    public static DoubleArrayColumn generateDoubleArray(final int size, final int max, int
+    private static DoubleArrayColumn generateDoubleArray(final int size, final int max, int
             skip) {
         final DoubleArrayColumn col = new DoubleArrayColumn(desc, size);
         for (int i = 0; i < size; i++) {

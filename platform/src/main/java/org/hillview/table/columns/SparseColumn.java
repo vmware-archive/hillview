@@ -31,8 +31,8 @@ import java.time.Instant;
 
 public class SparseColumn extends BaseColumn
         implements IMutableColumn, IStringColumn, IDoubleColumn, IIntColumn, IDateColumn, IDurationColumn {
-    protected final Int2ObjectMap<Object> data;
-    final int size;
+    private final Int2ObjectMap<Object> data;
+    private final int size;
 
     public SparseColumn(ColumnDescription desc, int size) {
         super(desc);

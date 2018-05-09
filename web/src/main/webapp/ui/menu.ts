@@ -51,7 +51,7 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
     cells: HTMLTableDataCellElement[];
     selectedIndex: number;  // -1 if no item is selected
 
-    constructor() {
+    protected constructor() {
         this.items = [];
         this.cells = [];
         this.selectedIndex = -1;

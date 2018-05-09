@@ -24,8 +24,8 @@ import java.io.Serializable;
 
 @SuppressWarnings("CanBeFinal")
 public class RangeFilterPair implements ITableFilterDescription, Serializable {
-    public final RangeFilterDescription first;
-    public final RangeFilterDescription second;
+    private final RangeFilterDescription first;
+    private final RangeFilterDescription second;
 
     public RangeFilterPair(RangeFilterDescription first, RangeFilterDescription second) {
         this.first = first;

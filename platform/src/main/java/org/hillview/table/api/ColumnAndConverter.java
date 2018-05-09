@@ -28,7 +28,7 @@ import java.time.Instant;
  */
 public class ColumnAndConverter {
     public final IColumn column;
-    public final IStringConverter converter;
+    private final IStringConverter converter;
 
     public ColumnAndConverter(IColumn column, IStringConverter converter) {
         this.column = column;

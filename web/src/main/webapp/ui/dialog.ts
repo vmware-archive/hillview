@@ -68,11 +68,11 @@ class DialogValues {
  */
 export class Dialog implements IHtmlElement {
     private tabIndex: number;
-    private container: HTMLDivElement;
+    private readonly container: HTMLDivElement;
     /**
      * The fieldsDiv is a div that contains all the form fields.
      */
-    private fieldsDiv: HTMLDivElement;
+    private readonly fieldsDiv: HTMLDivElement;
     /**
      * Method to be invoked when dialog is closed with OK.
      */
@@ -85,7 +85,7 @@ export class Dialog implements IHtmlElement {
      * Maps a field name to the fieldsDiv that contains all the corresponding visual elements.
      */
     private line: Map<string, HTMLElement>;
-    private confirmButton: HTMLButtonElement;
+    private readonly confirmButton: HTMLButtonElement;
     private dragMousePosition: Point;
     private dialogPosition: ClientRect;
     /**

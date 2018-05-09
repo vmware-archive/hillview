@@ -37,13 +37,13 @@ import java.util.List;
  * https://orc.apache.org/docs/core-java.html
  */
 public class OrcFileWriter implements ITableWriter {
-    public final String path;
+    private final String path;
 
     public OrcFileWriter(String path) {
         this.path = path;
     }
 
-    public static TypeDescription getSchema(Schema schema) {
+    private static TypeDescription getSchema(Schema schema) {
         TypeDescription result = TypeDescription.createStruct();
         for (String col : schema.getColumnNames()) {
             ColumnDescription cd = schema.getDescription(col);

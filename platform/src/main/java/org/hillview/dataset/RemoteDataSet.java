@@ -272,7 +272,7 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
             this.subject.onCompleted();
         }
 
-        public abstract S processResponse(final PartialResponse response);
+        protected abstract S processResponse(final PartialResponse response);
     }
 
     /**

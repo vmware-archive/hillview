@@ -264,10 +264,10 @@ public class DataSetTest extends BaseTest {
     }
 
     // The following are testing unsubscription
-    static AtomicLong initialTime = new AtomicLong(0);
-    static AtomicInteger completedLocals = new AtomicInteger(0);
+    private static final AtomicLong initialTime = new AtomicLong(0);
+    private static final AtomicInteger completedLocals = new AtomicInteger(0);
 
-    static long getTime() {
+    private static long getTime() {
         long time = System.currentTimeMillis();
         initialTime.compareAndSet(0, time);
         return time - initialTime.get();
