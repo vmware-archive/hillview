@@ -21,6 +21,7 @@ import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Randomness;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
+import java.util.logging.Level;
 
 /**
  * Base test class, used for global setup and teardown.
@@ -36,8 +37,17 @@ public class BaseTest {
     public static void setup() {
         if (!initialized) {
             HillviewLogger.initialize("test", null);
+            HillviewLogger.instance.setLogLevel(Level.WARNING);
         }
         initialized = true;
+    }
+
+    /**
+     * Called when an exception should be ignored.
+     */
+    void ignoringException(String message, Throwable t) {
+         System.out.println(message);
+         t.printStackTrace();
     }
 
     /**

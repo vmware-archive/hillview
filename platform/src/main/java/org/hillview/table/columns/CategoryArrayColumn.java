@@ -88,9 +88,4 @@ public class CategoryArrayColumn extends BaseArrayColumn
     public int sizeInRows() {
         return this.data.length;
     }
-
-    @Override
-    public void allDistinctStrings(Consumer<String> action) {
-        this.encoding.allDistinctStrings(action);
-    }
 }

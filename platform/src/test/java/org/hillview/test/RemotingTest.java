@@ -30,11 +30,11 @@ import org.hillview.dataset.api.PartialResult;
 import org.hillview.dataset.remoting.HillviewServer;
 import org.hillview.utils.Converters;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import rx.Observable;
 import rx.Subscriber;
-import rx.Subscription;
 import rx.observers.TestSubscriber;
 import rx.subjects.PublishSubject;
 import rx.subjects.SerializedSubject;
@@ -178,26 +178,24 @@ public class RemotingTest extends BaseTest {
                 .buffer(100, TimeUnit.MILLISECONDS)
                 .filter(e -> !e.isEmpty());
 
-        final Subscription sub = merge.subscribe(new Subscriber<List<Integer>>() {
+        merge.subscribe(new Subscriber<List<Integer>>() {
+            int interrupted = 0;
+
             @Override
             public void onCompleted() {
-                System.out.println("OC");
+                Assert.assertNotEquals(interrupted, 0);
             }
 
             @Override
-            public void onError(final Throwable throwable) {
-                System.out.println("OE");
-            }
+            public void onError(final Throwable throwable) { }
 
             @Override
             public void onNext(final List<Integer> integer) {
-                System.out.println("ON " + integer);
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    this.interrupted++;
                 }
-                System.out.println("ON end " + integer);
             }
         });
         es.execute(() -> obs1.onNext(1));
@@ -229,13 +227,13 @@ public class RemotingTest extends BaseTest {
                 .filter(p -> p.deltaValue != null)
                 .toBlocking()
                 .last().deltaValue;
-        assertNotNull(remoteIdsNew);
+        assertNotNull(remoteIdsNewMem);
         final int memoizedResult = remoteIdsNew.sketch(new SumSketch())
                 .map(e -> e.deltaValue)
                 .reduce((x, y) -> x + y)
                 .toBlocking()
                 .last();
-        assertEquals(50005000, result);
+        assertEquals(50005000, memoizedResult);
     }
 
     @Test
@@ -327,7 +325,7 @@ public class RemotingTest extends BaseTest {
             int nonExistentIndex = 99;
             final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(serverAddress,
                                                                        nonExistentIndex);
-            final IDataSet<int[]> oneMap = Converters.checkNull(
+            Converters.checkNull(
                     remoteIds.map(new IncrementMap()).toBlocking().last().deltaValue);
             fail();
         }
@@ -337,8 +335,7 @@ public class RemotingTest extends BaseTest {
             // Test with zip
             final IDataSet<int[]> remoteIdsLeft = new RemoteDataSet<int[]>(serverAddress);
             final IDataSet<int[]> remoteIdsRight = new RemoteDataSet<int[]>(serverAddress, 99);
-            final PartialResult<IDataSet<Pair<int[], int[]>>> last
-                    = Converters.checkNull(remoteIdsLeft.zip(remoteIdsRight)).toBlocking().last();
+            Converters.checkNull(remoteIdsLeft.zip(remoteIdsRight)).toBlocking().last();
             fail();
         } catch (RuntimeException ignored) {
         }

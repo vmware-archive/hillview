@@ -31,8 +31,8 @@ public class TestUtils {
      * Prints a table to stdout.
      * @param table The table that is printed.
      */
-    public static void printTable(ITable table) {
-        System.out.println(table.toLongString(0));
+    public static void printTable(String message, ITable table) {
+        System.out.println(message + " " + table.toLongString(0));
     }
 
     public static ITable loadTableFromCSV(String dataFolder, String csvFile, String schemaFile) {

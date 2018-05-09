@@ -128,7 +128,7 @@ public class JsonTest extends BaseTest {
             //ITable table = loader.load();
             //Assert.assertEquals("Table[2x1]", table.toString());
         } catch (Exception ex) {
-            System.out.println("Skipping mongodb test.");
+            ignoringException("Skipping mongodb test.", ex);
         }
     }
 }

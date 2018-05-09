@@ -31,8 +31,8 @@ public class RandomnessTest extends BaseTest {
         int iterationNum = 100; // number of iterations
         int length = 100000; // number of random numbers to generate
 
-        TestUtil.runPerfTest((k) -> totalRandom(length), iterationNum);
-        TestUtil.runPerfTest((k) -> totalMT(length), iterationNum);
+        TestUtil.runPerfTest("Random", (k) -> totalRandom(length), iterationNum);
+        TestUtil.runPerfTest("MerseeneRandom", (k) -> totalMT(length), iterationNum);
     }
 
     private void totalRandom(int k) {

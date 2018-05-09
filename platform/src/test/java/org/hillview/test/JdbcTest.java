@@ -44,8 +44,7 @@ public class JdbcTest extends BaseTest {
             return table;
         } catch (Exception e) {
             // This will fail if a database is not deployed, but we don't want to fail the test.
-            System.out.println("Cannot connect to database");
-            e.printStackTrace();
+            ignoringException("Cannot connect to database", e);
             return null;
         }
     }
@@ -92,7 +91,6 @@ public class JdbcTest extends BaseTest {
         ITable table = this.getTable(conn);
         if (table != null) {
             Assert.assertEquals("Table[4x2844047]", table.toString());
-            System.out.println(table.getSchema());
             ColumnAndConverter col = table.getLoadedColumn("salary");
             int firstSalary = col.column.getInt(0);
             Assert.assertEquals(60117, firstSalary);

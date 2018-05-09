@@ -23,7 +23,6 @@ import org.hillview.utils.HillviewLogger;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.function.Consumer;
 
 /**
  * A column of Categorical values that can grow in size.
@@ -111,7 +110,8 @@ public class CategoryListColumn extends BaseListColumn implements ICategoryColum
             if (encoding > 65535) {
                 // switch to an int encoding.  This should not really happen,
                 // but we guard here for wrong schemas.
-                HillviewLogger.instance.warn("Categorical column has too many values");
+                HillviewLogger.instance.warn(
+                        "Categorical column has too many values", "{0}", this);
                 this.firstIntSegment = segmentId;
                 int[] segment = new int[SegmentSize];
                 this.intSegments.add(segment);
@@ -164,10 +164,5 @@ public class CategoryListColumn extends BaseListColumn implements ICategoryColum
     @Override
     public void parseAndAppendString(@Nullable String s) {
         this.append(s);
-    }
-
-    @Override
-    public void allDistinctStrings(Consumer<String> action) {
-        this.encoding.allDistinctStrings(action);
     }
 }

@@ -21,7 +21,6 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 
 import javax.annotation.Nullable;
-import java.util.function.Consumer;
 
 /**
  * This class is used to compress categorical data.
@@ -49,9 +48,5 @@ class CategoryEncoding {
         this.intEncoding.put(value, encoding);
         this.intDecoding.put(encoding, value);
         return encoding;
-    }
-
-    void allDistinctStrings(Consumer<String> action) {
-        this.intEncoding.keySet().forEach(action);
     }
 }

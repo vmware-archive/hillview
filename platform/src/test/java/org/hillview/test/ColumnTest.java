@@ -82,7 +82,7 @@ public class ColumnTest extends BaseTest {
         Assert.assertFalse(col.isMissing(0));
         Assert.assertEquals(col.getString(0), "First");
         Assert.assertEquals(col.getString(1), "First");
-        Assert.assertEquals(col.getString(2), null);
+        Assert.assertNull(col.getString(2));
         Assert.assertEquals(col.getString(4), "Second");
         Assert.assertEquals(col.getString(264), "First");
         Assert.assertEquals(col.getString(265), "130");

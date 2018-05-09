@@ -39,14 +39,14 @@ public class ColumnPerfTest extends BaseTest {
             for (int i = 0; i < size; i++)
                 tmp += col.getInt(i);
         };
-        TestUtil.runPerfTest(fCall,testNum);
+        TestUtil.runPerfTest("getInt", fCall, testNum);
         final int[] rCol = new int[size];
         for (int i=0; i < size; i++)
-            rCol[i]=i;
+            rCol[i] = i;
         final Consumer<Integer> dCall = tmp -> {
             for (int i = 0; i < size; i++)
                 tmp += rCol[i];
         };
-        TestUtil.runPerfTest(dCall, testNum);
+        TestUtil.runPerfTest("direct index", dCall, testNum);
     }
 }

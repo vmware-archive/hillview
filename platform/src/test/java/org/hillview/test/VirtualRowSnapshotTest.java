@@ -101,7 +101,6 @@ public class VirtualRowSnapshotTest extends BaseTest {
         VirtualRowSnapshot vrs = new VirtualRowSnapshot(data, data.getSchema());
         vrs.setRow(0);
         if (hMap.containsKey(vrs)) {
-            System.out.println("A hit!\n");
             int count = hMap.getInt(vrs);
             hMap.put(vrs, count + 1);
         } else {

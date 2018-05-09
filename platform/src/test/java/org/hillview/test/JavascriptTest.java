@@ -42,8 +42,6 @@ import java.time.Instant;
 public class JavascriptTest {
     @Test
     public void helloWorldTest() throws ScriptException {
-        System.out.println("Nahorn engine version " +
-                        new NashornScriptEngineFactory().getEngineVersion());
         ScriptEngineManager factory = new ScriptEngineManager();
         ScriptEngine engine = factory.getEngineByName("nashorn");
         engine.eval("print('Hello, World from JavaScript!');");

@@ -33,7 +33,6 @@ public class JLSketchTest extends BaseTest {
         int range = 10;
         int numCols = 6;
         SmallTable data = TestTables.getCorrelatedCols(size, numCols, range);
-        //System.out.println(data.toLongString(20));
         String[] cn = new String[numCols];
         for (int i = 0; i < numCols; i++) {
             cn[i] = "Col" + String.valueOf(i);
@@ -66,9 +65,7 @@ public class JLSketchTest extends BaseTest {
         }
         JLSketch jls = new JLSketch(cn, 100, 0);
         JLProjection jlp = jls.add(jls.create(leftTable), jls.create(rightTable));
-        //System.out.println(Arrays.toString(jlp.getCorrelationMatrix()[0]));
         SampleCorrelationSketch ip = new SampleCorrelationSketch(cn, 0);
         CorrMatrix cm = ip.add(ip.create(leftTable), ip.create(rightTable));
-        //System.out.printf("IP Sketch: " + Arrays.toString(cm.getCorrelationMatrix()[0]) + "\n");
     }
 }

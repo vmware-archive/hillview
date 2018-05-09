@@ -74,11 +74,11 @@ public class CDFTest extends BaseTest {
     @Test
     public void HistE2E() {
         CDFTest cdftest = new CDFTest();
-        System.out.println("Running time of cdf: ");
-        TestUtil.runPerfTest(k -> cdftest.prepareCDF(1000, 1000, false), 2);
-        System.out.println("Running time of hist with sampling: ");
-        TestUtil.runPerfTest(k -> prepareHist(1000, 100, 10, true), 2);
-        System.out.println("Running time of hist without sampling: ");
-        TestUtil.runPerfTest(k -> cdftest.prepareHist(1000, 100, 10, false), 2);
+        TestUtil.runPerfTest("Running time of cdf: ",
+                k -> cdftest.prepareCDF(1000, 1000, false), 2);
+        TestUtil.runPerfTest("Running time of hist with sampling: ",
+                k -> prepareHist(1000, 100, 10, true), 2);
+        TestUtil.runPerfTest("Running time of hist without sampling: ",
+                k -> cdftest.prepareHist(1000, 100, 10, false), 2);
     }
 }

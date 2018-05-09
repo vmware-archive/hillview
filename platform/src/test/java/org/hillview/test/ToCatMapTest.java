@@ -37,7 +37,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class ToCatMapTest extends BaseTest {
-    public static Table tableWithStringColumn() {
+    static Table tableWithStringColumn() {
         ColumnDescription c0 = new ColumnDescription("Name", ContentsKind.String);
         ColumnDescription c1 = new ColumnDescription("Age", ContentsKind.Integer);
         StringArrayColumn sac = new StringArrayColumn(c0,
@@ -51,13 +51,11 @@ public class ToCatMapTest extends BaseTest {
     @Test
     public void testToCatMap() {
         ITable table = ToCatMapTest.tableWithStringColumn();
-        System.out.println("Table before conversion:");
-        TestUtils.printTable(table);
+        TestUtils.printTable("Table before conversion:", table);
         IMap<ITable, ITable> map = new ConvertColumnMap(
                 "Name", "Name Categorical", ContentsKind.Category, 1);
         ITable result = map.apply(table);
-        System.out.println("Table after conversion:");
-        TestUtils.printTable(result);
+        TestUtils.printTable("Table after conversion:", result);
 
         ColumnAndConverterDescription nameCat =
                 new ColumnAndConverterDescription("Name Categorical");
@@ -66,7 +64,7 @@ public class ToCatMapTest extends BaseTest {
         ColumnAndConverter nameCC = result.getLoadedColumn(name);
         ColumnAndConverter nameCatCC = result.getLoadedColumn(nameCat);
 
-        Assert.assertTrue(nameCatCC.column.getDescription().kind == ContentsKind.Category);
+        Assert.assertSame(nameCatCC.column.getDescription().kind, ContentsKind.Category);
         IRowIterator rowIt = result.getRowIterator();
         int row = rowIt.getNextRow();
         while (row >= 0) {
@@ -97,6 +95,6 @@ public class ToCatMapTest extends BaseTest {
             strings2.add(s);
         }
 
-        Assert.assertTrue(strings1.equals(strings2));
+        Assert.assertEquals(strings1, strings2);
     }
 }

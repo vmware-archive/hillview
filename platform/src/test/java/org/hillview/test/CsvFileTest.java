@@ -47,9 +47,9 @@ import java.util.UUID;
  * Test read/write access to CSV files.
  */
 public class CsvFileTest extends BaseTest {
-    public static final String ontimeFolder = "../data/ontime";
+    static final String ontimeFolder = "../data/ontime";
     private static final String criteoFolder = "../data/criteo";
-    public static final String csvFile = "On_Time_Sample.csv";
+    static final String csvFile = "On_Time_Sample.csv";
     private static final String schemaFile = "On_Time.schema";
     private static final String criteoFile = "criteoTab.csv";
     private static final String criteoSchema = "criteo.schema";
@@ -64,31 +64,26 @@ public class CsvFileTest extends BaseTest {
         return r.load();
     }
 
-    @Test
-    public void readCsvFileWithSchemaCriteoTest() {
+    private void readFileWithSchema(String criteoFile) {
         Path schemaPath = Paths.get(criteoFolder, criteoSchema);
         Path path = Paths.get(criteoFolder, criteoFile);
         CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
         config.allowFewerColumns = false;
         config.hasHeaderRow = false;
-         config.separator = '\t';
+        config.separator = '\t';
         CsvFileLoader r = new CsvFileLoader(path.toString(), config, schemaPath.toString());
         ITable t = r.load();
         Assert.assertNotNull(t);
     }
 
     @Test
+    public void readCsvFileWithSchemaCriteoTest() {
+        readFileWithSchema(criteoFile);
+    }
+
+    @Test
     public void readGzFileWithSchemaTest() {
-        Path schemaPath = Paths.get(criteoFolder, criteoSchema);
-        Path path = Paths.get(criteoFolder, criteoCompressed);
-        CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
-        config.allowFewerColumns = false;
-        config.hasHeaderRow = false;
-        config.separator = '\t';
-        CsvFileLoader r = new CsvFileLoader(path.toString(), config, schemaPath.toString());
-        System.out.println(path.getFileName().toString());
-        ITable t = r.load();
-        Assert.assertNotNull(t);
+        readFileWithSchema(criteoCompressed);
     }
 
     @Test
@@ -154,10 +149,6 @@ public class CsvFileTest extends BaseTest {
             ITable t = r.load();
             Assert.assertNotNull(t);
 
-            List<String> list = Files.readAllLines(Paths.get(path));
-            for (String l : list)
-                System.out.println(l);
-
             String ft = table.toLongString(table.getNumOfRows());
             String st = t.toLongString(t.getNumOfRows());
             Assert.assertEquals(ft, st);
@@ -208,6 +199,7 @@ public class CsvFileTest extends BaseTest {
         fw.close();
         File file = new File(fileName);
         if (file.exists()) {
+            @SuppressWarnings("unused")
             boolean ignored = file.delete();
         }
     }

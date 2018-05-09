@@ -34,17 +34,24 @@ import java.util.List;
 import java.util.function.Consumer;
 
 class TestUtil {
+    private static boolean silent = true;
+
     private static void Percentiles(final long[] R1) {
         Arrays.sort(R1);
-        System.out.println("Percentiles: 0,10,20,50,90,99 ");
-        System.out.println(R1[0]+ " , " + R1[R1.length/10]+ " , " + R1[R1.length/5]+ " , "
-                + R1[R1.length/2] + " , " + R1[(9 * R1.length) / 10] + " , " + R1[R1.length-1]);
+        if (!silent) {
+            System.out.println("Percentiles: 0,10,20,50,90,99 ");
+            System.out.println(R1[0] + " , " + R1[R1.length / 10] + " , " + R1[R1.length / 5] + " , "
+                    + R1[R1.length / 2] + " , " + R1[(9 * R1.length) / 10] + " , " + R1[R1.length - 1]);
+        }
     }
 
     /**
-     *  takes a lambda and measures its running time num times,
-       then prints a percentiles report */
-    static public void runPerfTest(final Consumer<Integer> testing, final int num) {
+     * Takes a lambda and measures its running time num times,
+     * then prints a percentiles report.  TODO: should check for regressions automatically.
+     **/
+    static void runPerfTest(String test, final Consumer<Integer> testing, final int num) {
+        if (!silent)
+            System.out.println(test);
         final int tmp = 0;
         long startTime, endTime;
         final long[] results = new long[num];
@@ -62,7 +69,7 @@ class TestUtil {
      * @return a table with size rows and 3 columns. A date column named "DOB". A string column
      * named "Name" and a double column named "Income".
      */
-    static public Table createTable(int size) {
+    static Table createTable(int size) {
         final int numCols = 3;
         final List<IColumn> columns = new ArrayList<IColumn>(numCols);
         columns.add(getRandDateArray(size, "DOB"));
@@ -72,7 +79,7 @@ class TestUtil {
         return new Table(columns, full, null, null);
     }
 
-    static public SmallTable createSmallTable(int size) {
+    static SmallTable createSmallTable(int size) {
         final int numCols = 3;
         final List<IColumn> columns = new ArrayList<IColumn>(numCols);
         columns.add(getRandDateArray(size, "DOB"));
