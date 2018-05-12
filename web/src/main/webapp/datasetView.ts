@@ -19,26 +19,25 @@ import {
     CombineOperators,
     RemoteObjectId
 } from "./javaBridge";
-import {OnCompleteRenderer, RemoteObject, RpcRequest} from "./rpc";
+import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
 import {DistinctStrings, IDistinctStrings} from "./distinctStrings";
 import {FullPage} from "./ui/fullPage";
 import {EnumIterators, ICancellable, Pair, PartialResult} from "./util";
-import {RemoteTableObjectView} from "./tableTarget";
+import {BigTableView} from "./tableTarget";
 import {MenuItem, SubMenu, TopMenuItem} from "./ui/menu";
 import {IHtmlElement} from "./ui/ui";
 import {DataLoaded} from "./initialObject";
 import {HillviewToplevel} from "./toplevel";
 
-
 /**
- * A dataset holds all information related to a loaded dataset.
- * A dataset represents the original (remote) data loaded from some storage medium.
- * A dataset will then have many views.
+ * A DatasetView holds all information related to a loaded dataset.
+ * A DatasetView represents the original (remote) data loaded from some storage medium.
+ * A DatasetView will then have many views.
  */
-export class Dataset implements IHtmlElement {
+export class DatasetView implements IHtmlElement {
     public readonly remoteObject: RemoteObject;
     private categoryCache: Map<string, DistinctStrings>;
-    private selected: RemoteTableObjectView; // participates in a combine operation
+    private selected: BigTableView; // participates in a combine operation
     private selectedPageId: number;  // id of page containing the selected object (if any)
     private readonly topLevel: HTMLElement;
     private pageCounter: number;
@@ -71,7 +70,7 @@ export class Dataset implements IHtmlElement {
         this.name = name;
     }
 
-    public select(object: RemoteTableObjectView, pageId: number): void {
+    public select(object: BigTableView, pageId: number): void {
         this.selected = object;
         this.selectedPageId = pageId;
     }
@@ -106,7 +105,7 @@ export class Dataset implements IHtmlElement {
      * Check if the selected object can be combined with the specified one,
      * and if so return it.  Otherwise write an error message and return null.
      */
-    getSelected(): Pair<RemoteTableObjectView, number> {
+    getSelected(): Pair<BigTableView, number> {
         return { first: this.selected, second: this.selectedPageId }
     }
 
@@ -118,7 +117,7 @@ export class Dataset implements IHtmlElement {
         return this.categoryCache.get(columnName);
     }
 
-    public combineMenu(ro: RemoteTableObjectView, pageId: number): TopMenuItem {
+    public combineMenu(ro: BigTableView, pageId: number): TopMenuItem {
         let combineMenu: MenuItem[] = [];
         combineMenu.push({
             text: "Select current",
@@ -200,9 +199,9 @@ export class Dataset implements IHtmlElement {
  * Receives a list of DistinctStrings and stores them into the category cache.
  * After that it calls the supplied continuation.
  */
-class ReceiveCategory extends OnCompleteRenderer<IDistinctStrings[]> {
+class ReceiveCategory extends OnCompleteReceiver<IDistinctStrings[]> {
     public constructor(
-        protected dataset: Dataset,
+        protected dataset: DatasetView,
         protected columns: string[],
         protected continuation: (operation: ICancellable) => void,
         page: FullPage,

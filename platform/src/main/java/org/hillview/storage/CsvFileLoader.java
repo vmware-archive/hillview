@@ -37,7 +37,7 @@ import java.nio.file.Paths;
  * Knows how to read a CSV file (comma-separated file).
  */
 public class CsvFileLoader extends TextFileLoader {
-    public static class CsvConfiguration implements Serializable {
+    public static class Config implements Serializable {
         /**
          * Field separator in CSV file.
          */
@@ -52,13 +52,13 @@ public class CsvFileLoader extends TextFileLoader {
         public boolean hasHeaderRow;
     }
 
-    private final CsvConfiguration configuration;
+    private final Config configuration;
     @Nullable
     private Schema actualSchema;
     @Nullable
     private final String schemaPath;
 
-    public CsvFileLoader(String path, CsvConfiguration configuration, @Nullable String schemaPath) {
+    public CsvFileLoader(String path, Config configuration, @Nullable String schemaPath) {
         super(path);
         this.configuration = configuration;
         this.schemaPath = schemaPath;
@@ -79,6 +79,7 @@ public class CsvFileLoader extends TextFileLoader {
             settings.setIgnoreTrailingWhitespaces(true);
             settings.setEmptyValue("");
             settings.setNullValue(null);
+            settings.setReadInputOnSeparateThread(false);
             if (this.actualSchema != null)
                 settings.setMaxColumns(this.actualSchema.getColumnCount());
             else
@@ -157,7 +158,6 @@ public class CsvFileLoader extends TextFileLoader {
                 if (ms == null)
                     ms = new FullMembershipSet(s.sizeInRows());
                 if (Utilities.isNullOrEmpty(this.schemaPath)) {
-                    // TODO: this is not enough, we have to reconcile between machines.
                     GuessSchema gs = new GuessSchema();
                     GuessSchema.SchemaInfo info = gs.guess((IStringColumn)s);
                     if (info.kind != ContentsKind.String &&

@@ -265,14 +265,16 @@ export class RpcRequest<T> implements ICancellable {
 }
 
 /**
- * A Renderer is an abstract base class for observers that handle replies from
+ * A Receiver is an abstract base class for observers that handle replies from
  * an Hillview streaming RPC request.  It receives a stream of PartialResult[T] objects.
  *
  * The protocol is that the onNext method will be called for each new piece
  * of data received.  If there is no error, the onCompleted method will be called last.
  * If an error occurs the onError method is called, and no other method may be called.
+ *
+ * A Renderer is a receiver which will actually show something on the screen.
  */
-export abstract class Renderer<T> implements Rx.Observer<PartialResult<T>> {
+export abstract class Receiver<T> implements Rx.Observer<PartialResult<T>> {
     protected progressBar: ProgressBar;
     protected reporter: ErrorReporter;
 
@@ -348,11 +350,11 @@ export abstract class Renderer<T> implements Rx.Observer<PartialResult<T>> {
 }
 
 /**
- * An OnCompleteRenderer does not do incremental renderings; it just
- * calls a 'run' method when all the data has been received.  It does
- * however manipulate correctly a progress bar.
+ * An OnCompleteReceiver just calls a 'run' method when *all*
+ * the data has been received.
+ * (It does however handle progress.)
  */
-export abstract class OnCompleteRenderer<T> extends Renderer<T> {
+export abstract class OnCompleteReceiver<T> extends Receiver<T> {
     protected value: T = null;
 
     protected constructor(public page: FullPage,

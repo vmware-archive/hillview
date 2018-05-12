@@ -19,7 +19,7 @@
  * This file contains lots of classes for accessing the remote TableTarget.java class.
  */
 
-import {RpcRequest, RemoteObject, OnCompleteRenderer} from "./rpc";
+import {RpcRequest, RemoteObject, OnCompleteReceiver} from "./rpc";
 import {ComparisonFilterDescription, EigenVal, EqualityFilterDescription, FindResult} from "./javaBridge";
 import {ICancellable, Pair, PartialResult, Seed} from "./util";
 import {PointSet, Resolution, ViewKind} from "./ui/ui";
@@ -32,18 +32,18 @@ import {
 } from "./javaBridge";
 import {Histogram2DArgs} from "./javaBridge";
 import {HeatMapArrayData} from "./dataViews/trellisHeatMapView";
-import {Dataset} from "./dataset";
+import {DatasetView} from "./datasetView";
+import {SchemaClass} from "./schemaClass";
 
 /**
  * This class has methods that correspond directly to TableTarget.java methods.
  */
-export class RemoteTableObject extends RemoteObject {
+export class TableTargetAPI extends RemoteObject {
     /**
      * Create a reference to a remote table target.
      * @param remoteObjectId   Id of remote table on the web server.
-     * @param dataset          Dataset that this table object belongs to.
      */
-    constructor(remoteObjectId: RemoteObjectId, public dataset: Dataset) {
+    constructor(public readonly remoteObjectId: RemoteObjectId) {
         super(remoteObjectId);
     }
 
@@ -131,6 +131,23 @@ export class RemoteTableObject extends RemoteObject {
             hittersId: r.remoteObjectId,
             schema: schema
         });
+    }
+
+    public createFilterHeavyRequest(r: RemoteObject, schema: Schema):
+        RpcRequest<PartialResult<RemoteObjectId>> {
+        return this.createStreamingRpcRequest<RemoteObjectId>("filterHeavy", {
+            hittersId: r.remoteObjectId,
+            schema: schema
+        });
+    }
+
+    public createFilterListHeavy(r: RemoteObject, schema: Schema, rowIndices: number[]):
+        RpcRequest<PartialResult<RemoteObjectId>> {
+            return this.createStreamingRpcRequest<RemoteObjectId>("filterListHeavy", {
+                hittersId: r,
+                schema: schema,
+                rowIndices: rowIndices
+            });
     }
 
     public createProjectToEigenVectorsRequest(r: RemoteObject, dimension: number, projectionName: string):
@@ -233,16 +250,35 @@ RpcRequest<PartialResult<RemoteObjectId>> {
 }
 
 /**
- * This is an IDataView that is also a RemoteTableObject.
- * This is a base class for most views that are rendering information in a remote table.
+ * This is an IDataView that is also a TableTargetAPI.
+ * "Big" tables are table-shaped remote datasets, represented
+ * in Java by IDataSet<ITable>.
+ * This is a base class for most views that are rendering
+ * information from a big table.
+ * A BigTableView view is always part of a datasetview.
  */
-export abstract class RemoteTableObjectView extends RemoteTableObject implements IDataView {
+export abstract class BigTableView extends TableTargetAPI implements IDataView {
     protected topLevel: HTMLElement;
+    public readonly dataset: DatasetView;
 
-    protected constructor(remoteObjectId: RemoteObjectId, protected page: FullPage,
-                public readonly viewKind: ViewKind) {
-        super(remoteObjectId, page.dataset);
+    /**
+     * Create a view for a big table.
+     * @param remoteObjectId   Id of remote table on the web server.
+     * @param schema           Schema of the current view (usually a subset of the schema of the
+     *                         big table).
+     * @param rowCount         Total number of rows in the big table.
+     * @param page             Page where the view is displayed.
+     * @param viewKind         Kind of view displayed.
+     */
+    protected constructor(
+        remoteObjectId: RemoteObjectId,
+        public rowCount: number,
+        public schema: SchemaClass,
+        protected page: FullPage,
+        public readonly viewKind: ViewKind) {
+        super(remoteObjectId);
         this.setPage(page);
+        this.dataset = page.dataset;
     }
 
     setPage(page: FullPage) {
@@ -278,22 +314,22 @@ export abstract class RemoteTableObjectView extends RemoteTableObject implements
 }
 
 /**
- * A renderer that receives a remoteObjectId for a RemoteTableObject.
+ * A renderer that receives a remoteObjectId for a big table.
  */
-export abstract class RemoteTableRenderer extends OnCompleteRenderer<RemoteObjectId> {
-    protected remoteObject: RemoteTableObject;
+export abstract class BaseRenderer extends OnCompleteReceiver<RemoteObjectId> {
+    protected remoteObject: TableTargetAPI;
 
     protected constructor(public page: FullPage,
                           public operation: ICancellable,
                           public description: string,
-                          protected dataset: Dataset) { // may be null for the first table
+                          protected dataset: DatasetView) { // may be null for the first table
         super(page, operation, description);
         this.remoteObject = null;
     }
 
     run(): void {
         if (this.value != null)
-            this.remoteObject = new RemoteTableObject(this.value, this.dataset);
+            this.remoteObject = new TableTargetAPI(this.value);
     }
 }
 
@@ -302,14 +338,14 @@ export abstract class RemoteTableRenderer extends OnCompleteRenderer<RemoteObjec
  * two IDataSet<ITable> objects (an IDataSet<Pair<ITable, ITable>>,
  *  and applies to the pair the specified set operation setOp.
  */
-export class ZipReceiver extends RemoteTableRenderer {
+export class ZipReceiver extends BaseRenderer {
     public constructor(page: FullPage,
                        operation: ICancellable,
                        protected setOp: CombineOperators,
-                       protected dataset: Dataset,
+                       protected dataset: DatasetView,
                        // receiver constructs the renderer that is used to display
                        // the result after combining
-                       protected receiver: (page: FullPage, operation: ICancellable) => RemoteTableRenderer) {
+                       protected receiver: (page: FullPage, operation: ICancellable) => BaseRenderer) {
         super(page, operation, "zip", dataset);
     }
 

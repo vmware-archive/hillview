@@ -38,7 +38,7 @@ public class TestUtils {
     public static ITable loadTableFromCSV(String dataFolder, String csvFile, String schemaFile) {
         Path schemaPath = Paths.get(dataFolder, schemaFile);
         Path path = Paths.get(dataFolder, csvFile);
-        CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
+        CsvFileLoader.Config config = new CsvFileLoader.Config();
         config.allowFewerColumns = false;
         config.hasHeaderRow = true;
         CsvFileLoader r = new CsvFileLoader(path.toString(), config, schemaPath.toString());

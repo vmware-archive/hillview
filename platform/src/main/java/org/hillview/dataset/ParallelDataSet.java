@@ -80,7 +80,7 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
         this.children = children;
     }
 
-    int size() { return this.children.size(); }
+    private int size() { return this.children.size(); }
 
     /**
      * Can be used to change the time interval in which partial results are aggregated.
@@ -102,7 +102,7 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
      * @return  A shorter stream, in which some of the values in the data stream have been
      * added together.
      */
-    <R> Observable<R> bundle(final Observable<R> data, IMonoid<R> adder) {
+    private <R> Observable<R> bundle(final Observable<R> data, IMonoid<R> adder) {
         if (this.bundleInterval > 0) {
             // If a time interval has no data we don't want to produce a zero.
             Observable<List<R>> bundled = data.buffer(this.bundleInterval, bundleTimeUnit)

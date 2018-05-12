@@ -39,11 +39,13 @@ public class PercentileTest extends BaseTest {
                 j = (int) Math.floor((rn.nextInt(range) * resolution) / range);
                 percentile[j]++;
             }
+            Arrays.sort(percentile);
+            /*
             for (j = 0; j < 100; j++)
                 System.out.printf("Bucket: %d, Count: %d%n", j, percentile[j]);
-            Arrays.sort(percentile);
             System.out.printf("Min: %d, Mean: %d, Max: %d%n",
                     percentile[0], sampleSize / resolution, percentile[resolution -1]);
+            */
         }
     }
 }

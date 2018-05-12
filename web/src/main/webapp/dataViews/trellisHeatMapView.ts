@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {Renderer} from "../rpc";
+import {Receiver} from "../rpc";
 import {Dialog} from "../ui/dialog";
 import {TopMenu, SubMenu} from "../ui/menu";
 import {Pair, truncate, significantDigits, ICancellable, PartialResult, Seed} from "../util";
@@ -31,7 +31,7 @@ import {HeatmapLegendPlot} from "../ui/legendPlot";
 import {TextOverlay} from "../ui/textOverlay";
 import {TableView, NextKReceiver} from "./tableView";
 import {DistinctStrings} from "../distinctStrings";
-import {RemoteTableObjectView, RemoteTableObject} from "../tableTarget";
+import {BigTableView, TableTargetAPI} from "../tableTarget";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {mouse as d3mouse, select as d3select} from "d3-selection";
 import {SchemaClass} from "../schemaClass";
@@ -257,7 +257,7 @@ class CompactHeatMapView {
 /**
  * A Trellis plot containing multiple heatmaps.
  */
-export class TrellisHeatMapView extends RemoteTableObjectView implements IScrollTarget {
+export class TrellisHeatMapView extends BigTableView implements IScrollTarget {
     // TODO: handle categorical values
     public args: TrellisPlotArgs;
     private offset: number; // Offset from the start of the set of unique z-values.
@@ -274,8 +274,9 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
     private mouseOverHeatMap: CompactHeatMapView;
 
     constructor(remoteObjectId: RemoteObjectId,
-                page: FullPage, args: TrellisPlotArgs, private schema: SchemaClass) {
-        super(remoteObjectId, page, "Trellis");
+                rowCount: number, schema: SchemaClass,
+                page: FullPage, args: TrellisPlotArgs) {
+        super(remoteObjectId, rowCount, schema, page, "Trellis");
         this.args = args;
         this.offset = 0;
         if (this.args.cds.length != 3)
@@ -381,9 +382,7 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
     }
 
     public showTable() {
-        let table = new TableView(this.remoteObjectId, this.page);
-        table.schema = this.schema;
-
+        let table = new TableView(this.remoteObjectId, this.rowCount, this.schema, this.page);
         let order =  new RecordOrder([ {
             columnDescription: this.args.cds[0],
             isAscending: true
@@ -581,7 +580,7 @@ export class TrellisHeatMapView extends RemoteTableObjectView implements IScroll
 /**
  * Receives the data range and initiates a new rendering.
  */
-export class Range2DRenderer extends Renderer<Pair<BasicColStats, BasicColStats>> {
+export class Range2DRenderer extends Receiver<Pair<BasicColStats, BasicColStats>> {
     constructor(page: FullPage, protected view: TrellisHeatMapView, operation: ICancellable) {
         super(page, operation, "Get stats");
     }
@@ -600,7 +599,7 @@ export class Range2DRenderer extends Renderer<Pair<BasicColStats, BasicColStats>
 /**
  * Receives data for the Trellis plot and updates the display.
  */
-class HeatMap3DRenderer extends Renderer<HeatMapArrayData> {
+class HeatMap3DRenderer extends Receiver<HeatMapArrayData> {
     constructor(page: FullPage, protected view: TrellisHeatMapView, operation: ICancellable, private zBins: string[]) {
         super(page, operation, "3D heatmap render");
     }
@@ -619,13 +618,15 @@ export class TrellisPlotDialog extends Dialog {
      * Create a dialog to display a Trellis plot of heatmaps.
      * @param selectedColumns  Columns selected by the user.
      * @param page             Page containing the original dataset.
+     * @param rowCount         Number of rows in the big table.
      * @param schema           Data schema.
      * @param remoteObject     Remote table object.
      * @param fixedColumns     If true do not allow the user to change the
      *                         first two selected columns.
      */
     constructor(private selectedColumns: string[], private page: FullPage,
-                private schema: SchemaClass, private remoteObject: RemoteTableObject,
+                private rowCount: number,
+                private schema: SchemaClass, private remoteObject: TableTargetAPI,
                 fixedColumns: boolean) {
         super("Heatmap array", "Draws a set of heatmap displays, one for each value in a categorical column.");
         let selectedNumColumns: string[] = [];
@@ -675,21 +676,22 @@ export class TrellisPlotDialog extends Dialog {
 
         let newPage = this.page.dataset.newPage("Heatmaps by " + args.cds[2].name, this.page);
         let trellisView = new TrellisHeatMapView(
-            this.remoteObject.remoteObjectId, newPage, args, this.schema);
+            this.remoteObject.remoteObjectId, this.rowCount, this.schema,
+            newPage, args);
         newPage.setDataView(trellisView);
         let cont = (operation: ICancellable) => {
-            args.uniqueStrings = this.remoteObject.dataset.getDistinctStrings(categCol.name);
+            args.uniqueStrings = this.page.dataset.getDistinctStrings(categCol.name);
             let rr = trellisView.createRange2DColsRequest(args.cds[0].name, args.cds[1].name);
             rr.chain(operation);
             rr.invoke(new Range2DRenderer(newPage, trellisView, rr));
         };
-        this.remoteObject.dataset.retrieveCategoryValues([categCol.name], this.page, cont);
+        this.page.dataset.retrieveCategoryValues([categCol.name], this.page, cont);
     }
 
     private parseFields(): TrellisPlotArgs {
-        let cd1 = this.schema.find(this.getFieldValue("col1"));
-        let cd2 = this.schema.find(this.getFieldValue("col2"));
-        let cd3 = this.schema.find(this.getFieldValue("col3"));
+        let cd1 = this.schema.findByDisplayName(this.getFieldValue("col1"));
+        let cd2 = this.schema.findByDisplayName(this.getFieldValue("col2"));
+        let cd3 = this.schema.findByDisplayName(this.getFieldValue("col3"));
         return {
             cds: [cd1, cd2, cd3],
         };

@@ -46,6 +46,7 @@ web/src/main/webapp/dataViews/*.js
 *.js.map
 
 web/src/main/webapp/toplevel.js
+web/src/main/webapp/datasetView.js
 web/src/main/webapp/schemaClass.js
 web/src/main/webapp/bundle.js
 web/src/main/webapp/dataset.js

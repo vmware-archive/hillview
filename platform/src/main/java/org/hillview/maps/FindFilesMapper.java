@@ -19,8 +19,8 @@ package org.hillview.maps;
 
 import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IMap;
-import org.hillview.storage.FileLoaderDescription;
-import org.hillview.storage.IFileLoader;
+import org.hillview.storage.FileSetDescription;
+import org.hillview.storage.IFileReference;
 import org.hillview.utils.HillviewLogger;
 
 import javax.annotation.Nullable;
@@ -39,47 +39,26 @@ import java.util.stream.Stream;
  * Scans a folder and finds files matching a pattern.
  * Creates a list of file loaders that can be invoked to load the actual file data as tables.
  */
-public class FindFilesMapper implements IMap<Empty, List<IFileLoader>> {
-    private final String folder;
-    private final int maxCount;
-    @Nullable
-    private final String fileNamePattern;
-    private final FileLoaderDescription loaderDescription;
-    /**
-     * The cookie can be used to prevent memoization, by using a different value
-     * every time.
-     */
-    @SuppressWarnings({"FieldCanBeLocal", "unused"})
-    @Nullable
-    private final String cookie;
-    private final int repeats;
+public class FindFilesMapper implements IMap<Empty, List<IFileReference>> {
+    private final FileSetDescription description;
 
-    /**
-     * Create an object to find all file names that match the specification.
-     * @param folder   Folder where files are sought.
-     * @param maxCount Maximum number of files to find.  If 0 there is no limit.
-     * @param fileNamePattern  Regex for file names to search.  If null all file names match.
-     * @param cookie   This string is not used except to disable memoization.
-     * @param repeats  Used for benchmarking: load each file this many times.
-     */
-    public FindFilesMapper(String folder, int maxCount,
-                           @Nullable String fileNamePattern,
-                           FileLoaderDescription loader,
-                           @Nullable String cookie,
-                           int repeats) {
-        this.folder = folder;
-        this.maxCount = maxCount;
-        this.fileNamePattern = fileNamePattern;
-        this.loaderDescription = loader;
-        this.cookie = cookie;
-        this.repeats = repeats;
+    public FindFilesMapper(FileSetDescription description) {
+        this.description = description;
     }
 
+    /**
+     * Returns a list of IFileReference objects, one for each of the files
+     * that match the specification.
+     * @param empty: unused.
+     */
     @Override
-    public List<IFileLoader> apply(Empty empty) {
-        Path dir = Paths.get(this.folder);
-        HillviewLogger.instance.info("Find files", "folder: {0}, absfolder: {1}, pattern: {2}",
-                this.folder, dir.toAbsolutePath().toString(), this.fileNamePattern);
+    public List<IFileReference> apply(Empty empty) {
+        Path dir = Paths.get(this.description.folder);
+        @Nullable
+        String filenameRegex = this.description.getRegexPattern();
+        HillviewLogger.instance.info("Find files", "folder: {0}, absfolder: {1}, regex: {2}",
+                this.description.folder, dir.toAbsolutePath().toString(),
+                filenameRegex);
 
         Stream<Path> files;
         try {
@@ -88,22 +67,26 @@ public class FindFilesMapper implements IMap<Empty, List<IFileLoader>> {
             throw new RuntimeException(e);
         }
         files = files.filter(f -> {
-            if (this.fileNamePattern == null)
+            if (filenameRegex == null)
                 return true;
             String filename = f.getFileName().toString();
-            return filename.matches(this.fileNamePattern);
+            return filename.matches(filenameRegex);
         });
         Stream<String> fileNames = files.map(Path::toString).sorted();
-        if (this.repeats > 1)
-            fileNames = fileNames.flatMap(n -> Collections.nCopies(this.repeats, n).stream());
-        if (this.maxCount > 0)
+        if (this.description.repeat > 1)
+            fileNames = fileNames.flatMap(
+                    n -> Collections.nCopies(this.description.repeat, n).stream());
+        /*
+        // Sometimes useful for testing.
+        if (this.description.maxCount > 0)
             fileNames = fileNames.limit(this.maxCount);
+        */
         List<String> list = fileNames.collect(Collectors.toList());
         String allNames = String.join(",", list);
         HillviewLogger.instance.info("Files found", "{0}: {1}", list.size(), allNames);
-        List<IFileLoader> result = new ArrayList<IFileLoader>();
+        List<IFileReference> result = new ArrayList<IFileReference>();
         for (String n: list)
-            result.add(this.loaderDescription.createLoader(n));
+            result.add(this.description.createFileReference(n));
         return result;
     }
 }

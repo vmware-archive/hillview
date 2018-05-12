@@ -21,7 +21,7 @@ import {TopMenu} from "./menu";
 import {openInNewTab, significantDigits} from "../util";
 import {ConsoleDisplay, ErrorReporter} from "./errReporter";
 import {DataDisplay, IDataView} from "./dataview";
-import {Dataset} from "../dataset";
+import {DatasetView} from "../datasetView";
 
 /**
  * Maps each ViewKind to a url anchor in the github userManual.
@@ -77,7 +77,7 @@ export class FullPage implements IHtmlElement {
      * @param dataset     Parent dataset; only null for the toplevel menu.
      */
     public constructor(public readonly pageId: number, public readonly title: string,
-                       sourcePage: FullPage, public readonly dataset: Dataset) {
+                       sourcePage: FullPage, public readonly dataset: DatasetView) {
         this.console = new ConsoleDisplay();
         this.progressManager = new ProgressManager();
         this.dataDisplay = new DataDisplay();

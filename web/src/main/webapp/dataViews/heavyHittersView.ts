@@ -15,36 +15,42 @@
  * limitations under the License.
  */
 
-import {CombineOperators, IColumnDescription, NextKList, RecordOrder, RemoteObjectId, TopList} from "../javaBridge";
+import {CombineOperators, IColumnDescription, NextKList, RecordOrder, TopList} from "../javaBridge";
 import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
 import {TableOperationCompleted, TableView} from "./tableView";
-import {OnCompleteRenderer, RemoteObject} from "../rpc";
+import {OnCompleteReceiver, RemoteObject} from "../rpc";
 import {cloneSet, ICancellable, significantDigits} from "../util";
 import {FullPage} from "../ui/fullPage";
 import {SpecialChars, textToDiv} from "../ui/ui";
 import {DataRange} from "../ui/dataRange";
 import {TabularDisplay} from "../ui/tabularDisplay";
-import {RemoteTableObjectView} from "../tableTarget";
-import {TableViewBase} from "./tableViewBase";
+import {BigTableView} from "../tableTarget";
+import {TSViewBase} from "./tsViewBase";
 import {Dialog, FieldKind} from "../ui/dialog";
+import {SchemaClass} from "../schemaClass";
 
 /**
  * This method handles the outcome of the sketch for finding Heavy Hitters.
  */
-export class HeavyHittersReceiver extends OnCompleteRenderer<TopList> {
+export class HeavyHittersReceiver extends OnCompleteReceiver<TopList> {
     public constructor(page: FullPage,
-                       protected tv: TableViewBase,
+                       protected readonly tv: TSViewBase,
                        operation: ICancellable,
-                       protected schema: IColumnDescription[],
-                       protected order: RecordOrder,
-                       protected isApprox: boolean,
-                       protected percent: number) {
+                       protected readonly rowCount: number,
+                       protected readonly schema: SchemaClass,
+                       protected readonly order: RecordOrder,
+                       protected readonly isApprox: boolean,
+                       protected readonly percent: number,
+                       protected readonly columnsShown: IColumnDescription[]) {
         super(page, operation, "Frequent Elements");
     }
 
     run(data: TopList): void {
-        let newPage = this.tv.dataset.newPage("Frequent Elements", this.page);
-        let hhv = new HeavyHittersView(data, newPage, this.tv, this.schema, this.order, this.isApprox, this.percent);
+        let names = this.columnsShown.map(c => this.schema.displayName(c.name)).join(", ");
+        let newPage = this.tv.dataset.newPage("Frequent Elements in " + names, this.page);
+        let hhv = new HeavyHittersView(
+            data, newPage, this.tv, this.rowCount, this.schema,
+            this.order, this.isApprox, this.percent, this.columnsShown);
         newPage.setDataView(hhv);
         hhv.fill(data.top, this.elapsedMilliseconds());
     }
@@ -55,7 +61,7 @@ export class HeavyHittersReceiver extends OnCompleteRenderer<TopList> {
  * order of counts. It also displays a menu that gives various option to
  * filter and view the results.
  */
-export class HeavyHittersView extends RemoteTableObjectView {
+export class HeavyHittersView extends BigTableView {
     public static min: number = 0.01;
     public static minString: string = "0.01%";
     public static switchToMG: number = 0.9;
@@ -68,12 +74,14 @@ export class HeavyHittersView extends RemoteTableObjectView {
 
     constructor(public data: TopList,
                 public page: FullPage,
-                public tv: TableViewBase,
-                public schema: IColumnDescription[],
+                public tv: TSViewBase,
+                rowCount: number,
+                schema: SchemaClass,
                 public order: RecordOrder,
                 private isApprox: boolean,
-                public percent: number) {
-        super(data.heavyHittersId, page, "HeavyHitters");
+                public percent: number,
+                public readonly columnsShown: IColumnDescription[]) {
+        super(data.heavyHittersId, rowCount, schema, page, "HeavyHitters");
         this.topLevel = document.createElement("div");
         this.contextMenu = new ContextMenu(this.topLevel);
         this.table = new TabularDisplay();
@@ -110,8 +118,8 @@ export class HeavyHittersView extends RemoteTableObjectView {
 
         let header: string[] = ["Rank"];
         let tips: string[] = ["Position in decreasing order of frequency."];
-        this.schema.forEach(c => {
-            header.push(c.name);
+        this.columnsShown.forEach(c => {
+            header.push(this.schema.displayName(c.name));
             tips.push("Column name");
         });
         header = header.concat(["Count", "% (Above " + this.percent.toString() + ")", "Fraction"]);
@@ -128,15 +136,15 @@ export class HeavyHittersView extends RemoteTableObjectView {
      */
     public showTable(isApprox: boolean): void {
         if (isApprox) {
-            let rr = this.tv.createCheckHeavyRequest(new RemoteObject(this.data.heavyHittersId), this.schema);
+            let rr = this.tv.createCheckHeavyRequest(
+                new RemoteObject(this.data.heavyHittersId), this.columnsShown);
             rr.invoke(new HeavyHittersReceiver3(this, rr));
         } else {
             let newPage = this.dataset.newPage("All frequent elements", this.page);
-            let rr = this.tv.createStreamingRpcRequest<RemoteObjectId>("filterHeavy", {
-                hittersId: this.data.heavyHittersId,
-                schema: this.schema
-            });
-            rr.invoke(new TableOperationCompleted(newPage, this.tv.schema, rr, this.order, this.tv.dataset));
+            let rr = this.tv.createFilterHeavyRequest(
+                new RemoteObject(this.data.heavyHittersId), this.columnsShown);
+            rr.invoke(new TableOperationCompleted(
+                newPage, this.rowCount, this.tv.schema, rr, this.order));
         }
     }
 
@@ -144,12 +152,10 @@ export class HeavyHittersView extends RemoteTableObjectView {
         if (this.table.getSelectedRows().size == 0)
             return;
         let newPage = this.dataset.newPage("Selected frequent elements", this.page);
-        let rr = this.tv.createStreamingRpcRequest<RemoteObjectId>("filterListHeavy", {
-            hittersId: this.data.heavyHittersId,
-            schema: this.schema,
-            rowIndices: this.getSelectedRows()
-        });
-        rr.invoke(new TableOperationCompleted(newPage, this.tv.schema, rr, this.order, this.tv.dataset));
+        let rr = this.tv.createFilterListHeavy(
+            new RemoteObject(this.data.heavyHittersId), this.columnsShown, this.getSelectedRows());
+        rr.invoke(new TableOperationCompleted(
+            newPage, this.rowCount, this.tv.schema, rr, this.order));
     }
 
     private getSelectedRows(): number[] {
@@ -169,45 +175,46 @@ export class HeavyHittersView extends RemoteTableObjectView {
     }
 
     public exactCounts(): void {
-        let rr = this.tv.createCheckHeavyRequest(new RemoteObject(this.data.heavyHittersId), this.schema);
+        let rr = this.tv.createCheckHeavyRequest(
+            new RemoteObject(this.data.heavyHittersId), this.columnsShown);
         rr.invoke(new HeavyHittersReceiver2(this, rr));
     }
 
-    public fill(tdv: NextKList, elapsedMs: number): void {
-        if (tdv.rows.length == 0) this.showEmptyDialog();
+    public fill(nextKList: NextKList, elapsedMs: number): void {
+        if (nextKList.rows.length == 0) this.showEmptyDialog();
         else {
-            this.setRest(tdv);
-            if (tdv.rows != null) {
+            this.setRest(nextKList);
+            if (nextKList.rows != null) {
                 let k = 0;
                 let position = 0;
-                for (let i = 0; i < tdv.rows.length; i++) {
+                for (let i = 0; i < nextKList.rows.length; i++) {
                     k++;
                     if (i == this.restPos) {
-                        this.showRest(k, position, this.restCount, tdv.rowCount, this.table);
+                        this.showRest(k, position, this.restCount, nextKList.rowsScanned, this.table);
                         position += this.restCount;
                         k++;
                     }
                     let row: Element[] = [];
                     row.push(textToDiv(k.toString()));
-                    for (let j = 0; j < this.schema.length; j++) {
-                        let value = tdv.rows[i].values[j];
-                        row.push(textToDiv(TableView.convert(value, this.schema[j].kind)));
+                    for (let j = 0; j < this.columnsShown.length; j++) {
+                        let value = nextKList.rows[i].values[j];
+                        row.push(textToDiv(TableView.convert(value, this.columnsShown[j].kind)));
                     }
-                    row.push(textToDiv(this.valueToString(tdv.rows[i].count)));
-                    row.push(textToDiv(this.valueToString((tdv.rows[i].count / tdv.rowCount) * 100)));
-                    row.push(new DataRange(position, tdv.rows[i].count, tdv.rowCount).getDOMRepresentation());
+                    row.push(textToDiv(this.valueToString(nextKList.rows[i].count)));
+                    row.push(textToDiv(this.valueToString((nextKList.rows[i].count / nextKList.rowsScanned) * 100)));
+                    row.push(new DataRange(position, nextKList.rows[i].count, nextKList.rowsScanned).getDOMRepresentation());
                     let tRow: HTMLTableRowElement = this.table.addElementRow(row);
                     tRow.oncontextmenu = e => this.clickThenShowContextMenu(tRow, e);
-                    position += tdv.rows[i].count;
+                    position += nextKList.rows[i].count;
                 }
-                if (this.restPos == tdv.rows.length)
-                    this.showRest(tdv.rows.length, position, this.restCount, tdv.rowCount, this.table);
+                if (this.restPos == nextKList.rows.length)
+                    this.showRest(nextKList.rows.length, position, this.restCount, nextKList.rowsScanned, this.table);
             }
             this.table.addFooter();
             this.page.scrollIntoView();
             this.page.reportTime(elapsedMs);
-            if (tdv.rows.length >=  HeavyHittersView.maxDisplay)
-                HeavyHittersView.showLongDialog(tdv.rows.length);
+            if (nextKList.rows.length >=  HeavyHittersView.maxDisplay)
+                HeavyHittersView.showLongDialog(nextKList.rows.length);
         }
     }
 
@@ -265,14 +272,14 @@ export class HeavyHittersView extends RemoteTableObjectView {
      */
     private setRest(tdv: NextKList): void {
         if (tdv.rows == null) {
-            this.restCount = tdv.rowCount;
+            this.restCount = tdv.rowsScanned;
             this.restPos = 0;
         } else {
-            let runCount = tdv.rowCount;
+            let runCount = tdv.rowsScanned;
             for (let i = 0; i < tdv.rows.length; i++)
                 runCount -= tdv.rows[i].count;
             this.restCount = runCount;
-            if (this.restCount < (this.percent * tdv.rowCount) / 100)
+            if (this.restCount < (this.percent * tdv.rowsScanned) / 100)
                 this.restPos = -1;
             else {
                 let i = 0;
@@ -288,7 +295,7 @@ export class HeavyHittersView extends RemoteTableObjectView {
     private showRest(k: number, position: number, restCount: number, total: number, table: TabularDisplay): void {
         let row: Element[] = [];
         row.push(textToDiv(k.toString()));
-        for (let j = 0; j < this.schema.length; j++) {
+        for (let j = 0; j < this.columnsShown.length; j++) {
             let m = textToDiv("everything else");
             m.classList.add("missingData");
             row.push(m);
@@ -309,9 +316,12 @@ export class HeavyHittersView extends RemoteTableObjectView {
     }
 
     private runWithThreshold(newPercent: number) {
-        let rr = this.tv.createHeavyHittersRequest(this.schema, newPercent,
+        let rr = this.tv.createHeavyHittersRequest(
+            this.columnsShown, newPercent,
             this.tv.getTotalRowCount(), HeavyHittersView.switchToMG);
-        rr.invoke(new HeavyHittersReceiver(this.tv.getPage(), this.tv, rr, this.schema, this.order, true, newPercent));
+        rr.invoke(new HeavyHittersReceiver(
+            this.tv.getPage(), this.tv, rr, this.rowCount, this.schema,
+            this.order, true, newPercent, this.columnsShown));
     }
 
     private changeThreshold(): void {
@@ -337,15 +347,16 @@ export class HeavyHittersView extends RemoteTableObjectView {
 /**
  * This class handles the reply of the "checkHeavy" method when the goal is to to compute and display the Exact counts.
   */
-export class HeavyHittersReceiver2 extends OnCompleteRenderer<TopList> {
+export class HeavyHittersReceiver2 extends OnCompleteReceiver<TopList> {
     public constructor(public hhv: HeavyHittersView,
                        public operation: ICancellable) {
         super(hhv.page, operation, "Frequent elements -- exact counts");
     }
 
     run(newData: TopList): void {
-        let newHhv = new HeavyHittersView(newData, this.page, this.hhv.tv, this.hhv.schema, this.hhv.order, false,
-            this.hhv.percent);
+        let newHhv = new HeavyHittersView(
+            newData, this.page, this.hhv.tv, this.hhv.rowCount, this.hhv.schema, this.hhv.order, false,
+            this.hhv.percent, this.hhv.columnsShown);
         this.page.setDataView(newHhv);
         newHhv.fill(newData.top, this.elapsedMilliseconds());
     }
@@ -357,7 +368,7 @@ export class HeavyHittersReceiver2 extends OnCompleteRenderer<TopList> {
  * "filterHeavy" method.
  * The code is fairly similar to that in showTable().
  */
-export class HeavyHittersReceiver3 extends OnCompleteRenderer<TopList> {
+export class HeavyHittersReceiver3 extends OnCompleteReceiver<TopList> {
     public constructor(public hhv: HeavyHittersView,
                        public operation: ICancellable) {
         super(hhv.page, operation, "Computing exact frequencies");
@@ -365,11 +376,9 @@ export class HeavyHittersReceiver3 extends OnCompleteRenderer<TopList> {
 
     run(exactList: TopList): void {
         let newPage = this.hhv.dataset.newPage("Frequent elements", this.hhv.page);
-        let rr = this.hhv.tv.createStreamingRpcRequest<RemoteObjectId>("filterHeavy", {
-            hittersId: exactList.heavyHittersId,
-            schema: this.hhv.schema
-        });
-        rr.invoke(new TableOperationCompleted(newPage, this.hhv.tv.schema, rr, this.hhv.order,
-            this.hhv.tv.dataset));
+        let rr = this.hhv.tv.createFilterHeavyRequest(
+            new RemoteObject(exactList.heavyHittersId), this.hhv.columnsShown);
+        rr.invoke(new TableOperationCompleted(
+            newPage, this.hhv.tv.rowCount, this.hhv.tv.schema, rr, this.hhv.order));
     }
 }

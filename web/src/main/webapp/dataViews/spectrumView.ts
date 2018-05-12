@@ -23,17 +23,18 @@ import {TopMenu} from "../ui/menu";
 import {formatNumber, ICancellable} from "../util";
 import {FullPage} from "../ui/fullPage";
 import {AxisData} from "./axisData";
-import {RemoteTableObjectView} from "../tableTarget";
+import {BigTableView} from "../tableTarget";
 import {HistogramPlot} from "../ui/histogramPlot";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {TableView} from "./tableView";
-import {OnCompleteRenderer} from "../rpc";
+import {OnCompleteReceiver} from "../rpc";
+import {SchemaClass} from "../schemaClass";
 
 
 /**
  * Receives the result of a PCA computation and plots the singular values
  */
-export class SpectrumReceiver extends OnCompleteRenderer<EigenVal> {
+export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
     public specView: SpectrumView;
     public constructor(page: FullPage,
                        protected tv: TableView,
@@ -44,7 +45,9 @@ export class SpectrumReceiver extends OnCompleteRenderer<EigenVal> {
 
     run(eVals: EigenVal): void {
         let newPage = this.tv.dataset.newPage("Singular Value Spectrum", this.page);
-        this.specView = new SpectrumView(this.tv.remoteObjectId, newPage);
+        this.specView = new SpectrumView(
+            this.tv.remoteObjectId, this.tv.rowCount,
+            this.tv.schema, newPage);
         newPage.setDataView(this.specView);
 
         let ev: number [] = eVals.eigenValues;
@@ -61,7 +64,7 @@ export class SpectrumReceiver extends OnCompleteRenderer<EigenVal> {
 /**
  * A SpectrumView plots a one-dimensional bar-chart showing the top singular values.
  */
-export class SpectrumView extends RemoteTableObjectView {
+export class SpectrumView extends BigTableView {
     protected currentData: {
         histogram: Histogram,
         axisData: AxisData,
@@ -73,8 +76,8 @@ export class SpectrumView extends RemoteTableObjectView {
     protected chartDiv: HTMLElement;
     protected summary: HTMLElement;
 
-    constructor(remoteObjectId: RemoteObjectId, page: FullPage) {
-        super(remoteObjectId, page, "SVD Spectrum");
+    constructor(remoteObjectId: RemoteObjectId, rowCount: number, schema: SchemaClass, page: FullPage) {
+        super(remoteObjectId, rowCount, schema, page, "SVD Spectrum");
 
         this.topLevel = document.createElement("div");
         this.topLevel.className = "chart";

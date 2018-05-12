@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {RemoteObject, OnCompleteRenderer} from "./rpc";
+import {RemoteObject, OnCompleteReceiver} from "./rpc";
 import {FullPage} from "./ui/fullPage";
 import {ICancellable, significantDigits, uuidv4} from "./util";
 import {
@@ -24,8 +24,8 @@ import {
     JdbcConnectionInformation,
     RemoteObjectId
 } from "./javaBridge";
-import {Dataset} from "./dataset";
-import {RemoteTableRenderer} from "./tableTarget";
+import {DatasetView} from "./datasetView";
+import {BaseRenderer} from "./tableTarget";
 import {SchemaReceiver} from "./dataViews/tableView";
 
 export interface FilesLoaded {
@@ -62,7 +62,7 @@ export function getDescription(data: DataLoaded): string {
  * A renderer which receives a remote object id that denotes a set of files.
  * Initiates an RPC to get the file size.
  */
-class FileNamesReceiver extends OnCompleteRenderer<RemoteObjectId> {
+class FileNamesReceiver extends OnCompleteReceiver<RemoteObjectId> {
     constructor(loadMenuPage: FullPage, operation: ICancellable, protected data: DataLoaded) {
         super(loadMenuPage, operation, "Get file info");
     }
@@ -80,7 +80,7 @@ class FileNamesReceiver extends OnCompleteRenderer<RemoteObjectId> {
  * Receives the file size.
  * It initiates a loadTable RPC request to load data from these files as a table.
  */
-class FileSizeReceiver extends OnCompleteRenderer<FileSizeSketchInfo> {
+class FileSizeReceiver extends OnCompleteReceiver<FileSizeSketchInfo> {
     constructor(loadMenuPage: FullPage, operation: ICancellable,
                 protected data: DataLoaded,
                 protected remoteObj: RemoteObject) {
@@ -105,7 +105,7 @@ class FileSizeReceiver extends OnCompleteRenderer<FileSizeSketchInfo> {
  * Receives the ID for a remote table and initiates a request to get the
  * table schema.
  */
-export class RemoteTableReceiver extends RemoteTableRenderer {
+export class RemoteTableReceiver extends BaseRenderer {
     /**
      * Create a renderer for a new table.
      * @param page            Parent page initiating this request.
@@ -124,7 +124,7 @@ export class RemoteTableReceiver extends RemoteTableRenderer {
         let rr = this.remoteObject.createGetSchemaRequest();
         rr.chain(this.operation);
         let title = getDescription(this.data);
-        let dataset = new Dataset(this.remoteObject.remoteObjectId, title, this.data);
+        let dataset = new DatasetView(this.remoteObject.remoteObjectId, title, this.data);
         let page = dataset.newPage(title, null);
         rr.invoke(new SchemaReceiver(page, rr, this.remoteObject, dataset, this.forceTableView));
     }
@@ -145,8 +145,8 @@ export class InitialObject extends RemoteObject {
         super("0");
     }
 
-    public loadCSVFiles(files: FileSetDescription, loadMenuPage: FullPage): void {
-        let rr = this.createStreamingRpcRequest<RemoteObjectId>("findCsvFiles", files);
+    public loadFiles(files: FileSetDescription, loadMenuPage: FullPage): void {
+        let rr = this.createStreamingRpcRequest<RemoteObjectId>("findFiles", files);
         let observer = new FileNamesReceiver(loadMenuPage, rr,
             { kind: "Files", description: files });
         rr.invoke(observer);
@@ -156,27 +156,6 @@ export class InitialObject extends RemoteObject {
         // Use a guid to force the request to reload every time
         let rr = this.createStreamingRpcRequest<RemoteObjectId>("findLogs", uuidv4());
         let observer = new FileNamesReceiver(loadMenuPage, rr, { kind: "Hillview logs"} );
-        rr.invoke(observer);
-    }
-
-    public loadJsonFiles(files: FileSetDescription, loadMenuPage: FullPage): void {
-        let rr = this.createStreamingRpcRequest<RemoteObjectId>("findJsonFiles", files);
-        let observer = new FileNamesReceiver(loadMenuPage, rr,
-            { kind: "Files", description: files });
-        rr.invoke(observer);
-    }
-
-    public loadParquetFiles(files: FileSetDescription, loadMenuPage: FullPage): void {
-        let rr = this.createStreamingRpcRequest<RemoteObjectId>("findParquetFiles", files);
-        let observer = new FileNamesReceiver(loadMenuPage, rr,
-            { kind: "Files", description: files });
-        rr.invoke(observer);
-    }
-
-    public loadOrcFiles(files: FileSetDescription, loadMenuPage: FullPage): void {
-        let rr = this.createStreamingRpcRequest<RemoteObjectId>("findOrcFiles", files);
-        let observer = new FileNamesReceiver(loadMenuPage, rr,
-            { kind: "Files", description: files });
         rr.invoke(observer);
     }
 

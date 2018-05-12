@@ -18,14 +18,14 @@
 package org.hillview.maps;
 
 import org.hillview.dataset.api.IMap;
-import org.hillview.storage.IFileLoader;
+import org.hillview.storage.IFileReference;
 import org.hillview.table.api.ITable;
 
-public class LoadFilesMapper implements IMap<IFileLoader, ITable> {
+public class LoadFilesMapper implements IMap<IFileReference, ITable> {
     public LoadFilesMapper() {}
 
     @Override
-    public ITable apply(IFileLoader data) {
+    public ITable apply(IFileReference data) {
         return data.load();
     }
 

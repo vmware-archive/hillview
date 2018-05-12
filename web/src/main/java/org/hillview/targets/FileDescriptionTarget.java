@@ -22,10 +22,8 @@ import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IMap;
 import org.hillview.maps.LoadFilesMapper;
 import org.hillview.sketches.FileSizeSketch;
-import org.hillview.storage.IFileLoader;
+import org.hillview.storage.IFileReference;
 import org.hillview.table.api.ITable;
-
-import javax.annotation.Nullable;
 
 /**
  * This is an RpcTarget object which stores a file loader name in each leaf.
@@ -33,21 +31,15 @@ import javax.annotation.Nullable;
 // All RpcTarget objects must be public
 @SuppressWarnings("WeakerAccess")
 public class FileDescriptionTarget extends RpcTarget {
-    private final IDataSet<IFileLoader> files;
+    private final IDataSet<IFileReference> files;
 
-    public FileDescriptionTarget(IDataSet<IFileLoader> files, HillviewComputation computation) {
+    public FileDescriptionTarget(IDataSet<IFileReference> files, HillviewComputation computation) {
         super(computation);
         this.files = files;
         this.registerObject();
     }
 
-    public static class SchemaFileLocation {
-        @Nullable
-        String schemaFilename;
-        boolean headerRow;
-    }
-
-    @HillviewRpc
+   @HillviewRpc
     public void getFileSize(RpcRequest request, RpcRequestContext context) {
         FileSizeSketch sk = new FileSizeSketch();
         this.runCompleteSketch(this.files, sk, (e, c) -> e, request, context);
@@ -55,7 +47,7 @@ public class FileDescriptionTarget extends RpcTarget {
 
     @HillviewRpc
     public void loadTable(RpcRequest request, RpcRequestContext context) {
-        IMap<IFileLoader, ITable> loader = new LoadFilesMapper();
+        IMap<IFileReference, ITable> loader = new LoadFilesMapper();
         this.runMap(this.files, loader, TableTarget::new, request, context);
     }
 }

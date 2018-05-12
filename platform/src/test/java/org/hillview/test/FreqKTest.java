@@ -88,7 +88,7 @@ public class FreqKTest extends BaseTest {
         FreqKSketchMG fk = new FreqKSketchMG(table.getSchema(), epsilon);
         FreqKListMG fkList= fk.create(table);
         fkList.filter();
-        System.out.println(fkList.toString());
+        //System.out.println(fkList.toString());
         //return fkList;
     }
 
@@ -165,12 +165,12 @@ public class FreqKTest extends BaseTest {
         //Assert.assertNotNull(all.blockingSketch(fk).toString());
         FreqKListMG fkList = all.blockingSketch(fk);
         fkList.filter();
-        System.out.println(fkList.toString());
+        //System.out.println(fkList.toString());
         SampleHeavyHittersSketch shh = new SampleHeavyHittersSketch(bigTable.getSchema(), epsilon,
                 bigTable.getNumOfRows(), 184764);
         FreqKListSample shhList = all.blockingSketch(shh);
         shhList.rescale();
-        System.out.println(shhList.toString());
+        //System.out.println(shhList.toString());
     }
 
     @Test

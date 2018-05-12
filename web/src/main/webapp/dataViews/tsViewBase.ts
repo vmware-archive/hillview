@@ -15,19 +15,11 @@
  * limitations under the License.
  */
 
-import {RemoteTableObjectView} from "../tableTarget";
+import {BigTableView} from "../tableTarget";
 import {
-    allContentsKind,
-    asContentsKind,
-    ColumnSortOrientation,
-    ComparisonFilterDescription,
-    CreateColumnInfo,
-    EqualityFilterDescription,
-    HLogLog,
-    IColumnDescription,
-    RangeInfo,
-    RecordOrder,
-    RemoteObjectId
+    allContentsKind, asContentsKind, ColumnSortOrientation, ComparisonFilterDescription,
+    CreateColumnInfo, EqualityFilterDescription, HLogLog, IColumnDescription,
+    RangeInfo, RecordOrder, RemoteObjectId
 } from "../javaBridge";
 import {FullPage} from "../ui/fullPage";
 import {DistinctStrings} from "../distinctStrings";
@@ -39,21 +31,22 @@ import {TrellisPlotDialog} from "./trellisHeatMapView";
 import {Histogram2DDialog} from "./histogram2DView";
 import {SubMenu, TopMenuItem} from "../ui/menu";
 import {SpecialChars, ViewKind} from "../ui/ui";
-import {OnCompleteRenderer} from "../rpc";
+import {OnCompleteReceiver} from "../rpc";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {HeavyHittersReceiver, HeavyHittersView} from "./heavyHittersView";
 import {SchemaClass} from "../schemaClass";
 
 /**
- * A base class for TableView and SchemaView
+ * A base class for TableView and SchemaView.
  */
-export abstract class TableViewBase extends RemoteTableObjectView {
-    public schema: SchemaClass;
-    // Total rows in the table
-    protected rowCount: number;
-
-    protected constructor(remoteObjectId: RemoteObjectId, page: FullPage, viewKind: ViewKind) {
-        super(remoteObjectId, page, viewKind);
+export abstract class TSViewBase extends BigTableView {
+    protected constructor(
+        remoteObjectId: RemoteObjectId,
+        rowCount: number,
+        schema: SchemaClass,
+        page: FullPage,
+        viewKind: ViewKind) {
+        super(remoteObjectId, rowCount, schema, page, viewKind);
     }
 
     /**
@@ -67,6 +60,30 @@ export abstract class TableViewBase extends RemoteTableObjectView {
      * These are columns in the underlying data table.
      */
     public abstract getSelectedColCount(): number;
+
+    renameColumn(): void {
+        let cols = this.getSelectedColNames();
+        if (cols.length != 1) {
+            this.reportError("Select only 1 column to rename");
+            return;
+        }
+        let colName = cols[0];
+        let dialog = new Dialog("Rename column",
+            "Choose a new name for column " + this.schema.displayName(colName));
+        dialog.addTextField("name", "New name",
+            FieldKind.String, this.schema.displayName(colName), "New name to use for column");
+        dialog.setAction(() => this.doRenameColumn(colName, dialog.getFieldValue("name")));
+        dialog.show();
+    }
+
+    doRenameColumn(from: string, to: string): void {
+        this.schema = this.schema.clone();
+        if (!this.schema.changeDisplayName(from, to)) {
+            this.reportError("Cannot rename column to " + to + " since the name is already used.");
+            return;
+        }
+        this.refresh();
+    }
 
     protected heatMap(): void {
         if (this.getSelectedColCount() == 3) {
@@ -92,7 +109,7 @@ export abstract class TableViewBase extends RemoteTableObjectView {
             "All ORC files will be written to this folder on each of the remote machines.");
         dialog.setCacheTitle("saveAs");
 
-        class SaveReceiver extends OnCompleteRenderer<boolean> {
+        class SaveReceiver extends OnCompleteReceiver<boolean> {
             constructor (page: FullPage, operation: ICancellable) {
                 super(page, operation, "Save as ORC files");
             }
@@ -155,7 +172,7 @@ export abstract class TableViewBase extends RemoteTableObjectView {
         o.addColumn({columnDescription: cd, isAscending: true});
 
         let rec = new TableOperationCompleted(
-            newPage, schema, rr, o, this.dataset);
+            newPage, this.rowCount, schema, rr, o);
         rr.invoke(rec);
     }
 
@@ -165,7 +182,8 @@ export abstract class TableViewBase extends RemoteTableObjectView {
         columns.forEach(v => {
             let colDesc = this.schema.find(v);
             if (colDesc.kind == "String") {
-                this.reportError("Histograms not supported for string columns " + colDesc.name);
+                this.reportError("Histograms not supported for string columns " +
+                    this.schema.displayName(colDesc.name));
                 return;
             }
             if (colDesc.kind == "Category")
@@ -208,12 +226,14 @@ export abstract class TableViewBase extends RemoteTableObjectView {
                 let rr = this.createRange2DRequest(rangeInfo[0], rangeInfo[1]);
                 rr.chain(operation);
                 rr.invoke(new Range2DCollector(
-                    cds, this.schema, distinct, this.getPage(), this, false, rr, heatMap, false, false));
+                    cds, this.rowCount, this.schema, distinct,
+                    this.getPage(), this, false, rr, heatMap, false, false));
             } else {
                 let rr = this.createRangeRequest(rangeInfo[0]);
                 rr.chain(operation);
-                let title = "Histogram " + cds[0].name;
-                rr.invoke(new RangeCollector(title, cds[0], this.schema, distinct[0],
+                let title = "Histogram " + this.schema.displayName(cds[0].name);
+                rr.invoke(new RangeCollector(
+                    title, cds[0], this.rowCount, this.schema, distinct[0],
                     this.getPage(), this, false, rr, false));
             }
         };
@@ -232,8 +252,9 @@ export abstract class TableViewBase extends RemoteTableObjectView {
     }
 
     protected trellisPlot(): void {
-        let colNames: string[] = this.getSelectedColNames();
-        let dialog = new TrellisPlotDialog(colNames, this.getPage(), this.schema, this, false);
+        let colNames: string[] = this.getSelectedColNames().map(c => this.schema.displayName(c));
+        let dialog = new TrellisPlotDialog(
+            colNames, this.getPage(), this.rowCount, this.schema, this, false);
         dialog.show();
     }
 
@@ -243,11 +264,12 @@ export abstract class TableViewBase extends RemoteTableObjectView {
             this.reportError("Could not find two columns that can be charted.");
             return;
         }
-        let dia = new Histogram2DDialog(eligible.columnNames, heatmap);
+        let dia = new Histogram2DDialog(
+            eligible.columnNames.map(c => this.schema.displayName(c)), heatmap);
         dia.setAction(
             () => {
-                let col0 = dia.getColumn(false);
-                let col1 = dia.getColumn(true);
+                let col0 = this.schema.fromDisplayName(dia.getColumn(false));
+                let col1 = this.schema.fromDisplayName(dia.getColumn(true));
                 if (col0 == col1) {
                     this.reportError("The two columns must be distinct");
                     return;
@@ -265,7 +287,7 @@ export abstract class TableViewBase extends RemoteTableObjectView {
         }
         let colName = this.getSelectedColNames()[0];
         let rr = this.createHLogLogRequest(colName);
-        let rec = new CountReceiver(this.getPage(), rr, colName);
+        let rec = new CountReceiver(this.getPage(), rr, this.schema.displayName(colName));
         rr.invoke(rec);
     }
 
@@ -275,10 +297,10 @@ export abstract class TableViewBase extends RemoteTableObjectView {
             this.reportError("No columns that can be histogrammed found.");
             return;
         }
-        let dia = new HistogramDialog(eligible.columnNames);
+        let dia = new HistogramDialog(eligible.columnNames.map(c => this.schema.displayName(c)));
         dia.setAction(
             () => {
-                let col = dia.getColumn();
+                let col = this.schema.fromDisplayName(dia.getColumn());
                 this.histogramOrHeatmap([col], false);
             }
         );
@@ -334,20 +356,21 @@ export abstract class TableViewBase extends RemoteTableObjectView {
                 TableView.convert(filter.compareValue, desc.kind);
 
             let newPage = this.dataset.newPage(title, this.page);
-            rr.invoke(new TableOperationCompleted(newPage, this.schema, rr, o, this.dataset));
+            rr.invoke(new TableOperationCompleted(
+                newPage, this.rowCount, this.schema, rr, o));
         });
         ef.show();
     }
 
     /**
      * Show a dialog to compare values on the specified column.
-     * @param {string} colName     Column name.  If null the user will select the column.
-     * @param {RecordOrder} order  Current record ordering.
+     * @param {string} displayName  Column name.  If null the user will select the column.
+     * @param {RecordOrder} order   Current record ordering.
      */
     protected showCompareDialog(
-        colName: string, order: RecordOrder): void {
-        let cd = this.schema.find(colName);
-        let cfd = new ComparisonFilterDialog(cd, this.schema);
+        displayName: string, order: RecordOrder): void {
+        let cd = this.schema.findByDisplayName(displayName);
+        let cfd = new ComparisonFilterDialog(cd, displayName, this.schema);
         cfd.setAction(() => this.runComparisonFilter(cfd.getFilter(), order));
         cfd.show();
     }
@@ -363,10 +386,12 @@ export abstract class TableViewBase extends RemoteTableObjectView {
 
         let rr = this.createFilterComparisonRequest(filter);
         let title = "Filtered: " +
-            TableView.convert(filter.compareValue, kind) + " " + filter.comparison + " " + filter.column;
+            TableView.convert(filter.compareValue, kind) + " " + filter.comparison + " " +
+            this.schema.displayName(filter.column);
 
         let newPage = this.dataset.newPage(title, this.page);
-        rr.invoke(new TableOperationCompleted(newPage, this.schema, rr, o, this.dataset))
+        rr.invoke(new TableOperationCompleted(
+            newPage, this.rowCount, this.schema, rr, o));
     }
 
     protected runHeavyHitters(percent: number) {
@@ -375,23 +400,25 @@ export abstract class TableViewBase extends RemoteTableObjectView {
             return;
         }
         let isApprox: boolean = true;
-        let columns: IColumnDescription[] = [];
+        let columnsShown: IColumnDescription[] = [];
         let cso: ColumnSortOrientation[] = [];
         this.getSelectedColNames().forEach(v => {
             let colDesc = this.schema.find(v);
-            columns.push(colDesc);
+            columnsShown.push(colDesc);
             cso.push({columnDescription: colDesc, isAscending: true});
         });
         let order = new RecordOrder(cso);
-        let rr = this.createHeavyHittersRequest(columns, percent, this.getTotalRowCount(), HeavyHittersView.switchToMG);
-        rr.invoke(new HeavyHittersReceiver(this.getPage(), this, rr, columns, order, isApprox, percent));
+        let rr = this.createHeavyHittersRequest(
+            columnsShown, percent, this.getTotalRowCount(), HeavyHittersView.switchToMG);
+        rr.invoke(new HeavyHittersReceiver(
+            this.getPage(), this, rr, this.rowCount, this.schema, order, isApprox, percent, columnsShown));
     }
 
     protected heavyHittersDialog(): void {
         let title = "Frequent Elements from ";
         let cols: string[] = this.getSelectedColNames();
         if (cols.length <= 1) {
-            title += " " + cols[0];
+            title += " " + this.schema.displayName(cols[0]);
         } else {
             title += cols.length + " columns";
         }
@@ -418,7 +445,7 @@ class EqualityFilterDialog extends Dialog {
     constructor(private columnDescription: IColumnDescription, private schema: SchemaClass) {
         super("Filter", "Eliminates data from a column according to its value.");
         if (columnDescription == null) {
-            let cols = this.schema.columnNames;
+            let cols = this.schema.columnNames.map(c => this.schema.displayName(c));
             if (cols.length == 0)
                 return;
             this.addSelectField("column", "Column", cols, null, "Column that is filtered");
@@ -434,7 +461,7 @@ class EqualityFilterDialog extends Dialog {
         let textQuery: string = this.getFieldValue("query");
         if (this.columnDescription == null) {
             let colName = this.getFieldValue("column");
-            this.columnDescription = this.schema.find(colName);
+            this.columnDescription = this.schema.find(this.schema.fromDisplayName(colName));
         }
         if (this.columnDescription.kind == "Date") {
             let date = new Date(textQuery);
@@ -454,12 +481,14 @@ class EqualityFilterDialog extends Dialog {
 class ComparisonFilterDialog extends Dialog {
     private explanation: HTMLElement;
 
-    constructor(private columnDescription: IColumnDescription, private schema: SchemaClass) {
+    constructor(private columnDescription: IColumnDescription,
+                private displayName: string,
+                private schema: SchemaClass) {
         super("Compare", "Compare values");
-        this.explanation = this.addText("Value == row[Column]");
+        this.explanation = this.addText("Value == row[" + displayName + "]");
 
         if (columnDescription == null) {
-            let cols = this.schema.columnNames;
+            let cols = this.schema.columnNames.map(c => this.schema.displayName(c));
             if (cols.length == 0)
                 return;
             let col = this.addSelectField("column", "Column", cols, null, "Column that is filtered");
@@ -472,17 +501,23 @@ class ComparisonFilterDialog extends Dialog {
         op.onchange = () => this.selectionChanged();
     }
 
+    protected getColName(): string {
+        if (this.columnDescription == null)
+            return this.getFieldValue("column");
+        return this.schema.displayName(this.columnDescription.name);
+    }
+
     protected selectionChanged(): void {
         this.explanation.textContent = this.getFieldValue("value") + " " +
             this.getFieldValue("operation") +
-            " row[" + this.getFieldValue("column") + "]";
+            " row[" + this.getColName() + "]";
     }
 
     public getFilter(): ComparisonFilterDescription {
         let value: string = this.getFieldValue("value");
         if (this.columnDescription == null) {
             let colName = this.getFieldValue("column");
-            this.columnDescription = this.schema.find(colName);
+            this.columnDescription = this.schema.findByDisplayName(colName);
         }
         if (this.columnDescription.kind == "Date") {
             let date = new Date(value);
@@ -497,7 +532,7 @@ class ComparisonFilterDialog extends Dialog {
     }
 }
 
-class CountReceiver extends OnCompleteRenderer<HLogLog> {
+class CountReceiver extends OnCompleteReceiver<HLogLog> {
     constructor(page: FullPage, operation: ICancellable,
                 protected colName: string) {
         super(page, operation, "HyperLogLog");

@@ -116,7 +116,7 @@ export class Test {
         this.addProgram([{
             description: "Load all flights",
             cond: () => true,
-            cont: () => findElement("#hillviewPage0 #topMenu #Flights").click()
+            cont: () => findElement("#hillviewPage0 #topMenu #Flights__15_columns_").click()
         }, /* {
         This menu has been disabled.
             description: "Show all columns",

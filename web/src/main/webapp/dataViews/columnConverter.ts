@@ -16,7 +16,7 @@
  */
 
 import {Dialog, FieldKind} from "../ui/dialog";
-import {OnCompleteRenderer} from "../rpc";
+import {OnCompleteReceiver} from "../rpc";
 import {ICancellable} from "../util";
 import {FullPage} from "../ui/fullPage";
 import {TableView, TableOperationCompleted} from "./tableView";
@@ -124,11 +124,11 @@ export class ColumnConverter  {
         let o = this.order.clone();
         o.addColumn({columnDescription: cd, isAscending: true});
         rr.invoke(new TableOperationCompleted(
-            newPage, schema, rr, o, this.table.dataset));
+            newPage, this.table.rowCount, schema, rr, o));
     }
 }
 
-class HLogLogReceiver extends OnCompleteRenderer<HLogLog> {
+class HLogLogReceiver extends OnCompleteReceiver<HLogLog> {
     constructor(page: FullPage, operation: ICancellable, protected cc: ColumnConverter) {
         super(page, operation, "HyperLogLog");
     }

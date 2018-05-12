@@ -76,7 +76,7 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
      * Schedule the computation using the LocalDataSet.workScheduler.
      * @param data  Data whose computation is scheduled
      */
-    <S> Observable<S> schedule(Observable<S> data) {
+    private <S> Observable<S> schedule(Observable<S> data) {
         if (this.separateThread) {
             return data.subscribeOn(LocalDataSet.workScheduler)
                     .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler());
@@ -186,7 +186,7 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
     @Override
     public <R> Observable<PartialResult<R>> sketch(final ISketch<T, R> sketch) {
         // Immediately return a zero partial result
-        final Observable<PartialResult<R>> zero = this.zero(sketch::zero);
+        // final Observable<PartialResult<R>> zero = this.zero(sketch::zero);
         final Callable<R> callable = () -> {
             try {
                 HillviewLogger.instance.info("Starting sketch", "{0}:{0}",
@@ -203,8 +203,8 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
         // Wrap results in a stream of PartialResults.
         final Observable<PartialResult<R>> pro = sketched.map(PartialResult::new);
         // Concatenate with the zero.
-        Observable<PartialResult<R>> result = zero.concatWith(pro);
-        return this.schedule(result);
+        //Observable<PartialResult<R>> result = zero.concatWith(pro);
+        return this.schedule(pro);
     }
 
     @Override

@@ -22,7 +22,7 @@ import {Point, Resolution, SpecialChars, ViewKind} from "../ui/ui";
 import {FullPage} from "../ui/fullPage";
 import {TextOverlay} from "../ui/textOverlay";
 import {AnyScale} from "./axisData";
-import {RemoteTableObjectView} from "../tableTarget";
+import {BigTableView} from "../tableTarget";
 import {DistinctStrings} from "../distinctStrings";
 import {CDFPlot} from "../ui/CDFPlot";
 import {PlottingSurface} from "../ui/plottingSurface";
@@ -32,7 +32,7 @@ import {SchemaClass} from "../schemaClass";
 /**
  * This is a base class that contains code common to various histogram renderings.
  */
-export abstract class HistogramViewBase extends RemoteTableObjectView {
+export abstract class HistogramViewBase extends BigTableView {
     protected dragging: boolean;
     protected svg: any;
     /**
@@ -52,9 +52,12 @@ export abstract class HistogramViewBase extends RemoteTableObjectView {
     protected cdfPlot: CDFPlot;
     protected surface: PlottingSurface;
 
-    protected constructor(remoteObjectId: RemoteObjectId, protected tableSchema: SchemaClass,
-                page: FullPage, viewKind: ViewKind) {
-        super(remoteObjectId, page, viewKind);
+    protected constructor(
+        remoteObjectId: RemoteObjectId,
+        rowCount: number,
+        schema: SchemaClass,
+        page: FullPage, viewKind: ViewKind) {
+        super(remoteObjectId, rowCount, schema, page, viewKind);
         this.topLevel = document.createElement("div");
         this.topLevel.className = "chart";
         this.topLevel.onkeydown = e => this.keyDown(e);

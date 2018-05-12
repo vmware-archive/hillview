@@ -109,7 +109,6 @@ public class JsonFileLoader extends TextFileLoader {
             throw new RuntimeException("Expected a JSON array of JSON objects " + filename);
         JsonObject object = el.getAsJsonObject();
 
-        int index = 0;
         for (Map.Entry<String, JsonElement> e : object.entrySet()) {
             String name = e.getKey();
             JsonElement value = e.getValue();

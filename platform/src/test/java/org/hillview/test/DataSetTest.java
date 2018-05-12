@@ -111,7 +111,7 @@ public class DataSetTest extends BaseTest {
         Observable<String> o1 = o.map(s -> s + "0").first().single();
         Observable<String> o2 = o.map(s -> s + "1");
         Observable<String> m = o1.mergeWith(o2);
-        m.subscribe(s -> System.out.println("Sub1 got: " + s));
+        m.subscribe(s -> print("Sub1 got: " + s));
     }
 
     @Test
@@ -273,14 +273,21 @@ public class DataSetTest extends BaseTest {
         return time - initialTime.get();
     }
 
+    private static boolean quiet = true;
+    private static void print(String s) {
+        if (quiet)
+            return;
+        System.out.println(s);
+    }
+
     static class SlowSketch implements ISketch<Integer, Integer> {
         @Override
         public Integer create(Integer data) {
-            System.out.println(getTime() + " working " + data);
+            print(getTime() + " working " + data);
             int sum = 0;
             for (int i = 0; i < 10000000; i++)
                 sum = (sum + i) % 43;
-            System.out.println(getTime() + " ready " + data + ": " + sum);
+            print(getTime() + " ready " + data + ": " + sum);
             completedLocals.getAndIncrement();
             return 0;
         }
@@ -337,17 +344,17 @@ public class DataSetTest extends BaseTest {
                 public void onNext(PartialResult<Integer> i) {
                 }
             };
-            src = src.doOnUnsubscribe(() -> System.out.println(getTime() + " unsubscribed"));
+            src = src.doOnUnsubscribe(() -> print(getTime() + " unsubscribed"));
 
-            System.out.println(getTime() + " starting");
+            print(getTime() + " starting");
             Subscription sub = src.subscribe(obs);
-            System.out.println(getTime() + " sleeping");
+            print(getTime() + " sleeping");
             Thread.sleep(200);
-            System.out.println(getTime() + " unsubscribing");
+            print(getTime() + " unsubscribing");
             sub.unsubscribe();
-            System.out.println(getTime() + " Sleeping some more");
+            print(getTime() + " Sleeping some more");
             Thread.sleep(3000);
-            System.out.println("Completed locals: " + completedLocals.get());
+            print("Completed locals: " + completedLocals.get());
 
             while (!sub.isUnsubscribed())
                 Thread.sleep(50);
@@ -359,11 +366,11 @@ public class DataSetTest extends BaseTest {
     static class SlowMap implements IMap<Integer, Integer> {
         @Override
         public Integer apply(Integer data) {
-            System.out.println(getTime() + " working " + data);
+            print(getTime() + " working " + data);
             int sum = 0;
             for (int i = 0; i < 10000000; i++)
                 sum = (sum + i) % 43;
-            System.out.println(getTime() + " ready " + data + ": " + sum);
+            print(getTime() + " ready " + data + ": " + sum);
             completedLocals.getAndIncrement();
             return sum;
         }
@@ -407,17 +414,17 @@ public class DataSetTest extends BaseTest {
                         public void onNext(PartialResult<IDataSet<Integer>> i) {
                         }
                     };
-            src = src.doOnUnsubscribe(() -> System.out.println(getTime() + " unsubscribed"));
+            src = src.doOnUnsubscribe(() -> print(getTime() + " unsubscribed"));
 
-            System.out.println(getTime() + " starting");
+            print(getTime() + " starting");
             Subscription sub = src.subscribe(obs);
-            System.out.println(getTime() + " sleeping");
+            print(getTime() + " sleeping");
             Thread.sleep(200);
-            System.out.println(getTime() + " unsubscribing");
+            print(getTime() + " unsubscribing");
             sub.unsubscribe();
-            System.out.println(getTime() + " Sleeping some more");
+            print(getTime() + " Sleeping some more");
             Thread.sleep(5000);
-            System.out.println("Completed locals: " + completedLocals.get());
+            print("Completed locals: " + completedLocals.get());
 
             while (!sub.isUnsubscribed())
                 Thread.sleep(50);

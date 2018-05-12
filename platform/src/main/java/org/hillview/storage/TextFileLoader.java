@@ -22,6 +22,7 @@ import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.io.ByteOrderMark;
 import org.apache.commons.io.input.BOMInputStream;
 import org.hillview.table.api.IAppendableColumn;
+import org.hillview.table.api.ITable;
 import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Utilities;
 
@@ -34,7 +35,7 @@ import java.io.*;
  * track of the current position within the file.  These loaders are
  * only allocated where the data is, they are not serializable.
  */
-public abstract class TextFileLoader implements IFileLoader {
+public abstract class TextFileLoader {
     final String filename;
     int currentRow;
     int currentColumn;
@@ -61,14 +62,6 @@ public abstract class TextFileLoader implements IFileLoader {
         this.currentColumn = 0;
         this.currentField = 0;
         this.currentToken = null;
-    }
-
-    @Override
-    public long getSizeInBytes() {
-        File file = new File(this.filename);
-        if (file.exists())
-            return file.length();
-        return 0;
     }
 
     Reader getFileReader() {
@@ -153,11 +146,11 @@ public abstract class TextFileLoader implements IFileLoader {
         String columnName = "";
         if (this.columns != null) {
             columnName = (this.currentColumn < this.columns.length) ?
-                    (" (" + this.columns[this.currentColumn].getName() + ")") : "";
+                    (" (" + this.columns[this.currentColumn].toString() + ")") : "";
         }
 
         return "Error while parsing file " + this.filename + "@" + Utilities.getHostName() +
-                " line " + this.currentRow + (this.currentColumn > 0 ?
+                " line " + this.currentRow + (this.currentColumn >= 0 ?
                 " column " + this.currentColumn + columnName : "")
                 + (this.currentToken != null ? " token " + this.currentToken : "");
     }
@@ -173,4 +166,6 @@ public abstract class TextFileLoader implements IFileLoader {
     private void error(Exception ex) {
         throw new RuntimeException(this.errorMessage(), ex);
     }
+
+    public abstract ITable load();
 }

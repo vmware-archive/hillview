@@ -57,7 +57,7 @@ public class CsvFileTest extends BaseTest {
 
     private ITable readTable(String folder, String file) {
         Path path = Paths.get(folder, file);
-        CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
+        CsvFileLoader.Config config = new CsvFileLoader.Config();
         config.allowFewerColumns = false;
         config.hasHeaderRow = false;
         CsvFileLoader r = new CsvFileLoader(path.toString(), config, null);
@@ -67,7 +67,7 @@ public class CsvFileTest extends BaseTest {
     private void readFileWithSchema(String criteoFile) {
         Path schemaPath = Paths.get(criteoFolder, criteoSchema);
         Path path = Paths.get(criteoFolder, criteoFile);
-        CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
+        CsvFileLoader.Config config = new CsvFileLoader.Config();
         config.allowFewerColumns = false;
         config.hasHeaderRow = false;
         config.separator = '\t';
@@ -96,7 +96,7 @@ public class CsvFileTest extends BaseTest {
     public void readCsvFileWithSchemaTest() {
         Path schemaPath = Paths.get(ontimeFolder, schemaFile);
         Path path = Paths.get(ontimeFolder, csvFile);
-        CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
+        CsvFileLoader.Config config = new CsvFileLoader.Config();
         config.allowFewerColumns = false;
         config.hasHeaderRow = true;
         CsvFileLoader r = new CsvFileLoader(path.toString(), config, schemaPath.toString());
@@ -107,7 +107,7 @@ public class CsvFileTest extends BaseTest {
     @Test
     public void readCsvFileGuessSchemaTest() {
         Path path = Paths.get(ontimeFolder, csvFile);
-        CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
+        CsvFileLoader.Config config = new CsvFileLoader.Config();
         config.allowFewerColumns = false;
         config.hasHeaderRow = true;
         CsvFileLoader r = new CsvFileLoader(path.toString(), config, null);
@@ -118,7 +118,7 @@ public class CsvFileTest extends BaseTest {
     @Test
     public void readUTF16FileTest() {
         Path path = Paths.get("../data/", "utf16-data.csv");
-        CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
+        CsvFileLoader.Config config = new CsvFileLoader.Config();
         config.allowFewerColumns = false;
         config.hasHeaderRow = true;
         CsvFileLoader r = new CsvFileLoader(path.toString(), config, null);
@@ -142,7 +142,7 @@ public class CsvFileTest extends BaseTest {
 
             table.getSchema().writeToJsonFile(schemaPath);
 
-            CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
+            CsvFileLoader.Config config = new CsvFileLoader.Config();
             config.allowFewerColumns = false;
             config.hasHeaderRow = true;
             CsvFileLoader r = new CsvFileLoader(path, config, schemaPath.toString());

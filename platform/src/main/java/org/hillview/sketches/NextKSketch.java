@@ -169,7 +169,7 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
         final SmallTable mergedTable = new SmallTable(mergedCol);
         return new NextKList(mergedTable, mergedCounts,
                 left.startPosition + right.startPosition,
-                left.totalRows + right.totalRows);
+                left.rowsScanned + right.rowsScanned);
     }
 
     @Override

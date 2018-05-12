@@ -20,10 +20,11 @@ package org.hillview.storage;
 import org.hillview.table.api.ITable;
 
 /**
- * This class loads a file from disk and converts it into an ITable.
+ * This class holds a reference to a "file" from some external storage medium.
+ * This class can read the data in the file into an ITable using the load method.
  * Instances of this class are not serializable; they are all created where the data resides.
  */
-public interface IFileLoader {
+public interface IFileReference {
     /**
      * Read the file, return a table.
      */

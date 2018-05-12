@@ -59,8 +59,11 @@ public class DoubleListColumn
     public void append(final double value) {
         final int segmentId = this.size >> LogSegmentSize;
         final int localIndex = this.size & SegmentMask;
-        if (this.segments.size() <= segmentId)
+        int segmentCount = this.segments.size();
+        if (segmentCount == segmentId)
             this.grow();
+        else if (segmentCount != segmentId + 1)
+            throw new RuntimeException("Not appending in last segment: " + segmentId + "/" + segmentCount);
         this.segments.get(segmentId)[localIndex] = value;
         this.size++;
     }

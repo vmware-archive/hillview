@@ -236,13 +236,13 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             @Override
             public void onCompleted() {
                 queue = queue.thenRunAsync(() -> {
-                    responseObserver.onCompleted();
-                    HillviewServer.this.removeSubscription(id, operation + " completed");
                     if (MEMOIZE && this.memoizedResult != null) {
                         HillviewServer.this.memoizedCommands.insert(
                                 command, this.memoizedResult,
                                 Converters.checkNull(this.memoizedDatasetIndex));
                     }
+                    responseObserver.onCompleted();
+                    HillviewServer.this.removeSubscription(id, operation + " completed");
                 }, executorService);
             }
 
@@ -269,6 +269,10 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                     final byte[] bytes = SerializationUtils.serialize(res);
                     final PartialResponse result = PartialResponse.newBuilder()
                             .setSerializedOp(ByteString.copyFrom(bytes)).build();
+                    if (MEMOIZE) {
+                        this.memoizedResult = result;
+                        this.memoizedDatasetIndex = idsIndex;
+                    }
                     responseObserver.onNext(result);
                 }, executorService);
             }
@@ -315,8 +319,8 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
      */
     @Override
     @SuppressWarnings("unchecked")
-    public void flatMap(final Command command, final StreamObserver<PartialResponse>
-            responseObserver) {
+    public void flatMap(
+            final Command command, final StreamObserver<PartialResponse> responseObserver) {
         try {
             final UUID commandId = this.getId(command);
             final IDataSet dataset = this.getIfValid(command.getIdsIndex(), responseObserver);

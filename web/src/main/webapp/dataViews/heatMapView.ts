@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { Renderer } from "../rpc";
+import { Receiver } from "../rpc";
 import {
     IColumnDescription, RecordOrder, BasicColStats, FilterDescription,
     Histogram2DArgs, CombineOperators, RemoteObjectId, HeatMap, isNumeric
@@ -32,7 +32,7 @@ import {FullPage} from "../ui/fullPage";
 import {HeatmapLegendPlot} from "../ui/legendPlot";
 import {TextOverlay} from "../ui/textOverlay";
 import {AxisData} from "./axisData";
-import {RemoteTableObjectView, ZipReceiver, RemoteTableObject} from "../tableTarget";
+import {BigTableView, TableTargetAPI, ZipReceiver} from "../tableTarget";
 import {DistinctStrings} from "../distinctStrings";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {HeatmapPlot} from "../ui/heatmapPlot";
@@ -46,7 +46,7 @@ import {SchemaClass} from "../schemaClass";
 /**
  * A HeatMapView renders information as a heatmap.
  */
-export class HeatMapView extends RemoteTableObjectView {
+export class HeatMapView extends BigTableView {
     protected dragging: boolean;
     /**
      * Coordinates of mouse within canvas.
@@ -74,8 +74,11 @@ export class HeatMapView extends RemoteTableObjectView {
     private readonly menu: TopMenu;
     protected readonly viewMenu: SubMenu;
 
-    constructor(remoteObjectId: RemoteObjectId, protected schema: SchemaClass, page: FullPage) {
-        super(remoteObjectId, page, "Heatmap");
+    constructor(remoteObjectId: RemoteObjectId,
+                rowCount: number,
+                schema: SchemaClass,
+                page: FullPage) {
+        super(remoteObjectId, rowCount, schema, page, "Heatmap");
         this.topLevel = document.createElement("div");
         this.topLevel.className = "chart";
         this.topLevel.onkeydown = e => this.keyDown(e);
@@ -222,9 +225,12 @@ export class HeatMapView extends RemoteTableObjectView {
 
     // Draw this as a 2-D histogram
     histogram(): void {
-        let rcol = new Range2DCollector([this.currentData.xData.description, this.currentData.yData.description],
-                    this.schema, [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
-                    this.page, this, this.currentData.samplingRate >= 1, null, false, false, false);
+        let rcol = new Range2DCollector(
+            [this.currentData.xData.description, this.currentData.yData.description],
+            this.rowCount,
+            this.schema,
+            [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
+            this.page, this, this.currentData.samplingRate >= 1, null, false, false, false);
         rcol.setValue({ first: this.currentData.xData.stats, second: this.currentData.yData.stats });
         rcol.onCompleted();
     }
@@ -235,7 +241,7 @@ export class HeatMapView extends RemoteTableObjectView {
             let col = this.schema.get(i);
             if (col.kind == "Category" && col.name != this.currentData.xData.description.name
                 && col.name != this.currentData.yData.description.name)
-                columns.push(col.name);
+                columns.push(this.schema.displayName(col.name));
         }
         if (columns.length == 0) {
             this.page.reportError("No acceptable columns found");
@@ -288,17 +294,19 @@ export class HeatMapView extends RemoteTableObjectView {
     }
 
     private showTrellis(colName: string) {
-        let oc = this.schema.find(colName);
+        let groupBy = this.schema.findByDisplayName(colName);
         let cds: IColumnDescription[] = [this.currentData.xData.description,
-                                         this.currentData.yData.description, oc];
+                                         this.currentData.yData.description, groupBy];
         let catColumns: string[] = [colName];
         let newPage = this.dataset.newPage(
-            "Heatmaps " + this.currentData.xData.description.name + ", " +
-            this.currentData.yData.description + " by " + oc.name, this.page);
+            "Heatmaps (" +
+            this.schema.displayName(this.currentData.xData.description.name) + ", " +
+            this.schema.displayName(this.currentData.yData.description.name) + " by " +
+            this.schema.displayName(groupBy.name) + ")", this.page);
 
         let args: TrellisPlotArgs = { cds: cds };
         let trellisView = new TrellisHeatMapView(
-            this.remoteObjectId, newPage, args, this.schema);
+            this.remoteObjectId, this.rowCount, this.schema, newPage, args);
         newPage.setDataView(trellisView);
         let cont = (operation: ICancellable) => {
             args.uniqueStrings = this.dataset.getDistinctStrings(colName);
@@ -323,7 +331,8 @@ export class HeatMapView extends RemoteTableObjectView {
                 page, operation,
                 [this.currentData.xData.description, this.currentData.yData.description],
                 [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
-                this.schema, this.currentData.samplingRate >= 1, true, this.dataset, false);
+                this.rowCount, this.schema, this.currentData.samplingRate >= 1,
+                true, this.dataset, false);
         };
         rr.invoke(new ZipReceiver(this.getPage(), rr, how, this.dataset, renderer));
     }
@@ -338,7 +347,7 @@ export class HeatMapView extends RemoteTableObjectView {
             isAscending: true
         }]);
         let page = this.dataset.newPage("Table", this.page);
-        let table = new TableView(this.remoteObjectId, page);
+        let table = new TableView(this.remoteObjectId, this.rowCount, this.schema, page);
         page.setDataView(table);
         table.schema = this.schema;
         let rr = table.createNextKRequest(order, null);
@@ -361,6 +370,7 @@ export class HeatMapView extends RemoteTableObjectView {
     public swapAxes(): void {
         let collector = new Range2DCollector(
             [this.currentData.yData.description, this.currentData.xData.description],
+            this.rowCount,
             this.schema,
             [this.currentData.yData.distinctStrings, this.currentData.xData.distinctStrings],
             this.page, this, this.currentData.samplingRate >= 1, null, true, false, false);
@@ -505,7 +515,7 @@ export class HeatMapView extends RemoteTableObjectView {
         let renderer = new Filter2DReceiver(
             this.currentData.xData.description, this.currentData.yData.description,
             this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings,
-            this.schema, this.page, this.currentData.samplingRate >= 1, rr, true,
+            this.rowCount, this.schema, this.page, this.currentData.samplingRate >= 1, rr, true,
             this.dataset, false);
         rr.invoke(renderer);
     }
@@ -514,13 +524,14 @@ export class HeatMapView extends RemoteTableObjectView {
 /**
  * Waits for all column stats to be received and then initiates a heatmap or 2D histogram.
   */
-export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats>> {
+export class Range2DCollector extends Receiver<Pair<BasicColStats, BasicColStats>> {
     protected stats: Pair<BasicColStats, BasicColStats>;
     constructor(protected cds: IColumnDescription[],
+                protected rowCount: number,
                 protected schema: SchemaClass,
                 protected ds: DistinctStrings[],
                 page: FullPage,
-                protected remoteObject: RemoteTableObject,
+                protected remoteObject: TableTargetAPI,
                 protected exact: boolean,
                 operation: ICancellable,
                 protected drawHeatMap: boolean,  // true - heatMap, false - histogram
@@ -534,7 +545,7 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
         this.stats = bcs;
     }
 
-    public setRemoteObject(ro: RemoteTableObject) {
+    public setRemoteObject(ro: BigTableView) {
         this.remoteObject = ro;
     }
 
@@ -581,7 +592,7 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
         if (this.drawHeatMap) {
             let rr = this.remoteObject.createHeatMapRequest(arg);
             let renderer = new HeatMapRenderer(this.page,
-                this.remoteObject, this.schema,
+                this.remoteObject, this.rowCount, this.schema,
                 this.cds, [this.stats.first, this.stats.second],
                 samplingRate, [this.ds[0], this.ds[1]], rr, this.reusePage);
             if (this.operation != null)
@@ -590,7 +601,7 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
         } else {
             let rr = this.remoteObject.createHistogram2DRequest(arg);
             let renderer = new Histogram2DRenderer(this.page,
-                this.remoteObject, this.schema,
+                this.remoteObject, this.rowCount, this.schema,
                 this.cds, [this.stats.first, this.stats.second], samplingRate,
                 this.ds, rr, this.relative, this.reusePage);
             if (this.operation != null)
@@ -611,11 +622,12 @@ export class Range2DCollector extends Renderer<Pair<BasicColStats, BasicColStats
 /**
  * Renders a heatmap
   */
-export class HeatMapRenderer extends Renderer<HeatMap> {
+export class HeatMapRenderer extends Receiver<HeatMap> {
     protected heatMap: HeatMapView;
 
     constructor(page: FullPage,
-                remoteTable: RemoteTableObject,
+                remoteTable: TableTargetAPI,
+                protected rowCount: number,
                 protected schema: SchemaClass,
                 protected cds: IColumnDescription[],
                 protected stats: BasicColStats[],
@@ -625,9 +637,11 @@ export class HeatMapRenderer extends Renderer<HeatMap> {
                 protected reusePage: boolean) {
         super(
             reusePage ? page : page.dataset.newPage(
-                "Heatmap " + cds[0].name + ", " + cds[1].name, page),
+                "Heatmap (" + schema.displayName(cds[0].name) + ", " +
+                schema.displayName(cds[1].name) + ")", page),
             operation, "histogram");
-        this.heatMap = new HeatMapView(remoteTable.remoteObjectId, schema, this.page);
+        this.heatMap = new HeatMapView(
+            remoteTable.remoteObjectId, rowCount, schema, this.page);
         this.page.setDataView(this.heatMap);
         if (cds.length != 2)
             throw "Expected 2 columns, got " + cds.length;

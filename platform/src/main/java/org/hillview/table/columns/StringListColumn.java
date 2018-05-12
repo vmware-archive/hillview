@@ -63,9 +63,16 @@ public class StringListColumn extends BaseListColumn implements IStringColumn {
 
         final int segmentId = this.size >> LogSegmentSize;
         final int localIndex = this.size & SegmentMask;
-        if (this.segments.size() <= segmentId)
+        int segmentCount = this.segments.size();
+        if (segmentCount == segmentId)
             this.grow();
-        this.segments.get(segmentId)[localIndex] = value;
+        else if (segmentCount != segmentId + 1)
+            throw new RuntimeException("Not appending in last segment: " + segmentId + "/" + segmentCount);
+
+        String[] segment = this.segments.get(segmentId);
+        if (segment == null)
+            throw new NullPointerException();
+        segment[localIndex] = value;
         this.size++;
     }
 

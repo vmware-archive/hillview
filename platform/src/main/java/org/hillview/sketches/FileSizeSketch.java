@@ -19,13 +19,13 @@ package org.hillview.sketches;
 
 import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.ISketch;
-import org.hillview.storage.IFileLoader;
+import org.hillview.storage.IFileReference;
 
 import javax.annotation.Nullable;
 
-public class FileSizeSketch implements ISketch<IFileLoader, FileSizeSketch.Info> {
+public class FileSizeSketch implements ISketch<IFileReference, FileSizeSketch.Info> {
     @Override
-    public Info create(IFileLoader data) {
+    public Info create(IFileReference data) {
         return new Info(1, data.getSizeInBytes());
     }
 

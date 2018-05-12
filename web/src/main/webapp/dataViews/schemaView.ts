@@ -17,14 +17,14 @@
 
 import {FullPage} from "../ui/fullPage";
 import {
-    NextKList, IColumnDescription, RecordOrder, Schema, RemoteObjectId, allContentsKind, ColumnSortOrientation,
+    NextKList, RecordOrder, Schema, RemoteObjectId, allContentsKind, ColumnSortOrientation,
     CombineOperators
 } from "../javaBridge";
 import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
 import {TabularDisplay} from "../ui/tabularDisplay";
 import {TableView} from "./tableView";
 import {Dialog, FieldKind} from "../ui/dialog";
-import {TableViewBase} from "./tableViewBase";
+import {TSViewBase} from "./tsViewBase";
 import {cloneToSet, significantDigits} from "../util";
 import {SchemaClass} from "../schemaClass";
 
@@ -32,19 +32,17 @@ import {SchemaClass} from "../schemaClass";
  * This class is used to browse through the columns of a table schema
  * and select columns from them.
  */
-export class SchemaView extends TableViewBase {
+export class SchemaView extends TSViewBase {
     protected display: TabularDisplay;
     protected contextMenu: ContextMenu;
     protected summary: HTMLElement;
 
     constructor(remoteObjectId: RemoteObjectId,
                 page: FullPage,
-                schema: SchemaClass,
                 rowCount: number,
+                schema: SchemaClass,
                 elapsedMs: number) {
-        super(remoteObjectId, page, "Schema");
-        this.rowCount = rowCount;
-        this.schema = schema;
+        super(remoteObjectId, rowCount, schema, page, "Schema");
         this.show();
         this.page.reportTime(elapsedMs);
     }
@@ -124,8 +122,11 @@ export class SchemaView extends TableViewBase {
         });
 
         for (let i = 0; i < this.schema.length; i++) {
-            let row = this.display.addRow([(i + 1).toString(), this.schema.get(i).name,
-                this.schema.get(i).kind.toString()]);
+            let cd = this.schema.get(i);
+            let row = this.display.addRow([
+                (i + 1).toString(),
+                this.schema.displayName(cd.name),
+                cd.kind.toString()]);
             row.oncontextmenu = e => this.createAndShowContextMenu(e);
         }
         this.topLevel.appendChild(this.display.getHTMLRepresentation());
@@ -190,7 +191,7 @@ export class SchemaView extends TableViewBase {
                 let so: ColumnSortOrientation = {
                     columnDescription: cd, isAscending: true
                 };
-                this.showCompareDialog(colName, new RecordOrder([so]));
+                this.showCompareDialog(this.schema.displayName(colName), new RecordOrder([so]));
             },
             help : "Eliminate data that matches/does not match a specific value."
         }, selectedCount == 1);
@@ -200,6 +201,11 @@ export class SchemaView extends TableViewBase {
             help: "Add a new column computed from the selected columns."
         }, true);
         this.contextMenu.addItem({
+            text: "Rename...",
+            action: () => this.renameColumn(),
+            help: "Give a new name to this column."
+        }, selectedCount == 1);
+        this.contextMenu.addItem({
             text: "Frequent Elements...",
             action: () => this.heavyHittersDialog(),
             help: "Find the values that occur most frequently in the selected columns."
@@ -207,7 +213,9 @@ export class SchemaView extends TableViewBase {
         this.contextMenu.show(e);
     }
 
-    refresh(): void { }
+    refresh(): void {
+        this.show();
+    }
 
     private dropColumns(): void {
         let selected = cloneToSet(this.getSelectedColNames());
@@ -217,7 +225,7 @@ export class SchemaView extends TableViewBase {
 
     private nameAction(regExp: RegExp, action: string) {
         for (let i = 0; i < this.schema.length; i++) {
-            if (this.schema.get(i).name.match(regExp)) {
+            if (this.schema.displayName(this.schema.get(i).name).match(regExp)) {
                 if (action == "Add")
                     this.display.selectedRows.add(i);
                 else if (action = "Remove")
@@ -256,24 +264,16 @@ export class SchemaView extends TableViewBase {
     }
 
     /**
-     * This method returns a Schema comprising of the selected columns.
-     */
-    private createSchema(): Schema {
-        let cds: IColumnDescription[] = [];
-        this.display.getSelectedRows().forEach(i => cds.push(this.schema.get(i)));
-        return cds;
-    }
-
-    /**
      * This method displays the table consisting of only the columns contained in the schema above.
      */
     private showTable(): void {
         let newPage = this.dataset.newPage(this.page.title, this.page);
-        let tv = new TableView(this.remoteObjectId, newPage);
+        let selected = this.display.getSelectedRows();
+        let newSchema = this.schema.filter(c => selected.has(this.schema.columnIndex(c.name)));
+        let tv = new TableView(this.remoteObjectId, this.rowCount, newSchema, newPage);
         newPage.setDataView(tv);
         let nkl: NextKList = {
-            schema: this.createSchema(),
-            rowCount: this.rowCount,
+            rowsScanned: this.rowCount,
             startPosition: 0,
             rows: []
         };

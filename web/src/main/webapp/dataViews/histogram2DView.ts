@@ -31,7 +31,7 @@ import {
     percent,
     saveAs
 } from "../util";
-import {Renderer, RpcRequest} from "../rpc";
+import {Receiver, RpcRequest} from "../rpc";
 import {Rectangle, Resolution} from "../ui/ui";
 import {FullPage} from "../ui/fullPage";
 import {TextOverlay} from "../ui/textOverlay";
@@ -39,7 +39,7 @@ import {AnyScale, AxisData} from "./axisData";
 import { HistogramViewBase, BucketDialog } from "./histogramViewBase";
 import {TableView, NextKReceiver} from "./tableView";
 import {Range2DCollector} from "./heatMapView";
-import {RemoteTableObject, RemoteTableRenderer, ZipReceiver} from "../tableTarget";
+import {TableTargetAPI, BaseRenderer, ZipReceiver} from "../tableTarget";
 import {DistinctStrings} from "../distinctStrings";
 import {CDFPlot} from "../ui/CDFPlot";
 import {PlottingSurface} from "../ui/plottingSurface";
@@ -49,7 +49,7 @@ import {Dialog} from "../ui/dialog";
 import {drag as d3drag} from "d3-drag";
 import {mouse as d3mouse, event as d3event} from "d3-selection";
 import {interpolateRainbow as d3interpolateRainbow} from "d3-scale-chromatic";
-import {Dataset} from "../dataset";
+import {DatasetView} from "../datasetView";
 import {SchemaClass} from "../schemaClass";
 
 /**
@@ -75,9 +75,9 @@ export class Histogram2DView extends HistogramViewBase {
     protected legendSurface: PlottingSurface;
     protected samplingRate: number;
 
-    constructor(remoteObjectId: RemoteObjectId, dataset: Dataset,
-                protected schema: SchemaClass, page: FullPage) {
-        super(remoteObjectId, schema, page, "2DHistogram");
+    constructor(remoteObjectId: RemoteObjectId, dataset: DatasetView,
+                rowCount: number, schema: SchemaClass, page: FullPage) {
+        super(remoteObjectId, rowCount, schema, page, "2DHistogram");
 
         this.legendSurface = new PlottingSurface(this.chartDiv, page);
         this.legendSurface.setHeight(Resolution.legendSpaceHeight);
@@ -241,8 +241,10 @@ export class Histogram2DView extends HistogramViewBase {
     }
 
     heatmap(): void {
-        let rcol = new Range2DCollector([this.currentData.xData.description, this.currentData.yData.description],
-            this.schema, [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
+        let rcol = new Range2DCollector(
+            [this.currentData.xData.description, this.currentData.yData.description],
+            this.rowCount, this.schema,
+            [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
             this.page, this, this.currentData.samplingRate >= 1, null, true, false, false);
         rcol.setValue({ first: this.currentData.xData.stats, second: this.currentData.yData.stats });
         rcol.onCompleted();
@@ -296,7 +298,7 @@ export class Histogram2DView extends HistogramViewBase {
                 page, operation,
                 [this.currentData.xData.description, this.currentData.yData.description],
                 [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
-                this.schema, this.currentData.samplingRate >= 1, false, this.dataset,
+                this.rowCount, this.schema, this.currentData.samplingRate >= 1, false, this.dataset,
                 this.relative);
         };
         rr.invoke(new ZipReceiver(this.getPage(), rr, how, this.dataset, renderer));
@@ -307,7 +309,7 @@ export class Histogram2DView extends HistogramViewBase {
             return;
         let rc = new Range2DCollector(
             [this.currentData.yData.description, this.currentData.xData.description],
-            this.schema,
+            this.rowCount, this.schema,
             [this.currentData.yData.distinctStrings, this.currentData.xData.distinctStrings],
             this.page, this, true, null, false, this.relative, false);
         rc.setValue({ first: this.currentData.yData.stats, second: this.currentData.xData.stats });
@@ -319,7 +321,7 @@ export class Histogram2DView extends HistogramViewBase {
             return;
         let rc = new Range2DCollector(
             [this.currentData.xData.description, this.currentData.yData.description],
-            this.schema,
+            this.rowCount, this.schema,
             [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
             this.page, this, true, null, false, this.relative, true);
         rc.setValue({ first: this.currentData.xData.stats,
@@ -369,7 +371,7 @@ export class Histogram2DView extends HistogramViewBase {
         };
         let rr = this.createHistogram2DRequest(args);
         let renderer = new Histogram2DRenderer(this.page,
-            this, this.schema,
+            this, this.rowCount, this.schema,
             [this.currentData.xData.description, this.currentData.yData.description],
             [this.currentData.xData.stats, this.currentData.yData.stats],
             samplingRate,
@@ -611,6 +613,7 @@ export class Histogram2DView extends HistogramViewBase {
             this.currentData.yData.description,
             this.currentData.xData.distinctStrings,
             this.currentData.yData.distinctStrings,
+            this.rowCount,
             this.schema,
             this.page, this.currentData.samplingRate >= 1.0, rr, false,
             this.dataset,
@@ -635,8 +638,7 @@ export class Histogram2DView extends HistogramViewBase {
         } ]);
 
         let page = this.dataset.newPage("Table", this.page);
-        let table = new TableView(this.remoteObjectId, page);
-        table.schema = this.schema;
+        let table = new TableView(this.remoteObjectId, this.rowCount, this.schema, page);
         let rr = table.createNextKRequest(order, null);
         page.setDataView(table);
         rr.invoke(new NextKReceiver(page, table, rr, false, order, null));
@@ -648,17 +650,18 @@ export class Histogram2DView extends HistogramViewBase {
  * a new 2D range computation, which in turns initiates a new 2D histogram
  * rendering.
  */
-export class Filter2DReceiver extends RemoteTableRenderer {
+export class Filter2DReceiver extends BaseRenderer {
     constructor(protected xColumn: IColumnDescription,
                 protected yColumn: IColumnDescription,
                 protected xDs: DistinctStrings,
                 protected yDs: DistinctStrings,
+                protected rowCount: number,
                 protected schema: SchemaClass,
                 page: FullPage,
                 protected exact: boolean,
                 operation: ICancellable,
                 protected heatMap: boolean,
-                dataset: Dataset,
+                dataset: DatasetView,
                 protected relative: boolean) {
         super(page, operation, "Filter", dataset);
     }
@@ -670,7 +673,8 @@ export class Filter2DReceiver extends RemoteTableRenderer {
         let rx = new RangeInfo(this.xColumn.name, this.xDs != null ? this.xDs.uniqueStrings : null);
         let ry = new RangeInfo(this.yColumn.name, this.yDs != null ? this.yDs.uniqueStrings : null);
         let rr = this.remoteObject.createRange2DRequest(rx, ry);
-        rr.invoke(new Range2DCollector(cds, this.schema, ds, this.page, this.remoteObject, this.exact,
+        rr.invoke(new Range2DCollector(
+            cds, this.rowCount, this.schema, ds, this.page, this.remoteObject, this.exact,
             rr, this.heatMap, this.relative, false));
     }
 }
@@ -679,15 +683,16 @@ export class Filter2DReceiver extends RemoteTableRenderer {
  * This class is invoked by the ZipReceiver after a set operation
  * to create a new 2D histogram.
   */
-export class Make2DHistogram extends RemoteTableRenderer {
+export class Make2DHistogram extends BaseRenderer {
     public constructor(page: FullPage,
                        operation: ICancellable,
                        private colDesc: IColumnDescription[],
                        protected ds: DistinctStrings[],
+                       private rowCount: number,
                        private schema: SchemaClass,
                        private exact: boolean,
                        private heatMap: boolean,
-                       dataset: Dataset,
+                       dataset: DatasetView,
                        private relative: boolean) {
         super(page, operation, "Reload", dataset);
     }
@@ -699,7 +704,7 @@ export class Make2DHistogram extends RemoteTableRenderer {
         let rr = this.remoteObject.createRange2DRequest(rx, ry);
         rr.chain(this.operation);
         rr.invoke(new Range2DCollector(
-            this.colDesc, this.schema, this.ds, this.page, this.remoteObject,
+            this.colDesc, this.rowCount, this.schema, this.ds, this.page, this.remoteObject,
             this.exact, rr, this.heatMap, this.relative, false));
     }
 }
@@ -708,11 +713,12 @@ export class Make2DHistogram extends RemoteTableRenderer {
  * Receives partial results and renders a 2D histogram.
  * The 2D histogram data and the HeatMap data use the same data structure.
  */
-export class Histogram2DRenderer extends Renderer<Pair<HeatMap, Histogram>> {
+export class Histogram2DRenderer extends Receiver<Pair<HeatMap, Histogram>> {
     protected histogram: Histogram2DView;
 
     constructor(page: FullPage,
-                protected remoteObject: RemoteTableObject,
+                protected remoteObject: TableTargetAPI,
+                protected rowCount: number,
                 protected schema: SchemaClass,
                 protected cds: IColumnDescription[],
                 protected stats: BasicColStats[],
@@ -723,10 +729,11 @@ export class Histogram2DRenderer extends Renderer<Pair<HeatMap, Histogram>> {
                 protected reusePage: boolean) {
         super(
             reusePage ? page : page.dataset.newPage(
-                "Histogram(" + cds[0].name + ", " + cds[1].name + ")", page),
+                "Histogram(" + schema.displayName(cds[0].name) + ", " +
+                schema.displayName(cds[1].name) + ")", page),
             operation, "histogram");
         this.histogram = new Histogram2DView(
-            this.remoteObject.remoteObjectId, this.remoteObject.dataset, schema, this.page);
+            this.remoteObject.remoteObjectId, page.dataset, rowCount, schema, this.page);
         this.page.setDataView(this.histogram);
         if (cds.length != 2 || stats.length != 2 || uniqueStrings.length != 2)
             throw "Expected 2 columns";

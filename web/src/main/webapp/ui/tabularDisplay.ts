@@ -99,7 +99,7 @@ export class TabularDisplay implements IHtmlElement {
     /**
      * Add a row of values; these are set as the innerHTML values of the cells.
      */
-    public addRow(data: string[], canClick: boolean= true): HTMLTableRowElement {
+    public addRow(data: string[], canClick: boolean = true): HTMLTableRowElement {
         let trow = this.insertRow(canClick);
         for (let d of data) {
             let cell = this.addRowCell(trow);

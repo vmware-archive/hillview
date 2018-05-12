@@ -15,18 +15,11 @@
  * limitations under the License.
  */
 
-import {OnCompleteRenderer, Renderer} from "../rpc";
+import {OnCompleteReceiver, Receiver} from "../rpc";
 import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
 import {
-    cloneToSet,
-    Comparison,
-    Converters,
-    formatDate,
-    formatNumber,
-    ICancellable,
-    PartialResult,
-    percent,
-    significantDigits
+    cloneToSet, Comparison, Converters, formatDate, formatNumber,
+    ICancellable, PartialResult, percent, significantDigits
 } from "../util";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {ColumnConverter, ConverterDialog} from "./columnConverter";
@@ -35,29 +28,17 @@ import {IScrollTarget, ScrollBar} from "../ui/scroll";
 import {FullPage} from "../ui/fullPage";
 import {missingHtml} from "../ui/ui";
 import {SelectionStateMachine} from "../ui/selectionStateMachine";
-
 import {SchemaView} from "./schemaView";
 import {
-    asContentsKind,
-    ColumnSortOrientation,
-    CombineOperators,
-    ComparisonFilterDescription,
-    ContentsKind,
-    FindResult,
-    Histogram,
-    IColumnDescription,
-    NextKList,
-    RecordOrder,
-    RemoteObjectId,
-    RowSnapshot,
-    Schema,
-    TableSummary
+    asContentsKind, ColumnSortOrientation, CombineOperators, ComparisonFilterDescription,
+    ContentsKind, FindResult, Histogram, IColumnDescription, NextKList,
+    RecordOrder, RemoteObjectId, RowSnapshot, Schema, TableSummary
 } from "../javaBridge";
-import {RemoteTableObject, RemoteTableRenderer, ZipReceiver} from "../tableTarget";
+import {BaseRenderer, TableTargetAPI, ZipReceiver} from "../tableTarget";
 import {IDataView} from "../ui/dataview";
-import {TableViewBase} from "./tableViewBase";
+import {TSViewBase} from "./tsViewBase";
 import {SpectrumReceiver} from "./spectrumView";
-import {Dataset} from "../dataset";
+import {DatasetView} from "../datasetView";
 import {SchemaClass} from "../schemaClass";
 
 //import {LAMPDialog} from "./lampView";
@@ -65,7 +46,7 @@ import {SchemaClass} from "../schemaClass";
 /**
  * Displays a table in the browser.
  */
-export class TableView extends TableViewBase implements IScrollTarget {
+export class TableView extends TSViewBase implements IScrollTarget {
     // Data view part: received from remote site
     // Logical position of first row displayed
     protected startPosition?: number;
@@ -82,8 +63,9 @@ export class TableView extends TableViewBase implements IScrollTarget {
     protected selectedColumns = new SelectionStateMachine();
     protected messageBox: HTMLElement;
 
-    public constructor(remoteObjectId: RemoteObjectId, page: FullPage) {
-        super(remoteObjectId, page, "Table");
+    public constructor(
+        remoteObjectId: RemoteObjectId, rowCount: number, schema: SchemaClass, page: FullPage) {
+        super(remoteObjectId, rowCount, schema, page, "Table");
         this.selectedColumns = new SelectionStateMachine();
         this.order = new RecordOrder([]);
         this.topLevel = document.createElement("div");
@@ -213,7 +195,8 @@ export class TableView extends TableViewBase implements IScrollTarget {
         let rr = this.createZipRequest(r.first);
         let o = this.order.clone();
         let finalRenderer = (page: FullPage, operation: ICancellable) => {
-            return new TableOperationCompleted(page, this.schema, operation, o, this.dataset);
+            return new TableOperationCompleted(
+                page, this.rowCount, this.schema, operation, o);
         };
         rr.invoke(new ZipReceiver(this.getPage(), rr, how, this.dataset, finalRenderer));
     }
@@ -235,7 +218,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
             this.end();
         } else {
             let o = this.order.clone();
-            let rr = this.createQuantileRequest(this.currentData.rowCount, o, position);
+            let rr = this.createQuantileRequest(this.rowCount, o, position);
             console.log("expecting quantile: " + String(position));
             rr.invoke(new QuantileReceiver(this.getPage(), this, rr, o));
         }
@@ -371,10 +354,11 @@ export class TableView extends TableViewBase implements IScrollTarget {
             return "&uArr;";
     }
 
-    private addHeaderCell(thr: Node, cd: IColumnDescription, help: string): HTMLElement {
+    private addHeaderCell(thr: Node, cd: IColumnDescription,
+                          displayName: string, help: string): HTMLElement {
         let thd = document.createElement("th");
         thd.classList.add("noselect");
-        let label = cd.name;
+        let label = displayName;
         if (!this.isVisible(cd.name)) {
             thd.style.fontWeight = "normal";
         } else {
@@ -418,10 +402,10 @@ export class TableView extends TableViewBase implements IScrollTarget {
                       order: RecordOrder, foundCount: number,
                       elapsedMs: number): void {
         this.selectedColumns.clear();
+        this.rowCount = data.rowsScanned;
         this.currentData = data;
         this.dataRowsDisplayed = 0;
         this.startPosition = data.startPosition;
-        this.rowCount = data.rowCount;
         this.order = order.clone();
         if (revert) {
             let rowsDisplayed = 0;
@@ -432,7 +416,6 @@ export class TableView extends TableViewBase implements IScrollTarget {
             this.startPosition = this.rowCount - this.startPosition - rowsDisplayed;
             this.order = this.order.invert();
         }
-        this.setSchema(data.schema);
 
         if (this.tHead != null)
             this.tHead.remove();
@@ -453,9 +436,9 @@ export class TableView extends TableViewBase implements IScrollTarget {
         };
 
         // Create column headers
-        let thd = this.addHeaderCell(thr, posCd, "Position within sorted order.");
+        let thd = this.addHeaderCell(thr, posCd, posCd.name, "Position within sorted order.");
         thd.oncontextmenu = () => {};
-        thd = this.addHeaderCell(thr, ctCd, "Number of occurrences.");
+        thd = this.addHeaderCell(thr, ctCd, ctCd.name, "Number of occurrences.");
         thd.oncontextmenu = () => {};
         if (this.schema == null)
             return;
@@ -465,7 +448,8 @@ export class TableView extends TableViewBase implements IScrollTarget {
             cds.push(cd);
             let title = "Column type is " + cd.kind +
                 ".\nA mouse click with the right button will open a menu.";
-            let thd = this.addHeaderCell(thr, cd, title);
+            let name = this.schema.displayName(cd.name);
+            let thd = this.addHeaderCell(thr, cd, name, title);
             thd.className = this.columnClass(cd.name);
             thd.onclick = e => this.columnClick(i, e);
             thd.oncontextmenu = e => {
@@ -525,6 +509,11 @@ export class TableView extends TableViewBase implements IScrollTarget {
                     "Applies to two or three columns only."
                 }, selectedCount >= 2 && selectedCount <= 3);
                 this.contextMenu.addItem({
+                    text: "Rename...",
+                    action: () => this.renameColumn(),
+                    help: "Give a new name to this column."
+                }, selectedCount == 1);
+                this.contextMenu.addItem({
                     text: "Frequent Elements...",
                     action: () => this.heavyHittersDialog(),  // switch between Sampling/MG based on HeavyHittersView.switchToMG
                     help: "Find the values that occur most frequently in the selected columns."
@@ -564,7 +553,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
                     text: "Compare...",
                     action: () => {
                         let colName = this.getSelectedColNames()[0];
-                        this.showCompareDialog(colName, this.order);
+                        this.showCompareDialog(this.schema.displayName(colName), this.order);
                     },
                     help : "Eliminate data that matches/does not match a specific value."
                 }, selectedCount == 1);
@@ -660,12 +649,6 @@ export class TableView extends TableViewBase implements IScrollTarget {
         let order = new RecordOrder(so);
         this.schema = schema;
         this.setOrder(order);
-    }
-
-    setSchema(schema: IColumnDescription[]): void {
-        if (schema == null)
-            return;
-        this.schema = new SchemaClass(schema);
     }
 
     // mouse click on a column
@@ -837,7 +820,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
 
     public viewSchema(): void {
         let newPage = this.dataset.newPage("Schema", this.page);
-        let sv = new SchemaView(this.remoteObjectId, newPage, this.schema, this.rowCount, 0);
+        let sv = new SchemaView(this.remoteObjectId, newPage, this.rowCount, this.schema, 0);
         newPage.setDataView(sv);
     }
 
@@ -944,7 +927,7 @@ export class TableView extends TableViewBase implements IScrollTarget {
 /**
  * Receives the NextK rows from a table and displays them.
  */
-export class NextKReceiver extends Renderer<NextKList> {
+export class NextKReceiver extends Receiver<NextKList> {
     constructor(page: FullPage,
                 protected table: TableView,
                 operation: ICancellable,
@@ -964,7 +947,7 @@ export class NextKReceiver extends Renderer<NextKList> {
 /**
  * Receives a Schema and displays the resulting table.
  */
-export class SchemaReceiver extends OnCompleteRenderer<TableSummary> {
+export class SchemaReceiver extends OnCompleteReceiver<TableSummary> {
     /**
      * Create a schema receiver for a new table.
      * @param page            Page where result should be displayed.
@@ -974,8 +957,8 @@ export class SchemaReceiver extends OnCompleteRenderer<TableSummary> {
      * @param forceTableView  If true the resulting view is always a table.
      */
     constructor(page: FullPage, operation: ICancellable,
-                protected remoteObject: RemoteTableObject,
-                protected dataset: Dataset,
+                protected remoteObject: TableTargetAPI,
+                protected dataset: DatasetView,
                 protected forceTableView) {
         super(page, operation, "Get schema")
     }
@@ -988,20 +971,19 @@ export class SchemaReceiver extends OnCompleteRenderer<TableSummary> {
             return;
         }
 
+        let schemaClass = new SchemaClass(summary.schema);
         if (summary.schema.length > 20 && !this.forceTableView) {
-            dataView = new SchemaView(this.remoteObject.remoteObjectId,
-                this.page, new SchemaClass(summary.schema),
-                summary.rowCount, this.elapsedMilliseconds());
+            dataView = new SchemaView(this.remoteObject.remoteObjectId, this.page, summary.rowCount, schemaClass, this.elapsedMilliseconds());
         } else {
             let nk: NextKList = {
-                schema: this.value.schema,
-                rowCount: this.value.rowCount,
+                rowsScanned: summary.rowCount,
                 startPosition: 0,
                 rows: []
             };
 
             let order = new RecordOrder([]);
-            let table = new TableView(this.remoteObject.remoteObjectId, this.page);
+            let table = new TableView(
+                this.remoteObject.remoteObjectId, summary.rowCount, schemaClass, this.page);
             table.updateView(nk, false, order, null, this.elapsedMilliseconds());
             dataView = table;
         }
@@ -1013,7 +995,7 @@ export class SchemaReceiver extends OnCompleteRenderer<TableSummary> {
  * Receives a row which is the result of an approximate quantile request and
  * initiates a request to get the NextK rows after this one.
  */
-class QuantileReceiver extends OnCompleteRenderer<any[]> {
+class QuantileReceiver extends OnCompleteReceiver<any[]> {
     public constructor(page: FullPage,
                        protected tv: TableView,
                        operation: ICancellable,
@@ -1032,7 +1014,7 @@ class QuantileReceiver extends OnCompleteRenderer<any[]> {
  * Receives the result of a PCA computation and initiates the request
  * to project the specified columns using the projection matrix.
  */
-class CorrelationMatrixReceiver extends RemoteTableRenderer {
+class CorrelationMatrixReceiver extends BaseRenderer {
     public constructor(page: FullPage,
                        protected tv: TableView,
                        operation: ICancellable,
@@ -1054,9 +1036,9 @@ class CorrelationMatrixReceiver extends RemoteTableRenderer {
 
 // Receives the ID of a table that contains additional eigen vector projection columns.
 // Invokes a sketch to get the schema of this new table.
-class PCATableReceiver extends RemoteTableRenderer {
+class PCATableReceiver extends BaseRenderer {
     constructor(page: FullPage, operation: ICancellable, protected title: string, progressInfo: string,
-                protected tv: TableViewBase, protected order: RecordOrder, protected numComponents: number) {
+                protected tv: TSViewBase, protected order: RecordOrder, protected numComponents: number) {
         super(page, operation, progressInfo, tv.dataset);
     }
 
@@ -1071,10 +1053,10 @@ class PCATableReceiver extends RemoteTableRenderer {
 
 // Receives the schema after a PCA computation; computes the additional columns
 // and adds these to the previous view
-class PCASchemaReceiver extends OnCompleteRenderer<TableSummary> {
+class PCASchemaReceiver extends OnCompleteReceiver<TableSummary> {
     constructor(page: FullPage, operation: ICancellable,
-                protected remoteObject: RemoteTableObject,
-                protected tv: TableViewBase,
+                protected remoteObject: TableTargetAPI,
+                protected tv: TSViewBase,
                 protected title: string,
                 protected order: RecordOrder,
                 protected numComponents: number) {
@@ -1097,8 +1079,9 @@ class PCASchemaReceiver extends OnCompleteRenderer<TableSummary> {
             o.addColumn({ columnDescription: cd, isAscending: true });
         }
 
-        let table = new TableView(this.remoteObject.remoteObjectId, this.page);
-        table.schema = this.tv.schema.concat(newCols);
+        let schema = this.tv.schema.concat(newCols);
+        let table = new TableView(
+            this.remoteObject.remoteObjectId, this.tv.rowCount, schema, this.page);
         this.page.setDataView(table);
         let rr = table.createNextKRequest(o, null);
         rr.chain(this.operation);
@@ -1106,24 +1089,23 @@ class PCASchemaReceiver extends OnCompleteRenderer<TableSummary> {
     }
 }
 
-
 /**
  * Receives the id of a remote table and
  * initiates a request to display the nextK rows from this table.
  */
-export class TableOperationCompleted extends RemoteTableRenderer {
+export class TableOperationCompleted extends BaseRenderer {
     public constructor(page: FullPage,
+                       protected rowCount: number,
                        protected schema: SchemaClass,
                        operation: ICancellable,
-                       protected order: RecordOrder,
-                       dataset: Dataset) {
-        super(page, operation, "Table operation", dataset);
+                       protected order: RecordOrder) {
+        super(page, operation, "Table operation", page.dataset);
     }
 
     run(): void {
         super.run();
-        let table = new TableView(this.remoteObject.remoteObjectId, this.page);
-        table.schema = this.schema;
+        let table = new TableView(
+            this.remoteObject.remoteObjectId, this.rowCount, this.schema, this.page);
         this.page.setDataView(table);
         let rr = table.createNextKRequest(this.order, null);
         rr.chain(this.operation);
@@ -1135,7 +1117,7 @@ export class TableOperationCompleted extends RemoteTableRenderer {
  * Receives a result from a remote table and initiates a NextK sketch
  * if any result is found.
  */
-export class FindReceiver extends OnCompleteRenderer<FindResult> {
+export class FindReceiver extends OnCompleteReceiver<FindResult> {
     public constructor(page: FullPage,
                        protected tv: TableView,
                        operation: ICancellable,

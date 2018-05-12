@@ -45,16 +45,17 @@ public class NextKList implements Serializable, IJson {
      */
     public final long startPosition;
     /**
-     * Total rows in the original table over which this is computed.
+     * The number of rows the statistics are computed over. For MG or Exact, this
+     * equals the number of rows in the input tuple. Whereas for sample heavy
+     * hitters, it is the number of samples.
      */
-    public final long totalRows;
+    final long rowsScanned;
 
-
-    public NextKList(SmallTable table, List<Integer> count, long position, long totalRows) {
+    public NextKList(SmallTable table, List<Integer> count, long position, long rowsScanned) {
         this.table = table;
         this.count = count;
         this.startPosition = position;
-        this.totalRows = totalRows;
+        this.rowsScanned = rowsScanned;
         /* If the table is empty, discard the counts. Else check we have counts for each row.*/
         if ((table.getNumOfRows() !=0) && (count.size() != table.getNumOfRows()))
             throw new IllegalArgumentException("Mismatched table and count length");
@@ -66,15 +67,13 @@ public class NextKList implements Serializable, IJson {
      * @param listRows List of RowSnapshots from a FreqKList
      * @param listCounts List of Counts from a FreqKList
      * @param schema The schema of the RowSnapshots
-     * @param totalRows The number of rows the statistics are computed over. For MG or Exact, this
-     *                  equals the number of rows in the input tuple. Whereas for sample heavy
-     *                  hitters, it is the number of samples.
+     * @param rowsScanned The number of rows the statistics are computed over.
      */
-    public NextKList(List<RowSnapshot> listRows, List<Integer> listCounts, Schema schema, long totalRows) {
+    public NextKList(List<RowSnapshot> listRows, List<Integer> listCounts, Schema schema, long rowsScanned) {
         this.table = new SmallTable(schema, listRows);
         this.count = listCounts;
         this.startPosition = 0;
-        this.totalRows = totalRows;
+        this.rowsScanned = rowsScanned;
     }
 
     /**
@@ -84,7 +83,7 @@ public class NextKList implements Serializable, IJson {
         this.table = new SmallTable(schema);
         this.count = new ArrayList<Integer>(0);
         this.startPosition = 0;
-        this.totalRows = 0;
+        this.rowsScanned = 0;
     }
 
     public String toLongString(int rowsToDisplay) {
@@ -114,7 +113,7 @@ public class NextKList implements Serializable, IJson {
     public JsonElement toJsonTree() {
         // The result looks like a TableDataView typescript class
         JsonObject result = new JsonObject();
-        result.addProperty("rowCount", this.totalRows);
+        result.addProperty("rowsScanned", this.rowsScanned);
         result.addProperty("startPosition", this.startPosition);
         JsonArray rows = new JsonArray();
         result.add("rows", rows);

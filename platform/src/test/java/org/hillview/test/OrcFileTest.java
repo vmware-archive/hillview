@@ -83,7 +83,7 @@ public class OrcFileTest extends BaseTest {
     @Test
     public void convertCsvFileTest() {
         String file = CsvFileTest.ontimeFolder + "/" + CsvFileTest.csvFile;
-        CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
+        CsvFileLoader.Config config = new CsvFileLoader.Config();
         CsvFileLoader loader = new CsvFileLoader(file, config, null);
         ITable table = loader.load();
         String orcFile = "tmpX.orc";
@@ -141,7 +141,7 @@ public class OrcFileTest extends BaseTest {
                     batch.cols[i].stringifyValue(builder, j);
                     builder.append(" ");
                 }
-                System.out.println(builder);
+                //System.out.println(builder);
             }
         }
         rows.close();

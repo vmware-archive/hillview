@@ -51,7 +51,7 @@ public class HillviewLogs {
     }
 
     public static class LogFileLoader extends TextFileLoader {
-        public LogFileLoader(final String path) {
+        LogFileLoader(final String path) {
             super(path);
         }
 

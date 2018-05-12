@@ -32,7 +32,7 @@ public class ComparisonFilterDescription implements ITableFilterDescription {
     private final String comparison;
 
     /**
-     * Make a filter that accepts rows that (do not) have a specified value in the specified
+     * Make a filter that accepts rows that have a specified value in the specified
      * column.
      * @param column Column that is compared.
      * @param compareValue Value that is compared.  The value will be to the left of the comparison.
@@ -111,7 +111,7 @@ public class ComparisonFilterDescription implements ITableFilterDescription {
                         case ">":
                             this.comparator = index -> {
                                 if (this.column.isMissing(index))
-                                    return true;
+                                    return false;
                                 String str = this.column.getString(index);
                                 assert str != null;
                                 return s.compareTo(str) > 0;
@@ -120,7 +120,7 @@ public class ComparisonFilterDescription implements ITableFilterDescription {
                         case "<":
                             this.comparator = index -> {
                                 if (this.column.isMissing(index))
-                                    return false;
+                                    return true;
                                 String str = this.column.getString(index);
                                 assert str != null;
                                 return s.compareTo(str) < 0;

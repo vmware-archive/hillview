@@ -334,8 +334,8 @@
                             <goal>single</goal>
                         </goals>
                     </execution>
-                    <!-- This was used to run benchmarks for the paper. -->
-                    <execution> 
+                    <!-- This was used to run benchmarks for the paper.
+                    <execution>
                         <id>build-histogram-benchmark</id>
                         <configuration>
                             <archive>
@@ -353,6 +353,7 @@
                             <goal>single</goal>
                         </goals>
                     </execution>
+                    -->
                 </executions>
             </plugin>
         </plugins>

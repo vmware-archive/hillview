@@ -19,7 +19,7 @@ import {IHtmlElement, removeAllChildren} from "./ui/ui";
 import {LoadMenu} from "./loadMenu";
 import {InitialObject} from "./initialObject";
 import {FullPage} from "./ui/fullPage";
-import {Dataset} from "./dataset";
+import {DatasetView} from "./datasetView";
 
 /**
  * The toplevel class implements the web page structure for Hillview.
@@ -28,12 +28,12 @@ import {Dataset} from "./dataset";
  */
 export class HillviewToplevel implements IHtmlElement {
     private readonly topLevel: HTMLElement;
-    private readonly datasets: Dataset[];
+    private readonly datasets: DatasetView[];
     private readonly strip: HTMLDivElement;
     private readonly tabs: HTMLElement[];
     private readonly content: HTMLDivElement;
     protected datasetCounter: number;
-    protected current: Dataset;
+    protected current: DatasetView;
 
     public static readonly instance = new HillviewToplevel();
 
@@ -70,7 +70,7 @@ export class HillviewToplevel implements IHtmlElement {
         return this.topLevel;
     }
 
-    public addDataset(dataset: Dataset): void {
+    public addDataset(dataset: DatasetView): void {
         // tab names never change once tabs are created.  They are also unique.
         // The tab name is not the dataset name; the dataset name is displayed in the tab.
         let tabName = "tab" + this.datasetCounter++;

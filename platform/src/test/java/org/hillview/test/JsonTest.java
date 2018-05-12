@@ -92,7 +92,7 @@ public class JsonTest extends BaseTest {
         NextKList list = new NextKList(t, li, 0, 100);
         s = list.toJson();
         Assert.assertEquals(s, "{" +
-                "\"rowCount\":100," +
+                "\"rowsScanned\":100," +
                 "\"startPosition\":0," +
                 "\"rows\":[" +
                     "{\"count\":2,\"values\":[10,90.0,\"John\"]}," +

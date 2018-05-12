@@ -274,8 +274,8 @@ export function truncate(str: string, length: number): string {
     }
 }
 
-export function clamp(x: number, xMin: number, xMax: number) {
-    return Math.max(Math.min(x, xMax), xMin);
+export function clamp(value: number, min: number, max: number) {
+    return Math.max(Math.min(value, max), min);
 }
 
 export function isInteger(n: number) {

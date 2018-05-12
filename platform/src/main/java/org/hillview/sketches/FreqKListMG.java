@@ -24,7 +24,7 @@ public class FreqKListMG extends FreqKList {
 
     /**
      * This method returns the sum of counts computed by the data structure. This is always less
-     * than totalRows, the number of rows in the table.
+     * than rowsScanned, the number of rows in the table.
      * @return The sum of all counts stored in the hash-map.
      */
     private int getTotalCount() {

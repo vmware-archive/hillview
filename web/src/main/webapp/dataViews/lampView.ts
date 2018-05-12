@@ -18,17 +18,17 @@
 import {Dialog, FieldKind} from "../ui/dialog";
 import {TopMenu, SubMenu} from "../ui/menu";
 import {
-    RangeInfo, BasicColStats, RecordOrder, ColumnAndRange, Histogram2DArgs, TableSummary, RemoteObjectId,
+    RangeInfo, BasicColStats, ColumnAndRange, Histogram2DArgs, TableSummary, RemoteObjectId,
     HeatMap, CombineOperators
 } from "../javaBridge";
-import {Renderer, RpcRequest, OnCompleteRenderer} from "../rpc";
+import {Receiver, RpcRequest, OnCompleteReceiver} from "../rpc";
 import {PartialResult, clamp, Pair, ICancellable, Seed} from "../util";
 import {Point, PointSet, Resolution} from "../ui/ui";
 import {FullPage} from "../ui/fullPage";
 import {HeatmapLegendPlot} from "../ui/legendPlot";
-import {TableView, NextKReceiver} from "./tableView";
+import {TableView} from "./tableView";
 import {TrellisPlotDialog} from "./trellisHeatMapView";
-import {RemoteTableObject, RemoteTableObjectView, RemoteTableRenderer} from "../tableTarget";
+import {TableTargetAPI, BigTableView, BaseRenderer} from "../tableTarget";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {drag as d3drag} from "d3-drag";
 import {mouse as d3mouse, select as d3select} from "d3-selection";
@@ -40,7 +40,7 @@ import {SchemaClass} from "../schemaClass";
  * and Computer Graphics, vol 17, issue 12, Dec 2011, by Paulo Joia, Danilo Coimbra, Jose A Cuminato,
  * Fernando V Paulovich, and Luis G Nonato.
  */
-class LampView extends RemoteTableObjectView {
+class LampView extends BigTableView {
     private minX: number;
     private minY: number;
     private maxX: number;
@@ -54,14 +54,15 @@ class LampView extends RemoteTableObjectView {
     private heatMapDots: Array<any>;
     private xDots: number;
     private yDots: number;
-    private lampTableObject: RemoteTableObject;
+    private lampTableObject: TableTargetAPI;
     private colorLegend: HeatmapLegendPlot;
     private readonly lampColNames: string[];
     private readonly legendSurface: PlottingSurface;
 
-    constructor(private tableObject: RemoteTableObject, private originalSchema: SchemaClass,
-                page: FullPage, private controlPointsId, private selectedColumns) {
-        super(tableObject.remoteObjectId, page, "LAMP");
+    constructor(private tableObject: TableTargetAPI, rowCount: number, schema: SchemaClass,
+                page: FullPage, private controlPointsId: RemoteObjectId,
+                private selectedColumns: string[]) {
+        super(tableObject.remoteObjectId, rowCount, schema, page, "LAMP");
         this.topLevel = document.createElement("div");
         this.topLevel.classList.add("chart");
         this.topLevel.classList.add("lampView");
@@ -124,8 +125,8 @@ class LampView extends RemoteTableObjectView {
         page.setDataView(this);
 
         this.lampColNames = [
-            this.originalSchema.uniqueColumnName("LAMP1"),
-            this.originalSchema.uniqueColumnName("LAMP2")
+            this.schema.uniqueColumnName("LAMP1"),
+            this.schema.uniqueColumnName("LAMP2")
         ];
     }
 
@@ -154,7 +155,7 @@ class LampView extends RemoteTableObjectView {
         this.updateHeatMapView();
     }
 
-    public updateRemoteTable(table: RemoteTableObject) {
+    public updateRemoteTable(table: TableTargetAPI) {
         this.lampTableObject = table;
     }
 
@@ -322,16 +323,17 @@ class LampView extends RemoteTableObjectView {
 
     private showTable() {
         let page = this.dataset.newPage("Table", this.page);
-        let table = new TableView(this.lampTableObject.remoteObjectId, page);
+        let table = new TableView(
+            this.lampTableObject.remoteObjectId, this.rowCount, this.schema, page);
         page.setDataView(table);
         let rr = this.lampTableObject.createGetSchemaRequest();
-        rr.invoke(new NextKReceiver(this.page, table, rr, false, new RecordOrder([]), null));
+        rr.invoke(new SchemaCollector(this.getPage(), rr, this.schema, this.lampTableObject, this.lampColNames));
     }
 
     private heatMap3D() {
         // The lamp table has a new schema, so we have to retrieve it.
         let rr = this.lampTableObject.createGetSchemaRequest();
-        rr.invoke(new SchemaCollector(this.getPage(), rr, this.lampTableObject, this.lampColNames));
+        rr.invoke(new SchemaCollector(this.getPage(), rr, this.schema, this.lampTableObject, this.lampColNames));
     }
 }
 
@@ -343,6 +345,7 @@ export class LAMPDialog extends Dialog {
     public static maxNumSamples = 100;
 
     constructor(private selectedColumns: string[], private page: FullPage,
+                private rowCount: number,
                 private schema: SchemaClass, private remoteObject: TableView) {
         super("LAMP", "Computes a 2D projection of the data based on a set of control-points that the user can control.");
         let sel = this.addSelectField("controlPointSelection", "Control point selection",
@@ -411,7 +414,8 @@ export class LAMPDialog extends Dialog {
         switch (projection) {
             case "MDS": {
                 rr.invoke(new ControlPointsProjector(
-                    newPage, rr, this.remoteObject, this.selectedColumns, this.schema));
+                    newPage, rr, this.remoteObject, this.selectedColumns,
+                    this.rowCount, this.schema));
                 break;
             }
             default: {
@@ -421,27 +425,36 @@ export class LAMPDialog extends Dialog {
     }
 }
 
-class ControlPointsProjector extends RemoteTableRenderer {
-    constructor(page, operation, private tableObject: RemoteTableObject, private selectedColumns, private schema) {
-        super(page, operation, "Sampling control points", tableObject.dataset);
+class ControlPointsProjector extends BaseRenderer {
+    constructor(page: FullPage,
+                operation: ICancellable,
+                private tableObject: TableTargetAPI,
+                private selectedColumns: string[],
+                private rowCount: number,
+                private schema: SchemaClass) {
+        super(page, operation, "Sampling control points", page.dataset);
     }
 
     run() {
         super.run();
         let rr = this.tableObject.createMDSProjectionRequest(this.remoteObject.remoteObjectId);
         rr.invoke(new ControlPointsRenderer(
-            this.page, rr, this.tableObject, this.schema, this.remoteObject.remoteObjectId, this.selectedColumns));
+            this.page, rr, this.tableObject, this.rowCount, this.schema,
+            this.remoteObject.remoteObjectId,
+            this.selectedColumns));
     }
 }
 
-class ControlPointsRenderer extends Renderer<PointSet> {
+class ControlPointsRenderer extends Receiver<PointSet> {
     private controlPointsView: LampView;
     private points: PointSet;
 
-    constructor(page, operation, tableObject, schema, controlPointsId, private selectedColumns) {
+    constructor(page: FullPage, operation: ICancellable,
+                tableObject: TableTargetAPI, rowCount: number, schema: SchemaClass,
+                controlPointsId: RemoteObjectId, private selectedColumns: string[]) {
         super(page, operation, "Projecting control points");
         this.controlPointsView = new LampView(
-            tableObject, schema, page, controlPointsId, this.selectedColumns);
+            tableObject, rowCount, schema, page, controlPointsId, this.selectedColumns);
     }
 
     public onNext(result: PartialResult<PointSet>) {
@@ -452,7 +465,7 @@ class ControlPointsRenderer extends Renderer<PointSet> {
     }
 }
 
-class LAMPMapReceiver extends RemoteTableRenderer {
+class LAMPMapReceiver extends BaseRenderer {
     constructor(page: FullPage, operation: ICancellable, private cpView: LampView,
                 private arg: Histogram2DArgs) {
         super(page, operation, "Computing LAMP", cpView.dataset);
@@ -467,7 +480,7 @@ class LAMPMapReceiver extends RemoteTableRenderer {
     }
 }
 
-class LAMPHeatMapReceiver extends Renderer<HeatMap> {
+class LAMPHeatMapReceiver extends Receiver<HeatMap> {
     private heatMap: HeatMap;
     constructor(page: FullPage, operation: ICancellable,
                 private controlPointsView: LampView, private lampTime: number) {
@@ -482,7 +495,7 @@ class LAMPHeatMapReceiver extends Renderer<HeatMap> {
     }
 }
 
-class LAMPRangeCollector extends Renderer<Pair<BasicColStats, BasicColStats>> {
+class LAMPRangeCollector extends Receiver<Pair<BasicColStats, BasicColStats>> {
     constructor(page: FullPage, operation: ICancellable, private cpView: LampView) {
         super(page, operation, "Getting LAMP ranges.")
     }
@@ -493,18 +506,21 @@ class LAMPRangeCollector extends Renderer<Pair<BasicColStats, BasicColStats>> {
     }
 }
 
-class SchemaCollector extends OnCompleteRenderer<TableSummary> {
+class SchemaCollector extends OnCompleteReceiver<TableSummary> {
     constructor(page: FullPage, operation: ICancellable,
-                private tableObject: RemoteTableObject, private lampColumnNames: string[]) {
+                private schema: SchemaClass,
+                private tableObject: TableTargetAPI,
+                private lampColumnNames: string[]) {
         super(page, operation, "Getting new schema");
     }
 
     run(): void {
         if (this.value == null)
             return;
+        let newSchema = new SchemaClass(this.value.schema);
+        newSchema.copyDisplayNames(this.schema);
         let dialog = new TrellisPlotDialog(
-            this.lampColumnNames, this.page, new SchemaClass(this.value.schema),
-            this.tableObject, true);
+            this.lampColumnNames, this.page, this.value.rowCount, newSchema, this.tableObject, true);
         dialog.show();
     }
 }

@@ -66,7 +66,7 @@ class DemoDataCleaner {
         }).sorted(Comparator.comparing(Path::toString))
                 .forEach(f -> {
                     String filename = f.toString();
-                    CsvFileLoader.CsvConfiguration config = new CsvFileLoader.CsvConfiguration();
+                    CsvFileLoader.Config config = new CsvFileLoader.Config();
                     config.allowFewerColumns = false;
                     config.hasHeaderRow = true;
                     CsvFileLoader r = new CsvFileLoader(filename, config, null);

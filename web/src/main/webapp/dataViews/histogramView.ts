@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { Renderer } from "../rpc";
+import { Receiver } from "../rpc";
 import {
     IColumnDescription, RecordOrder, RangeInfo, Histogram,
     BasicColStats, FilterDescription, HistogramArgs, CombineOperators, RemoteObjectId
@@ -34,14 +34,14 @@ import {AxisData} from "./axisData";
 import {HistogramViewBase, BucketDialog} from "./histogramViewBase";
 import {Range2DCollector} from "./heatMapView";
 import {NextKReceiver, TableView} from "./tableView";
-import {RemoteTableObject, RemoteTableRenderer, ZipReceiver} from "../tableTarget";
+import {TableTargetAPI, BaseRenderer, ZipReceiver} from "../tableTarget";
 import {DistinctStrings} from "../distinctStrings";
 import {HistogramPlot} from "../ui/histogramPlot";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {CDFPlot} from "../ui/CDFPlot";
 import {drag as d3drag} from "d3-drag";
 import {mouse as d3mouse, event as d3event} from "d3-selection";
-import {Dataset} from "../dataset";
+import {DatasetView} from "../datasetView";
 import {SchemaClass} from "../schemaClass";
 
 /**
@@ -58,8 +58,12 @@ export class HistogramView extends HistogramViewBase {
     protected menu: TopMenu;
     protected plot: HistogramPlot;
 
-    constructor(remoteObjectId: RemoteObjectId, dataset: Dataset, protected schema: SchemaClass, page: FullPage) {
-        super(remoteObjectId, schema, page, "Histogram");
+    constructor(
+        remoteObjectId: RemoteObjectId,
+        rowCount: number,
+        schema: SchemaClass,
+        page: FullPage) {
+        super(remoteObjectId, rowCount, schema, page, "Histogram");
         this.surface = new PlottingSurface(this.chartDiv, page);
         this.plot = new HistogramPlot(this.surface);
         this.cdfPlot = new CDFPlot(this.surface);
@@ -95,7 +99,7 @@ export class HistogramView extends HistogramViewBase {
                     help: "Draw a 2-dimensional histogram using this data and another column."
                 },
             ]) },
-            dataset.combineMenu(this, page.pageId)
+            this.dataset.combineMenu(this, page.pageId)
         ]);
 
         this.page.setMenu(this.menu);
@@ -177,8 +181,10 @@ export class HistogramView extends HistogramViewBase {
         let title = "[" + r.second + "] " + CombineOperators[how];
         let rr = this.createZipRequest(r.first);
         let finalRenderer = (page: FullPage, operation: ICancellable) => {
-            return new MakeHistogram(title, page, operation, this.currentData.axisData.description,
-                this.schema, this.currentData.samplingRate, this.currentData.axisData.distinctStrings,
+            return new MakeHistogram(
+                title, page, operation, this.currentData.axisData.description,
+                this.rowCount, this.schema, this.currentData.samplingRate,
+                this.currentData.axisData.distinctStrings,
                 this.dataset);
         };
         rr.invoke(new ZipReceiver(this.getPage(), rr, how, this.dataset, finalRenderer));
@@ -246,7 +252,8 @@ export class HistogramView extends HistogramViewBase {
             let distinct: DistinctStrings[] = [this.currentData.axisData.distinctStrings, ds];
             let rr = this.createRange2DRequest(r0, r1);
             rr.chain(operation);
-            rr.invoke(new Range2DCollector(cds, this.schema, distinct, this.getPage(), this,
+            rr.invoke(new Range2DCollector(
+                cds, this.rowCount, this.schema, distinct, this.getPage(), this,
                 this.currentData.samplingRate >=1, rr, false, false, false));
         };
         this.dataset.retrieveCategoryValues(catColumns, this.getPage(), cont);
@@ -272,8 +279,8 @@ export class HistogramView extends HistogramViewBase {
             this.currentData.axisData.stats, this.currentData.axisData.distinctStrings,
             +bucketCount);
         let renderer = new HistogramRenderer(this.currentData.title, this.page,
-            this.remoteObjectId, this.schema, axisData, rr, this.currentData.samplingRate,
-            this.dataset, true);
+            this.remoteObjectId, this.rowCount, this.schema, axisData, rr, this.currentData.samplingRate,
+            true);
         rr.invoke(renderer);
     }
 
@@ -301,8 +308,10 @@ export class HistogramView extends HistogramViewBase {
     exactHistogram(): void {
         if (this.currentData == null)
             return;
-        let rc = new RangeCollector(this.currentData.title, this.currentData.axisData.description,
-            this.schema, this.currentData.axisData.distinctStrings, this.page, this, true, null, true);
+        let rc = new RangeCollector(
+            this.currentData.title, this.currentData.axisData.description,
+            this.rowCount, this.schema, this.currentData.axisData.distinctStrings,
+            this.page, this, true, null, true);
         rc.setValue(this.currentData.axisData.stats);
         rc.onCompleted();
     }
@@ -352,7 +361,7 @@ export class HistogramView extends HistogramViewBase {
     // show the table corresponding to the data in the histogram
     protected showTable(): void {
         let newPage = this.dataset.newPage("Table", this.page);
-        let table = new TableView(this.remoteObjectId, newPage);
+        let table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newPage);
         newPage.setDataView(table);
         table.schema = this.schema;
 
@@ -405,7 +414,7 @@ export class HistogramView extends HistogramViewBase {
 
         let rr = this.createFilterRequest(filter);
         let renderer = new FilterReceiver(
-            filter, this.currentData.axisData.description, this.schema,
+            filter, this.currentData.axisData.description, this.rowCount, this.schema,
             this.currentData.axisData.distinctStrings, this.currentData.samplingRate >= 1.0,
             this.page, rr, this.dataset);
         rr.invoke(renderer);
@@ -416,16 +425,17 @@ export class HistogramView extends HistogramViewBase {
  * Receives the results of a filtering operation and initiates a new Range computation
  * (which in turn will initiate a new histogram rendering).
  */
-class FilterReceiver extends RemoteTableRenderer {
+class FilterReceiver extends BaseRenderer {
     constructor(
         protected filter: FilterDescription,
         protected columnDescription: IColumnDescription,
-        protected tableSchema: SchemaClass,
+        protected rowCount: number,
+        protected schema: SchemaClass,
         protected allStrings: DistinctStrings,
         protected exact: boolean,
         page: FullPage,
         operation: ICancellable,
-        dataset: Dataset) {
+        dataset: DatasetView) {
         super(page, operation, "Filter", dataset);
     }
 
@@ -442,7 +452,8 @@ class FilterReceiver extends RemoteTableRenderer {
         let rr = this.remoteObject.createRangeRequest(rangeInfo);
         rr.chain(this.operation);
         let title = this.filterDescription();
-        rr.invoke(new RangeCollector(title, this.columnDescription, this.tableSchema,
+        rr.invoke(
+            new RangeCollector(title, this.columnDescription, this.rowCount, this.schema,
                   this.allStrings, this.page, this.remoteObject, this.exact, this.operation, false));
     }
 }
@@ -450,14 +461,15 @@ class FilterReceiver extends RemoteTableRenderer {
 /**
  * Waits for column stats to be received and then initiates a histogram rendering.
   */
-export class RangeCollector extends Renderer<BasicColStats> {
+export class RangeCollector extends Receiver<BasicColStats> {
     protected stats: BasicColStats;
     constructor(protected title: string,  // title of the resulting display
                 protected cd: IColumnDescription,
-                protected tableSchema: SchemaClass,
+                protected rowCount: number,
+                protected schema: SchemaClass,
                 protected allStrings: DistinctStrings,  // for categorical columns only
                 page: FullPage,
-                protected remoteObject: RemoteTableObject,
+                protected remoteObject: TableTargetAPI,
                 protected exact: boolean,  // if true we should do no sampling
                 operation: ICancellable,
                 protected reusePage: boolean) {
@@ -468,7 +480,7 @@ export class RangeCollector extends Renderer<BasicColStats> {
         this.stats = bcs;
     }
 
-    public setRemoteObject(ro: RemoteTableObject) {
+    public setRemoteObject(ro: TableTargetAPI) {
         this.remoteObject = ro;
     }
 
@@ -503,8 +515,8 @@ export class RangeCollector extends Renderer<BasicColStats> {
         rr.chain(this.operation);
         let axisData = new AxisData(this.cd, this.stats, this.allStrings, bucketCount);
         let renderer = new HistogramRenderer(this.title, this.page,
-            this.remoteObject.remoteObjectId, this.tableSchema,
-            axisData, rr, samplingRate, this.remoteObject.dataset, this.reusePage);
+            this.remoteObject.remoteObjectId, this.rowCount, this.schema,
+            axisData, rr, samplingRate, this.reusePage);
         rr.invoke(renderer);
     }
 
@@ -524,7 +536,7 @@ export class RangeCollector extends Renderer<BasicColStats> {
 /**
  * Renders a 1D histogram.
   */
-export class HistogramRenderer extends Renderer<Pair<Histogram, Histogram>> {
+export class HistogramRenderer extends Receiver<Pair<Histogram, Histogram>> {
     protected histogram: HistogramView;
     protected timeInMs: number;
     /*
@@ -537,15 +549,15 @@ export class HistogramRenderer extends Renderer<Pair<Histogram, Histogram>> {
     constructor(protected title: string,
                 sourcePage: FullPage,
                 remoteTableId: string,
+                protected rowCount: number,
                 protected schema: SchemaClass,
                 protected axisData: AxisData,
                 operation: ICancellable,
                 protected samplingRate: number,
-                dataset: Dataset,
                 reusePage: boolean) {
         super(reusePage ? sourcePage : sourcePage.dataset.newPage(title, sourcePage),
             operation, "histogram");
-        this.histogram = new HistogramView(remoteTableId, dataset, schema, this.page);
+        this.histogram = new HistogramView(remoteTableId, rowCount, schema, this.page);
         this.page.setDataView(this.histogram);
     }
 
@@ -614,15 +626,16 @@ export class HistogramRenderer extends Renderer<Pair<Histogram, Histogram>> {
 /**
  * This class is invoked by the ZipReceiver after a set operation to create a new histogram
   */
-class MakeHistogram extends RemoteTableRenderer {
+class MakeHistogram extends BaseRenderer {
     public constructor(private title: string,
                        page: FullPage,
                        operation: ICancellable,
                        private colDesc: IColumnDescription,
+                       private rowCount: number,
                        private schema: SchemaClass,
                        protected samplingRate: number,
                        private allStrings: DistinctStrings,
-                       dataset: Dataset) {
+                       dataset: DatasetView) {
         super(page, operation, "Reload", dataset);
     }
 
@@ -637,7 +650,8 @@ class MakeHistogram extends RemoteTableRenderer {
                     return;
                 let rr = this.remoteObject.createRangeRequest(ds.getRangeInfo(this.colDesc.name));
                 rr.chain(operation);
-                rr.invoke(new RangeCollector(this.title, this.colDesc, this.schema, ds,
+                rr.invoke(new RangeCollector(this.title, this.colDesc,
+                    this.rowCount, this.schema, ds,
                     this.page, this.remoteObject, this.samplingRate >= 1, rr, false));
             };
             // Get the categorical data and invoke the continuation
@@ -645,7 +659,8 @@ class MakeHistogram extends RemoteTableRenderer {
         } else {
             let rr = this.remoteObject.createRangeRequest({columnName: this.colDesc.name, allNames: null});
             rr.chain(this.operation);
-            rr.invoke(new RangeCollector(this.title, this.colDesc, this.schema, this.allStrings,
+            rr.invoke(new RangeCollector(
+                this.title, this.colDesc, this.rowCount, this.schema, this.allStrings,
                 this.page, this.remoteObject, this.samplingRate >= 1, rr, false));
         }
     }

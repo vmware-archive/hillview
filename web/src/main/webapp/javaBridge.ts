@@ -87,7 +87,10 @@ export interface JdbcConnectionInformation {
     lazyLoading: boolean;
 }
 
+export type DataKinds = "csv" | "orc" | "parquet" | "json" | "hillviewlog" | "db";
+
 export interface FileSetDescription {
+    fileKind: DataKinds;
     folder: string;
     fileNamePattern: string;
     schemaFile: string;
@@ -223,6 +226,11 @@ export interface FilterDescription {
     bucketBoundaries: string[];
 }
 
+export interface HeavyHittersFilterInfo {
+    hittersId: String;
+    schema: Schema;
+}
+
 export interface TopList {
     top: NextKList;
     heavyHittersId: RemoteObjectId;
@@ -239,9 +247,7 @@ export interface EigenVal {
  * The serialization of a NextKList Java object
  */
 export interface NextKList {
-    schema: Schema;
-    // Total number of rows in the complete table
-    rowCount: number;
+    rowsScanned: number;
     startPosition: number;
     rows: RowSnapshot[];
 }

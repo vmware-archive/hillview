@@ -17,7 +17,7 @@
 
 import {TopMenu, SubMenu, TopMenuItem} from "./ui/menu";
 import {InitialObject} from "./initialObject";
-import {RemoteObject, OnCompleteRenderer} from "./rpc";
+import {RemoteObject, OnCompleteReceiver} from "./rpc";
 import {ICancellable} from "./util";
 import {IDataView} from "./ui/dataview";
 import {ConsoleDisplay} from "./ui/errReporter";
@@ -49,95 +49,102 @@ export class LoadMenu extends RemoteObject implements IDataView {
         this.testDatasetsMenu = new SubMenu([
             { text: "Flights (15 columns)",
                 action: () => {
-                    let files = {
+                    let files: FileSetDescription = {
                         folder: "../data/ontime",
                         fileNamePattern: "????_*.csv",
                         schemaFile: "short.schema",
                         headerRow: true,
                         repeat: 1,
-                        name: "Flights (15 columns)"
+                        name: "Flights (15 columns)",
+                        fileKind: "csv"
                     };
-                    this.init.loadCSVFiles(files, this.page);
+                    this.init.loadFiles(files, this.page);
                 },
                 help: "The US flights dataset."
             },
             { text: "Flights (15 columns, ORC)",
                 action: () => {
-                    let files = {
+                    let files: FileSetDescription = {
                         folder: "../data/ontime_small_orc",
                         fileNamePattern: "*.orc",
                         schemaFile: "schema",
                         headerRow: true,
                         repeat: 1,
-                        name: "Flights (15 columns, ORC)"
+                        name: "Flights (15 columns, ORC)",
+                        fileKind: "orc"
                     };
-                    this.init.loadOrcFiles(files, this.page);
+                    this.init.loadFiles(files, this.page);
                 },
                 help: "The US flights dataset."
             },
             { text: "Flights (all columns)",
                 action: () => {
-                    let files = {
+                    let files: FileSetDescription = {
                         folder: "../data/ontime_big",
                         fileNamePattern: "*.csv.gz",
                         schemaFile: "schema",
                         headerRow: true,
                         repeat: 1,
-                        name: "Flights"
+                        name: "Flights",
+                        fileKind: "csv"
                     };
-                    this.init.loadCSVFiles(files, this.page);
+                    this.init.loadFiles(files, this.page);
                 },
                 help: "The US flights dataset -- all 110 columns." },
             { text: "Flights (all columns, ORC)",
                 action: () => {
-                    let files = {
+                    let files: FileSetDescription = {
                         folder: "../data/ontime_orc",
                         fileNamePattern: "*.orc",
                         schemaFile: "schema",
                         headerRow: true,
                         repeat: 1,
-                        name: "Flights (ORC)"
+                        name: "Flights (ORC)",
+                        fileKind: "orc"
                     };
-                    this.init.loadOrcFiles(files, this.page);
+                    this.init.loadFiles(files, this.page);
                 },
                 help: "The US flights dataset -- all 110 columns." },
             { text: "10 x Flights",
                 action: () => {
-                    let files = {
+                    let files: FileSetDescription = {
                         folder: "../data/ontime_big",
                         fileNamePattern: "*.csv.gz",
                         schemaFile: "schema",
                         headerRow: true,
                         repeat: 10,
-                        name: "10 x Flights"
+                        name: "10 x Flights",
+                        fileKind: "csv"
                     };
-                    this.init.loadCSVFiles(files, this.page);
+                    this.init.loadFiles(files, this.page);
                 },
                 help: "10 times the US flights dataset." },
             { text: "10 x Flights (ORC)",
                 action: () => {
-                    let files = {
+                    let files: FileSetDescription = {
                         folder: "../data/ontime_orc",
                         fileNamePattern: "*.orc",
                         schemaFile: "schema",
                         headerRow: true,
                         repeat: 10,
-                        name: "10 x Flights (ORC)"
+                        name: "10 x Flights (ORC)",
+                        fileKind: "orc"
                     };
-                    this.init.loadOrcFiles(files, this.page);
+                    this.init.loadFiles(files, this.page);
                 },
                 help: "10 times the US flights dataset (from ORC files)." },
             { text: "100 x Flights (ORC)",
                 action: () => {
-                    let files = {
+                    let files: FileSetDescription = {
                         folder: "../data/ontime_orc",
                         fileNamePattern: "*.orc",
                         schemaFile: "schema",
                         headerRow: true,
                         repeat: 100,
-                        name: "100 x Flights (ORC)"
+                        name: "100 x Flights (ORC)",
+                        fileKind: "orc"
                     };
-                    this.init.loadOrcFiles(files, this.page);
+                    this.init.loadFiles(files, this.page);
                 },
                 help: "100 times the US flights dataset (from ORC files)." },
         ]);
@@ -260,25 +267,25 @@ export class LoadMenu extends RemoteObject implements IDataView {
 
     showCSVFileDialog(): void {
         let dialog = new CSVFileDialog();
-        dialog.setAction(() => this.init.loadCSVFiles(dialog.getFiles(), this.page));
+        dialog.setAction(() => this.init.loadFiles(dialog.getFiles(), this.page));
         dialog.show();
     }
 
     showJSONFileDialog(): void {
         let dialog = new JsonFileDialog();
-        dialog.setAction(() => this.init.loadJsonFiles(dialog.getFiles(), this.page));
+        dialog.setAction(() => this.init.loadFiles(dialog.getFiles(), this.page));
         dialog.show();
     }
 
     showParquetFileDialog(): void {
         let dialog = new ParquetFileDialog();
-        dialog.setAction(() => this.init.loadParquetFiles(dialog.getFiles(), this.page));
+        dialog.setAction(() => this.init.loadFiles(dialog.getFiles(), this.page));
         dialog.show();
     }
 
     showOrcFileDialog(): void {
         let dialog = new OrcFileDialog();
-        dialog.setAction(() => this.init.loadOrcFiles(dialog.getFiles(), this.page));
+        dialog.setAction(() => this.init.loadFiles(dialog.getFiles(), this.page));
         dialog.show();
     }
 
@@ -331,7 +338,8 @@ class CSVFileDialog extends Dialog {
             headerRow: this.getBooleanValue("hasHeader"),
             folder: this.getFieldValue("folder"),
             repeat: 1,
-            name: null
+            name: null,
+            fileKind: "csv"
         }
     }
 }
@@ -360,7 +368,8 @@ class JsonFileDialog extends Dialog {
             headerRow: false,
             folder: this.getFieldValue("folder"),
             repeat: 1,
-            name: null
+            name: null,
+            fileKind: "json"
         }
     }
 }
@@ -386,7 +395,8 @@ class ParquetFileDialog extends Dialog {
             headerRow: false,  // not used
             folder: this.getFieldValue("folder"),
             repeat: 1,
-            name: null
+            name: null,
+            fileKind: "parquet"
         }
     }
 }
@@ -414,7 +424,8 @@ class OrcFileDialog extends Dialog {
             headerRow: false,  // not used
             folder: this.getFieldValue("folder"),
             repeat: 1,
-            name: null
+            name: null,
+            fileKind: "orc"
         }
     }
 }
@@ -474,7 +485,7 @@ class DBDialog extends Dialog {
  * Receives the results of a remote management command.
  * @param T  each individual result has this type.
  */
-class CommandReceiver extends OnCompleteRenderer<Status[]> {
+class CommandReceiver extends OnCompleteReceiver<Status[]> {
     public constructor(name: string, page: FullPage, operation: ICancellable) {
         super(page, operation, name);
     }
@@ -502,7 +513,7 @@ class CommandReceiver extends OnCompleteRenderer<Status[]> {
 /**
  * Receives and displays the result of the ping command.
  */
-class PingReceiver extends OnCompleteRenderer<string[]> {
+class PingReceiver extends OnCompleteReceiver<string[]> {
     public constructor(page: FullPage, operation: ICancellable) {
         super(page, operation, "ping");
     }
