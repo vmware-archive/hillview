@@ -67,4 +67,8 @@ public class ColumnDescription implements Serializable, IJson {
         result = (31 * result) + this.kind.hashCode();
         return result;
     }
+
+    public ColumnDescription rename(String newName) {
+        return new ColumnDescription(newName, this.kind);
+    }
 }

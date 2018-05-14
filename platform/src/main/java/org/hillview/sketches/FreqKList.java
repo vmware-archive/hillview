@@ -56,7 +56,7 @@ public abstract class FreqKList implements Serializable {
      * The maximum number of rows that we would like to display. We return only these many entries
      * from the sorted list of Heavy Hitters.
      */
-    private final int maxDisplay = 200;
+    private static final int maxDisplay = 200;
 
     FreqKList(long totalRows, double epsilon, Object2IntOpenHashMap<RowSnapshot> hMap) {
         this.totalRows = totalRows;
@@ -91,7 +91,7 @@ public abstract class FreqKList implements Serializable {
     public NextKList sortTopK(Schema schema) {
         this.pList.sort((p1, p2) -> Integer.compare(Converters.checkNull(p2.second),
                 Converters.checkNull(p1.second)));
-        int maxSize = Math.min(pList.size(), this.maxDisplay);
+        int maxSize = Math.min(pList.size(), FreqKList.maxDisplay);
         List<RowSnapshot> listRows = new ArrayList<RowSnapshot>(maxSize);
         List<Integer> listCounts = new ArrayList<Integer>(maxSize);
         for (int i = 0; i < maxSize; i++) {
@@ -139,7 +139,7 @@ public abstract class FreqKList implements Serializable {
      * differently by each of them.
      * (FeqKListExact implements its own addition and does not use this.)
      */
-    public static List<Object2ObjectMap.Entry<RowSnapshot, MutableInteger>>
+    static List<Object2ObjectMap.Entry<RowSnapshot, MutableInteger>>
     addLists(FreqKList left, FreqKList right) {
         assert left != null;
         assert right != null;

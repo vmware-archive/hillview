@@ -25,10 +25,12 @@ import org.hillview.table.columns.BaseArrayColumn;
 import org.hillview.table.rows.JSVirtualRowSnapshot;
 import org.hillview.utils.Converters;
 
+import javax.annotation.Nullable;
 import javax.script.Invocable;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import java.time.Instant;
+import java.util.HashMap;
 
 /**
  * This map creates a new column by running a JavaScript
@@ -49,12 +51,23 @@ public class CreateColumnJSMap extends AppendColumnMap {
      * Description of the output column to produce.
      */
     private final ColumnDescription outputColumn;
+    /**
+     * A map describing columns that have been renamed by the user
+     * mapping the original name to the currently visible name.
+     */
+    @Nullable
+    private final HashMap<String, String> columnRenameMap;
 
-    public CreateColumnJSMap(String jsFunction, Schema inputColumns, ColumnDescription outputColumn) {
+    public CreateColumnJSMap(
+            String jsFunction, Schema inputColumns,
+            @Nullable
+            HashMap<String, String> columnRenameMap,
+            ColumnDescription outputColumn) {
         super(outputColumn.name, -1);
         this.jsFunction = jsFunction;
         this.inputColumns = inputColumns;
         this.outputColumn = outputColumn;
+        this.columnRenameMap = columnRenameMap;
     }
 
     @Override
@@ -71,7 +84,8 @@ public class CreateColumnJSMap extends AppendColumnMap {
             // TODO: ensure that the input columns are loaded.
             ContentsKind kind = this.outputColumn.kind;
 
-            JSVirtualRowSnapshot vrs = new JSVirtualRowSnapshot(table, this.inputColumns, engine);
+            JSVirtualRowSnapshot vrs = new JSVirtualRowSnapshot(
+                    table, this.inputColumns, this.columnRenameMap, engine);
             IRowIterator it = table.getMembershipSet().getIterator();
             int r = it.getNextRow();
             while (r >= 0) {

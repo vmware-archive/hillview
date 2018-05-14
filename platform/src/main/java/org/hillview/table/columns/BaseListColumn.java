@@ -36,7 +36,7 @@ public abstract class BaseListColumn extends BaseColumn implements IAppendableCo
     static final int SegmentMask = SegmentSize - 1;
 
     @Nullable
-    private ArrayList<BitSet> missing = null;
+    protected ArrayList<BitSet> missing = null;
     int size;
 
     BaseListColumn(final ColumnDescription desc) {

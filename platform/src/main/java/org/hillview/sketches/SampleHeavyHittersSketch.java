@@ -35,10 +35,6 @@ public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKListSample
      */
     private final double epsilon;
     /**
-     * The size of the input table.
-     */
-    private final long totalRows;
-    /**
      * The rate at which we sample data.
      */
     private final double samplingRate;
@@ -47,7 +43,6 @@ public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKListSample
     public SampleHeavyHittersSketch(Schema schema, double epsilon, long totalRows, long seed) {
         this.schema = schema;
         this.epsilon = epsilon;
-        this.totalRows = totalRows;
         this.seed = seed;
         this.samplingRate = Math.min(1, Math.max(10.0/(totalRows*epsilon*epsilon),
                 20000.0/totalRows));
@@ -83,9 +78,9 @@ public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKListSample
     public FreqKListSample create(ITable data) {
         IntHash.Strategy hs = new IntHash.Strategy() {
             final VirtualRowSnapshot vrs = new VirtualRowSnapshot(data,
-                    SampleHeavyHittersSketch.this.schema);
+                    SampleHeavyHittersSketch.this.schema, null);
             final VirtualRowSnapshot vrs1 = new VirtualRowSnapshot(data,
-                    SampleHeavyHittersSketch.this.schema);
+                    SampleHeavyHittersSketch.this.schema, null);
 
             @Override
             public int hashCode(int index) {

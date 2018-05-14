@@ -273,7 +273,7 @@ public class DataSetTest extends BaseTest {
         return time - initialTime.get();
     }
 
-    private static boolean quiet = true;
+    private static final boolean quiet = true;
     private static void print(String s) {
         if (quiet)
             return;

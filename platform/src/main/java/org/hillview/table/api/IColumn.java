@@ -131,6 +131,12 @@ public interface IColumn extends Serializable {
         return result;
     }
 
+    /**
+     * Create a new column which shares the same data but has a different name.
+     * @param newName  New name to use for column.
+     */
+    IColumn rename(String newName);
+
     default IMutableColumn allocateConvertedColumn(
         ContentsKind kind, IMembershipSet set, String newColName) {
         ColumnDescription cd = new ColumnDescription(newColName, kind);

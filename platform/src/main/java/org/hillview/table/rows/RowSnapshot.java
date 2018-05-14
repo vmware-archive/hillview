@@ -48,11 +48,9 @@ public class RowSnapshot extends BaseRowSnapshot
     public RowSnapshot(final ITable data, final int rowIndex, final Schema schema) {
         List<IColumn> columns = data.getColumns(schema);
         this.fieldNames = new ArrayList<String>(columns.size());
-        int i = 0;
         for (IColumn c: columns) {
             this.fields.put(c.getName(), c.getObject(rowIndex));
             this.fieldNames.add(c.getName());
-            i++;
         }
         this.cachedHashcode = this.fields.hashCode();
     }

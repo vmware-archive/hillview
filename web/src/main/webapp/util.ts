@@ -226,6 +226,16 @@ export function transpose<D>(m: D[][]): D[][] {
 }
 
 /**
+ * Converts a map to an array by creating an array with an even number of elements
+ * where the elements alternate keys and values [k0, v0, k1, v1, ...]
+ */
+export function mapToArray<K, V>(map: Map<K, V>): Array<any> {
+    let res: Array<any> = [];
+    map.forEach((v, k) => { res.push(k); res.push(v); });
+    return res;
+}
+
+/**
  * Given a set of values in a heatmap this computes two coefficients for a
  * linear regression from X to Y.  The result is an array with two numbers, the
  * two coefficients.  If the regression is undefined, the coefficients array is empty.

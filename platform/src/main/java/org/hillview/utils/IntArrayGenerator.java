@@ -60,7 +60,7 @@ public class IntArrayGenerator {
     /**
      * @return An integer array containing numbers (1,.., range), where i occurs i^2 times.
      */
-    public static IntArrayColumn getSqIntArray(int range) {
+    static IntArrayColumn getSqIntArray(int range) {
         final ColumnDescription desc = new ColumnDescription("Squares", ContentsKind.Integer);
         final IntArrayColumn col = new IntArrayColumn(desc, (range * (range + 1)* (2 *range +1)/6));
         int k = 0;
@@ -82,7 +82,7 @@ public class IntArrayGenerator {
      * @param rn   random number generator
      * @return An IntArray Column as described above.
      */
-    public static IntArrayColumn getHeavyIntArray(final int size, final double base,
+    static IntArrayColumn getHeavyIntArray(final int size, final double base,
                                                   final int range, final String name,
                                                   Randomness rn) {
         if(base <= 1)

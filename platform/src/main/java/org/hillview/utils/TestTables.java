@@ -22,12 +22,10 @@ import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.table.*;
 import org.hillview.table.api.*;
-import org.hillview.table.columns.CategoryArrayColumn;
-import org.hillview.table.columns.DoubleArrayColumn;
-import org.hillview.table.columns.IntArrayColumn;
-import org.hillview.table.columns.StringArrayColumn;
+import org.hillview.table.columns.*;
 import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.table.membership.SparseMembershipSet;
+import org.hillview.table.rows.RowSnapshot;
 import org.jblas.DoubleMatrix;
 
 import java.util.*;
@@ -47,6 +45,22 @@ public class TestTables {
                 new String[] { "Mike", "John", "Tom", "Bill", "Bill", "Smith", "Donald", "Bruce",
                                "Bob", "Frank", "Richard", "Steve", "Dave" });
         IntArrayColumn iac = new IntArrayColumn(c1, new int[] { 20, 30, 10, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
+        return new Table(Arrays.asList(sac, iac), null, null);
+    }
+
+    /**
+     * Same as testTable, but with list columns.
+     */
+    public static Table testListTable() {
+        Table t = testTable();
+        CategoryListColumn sac = new CategoryListColumn(t.getLoadedColumn("Name").column.getDescription());
+        IntListColumn iac = new IntListColumn(t.getLoadedColumn("Age").column.getDescription());
+        IRowIterator row = t.getMembershipSet().getIterator();
+        for (int r = row.getNextRow(); r >= 0; r = row.getNextRow()) {
+            RowSnapshot rs = new RowSnapshot(t, r, t.getSchema());
+            sac.append(rs.getString("Name"));
+            iac.append(rs.getInt("Age"));
+        }
         return new Table(Arrays.asList(sac, iac), null, null);
     }
 
@@ -148,8 +162,6 @@ public class TestTables {
     public static SmallTable getMissingIntTable(final int size, final int numCols) {
         Randomness rn = new Randomness(2); // we want deterministic random numbers for testing
         final List<IColumn> columns = new ArrayList<IColumn>(numCols);
-        double exp = 1.0/numCols;
-        final int range =  5*((int)Math.pow(size, exp));
         for (int i = 0; i < numCols; i++) {
             int mod = rn.nextInt(99) + 1;
             final String colName = String.valueOf(i) + "Missing" + String.valueOf(mod);

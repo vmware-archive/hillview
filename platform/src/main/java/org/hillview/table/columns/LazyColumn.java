@@ -99,6 +99,14 @@ public class LazyColumn extends BaseColumn {
     }
 
     @Override
+    public IColumn rename(String newName) {
+        LazyColumn result =
+                new LazyColumn(this.description.rename(newName), this.size, this.loader);
+        result.data = this.data;
+        return result;
+    }
+
+    @Override
     public IColumn convertKind(ContentsKind kind, String newColName, IMembershipSet set) {
         return this.ensureLoaded().convertKind(kind, newColName, set);
     }

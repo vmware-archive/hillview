@@ -18,7 +18,7 @@
 package org.hillview.storage;
 
 public class MySqlJdbcConnection extends JdbcConnection {
-    public MySqlJdbcConnection(JdbcConnectionInformation conn) {
+    MySqlJdbcConnection(JdbcConnectionInformation conn) {
         super('&', '?', conn);
     }
 

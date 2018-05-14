@@ -25,31 +25,56 @@ import org.hillview.table.columns.IntArrayColumn;
 import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.utils.IntArrayGenerator;
 import org.hillview.utils.TestTables;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import static org.hillview.test.DoubleArrayTest.generateDoubleArray;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 public class TableTest extends BaseTest {
     @Test
     public void getTableTest() {
         final SmallTable leftTable = TestTables.getIntTable(100, 2);
-        assertNotNull(leftTable);
+        Assert.assertNotNull(leftTable);
+    }
+
+    @Test
+    public void renameTest0() {
+        final SmallTable table = TestTables.getIntTable(100, 2);
+        HashMap<String, String> renameMap = new
+                HashMap<String, String>();
+        renameMap.put("Column0", "First");
+        ITable tbl = table.renameColumns(renameMap);
+        IColumn col = tbl.getLoadedColumn("First").column;
+        Assert.assertNotNull(col);
+        col = tbl.getLoadedColumn("Column1").column;
+        Assert.assertNotNull(col);
+    }
+
+    @Test
+    public void renameTest1() {
+        ITable t = TestTables.testListTable();
+        HashMap<String, String> renameMap = new
+                HashMap<String, String>();
+        renameMap.put("Name", "Firstname");
+        t = t.renameColumns(renameMap);
+        IColumn col = t.getLoadedColumn("Firstname").column;
+        Assert.assertNotNull(col);
+        col = t.getLoadedColumn("Age").column;
+        Assert.assertNotNull(col);
     }
 
     @Test
     public void columnCompressTest() {
         final int size = 100;
-        final int numCols = 3;
         final IntArrayColumn col = IntArrayGenerator.getMissingIntArray("X", size, 5);
         final FullMembershipSet FM = new FullMembershipSet(size);
         final IMembershipSet PMD = FM.filter(row -> (row % 2) == 0);
         final IColumn smallCol = col.compress(PMD);
-        assertNotNull(smallCol);
+        Assert.assertNotNull(smallCol);
     }
 
     @Test
@@ -62,9 +87,9 @@ public class TableTest extends BaseTest {
         FullMembershipSet full = new FullMembershipSet(size);
         IMembershipSet partial = full.filter(row -> (row % 2) == 0);
         Table myTable = new Table(columns, partial, null, null);
-        assertEquals(myTable.toString(), "Table[2x50]");
+        Assert.assertEquals(myTable.toString(), "Table[2x50]");
         ITable smallTable = myTable.compress();
-        assertEquals(smallTable.toString(), "Table[2x50]");
+        Assert.assertEquals(smallTable.toString(), "Table[2x50]");
     }
 
     @Test
@@ -73,7 +98,7 @@ public class TableTest extends BaseTest {
         int range = 10;
         int numCols = 4;
         SmallTable table = TestTables.getCorrelatedCols(size, numCols, range);
-        assertEquals(table.toString(), "Table[4x1000]");
+        Assert.assertEquals(table.toString(), "Table[4x1000]");
     }
 
     @Test
@@ -86,10 +111,10 @@ public class TableTest extends BaseTest {
         final FullMembershipSet full = new FullMembershipSet(size);
         final IMembershipSet partial = full.filter(row -> (row % 2) == 0);
         final Table myTable = new Table(columns, partial, null, null);
-        assertEquals(myTable.toString(), "Table[2x50]");
+        Assert.assertEquals(myTable.toString(), "Table[2x50]");
         HashSubSchema filter = new HashSubSchema();
         filter.add(columns.get(1).getDescription().name);
         ITable smallTable = myTable.compress(filter, partial);
-        assertEquals(smallTable.toString(), "Table[1x50]");
+        Assert.assertEquals(smallTable.toString(), "Table[1x50]");
     }
 }

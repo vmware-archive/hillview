@@ -17,7 +17,6 @@
 
 package org.hillview.test;
 
-import jdk.nashorn.api.scripting.NashornScriptEngineFactory;
 import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.api.IDataSet;
@@ -35,6 +34,7 @@ import org.junit.Test;
 
 import javax.script.*;
 import java.time.Instant;
+import java.util.HashMap;
 
 /**
  * Test the Javascript Nashorn engine.
@@ -90,7 +90,7 @@ public class JavascriptTest {
         LocalDataSet<ITable> lds = new LocalDataSet<ITable>(table);
         ColumnDescription outCol = new ColumnDescription("IsAdult", ContentsKind.Category);
         String function = "function map(row) { return row['Age'] > 18 ? 'true' : 'false'; }";
-        CreateColumnJSMap map = new CreateColumnJSMap(function, table.getSchema(), outCol);
+        CreateColumnJSMap map = new CreateColumnJSMap(function, table.getSchema(), null, outCol);
         IDataSet<ITable> mapped = lds.blockingMap(map);
         ITable outTable = ((LocalDataSet<ITable>)mapped).data;
         String data = outTable.toLongString(3);
@@ -106,7 +106,7 @@ public class JavascriptTest {
         LocalDataSet<ITable> lds = new LocalDataSet<ITable>(table);
         ColumnDescription outCol = new ColumnDescription("Date", ContentsKind.Date);
         String function = "function map(row) { return new Date(1970 + row['Age'], 0, 1); }";
-        CreateColumnJSMap map = new CreateColumnJSMap(function, table.getSchema(), outCol);
+        CreateColumnJSMap map = new CreateColumnJSMap(function, table.getSchema(), null, outCol);
         IDataSet<ITable> mapped = lds.blockingMap(map);
         ITable outTable = ((LocalDataSet<ITable>)mapped).data;
 
@@ -132,7 +132,26 @@ public class JavascriptTest {
         LocalDataSet<ITable> lds = new LocalDataSet<ITable>(table);
         ColumnDescription outCol = new ColumnDescription("Older", ContentsKind.Integer);
         String function = "function map(row) { return row['Age'] + 10; }";
-        CreateColumnJSMap map = new CreateColumnJSMap(function, table.getSchema(), outCol);
+        CreateColumnJSMap map = new CreateColumnJSMap(function, table.getSchema(), null, outCol);
+        IDataSet<ITable> mapped = lds.blockingMap(map);
+        ITable outTable = ((LocalDataSet<ITable>)mapped).data;
+        String data = outTable.toLongString(3);
+        Assert.assertEquals("Table[3x15]\n" +
+                "Mike,20,30\n" +
+                "John,30,40\n" +
+                "Tom,10,20\n", data);
+    }
+
+    @Test
+    public void testRename() {
+        ITable table = ToCatMapTest.tableWithStringColumn();
+        LocalDataSet<ITable> lds = new LocalDataSet<ITable>(table);
+        ColumnDescription outCol = new ColumnDescription("Older", ContentsKind.Integer);
+        String function = "function map(row) { return row['NewAge'] + 10; }";
+        HashMap<String, String> renameMap = new HashMap<String, String>();
+        renameMap.put("Age", "NewAge");
+        CreateColumnJSMap map = new CreateColumnJSMap(
+                function, table.getSchema(), renameMap, outCol);
         IDataSet<ITable> mapped = lds.blockingMap(map);
         ITable outTable = ((LocalDataSet<ITable>)mapped).data;
         String data = outTable.toLongString(3);
@@ -152,7 +171,7 @@ public class JavascriptTest {
         LocalDataSet<ITable> lds = new LocalDataSet<ITable>(tbl);
         ColumnDescription outCol = new ColumnDescription("Older", ContentsKind.Integer);
         String function = "function map(row) { return row['Age'] + 10; }";
-        CreateColumnJSMap map = new CreateColumnJSMap(function, table.getSchema(), outCol);
+        CreateColumnJSMap map = new CreateColumnJSMap(function, table.getSchema(), null, outCol);
         IDataSet<ITable> mapped = lds.blockingMap(map);
         ITable outTable = ((LocalDataSet<ITable>) mapped).data;
         String data = outTable.toLongString(3);
@@ -168,7 +187,7 @@ public class JavascriptTest {
         // Add a date column
         ColumnDescription outCol = new ColumnDescription("Date", ContentsKind.Date);
         String function = "function map(row) { return new Date(1970 + row['Age'], 0, 1); }";
-        CreateColumnJSMap map = new CreateColumnJSMap(function, table.getSchema(), outCol);
+        CreateColumnJSMap map = new CreateColumnJSMap(function, table.getSchema(), null, outCol);
         IDataSet<ITable> mapped = lds.blockingMap(map);
         // Convert the date column
         ColumnDescription outCol1 = new ColumnDescription("Later", ContentsKind.Date);
@@ -179,7 +198,7 @@ public class JavascriptTest {
                 " }";
         Schema outSchema = table.getSchema().clone();
         outSchema.append(outCol);
-        map = new CreateColumnJSMap(function, outSchema, outCol1);
+        map = new CreateColumnJSMap(function, outSchema, null, outCol1);
         mapped = mapped.blockingMap(map);
         ITable outTable = ((LocalDataSet<ITable>)mapped).data;
         String data = outTable.toLongString(3);

@@ -22,6 +22,7 @@ import org.hillview.table.SmallTable;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -139,4 +140,21 @@ public interface ITable {
      * @param rowsToDisplay How many rows to format.
      */
     String toLongString(int rowsToDisplay);
+
+    /**
+     * Create a new table where some columns have new names, as indicated
+     * by the rename map.
+     * @param renameMap  Map indicating how a column name should be renamed.
+     */
+    default ITable renameColumns(HashMap<String,String> renameMap) {
+        List<IColumn> cols = new ArrayList<IColumn>(this.getSchema().getColumnCount());
+        for (IColumn col: this.getColumns(this.getSchema())) {
+            IColumn newCol = col;
+            String name = col.getName();
+            if (renameMap.containsKey(name))
+                newCol = col.rename(renameMap.get(name));
+            cols.add(newCol);
+        }
+        return this.replace(cols);
+    }
 }

@@ -51,6 +51,7 @@ public class FileSetDescription implements Serializable, IJson {
     /**
      * Name of schema file in folder.  If null or empty no schema file is assumed.
      */
+    @SuppressWarnings("WeakerAccess")
     @Nullable
     public String schemaFile;
     /**

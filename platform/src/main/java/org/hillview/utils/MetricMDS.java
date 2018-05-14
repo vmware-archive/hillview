@@ -58,11 +58,7 @@ public class MetricMDS {
      * Learning rate to use in the optimization. It is decreased over time to find a more accurate minimum.
      */
     private double learningRate = MetricMDS.defaultLearningRate;
-    private final double learningRateDecay = MetricMDS.defaultLearningRateDecay;
-    /**
-     * If the magnitude of the gradient is smaller than this value, we consider the optimization converged.
-     */
-    public double stopTolerance = MetricMDS.tolerance;
+    private static final double learningRateDecay = MetricMDS.defaultLearningRateDecay;
 
     /**
      * All pairwise distances d(i, j) in nD. Since it is symmetric, only the upper-triangular part is stored.
@@ -177,11 +173,10 @@ public class MetricMDS {
         double cost = this.cost();
         double magnitude;
         double initialCost = cost;
-        int convergedCount = 0;
         do {
             /* Compute the gradient */
             DoubleMatrix gradient = this.gradient();
-            DoubleMatrix step = this.gradient().mul(this.learningRate / this.numObservations).neg();
+            DoubleMatrix step = this.gradient().mul(learningRate / this.numObservations).neg();
             /* Move the low-dimensional points s.t. the cost locally decreases. */
             this.dataLowDim.addi(step);
 
@@ -199,7 +194,7 @@ public class MetricMDS {
                 );
             }
 
-            this.learningRate *= this.learningRateDecay;
+            this.learningRate *= learningRateDecay;
             iterations++;
             cost = newCost;
             /* Continue while the convergence criterion isn't met and the max # iterations isn't met. */
@@ -270,6 +265,7 @@ public class MetricMDS {
         return MatrixFunctions.pow(this.distsHighDim.sub(this.distsLowDim), 2).sum();
     }
 
+    @SuppressWarnings("unused")
     public void setVerbose(boolean verbose) {
         this.verbose = verbose;
     }

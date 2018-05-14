@@ -109,6 +109,7 @@ export interface CreateColumnInfo {
     schema: Schema;
     outputColumn: string;
     outputKind: ContentsKind;
+    renameMap: string[]
 }
 
 export interface HeatMap {

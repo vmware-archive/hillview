@@ -25,6 +25,7 @@ import org.hillview.table.api.IIntColumn;
 import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
+import java.util.BitSet;
 
 /**
  * A column of integers that can grow in size.
@@ -41,6 +42,14 @@ public final class IntListColumn
         this.segments = new ArrayList<int []>();
     }
 
+    private IntListColumn(ColumnDescription desc, ArrayList<int[]> segments,
+                          @Nullable ArrayList<BitSet> missing, int size) {
+        super(desc);
+        this.missing = missing;
+        this.segments = segments;
+        this.size = size;
+    }
+
     @Override
     public IColumn seal() {
         this.checkMissingSize(this.segments.size());
@@ -52,6 +61,12 @@ public final class IntListColumn
         final int segmentId = rowIndex >> LogSegmentSize;
         final int localIndex = rowIndex & SegmentMask;
         return this.segments.get(segmentId)[localIndex];
+    }
+
+    @Override
+    public IColumn rename(String newName) {
+        return new IntListColumn(this.description.rename(newName), this.segments,
+                this.missing, this.size);
     }
 
     @Override

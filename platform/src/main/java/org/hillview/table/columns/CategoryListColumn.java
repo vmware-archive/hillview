@@ -28,7 +28,7 @@ import java.util.ArrayList;
  * A column of Categorical values that can grow in size.
  */
 public class CategoryListColumn extends BaseListColumn implements ICategoryColumn {
-    private CategoryEncoding encoding;
+    private final CategoryEncoding encoding;
     // All these arrays hold indexes into the encoding data structure.
     // We use byte-indexes until we run out of them.
     // Then we use short indexes, and hopefully we never run out of them.
@@ -51,6 +51,25 @@ public class CategoryListColumn extends BaseListColumn implements ICategoryColum
         this.encoding = new CategoryEncoding();
         this.firstIntSegment = Integer.MAX_VALUE;
         this.firstShortSegment = Integer.MAX_VALUE;
+    }
+
+    private CategoryListColumn(
+            ColumnDescription desc,
+            final CategoryEncoding encoding,
+            final ArrayList<int[]> intSegments,
+            final ArrayList<short[]> shortSegments,
+            final ArrayList<byte[]> byteSegments,
+            int firstShortSegment,
+            int firstIntSegment,
+            int size) {
+        super(desc);
+        this.encoding = encoding;
+        this.intSegments = intSegments;
+        this.shortSegments = shortSegments;
+        this.byteSegments = byteSegments;
+        this.firstIntSegment = firstIntSegment;
+        this.firstShortSegment = firstShortSegment;
+        this.size = size;
     }
 
     @Nullable
@@ -154,6 +173,19 @@ public class CategoryListColumn extends BaseListColumn implements ICategoryColum
     @Override
     public boolean isMissing(final int rowIndex) {
         return this.getString(rowIndex) == null;
+    }
+
+    @Override
+    public IColumn rename(String newName) {
+        return new CategoryListColumn(
+                this.description.rename(newName),
+                this.encoding,
+                this.intSegments,
+                this.shortSegments,
+                this.byteSegments,
+                this.firstShortSegment,
+                this.firstIntSegment,
+                this.size);
     }
 
     @Override

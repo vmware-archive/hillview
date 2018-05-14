@@ -26,6 +26,7 @@ import org.hillview.table.api.ITable;
 import javax.annotation.Nullable;
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
+import java.util.HashMap;
 
 /**
  * This class is an adaptor around the VirtualRowSnapshot which is used by the JavaScript
@@ -34,15 +35,19 @@ import javax.script.ScriptException;
 public class JSVirtualRowSnapshot extends VirtualRowSnapshot {
     private final ScriptEngine engine;
 
-    public JSVirtualRowSnapshot(ITable table, Schema schema, ScriptEngine engine) {
-        super(table, schema);
+    public JSVirtualRowSnapshot(
+            ITable table, Schema schema,
+            @Nullable
+            HashMap<String, String> columnRenameMap,
+            ScriptEngine engine) {
+        super(table, schema, columnRenameMap);
         this.engine = engine;
     }
 
     @Override
     @Nullable
     public Object get(Object key) {
-        IColumn col = this.getColumn((String)key);
+        IColumn col = this.getColumnChecked((String)key);
         if (col.getDescription().kind == ContentsKind.Date) {
             double dateEncoding = super.getDouble((String)key);
             // https://stackoverflow.com/questions/33110942/supply-javascript-date-to-nashorn-script

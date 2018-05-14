@@ -59,6 +59,11 @@ public final class IntArrayColumn
     }
 
     @Override
+    public IColumn rename(String newName) {
+        return new IntArrayColumn(this.description.rename(newName), this.data);
+    }
+
+    @Override
     public int getInt(final int rowIndex) {
         return this.data[rowIndex];
     }

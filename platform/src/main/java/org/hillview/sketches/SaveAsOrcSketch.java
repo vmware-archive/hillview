@@ -32,6 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -49,12 +50,20 @@ public class SaveAsOrcSketch implements ISketch<ITable, Empty> {
      * If true a schema file will also be created.
      */
     private final boolean createSchema;
+    /**
+     * Map that describes how columns should be renamed.
+     */
+    @Nullable
+    private final HashMap<String, String> renameMap;
 
     public SaveAsOrcSketch(final String folder,
-                           @Nullable final Schema schema, boolean createSchema) {
+                           @Nullable final Schema schema,
+                           @Nullable final HashMap<String, String> renameMap,
+                           boolean createSchema) {
         this.folder = folder;
         this.createSchema = createSchema;
         this.schema = schema;
+        this.renameMap = renameMap;
     }
 
     @Override
@@ -62,6 +71,8 @@ public class SaveAsOrcSketch implements ISketch<ITable, Empty> {
         try {
             if (this.schema != null)
                 data = data.project(this.schema);
+            if (this.renameMap != null && this.renameMap.size() != 0)
+                data = data.renameColumns(this.renameMap);
 
             List<ColumnAndConverterDescription> ccds = data.getSchema()
                     .getColumnAndConverterDescriptions();
@@ -84,7 +95,8 @@ public class SaveAsOrcSketch implements ISketch<ITable, Empty> {
             if (this.createSchema) {
                 String schemaFile = baseName + ".schema";
                 Path schemaPath = Paths.get(this.folder, schemaFile);
-                data.getSchema().writeToJsonFile(schemaPath);
+                Schema toWrite = data.getSchema();
+                toWrite.writeToJsonFile(schemaPath);
                 Path finalSchemaPath = Paths.get(this.folder, Schema.schemaFileName);
                 // Attempt to atomically rename the schema; this is also a race which
                 // may be won by multiple participants.  Hopefully all the schemas

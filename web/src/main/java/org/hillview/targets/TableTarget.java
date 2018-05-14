@@ -35,6 +35,7 @@ import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.Converters;
 import org.hillview.utils.LinAlg;
 import org.hillview.utils.Point2D;
+import org.hillview.utils.Utilities;
 import org.jblas.DoubleMatrix;
 import rx.Observer;
 
@@ -112,12 +113,16 @@ public final class TableTarget extends RpcTarget {
         String folder = "";
         @Nullable
         Schema schema;
+        // Rename map encoded as an array
+        @Nullable
+        String[] renameMap;
     }
 
     @HillviewRpc
     public void saveAsOrc(RpcRequest request, RpcRequestContext context) {
         SaveAsArgs args = request.parseArgs(SaveAsArgs.class);
-        SaveAsOrcSketch sk = new SaveAsOrcSketch(args.folder, args.schema, true);
+        SaveAsOrcSketch sk = new SaveAsOrcSketch(
+                args.folder, args.schema, Utilities.arrayToMap(args.renameMap), true);
         this.runCompleteSketch(this.table, sk, (e, c) -> e, request, context);
     }
 
@@ -619,13 +624,19 @@ public final class TableTarget extends RpcTarget {
         Schema schema;
         String outputColumn;
         ContentsKind outputKind = ContentsKind.Category;
+        /**
+         * Map string->string described by a string array.
+         */
+        @Nullable
+        String[] renameMap;
     }
 
     @HillviewRpc
     public void createColumn(RpcRequest request, RpcRequestContext context) {
         CreateColumnInfo info = request.parseArgs(CreateColumnInfo.class);
         ColumnDescription desc = new ColumnDescription(info.outputColumn, info.outputKind);
-        CreateColumnJSMap map = new CreateColumnJSMap(info.jsFunction, info.schema, desc);
+        CreateColumnJSMap map = new CreateColumnJSMap(
+                info.jsFunction, info.schema, Utilities.arrayToMap(info.renameMap), desc);
         this.runMap(this.table, map, TableTarget::new, request, context);
     }
 }

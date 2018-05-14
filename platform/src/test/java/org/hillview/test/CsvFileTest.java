@@ -184,7 +184,8 @@ public class CsvFileTest extends BaseTest {
 
     @Test
     public void csvWriterTest() throws IOException {
-        // The Csv writer we are using has a bug, reproduced with this test.
+        // The Csv writer (Univocity) we were using had a bug,
+        // reproduced with this test.
         String[] data = new String[]{ "", null };
         CsvWriterSettings settings = new CsvWriterSettings();
         CsvFormat format = new CsvFormat();

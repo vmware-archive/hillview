@@ -57,6 +57,11 @@ public final class StringArrayColumn
         return this.data.length;
     }
 
+    @Override
+    public IColumn rename(String newName) {
+        return new StringArrayColumn(this.description.rename(newName), this.data);
+    }
+
     @Nullable
     @Override
     public String getString(final int rowIndex) {

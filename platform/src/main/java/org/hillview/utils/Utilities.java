@@ -27,6 +27,7 @@ import javax.annotation.Nullable;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -95,6 +96,23 @@ public class Utilities {
         if (s == null || s.isEmpty())
             return null;
         return s;
+    }
+
+    /**
+     * Converts an array of strings into a Map string->string.
+     * The array must have an even number of elements, and
+     * the elements are in order key-value pairs.
+     */
+    @Nullable
+    public static HashMap<String, String> arrayToMap(@Nullable String[] array) {
+        if (array == null)
+            return null;
+        HashMap<String, String> result = new HashMap<String, String>();
+        if (array.length % 2 != 0)
+            throw new IllegalArgumentException("Array must have an even number of elements");
+        for (int index = 0; index < array.length; index += 2)
+            result.put(array[index], array[index+1]);
+        return result;
     }
 
     /**

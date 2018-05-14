@@ -42,7 +42,6 @@ public class MongoDBLoader extends JsonFileLoader {
      * We don't really use JDBC, but this data structure is handy.
      */
     private final JdbcConnectionInformation info;
-    private int currentRow;
     private static final JsonParser parser = new JsonParser();
     private final MongoDatabase database;
     //final DB oldDatabase;
@@ -84,7 +83,7 @@ public class MongoDBLoader extends JsonFileLoader {
         Schema schema = this.guessSchema(filename, data.iterator());
         IAppendableColumn[] columns = schema.createAppendableColumns();
 
-        this.currentRow = 0;
+        int currentRow = 0;
         // reopen the iterator
         for (JsonElement e: Linq.map(cursor, MongoDBLoader::convert))
             this.append(columns, e);

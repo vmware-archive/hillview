@@ -564,7 +564,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
                 }, selectedCount == 1);
                 this.contextMenu.addItem({
                     text: "Create column...",
-                    action: () => this.addColumn(this.order),
+                    action: () => this.createColumnDialog(this.order),
                     help: "Add a new column computed from the selected columns."
                 }, true);
                 this.contextMenu.show(e);
@@ -860,7 +860,10 @@ export class TableView extends TSViewBase implements IScrollTarget {
             let cd = cds[i];
             cell = trow.insertCell(i + 2);
             cell.classList.add(this.columnClass(cd.name));
-            cell.style.textAlign = "right";
+            let align = "right";
+            if (cd.kind == "Category" || cd.kind == "String")
+                align = "left";
+            cell.style.textAlign = align;
 
             this.cellsPerColumn.get(cd.name).push(cell);
 

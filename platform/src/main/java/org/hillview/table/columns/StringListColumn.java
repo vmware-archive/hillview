@@ -38,6 +38,13 @@ public class StringListColumn extends BaseListColumn implements IStringColumn {
         this.segments = new ArrayList<String []>();
     }
 
+    private StringListColumn(ColumnDescription desc, ArrayList<String[]> segments, int size) {
+        super(desc);
+        this.segments = segments;
+        this.size = size;
+        this.seal();
+    }
+
     @Override
     public IColumn seal() { return this; }
 
@@ -79,6 +86,11 @@ public class StringListColumn extends BaseListColumn implements IStringColumn {
     @Override
     public boolean isMissing(final int rowIndex) {
         return this.getString(rowIndex) == null;
+    }
+
+    @Override
+    public IColumn rename(String newName) {
+        return new StringListColumn(this.description.rename(newName), this.segments, this.size);
     }
 
     @Override

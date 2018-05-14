@@ -300,7 +300,7 @@ public abstract class RpcTarget implements IJson {
      * to the consumer.  It performs aggregation by itself.
      * @param <R> Type of data.
      */
-    class CompleteSketchResultObserver<T, R, S extends IJson> extends ResultObserver<R> {
+    class CompleteSketchResultObserver<R, S extends IJson> extends ResultObserver<R> {
         @Nullable
         private R last;
         private final BiFunction<R, HillviewComputation, S> postprocessing;
@@ -450,7 +450,7 @@ public abstract class RpcTarget implements IJson {
         // Prefix sum of the partial results
         Observable<PartialResult<R>> add = concat.scan(prm::add);
         // Send the partial results back
-        CompleteSketchResultObserver<T, R, S> robs = new CompleteSketchResultObserver<T, R, S>(
+        CompleteSketchResultObserver<R, S> robs = new CompleteSketchResultObserver<R, S>(
                 sketch.asString(), this, request, context, postprocessing);
         Subscription sub = add
                 .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
@@ -550,7 +550,7 @@ public abstract class RpcTarget implements IJson {
      * @param request Web socket request, where replies are sent.
      * @param context Context for the computation.
      */
-    protected <T, R extends IJson> void
+    protected <T> void
     runManage(IDataSet<T> data, ControlMessage command,
               RpcRequest request, RpcRequestContext context) {
         // Run the sketch

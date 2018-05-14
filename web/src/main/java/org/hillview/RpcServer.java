@@ -116,8 +116,8 @@ public final class RpcServer {
 
     public static void execute(RpcRequest rpcRequest, RpcRequestContext context) {
         HillviewLogger.instance.info("Executing request", "{0}", rpcRequest);
-        /* Observable invoked when the source object has been obtained.
-         * This observable will actually invoke the method on the object. */
+        /* Observer invoked when the source object has been obtained.
+         * This observer will actually invoke the method on the object. */
         SingleObserver<RpcTarget> obs = new SingleObserver<RpcTarget>() {
             @Override
             public void onError(Throwable throwable) {

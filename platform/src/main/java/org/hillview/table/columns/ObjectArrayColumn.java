@@ -38,10 +38,14 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
         this.data = new Object[size];
     }
 
-    public ObjectArrayColumn(final ColumnDescription description,
+    private ObjectArrayColumn(final ColumnDescription description,
                              final Object[] data) {
         super(description, data.length);
         this.data = data;
+    }
+
+    public IColumn rename(String newName) {
+        return new ObjectArrayColumn(this.description.rename(newName), this.data);
     }
 
     @Override

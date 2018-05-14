@@ -54,6 +54,11 @@ public class DoubleArrayColumn
     public int sizeInRows() { return this.data.length;}
 
     @Override
+    public IColumn rename(String newName) {
+        return new DoubleArrayColumn(this.description.rename(newName), this.data);
+    }
+
+    @Override
     public double getDouble(final int rowIndex) { return this.data[rowIndex];}
 
     @Override

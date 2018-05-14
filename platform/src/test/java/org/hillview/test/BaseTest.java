@@ -29,6 +29,7 @@ import java.util.logging.Level;
  * on the test class:
  * "@net.jcip.annotations.NotThreadSafe"
  */
+@SuppressWarnings("WeakerAccess")
 @Ignore
 public class BaseTest {
     private static boolean initialized = false;

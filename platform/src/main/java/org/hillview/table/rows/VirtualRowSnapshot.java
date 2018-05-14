@@ -60,7 +60,11 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
     private final Schema schema;
     private final HashMap<String, IColumn> columns;
 
-    public VirtualRowSnapshot(final ITable table, final Schema schema) {
+    public VirtualRowSnapshot(
+            final ITable table,
+            final Schema schema,
+            @Nullable
+            final HashMap<String, String> columnRenameMap) {
         this.table = table;
         this.schema = schema;
         this.columns = new HashMap<String, IColumn>();
@@ -68,8 +72,17 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
                 schema.getColumnNames());
         List<ColumnAndConverter> cols = table.getLoadedColumns(ccds);
         for (ColumnAndConverter col: cols) {
-            this.columns.put(col.getName(), col.column);
+            String nameToUse = col.getName();
+            if (columnRenameMap != null && columnRenameMap.containsKey(nameToUse))
+                nameToUse = columnRenameMap.get(nameToUse);
+            this.columns.put(nameToUse, col.column);
         }
+    }
+
+    public VirtualRowSnapshot(
+            final ITable table,
+            final Schema schema) {
+        this(table, schema, null);
     }
 
     public boolean exists() { return this.rowIndex >= 0; }
@@ -135,14 +148,15 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
         return compareForEquality((BaseRowSnapshot)o, this.schema);
     }
 
-    IColumn getColumn(String colName) {
+    @Nullable
+    protected IColumn getColumn(String colName) {
         return this.columns.get(colName);
     }
 
     public boolean isMissing(String colName) {
         if (!this.exists())
             throw new RuntimeException("No such row.");
-        return this.getColumn(colName).isMissing(this.rowIndex);
+        return this.getColumnChecked(colName).isMissing(this.rowIndex);
     }
 
     @Override
@@ -155,33 +169,40 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
         return this.schema.getColumnNames();
     }
 
+    IColumn getColumnChecked(String colName) {
+        IColumn col = this.getColumn(colName);
+        if (col == null)
+            throw new RuntimeException("No column named " + colName);
+        return col;
+    }
+
     @Override
     public Object getObject(String colName) {
-        return this.getColumn(colName).getObject(this.rowIndex);
+        return this.getColumnChecked(colName).getObject(this.rowIndex);
     }
 
     @Override
     public String getString(String colName) {
-        return this.getColumn(colName).asString(this.rowIndex);
+        return this.getColumnChecked(colName).asString(this.rowIndex);
     }
 
     @Override
     public int getInt(String colName) {
-        return this.getColumn(colName).getInt(this.rowIndex);
+        return this.getColumnChecked(colName).getInt(this.rowIndex);
     }
 
     @Override
     public double getDouble(String colName) {
-        return this.getColumn(colName).getDouble(this.rowIndex);
+        return this.getColumnChecked(colName).getDouble(this.rowIndex);
     }
 
     @Override
     public Instant getDate(String colName) {
-        return this.getColumn(colName).getDate(this.rowIndex);
+        return this.getColumnChecked(colName).getDate(this.rowIndex);
     }
 
     @Override
     public Duration getDuration(String colName) {
-        return this.getColumn(colName).getDuration(this.rowIndex);
+        return this.getColumnChecked(colName).getDuration(this.rowIndex);
     }
 }

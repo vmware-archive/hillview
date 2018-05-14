@@ -40,6 +40,12 @@ public class SparseColumn extends BaseColumn
         this.data = new Int2ObjectOpenHashMap<Object>();
     }
 
+    SparseColumn(ColumnDescription description, Int2ObjectMap<Object> data, int size) {
+        super(description);
+        this.data = data;
+        this.size = size;
+    }
+
     @Override
     public boolean isLoaded() { return true; }
 
@@ -121,7 +127,12 @@ public class SparseColumn extends BaseColumn
         };
     }
 
-   @Override
+    @Override
+    public IColumn rename(String newName) {
+        return new SparseColumn(this.description.rename(newName), this.data, this.size);
+    }
+
+    @Override
     @SuppressWarnings("ConstantConditions")
     public long hashCode64(int rowIndex, LongHashFunction hash) {
         assert !isMissing(rowIndex);

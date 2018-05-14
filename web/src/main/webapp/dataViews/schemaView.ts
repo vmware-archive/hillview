@@ -197,7 +197,7 @@ export class SchemaView extends TSViewBase {
         }, selectedCount == 1);
         this.contextMenu.addItem({
             text: "Create column...",
-            action: () => this.addColumn(new RecordOrder([])),
+            action: () => this.createColumnDialog(new RecordOrder([])),
             help: "Add a new column computed from the selected columns."
         }, true);
         this.contextMenu.addItem({

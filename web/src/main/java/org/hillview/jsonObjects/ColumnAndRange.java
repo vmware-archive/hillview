@@ -25,9 +25,10 @@ import org.hillview.table.api.ColumnAndConverterDescription;
 import org.hillview.table.api.IStringConverterDescription;
 
 import javax.annotation.Nullable;
+import java.io.Serializable;
 
 @SuppressWarnings("WeakerAccess,CanBeFinal")
-public class ColumnAndRange {
+public class ColumnAndRange implements Serializable {
     public String columnName = "";
     public double min;
     public double max;

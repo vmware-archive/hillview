@@ -22,6 +22,7 @@ import org.hillview.table.api.*;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.BitSet;
 
 /**
  * A column of doubles that can grow in size.
@@ -35,11 +36,25 @@ public class DoubleListColumn
         this.segments = new ArrayList<double []>();
     }
 
+    private DoubleListColumn(final ColumnDescription desc, ArrayList<double[]> segments,
+                             @Nullable ArrayList<BitSet> missing, int size) {
+        super(desc);
+        this.segments = segments;
+        this.missing = missing;
+        this.size = size;
+    }
+
     @Override
     public IColumn seal() {
         this.checkMissingSize(this.segments.size());
         this.segments.trimToSize();
         return this;
+    }
+
+    @Override
+    public IColumn rename(String newName) {
+        return new DoubleListColumn(
+                this.description.rename(newName), this.segments, this.missing, this.size);
     }
 
     @Override

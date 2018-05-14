@@ -77,10 +77,6 @@ public final class RpcRequest implements IJson {
         return this.objectId + "." + this.method + "()";
     }
 
-    RpcReply createReply(IJson userResult) {
-        return this.createReply(userResult.toJsonTree());
-    }
-
     private RpcReply createReply(String json) {
         return new RpcReply(this.requestId, json, false);
     }

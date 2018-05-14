@@ -21,7 +21,6 @@ import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.*;
 
 import javax.annotation.Nullable;
-import java.util.function.Consumer;
 
 public class CategoryArrayColumn extends BaseArrayColumn
         implements IStringColumn, IMutableColumn, ICategoryColumn {
@@ -46,6 +45,13 @@ public class CategoryArrayColumn extends BaseArrayColumn
             this.set(i, value);
             i++;
         }
+    }
+
+    private CategoryArrayColumn(ColumnDescription description,
+                               int[] data, CategoryEncoding encoding) {
+        super(description, data.length);
+        this.data = data;
+        this.encoding = encoding;
     }
 
     @Override
@@ -87,5 +93,12 @@ public class CategoryArrayColumn extends BaseArrayColumn
     @Override
     public int sizeInRows() {
         return this.data.length;
+    }
+
+    @Override
+    public IColumn rename(String newName) {
+        return new CategoryArrayColumn(
+                this.description.rename(newName),
+                this.data, this.encoding);
     }
 }

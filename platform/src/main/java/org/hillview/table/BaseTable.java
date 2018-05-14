@@ -64,10 +64,6 @@ public abstract class BaseTable implements ITable, Serializable {
         }
     }
 
-    BaseTable() {
-        this.columns = new HashMap<String, IColumn>();
-    }
-
     /**
      * Returns columns in the order they appear in the schema.
      */
@@ -104,12 +100,16 @@ public abstract class BaseTable implements ITable, Serializable {
      * Throws if the columns do not all have the same size.
      */
     static <C extends IColumn> int columnSize(Iterable<C> columns) {
+        String firstColumn = "";
         int size = -1;
         for (IColumn c : columns) {
-            if (size < 0)
+            if (size < 0) {
                 size = c.sizeInRows();
-            else if (size != c.sizeInRows())
-                throw new IllegalArgumentException("Columns do not have the same size");
+                firstColumn = c.getName();
+            } else if (size != c.sizeInRows()) {
+                throw new IllegalArgumentException("Columns " +
+                        firstColumn + " and " + c.getName() + " do not have the same size");
+            }
         }
         if (size < 0)
             size = 0;

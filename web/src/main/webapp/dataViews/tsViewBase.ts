@@ -23,7 +23,14 @@ import {
 } from "../javaBridge";
 import {FullPage} from "../ui/fullPage";
 import {DistinctStrings} from "../distinctStrings";
-import {cloneToSet, Comparison, Converters, ICancellable, significantDigits} from "../util";
+import {
+    cloneToSet,
+    Comparison,
+    Converters,
+    ICancellable,
+    mapToArray,
+    significantDigits
+} from "../util";
 import {TableOperationCompleted, TableView} from "./tableView";
 import {HistogramDialog, RangeCollector} from "./histogramView";
 import {Range2DCollector} from "./heatMapView";
@@ -124,7 +131,8 @@ export abstract class TSViewBase extends BigTableView {
             let folder = dialog.getFieldValue("folderName");
             let rr = this.createStreamingRpcRequest<boolean>("saveAsOrc", {
                 folder: folder,
-                schema: schema.schema
+                schema: schema.schema,
+                renameMap: mapToArray(schema.getRenameMap())
             });
             let renderer = new SaveReceiver(this.page, rr);
             rr.invoke(renderer);
@@ -132,7 +140,7 @@ export abstract class TSViewBase extends BigTableView {
         dialog.show();
     }
 
-    addColumn(order: RecordOrder): void {
+    createColumnDialog(order: RecordOrder): void {
         let dialog = new Dialog(
             "Add column", "Specify a JavaScript function which computes the values in a new column.");
         dialog.addTextField(
@@ -159,7 +167,8 @@ export abstract class TSViewBase extends BigTableView {
             jsFunction: fun,
             outputColumn: col,
             outputKind: asContentsKind(kind),
-            schema: subSchema.schema
+            schema: subSchema.schema,
+            renameMap: mapToArray(subSchema.getRenameMap())
         };
         let rr = this.createCreateColumnRequest(arg);
         let newPage = this.dataset.newPage("New column " + col, this.page);

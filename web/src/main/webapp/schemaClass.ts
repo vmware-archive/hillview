@@ -47,6 +47,10 @@ export class SchemaClass {
         this.reverseDisplayNameMap = new Map<string, string>(schema.reverseDisplayNameMap);
     }
 
+    public getRenameMap(): Map<string, string> {
+        return this.displayNameMap;
+    }
+
     /**
      * Get the display name of the specified column.
      */
@@ -76,6 +80,8 @@ export class SchemaClass {
             return false;
         if (this.columnMap.has(to) && !this.displayNameMap.has(to))
             return false;
+        if (this.displayNameMap.has(name))
+            this.reverseDisplayNameMap.delete(this.displayNameMap.get(name));
         this.displayNameMap.set(name, to);
         this.reverseDisplayNameMap.set(to, name);
         return true;
