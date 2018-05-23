@@ -16,6 +16,7 @@
  */
 
 import {Dialog} from "./ui/dialog";
+import {findElement} from "./util";
 
 interface TestOperation {
     /**
@@ -27,16 +28,6 @@ interface TestOperation {
        */
     cont: () => void;
     description: string;
-}
-
-/**
- * Retrieves a node from the DOM starting from a CSS selector specification.
- * @param cssselector  Node specification as a CSS selector.
- * @returns The unique selected node.
- */
-function findElement(cssselector: string): HTMLElement {
-    let val = document.querySelector(cssselector);
-    return <HTMLElement>val;
 }
 
 /**

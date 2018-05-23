@@ -69,24 +69,27 @@ export class HeatmapPlot extends Plot {
         this.xScale = xsc.scale;
         this.yScale = ysc.scale;
 
+        let htmlCanvas: HTMLCanvasElement = document.createElement("canvas");
+        htmlCanvas.height = this.getChartHeight();
+        htmlCanvas.width = this.getChartWidth();
+        // draw the image onto the canvas.
+        let ctx: CanvasRenderingContext2D = htmlCanvas.getContext("2d");
+        for (let dot of this.dots) {
+            ctx.beginPath();
+            ctx.fillStyle = this.legendPlot.getColor(dot.v);
+            ctx.fillRect(dot.x, dot.y, this.pointWidth, this.pointHeight);
+            ctx.closePath();
+        }
+        let url = htmlCanvas.toDataURL("image/png");
         this.plottingSurface.getChart()
-            .selectAll()
-            .data(this.dots)
-            .enter()
-            .append("g")
-            .append("svg:rect")
-            .attr("class", "heatMapCell")
-            .attr("x", d => d.x)
-            .attr("y", d => d.y)
-            .attr("data-val", d => d.v)
-            .attr("width", this.pointWidth)
-            .attr("height", this.pointHeight)
-            .style("stroke-width", 0)
-            .style("fill", d => this.legendPlot.getColor(d.v));
-
+            .append("image")
+            .attr("xlink:href", url)
+            .attr("width", this.getChartWidth())
+            .attr("height", this.getChartHeight());
         this.drawAxes();
 
-        if (this.yAxisData.description.kind != "Category") {
+        if (this.yAxisData.description.kind != "Category" &&
+            this.xAxisData.description.kind != "Category") {
             // it makes no sense to do regressions for categorical values
             let regr = regression(this.heatmap.buckets);
             if (regr.length == 2) {

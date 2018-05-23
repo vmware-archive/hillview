@@ -19,6 +19,8 @@
  * This file contains various useful functions and classes.
  */
 
+import * as FileSaver from "file-saver";
+
 export type Comparison = "==" | "!=" | "<" | ">" | "<=" | ">=";
 
 export interface Pair<T1, T2> {
@@ -40,15 +42,23 @@ export class Converters {
 }
 
 /**
+ * Retrieves a node from the DOM starting from a CSS selector specification.
+ * @param cssselector  Node specification as a CSS selector.
+ * @returns The unique selected node.
+ */
+export function findElement(cssselector: string): HTMLElement {
+    let val = document.querySelector(cssselector);
+    return <HTMLElement>val;
+}
+
+/**
  * Save data in a file on the local filesystem.
  * @param {string} filename  File to save data to.
  * @param {string} contents  Contents to write in file.
  */
 export function saveAs(filename: string, contents: string) {
-   let pom = document.createElement('a');
-   pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(contents));
-   pom.setAttribute('download', filename);
-   pom.click();
+   let blob = new Blob([contents], {type: "text/plain;charset=utf-8"});
+   FileSaver.saveAs(blob, filename);
 }
 
 /**

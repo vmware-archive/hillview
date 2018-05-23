@@ -163,6 +163,7 @@ export class HillviewToplevel implements IHtmlElement {
         let dataset = this.datasets[index];
         this.current = dataset;
         this.content.appendChild(dataset.getHTMLRepresentation());
+        dataset.resize();
         return selected;
     }
 
