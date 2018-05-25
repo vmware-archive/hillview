@@ -19,7 +19,7 @@ class Headings:
     def makeReference(self, ref):
         """Converts text into a suitable markdown reference"""
         ref = ref.strip()
-        return "(#" + ref.lower().replace(" ", "-") + ")"
+        return "(#" + ref.lower().replace(".", "").replace(" ", "-") + ")"
 
     def getHeading(self, row):
         """If row is a heading (starting with a number of #s) it is prepended

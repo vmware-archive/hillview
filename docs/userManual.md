@@ -25,50 +25,50 @@ memory over distributed data.
 # Contents
 |Section|Reference|
 |---:|:---|
-|1.|[Basic concepts](#1.-basic-concepts)|
-|1.1.|[System architecture](#1.1.-system-architecture)|
-|1.2.|[Streaming interaction](#1.2.-streaming-interaction)|
-|1.3.|[Data model](#1.3.-data-model)|
-|2.|[Interacting with data](#2.-interacting-with-data)|
-|2.1.|[Error display](#2.1.-error-display)|
-|2.2.|[Mouse-based selection](#2.2.-mouse-based-selection)|
-|2.3.|[Loading data](#2.3.-loading-data)|
-|2.3.1.|[Specifying the data schema](#2.3.1.-specifying-the-data-schema)|
-|2.3.2.|[Reading CSV files](#2.3.2.-reading-csv-files)|
-|2.3.3.|[Reading JSON files](#2.3.3.-reading-json-files)|
-|2.3.4.|[Reading ORC files](#2.3.4.-reading-orc-files)|
-|2.3.5.|[Reading data from SQL databases](#2.3.5.-reading-data-from-sql-databases)|
-|2.3.6.|[Reading Parquet files](#2.3.6.-reading-parquet-files)|
-|2.4.|[Navigating multiple datasets](#2.4.-navigating-multiple-datasets)|
-|3.|[Data views](#3.-data-views)|
-|3.1.|[Schema views](#3.1.-schema-views)|
-|3.1.1.|[Selecting columns](#3.1.1.-selecting-columns)|
-|3.1.2.|[The schema view menu](#3.1.2.-the-schema-view-menu)|
-|3.1.3.|[The chart menu](#3.1.3.-the-chart-menu)|
-|3.1.4.|[Saving data](#3.1.4.-saving-data)|
-|3.2.|[Table views](#3.2.-table-views)|
-|3.2.1.|[Scrolling](#3.2.1.-scrolling)|
-|3.2.2.|[Selecting columns](#3.2.2.-selecting-columns)|
-|3.2.3.|[Operations on selected columns](#3.2.3.-operations-on-selected-columns)|
-|3.2.4.|[Operations on a table cell](#3.2.4.-operations-on-a-table-cell)|
-|3.2.5.|[Operations on tables](#3.2.5.-operations-on-tables)|
-|3.2.5.1.|[The table view menu](#3.2.5.1.-the-table-view-menu)|
-|3.2.6.|[The table filter menu](#3.2.6.-the-table-filter-menu)|
-|3.3.|[Frequent elements views](#3.3.-frequent-elements-views)|
-|3.3.1.|[View as a Table](#3.3.1.-view-as-a-table)|
-|3.3.2.|[Modify](#3.3.2.-modify)|
-|3.4.|[Uni-dimensional histogram views](#3.4.-uni-dimensional-histogram-views)|
-|3.4.1.|[The histogram menu](#3.4.1.-the-histogram-menu)|
-|3.4.2.|[The histogram view menu](#3.4.2.-the-histogram-view-menu)|
-|3.4.3.|[Mouse selection in histogram views](#3.4.3.-mouse-selection-in-histogram-views)|
-|3.4.4.|[Categorical histograms](#3.4.4.-categorical-histograms)|
-|3.5.|[Two-dimensional histogram views](#3.5.-two-dimensional-histogram-views)|
-|3.5.1.|[Selection in 2D histograms](#3.5.1.-selection-in-2d-histograms)|
-|3.6.|[Heatmap views](#3.6.-heatmap-views)|
-|3.6.1.|[Selection from a heatmap](#3.6.1.-selection-from-a-heatmap)|
-|3.7.|[Trellis plot views](#3.7.-trellis-plot-views)|
-|3.8.|[Combining two views](#3.8.-combining-two-views)|
-|3.9.|[LAMP projection](#3.9.-lamp-projection)|
+|1.|[Basic concepts](#1-basic-concepts)|
+|1.1.|[System architecture](#11-system-architecture)|
+|1.2.|[Streaming interaction](#12-streaming-interaction)|
+|1.3.|[Data model](#13-data-model)|
+|2.|[Interacting with data](#2-interacting-with-data)|
+|2.1.|[Error display](#21-error-display)|
+|2.2.|[Mouse-based selection](#22-mouse-based-selection)|
+|2.3.|[Loading data](#23-loading-data)|
+|2.3.1.|[Specifying the data schema](#231-specifying-the-data-schema)|
+|2.3.2.|[Reading CSV files](#232-reading-csv-files)|
+|2.3.3.|[Reading JSON files](#233-reading-json-files)|
+|2.3.4.|[Reading ORC files](#234-reading-orc-files)|
+|2.3.5.|[Reading data from SQL databases](#235-reading-data-from-sql-databases)|
+|2.3.6.|[Reading Parquet files](#236-reading-parquet-files)|
+|2.4.|[Navigating multiple datasets](#24-navigating-multiple-datasets)|
+|3.|[Data views](#3-data-views)|
+|3.1.|[Schema views](#31-schema-views)|
+|3.1.1.|[Selecting columns](#311-selecting-columns)|
+|3.1.2.|[The schema view menu](#312-the-schema-view-menu)|
+|3.1.3.|[The chart menu](#313-the-chart-menu)|
+|3.1.4.|[Saving data](#314-saving-data)|
+|3.2.|[Table views](#32-table-views)|
+|3.2.1.|[Scrolling](#321-scrolling)|
+|3.2.2.|[Selecting columns](#322-selecting-columns)|
+|3.2.3.|[Operations on selected columns](#323-operations-on-selected-columns)|
+|3.2.4.|[Operations on a table cell](#324-operations-on-a-table-cell)|
+|3.2.5.|[Operations on tables](#325-operations-on-tables)|
+|3.2.5.1.|[The table view menu](#3251-the-table-view-menu)|
+|3.2.6.|[The table filter menu](#326-the-table-filter-menu)|
+|3.3.|[Frequent elements views](#33-frequent-elements-views)|
+|3.3.1.|[View as a Table](#331-view-as-a-table)|
+|3.3.2.|[Modify](#332-modify)|
+|3.4.|[Uni-dimensional histogram views](#34-uni-dimensional-histogram-views)|
+|3.4.1.|[The histogram menu](#341-the-histogram-menu)|
+|3.4.2.|[The histogram view menu](#342-the-histogram-view-menu)|
+|3.4.3.|[Mouse selection in histogram views](#343-mouse-selection-in-histogram-views)|
+|3.4.4.|[Categorical histograms](#344-categorical-histograms)|
+|3.5.|[Two-dimensional histogram views](#35-two-dimensional-histogram-views)|
+|3.5.1.|[Selection in 2D histograms](#351-selection-in-2d-histograms)|
+|3.6.|[Heatmap views](#36-heatmap-views)|
+|3.6.1.|[Selection from a heatmap](#361-selection-from-a-heatmap)|
+|3.7.|[Trellis plot views](#37-trellis-plot-views)|
+|3.8.|[Combining two views](#38-combining-two-views)|
+|3.9.|[LAMP projection](#39-lamp-projection)|
 ## 1. Basic concepts
 
 ### 1.1. System architecture
@@ -176,24 +176,24 @@ storage.
   This is used to debug the Hillview system itself.
 
 * CSV files: allows the user to [read data from a set of CSV
-  files](#2.3.2.-reading-csv-files).
+  files](#232-reading-csv-files).
 
 * JSON files: allows the user to [read the data from a set of JSON
-  files](#2.3.3.-reading-json-files).
+  files](#233-reading-json-files).
 
 * Parquet files: allows the user to [read the data from a set of
-  Parquet files](#2.3.6.-reading-parquet-files).
+  Parquet files](#236-reading-parquet-files).
 
 * ORC files: allows the user to [read the data from a set of ORC
-  files](#2.3.4.-reading-orc-files).
+  files](#234-reading-orc-files).
 
 * DB tables: allows the user to [read data from a set of federated
-  databases using JDBC](#2.3.5.-reading-data-from-sql-databases).
+  databases using JDBC](#235-reading-data-from-sql-databases).
 
 After the data loading is initiated the user will be presented with a
 view of the loaded table.  If the table has relatively few columns,
-the user is shown directly a [Tabular view](#3.2.-table-views).  Otherwise
-the user is shown a [Schema view](#3.1.-schema-views), which can be
+the user is shown directly a [Tabular view](#32-table-views).  Otherwise
+the user is shown a [Schema view](#31-schema-views), which can be
 used to select a smaller set of columns to browse.
 
 #### 2.3.1. Specifying the data schema
@@ -219,7 +219,7 @@ column description has two fields:
   schema must be unique.
 
 * kind: A string describing the type of data in the column,
-  corresponding to the types in the [data model](#1.3.-data-model).  The
+  corresponding to the types in the [data model](#13-data-model).  The
   kind is one of: "String", "Category", "JSON", "Double", "Integer",
   "Date", and "Interval".
 
@@ -237,7 +237,7 @@ is deployed*.
 * File name pattern: A shell expansion pattern that names the files to
   load.  Multiple files may be loaded on each machine.
 
-* Schema file: An optional [schema file](#2.3.1.-specifying-the-data-schema)
+* Schema file: An optional [schema file](#231-specifying-the-data-schema)
   in JSON format that describes the schema of the data.  In the
   absence of a schema file Hillview attempts to guess the type of data
   in each column.  The schema file must reside in same folder.
@@ -292,7 +292,7 @@ is an ORC struct with scalar types as fields.
 * File name pattern: A shell expansion pattern that names the files to
   load.  Multiple files may be loaded on each machine.
 
-* Schema file: An optional [schema file](#2.3.1.-specifying-the-data-schema)
+* Schema file: An optional [schema file](#231-specifying-the-data-schema)
   in JSON format that describes the schema of the data.  The schema
   file must reside in same folder, and it must be compatible with the
   ORC schema.
@@ -409,23 +409,23 @@ menu with the following options:
 
 ![Schema menu](schema-menu.png)
 
-* Save as: allows the user to [save a copy of the data](#3.1.4.-saving-data)
+* Save as: allows the user to [save a copy of the data](#314-saving-data)
   in a different format; *the data is saved on the cluster where the
   service is running*
 
 * View: allows the user to [change the way data is
-  displayed](#3.1.2.-the-schema-view-menu)
+  displayed](#312-the-schema-view-menu)
 
-* Chart: allows users to [draw charts](#3.1.3.-the-chart-menu) of one or two
+* Chart: allows users to [draw charts](#313-the-chart-menu) of one or two
   colums
 
 * Combine: allows users to [combine data in two
-  views](#3.8.-combining-two-views)
+  views](#38-combining-two-views)
 
 #### 3.1.1. Selecting columns
 
 There are two ways to modify the selection:
-1. By [using the mouse](#2.2.-mouse-based-selection).
+1. By [using the mouse](#22-mouse-based-selection).
 
 2. Using the selection menus, which can be accessed either by
 right-clicking on the **Name**, **Type** or **Allows Missing** column
@@ -454,7 +454,7 @@ data table restricted to the selected columns using the View/Selected columns me
 
 ![Schema view menu](schema-view-menu.png)
 
-* Selected columns: this displays a [table view](#3.2.-table-views) of the
+* Selected columns: this displays a [table view](#32-table-views) of the
 data restricted to the selected columns.
 
 #### 3.1.3. The chart menu
@@ -466,18 +466,18 @@ of columns using the chart menu:
 
 * 1D Histogram. Selecting this menu presents a dialog allowing the user to
   select a column whose data will be drawn as a
-  [uni-dimensional histogram view](#3.4.-uni-dimensional-histogram-views).
+  [uni-dimensional histogram view](#34-uni-dimensional-histogram-views).
 
 ![1D histogram dialog](1d-histogram-dialog.png)
 
 * 2D Histogram.  Selecting this menu presents a dialog allowing the
   user to select two columns whose data will be drawn as a
-  [two-dimensional histogram view](#3.5.-two-dimensional-histogram-views).
+  [two-dimensional histogram view](#35-two-dimensional-histogram-views).
 
 ![2D histogram dialog](2d-histogram-dialog.png)
 
 * Heatmap.  Selecting this menu presents a dialog allowing the user to
-  select two columns whose data will be drawn as a [heatmap](#3.6.-heatmap-views).
+  select two columns whose data will be drawn as a [heatmap](#36-heatmap-views).
 
 ![Heatmap dialog](heatmap-dialog.png)
 
@@ -489,7 +489,7 @@ of columns using the chart menu:
 ![Save-as menu](saveas-menu.png)
 
 * Save as ORC files: allows users to specify how data should be saved
-  in the [ORC file format](#2.3.4.-reading-orc-files).
+  in the [ORC file format](#234-reading-orc-files).
 
 ![Save-as ORC menu](saveas-orc-menu.png)
 
@@ -593,7 +593,7 @@ into view a set of rows that includes the requested quantile.
 
 #### 3.2.2. Selecting columns
 
-The user can [select](#2.2.-mouse-based-selection) one or more column using
+The user can [select](#22-mouse-based-selection) one or more column using
 the mouse.  The following image shows the header of a table with 6
 selected columns.
 
@@ -635,9 +635,9 @@ the current state of the display.
 * Heatmap: this option requires exactly two or three columns of
   suitable types to be selected.  When two columns are selected this
   will display the data in these columns as a [Heat-map
-  view](#3.6.-heatmap-views).  When three columns are selected the
+  view](#36-heatmap-views).  When three columns are selected the
   following menu allows the user to configure the data to display as a
-  [Trellis plot view](#3.7.-trellis-plot-views).
+  [Trellis plot view](#37-trellis-plot-views).
 
   ![Heatmap array menu](heatmap-array-menu.png)
 
@@ -651,11 +651,11 @@ the current state of the display.
   suitable types to be selected.  If one column is selected, this
   operation will draw a histogram of the data in the selected column.
   For one-dimensional histograms see
-  [Uni-dimensional-histogram-views](#3.4.-uni-dimensional-histogram-views).
+  [Uni-dimensional-histogram-views](#34-uni-dimensional-histogram-views).
   If two columns are selected this menu will draw a two-dimensional
   histogram of the data in the selected columns.  For two-dimensional
   histograms see [Two-dimensional
-  histograms](#3.5.-two-dimensional-histogram-views).
+  histograms](#35-two-dimensional-histogram-views).
 
 * Frequent elements...: finds the most frequent values that appear in
   the selected columns.  The user is presented with a dialog
@@ -667,7 +667,7 @@ the current state of the display.
   The user has to specify a percentage, between .01 (1/10,000 of the
   data) and 100 (the whole data).  The result is all items whose frequency
   in the selected columns is above the threshold. the result is shown in a [heavy
-  hitter view](#3.3.-frequent-elements-views).
+  hitter view](#33-frequent-elements-views).
 
 * Filter...: this option will pop-up a dialog window that allows the user
   to filter the data in the selected column (this option requires only
@@ -758,19 +758,19 @@ The table view has a menu that offers the following options:
 
 ![Table menu](table-menu.png)
 
-* Save as: allows the user to [save a copy of the data](#3.1.4.-saving-data)
+* Save as: allows the user to [save a copy of the data](#314-saving-data)
   in a different format; *the data is saved on the cluster where the
   service is running*
 
 * View: allows the user to [change the way the data is
-  displayed](#3.2.5.1.-the-table-view-menu).
+  displayed](#3251-the-table-view-menu).
 
-* Chart: [allows the user to chart the data](#3.1.3.-the-chart-menu).
+* Chart: [allows the user to chart the data](#313-the-chart-menu).
 
-* Filter: allows the user [to filter data](#3.2.6.-the-table-filter-menu) according
+* Filter: allows the user [to filter data](#326-the-table-filter-menu) according
   to various criteria.
 
-* Combine: allows the user to [combine the data in two views](#3.8.-combining-two-views).
+* Combine: allows the user to [combine the data in two views](#38-combining-two-views).
 
 ##### 3.2.5.1. The table view menu
 
@@ -782,7 +782,7 @@ The view menu offers the following options.
 
 * No columns: all columns will be hidden.
 
-* Schema: displays [the table schema](#3.1.-schema-views).
+* Schema: displays [the table schema](#31-schema-views).
 
 #### 3.2.6. The table filter menu
 
@@ -830,7 +830,7 @@ which indicates the total over all rows corresponding to elements  that do not a
 frequently enough individually to be above the chosen threshold. This value only appears
 if the total over all these rows is itself above the threshold.
 
-There are two menu options offered from this view: [View as a table](#3.3.1.-view-as-a-table) and [Modify](#3.3.2.-modify).
+There are two menu options offered from this view: [View as a table](#331-view-as-a-table) and [Modify](#332-modify).
 
 #### 3.3.1. View as a Table
 
@@ -838,11 +838,11 @@ Clicking this button gives the user two options:
 ![View as a Table](heavy-hitters-tableMenu.png)
 
 * All frequent elements as table: switches back to a [table
-  view](#3.2.-table-views), but where the table only contains the rows
+  view](#32-table-views), but where the table only contains the rows
   corresponding to the frequent values.
 
 * Selected frequent elements As table: switches back to a [table
-  view](#3.2.-table-views), but where the table only contains the rows
+  view](#32-table-views), but where the table only contains the rows
   corresponding to the frequent values currently selected.
 
 #### 3.3.2. Modify
@@ -863,14 +863,14 @@ be useful to see a larger list for instance.
 Note that if the threshold is set very low, then the number of results can be very large. HillView
 only displays the 200 most frequent elements results, and alerts the user to the possible existence
 of further frequent elements. These can be viewed using the All frequent elements option from the
- [View as a table](#3.3.1.-view-as-a-table) menu option.
+ [View as a table](#331-view-as-a-table) menu option.
 
 ### 3.4. Uni-dimensional histogram views
 
 A uni-dimensional (1D) histogram is a succinct representation of the
 data in a column.  Histograms can be used to display numeric data
 (integers or doubles), date/time values, time interval values, or
-categorical values; see [below](#3.4.4.-categorical-histograms) for a
+categorical values; see [below](#344-categorical-histograms) for a
 description of categorical histograms.  A histogram is computed in two
 phases:
 
@@ -920,9 +920,9 @@ Histogram views have a menu that offers to the users several operations:
   second describing the bucket size.  This data can be used to plot
   the same histogram using a tool like Excel.
 
-* View: [changing parameters](#3.4.2.-the-histogram-view-menu) of the current view.
+* View: [changing parameters](#342-the-histogram-view-menu) of the current view.
 
-* Combine: [combining the data](#3.8.-combining-two-views) in the current view with
+* Combine: [combining the data](#38-combining-two-views) in the current view with
   another one.
 
 #### 3.4.2. The histogram view menu
@@ -946,7 +946,7 @@ The "View" menu from a histogram display has the following functions:
 
 * correlate: allows the user to specify a second column and switches
   the display to a [two-dimensional
-  histogram](#3.5.-two-dimensional-histogram-views)
+  histogram](#35-two-dimensional-histogram-views)
 
 #### 3.4.3. Mouse selection in histogram views
 
@@ -1050,7 +1050,7 @@ The "view" menu for a 2D histogram offers the following operations:
 * swap axes: Draws a new 2D histogram where the two columns are
   swapped.
 
-* heatmap: Displays a [heat map](#3.6.-heatmap-views) of the data using the
+* heatmap: Displays a [heat map](#36-heatmap-views) of the data using the
   same two columns as in the current histogram.
 
 * relative/absolute: This toggles between displaying the 2D histogram
@@ -1059,7 +1059,7 @@ following image.
 
 ![A normalized two-dimensional histogram](hillview-histogram-normalized.png)
 
-For a description of the combine menu see [combining two views](#3.8.-combining-two-views).
+For a description of the combine menu see [combining two views](#38-combining-two-views).
 
 #### 3.5.1. Selection in 2D histograms
 
@@ -1115,14 +1115,14 @@ The heatmap view menu has the following operations:
 
 * table: Displays the data in the current heatmap in a tabular form.
 
-* Histogram: Draws a [2D histogram](#3.5.-two-dimensional-histogram-views)
+* Histogram: Draws a [2D histogram](#35-two-dimensional-histogram-views)
   of the data in the two columns that are used for the heatmap
   display.
 
-* group by: Groups data by a third column creating a [Trellis plot] (#3.7.-trellis-plot-views).
+* group by: Groups data by a third column creating a [Trellis plot] (#37-trellis-plot-views).
 
 
-For a description of the combine menu see [combining two views](#3.8.-combining-two-views).
+For a description of the combine menu see [combining two views](#38-combining-two-views).
 
 #### 3.6.1. Selection from a heatmap
 
@@ -1227,6 +1227,6 @@ The "View" menu offers the following options:
 * table: show a tabular view of the data represented in the LAMP view.
 
 * 3D heat map: selecting this option opens a new menu which allows the
-  user to make a [Trellis plot](#3.7.-trellis-plot-views) of the
+  user to make a [Trellis plot](#37-trellis-plot-views) of the
   two-dimensional data produced by the projection, by grouping all
   points that belong to a categorical value.
