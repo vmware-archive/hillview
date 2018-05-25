@@ -20,7 +20,7 @@ import {
     EigenVal, RecordOrder
 } from "../javaBridge";
 import {TopMenu} from "../ui/menu";
-import {formatNumber, ICancellable} from "../util";
+import {formatNumber, ICancellable, significantDigits} from "../util";
 import {FullPage} from "../ui/fullPage";
 import {AxisData} from "./axisData";
 import {BigTableView} from "../tableTarget";
@@ -38,6 +38,7 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
     public specView: SpectrumView;
     public constructor(page: FullPage,
                        protected tv: TableView,
+                       protected colNames: string[],
                        operation: ICancellable,
                        protected order: RecordOrder) {
         super(page, operation, "Singular Value Spectrum");
@@ -53,11 +54,12 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
         let ev: number [] = eVals.eigenValues;
         let histogram: Histogram = { buckets: ev, missingData: 0, outOfRange: 0 };
         let icd: IColumnDescription = {kind: "Integer", name: "Singular Values" };
-        let stats: BasicColStats = {momentCount: 0, min: 0, max: ev[0], moments: null, presentCount: 0, missingCount: 0};
+        let stats: BasicColStats = {momentCount: 0, min: -.5, max: ev.length - .5, moments: null, presentCount: 0, missingCount: 0};
         let axisData = new AxisData(icd, stats, null, ev.length);
         this.specView.updateView("Spectrum", histogram, axisData, this.elapsedMilliseconds());
-        newPage.reportError("Showing top " + eVals.eigenValues.length + " singular values, Total Variance: "
-            + eVals.totalVar.toString() + ", Explained Variance: " + eVals.explainedVar.toString());
+        newPage.reportError("Showing top " + eVals.eigenValues.length + "/" + this.colNames.length +
+            " singular values, Total Variance: " + significantDigits(eVals.totalVar) +
+            ", Explained Variance: " + significantDigits(eVals.explainedVar));
     }
 }
 

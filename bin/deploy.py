@@ -6,6 +6,7 @@
 from hillviewCommon import *
 from optparse import OptionParser
 import tempfile
+import os
 
 def prepare_webserver(config):
     """Deploys files needed by the Hillview web server"""
@@ -29,7 +30,8 @@ def prepare_webserver(config):
     rh.run_remote_shell_command(installTomcat)
     rh.run_remote_shell_command("rm -rf " + tomcatFolder + "/webapps/ROOT")
     rh.copy_file_to_remote(
-        "../web/target/web-1.0-SNAPSHOT.war",
+        config.scriptFolder +
+        "/../web/target/web-1.0-SNAPSHOT.war",
         tomcatFolder + "/webapps/ROOT.war", "")
     tmp = tempfile.NamedTemporaryFile(mode="w", delete=False)
     for h in config.backends:
@@ -53,7 +55,8 @@ def prepare_backend(config, rh):
     rh.run_remote_shell_command("chown " + config.user + " " + config.service_folder)
     rh.create_remote_folder(config.service_folder + "/hillview")
     rh.copy_file_to_remote(
-        "../platform/target/hillview-server-jar-with-dependencies.jar", config.service_folder + "/hillview", "")
+        config.scriptFolder +
+        "/../platform/target/hillview-server-jar-with-dependencies.jar", config.service_folder + "/hillview", "")
     if config.cleanup:
         rh.run_remote_shell_command(
             "cd " + config.service_folder + "/hillview;"

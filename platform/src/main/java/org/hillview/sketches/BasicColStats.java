@@ -73,7 +73,7 @@ public class BasicColStats implements IJson {
     public long getRowCount() { return this.presentCount + this.missingCount; }
 
     void createStats(final ColumnAndConverter column,
-                            final IMembershipSet membershipSet) {
+                     final IMembershipSet membershipSet) {
         final IRowIterator myIter = membershipSet.getIterator();
         int currRow = myIter.getNextRow();
 

@@ -142,7 +142,7 @@ export class HeavyHittersView extends BigTableView {
         } else {
             let newPage = this.dataset.newPage("All frequent elements", this.page);
             let rr = this.tv.createFilterHeavyRequest(
-                new RemoteObject(this.data.heavyHittersId), this.columnsShown);
+                this.data.heavyHittersId, this.columnsShown);
             rr.invoke(new TableOperationCompleted(
                 newPage, this.rowCount, this.tv.schema, rr, this.order));
         }
@@ -153,7 +153,7 @@ export class HeavyHittersView extends BigTableView {
             return;
         let newPage = this.dataset.newPage("Selected frequent elements", this.page);
         let rr = this.tv.createFilterListHeavy(
-            new RemoteObject(this.data.heavyHittersId), this.columnsShown, this.getSelectedRows());
+            this.data.heavyHittersId, this.columnsShown, this.getSelectedRows());
         rr.invoke(new TableOperationCompleted(
             newPage, this.rowCount, this.tv.schema, rr, this.order));
     }
@@ -377,7 +377,7 @@ export class HeavyHittersReceiver3 extends OnCompleteReceiver<TopList> {
     run(exactList: TopList): void {
         let newPage = this.hhv.dataset.newPage("Frequent elements", this.hhv.page);
         let rr = this.hhv.tv.createFilterHeavyRequest(
-            new RemoteObject(exactList.heavyHittersId), this.hhv.columnsShown);
+            exactList.heavyHittersId, this.hhv.columnsShown);
         rr.invoke(new TableOperationCompleted(
             newPage, this.hhv.tv.rowCount, this.hhv.tv.schema, rr, this.hhv.order));
     }

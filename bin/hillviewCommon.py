@@ -24,6 +24,8 @@ def load_config(parser, file):
         print("service_folder must be an absolute path in configuration file",
               config.service_folder)
         exit(1)
+    # The path where the current script is installed
+    config.scriptFolder = os.path.dirname(os.path.abspath(__file__))
     return config
 
 def execute_command(command):

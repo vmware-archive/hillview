@@ -1,6 +1,10 @@
 #!/bin/sh
 # Compile and deploy program
 
+mydir="$(dirname "$0")"
+if [[ ! -d "$mydir" ]]; then mydir="$PWD"; fi
+source $mydir/lib.sh
+
 # Bail out at first error
 set -e
 
@@ -27,7 +31,7 @@ while getopts sdh FLAG; do
 done
 shift $((OPTIND-1))
 
-if [ $# -ne 1 ]; then 
+if [ $# -ne 1 ]; then
    echo "You must supply a config.py argument"
    usage
 fi
@@ -37,18 +41,14 @@ shift
 echo Using configuration $CONFIG
 
 if [ -z $SKIP ]; then
-    cd ../platform
-    mvn -DskipTets install
-    cd ../web
-    mvn package
-    cd ../bin
+    $mydir/../bin/rebuild.sh
 fi
 
 echo "Stopping services"
-./stop.py $CONFIG
+$mydir/stop.py $CONFIG
 if [ -z $NOREDEPLOY ]; then
     echo "Installing software"
-    ./deploy.py $CONFIG
+    $mydir/deploy.py $CONFIG
 fi
 echo "Starting services"
-./start.py $CONFIG
+$mydir/start.py $CONFIG

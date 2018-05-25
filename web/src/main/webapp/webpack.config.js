@@ -18,6 +18,7 @@
 var path = require('path');
 
 module.exports = {
+    cache: true,
     entry: "./hillview.ts",
     output: {
         filename: "./bundle.js"

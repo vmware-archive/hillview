@@ -756,7 +756,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
         let [valid, message] = this.checkNumericColumns(colNames);
         if (valid) {
             let rr = this.createSpectrumRequest(colNames, this.getTotalRowCount(), toSample);
-            rr.invoke(new SpectrumReceiver(this.getPage(), this, rr, this.order));
+            rr.invoke(new SpectrumReceiver(this.getPage(), this, colNames, rr, this.order));
         } else {
             this.reportError("Not valid for PCA:" + message);
         }

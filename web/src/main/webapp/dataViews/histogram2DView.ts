@@ -425,7 +425,7 @@ export class Histogram2DView extends HistogramViewBase {
         let xs = HistogramViewBase.invert(position[0], this.plot.xScale,
             this.currentData.xData.description.kind, this.currentData.xData.distinctStrings);
         let y = Math.round(this.plot.yScale.invert(mouseY));
-        let ys = this.relative ? significantDigits(y) : formatNumber(y);
+        let ys = significantDigits(y);
         let scale = 1.0;
         if (this.relative)
             ys += "%";
@@ -455,7 +455,7 @@ export class Histogram2DView extends HistogramViewBase {
                     yTotalScaled += values[i] * scale;
                     yTotal += values[i];
                     if (yTotalScaled >= y && !found) {
-                        size = formatNumber(values[i]);
+                        size = significantDigits(values[i]);
                         perc = values[i];
                         value = this.currentData.yData.bucketDescription(i);
                         colorIndex = i;
@@ -467,12 +467,12 @@ export class Histogram2DView extends HistogramViewBase {
                 yTotalScaled += missing * scale;
                 if (!found && yTotalScaled >= y) {
                     value = "missing";
-                    size = formatNumber(missing);
+                    size = significantDigits(missing);
                     perc = missing;
                     colorIndex = -1;
                 }
                 if (yTotal > 0)
-                    perc = 100 * perc / yTotal;
+                    perc = perc / yTotal;
             }
             // else value is ""
         }
@@ -481,7 +481,7 @@ export class Histogram2DView extends HistogramViewBase {
         this.cdfDot.attr("cx", mouseX + this.surface.leftMargin);
         this.cdfDot.attr("cy", (1 - pos) * this.surface.getActualChartHeight() + this.surface.topMargin);
         let cdf = percent(pos);
-        this.pointDescription.update([xs, value, ys, size, significantDigits(perc) + "%", cdf], mouseX, mouseY);
+        this.pointDescription.update([xs, value, ys, size, percent(perc), cdf], mouseX, mouseY);
         this.legendPlot.hilight(colorIndex);
     }
 
