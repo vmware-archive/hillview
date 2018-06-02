@@ -240,24 +240,22 @@ public abstract class RpcTarget implements IJson {
          * Returns true if the reconstruction is attempted.
          */
         boolean checkMissingDataset(Throwable throwable) {
-            if (!(throwable instanceof StatusRuntimeException))
-                return false;
-            StatusRuntimeException sre = (StatusRuntimeException)throwable;
-            Throwable cause = sre.getStatus().getCause();
-            List<Throwable> causes;
-
-            if (cause instanceof CompositeException) {
-                // Sometimes RxJava catches several exceptions and bundles
-                // them together into a CompositeException
-                CompositeException composite = (CompositeException) cause;
-                causes = composite.getExceptions();
+            List<Throwable> exceptions;
+            if (throwable instanceof CompositeException) {
+                CompositeException ce = (CompositeException)throwable;
+                exceptions = ce.getExceptions();
             } else {
-                causes = new ArrayList<Throwable>();
-                causes.add(cause);
+                exceptions = new ArrayList<Throwable>();
+                exceptions.add(throwable);
             }
+
             boolean datasetMissing = false;
-            for (Throwable th: causes) {
-                if (th instanceof DatasetMissing) {
+            for (Throwable t: exceptions) {
+                if (!(throwable instanceof StatusRuntimeException))
+                    continue;
+                StatusRuntimeException sre = (StatusRuntimeException)t;
+                String description = sre.getStatus().getDescription();
+                if (description != null && description.contains("DatasetMissing")) {
                     datasetMissing = true;
                     break;
                 }
@@ -266,13 +264,15 @@ public abstract class RpcTarget implements IJson {
             if (datasetMissing) {
                 RpcTarget.Id[] toDelete = this.request.getDatasetSourceIds();
                 for (RpcTarget.Id s: toDelete) {
-                    HillviewLogger.instance.info("Trying to fix missing remote object", "{0}", s);
+                    HillviewLogger.instance.info("Trying to rebuild missing remote object", "{0}", s);
                     RpcObjectManager.instance.deleteObject(s);
                 }
                 // Try to re-execute this request; this will trigger rebuilding the sources.
                 RpcServer.execute(this.request, this.context);
                 return true;
             }
+
+            HillviewLogger.instance.info("Dataset is not missing");
             return false;
         }
     }

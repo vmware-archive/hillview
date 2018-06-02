@@ -979,9 +979,9 @@ The 6 rows represent the following values:
 * % = 64.14% indicates that delays between -12 and 2 represent roughly
     65% of all delays from NY
 
-* cdf = 71%: indicates the value of the CDF function at the current
+* cdf = 71.1%: indicates the value of the CDF function at the current
   mouse X coordinate, shown by the blue little dot; in other words,
-  the flights from states alphabetically before NY make up 75% of the
+  the flights from states alphabetically before NY make up 71.1% of the
   flights.
 
 The "view" menu for a 2D histogram offers the following operations:
