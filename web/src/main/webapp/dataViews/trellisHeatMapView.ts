@@ -35,6 +35,7 @@ import {BigTableView, TableTargetAPI} from "../tableTarget";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {mouse as d3mouse, select as d3select} from "d3-selection";
 import {SchemaClass} from "../schemaClass";
+import {ChartObserver} from "./tsViewBase";
 
 export class HeatMapArrayData {
     buckets: number[][][];
@@ -578,11 +579,29 @@ export class TrellisHeatMapView extends BigTableView implements IScrollTarget {
 }
 
 /**
- * Receives the data range and initiates a new rendering.
+ * Receives the data range and initiates a trellis view rendering.
  */
-export class Range2DRenderer extends Receiver<Pair<BasicColStats, BasicColStats>> {
-    constructor(page: FullPage, protected view: TrellisHeatMapView, operation: ICancellable) {
+export class TrellisRangeReceiver extends Receiver<Pair<BasicColStats, BasicColStats>> {
+    protected view: TrellisHeatMapView;
+
+    constructor(protected remoteObject: TableTargetAPI,
+                page: FullPage, operation: ICancellable,
+                protected schema: SchemaClass, protected rowCount: number,
+                protected cds: IColumnDescription[]) {
         super(page, operation, "Get stats");
+        console.assert(cds.length == 3);
+        let newPage = page.dataset.newPage(
+            "Heatmaps (" +
+            this.schema.displayName(this.cds[0].name) + ", " +
+            this.schema.displayName(this.cds[1].name) + " by " +
+            this.schema.displayName(this.cds[2].name) + ")", this.page);
+        let args: TrellisPlotArgs = {
+            cds: this.cds,
+            uniqueStrings: page.dataset.getDistinctStrings(this.cds[2].name)
+        };
+        this.view = new TrellisHeatMapView(
+            this.remoteObject.remoteObjectId, this.rowCount, this.schema, newPage, args);
+        newPage.setDataView(this.view);
     }
 
     onNext(value: PartialResult<Pair<BasicColStats, BasicColStats>>) {
@@ -656,7 +675,7 @@ export class TrellisPlotDialog extends Dialog {
         this.addSelectField("col2", "Heatmap column 2: ",
             fixedColumns ? [selectedNumColumns[1]] : numColumns, selectedNumColumns[1],
             "Column to use for the Y axis of the heatmap plot.");
-        this.addSelectField("col3", "Array column: ", catColumns, selectedCatColumn,
+        this.addSelectField("col3", "Group by column: ", catColumns, selectedCatColumn,
             "Column used to group heapmap plots.  Must be a categorical column.");
         this.setAction(() => this.execute());
     }
@@ -674,18 +693,10 @@ export class TrellisPlotDialog extends Dialog {
             return;
         }
 
-        let newPage = this.page.dataset.newPage("Heatmaps by " + args.cds[2].name, this.page);
-        let trellisView = new TrellisHeatMapView(
-            this.remoteObject.remoteObjectId, this.rowCount, this.schema,
-            newPage, args);
-        newPage.setDataView(trellisView);
-        let cont = (operation: ICancellable) => {
-            args.uniqueStrings = this.page.dataset.getDistinctStrings(categCol.name);
-            let rr = trellisView.createRange2DColsRequest(args.cds[0].name, args.cds[1].name);
-            rr.chain(operation);
-            rr.invoke(new Range2DRenderer(newPage, trellisView, rr));
-        };
-        this.page.dataset.retrieveCategoryValues([categCol.name], this.page, cont);
+        let rr = this.page.dataset.createGetCategoryRequest(this.page, args.cds);
+        rr.invoke(new ChartObserver(this.remoteObject, this.page, rr,
+            null, this.rowCount, this.schema,
+            { exact: false, heatmap: true, relative: false, reusePage: false}, args.cds));
     }
 
     private parseFields(): TrellisPlotArgs {

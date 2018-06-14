@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {IHtmlElement, removeAllChildren, ViewKind} from "./ui";
+import {IHtmlElement, ViewKind} from "./ui";
 import {FullPage} from "./fullPage";
 
 /**
@@ -36,33 +36,7 @@ export interface IDataView extends IHtmlElement {
      * being resized, or it can be called as a result of a user action.
      */
     refresh(): void;
+    /** Kind of view displayed */
     viewKind: ViewKind;
 }
 
-/**
- * A DataDisplay holds an IDataView within a FullPage.
- */
-export class DataDisplay implements IHtmlElement {
-    topLevel: HTMLElement;
-    element: IDataView;
-
-    constructor() {
-        this.topLevel = document.createElement("div");
-        this.topLevel.className = "dataDisplay";
-    }
-
-    public onResize(): void {
-        if (this.element != null)
-            this.element.refresh();
-    }
-
-    public getHTMLRepresentation(): HTMLElement {
-        return this.topLevel;
-    }
-
-    public setDataView(element: IDataView): void {
-        this.element = element;
-        removeAllChildren(this.topLevel);
-        this.topLevel.appendChild(element.getHTMLRepresentation());
-    }
-}

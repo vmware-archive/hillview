@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {Dialog} from "./ui/dialog";
+import {Dialog, NotifyDialog} from "./ui/dialog";
 import {findElement} from "./util";
 
 interface TestOperation {
@@ -229,7 +229,7 @@ export class Test {
                     let el = findElement("#hillviewPage" + i.toString() + " .close");
                     el.click();
                 }
-                let dialog = new Dialog("Tests are completed", "Done.");
+                let dialog = new NotifyDialog("Tests are completed", "Done.");
                 dialog.show();
             }
         }

@@ -22,7 +22,8 @@ import {
 } from "../javaBridge";
 import {TableView, NextKReceiver} from "./tableView";
 import {
-    Pair, significantDigits, formatNumber, reorder, ICancellable, PartialResult, Seed, saveAs
+    Pair, significantDigits, formatNumber, reorder, ICancellable,
+    PartialResult, Seed, saveAs,
 } from "../util";
 import {HistogramViewBase} from "./histogramViewBase";
 import {TopMenu, SubMenu} from "../ui/menu";
@@ -38,15 +39,17 @@ import {PlottingSurface} from "../ui/plottingSurface";
 import {HeatmapPlot} from "../ui/heatmapPlot";
 import {HistogramPlot} from "../ui/histogramPlot";
 import {Dialog} from "../ui/dialog";
-import {Range2DRenderer, TrellisHeatMapView, TrellisPlotArgs} from "./trellisHeatMapView";
 import {drag as d3drag} from "d3-drag";
 import {mouse as d3mouse, event as d3event} from "d3-selection";
 import {SchemaClass} from "../schemaClass";
+import {ChartObserver} from "./tsViewBase";
+import {IDataView} from "../ui/dataview";
+import {IViewSerialization} from "../datasetView";
 
 /**
  * A HeatMapView renders information as a heatmap.
  */
-export class HeatMapView extends BigTableView {
+export class HeatmapView extends BigTableView {
     protected dragging: boolean;
     /**
      * Coordinates of mouse within canvas.
@@ -223,6 +226,31 @@ export class HeatMapView extends BigTableView {
         this.summary.innerHTML = summary;
     }
 
+    serialize(): IViewSerialization {
+        let result = super.serialize();
+        result["exact"] = this.currentData.samplingRate >= 1;
+        result["columnDescription0"] = this.currentData.xData.description;
+        result["columnDescription1"] = this.currentData.yData.description;
+        return result;
+    }
+
+    static reconstruct(ser: IViewSerialization, page: FullPage): IDataView {
+        let exact: boolean = ser["exact"];
+        let cd0: IColumnDescription = ser["columnDescription0"];
+        let cd1: IColumnDescription = ser["columnDescription1"];
+        let schema: SchemaClass = new SchemaClass([]).deserialize(ser.schema);
+        if (cd0 == null || cd1 == null || exact == null || schema == null)
+            return null;
+        let cds = [cd0, cd1];
+
+        let hv = new HeatmapView(ser.remoteObjectId, ser.rowCount, schema, page);
+        let rr = page.dataset.createGetCategoryRequest(page, cds);
+        rr.invoke(new ChartObserver(hv, page, rr, null,
+            ser.rowCount, schema,
+            { exact: exact, heatmap: true, relative: false, reusePage: true }, cds));
+        return hv;
+    }
+
     // Draw this as a 2-D histogram
     histogram(): void {
         let rcol = new Range2DCollector(
@@ -297,26 +325,10 @@ export class HeatMapView extends BigTableView {
         let groupBy = this.schema.findByDisplayName(colName);
         let cds: IColumnDescription[] = [this.currentData.xData.description,
                                          this.currentData.yData.description, groupBy];
-        let catColumns: string[] = [colName];
-        let newPage = this.dataset.newPage(
-            "Heatmaps (" +
-            this.schema.displayName(this.currentData.xData.description.name) + ", " +
-            this.schema.displayName(this.currentData.yData.description.name) + " by " +
-            this.schema.displayName(groupBy.name) + ")", this.page);
-
-        let args: TrellisPlotArgs = { cds: cds };
-        let trellisView = new TrellisHeatMapView(
-            this.remoteObjectId, this.rowCount, this.schema, newPage, args);
-        newPage.setDataView(trellisView);
-        let cont = (operation: ICancellable) => {
-            args.uniqueStrings = this.dataset.getDistinctStrings(colName);
-            let rr = trellisView.createRange2DColsRequest(
-                this.currentData.xData.description.name,
-                this.currentData.yData.description.name);
-            rr.chain(operation);
-            rr.invoke(new Range2DRenderer(newPage, trellisView, rr));
-        };
-        this.dataset.retrieveCategoryValues(catColumns, this.getPage(), cont);
+        let rr = this.page.dataset.createGetCategoryRequest(this.page, cds);
+        rr.invoke(new ChartObserver(this, this.page, rr,
+            null, this.rowCount, this.schema,
+            { exact: false, heatmap: true, relative: false, reusePage: false}, cds));
     }
 
     // combine two views according to some operation
@@ -623,7 +635,7 @@ export class Range2DCollector extends Receiver<Pair<BasicColStats, BasicColStats
  * Renders a heatmap
   */
 export class HeatMapRenderer extends Receiver<HeatMap> {
-    protected heatMap: HeatMapView;
+    protected heatMap: HeatmapView;
 
     constructor(page: FullPage,
                 remoteTable: TableTargetAPI,
@@ -640,7 +652,7 @@ export class HeatMapRenderer extends Receiver<HeatMap> {
                 "Heatmap (" + schema.displayName(cds[0].name) + ", " +
                 schema.displayName(cds[1].name) + ")", page),
             operation, "histogram");
-        this.heatMap = new HeatMapView(
+        this.heatMap = new HeatmapView(
             remoteTable.remoteObjectId, rowCount, schema, this.page);
         this.page.setDataView(this.heatMap);
         if (cds.length != 2)

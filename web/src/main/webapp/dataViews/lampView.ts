@@ -18,7 +18,7 @@
 import {Dialog, FieldKind} from "../ui/dialog";
 import {TopMenu, SubMenu} from "../ui/menu";
 import {
-    RangeInfo, BasicColStats, ColumnAndRange, Histogram2DArgs, TableSummary, RemoteObjectId,
+    CategoricalValues, BasicColStats, ColumnAndRange, Histogram2DArgs, TableSummary, RemoteObjectId,
     HeatMap, CombineOperators
 } from "../javaBridge";
 import {Receiver, RpcRequest, OnCompleteReceiver} from "../rpc";
@@ -269,8 +269,8 @@ class LampView extends BigTableView {
     }
 
     private fetchNewRanges() {
-        let l1: RangeInfo = new RangeInfo("LAMP1");
-        let l2: RangeInfo = new RangeInfo("LAMP2");
+        let l1: CategoricalValues = new CategoricalValues("LAMP1");
+        let l2: CategoricalValues = new CategoricalValues("LAMP2");
         let rr = this.lampTableObject.createRange2DRequest(l1, l2);
         rr.invoke(new LAMPRangeCollector(this.page, rr, this));
     }

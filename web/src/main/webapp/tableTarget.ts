@@ -28,11 +28,11 @@ import {FullPage} from "./ui/fullPage";
 import {
     BasicColStats,
     CombineOperators, CreateColumnInfo, FilterDescription, HeatMap, Histogram, Histogram3DArgs, HistogramArgs, HLogLog,
-    IColumnDescription, NextKList, RangeInfo, RecordOrder, RemoteObjectId, Schema, TableSummary, TopList
+    IColumnDescription, NextKList, CategoricalValues, RecordOrder, RemoteObjectId, Schema, TableSummary, TopList
 } from "./javaBridge";
 import {Histogram2DArgs} from "./javaBridge";
 import {HeatMapArrayData} from "./dataViews/trellisHeatMapView";
-import {DatasetView} from "./datasetView";
+import {DatasetView, IViewSerialization} from "./datasetView";
 import {SchemaClass} from "./schemaClass";
 
 /**
@@ -47,7 +47,7 @@ export class TableTargetAPI extends RemoteObject {
         super(remoteObjectId);
     }
 
-    public createRangeRequest(r: RangeInfo): RpcRequest<PartialResult<BasicColStats>> {
+    public createRangeRequest(r: CategoricalValues): RpcRequest<PartialResult<BasicColStats>> {
         return this.createStreamingRpcRequest<BasicColStats>("range", r);
     }
 
@@ -98,15 +98,15 @@ export class TableTargetAPI extends RemoteObject {
             { columnName: colName, seed: Seed.instance.get() });
     }
 
-    public createRange2DRequest(r1: RangeInfo, r2: RangeInfo):
+    public createRange2DRequest(r1: CategoricalValues, r2: CategoricalValues):
     RpcRequest<PartialResult<Pair<BasicColStats, BasicColStats>>> {
         return this.createStreamingRpcRequest<Pair<BasicColStats, BasicColStats>>("range2D", [r1, r2]);
     }
 
     public createRange2DColsRequest(c1: string, c2: string):
             RpcRequest<PartialResult<Pair<BasicColStats, BasicColStats>>> {
-        let r1: RangeInfo = new RangeInfo(c1, null);
-        let r2: RangeInfo = new RangeInfo(c2, null);
+        let r1: CategoricalValues = new CategoricalValues(c1, null);
+        let r2: CategoricalValues = new CategoricalValues(c2, null);
         return this.createRange2DRequest(r1, r2);
     }
 
@@ -279,6 +279,21 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView {
         super(remoteObjectId);
         this.setPage(page);
         this.dataset = page.dataset;
+    }
+
+    /**
+     * Save the information needed to (re)create this view.
+     */
+    serialize(): IViewSerialization {
+        return {
+            viewKind: this.viewKind,
+            pageId: this.page.pageId,
+            sourcePageId: this.page.sourcePageId,
+            title: this.page.title,
+            remoteObjectId: this.remoteObjectId,
+            rowCount: this.rowCount,
+            schema: this.schema.serialize()
+        };
     }
 
     setPage(page: FullPage) {

@@ -15,9 +15,16 @@
  * limitations under the License.
  */
 
-import {CombineOperators, IColumnDescription, NextKList, RecordOrder, TopList} from "../javaBridge";
+import {
+    ColumnSortOrientation,
+    CombineOperators,
+    IColumnDescription,
+    NextKList,
+    RecordOrder,
+    TopList
+} from "../javaBridge";
 import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
-import {TableOperationCompleted, TableView} from "./tableView";
+import {NextKReceiver, TableOperationCompleted, TableView} from "./tableView";
 import {OnCompleteReceiver, RemoteObject} from "../rpc";
 import {cloneSet, ICancellable, significantDigits} from "../util";
 import {FullPage} from "../ui/fullPage";
@@ -28,6 +35,8 @@ import {BigTableView} from "../tableTarget";
 import {TSViewBase} from "./tsViewBase";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {SchemaClass} from "../schemaClass";
+import {IDataView} from "../ui/dataview";
+import {IViewSerialization} from "../datasetView";
 
 /**
  * This method handles the outcome of the sketch for finding Heavy Hitters.
@@ -127,6 +136,12 @@ export class HeavyHittersView extends BigTableView {
         "the sorted order"]);
         this.table.setColumns(header, tips);
         this.topLevel.appendChild(this.table.getHTMLRepresentation());
+    }
+
+    serialize(): IViewSerialization {
+        let result = super.serialize();
+        result["order"] = this.order;
+        return result;
     }
 
     refresh(): void {}

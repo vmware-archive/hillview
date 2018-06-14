@@ -56,16 +56,11 @@ public final class RpcObjectManager {
     private final HashMap<Session, Subscription> sessionSubscription =
             new HashMap<Session, Subscription>(10);
 
-    /**
-     * Objects currently under reconstruction.
-     */
-    private final HashSet<RpcTarget.Id> reconstructing;
     private final RedoLog objectLog;
 
     // Private constructor
     private RpcObjectManager() {
         this.objectLog = new RedoLog();
-        this.reconstructing = new HashSet<RpcTarget.Id>();
     }
 
     synchronized void addSession(Session session, @Nullable RpcTarget target) {
@@ -120,8 +115,6 @@ public final class RpcObjectManager {
     public void addObject(RpcTarget target) {
         HillviewLogger.instance.info("Object generated", "{0} from {1}", target.getId(), target.computation);
         this.objectLog.addObject(target);
-        // If we have the object we are definitely not reconstructing it.
-        this.reconstructing.remove(target.getId());
     }
 
     @Nullable RpcTarget getObject(RpcTarget.Id id) {
@@ -163,13 +156,6 @@ public final class RpcObjectManager {
      */
     private void rebuild(RpcTarget.Id id, Observer<RpcTarget> toNotify) {
         HillviewLogger.instance.info("Attempt to reconstruct", "{0}", id);
-        if (this.reconstructing.contains(id)) {
-            Exception ex = new RuntimeException("Recursive dependences while reconstructing " + id);
-            HillviewLogger.instance.error("Recursion in reconstruction", ex);
-            toNotify.onError(ex);
-            return;
-        }
-        this.reconstructing.add(id);
         HillviewComputation computation = this.objectLog.getComputation(id);
         if (computation != null) {
             // The following may trigger a recursive reconstruction.

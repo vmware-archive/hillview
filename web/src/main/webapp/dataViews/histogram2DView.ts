@@ -17,19 +17,13 @@
 
 import {
     IColumnDescription, RecordOrder, ColumnAndRange, FilterDescription,
-    BasicColStats, RangeInfo, Histogram2DArgs, CombineOperators, RemoteObjectId, HeatMap, Histogram
+    BasicColStats, CategoricalValues, Histogram2DArgs, CombineOperators,
+    RemoteObjectId, HeatMap, Histogram
 } from "../javaBridge";
 import {TopMenu, SubMenu} from "../ui/menu";
 import {
-    reorder,
-    significantDigits,
-    formatNumber,
-    ICancellable,
-    PartialResult,
-    Seed,
-    Pair,
-    percent,
-    saveAs
+    reorder, significantDigits, formatNumber, ICancellable, PartialResult,
+    Seed, Pair, percent, saveAs
 } from "../util";
 import {Receiver, RpcRequest} from "../rpc";
 import {Rectangle, Resolution} from "../ui/ui";
@@ -38,7 +32,7 @@ import {TextOverlay} from "../ui/textOverlay";
 import {AnyScale, AxisData} from "./axisData";
 import { HistogramViewBase, BucketDialog } from "./histogramViewBase";
 import {TableView, NextKReceiver} from "./tableView";
-import {Range2DCollector} from "./heatMapView";
+import {Range2DCollector} from "./heatmapView";
 import {TableTargetAPI, BaseRenderer, ZipReceiver} from "../tableTarget";
 import {DistinctStrings} from "../distinctStrings";
 import {CDFPlot} from "../ui/CDFPlot";
@@ -49,8 +43,10 @@ import {Dialog} from "../ui/dialog";
 import {drag as d3drag} from "d3-drag";
 import {mouse as d3mouse, event as d3event} from "d3-selection";
 import {interpolateRainbow as d3interpolateRainbow} from "d3-scale-chromatic";
-import {DatasetView} from "../datasetView";
+import {DatasetView, IViewSerialization} from "../datasetView";
 import {SchemaClass} from "../schemaClass";
+import {ChartObserver} from "./tsViewBase";
+import {IDataView} from "../ui/dataview";
 
 /**
  * This class is responsible for rendering a 2D histogram.
@@ -75,8 +71,8 @@ export class Histogram2DView extends HistogramViewBase {
     protected legendSurface: PlottingSurface;
     protected samplingRate: number;
 
-    constructor(remoteObjectId: RemoteObjectId, dataset: DatasetView,
-                rowCount: number, schema: SchemaClass, page: FullPage) {
+    constructor(remoteObjectId: RemoteObjectId, rowCount: number,
+                schema: SchemaClass, page: FullPage) {
         super(remoteObjectId, rowCount, schema, page, "2DHistogram");
 
         this.legendSurface = new PlottingSurface(this.chartDiv, page);
@@ -128,7 +124,7 @@ export class Histogram2DView extends HistogramViewBase {
                 help: "In an absolute plot the Y axis represents the size for a bucket. " +
                 "In a relative plot all bars are normalized to 100% on the Y axis."
             }]) },
-            dataset.combineMenu(this, page.pageId)
+            page.dataset.combineMenu(this, page.pageId)
         ]);
 
         this.relative = false;
@@ -228,6 +224,33 @@ export class Histogram2DView extends HistogramViewBase {
         if (samplingRate < 1.0)
             summary += ", sampling rate " + significantDigits(samplingRate);
         this.summary.innerHTML = summary;
+    }
+
+    serialize(): IViewSerialization {
+        let result = super.serialize();
+        result["exact"] = this.currentData.samplingRate >= 1;
+        result["relative"] = this.relative;
+        result["columnDescription0"] = this.currentData.xData.description;
+        result["columnDescription1"] = this.currentData.yData.description;
+        return result;
+    }
+
+    static reconstruct(ser: IViewSerialization, page: FullPage): IDataView {
+        let exact: boolean = ser["exact"];
+        let relative: boolean = ser["relative"];
+        let cd0: IColumnDescription = ser["columnDescription0"];
+        let cd1: IColumnDescription = ser["columnDescription1"];
+        let schema: SchemaClass = new SchemaClass([]).deserialize(ser.schema);
+        if (cd0 == null || cd1 == null || exact == null || schema == null)
+            return null;
+        let cds = [cd0, cd1];
+
+        let hv = new Histogram2DView(ser.remoteObjectId, ser.rowCount, schema, page);
+        let rr = page.dataset.createGetCategoryRequest(page, cds);
+        rr.invoke(new ChartObserver(hv, page, rr, null,
+            ser.rowCount, schema,
+            { exact: exact, heatmap: false, relative: relative, reusePage: true }, cds));
+        return hv;
     }
 
     toggleNormalize(): void {
@@ -670,8 +693,8 @@ export class Filter2DReceiver extends BaseRenderer {
         super.run();
         let cds: IColumnDescription[] = [this.xColumn, this.yColumn];
         let ds: DistinctStrings[] = [this.xDs, this.yDs];
-        let rx = new RangeInfo(this.xColumn.name, this.xDs != null ? this.xDs.uniqueStrings : null);
-        let ry = new RangeInfo(this.yColumn.name, this.yDs != null ? this.yDs.uniqueStrings : null);
+        let rx = new CategoricalValues(this.xColumn.name, this.xDs != null ? this.xDs.uniqueStrings : null);
+        let ry = new CategoricalValues(this.yColumn.name, this.yDs != null ? this.yDs.uniqueStrings : null);
         let rr = this.remoteObject.createRange2DRequest(rx, ry);
         rr.invoke(new Range2DCollector(
             cds, this.rowCount, this.schema, ds, this.page, this.remoteObject, this.exact,
@@ -699,8 +722,8 @@ export class Make2DHistogram extends BaseRenderer {
 
     run(): void {
         super.run();
-        let rx = new RangeInfo(this.colDesc[0].name, this.ds[0] != null ? this.ds[0].uniqueStrings : null);
-        let ry = new RangeInfo(this.colDesc[1].name, this.ds[1] != null ? this.ds[1].uniqueStrings : null);
+        let rx = new CategoricalValues(this.colDesc[0].name, this.ds[0] != null ? this.ds[0].uniqueStrings : null);
+        let ry = new CategoricalValues(this.colDesc[1].name, this.ds[1] != null ? this.ds[1].uniqueStrings : null);
         let rr = this.remoteObject.createRange2DRequest(rx, ry);
         rr.chain(this.operation);
         rr.invoke(new Range2DCollector(
@@ -723,7 +746,7 @@ export class Histogram2DRenderer extends Receiver<Pair<HeatMap, Histogram>> {
                 protected cds: IColumnDescription[],
                 protected stats: BasicColStats[],
                 protected samplingRate: number,
-                protected uniqueStrings: DistinctStrings[],
+                protected distinctStrings: DistinctStrings[],
                 operation: RpcRequest<PartialResult<Pair<HeatMap, Histogram>>>,
                 protected relative: boolean,
                 protected reusePage: boolean) {
@@ -733,9 +756,9 @@ export class Histogram2DRenderer extends Receiver<Pair<HeatMap, Histogram>> {
                 schema.displayName(cds[1].name) + ")", page),
             operation, "histogram");
         this.histogram = new Histogram2DView(
-            this.remoteObject.remoteObjectId, page.dataset, rowCount, schema, this.page);
+            this.remoteObject.remoteObjectId, rowCount, schema, this.page);
         this.page.setDataView(this.histogram);
-        if (cds.length != 2 || stats.length != 2 || uniqueStrings.length != 2)
+        if (cds.length != 2 || stats.length != 2 || distinctStrings.length != 2)
             throw "Expected 2 columns";
     }
 
@@ -753,8 +776,8 @@ export class Histogram2DRenderer extends Receiver<Pair<HeatMap, Histogram>> {
             yPoints = points[0] != null ? points[0].length : 1;
         }
 
-        let xAxisData = new AxisData(this.cds[0], this.stats[0], this.uniqueStrings[0], xPoints);
-        let yAxisData = new AxisData(this.cds[1], this.stats[1], this.uniqueStrings[1], yPoints);
+        let xAxisData = new AxisData(this.cds[0], this.stats[0], this.distinctStrings[0], xPoints);
+        let yAxisData = new AxisData(this.cds[1], this.stats[1], this.distinctStrings[1], yPoints);
         this.histogram.updateView(heatMap, xAxisData, yAxisData, cdf,
             this.samplingRate, this.relative, this.elapsedMilliseconds());
     }

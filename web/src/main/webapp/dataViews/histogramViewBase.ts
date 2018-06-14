@@ -190,7 +190,7 @@ export abstract class HistogramViewBase extends BigTableView {
     public static getRange(stats: BasicColStats, cd: IColumnDescription,
                            allStrings: DistinctStrings,
                            bucketCount: number): ColumnAndRange {
-        let boundaries = allStrings != null ?
+        let boundaries = (allStrings != null && allStrings.uniqueStrings != null) ?
             allStrings.categoriesInRange(stats.min, stats.max, bucketCount) : null;
         return {
             columnName: cd.name,

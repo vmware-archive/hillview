@@ -20,6 +20,7 @@ import {LoadMenu} from "./loadMenu";
 import {InitialObject} from "./initialObject";
 import {FullPage} from "./ui/fullPage";
 import {DatasetView} from "./datasetView";
+import {ContextMenu} from "./ui/menu";
 
 /**
  * The toplevel class implements the web page structure for Hillview.
@@ -88,6 +89,14 @@ export class HillviewToplevel implements IHtmlElement {
         cell.title = dataset.name;
         cell.onclick = () => { if (this.select(tabName)) this.rename(tabName); };
         cell.className = "dataset-name";
+
+        let menu = new ContextMenu(this.topLevel, [{
+            text: "Save to file",
+            action: () => dataset.saveToFile(),
+            help: "Save data describing this view to a local file;\n" +
+            "this file can be shared with other people."
+        }]);
+        cell.oncontextmenu = e => menu.show(e);
 
         let close = document.createElement("span");
         close.className = "close";

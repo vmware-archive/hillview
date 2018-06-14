@@ -15,50 +15,44 @@
  * limitations under the License.
  */
 
-import {RangeInfo} from "./javaBridge";
-
-/**
- * All strings that can appear in a categorical column.
- */
-export interface IDistinctStrings {
-    uniqueStrings: string[];
-    // This may be true if there are too many distinct strings in a column.
-    truncated: boolean;
-    // Number of values in the column containing the strings.
-    columnSize: number;
-}
+import {CategoricalValues, IDistinctStrings} from "./javaBridge";
 
 /**
  * All strings that can appear in a categorical column.
  */
 export class DistinctStrings implements IDistinctStrings {
-    public uniqueStrings: string[];
+    public uniqueStrings: string[] | null;
     // This may be true if there are too many distinct strings in a column.
     public truncated: boolean;
-    // Number of values in the column containing the strings.
-    public columnSize: number;
 
-    public constructor(ds: IDistinctStrings) {
-        this.uniqueStrings = ds.uniqueStrings;
-        this.truncated = ds.truncated;
-        this.columnSize = ds.columnSize;
-        this.uniqueStrings.sort();
+    public constructor(ds: IDistinctStrings | null, protected colName: string) {
+        if (ds == null) {
+            this.uniqueStrings = null;
+        } else {
+            this.truncated = ds.truncated;
+            this.uniqueStrings = ds.uniqueStrings;
+            this.uniqueStrings.sort();
+        }
     }
 
     public size(): number { return this.uniqueStrings.length; }
 
-    public getRangeInfo(colName: string): RangeInfo {
-        return new RangeInfo(colName, this.uniqueStrings);
+    public getCategoricalValues(): CategoricalValues {
+        return new CategoricalValues(this.colName, this.uniqueStrings);
     }
 
     /**
      * Returns all strings numbered between min and max.
      * @param min    Minimum string number
      * @param max    Maximum string number
-     * @param bucketCount
-     * @returns {string[]}
+     * @param bucketCount  Number of buckets.
+     * @returns      null if there are no strings (e.g., this is not
+     *               a categorical column)
      */
-    public categoriesInRange(min: number, max: number, bucketCount: number): string[] {
+    public categoriesInRange(min: number, max: number, bucketCount: number): string[] | null {
+        if (this.uniqueStrings == null)
+            return null;
+
         let boundaries: string[] = null;
         if (min <= 0)
             min = 0;

@@ -26,10 +26,11 @@ import {AxisData} from "./axisData";
 import {BigTableView} from "../tableTarget";
 import {HistogramPlot} from "../ui/histogramPlot";
 import {PlottingSurface} from "../ui/plottingSurface";
-import {TableView} from "./tableView";
+import {NextKReceiver, TableView} from "./tableView";
 import {OnCompleteReceiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
-
+import {IDataView} from "../ui/dataview";
+import {IViewSerialization} from "../datasetView";
 
 /**
  * Receives the result of a PCA computation and plots the singular values
@@ -37,18 +38,24 @@ import {SchemaClass} from "../schemaClass";
 export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
     public specView: SpectrumView;
     public constructor(page: FullPage,
-                       protected tv: TableView,
+                       protected remoteObjectId: RemoteObjectId,
+                       protected rowCount: number,
+                       protected schema: SchemaClass,
                        protected colNames: string[],
                        operation: ICancellable,
-                       protected order: RecordOrder) {
+                       protected reusePage: boolean) {
         super(page, operation, "Singular Value Spectrum");
     }
 
     run(eVals: EigenVal): void {
-        let newPage = this.tv.dataset.newPage("Singular Value Spectrum", this.page);
+        let newPage: FullPage;
+        if (this.reusePage)
+            newPage = this.page;
+        else
+            newPage = this.page.dataset.newPage("Singular Value Spectrum", this.page);
         this.specView = new SpectrumView(
-            this.tv.remoteObjectId, this.tv.rowCount,
-            this.tv.schema, newPage);
+            this.remoteObjectId, this.rowCount, this.colNames,
+            this.schema, newPage);
         newPage.setDataView(this.specView);
 
         let ev: number [] = eVals.eigenValues;
@@ -78,7 +85,9 @@ export class SpectrumView extends BigTableView {
     protected chartDiv: HTMLElement;
     protected summary: HTMLElement;
 
-    constructor(remoteObjectId: RemoteObjectId, rowCount: number, schema: SchemaClass, page: FullPage) {
+    constructor(remoteObjectId: RemoteObjectId, rowCount: number,
+                protected colNames: string[],
+                schema: SchemaClass, page: FullPage) {
         super(remoteObjectId, rowCount, schema, page, "SVD Spectrum");
 
         this.topLevel = document.createElement("div");
@@ -131,6 +140,24 @@ export class SpectrumView extends BigTableView {
             this.currentData.histogram,
             this.currentData.axisData,
             0);
+    }
+
+    serialize(): IViewSerialization {
+        let result = super.serialize();
+        result["colNames"] = this.colNames;
+        return result;
+    }
+
+    static reconstruct(ser: IViewSerialization, page: FullPage): IDataView {
+        let schema = new SchemaClass([]).deserialize(ser.schema);
+        let colNames: string[] = ser["colNames"];
+        if (colNames == null || schema == null)
+            return null;
+        let sv = new SpectrumView(ser.remoteObjectId, ser.rowCount, colNames, schema, page);
+        let rr = sv.createSpectrumRequest(colNames, ser.rowCount, true);
+        rr.invoke(new SpectrumReceiver(page, ser.remoteObjectId,
+            ser.rowCount, schema, colNames, rr, true));
+        return sv;
     }
 
     public combine(how: CombineOperators): void {

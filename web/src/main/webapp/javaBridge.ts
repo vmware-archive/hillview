@@ -159,10 +159,19 @@ export interface ColumnSortOrientation {
     isAscending: boolean;
 }
 
-export class RangeInfo {
+export class CategoricalValues {
     constructor(public columnName: string,
-                // The following is only used for categorical columns
                 public allNames?: string[]) {}
+}
+
+/**
+ * All strings that can appear in a categorical column.
+ * Serialization of the DistinctStrings Java class.
+ */
+export interface IDistinctStrings {
+    uniqueStrings: string[];
+    // This may be true if there are too many distinct strings in a column.
+    truncated: boolean;
 }
 
 export interface Histogram {

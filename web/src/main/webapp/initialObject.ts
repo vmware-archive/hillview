@@ -24,13 +24,13 @@ import {
     JdbcConnectionInformation,
     RemoteObjectId
 } from "./javaBridge";
-import {DatasetView} from "./datasetView";
+import {DatasetView, IDatasetSerialization} from "./datasetView";
 import {BaseRenderer} from "./tableTarget";
 import {SchemaReceiver} from "./dataViews/tableView";
 
 export interface FilesLoaded {
     kind: "Files",
-    description: FileSetDescription;
+    description: FileSetDescription
 }
 
 export interface TablesLoaded {
@@ -42,10 +42,12 @@ export interface HillviewLogs {
     kind: "Hillview logs",
 }
 
-export type DataLoaded = FilesLoaded | TablesLoaded | HillviewLogs;
+export type DataLoaded = FilesLoaded | TablesLoaded | HillviewLogs | IDatasetSerialization;
 
 export function getDescription(data: DataLoaded): string {
     switch (data.kind) {
+        case "Saved dataset":
+            return "saved";
         case "Files":
             if (data.description.name != null)
                 return data.description.name;

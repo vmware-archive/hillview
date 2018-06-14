@@ -16,21 +16,27 @@
  */
 
 import {IColumnDescription, Schema} from "./javaBridge";
+import {mapToArray, Serializable} from "./util";
+
+export interface SchemaClassSerialization {
+    schema: Schema;
+    displayNameMap: string[];
+}
 
 /**
  * A SchemaClass is a class containing a Schema and some indexes and methods
  * for fast access.
  */
-export class SchemaClass {
-    public readonly columnNames: string[];
-    private readonly columnMap: Map<string, number>;
+export class SchemaClass implements Serializable<SchemaClass> {
+    public columnNames: string[];
+    private columnMap: Map<string, number>;
     /**
      * Each column can have a different display name.
      */
     private displayNameMap: Map<string, string>;
     private reverseDisplayNameMap: Map<string, string>;
 
-    constructor(public readonly schema: Schema) {
+    private initialize() {
         this.columnNames = [];
         this.columnMap = new Map<string, number>();
         for (let i = 0; i < this.schema.length; i++) {
@@ -42,6 +48,10 @@ export class SchemaClass {
         this.reverseDisplayNameMap = new Map<string, string>();
     }
 
+    constructor(public schema: Schema) {
+        this.initialize();
+    }
+
     public copyDisplayNames(schema: SchemaClass): void {
         this.displayNameMap = new Map<string, string>(schema.displayNameMap);
         this.reverseDisplayNameMap = new Map<string, string>(schema.reverseDisplayNameMap);
@@ -49,6 +59,30 @@ export class SchemaClass {
 
     public getRenameMap(): Map<string, string> {
         return this.displayNameMap;
+    }
+
+    public serialize(): SchemaClassSerialization {
+        return {
+            schema: this.schema,
+            displayNameMap: mapToArray(this.displayNameMap)
+        }
+    }
+
+    public deserialize(data: SchemaClassSerialization): SchemaClass {
+        this.schema = data.schema;
+        let dn: Array<string> = data.displayNameMap;
+
+        if (this.schema == null || dn == null)
+            return null;
+        this.initialize();
+        if (dn.length % 2 != 0)
+            return null;
+        for (let i = 0; i < dn.length; i += 2) {
+            let success = this.changeDisplayName(dn[i], dn[i + 1]);
+            if (!success)
+                return null;
+        }
+        return this;
     }
 
     /**

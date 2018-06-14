@@ -20,6 +20,7 @@
  */
 
 import * as FileSaver from "file-saver";
+import {ErrorReporter} from "./ui/errReporter";
 
 export type Comparison = "==" | "!=" | "<" | ">" | "<=" | ">=";
 
@@ -52,6 +53,23 @@ export function findElement(cssselector: string): HTMLElement {
 }
 
 /**
+ * Interface which is implemented by classes that know
+ * how to serialize and deserialize themselves from objects.
+ * T in general will be the class itself.
+ */
+export interface Serializable<T> {
+    /**
+     * Save the data into a javascript object.
+     */
+    serialize(): Object;
+    /**
+     * Initialize the current object from the specified object.
+     * @returns The same object if deserialization is successful, null otherwise.
+     */
+    deserialize(data: Object): T;
+}
+
+/**
  * Save data in a file on the local filesystem.
  * @param {string} filename  File to save data to.
  * @param {string} contents  Contents to write in file.
@@ -59,6 +77,26 @@ export function findElement(cssselector: string): HTMLElement {
 export function saveAs(filename: string, contents: string) {
    let blob = new Blob([contents], {type: "text/plain;charset=utf-8"});
    FileSaver.saveAs(blob, filename);
+}
+
+/**
+ * Load the contents of a text file.
+ * @param file      File to load.
+ * @param onsuccess method called with the file contents when successful.
+ * @param reporter  Used to report errors.
+ */
+export function loadFile(file: File,
+                         onsuccess: (string) => void,
+                         reporter: ErrorReporter): void {
+    let reader = new FileReader();
+
+    reader.onloadend = () => onsuccess(reader.result);
+    reader.onabort = () => reporter.reportError("Read of file " + file.name + " aborted");
+    reader.onerror = (e) => reporter.reportError(e.message);
+    if (file)
+        reader.readAsText(file);
+    else
+        reporter.reportError("Invalid file");
 }
 
 /**

@@ -15,16 +15,14 @@
  * limitations under the License.
  */
 
-import { Receiver } from "../rpc";
-import {
-    IColumnDescription, RecordOrder, RangeInfo, Histogram,
-    BasicColStats, FilterDescription, HistogramArgs, CombineOperators, RemoteObjectId
+import {Receiver} from "../rpc";
+import {IColumnDescription, RecordOrder, CategoricalValues, Histogram,
+    BasicColStats, FilterDescription, HistogramArgs, CombineOperators, RemoteObjectId,
 } from "../javaBridge";
 import {TopMenu, SubMenu} from "../ui/menu";
-// noinspection ES6UnusedImports
 import {
     Pair, reorder, significantDigits, formatNumber, percent, ICancellable, PartialResult, Seed,
-    formatDate, exponentialDistribution, saveAs
+    saveAs
 } from "../util";
 import {Dialog} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
@@ -32,7 +30,6 @@ import {Resolution} from "../ui/ui";
 import {TextOverlay} from "../ui/textOverlay";
 import {AxisData} from "./axisData";
 import {HistogramViewBase, BucketDialog} from "./histogramViewBase";
-import {Range2DCollector} from "./heatMapView";
 import {NextKReceiver, TableView} from "./tableView";
 import {TableTargetAPI, BaseRenderer, ZipReceiver} from "../tableTarget";
 import {DistinctStrings} from "../distinctStrings";
@@ -41,8 +38,10 @@ import {PlottingSurface} from "../ui/plottingSurface";
 import {CDFPlot} from "../ui/CDFPlot";
 import {drag as d3drag} from "d3-drag";
 import {mouse as d3mouse, event as d3event} from "d3-selection";
-import {DatasetView} from "../datasetView";
+import {DatasetView, IViewSerialization} from "../datasetView";
 import {SchemaClass} from "../schemaClass";
+import {IDataView} from "../ui/dataview";
+import {ChartObserver} from "./tsViewBase";
 
 /**
  * A HistogramView is responsible for showing a one-dimensional histogram on the screen.
@@ -103,6 +102,28 @@ export class HistogramView extends HistogramViewBase {
         ]);
 
         this.page.setMenu(this.menu);
+    }
+
+    serialize(): IViewSerialization {
+        let result = super.serialize();
+        result["exact"] = this.currentData.samplingRate >= 1;
+        result["columnDescription"] = this.currentData.axisData.description;
+        return result;
+    }
+
+    static reconstruct(ser: IViewSerialization, page: FullPage): IDataView {
+        let exact: boolean = ser["exact"];
+        let cd: IColumnDescription = ser["columnDescription"];
+        let schema: SchemaClass = new SchemaClass([]).deserialize(ser.schema);
+        if (cd == null || exact == null || schema == null)
+            return null;
+
+        let hv = new HistogramView(ser.remoteObjectId, ser.rowCount, schema, page);
+        let rr = page.dataset.createGetCategoryRequest(page, [cd]);
+        rr.invoke(new ChartObserver(hv, page, rr, null,
+            ser.rowCount, schema,
+            { exact: exact, heatmap: false, relative: false, reusePage: true }, [cd]));
+        return hv;
     }
 
     public updateView(title: string, cdf: Histogram, h: Histogram,
@@ -184,7 +205,6 @@ export class HistogramView extends HistogramViewBase {
             return new MakeHistogram(
                 title, page, operation, this.currentData.axisData.description,
                 this.rowCount, this.schema, this.currentData.samplingRate,
-                this.currentData.axisData.distinctStrings,
                 this.dataset);
         };
         rr.invoke(new ZipReceiver(this.getPage(), rr, how, this.dataset, finalRenderer));
@@ -241,22 +261,11 @@ export class HistogramView extends HistogramViewBase {
     private showSecondColumn(colName: string) {
         let oc = this.schema.find(colName);
         let cds: IColumnDescription[] = [this.currentData.axisData.description, oc];
-        let catColumns: string[] = [];
-        if (oc.kind == "Category")
-            catColumns.push(colName);
-
-        let cont = (operation: ICancellable) => {
-            let r0 = this.currentData.axisData.getRangeInfo();
-            let ds = this.dataset.getDistinctStrings(colName);
-            let r1 = new RangeInfo(colName, ds != null ? ds.uniqueStrings : null);
-            let distinct: DistinctStrings[] = [this.currentData.axisData.distinctStrings, ds];
-            let rr = this.createRange2DRequest(r0, r1);
-            rr.chain(operation);
-            rr.invoke(new Range2DCollector(
-                cds, this.rowCount, this.schema, distinct, this.getPage(), this,
-                this.currentData.samplingRate >=1, rr, false, false, false));
-        };
-        this.dataset.retrieveCategoryValues(catColumns, this.getPage(), cont);
+        let rr = this.dataset.createGetCategoryRequest(this.page, cds);
+        rr.invoke(new ChartObserver(this, this.page, rr, null,
+            this.rowCount, this.schema,
+            { exact: this.currentData.samplingRate >= 1,
+                heatmap: false, relative: false, reusePage: false }, cds));
     }
 
     changeBuckets(bucketCount: number): void {
@@ -446,10 +455,10 @@ class FilterReceiver extends BaseRenderer {
     public run(): void {
         super.run();
         let colName = this.columnDescription.name;
-        let rangeInfo: RangeInfo = new RangeInfo(colName);
+        let catValues: CategoricalValues = new CategoricalValues(colName);
         if (this.allStrings != null)
-            rangeInfo = this.allStrings.getRangeInfo(colName);
-        let rr = this.remoteObject.createRangeRequest(rangeInfo);
+            catValues = this.allStrings.getCategoricalValues();
+        let rr = this.remoteObject.createRangeRequest(catValues);
         rr.chain(this.operation);
         let title = this.filterDescription();
         rr.invoke(
@@ -634,35 +643,17 @@ class MakeHistogram extends BaseRenderer {
                        private rowCount: number,
                        private schema: SchemaClass,
                        protected samplingRate: number,
-                       private allStrings: DistinctStrings,
                        dataset: DatasetView) {
         super(page, operation, "Reload", dataset);
     }
 
     run(): void {
         super.run();
-        if (this.colDesc.kind == "Category") {
-            // Continuation invoked after the distinct strings have been obtained
-            let cont = (operation: ICancellable) => {
-                let ds = this.dataset.getDistinctStrings(this.colDesc.name);
-                if (ds == null)
-                // Probably an error has occurred
-                    return;
-                let rr = this.remoteObject.createRangeRequest(ds.getRangeInfo(this.colDesc.name));
-                rr.chain(operation);
-                rr.invoke(new RangeCollector(this.title, this.colDesc,
-                    this.rowCount, this.schema, ds,
-                    this.page, this.remoteObject, this.samplingRate >= 1, rr, false));
-            };
-            // Get the categorical data and invoke the continuation
-            this.dataset.retrieveCategoryValues([this.colDesc.name], this.page, cont);
-        } else {
-            let rr = this.remoteObject.createRangeRequest({columnName: this.colDesc.name, allNames: null});
-            rr.chain(this.operation);
-            rr.invoke(new RangeCollector(
-                this.title, this.colDesc, this.rowCount, this.schema, this.allStrings,
-                this.page, this.remoteObject, this.samplingRate >= 1, rr, false));
-        }
+        let cd = [this.colDesc];
+        let rr = this.dataset.createGetCategoryRequest(this.page, cd);
+        rr.invoke(new ChartObserver(this.remoteObject, this.page, rr, this.title,
+            this.rowCount, this.schema,
+            { exact: this.samplingRate >= 1, heatmap: false, relative: false, reusePage: false}, cd));
     }
 }
 

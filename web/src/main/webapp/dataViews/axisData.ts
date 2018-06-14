@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {IColumnDescription, BasicColStats, RangeInfo, ColumnAndRange} from "../javaBridge";
+import {IColumnDescription, BasicColStats, CategoricalValues, ColumnAndRange} from "../javaBridge";
 import {Converters, significantDigits} from "../util";
 import {DistinctStrings} from "../distinctStrings";
 import {
@@ -45,7 +45,7 @@ export interface ScaleAndAxis {
 export class AxisData {
     public constructor(public description: IColumnDescription,
                        public stats: BasicColStats,
-                       public distinctStrings: DistinctStrings,    // used only for categorical histograms
+                       public distinctStrings: DistinctStrings,
                        public bucketCount: number)
     {}
 
@@ -131,11 +131,8 @@ export class AxisData {
         return { scale: scale, axis: axis };
     }
 
-    /**
-     * @returns {RangeInfo} structure summarizing this data.
-     */
-    getRangeInfo(): RangeInfo {
-        return new RangeInfo(this.description.name,
+    getCategoricalValues(): CategoricalValues {
+        return new CategoricalValues(this.description.name,
             this.distinctStrings != null ? this.distinctStrings.uniqueStrings : null);
     }
 

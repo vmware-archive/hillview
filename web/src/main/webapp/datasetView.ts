@@ -15,19 +15,41 @@
  * limitations under the License.
  */
 
-import {
-    CombineOperators,
-    RemoteObjectId
-} from "./javaBridge";
+import {CombineOperators, IColumnDescription, IDistinctStrings, RemoteObjectId} from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
-import {DistinctStrings, IDistinctStrings} from "./distinctStrings";
+import {DistinctStrings} from "./distinctStrings";
 import {FullPage} from "./ui/fullPage";
-import {EnumIterators, ICancellable, Pair, PartialResult} from "./util";
+import {EnumIterators, ICancellable, Pair, PartialResult, saveAs} from "./util";
 import {BigTableView} from "./tableTarget";
 import {MenuItem, SubMenu, TopMenuItem} from "./ui/menu";
-import {IHtmlElement} from "./ui/ui";
+import {IHtmlElement, ViewKind} from "./ui/ui";
 import {DataLoaded} from "./initialObject";
 import {HillviewToplevel} from "./toplevel";
+import {NotifyDialog} from "./ui/dialog";
+import {TableView} from "./dataViews/tableView";
+import {IDataView} from "./ui/dataview";
+import {HistogramView} from "./dataViews/histogramView";
+import {SchemaClassSerialization} from "./schemaClass";
+import {Histogram2DView} from "./dataViews/histogram2DView";
+import {HeatmapView} from "./dataViews/heatmapView";
+import {SchemaView} from "./dataViews/schemaView";
+import {SpectrumView} from "./dataViews/spectrumView";
+
+export interface IViewSerialization {
+    viewKind: ViewKind;
+    pageId: number;
+    sourcePageId: number;
+    title: string;
+    remoteObjectId: RemoteObjectId;
+    rowCount: number;
+    schema: SchemaClassSerialization;
+}
+
+export interface IDatasetSerialization {
+    kind: "Saved dataset";
+    views: IViewSerialization[];
+    remoteObjectId: RemoteObjectId;
+}
 
 /**
  * A DatasetView holds all information related to a loaded dataset.
@@ -79,26 +101,20 @@ export class DatasetView implements IHtmlElement {
         return this.name;
     }
 
-    /// Retrieves the category values for all specified column names
-    /// and stores them internally in columnValues.
-    /// Invokes continuation when all values are known.
-    public retrieveCategoryValues(columnNames: string[], page: FullPage,
-                                  // The operation is the asynchronous operation
-                                  // that may have retrieved the data
-                                  continuation: (operation: ICancellable) => void): void {
-        let columnsToFetch: string[] = [];
-        for (let c of columnNames) {
-            if (!this.categoryCache.has(c))
-                columnsToFetch.push(c);
-        }
-
-        let rr = this.remoteObject.createStreamingRpcRequest<IDistinctStrings[]>("uniqueStrings", columnsToFetch);
-        if (columnsToFetch.length > 0) {
-            let renderer = new ReceiveCategory(this, columnsToFetch, continuation, page, rr);
-            rr.invoke(renderer);
-        } else {
-            continuation(rr);
-        }
+    /**
+     * Creates an RPC request which returns the categorical values for the specified
+     * columns
+     * @param page  Used for reporting errors.
+     * @param columns  A list of columns; some of these may not be categorical.
+     * @returns An RPC request which when invoked will return an IDistinctStrings for
+     *          each column; the non-categorical columns will have nulls in the result.
+     */
+    public createGetCategoryRequest(page: FullPage, columns: IColumnDescription[]):
+        RpcRequest<DistinctStrings[]> {
+        let toBring = columns.filter(c => c.kind == "Category")
+            .map(c => c.name)
+            .filter(c => !this.categoryCache.has(c));
+        return new CategoryValuesRequest(this.remoteObjectId, page, columns, toBring);
     }
 
     /**
@@ -114,7 +130,9 @@ export class DatasetView implements IHtmlElement {
     }
 
     public getDistinctStrings(columnName: string): DistinctStrings {
-        return this.categoryCache.get(columnName);
+        if (this.categoryCache.has(columnName))
+            return this.categoryCache.get(columnName);
+        return new DistinctStrings(null, columnName);
     }
 
     public combineMenu(ro: BigTableView, pageId: number): TopMenuItem {
@@ -145,19 +163,19 @@ export class DatasetView implements IHtmlElement {
         return index;
     }
 
-    public append(page: FullPage): void {
-        this.allPages.push(page);
-        this.topLevel.appendChild(page.getHTMLRepresentation());
-    }
-
-    public insertAfterMe(toInsert: FullPage, me: FullPage): void {
+    /**
+     * Insert a page after the specified page.
+     * @param {FullPage} toInsert  Page to insert.
+     * @param {FullPage} after     Page to insert after; if null insertion is done at the end.
+     */
+    insertAfter(toInsert: FullPage, after: FullPage | null): void {
         console.assert(toInsert != null);
         let pageRepresentation = toInsert.getHTMLRepresentation();
-        if (me == null) {
+        if (after == null) {
             this.topLevel.appendChild(pageRepresentation);
             this.allPages.push(toInsert);
         } else {
-            let index = this.findIndex(me);
+            let index = this.findIndex(after);
             this.allPages.splice(index + 1, 0, toInsert);
             if (index >= this.topLevel.children.length - 1)
                 this.topLevel.appendChild(pageRepresentation);
@@ -172,10 +190,22 @@ export class DatasetView implements IHtmlElement {
         this.topLevel.removeChild(this.topLevel.children[index]);
     }
 
-    public newPage(title: string, sourcePage: FullPage): FullPage {
+    public newPage(title: string, sourcePage: FullPage | null): FullPage {
         let number = this.pageCounter++;
-        let page = new FullPage(number, title, sourcePage, this);
-        this.insertAfterMe(page, sourcePage);
+        let page = new FullPage(number, title, sourcePage != null ? sourcePage.pageId : null, this);
+        this.insertAfter(page, sourcePage);
+        return page;
+    }
+
+    /**
+     * Creates a page when reconstructing a view that has been saved/bookmarked.
+     * The newly created page is always inserted at the end.
+     */
+    public reconstructPage(title: string, pageNo: number, sourcePageNo: number | null): FullPage {
+        let page = new FullPage(pageNo, title, sourcePageNo, this);
+        if (pageNo >= this.pageCounter)
+            this.pageCounter = pageNo + 1;
+        this.insertAfter(page, null);
         return page;
     }
 
@@ -193,34 +223,157 @@ export class DatasetView implements IHtmlElement {
         for (let p of this.allPages)
             p.onResize();
     }
+
+    /**
+     * Reconstruct one view in the dataset.
+     * @param {Object} obj  Object which is a serialization of a BigTableView.
+     * @returns {boolean}   True if reconstruction succeeds.
+     */
+    reconstructView(obj: Object): boolean {
+        // This is ugly, but circular module dependences make it
+        // difficult to place this method in a set of separate classes.
+        let vs = <IViewSerialization>obj;
+        if (vs.pageId == null ||
+            vs.remoteObjectId == null ||
+            vs.rowCount == null ||
+            vs.title == null ||
+            vs.viewKind == null)  // sourcePageId can be null
+            return false;
+        let page = this.reconstructPage(vs.title, vs.pageId, vs.sourcePageId);
+        let view: IDataView = null;
+        switch (vs.viewKind) {
+            case "Table":
+                view = TableView.reconstruct(vs, page);
+                break;
+            case "Histogram":
+                view = HistogramView.reconstruct(vs, page);
+                break;
+            case "2DHistogram":
+                view = Histogram2DView.reconstruct(vs, page);
+                break;
+            case "Heatmap":
+                view = HeatmapView.reconstruct(vs, page);
+                break;
+            case "Schema":
+                view = SchemaView.reconstruct(vs, page);
+                break;
+            case "Trellis":
+                // TODO
+                break;
+            case "HeavyHitters":
+                // TODO
+                break;
+            case "SVD Spectrum":
+                view = SpectrumView.reconstruct(vs, page);
+                break;
+            case "LAMP":
+                // No longer maintained.
+            case "Load":
+                // These do not need to be reconstructed ever.
+            default:
+                break;
+        }
+        if (view != null) {
+            page.setDataView(view);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * reconstruct a dataset view from serialized information.
+     * @param {Object} obj  Serialized description of the dataset read back.
+     * @returns {boolean}   True if the reconstruction succeeded.
+     */
+    reconstruct(obj: Object): boolean {
+        if (obj["views"] == null)
+            return false;
+        if (!Array.isArray(obj["views"]))
+            return false;
+        for (let v of obj["views"])
+            if (!this.reconstructView(v))
+                return false;
+        return true;
+    }
+
+    serialize(): IDatasetSerialization {
+        let result: IDatasetSerialization = {
+            remoteObjectId: this.remoteObjectId,
+            views: [],
+            kind: "Saved dataset"
+        };
+        for (let p of this.allPages) {
+            let vs = <BigTableView>p.getDataView();
+            if (vs != null)
+                result.views.push(vs.serialize());
+        }
+        return result;
+    }
+
+    saveToFile(): void {
+        let ser = this.serialize();
+        let str = JSON.stringify(ser);
+        let fileName = "savedView.txt";
+        saveAs(fileName, str);
+        let notify = new NotifyDialog("File has been saved\n" +
+            "Look for file " + fileName + " in the browser Downloads folder",
+            "File has been saved");
+        notify.show();
+    }
 }
 
 /**
- * Receives a list of DistinctStrings and stores them into the category cache.
- * After that it calls the supplied continuation.
+ * Receives categories for a set of columns from an RPC, caches the result,
+ * and then invokes an observer passing all the columns that the observer asked for.
  */
-class ReceiveCategory extends OnCompleteReceiver<IDistinctStrings[]> {
-    public constructor(
-        protected dataset: DatasetView,
-        protected columns: string[],
-        protected continuation: (operation: ICancellable) => void,
-        page: FullPage,
-        operation: RpcRequest<PartialResult<IDistinctStrings[]>>) {
-        super(page, operation, "Create converter");
+class CategoryValuesObserver extends OnCompleteReceiver<IDistinctStrings[]> {
+    constructor(page: FullPage, operation: ICancellable,
+        protected requestedColumns: IColumnDescription[],
+        protected toBringColumns: string[],
+        protected observer: OnCompleteReceiver<DistinctStrings[]>) {
+        super(page, operation, "Enumerate categories");
     }
 
-    public run(value: IDistinctStrings[]): void {
-        if (this.columns.length != value.length)
-            throw "Required " + this.columns.length + " got " + value.length;
-        for (let i=0; i < value.length; i++) {
-            let col = this.columns[i];
-            if (value[i].truncated) {
-                this.page.reportError("Column " + col + " has too many distinct values; it is not really a category");
-            } else {
-                let ds = new DistinctStrings(value[i]);
-                this.dataset.setDistinctStrings(col, ds);
-            }
+    run(value: IDistinctStrings[]): void {
+        // Receive the columns that we asked for and cache the results
+        console.assert(this.toBringColumns.length == value.length);
+        for (let i = 0; i < this.toBringColumns.length; i++) {
+            let ds = new DistinctStrings(value[i], this.toBringColumns[i]);
+            if (ds.truncated)
+                this.page.reportError(
+                    "Column " + this.requestedColumns[i] + " has too many distinct values for a category");
+            this.page.dataset.setDistinctStrings(this.toBringColumns[i], ds);
         }
-        this.continuation(this.operation);
+
+        // Build the result expected by the observer: all the requested columns
+        let result: DistinctStrings[] = [];
+        for (let c of this.requestedColumns)
+            result.push(this.page.dataset.getDistinctStrings(c.name));
+
+        this.observer.onNext(new PartialResult<DistinctStrings[]>(1, result));
+        this.observer.onCompleted();
+    }
+}
+
+/**
+ * Looks like an RpcRequest, but it is more complicated: it intercepts the results
+ * and saves them, and then it invokes the observer.
+ */
+class CategoryValuesRequest extends RpcRequest<IDistinctStrings[]> {
+    constructor(object: RemoteObjectId, protected page: FullPage,
+                protected requestedColumns: IColumnDescription[],
+                protected toBringColumns: string[]) {
+        super(object, "uniqueStrings", toBringColumns);
+    }
+
+    public invoke(onReply: OnCompleteReceiver<DistinctStrings[]>) {
+        let cvo = new CategoryValuesObserver(
+            this.page, this, this.requestedColumns, this.toBringColumns, onReply);
+        if (this.toBringColumns.length == 0) {
+            cvo.onNext(new PartialResult<DistinctStrings[]>(1, []));
+            cvo.onCompleted();
+        } else {
+            super.invoke(cvo);
+        }
     }
 }

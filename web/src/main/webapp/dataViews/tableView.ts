@@ -35,11 +35,11 @@ import {
     RecordOrder, RemoteObjectId, RowSnapshot, Schema, TableSummary
 } from "../javaBridge";
 import {BaseRenderer, TableTargetAPI, ZipReceiver} from "../tableTarget";
-import {IDataView} from "../ui/dataview";
 import {TSViewBase} from "./tsViewBase";
 import {SpectrumReceiver} from "./spectrumView";
-import {DatasetView} from "../datasetView";
+import {DatasetView, IViewSerialization} from "../datasetView";
 import {SchemaClass} from "../schemaClass";
+import {IDataView} from "../ui/dataview";
 
 //import {LAMPDialog} from "./lampView";
 
@@ -50,7 +50,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
     // Data view part: received from remote site
     // Logical position of first row displayed
     protected startPosition?: number;
-    protected order: RecordOrder;
+    public    order: RecordOrder;
     // Logical number of data rows displayed; includes count of each data row
     protected dataRowsDisplayed: number;
     protected scrollBar: ScrollBar;
@@ -146,6 +146,26 @@ export class TableView extends TSViewBase implements IScrollTarget {
 
         this.messageBox = document.createElement("div");
         this.topLevel.appendChild(this.messageBox);
+    }
+
+    serialize(): IViewSerialization {
+        let result = super.serialize();
+        result["order"] = this.order;
+        result["firstRow"] = this.currentData.rows.length > 0 ?
+            this.currentData.rows[0].values : null;
+        return result;
+    }
+
+    static reconstruct(ser: IViewSerialization, page: FullPage): IDataView {
+        let order = new RecordOrder(ser["order"]["sortOrientationList"]);
+        let firstRow: any[] = ser["firstRow"];
+        let schema = new SchemaClass([]).deserialize(ser.schema);
+        if (order == null || schema == null)
+            return null;
+        let tableView = new TableView(ser.remoteObjectId, ser.rowCount, schema, page);
+        let rr = tableView.createNextKRequest(order, firstRow);
+        rr.invoke(new NextKReceiver(page, tableView, rr, true, order, null));
+        return tableView;
     }
 
     find(): void {
@@ -515,7 +535,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
                 }, selectedCount == 1);
                 this.contextMenu.addItem({
                     text: "Frequent Elements...",
-                    action: () => this.heavyHittersDialog(),  // switch between Sampling/MG based on HeavyHittersView.switchToMG
+                    action: () => this.heavyHittersDialog(),
                     help: "Find the values that occur most frequently in the selected columns."
                 }, true);
                 this.contextMenu.addItem({
@@ -756,7 +776,9 @@ export class TableView extends TSViewBase implements IScrollTarget {
         let [valid, message] = this.checkNumericColumns(colNames);
         if (valid) {
             let rr = this.createSpectrumRequest(colNames, this.getTotalRowCount(), toSample);
-            rr.invoke(new SpectrumReceiver(this.getPage(), this, colNames, rr, this.order));
+            rr.invoke(new SpectrumReceiver(
+                this.getPage(), this.remoteObjectId, this.rowCount,
+                this.schema, colNames, rr, false));
         } else {
             this.reportError("Not valid for PCA:" + message);
         }

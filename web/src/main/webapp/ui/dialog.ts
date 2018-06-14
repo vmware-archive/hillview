@@ -63,16 +63,100 @@ class DialogValues {
 }
 
 /**
- * Base class for dialog implementations.
- * A dialog asks the user to fill in values for a set of fields.
+ * Base class for implementing dialogs.
  */
-export class Dialog implements IHtmlElement {
-    private tabIndex: number;
-    private readonly container: HTMLDivElement;
+class DialogBase implements IHtmlElement {
+    protected readonly topLevel: HTMLDivElement;
+    protected tabIndex: number;
+    protected dragging: boolean;
+    protected readonly buttonsDiv: HTMLDivElement;
+    private dragMousePosition: Point;
+    private dialogPosition: ClientRect;
     /**
      * The fieldsDiv is a div that contains all the form fields.
      */
-    private readonly fieldsDiv: HTMLDivElement;
+    protected readonly fieldsDiv: HTMLDivElement;
+
+    /**
+     * Create a dialog with the given name.
+     * @param title; header to show on top of the dialog.
+     * @param toolTip: help message to display on mouseover.
+     */
+    constructor(title: string, toolTip: string) {
+        // Tab indexes seem to be global to the whole DOM.
+        // That's not good, since having an element with tabindex 2 will be behind all
+        // other elements with tabindex 1, no matter where they are in the document.
+        // We choose 10 here, and hope that all menu fields are at least consecutive
+        // in tab order in the whole DOM.  Probably the right solution is to handle the
+        // tab keypress in an event handler.
+        this.tabIndex = 10;
+        this.dragging = false;
+        this.topLevel = document.createElement("div");
+        this.topLevel.title = toolTip;
+        this.topLevel.classList.add('dialog');
+        this.topLevel.style.left = "50%";
+        this.topLevel.style.top = "50%";
+        this.topLevel.style.transform = "translate(-50%, -50%)";
+
+        let titleElement = document.createElement("h1");
+        titleElement.textContent = title;
+        this.topLevel.appendChild(titleElement);
+
+        this.fieldsDiv = document.createElement("div");
+        this.topLevel.appendChild(this.fieldsDiv);
+
+        this.buttonsDiv = document.createElement("div");
+        this.topLevel.appendChild(this.buttonsDiv);
+
+        let drag = d3drag()
+            .on("start", () => this.dragStart())
+            .on("end", () => this.dragEnd())
+            .on("drag", () => this.dragMove());
+        d3select(this.topLevel).call(drag);
+    }
+
+    dragStart(): void {
+        this.dragging = true;
+        this.dragMousePosition = { x: d3event.x, y: d3event.y };
+        this.dialogPosition = this.topLevel.getBoundingClientRect();
+        this.topLevel.style.transform = "";
+        this.topLevel.style.cursor = "move";
+        this.dragMove();  // put it in the right place; changing the transform may move it.
+    }
+
+    dragMove(): void {
+        if (!this.dragging)
+            return;
+        let dx = this.dragMousePosition.x - d3event.x;
+        let dy = this.dragMousePosition.y - d3event.y;
+        this.topLevel.style.left = (this.dialogPosition.left - dx).toString() + "px";
+        this.topLevel.style.top = (this.dialogPosition.top - dy).toString() + "px";
+    }
+
+    dragEnd(): void {
+        this.dragging = false;
+        this.topLevel.style.cursor = "default";
+    }
+
+    public hide(): void {
+        // Removes the menu from the DOM
+        this.topLevel.remove();
+    }
+
+    public getHTMLRepresentation(): HTMLDivElement {
+        return this.topLevel;
+    }
+
+    public show(): void {
+        document.body.appendChild(this.topLevel);
+    }
+}
+
+/**
+ * Dialog implementations - can be further subclassed.
+ * A dialog asks the user to fill in values for a set of fields.
+ */
+export class Dialog extends DialogBase {
     /**
      * Method to be invoked when dialog is closed with OK.
      */
@@ -86,14 +170,11 @@ export class Dialog implements IHtmlElement {
      */
     private line: Map<string, HTMLElement>;
     private readonly confirmButton: HTMLButtonElement;
-    private dragMousePosition: Point;
-    private dialogPosition: ClientRect;
     /**
      * Optional string which is used as an index in the dialogValueCache to
      * populate a dialog with its previous values.
      */
     private dialogTitle: string;
-    private dragging: boolean;
 
     /**
      * This is a cache that can map a dialog title to a set of dialog values.
@@ -112,27 +193,10 @@ export class Dialog implements IHtmlElement {
         // We choose 10 here, and hope that all menu fields are at least consecutive
         // in tab order in the whole DOM.  Probably the right solution is to handle the
         // tab keypress in an event handler.
-        this.tabIndex = 10;
-        this.dragging = false;
+        super(title, toolTip);
         this.dialogTitle = null;
         this.line = new Map<string, HTMLElement>();
         this.onConfirm = null;
-        this.container = document.createElement("div");
-        this.container.title = toolTip;
-        this.container.classList.add('dialog');
-        this.container.style.left = "50%";
-        this.container.style.top = "50%";
-        this.container.style.transform = "translate(-50%, -50%)";
-
-        let titleElement = document.createElement("h1");
-        titleElement.textContent = title;
-        this.container.appendChild(titleElement);
-
-        this.fieldsDiv = document.createElement("div");
-        this.container.appendChild(this.fieldsDiv);
-
-        let buttonsDiv = document.createElement("div");
-        this.container.appendChild(buttonsDiv);
 
         let nodrag = d3drag()
             .on("start", () => this.dragEnd());
@@ -142,19 +206,13 @@ export class Dialog implements IHtmlElement {
         cancelButton.textContent = "Cancel";
         cancelButton.classList.add("cancel");
         d3select(cancelButton).call(nodrag);
-        buttonsDiv.appendChild(cancelButton);
+        this.buttonsDiv.appendChild(cancelButton);
 
         this.confirmButton = document.createElement("button");
         this.confirmButton.textContent = "Confirm";
         this.confirmButton.classList.add("confirm");
         d3select(this.confirmButton).call(nodrag);
-        buttonsDiv.appendChild(this.confirmButton);
-
-        let drag = d3drag()
-            .on("start", () => this.dragStart())
-            .on("end", () => this.dragEnd())
-            .on("drag", () => this.dragMove());
-        d3select(this.container).call(drag);
+        this.buttonsDiv.appendChild(this.confirmButton);
     }
 
     /**
@@ -170,29 +228,6 @@ export class Dialog implements IHtmlElement {
             if (values != null)
                 this.setAllValues(values);
         }
-    }
-
-    dragStart(): void {
-        this.dragging = true;
-        this.dragMousePosition = { x: d3event.x, y: d3event.y };
-        this.dialogPosition = this.container.getBoundingClientRect();
-        this.container.style.transform = "";
-        this.container.style.cursor = "move";
-        this.dragMove();  // put it in the right place; changing the transform may move it.
-    }
-
-    dragMove(): void {
-        if (!this.dragging)
-            return;
-        let dx = this.dragMousePosition.x - d3event.x;
-        let dy = this.dragMousePosition.y - d3event.y;
-        this.container.style.left = (this.dialogPosition.left - dx).toString() + "px";
-        this.container.style.top = (this.dialogPosition.top - dy).toString() + "px";
-    }
-
-    dragEnd(): void {
-        this.dragging = false;
-        this.container.style.cursor = "default";
     }
 
     getAllValues(): DialogValues {
@@ -241,28 +276,23 @@ export class Dialog implements IHtmlElement {
     }
 
     /**
-     * Display the menu
+     * Display the dialog.
       */
     public show(): void {
-        document.body.appendChild(this.container);
+        super.show();
         if (this.fieldsDiv.childElementCount == 0) {
             // If there are somehow no fields, focus on the container.
-            this.container.setAttribute("tabindex", "10");
-            this.container.focus();
+            this.topLevel.setAttribute("tabindex", "10");
+            this.topLevel.focus();
         } else {
-            // Focus on the first input element.
-            this.fields.values().next().value.html.focus();
+            // Focus on the first input element if present
+            let firstField = this.fields.values().next();
+            if (firstField.value)
+                firstField.value.html.focus();
+            else
+                this.topLevel.focus();
         }
-        this.container.onkeydown = (ev) => this.handleKeypress(ev);
-    }
-
-    public hide(): void {
-        // Removes the menu from the DOM
-        this.container.remove();
-    }
-
-    public getHTMLRepresentation(): HTMLDivElement {
-        return this.container;
+        this.topLevel.onkeydown = (ev) => this.handleKeypress(ev);
     }
 
     createRowContainer(fieldName: string, labelText: string, toolTip: string): HTMLDivElement {
@@ -495,8 +525,42 @@ export class Dialog implements IHtmlElement {
         return result;
     }
 
+    /**
+     * The value associated with a field representing a file selector.
+     */
+    public getFieldValueAsFiles(field: string): FileList {
+        let f = <HTMLInputElement>this.fields.get(field).html;
+        return f.files;
+    }
+
     private cancelAction(): void {
         // Remove this element from the DOM.
         this.hide();
+    }
+}
+
+/**
+ * Notifications have no input elements, just an OK button.
+ */
+export class NotifyDialog extends DialogBase {
+    constructor(title: string, toolTip: string) {
+        super(title, toolTip);
+
+        let confirmButton = document.createElement("button");
+        confirmButton.textContent = "Confirm";
+        confirmButton.classList.add("confirm");
+        confirmButton.onclick = () => this.hide();
+        this.buttonsDiv.appendChild(confirmButton);
+    }
+
+    public show(): void {
+        super.show();
+        this.topLevel.focus();
+        this.topLevel.onkeydown = (ev) => this.handleKeypress(ev);
+    }
+
+    protected handleKeypress(ev: KeyboardEvent): void {
+        if (ev.code == "Enter" || ev.code == "Escape")
+            this.hide();
     }
 }

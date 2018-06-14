@@ -105,26 +105,6 @@ export class RpcRequest<T> implements ICancellable {
         this.rpcTime = null;
     }
 
-    serialize() : Uint8Array {
-        let argString = "";
-        if (this.args == null)
-            argString = JSON.stringify(null);
-        else if  (this.args.toJSON != null)
-            argString = this.args.toJSON();
-        else
-            argString = JSON.stringify(this.args);
-        let result = {
-            "objectId": this.objectId,
-            "method": this.method,
-            "arguments": argString,
-            "requestId": this.requestId,
-            "protoVersion": this.protoVersion
-        };
-        let str = JSON.stringify(result);
-        console.log(formatDate() + " Sending message " + str);
-        return pako.deflate(str);
-    }
-
     /**
      * The time when this RPC request was invoked (or when the request it has been chained to
      * has started).
@@ -145,6 +125,26 @@ export class RpcRequest<T> implements ICancellable {
     public chain(after: ICancellable) {
         if (after != null)
             this.setStartTime(after.startTime());
+    }
+
+    serialize() : Uint8Array {
+        let argString = "";
+        if (this.args == null)
+            argString = JSON.stringify(null);
+        else if  (this.args.toJSON != null)
+            argString = this.args.toJSON();
+        else
+            argString = JSON.stringify(this.args);
+        let result = {
+            "objectId": this.objectId,
+            "method": this.method,
+            "arguments": argString,
+            "requestId": this.requestId,
+            "protoVersion": this.protoVersion
+        };
+        let str = JSON.stringify(result);
+        console.log(formatDate() + " Sending message " + str);
+        return pako.deflate(str);
     }
 
     /**
@@ -287,8 +287,8 @@ export abstract class Receiver<T> implements Rx.Observer<PartialResult<T>> {
      *                                   next to the progress bar.
      */
     protected constructor(public page: FullPage,
-                       public operation: ICancellable,
-                       public description: string) {
+                          public operation: ICancellable,
+                          public description: string) {
         this.progressBar = page.progressManager.newProgressBar(operation, description);
         this.reporter = page.getErrorReporter();
         this.reporter.clear();
@@ -358,8 +358,8 @@ export abstract class OnCompleteReceiver<T> extends Receiver<T> {
     protected value: T = null;
 
     protected constructor(public page: FullPage,
-                       public operation: ICancellable,
-                       public description: string) {
+                          public operation: ICancellable,
+                          public description: string) {
         super(page, operation, description);
     }
 

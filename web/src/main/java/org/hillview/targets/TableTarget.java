@@ -192,7 +192,7 @@ public final class TableTarget extends RpcTarget {
         this.runSketch(this.table, sk, request, context);
     }
 
-    static class RangeInfo {
+    static class CategoricalValues {
         String columnName = "";
         // The following are only used for categorical columns
         @Nullable
@@ -215,14 +215,14 @@ public final class TableTarget extends RpcTarget {
 
     @HillviewRpc
     public void range(RpcRequest request, RpcRequestContext context) {
-        RangeInfo info = request.parseArgs(RangeInfo.class);
+        CategoricalValues info = request.parseArgs(CategoricalValues.class);
         BasicColStatSketch sk = info.getBasicStatsSketch();
         this.runSketch(this.table, sk, request, context);
     }
 
     @HillviewRpc
     public void range2D(RpcRequest request, RpcRequestContext context) {
-        RangeInfo[] cols = request.parseArgs(RangeInfo[].class);
+        CategoricalValues[] cols = request.parseArgs(CategoricalValues[].class);
         if (cols.length != 2)
             throw new RuntimeException("Expected 2 RangeInfo objects, got " + cols.length);
         BasicColStatSketch sk1 = cols[0].getBasicStatsSketch();
@@ -234,7 +234,7 @@ public final class TableTarget extends RpcTarget {
 
     @HillviewRpc
     public void range3D(RpcRequest request, RpcRequestContext context) {
-        RangeInfo[] cols = request.parseArgs(RangeInfo[].class);
+        CategoricalValues[] cols = request.parseArgs(CategoricalValues[].class);
         if (cols.length != 3)
             throw new RuntimeException("Expected 3 RangeInfo objects, got " + cols.length);
         BasicColStatSketch sk1 = cols[0].getBasicStatsSketch();

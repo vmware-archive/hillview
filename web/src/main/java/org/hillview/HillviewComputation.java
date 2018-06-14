@@ -78,9 +78,13 @@ public class HillviewComputation implements Serializable {
         }
     }
 
-    void replay(Observer<RpcTarget> toNotify) {
+    synchronized void replay(Observer<RpcTarget> toNotify) {
         HillviewLogger.instance.info("Attempt to replay", "{0}", this);
-        // This observer is notified when the source object has been recreated.
+        // Tell this guy when the produced object is created
+        this.registerOnCreate(toNotify);
+
+        // This observer is notified when the source object for this
+        // computation has been recreated.
         Observer<RpcTarget> sourceNotify = new SingleObserver<RpcTarget>() {
             @Override
             public void onError(Throwable throwable) {
@@ -89,18 +93,30 @@ public class HillviewComputation implements Serializable {
 
             @Override
             public void onSuccess(RpcTarget source) {
+                // Before executing the computation again check if the destination
+                // object has not appeared.  There is a race between multiple
+                // copies of a computation executing.
+
+                if (RpcObjectManager.instance.getObject(HillviewComputation.this.resultId) != null) {
+                    HillviewLogger.instance.info("Source retrieved, but destination found",
+                            "Dest={0}, Request={1}",
+                            HillviewComputation.this.resultId,
+                            HillviewComputation.this.request.toString());
+                    return;
+                }
+
                 // Executing this function will probably create the
                 // target object, but we don't know when exactly.
-                HillviewLogger.instance.info("Source retrieved; invoking request", "Source={0}, Request={1}",
+                HillviewLogger.instance.info("Source retrieved; invoking request",
+                        "Source={0}, Request={1}",
                         source.toString(), HillviewComputation.this.request.toString());
                 source.execute(HillviewComputation.this.request,
                         new RpcRequestContext(HillviewComputation.this));
             }
         };
 
-        // Tell this guy when the destination is done
-        this.registerOnCreate(toNotify);
-        // Trigger the computation by retrieving the source
+        // Trigger the computation by retrieving the source; when that's done it will
+        // start sourceNotify which will rerun this computation.
         RpcObjectManager.instance.retrieveTarget(this.getSourceId(), true, sourceNotify);
     }
 

@@ -27,6 +27,8 @@ import {Dialog, FieldKind} from "../ui/dialog";
 import {TSViewBase} from "./tsViewBase";
 import {cloneToSet, significantDigits} from "../util";
 import {SchemaClass} from "../schemaClass";
+import {IDataView} from "../ui/dataview";
+import {IViewSerialization} from "../datasetView";
 
 /**
  * This class is used to browse through the columns of a table schema
@@ -45,6 +47,15 @@ export class SchemaView extends TSViewBase {
         super(remoteObjectId, rowCount, schema, page, "Schema");
         this.show();
         this.page.reportTime(elapsedMs);
+    }
+
+    static reconstruct(ser: IViewSerialization, page: FullPage): IDataView {
+        let schema = new SchemaClass([]).deserialize(ser.schema);
+        if (schema == null)
+            return null;
+        let schemaView = new SchemaView(ser.remoteObjectId, page, ser.rowCount, schema, 0);
+        schemaView.show();
+        return schemaView;
     }
 
     show(): void {

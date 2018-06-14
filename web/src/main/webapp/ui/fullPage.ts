@@ -20,7 +20,7 @@ import {ProgressManager} from "./progress";
 import {TopMenu} from "./menu";
 import {openInNewTab, significantDigits} from "../util";
 import {ConsoleDisplay, ErrorReporter} from "./errReporter";
-import {DataDisplay, IDataView} from "./dataview";
+import {IDataView} from "./dataview";
 import {DatasetView} from "../datasetView";
 
 /**
@@ -46,7 +46,7 @@ const plus = "+";
  * A FullPage is the main unit of display in Hillview, storing on rendering.
  * The page layout is as follows:
  * -------------------------------------------------
- * | menu           Title                 ? - [2] x|  titleRow
+ * | menu            #. Title                 ? - x|  titleRow
  * |-----------------------------------------------|
  * |                                               |
  * |                 data display                  |  displayHolder
@@ -57,7 +57,7 @@ const plus = "+";
  * -------------------------------------------------
  */
 export class FullPage implements IHtmlElement {
-    public dataDisplay: DataDisplay;
+    public dataView: IDataView;
     bottomContainer: HTMLElement;
     public progressManager: ProgressManager;
     protected console: ConsoleDisplay;
@@ -73,14 +73,15 @@ export class FullPage implements IHtmlElement {
      * Creates a page which will be used to display some rendering.
      * @param pageId      Page number within dataset.
      * @param title       Title to use for page.
-     * @param sourcePage  Page which initiated the creation of this one.
+     * @param sourcePageId Id of page which initiated the creation of this one.
+     *                     Null if this is the first page in a dataset.
      * @param dataset     Parent dataset; only null for the toplevel menu.
      */
     public constructor(public readonly pageId: number, public readonly title: string,
-                       sourcePage: FullPage, public readonly dataset: DatasetView) {
+                       public readonly sourcePageId: number | null,
+                       public readonly dataset: DatasetView) {
         this.console = new ConsoleDisplay();
         this.progressManager = new ProgressManager();
-        this.dataDisplay = new DataDisplay();
         this.minimized = false;
 
         this.pageTopLevel = document.createElement("div");
@@ -107,9 +108,9 @@ export class FullPage implements IHtmlElement {
         this.h1 = h1;
         this.addCell(h1, false);
 
-        if (sourcePage != null) {
+        if (sourcePageId != null) {
             h1.innerHTML += " from ";
-            let refLink = this.pageReference(sourcePage.pageId);
+            let refLink = this.pageReference(sourcePageId);
             refLink.title = "View which produced this one.";
             h1.appendChild(refLink);
         }
@@ -148,7 +149,6 @@ export class FullPage implements IHtmlElement {
 
         this.displayHolder = document.createElement("div");
         this.pageTopLevel.appendChild(this.displayHolder);
-        this.displayHolder.appendChild(this.dataDisplay.getHTMLRepresentation());
         this.pageTopLevel.appendChild(this.bottomContainer);
 
         this.bottomContainer.appendChild(this.progressManager.getHTMLRepresentation());
@@ -201,7 +201,7 @@ export class FullPage implements IHtmlElement {
 
     public minimize(span: HTMLElement): void {
         if (this.minimized) {
-            this.displayHolder.appendChild(this.dataDisplay.getHTMLRepresentation());
+            this.displayHolder.appendChild(this.dataView.getHTMLRepresentation());
             this.minimized = false;
             span.innerHTML = minus;
         } else {
@@ -213,7 +213,7 @@ export class FullPage implements IHtmlElement {
     }
 
     public onResize(): void {
-        this.dataDisplay.onResize();
+        this.dataView.refresh();
     }
 
     public getHTMLRepresentation(): HTMLElement {
@@ -225,8 +225,14 @@ export class FullPage implements IHtmlElement {
     }
 
     public setDataView(hdv: IDataView): void {
-        this.dataDisplay.setDataView(hdv);
+        this.dataView = hdv;
+        removeAllChildren(this.displayHolder);
+        this.displayHolder.appendChild(hdv.getHTMLRepresentation());
         this.setViewKind(hdv.viewKind);
+    }
+
+    public getDataView(): IDataView | null {
+        return this.dataView;
     }
 
     public reportError(error: string) {

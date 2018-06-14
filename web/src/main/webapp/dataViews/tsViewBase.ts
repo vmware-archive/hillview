@@ -15,14 +15,13 @@
  * limitations under the License.
  */
 
-import {BigTableView} from "../tableTarget";
+import {BigTableView, TableTargetAPI} from "../tableTarget";
 import {
     allContentsKind, asContentsKind, ColumnSortOrientation, ComparisonFilterDescription,
     CreateColumnInfo, EqualityFilterDescription, HLogLog, IColumnDescription,
-    RangeInfo, RecordOrder, RemoteObjectId
+    RecordOrder, RemoteObjectId
 } from "../javaBridge";
 import {FullPage} from "../ui/fullPage";
-import {DistinctStrings} from "../distinctStrings";
 import {
     cloneToSet,
     Comparison,
@@ -33,8 +32,7 @@ import {
 } from "../util";
 import {TableOperationCompleted, TableView} from "./tableView";
 import {HistogramDialog, RangeCollector} from "./histogramView";
-import {Range2DCollector} from "./heatMapView";
-import {TrellisPlotDialog} from "./trellisHeatMapView";
+import {TrellisPlotArgs, TrellisPlotDialog, TrellisRangeReceiver} from "./trellisHeatMapView";
 import {Histogram2DDialog} from "./histogram2DView";
 import {SubMenu, TopMenuItem} from "../ui/menu";
 import {SpecialChars, ViewKind} from "../ui/ui";
@@ -42,6 +40,8 @@ import {OnCompleteReceiver} from "../rpc";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {HeavyHittersReceiver, HeavyHittersView} from "./heavyHittersView";
 import {SchemaClass} from "../schemaClass";
+import {DistinctStrings} from "../distinctStrings";
+import {Range2DCollector} from "./heatmapView";
 
 /**
  * A base class for TableView and SchemaView.
@@ -185,9 +185,8 @@ export abstract class TSViewBase extends BigTableView {
         rr.invoke(rec);
     }
 
-    protected histogramOrHeatmap(columns: string[], heatMap: boolean): void {
+    protected histogramOrHeatmap(columns: string[], heatmap: boolean): void {
         let cds: IColumnDescription[] = [];
-        let catColumns: string[] = [];  // categorical columns
         columns.forEach(v => {
             let colDesc = this.schema.find(v);
             if (colDesc.kind == "String") {
@@ -195,60 +194,16 @@ export abstract class TSViewBase extends BigTableView {
                     this.schema.displayName(colDesc.name));
                 return;
             }
-            if (colDesc.kind == "Category")
-                catColumns.push(v);
             cds.push(colDesc);
         });
 
         if (cds.length != columns.length)
             // some error occurred
             return;
-
-        let twoDimensional = (cds.length == 2);
-        // Continuation invoked after the distinct strings have been obtained
-        let cont = (operation: ICancellable) => {
-            let rangeInfo: RangeInfo[] = [];
-            let distinct: DistinctStrings[] = [];
-
-            cds.forEach(v => {
-                let colName = v.name;
-                let ri: RangeInfo;
-                if (v.kind == "Category") {
-                    let ds = this.dataset.getDistinctStrings(colName);
-                    if (ds == null)
-                    // Probably an error has occurred
-                        return;
-                    distinct.push(ds);
-                    ri = ds.getRangeInfo(colName);
-                } else {
-                    distinct.push(null);
-                    ri = new RangeInfo(colName);
-                }
-                rangeInfo.push(ri);
-            });
-
-            if (rangeInfo.length != cds.length)
-            // some error occurred in loop
-                return;
-
-            if (twoDimensional) {
-                let rr = this.createRange2DRequest(rangeInfo[0], rangeInfo[1]);
-                rr.chain(operation);
-                rr.invoke(new Range2DCollector(
-                    cds, this.rowCount, this.schema, distinct,
-                    this.getPage(), this, false, rr, heatMap, false, false));
-            } else {
-                let rr = this.createRangeRequest(rangeInfo[0]);
-                rr.chain(operation);
-                let title = "Histogram " + this.schema.displayName(cds[0].name);
-                rr.invoke(new RangeCollector(
-                    title, cds[0], this.rowCount, this.schema, distinct[0],
-                    this.getPage(), this, false, rr, false));
-            }
-        };
-
-        // Get the categorical data and invoke the continuation
-        this.dataset.retrieveCategoryValues(catColumns, this.getPage(), cont);
+        let rr = this.dataset.createGetCategoryRequest(this.page, cds);
+        rr.invoke(new ChartObserver(this, this.page, rr, null,
+            this.rowCount, this.schema,
+            { exact: false, heatmap: heatmap, relative: false, reusePage: false}, cds));
     }
 
     protected histogram(heatMap: boolean): void {
@@ -552,5 +507,74 @@ class CountReceiver extends OnCompleteReceiver<HLogLog> {
         this.page.reportError("Distinct values in column \'" +
             this.colName + "\' " + SpecialChars.approx + String(data.distinctItemCount) + "\n" +
             "Operation took " + significantDigits(timeInMs/1000) + " seconds");
+    }
+}
+
+// Using an interface for emulating named arguments
+// otherwise it's hard to remember the order of all these booleans.
+export interface ChartOptions {
+    exact: boolean;    // draw an exact chart (not approximate)
+    heatmap: boolean;  // draw heatmaps, not histograms
+    relative: boolean  // draw a relative 2D histogram
+    reusePage: boolean;// draw the chart in the supplied page
+}
+
+export class ChartObserver extends OnCompleteReceiver<DistinctStrings[]> {
+    constructor(
+        protected remoteObject: TableTargetAPI,
+        page: FullPage, operation: ICancellable,
+        protected title: string | null,
+        protected rowCount: number,
+        protected schema: SchemaClass,
+        protected options: ChartOptions,
+        protected columns: IColumnDescription[]) {
+        super(page, operation, "Get category values");
+    }
+
+    run(value: DistinctStrings[]): void {
+        if (value == null)
+            return;
+        switch (value.length) {
+            case 1: {
+                let col = this.columns[0];
+                let cv = value[0].getCategoricalValues();
+                let rr = this.remoteObject.createRangeRequest(cv);
+                rr.chain(this.operation);
+                if (this.title == null)
+                    this.title = "Histogram " + this.schema.displayName(col.name);
+                rr.invoke(new RangeCollector(
+                    this.title, col,
+                    this.rowCount, this.schema, value[0],
+                    this.page, this.remoteObject, this.options.exact, rr,
+                    this.options.reusePage));
+                break;
+            }
+            case 2: {
+                let cv0 = value[0].getCategoricalValues();
+                let cv1 = value[1].getCategoricalValues();
+                let rr = this.remoteObject.createRange2DRequest(cv0, cv1);
+                rr.chain(this.operation);
+                rr.invoke(new Range2DCollector(
+                    this.columns, this.rowCount, this.schema, value,
+                    this.page, this.remoteObject, this.options.exact, rr,
+                    this.options.heatmap, this.options.relative, this.options.reusePage));
+                break;
+            }
+            case 3: {
+                // TODO: generalize this
+                let args: TrellisPlotArgs = {
+                    cds: this.columns,
+                    uniqueStrings: value[2]
+                };
+                let rr = this.remoteObject.createRange2DColsRequest(
+                    this.columns[0].name, this.columns[1].name);
+                rr.chain(this.operation);
+                rr.invoke(new TrellisRangeReceiver(
+                    this.remoteObject, this.page, rr, this.schema, this.rowCount, args.cds));
+                break;
+            }
+            default:
+                this.page.reportError("Unexpected number of values received: " + value.length);
+        }
     }
 }
