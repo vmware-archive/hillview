@@ -402,9 +402,10 @@ export class PartialResult<T> {
 }
 
 export interface RpcReply {
-    result: string;     // JSON or error message
-    requestId: number;  // request that is being replied
-    isError: boolean;
+    result: string;     // JSON or error message.
+    requestId: number;  // Request that is being replied.
+    isError: boolean;   // Indicates that the message contains an error.
+    isCompleted: boolean;  // If true this message is the last one.
 }
 
 export interface ICancellable {

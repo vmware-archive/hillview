@@ -95,6 +95,10 @@ export class HillviewToplevel implements IHtmlElement {
             action: () => dataset.saveToFile(),
             help: "Save data describing this view to a local file;\n" +
             "this file can be shared with other people."
+        }, {
+            text: "Redisplay",
+            action: () => dataset.redisplay(),
+            help: "Display again the original dataset"
         }]);
         cell.oncontextmenu = e => menu.show(e);
 

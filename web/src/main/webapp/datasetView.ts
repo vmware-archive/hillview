@@ -16,17 +16,17 @@
  */
 
 import {CombineOperators, IColumnDescription, IDistinctStrings, RemoteObjectId} from "./javaBridge";
-import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
+import {OnCompleteReceiver, RpcRequest} from "./rpc";
 import {DistinctStrings} from "./distinctStrings";
 import {FullPage} from "./ui/fullPage";
 import {EnumIterators, ICancellable, Pair, PartialResult, saveAs} from "./util";
-import {BigTableView} from "./tableTarget";
+import {BigTableView, TableTargetAPI} from "./tableTarget";
 import {MenuItem, SubMenu, TopMenuItem} from "./ui/menu";
 import {IHtmlElement, ViewKind} from "./ui/ui";
-import {DataLoaded} from "./initialObject";
+import {DataLoaded, getDescription} from "./initialObject";
 import {HillviewToplevel} from "./toplevel";
 import {NotifyDialog} from "./ui/dialog";
-import {TableView} from "./dataViews/tableView";
+import {SchemaReceiver, TableView} from "./dataViews/tableView";
 import {IDataView} from "./ui/dataview";
 import {HistogramView} from "./dataViews/histogramView";
 import {SchemaClassSerialization} from "./schemaClass";
@@ -34,6 +34,7 @@ import {Histogram2DView} from "./dataViews/histogram2DView";
 import {HeatmapView} from "./dataViews/heatmapView";
 import {SchemaView} from "./dataViews/schemaView";
 import {SpectrumView} from "./dataViews/spectrumView";
+import {HeavyHittersView} from "./dataViews/heavyHittersView";
 
 export interface IViewSerialization {
     viewKind: ViewKind;
@@ -57,7 +58,7 @@ export interface IDatasetSerialization {
  * A DatasetView will then have many views.
  */
 export class DatasetView implements IHtmlElement {
-    public readonly remoteObject: RemoteObject;
+    public readonly remoteObject: TableTargetAPI;
     private categoryCache: Map<string, DistinctStrings>;
     private selected: BigTableView; // participates in a combine operation
     private selectedPageId: number;  // id of page containing the selected object (if any)
@@ -74,7 +75,7 @@ export class DatasetView implements IHtmlElement {
     constructor(public readonly remoteObjectId: RemoteObjectId,
                 public name: string,
                 public readonly loaded: DataLoaded) {
-        this.remoteObject = new RemoteObject(remoteObjectId);
+        this.remoteObject = new TableTargetAPI(remoteObjectId);
         this.categoryCache = new Map<string, DistinctStrings>();
         this.selected = null;
         this.pageCounter = 1;
@@ -261,7 +262,7 @@ export class DatasetView implements IHtmlElement {
                 // TODO
                 break;
             case "HeavyHitters":
-                // TODO
+                view = HeavyHittersView.reconstruct(vs, page);
                 break;
             case "SVD Spectrum":
                 view = SpectrumView.reconstruct(vs, page);
@@ -308,6 +309,16 @@ export class DatasetView implements IHtmlElement {
                 result.views.push(vs.serialize());
         }
         return result;
+    }
+
+    /**
+     * Displays again the original data.
+     */
+    redisplay(): void {
+        let rr = this.remoteObject.createGetSchemaRequest();
+        let title = getDescription(this.loaded);
+        let newPage = this.newPage(title, null);
+        rr.invoke(new SchemaReceiver(newPage, rr, this.remoteObject, this, false));
     }
 
     saveToFile(): void {

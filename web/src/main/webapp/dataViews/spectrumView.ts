@@ -16,17 +16,15 @@
  */
 
 import {
-    Histogram, CombineOperators, RemoteObjectId, BasicColStats, IColumnDescription,
-    EigenVal, RecordOrder
+    Histogram, CombineOperators, RemoteObjectId, BasicColStats, IColumnDescription, EigenVal
 } from "../javaBridge";
 import {TopMenu} from "../ui/menu";
-import {formatNumber, ICancellable, significantDigits} from "../util";
+import {ICancellable, significantDigits} from "../util";
 import {FullPage} from "../ui/fullPage";
 import {AxisData} from "./axisData";
 import {BigTableView} from "../tableTarget";
 import {HistogramPlot} from "../ui/histogramPlot";
 import {PlottingSurface} from "../ui/plottingSurface";
-import {NextKReceiver, TableView} from "./tableView";
 import {OnCompleteReceiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
 import {IDataView} from "../ui/dataview";
@@ -116,20 +114,10 @@ export class SpectrumView extends BigTableView {
             title: title,
             histogram: h };
 
-        let counts = h.buckets;
-        let bucketCount = counts.length;
-
         this.plot.setHistogram(h, 1, axisData);
         this.plot.draw();
 
-        let summary = "";
-        if (h.missingData != 0)
-            summary = formatNumber(h.missingData) + " missing, ";
-        summary += formatNumber(axisData.stats.presentCount + axisData.stats.missingCount) + " points";
-        if (axisData.distinctStrings != null)
-            summary += ", " + (axisData.stats.max - axisData.stats.min) + " distinct values";
-        summary += ", " + String(bucketCount) + " buckets";
-        this.summary.innerHTML = summary;
+        this.summary.innerHTML = "Columns: " + this.colNames.join(", ");
     }
 
     public refresh(): void {

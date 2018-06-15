@@ -81,6 +81,7 @@ export class RpcRequest<T> implements ICancellable {
     cancelled: boolean;
     closed:    boolean;  // i.e., not opened
     socket:    WebSocket;
+    completed: boolean;
     /**
      *  Time when RPC was initiated.  It may be set explicitly
      *  by users, and then it can be used to measured operations
@@ -102,6 +103,7 @@ export class RpcRequest<T> implements ICancellable {
         this.socket = null;
         this.cancelled = false;
         this.closed = true;
+        this.completed = false;
         this.rpcTime = null;
     }
 
@@ -196,12 +198,18 @@ export class RpcRequest<T> implements ICancellable {
                     msg = "Error communicating to server.";
                 onReply.onError(msg);
             };
-            this.socket.onmessage = function (r: MessageEvent) {
+            this.socket.onmessage = (r: MessageEvent) => {
                 // parse json and invoke onReply.onNext
                 console.log(formatDate() + ' reply received: ' + r.data);
                 let reply = <RpcReply>JSON.parse(r.data);
+                if (this.completed) {
+                    console.log("Message received after rpc completed: " + reply);
+                }
                 if (reply.isError) {
                     onReply.onError(RpcRequest.simplifyExceptions(reply.result));
+                } else if (reply.isCompleted) {
+                    this.completed = true;
+                    onReply.onCompleted();
                 } else {
                     let success = false;
                     let response: any;
@@ -223,7 +231,9 @@ export class RpcRequest<T> implements ICancellable {
             this.socket.onclose = (e: CloseEvent) => {
                 console.log("Socket closed");
                 if (e.code == 1000) {
-                    onReply.onCompleted();
+                    if (!this.completed) {
+                        onReply.onError("Socket closed, but request not completed");
+                    }
                     Test.instance.runNext();
                     return; // normal
                 }
@@ -256,7 +266,6 @@ export class RpcRequest<T> implements ICancellable {
                     reason = "Cannot verify server TLS certificate.";
                 // else unknown
                 onReply.onError(reason);
-                onReply.onCompleted();
             }
         } catch (e) {
             onReply.onError(e);

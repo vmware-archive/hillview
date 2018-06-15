@@ -90,6 +90,10 @@ public final class RpcRequest implements IJson {
                 Utilities.throwableToString(th), true);
     }
 
+    public RpcReply createCompletedReply() {
+        return new RpcReply(this.requestId);
+    }
+
     public <T> T parseArgs(Class<T> classOfT) {
         return IJson.gsonInstance.fromJson(this.arguments, classOfT);
     }

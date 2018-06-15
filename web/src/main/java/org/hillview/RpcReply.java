@@ -37,11 +37,33 @@ public final class RpcReply {
      * True if this reply represents an error that occurred.
      */
     private final boolean isError;
+    /**
+     * True if this message corresponds to an onCompleted call.
+     */
+    private final boolean isCompleted;
 
+    /**
+     * Create a reply to a request; this is one of many replies.
+     * @param requestId  Request that is being replied.
+     * @param result     Result produced so far.
+     * @param isError    True if this result is an error.
+     */
     RpcReply(final int requestId, final String result, boolean isError) {
         this.requestId = requestId;
         this.result = result;
         this.isError = isError;
+        this.isCompleted = false;
+    }
+
+    /**
+     * A reply that indicates that the request is completed.
+     * @param requestId  Request that is completed.
+     */
+    RpcReply(final int requestId) {
+        this.requestId = requestId;
+        this.result = "0";  // unused
+        this.isError = false;
+        this.isCompleted = true;
     }
 
     JsonElement toJson() {
@@ -49,6 +71,7 @@ public final class RpcReply {
         result.addProperty("requestId", this.requestId);
         result.addProperty("result", this.result);
         result.addProperty("isError", this.isError);
+        result.addProperty("isCompleted", this.isCompleted);
         return result;
     }
 

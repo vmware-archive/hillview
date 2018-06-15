@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {Dialog, NotifyDialog} from "./ui/dialog";
+import {NotifyDialog} from "./ui/dialog";
 import {findElement} from "./util";
 
 interface TestOperation {

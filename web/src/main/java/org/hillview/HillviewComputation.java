@@ -98,7 +98,7 @@ public class HillviewComputation implements Serializable {
                 // copies of a computation executing.
 
                 if (RpcObjectManager.instance.getObject(HillviewComputation.this.resultId) != null) {
-                    HillviewLogger.instance.info("Source retrieved, but destination found",
+                    HillviewLogger.instance.info("Source retrieved but destination found",
                             "Dest={0}, Request={1}",
                             HillviewComputation.this.resultId,
                             HillviewComputation.this.request.toString());

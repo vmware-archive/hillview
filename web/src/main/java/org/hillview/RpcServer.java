@@ -65,6 +65,12 @@ public final class RpcServer {
         });
     }
 
+    public static void requestCompleted(RpcRequest request, Session session) {
+        RpcReply reply = request.createCompletedReply();
+        HillviewLogger.instance.info("Sending RPC complete reply");
+        RpcServer.sendReply(reply, session);
+    }
+
     public static void closeSession(final Session session) {
         // We use replyExecutor to make sure that the session closing
         // is performed after all replies on that session have been sent.

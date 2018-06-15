@@ -213,6 +213,7 @@ public abstract class RpcTarget implements IJson {
         @Override
         public void onCompleted() {
             HillviewLogger.instance.info("Computation completed", "for {0}", this.name);
+            RpcServer.requestCompleted(this.request, Converters.checkNull(this.context.session));
             this.request.syncCloseSession(this.context.session);
         }
 

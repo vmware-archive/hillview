@@ -375,7 +375,8 @@ export abstract class TSViewBase extends BigTableView {
         let rr = this.createHeavyHittersRequest(
             columnsShown, percent, this.getTotalRowCount(), HeavyHittersView.switchToMG);
         rr.invoke(new HeavyHittersReceiver(
-            this.getPage(), this, rr, this.rowCount, this.schema, order, isApprox, percent, columnsShown));
+            this.getPage(), this, rr, this.rowCount, this.schema,
+            order, isApprox, percent, columnsShown, false));
     }
 
     protected heavyHittersDialog(): void {

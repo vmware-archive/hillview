@@ -127,8 +127,8 @@ export class RemoteTableReceiver extends BaseRenderer {
         rr.chain(this.operation);
         let title = getDescription(this.data);
         let dataset = new DatasetView(this.remoteObject.remoteObjectId, title, this.data);
-        let page = dataset.newPage(title, null);
-        rr.invoke(new SchemaReceiver(page, rr, this.remoteObject, dataset, this.forceTableView));
+        let newPage = dataset.newPage(title, null);
+        rr.invoke(new SchemaReceiver(newPage, rr, this.remoteObject, dataset, this.forceTableView));
     }
 }
 

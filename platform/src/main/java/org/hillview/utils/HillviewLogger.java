@@ -155,8 +155,10 @@ public class HillviewLogger {
     }
 
     private String checkCommas(String str) {
-        if (str.contains(","))
-            throw new RuntimeException("Message should contain no commas: " + str);
+        if (str.contains(",")) {
+            HillviewLogger.instance.error("Log message should contain no commas", "{0}", str);
+            str = str.replace(",", ";");
+        }
         return str;
     }
 
