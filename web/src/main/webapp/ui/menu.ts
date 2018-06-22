@@ -219,8 +219,16 @@ export class ContextMenu extends BaseMenu<MenuItem> implements IHtmlElement {
     public show(e: MouseEvent): void {
         e.preventDefault();
         // Spawn the menu at the mouse's location
-        this.move(e.pageX - 1, e.pageY - 1);
+        let x = e.pageX - 5;
+        let y = e.pageY - 5;
         this.outer.classList.remove("hidden");
+        if (this.outer.offsetWidth + x >= window.innerWidth)
+            x = window.innerWidth - this.outer.offsetWidth - 1;
+        if (this.outer.offsetHeight + y >= window.innerHeight)
+            y = window.innerHeight - this.outer.offsetHeight - 1;
+        if (y < 0)
+            y = 0;
+        this.move(x, y);
         this.outer.tabIndex = 1;  // necessary for keyboard events?
         this.outer.focus();
     }
