@@ -66,18 +66,6 @@ public class RecordOrder implements Serializable {
     }
 
     /**
-     * Return a subSchema describing the columns in this sort order.
-     */
-    public ISubSchema toSubSchema() {
-        final HashSubSchema subSchema = new HashSubSchema();
-        for (int i=0; i < this.getSize(); i++) {
-            ColumnSortOrientation ordCol = this.getOrientation(i);
-            subSchema.add(ordCol.columnDescription.name);
-        }
-        return subSchema;
-    }
-
-    /**
      * Returns an IndexComparator for rows in a Table, based on the sort order.
      * The table and the RecordOrder need to be compatible.
      * @param table The Table we wish to sort.

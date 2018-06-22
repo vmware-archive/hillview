@@ -112,9 +112,8 @@ public class TableTest extends BaseTest {
         final IMembershipSet partial = full.filter(row -> (row % 2) == 0);
         final Table myTable = new Table(columns, partial, null, null);
         Assert.assertEquals(myTable.toString(), "Table[2x50]");
-        HashSubSchema filter = new HashSubSchema();
-        filter.add(columns.get(1).getDescription().name);
-        ITable smallTable = myTable.compress(filter, partial);
+        String[] keep = new String[] { columns.get(1).getDescription().name };
+        ITable smallTable = myTable.compress(keep, partial);
         Assert.assertEquals(smallTable.toString(), "Table[1x50]");
     }
 }

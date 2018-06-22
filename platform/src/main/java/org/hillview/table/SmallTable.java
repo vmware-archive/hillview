@@ -30,6 +30,7 @@ import org.hillview.utils.Linq;
 import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -84,6 +85,10 @@ public class SmallTable extends BaseTable implements Serializable, IJson {
             s.append(c.getDescription());
         this.schema = s;
         this.check();
+    }
+
+    public <T extends IColumn> SmallTable(final T[] columns) {
+        this(Arrays.asList(columns));
     }
 
     public SmallTable(final Schema schema) {

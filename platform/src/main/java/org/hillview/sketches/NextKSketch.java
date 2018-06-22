@@ -76,7 +76,7 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
         }
         Int2IntSortedMap topKList = topK.getTopK();
         IRowOrder rowOrder = new ArrayRowOrder(topKList.keySet().toIntArray());
-        SmallTable topKRows = data.compress(this.recordOrder.toSubSchema(), rowOrder);
+        SmallTable topKRows = data.compress(this.recordOrder.toSchema(), rowOrder);
         List<Integer> count = new ArrayList<Integer>(topKList.size());
         count.addAll(topKList.values());
         return new NextKList(topKRows, count, position, data.getNumOfRows());

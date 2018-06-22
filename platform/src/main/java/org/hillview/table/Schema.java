@@ -22,7 +22,6 @@ import org.hillview.dataset.api.IJson;
 import org.hillview.table.api.ColumnAndConverterDescription;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IAppendableColumn;
-import org.hillview.table.api.ISubSchema;
 import org.hillview.table.columns.BaseListColumn;
 import org.hillview.utils.Converters;
 
@@ -36,6 +35,7 @@ import java.nio.file.StandardOpenOption;
 import java.security.InvalidParameterException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 
 /**
  * A schema is an ordering of the columns, plus a map from a column name to a column description.
@@ -187,10 +187,11 @@ public final class Schema
 
     /**
      * Generates a new Schema that contains only the subset of columns contained in the subSchema.
+     * The columns are ordered as in the original schema.
      */
-    public Schema project(final ISubSchema subSchema) {
+    public Schema project(Predicate<String> keepByName) {
         final Schema projection = new Schema();
-        this.columns.values().stream().filter(cd -> subSchema.isColumnPresent(cd.name)).forEach(projection::append);
+        this.columns.values().stream().filter(cd -> keepByName.test(cd.name)).forEach(projection::append);
         return projection;
     }
 

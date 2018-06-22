@@ -18,7 +18,6 @@
 package org.hillview.sketches;
 
 import org.hillview.dataset.api.ISketch;
-import org.hillview.table.HashSubSchema;
 import org.hillview.table.SmallTable;
 import org.hillview.table.api.*;
 
@@ -87,8 +86,7 @@ public class RandomSamplingSketch implements ISketch<ITable, SmallTable> {
                 return true;
             }).sample(this.rate, this.seed);
         }
-        ISubSchema schema = new HashSubSchema(this.columnNames);
-        return data.compress(schema, sample);
+        return data.compress(this.columnNames, sample);
     }
 
     @Override

@@ -74,7 +74,7 @@ public class SampleQuantileSketch  implements ISketch<ITable, SampleList> {
                 this.samplingRate, this.seed);
         final IRowOrder rowOrder = new ArrayRowOrder(this.
                 colSortOrder.getSortedRowOrder(data, sampleSet));
-        return new SampleList(data.compress(this.colSortOrder.toSubSchema(), rowOrder));
+        return new SampleList(data.compress(this.colSortOrder.toSchema(), rowOrder));
     }
 
     /**

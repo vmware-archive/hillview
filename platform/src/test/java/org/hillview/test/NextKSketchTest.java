@@ -178,10 +178,10 @@ public class NextKSketchTest extends BaseTest {
         RecordOrder ro = new RecordOrder();
         ro.append(new ColumnSortOrientation(t.getSchema().getDescription("Age"), true));
         ro.append(new ColumnSortOrientation(t.getSchema().getDescription("Name"), true));
-        String sb = "Table[2x13]\nBill,1: 1\nBill,2: 1\n" +
-                    "Smith,3: 1\nDonald,4: 1\nBruce,5: 1\n";
+        String sb = "Table[2x13]\n1,Bill: 1\n2,Bill: 1\n" +
+                    "3,Smith: 1\n4,Donald: 1\n5,Bruce: 1\n";
         NextKSketch nks = new NextKSketch(ro, null, 20);
-        Assert.assertEquals(sb,nks.create(t).toLongString(5));
+        Assert.assertEquals(sb, nks.create(t).toLongString(5));
     }
 
     /**
@@ -191,7 +191,6 @@ public class NextKSketchTest extends BaseTest {
     public void TestTopK6() {
         final int numCols = 2;
         final int maxSize = 10;
-        final int rightSize = 100;
         final int leftSize = 100;
         final ITable leftTable = TestTables.getMissingIntTable(leftSize, numCols);
         RecordOrder cso = new RecordOrder();

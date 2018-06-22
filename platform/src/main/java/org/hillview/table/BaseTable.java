@@ -117,13 +117,24 @@ public abstract class BaseTable implements ITable, Serializable {
     }
 
     /**
-     * Compress generates a table that contains only the columns referred to by subSchema,
+     * Compress generates a table that contains only the columns referred to by newSchema,
      * and only the rows contained in IMembership Set with consecutive numbering.
      * The order among the columns is preserved.
      */
-    @Override public SmallTable compress(final ISubSchema subSchema,
+    @Override public SmallTable compress(final String[] colNames,
                                          final IRowOrder rowOrder) {
-        Schema newSchema = this.getSchema().project(subSchema);
+        IColumn[] compressedCols =
+                Linq.map(colNames, s -> this.columns.get(s).compress(rowOrder), IColumn.class);
+        return new SmallTable(compressedCols);
+    }
+
+    /**
+     * Compress generates a table that contains only the columns referred to by newSchema,
+     * and only the rows contained in IMembership Set with consecutive numbering.
+     * The order among the columns is preserved.
+     */
+    @Override public SmallTable compress(final Schema newSchema,
+                                         final IRowOrder rowOrder) {
         List<String> colNames = newSchema.getColumnNames();
         List<IColumn> compressedCols =
                 Linq.map(colNames, s -> this.columns.get(s).compress(rowOrder));
@@ -136,8 +147,7 @@ public abstract class BaseTable implements ITable, Serializable {
      * @return A compressed table containing only the rows contained in rowOrder.
      */
     @Override public SmallTable compress(final IRowOrder rowOrder) {
-        final ISubSchema subSchema = new FullSubSchema();
-        return this.compress(subSchema, rowOrder);
+        return this.compress(this.getSchema(), rowOrder);
     }
 
     private String toLongString(int startRow, int rowsToDisplay) {

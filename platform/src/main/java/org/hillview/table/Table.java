@@ -215,7 +215,6 @@ public class Table extends BaseTable {
      * the rows contained in IMembership Set members with consecutive numbering.
      */
     public SmallTable compress() {
-        final ISubSchema subSchema = new FullSubSchema();
-        return this.compress(subSchema, this.members);
+        return this.compress(this.getSchema(), this.members);
     }
 }

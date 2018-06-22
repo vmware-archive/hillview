@@ -60,10 +60,18 @@ public interface ITable {
     /**
      * Creates a small table by keeping only the rows in the IRowOrder and
      * the columns in the subSchema.
-     * @param subSchema Indicates columns to keep.
+     * @param colNames Indicates columns to keep.
      * @param rowOrder  Indicates rows to keep.
      */
-    SmallTable compress(ISubSchema subSchema, IRowOrder rowOrder);
+    SmallTable compress(String[] colNames, IRowOrder rowOrder);
+
+    /**
+     * Creates a small table by keeping only the rows in the IRowOrder and
+     * the columns in the subSchema.
+     * @param schema Indicates columns to keep.
+     * @param rowOrder  Indicates rows to keep.
+     */
+    SmallTable compress(Schema schema, IRowOrder rowOrder);
 
     /**
      * Creates a small table by keeping only the rows in rowOrder.

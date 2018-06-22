@@ -19,7 +19,6 @@ package org.hillview;
 
 import org.hillview.storage.CsvFileLoader;
 import org.hillview.storage.CsvFileWriter;
-import org.hillview.table.HashSubSchema;
 import org.hillview.table.Schema;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.HillviewLogger;
@@ -28,7 +27,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -43,19 +45,18 @@ class DemoDataCleaner {
 
     public static void main(String[] args) throws IOException {
         HillviewLogger.initialize("data cleaner", "hillview.log");
-        String[] columns = {
+        Set<String> columns = new HashSet<String>();
+        Collections.addAll(columns,
                 "DayOfWeek", "FlightDate", "UniqueCarrier",
                 "Origin", "OriginCityName", "OriginState", "Dest", "DestState",
                 "DepTime", "DepDelay", "ArrTime", "ArrDelay", "Cancelled",
-                "ActualElapsedTime", "Distance"
-        };
+                "ActualElapsedTime", "Distance");
 
         System.out.println("Splitting files in folder " + dataFolder);
         String prefix = "On_Time_On_Time_Performance_";
         Path folder = Paths.get(dataFolder);
         Stream<Path> files = Files.walk(folder, 1);
         Schema[] schema = new Schema[1];
-        HashSubSchema subSchema = new HashSubSchema(columns);
 
         files.filter(f -> {
             String filename = f.getFileName().toString();
@@ -77,7 +78,7 @@ class DemoDataCleaner {
                     if (schema[0] == null) {
                         Schema fullSchema = tbl.getSchema();
                         fullSchema.writeToJsonFile(Paths.get(dataFolder, "On_Time.schema"));
-                        schema[0] = fullSchema.project(subSchema);
+                        schema[0] = fullSchema.project(columns::contains);
                         schema[0].writeToJsonFile(Paths.get(dataFolder, "short.schema"));
                     }
                     ITable p = tbl.project(schema[0]);

@@ -22,7 +22,6 @@ import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.sketches.*;
-import org.hillview.table.HashSubSchema;
 import org.hillview.table.Schema;
 import org.hillview.table.SmallTable;
 import org.hillview.table.Table;
@@ -176,10 +175,8 @@ public class FreqKTest extends BaseTest {
     @Test
     public void testTopK6() {
         Table t = TestTables.testRepTable();
-        HashSubSchema hss = new HashSubSchema();
-        hss.add("Age");
-        FreqKSketchMG fk = new FreqKSketchMG(t.getSchema().project(hss), 5);
-        String s = "10: (3-4)\n20: (3-4)\n30: (2-3)\n40: (1-2)\nError bound: 1\n";
-        //Assert.assertEquals(fk.create(t).toString(), s);
+        FreqKSketchMG fk = new FreqKSketchMG(t.getSchema().project(s -> s.equals("Age")), 5);
+        String s = "10: 4\n20: 4\n30: 3\n40: 2\n60: 1\n50: 1\n";
+        Assert.assertEquals(fk.create(t).toString(), s);
     }
 }
