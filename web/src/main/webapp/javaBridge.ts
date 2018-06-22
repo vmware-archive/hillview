@@ -180,6 +180,22 @@ export interface Histogram {
     outOfRange: number;
 }
 
+export interface NumericColumnStatistics {
+    momentCount: number;
+    min: number;
+    max: number;
+    moments: Array<number>;
+    presentCount: number;
+    missingCount: number;
+}
+
+export interface StringColumnStatistics {
+    min: string;
+    max: string;
+    presentCount: number;
+    missingCount: number;
+}
+
 export interface BasicColStats {
     momentCount: number;
     min: number;

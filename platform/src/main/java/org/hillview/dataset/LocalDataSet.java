@@ -189,7 +189,7 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
         // final Observable<PartialResult<R>> zero = this.zero(sketch::zero);
         final Callable<R> callable = () -> {
             try {
-                HillviewLogger.instance.info("Starting sketch", "{0}:{0}",
+                HillviewLogger.instance.info("Starting sketch", "{0}:{1}",
                         this, sketch.asString());
                 R result = sketch.create(this.data);
                 HillviewLogger.instance.info("Completed sketch", "{0}:{1}",

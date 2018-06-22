@@ -17,26 +17,29 @@
 
 package org.hillview.sketches;
 
+import org.hillview.table.api.IColumn;
+
+import java.util.Arrays;
+
 /**
- * Metadata for one dimensional buckets held by a histogram
+ * Bucket boundaries for string histograms.
  */
-public class BucketsDescription implements IBucketsDescription {
-    private final double minValue;
-    private final double maxValue;
+public class StringBucketsDescription implements IHistogramBuckets {
+    private final String minValue;
+    private final String maxValue;
     private final int numOfBuckets;
-    private final double[] boundaries;
+    private final String[] boundaries;
 
     /**
      * The assumption is that the all buckets are only left inclusive except the right one which
      * is right inclusive. Boundaries has to be strongly sorted.
      */
-    public BucketsDescription(final double[] boundaries) {
+    public StringBucketsDescription(final String[] boundaries) {
         if (boundaries.length == 0)
             throw new IllegalArgumentException("Boundaries of buckets can't be empty");
         if (!isSorted(boundaries))
             throw new IllegalArgumentException("Boundaries of buckets have to be sorted");
-        this.boundaries = new double[boundaries.length];
-        System.arraycopy(boundaries, 0, this.boundaries, 0, boundaries.length);
+        this.boundaries = boundaries;
         this.numOfBuckets = boundaries.length - 1;
         this.minValue = this.boundaries[0];
         this.maxValue = this.boundaries[this.numOfBuckets];
@@ -45,42 +48,40 @@ public class BucketsDescription implements IBucketsDescription {
     /**
      * Checks that an array is strongly sorted
      */
-    private static boolean isSorted(final double[] a) {
+    private static boolean isSorted(final String[] a) {
         for (int i = 0; i < (a.length - 1); i++)
-            if (a[i] > a[i + 1])
+            if (a[i].compareTo(a[i + 1]) >= 0)
                 return false;
         return true;
     }
 
-    @Override
-    public int indexOf(final double item) {
-        if ((item < this.minValue) || (item > this.maxValue))
+    public int indexOf(String item) {
+        if ((item.compareTo(this.minValue)) < 0 || (item.compareTo(this.maxValue)) > 0)
             return -1;
-        if (item == this.maxValue)
-            return this.numOfBuckets - 1;
-        int lo = 0;
-        int hi = this.boundaries.length - 1;
-        while (lo <= hi) {
-            int mid = lo + ((hi - lo) / 2);
-            if (item < this.boundaries[mid]) hi = mid ;
-            else if (item >= this.boundaries[mid + 1]) lo = mid;
-            else return mid;
+        if (item.equals(this.maxValue))
+            return this.numOfBuckets;
+        int index = Arrays.binarySearch(boundaries, item);
+        // This method returns index of the search key, if it is contained in the array,
+        // else it returns (-(insertion point) - 1). The insertion point is the point
+        // at which the key would be inserted into the array: the index of the first
+        // element greater than the key, or a.length if all elements in the array
+        // are less than the specified key.
+        if (index < 0) {
+            index = -index - 1;
+            if (index == 0)
+                // before first element
+                index = -1;
         }
-        throw new IllegalStateException("bug in the indexOf function");
+        return index;
     }
 
     @Override
-    public double getLeftBoundary(int index) {
-        if ((index < 0) || (index >= this.numOfBuckets))
-            throw new IllegalArgumentException("Bucket index out of range");
-        return this.boundaries[index];
-    }
-
-    @Override
-    public double getRightBoundary(final int index) {
-        if (index == (this.numOfBuckets - 1))
-            return this.maxValue;
-        return this.getLeftBoundary(index + 1);
+    public int indexOf(IColumn column, int rowIndex) {
+        String item = column.getString(rowIndex);
+        if (item == null)
+            // This should not really happen.
+            return -1;
+        return this.indexOf(item);
     }
 
     @Override

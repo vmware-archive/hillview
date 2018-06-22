@@ -32,7 +32,7 @@ import {
 } from "../util";
 import {TableOperationCompleted, TableView} from "./tableView";
 import {HistogramDialog, RangeCollector} from "./histogramView";
-import {TrellisPlotArgs, TrellisPlotDialog, TrellisRangeReceiver} from "./trellisHeatMapView";
+import {TrellisPlotDialog, TrellisRangeReceiver} from "./trellisHeatMapView";
 import {Histogram2DDialog} from "./histogram2DView";
 import {SubMenu, TopMenuItem} from "../ui/menu";
 import {SpecialChars, ViewKind} from "../ui/ui";
@@ -563,15 +563,11 @@ export class ChartObserver extends OnCompleteReceiver<DistinctStrings[]> {
             }
             case 3: {
                 // TODO: generalize this
-                let args: TrellisPlotArgs = {
-                    cds: this.columns,
-                    uniqueStrings: value[2]
-                };
                 let rr = this.remoteObject.createRange2DColsRequest(
                     this.columns[0].name, this.columns[1].name);
                 rr.chain(this.operation);
                 rr.invoke(new TrellisRangeReceiver(
-                    this.remoteObject, this.page, rr, this.schema, this.rowCount, args.cds));
+                    this.remoteObject, this.page, rr, this.schema, this.rowCount, this.columns));
                 break;
             }
             default:

@@ -44,10 +44,8 @@ export class HeatMapArrayData {
 }
 
 export interface TrellisPlotArgs {
-    cds: IColumnDescription[];
-    uniqueStrings?: DistinctStrings;
-    xStats?: BasicColStats;
-    yStats?: BasicColStats;
+    cds: IColumnDescription[];       // all 3 columns
+    uniqueStrings: DistinctStrings;  // for the third column
 }
 
 class CompactHeatMapView {
@@ -260,7 +258,6 @@ class CompactHeatMapView {
  */
 export class TrellisHeatMapView extends BigTableView implements IScrollTarget {
     // TODO: handle categorical values
-    public args: TrellisPlotArgs;
     private offset: number; // Offset from the start of the set of unique z-values.
 
     // UI elements
@@ -270,16 +267,19 @@ export class TrellisHeatMapView extends BigTableView implements IScrollTarget {
     private readonly colorLegend: HeatmapLegendPlot;
     private readonly heatMapsSvg: any; // svg containing all heatmaps.
     private readonly legendSurface: PlottingSurface;
+    private xStats: BasicColStats | null;
+    private yStats: BasicColStats | null;
 
     // Holds the state of which heatmap is hovered over.
     private mouseOverHeatMap: CompactHeatMapView;
 
     constructor(remoteObjectId: RemoteObjectId,
                 rowCount: number, schema: SchemaClass,
-                page: FullPage, args: TrellisPlotArgs) {
+                page: FullPage, public args: TrellisPlotArgs) {
         super(remoteObjectId, rowCount, schema, page, "Trellis");
-        this.args = args;
         this.offset = 0;
+        this.xStats = null;
+        this.yStats = null;
         if (this.args.cds.length != 3)
             throw "Expected 3 columns";
 
@@ -371,11 +371,11 @@ export class TrellisHeatMapView extends BigTableView implements IScrollTarget {
     }
 
     public swapAxes() {
-        let xStats = this.args.xStats;
+        let xStats = this.xStats;
         // noinspection JSSuspiciousNameCombination
-        this.args.xStats = this.args.yStats;
+        this.xStats = this.yStats;
         // noinspection JSSuspiciousNameCombination
-        this.args.yStats = xStats;
+        this.yStats = xStats;
         let cdX = this.args.cds[0];
         this.args.cds[0] = this.args.cds[1];
         this.args.cds[1] = cdX;
@@ -464,7 +464,7 @@ export class TrellisHeatMapView extends BigTableView implements IScrollTarget {
 
             let heatMap = new CompactHeatMapView(
                 this.heatMapsSvg, pos, chartSize, labelSize,
-                zBins[z], xDim, yDim, this.args.cds, this.args.xStats, this.args.yStats
+                zBins[z], xDim, yDim, this.args.cds, this.xStats, this.yStats
             );
             for (let x = 0; x < xDim; x++) {
                 for (let y = 0; y < yDim; y++) {
@@ -532,8 +532,8 @@ export class TrellisHeatMapView extends BigTableView implements IScrollTarget {
     }
 
     public setStats(stats: Pair<BasicColStats, BasicColStats>): void {
-        this.args.xStats = stats.first;
-        this.args.yStats = stats.second;
+        this.xStats = stats.first;
+        this.yStats = stats.second;
     }
 
     public initiateHeatMaps(): void {
@@ -546,14 +546,14 @@ export class TrellisHeatMapView extends BigTableView implements IScrollTarget {
 
         let col0: ColumnAndRange = {
             columnName: this.args.cds[0].name,
-            min: this.args.xStats.min,
-            max: this.args.xStats.max,
+            min: this.xStats.min,
+            max: this.xStats.max,
             bucketBoundaries: null  // TODO
         };
         let col1: ColumnAndRange = {
             columnName: this.args.cds[1].name,
-            min: this.args.yStats.min,
-            max: this.args.yStats.max,
+            min: this.yStats.min,
+            max: this.yStats.max,
             bucketBoundaries: null  // TODO
         };
         let col2: ColumnAndRange = {
@@ -681,30 +681,28 @@ export class TrellisPlotDialog extends Dialog {
     }
 
     private execute(): void {
-        let args = this.parseFields();
-        if (!isNumeric(args.cds[0].kind) || !isNumeric(args.cds[1].kind)) {
+        let cds = this.getColumns();
+        if (!isNumeric(cds[0].kind) || !isNumeric(cds[1].kind)) {
             this.page.reportError("First and second colum must be numeric");
             return;
         }
 
-        let categCol = args.cds[2];
+        let categCol = cds[2];
         if (categCol.kind != "Category") {
             this.page.reportError("Last column must be categorical");
             return;
         }
 
-        let rr = this.page.dataset.createGetCategoryRequest(this.page, args.cds);
+        let rr = this.page.dataset.createGetCategoryRequest(this.page, cds);
         rr.invoke(new ChartObserver(this.remoteObject, this.page, rr,
             null, this.rowCount, this.schema,
-            { exact: false, heatmap: true, relative: false, reusePage: false}, args.cds));
+            { exact: false, heatmap: true, relative: false, reusePage: false}, cds));
     }
 
-    private parseFields(): TrellisPlotArgs {
+    private getColumns(): IColumnDescription[] {
         let cd1 = this.schema.findByDisplayName(this.getFieldValue("col1"));
         let cd2 = this.schema.findByDisplayName(this.getFieldValue("col2"));
         let cd3 = this.schema.findByDisplayName(this.getFieldValue("col3"));
-        return {
-            cds: [cd1, cd2, cd3],
-        };
+        return [cd1, cd2, cd3];
     }
 }

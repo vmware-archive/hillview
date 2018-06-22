@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * Copyright (c) 2018 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,28 +17,25 @@
 
 package org.hillview.sketches;
 
-import org.hillview.table.api.*;
+import org.hillview.table.api.ColumnAndConverter;
+import org.hillview.table.api.IColumn;
+import org.hillview.table.api.IMembershipSet;
+import org.hillview.table.api.ISampledRowIterator;
+
 import java.io.Serializable;
 
 /**
  * One dimensional histogram.
  */
-public class Histogram implements Serializable {
+public class NewHistogram implements Serializable {
     private final long[] buckets;
     private long missingData;
     private long outOfRange;
-    private final IBucketsDescription bucketDescription;
+    private final IHistogramBuckets bucketDescription;
 
-    public Histogram(final IBucketsDescription bucketDescription) {
+    public NewHistogram(final IHistogramBuckets bucketDescription) {
         this.bucketDescription = bucketDescription;
         this.buckets = new long[bucketDescription.getNumOfBuckets()];
-    }
-
-    void addValue(final double val) {
-        int index = this.bucketDescription.indexOf(val);
-        if (index >= 0)
-            this.buckets[index]++;
-        else this.outOfRange++;
     }
 
     public void rescale(double sampleRate) {
@@ -50,18 +47,18 @@ public class Histogram implements Serializable {
             this.buckets[i] = (long) ((double) this.buckets[i] / sampleRate);
     }
 
-    public void create(final ColumnAndConverter column, IMembershipSet membershipSet,
+    public void create(final IColumn column, IMembershipSet membershipSet,
                        double sampleRate, long seed, boolean enforceRate) {
         if (sampleRate <= 0)
             throw new RuntimeException("Negative sampling rate");
-        final ISampledRowIterator myIter = membershipSet.getIteratorOverSample(sampleRate, seed, enforceRate);
+        final ISampledRowIterator myIter = membershipSet.getIteratorOverSample(
+                sampleRate, seed, enforceRate);
         int currRow = myIter.getNextRow();
         while (currRow >= 0) {
             if (column.isMissing(currRow))
                 this.missingData++;
             else {
-                double val = column.asDouble(currRow);
-                int index = this.bucketDescription.indexOf(val);
+                int index = this.bucketDescription.indexOf(column, currRow);
                 if (index >= 0)
                     this.buckets[index]++;
                 else this.outOfRange++;
@@ -84,8 +81,8 @@ public class Histogram implements Serializable {
      * @param  otherHistogram with the same bucketDescription
      * @return a new Histogram which is the union of this and otherHistogram
      */
-    public Histogram union(Histogram otherHistogram) {
-        Histogram unionH = new Histogram(this.bucketDescription);
+    public NewHistogram union(NewHistogram otherHistogram) {
+        NewHistogram unionH = new NewHistogram(this.bucketDescription);
         for (int i = 0; i < unionH.bucketDescription.getNumOfBuckets(); i++)
             unionH.buckets[i] = this.buckets[i] + otherHistogram.buckets[i];
         unionH.missingData = this.missingData + otherHistogram.missingData;
@@ -93,9 +90,8 @@ public class Histogram implements Serializable {
         return unionH;
     }
 
-    public Histogram prefixSum() {
-        // This method is used for creating the CDF
-        Histogram cdf = new Histogram(this.bucketDescription);
+    public NewHistogram prefixSum() {
+        NewHistogram cdf = new NewHistogram(this.bucketDescription);
         cdf.buckets[0] = this.buckets[0];
         for (int i = 1; i < this.bucketDescription.getNumOfBuckets(); i++)
             cdf.buckets[i] = cdf.buckets[i - 1] + this.buckets[i];

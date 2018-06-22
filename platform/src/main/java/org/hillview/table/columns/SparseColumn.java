@@ -40,7 +40,7 @@ public class SparseColumn extends BaseColumn
         this.data = new Int2ObjectOpenHashMap<Object>();
     }
 
-    SparseColumn(ColumnDescription description, Int2ObjectMap<Object> data, int size) {
+    private SparseColumn(ColumnDescription description, Int2ObjectMap<Object> data, int size) {
         super(description);
         this.data = data;
         this.size = size;

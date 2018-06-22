@@ -54,7 +54,7 @@ public class CDFTest extends BaseTest {
         HistogramSketch sk = new HistogramSketch(
                 bDec, new ColumnAndConverterDescription(this.colName), rate, 0);
         final Histogram tmpHist = this.dataSet.blockingSketch(sk);
-        return tmpHist.createCDF();
+        return tmpHist.prefixSum();
     }
 
     private Histogram prepareHist(int width, int height, int barWidth, boolean useSampling) {

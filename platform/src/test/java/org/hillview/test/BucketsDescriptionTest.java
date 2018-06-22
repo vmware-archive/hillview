@@ -17,12 +17,11 @@
 
 package org.hillview.test;
 
-import org.hillview.sketches.BucketsDescription;
+import org.hillview.sketches.StringBucketsDescription;
 import org.hillview.sketches.BucketsDescriptionEqSize;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 
 
 public class BucketsDescriptionTest extends BaseTest {
@@ -43,24 +42,16 @@ public class BucketsDescriptionTest extends BaseTest {
 
     @Test
     public void testGeneric1D() {
-        double[] boundaries = new double[101];
-        for (int i = 0; i < 101; i++)
-            boundaries[i] = i + 0.5;
-        BucketsDescription bdEq = new BucketsDescription(boundaries);
-        assertEquals(bdEq.getNumOfBuckets(), 100);
-        assertEquals(bdEq.indexOf(0.5), 0);
-        assertEquals(bdEq.indexOf(0.6), 0);
-        assertEquals(bdEq.indexOf(100.5), 99);
-        assertEquals(bdEq.indexOf(100.4), 99);
-        assertEquals(bdEq.indexOf(70.5), 70);
-        assertEquals(bdEq.indexOf(30.6), 30);
-        assertEquals(bdEq.getLeftBoundary(23), 23.5, .1);
-        assertEquals(bdEq.getRightBoundary(23), 24.5, .1);
-        assertEquals(bdEq.getRightBoundary(99), 100.5, .1);
-        double[] boundaries1 = new double[101];
-        for (int i = 0; i < 101; i++)
-            boundaries1[i] = i + 0.4;
-        BucketsDescription bdEq1 = new BucketsDescription(boundaries1);
-        assertFalse(bdEq.equals(bdEq1));
+        String[] boundaries = { "Apple", "Bad", "China", "Rome", "Zetta" };
+        StringBucketsDescription b = new StringBucketsDescription(boundaries);
+        assertEquals(b.getNumOfBuckets(), 4);
+        assertEquals(b.indexOf("Aardwark"), -1);
+        assertEquals(b.indexOf("Apple"), 0);
+        assertEquals(b.indexOf("Away"), 1);
+        assertEquals(b.indexOf(""), -1);
+        assertEquals(b.indexOf("Bad"), 1);
+        assertEquals(b.indexOf("Zz"), -1);
+        assertEquals(b.indexOf("Z"), 4);
+        assertEquals(b.indexOf("Zetta"), 4);
     }
 }

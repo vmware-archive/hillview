@@ -185,7 +185,7 @@ export class HistogramView extends HistogramViewBase {
         if (h.missingData != 0)
             summary = formatNumber(h.missingData) + " missing, ";
         summary += formatNumber(axisData.stats.presentCount + axisData.stats.missingCount) + " points";
-        if (axisData.distinctStrings != null)
+        if (axisData.distinctStrings != null && axisData.distinctStrings.uniqueStrings != null)
             summary += ", " + (axisData.stats.max - axisData.stats.min) + " distinct values";
         summary += ", " + String(bucketCount) + " buckets";
         if (samplingRate < 1.0)

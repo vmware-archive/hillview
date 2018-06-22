@@ -84,12 +84,12 @@ public class CategoryListColumn extends BaseListColumn implements ICategoryColum
             // use the byte segments
             byte[] segment = this.byteSegments.get(segmentId);
             byte index = segment[localIndex];
-            return this.encoding.decode(index);
+            return this.encoding.decode(Byte.toUnsignedInt(index));
         } else if (segmentId < this.firstIntSegment) {
             segmentId = segmentId - this.firstShortSegment;
             short[] segment = this.shortSegments.get(segmentId);
             short index = segment[localIndex];
-            return this.encoding.decode(index);
+            return this.encoding.decode(Short.toUnsignedInt(index));
         } else {
             segmentId = segmentId - this.firstIntSegment;
             int[] segment = this.intSegments.get(segmentId);
@@ -141,7 +141,7 @@ public class CategoryListColumn extends BaseListColumn implements ICategoryColum
                         segment[i] = Short.toUnsignedInt(shortSegment[i]);
                     this.shortSegments.set(segmentId, null);
                 }
-                segment[localIndex] = (short)encoding;
+                segment[localIndex] = encoding;
             } else {
                 segmentId -= this.firstShortSegment;
                 if (this.shortSegments.size() <= segmentId)

@@ -74,7 +74,11 @@ public class ColumnTest extends BaseTest {
         col.append("Second");
         for (int i = 0; i < 100000; i++) {
             col.append(Integer.toString(i));
+            String str = col.getString(i * 2 + 5);
+            Assert.assertEquals(Integer.toString(i), str);
             col.append("First");
+            str = col.getString(i * 2 + 6);
+            Assert.assertEquals("First", str);
         }
         col.seal();
         Assert.assertTrue(col.isMissing(2));
@@ -88,5 +92,21 @@ public class ColumnTest extends BaseTest {
         Assert.assertEquals(col.getString(265), "130");
         Assert.assertEquals(col.getString(266), "First");
         Assert.assertEquals(col.getString(100004), "First");
+
+        int nulls = 0;
+        int firstCount = 0;
+        int otherCount = 0;
+        for (int i=0; i < col.sizeInRows(); i++) {
+            String str = col.getString(i);
+            if (str == null)
+                nulls++;
+            else if (str.equals("First"))
+                firstCount++;
+            else
+                otherCount++;
+        }
+        Assert.assertEquals(2, nulls);
+        Assert.assertEquals(100002, firstCount);
+        Assert.assertEquals(col.sizeInRows() - nulls - firstCount, otherCount);
     }
 }

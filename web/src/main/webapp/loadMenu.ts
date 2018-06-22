@@ -133,21 +133,7 @@ export class LoadMenu extends RemoteObject implements IDataView {
                     };
                     this.init.loadFiles(files, this.page);
                 },
-                help: "10 times the US flights dataset (from ORC files)." },
-            { text: "100 x Flights (ORC)",
-                action: () => {
-                    let files: FileSetDescription = {
-                        folder: "../data/ontime_big_orc",
-                        fileNamePattern: "*.orc",
-                        schemaFile: "schema",
-                        headerRow: true,
-                        repeat: 100,
-                        name: "100 x Flights (ORC)",
-                        fileKind: "orc"
-                    };
-                    this.init.loadFiles(files, this.page);
-                },
-                help: "100 times the US flights dataset (from ORC files)." },
+                help: "10 times the US flights dataset (from ORC files)." }
         ]);
         this.loadMenu = new SubMenu([
             { text: "System logs",
