@@ -32,7 +32,7 @@ def start_backend(config, rh):
 
 def start_backends(config):
     """Starts all Hillview backend workers"""
-    run_on_all_backends(config, lambda rh: start_backend(config, rh))
+    run_on_all_backends(config, lambda rh: start_backend(config, rh), True)
 
 def main():
     parser = OptionParser(usage="%prog config_file")

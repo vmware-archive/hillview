@@ -16,18 +16,16 @@ def stop_webserver(config):
         # The echo is there to ignore the exit code of pkill
         "pkill -f Bootstrap; echo")
 
-def stop_backend(config, host):
+def stop_backend(rh):
     """Stops a Hillview service on a remote machine"""
-    print("Stopping backend", host)
-    rh = RemoteHost(config.user, host)
+    print("Stopping backend", rh.host)
     rh.run_remote_shell_command(
         # The echo is there to ignore the exit code of pkill
         "pkill -f hillview-server; echo")
 
 def stop_backends(config):
     """Stops all Hillview backend workers"""
-    for h in config.backends:
-        stop_backend(config, h)
+    run_on_all_backends(config, lambda: rh: stop_backend(rh), True)
 
 def main():
     parser = OptionParser(usage="%prog config_file")

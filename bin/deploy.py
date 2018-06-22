@@ -64,7 +64,7 @@ def prepare_backend(config, rh):
 
 def prepare_backends(config):
     """Prepares all Hillview backend workers"""
-    run_on_all_backends(config, lambda rh: prepare_backend(config, rh))
+    run_on_all_backends(config, lambda rh: prepare_backend(config, rh), True)
 
 def main():
     parser = OptionParser(usage="%prog config_file")

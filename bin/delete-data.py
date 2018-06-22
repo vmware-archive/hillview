@@ -5,14 +5,12 @@
 from hillviewCommon import *
 from optparse import OptionParser
 
-def delete_remote_folder(config, host, folder):
-    rh = RemoteHost(config.user, host)
+def delete_remote_folder(rh, folder):
     rh.run_remote_shell_command("rm -rf " + folder)
 
 def delete_folder(config, folder):
     print("Deleting", folder, "from all hosts")
-    for w in config.backends:
-        delete_remote_folder(config, w, folder)
+    run_on_all_backends(config, lambda rh: delete_remote_folder(rh, folder), True)
 
 def main():
     parser = OptionParser(usage="%prog [options] config folderToDelete")

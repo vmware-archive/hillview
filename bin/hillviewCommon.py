@@ -5,6 +5,7 @@ from optparse import OptionParser
 from importlib.machinery import SourceFileLoader
 import subprocess
 import tempfile
+from joblib import Parallel, delayed
 
 def usage(parser):
     assert isinstance(parser, OptionParser)
@@ -36,12 +37,16 @@ def execute_command(command):
         print("Exit code returned:", exitcode)
         exit(exitcode)
 
-def run_on_all_backends(config, function):
+def run_on_all_backends(config, function, parallel):
     """Run a lambda on all back-ends.  function is a lambda that takes a
-    RemoteHost object as an argument"""
-    for h in config.backends:
-        rh = RemoteHost(config.user, h)
-        function(rh)
+    RemoteHost object as an argument.  If parallel is True the function is
+    run concurrently"""
+    if not parallel:
+        for h in config.backends:
+            rh = RemoteHost(config.user, h)
+            function(rh)
+    else:
+        Parallel(n_jobs=10)(delayed(function)(RemoteHost(config.user, h)) for h in config.backends)
 
 class RemoteHost:
     """Abstraction for a remote host"""

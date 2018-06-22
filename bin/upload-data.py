@@ -25,7 +25,7 @@ def copy_file_to_remote_host(rh, source, folder, copyOption):
 
 def copy_schema(config, schema, folder, copyOption):
     print("Copying", schema, "to all hosts")
-    run_on_all_backends(config, lambda rh: copy_file_to_remote_host(rh, schema, folder, copyOption))
+    run_on_all_backends(config, lambda rh: copy_file_to_remote_host(rh, schema, folder, copyOption), True)
 
 def copy_files(config, folder, filelist, copyOption):
     print("Copying", len(filelist), "files to all hosts")
