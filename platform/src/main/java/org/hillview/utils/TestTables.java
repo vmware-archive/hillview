@@ -20,7 +20,10 @@ package org.hillview.utils;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.api.IDataSet;
-import org.hillview.table.*;
+import org.hillview.dataset.api.Pair;
+import org.hillview.table.ColumnDescription;
+import org.hillview.table.SmallTable;
+import org.hillview.table.Table;
 import org.hillview.table.api.*;
 import org.hillview.table.columns.*;
 import org.hillview.table.membership.FullMembershipSet;
@@ -116,6 +119,57 @@ public class TestTables {
         IntArrayColumn iac = new IntArrayColumn(c1, ages.stream().mapToInt(i -> i).toArray());
 
         return new Table(Arrays.asList(sac, iac), null, null);
+    }
+
+    public static List<String> randStringArray(int suppSize, int length) {
+        String aToZ = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        ColumnDescription c0 = new ColumnDescription("Name", ContentsKind.String);
+
+        //Assert.assertTrue(!Arrays.asList(others).contains(test));
+        Random random = new Random(0);
+        ArrayList<String> names = new ArrayList<String>();
+        for (int i = 0; i < suppSize; i++) {
+            StringBuilder nextName = new StringBuilder();
+            for (int j = 0; j < length; j++) {
+                int index = random.nextInt(aToZ.length());
+                nextName.append(aToZ.charAt(index));
+            }
+            names.add(nextName.toString());
+        }
+        return names;
+    }
+
+    public static List<Integer> getRanks(List<String> inpList, List<String> allStrings) {
+        Collections.sort(allStrings);
+        SortedMap<String, Integer> sortedStrings= new TreeMap<>();
+        for (int i = 0; i < allStrings.size(); i++)
+            sortedStrings.put(allStrings.get(i), i+1);
+        List<Integer> ranks = new ArrayList<>();
+        for (int i = 0; i < inpList.size(); i++) {
+            if (sortedStrings.get(inpList.get(i)) != null)
+                ranks.add(sortedStrings.get(inpList.get(i)));
+        }
+        return ranks;
+    }
+
+    public static Pair<Table, SortedMap<String, Integer> > randStringTable(int num, List<String> randString) {
+        int suppSize = randString.size();
+        ArrayList<String> names = new ArrayList<String>();
+        Random random = new Random(112358);
+        int [] count = new int[suppSize];
+        for (int i = 0; i< num; i++) {
+            int index = random.nextInt(suppSize);
+            names.add(randString.get(index));
+            count[index] += 1;
+        }
+        SortedMap<String, Integer> dist= new TreeMap<>();
+        for (int i = 0 ; i < suppSize; i++)
+            if (count[i] > 0)
+                dist.put(randString.get(i), count[i]);
+        ColumnDescription c0 = new ColumnDescription("Name", ContentsKind.String);
+        StringArrayColumn sac =  new StringArrayColumn(c0, names.toArray(new String[0]));
+        Table randStringTable = new Table(Arrays.asList(sac), null, null);
+        return new Pair(randStringTable, dist);
     }
 
     /**
