@@ -135,13 +135,6 @@ export class HeatmapPlot extends Plot {
         return this.distinct;
     }
 
-    public reapplyColorMap() {
-        this.plottingSurface.getChart()
-            .selectAll(".heatMapCell")
-            .datum(function() {return this.dataset;})
-            .style("fill", d => this.legendPlot.getColor(d.val))
-    }
-
     public setData(heatmap: HeatMap, xData: AxisData, yData: AxisData, samplingRate: number) {
         this.heatmap = heatmap;
         this.xAxisData = xData;

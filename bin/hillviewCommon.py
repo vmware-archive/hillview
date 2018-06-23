@@ -5,7 +5,7 @@ from optparse import OptionParser
 from importlib.machinery import SourceFileLoader
 import subprocess
 import tempfile
-from joblib import Parallel, delayed
+#from pathos.pools import ProcessPool
 
 def usage(parser):
     assert isinstance(parser, OptionParser)
@@ -40,13 +40,13 @@ def execute_command(command):
 def run_on_all_backends(config, function, parallel):
     """Run a lambda on all back-ends.  function is a lambda that takes a
     RemoteHost object as an argument.  If parallel is True the function is
-    run concurrently"""
-    if not parallel:
-        for h in config.backends:
-            rh = RemoteHost(config.user, h)
-            function(rh)
-    else:
-        Parallel(n_jobs=10)(delayed(function)(RemoteHost(config.user, h)) for h in config.backends)
+    run concurrently."""
+    # Unfortunately there seems to be no way to reliably
+    # run something in parallel in Python, so this is not working yet.
+    parallel = False
+    for h in config.backends:
+        rh = RemoteHost(config.user, h)
+        function(rh)
 
 class RemoteHost:
     """Abstraction for a remote host"""

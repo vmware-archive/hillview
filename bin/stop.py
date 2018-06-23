@@ -25,7 +25,7 @@ def stop_backend(rh):
 
 def stop_backends(config):
     """Stops all Hillview backend workers"""
-    run_on_all_backends(config, lambda: rh: stop_backend(rh), True)
+    run_on_all_backends(config, lambda rh: stop_backend(rh), True)
 
 def main():
     parser = OptionParser(usage="%prog config_file")

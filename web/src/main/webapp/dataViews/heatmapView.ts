@@ -88,33 +88,55 @@ export class HeatmapView extends BigTableView {
         this.dragging = false;
         this.moved = false;
         this.viewMenu = new SubMenu([
-            { text: "refresh",
-                action: () => { this.refresh(); },
-                help: "Redraw this view." },
-            { text: "swap axes",
-                action: () => { this.swapAxes(); },
-                help: "Draw the heatmap with the same data by swapping the X and Y axes." },
-            { text: "table",
-                action: () => { this.showTable(); },
-                help: "View the data underlying this view as a table." },
-            { text: "histogram",
-                action: () => { this.histogram(); },
-                help: "Show this data as a two-dimensional histogram." },
-            { text: "group by",
-                action: () => { this.trellis(); },
-                help: "Group data by a third column." },
+            {
+                text: "refresh",
+                action: () => {
+                    this.refresh();
+                },
+                help: "Redraw this view."
+            },
+            {
+                text: "swap axes",
+                action: () => {
+                    this.swapAxes();
+                },
+                help: "Draw the heatmap with the same data by swapping the X and Y axes."
+            },
+            {
+                text: "table",
+                action: () => {
+                    this.showTable();
+                },
+                help: "View the data underlying this view as a table."
+            },
+            {
+                text: "histogram",
+                action: () => {
+                    this.histogram();
+                },
+                help: "Show this data as a two-dimensional histogram."
+            },
+            {
+                text: "group by",
+                action: () => {
+                    this.trellis();
+                },
+                help: "Group data by a third column."
+            },
         ]);
-        this.menu = new TopMenu( [
+        this.menu = new TopMenu([
             {
                 text: "Export",
                 help: "Save the information in this view in a local file.",
                 subMenu: new SubMenu([{
                     text: "As CSV",
                     help: "Saves the data in this view in a CSV file.",
-                    action: () => { this.export(); }
+                    action: () => {
+                        this.export();
+                    }
                 }])
             },
-            { text: "View", help: "Change the way the data is displayed.", subMenu:  this.viewMenu },
+            {text: "View", help: "Change the way the data is displayed.", subMenu: this.viewMenu},
             this.dataset.combineMenu(this, page.pageId)
         ]);
 
@@ -123,9 +145,16 @@ export class HeatmapView extends BigTableView {
 
         let legendSurface = new PlottingSurface(this.topLevel, page);
         //legendSurface.setMargins(0, 0, 0, 0);
-        legendSurface.setHeight(Resolution.legendSpaceHeight * 2/3);
+        legendSurface.setHeight(Resolution.legendSpaceHeight * 2 / 3);
         this.colorLegend = new HeatmapLegendPlot(legendSurface);
-        this.colorLegend.setColorMapChangeEventListener(() => this.plot.reapplyColorMap());
+        this.colorLegend.setColorMapChangeEventListener(
+            () => this.updateView(
+                    this.currentData.heatMap,
+                    this.currentData.xData,
+                    this.currentData.yData,
+                    this.currentData.samplingRate,
+                    true,
+                    0));
 
         this.surface = new PlottingSurface(this.topLevel, page);
         this.surface.setMargins(20, this.surface.rightMargin, this.surface.bottomMargin, this.surface.leftMargin);
@@ -143,9 +172,10 @@ export class HeatmapView extends BigTableView {
     }
 
     public updateView(heatmap: HeatMap, xData: AxisData, yData: AxisData,
-                      samplingRate: number, elapsedMs: number) : void {
+                      samplingRate: number, keepColorMap: boolean, elapsedMs: number) : void {
         this.page.reportTime(elapsedMs);
-        this.colorLegend.clear();
+        if (!keepColorMap)
+            this.colorLegend.clear();
         this.plot.clear();
         if (this.showMissingData)
             this.xHistoPlot.clear();
@@ -187,7 +217,9 @@ export class HeatmapView extends BigTableView {
 
         // The order of these operations is important
         this.plot.setData(heatmap, xData, yData, samplingRate);
-        this.colorLegend.setData(1, this.plot.getMaxCount());
+        if (!keepColorMap) {
+            this.colorLegend.setData(1, this.plot.getMaxCount());
+        }
         this.colorLegend.draw();
         this.plot.draw();
         /*
@@ -400,6 +432,7 @@ export class HeatmapView extends BigTableView {
             this.currentData.xData,
             this.currentData.yData,
             this.currentData.samplingRate,
+            true,
             0);
     }
 
@@ -675,6 +708,6 @@ export class HeatMapRenderer extends Receiver<HeatMap> {
         let xAxisData = new AxisData(this.cds[0], this.stats[0], this.ds[0], xPoints);
         let yAxisData = new AxisData(this.cds[1], this.stats[1], this.ds[1], yPoints);
         this.heatMap.updateView(value.data, xAxisData, yAxisData,
-            this.samplingRate, this.elapsedMilliseconds());
+            this.samplingRate, false, this.elapsedMilliseconds());
     }
 }

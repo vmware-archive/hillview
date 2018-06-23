@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Compile and deploy program
 
 mydir="$(dirname "$0")"
