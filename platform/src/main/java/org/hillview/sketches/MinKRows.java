@@ -2,13 +2,19 @@ package org.hillview.sketches;
 
 import it.unimi.dsi.fastutil.longs.Long2IntRBTreeMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectRBTreeMap;
-import org.hillview.table.api.IColumn;
+
+import java.util.Comparator;
+import java.util.function.Function;
 
 /**
- * A data structure that computes the minHash of table. It stores the row indices of the k rows that
- * hash to the minimum value (for some column to which the hash is applied). We assume no collisions
- * in the hash function.Finally, we will replace the row indices by the values of the column at
- * those indices. This structure is used to iterate over the table (and avoid boxing/unboxing).
+ * A data structure that stores a set of row indices. These row indices represent a
+ * sample of distinct elements from some (group of) columns.
+ *
+ * Currently this is done by storing those rows that hash to the minimum values. We store
+ * the row indices of the k rows that hash to the minimum value (for some column to which the hash
+ * is applied). We assume no collisions in the hash function. Finally, we will replace the row
+ * indices by the values of the column at those indices. This structure is used to iterate over the
+ * table (and avoid boxing/unboxing).
  */
 public class MinKRows {
     /**
@@ -59,11 +65,14 @@ public class MinKRows {
         }
     }
 
-    public MinKSet getMinKSet(IColumn iCol) {
-        Long2ObjectRBTreeMap<Object> data = new Long2ObjectRBTreeMap();
+    /**
+     * Currently this method is not used. We specialize to String Columns and just read the strings
+     * from the columns
+     */
+    public <T> MinKSet<T> getMinKSet(Function<Integer, T> func, Comparator<T> comp) {
+        Long2ObjectRBTreeMap<T> data = new Long2ObjectRBTreeMap<T>();
         for (long hashKey: this.treeMap.keySet())
-            data.put(hashKey, iCol.getObject(treeMap.get(hashKey)));
-        return new MinKSet(this.maxSize, data);
+            data.put(hashKey, func.apply(treeMap.get(hashKey)));
+        return new MinKSet<T>(this.maxSize, data, comp);
     }
-
 }

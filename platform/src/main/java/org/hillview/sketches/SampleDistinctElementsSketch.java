@@ -10,16 +10,17 @@ import java.util.Comparator;
 
 /**
  * This sketch produces a uniformly random sample of k distinct values from a column (assuming truly
- * random hashing). The values are sampled from the *set* of distinct values taken by that column.
+ * random hashing). The values are sampled from the set of distinct values in that column. Missing
+ * values are ignored.
  */
-public class BottomKSketch implements ISketch<ITable, MinKSet<String>> {
+public class SampleDistinctElementsSketch implements ISketch<ITable, MinKSet<String>> {
     private final String colName;
-    LongHashFunction hash;
+    private final long seed;
     final int maxSize;
 
-    public BottomKSketch(String colName, long seed, int maxSize) {
-        this.colName= colName;
-        this.hash = LongHashFunction.xx(seed);
+    public SampleDistinctElementsSketch(String colName, long seed, int maxSize) {
+        this.colName = colName;
+        this.seed = seed;
         this.maxSize = maxSize;
     }
 
@@ -31,7 +32,9 @@ public class BottomKSketch implements ISketch<ITable, MinKSet<String>> {
     public MinKSet create(ITable data) {
         IColumn col = data.getLoadedColumn(new ColumnAndConverterDescription(this.colName)).column;
         if (col.getDescription().kind != ContentsKind.String)
-            throw new IllegalArgumentException("BottomKSketch only supports String columns");
+            throw new IllegalArgumentException(
+                    "SampleDistinctElementsSketch only supports String columns");
+        LongHashFunction hash = LongHashFunction.xx(this.seed);
         final IRowIterator myIter = data.getMembershipSet().getIterator();
         int currRow = myIter.getNextRow();
         MinKRows mkRows = new MinKRows(this.maxSize);
@@ -54,7 +57,7 @@ public class BottomKSketch implements ISketch<ITable, MinKSet<String>> {
     @Nullable
     @Override
     public MinKSet<String> zero() {
-        return new MinKSet(maxSize, Comparator.<String>naturalOrder());
+        return new MinKSet(this.maxSize, Comparator.<String>naturalOrder());
     }
 
     /**

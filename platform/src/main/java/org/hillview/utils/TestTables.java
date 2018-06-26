@@ -121,12 +121,15 @@ public class TestTables {
         return new Table(Arrays.asList(sac, iac), null, null);
     }
 
-    public static List<String> randStringArray(int suppSize, int length) {
+    /**
+     * Helper method that generates a List of random alphanumeric strings.
+     * @param suppSize Number of strings
+     * @param length Size of each string.
+     */
+    public static List<String> randStringList(int suppSize, int length) {
         String aToZ = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         ColumnDescription c0 = new ColumnDescription("Name", ContentsKind.String);
-
-        //Assert.assertTrue(!Arrays.asList(others).contains(test));
-        Random random = new Random(0);
+        Random random = new Random(1276449);
         ArrayList<String> names = new ArrayList<String>();
         for (int i = 0; i < suppSize; i++) {
             StringBuilder nextName = new StringBuilder();
@@ -139,19 +142,14 @@ public class TestTables {
         return names;
     }
 
-    public static List<Integer> getRanks(List<String> inpList, List<String> allStrings) {
-        Collections.sort(allStrings);
-        SortedMap<String, Integer> sortedStrings= new TreeMap<>();
-        for (int i = 0; i < allStrings.size(); i++)
-            sortedStrings.put(allStrings.get(i), i+1);
-        List<Integer> ranks = new ArrayList<>();
-        for (int i = 0; i < inpList.size(); i++) {
-            if (sortedStrings.get(inpList.get(i)) != null)
-                ranks.add(sortedStrings.get(inpList.get(i)));
-        }
-        return ranks;
-    }
-
+    /**
+     * Generates a table containing a single column of (repeated) strings.
+     * @param num the number of rows in the table
+     * @param randString the set of strings that occur in the table.Can be viewed as the support of
+     *                   the distribution.
+     * @return A table containing a single column. Each row of this column is drawn randomly from
+     * randString.
+     */
     public static Pair<Table, SortedMap<String, Integer> > randStringTable(int num, List<String> randString) {
         int suppSize = randString.size();
         ArrayList<String> names = new ArrayList<String>();
@@ -170,6 +168,23 @@ public class TestTables {
         StringArrayColumn sac =  new StringArrayColumn(c0, names.toArray(new String[0]));
         Table randStringTable = new Table(Arrays.asList(sac), null, null);
         return new Pair(randStringTable, dist);
+    }
+
+    /**
+     * Given a small list of strings (inpList) and a large list (allStrings), it returns the ranks
+     * of the elements of the small list in the large list. Used for testing.
+     */
+    public static List<Integer> getRanks(List<String> inpList, List<String> allStrings) {
+        Collections.sort(allStrings);
+        SortedMap<String, Integer> sortedStrings= new TreeMap<>();
+        for (int i = 0; i < allStrings.size(); i++)
+            sortedStrings.put(allStrings.get(i), i+1);
+        List<Integer> ranks = new ArrayList<>();
+        for (int i = 0; i < inpList.size(); i++) {
+            if (sortedStrings.get(inpList.get(i)) != null)
+                ranks.add(sortedStrings.get(inpList.get(i)));
+        }
+        return ranks;
     }
 
     /**
