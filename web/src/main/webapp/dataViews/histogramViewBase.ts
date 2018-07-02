@@ -219,7 +219,6 @@ export abstract class HistogramViewBase extends BigTableView {
             columnKind == "Category")
             bucketCount = (stats.max - stats.min) / Math.ceil( (stats.max - stats.min) / maxBucketCount);
 
-
         return Math.floor(bucketCount);
     }
 
