@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-import {PlottingSurface} from "./plottingSurface";
-import {Histogram} from "../javaBridge";
-import {HistogramViewBase} from "../dataViews/histogramViewBase";
-import {Plot} from "./plot";
-import {AxisData} from "../dataViews/axisData";
-import {scaleLinear as d3scaleLinear} from "d3-scale";
 import {axisLeft as d3axisLeft} from "d3-axis";
 import {format as d3format} from "d3-format";
+import {scaleLinear as d3scaleLinear} from "d3-scale";
+import {AxisData} from "../dataViews/axisData";
+import {HistogramViewBase} from "../dataViews/histogramViewBase";
+import {Histogram} from "../javaBridge";
+import {Plot} from "./plot";
+import {PlottingSurface} from "./plottingSurface";
 
 /**
  * A HistogramPlot draws a  bar chart on a PlottingSurface, including the axes.
@@ -31,16 +31,16 @@ export class HistogramPlot extends Plot {
     /**
      * Histogram that is being drawn.
      */
-    histogram: Histogram;
+    public histogram: Histogram;
     /**
      * Sampling rate that was used to compute the histogram.
      */
-    samplingRate: number;
+    public samplingRate: number;
     /**
      * Data used to draw the X axis.
      */
-    axisData: AxisData;
-    barWidth: number;
+    public axisData: AxisData;
+    public barWidth: number;
 
     public constructor(protected plottingSurface: PlottingSurface) {
         super(plottingSurface);
@@ -52,8 +52,8 @@ export class HistogramPlot extends Plot {
         this.histogram = bars;
         this.samplingRate = samplingRate;
         this.axisData = axisData;
-        let chartWidth = this.getChartWidth();
-        let bucketCount = this.histogram.buckets.length;
+        const chartWidth = this.getChartWidth();
+        const bucketCount = this.histogram.buckets.length;
         this.barWidth = chartWidth / bucketCount;
     }
 
@@ -62,14 +62,13 @@ export class HistogramPlot extends Plot {
         if (this.histogram == null)
             return;
 
-        let counts = this.histogram.buckets;
-        let bucketCount = counts.length;
-        let max = Math.max(...counts);
+        const counts = this.histogram.buckets;
+        const max = Math.max(...counts);
 
-        let chartWidth = this.getChartWidth();
-        let chartHeight = this.getChartHeight();
+        const chartWidth = this.getChartWidth();
+        const chartHeight = this.getChartHeight();
 
-        let bars = this.plottingSurface
+        const bars = this.plottingSurface
             .getChart()
             .selectAll("g")
             .data(counts)
@@ -81,24 +80,24 @@ export class HistogramPlot extends Plot {
             .range([chartHeight, 0]);
 
         bars.append("rect")
-            .attr("y", d => this.yScale(d))
+            .attr("y", (d) => this.yScale(d))
             .attr("fill", "darkcyan")
-            .attr("height", d => chartHeight - this.yScale(d))
+            .attr("height", (d) => chartHeight - this.yScale(d))
             .attr("width", this.barWidth - 1);
 
         bars.append("text")
             .attr("class", "histogramBoxLabel")
             .attr("x", this.barWidth / 2)
-            .attr("y", d => this.yScale(d))
+            .attr("y", (d) => this.yScale(d))
             .attr("text-anchor", "middle")
-            .attr("dy", d => d <= (9 * max / 10) ? "-.25em" : ".75em")
-            .text(d => HistogramViewBase.boxHeight(d, this.samplingRate, this.axisData.stats.presentCount))
+            .attr("dy", (d) => d <= (9 * max / 10) ? "-.25em" : ".75em")
+            .text((d) => HistogramViewBase.boxHeight(d, this.samplingRate, this.axisData.stats.presentCount))
             .exit();
 
         this.yAxis = d3axisLeft(this.yScale)
             .tickFormat(d3format(".2s"));
 
-        let scaleAxis = this.axisData.scaleAndAxis(chartWidth, true, false);
+        const scaleAxis = this.axisData.scaleAndAxis(chartWidth, true, false);
         this.xScale = scaleAxis.scale;
         this.xAxis = scaleAxis.axis;
 
@@ -106,11 +105,10 @@ export class HistogramPlot extends Plot {
     }
 
     public get(x: number): number {
-        let bucket = Math.floor(x / this.barWidth);
+        const bucket = Math.floor(x / this.barWidth);
         if (bucket < 0 || bucket >= this.histogram.buckets.length)
             return 0;
-        let value = this.histogram.buckets[bucket];
+        const value = this.histogram.buckets[bucket];
         return value;
     }
 }
-

@@ -60,7 +60,7 @@ export class DistinctStrings implements IDistinctStrings {
             max = this.uniqueStrings.length - 1;
         max = Math.floor(max);
         min = Math.ceil(min);
-        let range = max - min;
+        const range = max - min;
         if (range <= 0)
             bucketCount = 1;
 
@@ -70,7 +70,7 @@ export class DistinctStrings implements IDistinctStrings {
             } else {
                 boundaries = [];
                 for (let i = 0; i <= bucketCount; i++) {
-                    let index = min + Math.round(i * range / bucketCount);
+                    const index = min + Math.round(i * range / bucketCount);
                     boundaries.push(this.uniqueStrings[index]);
                 }
             }
@@ -79,7 +79,7 @@ export class DistinctStrings implements IDistinctStrings {
     }
 
     public get(index: number): string {
-        index = Math.round(<number>index);
+        index = Math.round(index);
         if (index >= 0 && index < this.uniqueStrings.length)
             return this.uniqueStrings[index];
         return null;

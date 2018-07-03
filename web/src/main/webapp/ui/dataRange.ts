@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-import {IElement} from "./ui";
-import {formatNumber, percent} from "../util";
 import {select as d3select} from "d3-selection";
+import {formatNumber, percent} from "../util";
+import {IElement} from "./ui";
 
 /**
  * A horizontal rectangle that displays a data range within an interval 0-max.
@@ -35,17 +35,17 @@ export class DataRange implements IElement {
         this.topLevel.classList.add("dataRange");
         // If the range represents < 1 % of the total count, use 1% of the
         // bar's width, s.t. it is still visible.
-        let w = Math.max(0.01, count / totalCount);
+        const w = Math.max(0.01, count / totalCount);
         let x = position / totalCount;
         if (x + w > 1)
             x = 1 - w;
-        let label = w.toString() + "%";
+        const label = w.toString() + "%";
         d3select(this.topLevel)
             .append("g")
             .append("svg:title")
             .text(
                 formatNumber(position) + "+" + formatNumber(count) + "/" + formatNumber(totalCount) + "\n" +
-                percent(position/totalCount) + "+" + percent(count/totalCount)
+                percent(position / totalCount) + "+" + percent(count / totalCount),
             );
         d3select(this.topLevel).select("g")
             .append("rect")

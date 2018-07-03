@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-import Rx = require('rx');
-import Observer = Rx.Observer;
-import {ErrorReporter} from "./ui/errReporter";
-import {PartialResult, ICancellable, RpcReply, formatDate} from "./util";
-import {ProgressBar} from "./ui/progress";
-import {FullPage} from "./ui/fullPage";
+import {timeMillisecond as d3timeMillisecond} from "d3-time";
+import pako = require("pako");
+import Rx = require("rx");
 import {RemoteObjectId} from "./javaBridge";
 import {Test} from "./test";
-import pako = require('pako');
-import {timeMillisecond as d3timeMillisecond} from 'd3-time';
+import Observer = Rx.Observer;
+import {ErrorReporter} from "./ui/errReporter";
+import {FullPage} from "./ui/fullPage";
+import {ProgressBar} from "./ui/progress";
+import {formatDate, ICancellable, PartialResult, RpcReply} from "./util";
 
 /**
  * Path in server url for rpc web sockets.
@@ -39,7 +39,7 @@ const RpcRequestPath = "rpc";
  * are represented in Java by classes that extend RpcTarget.
  */
 export class RemoteObject {
-    constructor(public readonly remoteObjectId : RemoteObjectId) {}
+    constructor(public readonly remoteObjectId: RemoteObjectId) {}
 
     /**
      * Creates a request to a remote method.  The request must be invoked separately.
@@ -54,11 +54,11 @@ export class RemoteObject {
      *                         method in Java.
      * @returns {RpcRequest}   The request that is created.
      */
-    createRpcRequest<T>(method: string, args: any) : RpcRequest<T> {
+    public createRpcRequest<T>(method: string, args: any): RpcRequest<T> {
         return new RpcRequest<T>(this.remoteObjectId, method, args);
     }
 
-    createStreamingRpcRequest<T>(method: string, args: any) : RpcRequest<PartialResult<T>> {
+    public createStreamingRpcRequest<T>(method: string, args: any): RpcRequest<PartialResult<T>> {
         return this.createRpcRequest<PartialResult<T>>(method, args);
     }
 
@@ -76,19 +76,20 @@ export class RemoteObject {
  * T is the type of the result returned.
  */
 export class RpcRequest<T> implements ICancellable {
-    readonly protoVersion : number = 6;
-    readonly requestId: number;
-    cancelled: boolean;
-    closed:    boolean;  // i.e., not opened
-    socket:    WebSocket;
-    completed: boolean;
+    public readonly protoVersion: number = 6;
+    public readonly requestId: number;
+    public cancelled: boolean;
+    public closed: boolean;  // i.e., not opened
+    public socket: WebSocket;
+    public completed: boolean;
     /**
-     *  Time when RPC was initiated.  It may be set explicitly
-     *  by users, and then it can be used to measured operations
-     *  that span multiple RPCs */
-    rpcTime:   Date;
+     * Time when RPC was initiated.  It may be set explicitly
+     * by users, and then it can be used to measured operations
+     * that span multiple RPCs
+     */
+    public rpcTime: Date;
 
-    static requestCounter : number = 0;
+    public static requestCounter: number = 0;
 
     /**
      * Create a request to a remote object.
@@ -96,9 +97,9 @@ export class RpcRequest<T> implements ICancellable {
      * @param {string} method     Method that is being invoked.
      * @param args                Arguments that are passed to method; will be converted to JSON.
      */
-    constructor(public objectId : string,
-                public method : string,
-                public args : any) {
+    constructor(public objectId: string,
+                public method: string,
+                public args: any) {
         this.requestId = RpcRequest.requestCounter++;
         this.socket = null;
         this.cancelled = false;
@@ -115,7 +116,7 @@ export class RpcRequest<T> implements ICancellable {
         return this.rpcTime;
     }
 
-    setStartTime(start: Date): void{
+    public setStartTime(start: Date): void {
         this.rpcTime = start;
     }
 
@@ -129,7 +130,7 @@ export class RpcRequest<T> implements ICancellable {
             this.setStartTime(after.startTime());
     }
 
-    serialize() : Uint8Array {
+    public serialize(): Uint8Array {
         let argString = "";
         if (this.args == null)
             argString = JSON.stringify(null);
@@ -137,14 +138,14 @@ export class RpcRequest<T> implements ICancellable {
             argString = this.args.toJSON();
         else
             argString = JSON.stringify(this.args);
-        let result = {
-            "objectId": this.objectId,
-            "method": this.method,
-            "arguments": argString,
-            "requestId": this.requestId,
-            "protoVersion": this.protoVersion
+        const result = {
+            objectId: this.objectId,
+            method: this.method,
+            arguments: argString,
+            requestId: this.requestId,
+            protoVersion: this.protoVersion,
         };
-        let str = JSON.stringify(result);
+        const str = JSON.stringify(result);
         console.log(formatDate() + " Sending message " + str);
         return pako.deflate(str);
     }
@@ -155,7 +156,7 @@ export class RpcRequest<T> implements ICancellable {
      */
     public cancel(): boolean {
         if (!this.closed) {
-            console.log(formatDate() + ' cancelling ' + this.toString());
+            console.log(formatDate() + " cancelling " + this.toString());
             this.closed = true;
             this.socket.close();
             return true;
@@ -163,12 +164,12 @@ export class RpcRequest<T> implements ICancellable {
         return false;
     }
 
-    static simplifyExceptions(errorMessage: string): string {
+    public static simplifyExceptions(errorMessage: string): string {
         let lines = errorMessage.split(/\r?\n/);
         lines = lines
-            .filter(v => !v.match(
+            .filter((v) => !v.match(
                 /^\s+at ((rx\.)|(io\.grpc)|(java\.lang\.Thread\.run)|(java\.util\.concurrent\.ThreadPoolExecutor))/))
-            .map(v => v.replace("io.grpc.StatusRuntimeException: INTERNAL: ", ""));
+            .map((v) => v.replace("io.grpc.StatusRuntimeException: INTERNAL: ", ""));
         return lines.join("\n");
     }
 
@@ -181,7 +182,7 @@ export class RpcRequest<T> implements ICancellable {
      * @param onReply  An observer which is invoked for each result received by
      *                 the streaming RPC.
      */
-    public invoke(onReply : Observer<T>) : void {
+    public invoke(onReply: Observer<T>): void {
         try {
             // If time is not set we set it now.  The time may be set because this
             // is a request that is part of a chain of requests.
@@ -191,7 +192,7 @@ export class RpcRequest<T> implements ICancellable {
             let rpcRequestUrl = "ws://" + window.location.hostname + ":" + window.location.port + "/" + RpcRequestPath;
             this.socket = new WebSocket(rpcRequestUrl);
             this.socket.binaryType = "arraybuffer";
-            this.socket.onerror = function (ev: ErrorEvent) {
+            this.socket.onerror = (ev: ErrorEvent) => {
                 console.log("socket error " + ev);
                 let msg = ev.message;
                 if (msg == null)
@@ -200,8 +201,8 @@ export class RpcRequest<T> implements ICancellable {
             };
             this.socket.onmessage = (r: MessageEvent) => {
                 // parse json and invoke onReply.onNext
-                console.log(formatDate() + ' reply received: ' + r.data);
-                let reply = <RpcReply>JSON.parse(r.data);
+                console.log(formatDate() + " reply received: " + r.data);
+                const reply = JSON.parse(r.data) as RpcReply;
                 if (this.completed) {
                     console.log("Message received after rpc completed: " + reply);
                 }
@@ -214,7 +215,7 @@ export class RpcRequest<T> implements ICancellable {
                     let success = false;
                     let response: any;
                     try {
-                        response = <T>JSON.parse(reply.result);
+                        response = JSON.parse(reply.result) as T;
                         success = true;
                     } catch (e) {
                         onReply.onError(e);
@@ -225,12 +226,12 @@ export class RpcRequest<T> implements ICancellable {
             };
             this.socket.onopen = () => {
                 this.closed = false;
-                let reqStr: Uint8Array = this.serialize();
+                const reqStr: Uint8Array = this.serialize();
                 this.socket.send(reqStr.buffer);
             };
             this.socket.onclose = (e: CloseEvent) => {
                 console.log("Socket closed");
-                if (e.code == 1000) {
+                if (e.code === 1000) {
                     if (!this.completed) {
                         onReply.onError("Socket closed, but request not completed");
                     }
@@ -240,37 +241,37 @@ export class RpcRequest<T> implements ICancellable {
 
                 let reason = "Unknown reason.";
                 // See http://tools.ietf.org/html/rfc6455#section-7.4.1
-                if (e.code == 1001)
+                if (e.code === 1001)
                     reason = "Endpoint disconnected.";
-                else if (e.code == 1002)
+                else if (e.code === 1002)
                     reason = "Protocol error.";
-                else if (e.code == 1003)
+                else if (e.code === 1003)
                     reason = "Incorrect data.";
-                else if (e.code == 1004)
+                else if (e.code === 1004)
                     reason = "Reserved.";
-                else if (e.code == 1005)
+                else if (e.code === 1005)
                     reason = "No status code.";
-                else if (e.code == 1006)
+                else if (e.code === 1006)
                     reason = "Connection closed abnormally.";
-                else if (e.code == 1007)
+                else if (e.code === 1007)
                     reason = "Incorrect message type.";
-                else if (e.code == 1008)
+                else if (e.code === 1008)
                     reason = "Message violates policy.";
-                else if (e.code == 1009)
+                else if (e.code === 1009)
                     reason = "Message too large.";
-                else if (e.code == 1010)
+                else if (e.code === 1010)
                     reason = "Protocol extension not supported.";
-                else if (e.code == 1011)
+                else if (e.code === 1011)
                     reason = "Unexpected server condition.";
-                else if (e.code == 1015)
+                else if (e.code === 1015)
                     reason = "Cannot verify server TLS certificate.";
                 // else unknown
                 onReply.onError(reason);
-            }
+            };
         } catch (e) {
             onReply.onError(e);
         }
-    };
+    }
 }
 
 /**
@@ -343,7 +344,6 @@ export abstract class Receiver<T> implements Rx.Observer<PartialResult<T>> {
      * this method; otherwise the progress bar will not advance.
      */
     public onNext(value: PartialResult<T>) {
-        //this.page.scrollIntoView();
         this.progressBar.setPosition(value.done);
         if (this.operation != null)
             console.log("onNext after " + this.elapsedMilliseconds());

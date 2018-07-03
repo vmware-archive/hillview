@@ -25,7 +25,7 @@ export interface ErrorReporter {
      * Report an error.
      * @param {string} htmlMessage   Error message as a HTML string.
      */
-    reportError(htmlMessage: string) : void;
+    reportError(htmlMessage: string): void;
     /**
      * Clear all displayed error messages.
      * (May do nothing for some implementations, such as a console).
@@ -39,11 +39,11 @@ export interface ErrorReporter {
 export class ConsoleErrorReporter implements ErrorReporter {
     public static instance: ConsoleErrorReporter = new ConsoleErrorReporter();
 
-    public reportError(message: string) : void {
+    public reportError(message: string): void {
         console.log(message);
     }
 
-    public clear() : void {
+    public clear(): void {
         // We cannot clear the console
     }
 }
@@ -53,7 +53,7 @@ export class ConsoleErrorReporter implements ErrorReporter {
  * TODO: rename it, since "console" is not appropriate.
  */
 export class ConsoleDisplay implements IHtmlElement, ErrorReporter {
-    topLevel: HTMLElement;
+    protected topLevel: HTMLElement;
 
     constructor() {
         this.topLevel = document.createElement("div");

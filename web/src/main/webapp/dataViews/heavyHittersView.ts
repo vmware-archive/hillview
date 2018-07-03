@@ -15,21 +15,21 @@
  * limitations under the License.
  */
 
-import {CombineOperators,IColumnDescription,NextKList,RecordOrder,RemoteObjectId,TopList}
+import {HeavyHittersSerialization, IViewSerialization} from "../datasetView";
+import {CombineOperators, IColumnDescription, NextKList, RecordOrder, RemoteObjectId, TopList}
     from "../javaBridge";
-import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
-import {TableOperationCompleted, TableView} from "./tableView";
 import {OnCompleteReceiver, RemoteObject} from "../rpc";
-import {cloneSet, ICancellable, significantDigits} from "../util";
-import {FullPage} from "../ui/fullPage";
-import {SpecialChars, textToDiv} from "../ui/ui";
-import {DataRange} from "../ui/dataRange";
-import {TabularDisplay} from "../ui/tabularDisplay";
-import {BigTableView, TableTargetAPI} from "../tableTarget";
-import {Dialog, FieldKind} from "../ui/dialog";
 import {SchemaClass} from "../schemaClass";
-import {IViewSerialization} from "../datasetView";
+import {BigTableView, TableTargetAPI} from "../tableTarget";
+import {DataRange} from "../ui/dataRange";
 import {IDataView} from "../ui/dataview";
+import {Dialog, FieldKind} from "../ui/dialog";
+import {FullPage} from "../ui/fullPage";
+import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
+import {TabularDisplay} from "../ui/tabularDisplay";
+import {Resolution, SpecialChars, textToDiv} from "../ui/ui";
+import {cloneSet, ICancellable, significantDigits} from "../util";
+import {TableOperationCompleted, TableView} from "./tableView";
 
 /**
  * This method handles the outcome of the sketch for finding Heavy Hitters.
@@ -48,12 +48,12 @@ export class HeavyHittersReceiver extends OnCompleteReceiver<TopList> {
         super(page, operation, "Frequent Elements");
     }
 
-    run(data: TopList): void {
-        let names = this.columnsShown.map(c => this.schema.displayName(c.name)).join(", ");
+    public run(data: TopList): void {
+        const names = this.columnsShown.map((c) => this.schema.displayName(c.name)).join(", ");
         let newPage = this.page;
         if (!this.reusePage)
             newPage = this.page.dataset.newPage("Frequent Elements in " + names, this.page);
-        let hhv = new HeavyHittersView(
+        const hhv = new HeavyHittersView(
             data.heavyHittersId, newPage, this.remoteTableObject, this.rowCount, this.schema,
             this.order, this.isApprox, this.percent, this.columnsShown);
         newPage.setDataView(hhv);
@@ -70,9 +70,9 @@ export class HeavyHittersView extends BigTableView {
     public static min: number = 0.01;
     public static minString: string = "0.01%";
     public static switchToMG: number = 0.9;
-    public static maxDisplay: number = 200; //Should match parameter maxDisplay in FreqKList.java
+    public static maxDisplay: number = 200; // Should match parameter maxDisplay in FreqKList.java
 
-    contextMenu: ContextMenu;
+    public contextMenu: ContextMenu;
     protected table: TabularDisplay;
     protected restCount: number;
     protected restPos: number;
@@ -91,7 +91,7 @@ export class HeavyHittersView extends BigTableView {
         this.contextMenu = new ContextMenu(this.topLevel);
         this.table = new TabularDisplay();
 
-        let tableMenu = new SubMenu([]);
+        const tableMenu = new SubMenu([]);
         tableMenu.addItem({
                 text: "All Frequent Elements as a Table",
                 action: () => this.showTable(isApprox),
@@ -103,7 +103,7 @@ export class HeavyHittersView extends BigTableView {
                 help: "Filter by the selected frequent elements and show the result as a table."},
             true );
 
-        let modifyMenu = new SubMenu([]);
+        const modifyMenu = new SubMenu([]);
         modifyMenu.addItem({
                 text: "Get exact counts",
                 action: () => this.exactCounts(),
@@ -112,10 +112,10 @@ export class HeavyHittersView extends BigTableView {
         modifyMenu.addItem( {
             text: "Change the threshold",
             action: () => this.changeThreshold(),
-            help: "Change the frequency threshold for an element to be included"
+            help: "Change the frequency threshold for an element to be included",
         }, true);
 
-        let menu = new TopMenu([
+        const menu = new TopMenu([
             { text: "View as Table",  subMenu: tableMenu, help: "Display frequent elements in a table."},
             { text: "Modify",  subMenu: modifyMenu, help: "Change how frequent elements are computed."},
         ]);
@@ -123,7 +123,7 @@ export class HeavyHittersView extends BigTableView {
 
         let header: string[] = ["Rank"];
         let tips: string[] = ["Position in decreasing order of frequency."];
-        this.columnsShown.forEach(c => {
+        this.columnsShown.forEach((c) => {
             header.push(this.schema.displayName(c.name));
             tips.push("Column name");
         });
@@ -134,73 +134,77 @@ export class HeavyHittersView extends BigTableView {
         this.topLevel.appendChild(this.table.getHTMLRepresentation());
     }
 
-    serialize(): IViewSerialization {
-        let result = super.serialize();
-        result["order"] = this.originalTableOrder;
-        result["percent"] = this.percent;
-        result["remoteTableId"] = this.remoteTableObject.remoteObjectId;
-        result["isApprox"] = this.isApprox;
-        result["columnsShown"] = this.columnsShown;
+    public serialize(): IViewSerialization {
+        const result: HeavyHittersSerialization = {
+            ...super.serialize(),
+            order: this.originalTableOrder,
+            percent: this.percent,
+            remoteTableId: this.remoteTableObject.remoteObjectId,
+            isApprox: this.isApprox,
+            columnsShown: this.columnsShown,
+        };
         return result;
     }
 
-    static reconstruct(ser: IViewSerialization, page: FullPage): IDataView {
-        let schema: SchemaClass = new SchemaClass([]).deserialize(ser.schema);
-        let percent: number = ser["percent"];
-        let order = new RecordOrder(ser["order"]["sortOrientationList"]);
-        let remoteTableId: string = ser["remoteTableId"];
-        let isApprox: boolean = ser["isApprox"];
-        let columnsShown: IColumnDescription[] = ser["columnsShown"];
+    public static reconstruct(ser: HeavyHittersSerialization, page: FullPage): IDataView {
+        const schema: SchemaClass = new SchemaClass([]).deserialize(ser.schema);
+        const percent: number = ser.percent;
+        const order = new RecordOrder(ser.order.sortOrientationList);
+        const remoteTableId: string = ser.remoteTableId;
+        const isApprox: boolean = ser.isApprox;
+        const columnsShown: IColumnDescription[] = ser.columnsShown;
         if (schema == null || percent == null || remoteTableId == null || isApprox == null ||
             order == null || columnsShown == null)
             return null;
 
-        let remoteTable = new TableTargetAPI(remoteTableId);
-        let hv = new HeavyHittersView(ser.remoteObjectId, page, remoteTable, ser.rowCount, schema,
+        const remoteTable = new TableTargetAPI(remoteTableId);
+        const hv = new HeavyHittersView(ser.remoteObjectId, page, remoteTable, ser.rowCount, schema,
             order, isApprox, percent, columnsShown);
-        let rr = remoteTable.createHeavyHittersRequest(
+        const rr = remoteTable.createHeavyHittersRequest(
             columnsShown, percent, ser.rowCount, HeavyHittersView.switchToMG);
         rr.invoke(new HeavyHittersReceiver(
             page, hv, rr, ser.rowCount, schema, order, isApprox, percent, columnsShown, true));
         return hv;
     }
 
-    refresh(): void {}
+    public refresh(): void {}
     /**
      * Method the creates the filtered table. If isApprox is true, then there are two steps: we first compute the exact
      * heavy hitters and then use that list to filter the table. If isApprox is false, we compute the table right away.
      */
     public showTable(isApprox: boolean): void {
         if (isApprox) {
-            let rr = this.remoteTableObject.createCheckHeavyRequest(
+            const rr = this.remoteTableObject.createCheckHeavyRequest(
                 new RemoteObject(this.heavyHittersId), this.columnsShown);
             rr.invoke(new HeavyHittersReceiver3(this, rr));
         } else {
-            let newPage = this.dataset.newPage("All frequent elements", this.page);
-            let rr = this.remoteTableObject.createFilterHeavyRequest(
+            const newPage = this.dataset.newPage("All frequent elements", this.page);
+            const rr = this.remoteTableObject.createFilterHeavyRequest(
                 this.heavyHittersId, this.columnsShown);
             rr.invoke(new TableOperationCompleted(
-                newPage, this.rowCount, this.schema, rr, this.originalTableOrder));
+                newPage, this.rowCount, this.schema, rr, this.originalTableOrder,
+                Resolution.tableRowsOnScreen));
         }
     }
 
     public showSelected(): void {
-        if (this.table.getSelectedRows().size == 0)
+        if (this.table.getSelectedRows().size === 0)
             return;
-        let newPage = this.dataset.newPage("Selected frequent elements", this.page);
-        let rr = this.remoteTableObject.createFilterListHeavy(
+        const newPage = this.dataset.newPage("Selected frequent elements", this.page);
+        const rr = this.remoteTableObject.createFilterListHeavy(
             this.heavyHittersId, this.columnsShown, this.getSelectedRows());
         rr.invoke(new TableOperationCompleted(
-            newPage, this.rowCount, this.schema, rr, this.originalTableOrder));
+            newPage, this.rowCount, this.schema, rr, this.originalTableOrder,
+            Resolution.tableRowsOnScreen));
     }
 
     private getSelectedRows(): number[] {
-        let sRows: number[] = cloneSet(this.table.getSelectedRows());
-        if (this.restPos == -1)
+        const sRows: number[] = cloneSet(this.table.getSelectedRows());
+        if (this.restPos === -1)
             return sRows;
         else {
-            let tRows: Set<number> = new Set<number>();
-            for (let j of sRows) {
+            const tRows: Set<number> = new Set<number>();
+            for (const j of sRows) {
                 if (j < this.restPos)
                     tRows.add(j);
                 else if (j > this.restPos)
@@ -211,13 +215,13 @@ export class HeavyHittersView extends BigTableView {
     }
 
     public exactCounts(): void {
-        let rr = this.remoteTableObject.createCheckHeavyRequest(
+        const rr = this.remoteTableObject.createCheckHeavyRequest(
             new RemoteObject(this.heavyHittersId), this.columnsShown);
         rr.invoke(new HeavyHittersReceiver2(this, rr));
     }
 
     public updateView(nextKList: NextKList, elapsedMs: number): void {
-        if (nextKList.rows.length == 0) this.showEmptyDialog();
+        if (nextKList.rows.length === 0) this.showEmptyDialog();
         else {
             this.setRest(nextKList);
             if (nextKList.rows != null) {
@@ -225,25 +229,26 @@ export class HeavyHittersView extends BigTableView {
                 let position = 0;
                 for (let i = 0; i < nextKList.rows.length; i++) {
                     k++;
-                    if (i == this.restPos) {
+                    if (i === this.restPos) {
                         this.showRest(k, position, this.restCount, nextKList.rowsScanned, this.table);
                         position += this.restCount;
                         k++;
                     }
-                    let row: Element[] = [];
+                    const row: Element[] = [];
                     row.push(textToDiv(k.toString()));
                     for (let j = 0; j < this.columnsShown.length; j++) {
-                        let value = nextKList.rows[i].values[j];
+                        const value = nextKList.rows[i].values[j];
                         row.push(textToDiv(TableView.convert(value, this.columnsShown[j].kind)));
                     }
                     row.push(textToDiv(this.valueToString(nextKList.rows[i].count)));
                     row.push(textToDiv(this.valueToString((nextKList.rows[i].count / nextKList.rowsScanned) * 100)));
-                    row.push(new DataRange(position, nextKList.rows[i].count, nextKList.rowsScanned).getDOMRepresentation());
-                    let tRow: HTMLTableRowElement = this.table.addElementRow(row);
-                    tRow.oncontextmenu = e => this.clickThenShowContextMenu(tRow, e);
+                    row.push(new DataRange(position, nextKList.rows[i].count,
+                        nextKList.rowsScanned).getDOMRepresentation());
+                    const tRow: HTMLTableRowElement = this.table.addElementRow(row);
+                    tRow.oncontextmenu = (e) => this.clickThenShowContextMenu(tRow, e);
                     position += nextKList.rows[i].count;
                 }
-                if (this.restPos == nextKList.rows.length)
+                if (this.restPos === nextKList.rows.length)
                     this.showRest(nextKList.rows.length, position, this.restCount, nextKList.rowsScanned, this.table);
             }
             this.table.addFooter();
@@ -255,7 +260,7 @@ export class HeavyHittersView extends BigTableView {
     }
 
     private static showLongDialog(total: number): void {
-        let longListDialog = new Dialog("Too Many Frequent Elements", "");
+        const longListDialog = new Dialog("Too Many Frequent Elements", "");
         longListDialog.addText("Showing the top " + HeavyHittersView.maxDisplay.toString() +
             " elements out of " + total);
         longListDialog.addText("Use the 'View as Table' menu option to see the entire list");
@@ -265,7 +270,7 @@ export class HeavyHittersView extends BigTableView {
     }
 
     private showEmptyDialog(): void {
-        let percentDialog = new Dialog("No Frequent Elements", "");
+        const percentDialog = new Dialog("No Frequent Elements", "");
         percentDialog.addText("No elements found with frequency above " + this.percent.toString() + "%.");
         if (this.percent > HeavyHittersView.min) {
             percentDialog.addText("Lower the threshold? Can take any value above " + HeavyHittersView.minString);
@@ -274,12 +279,11 @@ export class HeavyHittersView extends BigTableView {
                 "All values that appear in the dataset with a frequency above this value (as a percent) " +
                 "will be considered frequent elements.  Must be at least " + HeavyHittersView.minString);
             percentDialog.setAction(() => {
-                let newPercent = percentDialog.getFieldValueAsNumber("newPercent");
+                const newPercent = percentDialog.getFieldValueAsNumber("newPercent");
                 if (newPercent != null)
                     this.runWithThreshold(newPercent);
             });
-        }
-        else
+        } else
             percentDialog.setAction(() => {});
         percentDialog.setCacheTitle("noHeavyHittersDialog");
         percentDialog.show();
@@ -287,8 +291,8 @@ export class HeavyHittersView extends BigTableView {
 
     private clickThenShowContextMenu(tRow: HTMLTableRowElement, e: MouseEvent): void {
         this.table.clickRow(tRow, e);
-        if(e.button == 1) return; //If it was in fact a CTRL+ leftClick on a Mac, don't show the context menu.
-        let selectedCount = this.table.selectedRows.size();
+        if (e.button === 1) return; // If it was in fact a CTRL+ leftClick on a Mac, don't show the context menu.
+        const selectedCount = this.table.selectedRows.size();
         this.contextMenu.clear();
         this.contextMenu.addItem({
                 text: "Filter selected frequent elements (as table)",
@@ -312,8 +316,8 @@ export class HeavyHittersView extends BigTableView {
             this.restPos = 0;
         } else {
             let runCount = tdv.rowsScanned;
-            for (let i = 0; i < tdv.rows.length; i++)
-                runCount -= tdv.rows[i].count;
+            for (const ri of tdv.rows)
+                runCount -= ri.count;
             this.restCount = runCount;
             if (this.restCount < (this.percent * tdv.rowsScanned) / 100)
                 this.restPos = -1;
@@ -324,24 +328,24 @@ export class HeavyHittersView extends BigTableView {
                 this.restPos = i;
             }
         }
-        if (this.restPos != -1)
+        if (this.restPos !== -1)
             this.table.excludeRow(this.restPos);
     }
 
     private showRest(k: number, position: number, restCount: number, total: number, table: TabularDisplay): void {
-        let row: Element[] = [];
+        const row: Element[] = [];
         row.push(textToDiv(k.toString()));
-        for (let j = 0; j < this.columnsShown.length; j++) {
-            let m = textToDiv("everything else");
+        for (let j = 0; j < this.columnsShown.length; j++) { // tslint:disable-line
+            const m = textToDiv("everything else");
             m.classList.add("missingData");
             row.push(m);
         }
         row.push(textToDiv(this.valueToString(restCount)));
         row.push(textToDiv(this.valueToString((restCount / total) * 100)));
         row.push(new DataRange(position, restCount, total).getDOMRepresentation());
-        let tRow: HTMLTableRowElement = table.addElementRow(row, false);
-        tRow.onclick = e => e.preventDefault();
-        tRow.oncontextmenu = e => e.preventDefault();
+        const tRow: HTMLTableRowElement = table.addElementRow(row, false);
+        tRow.onclick = (e) => e.preventDefault();
+        tRow.oncontextmenu = (e) => e.preventDefault();
     }
 
     private valueToString(n: number): string {
@@ -352,7 +356,7 @@ export class HeavyHittersView extends BigTableView {
     }
 
     private runWithThreshold(newPercent: number) {
-        let rr = this.remoteTableObject.createHeavyHittersRequest(
+        const rr = this.remoteTableObject.createHeavyHittersRequest(
             this.columnsShown, newPercent,
             this.rowCount, HeavyHittersView.switchToMG);
         rr.invoke(new HeavyHittersReceiver(
@@ -361,14 +365,14 @@ export class HeavyHittersView extends BigTableView {
     }
 
     private changeThreshold(): void {
-        let percentDialog = new Dialog("Change the frequency threshold", "Changes the frequency threshold above which " +
-            "elements are considered frequent");
-        percentDialog.addText("Enter a percentage between " + HeavyHittersView.minString +" and 100%");
+        const percentDialog = new Dialog("Change the frequency threshold",
+            "Changes the frequency threshold above which elements are considered frequent");
+        percentDialog.addText("Enter a percentage between " + HeavyHittersView.minString + " and 100%");
         percentDialog.addTextField("newPercent", "Threshold (%)", FieldKind.Double,
             this.percent.toString(), "All values that appear with a frequency above this value " +
             "(as a percent) will be considered frequent elements.  Must be at least " + HeavyHittersView.minString);
         percentDialog.setAction(() => {
-            let newPercent = percentDialog.getFieldValueAsNumber("newPercent");
+            const newPercent = percentDialog.getFieldValueAsNumber("newPercent");
             if (newPercent != null) this.runWithThreshold(newPercent);
             });
         percentDialog.setCacheTitle("ChangeHeavyHittersDialog");
@@ -382,15 +386,15 @@ export class HeavyHittersView extends BigTableView {
 
 /**
  * This class handles the reply of the "checkHeavy" method when the goal is to to compute and display the Exact counts.
-  */
+ */
 export class HeavyHittersReceiver2 extends OnCompleteReceiver<TopList> {
     public constructor(public hhv: HeavyHittersView,
                        public operation: ICancellable) {
         super(hhv.page, operation, "Frequent elements -- exact counts");
     }
 
-    run(newData: TopList): void {
-        let newHhv = new HeavyHittersView(
+    public run(newData: TopList): void {
+        const newHhv = new HeavyHittersView(
             newData.heavyHittersId, this.page, this.hhv.remoteTableObject,
             this.hhv.rowCount, this.hhv.schema, this.hhv.originalTableOrder, false,
             this.hhv.percent, this.hhv.columnsShown);
@@ -411,11 +415,12 @@ export class HeavyHittersReceiver3 extends OnCompleteReceiver<TopList> {
         super(hhv.page, operation, "Computing exact frequencies");
     }
 
-    run(exactList: TopList): void {
-        let newPage = this.hhv.dataset.newPage("Frequent elements", this.hhv.page);
-        let rr = this.hhv.remoteTableObject.createFilterHeavyRequest(
+    public run(exactList: TopList): void {
+        const newPage = this.hhv.dataset.newPage("Frequent elements", this.hhv.page);
+        const rr = this.hhv.remoteTableObject.createFilterHeavyRequest(
             exactList.heavyHittersId, this.hhv.columnsShown);
         rr.invoke(new TableOperationCompleted(
-            newPage, this.hhv.rowCount, this.hhv.schema, rr, this.hhv.originalTableOrder));
+            newPage, this.hhv.rowCount, this.hhv.schema, rr, this.hhv.originalTableOrder,
+            Resolution.tableRowsOnScreen));
     }
 }

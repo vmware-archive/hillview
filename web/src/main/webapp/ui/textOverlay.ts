@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-import {Resolution, Size} from "./ui";
 import {truncate} from "../util";
+import {Resolution, Size} from "./ui";
 
 /**
  * This class is used to display a small semi-transparent rectangle that
@@ -47,7 +47,7 @@ export class TextOverlay {
             .attr("width", 100)
             .attr("fill", "rgba(255, 255, 255, 0.9)");
         this.lines = [];
-        for (let index in keys) {
+        for (const index in keys) {
             keys[index] = truncate(keys[index], maxLength);
             this.lines.push(
                 this.parent.append("text")
@@ -56,9 +56,9 @@ export class TextOverlay {
         }
     }
 
-    show(visible: boolean): void {
+    public show(visible: boolean): void {
         this.rect.attr("visibility", visible ? "visible" : "hidden");
-        for (let l of this.lines)
+        for (const l of this.lines)
             l.attr("visibility", visible ? "visible" : "hidden");
     }
 
@@ -68,12 +68,12 @@ export class TextOverlay {
      * @param {number} x         X screen coordinate.
      * @param {number} y         Y screen coordinate.
      */
-    update(values: string[], x: number, y: number): void {
+    public update(values: string[], x: number, y: number): void {
         let maxWidth = 0;
 
         // compute width
-        for (let index = 0; index < values.length; index++)
-            maxWidth = Math.max(maxWidth, this.lines[index].node().getBBox().width);
+        for (let ix = 0; ix < values.length; ix++)
+            maxWidth = Math.max(maxWidth, this.lines[ix].node().getBBox().width);
 
         // If too close to the margin move it a bit
         if (this.parentSize.width < x + maxWidth)
@@ -83,7 +83,7 @@ export class TextOverlay {
 
         let index = 0;
         let crtY = y;
-        for (let v of values) {
+        for (const v of values) {
             this.lines[index]
                 .text(this.keys[index] + " = " + v)
                 .attr("x", x)

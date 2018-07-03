@@ -15,33 +15,28 @@
  * limitations under the License.
  */
 
-import {BigTableView, TableTargetAPI} from "../tableTarget";
+import {DistinctStrings} from "../distinctStrings";
 import {
     allContentsKind, asContentsKind, ColumnSortOrientation, ComparisonFilterDescription,
     CreateColumnInfo, EqualityFilterDescription, HLogLog, IColumnDescription,
-    RecordOrder, RemoteObjectId
+    RecordOrder, RemoteObjectId,
 } from "../javaBridge";
+import {OnCompleteReceiver} from "../rpc";
+import {SchemaClass} from "../schemaClass";
+import {BigTableView, TableTargetAPI} from "../tableTarget";
+import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
-import {
-    cloneToSet,
-    Comparison,
-    Converters,
-    ICancellable,
-    mapToArray,
-    significantDigits
-} from "../util";
-import {TableOperationCompleted, TableView} from "./tableView";
-import {HistogramDialog, RangeCollector} from "./histogramView";
-import {TrellisPlotDialog, TrellisRangeReceiver} from "./trellisHeatMapView";
-import {Histogram2DDialog} from "./histogram2DView";
 import {SubMenu, TopMenuItem} from "../ui/menu";
 import {SpecialChars, ViewKind} from "../ui/ui";
-import {OnCompleteReceiver} from "../rpc";
-import {Dialog, FieldKind} from "../ui/dialog";
-import {HeavyHittersReceiver, HeavyHittersView} from "./heavyHittersView";
-import {SchemaClass} from "../schemaClass";
-import {DistinctStrings} from "../distinctStrings";
+import {
+    cloneToSet, Comparison, Converters, ICancellable, mapToArray, significantDigits,
+} from "../util";
 import {Range2DCollector} from "./heatmapView";
+import {HeavyHittersReceiver, HeavyHittersView} from "./heavyHittersView";
+import {Histogram2DDialog} from "./histogram2DView";
+import {HistogramDialog, RangeCollector} from "./histogramView";
+import {TableOperationCompleted, TableView} from "./tableView";
+import {TrellisPlotDialog, TrellisRangeReceiver} from "./trellisHeatMapView";
 
 /**
  * A base class for TableView and SchemaView.
@@ -68,14 +63,14 @@ export abstract class TSViewBase extends BigTableView {
      */
     public abstract getSelectedColCount(): number;
 
-    renameColumn(): void {
-        let cols = this.getSelectedColNames();
-        if (cols.length != 1) {
+    public renameColumn(): void {
+        const cols = this.getSelectedColNames();
+        if (cols.length !== 1) {
             this.reportError("Select only 1 column to rename");
             return;
         }
-        let colName = cols[0];
-        let dialog = new Dialog("Rename column",
+        const colName = cols[0];
+        const dialog = new Dialog("Rename column",
             "Choose a new name for column " + this.schema.displayName(colName));
         dialog.addTextField("name", "New name",
             FieldKind.String, this.schema.displayName(colName), "New name to use for column");
@@ -83,7 +78,7 @@ export abstract class TSViewBase extends BigTableView {
         dialog.show();
     }
 
-    doRenameColumn(from: string, to: string): void {
+    public doRenameColumn(from: string, to: string): void {
         this.schema = this.schema.clone();
         if (!this.schema.changeDisplayName(from, to)) {
             this.reportError("Cannot rename column to " + to + " since the name is already used.");
@@ -93,11 +88,11 @@ export abstract class TSViewBase extends BigTableView {
     }
 
     protected heatMap(): void {
-        if (this.getSelectedColCount() == 3) {
+        if (this.getSelectedColCount() === 3) {
             this.trellisPlot();
             return;
         }
-        if (this.getSelectedColCount() != 2) {
+        if (this.getSelectedColCount() !== 2) {
             this.reportError("Must select exactly 2 columns for heatmap");
             return;
         }
@@ -105,43 +100,43 @@ export abstract class TSViewBase extends BigTableView {
         this.histogram(true);
     }
 
-    reportError(s: string) {
+    public reportError(s: string) {
         this.page.reportError(s);
     }
 
-    saveAsOrc(schema: SchemaClass): void {
-        let dialog = new Dialog("Save as ORC files",
+    public saveAsOrc(schema: SchemaClass): void {
+        const dialog = new Dialog("Save as ORC files",
             "Describe the set of ORC files where data will be saved.");
         dialog.addTextField("folderName", "Folder", FieldKind.String, "/",
             "All ORC files will be written to this folder on each of the remote machines.");
         dialog.setCacheTitle("saveAs");
 
         class SaveReceiver extends OnCompleteReceiver<boolean> {
-            constructor (page: FullPage, operation: ICancellable) {
+            constructor(page: FullPage, operation: ICancellable) {
                 super(page, operation, "Save as ORC files");
             }
 
-            run(value: boolean): void {
+            public run(value: boolean): void {
                 if (value)
                     this.page.reportError("Save succeeded.");
             }
         }
 
         dialog.setAction(() => {
-            let folder = dialog.getFieldValue("folderName");
-            let rr = this.createStreamingRpcRequest<boolean>("saveAsOrc", {
-                folder: folder,
+            const folder = dialog.getFieldValue("folderName");
+            const rr = this.createStreamingRpcRequest<boolean>("saveAsOrc", {
+                folder,
                 schema: schema.schema,
-                renameMap: mapToArray(schema.getRenameMap())
+                renameMap: mapToArray(schema.getRenameMap()),
             });
-            let renderer = new SaveReceiver(this.page, rr);
+            const renderer = new SaveReceiver(this.page, rr);
             rr.invoke(renderer);
         });
         dialog.show();
     }
 
-    createColumnDialog(order: RecordOrder): void {
-        let dialog = new Dialog(
+    public createColumnDialog(order: RecordOrder, tableRowsDesired: number): void {
+        const dialog = new Dialog(
             "Add column", "Specify a JavaScript function which computes the values in a new column.");
         dialog.addTextField(
             "outColName", "Column name", FieldKind.String, null, "Name to use for the generated column.");
@@ -153,43 +148,43 @@ export abstract class TSViewBase extends BigTableView {
             "The function has a single argument 'row'.  The row is a JavaScript map that can be indexed with " +
             "a column name (a string) and which produces a value.");
         dialog.setCacheTitle("CreateDialog");
-        dialog.setAction(() => this.createColumn(dialog, order));
+        dialog.setAction(() => this.createColumn(dialog, order, tableRowsDesired));
         dialog.show();
     }
 
-    createColumn(dialog: Dialog, order: RecordOrder): void {
-        let col = dialog.getFieldValue("outColName");
-        let kind = dialog.getFieldValue("outColKind");
-        let fun = "function map(row) {" + dialog.getFieldValue("function") + "}";
-        let selColumns = cloneToSet(this.getSelectedColNames());
-        let subSchema = this.schema.filter(c => selColumns.has(c.name));
-        let arg: CreateColumnInfo = {
+    public createColumn(dialog: Dialog, order: RecordOrder, tableRowsDesired: number): void {
+        const col = dialog.getFieldValue("outColName");
+        const kind = dialog.getFieldValue("outColKind");
+        const fun = "function map(row) {" + dialog.getFieldValue("function") + "}";
+        const selColumns = cloneToSet(this.getSelectedColNames());
+        const subSchema = this.schema.filter((c) => selColumns.has(c.name));
+        const arg: CreateColumnInfo = {
             jsFunction: fun,
             outputColumn: col,
             outputKind: asContentsKind(kind),
             schema: subSchema.schema,
-            renameMap: mapToArray(subSchema.getRenameMap())
+            renameMap: mapToArray(subSchema.getRenameMap()),
         };
-        let rr = this.createCreateColumnRequest(arg);
-        let newPage = this.dataset.newPage("New column " + col, this.page);
-        let cd: IColumnDescription = {
+        const rr = this.createCreateColumnRequest(arg);
+        const newPage = this.dataset.newPage("New column " + col, this.page);
+        const cd: IColumnDescription = {
             kind: arg.outputKind,
-            name: col
+            name: col,
         };
-        let schema = this.schema.append(cd);
-        let o = order.clone();
+        const schema = this.schema.append(cd);
+        const o = order.clone();
         o.addColumn({columnDescription: cd, isAscending: true});
 
-        let rec = new TableOperationCompleted(
-            newPage, this.rowCount, schema, rr, o);
+        const rec = new TableOperationCompleted(
+            newPage, this.rowCount, schema, rr, o, tableRowsDesired);
         rr.invoke(rec);
     }
 
     protected histogramOrHeatmap(columns: string[], heatmap: boolean): void {
-        let cds: IColumnDescription[] = [];
-        columns.forEach(v => {
-            let colDesc = this.schema.find(v);
-            if (colDesc.kind == "String") {
+        const cds: IColumnDescription[] = [];
+        columns.forEach((v) => {
+            const colDesc = this.schema.find(v);
+            if (colDesc.kind === "String") {
                 this.reportError("Histograms not supported for string columns " +
                     this.schema.displayName(colDesc.name));
                 return;
@@ -197,13 +192,13 @@ export abstract class TSViewBase extends BigTableView {
             cds.push(colDesc);
         });
 
-        if (cds.length != columns.length)
+        if (cds.length !== columns.length)
             // some error occurred
             return;
-        let rr = this.dataset.createGetCategoryRequest(this.page, cds);
+        const rr = this.dataset.createGetCategoryRequest(this.page, cds);
         rr.invoke(new ChartObserver(this, this.page, rr, null,
             this.rowCount, this.schema,
-            { exact: false, heatmap: heatmap, relative: false, reusePage: false}, cds));
+            { exact: false, heatmap, relative: false, reusePage: false}, cds));
     }
 
     protected histogram(heatMap: boolean): void {
@@ -216,74 +211,74 @@ export abstract class TSViewBase extends BigTableView {
     }
 
     protected trellisPlot(): void {
-        let colNames: string[] = this.getSelectedColNames().map(c => this.schema.displayName(c));
-        let dialog = new TrellisPlotDialog(
+        const colNames: string[] = this.getSelectedColNames().map((c) => this.schema.displayName(c));
+        const dialog = new TrellisPlotDialog(
             colNames, this.getPage(), this.rowCount, this.schema, this, false);
         dialog.show();
     }
 
-    twoDHistogramMenu(heatmap: boolean): void {
-        let eligible = this.schema.filter(d => d.kind != "String");
+    public twoDHistogramMenu(heatmap: boolean): void {
+        const eligible = this.schema.filter((d) => d.kind !== "String");
         if (eligible.length < 2) {
             this.reportError("Could not find two columns that can be charted.");
             return;
         }
-        let dia = new Histogram2DDialog(
-            eligible.columnNames.map(c => this.schema.displayName(c)), heatmap);
+        const dia = new Histogram2DDialog(
+            eligible.columnNames.map((c) => this.schema.displayName(c)), heatmap);
         dia.setAction(
             () => {
-                let col0 = this.schema.fromDisplayName(dia.getColumn(false));
-                let col1 = this.schema.fromDisplayName(dia.getColumn(true));
-                if (col0 == col1) {
+                const col0 = this.schema.fromDisplayName(dia.getColumn(false));
+                const col1 = this.schema.fromDisplayName(dia.getColumn(true));
+                if (col0 === col1) {
                     this.reportError("The two columns must be distinct");
                     return;
                 }
                 this.histogramOrHeatmap([col0, col1], heatmap);
-            }
+            },
         );
         dia.show();
     }
 
     protected hLogLog(): void {
-        if (this.getSelectedColCount() != 1) {
+        if (this.getSelectedColCount() !== 1) {
             this.reportError("Only one column must be selected");
             return;
         }
-        let colName = this.getSelectedColNames()[0];
-        let rr = this.createHLogLogRequest(colName);
-        let rec = new CountReceiver(this.getPage(), rr, this.schema.displayName(colName));
+        const colName = this.getSelectedColNames()[0];
+        const rr = this.createHLogLogRequest(colName);
+        const rec = new CountReceiver(this.getPage(), rr, this.schema.displayName(colName));
         rr.invoke(rec);
     }
 
-    oneDHistogramMenu(): void {
-        let eligible = this.schema.filter(d => d.kind != "String");
-        if (eligible.length == 0) {
+    public oneDHistogramMenu(): void {
+        const eligible = this.schema.filter((d) => d.kind !== "String");
+        if (eligible.length === 0) {
             this.reportError("No columns that can be histogrammed found.");
             return;
         }
-        let dia = new HistogramDialog(eligible.columnNames.map(c => this.schema.displayName(c)));
+        const dia = new HistogramDialog(eligible.columnNames.map((c) => this.schema.displayName(c)));
         dia.setAction(
             () => {
-                let col = this.schema.fromDisplayName(dia.getColumn());
+                const col = this.schema.fromDisplayName(dia.getColumn());
                 this.histogramOrHeatmap([col], false);
-            }
+            },
         );
         dia.show();
     }
 
-    saveAsMenu(): TopMenuItem {
+    public saveAsMenu(): TopMenuItem {
         return {
             text: "Save as", help: "Save the data to persistent storage.", subMenu: new SubMenu([
                 {
                     text: "Save as ORC files...",
                     action: () => this.saveAsOrc(this.schema),
-                    help: "Save the data to a set of ORC files on the remote machines."
-                }
+                    help: "Save the data to a set of ORC files on the remote machines.",
+                },
             ]),
         };
     }
 
-    chartMenu(): TopMenuItem {
+    public chartMenu(): TopMenuItem {
         return {
             text: "Chart", help: "Draw a chart", subMenu: new SubMenu([
                 { text: "1D Histogram...", action: () => this.oneDHistogramMenu(),
@@ -292,70 +287,73 @@ export abstract class TSViewBase extends BigTableView {
                     help: "Draw a histogram of the data in two columns."},
                 { text: "Heatmap...", action: () => this.twoDHistogramMenu(true),
                     help: "Draw a heatmap of the data in two columns."},
-            ])
+            ]),
         };
     }
 
     /**
      * Show a dialog to compare values on the specified column.
-     * @param {string} colName     Column name.  If null the user will select the column.
-     * @param {RecordOrder} order  Current record ordering.
+     * @param colName     Column name.  If null the user will select the column.
+     * @param order  Current record ordering.
+     * @param tableRowsDesired  Number of table rows to display.
      */
     protected showFilterDialog(
-        colName: string, order: RecordOrder): void {
-        let cd = this.schema.find(colName);
-        let ef = new EqualityFilterDialog(cd, this.schema);
+        colName: string, order: RecordOrder, tableRowsDesired: number): void {
+        const cd = this.schema.find(colName);
+        const ef = new EqualityFilterDialog(cd, this.schema);
         ef.setAction(() => {
-            let filter = ef.getFilter();
-            let desc = this.schema.find(filter.column);
-            let o = order.clone();
-            let so: ColumnSortOrientation = {
+            const filter = ef.getFilter();
+            const desc = this.schema.find(filter.column);
+            const o = order.clone();
+            const so: ColumnSortOrientation = {
                 columnDescription: desc,
-                isAscending: true
+                isAscending: true,
             };
             o.addColumn(so);
-            let rr = this.createFilterEqualityRequest(filter);
-            let title = "Filtered: " + filter.column + " is " +
+            const rr = this.createFilterEqualityRequest(filter);
+            const title = "Filtered: " + filter.column + " is " +
                 (filter.complement ? "not " : "") +
                 TableView.convert(filter.compareValue, desc.kind);
 
-            let newPage = this.dataset.newPage(title, this.page);
+            const newPage = this.dataset.newPage(title, this.page);
             rr.invoke(new TableOperationCompleted(
-                newPage, this.rowCount, this.schema, rr, o));
+                newPage, this.rowCount, this.schema, rr, o, tableRowsDesired));
         });
         ef.show();
     }
 
     /**
      * Show a dialog to compare values on the specified column.
-     * @param {string} displayName  Column name.  If null the user will select the column.
-     * @param {RecordOrder} order   Current record ordering.
+     * @param displayName  Column name.  If null the user will select the column.
+     * @param order   Current record ordering.
+     * @param tableRowsDesired  Number of table rows to display.
      */
     protected showCompareDialog(
-        displayName: string, order: RecordOrder): void {
-        let cd = this.schema.findByDisplayName(displayName);
-        let cfd = new ComparisonFilterDialog(cd, displayName, this.schema);
-        cfd.setAction(() => this.runComparisonFilter(cfd.getFilter(), order));
+        displayName: string, order: RecordOrder, tableRowsDesired: number): void {
+        const cd = this.schema.findByDisplayName(displayName);
+        const cfd = new ComparisonFilterDialog(cd, displayName, this.schema);
+        cfd.setAction(() => this.runComparisonFilter(cfd.getFilter(), order, tableRowsDesired));
         cfd.show();
     }
 
-    protected runComparisonFilter(filter: ComparisonFilterDescription, order: RecordOrder): void {
-        let cd = this.schema.find(filter.column);
-        let kind = cd.kind;
-        let so: ColumnSortOrientation = {
-            columnDescription: cd, isAscending: true
+    protected runComparisonFilter(
+        filter: ComparisonFilterDescription, order: RecordOrder, tableRowsDesired: number): void {
+        const cd = this.schema.find(filter.column);
+        const kind = cd.kind;
+        const so: ColumnSortOrientation = {
+            columnDescription: cd, isAscending: true,
         };
-        let o = order.clone();
+        const o = order.clone();
         o.addColumn(so);
 
-        let rr = this.createFilterComparisonRequest(filter);
-        let title = "Filtered: " +
+        const rr = this.createFilterComparisonRequest(filter);
+        const title = "Filtered: " +
             TableView.convert(filter.compareValue, kind) + " " + filter.comparison + " " +
             this.schema.displayName(filter.column);
 
-        let newPage = this.dataset.newPage(title, this.page);
+        const newPage = this.dataset.newPage(title, this.page);
         rr.invoke(new TableOperationCompleted(
-            newPage, this.rowCount, this.schema, rr, o));
+            newPage, this.rowCount, this.schema, rr, o, tableRowsDesired));
     }
 
     protected runHeavyHitters(percent: number) {
@@ -363,16 +361,16 @@ export abstract class TSViewBase extends BigTableView {
             this.reportError("Percentage must be between " + HeavyHittersView.min.toString() + " and 100");
             return;
         }
-        let isApprox: boolean = true;
-        let columnsShown: IColumnDescription[] = [];
-        let cso: ColumnSortOrientation[] = [];
-        this.getSelectedColNames().forEach(v => {
-            let colDesc = this.schema.find(v);
+        const isApprox: boolean = true;
+        const columnsShown: IColumnDescription[] = [];
+        const cso: ColumnSortOrientation[] = [];
+        this.getSelectedColNames().forEach((v) => {
+            const colDesc = this.schema.find(v);
             columnsShown.push(colDesc);
             cso.push({columnDescription: colDesc, isAscending: true});
         });
-        let order = new RecordOrder(cso);
-        let rr = this.createHeavyHittersRequest(
+        const order = new RecordOrder(cso);
+        const rr = this.createHeavyHittersRequest(
             columnsShown, percent, this.getTotalRowCount(), HeavyHittersView.switchToMG);
         rr.invoke(new HeavyHittersReceiver(
             this.getPage(), this, rr, this.rowCount, this.schema,
@@ -381,27 +379,27 @@ export abstract class TSViewBase extends BigTableView {
 
     protected heavyHittersDialog(): void {
         let title = "Frequent Elements from ";
-        let cols: string[] = this.getSelectedColNames();
+        const cols: string[] = this.getSelectedColNames();
         if (cols.length <= 1) {
             title += " " + this.schema.displayName(cols[0]);
         } else {
             title += cols.length + " columns";
         }
-        let d = new Dialog(title, "Find the most frequent values in the selected columns.");
+        const d = new Dialog(title, "Find the most frequent values in the selected columns.");
         d.addTextField("percent", "Threshold (%)", FieldKind.Double, "1",
             "All values that appear in the dataset with a frequency above this value (as a percent) " +
             "will be considered frequent elements.  Must be a number between " + HeavyHittersView.minString +
             " and 100%.");
         d.setAction(() => {
-            let amount = d.getFieldValueAsNumber("percent");
+            const amount = d.getFieldValueAsNumber("percent");
             if (amount != null)
-                this.runHeavyHitters(amount)
+                this.runHeavyHitters(amount);
         });
         d.setCacheTitle("HeavyHittersDialog");
         d.show();
     }
 
-    public getTotalRowCount() : number {
+    public getTotalRowCount(): number {
         return this.rowCount;
     }
 }
@@ -410,8 +408,8 @@ class EqualityFilterDialog extends Dialog {
     constructor(private columnDescription: IColumnDescription, private schema: SchemaClass) {
         super("Filter", "Eliminates data from a column according to its value.");
         if (columnDescription == null) {
-            let cols = this.schema.columnNames.map(c => this.schema.displayName(c));
-            if (cols.length == 0)
+            const cols = this.schema.columnNames.map((c) => this.schema.displayName(c));
+            if (cols.length === 0)
                 return;
             this.addSelectField("column", "Column", cols, null, "Column that is filtered");
         }
@@ -425,20 +423,20 @@ class EqualityFilterDialog extends Dialog {
     public getFilter(): EqualityFilterDescription {
         let textQuery: string = this.getFieldValue("query");
         if (this.columnDescription == null) {
-            let colName = this.getFieldValue("column");
+            const colName = this.getFieldValue("column");
             this.columnDescription = this.schema.find(this.schema.fromDisplayName(colName));
         }
-        if (this.columnDescription.kind == "Date") {
-            let date = new Date(textQuery);
+        if (this.columnDescription.kind === "Date") {
+            const date = new Date(textQuery);
             textQuery = Converters.doubleFromDate(date).toString();
         }
-        let asRegEx = this.getBooleanValue("asRegEx");
-        let complement = this.getBooleanValue("complement");
+        const asRegEx = this.getBooleanValue("asRegEx");
+        const complement = this.getBooleanValue("complement");
         return {
             column: this.columnDescription.name,
             compareValue: textQuery,
-            complement: complement,
-            asRegEx: asRegEx
+            complement,
+            asRegEx,
         };
     }
 }
@@ -453,15 +451,15 @@ class ComparisonFilterDialog extends Dialog {
         this.explanation = this.addText("Value == row[" + displayName + "]");
 
         if (columnDescription == null) {
-            let cols = this.schema.columnNames.map(c => this.schema.displayName(c));
-            if (cols.length == 0)
+            const cols = this.schema.columnNames.map((c) => this.schema.displayName(c));
+            if (cols.length === 0)
                 return;
-            let col = this.addSelectField("column", "Column", cols, null, "Column that is filtered");
+            const col = this.addSelectField("column", "Column", cols, null, "Column that is filtered");
             col.onchange = () => this.selectionChanged();
         }
-        let val = this.addTextField("value", "Value", FieldKind.String, "?", "Value to compare");
+        const val = this.addTextField("value", "Value", FieldKind.String, "?", "Value to compare");
         val.onchange = () => this.selectionChanged();
-        let op = this.addSelectField("operation", "Compare", ["==", "!=", "<", ">", "<=", ">="], "<",
+        const op = this.addSelectField("operation", "Compare", ["==", "!=", "<", ">", "<=", ">="], "<",
             "Operation that is used to compare; the value is used at the right in the comparison.");
         op.onchange = () => this.selectionChanged();
     }
@@ -481,18 +479,18 @@ class ComparisonFilterDialog extends Dialog {
     public getFilter(): ComparisonFilterDescription {
         let value: string = this.getFieldValue("value");
         if (this.columnDescription == null) {
-            let colName = this.getFieldValue("column");
+            const colName = this.getFieldValue("column");
             this.columnDescription = this.schema.findByDisplayName(colName);
         }
-        if (this.columnDescription.kind == "Date") {
-            let date = new Date(value);
+        if (this.columnDescription.kind === "Date") {
+            const date = new Date(value);
             value = Converters.doubleFromDate(date).toString();
         }
-        let comparison = <Comparison>this.getFieldValue("operation");
+        const comparison = this.getFieldValue("operation") as Comparison;
         return {
             column: this.columnDescription.name,
             compareValue: value,
-            comparison: comparison
+            comparison,
         };
     }
 }
@@ -503,11 +501,11 @@ class CountReceiver extends OnCompleteReceiver<HLogLog> {
         super(page, operation, "HyperLogLog");
     }
 
-    run(data: HLogLog): void {
-        let timeInMs = this.elapsedMilliseconds();
+    public run(data: HLogLog): void {
+        const timeInMs = this.elapsedMilliseconds();
         this.page.reportError("Distinct values in column \'" +
             this.colName + "\' " + SpecialChars.approx + String(data.distinctItemCount) + "\n" +
-            "Operation took " + significantDigits(timeInMs/1000) + " seconds");
+            "Operation took " + significantDigits(timeInMs / 1000) + " seconds");
     }
 }
 
@@ -516,8 +514,8 @@ class CountReceiver extends OnCompleteReceiver<HLogLog> {
 export interface ChartOptions {
     exact: boolean;    // draw an exact chart (not approximate)
     heatmap: boolean;  // draw heatmaps, not histograms
-    relative: boolean  // draw a relative 2D histogram
-    reusePage: boolean;// draw the chart in the supplied page
+    relative: boolean;  // draw a relative 2D histogram
+    reusePage: boolean; // draw the chart in the supplied page
 }
 
 export class ChartObserver extends OnCompleteReceiver<DistinctStrings[]> {
@@ -532,14 +530,14 @@ export class ChartObserver extends OnCompleteReceiver<DistinctStrings[]> {
         super(page, operation, "Get category values");
     }
 
-    run(value: DistinctStrings[]): void {
+    public run(value: DistinctStrings[]): void {
         if (value == null)
             return;
         switch (value.length) {
             case 1: {
-                let col = this.columns[0];
-                let cv = value[0].getCategoricalValues();
-                let rr = this.remoteObject.createRangeRequest(cv);
+                const col = this.columns[0];
+                const cv = value[0].getCategoricalValues();
+                const rr = this.remoteObject.createRangeRequest(cv);
                 rr.chain(this.operation);
                 if (this.title == null)
                     this.title = "Histogram " + this.schema.displayName(col.name);
@@ -551,9 +549,9 @@ export class ChartObserver extends OnCompleteReceiver<DistinctStrings[]> {
                 break;
             }
             case 2: {
-                let cv0 = value[0].getCategoricalValues();
-                let cv1 = value[1].getCategoricalValues();
-                let rr = this.remoteObject.createRange2DRequest(cv0, cv1);
+                const cv0 = value[0].getCategoricalValues();
+                const cv1 = value[1].getCategoricalValues();
+                const rr = this.remoteObject.createRange2DRequest(cv0, cv1);
                 rr.chain(this.operation);
                 rr.invoke(new Range2DCollector(
                     this.columns, this.rowCount, this.schema, value,
@@ -563,7 +561,7 @@ export class ChartObserver extends OnCompleteReceiver<DistinctStrings[]> {
             }
             case 3: {
                 // TODO: generalize this
-                let rr = this.remoteObject.createRange2DColsRequest(
+                const rr = this.remoteObject.createRange2DColsRequest(
                     this.columns[0].name, this.columns[1].name);
                 rr.chain(this.operation);
                 rr.invoke(new TrellisRangeReceiver(

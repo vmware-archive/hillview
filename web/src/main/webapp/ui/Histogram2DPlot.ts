@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-import {Plot} from "./plot";
-import {HeatMap, Histogram} from "../javaBridge";
-import {PlottingSurface} from "./plottingSurface";
-import {AxisData} from "../dataViews/axisData";
-import {HistogramViewBase} from "../dataViews/histogramViewBase";
-import {Histogram2DView} from "../dataViews/histogram2DView";
-import {scaleLinear as d3scaleLinear} from "d3-scale";
 import {axisLeft as d3axisLeft} from "d3-axis";
 import {format as d3format} from "d3-format";
+import {scaleLinear as d3scaleLinear} from "d3-scale";
+import {AxisData} from "../dataViews/axisData";
+import {Histogram2DView} from "../dataViews/histogram2DView";
+import {HistogramViewBase} from "../dataViews/histogramViewBase";
+import {HeatMap, Histogram} from "../javaBridge";
+import {Plot} from "./plot";
+import {PlottingSurface} from "./plottingSurface";
 
 /**
  * Represents an SVG rectangle drawn on the screen.
@@ -78,37 +78,37 @@ export class Histogram2DPlot extends Plot {
     }
 
     public draw(): void {
-        let xPoints = this.heatmap.buckets.length;
-        let yPoints = this.heatmap.buckets[0].length;
+        const xPoints = this.heatmap.buckets.length;
+        const yPoints = this.heatmap.buckets[0].length;
 
-        let counts: number[] = [];
+        const counts: number[] = [];
         this.missingDisplayed = 0;
         this.visiblePoints = 0;
 
         let max = 0;
-        let rects: Rect[] = [];
+        const rects: Rect[] = [];
         for (let x = 0; x < this.heatmap.buckets.length; x++) {
             let yTotal = 0;
             for (let y = 0; y < this.heatmap.buckets[x].length; y++) {
-                let v = this.heatmap.buckets[x][y];
-                this.visiblePoints += v;
-                if (v != 0) {
-                    let rec: Rect = {
+                const vis = this.heatmap.buckets[x][y];
+                this.visiblePoints += vis;
+                if (vis !== 0) {
+                    const rect: Rect = {
                         xIndex: x,
                         countBelow: yTotal,
                         yIndex: y,
-                        count: v
+                        count: vis,
                     };
-                    rects.push(rec);
+                    rects.push(rect);
                 }
-                yTotal += v;
+                yTotal += vis;
             }
-            let v = this.heatmap.histogramMissingY.buckets[x];
-            let rec: Rect = {
+            const v = this.heatmap.histogramMissingY.buckets[x];
+            const rec: Rect = {
                 xIndex: x,
                 countBelow: yTotal,
                 yIndex: this.heatmap.buckets[x].length,
-                count: v
+                count: v,
             };
             rects.push(rec);
             yTotal += v;
@@ -127,8 +127,8 @@ export class Histogram2DPlot extends Plot {
         this.yAxis = d3axisLeft(this.yScale)
             .tickFormat(d3format(".2s"));
 
-        let bucketCount = xPoints;
-        let scAxis = this.xAxisData.scaleAndAxis(this.getChartWidth(), true, false);
+        const bucketCount = xPoints;
+        const scAxis = this.xAxisData.scaleAndAxis(this.getChartWidth(), true, false);
         this.xScale = scAxis.scale;
         this.xAxis = scAxis.axis;
 
@@ -140,7 +140,7 @@ export class Histogram2DPlot extends Plot {
             .attr("dominant-baseline", "text-before-edge");
 
         this.barWidth = this.getChartWidth() / bucketCount;
-        let scale = max <= 0 ? 1 : this.getChartHeight() / max;
+        const scale = max <= 0 ? 1 : this.getChartHeight() / max;
 
         this.plottingSurface.getChart()
             .selectAll("g")
@@ -169,8 +169,8 @@ export class Histogram2DPlot extends Plot {
             .exit();
 
         let noX = 0;
-        for (let y = 0; y < this.heatmap.histogramMissingX.buckets.length; y++)
-            noX += this.heatmap.histogramMissingX.buckets[y];
+        for (const bucket of this.heatmap.histogramMissingX.buckets)
+            noX += bucket;
 
         if (max <= 0) {
             this.plottingSurface.reportError("All values are missing: " + noX + " have no X value, "
@@ -204,7 +204,7 @@ export class Histogram2DPlot extends Plot {
 
     protected rectHeight(d: Rect, counts: number[], scale: number): number {
         if (this.normalized) {
-            let c = counts[d.xIndex];
+            const c = counts[d.xIndex];
             if (c <= 0)
                 return 0;
             return this.getChartHeight() * d.count / c;
@@ -213,9 +213,9 @@ export class Histogram2DPlot extends Plot {
     }
 
     protected rectPosition(d: Rect, counts: number[], scale: number): number {
-        let y = d.countBelow + d.count;
+        const y = d.countBelow + d.count;
         if (this.normalized) {
-            let c = counts[d.xIndex];
+            const c = counts[d.xIndex];
             if (c <= 0)
                 return 0;
             return this.getChartHeight() * (1 - y / c);
@@ -223,11 +223,11 @@ export class Histogram2DPlot extends Plot {
         return this.getChartHeight() - y * scale;
     }
 
-    color(d: number, max: number): string {
+    public color(d: number, max: number): string {
         if (d > max)
         // This is for the "missing" data
             return "none";
-        if (max == 0)
+        if (max === 0)
             return Histogram2DView.colorMap(0);
         return Histogram2DView.colorMap(d / max);
     }

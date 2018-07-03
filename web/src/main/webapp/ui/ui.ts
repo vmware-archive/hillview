@@ -31,7 +31,7 @@ export type ViewKind = "Table" | "Histogram" | "2DHistogram" | "Heatmap" |
  * This returns the root of the HTML rendering.
  */
 export interface IHtmlElement {
-    getHTMLRepresentation() : HTMLElement;
+    getHTMLRepresentation(): HTMLElement;
 }
 
 /**
@@ -45,7 +45,7 @@ export interface IElement {
 export const missingHtml: string = "<div class='missingData'>missing</div>";
 
 export function textToDiv(text: string): HTMLElement {
-    let div = document.createElement("div");
+    const div = document.createElement("div");
     div.innerHTML = text;
     return div;
 }
@@ -83,7 +83,7 @@ export interface Point {
 }
 
 export class PointSet {
-    points: Point[];
+    public points: Point[];
 }
 
 /**
@@ -91,32 +91,31 @@ export class PointSet {
  */
 export class Rectangle {
     constructor(public readonly origin: Point, public readonly size: Size) {}
-    upperLeft(): Point { return this.origin; }
-    upperRight(): Point { return {
+    public upperLeft(): Point { return this.origin; }
+    public upperRight(): Point { return {
         x: this.origin.x + this.size.width,
         y: this.origin.y }; }
-    lowerLeft(): Point { return {
+    public lowerLeft(): Point { return {
         x: this.origin.x,
         y: this.origin.y + this.size.height }; }
-    lowerRight(): Point { return {
+    public lowerRight(): Point { return {
         x: this.origin.x + this.size.width,
         y: this.origin.y + this.size.height }; }
-    width(): number { return this.size.width; }
-    height(): number { return this.size.height; }
+    public width(): number { return this.size.width; }
+    public height(): number { return this.size.height; }
 }
-
 
 /**
  * This class contains various constants for representing the dimensions of
  * the displayed objects.
  */
 export class Resolution {
-    static readonly maxBucketCount = 40;  // maximum number of buckets in a histogram
-    static readonly minBarWidth = 5;      // minimum number of pixels for a histogram bar
-    static readonly minDotSize = 4;       // dots are drawn as rectangles of this size in pixels
-    static readonly tableRowsOnScreen = 20; // table rows displayed
-    static readonly lineHeight = 20;      // Height of a line of text drawn in svg (including reasonable margin).
-    static readonly mouseDotRadius = 3;        // Size of dots that show mouse position
-    static readonly legendBarWidth = 500;
-    static readonly legendSpaceHeight = 60;
+    public static readonly maxBucketCount = 40;  // maximum number of buckets in a histogram
+    public static readonly minBarWidth = 5;      // minimum number of pixels for a histogram bar
+    public static readonly minDotSize = 4;       // dots are drawn as rectangles of this size in pixels
+    public static readonly tableRowsOnScreen = 20; // table rows displayed
+    public static readonly lineHeight = 20;      // Height of a line of text drawn in svg (including reasonable margin).
+    public static readonly mouseDotRadius = 3;        // Size of dots that show mouse position
+    public static readonly legendBarWidth = 500;
+    public static readonly legendSpaceHeight = 60;
 }

@@ -15,17 +15,17 @@
  * limitations under the License.
  */
 
-import {IHtmlElement} from "./ui";
 import {makeId} from "../util";
+import {IHtmlElement} from "./ui";
 
 /**
- * A textarea which allows users to type a program.
+ * A text area which allows users to type a program.
  */
 export class EditBox implements IHtmlElement {
-    topLevel: HTMLDivElement;
-    textArea: HTMLTextAreaElement;
-    pre: HTMLInputElement;
-    post: HTMLInputElement;
+    public topLevel: HTMLDivElement;
+    public textArea: HTMLTextAreaElement;
+    public pre: HTMLInputElement;
+    public post: HTMLInputElement;
 
     constructor(name: string, pre: string, value: string, post: string) {
         this.topLevel = document.createElement("div");
@@ -46,9 +46,9 @@ export class EditBox implements IHtmlElement {
         this.textArea.style.flexGrow = "100";
         this.textArea.id = makeId(name);
         // The following will prevent these events from going to the parent element
-        this.textArea.onkeydown = e => e.stopPropagation();
-        this.textArea.onkeypress = e => e.stopPropagation();
-        this.textArea.onmousedown = e => e.stopPropagation();
+        this.textArea.onkeydown = (e) => e.stopPropagation();
+        this.textArea.onkeypress = (e) => e.stopPropagation();
+        this.textArea.onmousedown = (e) => e.stopPropagation();
 
         this.topLevel.appendChild(this.pre);
         this.topLevel.appendChild(this.textArea);
@@ -61,7 +61,7 @@ export class EditBox implements IHtmlElement {
             this.post.value = post;
     }
 
-    focus(): void {
+    public focus(): void {
         this.textArea.focus();
     }
 
@@ -73,7 +73,7 @@ export class EditBox implements IHtmlElement {
         this.textArea.value = value;
     }
 
-    setTabIndex(index: number) {
+    public setTabIndex(index: number) {
         this.topLevel.tabIndex = index;
     }
 

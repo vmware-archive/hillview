@@ -19,21 +19,21 @@
  * This file contains lots of classes for accessing the remote TableTarget.java class.
  */
 
-import {RpcRequest, RemoteObject, OnCompleteReceiver} from "./rpc";
+import {DatasetView, IViewSerialization} from "./datasetView";
+import {HeatMapArrayData} from "./dataViews/trellisHeatMapView";
+import {Histogram2DArgs, NextKArgs} from "./javaBridge";
 import {ComparisonFilterDescription, EigenVal, EqualityFilterDescription, FindResult} from "./javaBridge";
-import {ICancellable, Pair, PartialResult, Seed} from "./util";
-import {PointSet, Resolution, ViewKind} from "./ui/ui";
+import {
+    BasicColStats, CategoricalValues, CombineOperators, CreateColumnInfo, FilterDescription,
+    HeatMap, Histogram, Histogram3DArgs, HistogramArgs,
+    HLogLog, IColumnDescription, NextKList, RecordOrder, RemoteObjectId, Schema, TableSummary, TopList,
+} from "./javaBridge";
+import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
+import {SchemaClass} from "./schemaClass";
 import {IDataView} from "./ui/dataview";
 import {FullPage} from "./ui/fullPage";
-import {
-    BasicColStats,
-    CombineOperators, CreateColumnInfo, FilterDescription, HeatMap, Histogram, Histogram3DArgs, HistogramArgs, HLogLog,
-    IColumnDescription, NextKList, CategoricalValues, RecordOrder, RemoteObjectId, Schema, TableSummary, TopList
-} from "./javaBridge";
-import {Histogram2DArgs} from "./javaBridge";
-import {HeatMapArrayData} from "./dataViews/trellisHeatMapView";
-import {DatasetView, IViewSerialization} from "./datasetView";
-import {SchemaClass} from "./schemaClass";
+import {PointSet, ViewKind} from "./ui/ui";
+import {ICancellable, Pair, PartialResult, Seed} from "./util";
 
 /**
  * This class has methods that correspond directly to TableTarget.java methods.
@@ -75,16 +75,17 @@ export class TableTargetAPI extends RemoteObject {
             tableSize: rowCount,
             order: o,
             position: position,
-            seed: Seed.instance.get()
+            seed: Seed.instance.get(),
         });
     }
 
-    public createNextKRequest(order: RecordOrder, firstRow: any[]):
+    public createNextKRequest(order: RecordOrder, firstRow: any[] | null, rowCount: number):
         RpcRequest<PartialResult<NextKList>> {
-        let nextKArgs = {
+        const nextKArgs: NextKArgs = {
+            toFind: null,
             order: order,
             firstRow: firstRow,
-            rowsOnScreen: Resolution.tableRowsOnScreen
+            rowsOnScreen: rowCount,
         };
         return this.createStreamingRpcRequest<NextKList>("getNextK", nextKArgs);
     }
@@ -93,8 +94,8 @@ export class TableTargetAPI extends RemoteObject {
         return this.createStreamingRpcRequest<TableSummary>("getSchema", null);
     }
 
-    public createHLogLogRequest(colName: string) : RpcRequest<PartialResult<HLogLog>> {
-    	return this.createStreamingRpcRequest<HLogLog>("hLogLog",
+    public createHLogLogRequest(colName: string): RpcRequest<PartialResult<HLogLog>> {
+        return this.createStreamingRpcRequest<HLogLog>("hLogLog",
             { columnName: colName, seed: Seed.instance.get() });
     }
 
@@ -105,8 +106,8 @@ export class TableTargetAPI extends RemoteObject {
 
     public createRange2DColsRequest(c1: string, c2: string):
             RpcRequest<PartialResult<Pair<BasicColStats, BasicColStats>>> {
-        let r1: CategoricalValues = new CategoricalValues(c1, null);
-        let r2: CategoricalValues = new CategoricalValues(c2, null);
+        const r1: CategoricalValues = new CategoricalValues(c1, null);
+        const r2: CategoricalValues = new CategoricalValues(c2, null);
         return this.createRange2DRequest(r1, r2);
     }
 
@@ -230,7 +231,8 @@ RpcRequest<PartialResult<RemoteObjectId>> {
             {rowCount: rowCount, numSamples: numSamples, columnNames: columnNames, seed: Seed.instance.get() });
     }
 
-    public createCategoricalCentroidsControlPointsRequest(categoricalColumnName: string, numericalColumnNames: string[]):
+    public createCategoricalCentroidsControlPointsRequest(
+        categoricalColumnName: string, numericalColumnNames: string[]):
             RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<RemoteObjectId>("categoricalCentroidsControlPoints", {
                 categoricalColumnName: categoricalColumnName,
@@ -242,7 +244,8 @@ RpcRequest<PartialResult<RemoteObjectId>> {
             "makeMDSProjection", { id: id, seed: Seed.instance.get() });
     }
 
-    public createLAMPMapRequest(controlPointsId: RemoteObjectId, colNames: string[], controlPoints: PointSet, newColNames: string[]):
+    public createLAMPMapRequest(controlPointsId: RemoteObjectId,
+                                colNames: string[], controlPoints: PointSet, newColNames: string[]):
             RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<RemoteObjectId>("lampMap",
             {controlPointsId: controlPointsId, colNames: colNames, newLowDimControlPoints: controlPoints, newColNames: newColNames});
@@ -284,7 +287,7 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView {
     /**
      * Save the information needed to (re)create this view.
      */
-    serialize(): IViewSerialization {
+    public serialize(): IViewSerialization {
         return {
             viewKind: this.viewKind,
             pageId: this.page.pageId,
@@ -292,30 +295,30 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView {
             title: this.page.title,
             remoteObjectId: this.remoteObjectId,
             rowCount: this.rowCount,
-            schema: this.schema.serialize()
+            schema: this.schema.serialize(),
         };
     }
 
-    setPage(page: FullPage) {
+    public setPage(page: FullPage) {
         if (page == null)
-            throw("null FullPage");
+            throw new Error(("null FullPage"));
         this.page = page;
         if (this.topLevel != null) {
-            this.topLevel.ondragover = e => e.preventDefault();
-            this.topLevel.ondrop = e => this.drop(e);
+            this.topLevel.ondragover = (e) => e.preventDefault();
+            this.topLevel.ondrop = (e) => this.drop(e);
         }
     }
 
     // noinspection JSMethodCanBeStatic
-    drop(e: DragEvent): void { console.log(e); }
+    public drop(e: DragEvent): void { console.log(e); }
 
-    getPage() : FullPage {
+    public getPage(): FullPage {
         if (this.page == null)
-            throw("Page not set");
+            throw new Error(("Page not set"));
         return this.page;
     }
 
-    selectCurrent(): void {
+    public selectCurrent(): void {
         this.dataset.select(this, this.page.pageId);
     }
 
@@ -342,7 +345,7 @@ export abstract class BaseRenderer extends OnCompleteReceiver<RemoteObjectId> {
         this.remoteObject = null;
     }
 
-    run(): void {
+    public run(): void {
         if (this.value != null)
             this.remoteObject = new TableTargetAPI(this.value);
     }
@@ -364,10 +367,10 @@ export class ZipReceiver extends BaseRenderer {
         super(page, operation, "zip", dataset);
     }
 
-    run(): void {
+    public run(): void {
         super.run();
-        let rr = this.remoteObject.createSetOperationRequest(this.setOp);
-        let rec = this.receiver(this.page, rr);
+        const rr = this.remoteObject.createSetOperationRequest(this.setOp);
+        const rec = this.receiver(this.page, rr);
         rr.invoke(rec);
     }
 }

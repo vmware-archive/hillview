@@ -15,18 +15,18 @@
  * limitations under the License.
  */
 
-import {TopMenu, SubMenu, TopMenuItem} from "./ui/menu";
+import {DatasetView} from "./datasetView";
 import {InitialObject} from "./initialObject";
-import {RemoteObject, OnCompleteReceiver} from "./rpc";
-import {ICancellable, loadFile} from "./util";
+import {FileSetDescription, JdbcConnectionInformation, Status} from "./javaBridge";
+import {OnCompleteReceiver, RemoteObject} from "./rpc";
+import {Test} from "./test";
 import {IDataView} from "./ui/dataview";
+import {Dialog, FieldKind} from "./ui/dialog";
 import {ConsoleDisplay} from "./ui/errReporter";
 import {FullPage} from "./ui/fullPage";
-import {FileSetDescription, JdbcConnectionInformation, Status} from "./javaBridge";
-import {Dialog, FieldKind} from "./ui/dialog";
-import {Test} from "./test";
+import {SubMenu, TopMenu, TopMenuItem} from "./ui/menu";
 import {ViewKind} from "./ui/ui";
-import {DatasetView} from "./datasetView";
+import {ICancellable, loadFile} from "./util";
 
 /**
  * The load menu is the first menu that is displayed on the screen.
@@ -50,90 +50,90 @@ export class LoadMenu extends RemoteObject implements IDataView {
         this.testDatasetsMenu = new SubMenu([
             { text: "Flights (15 columns)",
                 action: () => {
-                    let files: FileSetDescription = {
+                    const files: FileSetDescription = {
                         folder: "../data/ontime",
                         fileNamePattern: "????_*.csv",
                         schemaFile: "short.schema",
                         headerRow: true,
                         repeat: 1,
                         name: "Flights (15 columns)",
-                        fileKind: "csv"
+                        fileKind: "csv",
                     };
                     this.init.loadFiles(files, this.page);
                 },
-                help: "The US flights dataset."
+                help: "The US flights dataset.",
             },
             { text: "Flights (15 columns, ORC)",
                 action: () => {
-                    let files: FileSetDescription = {
+                    const files: FileSetDescription = {
                         folder: "../data/ontime_small_orc",
                         fileNamePattern: "*.orc",
                         schemaFile: "schema",
                         headerRow: true,
                         repeat: 1,
                         name: "Flights (15 columns, ORC)",
-                        fileKind: "orc"
+                        fileKind: "orc",
                     };
                     this.init.loadFiles(files, this.page);
                 },
-                help: "The US flights dataset."
+                help: "The US flights dataset.",
             },
             { text: "Flights (all columns)",
                 action: () => {
-                    let files: FileSetDescription = {
+                    const files: FileSetDescription = {
                         folder: "../data/ontime_big",
                         fileNamePattern: "*.csv.gz",
                         schemaFile: "schema",
                         headerRow: true,
                         repeat: 1,
                         name: "Flights",
-                        fileKind: "csv"
+                        fileKind: "csv",
                     };
                     this.init.loadFiles(files, this.page);
                 },
                 help: "The US flights dataset -- all 110 columns." },
             { text: "Flights (all columns, ORC)",
                 action: () => {
-                    let files: FileSetDescription = {
+                    const files: FileSetDescription = {
                         folder: "../data/ontime_big_orc",
                         fileNamePattern: "*.orc",
                         schemaFile: "schema",
                         headerRow: true,
                         repeat: 1,
                         name: "Flights (ORC)",
-                        fileKind: "orc"
+                        fileKind: "orc",
                     };
                     this.init.loadFiles(files, this.page);
                 },
                 help: "The US flights dataset -- all 110 columns." },
             { text: "10 x Flights",
                 action: () => {
-                    let files: FileSetDescription = {
+                    const files: FileSetDescription = {
                         folder: "../data/ontime_big",
                         fileNamePattern: "*.csv.gz",
                         schemaFile: "schema",
                         headerRow: true,
                         repeat: 10,
                         name: "10 x Flights",
-                        fileKind: "csv"
+                        fileKind: "csv",
                     };
                     this.init.loadFiles(files, this.page);
                 },
                 help: "10 times the US flights dataset." },
             { text: "10 x Flights (ORC)",
                 action: () => {
-                    let files: FileSetDescription = {
+                    const files: FileSetDescription = {
                         folder: "../data/ontime_big_orc",
                         fileNamePattern: "*.orc",
                         schemaFile: "schema",
                         headerRow: true,
                         repeat: 10,
                         name: "10 x Flights (ORC)",
-                        fileKind: "orc"
+                        fileKind: "orc",
                     };
                     this.init.loadFiles(files, this.page);
                 },
-                help: "10 times the US flights dataset (from ORC files)." }
+                help: "10 times the US flights dataset (from ORC files)." },
         ]);
         this.loadMenu = new SubMenu([
             { text: "System logs",
@@ -156,15 +156,15 @@ export class LoadMenu extends RemoteObject implements IDataView {
                 help: "A set of Orc files residing on the worker machines." },
             { text: "DB tables...",
                 action: () => this.showDBDialog(),
-                help: "A set of database tables residing in databases on each worker machine." }
+                help: "A set of database tables residing in databases on each worker machine." },
         ]);
 
-        let items: TopMenuItem[] = [
+        const items: TopMenuItem[] = [
             { text: "Test datasets", help: "Hardwired datasets for testing Hillview.",
-                subMenu: this.testDatasetsMenu
+                subMenu: this.testDatasetsMenu,
             }, {
                 text: "Load", help: "Load data from the worker machines.",
-                subMenu: this.loadMenu }
+                subMenu: this.loadMenu },
         ];
         /**
          * These are operations supported by the back-end management API.
@@ -178,44 +178,44 @@ export class LoadMenu extends RemoteObject implements IDataView {
                         "These tests simulate the user clicking in various menus in the browser." +
                         "The tests must be run " +
                         "immediately after reloading the main web page. The user should " +
-                        "not use the mouse during the tests.", action: () => this.runTests()
-                    }
-                ])
+                        "not use the mouse during the tests.", action: () => this.runTests(),
+                    },
+                ]),
             },
             {
                 text: "Manage", help: "Execute cluster management operations.", subMenu: new SubMenu([
                     {
                         text: "List machines",
                         action: () => this.ping(),
-                        help: "Produces a list of all worker machines."
+                        help: "Produces a list of all worker machines.",
                     },
                     {
                         text: "Toggle memoization",
                         action: () => this.command("toggleMemoization"),
-                        help: "Asks the workers to memoize/not memoize query results."
+                        help: "Asks the workers to memoize/not memoize query results.",
                     },
                     {
                         text: "Memory use",
                         action: () => this.command("memoryUse"),
-                        help: "Reports Java memory use for each worker."
+                        help: "Reports Java memory use for each worker.",
                     },
                     {
                         text: "Purge memoized",
                         action: () => this.command("purgeMemoization"),
-                        help: "Remove all memoized datasets from the workers."
+                        help: "Remove all memoized datasets from the workers.",
                     },
                     {
                         text: "Purge root datasets",
                         action: () => this.command("purgeDatasets"),
-                        help: "Remove all datasets stored at the root node."
+                        help: "Remove all datasets stored at the root node.",
                     },
                     {
                         text: "Purge leaf datasets",
                         action: () => this.command("purgeLeafDatasets"),
-                        help: "Remove all datasets stored at the worker nodes."
-                    }
-                ])
-            }
+                        help: "Remove all datasets stored at the worker nodes.",
+                    },
+                ]),
+            },
         );
 
         this.menu = new TopMenu(items);
@@ -230,36 +230,36 @@ export class LoadMenu extends RemoteObject implements IDataView {
         this.showAdvanced(this.advanced);
     }
 
-    loadSavedDialog(): void {
-        let dialog = new Dialog("Load saved view", "Load a view from a file");
+    public loadSavedDialog(): void {
+        const dialog = new Dialog("Load saved view", "Load a view from a file");
         dialog.addFileField("File", "File", "File containing saved view");
         dialog.addTextField("Name", "Tab label", FieldKind.String, "Saved", "Name to display for dataset");
         dialog.setAction(() =>  {
-            let files = dialog.getFieldValueAsFiles("File");
-            let name = dialog.getFieldValue("Name");
-            if (files.length != 1) {
+            const files = dialog.getFieldValueAsFiles("File");
+            const name = dialog.getFieldValue("Name");
+            if (files.length !== 1) {
                 this.page.reportError("Please select exactly one file to load");
                 return;
             }
-            loadFile(files[0], data => this.loaded(data, name), this.page.getErrorReporter());
+            loadFile(files[0], (data) => this.loaded(data, name), this.page.getErrorReporter());
         });
         dialog.show();
     }
 
-    loaded(savedViewJson: string, title: string): void {
-        let json = JSON.parse(savedViewJson);
+    public loaded(savedViewJson: string, title: string): void {
+        const json = JSON.parse(savedViewJson);
         if (json == null || json.views == null || json.remoteObjectId == null) {
             this.page.reportError("File could not be parsed");
             return;
         }
         this.page.reportError("Reconstructing " + json.views.length + " views");
-        let dataset = new DatasetView(json.remoteObjectId, title, json);
-        let success = dataset.reconstruct(json);
+        const dataset = new DatasetView(json.remoteObjectId, title, json);
+        const success = dataset.reconstruct(json);
         if (!success)
             this.page.reportError("Error reconstructing view");
     }
 
-    showAdvanced(show: boolean): void {
+    public showAdvanced(show: boolean): void {
         this.menu.enable("Manage", show);
         this.menu.enable("Test", show);
         /*
@@ -274,62 +274,62 @@ export class LoadMenu extends RemoteObject implements IDataView {
     /**
      * Starts the execution of the UI tests.
      */
-    runTests(): void {
+    public runTests(): void {
         Test.instance.runTests();
     }
 
-    showDBDialog(): void {
-        let dialog = new DBDialog();
+    public showDBDialog(): void {
+        const dialog = new DBDialog();
         dialog.setAction(() => this.init.loadDBTable(dialog.getConnection(), this.page));
         dialog.show();
     }
 
-    showCSVFileDialog(): void {
-        let dialog = new CSVFileDialog();
+    public showCSVFileDialog(): void {
+        const dialog = new CSVFileDialog();
         dialog.setAction(() => this.init.loadFiles(dialog.getFiles(), this.page));
         dialog.show();
     }
 
-    showJSONFileDialog(): void {
-        let dialog = new JsonFileDialog();
+    public showJSONFileDialog(): void {
+        const dialog = new JsonFileDialog();
         dialog.setAction(() => this.init.loadFiles(dialog.getFiles(), this.page));
         dialog.show();
     }
 
-    showParquetFileDialog(): void {
-        let dialog = new ParquetFileDialog();
+    public showParquetFileDialog(): void {
+        const dialog = new ParquetFileDialog();
         dialog.setAction(() => this.init.loadFiles(dialog.getFiles(), this.page));
         dialog.show();
     }
 
-    showOrcFileDialog(): void {
-        let dialog = new OrcFileDialog();
+    public showOrcFileDialog(): void {
+        const dialog = new OrcFileDialog();
         dialog.setAction(() => this.init.loadFiles(dialog.getFiles(), this.page));
         dialog.show();
     }
 
-    getHTMLRepresentation(): HTMLElement {
+    public getHTMLRepresentation(): HTMLElement {
         return this.top;
     }
 
-    ping(): void {
-        let rr = this.createStreamingRpcRequest<string[]>("ping", null);
+    public ping(): void {
+        const rr = this.createStreamingRpcRequest<string[]>("ping", null);
         rr.invoke(new PingReceiver(this.page, rr));
     }
 
-    command(command: string): void {
-        let rr = this.createStreamingRpcRequest<Status[]>(command, null);
+    public command(command: string): void {
+        const rr = this.createStreamingRpcRequest<Status[]>(command, null);
         rr.invoke(new CommandReceiver(command, this.page, rr));
     }
 
     public refresh(): void {}
 
-    setPage(page: FullPage): void {
+    public setPage(page: FullPage): void {
         this.page = page;
         page.setDataView(this);
     }
 
-    getPage(): FullPage {
+    public getPage(): FullPage {
         return this.page;
     }
 }
@@ -339,7 +339,8 @@ export class LoadMenu extends RemoteObject implements IDataView {
  */
 class CSVFileDialog extends Dialog {
     constructor() {
-        super("Load CSV files", "Loads comma-separated value (CSV) files from all machines that are part of the service.");
+        super("Load CSV files",
+            "Loads comma-separated value (CSV) files from all machines that are part of the service.");
         this.addTextField("folder", "Folder", FieldKind.String, "/",
             "Folder on the remote machines where all the CSV files are found.");
         this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "*.csv",
@@ -358,8 +359,8 @@ class CSVFileDialog extends Dialog {
             folder: this.getFieldValue("folder"),
             repeat: 1,
             name: null,
-            fileKind: "csv"
-        }
+            fileKind: "csv",
+        };
     }
 }
 
@@ -388,8 +389,8 @@ class JsonFileDialog extends Dialog {
             folder: this.getFieldValue("folder"),
             repeat: 1,
             name: null,
-            fileKind: "json"
-        }
+            fileKind: "json",
+        };
     }
 }
 
@@ -415,8 +416,8 @@ class ParquetFileDialog extends Dialog {
             folder: this.getFieldValue("folder"),
             repeat: 1,
             name: null,
-            fileKind: "parquet"
-        }
+            fileKind: "parquet",
+        };
     }
 }
 
@@ -432,7 +433,8 @@ class OrcFileDialog extends Dialog {
         this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "*.orc",
             "Shell pattern that describes the names of the files to load.");
         this.addTextField("schemaFile", "Schema file (optional)", FieldKind.String, "schema",
-            "The name of a JSON file that contains the schema of the data (if empty the ORC file schema will be used).");
+            "The name of a JSON file that contains the schema of the data " +
+            "(if empty the ORC file schema will be used).");
         this.setCacheTitle("OrcFileDialog");
     }
 
@@ -444,8 +446,8 @@ class OrcFileDialog extends Dialog {
             folder: this.getFieldValue("folder"),
             repeat: 1,
             name: null,
-            fileKind: "orc"
-        }
+            fileKind: "orc",
+        };
     }
 }
 
@@ -456,7 +458,7 @@ class DBDialog extends Dialog {
     constructor() {
         super("Load DB tables", "Loads one table on each machine that is part of the service.");
         // TODO: this should be a pattern string, based on local worker name.
-        let sel = this.addSelectField("databaseKind", "Database kind", ["mysql", "impala"], "mysql",
+        const sel = this.addSelectField("databaseKind", "Database kind", ["mysql", "impala"], "mysql",
             "The kind of database.");
         sel.onchange = () => this.dbChanged();
         this.addTextField("host", "Host", FieldKind.String, "localhost",
@@ -474,8 +476,8 @@ class DBDialog extends Dialog {
         this.setCacheTitle("DBDialog");
     }
 
-    dbChanged(): void {
-        let db = this.getFieldValue("databaseKind");
+    public dbChanged(): void {
+        const db = this.getFieldValue("databaseKind");
         switch (db) {
             case "mysql":
                 this.setFieldValue("port", "3306");
@@ -495,8 +497,8 @@ class DBDialog extends Dialog {
             user: this.getFieldValue("user"),
             password: this.getFieldValue("password"),
             databaseKind: this.getFieldValue("databaseKind"),
-            lazyLoading: true
-        }
+            lazyLoading: true,
+        };
     }
 }
 
@@ -509,7 +511,7 @@ class CommandReceiver extends OnCompleteReceiver<Status[]> {
         super(page, operation, name);
     }
 
-    toString(s: Status): string {
+    public toString(s: Status): string {
         let str = s.hostname + "=>";
         if (s.exception == null)
             str += s.result;
@@ -518,10 +520,10 @@ class CommandReceiver extends OnCompleteReceiver<Status[]> {
         return str;
     }
 
-    run(value: Status[]): void {
+    public run(value: Status[]): void {
         let res = "";
-        for (let s of value) {
-            if (res != "")
+        for (const s of value) {
+            if (res !== "")
                 res += "\n";
             res += this.toString(s);
         }
@@ -537,7 +539,7 @@ class PingReceiver extends OnCompleteReceiver<string[]> {
         super(page, operation, "ping");
     }
 
-    run(value: string[]): void {
+    public run(value: string[]): void {
         this.page.reportError(this.value.toString());
     }
 }

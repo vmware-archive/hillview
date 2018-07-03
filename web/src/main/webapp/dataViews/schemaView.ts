@@ -15,20 +15,21 @@
  * limitations under the License.
  */
 
-import {FullPage} from "../ui/fullPage";
+import {IViewSerialization} from "../datasetView";
 import {
-    NextKList, RecordOrder, Schema, RemoteObjectId, allContentsKind, ColumnSortOrientation,
-    CombineOperators
+    allContentsKind, ColumnSortOrientation, CombineOperators, NextKList, RecordOrder, RemoteObjectId,
+    Schema,
 } from "../javaBridge";
-import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
-import {TabularDisplay} from "../ui/tabularDisplay";
-import {TableView} from "./tableView";
-import {Dialog, FieldKind} from "../ui/dialog";
-import {TSViewBase} from "./tsViewBase";
-import {cloneToSet, significantDigits} from "../util";
 import {SchemaClass} from "../schemaClass";
 import {IDataView} from "../ui/dataview";
-import {IViewSerialization} from "../datasetView";
+import {Dialog, FieldKind} from "../ui/dialog";
+import {FullPage} from "../ui/fullPage";
+import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
+import {TabularDisplay} from "../ui/tabularDisplay";
+import {Resolution} from "../ui/ui";
+import {cloneToSet, significantDigits} from "../util";
+import {TableView} from "./tableView";
+import {TSViewBase} from "./tsViewBase";
 
 /**
  * This class is used to browse through the columns of a table schema
@@ -49,45 +50,45 @@ export class SchemaView extends TSViewBase {
         this.page.reportTime(elapsedMs);
     }
 
-    static reconstruct(ser: IViewSerialization, page: FullPage): IDataView {
-        let schema = new SchemaClass([]).deserialize(ser.schema);
+    public static reconstruct(ser: IViewSerialization, page: FullPage): IDataView {
+        const schema = new SchemaClass([]).deserialize(ser.schema);
         if (schema == null)
             return null;
-        let schemaView = new SchemaView(ser.remoteObjectId, page, ser.rowCount, schema, 0);
+        const schemaView = new SchemaView(ser.remoteObjectId, page, ser.rowCount, schema, 0);
         schemaView.show();
         return schemaView;
     }
 
-    show(): void {
+    public show(): void {
         this.topLevel = document.createElement("div");
         this.contextMenu = new ContextMenu(this.topLevel);
 
-        let viewMenu = new SubMenu([{
+        const viewMenu = new SubMenu([{
             text: "Selected columns",
             action: () => this.showTable(),
-            help: "Show the data using a tabular view containing the selected columns."
+            help: "Show the data using a tabular view containing the selected columns.",
         }]);
-        let selectMenu = new SubMenu([{
+        const selectMenu = new SubMenu([{
             text: "By Name",
             action: () => nameDialog.show(),
-            help: "Select Columns by name."
+            help: "Select Columns by name.",
         }, {
             text: "By Type",
             action: () => {
                 typeDialog.show();
             },
-            help: "Select Columns by type."
+            help: "Select Columns by type.",
         }]);
-        let menu = new TopMenu([
+        const menu = new TopMenu([
             this.saveAsMenu(),
             {text: "View", subMenu: viewMenu, help: "Change the way the data is displayed."},
             {text: "Select", subMenu: selectMenu, help: "Select columns based on attributes."},
-            this.chartMenu()
+            this.chartMenu(),
         ]);
         this.page.setMenu(menu);
         this.topLevel.appendChild(document.createElement("br"));
 
-        let para = document.createElement("div");
+        const para = document.createElement("div");
         para.textContent = "Select the columns that you would like to browse";
         this.topLevel.appendChild(para);
 
@@ -96,49 +97,49 @@ export class SchemaView extends TSViewBase {
             ["Column number", "Column name", "Type of data stored within the column"]);
 
         /* Dialog box for selecting columns based on name */
-        let nameDialog = new Dialog("Select by name",
+        const nameDialog = new Dialog("Select by name",
             "Allows selecting/deselecting columns by name using regular expressions");
         nameDialog.addTextField("selected", "Name", FieldKind.String, "",
             "Names of columns to select (regular expressions allowed)");
-        let actions: string[] = ["Add", "Remove"];
+        const actions: string[] = ["Add", "Remove"];
         nameDialog.addSelectField("action", "Action", actions, "Add",
             "Add to or Remove from current selection");
         nameDialog.setAction(() => {
-            let regExp: RegExp = new RegExp(nameDialog.getFieldValue("selected"));
-            let action: string = nameDialog.getFieldValue("action");
+            const regExp: RegExp = new RegExp(nameDialog.getFieldValue("selected"));
+            const action: string = nameDialog.getFieldValue("action");
             this.nameAction(regExp, action);
             this.display.highlightSelectedRows();
         });
         this.display.addRightClickHandler("Name", (e: MouseEvent) => {
             e.preventDefault();
-            nameDialog.show()
+            nameDialog.show();
         });
 
         /* Dialog box for selecting columns based on type*/
-        let typeDialog = new Dialog("Select by type", "Allows selecting/deselecting columns based on type");
+        const typeDialog = new Dialog("Select by type", "Allows selecting/deselecting columns based on type");
         typeDialog.addSelectField("selectedType", "Type", allContentsKind, "String",
             "Type of columns you wish to select");
         typeDialog.addSelectField("action", "Action", actions, "Add",
             "Add to or Remove from current selection");
         typeDialog.setCacheTitle("SchemaTypeDialog");
         typeDialog.setAction(() => {
-            let selectedType: string = typeDialog.getFieldValue("selectedType");
-            let action: string = typeDialog.getFieldValue("action");
+            const selectedType: string = typeDialog.getFieldValue("selectedType");
+            const action: string = typeDialog.getFieldValue("action");
             this.typeAction(selectedType, action);
             this.display.highlightSelectedRows();
         });
         this.display.addRightClickHandler("Type", (e: MouseEvent) => {
             e.preventDefault();
-            typeDialog.show()
+            typeDialog.show();
         });
 
         for (let i = 0; i < this.schema.length; i++) {
-            let cd = this.schema.get(i);
-            let row = this.display.addRow([
+            const cd = this.schema.get(i);
+            const row = this.display.addRow([
                 (i + 1).toString(),
                 this.schema.displayName(cd.name),
                 cd.kind.toString()]);
-            row.oncontextmenu = e => this.createAndShowContextMenu(e);
+            row.oncontextmenu = (e) => this.createAndShowContextMenu(e);
         }
         this.topLevel.appendChild(this.display.getHTMLRepresentation());
         this.display.getHTMLRepresentation().setAttribute("overflow-x", "hidden");
@@ -149,14 +150,14 @@ export class SchemaView extends TSViewBase {
         this.page.setDataView(this);
     }
 
-    createAndShowContextMenu(e: MouseEvent): void {
-        if (e.ctrlKey && (e.button == 1)) {
+    public createAndShowContextMenu(e: MouseEvent): void {
+        if (e.ctrlKey && (e.button === 1)) {
             // Ctrl + click is interpreted as a right-click on macOS.
             // This makes sure it's interpreted as a column click with Ctrl.
             return;
         }
         this.contextMenu.clear();
-        let selectedCount = this.display.selectedRows.size();
+        const selectedCount = this.display.selectedRows.size();
         this.contextMenu.addItem({
             text: "Drop",
             action: () => this.dropColumns(),
@@ -169,77 +170,78 @@ export class SchemaView extends TSViewBase {
             text: "Histogram",
             action: () => this.histogram(false),
             help: "Plot the data in the selected columns as a histogram.  Applies to one or two columns only. " +
-            "The data cannot be of type String."
+            "The data cannot be of type String.",
         }, selectedCount >= 1 && selectedCount <= 2);
         this.contextMenu.addItem({
             text: "Heatmap",
             action: () => this.heatMap(),
             help: "Plot the data in the selected columns as a heatmap or as a Trellis plot of heatmaps. " +
-            "Applies to two or three columns only."
+            "Applies to two or three columns only.",
         }, selectedCount >= 2 && selectedCount <= 3);
         this.contextMenu.addItem({
             text: "Estimate distinct elements",
             action: () => this.hLogLog(),
-            help: "Compute an estimate of the number of different values that appear in the selected column."
-        }, selectedCount == 1);
+            help: "Compute an estimate of the number of different values that appear in the selected column.",
+        }, selectedCount === 1);
         this.contextMenu.addItem({
             text: "Filter...",
             action: () => {
-                let colName = this.getSelectedColNames()[0];
-                let cd = this.schema.find(colName);
-                let so: ColumnSortOrientation = {
-                    columnDescription: cd, isAscending: true
+                const colName = this.getSelectedColNames()[0];
+                const cd = this.schema.find(colName);
+                const so: ColumnSortOrientation = {
+                    columnDescription: cd, isAscending: true,
                 };
-                this.showFilterDialog(colName, new RecordOrder([so]));
+                this.showFilterDialog(colName, new RecordOrder([so]), Resolution.tableRowsOnScreen);
             },
-            help : "Eliminate data that matches/does not match a specific value."
-        }, selectedCount == 1);
+            help : "Eliminate data that matches/does not match a specific value.",
+        }, selectedCount === 1);
         this.contextMenu.addItem({
             text: "Compare...",
             action: () => {
-                let colName = this.getSelectedColNames()[0];
-                let cd = this.schema.find(colName);
-                let so: ColumnSortOrientation = {
-                    columnDescription: cd, isAscending: true
+                const colName = this.getSelectedColNames()[0];
+                const cd = this.schema.find(colName);
+                const so: ColumnSortOrientation = {
+                    columnDescription: cd, isAscending: true,
                 };
-                this.showCompareDialog(this.schema.displayName(colName), new RecordOrder([so]));
+                this.showCompareDialog(this.schema.displayName(colName), new RecordOrder([so]),
+                    Resolution.tableRowsOnScreen);
             },
-            help : "Eliminate data that matches/does not match a specific value."
-        }, selectedCount == 1);
+            help : "Eliminate data that matches/does not match a specific value.",
+        }, selectedCount === 1);
         this.contextMenu.addItem({
             text: "Create column...",
-            action: () => this.createColumnDialog(new RecordOrder([])),
-            help: "Add a new column computed from the selected columns."
+            action: () => this.createColumnDialog(new RecordOrder([]), Resolution.tableRowsOnScreen),
+            help: "Add a new column computed from the selected columns.",
         }, true);
         this.contextMenu.addItem({
             text: "Rename...",
             action: () => this.renameColumn(),
-            help: "Give a new name to this column."
-        }, selectedCount == 1);
+            help: "Give a new name to this column.",
+        }, selectedCount === 1);
         this.contextMenu.addItem({
             text: "Frequent Elements...",
             action: () => this.heavyHittersDialog(),
-            help: "Find the values that occur most frequently in the selected columns."
+            help: "Find the values that occur most frequently in the selected columns.",
         }, true);
         this.contextMenu.show(e);
     }
 
-    refresh(): void {
+    public refresh(): void {
         this.show();
     }
 
     private dropColumns(): void {
-        let selected = cloneToSet(this.getSelectedColNames());
-        this.schema = this.schema.filter(c => !selected.has(c.name));
+        const selected = cloneToSet(this.getSelectedColNames());
+        this.schema = this.schema.filter((c) => !selected.has(c.name));
         this.show();
     }
 
     private nameAction(regExp: RegExp, action: string) {
         for (let i = 0; i < this.schema.length; i++) {
             if (this.schema.displayName(this.schema.get(i).name).match(regExp)) {
-                if (action == "Add")
+                if (action === "Add")
                     this.display.selectedRows.add(i);
-                else if (action = "Remove")
+                else if (action === "Remove")
                     this.display.selectedRows.delete(i);
             }
         }
@@ -254,8 +256,8 @@ export class SchemaView extends TSViewBase {
     }
 
     public getSelectedColNames(): string[] {
-        let colNames: string[] = [];
-        this.display.selectedRows.getStates().forEach(i => colNames.push(this.schema.get(i).name));
+        const colNames: string[] = [];
+        this.display.selectedRows.getStates().forEach((i) => colNames.push(this.schema.get(i).name));
         return colNames;
     }
     /**
@@ -263,12 +265,12 @@ export class SchemaView extends TSViewBase {
      * @param {string} action: Either Add or Remove.
      * This method updates the set of selected columns by adding/removing all columns of selectedType.
      */
-    private typeAction(selectedType:string, action: string) {
+    private typeAction(selectedType: string, action: string) {
         for (let i = 0; i < this.schema.length; i++) {
-            if (this.schema.get(i).kind == selectedType) {
-                if (action == "Add")
+            if (this.schema.get(i).kind === selectedType) {
+                if (action === "Add")
                     this.display.selectedRows.add(i);
-                else if (action = "Remove")
+                else if (action === "Remove")
                     this.display.selectedRows.delete(i);
             }
         }
@@ -278,15 +280,15 @@ export class SchemaView extends TSViewBase {
      * This method displays the table consisting of only the columns contained in the schema above.
      */
     private showTable(): void {
-        let newPage = this.dataset.newPage(this.page.title, this.page);
-        let selected = this.display.getSelectedRows();
-        let newSchema = this.schema.filter(c => selected.has(this.schema.columnIndex(c.name)));
-        let tv = new TableView(this.remoteObjectId, this.rowCount, newSchema, newPage);
+        const newPage = this.dataset.newPage(this.page.title, this.page);
+        const selected = this.display.getSelectedRows();
+        const newSchema = this.schema.filter((c) => selected.has(this.schema.columnIndex(c.name)));
+        const tv = new TableView(this.remoteObjectId, this.rowCount, newSchema, newPage);
         newPage.setDataView(tv);
-        let nkl: NextKList = {
+        const nkl: NextKList = {
             rowsScanned: this.rowCount,
             startPosition: 0,
-            rows: []
+            rows: [],
         };
         tv.updateView(nkl, false, new RecordOrder([]), null, 0);
     }

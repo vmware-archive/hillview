@@ -15,19 +15,19 @@
  * limitations under the License.
  */
 
-import {IColumnDescription, BasicColStats, CategoricalValues, ColumnAndRange} from "../javaBridge";
-import {Converters, significantDigits} from "../util";
-import {DistinctStrings} from "../distinctStrings";
-import {
-    scaleLinear as d3scaleLinear,
-    scaleTime as d3scaleTime,
-    ScaleLinear as D3ScaleLinear,
-    ScaleTime as D3ScaleTime
-} from "d3-scale";
 import {
     axisBottom as d3axisBottom,
-    axisLeft as d3axisLeft
+    axisLeft as d3axisLeft,
 } from "d3-axis";
+import {
+    scaleLinear as d3scaleLinear,
+    ScaleLinear as D3ScaleLinear,
+    scaleTime as d3scaleTime,
+    ScaleTime as D3ScaleTime,
+} from "d3-scale";
+import {DistinctStrings} from "../distinctStrings";
+import {BasicColStats, CategoricalValues, ColumnAndRange, IColumnDescription} from "../javaBridge";
+import {Converters, significantDigits} from "../util";
 
 export type AnyScale = D3ScaleLinear<number, number> | D3ScaleTime<number, number>;
 
@@ -35,8 +35,8 @@ export type AnyScale = D3ScaleLinear<number, number> | D3ScaleTime<number, numbe
  * A D3 axis and an associated scale.
  */
 export interface ScaleAndAxis {
-    scale: AnyScale,
-    axis: any,  // a d3 axis, but typing does not work well
+    scale: AnyScale;
+    axis: any;  // a d3 axis, but typing does not work well
 }
 
 /**
@@ -46,16 +46,16 @@ export class AxisData {
     public constructor(public description: IColumnDescription,
                        public stats: BasicColStats,
                        public distinctStrings: DistinctStrings,
-                       public bucketCount: number)
-    {}
+                       public bucketCount: number) {}
 
     public scaleAndAxis(length: number, bottom: boolean, legend: boolean): ScaleAndAxis {
-        let axisCreator = bottom ? d3axisBottom : d3axisLeft;
+        const axisCreator = bottom ? d3axisBottom : d3axisLeft;
 
         let actualMin = this.stats.min;
         let actualMax = this.stats.max;
         let adjust = .5;
-        if (legend && (this.description.kind == "Integer" || this.description.kind == "Category")) {
+        if (legend && (this.description.kind === "Integer" ||
+            this.description.kind === "Category")) {
             // These were adjusted, bring them back.
             actualMin += .5;
             actualMax -= .5;
@@ -63,7 +63,7 @@ export class AxisData {
         }
 
         // on vertical axis the direction is swapped
-        let domain = bottom ? [actualMin, actualMax] : [actualMax, actualMin];
+        const domain = bottom ? [actualMin, actualMax] : [actualMax, actualMin];
 
         let axis: any;
         let scale: AnyScale;
@@ -77,23 +77,23 @@ export class AxisData {
                 break;
             }
             case "Category": {
-                let ticks: number[] = [];
-                let labels: string[] = [];
+                const ticks: number[] = [];
+                const labels: string[] = [];
                 // note: this is without adjustment.
-                let tickCount = Math.ceil(this.stats.max - this.stats.min);
+                const tickCount = Math.ceil(this.stats.max - this.stats.min);
                 // TODO: if the tick count is too large it must be reduced
-                let minLabelWidth = 40;  // pixels
-                let maxLabelCount = length / minLabelWidth;
-                let labelPeriod = Math.ceil(tickCount / maxLabelCount);
+                const minLabelWidth = 40;  // pixels
+                const maxLabelCount = length / minLabelWidth;
+                const labelPeriod = Math.ceil(tickCount / maxLabelCount);
                 // On a legend the leftmost and rightmost ticks are at the ends
                 // On a plot axis the ticks are offset .5 from the ends.
-                let totalIntervals = legend ? (tickCount - 1) : tickCount;
-                let tickWidth = length / totalIntervals;
+                const totalIntervals = legend ? (tickCount - 1) : tickCount;
+                const tickWidth = length / totalIntervals;
 
                 for (let i = 0; i < tickCount; i++) {
                     ticks.push((i + adjust) * tickWidth);
                     let label = "";
-                    if (i % labelPeriod == 0)
+                    if (i % labelPeriod === 0)
                         label = this.distinctStrings.get(this.stats.min + .5 + i);
                     labels.push(label);
                 }
@@ -101,7 +101,7 @@ export class AxisData {
                     labels.reverse();
 
                 // We manually control the ticks.
-                let manual = d3scaleLinear()
+                const manual = d3scaleLinear()
                     .domain([0, length])
                     .range([0, length]);
                 scale = d3scaleLinear()
@@ -113,8 +113,8 @@ export class AxisData {
                 break;
             }
             case "Date": {
-                let minDate: Date = Converters.dateFromDouble(domain[0]);
-                let maxDate: Date = Converters.dateFromDouble(domain[1]);
+                const minDate: Date = Converters.dateFromDouble(domain[0]);
+                const maxDate: Date = Converters.dateFromDouble(domain[1]);
                 scale = d3scaleTime()
                     .domain([minDate, maxDate])
                     .range([0, length]);
@@ -131,7 +131,7 @@ export class AxisData {
         return { scale: scale, axis: axis };
     }
 
-    getCategoricalValues(): CategoricalValues {
+    public getCategoricalValues(): CategoricalValues {
         return new CategoricalValues(this.description.name,
             this.distinctStrings != null ? this.distinctStrings.uniqueStrings : null);
     }
@@ -142,7 +142,7 @@ export class AxisData {
      * @returns {string[]}  An array of categories, or null if this is not a
      * categorical column.
      */
-    getCategoriesInRange(bucketCount: number): string[] {
+    public getCategoriesInRange(bucketCount: number): string[] {
         if (this.distinctStrings == null)
             return null;
         return this.distinctStrings.categoriesInRange(
@@ -154,12 +154,12 @@ export class AxisData {
      * may be used to initiate a histogram computation.
      * @param {number} bucketCount  Number of buckets expected in histogram.
      */
-    getColumnAndRange(bucketCount: number): ColumnAndRange {
+    public getColumnAndRange(bucketCount: number): ColumnAndRange {
         return {
             columnName: this.description.name,
             min: this.stats.min,
             max: this.stats.max,
-            bucketBoundaries: this.getCategoriesInRange(bucketCount)
+            bucketBoundaries: this.getCategoriesInRange(bucketCount),
         };
     }
 
@@ -168,12 +168,12 @@ export class AxisData {
      * @param {number} bucket  Bucket number.
      * @returns {[number]}     The left and right margins of this bucket.
      */
-    boundaries(bucket: number): [number, number] {
+    public boundaries(bucket: number): [number, number] {
         if (bucket < 0 || bucket >= this.bucketCount)
             return null;
-        let interval = (this.stats.max - this.stats.min) / this.bucketCount;
-        let start = this.stats.min + interval * bucket;
-        let end = start + interval;
+        const interval = (this.stats.max - this.stats.min) / this.bucketCount;
+        const start = this.stats.min + interval * bucket;
+        const end = start + interval;
         return [start, end];
     }
 
@@ -181,7 +181,7 @@ export class AxisData {
      * @param {number} bucket  Bucket number.
      * @returns {string}  A description of the boundaries of the specified bucket.
      */
-    bucketDescription(bucket: number): string {
+    public bucketDescription(bucket: number): string {
         if (bucket < 0 || bucket >= this.bucketCount)
             return "empty";
         let [start, end] = this.boundaries(bucket);
@@ -194,7 +194,7 @@ export class AxisData {
                 end = Math.floor(end);
                 if (end < start)
                     return "empty";
-                else if (end == start)
+                else if (end === start)
                     return significantDigits(start);
                 else
                     return "[" + significantDigits(start) + ", " + significantDigits(end) + closeBracket;
@@ -205,14 +205,14 @@ export class AxisData {
                 end = Math.floor(end);
                 if (end < start)
                     return "empty";
-                else if (end == start)
+                else if (end === start)
                     return this.distinctStrings.get(start);
                 else
                     return "[" + this.distinctStrings.get(start) + ", " + this.distinctStrings.get(end) + closeBracket;
             }
             case "Date": {
-                let minDate: Date = Converters.dateFromDouble(start);
-                let maxDate: Date = Converters.dateFromDouble(end);
+                const minDate: Date = Converters.dateFromDouble(start);
+                const maxDate: Date = Converters.dateFromDouble(end);
                 return "[" + minDate + ", " + maxDate + closeBracket;
             }
             default: {

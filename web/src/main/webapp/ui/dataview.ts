@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-import {IHtmlElement, ViewKind} from "./ui";
 import {FullPage} from "./fullPage";
+import {IHtmlElement, ViewKind} from "./ui";
 
 /**
  * Main interface implemented by all Hillview views.
@@ -39,4 +39,3 @@ export interface IDataView extends IHtmlElement {
     /** Kind of view displayed */
     viewKind: ViewKind;
 }
-

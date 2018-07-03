@@ -15,31 +15,31 @@
  * limitations under the License.
  */
 
-import {RemoteObject, OnCompleteReceiver} from "./rpc";
-import {FullPage} from "./ui/fullPage";
-import {ICancellable, significantDigits, uuidv4} from "./util";
+import {DatasetView, IDatasetSerialization} from "./datasetView";
+import {SchemaReceiver} from "./dataViews/tableView";
 import {
     FileSetDescription,
     FileSizeSketchInfo,
     JdbcConnectionInformation,
-    RemoteObjectId
+    RemoteObjectId,
 } from "./javaBridge";
-import {DatasetView, IDatasetSerialization} from "./datasetView";
+import {OnCompleteReceiver, RemoteObject} from "./rpc";
 import {BaseRenderer} from "./tableTarget";
-import {SchemaReceiver} from "./dataViews/tableView";
+import {FullPage} from "./ui/fullPage";
+import {ICancellable, significantDigits, uuidv4} from "./util";
 
 export interface FilesLoaded {
-    kind: "Files",
-    description: FileSetDescription
+    kind: "Files";
+    description: FileSetDescription;
 }
 
 export interface TablesLoaded {
-    kind: "DB",
-    description: JdbcConnectionInformation
+    kind: "DB";
+    description: JdbcConnectionInformation;
 }
 
 export interface HillviewLogs {
-    kind: "Hillview logs",
+    kind: "Hillview logs";
 }
 
 export type DataLoaded = FilesLoaded | TablesLoaded | HillviewLogs | IDatasetSerialization;
@@ -70,10 +70,10 @@ class FileNamesReceiver extends OnCompleteReceiver<RemoteObjectId> {
     }
 
     public run(remoteObjId: RemoteObjectId): void {
-        let fn = new RemoteObject(remoteObjId);
-        let rr = fn.createStreamingRpcRequest<FileSizeSketchInfo>("getFileSize", null);
+        const fn = new RemoteObject(remoteObjId);
+        const rr = fn.createStreamingRpcRequest<FileSizeSketchInfo>("getFileSize", null);
         rr.chain(this.operation);
-        let observer = new FileSizeReceiver(this.page, rr, this.data, fn);
+        const observer = new FileSizeReceiver(this.page, rr, this.data, fn);
         rr.invoke(observer);
     }
 }
@@ -90,15 +90,15 @@ class FileSizeReceiver extends OnCompleteReceiver<FileSizeSketchInfo> {
     }
 
     public run(size: FileSizeSketchInfo): void {
-        if (size.fileCount == 0) {
+        if (size.fileCount === 0) {
             this.page.reportError("No files matching " + getDescription(this.data));
             return;
         }
-        let fileSize = "Loading " + size.fileCount + " file(s), total size " +
+        const fileSize = "Loading " + size.fileCount + " file(s), total size " +
             significantDigits(size.totalSize);
-        let rr = this.remoteObj.createStreamingRpcRequest<RemoteObjectId>("loadTable", null);
+        const rr = this.remoteObj.createStreamingRpcRequest<RemoteObjectId>("loadTable", null);
         rr.chain(this.operation);
-        let observer = new RemoteTableReceiver(this.page, rr, this.data, fileSize, false);
+        const observer = new RemoteTableReceiver(this.page, rr, this.data, fileSize, false);
         rr.invoke(observer);
     }
 }
@@ -123,11 +123,11 @@ export class RemoteTableReceiver extends BaseRenderer {
 
     public run(): void {
         super.run();
-        let rr = this.remoteObject.createGetSchemaRequest();
+        const rr = this.remoteObject.createGetSchemaRequest();
         rr.chain(this.operation);
-        let title = getDescription(this.data);
-        let dataset = new DatasetView(this.remoteObject.remoteObjectId, title, this.data);
-        let newPage = dataset.newPage(title, null);
+        const title = getDescription(this.data);
+        const dataset = new DatasetView(this.remoteObject.remoteObjectId, title, this.data);
+        const newPage = dataset.newPage(title, null);
         rr.invoke(new SchemaReceiver(newPage, rr, this.remoteObject, dataset, this.forceTableView));
     }
 }
@@ -148,22 +148,22 @@ export class InitialObject extends RemoteObject {
     }
 
     public loadFiles(files: FileSetDescription, loadMenuPage: FullPage): void {
-        let rr = this.createStreamingRpcRequest<RemoteObjectId>("findFiles", files);
-        let observer = new FileNamesReceiver(loadMenuPage, rr,
+        const rr = this.createStreamingRpcRequest<RemoteObjectId>("findFiles", files);
+        const observer = new FileNamesReceiver(loadMenuPage, rr,
             { kind: "Files", description: files });
         rr.invoke(observer);
     }
 
     public loadLogs(loadMenuPage: FullPage): void {
         // Use a guid to force the request to reload every time
-        let rr = this.createStreamingRpcRequest<RemoteObjectId>("findLogs", uuidv4());
-        let observer = new FileNamesReceiver(loadMenuPage, rr, { kind: "Hillview logs"} );
+        const rr = this.createStreamingRpcRequest<RemoteObjectId>("findLogs", uuidv4());
+        const observer = new FileNamesReceiver(loadMenuPage, rr, { kind: "Hillview logs"} );
         rr.invoke(observer);
     }
 
     public loadDBTable(conn: JdbcConnectionInformation, loadMenuPage: FullPage): void {
-        let rr = this.createStreamingRpcRequest<RemoteObjectId>("loadDBTable", conn);
-        let observer = new RemoteTableReceiver(loadMenuPage, rr,
+        const rr = this.createStreamingRpcRequest<RemoteObjectId>("loadDBTable", conn);
+        const observer = new RemoteTableReceiver(loadMenuPage, rr,
             { kind: "DB", description: conn }, "loading database table", false);
         rr.invoke(observer);
     }

@@ -296,9 +296,7 @@ table.menu td.selected {
 }
 
 table.dropdown {
-    position: absolute;
-    top: 0;
-    left: 0;
+    position: fixed;  /* relative to browser window */
     z-index: 1;
 }
 

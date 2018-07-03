@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-import {IHtmlElement} from "./ui";
-import {percent} from "../util";
 import {drag as d3drag} from "d3-drag";
 import {mouse as d3mouse, select as d3select} from "d3-selection";
+import {percent} from "../util";
+import {IHtmlElement} from "./ui";
 
 /**
  * A scroll target is an object which supports scrolling.  These are events
@@ -34,19 +34,19 @@ export interface IScrollTarget {
  * A custom scroll-bar.  Currently only vertical scrollbars are supported.
  */
 export class ScrollBar implements IHtmlElement {
-    static readonly minimumSize = 10;
-    static readonly barWidth = 16;
-    static readonly handleHeight = 6;
-    static readonly handleWidth = 12;
+    public static readonly minimumSize = 10;
+    public static readonly barWidth = 16;
+    public static readonly handleHeight = 6;
+    public static readonly handleWidth = 12;
 
     /**
      * Starting position; the range is 0-1.
      */
-    start : number;
+    public start: number;
     /**
      * End position: the range is 0-1.
      */
-    end : number;
+    public end: number;
 
     private readonly topLevel: HTMLElement;
     private beforeG: any;
@@ -72,7 +72,7 @@ export class ScrollBar implements IHtmlElement {
         this.topLevel.classList.add("hidden");
         this.height = 0;
 
-        let drag = d3drag()
+        const drag = d3drag()
             .on("start", () => this.dragStart())
             .on("drag", () => this.dragMove())
             .on("end", () => this.dragEnd());
@@ -136,14 +136,14 @@ export class ScrollBar implements IHtmlElement {
             .call(drag);
     }
 
-    dragStart(): void {
+    public dragStart(): void {
         this.bar.attr("height", "0");
         this.before.attr("height", this.height);
         this.before.attr("y", 0);
     }
 
-    dragEnd(): void {
-        let position = this.handle.attr("y");
+    public dragEnd(): void {
+        const position = this.handle.attr("y");
         let perc = position / this.height;
         if (position >= this.height - ScrollBar.handleHeight)
             perc = 1;
@@ -151,8 +151,8 @@ export class ScrollBar implements IHtmlElement {
             this.target.scrolledTo(perc);
     }
 
-    dragMove(): void {
-        let position = d3mouse(this.svg.node());
+    public dragMove(): void {
+        const position = d3mouse(this.svg.node());
         let y = position[1];
         if (y < 0)
             y = 0;
@@ -161,11 +161,11 @@ export class ScrollBar implements IHtmlElement {
         this.handle.attr("y", y);
     }
 
-    getHTMLRepresentation() : HTMLElement {
+    public getHTMLRepresentation(): HTMLElement {
         return this.topLevel;
     }
 
-    computePosition() : void {
+    public computePosition(): void {
         if (this.start <= 0.0 && this.end >= 1.0) {
             this.topLevel.classList.add("hidden");
             return;
@@ -197,9 +197,9 @@ export class ScrollBar implements IHtmlElement {
             .attr("y", barY + ((barHeight - ScrollBar.handleHeight) / 2));
     }
 
-    setPosition(start : number, end: number) : void {
+    public setPosition(start: number, end: number): void {
         if (start > end)
-            throw "Start after end: " + start + "/" + end;
+            throw new Error("Start after end: " + start + "/" + end);
         this.start = start;
         this.end = end;
         this.computePosition();

@@ -15,17 +15,17 @@
  * limitations under the License.
  */
 
-import {Plot} from "./plot";
-import {PlottingSurface} from "./plottingSurface";
-import {HeatMap} from "../javaBridge";
 import {AxisData} from "../dataViews/axisData";
+import {HeatMap} from "../javaBridge";
 import {regression} from "../util";
 import {HeatmapLegendPlot} from "./legendPlot";
+import {Plot} from "./plot";
+import {PlottingSurface} from "./plottingSurface";
 
 interface Dot {
-    x: number,
-    y: number,
-    v: number
+    x: number;
+    y: number;
+    v: number;
 }
 
 export class HeatmapPlot extends Plot {
@@ -51,7 +51,7 @@ export class HeatmapPlot extends Plot {
             return;
         }
 
-        let canvas = this.plottingSurface.getCanvas();
+        const canvas = this.plottingSurface.getCanvas();
         canvas.append("text")
             .text(this.yAxisData.description.name)
             .attr("dominant-baseline", "text-before-edge");
@@ -62,25 +62,25 @@ export class HeatmapPlot extends Plot {
             .attr("text-anchor", "middle")
             .attr("dominant-baseline", "hanging");
 
-        let xsc = this.xAxisData.scaleAndAxis(this.getChartWidth(), true, false);
-        let ysc = this.yAxisData.scaleAndAxis(this.getChartHeight(), false, false);
+        const xsc = this.xAxisData.scaleAndAxis(this.getChartWidth(), true, false);
+        const ysc = this.yAxisData.scaleAndAxis(this.getChartHeight(), false, false);
         this.xAxis = xsc.axis;
         this.yAxis = ysc.axis;
         this.xScale = xsc.scale;
         this.yScale = ysc.scale;
 
-        let htmlCanvas: HTMLCanvasElement = document.createElement("canvas");
+        const htmlCanvas: HTMLCanvasElement = document.createElement("canvas");
         htmlCanvas.height = this.getChartHeight();
         htmlCanvas.width = this.getChartWidth();
         // draw the image onto the canvas.
-        let ctx: CanvasRenderingContext2D = htmlCanvas.getContext("2d");
-        for (let dot of this.dots) {
+        const ctx: CanvasRenderingContext2D = htmlCanvas.getContext("2d");
+        for (const dot of this.dots) {
             ctx.beginPath();
             ctx.fillStyle = this.legendPlot.getColor(dot.v);
             ctx.fillRect(dot.x, dot.y, this.pointWidth, this.pointHeight);
             ctx.closePath();
         }
-        let url = htmlCanvas.toDataURL("image/png");
+        const url = htmlCanvas.toDataURL("image/png");
         this.plottingSurface.getChart()
             .append("image")
             .attr("xlink:href", url)
@@ -88,15 +88,15 @@ export class HeatmapPlot extends Plot {
             .attr("height", this.getChartHeight());
         this.drawAxes();
 
-        if (this.yAxisData.description.kind != "Category" &&
-            this.xAxisData.description.kind != "Category") {
+        if (this.yAxisData.description.kind !== "Category" &&
+            this.xAxisData.description.kind !== "Category") {
             // it makes no sense to do regressions for categorical values
-            let regr = regression(this.heatmap.buckets);
-            if (regr.length == 2) {
-                let b = regr[0];
-                let a = regr[1];
-                let y1 = this.getChartHeight() - b * this.pointHeight;
-                let y2 = this.getChartHeight() - (a * this.heatmap.buckets.length + b) * this.pointHeight;
+            const regr = regression(this.heatmap.buckets);
+            if (regr.length === 2) {
+                const b = regr[0];
+                const a = regr[1];
+                const y1 = this.getChartHeight() - b * this.pointHeight;
+                const y2 = this.getChartHeight() - (a * this.heatmap.buckets.length + b) * this.pointHeight;
                 this.plottingSurface.getChart()
                     .append("line")
                     .attr("x1", 0)
@@ -116,8 +116,8 @@ export class HeatmapPlot extends Plot {
         let yi = (this.getChartHeight() - y) / this.pointHeight;
         xi = Math.floor(xi);
         yi = Math.floor(yi);
-        let xPoints = this.heatmap.buckets.length;
-        let yPoints = this.heatmap.buckets[0].length;
+        const xPoints = this.heatmap.buckets.length;
+        const yPoints = this.heatmap.buckets[0].length;
         if (xi >= 0 && xi < xPoints && yi >= 0 && yi < yPoints)
             return this.heatmap.buckets[xi][yi];
         return 0;
@@ -141,9 +141,9 @@ export class HeatmapPlot extends Plot {
         this.yAxisData = yData;
         this.samplingRate = samplingRate;
 
-        let xPoints = this.heatmap.buckets.length;
-        let yPoints = this.heatmap.buckets[0].length;
-        if (xPoints == 0 || yPoints == 0)
+        const xPoints = this.heatmap.buckets.length;
+        const yPoints = this.heatmap.buckets[0].length;
+        if (xPoints === 0 || yPoints === 0)
             return;
         this.pointWidth = this.getChartWidth() / xPoints;
         this.pointHeight = this.getChartHeight() / yPoints;
@@ -155,11 +155,11 @@ export class HeatmapPlot extends Plot {
 
         for (let x = 0; x < this.heatmap.buckets.length; x++) {
             for (let y = 0; y < this.heatmap.buckets[x].length; y++) {
-                let v = this.heatmap.buckets[x][y];
+                const v = this.heatmap.buckets[x][y];
                 if (v > this.max)
                     this.max = v;
-                if (v != 0) {
-                    let rec = {
+                if (v !== 0) {
+                    const rec = {
                         x: x * this.pointWidth,
                         y: this.getChartHeight() - (y + 1) * this.pointHeight,  // +1 because it's the upper corner
                         v: v

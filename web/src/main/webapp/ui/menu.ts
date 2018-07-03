@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
+import {browserWindowSize, makeId} from "../util";
 import {IHtmlElement} from "./ui";
-import {makeId} from "../util";
 
 /**
  * One item in a menu.
@@ -41,15 +41,15 @@ export interface MenuItem extends BaseMenuItem {
 }
 
 abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
-    items: MI[];
+    public items: MI[];
     /**
      * Actual html representations corresponding to the submenu items.
      * They are stored in the same order as the items.
      */
-    outer: HTMLTableElement;
-    tableBody: HTMLTableSectionElement;
-    cells: HTMLTableDataCellElement[];
-    selectedIndex: number;  // -1 if no item is selected
+    public outer: HTMLTableElement;
+    public tableBody: HTMLTableSectionElement;
+    public cells: HTMLTableDataCellElement[];
+    public selectedIndex: number;  // -1 if no item is selected
 
     protected constructor() {
         this.items = [];
@@ -58,27 +58,27 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
         this.outer = document.createElement("table");
         this.outer.classList.add("menu", "hidden");
         this.tableBody = this.outer.createTBody();
-        this.outer.onkeydown = e => this.keyAction(e);
+        this.outer.onkeydown = (e) => this.keyAction(e);
     }
 
     protected addItems(mis: MI[]): void {
         if (mis != null) {
-            for (let mi of mis)
+            for (const mi of mis)
                 this.addItem(mi, true);
         }
     }
 
-    abstract setAction(mi: MI, enabled: boolean): void;
+    public abstract setAction(mi: MI, enabled: boolean): void;
 
-    keyAction(e: KeyboardEvent): void {
-        if (e.code == "ArrowDown" && this.selectedIndex < this.cells.length - 1) {
+    public keyAction(e: KeyboardEvent): void {
+        if (e.code === "ArrowDown" && this.selectedIndex < this.cells.length - 1) {
             this.select(this.selectedIndex + 1);
-        } else if (e.code == "ArrowUp"  && this.selectedIndex > 0) {
+        } else if (e.code === "ArrowUp"  && this.selectedIndex > 0) {
             this.select(this.selectedIndex - 1);
-        } else if (e.code == "Enter" && this.selectedIndex >= 0) {
+        } else if (e.code === "Enter" && this.selectedIndex >= 0) {
             // emulate a mouse click on this cell
             this.cells[this.selectedIndex].click();
-        } else if (e.code == "Escape") {
+        } else if (e.code === "Escape") {
             this.hide();
         }
     }
@@ -87,35 +87,35 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
      * Find the position of an item based on its text.
      * @param text   Text string in the item.
      */
-    find(text: string): number {
-        for (let i=0; i < this.items.length; i++)
-            if (this.items[i].text == text)
+    public find(text: string): number {
+        for (let i = 0; i < this.items.length; i++)
+            if (this.items[i].text === text)
                 return i;
         return -1;
     }
 
-    getHTMLRepresentation(): HTMLElement {
+    public getHTMLRepresentation(): HTMLElement {
         return this.outer;
     }
 
-    hide(): void {
+    public hide(): void {
         this.outer.classList.add("hidden");
     }
 
-    getCell(mi: MI): HTMLTableCellElement {
-        let index = this.find(mi.text);
+    public getCell(mi: MI): HTMLTableCellElement {
+        const index = this.find(mi.text);
         if (index < 0)
-            throw "Cannot find menu item";
+            throw new Error("Cannot find menu item");
         return this.cells[index];
     }
 
     public addItem(mi: MI, enabled: boolean): HTMLTableDataCellElement {
-        let index = this.items.length;
+        const index = this.items.length;
         this.items.push(mi);
-        let trow = this.tableBody.insertRow();
-        let cell = trow.insertCell(0);
+        const trow = this.tableBody.insertRow();
+        const cell = trow.insertCell(0);
         this.cells.push(cell);
-        if (mi.text == "---")
+        if (mi.text === "---")
             cell.innerHTML = "<hr>";
         else
             cell.innerHTML = mi.text;
@@ -135,9 +135,9 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
      * @param {number} index      Index of item to highlight.
      * @param {boolean} selected  True if the item is being selected.
      */
-    markSelect(index: number, selected: boolean): void {
+    public markSelect(index: number, selected: boolean): void {
         if (index >= 0 && index < this.cells.length) {
-            let cell = this.cells[index];
+            const cell = this.cells[index];
             if (selected) {
                 cell.classList.add("selected");
                 this.outer.focus();
@@ -147,7 +147,7 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
         }
     }
 
-    select(index: number): void {
+    public select(index: number): void {
         if (this.selectedIndex >= 0)
             this.markSelect(this.selectedIndex, false);
         if (index < 0 || index >= this.cells.length)
@@ -156,8 +156,8 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
         this.markSelect(this.selectedIndex, true);
     }
 
-    enableByIndex(index: number, enabled: boolean): void {
-        let cell = this.cells[index];
+    public enableByIndex(index: number, enabled: boolean): void {
+        const cell = this.cells[index];
         if (enabled)
             cell.classList.remove("disabled");
         else
@@ -165,14 +165,14 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
         this.setAction(this.items[index], enabled);
     }
 
-    enableItem(mi: MI, enabled: boolean): void {
+    public enableItem(mi: MI, enabled: boolean): void {
         this.enable(mi.text, enabled);
     }
 
     /**
      * Remove all elements from the menu.
      */
-    clear(): void {
+    public clear(): void {
         this.tableBody.remove();
         this.items = [];
         this.cells = [];
@@ -185,10 +185,10 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
      * @param {string} text      Text of the item which identifies the item.
      * @param {boolean} enabled  If true the menu item is enabled, else it is disabled.
      */
-    enable(text: string, enabled: boolean): void {
-        let index = this.find(text);
+    public enable(text: string, enabled: boolean): void {
+        const index = this.find(text);
         if (index < 0)
-            throw "Cannot find menu item " + text;
+            throw new Error("Cannot find menu item " + text);
         this.enableByIndex(index, enabled);
     }
 }
@@ -207,7 +207,7 @@ export class ContextMenu extends BaseMenu<MenuItem> implements IHtmlElement {
         this.addItems(mis);
         this.outer.classList.add("dropdown");
         this.outer.classList.add("menu");
-        this.outer.onmouseleave = () => { this.hide() };
+        this.outer.onmouseleave = () => { this.hide(); };
 
         parent.appendChild(this.getHTMLRepresentation());
         this.hide();
@@ -219,13 +219,16 @@ export class ContextMenu extends BaseMenu<MenuItem> implements IHtmlElement {
     public show(e: MouseEvent): void {
         e.preventDefault();
         // Spawn the menu at the mouse's location
-        let x = e.pageX - 5;
-        let y = e.pageY - 5;
+        let x = e.clientX - 5;
+        let y = e.clientY - 5;
         this.outer.classList.remove("hidden");
-        if (this.outer.offsetWidth + x >= window.innerWidth)
-            x = window.innerWidth - this.outer.offsetWidth - 1;
-        if (this.outer.offsetHeight + y >= window.innerHeight)
-            y = window.innerHeight - this.outer.offsetHeight - 1;
+        const max = browserWindowSize();
+       
+        // We use 5 to leave room for border and shadow
+        if (this.outer.offsetWidth + x >= max.width)
+            x = max.width - this.outer.offsetWidth - 5;
+        if (this.outer.offsetHeight + y >= max.height)
+            y = max.height - this.outer.offsetHeight - 5;
         if (y < 0)
             y = 0;
         this.move(x, y);
@@ -235,16 +238,17 @@ export class ContextMenu extends BaseMenu<MenuItem> implements IHtmlElement {
 
     /**
      * Place the menu at some specific position on the screen.
-     * @param {number} x  Absolute x coordinate.
-     * @param {number} y  Absolute y coordinate.
+     * @param {number} x  Absolute x coordinate within browser window.
+     * @param {number} y  Absolute y coordinate within browser window.
      */
-    move(x: number, y: number): void {
-        this.outer.style.transform = `translate(${x}px, ${y}px)`;
+    public move(x: number, y: number): void {
+        this.outer.style.left = x + "px";
+        this.outer.style.top = y + "px";
     }
 
-    setAction(mi: MenuItem, enabled: boolean): void {
-        let index = this.find(mi.text);
-        let cell = this.cells[index];
+    public setAction(mi: MenuItem, enabled: boolean): void {
+        const index = this.find(mi.text);
+        const cell = this.cells[index];
         if (mi.action != null && enabled)
             cell.onclick = () => { this.hide(); mi.action(); };
         else
@@ -267,17 +271,17 @@ export class SubMenu extends BaseMenu<MenuItem> implements IHtmlElement {
         this.outer.id = "topMenu";
     }
 
-    show(): void {
+    public show(): void {
         this.outer.classList.remove("hidden");
         this.outer.tabIndex = 1;  // necessary for keyboard events?
     }
 
-    setAction(mi: MenuItem, enabled: boolean): void {
-        let cell = this.getCell(mi);
+    public setAction(mi: MenuItem, enabled: boolean): void {
+        const cell = this.getCell(mi);
         if (mi.action != null && enabled)
             cell.onclick = (e: MouseEvent) => { e.stopPropagation(); this.hide(); mi.action(); };
         else
-            cell.onclick = (e: MouseEvent) => { e.stopPropagation(); this.hide(); }
+            cell.onclick = (e: MouseEvent) => { e.stopPropagation(); this.hide(); };
     }
 }
 
@@ -305,12 +309,12 @@ export class TopMenu extends BaseMenu<TopMenuItem> {
         this.addItems(mis);
     }
 
-    hideSubMenus(): void {
+    public hideSubMenus(): void {
         this.items.forEach((mi) => mi.subMenu.hide());
     }
 
     public addItem(mi: TopMenuItem, enabled: boolean): HTMLTableDataCellElement {
-        let cell = this.tableBody.rows.item(0).insertCell();
+        const cell = this.tableBody.rows.item(0).insertCell();
         cell.id = makeId(mi.text);  // for testing
         cell.textContent = mi.text;
         cell.appendChild(mi.subMenu.getHTMLRepresentation());
@@ -323,12 +327,12 @@ export class TopMenu extends BaseMenu<TopMenuItem> {
         return cell;
     }
 
-    setAction(mi: TopMenuItem, enabled: boolean): void {
-        let cell = this.getCell(mi);
+    public setAction(mi: TopMenuItem, enabled: boolean): void {
+        const cell = this.getCell(mi);
         cell.onclick = enabled ? () => {
             this.hideSubMenus();
             cell.classList.add("selected");
-            mi.subMenu.show()
+            mi.subMenu.show();
         } : () => {
             this.hideSubMenus();
         };
@@ -338,7 +342,7 @@ export class TopMenu extends BaseMenu<TopMenuItem> {
         };
     }
 
-    getHTMLRepresentation(): HTMLElement {
+    public getHTMLRepresentation(): HTMLElement {
         return this.outer;
     }
 
@@ -346,10 +350,10 @@ export class TopMenu extends BaseMenu<TopMenuItem> {
      * Find the position of an item
      * @param text   Text string in the item.
      */
-    getSubmenu(text: string): SubMenu {
-        for (let i=0; i < this.items.length; i++)
-            if (this.items[i].text == text)
-                return this.items[i].subMenu;
+    public getSubmenu(text: string): SubMenu {
+        for (const item of this.items)
+            if (item.text === text)
+                return item.subMenu;
         return null;
     }
 }

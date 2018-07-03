@@ -16,9 +16,9 @@
  */
 
 import {line as d3line} from "d3-shape";
+import {Histogram} from "../javaBridge";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
-import {Histogram} from "../javaBridge";
 
 /**
  * A CDFPlot draws a CDF curve on a PlottingSurface.
@@ -36,31 +36,31 @@ export class CDFPlot extends Plot {
         this.cdf = cdf;
         this.cdfData = [];
         let point = 0;
-        for (let i in cdf.buckets) {
+        for (const bucket of cdf.buckets) {
             // yes, each point is inserted twice.
             this.cdfData.push(point);
-            point += cdf.buckets[i];
+            point += bucket;
             this.cdfData.push(point);
         }
         this.max = point;
-        if (this.max == 0)
+        if (this.max === 0)
             // To prevent division by zero below.  It won't matter anyway
             this.max = 1;
     }
 
     public draw(): void {
-        if (this.cdfData.length == 0)
+        if (this.cdfData.length === 0)
             return;
         // After resizing the line may not have the exact number of points
         // as the screen width.
-        let chartWidth = this.getChartWidth();
-        let chartHeight = this.getChartHeight();
-        let cdfLine = d3line<number>()
+        const chartWidth = this.getChartWidth();
+        const chartHeight = this.getChartHeight();
+        const cdfLine = d3line<number>()
             .x((d, i) => {
-                let index = Math.floor(i / 2); // two points for each data point, for a zig-zag
+                const index = Math.floor(i / 2); // two points for each data point, for a zig-zag
                 return index * 2 * chartWidth / this.cdfData.length;
             })
-            .y(d => chartHeight - d * chartHeight / this.max);
+            .y((d) => chartHeight - d * chartHeight / this.max);
 
         // draw CDF curve
         this.plottingSurface.getChart()
@@ -77,14 +77,14 @@ export class CDFPlot extends Plot {
      */
     public getY(x: number): number {
         // determine mouse position on cdf curve
-        let cdfX = x * this.cdf.buckets.length / this.getChartWidth();
+        const cdfX = x * this.cdf.buckets.length / this.getChartWidth();
         if (cdfX < 0) {
             return 0;
         } else if (cdfX >= this.cdf.buckets.length) {
             return 1;
         } else {
             // 2 values for each pixel
-            let cdfPosition = this.cdfData[2 * Math.floor(cdfX)];
+            const cdfPosition = this.cdfData[2 * Math.floor(cdfX)];
             return cdfPosition / this.max;
         }
     }

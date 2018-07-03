@@ -40,7 +40,7 @@ export class SchemaClass implements Serializable<SchemaClass> {
         this.columnNames = [];
         this.columnMap = new Map<string, number>();
         for (let i = 0; i < this.schema.length; i++) {
-            let colName = this.schema[i].name;
+            const colName = this.schema[i].name;
             this.columnNames.push(colName);
             this.columnMap.set(colName, i);
         }
@@ -64,21 +64,21 @@ export class SchemaClass implements Serializable<SchemaClass> {
     public serialize(): SchemaClassSerialization {
         return {
             schema: this.schema,
-            displayNameMap: mapToArray(this.displayNameMap)
-        }
+            displayNameMap: mapToArray(this.displayNameMap),
+        };
     }
 
     public deserialize(data: SchemaClassSerialization): SchemaClass {
         this.schema = data.schema;
-        let dn: Array<string> = data.displayNameMap;
+        const dn: string[] = data.displayNameMap;
 
         if (this.schema == null || dn == null)
             return null;
         this.initialize();
-        if (dn.length % 2 != 0)
+        if (dn.length % 2 !== 0)
             return null;
         for (let i = 0; i < dn.length; i += 2) {
-            let success = this.changeDisplayName(dn[i], dn[i + 1]);
+            const success = this.changeDisplayName(dn[i], dn[i + 1]);
             if (!success)
                 return null;
         }
@@ -140,32 +140,32 @@ export class SchemaClass implements Serializable<SchemaClass> {
     public find(colName: string): IColumnDescription {
         if (colName == null)
             return null;
-        let colIndex = this.columnIndex(colName);
+        const colIndex = this.columnIndex(colName);
         if (colIndex != null)
             return this.schema[colIndex];
         return null;
     }
 
     public findByDisplayName(colName: string): IColumnDescription {
-        let original = this.fromDisplayName(colName);
+        const original = this.fromDisplayName(colName);
         return this.find(original);
     }
 
     public filter(predicate: (IColumnDescription) => boolean): SchemaClass {
-        let cols = this.schema.filter(predicate);
-        let result = new SchemaClass(cols);
+        const cols = this.schema.filter(predicate);
+        const result = new SchemaClass(cols);
         result.copyDisplayNames(this);
         return result;
     }
 
     public append(cd: IColumnDescription): SchemaClass {
-        let result = new SchemaClass(this.schema.concat(cd));
+        const result = new SchemaClass(this.schema.concat(cd));
         result.copyDisplayNames(this);
         return result;
     }
 
     public concat(cds: IColumnDescription[]): SchemaClass {
-        let result = new SchemaClass(this.schema.concat(cds));
+        const result = new SchemaClass(this.schema.concat(cds));
         result.copyDisplayNames(this);
         return result;
     }
@@ -179,7 +179,7 @@ export class SchemaClass implements Serializable<SchemaClass> {
     }
 
     public clone(): SchemaClass {
-        let result = new SchemaClass(this.schema);
+        const result = new SchemaClass(this.schema);
         result.copyDisplayNames(this);
         return result;
     }

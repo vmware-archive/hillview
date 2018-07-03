@@ -15,26 +15,32 @@
  * limitations under the License.
  */
 
-import {CombineOperators, IColumnDescription, IDistinctStrings, RemoteObjectId} from "./javaBridge";
-import {OnCompleteReceiver, RpcRequest} from "./rpc";
-import {DistinctStrings} from "./distinctStrings";
-import {FullPage} from "./ui/fullPage";
-import {EnumIterators, ICancellable, Pair, PartialResult, saveAs} from "./util";
-import {BigTableView, TableTargetAPI} from "./tableTarget";
-import {MenuItem, SubMenu, TopMenuItem} from "./ui/menu";
-import {IHtmlElement, ViewKind} from "./ui/ui";
-import {DataLoaded, getDescription} from "./initialObject";
-import {HillviewToplevel} from "./toplevel";
-import {NotifyDialog} from "./ui/dialog";
-import {SchemaReceiver, TableView} from "./dataViews/tableView";
-import {IDataView} from "./ui/dataview";
-import {HistogramView} from "./dataViews/histogramView";
-import {SchemaClassSerialization} from "./schemaClass";
-import {Histogram2DView} from "./dataViews/histogram2DView";
 import {HeatmapView} from "./dataViews/heatmapView";
+import {HeavyHittersView} from "./dataViews/heavyHittersView";
+import {Histogram2DView} from "./dataViews/histogram2DView";
+import {HistogramView} from "./dataViews/histogramView";
 import {SchemaView} from "./dataViews/schemaView";
 import {SpectrumView} from "./dataViews/spectrumView";
-import {HeavyHittersView} from "./dataViews/heavyHittersView";
+import {SchemaReceiver, TableView} from "./dataViews/tableView";
+import {DistinctStrings} from "./distinctStrings";
+import {DataLoaded, getDescription} from "./initialObject";
+import {
+    CombineOperators,
+    IColumnDescription,
+    IDistinctStrings,
+    RecordOrder,
+    RemoteObjectId,
+} from "./javaBridge";
+import {OnCompleteReceiver, RpcRequest} from "./rpc";
+import {SchemaClassSerialization} from "./schemaClass";
+import {BigTableView, TableTargetAPI} from "./tableTarget";
+import {HillviewToplevel} from "./toplevel";
+import {IDataView} from "./ui/dataview";
+import {NotifyDialog} from "./ui/dialog";
+import {FullPage} from "./ui/fullPage";
+import {MenuItem, SubMenu, TopMenuItem} from "./ui/menu";
+import {IHtmlElement, ViewKind} from "./ui/ui";
+import {assert, EnumIterators, ICancellable, Pair, PartialResult, saveAs} from "./util";
 
 export interface IViewSerialization {
     viewKind: ViewKind;
@@ -44,6 +50,39 @@ export interface IViewSerialization {
     remoteObjectId: RemoteObjectId;
     rowCount: number;
     schema: SchemaClassSerialization;
+}
+
+export interface HeavyHittersSerialization extends IViewSerialization {
+    order: RecordOrder;
+    percent: number;
+    remoteTableId: string;
+    isApprox: boolean;
+    columnsShown: IColumnDescription[];
+}
+
+export interface TableSerialization extends IViewSerialization {
+    order: RecordOrder;
+    firstRow: any[];
+    tableRowsDesired: number;
+}
+
+export interface HistogramSerialization extends IViewSerialization {
+    exact: boolean;
+    columnDescription: IColumnDescription;
+}
+
+export interface HeatmapSerialization extends IViewSerialization {
+    exact: boolean;
+    columnDescription0: IColumnDescription;
+    columnDescription1: IColumnDescription;
+}
+
+export interface Histogram2DSerialization extends HeatmapSerialization {
+    relative: boolean;
+}
+
+export interface SpectrumSerialization extends IViewSerialization {
+    colNames: string[];
 }
 
 export interface IDatasetSerialization {
@@ -112,9 +151,9 @@ export class DatasetView implements IHtmlElement {
      */
     public createGetCategoryRequest(page: FullPage, columns: IColumnDescription[]):
         RpcRequest<DistinctStrings[]> {
-        let toBring = columns.filter(c => c.kind == "Category")
-            .map(c => c.name)
-            .filter(c => !this.categoryCache.has(c));
+        const toBring = columns.filter((c) => c.kind === "Category")
+            .map((c) => c.name)
+            .filter((c) => !this.categoryCache.has(c));
         return new CategoryValuesRequest(this.remoteObjectId, page, columns, toBring);
     }
 
@@ -122,8 +161,8 @@ export class DatasetView implements IHtmlElement {
      * Check if the selected object can be combined with the specified one,
      * and if so return it.  Otherwise write an error message and return null.
      */
-    getSelected(): Pair<BigTableView, number> {
-        return { first: this.selected, second: this.selectedPageId }
+    public getSelected(): Pair<BigTableView, number> {
+        return { first: this.selected, second: this.selectedPageId };
     }
 
     public setDistinctStrings(columnName: string, values: DistinctStrings): void {
@@ -137,30 +176,31 @@ export class DatasetView implements IHtmlElement {
     }
 
     public combineMenu(ro: BigTableView, pageId: number): TopMenuItem {
-        let combineMenu: MenuItem[] = [];
+        const combineMenu: MenuItem[] = [];
         combineMenu.push({
             text: "Select current",
             action: () => { this.select(ro, pageId); },
-            help: "Save the current view; later it can be combined with another view, using one of the operations below."
+            help: "Save the current view; later it can be combined with another view, " +
+                  "using one of the operations below.",
         });
         combineMenu.push({text: "---", action: null, help: null});
         EnumIterators.getNamesAndValues(CombineOperators)
-            .forEach(c => combineMenu.push({
+            .forEach((c) => combineMenu.push({
                 text: c.name,
                 action: () => { ro.combine(c.value); },
-                help: "Combine the rows in the two views using the " + c.value + " operation"
+                help: "Combine the rows in the two views using the " + c.value + " operation",
             }));
         return {
             text: "Combine",
             help: "Combine data from two separate views.",
-            subMenu: new SubMenu(combineMenu)
+            subMenu: new SubMenu(combineMenu),
         };
     }
 
-    findIndex(page: FullPage): number {
-        let index = this.allPages.indexOf(page);
+    public findIndex(page: FullPage): number {
+        const index = this.allPages.indexOf(page);
         if (index < 0)
-            throw "Page not found";
+            throw new Error("Page not found");
         return index;
     }
 
@@ -169,14 +209,14 @@ export class DatasetView implements IHtmlElement {
      * @param {FullPage} toInsert  Page to insert.
      * @param {FullPage} after     Page to insert after; if null insertion is done at the end.
      */
-    insertAfter(toInsert: FullPage, after: FullPage | null): void {
-        console.assert(toInsert != null);
-        let pageRepresentation = toInsert.getHTMLRepresentation();
+    public insertAfter(toInsert: FullPage, after: FullPage | null): void {
+        assert(toInsert !== null);
+        const pageRepresentation = toInsert.getHTMLRepresentation();
         if (after == null) {
             this.topLevel.appendChild(pageRepresentation);
             this.allPages.push(toInsert);
         } else {
-            let index = this.findIndex(after);
+            const index = this.findIndex(after);
             this.allPages.splice(index + 1, 0, toInsert);
             if (index >= this.topLevel.children.length - 1)
                 this.topLevel.appendChild(pageRepresentation);
@@ -186,14 +226,14 @@ export class DatasetView implements IHtmlElement {
     }
 
     public remove(page: FullPage): void {
-        let index = this.findIndex(page);
+        const index = this.findIndex(page);
         this.allPages.splice(index, 1);
         this.topLevel.removeChild(this.topLevel.children[index]);
     }
 
     public newPage(title: string, sourcePage: FullPage | null): FullPage {
-        let number = this.pageCounter++;
-        let page = new FullPage(number, title, sourcePage != null ? sourcePage.pageId : null, this);
+        const num = this.pageCounter++;
+        const page = new FullPage(num, title, sourcePage != null ? sourcePage.pageId : null, this);
         this.insertAfter(page, sourcePage);
         return page;
     }
@@ -203,7 +243,7 @@ export class DatasetView implements IHtmlElement {
      * The newly created page is always inserted at the end.
      */
     public reconstructPage(title: string, pageNo: number, sourcePageNo: number | null): FullPage {
-        let page = new FullPage(pageNo, title, sourcePageNo, this);
+        const page = new FullPage(pageNo, title, sourcePageNo, this);
         if (pageNo >= this.pageCounter)
             this.pageCounter = pageNo + 1;
         this.insertAfter(page, null);
@@ -211,8 +251,8 @@ export class DatasetView implements IHtmlElement {
     }
 
     public scrollIntoView(pageId: number): boolean {
-        for (let p of this.allPages) {
-            if (p.pageId == pageId) {
+        for (const p of this.allPages) {
+            if (p.pageId === pageId) {
                 p.scrollIntoView();
                 return true;
             }
@@ -221,7 +261,7 @@ export class DatasetView implements IHtmlElement {
     }
 
     public resize(): void {
-        for (let p of this.allPages)
+        for (const p of this.allPages)
             p.onResize();
     }
 
@@ -230,30 +270,30 @@ export class DatasetView implements IHtmlElement {
      * @param {Object} obj  Object which is a serialization of a BigTableView.
      * @returns {boolean}   True if reconstruction succeeds.
      */
-    reconstructView(obj: Object): boolean {
+    public reconstructView(obj: object): boolean {
         // This is ugly, but circular module dependences make it
         // difficult to place this method in a set of separate classes.
-        let vs = <IViewSerialization>obj;
+        const vs = obj as IViewSerialization;
         if (vs.pageId == null ||
             vs.remoteObjectId == null ||
             vs.rowCount == null ||
             vs.title == null ||
             vs.viewKind == null)  // sourcePageId can be null
             return false;
-        let page = this.reconstructPage(vs.title, vs.pageId, vs.sourcePageId);
+        const page = this.reconstructPage(vs.title, vs.pageId, vs.sourcePageId);
         let view: IDataView = null;
         switch (vs.viewKind) {
             case "Table":
-                view = TableView.reconstruct(vs, page);
+                view = TableView.reconstruct(vs as TableSerialization, page);
                 break;
             case "Histogram":
-                view = HistogramView.reconstruct(vs, page);
+                view = HistogramView.reconstruct(vs as HistogramSerialization, page);
                 break;
             case "2DHistogram":
-                view = Histogram2DView.reconstruct(vs, page);
+                view = Histogram2DView.reconstruct(vs as Histogram2DSerialization, page);
                 break;
             case "Heatmap":
-                view = HeatmapView.reconstruct(vs, page);
+                view = HeatmapView.reconstruct(vs as HeatmapSerialization, page);
                 break;
             case "Schema":
                 view = SchemaView.reconstruct(vs, page);
@@ -262,10 +302,10 @@ export class DatasetView implements IHtmlElement {
                 // TODO
                 break;
             case "HeavyHitters":
-                view = HeavyHittersView.reconstruct(vs, page);
+                view = HeavyHittersView.reconstruct(vs as HeavyHittersSerialization, page);
                 break;
             case "SVD Spectrum":
-                view = SpectrumView.reconstruct(vs, page);
+                view = SpectrumView.reconstruct(vs as SpectrumSerialization, page);
                 break;
             case "LAMP":
                 // No longer maintained.
@@ -286,25 +326,26 @@ export class DatasetView implements IHtmlElement {
      * @param {Object} obj  Serialized description of the dataset read back.
      * @returns {boolean}   True if the reconstruction succeeded.
      */
-    reconstruct(obj: Object): boolean {
-        if (obj["views"] == null)
+    public reconstruct(obj: object): boolean {
+        const dss = obj as IDatasetSerialization;
+        if (dss.views == null)
             return false;
-        if (!Array.isArray(obj["views"]))
+        if (!Array.isArray(dss.views))
             return false;
-        for (let v of obj["views"])
+        for (const v of dss.views)
             if (!this.reconstructView(v))
                 return false;
         return true;
     }
 
-    serialize(): IDatasetSerialization {
-        let result: IDatasetSerialization = {
+    public serialize(): IDatasetSerialization {
+        const result: IDatasetSerialization = {
             remoteObjectId: this.remoteObjectId,
             views: [],
-            kind: "Saved dataset"
+            kind: "Saved dataset",
         };
-        for (let p of this.allPages) {
-            let vs = <BigTableView>p.getDataView();
+        for (const p of this.allPages) {
+            const vs = p.getDataView() as BigTableView;
             if (vs != null)
                 result.views.push(vs.serialize());
         }
@@ -314,19 +355,19 @@ export class DatasetView implements IHtmlElement {
     /**
      * Displays again the original data.
      */
-    redisplay(): void {
-        let rr = this.remoteObject.createGetSchemaRequest();
-        let title = getDescription(this.loaded);
-        let newPage = this.newPage(title, null);
+    public redisplay(): void {
+        const rr = this.remoteObject.createGetSchemaRequest();
+        const title = getDescription(this.loaded);
+        const newPage = this.newPage(title, null);
         rr.invoke(new SchemaReceiver(newPage, rr, this.remoteObject, this, false));
     }
 
-    saveToFile(): void {
-        let ser = this.serialize();
-        let str = JSON.stringify(ser);
-        let fileName = "savedView.txt";
+    public saveToFile(): void {
+        const ser = this.serialize();
+        const str = JSON.stringify(ser);
+        const fileName = "savedView.txt";
         saveAs(fileName, str);
-        let notify = new NotifyDialog("File has been saved\n" +
+        const notify = new NotifyDialog("File has been saved\n" +
             "Look for file " + fileName + " in the browser Downloads folder",
             "File has been saved");
         notify.show();
@@ -339,17 +380,17 @@ export class DatasetView implements IHtmlElement {
  */
 class CategoryValuesObserver extends OnCompleteReceiver<IDistinctStrings[]> {
     constructor(page: FullPage, operation: ICancellable,
-        protected requestedColumns: IColumnDescription[],
-        protected toBringColumns: string[],
-        protected observer: OnCompleteReceiver<DistinctStrings[]>) {
+                protected requestedColumns: IColumnDescription[],
+                protected toBringColumns: string[],
+                protected observer: OnCompleteReceiver<DistinctStrings[]>) {
         super(page, operation, "Enumerate categories");
     }
 
-    run(value: IDistinctStrings[]): void {
+    public run(value: IDistinctStrings[]): void {
         // Receive the columns that we asked for and cache the results
-        console.assert(this.toBringColumns.length == value.length);
+        assert(this.toBringColumns.length === value.length);
         for (let i = 0; i < this.toBringColumns.length; i++) {
-            let ds = new DistinctStrings(value[i], this.toBringColumns[i]);
+            const ds = new DistinctStrings(value[i], this.toBringColumns[i]);
             if (ds.truncated)
                 this.page.reportError(
                     "Column " + this.requestedColumns[i] + " has too many distinct values for a category");
@@ -357,8 +398,8 @@ class CategoryValuesObserver extends OnCompleteReceiver<IDistinctStrings[]> {
         }
 
         // Build the result expected by the observer: all the requested columns
-        let result: DistinctStrings[] = [];
-        for (let c of this.requestedColumns)
+        const result: DistinctStrings[] = [];
+        for (const c of this.requestedColumns)
             result.push(this.page.dataset.getDistinctStrings(c.name));
 
         this.observer.onNext(new PartialResult<DistinctStrings[]>(1, result));
@@ -378,9 +419,9 @@ class CategoryValuesRequest extends RpcRequest<IDistinctStrings[]> {
     }
 
     public invoke(onReply: OnCompleteReceiver<DistinctStrings[]>) {
-        let cvo = new CategoryValuesObserver(
+        const cvo = new CategoryValuesObserver(
             this.page, this, this.requestedColumns, this.toBringColumns, onReply);
-        if (this.toBringColumns.length == 0) {
+        if (this.toBringColumns.length === 0) {
             cvo.onNext(new PartialResult<DistinctStrings[]>(1, []));
             cvo.onCompleted();
         } else {

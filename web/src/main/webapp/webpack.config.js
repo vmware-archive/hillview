@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-var path = require('path');
-
 module.exports = {
     cache: true,
     entry: "./hillview.ts",

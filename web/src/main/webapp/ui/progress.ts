@@ -25,8 +25,7 @@ import {IHtmlElement} from "./ui";
  * operation.
  */
 export class ProgressBar implements IHtmlElement {
-    end: number;
-
+    protected end: number;
     private finished: boolean;
     private readonly bar: HTMLElement;
     private readonly topLevel: HTMLElement;
@@ -46,27 +45,27 @@ export class ProgressBar implements IHtmlElement {
                 public readonly description: string,
                 private readonly operation: ICancellable) {
         if (description == null)
-            throw "Null label";
+            throw new Error("Null label");
         if (manager == null)
-            throw "Null ProgressManager";
+            throw new Error("Null ProgressManager");
         this.firstUpdate = null;
         this.firstPosition = 0;
 
         this.finished = false;
-        let top = document.createElement("table");
+        const top = document.createElement("table");
         top.className = "noBorder";
         this.topLevel = top;
-        let body = top.createTBody();
-        let row = body.insertRow();
+        const body = top.createTBody();
+        const row = body.insertRow();
         row.className = "noBorder";
 
-        let cancelButton = document.createElement("button");
+        const cancelButton = document.createElement("button");
         cancelButton.textContent = "Stop";
-        let label = document.createElement("div");
+        const label = document.createElement("div");
         label.textContent = description;
         label.className = "progressLabel";
 
-        let outer = document.createElement("div");
+        const outer = document.createElement("div");
         outer.className = "progressBarOuter";
 
         this.bar = document.createElement("div");
@@ -74,16 +73,16 @@ export class ProgressBar implements IHtmlElement {
 
         outer.appendChild(this.bar);
 
-        let labelCell = row.insertCell(0);
+        const labelCell = row.insertCell(0);
         labelCell.appendChild(label);
         labelCell.style.textAlign = "left";
         labelCell.className = "noBorder";
 
-        let barCell = row.insertCell(1);
+        const barCell = row.insertCell(1);
         barCell.appendChild(outer);
         barCell.className = "noBorder";
 
-        let buttonCell = row.insertCell(2);
+        const buttonCell = row.insertCell(2);
         buttonCell.appendChild(cancelButton);
         buttonCell.className = "noBorder";
 
@@ -91,16 +90,16 @@ export class ProgressBar implements IHtmlElement {
         cancelButton.onclick = () => this.cancel();
 
         this.estimate = document.createElement("div");
-        let estimateCell = row.insertCell(3);
+        const estimateCell = row.insertCell(3);
         estimateCell.className = "noBorder";
         estimateCell.appendChild(this.estimate);
     }
 
-    getHTMLRepresentation(): HTMLElement {
+    public getHTMLRepresentation(): HTMLElement {
         return this.topLevel;
     }
 
-    setPosition(end: number): void {
+    public setPosition(end: number): void {
         if (this.finished)
         // One may attempt to update the progress bar
         // even after completion
@@ -111,15 +110,15 @@ export class ProgressBar implements IHtmlElement {
             end = 1;
         if (end < this.end)
             console.log("Progress bar moves backward:" + this.end + " to " + end);
-        let time = new Date();
+        const time = new Date();
         if (this.firstUpdate == null) {
             this.firstUpdate = time;
             this.firstPosition = end;
         } else {
-            let elapsed = time.getTime() - this.firstUpdate.getTime();
-            let progress = end - this.firstPosition;
+            const elapsed = time.getTime() - this.firstUpdate.getTime();
+            const progress = end - this.firstPosition;
             if (progress > 0 && elapsed > 2000) {
-                let estimated = elapsed / progress - elapsed;
+                const estimated = elapsed / progress - elapsed;
                 this.estimate.textContent = "Remaining time: " + readableTime(estimated);
             }
         }
@@ -127,11 +126,11 @@ export class ProgressBar implements IHtmlElement {
         this.computePosition();
     }
 
-    computePosition(): void {
+    public computePosition(): void {
         this.bar.style.width = String(this.end * 100) + "%";
     }
 
-    setFinished(): void {
+    public setFinished(): void {
         if (this.finished)
             return;
         this.setPosition(1.0);
@@ -139,7 +138,7 @@ export class ProgressBar implements IHtmlElement {
         this.manager.removeProgressBar(this);
     }
 
-    cancel(): void {
+    public cancel(): void {
         if (this.operation != null)
             this.operation.cancel();
         this.setFinished();
@@ -153,7 +152,7 @@ export class ProgressBar implements IHtmlElement {
  * The PM has an 'idle' class when there are no operations outstanding.
  */
 export class ProgressManager implements IHtmlElement {
-    topLevel: HTMLElement;
+    public topLevel: HTMLElement;
 
     constructor() {
         this.topLevel = document.createElement("div");
@@ -161,20 +160,20 @@ export class ProgressManager implements IHtmlElement {
         this.topLevel.classList.add("idle");
     }
 
-    getHTMLRepresentation(): HTMLElement {
+    public getHTMLRepresentation(): HTMLElement {
         return this.topLevel;
     }
 
-    newProgressBar(operation: ICancellable, description: string) {
+    public newProgressBar(operation: ICancellable, description: string) {
         this.topLevel.classList.remove("idle");
-        let p = new ProgressBar(this, description, operation);
+        const p = new ProgressBar(this, description, operation);
         this.topLevel.appendChild(p.getHTMLRepresentation());
         return p;
     }
 
-    removeProgressBar(p: ProgressBar) {
+    public removeProgressBar(p: ProgressBar) {
         this.topLevel.removeChild(p.getHTMLRepresentation());
-        if (this.topLevel.children.length == 0)
+        if (this.topLevel.children.length === 0)
             this.topLevel.classList.add("idle");
     }
 }

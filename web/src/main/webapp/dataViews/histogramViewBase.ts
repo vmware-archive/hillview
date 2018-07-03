@@ -15,19 +15,19 @@
  * limitations under the License.
  */
 
-import {Dialog, FieldKind} from "../ui/dialog";
-import {ContentsKind, BasicColStats, IColumnDescription, ColumnAndRange, RemoteObjectId} from "../javaBridge";
-import {Converters, formatDate, formatNumber, significantDigits} from "../util";
-import {Point, Resolution, SpecialChars, ViewKind} from "../ui/ui";
-import {FullPage} from "../ui/fullPage";
-import {TextOverlay} from "../ui/textOverlay";
-import {AnyScale} from "./axisData";
-import {BigTableView} from "../tableTarget";
-import {DistinctStrings} from "../distinctStrings";
-import {CDFPlot} from "../ui/CDFPlot";
-import {PlottingSurface} from "../ui/plottingSurface";
 import {mouse as d3mouse} from "d3-selection";
+import {DistinctStrings} from "../distinctStrings";
+import {BasicColStats, ColumnAndRange, ContentsKind, IColumnDescription, RemoteObjectId} from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
+import {BigTableView} from "../tableTarget";
+import {CDFPlot} from "../ui/CDFPlot";
+import {Dialog, FieldKind} from "../ui/dialog";
+import {FullPage} from "../ui/fullPage";
+import {PlottingSurface} from "../ui/plottingSurface";
+import {TextOverlay} from "../ui/textOverlay";
+import {Point, Resolution, SpecialChars, ViewKind} from "../ui/ui";
+import {Converters, formatDate, formatNumber, significantDigits} from "../util";
+import {AnyScale} from "./axisData";
 
 /**
  * This is a base class that contains code common to various histogram renderings.
@@ -60,7 +60,7 @@ export abstract class HistogramViewBase extends BigTableView {
         super(remoteObjectId, rowCount, schema, page, viewKind);
         this.topLevel = document.createElement("div");
         this.topLevel.className = "chart";
-        this.topLevel.onkeydown = e => this.keyDown(e);
+        this.topLevel.onkeydown = (e) => this.keyDown(e);
         this.dragging = false;
         this.moved = false;
 
@@ -76,7 +76,7 @@ export abstract class HistogramViewBase extends BigTableView {
     }
 
     protected keyDown(ev: KeyboardEvent): void {
-        if (ev.code == "Escape")
+        if (ev.code === "Escape")
             this.cancelDrag();
     }
 
@@ -106,7 +106,7 @@ export abstract class HistogramViewBase extends BigTableView {
     public dragStart(): void {
         this.dragging = true;
         this.moved = false;
-        let position = d3mouse(this.surface.getCanvas().node());
+        const position = d3mouse(this.surface.getCanvas().node());
         this.selectionOrigin = {
             x: position[0],
             y: position[1] };
@@ -120,10 +120,10 @@ export abstract class HistogramViewBase extends BigTableView {
             return;
         this.moved = true;
         let ox = this.selectionOrigin.x;
-        let position = d3mouse(this.surface.getCanvas().node());
-        let x = position[0];
+        const position = d3mouse(this.surface.getCanvas().node());
+        const x = position[0];
         let width = x - ox;
-        let height = this.surface.getActualChartHeight();
+        const height = this.surface.getActualChartHeight();
 
         if (width < 0) {
             ox = x;
@@ -148,10 +148,10 @@ export abstract class HistogramViewBase extends BigTableView {
 
     // noinspection JSUnusedLocalSymbols
     public static samplingRate(bucketCount: number, rowCount: number, page: FullPage): number {
-        let constant = 4;  // This models the confidence we want from the sampling
-        let height = PlottingSurface.getDefaultChartSize(page).height;
-        let sampleCount = constant * height * height;
-        let sampleRate = sampleCount / rowCount;
+        const constant = 4;  // This models the confidence we want from the sampling
+        const height = PlottingSurface.getDefaultChartSize(page).height;
+        const sampleCount = constant * height * height;
+        const sampleRate = sampleCount / rowCount;
         return Math.min(sampleRate, 1);
     }
 
@@ -163,17 +163,17 @@ export abstract class HistogramViewBase extends BigTableView {
      */
     public static boxHeight(barSize: number, samplingRate: number, totalPop: number): string {
         if (samplingRate >= 1) {
-            if (barSize == 0)
+            if (barSize === 0)
                 return "";
             return significantDigits(barSize);
         }
-        let muS = barSize / totalPop;
-        let dev = 2.38 * Math.sqrt(muS * (1 - muS) * totalPop / samplingRate);
-        let min = Math.max(barSize - dev, 0);
-        let max = barSize + dev;
-        let minString = significantDigits(min);
-        let maxString = significantDigits(max);
-        if (minString == maxString && dev != 0)
+        const muS = barSize / totalPop;
+        const dev = 2.38 * Math.sqrt(muS * (1 - muS) * totalPop / samplingRate);
+        const min = Math.max(barSize - dev, 0);
+        const max = barSize + dev;
+        const minString = significantDigits(min);
+        const maxString = significantDigits(max);
+        if (minString === maxString && dev !== 0)
             return minString;
         return SpecialChars.approx + significantDigits(barSize);
     }
@@ -181,7 +181,7 @@ export abstract class HistogramViewBase extends BigTableView {
     // Adjust the statistics for integral and categorical data pretending
     // that we are centering the values.
     public static adjustStats(kind: ContentsKind, stats: BasicColStats): void {
-         if (kind == "Integer" || kind == "Category") {
+         if (kind === "Integer" || kind === "Category") {
              stats.min -= .5;
              stats.max += .5;
          }
@@ -190,20 +190,20 @@ export abstract class HistogramViewBase extends BigTableView {
     public static getRange(stats: BasicColStats, cd: IColumnDescription,
                            allStrings: DistinctStrings,
                            bucketCount: number): ColumnAndRange {
-        let boundaries = (allStrings != null && allStrings.uniqueStrings != null) ?
+        const boundaries = (allStrings != null && allStrings.uniqueStrings != null) ?
             allStrings.categoriesInRange(stats.min, stats.max, bucketCount) : null;
         return {
             columnName: cd.name,
             min: stats.min,
             max: stats.max,
-            bucketBoundaries: boundaries
+            bucketBoundaries: boundaries,
         };
     }
 
     public static bucketCount(stats: BasicColStats, page: FullPage, columnKind: ContentsKind,
                               heatMap: boolean, bottom: boolean): number {
-        let size = PlottingSurface.getDefaultChartSize(page);
-        let length = Math.floor(bottom ? size.width : size.height);
+        const size = PlottingSurface.getDefaultChartSize(page);
+        const length = Math.floor(bottom ? size.width : size.height);
         let maxBucketCount = Resolution.maxBucketCount;
         let minBarWidth = Resolution.minBarWidth;
         if (heatMap) {
@@ -215,39 +215,39 @@ export abstract class HistogramViewBase extends BigTableView {
         if (length / minBarWidth < bucketCount)
             bucketCount = Math.floor(length / minBarWidth);
 
-        if (columnKind == "Integer" ||
-            columnKind == "Category")
+        if (columnKind === "Integer" ||
+            columnKind === "Category")
             bucketCount = Math.min(bucketCount, stats.max - stats.min);
 
         return Math.floor(bucketCount);
     }
 
-    static invert(v: number, scale: AnyScale, kind: ContentsKind,
-                  allStrings: DistinctStrings): string {
-        let inv = scale.invert(v);
+    public static invert(v: number, scale: AnyScale, kind: ContentsKind,
+                         allStrings: DistinctStrings): string {
+        const inv = scale.invert(v);
         let result: string;
-        if (kind == "Integer")
-            result = formatNumber(Math.round(<number>inv));
-        if (kind == "Category")
-            result = allStrings.get(<number>inv);
-        else if (kind == "Integer" || kind == "Double")
-            result = formatNumber(<number>inv);
-        else if (kind == "Date")
-            result = formatDate(<Date>inv);
+        if (kind === "Integer")
+            result = formatNumber(Math.round(inv as number));
+        if (kind === "Category")
+            result = allStrings.get(inv as number);
+        else if (kind === "Integer" || kind === "Double")
+            result = formatNumber(inv as number);
+        else if (kind === "Date")
+            result = formatDate(inv as Date);
         else
             result = inv.toString();
         return result;
     }
 
     public static invertToNumber(v: number, scale: AnyScale, kind: ContentsKind): number {
-        let inv = scale.invert(v);
+        const inv = scale.invert(v);
         let result: number = 0;
-        if (kind == "Integer" || kind == "Category") {
-            result = Math.round(<number>inv);
-        } else if (kind == "Double") {
-            result = <number>inv;
-        } else if (kind == "Date") {
-            result = Converters.doubleFromDate(<Date>inv);
+        if (kind === "Integer" || kind === "Category") {
+            result = Math.round(inv as number);
+        } else if (kind === "Double") {
+            result = inv as number;
+        } else if (kind === "Date") {
+            result = Converters.doubleFromDate(inv as Date);
         }
         return result;
     }
@@ -265,7 +265,7 @@ export class BucketDialog extends Dialog {
         this.setCacheTitle("BucketDialog");
     }
 
-    getBucketCount(): number {
+    public getBucketCount(): number {
         return this.getFieldValueAsInt("n_buckets");
     }
 }

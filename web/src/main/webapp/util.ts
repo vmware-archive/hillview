@@ -21,12 +21,17 @@
 
 import * as FileSaver from "file-saver";
 import {ErrorReporter} from "./ui/errReporter";
+import {Size} from "./ui/ui";
 
 export type Comparison = "==" | "!=" | "<" | ">" | "<=" | ">=";
 
 export interface Pair<T1, T2> {
     first: T1;
     second: T2;
+}
+
+export function assert(condition: boolean, message?: string): void {
+    console.assert(condition, message);  // tslint:disable-line
 }
 
 /**
@@ -48,8 +53,8 @@ export class Converters {
  * @returns The unique selected node.
  */
 export function findElement(cssselector: string): HTMLElement {
-    let val = document.querySelector(cssselector);
-    return <HTMLElement>val;
+    const val = document.querySelector(cssselector);
+    return val as HTMLElement;
 }
 
 /**
@@ -61,12 +66,12 @@ export interface Serializable<T> {
     /**
      * Save the data into a javascript object.
      */
-    serialize(): Object;
+    serialize(): object;
     /**
      * Initialize the current object from the specified object.
      * @returns The same object if deserialization is successful, null otherwise.
      */
-    deserialize(data: Object): T;
+    deserialize(data: object): T;
 }
 
 /**
@@ -75,7 +80,7 @@ export interface Serializable<T> {
  * @param {string} contents  Contents to write in file.
  */
 export function saveAs(filename: string, contents: string) {
-   let blob = new Blob([contents], {type: "text/plain;charset=utf-8"});
+   const blob = new Blob([contents], {type: "text/plain;charset=utf-8"});
    FileSaver.saveAs(blob, filename);
 }
 
@@ -86,13 +91,12 @@ export function saveAs(filename: string, contents: string) {
  * @param reporter  Used to report errors.
  */
 export function loadFile(file: File,
-                         onsuccess: (string) => void,
+                         onsuccess: (s: string) => void,
                          reporter: ErrorReporter): void {
-    let reader = new FileReader();
-
+    const reader = new FileReader();
     reader.onloadend = () => onsuccess(reader.result);
     reader.onabort = () => reporter.reportError("Read of file " + file.name + " aborted");
-    reader.onerror = (e) => reporter.reportError(e.message);
+    reader.onerror = (e) => reporter.reportError(e.toString());
     if (file)
         reader.readAsText(file);
     else
@@ -101,7 +105,7 @@ export function loadFile(file: File,
 
 /**
  * Random seed management
-  */
+ */
 export class Seed {
     public static instance: Seed = new Seed();
 
@@ -133,11 +137,11 @@ export function percent(n: number): string {
  * bring the integer part to the specified number of digits
  */
 function zeroPad(num: number, length: number): string {
-    let n = Math.abs(num);
-    let zeros = Math.max(0, length - Math.floor(n).toString().length );
-    let zeroString = Math.pow(10,zeros).toString().substr(1);
+    const n = Math.abs(num);
+    const zeros = Math.max(0, length - Math.floor(n).toString().length );
+    let zeroString = Math.pow(10, zeros).toString().substr(1);
     if (num < 0) {
-        zeroString = '-' + zeroString;
+        zeroString = "-" + zeroString;
     }
 
     return zeroString + n;
@@ -151,23 +155,23 @@ function zeroPad(num: number, length: number): string {
 export function formatDate(d?: Date): string {
     if (d == null)
         d = new Date();
-    let year = d.getFullYear();
-    let month = d.getMonth() + 1;
-    let day = d.getDate();
-    let hour = d.getHours();
-    let minutes = d.getMinutes();
-    let seconds = d.getSeconds();
-    let ms = d.getMilliseconds();
-    let df = String(year) + "/" + zeroPad(month, 2) + "/" + zeroPad(day, 2);
+    const year = d.getFullYear();
+    const month = d.getMonth() + 1;
+    const day = d.getDate();
+    const hour = d.getHours();
+    const minutes = d.getMinutes();
+    const seconds = d.getSeconds();
+    const ms = d.getMilliseconds();
+    const df = String(year) + "/" + zeroPad(month, 2) + "/" + zeroPad(day, 2);
     let suffix = "";
-    if (ms != 0)
+    if (ms !== 0)
         suffix = "." + zeroPad(ms, 3);
-    if (seconds != 0 || suffix != "")
+    if (seconds !== 0 || suffix !== "")
         suffix = ":" + zeroPad(seconds, 2) + suffix;
-    if (minutes != 0 || suffix != "")
+    if (minutes !== 0 || suffix !== "")
         suffix = ":" + zeroPad(minutes, 2) + suffix;
-    if (hour != 0 || suffix != "") {
-        if (suffix == "")
+    if (hour !== 0 || suffix !== "") {
+        if (suffix === "")
             suffix = ":00:00";
         suffix = " " + zeroPad(hour, 2) + suffix;
     }
@@ -182,7 +186,7 @@ export function formatDate(d?: Date): string {
  *                        is replaced with an underscore.
  */
 export function makeId(text: string): string {
-    return text.replace(/[^a-zA-Z0-9]/g, '_');
+    return text.replace(/[^a-zA-Z0-9]/g, "_");
 }
 
 /**
@@ -191,9 +195,9 @@ export function makeId(text: string): string {
  */
 export function significantDigits(n: number): string {
     let suffix = "";
-    if (n == 0)
+    if (n === 0)
         return "0";
-    let absn = Math.abs(n);
+    const absn = Math.abs(n);
     if (absn > 1e12) {
         suffix = "T";
         n = n / 1e12;
@@ -213,7 +217,7 @@ export function significantDigits(n: number): string {
             n = n * 10;
             expo++;
         }
-        suffix = "* 10<sup>-" + expo + "</sup>"
+        suffix = "* 10<sup>-" + expo + "</sup>";
     }
     if (absn > 1)
         n = Math.round(n * 100) / 100;
@@ -237,20 +241,20 @@ export function reorder(m: number, n: number): [number, number] {
  * In all these methods e is an enum *type*
  */
 export class EnumIterators {
-    static getNamesAndValues<T extends number>(e: any) {
-        return EnumIterators.getNames(e).map(n => ({ name: n, value: e[n] as T }));
+    public static getNamesAndValues<T extends number>(e: any) {
+        return EnumIterators.getNames(e).map((n) => ({ name: n, value: e[n] as T }));
     }
 
-    static getNames(e: any) {
-        return EnumIterators.getObjValues(e).filter(v => typeof v == "string") as string[];
+    public static getNames(e: any) {
+        return EnumIterators.getObjValues(e).filter((v) => typeof v === "string") as string[];
     }
 
-    static getValues<T extends number>(e: any) {
-        return EnumIterators.getObjValues(e).filter(v => typeof v == "number") as T[];
+    public static getValues<T extends number>(e: any) {
+        return EnumIterators.getObjValues(e).filter((v) => typeof v === "number") as T[];
     }
 
-    private static getObjValues(e: any): (number | string)[] {
-        return Object.keys(e).map(k => e[k]);
+    private static getObjValues(e: any): Array<number | string> {
+        return Object.keys(e).map((k) => e[k]);
     }
 }
 
@@ -258,15 +262,15 @@ export class EnumIterators {
  * Transpose a matrix.
  */
 export function transpose<D>(m: D[][]): D[][] {
-    let w = m.length;
-    if (w == 0)
+    const w = m.length;
+    if (w === 0)
         return m;
-    let h = m[0].length;
+    const h = m[0].length;
 
-    let result: D[][] = [];
-    for (let i=0; i < h; i++) {
-        let v = [];
-        for (let j=0; j < w; j++)
+    const result: D[][] = [];
+    for (let i = 0; i < h; i++) {
+        const v = [];
+        for (let j = 0; j < w; j++)
             v.push(m[j][i]);
         result.push(v);
     }
@@ -277,8 +281,8 @@ export function transpose<D>(m: D[][]): D[][] {
  * Converts a map to an array by creating an array with an even number of elements
  * where the elements alternate keys and values [k0, v0, k1, v1, ...]
  */
-export function mapToArray<K, V>(map: Map<K, V>): Array<any> {
-    let res: Array<any> = [];
+export function mapToArray<K, V>(map: Map<K, V>): any[] {
+    const res: any[] = [];
     map.forEach((v, k) => { res.push(k); res.push(v); });
     return res;
 }
@@ -288,9 +292,9 @@ export function mapToArray<K, V>(map: Map<K, V>): Array<any> {
  * linear regression from X to Y.  The result is an array with two numbers, the
  * two coefficients.  If the regression is undefined, the coefficients array is empty.
  */
-export function regression(data: number[][]) : number[] {
-    let width = data.length;
-    let height = data[0].length;
+export function regression(data: number[][]): number[] {
+    const width = data.length;
+    const height = data[0].length;
     let sumt = 0;
     let sumt2 = 0;
     let sumb = 0;
@@ -305,28 +309,44 @@ export function regression(data: number[][]) : number[] {
             size += data[i][j];
         }
     }
-    let denom = ((size * sumt2) - (sumt * sumt));
-    if (denom == 0)
+    const denom = ((size * sumt2) - (sumt * sumt));
+    if (denom === 0)
     // TODO: should we use here some epsilon?
         return [];
-    let a = 1 / denom;
-    let  alpha = a * ((sumt2 * sumb) - (sumt * sumtb));
-    let beta = a * ((size * sumtb) - (sumt * sumb));
+    const a = 1 / denom;
+    const  alpha = a * ((sumt2 * sumb) - (sumt * sumtb));
+    const beta = a * ((size * sumtb) - (sumt * sumb));
     // estimation is alpha + beta * i
     return [alpha, beta];
 }
 
+/**
+ * This is actually just a guess on the width of the vertical scroll-bar,
+ * which we would like to always be visible.
+ */
+export const scrollBarWidth = 15;
+
+/**
+ * Browser window size excluding scrollbars.
+ */
+export function browserWindowSize(): Size {
+    return {
+        width: window.innerWidth - scrollBarWidth,
+        height: window.innerHeight,
+    };
+}
+
 export function openInNewTab(url: string): void {
-    let win = window.open(url, "_blank");
+    const win = window.open(url, "_blank");
     win.focus();
 }
 
 /**
  * Truncate a string to the specified length, adding ellipses if it was too long.
-  */
+ */
 export function truncate(str: string, length: number): string {
     if (str.length > length) {
-        return str.slice(0, length) + "..."
+        return str.slice(0, length) + "...";
     } else {
         return str;
     }
@@ -337,7 +357,7 @@ export function clamp(value: number, min: number, max: number) {
 }
 
 export function isInteger(n: number) {
-    return Math.floor(n) == n;
+    return Math.floor(n) === n;
 }
 
 /**
@@ -348,15 +368,16 @@ export function cloneArray<T>(arr: T[]): T[] {
 }
 
 export function cloneToSet<T>(arr: T[]): Set<T> {
-    let result = new Set<T>();
-    arr.forEach(e => result.add(e));
+    const result = new Set<T>();
+    arr.forEach((e) => result.add(e));
     return result;
 }
 
 export function uuidv4(): string {
     // From https://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        let r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+        const r = Math.random() * 16 | 0;
+        const v = c === "x" ? r : (r & 0x3 | 0x8);
         return v.toString(16);
     });
 }
@@ -364,7 +385,7 @@ export function uuidv4(): string {
 export function readableTime(millisec: number) {
     let seconds = Math.floor(millisec / 1000);
     let minutes = Math.floor(seconds / 60);
-    let hours = Math.floor(seconds / 3600);
+    const hours = Math.floor(seconds / 3600);
     seconds = seconds % 60;
     minutes = minutes % 60;
 
@@ -375,8 +396,8 @@ export function readableTime(millisec: number) {
             return n.toString();
     }
 
-    let min = pad(minutes);
-    let sec = pad(seconds);
+    const min = pad(minutes);
+    const sec = pad(seconds);
 
     if (hours > 0) {
         return `${hours}:${min}:${sec}`;
@@ -388,7 +409,7 @@ export function readableTime(millisec: number) {
  * Convert a set to an array
  */
 export function cloneSet<T>(set: Set<T>): T[] {
-    let ret: T[] = [];
+    const ret: T[] = [];
     set.forEach((val) => ret.push(val));
     return ret;
 }

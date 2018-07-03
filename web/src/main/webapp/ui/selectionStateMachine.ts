@@ -53,7 +53,7 @@ export class SelectionStateMachine {
         return this.selected;
     }
 
-    public has(val: number): boolean{
+    public has(val: number): boolean {
         return this.selected.has(val);
     }
 
@@ -70,14 +70,13 @@ export class SelectionStateMachine {
     }
 
     public add(val: number) {
-        if(!this.excluded.has(val))
+        if (!this.excluded.has(val))
             this.selected.add(val);
     }
 
     public delete(val: number) {
         this.selected.delete(val);
     }
-
 
     /**
      * Changes the membership for all states in the interval [a,b] to the boolean value to.
@@ -104,24 +103,22 @@ export class SelectionStateMachine {
      * so that its state matches that of val.
      */
     public changeState(type: TransitionType, val: number) {
-        if (type == "NoKey") { //No buttons pressed, forget everything else, toggle val
-            let isPresent: boolean = this.has(val);
+        if (type === "NoKey") { // No buttons pressed, forget everything else, toggle val
+            const isPresent: boolean = this.has(val);
             this.selected.clear();
             if (!isPresent)
                 this.add(val);
             this.curState = val;
-        }
-        else if (type == "Ctrl") { //Ctrl or Esc pressed, keep everything else, toggle val
+        } else if (type === "Ctrl") { // Ctrl or Esc pressed, keep everything else, toggle val
             this.toggle(val);
             this.curState = val;
-        }
-        else if (type == "Shift") { //Shift pressed, toggle states in the open interval
+        } else if (type === "Shift") { // Shift pressed, toggle states in the open interval
             // curState to val
-            let current: boolean = this.has(val);
+            const current: boolean = this.has(val);
             if (val > this.curState)
                 this.rangeChange(this.curState + 1, val, !current);
             else if (val < this.curState)
-                this.rangeChange(val, this.curState -1, !current);
+                this.rangeChange(val, this.curState - 1, !current);
             this.curState = val;
         }
     }

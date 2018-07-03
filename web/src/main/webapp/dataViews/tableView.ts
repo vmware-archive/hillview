@@ -15,33 +15,32 @@
  * limitations under the License.
  */
 
-import {OnCompleteReceiver, Receiver} from "../rpc";
-import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
-import {
-    cloneToSet, Comparison, Converters, formatDate, formatNumber,
-    ICancellable, PartialResult, percent, significantDigits
-} from "../util";
-import {Dialog, FieldKind} from "../ui/dialog";
-import {ColumnConverter, ConverterDialog} from "./columnConverter";
-import {DataRange} from "../ui/dataRange"
-import {IScrollTarget, ScrollBar} from "../ui/scroll";
-import {FullPage} from "../ui/fullPage";
-import {missingHtml} from "../ui/ui";
-import {SelectionStateMachine} from "../ui/selectionStateMachine";
-import {SchemaView} from "./schemaView";
+import {DatasetView, IViewSerialization, TableSerialization} from "../datasetView";
 import {
     asContentsKind, ColumnSortOrientation, CombineOperators, ComparisonFilterDescription,
     ContentsKind, FindResult, Histogram, IColumnDescription, NextKList,
-    RecordOrder, RemoteObjectId, RowSnapshot, Schema, TableSummary
+    RecordOrder, RemoteObjectId, RowSnapshot, Schema, TableSummary,
 } from "../javaBridge";
-import {BaseRenderer, TableTargetAPI, ZipReceiver} from "../tableTarget";
-import {TSViewBase} from "./tsViewBase";
-import {SpectrumReceiver} from "./spectrumView";
-import {DatasetView, IViewSerialization} from "../datasetView";
+import {OnCompleteReceiver, Receiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
+import {BaseRenderer, TableTargetAPI, ZipReceiver} from "../tableTarget";
+import {DataRange} from "../ui/dataRange";
 import {IDataView} from "../ui/dataview";
-
-//import {LAMPDialog} from "./lampView";
+import {Dialog, FieldKind} from "../ui/dialog";
+import {FullPage} from "../ui/fullPage";
+import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
+import {IScrollTarget, ScrollBar} from "../ui/scroll";
+import {SelectionStateMachine} from "../ui/selectionStateMachine";
+import {missingHtml, Resolution} from "../ui/ui";
+import {
+    cloneToSet, Comparison, Converters, formatDate, formatNumber,
+    ICancellable, PartialResult, percent, significantDigits,
+} from "../util";
+import {ColumnConverter, ConverterDialog} from "./columnConverter";
+import {SchemaView} from "./schemaView";
+import {SpectrumReceiver} from "./spectrumView";
+import {TSViewBase} from "./tsViewBase";
+// import {LAMPDialog} from "./lampView";
 
 /**
  * Displays a table in the browser.
@@ -53,6 +52,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
     public    order: RecordOrder;
     // Logical number of data rows displayed; includes count of each data row
     protected dataRowsDisplayed: number;
+    public    tableRowsDesired: number;
     protected scrollBar: ScrollBar;
     protected htmlTable: HTMLTableElement;
     protected tHead: HTMLTableSectionElement;
@@ -67,11 +67,12 @@ export class TableView extends TSViewBase implements IScrollTarget {
         remoteObjectId: RemoteObjectId, rowCount: number, schema: SchemaClass, page: FullPage) {
         super(remoteObjectId, rowCount, schema, page, "Table");
         this.selectedColumns = new SelectionStateMachine();
+        this.tableRowsDesired = Resolution.tableRowsOnScreen;
         this.order = new RecordOrder([]);
         this.topLevel = document.createElement("div");
         this.topLevel.id = "tableContainer";
         this.topLevel.tabIndex = 1;  // necessary for keyboard events?
-        this.topLevel.onkeydown = e => this.keyDown(e);
+        this.topLevel.onkeydown = (e) => this.keyDown(e);
 
         this.topLevel.style.flexDirection = "column";
         this.topLevel.style.display = "flex";
@@ -79,7 +80,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
         this.topLevel.style.justifyContent = "flex-start";
         this.topLevel.style.alignItems = "stretch";
 
-        let menu = new TopMenu([
+        const menu = new TopMenu([
             this.saveAsMenu(),
             {
                 text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
@@ -90,7 +91,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
                     },*/
                     { text: "Refresh",
                         action: () => this.refresh(),
-                        help: "Redraw this view."
+                        help: "Redraw this view.",
                     },
                     /*
                     { text: "All columns",
@@ -100,13 +101,18 @@ export class TableView extends TSViewBase implements IScrollTarget {
                     */
                     { text: "No columns",
                         action: () => this.setOrder(new RecordOrder([])),
-                        help: "Make all columns invisible"
+                        help: "Make all columns invisible",
                     },
                     { text: "Schema",
                         action: () => this.viewSchema(),
-                        help: "Browse the list of columns of this table and choose a subset to visualize."
-                    }
-                ])
+                        help: "Browse the list of columns of this table and choose a subset to visualize.",
+                    },
+                    {
+                        text: "Change table size...",
+                        action: () => this.changeTableSize(),
+                        help: "Change the number of rows displayed",
+                    },
+                ]),
             },
             this.chartMenu(),
             {
@@ -117,13 +123,13 @@ export class TableView extends TSViewBase implements IScrollTarget {
                     action: () => this.find() }, {
                     text: "Filter...",
                     help: "Filter rows that contain a specific value",
-                    action: () => this.showFilterDialog(null, this.order) }, {
+                    action: () => this.showFilterDialog(null, this.order, this.tableRowsDesired) }, {
                     text: "Compare...",
                     help: "Filter rows by comparing with a specific value",
-                    action: () => this.showCompareDialog(null, this.order) },
-                ])
+                    action: () => this.showCompareDialog(null, this.order, this.tableRowsDesired) },
+                ]),
             },
-            this.dataset.combineMenu(this, page.pageId)
+            this.dataset.combineMenu(this, page.pageId),
         ]);
 
         this.page.setMenu(menu);
@@ -134,7 +140,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
         this.scrollBar = new ScrollBar(this);
 
         // to force the scroll bar next to the table we put them in yet another div
-        let tblAndBar = document.createElement("div");
+        const tblAndBar = document.createElement("div");
         tblAndBar.style.flexDirection = "row";
         tblAndBar.style.display = "flex";
         tblAndBar.style.flexWrap = "nowrap";
@@ -148,32 +154,35 @@ export class TableView extends TSViewBase implements IScrollTarget {
         this.topLevel.appendChild(this.messageBox);
     }
 
-    serialize(): IViewSerialization {
-        let result = super.serialize();
-        result["order"] = this.order;
-        result["firstRow"] = this.currentData.rows.length > 0 ?
-            this.currentData.rows[0].values : null;
+    public serialize(): IViewSerialization {
+        const result: TableSerialization = {
+            ...super.serialize(),
+            order: this.order,
+            tableRowsDesired: this.tableRowsDesired,
+            firstRow: this.currentData.rows.length > 0 ? this.currentData.rows[0].values : null,
+        };
         return result;
     }
 
-    static reconstruct(ser: IViewSerialization, page: FullPage): IDataView {
-        let order = new RecordOrder(ser["order"]["sortOrientationList"]);
-        let firstRow: any[] = ser["firstRow"];
-        let schema = new SchemaClass([]).deserialize(ser.schema);
-        if (order == null || schema == null)
+    public static reconstruct(ser: TableSerialization | null, page: FullPage): IDataView {
+        const order = new RecordOrder(ser.order.sortOrientationList);
+        const firstRow: any[] = ser.firstRow;
+        const schema = new SchemaClass([]).deserialize(ser.schema);
+        const rowsDesired = ser.tableRowsDesired;
+        if (order == null || schema == null || rowsDesired == null)
             return null;
-        let tableView = new TableView(ser.remoteObjectId, ser.rowCount, schema, page);
-        let rr = tableView.createNextKRequest(order, firstRow);
+        const tableView = new TableView(ser.remoteObjectId, ser.rowCount, schema, page);
+        const rr = tableView.createNextKRequest(order, firstRow, rowsDesired);
         rr.invoke(new NextKReceiver(page, tableView, rr, true, order, null));
         return tableView;
     }
 
-    find(): void {
-        if (this.order.length() == 0) {
+    public find(): void {
+        if (this.order.length() === 0) {
             this.reportError("Find operates in the displayed column, but no column is currently visible.");
             return;
         }
-        let dialog = new Dialog("Find", "Find a string/pattern");
+        const dialog = new Dialog("Find", "Find a string/pattern");
         dialog.addTextField("string", "String to search", FieldKind.String, null, "Pattern to look for");
         dialog.addBooleanField("substring", "Match substrings", false,
             "If checked a substring will match.");
@@ -190,45 +199,45 @@ export class TableView extends TSViewBase implements IScrollTarget {
         dialog.show();
     }
 
-    search(toFind: string, regex: boolean, substring: boolean, caseSensitive: boolean): void {
-        if (toFind == "") {
+    public search(toFind: string, regex: boolean, substring: boolean, caseSensitive: boolean): void {
+        if (toFind === "") {
             this.reportError("Search string cannot be empty");
             return;
         }
-        if (this.currentData.rows.length == 0) {
+        if (this.currentData.rows.length === 0) {
             this.reportError("No data to search in");
             return;
         }
-        let o = this.order.clone();
-        let rr = this.createFindRequest(o, this.currentData.rows[0].values, toFind, regex, substring, caseSensitive);
+        const o = this.order.clone();
+        const rr = this.createFindRequest(o, this.currentData.rows[0].values, toFind, regex, substring, caseSensitive);
         rr.invoke(new FindReceiver(this.getPage(), this, rr, o));
     }
 
     /**
      * Combine two views according to some operation: intersection, union, etc.
      */
-    combine(how: CombineOperators): void {
-        let r = this.dataset.getSelected();
+    public combine(how: CombineOperators): void {
+        const r = this.dataset.getSelected();
         if (r.first == null)
             return;
 
-        let rr = this.createZipRequest(r.first);
-        let o = this.order.clone();
-        let finalRenderer = (page: FullPage, operation: ICancellable) => {
+        const rr = this.createZipRequest(r.first);
+        const o = this.order.clone();
+        const finalRenderer = (page: FullPage, operation: ICancellable) => {
             return new TableOperationCompleted(
-                page, this.rowCount, this.schema, operation, o);
+                page, this.rowCount, this.schema, operation, o, this.tableRowsDesired);
         };
         rr.invoke(new ZipReceiver(this.getPage(), rr, how, this.dataset, finalRenderer));
     }
 
-    getSelectedColCount(): number {
+    public getSelectedColCount(): number {
         return this.selectedColumns.size();
     }
 
     /**
      * Invoked when scrolling has completed.
      */
-    scrolledTo(position: number): void {
+    public scrolledTo(position: number): void {
         if (this.currentData == null)
             return;
 
@@ -237,8 +246,8 @@ export class TableView extends TSViewBase implements IScrollTarget {
         } else if (position >= 1.0) {
             this.end();
         } else {
-            let o = this.order.clone();
-            let rr = this.createQuantileRequest(this.rowCount, o, position);
+            const o = this.order.clone();
+            const rr = this.createQuantileRequest(this.rowCount, o, position);
             console.log("expecting quantile: " + String(position));
             rr.invoke(new QuantileReceiver(this.getPage(), this, rr, o));
         }
@@ -248,69 +257,75 @@ export class TableView extends TSViewBase implements IScrollTarget {
      * Event handler called when a key is pressed
      */
     protected keyDown(ev: KeyboardEvent): void {
-        if (ev.code == "PageUp")
+        if (ev.code === "PageUp") {
             this.pageUp();
-        else if (ev.code == "PageDown")
+            ev.preventDefault();
+        } else if (ev.code === "PageDown") {
             this.pageDown();
-        else if (ev.code == "End")
+            ev.preventDefault();
+        } else if (ev.code === "End") {
             this.end();
-        else if (ev.code == "Home")
+            ev.preventDefault();
+        } else if (ev.code === "Home") {
             this.begin();
+            ev.preventDefault();
+        }
     }
 
     /**
      * Scroll one page up
      */
     public pageUp(): void {
-        if (this.currentData == null || this.currentData.rows.length == 0)
+        if (this.currentData == null || this.currentData.rows.length === 0)
             return;
         if (this.startPosition <= 0) {
             this.reportError("Already at the top");
             return;
         }
-        let order = this.order.invert();
-        let rr = this.createNextKRequest(order, this.currentData.rows[0].values);
+        const order = this.order.invert();
+        const rr = this.createNextKRequest(order, this.currentData.rows[0].values, this.tableRowsDesired);
         rr.invoke(new NextKReceiver(this.getPage(), this, rr, true, order, null));
     }
 
     protected begin(): void {
-        if (this.currentData == null || this.currentData.rows.length == 0)
+        if (this.currentData == null || this.currentData.rows.length === 0)
             return;
         if (this.startPosition <= 0) {
             this.reportError("Already at the top");
             return;
         }
-        let o = this.order.clone();
-        let rr = this.createNextKRequest(o, null);
+        const o = this.order.clone();
+        const rr = this.createNextKRequest(o, null, this.tableRowsDesired);
         rr.invoke(new NextKReceiver(this.getPage(), this, rr, false, o, null));
     }
 
     protected end(): void {
-        if (this.currentData == null || this.currentData.rows.length == 0)
+        if (this.currentData == null || this.currentData.rows.length === 0)
             return;
         if (this.startPosition + this.dataRowsDisplayed >= this.rowCount - 1) {
             this.reportError("Already at the bottom");
             return;
         }
-        let order = this.order.invert();
-        let rr = this.createNextKRequest(order, null);
+        const order = this.order.invert();
+        const rr = this.createNextKRequest(order, null, this.tableRowsDesired);
         rr.invoke(new NextKReceiver(this.getPage(), this, rr, true, order, null));
     }
 
     public pageDown(): void {
-        if (this.currentData == null || this.currentData.rows.length == 0)
+        if (this.currentData == null || this.currentData.rows.length === 0)
             return;
         if (this.startPosition + this.dataRowsDisplayed >= this.rowCount - 1) {
             this.reportError("Already at the bottom");
             return;
         }
-        let o = this.order.clone();
-        let rr = this.createNextKRequest(o, this.currentData.rows[this.currentData.rows.length - 1].values);
+        const o = this.order.clone();
+        const rr = this.createNextKRequest(
+            o, this.currentData.rows[this.currentData.rows.length - 1].values, this.tableRowsDesired);
         rr.invoke(new NextKReceiver(this.getPage(), this, rr, false, o, null));
     }
 
     protected setOrder(o: RecordOrder): void {
-        let rr = this.createNextKRequest(o, null);
+        const rr = this.createNextKRequest(o, null, this.tableRowsDesired);
         rr.invoke(new NextKReceiver(this.getPage(), this, rr, false, o, null));
     }
 
@@ -320,9 +335,9 @@ export class TableView extends TSViewBase implements IScrollTarget {
             return;
         }
 
-        let o = this.order.clone();
+        const o = this.order.clone();
         for (let i = 0; i < this.schema.length; i++) {
-            let c = this.schema.get(i);
+            const c = this.schema.get(i);
             o.addColumnIfNotVisible({ columnDescription: c, isAscending: true });
         }
         this.setOrder(o);
@@ -338,34 +353,34 @@ export class TableView extends TSViewBase implements IScrollTarget {
     }
     */
 
-    getSortOrder(column: string): [boolean, number] {
+    public getSortOrder(column: string): [boolean, number] {
         for (let i = 0; i < this.order.length(); i++) {
-            let o = this.order.get(i);
-            if (o.columnDescription.name == column)
+            const o = this.order.get(i);
+            if (o.columnDescription.name === column)
                 return [o.isAscending, i];
         }
         return null;
     }
 
     public isVisible(column: string): boolean {
-        let so = this.getSortOrder(column);
+        const so = this.getSortOrder(column);
         return so != null;
     }
 
     public isAscending(column: string): boolean {
-        let so = this.getSortOrder(column);
+        const so = this.getSortOrder(column);
         if (so == null) return null;
         return so[0];
     }
 
     public getSortIndex(column: string): number {
-        let so = this.getSortOrder(column);
+        const so = this.getSortOrder(column);
         if (so == null) return null;
         return so[1];
     }
 
     public getSortArrow(column: string): string {
-        let asc = this.isAscending(column);
+        const asc = this.isAscending(column);
         if (asc == null)
             return "";
         else if (asc)
@@ -376,7 +391,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
 
     private addHeaderCell(thr: Node, cd: IColumnDescription,
                           displayName: string, help: string): HTMLElement {
-        let thd = document.createElement("th");
+        const thd = document.createElement("th");
         thd.classList.add("noselect");
         let label = displayName;
         if (!this.isVisible(cd.name)) {
@@ -395,11 +410,11 @@ export class TableView extends TSViewBase implements IScrollTarget {
         // order is 0 to hide
         //         -1 to sort descending
         //          1 to sort ascending
-        let o = this.order.clone();
+        const o = this.order.clone();
         // The set iterator did not seem to work correctly...
-        this.getSelectedColNames().forEach(colName => {
-            let col = this.schema.find(colName);
-            if (order != 0 && col != null) {
+        this.getSelectedColNames().forEach((colName) => {
+            const col = this.schema.find(colName);
+            if (order !== 0 && col != null) {
                 if (first)
                     o.sortFirst({columnDescription: col, isAscending: order > 0});
                 else
@@ -415,11 +430,17 @@ export class TableView extends TSViewBase implements IScrollTarget {
             this.reportError("Nothing to refresh");
             return;
         }
-        this.updateView(this.currentData, false, this.order, null, 0);
+
+        let firstRow = null;
+        if (this.currentData.rows != null &&
+            this.currentData.rows.length > 0)
+            firstRow = this.currentData.rows[0].values;
+        const rr = this.createNextKRequest(this.order, firstRow, this.tableRowsDesired);
+        rr.invoke(new NextKReceiver(this.page, this, rr, false, this.order, null));
     }
 
     public updateView(data: NextKList, revert: boolean,
-                      order: RecordOrder, foundCount: number,
+                      order: RecordOrder, foundCount: number | null,
                       elapsedMs: number): void {
         this.selectedColumns.clear();
         this.rowCount = data.rowsScanned;
@@ -431,7 +452,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
             let rowsDisplayed = 0;
             if (data.rows != null) {
                 data.rows.reverse();
-                rowsDisplayed = data.rows.map(r => r.count).reduce( (a, b) => {return a + b;}, 0 );
+                rowsDisplayed = data.rows.map((r) => r.count).reduce( (a, b) => a + b, 0 );
             }
             this.startPosition = this.rowCount - this.startPosition - rowsDisplayed;
             this.order = this.order.invert();
@@ -442,150 +463,156 @@ export class TableView extends TSViewBase implements IScrollTarget {
         if (this.tBody != null)
             this.tBody.remove();
         this.tHead = this.htmlTable.createTHead();
-        let thr = this.tHead.appendChild(document.createElement("tr"));
+        const thr = this.tHead.appendChild(document.createElement("tr"));
 
         // These two columns are always shown
-        let cds: IColumnDescription[] = [];
-        let posCd: IColumnDescription = {
+        const cds: IColumnDescription[] = [];
+        const posCd: IColumnDescription = {
             kind: "Integer",
-            name: "(position)"
+            name: "(position)",
         };
-        let ctCd: IColumnDescription = {
+        const ctCd: IColumnDescription = {
             kind: "Integer",
-            name: "(count)"
+            name: "(count)",
         };
 
-        // Create column headers
-        let thd = this.addHeaderCell(thr, posCd, posCd.name, "Position within sorted order.");
-        thd.oncontextmenu = () => {};
-        thd = this.addHeaderCell(thr, ctCd, ctCd.name, "Number of occurrences.");
-        thd.oncontextmenu = () => {};
-        if (this.schema == null)
-            return;
+        {
+            // Create column headers
+            let thd = this.addHeaderCell(thr, posCd, posCd.name, "Position within sorted order.");
+            thd.oncontextmenu = () => {
+            };
+            thd = this.addHeaderCell(thr, ctCd, ctCd.name, "Number of occurrences.");
+            thd.oncontextmenu = () => {
+            };
+            if (this.schema == null)
+                return;
+        }
 
         for (let i = 0; i < this.schema.length; i++) {
-            let cd = this.schema.get(i);
+            const cd = this.schema.get(i);
             cds.push(cd);
-            let title = "Column type is " + cd.kind +
+            const title = "Column type is " + cd.kind +
                 ".\nA mouse click with the right button will open a menu.";
-            let name = this.schema.displayName(cd.name);
-            let thd = this.addHeaderCell(thr, cd, name, title);
+            const name = this.schema.displayName(cd.name);
+            const thd = this.addHeaderCell(thr, cd, name, title);
             thd.className = this.columnClass(cd.name);
-            thd.onclick = e => this.columnClick(i, e);
-            thd.oncontextmenu = e => {
+            thd.onclick = (e) => this.columnClick(i, e);
+            thd.oncontextmenu = (e) => {
                 this.columnClick(i, e);
-                if (e.ctrlKey && (e.button == 1)) {
+                if (e.ctrlKey && (e.button === 1)) {
                     // Ctrl + click is interpreted as a right-click on macOS.
                     // This makes sure it's interpreted as a column click with Ctrl.
                     return;
                 }
 
-                let selectedCount = this.selectedColumns.size();
+                const selectedCount = this.selectedColumns.size();
                 this.contextMenu.clear();
                 if (this.order.find(cd.name) >= 0) {
                     this.contextMenu.addItem({
                         text: "Hide",
                         action: () => this.showColumns(0, true),
-                        help: "Hide the data in the selected columns"
+                        help: "Hide the data in the selected columns",
                     }, true);
                 } else {
                     this.contextMenu.addItem({
                         text: "Show",
                         action: () => this.showColumns(1, false),
-                        help: "Show the data in the selected columns."
+                        help: "Show the data in the selected columns.",
                     }, true);
                 }
 
                 this.contextMenu.addItem({
                     text: "Drop",
                     action: () => this.dropColumns(),
-                    help: "Eliminate the selected columns from the view."
-                }, selectedCount != 0);
+                    help: "Eliminate the selected columns from the view.",
+                }, selectedCount !== 0);
                 this.contextMenu.addItem({
                     text: "Estimate distinct elements",
                     action: () => this.hLogLog(),
-                    help: "Compute an estimate of the number of different values that appear in the selected column."
-                }, selectedCount == 1);
+                    help: "Compute an estimate of the number of different values that appear in the selected column.",
+                }, selectedCount === 1);
                 this.contextMenu.addItem({
                     text: "Sort ascending",
                     action: () => this.showColumns(1, true),
-                    help: "Sort the data first on this colum, in increasing order."
+                    help: "Sort the data first on this colum, in increasing order.",
                 }, true);
                 this.contextMenu.addItem({
                     text: "Sort descending",
                     action: () => this.showColumns(-1, true),
-                    help: "Sort the data first on this column, in decreasing order"
+                    help: "Sort the data first on this column, in decreasing order",
                 }, true);
                 this.contextMenu.addItem({
                     text: "Histogram",
                     action: () => this.histogram(false),
-                    help: "Plot the data in the selected columns as a histogram.  Applies to one or two columns only. " +
-                    "The data cannot be of type String."
+                    help: "Plot the data in the selected columns as a histogram. " +
+                    "Applies to one or two columns only. The data cannot be of type String.",
                 }, selectedCount >= 1 && selectedCount <= 2);
                 this.contextMenu.addItem({
                     text: "Heatmap",
                     action: () => this.heatMap(),
                     help: "Plot the data in the selected columns as a heatmap or as a Trellis plot of heatmaps. " +
-                    "Applies to two or three columns only."
+                    "Applies to two or three columns only.",
                 }, selectedCount >= 2 && selectedCount <= 3);
                 this.contextMenu.addItem({
                     text: "Rename...",
                     action: () => this.renameColumn(),
-                    help: "Give a new name to this column."
-                }, selectedCount == 1);
+                    help: "Give a new name to this column.",
+                }, selectedCount === 1);
                 this.contextMenu.addItem({
                     text: "Frequent Elements...",
                     action: () => this.heavyHittersDialog(),
-                    help: "Find the values that occur most frequently in the selected columns."
+                    help: "Find the values that occur most frequently in the selected columns.",
                 }, true);
                 this.contextMenu.addItem({
                     text: "PCA...",
                     action: () => this.pca(true),
                     help: "Perform Principal Component Analysis on a set of numeric columns. " +
-                    "This produces a smaller set of columns that preserve interesting properties of the data."
+                    "This produces a smaller set of columns that preserve interesting properties of the data.",
                 }, selectedCount > 1 &&
                     this.getSelectedColNames().reduce( (a, b) => a && this.isNumericColumn(b), true) );
                 this.contextMenu.addItem({
                     text: "Plot Singular Value Spectrum",
                     action: () => this.spectrum(true),
-                    help: "Plot singular values for the selected columns. "
+                    help: "Plot singular values for the selected columns. ",
                 }, selectedCount > 1 &&
                     this.getSelectedColNames().reduce( (a, b) => a && this.isNumericColumn(b), true) );
                 /*
                 this.contextMenu.addItem({
                     text: "LAMP...",
                     action: () => this.lamp(),
-                    help: "Perform a Local Affine Multidimensional Projection of the data in a set of numeric columns." +
-                    "This produces a 2D view of the data which can be manually adjusted.  Note: this operation is rather slow."
+                    help: "Perform a Local Affine Multidimensional Projection of the data in a set " +
+                    "of numeric columns. This produces a 2D view of the data which can be manually " +
+                    "adjusted.  Note: this operation is rather slow."
                 }, selectedCount > 1 &&
                     this.getSelectedColNames().reduce( (a, b) => a && this.isNumericColumn(b), true) );
                     */
                 this.contextMenu.addItem({
                     text: "Filter...",
                     action: () => {
-                        let colName = this.getSelectedColNames()[0];
-                        let cd = this.schema.find(colName);
-                        this.showFilterDialog(cd.name, this.order);
+                        const colName = this.getSelectedColNames()[0];
+                        const colDesc = this.schema.find(colName);
+                        this.showFilterDialog(colDesc.name, this.order, this.tableRowsDesired);
                     },
-                    help: "Eliminate data that matches/does not match a specific value."
-                }, selectedCount == 1);
+                    help: "Eliminate data that matches/does not match a specific value.",
+                }, selectedCount === 1);
                 this.contextMenu.addItem({
                     text: "Compare...",
                     action: () => {
-                        let colName = this.getSelectedColNames()[0];
-                        this.showCompareDialog(this.schema.displayName(colName), this.order);
+                        const colName = this.getSelectedColNames()[0];
+                        this.showCompareDialog(this.schema.displayName(colName),
+                            this.order, this.tableRowsDesired);
                     },
-                    help : "Eliminate data that matches/does not match a specific value."
-                }, selectedCount == 1);
+                    help : "Eliminate data that matches/does not match a specific value.",
+                }, selectedCount === 1);
                 this.contextMenu.addItem({
                     text: "Convert...",
                     action: () => this.convert(cd.name),
-                    help: "Convert the data in the selected column to a different data type."
-                }, selectedCount == 1);
+                    help: "Convert the data in the selected column to a different data type.",
+                }, selectedCount === 1);
                 this.contextMenu.addItem({
                     text: "Create column...",
-                    action: () => this.createColumnDialog(this.order),
-                    help: "Add a new column computed from the selected columns."
+                    action: () => this.createColumnDialog(this.order, this.tableRowsDesired),
+                    help: "Add a new column computed from the selected columns.",
                 }, true);
                 this.contextMenu.show(e);
             };
@@ -598,19 +625,19 @@ export class TableView extends TSViewBase implements IScrollTarget {
         // Add row data
         if (data.rows != null) {
             tableRowCount = data.rows.length;
-            for (let i = 0; i < data.rows.length; i++)
-                this.addRow(data.rows[i], cds);
+            for (const row of data.rows)
+                this.addRow(row, cds);
         }
 
         let perc = "";
         if (this.rowCount > 0)
             perc = percent(this.dataRowsDisplayed / this.rowCount);
         if (this.startPosition > 0) {
-            if (perc != "")
+            if (perc !== "")
                 perc += " ";
             perc += "starting at " + percent(this.startPosition / this.rowCount);
         }
-        if (perc != "")
+        if (perc !== "")
             perc = " (" + perc + ")";
 
         let message = "Showing on " + tableRowCount + " rows " +
@@ -625,31 +652,31 @@ export class TableView extends TSViewBase implements IScrollTarget {
         this.page.reportTime(elapsedMs);
     }
 
-    filterOnValue(colName: string, value: string, comparison: Comparison): void {
-        let cd = this.schema.find(colName);
-        if (value != null && cd.kind == "Date") {
+    public filterOnValue(colName: string, value: string, comparison: Comparison): void {
+        const cd = this.schema.find(colName);
+        if (value != null && cd.kind === "Date") {
             // Parse the date in Javascript; the Java Date parser is very bad
-            let date = new Date(value);
+            const date = new Date(value);
             value = Converters.doubleFromDate(date).toString();
         }
-        let cfd: ComparisonFilterDescription = {
+        const cfd: ComparisonFilterDescription = {
             column: colName,
             compareValue: value,
-            comparison: comparison,
+            comparison,
         };
-        this.runComparisonFilter(cfd, this.order);
+        this.runComparisonFilter(cfd, this.order, this.tableRowsDesired);
     }
 
     /**
      * Convert the data in a column to a different column kind.
      */
-    convert(colName: string): void {
-        let cd = new ConverterDialog(colName, this.schema.columnNames);
+    public convert(colName: string): void {
+        const cd = new ConverterDialog(colName, this.schema.columnNames);
         cd.setAction(
             () => {
-                let kindStr = cd.getFieldValue("newKind");
-                let kind: ContentsKind = asContentsKind(kindStr);
-                let converter: ColumnConverter = new ColumnConverter(
+                const kindStr = cd.getFieldValue("newKind");
+                const kind: ContentsKind = asContentsKind(kindStr);
+                const converter: ColumnConverter = new ColumnConverter(
                     cd.getFieldValue("columnName"), kind, cd.getFieldValue("newColumnName"), this,
                     this.order, this.page);
                 converter.run();
@@ -657,16 +684,16 @@ export class TableView extends TSViewBase implements IScrollTarget {
         cd.show();
     }
 
-    dropColumns(): void {
-        let selected = cloneToSet(this.getSelectedColNames());
-        let schema = this.schema.filter(c => !selected.has(c.name));
-        let so: ColumnSortOrientation[] = [];
+    public dropColumns(): void {
+        const selected = cloneToSet(this.getSelectedColNames());
+        const schema = this.schema.filter((c) => !selected.has(c.name));
+        const so: ColumnSortOrientation[] = [];
         for (let i = 0; i < this.order.length(); i++) {
-            let cso = this.order.get(i);
+            const cso = this.order.get(i);
             if (!selected.has(cso.columnDescription.name))
                 so.push(cso);
         }
-        let order = new RecordOrder(so);
+        const order = new RecordOrder(so);
         this.schema = schema;
         this.setOrder(order);
     }
@@ -679,7 +706,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
         else if (e.shiftKey)
             this.selectedColumns.changeState("Shift", colNum);
         else {
-            if (e.button == 2) {
+            if (e.button === 2) {
                 // right button
                 if (this.selectedColumns.has(colNum))
                 // Do nothing if pressed on a selected column
@@ -695,8 +722,8 @@ export class TableView extends TSViewBase implements IScrollTarget {
         this.selectedColumns.clear();
         let count = 0;
         for (let i = 0; i < this.schema.length; i++) {
-            let kind = this.schema.get(i).kind;
-            if (kind == "Integer" || kind == "Double") {
+            const kind = this.schema.get(i).kind;
+            if (kind === "Integer" || kind === "Double") {
                 this.selectedColumns.add(i);
                 count++;
             }
@@ -706,25 +733,25 @@ export class TableView extends TSViewBase implements IScrollTarget {
     }
 
     private columnClass(colName: string): string {
-        let index = this.schema.columnIndex(colName);
+        const index = this.schema.columnIndex(colName);
         return "col" + String(index);
     }
 
     public getSelectedColNames(): string[] {
-        let colNames: string[] = [];
-        this.selectedColumns.getStates().forEach(i => colNames.push(this.schema.get(i).name));
+        const colNames: string[] = [];
+        this.selectedColumns.getStates().forEach((i) => colNames.push(this.schema.get(i).name));
         return colNames;
     }
 
     private isNumericColumn(colName: string): boolean {
-        let kind = this.schema.find(colName).kind;
-        return kind == "Double" || kind == "Integer";
+        const kind = this.schema.find(colName).kind;
+        return kind === "Double" || kind === "Integer";
     }
 
     private checkNumericColumns(colNames: string[], atLeast: number = 3): [boolean, string] {
         if (colNames.length < atLeast) {
-            let message = `\nNot enough columns. Need at least ${atLeast}. There are ${colNames.length}`;
-            return [false, message];
+            const msg = `\nNot enough columns. Need at least ${atLeast}. There are ${colNames.length}`;
+            return [false, msg];
         }
         let valid = true;
         let message = "";
@@ -739,10 +766,10 @@ export class TableView extends TSViewBase implements IScrollTarget {
     }
 
     private pca(toSample: boolean): void {
-        let colNames = this.getSelectedColNames();
-        let [valid, message] = this.checkNumericColumns(colNames);
+        const colNames = this.getSelectedColNames();
+        const [valid, message] = this.checkNumericColumns(colNames);
         if (valid) {
-            let pcaDialog = new Dialog("Principal Component Analysis",
+            const pcaDialog = new Dialog("Principal Component Analysis",
                 "Projects a set of numeric columns to a smaller set of numeric columns while preserving the 'shape' " +
                 " of the data as much as possible.");
             pcaDialog.addTextField("numComponents", "Number of components", FieldKind.Integer, "2",
@@ -753,15 +780,15 @@ export class TableView extends TSViewBase implements IScrollTarget {
                 "The projected columns will appear with this name followed by a number starting from 0");
             pcaDialog.setCacheTitle("PCADialog");
             pcaDialog.setAction(() => {
-                let numComponents: number = pcaDialog.getFieldValueAsInt("numComponents");
-                let projectionName: string = pcaDialog.getFieldValue("projectionName");
+                const numComponents: number = pcaDialog.getFieldValueAsInt("numComponents");
+                const projectionName: string = pcaDialog.getFieldValue("projectionName");
                 if (numComponents < 1 || numComponents > colNames.length) {
                     this.reportError("Number of components for PCA must be between 1 (incl.) " +
                         "and the number of selected columns, " + colNames.length + " (incl.). (" +
                         numComponents + " does not satisfy this.)");
                     return;
                 }
-                let rr = this.createCorrelationMatrixRequest(colNames, this.getTotalRowCount(), toSample);
+                const rr = this.createCorrelationMatrixRequest(colNames, this.getTotalRowCount(), toSample);
                 rr.invoke(new CorrelationMatrixReceiver(this.getPage(), this, rr, this.order,
                     numComponents, projectionName));
             });
@@ -772,10 +799,10 @@ export class TableView extends TSViewBase implements IScrollTarget {
     }
 
     private spectrum(toSample: boolean): void {
-        let colNames = this.getSelectedColNames();
-        let [valid, message] = this.checkNumericColumns(colNames);
+        const colNames = this.getSelectedColNames();
+        const [valid, message] = this.checkNumericColumns(colNames);
         if (valid) {
-            let rr = this.createSpectrumRequest(colNames, this.getTotalRowCount(), toSample);
+            const rr = this.createSpectrumRequest(colNames, this.getTotalRowCount(), toSample);
             rr.invoke(new SpectrumReceiver(
                 this.getPage(), this.remoteObjectId, this.rowCount,
                 this.schema, colNames, rr, false));
@@ -799,20 +826,19 @@ export class TableView extends TSViewBase implements IScrollTarget {
 
     private highlightSelectedColumns(): void {
         for (let i = 0; i < this.schema.length; i++) {
-            let name = this.schema.get(i).name;
-            let cls = this.columnClass(name);
-            let headers = this.tHead.getElementsByClassName(cls);
-            let cells = this.cellsPerColumn.get(name);
-            let selected = this.selectedColumns.has(i);
-            for (let i = 0; i < headers.length; i++) {
-                let header = headers[i];
+            const name = this.schema.get(i).name;
+            const cls = this.columnClass(name);
+            const headers = this.tHead.getElementsByClassName(cls);
+            const cells = this.cellsPerColumn.get(name);
+            const selected = this.selectedColumns.has(i);
+            for (let hi = 0; hi < headers.length; hi++) {  // tslint:disable-line
+                const header = headers[hi];
                 if (selected)
                     header.classList.add("selected");
                 else
                     header.classList.remove("selected");
             }
-            for (let i = 0; i < cells.length; i++) {
-                let cell = cells[i];
+            for (const cell of cells) {
                 if (selected)
                     cell.classList.add("selected");
                 else
@@ -832,7 +858,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
                 (this.startPosition + this.dataRowsDisplayed) / this.rowCount);
     }
 
-    public getRowCount() : number {
+    public getRowCount(): number {
         return this.tBody.childNodes.length;
     }
 
@@ -840,9 +866,26 @@ export class TableView extends TSViewBase implements IScrollTarget {
         return this.schema.length;
     }
 
+    protected changeTableSize(): void {
+        const dialog = new Dialog("Number of rows", "Choose number of rows to display");
+        dialog.addTextField("rows", "Rows", FieldKind.Integer,
+            Resolution.tableRowsOnScreen.toString(),
+            "Number of rows to show (between 10 and 200)");
+        dialog.setAction(() => {
+            const rowCount = dialog.getFieldValueAsInt("rows");
+            if (rowCount < 10 || rowCount > 200) {
+                this.page.reportError("Row count must be between 10 and 200");
+                return;
+            }
+            this.tableRowsDesired = rowCount;
+            this.refresh();
+        });
+        dialog.show();
+    }
+
     public viewSchema(): void {
-        let newPage = this.dataset.newPage("Schema", this.page);
-        let sv = new SchemaView(this.remoteObjectId, newPage, this.rowCount, this.schema, 0);
+        const newPage = this.dataset.newPage("Schema", this.page);
+        const sv = new SchemaView(this.remoteObjectId, newPage, this.rowCount, this.schema, 0);
         newPage.setDataView(sv);
     }
 
@@ -854,24 +897,35 @@ export class TableView extends TSViewBase implements IScrollTarget {
     public static convert(val: any, kind: ContentsKind): string {
         if (val == null)
             return missingHtml;
-        if (kind == "Integer" || kind == "Double")
+        if (kind === "Integer" || kind === "Double")
             return String(val);
-        else if (kind == "Date")
-            return formatDate(Converters.dateFromDouble(<number>val));
-        else if (kind == "Category" || kind == "String" || kind == "Json")
-            return <string>val;
+        else if (kind === "Date")
+            return formatDate(Converters.dateFromDouble(val as number));
+        else if (kind === "Category" || kind === "String" || kind === "Json")
+            return val as string;
         else
             return val.toString();  // TODO
     }
 
+    public moveRowToTop(row: RowSnapshot): void {
+        const rr = this.createNextKRequest(this.order, row.values, this.tableRowsDesired);
+        rr.invoke(new NextKReceiver(this.page, this, rr, false, this.order, null));
+    }
+
     public addRow(row: RowSnapshot, cds: IColumnDescription[]): void {
-        let trow = this.tBody.insertRow();
-
-        let position = this.startPosition + this.dataRowsDisplayed;
-
+        const trow = this.tBody.insertRow();
+        const position = this.startPosition + this.dataRowsDisplayed;
         let cell = trow.insertCell(0);
-        let dataRange = new DataRange(position, row.count, this.rowCount);
+        const dataRange = new DataRange(position, row.count, this.rowCount);
         cell.appendChild(dataRange.getDOMRepresentation());
+        cell.oncontextmenu = (e) => {
+            this.contextMenu.clear();
+            this.contextMenu.addItem({text: "Move to top",
+                action: () => this.moveRowToTop(row),
+                help: "Move this row to the top of the view.",
+            }, true);
+            this.contextMenu.show(e);
+        };
 
         cell = trow.insertCell(1);
         cell.style.textAlign = "right";
@@ -879,18 +933,18 @@ export class TableView extends TSViewBase implements IScrollTarget {
         cell.title = "Number of rows that have these values: " + formatNumber(row.count);
 
         for (let i = 0; i < cds.length; i++) {
-            let cd = cds[i];
+            const cd = cds[i];
             cell = trow.insertCell(i + 2);
             cell.classList.add(this.columnClass(cd.name));
             let align = "right";
-            if (cd.kind == "Category" || cd.kind == "String")
+            if (cd.kind === "Category" || cd.kind === "String")
                 align = "left";
             cell.style.textAlign = align;
 
             this.cellsPerColumn.get(cd.name).push(cell);
 
-            let dataIndex = this.order.find(cd.name);
-            if (dataIndex == -1)
+            const dataIndex = this.order.find(cd.name);
+            if (dataIndex === -1)
                 continue;
             if (this.isVisible(cd.name)) {
                 let value = row.values[dataIndex];
@@ -905,34 +959,38 @@ export class TableView extends TSViewBase implements IScrollTarget {
                 }
                 cell.textContent = cellValue;
                 cell.title = "Right click will popup a menu.";
-                cell.oncontextmenu = e => {
+                cell.oncontextmenu = (e) => {
                     this.contextMenu.clear();
                     // This menu shows the value to the right, but the filter
                     // takes the value to the left, so we have to flip all
                     // comparison signs.
                     this.contextMenu.addItem({text: "Filter for " + cellValue,
                         action: () => this.filterOnValue(cd.name, value, "=="),
-                        help: "Keep only the rows that have this value in this column."
+                        help: "Keep only the rows that have this value in this column.",
                     }, true);
                     this.contextMenu.addItem({text: "Filter for different from " + cellValue,
                         action: () => this.filterOnValue(cd.name, value, "!="),
-                        help: "Keep only the rows that have a different value in this column."
+                        help: "Keep only the rows that have a different value in this column.",
                     }, true);
                     this.contextMenu.addItem({text: "Filter for < " + cellValue,
                         action: () => this.filterOnValue(cd.name, value, ">"),
-                        help: "Keep only the rows that have a a smaller value in this column."
+                        help: "Keep only the rows that have a a smaller value in this column.",
                     }, true);
                     this.contextMenu.addItem({text: "Filter for > " + cellValue,
                         action: () => this.filterOnValue(cd.name, value, "<"),
-                        help: "Keep only the rows that have a larger value in this column."
+                        help: "Keep only the rows that have a larger value in this column.",
                     }, true);
                     this.contextMenu.addItem({text: "Filter for <= " + cellValue,
                         action: () => this.filterOnValue(cd.name, value, ">="),
-                        help: "Keep only the rows that have a smaller or equal value in this column."
+                        help: "Keep only the rows that have a smaller or equal value in this column.",
                     }, true);
                     this.contextMenu.addItem({text: "Filter for >= " + cellValue,
                         action: () => this.filterOnValue(cd.name, value, "<="),
-                        help: "Keep only the rows that have a larger or equal in this column."
+                        help: "Keep only the rows that have a larger or equal in this column.",
+                    }, true);
+                    this.contextMenu.addItem({text: "Move to top",
+                        action: () => this.moveRowToTop(row),
+                        help: "Move this row to the top of the view.",
                     }, true);
                     this.contextMenu.show(e);
                 };
@@ -958,11 +1016,11 @@ export class NextKReceiver extends Receiver<NextKList> {
                 operation: ICancellable,
                 protected reverse: boolean,
                 protected order: RecordOrder,
-                protected foundCount: number) {
+                protected foundCount: number | null) {
         super(page, operation, "Getting table info");
     }
 
-    onNext(value: PartialResult<NextKList>): void {
+    public onNext(value: PartialResult<NextKList>): void {
         super.onNext(value);
         this.table.updateView(value.data, this.reverse, this.order,
             this.foundCount, this.elapsedMilliseconds());
@@ -985,10 +1043,10 @@ export class SchemaReceiver extends OnCompleteReceiver<TableSummary> {
                 protected remoteObject: TableTargetAPI,
                 protected dataset: DatasetView,
                 protected forceTableView) {
-        super(page, operation, "Get schema")
+        super(page, operation, "Get schema");
     }
 
-    run(summary: TableSummary): void {
+    public run(summary: TableSummary): void {
         let dataView: IDataView;
 
         if (summary.schema == null) {
@@ -996,18 +1054,19 @@ export class SchemaReceiver extends OnCompleteReceiver<TableSummary> {
             return;
         }
 
-        let schemaClass = new SchemaClass(summary.schema);
+        const schemaClass = new SchemaClass(summary.schema);
         if (summary.schema.length > 20 && !this.forceTableView) {
-            dataView = new SchemaView(this.remoteObject.remoteObjectId, this.page, summary.rowCount, schemaClass, this.elapsedMilliseconds());
+            dataView = new SchemaView(this.remoteObject.remoteObjectId, this.page,
+                summary.rowCount, schemaClass, this.elapsedMilliseconds());
         } else {
-            let nk: NextKList = {
+            const nk: NextKList = {
                 rowsScanned: summary.rowCount,
                 startPosition: 0,
-                rows: []
+                rows: [],
             };
 
-            let order = new RecordOrder([]);
-            let table = new TableView(
+            const order = new RecordOrder([]);
+            const table = new TableView(
                 this.remoteObject.remoteObjectId, summary.rowCount, schemaClass, this.page);
             table.updateView(nk, false, order, null, this.elapsedMilliseconds());
             dataView = table;
@@ -1028,8 +1087,8 @@ class QuantileReceiver extends OnCompleteReceiver<any[]> {
         super(page, operation, "Compute quantiles");
     }
 
-    run(firstRow: any[]): void {
-        let rr = this.tv.createNextKRequest(this.order, firstRow);
+    public run(firstRow: any[]): void {
+        const rr = this.tv.createNextKRequest(this.order, firstRow, this.tv.tableRowsDesired);
         rr.chain(this.operation);
         rr.invoke(new NextKReceiver(this.page, this.tv, rr, false, this.order, null));
     }
@@ -1049,13 +1108,14 @@ class CorrelationMatrixReceiver extends BaseRenderer {
         super(page, operation, "Correlation matrix", tv.dataset);
     }
 
-    run(): void {
+    public run(): void {
         super.run();
-        let rr = this.tv.createProjectToEigenVectorsRequest(
+        const rr = this.tv.createProjectToEigenVectorsRequest(
                 this.remoteObject, this.numComponents, this.projectionName);
         rr.chain(this.operation);
         rr.invoke(new PCATableReceiver(
-            this.page, rr, "Data with PCA projection columns", "Reading", this.tv, this.order, this.numComponents));
+            this.page, rr, "Data with PCA projection columns", "Reading", this.tv, this.order,
+            this.numComponents, this.tv.tableRowsDesired));
     }
 }
 
@@ -1063,16 +1123,17 @@ class CorrelationMatrixReceiver extends BaseRenderer {
 // Invokes a sketch to get the schema of this new table.
 class PCATableReceiver extends BaseRenderer {
     constructor(page: FullPage, operation: ICancellable, protected title: string, progressInfo: string,
-                protected tv: TSViewBase, protected order: RecordOrder, protected numComponents: number) {
+                protected tv: TSViewBase, protected order: RecordOrder, protected numComponents: number,
+                protected tableRowsDesired: number) {
         super(page, operation, progressInfo, tv.dataset);
     }
 
     public run(): void {
         super.run();
-        let rr = this.remoteObject.createGetSchemaRequest();
+        const rr = this.remoteObject.createGetSchemaRequest();
         rr.chain(this.operation);
         rr.invoke(new PCASchemaReceiver(this.page, rr, this.remoteObject, this.tv,
-            this.title, this.order, this.numComponents));
+            this.title, this.order, this.numComponents, this.tableRowsDesired));
     }
 }
 
@@ -1084,31 +1145,32 @@ class PCASchemaReceiver extends OnCompleteReceiver<TableSummary> {
                 protected tv: TSViewBase,
                 protected title: string,
                 protected order: RecordOrder,
-                protected numComponents: number) {
-        super(page, operation, "Get schema")
+                protected numComponents: number,
+                protected tableRowsDesired: number) {
+        super(page, operation, "Get schema");
     }
 
-    run(summary: TableSummary): void {
+    public run(summary: TableSummary): void {
         if (summary.schema == null) {
             this.page.reportError("No schema received; empty dataset?");
             return;
         }
 
-        let newCols: IColumnDescription[] = [];
-        let o = this.order.clone();
+        const newCols: IColumnDescription[] = [];
+        const o = this.order.clone();
         // we rely on the fact that the last numComponents columns are added by the PCA
         // computation.
         for (let i = 0; i < this.numComponents; i++) {
-            let cd = summary.schema[summary.schema.length - this.numComponents + i];
+            const cd = summary.schema[summary.schema.length - this.numComponents + i];
             newCols.push(cd);
             o.addColumn({ columnDescription: cd, isAscending: true });
         }
 
-        let schema = this.tv.schema.concat(newCols);
-        let table = new TableView(
+        const schema = this.tv.schema.concat(newCols);
+        const table = new TableView(
             this.remoteObject.remoteObjectId, this.tv.rowCount, schema, this.page);
         this.page.setDataView(table);
-        let rr = table.createNextKRequest(o, null);
+        const rr = table.createNextKRequest(o, null, this.tableRowsDesired);
         rr.chain(this.operation);
         rr.invoke(new NextKReceiver(this.page, table, rr, false, o, null));
     }
@@ -1123,16 +1185,17 @@ export class TableOperationCompleted extends BaseRenderer {
                        protected rowCount: number,
                        protected schema: SchemaClass,
                        operation: ICancellable,
-                       protected order: RecordOrder) {
+                       protected order: RecordOrder,
+                       protected tableRowsDesired: number) {
         super(page, operation, "Table operation", page.dataset);
     }
 
-    run(): void {
+    public run(): void {
         super.run();
-        let table = new TableView(
+        const table = new TableView(
             this.remoteObject.remoteObjectId, this.rowCount, this.schema, this.page);
         this.page.setDataView(table);
-        let rr = table.createNextKRequest(this.order, null);
+        const rr = table.createNextKRequest(this.order, null, this.tableRowsDesired);
         rr.chain(this.operation);
         rr.invoke(new NextKReceiver(this.page, table, rr, false, this.order, null));
     }
@@ -1150,12 +1213,12 @@ export class FindReceiver extends OnCompleteReceiver<FindResult> {
         super(page, operation, "Compute quantiles");
     }
 
-    run(result: FindResult): void {
-        if (result.count == 0) {
+    public run(result: FindResult): void {
+        if (result.count === 0) {
             this.page.reportError("No matches found");
             return;
         }
-        let rr = this.tv.createNextKRequest(this.order, result.firstRow);
+        const rr = this.tv.createNextKRequest(this.order, result.firstRow, this.tv.tableRowsDesired);
         rr.chain(this.operation);
         rr.invoke(new NextKReceiver(this.page, this.tv, rr, false, this.order, result.count));
     }

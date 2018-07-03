@@ -64,10 +64,10 @@ export interface TableSummary {
 }
 
 export interface ConvertColumnInfo {
-    colName: string,
-    newColName: string,
-    newKind: ContentsKind,
-    columnIndex: number
+    colName: string;
+    newColName: string;
+    newKind: ContentsKind;
+    columnIndex: number;
 }
 
 /// Same as FindSketch.Result
@@ -101,7 +101,7 @@ export interface FileSetDescription {
 }
 
 export interface HLogLog {
-    distinctItemCount: number
+    distinctItemCount: number;
 }
 
 export interface CreateColumnInfo {
@@ -109,7 +109,7 @@ export interface CreateColumnInfo {
     schema: Schema;
     outputColumn: string;
     outputKind: ContentsKind;
-    renameMap: string[]
+    renameMap: string[];
 }
 
 export interface HeatMap {
@@ -130,7 +130,7 @@ export interface Status {
 }
 
 export enum CombineOperators {
-    Union, Intersection, Exclude, Replace
+    Union, Intersection, Exclude, Replace,
 }
 
 export interface IColumnDescription {
@@ -139,7 +139,7 @@ export interface IColumnDescription {
 }
 
 export function isNumeric(kind: ContentsKind): boolean {
-    return kind == "Integer" || kind == "Double";
+    return kind === "Integer" || kind === "Double";
 }
 
 export type Schema = IColumnDescription[];
@@ -175,7 +175,7 @@ export interface IDistinctStrings {
 }
 
 export interface Histogram {
-    buckets: number[]
+    buckets: number[];
     missingData: number;
     outOfRange: number;
 }
@@ -184,7 +184,7 @@ export interface NumericColumnStatistics {
     momentCount: number;
     min: number;
     max: number;
-    moments: Array<number>;
+    moments: number[];
     presentCount: number;
     missingCount: number;
 }
@@ -200,7 +200,7 @@ export interface BasicColStats {
     momentCount: number;
     min: number;
     max: number;
-    moments: Array<number>;
+    moments: number[];
     presentCount: number;
     missingCount: number;
 }
@@ -227,7 +227,7 @@ export interface Histogram2DArgs {
     xBucketCount: number;
     yBucketCount: number;
     samplingRate: number;
-    seed:         number;
+    seed: number;
     cdfBucketCount: number;
     cdfSamplingRate: number;
 }
@@ -240,26 +240,33 @@ export interface Histogram3DArgs {
     yBucketCount: number;
     zBucketCount: number;
     samplingRate: number;
-    seed:         number;
+    seed: number;
 }
 
 export interface FilterDescription {
     min: number;
     max: number;
     columnName: string;
-    kind: ContentsKind,
+    kind: ContentsKind;
     complement: boolean;
     bucketBoundaries: string[];
 }
 
 export interface HeavyHittersFilterInfo {
-    hittersId: String;
+    hittersId: string;
     schema: Schema;
 }
 
 export interface TopList {
     top: NextKList;
     heavyHittersId: RemoteObjectId;
+}
+
+export interface NextKArgs {
+    toFind: string | null;
+    order: RecordOrder;
+    firstRow: any[] | null;
+    rowsOnScreen: number;
 }
 
 export interface EigenVal {
@@ -280,43 +287,43 @@ export interface NextKList {
 
 export class RecordOrder {
     // Direct counterpart to Java class
-    constructor(public sortOrientationList: Array<ColumnSortOrientation>) {}
+    constructor(public sortOrientationList: ColumnSortOrientation[]) {}
     public length(): number { return this.sortOrientationList.length; }
     public get(i: number): ColumnSortOrientation { return this.sortOrientationList[i]; }
 
     // Find the index of a specific column; return -1 if columns is not in the sort order
     public find(col: string): number {
         for (let i = 0; i < this.length(); i++)
-            if (this.sortOrientationList[i].columnDescription.name == col)
+            if (this.sortOrientationList[i].columnDescription.name === col)
                 return i;
         return -1;
     }
 
     public hide(col: string): void {
-        let index = this.find(col);
-        if (index == -1)
+        const index = this.find(col);
+        if (index === -1)
         // already hidden
             return;
         this.sortOrientationList.splice(index, 1);
     }
 
     public sortFirst(cso: ColumnSortOrientation) {
-        let index = this.find(cso.columnDescription.name);
-        if (index != -1)
+        const index = this.find(cso.columnDescription.name);
+        if (index !== -1)
             this.sortOrientationList.splice(index, 1);
         this.sortOrientationList.splice(0, 0, cso);
     }
 
     public addColumn(cso: ColumnSortOrientation) {
-        let index = this.find(cso.columnDescription.name);
-        if (index != -1)
+        const index = this.find(cso.columnDescription.name);
+        if (index !== -1)
             this.sortOrientationList.splice(index, 1);
         this.sortOrientationList.push(cso);
     }
 
     public addColumnIfNotVisible(cso: ColumnSortOrientation) {
-        let index = this.find(cso.columnDescription.name);
-        if (index == -1)
+        const index = this.find(cso.columnDescription.name);
+        if (index === -1)
             this.sortOrientationList.push(cso);
     }
 
@@ -326,13 +333,12 @@ export class RecordOrder {
 
     // Returns a new object
     public invert(): RecordOrder {
-        let result = new Array<ColumnSortOrientation>(this.sortOrientationList.length);
-        for (let i in this.sortOrientationList) {
-            let cso = this.sortOrientationList[i];
-            result[i] = {
+        const result: ColumnSortOrientation[] = [];
+        for (const cso of this.sortOrientationList) {
+            result.push({
                 isAscending: !cso.isAscending,
-                columnDescription: cso.columnDescription
-            };
+                columnDescription: cso.columnDescription,
+            });
         }
         return new RecordOrder(result);
     }
@@ -343,8 +349,8 @@ export class RecordOrder {
 
     public toString(): string {
         let result = "";
-        for (let i = 0; i < this.sortOrientationList.length; i++)
-            result += RecordOrder.coToString(this.sortOrientationList[i]);
+        for (const soi of this.sortOrientationList)
+            result += RecordOrder.coToString(soi);
         return result;
     }
 }

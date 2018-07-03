@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-import {Dialog, FieldKind} from "../ui/dialog";
-import {OnCompleteReceiver} from "../rpc";
-import {ICancellable} from "../util";
-import {FullPage} from "../ui/fullPage";
-import {TableView, TableOperationCompleted} from "./tableView";
 import {
     allContentsKind, ContentsKind, ConvertColumnInfo, HLogLog, IColumnDescription,
-    RecordOrder
+    RecordOrder,
 } from "../javaBridge";
+import {OnCompleteReceiver} from "../rpc";
+import {Dialog, FieldKind} from "../ui/dialog";
+import {FullPage} from "../ui/fullPage";
+import {ICancellable} from "../util";
+import {TableOperationCompleted, TableView} from "./tableView";
 
 /**
  * A dialog to find out information about how to perform the conversion of the data in a column.
@@ -35,11 +35,11 @@ export class ConverterDialog extends Dialog {
     constructor(protected readonly columnName: string,
                 protected readonly allColumns: string[]) {
         super("Convert column", "Creates a new column by converting the data in an existing column to a new type.");
-        let cn = this.addSelectField("columnName", "Column: ", allColumns, columnName,
+        const cn = this.addSelectField("columnName", "Column: ", allColumns, columnName,
             "Column whose type is converted");
-        let nk = this.addSelectField("newKind", "Convert to: ", allContentsKind, null,
+        const nk = this.addSelectField("newKind", "Convert to: ", allContentsKind, null,
             "Type of data for the converted column.");
-        let nn = this.addTextField("newColumnName", "New column name: ", FieldKind.String, null,
+        const nn = this.addTextField("newColumnName", "New column name: ", FieldKind.String, null,
             "A name for the new column.  The name must be different from all other column names.");
         cn.onchange = () => this.generateColumnName();
         nk.onchange = () => this.generateColumnName();
@@ -53,8 +53,8 @@ export class ConverterDialog extends Dialog {
     private generateColumnName(): void {
         if (this.columnNameFixed)
             return;
-        let cn = this.getFieldValue("columnName");
-        let suffix = " (" + this.getFieldValue("newKind") + ")";
+        const cn = this.getFieldValue("columnName");
+        const suffix = " (" + this.getFieldValue("newKind") + ")";
         let nn = cn + suffix;
         if (this.allColumns.indexOf(nn) >= 0) {
             let counter = 0;
@@ -75,11 +75,11 @@ export class ColumnConverter  {
     private readonly columnIndex: number;  // index of original column in schema
 
     constructor(private columnName: string,
-        private newKind: ContentsKind,
-        private newColumnName: string,
-        private table: TableView,
-        private order: RecordOrder,
-        private page: FullPage) {
+                private newKind: ContentsKind,
+                private newColumnName: string,
+                private table: TableView,
+                private order: RecordOrder,
+                private page: FullPage) {
         this.columnIndex = this.table.schema.columnIndex(this.columnName);
     }
 
@@ -88,9 +88,9 @@ export class ColumnConverter  {
             this.table.reportError(`Column name ${this.newColumnName} already exists in table.`);
             return;
         }
-        if (this.newKind == "Category") {
-            let rr = this.table.createHLogLogRequest(this.columnName);
-            let rec: HLogLogReceiver = new HLogLogReceiver(this.table.getPage(), rr, this);
+        if (this.newKind === "Category") {
+            const rr = this.table.createHLogLogRequest(this.columnName);
+            const rec: HLogLogReceiver = new HLogLogReceiver(this.table.getPage(), rr, this);
             rr.invoke(rec);
         } else {
             this.convert(null);
@@ -107,24 +107,24 @@ export class ColumnConverter  {
     }
 
     public convert(operation: ICancellable): void {
-        let args: ConvertColumnInfo = {
+        const args: ConvertColumnInfo = {
             colName: this.columnName,
             newColName: this.newColumnName,
             newKind: this.newKind,
-            columnIndex: this.columnIndex
+            columnIndex: this.columnIndex,
         };
-        let newPage = this.table.dataset.newPage("Converted " + this.newColumnName, this.page);
-        let rr = this.table.createStreamingRpcRequest<string>("convertColumnMap", args);
+        const newPage = this.table.dataset.newPage("Converted " + this.newColumnName, this.page);
+        const rr = this.table.createStreamingRpcRequest<string>("convertColumnMap", args);
         rr.chain(operation);
-        let cd: IColumnDescription = {
+        const cd: IColumnDescription = {
             kind: this.newKind,
-            name: this.newColumnName
+            name: this.newColumnName,
         };
-        let schema = this.table.schema.append(cd);
-        let o = this.order.clone();
+        const schema = this.table.schema.append(cd);
+        const o = this.order.clone();
         o.addColumn({columnDescription: cd, isAscending: true});
         rr.invoke(new TableOperationCompleted(
-            newPage, this.table.rowCount, schema, rr, o));
+            newPage, this.table.rowCount, schema, rr, o, this.table.tableRowsDesired));
     }
 }
 
@@ -133,7 +133,7 @@ class HLogLogReceiver extends OnCompleteReceiver<HLogLog> {
         super(page, operation, "HyperLogLog");
     }
 
-    run(data: HLogLog): void {
+    public run(data: HLogLog): void {
         this.cc.countReceived(data.distinctItemCount, this.operation);
     }
 }

@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-import {IHtmlElement, Point} from "./ui"
-import {EditBox} from "./editBox";
-import {cloneArray, makeId} from "../util";
 import {drag as d3drag} from "d3-drag";
 import {event as d3event, select as d3select} from "d3-selection";
+import {cloneArray, makeId} from "../util";
+import {EditBox} from "./editBox";
+import {IHtmlElement, Point} from "./ui";
 
 export enum FieldKind {
     String,
@@ -27,18 +27,18 @@ export enum FieldKind {
     Double,
     Boolean,
     Password,
-    File
+    File,
 }
 
 /**
  *  Represents a field in the dialog.
  */
 export class DialogField {
-    html: HTMLSelectElement | HTMLInputElement | EditBox;
+    public html: HTMLSelectElement | HTMLInputElement | EditBox;
     /**
      * Optional kind of data expected to be input by the user.
      */
-    type?: FieldKind;
+    public type?: FieldKind;
 }
 
 /**
@@ -49,15 +49,15 @@ class DialogValues {
     /**
      * Map field name to field value.
      */
-   values: Map<string, string>;
+   public values: Map<string, string>;
 
    constructor() { this.values = new Map<string, string>(); }
 
-   set(field: string, value: string): void {
+   public set(field: string, value: string): void {
        this.values.set(field, value);
    }
 
-   get(field: string): string {
+   public get(field: string): string {
        return this.values.get(field);
    }
 }
@@ -93,12 +93,12 @@ class DialogBase implements IHtmlElement {
         this.dragging = false;
         this.topLevel = document.createElement("div");
         this.topLevel.title = toolTip;
-        this.topLevel.classList.add('dialog');
+        this.topLevel.classList.add("dialog");
         this.topLevel.style.left = "50%";
         this.topLevel.style.top = "50%";
         this.topLevel.style.transform = "translate(-50%, -50%)";
 
-        let titleElement = document.createElement("h1");
+        const titleElement = document.createElement("h1");
         titleElement.textContent = title;
         this.topLevel.appendChild(titleElement);
 
@@ -108,14 +108,14 @@ class DialogBase implements IHtmlElement {
         this.buttonsDiv = document.createElement("div");
         this.topLevel.appendChild(this.buttonsDiv);
 
-        let drag = d3drag()
+        const drag = d3drag()
             .on("start", () => this.dragStart())
             .on("end", () => this.dragEnd())
             .on("drag", () => this.dragMove());
         d3select(this.topLevel).call(drag);
     }
 
-    dragStart(): void {
+    public dragStart(): void {
         this.dragging = true;
         this.dragMousePosition = { x: d3event.x, y: d3event.y };
         this.dialogPosition = this.topLevel.getBoundingClientRect();
@@ -124,16 +124,16 @@ class DialogBase implements IHtmlElement {
         this.dragMove();  // put it in the right place; changing the transform may move it.
     }
 
-    dragMove(): void {
+    public dragMove(): void {
         if (!this.dragging)
             return;
-        let dx = this.dragMousePosition.x - d3event.x;
-        let dy = this.dragMousePosition.y - d3event.y;
+        const dx = this.dragMousePosition.x - d3event.x;
+        const dy = this.dragMousePosition.y - d3event.y;
         this.topLevel.style.left = (this.dialogPosition.left - dx).toString() + "px";
         this.topLevel.style.top = (this.dialogPosition.top - dy).toString() + "px";
     }
 
-    dragEnd(): void {
+    public dragEnd(): void {
         this.dragging = false;
         this.topLevel.style.cursor = "default";
     }
@@ -160,7 +160,7 @@ export class Dialog extends DialogBase {
     /**
      * Method to be invoked when dialog is closed with OK.
      */
-    onConfirm: () => void;
+    public onConfirm: () => void;
     /**
      * Stores the input elements and (optionally) their types.
      */
@@ -179,7 +179,7 @@ export class Dialog extends DialogBase {
     /**
      * This is a cache that can map a dialog title to a set of dialog values.
      */
-    static dialogValueCache: Map<string, DialogValues> = new Map<string, DialogValues>();
+    public static dialogValueCache: Map<string, DialogValues> = new Map<string, DialogValues>();
 
     /**
      * Create a dialog with the given name.
@@ -198,10 +198,10 @@ export class Dialog extends DialogBase {
         this.line = new Map<string, HTMLElement>();
         this.onConfirm = null;
 
-        let nodrag = d3drag()
+        const nodrag = d3drag()
             .on("start", () => this.dragEnd());
 
-        let cancelButton = document.createElement("button");
+        const cancelButton = document.createElement("button");
         cancelButton.onclick = () => this.cancelAction();
         cancelButton.textContent = "Cancel";
         cancelButton.classList.add("cancel");
@@ -221,43 +221,43 @@ export class Dialog extends DialogBase {
      * dialog appears again.  If a set of values for this title is already
      * available, it is used to populate the dialog.
      */
-    setCacheTitle(title: string): void {
+    public setCacheTitle(title: string): void {
         this.dialogTitle = title;
         if (title != null) {
-            let values = Dialog.dialogValueCache.get(title);
+            const values = Dialog.dialogValueCache.get(title);
             if (values != null)
                 this.setAllValues(values);
         }
     }
 
-    getAllValues(): DialogValues {
-        let retval = new DialogValues();
+    public getAllValues(): DialogValues {
+        const retval = new DialogValues();
         this.fields.forEach((v, k) => retval.set(k, this.getFieldValue(k)));
         return retval;
     }
 
-    setAllValues(values: DialogValues): void {
+    public setAllValues(values: DialogValues): void {
         this.fields.forEach((v, k) => {
-            let value = values.get(k);
+            const value = values.get(k);
             if (value != null)
                 this.setFieldValue(k, value);
         });
     }
 
     protected handleKeypress(ev: KeyboardEvent): void {
-        if (ev.code == "Enter") {
+        if (ev.code === "Enter") {
             this.hide();
             this.cacheValues();
             this.onConfirm();
-        } else if (ev.code == "Escape") {
+        } else if (ev.code === "Escape") {
             this.hide();
         }
     }
 
-    cacheValues(): void {
+    public cacheValues(): void {
         if (this.dialogTitle == null)
             return;
-        let vals = this.getAllValues();
+        const vals = this.getAllValues();
         Dialog.dialogValueCache.set(this.dialogTitle, vals);
     }
 
@@ -277,16 +277,16 @@ export class Dialog extends DialogBase {
 
     /**
      * Display the dialog.
-      */
+     */
     public show(): void {
         super.show();
-        if (this.fieldsDiv.childElementCount == 0) {
+        if (this.fieldsDiv.childElementCount === 0) {
             // If there are somehow no fields, focus on the container.
             this.topLevel.setAttribute("tabindex", "10");
             this.topLevel.focus();
         } else {
             // Focus on the first input element if present
-            let firstField = this.fields.values().next();
+            const firstField = this.fields.values().next();
             if (firstField.value)
                 firstField.value.html.focus();
             else
@@ -295,14 +295,14 @@ export class Dialog extends DialogBase {
         this.topLevel.onkeydown = (ev) => this.handleKeypress(ev);
     }
 
-    createRowContainer(fieldName: string, labelText: string, toolTip: string): HTMLDivElement {
-        let fieldDiv = document.createElement("div");
+    public createRowContainer(fieldName: string, labelText: string, toolTip: string): HTMLDivElement {
+        const fieldDiv = document.createElement("div");
         fieldDiv.style.display = "flex";
         fieldDiv.style.alignItems = "center";
         fieldDiv.title = toolTip;
-        fieldDiv.onmousedown = e => e.stopPropagation();
+        fieldDiv.onmousedown = (e) => e.stopPropagation();
         this.fieldsDiv.appendChild(fieldDiv);
-        let label = document.createElement("label");
+        const label = document.createElement("label");
         label.textContent = labelText;
         fieldDiv.appendChild(label);
         this.line.set(fieldName, fieldDiv);
@@ -321,18 +321,18 @@ export class Dialog extends DialogBase {
     public addTextField(fieldName: string, labelText: string,
                         type: FieldKind, value: string,
                         toolTip: string): HTMLInputElement {
-        let fieldDiv = this.createRowContainer(fieldName, labelText, toolTip);
-        let input: HTMLInputElement = document.createElement("input");
+        const fieldDiv = this.createRowContainer(fieldName, labelText, toolTip);
+        const input: HTMLInputElement = document.createElement("input");
         input.tabIndex = this.tabIndex++;
         input.style.flexGrow = "100";
         input.id = makeId(fieldName);
         fieldDiv.appendChild(input);
-        if (type == FieldKind.Integer)
+        if (type === FieldKind.Integer)
             input.type = "number";
-        if (type == FieldKind.Password)
+        if (type === FieldKind.Password)
             input.type = "password";
 
-        this.fields.set(fieldName, {html: input, type: type});
+        this.fields.set(fieldName, {html: input, type});
         if (value != null)
             input.value = value;
         return input;
@@ -347,8 +347,8 @@ export class Dialog extends DialogBase {
      */
     public addFileField(
         fieldName: string, labelText: string, toolTip: string): HTMLInputElement {
-        let fieldDiv = this.createRowContainer(fieldName, labelText, toolTip);
-        let input: HTMLInputElement = document.createElement("input");
+        const fieldDiv = this.createRowContainer(fieldName, labelText, toolTip);
+        const input: HTMLInputElement = document.createElement("input");
         input.tabIndex = this.tabIndex++;
         input.style.flexGrow = "100";
         input.id = makeId(fieldName);
@@ -369,8 +369,8 @@ export class Dialog extends DialogBase {
      */
     public addMultiLineTextField(fieldName: string, labelText: string, pre: string,
                                  value: string, post: string, toolTip: string): void {
-        let fieldDiv = this.createRowContainer(fieldName, labelText, toolTip);
-        let input = new EditBox(fieldName, pre, value, post);
+        const fieldDiv = this.createRowContainer(fieldName, labelText, toolTip);
+        const input = new EditBox(fieldName, pre, value, post);
         input.setTabIndex(this.tabIndex++);
         fieldDiv.appendChild(input.getHTMLRepresentation());
 
@@ -383,8 +383,8 @@ export class Dialog extends DialogBase {
      * @returns           A reference to the HTML element holding the text.
      */
     public addText(textString: string): HTMLElement {
-        let fieldDiv = this.createRowContainer("message", textString, null);
-        return <HTMLElement>fieldDiv.children[0];
+        const fieldDiv = this.createRowContainer("message", textString, null);
+        return fieldDiv.children[0] as HTMLElement;
     }
 
     /**
@@ -397,8 +397,8 @@ export class Dialog extends DialogBase {
      */
     public addBooleanField(fieldName: string, labelText: string,
                            value: boolean, toolTip: string): HTMLInputElement {
-        let fieldDiv = this.createRowContainer(fieldName, labelText, toolTip);
-        let input: HTMLInputElement = document.createElement("input");
+        const fieldDiv = this.createRowContainer(fieldName, labelText, toolTip);
+        const input: HTMLInputElement = document.createElement("input");
         input.tabIndex = this.tabIndex++;
         input.type = "checkbox";
         input.style.flexGrow = "100";
@@ -422,17 +422,17 @@ export class Dialog extends DialogBase {
     public addSelectField(fieldName: string, labelText: string,
                           options: string[], value: string,
                           toolTip: string): HTMLSelectElement {
-        let sortOptions = cloneArray(options);
+        const sortOptions = cloneArray(options);
         sortOptions.sort();
 
-        let fieldDiv = this.createRowContainer(fieldName, labelText, toolTip);
-        let select = document.createElement("select");
+        const fieldDiv = this.createRowContainer(fieldName, labelText, toolTip);
+        const select = document.createElement("select");
         select.tabIndex = this.tabIndex++;
         select.style.flexGrow = "100";
         select.id = makeId(fieldName);
         fieldDiv.appendChild(select);
-        sortOptions.forEach(option => {
-            let optionElement = document.createElement("option");
+        sortOptions.forEach((option) => {
+            const optionElement = document.createElement("option");
             optionElement.value = option;
             optionElement.text = option;
             select.add(optionElement);
@@ -441,12 +441,12 @@ export class Dialog extends DialogBase {
         if (value != null) {
             let i;
             for (i = 0; i < sortOptions.length; i++) {
-                if (sortOptions[i] == value) {
+                if (sortOptions[i] === value) {
                     select.selectedIndex = i;
                     break;
                 }
             }
-            if (i == sortOptions.length)
+            if (i === sortOptions.length)
                 throw new Error(`Given default value ${value} not found in options.`);
         }
         this.fields.set(fieldName, {html: select, type: FieldKind.String });
@@ -461,7 +461,7 @@ export class Dialog extends DialogBase {
      * @param {boolean} show       If true show the field, else hide it.
      */
     public showField(labelText: string, show: boolean): void {
-        let fieldDiv = this.line.get(labelText);
+        const fieldDiv = this.line.get(labelText);
         if (fieldDiv == null)
             return;
         if (show)
@@ -485,7 +485,7 @@ export class Dialog extends DialogBase {
      * @returns {boolean}  True if the field is checked.
      */
     public getBooleanValue(field: string): boolean {
-        return (<HTMLInputElement>this.fields.get(field).html).checked;
+        return (this.fields.get(field).html as HTMLInputElement).checked;
     }
 
     /**
@@ -494,10 +494,10 @@ export class Dialog extends DialogBase {
      * @param {string} value  Value that is being set.
      */
     public setFieldValue(field: string, value: string): void {
-        let f = this.fields.get(field);
+        const f = this.fields.get(field);
         f.html.value = value;
-        if (f.type == FieldKind.Boolean && value == "on") {
-            (<HTMLInputElement>f.html).checked = true;
+        if (f.type === FieldKind.Boolean && value === "on") {
+            (f.html as HTMLInputElement).checked = true;
         }
     }
 
@@ -506,8 +506,8 @@ export class Dialog extends DialogBase {
      * Returns either a number or null if the value cannot be parsed.
      */
     public getFieldValueAsInt(field: string): number {
-        let s = this.getFieldValue(field);
-        let result = parseInt(s);
+        const s = this.getFieldValue(field);
+        const result = parseInt(s, 10);
         if (isNaN(result))
             return null;
         return result;
@@ -518,8 +518,8 @@ export class Dialog extends DialogBase {
      * Returns either a number or null if the value cannot be parsed.
      */
     public getFieldValueAsNumber(field: string): number {
-        let s = this.getFieldValue(field);
-        let result = parseFloat(s);
+        const s = this.getFieldValue(field);
+        const result = parseFloat(s);
         if (isNaN(result))
             return null;
         return result;
@@ -529,7 +529,7 @@ export class Dialog extends DialogBase {
      * The value associated with a field representing a file selector.
      */
     public getFieldValueAsFiles(field: string): FileList {
-        let f = <HTMLInputElement>this.fields.get(field).html;
+        const f = this.fields.get(field).html as HTMLInputElement;
         return f.files;
     }
 
@@ -546,7 +546,7 @@ export class NotifyDialog extends DialogBase {
     constructor(title: string, toolTip: string) {
         super(title, toolTip);
 
-        let confirmButton = document.createElement("button");
+        const confirmButton = document.createElement("button");
         confirmButton.textContent = "Confirm";
         confirmButton.classList.add("confirm");
         confirmButton.onclick = () => this.hide();
@@ -560,7 +560,7 @@ export class NotifyDialog extends DialogBase {
     }
 
     protected handleKeypress(ev: KeyboardEvent): void {
-        if (ev.code == "Enter" || ev.code == "Escape")
+        if (ev.code === "Enter" || ev.code === "Escape")
             this.hide();
     }
 }

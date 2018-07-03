@@ -15,24 +15,24 @@
  * limitations under the License.
  */
 
-import {Dialog, FieldKind} from "../ui/dialog";
-import {TopMenu, SubMenu} from "../ui/menu";
-import {
-    CategoricalValues, BasicColStats, ColumnAndRange, Histogram2DArgs, TableSummary, RemoteObjectId,
-    HeatMap, CombineOperators
-} from "../javaBridge";
-import {Receiver, RpcRequest, OnCompleteReceiver} from "../rpc";
-import {PartialResult, clamp, Pair, ICancellable, Seed} from "../util";
-import {Point, PointSet, Resolution} from "../ui/ui";
-import {FullPage} from "../ui/fullPage";
-import {HeatmapLegendPlot} from "../ui/legendPlot";
-import {TableView} from "./tableView";
-import {TrellisPlotDialog} from "./trellisHeatMapView";
-import {TableTargetAPI, BigTableView, BaseRenderer} from "../tableTarget";
-import {PlottingSurface} from "../ui/plottingSurface";
 import {drag as d3drag} from "d3-drag";
 import {mouse as d3mouse, select as d3select} from "d3-selection";
+import {
+    BasicColStats, CategoricalValues, ColumnAndRange, CombineOperators, HeatMap, Histogram2DArgs,
+    RemoteObjectId, TableSummary,
+} from "../javaBridge";
+import {OnCompleteReceiver, Receiver, RpcRequest} from "../rpc";
 import {SchemaClass} from "../schemaClass";
+import {BaseRenderer, BigTableView, TableTargetAPI} from "../tableTarget";
+import {Dialog, FieldKind} from "../ui/dialog";
+import {FullPage} from "../ui/fullPage";
+import {HeatmapLegendPlot} from "../ui/legendPlot";
+import {SubMenu, TopMenu} from "../ui/menu";
+import {PlottingSurface} from "../ui/plottingSurface";
+import {Point, PointSet, Resolution} from "../ui/ui";
+import {clamp, ICancellable, Pair, PartialResult, Seed} from "../util";
+import {TableView} from "./tableView";
+import {TrellisPlotDialog} from "./trellisHeatMapView";
 
 /**
  * This class displays the results of performing a local affine multi-dimensional projection.
@@ -51,7 +51,7 @@ class LampView extends BigTableView {
     private controlPointsCanvas: any;
     private controlPointsChart: any;
     public controlPoints: PointSet;
-    private heatMapDots: Array<any>;
+    private heatMapDots: any[];
     private xDots: number;
     private yDots: number;
     private lampTableObject: TableTargetAPI;
@@ -67,43 +67,43 @@ class LampView extends BigTableView {
         this.topLevel.classList.add("chart");
         this.topLevel.classList.add("lampView");
 
-        let menu = new TopMenu( [
+        const menu = new TopMenu( [
             { text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
                 { text: "refresh",
                     action: () => { this.refresh(); },
-                    help: "Redraw this view."
+                    help: "Redraw this view.",
                 },
                 { text: "update ranges",
                     action: () => { this.fetchNewRanges(); },
-                    help: "Redraw this view such that all data fits on screen."
+                    help: "Redraw this view such that all data fits on screen.",
                 },
                 { text: "table",
                     action: () => { this.showTable(); },
-                    help: "Show the data underlying this view using a table."
+                    help: "Show the data underlying this view using a table.",
                 },
                 { text: "3D heatmap...",
                     action: () => { this.heatMap3D(); },
                     help: "Specify a categorical column and replot this data" +
-                    " grouped on values of that column."
+                    " grouped on values of that column.",
                 },
-            ]) }
+            ]) },
         ]);
         this.page.setMenu(menu);
 
         this.legendSurface = new PlottingSurface(this.topLevel, page);
-        //this.legendSurface.setMargins(0, 0, 0, 0);
+        // this.legendSurface.setMargins(0, 0, 0, 0);
         this.legendSurface.setHeight(Resolution.legendSpaceHeight);
         this.colorLegend = new HeatmapLegendPlot(this.legendSurface);
         this.colorLegend.setColorMapChangeEventListener(() => {
             this.refresh();
         });
-        let chartDiv = document.createElement("div");
+        const chartDiv = document.createElement("div");
         this.topLevel.appendChild(chartDiv);
 
-        let canvasSize = Math.min(
+        const canvasSize = Math.min(
             PlottingSurface.getDefaultCanvasSize(this.getPage()).width,
             PlottingSurface.getDefaultCanvasSize(this.getPage()).height);
-        let chartSize = Math.min(
+        const chartSize = Math.min(
             PlottingSurface.getDefaultChartSize(this.getPage()).width,
             PlottingSurface.getDefaultChartSize(this.getPage()).height);
         this.heatMapCanvas = d3select(chartDiv).append("svg")
@@ -126,7 +126,7 @@ class LampView extends BigTableView {
 
         this.lampColNames = [
             this.schema.uniqueColumnName("LAMP1"),
-            this.schema.uniqueColumnName("LAMP2")
+            this.schema.uniqueColumnName("LAMP2"),
         ];
     }
 
@@ -135,8 +135,10 @@ class LampView extends BigTableView {
     }
 
     public refresh() {
-        let canvasSize = Math.min(PlottingSurface.getDefaultCanvasSize(this.getPage()).width, PlottingSurface.getDefaultCanvasSize(this.getPage()).height);
-        let chartSize = Math.min(PlottingSurface.getDefaultChartSize(this.getPage()).width, PlottingSurface.getDefaultChartSize(this.getPage()).height);
+        const canvasSize = Math.min(PlottingSurface.getDefaultCanvasSize(
+            this.getPage()).width, PlottingSurface.getDefaultCanvasSize(this.getPage()).height);
+        const chartSize = Math.min(PlottingSurface.getDefaultChartSize(
+            this.getPage()).width, PlottingSurface.getDefaultChartSize(this.getPage()).height);
         this.controlPointsCanvas
             .attr("width", canvasSize)
             .attr("height", canvasSize);
@@ -162,9 +164,11 @@ class LampView extends BigTableView {
     public updateControlPoints(pointSet: PointSet) {
         this.controlPoints = pointSet;
         /* Set the coordinate system of the plot */
-        let [minX, maxX] = [Math.min(...this.controlPoints.points.map(p => p.x)), Math.max(...this.controlPoints.points.map(p => p.x))];
-        let [minY, maxY] = [Math.min(...this.controlPoints.points.map(p => p.y)), Math.max(...this.controlPoints.points.map(p => p.y))];
-        let maxRange = Math.max(maxX - minX, maxY - minY);
+        const [minX, maxX] = [Math.min(...this.controlPoints.points.map((p) => p.x)),
+            Math.max(...this.controlPoints.points.map((p) => p.x))];
+        const [minY, maxY] = [Math.min(...this.controlPoints.points.map((p) => p.y)),
+            Math.max(...this.controlPoints.points.map((p) => p.y))];
+        const maxRange = Math.max(maxX - minX, maxY - minY);
         this.minX = minX;
         this.minY = minY;
         this.maxX = minX + maxRange;
@@ -183,7 +187,7 @@ class LampView extends BigTableView {
         this.maxVal = 0;
         for (let i = 0; i < this.xDots; i++) {
             for (let j = 0; j < this.yDots; j++) {
-                let val = heatMap.buckets[i][j];
+                const val = heatMap.buckets[i][j];
                 if (val > 0) {
                     this.heatMapDots.push({x: i / this.xDots, y: 1 - (j + 1) / this.yDots, v: val});
                     this.maxVal = Math.max(val, this.maxVal);
@@ -197,8 +201,8 @@ class LampView extends BigTableView {
     public updateHeatMapView() {
         if (this.heatMapDots == null)
             return;
-        let chartWidth = this.heatMapChart.attr("width");
-        let chartHeight = this.heatMapChart.attr("height");
+        const chartWidth = this.heatMapChart.attr("width");
+        const chartHeight = this.heatMapChart.attr("height");
 
         this.colorLegend.clear();
         this.heatMapChart.selectAll("*").remove();
@@ -215,31 +219,31 @@ class LampView extends BigTableView {
             .data(this.heatMapDots)
             .enter()
             .append("rect")
-            .attr("x", d => d.x * chartWidth)
-            .attr("y", d => d.y * chartHeight)
-            .attr("data-val", d => d.v)
+            .attr("x", (d) => d.x * chartWidth)
+            .attr("y", (d) => d.y * chartHeight)
+            .attr("data-val", (d) => d.v)
             .attr("width", chartWidth / this.xDots)
             .attr("height", chartHeight / this.yDots)
             .style("stroke-width", 0)
-            .style("fill", d => this.colorLegend.getColor(d.v));
+            .style("fill", (d) => this.colorLegend.getColor(d.v));
     }
 
     public applyLAMP() {
-        let xBuckets = Math.ceil(this.heatMapChart.attr("width") / Resolution.minDotSize);
-        let yBuckets = Math.ceil(this.heatMapChart.attr("height") / Resolution.minDotSize);
-        let xColAndRange: ColumnAndRange = {
+        const xBuckets = Math.ceil(this.heatMapChart.attr("width") / Resolution.minDotSize);
+        const yBuckets = Math.ceil(this.heatMapChart.attr("height") / Resolution.minDotSize);
+        const xColAndRange: ColumnAndRange = {
             min: this.minX,
             max: this.maxX,
             columnName: this.lampColNames[0],
-            bucketBoundaries: null
+            bucketBoundaries: null,
         };
-        let yColAndRange: ColumnAndRange = {
+        const yColAndRange: ColumnAndRange = {
             min: this.minY,
             max: this.maxY,
             columnName: this.lampColNames[1],
-            bucketBoundaries: null
+            bucketBoundaries: null,
         };
-        let arg: Histogram2DArgs = {
+        const arg: Histogram2DArgs = {
             first: xColAndRange,
             second: yColAndRange,
             samplingRate: 1.0,  // TODO
@@ -247,20 +251,23 @@ class LampView extends BigTableView {
             xBucketCount: xBuckets,
             yBucketCount: yBuckets,
             cdfBucketCount: 0,
-            cdfSamplingRate: 1.0
+            cdfSamplingRate: 1.0,
         };
-        let rr = this.tableObject.createLAMPMapRequest(this.controlPointsId, this.selectedColumns, this.controlPoints, this.lampColNames);
+        const rr = this.tableObject.createLAMPMapRequest(
+            this.controlPointsId, this.selectedColumns, this.controlPoints, this.lampColNames);
         rr.invoke(new LAMPMapReceiver(this.page, rr, this, arg));
     }
 
     public updateRanges(l1: BasicColStats, l2: BasicColStats) {
-        let [cpMinX, cpMaxX] = [Math.min(...this.controlPoints.points.map(p => p.x)), Math.max(...this.controlPoints.points.map(p => p.x))];
-        let [cpMinY, cpMaxY] = [Math.min(...this.controlPoints.points.map(p => p.y)), Math.max(...this.controlPoints.points.map(p => p.y))];
+        const [cpMinX, cpMaxX] = [Math.min(...this.controlPoints.points.map((p) => p.x)),
+            Math.max(...this.controlPoints.points.map((p) => p.x))];
+        const [cpMinY, cpMaxY] = [Math.min(...this.controlPoints.points.map((p) => p.y)),
+            Math.max(...this.controlPoints.points.map((p) => p.y))];
         this.minX = Math.min(l1.min, cpMinX);
         this.minY = Math.min(l2.min, cpMinY);
-        let maxX = Math.max(l1.max, cpMaxX);
-        let maxY = Math.max(l2.max, cpMaxY);
-        let range = Math.max(maxX - this.minX, maxY - this.minY);
+        const maxX = Math.max(l1.max, cpMaxX);
+        const maxY = Math.max(l2.max, cpMaxY);
+        const range = Math.max(maxX - this.minX, maxY - this.minY);
         this.maxX = this.minX + range;
         this.maxY = this.minY + range;
         this.refresh();
@@ -269,9 +276,9 @@ class LampView extends BigTableView {
     }
 
     private fetchNewRanges() {
-        let l1: CategoricalValues = new CategoricalValues("LAMP1");
-        let l2: CategoricalValues = new CategoricalValues("LAMP2");
-        let rr = this.lampTableObject.createRange2DRequest(l1, l2);
+        const l1: CategoricalValues = new CategoricalValues("LAMP1");
+        const l2: CategoricalValues = new CategoricalValues("LAMP2");
+        const rr = this.lampTableObject.createRange2DRequest(l1, l2);
         rr.invoke(new LAMPRangeCollector(this.page, rr, this));
     }
 
@@ -287,26 +294,27 @@ class LampView extends BigTableView {
             .attr("height", this.controlPointsChart.attr("height"))
             .style("fill", "none")
             .style("stroke", "black");
-        let chartSize = this.controlPointsChart.attr("width");
-        let range = Math.max(this.maxX - this.minX, this.maxY - this.minY);
-        let scale = chartSize / range;
+        const chartSize = this.controlPointsChart.attr("width");
+        const range = Math.max(this.maxX - this.minX, this.maxY - this.minY);
+        const scale = chartSize / range;
 
-        let plot = this.controlPointsChart.append("g")
-            .attr("transform", `translate(0, ${this.controlPointsChart.attr("height")}) scale(1, -1) scale(${scale}) translate(${-this.minX}, ${-this.minY})`);
+        const plot = this.controlPointsChart.append("g")
+            .attr("transform", `translate(0, ${this.controlPointsChart.attr("height")}) scale(1, -1) scale(${scale}) " +
+            "translate(${-this.minX}, ${-this.minY})`);
 
-        let radius = 4;
+        const radius = 4;
         plot.selectAll("points")
             .data(this.controlPoints.points)
             .enter().append("circle")
-                .attr("cx", p => p.x)
-                .attr("cy", p => p.y)
+                .attr("cx", (p) => p.x)
+                .attr("cy", (p) => p.y)
                 .attr("r", radius / scale)
                 .attr("class", "controlPoint")
                 .attr("stroke", "black")
                 .attr("vector-effect", "non-scaling-stroke")
                 .call(d3drag()
                     .on("drag", (p: Point, i: number, circles: Element[]) => {
-                        let mouse = d3mouse(plot.node());
+                        const mouse = d3mouse(plot.node());
                         mouse[0] = clamp(mouse[0], this.minX, this.minX + range);
                         mouse[1] = clamp(mouse[1], this.minY, this.minY + range);
                         p.x = mouse[0];
@@ -317,22 +325,22 @@ class LampView extends BigTableView {
                     })
                     .on("end", (/*p: Point, i: number, circles: Element[]*/) => {
                         this.applyLAMP();
-                    })
-                )
+                    }),
+                );
     }
 
     private showTable() {
-        let page = this.dataset.newPage("Table", this.page);
-        let table = new TableView(
+        const page = this.dataset.newPage("Table", this.page);
+        const table = new TableView(
             this.lampTableObject.remoteObjectId, this.rowCount, this.schema, page);
         page.setDataView(table);
-        let rr = this.lampTableObject.createGetSchemaRequest();
+        const rr = this.lampTableObject.createGetSchemaRequest();
         rr.invoke(new SchemaCollector(this.getPage(), rr, this.schema, this.lampTableObject, this.lampColNames));
     }
 
     private heatMap3D() {
         // The lamp table has a new schema, so we have to retrieve it.
-        let rr = this.lampTableObject.createGetSchemaRequest();
+        const rr = this.lampTableObject.createGetSchemaRequest();
         rr.invoke(new SchemaCollector(this.getPage(), rr, this.schema, this.lampTableObject, this.lampColNames));
     }
 }
@@ -347,16 +355,17 @@ export class LAMPDialog extends Dialog {
     constructor(private selectedColumns: string[], private page: FullPage,
                 private rowCount: number,
                 private schema: SchemaClass, private remoteObject: TableView) {
-        super("LAMP", "Computes a 2D projection of the data based on a set of control-points that the user can control.");
-        let sel = this.addSelectField("controlPointSelection", "Control point selection",
+        super("LAMP", "Computes a 2D projection of the data based on a set of " +
+            "control-points that the user can control.");
+        const sel = this.addSelectField("controlPointSelection", "Control point selection",
             ["Random samples", "Category centroids"], "Random samples",
             "The method used to select the control points.");
         sel.onchange = () => this.ctrlPointsChanged();
         this.addTextField("numSamples", "No. control points", FieldKind.Integer, "5",
             "The number of control points to select.");
-        let catColumns = [""];
+        const catColumns = [""];
         for (let i = 0; i < schema.length; i++)
-            if (schema.get(i).kind == "Category")
+            if (schema.get(i).kind === "Category")
                 catColumns.push(schema.get(i).name);
         this.addSelectField("category", "Category for centroids", catColumns, "",
             "A column name with categorical data that will be used to defined the control points." +
@@ -369,7 +378,7 @@ export class LAMPDialog extends Dialog {
     }
 
     private ctrlPointsChanged(): void {
-        let sel = this.getFieldValue("controlPointSelection");
+        const sel = this.getFieldValue("controlPointSelection");
         switch (sel) {
             case "Random samples":
                 this.showField("numSamples", true);
@@ -383,10 +392,10 @@ export class LAMPDialog extends Dialog {
     }
 
     private execute() {
-        let numSamples = this.getFieldValueAsInt("numSamples");
-        let selection = this.getFieldValue("controlPointSelection");
-        let projection = this.getFieldValue("controlPointProjection");
-        let category = this.getFieldValue("category");
+        const numSamples = this.getFieldValueAsInt("numSamples");
+        const selection = this.getFieldValue("controlPointSelection");
+        const projection = this.getFieldValue("controlPointProjection");
+        const category = this.getFieldValue("category");
         let rr: RpcRequest<PartialResult<RemoteObjectId>>;
         switch (selection) {
             case "Random samples": {
@@ -394,11 +403,12 @@ export class LAMPDialog extends Dialog {
                     this.page.reportError(`Too many samples. Use at most ${LAMPDialog.maxNumSamples}.`);
                     return;
                 }
-                rr = this.remoteObject.createSampledControlPointsRequest(this.remoteObject.getTotalRowCount(), numSamples, this.selectedColumns);
+                rr = this.remoteObject.createSampledControlPointsRequest(
+                    this.remoteObject.getTotalRowCount(), numSamples, this.selectedColumns);
                 break;
             }
             case "Category centroids": {
-                if (category == "") {
+                if (category === "") {
                     this.page.reportError("No category selected for centroids.");
                     return;
                 }
@@ -410,7 +420,7 @@ export class LAMPDialog extends Dialog {
             }
         }
 
-        let newPage = this.page.dataset.newPage("LAMP", this.page);
+        const newPage = this.page.dataset.newPage("LAMP", this.page);
         switch (projection) {
             case "MDS": {
                 rr.invoke(new ControlPointsProjector(
@@ -435,9 +445,9 @@ class ControlPointsProjector extends BaseRenderer {
         super(page, operation, "Sampling control points", page.dataset);
     }
 
-    run() {
+    public run() {
         super.run();
-        let rr = this.tableObject.createMDSProjectionRequest(this.remoteObject.remoteObjectId);
+        const rr = this.tableObject.createMDSProjectionRequest(this.remoteObject.remoteObjectId);
         rr.invoke(new ControlPointsRenderer(
             this.page, rr, this.tableObject, this.rowCount, this.schema,
             this.remoteObject.remoteObjectId,
@@ -471,11 +481,11 @@ class LAMPMapReceiver extends BaseRenderer {
         super(page, operation, "Computing LAMP", cpView.dataset);
     }
 
-    run() {
+    public run() {
         super.run();
-        let lampTime = this.elapsedMilliseconds() / 1000;
+        const lampTime = this.elapsedMilliseconds() / 1000;
         this.cpView.updateRemoteTable(this.remoteObject);
-        let rr = this.remoteObject.createHeatMapRequest(this.arg);
+        const rr = this.remoteObject.createHeatMapRequest(this.arg);
         rr.invoke(new LAMPHeatMapReceiver(this.page, rr, this.cpView, lampTime));
     }
 }
@@ -484,10 +494,10 @@ class LAMPHeatMapReceiver extends Receiver<HeatMap> {
     private heatMap: HeatMap;
     constructor(page: FullPage, operation: ICancellable,
                 private controlPointsView: LampView, private lampTime: number) {
-        super(page, operation, "Computing heatmap")
+        super(page, operation, "Computing heatmap");
     }
 
-    onNext(result: PartialResult<HeatMap>) {
+    public onNext(result: PartialResult<HeatMap>) {
         super.onNext(result);
         this.heatMap = result.data;
         if (this.heatMap != null)
@@ -497,10 +507,10 @@ class LAMPHeatMapReceiver extends Receiver<HeatMap> {
 
 class LAMPRangeCollector extends Receiver<Pair<BasicColStats, BasicColStats>> {
     constructor(page: FullPage, operation: ICancellable, private cpView: LampView) {
-        super(page, operation, "Getting LAMP ranges.")
+        super(page, operation, "Getting LAMP ranges.");
     }
 
-    onNext(result: PartialResult<Pair<BasicColStats, BasicColStats>>): void {
+    public onNext(result: PartialResult<Pair<BasicColStats, BasicColStats>>): void {
         super.onNext(result);
         this.cpView.updateRanges(result.data.first, result.data.second);
     }
@@ -514,12 +524,12 @@ class SchemaCollector extends OnCompleteReceiver<TableSummary> {
         super(page, operation, "Getting new schema");
     }
 
-    run(): void {
+    public run(): void {
         if (this.value == null)
             return;
-        let newSchema = new SchemaClass(this.value.schema);
+        const newSchema = new SchemaClass(this.value.schema);
         newSchema.copyDisplayNames(this.schema);
-        let dialog = new TrellisPlotDialog(
+        const dialog = new TrellisPlotDialog(
             this.lampColumnNames, this.page, this.value.rowCount, newSchema, this.tableObject, true);
         dialog.show();
     }

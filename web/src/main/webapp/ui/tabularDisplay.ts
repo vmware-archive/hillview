@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-import {IHtmlElement} from "./ui";
-import {SelectionStateMachine} from "./selectionStateMachine";
 import {PlottingSurface} from "./plottingSurface";
+import {SelectionStateMachine} from "./selectionStateMachine";
+import {IHtmlElement} from "./ui";
 
 /**
  * A TabularDisplay is a visual representation that uses an HTML table to display
@@ -25,14 +25,14 @@ import {PlottingSurface} from "./plottingSurface";
  * heavy hitters or the schema of a "real" remote table.
  */
 export class TabularDisplay implements IHtmlElement {
-    topLevel: HTMLElement;
-    table: HTMLTableElement;
-    tbody: HTMLTableSectionElement;
-    selectedRows: SelectionStateMachine;
-    rowCount: number;
-    columnCount: number;
-    colHeaderMap: Map<string, HTMLElement>;
-    rows: HTMLTableRowElement[];
+    public topLevel: HTMLElement;
+    public table: HTMLTableElement;
+    public tbody: HTMLTableSectionElement;
+    public selectedRows: SelectionStateMachine;
+    public rowCount: number;
+    public columnCount: number;
+    public colHeaderMap: Map<string, HTMLElement>;
+    public rows: HTMLTableRowElement[];
 
     constructor() {
         this.topLevel = document.createElement("div");
@@ -50,7 +50,7 @@ export class TabularDisplay implements IHtmlElement {
         this.rows = [];
     }
 
-    getHTMLRepresentation(): HTMLElement {
+    public getHTMLRepresentation(): HTMLElement {
         return this.topLevel;
     }
 
@@ -58,12 +58,12 @@ export class TabularDisplay implements IHtmlElement {
      * Create columns.  The column names are used as the innerHTML of the cells.
      */
     public setColumns(colNames: string[], toolTips: string[]): void {
-        let tHead = this.table.createTHead();
-        let thr = tHead.appendChild(document.createElement("tr"));
+        const tHead = this.table.createTHead();
+        const thr = tHead.appendChild(document.createElement("tr"));
         let index = 0;
-        for (let c of colNames) {
-            let tip = toolTips[index++];
-            let thd = document.createElement("th");
+        for (const c of colNames) {
+            const tip = toolTips[index++];
+            const thd = document.createElement("th");
             thd.title = tip;
             thd.innerHTML = c;
             thr.appendChild(thd);
@@ -73,20 +73,19 @@ export class TabularDisplay implements IHtmlElement {
         }
     }
 
-    insertRow(canClick: boolean = true): HTMLTableRowElement {
-        let trow = this.tbody.insertRow();
-        let rowNo = this.rowCount;
+    public insertRow(canClick: boolean = true): HTMLTableRowElement {
+        const trow = this.tbody.insertRow();
+        const rowNo = this.rowCount;
         trow.id = "row" + this.rowCount;
         if (canClick)
-            trow.onclick = e => this.clickRowIndex(rowNo, e);
+            trow.onclick = (e) => this.clickRowIndex(rowNo, e);
         this.rows.push(trow);
         this.rowCount++;
         return trow;
     }
 
-
-    addRowCell(trow: HTMLTableRowElement): HTMLTableCellElement {
-        let cell = trow.insertCell(trow.cells.length);
+    public addRowCell(trow: HTMLTableRowElement): HTMLTableCellElement {
+        const cell = trow.insertCell(trow.cells.length);
         cell.style.textAlign = "right";
         cell.classList.add("noselect");
         return cell;
@@ -100,17 +99,17 @@ export class TabularDisplay implements IHtmlElement {
      * Add a row of values; these are set as the innerHTML values of the cells.
      */
     public addRow(data: string[], canClick: boolean = true): HTMLTableRowElement {
-        let trow = this.insertRow(canClick);
-        for (let d of data) {
-            let cell = this.addRowCell(trow);
+        const trow = this.insertRow(canClick);
+        for (const d of data) {
+            const cell = this.addRowCell(trow);
             cell.innerHTML = d;
         }
         return trow;
     }
 
     public addFooter() {
-        let footer = this.tbody.insertRow();
-        let cell = footer.insertCell(0);
+        const footer = this.tbody.insertRow();
+        const cell = footer.insertCell(0);
         cell.colSpan = this.columnCount;
         cell.className = "footer";
     }
@@ -119,9 +118,9 @@ export class TabularDisplay implements IHtmlElement {
      * Add a row of values; these are set as the dom children of the table cells
      */
     public addElementRow(data: Element[], canClick: boolean = true): HTMLTableRowElement  {
-        let trow = this.insertRow(canClick);
-        for (let d of data) {
-            let cell = this.addRowCell(trow);
+        const trow = this.insertRow(canClick);
+        for (const d of data) {
+            const cell = this.addRowCell(trow);
             cell.appendChild(d);
             d.classList.add("noselect");
         }
@@ -142,7 +141,7 @@ export class TabularDisplay implements IHtmlElement {
      */
     private clickRowIndex(rowIndex: number, e: MouseEvent): void {
         e.preventDefault();
-        if (e.button == 2) {// right button
+        if (e.button === 2) { // right button
             if (!this.selectedRows.has(rowIndex))// Add the row if not already present.
                 this.selectedRows.changeState("Ctrl", rowIndex);
         } else {
@@ -157,15 +156,15 @@ export class TabularDisplay implements IHtmlElement {
     }
 
     public clickRow(htmlRow: HTMLTableRowElement, e: MouseEvent): void {
-        let i: number = this.rows.indexOf(htmlRow);
-        if(i != -1)
+        const i: number = this.rows.indexOf(htmlRow);
+        if (i !== -1)
            this.clickRowIndex(i, e);
         return;
     }
 
     public highlightSelectedRows(): void {
         for (let i = 0; i < this.rowCount; i++) {
-            let rowi = this.rows[i];
+            const rowi = this.rows[i];
             if (this.selectedRows.has(i))
                 rowi.classList.add("selected");
             else

@@ -15,18 +15,18 @@
  * limitations under the License.
  */
 
-import {IHtmlElement, removeAllChildren, ViewKind} from "./ui";
-import {ProgressManager} from "./progress";
-import {TopMenu} from "./menu";
-import {openInNewTab, significantDigits} from "../util";
-import {ConsoleDisplay, ErrorReporter} from "./errReporter";
-import {IDataView} from "./dataview";
 import {DatasetView} from "../datasetView";
+import {openInNewTab, significantDigits} from "../util";
+import {IDataView} from "./dataview";
+import {ConsoleDisplay, ErrorReporter} from "./errReporter";
+import {TopMenu} from "./menu";
+import {ProgressManager} from "./progress";
+import {IHtmlElement, removeAllChildren, ViewKind} from "./ui";
 
 /**
  * Maps each ViewKind to a url anchor in the github userManual.
  */
-let helpUrl = {
+const helpUrl = {
     "Table": "table-views",
     "Histogram": "uni-dimensional-histogram-views",
     "2DHistogram": "two-dimensional-histogram-views",
@@ -36,7 +36,7 @@ let helpUrl = {
     "LAMP": "lamp-projection",
     "Schema": "data-schema-views",
     "Load": "loading-data",
-    "SVD Spectrum": "svd-spectrum"
+    "SVD Spectrum": "svd-spectrum",
 };
 
 const minus = "&#8722;";
@@ -58,10 +58,10 @@ const plus = "+";
  */
 export class FullPage implements IHtmlElement {
     public dataView: IDataView;
-    bottomContainer: HTMLElement;
+    public bottomContainer: HTMLElement;
     public progressManager: ProgressManager;
     protected console: ConsoleDisplay;
-    pageTopLevel: HTMLElement;
+    public pageTopLevel: HTMLElement;
     private readonly menuSlot: HTMLElement;
     private readonly h1: HTMLElement;
     private minimized: boolean;
@@ -99,7 +99,7 @@ export class FullPage implements IHtmlElement {
         this.menuSlot = document.createElement("div");
         this.addCell(this.menuSlot, true);
 
-        let h1 = document.createElement("h1");
+        const h1 = document.createElement("h1");
         if (title != null)
             h1.innerHTML = (this.pageId > 0 ? (this.pageId.toString() + ". ") : "") + title;
         h1.style.textOverflow = "ellipsis";
@@ -110,7 +110,7 @@ export class FullPage implements IHtmlElement {
 
         if (sourcePageId != null) {
             h1.innerHTML += " from ";
-            let refLink = this.pageReference(sourcePageId);
+            const refLink = this.pageReference(sourcePageId);
             refLink.title = "View which produced this one.";
             h1.appendChild(refLink);
         }
@@ -123,7 +123,7 @@ export class FullPage implements IHtmlElement {
 
         if (this.dataset != null) {
             // The load menu does not have these decorative elements
-            let minimize = document.createElement("span");
+            const minimize = document.createElement("span");
             minimize.className = "minimize";
             minimize.innerHTML = minus;
             minimize.onclick = () => this.minimize(minimize);
@@ -139,7 +139,7 @@ export class FullPage implements IHtmlElement {
             this.addCell(pageIdSpan, true);
             */
 
-            let close = document.createElement("span");
+            const close = document.createElement("span");
             close.className = "close";
             close.innerHTML = "&times;";
             close.onclick = () => this.dataset.remove(this);
@@ -159,7 +159,7 @@ export class FullPage implements IHtmlElement {
         this.help.onclick = () => openInNewTab(FullPage.helpUrl(viewKind));
     }
 
-    getTitleElement(): HTMLElement {
+    public getTitleElement(): HTMLElement {
         return this.h1;
     }
 
@@ -167,16 +167,16 @@ export class FullPage implements IHtmlElement {
      * Returns a URL to a section in the user manual.
      * @param {ViewKind} viewKind  Kind of view that help is sought for.
      */
-    static helpUrl(viewKind: ViewKind): string {
-        let ref = helpUrl[viewKind];
+    public static helpUrl(viewKind: ViewKind): string {
+        const ref = helpUrl[viewKind];
         return "https://github.com/vmware/hillview/blob/master/docs/userManual.md#" + ref;
     }
 
     /**
      * @eturns An html string that represents a reference to the specified page.
      */
-    pageReference(pageId: number): HTMLElement {
-        let refLink = document.createElement("a");
+    public pageReference(pageId: number): HTMLElement {
+        const refLink = document.createElement("a");
         refLink.href = "#";
         refLink.textContent = pageId.toString();
         refLink.onclick = () => {
@@ -188,12 +188,12 @@ export class FullPage implements IHtmlElement {
         return refLink;
     }
 
-    setMenu(c: TopMenu): void {
+    public setMenu(c: TopMenu): void {
         removeAllChildren(this.menuSlot);
         this.menuSlot.appendChild(c.getHTMLRepresentation());
     }
 
-    addCell(c: HTMLElement, minSize: boolean): void {
+    public addCell(c: HTMLElement, minSize: boolean): void {
         if (!minSize)
             c.style.flexGrow = "100";
         this.titleRow.appendChild(c);
@@ -245,14 +245,14 @@ export class FullPage implements IHtmlElement {
     }
 
     public reportTime(timeInMs: number) {
-        this.reportError("Operation took " + significantDigits(timeInMs/1000) + " seconds");
+        this.reportError("Operation took " + significantDigits(timeInMs / 1000) + " seconds");
     }
 
     public getWidthInPixels(): number {
         return this.pageTopLevel.getBoundingClientRect().width;
     }
 
-    scrollIntoView(): void {
+    public scrollIntoView(): void {
         this.getHTMLRepresentation().scrollIntoView( { block: "end", behavior: "smooth" } );
     }
 }

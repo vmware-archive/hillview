@@ -52,14 +52,14 @@ export abstract class Plot {
     /**
      * When the plot is of a chart this returns the chart width in pixels - excluding borders.
      */
-    getChartWidth(): number {
+    public getChartWidth(): number {
         return this.plottingSurface.getActualChartWidth();
     }
 
     /**
      * When the plot is of a chart this returns the chart height in pixels - excluding borders.
      */
-    getChartHeight(): number {
+    public getChartHeight(): number {
         return this.plottingSurface.getActualChartHeight();
     }
 
@@ -67,7 +67,7 @@ export abstract class Plot {
         this.plottingSurface.clear();
     }
 
-    drawAxes(): void {
+    protected drawAxes(): void {
         if (this.yAxis != null)
             this.yAxisRepresentation = this.plottingSurface.getChart()
                 .append("g")
@@ -85,13 +85,13 @@ export abstract class Plot {
     /**
      * Measure the maximum label width on a axis, in pixels.
      */
-    labelWidth(): number {
+    protected labelWidth(): number {
         if (this.yAxis == null)
             return 0;
         let max = 0;
-        let domNodes = this.yAxisRepresentation.selectAll(".tick").nodes();
-        for (let i = 0; i < domNodes.length; i++)
-            max = Math.max(max, domNodes[i].getBBox().width);
+        const domNodes = this.yAxisRepresentation.selectAll(".tick").nodes();
+        for (const domNode of domNodes)
+            max = Math.max(max, domNode.getBBox().width);
         return max;
     }
 

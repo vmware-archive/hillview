@@ -15,57 +15,57 @@
  * limitations under the License.
  */
 
-import {IHtmlElement, Size} from "./ui";
-import {TextOverlay} from "./textOverlay";
-import {FullPage} from "./fullPage";
 import {select as d3select} from "d3-selection";
+import {FullPage} from "./fullPage";
+import {TextOverlay} from "./textOverlay";
+import {IHtmlElement, Size} from "./ui";
 
 /**
  * A plotting surface contains an SVG element on top of which various charts are drawn.
  * There is a margin around the chart, which is dynamically computed.
  */
 export class PlottingSurface implements IHtmlElement {
-    topLevel: HTMLDivElement;
+    public topLevel: HTMLDivElement;
     /**
      * Number of pixels on between the top of the SVG area and the top of the drawn chart.
      */
-    topMargin: number;
+    public topMargin: number;
     /**
      * Number of pixels between the left of the SVG area and the left axis.
      */
-    leftMargin: number;
+    public leftMargin: number;
     /**
      * Number of pixels between the bottom of the SVG area and the bottom axis.
      */
-    bottomMargin: number;
+    public bottomMargin: number;
     /**
      * Number of pixels between the right of the SVG area and the end of the drawn chart.
      */
-    rightMargin: number;
+    public rightMargin: number;
     /**
      * SVG element on top of which the chart is drawn.
      */
-    svgCanvas: any;
+    public svgCanvas: any;
     /**
      * Current size in pixels of the canvas.
      */
-    size: Size;
+    public size: Size;
     /**
      * An AVG g element which is used to draw the chart; it is offset from the
      * svgCanvas by leftMargin, topMargin.
      */
-    chartArea: any;
+    public chartArea: any;
     /**
      * Describes the mouse pointer.  May be null.
      */
-    pointDescription: TextOverlay;
+    public pointDescription: TextOverlay;
 
-    static readonly minCanvasWidth = 300; // minimum number of pixels for a plot (including margins)
-    static readonly canvasHeight = 500;   // size of a plot
-    static readonly topMargin = 10;        // top margin in pixels in a plot
-    static readonly rightMargin = 20;     // right margin in pixels in a plot
-    static readonly bottomMargin = 50;    // bottom margin in pixels in a plot
-    static readonly leftMargin = 40;      // left margin in pixels in a plot
+    public static readonly minCanvasWidth = 300; // minimum number of pixels for a plot (including margins)
+    public static readonly canvasHeight = 500;   // size of a plot
+    public static readonly topMargin = 10;        // top margin in pixels in a plot
+    public static readonly rightMargin = 20;     // right margin in pixels in a plot
+    public static readonly bottomMargin = 50;    // bottom margin in pixels in a plot
+    public static readonly leftMargin = 40;      // left margin in pixels in a plot
 
     constructor(parent: HTMLElement, public readonly page: FullPage) {
         this.topLevel = document.createElement("div");
@@ -76,24 +76,24 @@ export class PlottingSurface implements IHtmlElement {
         this.size = PlottingSurface.getDefaultCanvasSize(this.page);
     }
 
-    static getDefaultCanvasSize(page: FullPage): Size {
+    public static getDefaultCanvasSize(page: FullPage): Size {
         let width = page.getWidthInPixels() - 3;
         if (width < PlottingSurface.minCanvasWidth)
             width = PlottingSurface.minCanvasWidth;
-        return { width: width, height: PlottingSurface.canvasHeight };
+        return { width, height: PlottingSurface.canvasHeight };
     }
 
     public static getDefaultChartSize(page: FullPage): Size {
-        let canvasSize = PlottingSurface.getDefaultCanvasSize(page);
-        let width = canvasSize.width - PlottingSurface.leftMargin - PlottingSurface.rightMargin;
-        let height = canvasSize.height - PlottingSurface.topMargin - PlottingSurface.bottomMargin;
-        return { width: width, height: height };
+        const canvasSize = PlottingSurface.getDefaultCanvasSize(page);
+        const width = canvasSize.width - PlottingSurface.leftMargin - PlottingSurface.rightMargin;
+        const height = canvasSize.height - PlottingSurface.topMargin - PlottingSurface.bottomMargin;
+        return { width, height };
     }
 
-    clear() {
+    public clear() {
         if (this.svgCanvas != null)
             this.svgCanvas.remove();
-        let size = PlottingSurface.getDefaultCanvasSize(this.page);
+        const size = PlottingSurface.getDefaultCanvasSize(this.page);
         this.size.width = Math.max(PlottingSurface.minCanvasWidth, size.width);
 
         this.svgCanvas = d3select(this.topLevel)
@@ -108,33 +108,33 @@ export class PlottingSurface implements IHtmlElement {
             .attr("transform", `translate(${this.leftMargin}, ${this.topMargin})`);
     }
 
-    getChart(): any {
+    public getChart(): any {
         return this.chartArea;
     }
 
-    getCanvas(): any {
+    public getCanvas(): any {
         return this.svgCanvas;
     }
 
     /**
      * The width of the drawn chart, excluding the margins, in pixels.
      */
-    getActualChartWidth(): number {
+    public getActualChartWidth(): number {
         return this.size.width - this.leftMargin - this.rightMargin;
     }
 
     /**
      * The height of the drawn chart, excluding the margins, in pixels.
      */
-    getActualChartHeight(): number {
+    public getActualChartHeight(): number {
         return this.size.height - this.topMargin - this.bottomMargin;
     }
 
-    getDefaultChartSize(): Size {
+    public getDefaultChartSize(): Size {
         return { width: this.getActualChartWidth(), height: this.getActualChartHeight() };
     }
 
-    getHTMLRepresentation(): HTMLElement {
+    public getHTMLRepresentation(): HTMLElement {
         return this.topLevel;
     }
 
