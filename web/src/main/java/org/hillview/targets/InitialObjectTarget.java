@@ -170,6 +170,7 @@ public class InitialObjectTarget extends RpcTarget {
         if (session == null)
             return;
         RpcServer.sendReply(reply, session);
+        RpcServer.requestCompleted(request, session);
         request.syncCloseSession(session);
     }
 }
