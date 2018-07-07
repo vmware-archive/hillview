@@ -184,8 +184,8 @@ export abstract class TSViewBase extends BigTableView {
         const cds: IColumnDescription[] = [];
         columns.forEach((v) => {
             const colDesc = this.schema.find(v);
-            if (colDesc.kind === "String") {
-                this.reportError("Histograms not supported for string columns " +
+            if (colDesc.kind === "String" || colDesc.kind === "Json") {
+                this.reportError("Histograms not supported for string or JSON columns " +
                     this.schema.displayName(colDesc.name));
                 return;
             }
@@ -214,7 +214,8 @@ export abstract class TSViewBase extends BigTableView {
         const colNames: string[] = this.getSelectedColNames().map((c) => this.schema.displayName(c));
         const dialog = new TrellisPlotDialog(
             colNames, this.getPage(), this.rowCount, this.schema, this, false);
-        dialog.show();
+        if (dialog.validate())
+            dialog.show();
     }
 
     public twoDHistogramMenu(heatmap: boolean): void {

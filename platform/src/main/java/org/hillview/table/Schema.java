@@ -259,6 +259,10 @@ public final class Schema
         );
     }
 
+    public static void purgeCache() {
+        loadedFiles.clear();
+    }
+
     public void writeToJsonFile(Path file) {
         try {
             String text = this.toJson();

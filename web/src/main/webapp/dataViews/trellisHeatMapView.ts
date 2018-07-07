@@ -638,6 +638,8 @@ class HeatMap3DRenderer extends Receiver<HeatMapArrayData> {
  * Dialog to query user about parameters ot a Trellis plot of heatmaps.
  */
 export class TrellisPlotDialog extends Dialog {
+    private valid: boolean;
+
     /**
      * Create a dialog to display a Trellis plot of heatmaps.
      * @param selectedColumns  Columns selected by the user.
@@ -663,6 +665,8 @@ export class TrellisPlotDialog extends Dialog {
             if (schema.get(i).kind === "Double" || schema.get(i).kind === "Integer")
                 numColumns.push(schema.get(i).name);
         }
+        this.valid = numColumns.length >= 2 && catColumns.length >= 1;
+
         selectedColumns.forEach((selectedColumn) => {
             if (catColumns.indexOf(selectedColumn) >= 0)
                 selectedCatColumn = selectedColumn;
@@ -683,6 +687,13 @@ export class TrellisPlotDialog extends Dialog {
         this.addSelectField("col3", "Group by column: ", catColumns, selectedCatColumn,
             "Column used to group heapmap plots.  Must be a categorical column.");
         this.setAction(() => this.execute());
+    }
+
+    public validate(): boolean {
+        if (!this.valid)
+            this.page.reportError("Trellis plots currently require two numeric columns and" +
+                "one categorical column");
+        return this.valid;
     }
 
     private execute(): void {

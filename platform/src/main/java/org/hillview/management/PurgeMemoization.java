@@ -19,6 +19,7 @@ package org.hillview.management;
 
 import org.hillview.dataset.api.ControlMessage;
 import org.hillview.dataset.remoting.HillviewServer;
+import org.hillview.table.Schema;
 
 /**
  * This control message causes the remote servers to remove everything from their
@@ -27,6 +28,7 @@ import org.hillview.dataset.remoting.HillviewServer;
 public class PurgeMemoization extends ControlMessage {
     public Status remoteServerAction(HillviewServer server) {
         server.purgeMemoized();
+        Schema.purgeCache();
         return new Status("caches purged");
     }
 }

@@ -17,14 +17,15 @@
 
 package org.hillview.table.rows;
 
-import com.google.gson.internal.Streams;
 import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.ICategoryColumn;
 import org.hillview.table.api.IStringColumn;
 import org.hillview.utils.DateParsing;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.HashMap;
@@ -154,6 +155,61 @@ public class GuessSchema {
         return current;
     }
 
+    private static boolean isJsonValid(final String json) throws IOException {
+        return isJsonValid(new StringReader(json));
+    }
+
+    private static boolean isJsonValid(final Reader reader)
+            throws IOException {
+        return isJsonValid(new JsonReader(reader));
+    }
+
+    /**
+     * Throws if the value is not valid JSON
+     * The gson parser is not strict enough: it parses
+     * unquoted strings as JSON.String, so we have to do this manually.
+     * Returns true if this is a complex json value, false otherwise.
+     */
+    private static boolean isJsonValid(final JsonReader jsonReader) throws IOException {
+        JsonToken token;
+        boolean isComplex = false;
+        loop:
+        while ((token = jsonReader.peek()) != JsonToken.END_DOCUMENT && token != null) {
+            switch (token) {
+                case BEGIN_ARRAY:
+                    isComplex = true;
+                    jsonReader.beginArray();
+                    break;
+                case END_ARRAY:
+                    isComplex = true;
+                    jsonReader.endArray();
+                    break;
+                case BEGIN_OBJECT:
+                    isComplex = true;
+                    jsonReader.beginObject();
+                    break;
+                case END_OBJECT:
+                    isComplex = true;
+                    jsonReader.endObject();
+                    break;
+                case NAME:
+                    jsonReader.nextName();
+                    break;
+                case STRING:
+                case NUMBER:
+                case BOOLEAN:
+                case NULL:
+                    jsonReader.skipValue();
+                    break;
+                case END_DOCUMENT:
+                    break loop;
+                default:
+                    throw new AssertionError(token);
+            }
+        }
+        return isComplex;
+    }
+
     private CanParse canParse(@Nullable String value, final ContentsKind with) {
         if (value == null)
             return CanParse.AsNull;
@@ -178,26 +234,28 @@ public class GuessSchema {
                     // Allow empty strings as numbers
                     if (value.trim().isEmpty())
                         return CanParse.AsNull;
-                    int ignored = Integer.parseInt(value);
+                    Integer.parseInt(value);
                     return CanParse.Yes;
                 } catch (Exception ex) {
                     return CanParse.No;
                 }
             case Json:
+                return CanParse.No;
+                // TODO: reinstate this
+                /*
                 try {
-                    Reader reader = new StringReader(value);
-                    JsonReader jReader = new JsonReader(reader);
-                    Streams.parse(jReader);
+                    isJsonValid(value);
                     return CanParse.Yes;
                 } catch (Exception ex) {
                     return CanParse.No;
                 }
+                */
             case Double:
                 try {
                     // Allow empty strings as numbers
                     if (value.trim().isEmpty())
                         return CanParse.AsNull;
-                    double ignored = Double.parseDouble(value);
+                    Double.parseDouble(value);
                     return CanParse.Yes;
                 } catch (Exception ex) {
                     return CanParse.No;
