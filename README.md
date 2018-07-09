@@ -40,7 +40,7 @@ These instructions describe how to run hillview on a single machine
 using a sample dataset.
 
 * First install all software required as described
-  [below](#installing-the-software-needed).
+  [below](#software-needed-for-deployment).
 
 * Check/edit the file `./bin/config.sh` and select the appropriate
   versions for the software dependences.
@@ -278,10 +278,9 @@ $ ./install-dependences.sh
 
 ## Impala Java libraries
 
-If you want to access the ![Impala](https://impala.apache.org/)
+If you want to access the [Impala](https://impala.apache.org/)
 database you will need to download and install the JDBC connectors for
-Impala libraries from
-![Cloudera](https://www.cloudera.com/documentation/other/connectors.html).
+Impala libraries from [Cloudera](https://www.cloudera.com/documentation/other/connectors.html).
 (These are not free software, so they are not available in Java Maven
 repositories.)  You should install these in your local Maven
 repository, e.g. in the ~/.m2/com/cloudera/impala folder.  You may
