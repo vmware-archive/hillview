@@ -39,11 +39,6 @@ public class SampleDistinctElementsSketch implements ISketch<ITable, MinKSet<Str
         @Nullable String maxString = null;
         final IRowIterator myIter = data.getMembershipSet().getIterator();
         int currRow = myIter.getNextRow();
-        if (currRow >= 0) {
-            String thisString = col.getString(currRow);
-            minString = thisString;
-            maxString = thisString;
-        }
         MinKRows mkRows = new MinKRows(this.maxSize);
         while (currRow >= 0) {
             if (!col.isMissing(currRow)) {
