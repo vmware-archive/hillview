@@ -35,23 +35,35 @@ public class SampleDistinctElementsSketch implements ISketch<ITable, MinKSet<Str
             throw new IllegalArgumentException(
                     "SampleDistinctElementsSketch only supports String columns");
         LongHashFunction hash = LongHashFunction.xx(this.seed);
+        String minString = null;
+        String maxString = null;
         final IRowIterator myIter = data.getMembershipSet().getIterator();
         int currRow = myIter.getNextRow();
+        if (currRow >= 0) {
+            minString = col.getString(currRow);
+            maxString = col.getString(currRow);
+        }
         MinKRows mkRows = new MinKRows(this.maxSize);
         while (currRow >= 0) {
             if (!col.isMissing(currRow)) {
                 mkRows.push(col.hashCode64(currRow, hash), currRow);
+                if (minString.compareTo(col.getString(currRow)) > 0)
+                    minString = col.getString(currRow);
+                if (maxString.compareTo(col.getString(currRow)) < 0)
+                    maxString = col.getString(currRow);
             }
             currRow = myIter.getNextRow();
         }
-        return getMinStrings(col, mkRows);
+        return getMinStrings(col, mkRows, minString, maxString);
     }
 
-    private MinKSet<String> getMinStrings(IColumn col, MinKRows mkRows) {
+    private MinKSet<String> getMinStrings(IColumn col, MinKRows mkRows, String minString,
+                                          String maxString) {
         Long2ObjectRBTreeMap<String> data = new Long2ObjectRBTreeMap<String>();
         for (long hashKey: mkRows.treeMap.keySet())
             data.put(hashKey, col.getString(mkRows.treeMap.get(hashKey)));
-        return new MinKSet<String>(this.maxSize, data, Comparator.comparing(String::toString));
+        return new MinKSet<String>(this.maxSize, data, Comparator.comparing(String::toString),
+                minString, maxString);
     }
 
     @Nullable
@@ -67,12 +79,25 @@ public class SampleDistinctElementsSketch implements ISketch<ITable, MinKSet<Str
     @Nullable
     public MinKSet<String> add(@Nullable MinKSet<String> left, @Nullable MinKSet<String> right) {
         Long2ObjectRBTreeMap<String> data = new Long2ObjectRBTreeMap<>();
+        String minString, maxString;
+        if (left.min == null) {
+            minString = right.min;
+            maxString = right.max;
+        }
+        else if (right.min == null) {
+            minString = left.min;
+            maxString = left.max;
+        }
+        else {
+            minString = (left.min.compareTo(right.min) < 0) ? left.min : right.min;
+            maxString = (left.max.compareTo(right.max) > 0) ? left.max : right.max;
+        }
         data.putAll(left.data);
         data.putAll(right.data);
         while (data.size() > this.maxSize) {
             long maxKey = data.lastLongKey();
             data.remove(maxKey);
         }
-        return new MinKSet(this.maxSize, data, Comparator.<String>naturalOrder());
+        return new MinKSet(this.maxSize, data, Comparator.<String>naturalOrder(), minString, maxString);
     }
 }

@@ -69,10 +69,10 @@ public class MinKRows {
      * Currently this method is not used. We specialize to String Columns and just read the strings
      * from the columns
      */
-    public <T> MinKSet<T> getMinKSet(Function<Integer, T> func, Comparator<T> comp) {
+    public <T> MinKSet<T> getMinKSet(Function<Integer, T> func, Comparator<T> comp, T min, T max) {
         Long2ObjectRBTreeMap<T> data = new Long2ObjectRBTreeMap<T>();
         for (long hashKey: this.treeMap.keySet())
             data.put(hashKey, func.apply(treeMap.get(hashKey)));
-        return new MinKSet<T>(this.maxSize, data, comp);
+        return new MinKSet<T>(this.maxSize, data, comp, min, max);
     }
 }
