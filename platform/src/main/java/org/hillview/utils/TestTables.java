@@ -178,7 +178,7 @@ public class TestTables {
         Collections.sort(allStrings);
         SortedMap<String, Integer> sortedStrings= new TreeMap<>();
         for (int i = 0; i < allStrings.size(); i++)
-            sortedStrings.put(allStrings.get(i), i+1);
+            sortedStrings.put(allStrings.get(i), i);
         List<Integer> ranks = new ArrayList<>();
         for (int i = 0; i < inpList.size(); i++) {
             if (sortedStrings.get(inpList.get(i)) != null)
