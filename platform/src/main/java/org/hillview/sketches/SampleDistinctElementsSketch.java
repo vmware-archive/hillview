@@ -35,30 +35,32 @@ public class SampleDistinctElementsSketch implements ISketch<ITable, MinKSet<Str
             throw new IllegalArgumentException(
                     "SampleDistinctElementsSketch only supports String columns");
         LongHashFunction hash = LongHashFunction.xx(this.seed);
-        String minString = null;
-        String maxString = null;
+        @Nullable String minString = null;
+        @Nullable String maxString = null;
         final IRowIterator myIter = data.getMembershipSet().getIterator();
         int currRow = myIter.getNextRow();
         if (currRow >= 0) {
-            minString = col.getString(currRow);
-            maxString = col.getString(currRow);
+            String thisString = col.getString(currRow);
+            minString = thisString;
+            maxString = thisString;
         }
         MinKRows mkRows = new MinKRows(this.maxSize);
         while (currRow >= 0) {
             if (!col.isMissing(currRow)) {
                 mkRows.push(col.hashCode64(currRow, hash), currRow);
-                if (minString.compareTo(col.getString(currRow)) > 0)
-                    minString = col.getString(currRow);
-                if (maxString.compareTo(col.getString(currRow)) < 0)
-                    maxString = col.getString(currRow);
+                String thisString = col.getString(currRow);
+                if (minString.compareTo(thisString) > 0)
+                    minString = thisString;
+                if (maxString.compareTo(thisString) < 0)
+                    maxString = thisString;
             }
             currRow = myIter.getNextRow();
         }
         return getMinStrings(col, mkRows, minString, maxString);
     }
 
-    private MinKSet<String> getMinStrings(IColumn col, MinKRows mkRows, String minString,
-                                          String maxString) {
+    private MinKSet<String> getMinStrings(IColumn col, MinKRows mkRows, @Nullable  String minString,
+                                          @Nullable String maxString) {
         Long2ObjectRBTreeMap<String> data = new Long2ObjectRBTreeMap<String>();
         for (long hashKey: mkRows.treeMap.keySet())
             data.put(hashKey, col.getString(mkRows.treeMap.get(hashKey)));
@@ -83,12 +85,10 @@ public class SampleDistinctElementsSketch implements ISketch<ITable, MinKSet<Str
         if (left.min == null) {
             minString = right.min;
             maxString = right.max;
-        }
-        else if (right.min == null) {
+        } else if (right.min == null) {
             minString = left.min;
             maxString = left.max;
-        }
-        else {
+        } else {
             minString = (left.min.compareTo(right.min) < 0) ? left.min : right.min;
             maxString = (left.max.compareTo(right.max) > 0) ? left.max : right.max;
         }

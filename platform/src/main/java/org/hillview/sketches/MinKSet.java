@@ -2,6 +2,7 @@ package org.hillview.sketches;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectRBTreeMap;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -14,8 +15,8 @@ public class MinKSet<T> {
     public final Comparator<T> comp;
     public final int maxSize;
     public final Long2ObjectRBTreeMap<T> data;
-    public T min;
-    public T max;
+    @Nullable public T min;
+    @Nullable public T max;
 
     public MinKSet(int maxSize, Comparator<T> comp) {
         this.maxSize = maxSize;
