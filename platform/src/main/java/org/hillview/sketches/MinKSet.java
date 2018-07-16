@@ -40,12 +40,13 @@ public class MinKSet<T> {
     }
 
     /**
-     * This method will return (at most) a prescribed number of bucket boundaries. If the number of
-     * buckets is b, the number of boundaries is b+1. The first bucket starts at min, the last
-     * bucket ends at max. The buckets boundaries are all distinct, hence the number of buckets
-     * returned might be smaller.
-     * @param maxBuckets The number of buckets.
-     * @return An ordered list of boundaries for the buckets.
+     * This method will return (at most) a prescribed number of bucket boundaries.
+     * @param maxBuckets The maximum number of buckets.
+     * @return An ordered list of boundaries for b <= maxBuckets buckets. If the number of distinct
+     * strings is small, the number of buckets b could be strictly smaller than maxBuckets.
+     * If the number of buckets is b, the number of boundaries is b+1. The first bucket starts at
+     * min, the last bucket ends at max. The buckets boundaries are all distinct, hence the number
+     * of buckets returned might be smaller.
      */
     public List<T> getBoundaries(int maxBuckets) {
         List<T> samples = this.getSamples();
