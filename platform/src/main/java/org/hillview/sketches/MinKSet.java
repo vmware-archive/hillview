@@ -44,21 +44,21 @@ public class MinKSet<T> {
      * buckets is b, the number of boundaries is b+1. The first bucket starts at min, the last
      * bucket ends at max. The buckets boundaries are all distinct, hence the number of buckets
      * returned might be smaller.
-     * @param numBuckets The number of buckets.
+     * @param maxBuckets The number of buckets.
      * @return An ordered list of boundaries for the buckets.
      */
-    public List<T> getBoundaries(int numBuckets) {
+    public List<T> getBoundaries(int maxBuckets) {
         List<T> samples = this.getSamples();
         samples.remove(this.min);
         samples.remove(this.max);
         int numSamples = samples.size();
-        List <T> boundaries = new ArrayList<T>(numBuckets + 1);
+        List <T> boundaries = new ArrayList<T>(maxBuckets + 1);
         boundaries.add(this.min);
-        if (numSamples <= numBuckets - 1)
+        if (numSamples <= maxBuckets - 1)
             boundaries.addAll(samples);
         else {
-            for (int i = 1; i < numBuckets; i++) {
-                int j = (int) Math.ceil(numSamples * i / (numBuckets));
+            for (int i = 1; i < maxBuckets; i++) {
+                int j = (int) Math.ceil(numSamples * i / ((float) maxBuckets)) -1;
                 boundaries.add(samples.get(j));
             }
         }
