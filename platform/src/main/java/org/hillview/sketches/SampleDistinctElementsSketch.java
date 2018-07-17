@@ -9,9 +9,10 @@ import javax.annotation.Nullable;
 import java.util.Comparator;
 
 /**
- * This sketch produces a uniformly random sample of k distinct values from a column (assuming truly
- * random hashing). The values are sampled from the set of distinct values in that column. Missing
- * values are ignored.
+ * This sketch produces a uniformly random sample of maxSize distinct values from a column (assuming
+ * truly random hashing). The values are sampled from the set of distinct values in that column.
+ * Missing values are ignored. IF there are fewer than msxSize distinct values, then all of them are
+ * returned.
  */
 public class SampleDistinctElementsSketch implements ISketch<ITable, MinKSet<String>> {
     private final String colName;
@@ -38,34 +39,36 @@ public class SampleDistinctElementsSketch implements ISketch<ITable, MinKSet<Str
         @Nullable String minString = null;
         @Nullable String maxString = null;
         final IRowIterator myIter = data.getMembershipSet().getIterator();
-        int currRow = myIter.getNextRow();
-        if (currRow >= 0) {
-            String thisString = col.getString(currRow);
-            minString = thisString;
-            maxString = thisString;
-        }
         MinKRows mkRows = new MinKRows(this.maxSize);
+        long numPresent  = 0;
+        int currRow = myIter.getNextRow();
         while (currRow >= 0) {
             if (!col.isMissing(currRow)) {
+                numPresent += 1;
                 mkRows.push(col.hashCode64(currRow, hash), currRow);
                 String thisString = col.getString(currRow);
-                if (minString.compareTo(thisString) > 0)
+                if (minString == null) {
                     minString = thisString;
-                if (maxString.compareTo(thisString) < 0)
                     maxString = thisString;
+                } else {
+                    if (minString.compareTo(thisString) > 0)
+                        minString = thisString;
+                    if (maxString.compareTo(thisString) < 0)
+                        maxString = thisString;
+                }
             }
             currRow = myIter.getNextRow();
         }
-        return getMinStrings(col, mkRows, minString, maxString);
+        return getMinStrings(col, mkRows, minString, maxString, numPresent);
     }
 
     private MinKSet<String> getMinStrings(IColumn col, MinKRows mkRows, @Nullable  String minString,
-                                          @Nullable String maxString) {
+                                          @Nullable String maxString, long numPresent) {
         Long2ObjectRBTreeMap<String> data = new Long2ObjectRBTreeMap<String>();
         for (long hashKey: mkRows.treeMap.keySet())
             data.put(hashKey, col.getString(mkRows.treeMap.get(hashKey)));
-        return new MinKSet<String>(this.maxSize, data, Comparator.comparing(String::toString),
-                minString, maxString);
+        return new MinKSet<String>(this.maxSize, data, Comparator.<String>naturalOrder(),
+                minString, maxString, numPresent);
     }
 
     @Nullable
@@ -80,24 +83,29 @@ public class SampleDistinctElementsSketch implements ISketch<ITable, MinKSet<Str
      */
     @Nullable
     public MinKSet<String> add(@Nullable MinKSet<String> left, @Nullable MinKSet<String> right) {
-        Long2ObjectRBTreeMap<String> data = new Long2ObjectRBTreeMap<>();
         String minString, maxString;
-        if (left.min == null) {
+        long numPresent;
+        if (left.numPresent == 0) {
             minString = right.min;
             maxString = right.max;
-        } else if (right.min == null) {
+            numPresent = right.numPresent;
+        } else if (right.numPresent == 0) {
             minString = left.min;
             maxString = left.max;
+            numPresent = left.numPresent;
         } else {
             minString = (left.min.compareTo(right.min) < 0) ? left.min : right.min;
             maxString = (left.max.compareTo(right.max) > 0) ? left.max : right.max;
+            numPresent = left.numPresent + right.numPresent;
         }
+        Long2ObjectRBTreeMap<String> data = new Long2ObjectRBTreeMap<>();
         data.putAll(left.data);
         data.putAll(right.data);
         while (data.size() > this.maxSize) {
             long maxKey = data.lastLongKey();
             data.remove(maxKey);
         }
-        return new MinKSet(this.maxSize, data, Comparator.<String>naturalOrder(), minString, maxString);
+        return new MinKSet(this.maxSize, data, Comparator.<String>naturalOrder(),
+                minString, maxString, numPresent);
     }
 }

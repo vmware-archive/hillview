@@ -64,6 +64,8 @@ public class MinKTest {
         int numSamples = 10000;
         SampleDistinctElementsSketch bks = new SampleDistinctElementsSketch("Name", 176864, numSamples);
         MinKSet mks = bks.create(pair.first);
+        if (printOn)
+            System.out.printf("Table size: %d, non-null %d\n", num, mks.numPresent);
         int maxBuckets = 100;
         List<String> boundaries = mks.getBoundaries(maxBuckets);
         int numBuckets= boundaries.size() - 1;
@@ -142,6 +144,7 @@ public class MinKTest {
         double bound = this.getErrBound(numSamples);
         Assert.assertTrue(maxErr < bound);
     }
+
 }
 
 
