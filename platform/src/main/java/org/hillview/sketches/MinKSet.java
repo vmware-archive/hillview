@@ -17,6 +17,7 @@ public class MinKSet<T> {
     public final Long2ObjectRBTreeMap<T> data;
     @Nullable public T min;
     @Nullable public T max;
+    public long numPresent;
 
     public MinKSet(int maxSize, Comparator<T> comp) {
         this.maxSize = maxSize;
@@ -24,14 +25,17 @@ public class MinKSet<T> {
         this.data = new Long2ObjectRBTreeMap();
         this.min = null;
         this.max = null;
+        this.numPresent = 0;
     }
 
-    public MinKSet(int maxSize, Long2ObjectRBTreeMap<T> data, Comparator<T> comp, T min, T max) {
+    public MinKSet(int maxSize, Long2ObjectRBTreeMap<T> data, Comparator<T> comp, T min, T max,
+                   long numPresent) {
         this.comp = comp;
         this.maxSize = maxSize;
         this.data = data;
         this.min = min;
         this.max = max;
+        this.numPresent = numPresent;
     }
 
     public List<T> getSamples() {
