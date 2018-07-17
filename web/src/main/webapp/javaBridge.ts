@@ -115,8 +115,8 @@ export interface CreateColumnInfo {
 export interface HeatMap {
     buckets: number[][];
     missingData: number;
-    histogramMissingX: Histogram;
-    histogramMissingY: Histogram;
+    histogramMissingX: HistogramBase;
+    histogramMissingY: HistogramBase;
     totalSize: number;
 }
 
@@ -138,8 +138,12 @@ export interface IColumnDescription {
     readonly name: string;
 }
 
-export function isNumeric(kind: ContentsKind): boolean {
+export function kindIsNumeric(kind: ContentsKind): boolean {
     return kind === "Integer" || kind === "Double";
+}
+
+export function kindIsString(kind: ContentsKind): boolean {
+    return kind === "Category" || kind === "String" || kind === "Json";
 }
 
 export type Schema = IColumnDescription[];
@@ -174,7 +178,7 @@ export interface IDistinctStrings {
     truncated: boolean;
 }
 
-export interface Histogram {
+export interface HistogramBase {
     buckets: number[];
     missingData: number;
     outOfRange: number;
@@ -208,6 +212,7 @@ export interface BasicColStats {
 export interface ColumnAndRange {
     min: number;
     max: number;
+    onStrings: boolean;
     columnName: string;
     bucketBoundaries: string[];
 }

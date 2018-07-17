@@ -17,8 +17,7 @@
 
 package org.hillview.jsonObjects;
 
-import org.hillview.sketches.BucketsDescriptionEqSize;
-import org.hillview.sketches.IBucketsDescription;
+import org.hillview.sketches.*;
 import org.hillview.table.RadixConverter;
 import org.hillview.table.SortedStringsConverterDescription;
 import org.hillview.table.api.ColumnAndConverterDescription;
@@ -30,6 +29,7 @@ import java.io.Serializable;
 @SuppressWarnings("WeakerAccess,CanBeFinal")
 public class ColumnAndRange implements Serializable {
     public String columnName = "";
+    public boolean onStrings;  // If true the histogram is done on string values
     public double min;
     public double max;
     @Nullable
@@ -50,5 +50,15 @@ public class ColumnAndRange implements Serializable {
         if (this.min >= this.max)
             count = 1;
         return new BucketsDescriptionEqSize(this.min, this.max, count);
+    }
+
+    public IHistogramBuckets getNewBuckets(int count) {
+        if (this.min >= this.max)
+            count = 1;
+        if (this.onStrings) {
+            assert this.bucketBoundaries != null;
+            return new StringHistogramBuckets(this.bucketBoundaries);
+        }
+        return new DoubleHistogramBuckets(this.min, this.max, count);
     }
 }

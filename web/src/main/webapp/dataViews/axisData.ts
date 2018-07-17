@@ -26,7 +26,13 @@ import {
     ScaleTime as D3ScaleTime,
 } from "d3-scale";
 import {DistinctStrings} from "../distinctStrings";
-import {BasicColStats, CategoricalValues, ColumnAndRange, IColumnDescription} from "../javaBridge";
+import {
+    BasicColStats,
+    CategoricalValues,
+    ColumnAndRange,
+    IColumnDescription,
+    kindIsString
+} from "../javaBridge";
 import {Converters, significantDigits} from "../util";
 
 export type AnyScale = D3ScaleLinear<number, number> | D3ScaleTime<number, number>;
@@ -55,7 +61,7 @@ export class AxisData {
         let actualMax = this.stats.max;
         let adjust = .5;
         if (legend && (this.description.kind === "Integer" ||
-            this.description.kind === "Category")) {
+            kindIsString(this.description.kind))) {
             // These were adjusted, bring them back.
             actualMin += .5;
             actualMax -= .5;
@@ -76,6 +82,8 @@ export class AxisData {
                 axis = axisCreator(scale);
                 break;
             }
+            case "Json":
+            case "String":
             case "Category": {
                 const ticks: number[] = [];
                 const labels: string[] = [];
@@ -122,6 +130,7 @@ export class AxisData {
                 break;
             }
             default: {
+                console.log("Unexpected data kind for axis" + this.description.kind);
                 axis = null;
                 scale = null;
                 break;
@@ -160,6 +169,7 @@ export class AxisData {
             min: this.stats.min,
             max: this.stats.max,
             bucketBoundaries: this.getCategoriesInRange(bucketCount),
+            onStrings: kindIsString(this.description.kind)
         };
     }
 

@@ -22,8 +22,8 @@ import {DatasetView, Histogram2DSerialization, IViewSerialization} from "../data
 import {DistinctStrings} from "../distinctStrings";
 import {
     BasicColStats, CategoricalValues, ColumnAndRange, CombineOperators,
-    FilterDescription, HeatMap, Histogram, Histogram2DArgs,
-    IColumnDescription, RecordOrder, RemoteObjectId,
+    FilterDescription, HeatMap, Histogram2DArgs, HistogramBase,
+    IColumnDescription, kindIsString, RecordOrder, RemoteObjectId,
 } from "../javaBridge";
 import {Receiver, RpcRequest} from "../rpc";
 import {SchemaClass} from "../schemaClass";
@@ -56,7 +56,7 @@ export class Histogram2DView extends HistogramViewBase {
     protected currentData: {
         xData: AxisData;
         yData: AxisData;
-        cdf: Histogram;
+        cdf: HistogramBase;
         heatMap: HeatMap;
         xPoints: number;
         yPoints: number;
@@ -131,7 +131,7 @@ export class Histogram2DView extends HistogramViewBase {
         this.page.setMenu(this.menu);
     }
 
-    public updateView(heatmap: HeatMap, xData: AxisData, yData: AxisData, cdf: Histogram,
+    public updateView(heatmap: HeatMap, xData: AxisData, yData: AxisData, cdf: HistogramBase,
                       samplingRate: number, relative: boolean, elapsedMs: number): void {
         this.relative = relative;
         this.samplingRate = samplingRate;
@@ -179,7 +179,9 @@ export class Histogram2DView extends HistogramViewBase {
 
         this.plot.setData(heatmap, cdf, xData, yData, samplingRate, this.relative);
         this.plot.draw();
-        this.cdfPlot.setData(cdf);
+        const discrete = kindIsString(this.currentData.xData.description.kind) ||
+            this.currentData.xData.description.kind === "Integer";
+        this.cdfPlot.setData(cdf, discrete);
         this.cdfPlot.draw();
         this.legendPlot.setData(yData, this.plot.getMissingDisplayed() > 0);
         this.legendPlot.draw();
@@ -374,12 +376,14 @@ export class Histogram2DView extends HistogramViewBase {
             min: this.currentData.xData.stats.min,
             max: this.currentData.xData.stats.max,
             bucketBoundaries: xBoundaries,
+            onStrings: kindIsString(this.currentData.xData.description.kind)
         };
         const arg1: ColumnAndRange = {
             columnName: this.currentData.yData.description.name,
             min: this.currentData.yData.stats.min,
             max: this.currentData.yData.stats.max,
             bucketBoundaries: yBoundaries,
+            onStrings: kindIsString(this.currentData.yData.description.kind)
         };
         const size = PlottingSurface.getDefaultChartSize(this.page);
         const cdfCount = Math.floor(size.width);
@@ -740,7 +744,7 @@ export class Make2DHistogram extends BaseRenderer {
  * Receives partial results and renders a 2D histogram.
  * The 2D histogram data and the HeatMap data use the same data structure.
  */
-export class Histogram2DRenderer extends Receiver<Pair<HeatMap, Histogram>> {
+export class Histogram2DRenderer extends Receiver<Pair<HeatMap, HistogramBase>> {
     protected histogram: Histogram2DView;
 
     constructor(page: FullPage,
@@ -751,7 +755,7 @@ export class Histogram2DRenderer extends Receiver<Pair<HeatMap, Histogram>> {
                 protected stats: BasicColStats[],
                 protected samplingRate: number,
                 protected distinctStrings: DistinctStrings[],
-                operation: RpcRequest<PartialResult<Pair<HeatMap, Histogram>>>,
+                operation: RpcRequest<PartialResult<Pair<HeatMap, HistogramBase>>>,
                 protected relative: boolean,
                 protected reusePage: boolean) {
         super(
@@ -766,7 +770,7 @@ export class Histogram2DRenderer extends Receiver<Pair<HeatMap, Histogram>> {
             throw new Error("Expected 2 columns");
     }
 
-    public onNext(value: PartialResult<Pair<HeatMap, Histogram>>): void {
+    public onNext(value: PartialResult<Pair<HeatMap, HistogramBase>>): void {
         super.onNext(value);
         if (value == null)
             return;

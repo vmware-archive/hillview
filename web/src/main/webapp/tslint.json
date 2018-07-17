@@ -13,7 +13,8 @@
     "import-spacing": false,
     "no-empty": false,
     "no-console": false,
-    "object-literal-shorthand": false
+    "object-literal-shorthand": false,
+    "trailing-comma": false
   },
   "rulesDirectory": []
 }

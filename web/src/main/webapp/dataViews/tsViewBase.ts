@@ -18,7 +18,7 @@
 import {DistinctStrings} from "../distinctStrings";
 import {
     allContentsKind, asContentsKind, ColumnSortOrientation, ComparisonFilterDescription,
-    CreateColumnInfo, EqualityFilterDescription, HLogLog, IColumnDescription,
+    CreateColumnInfo, EqualityFilterDescription, HLogLog, IColumnDescription, kindIsString,
     RecordOrder, RemoteObjectId,
 } from "../javaBridge";
 import {OnCompleteReceiver} from "../rpc";
@@ -27,6 +27,7 @@ import {BigTableView, TableTargetAPI} from "../tableTarget";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
 import {SubMenu, TopMenuItem} from "../ui/menu";
+import {PlottingSurface} from "../ui/plottingSurface";
 import {SpecialChars, ViewKind} from "../ui/ui";
 import {
     cloneToSet, Comparison, Converters, ICancellable, mapToArray, significantDigits,
@@ -34,7 +35,7 @@ import {
 import {Range2DCollector} from "./heatmapView";
 import {HeavyHittersReceiver, HeavyHittersView} from "./heavyHittersView";
 import {Histogram2DDialog} from "./histogram2DView";
-import {HistogramDialog, RangeCollector} from "./histogramView";
+import {HistogramDialog, RangeCollector, StringBucketsObserver} from "./histogramView";
 import {TableOperationCompleted, TableView} from "./tableView";
 import {TrellisPlotDialog, TrellisRangeReceiver} from "./trellisHeatMapView";
 
@@ -184,21 +185,20 @@ export abstract class TSViewBase extends BigTableView {
         const cds: IColumnDescription[] = [];
         columns.forEach((v) => {
             const colDesc = this.schema.find(v);
-            if (colDesc.kind === "String" || colDesc.kind === "Json") {
-                this.reportError("Histograms not supported for string or JSON columns " +
-                    this.schema.displayName(colDesc.name));
-                return;
-            }
             cds.push(colDesc);
         });
 
-        if (cds.length !== columns.length)
-            // some error occurred
-            return;
-        const rr = this.dataset.createGetCategoryRequest(this.page, cds);
-        rr.invoke(new ChartObserver(this, this.page, rr, null,
-            this.rowCount, this.schema,
-            { exact: false, heatmap, relative: false, reusePage: false}, cds));
+        if (cds.length === 1 && kindIsString(cds[0].kind)) {
+            const size = PlottingSurface.getDefaultChartSize(this.page);
+            const rr = this.createSampleDistinctRequest(cds[0].name, size.width);
+            rr.invoke(new StringBucketsObserver(this, this.page, rr, this.rowCount, this.schema,
+                { exact: false, heatmap: false, relative: false, reusePage: false }, cds[0]));
+        } else {
+            const rr = this.dataset.createGetCategoryRequest(this.page, cds);
+            rr.invoke(new ChartObserver(this, this.page, rr, null,
+                this.rowCount, this.schema,
+                {exact: false, heatmap: heatmap, relative: false, reusePage: false}, cds));
+        }
     }
 
     protected histogram(heatMap: boolean): void {

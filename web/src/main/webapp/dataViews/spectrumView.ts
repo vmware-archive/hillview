@@ -17,20 +17,20 @@
 
 import {IViewSerialization, SpectrumSerialization} from "../datasetView";
 import {
-    BasicColStats, CombineOperators, EigenVal, Histogram, IColumnDescription, RecordOrder, RemoteObjectId,
+    BasicColStats, CombineOperators, EigenVal, HistogramBase, IColumnDescription, RecordOrder, RemoteObjectId,
 } from "../javaBridge";
 import {OnCompleteReceiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
 import {BigTableView, TableTargetAPI} from "../tableTarget";
 import {IDataView} from "../ui/dataview";
+import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
 import {HistogramPlot} from "../ui/histogramPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {ICancellable, significantDigits} from "../util";
 import {AxisData} from "./axisData";
-import {CorrelationMatrixReceiver, TableView} from "./tableView"
-import {Dialog, FieldKind} from "../ui/dialog";
+import {CorrelationMatrixReceiver, TableView} from "./tableView";
 /**
  * Receives the result of a PCA computation and plots the singular values
  */
@@ -67,7 +67,7 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
         this.newPage.setDataView(this.specView);
 
         const ev: number [] = eVals.eigenValues;
-        const histogram: Histogram = { buckets: ev, missingData: 0, outOfRange: 0 };
+        const histogram: HistogramBase = { buckets: ev, missingData: 0, outOfRange: 0 };
         const icd: IColumnDescription = { kind: "Integer", name: "Singular Values" };
         const stats: BasicColStats = { momentCount: 0, min: -.5, max: ev.length - .5,
             moments: null, presentCount: 0, missingCount: 0};
@@ -114,7 +114,7 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
  */
 export class SpectrumView extends BigTableView {
     protected currentData: {
-        histogram: Histogram,
+        histogram: HistogramBase,
         axisData: AxisData,
         title: string,
     };
@@ -141,7 +141,7 @@ export class SpectrumView extends BigTableView {
         this.topLevel.appendChild(this.summary);
     }
 
-    public updateView(title: string, h: Histogram,
+    public updateView(title: string, h: HistogramBase,
                       axisData: AxisData, elapsedMs: number): void {
         this.page.reportTime(elapsedMs);
         this.plot.clear();

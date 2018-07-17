@@ -19,10 +19,19 @@ import {drag as d3drag} from "d3-drag";
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {DatasetView, HistogramSerialization, IViewSerialization} from "../datasetView";
 import {DistinctStrings} from "../distinctStrings";
-import {BasicColStats, CategoricalValues, CombineOperators, FilterDescription,
-    Histogram, HistogramArgs, IColumnDescription, RecordOrder, RemoteObjectId,
+import {
+    BasicColStats,
+    CategoricalValues,
+    CombineOperators,
+    FilterDescription,
+    HistogramArgs,
+    HistogramBase,
+    IColumnDescription,
+    kindIsString,
+    RecordOrder,
+    RemoteObjectId,
 } from "../javaBridge";
-import {Receiver} from "../rpc";
+import {OnCompleteReceiver, Receiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
 import {BaseRenderer, TableTargetAPI, ZipReceiver} from "../tableTarget";
 import {CDFPlot} from "../ui/CDFPlot";
@@ -41,15 +50,15 @@ import {
 import {AxisData} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
-import {ChartObserver} from "./tsViewBase";
+import {ChartObserver, ChartOptions} from "./tsViewBase";
 
 /**
  * A HistogramView is responsible for showing a one-dimensional histogram on the screen.
  */
 export class HistogramView extends HistogramViewBase {
     protected currentData: {
-        histogram: Histogram,
-        cdf: Histogram,
+        histogram: HistogramBase,
+        cdf: HistogramBase,
         axisData: AxisData,
         samplingRate: number,
         title: string,
@@ -128,7 +137,7 @@ export class HistogramView extends HistogramViewBase {
         return hv;
     }
 
-    public updateView(title: string, cdf: Histogram, h: Histogram,
+    public updateView(title: string, cdf: HistogramBase, h: HistogramBase,
                       axisData: AxisData, samplingRate: number, elapsedMs: number): void {
         this.page.reportTime(elapsedMs);
         this.plot.clear();
@@ -156,7 +165,10 @@ export class HistogramView extends HistogramViewBase {
 
         this.plot.setHistogram(h, samplingRate, axisData);
         this.plot.draw();
-        this.cdfPlot.setData(cdf);
+
+        const discrete = kindIsString(this.currentData.axisData.description.kind) ||
+            this.currentData.axisData.description.kind === "Integer";
+        this.cdfPlot.setData(cdf, discrete);
         this.cdfPlot.draw();
         const canvas = this.surface.getCanvas();
 
@@ -428,7 +440,7 @@ export class HistogramView extends HistogramViewBase {
         const renderer = new FilterReceiver(
             filter, this.currentData.axisData.description, this.rowCount, this.schema,
             this.currentData.axisData.distinctStrings, this.currentData.samplingRate >= 1.0,
-            this.page, rr, this.dataset);
+            this.page.title, this.page, rr, this.dataset);
         rr.invoke(renderer);
     }
 }
@@ -445,14 +457,15 @@ class FilterReceiver extends BaseRenderer {
         protected schema: SchemaClass,
         protected allStrings: DistinctStrings,
         protected exact: boolean,
+        protected sourceTitle: string,
         page: FullPage,
         operation: ICancellable,
         dataset: DatasetView) {
         super(page, operation, "Filter", dataset);
     }
 
-    private filterDescription() {
-        return "Filtered";  // TODO: add title description
+    private filterDescription(): string {
+        return "Filtered " + this.filter.columnName;
     }
 
     public run(): void {
@@ -522,8 +535,8 @@ export class RangeCollector extends Receiver<BasicColStats> {
             cdfBucketCount: cdfCount,
             bucketCount,
         };
-        const rr = this.remoteObject.createHistogramRequest(args);
 
+        const rr = this.remoteObject.createNewHistogramRequest(args);
         rr.chain(this.operation);
         const axisData = new AxisData(this.cd, this.stats, this.allStrings, bucketCount);
         const renderer = new HistogramRenderer(this.title, this.page,
@@ -548,7 +561,7 @@ export class RangeCollector extends Receiver<BasicColStats> {
 /**
  * Renders a 1D histogram.
  */
-export class HistogramRenderer extends Receiver<Pair<Histogram, Histogram>> {
+export class HistogramRenderer extends Receiver<Pair<HistogramBase, HistogramBase>> {
     protected histogram: HistogramView;
     protected timeInMs: number;
     /*
@@ -573,7 +586,7 @@ export class HistogramRenderer extends Receiver<Pair<Histogram, Histogram>> {
         this.page.setDataView(this.histogram);
     }
 
-    public onNext(value: PartialResult<Pair<Histogram, Histogram>>): void {
+    public onNext(value: PartialResult<Pair<HistogramBase, HistogramBase>>): void {
         super.onNext(value);
         this.timeInMs = this.elapsedMilliseconds();
         this.histogram.updateView(this.title, value.data.first, value.data.second,
@@ -668,5 +681,103 @@ export class HistogramDialog extends Dialog {
 
     public getColumn(): string {
         return this.getFieldValue("columnName");
+    }
+}
+
+/**
+ * Receives buckets for a string histogram and initiates the string histogram.
+ */
+export class StringBucketsObserver extends OnCompleteReceiver<string[]> {
+    constructor(
+        protected remoteObject: TableTargetAPI,
+        page: FullPage, operation: ICancellable,
+        protected rowCount: number,
+        protected schema: SchemaClass,
+        protected options: ChartOptions,
+        protected column: IColumnDescription) {
+        super(page, operation, "Compute string histogram");
+    }
+
+    public run(value: string[]): void {
+        const bucketCount = value.length;
+        const samplingRate = HistogramViewBase.samplingRate(bucketCount, this.rowCount, this.page);
+        const distinctStrings = new DistinctStrings( {
+            truncated: false,
+            uniqueStrings: value
+        }, this.column.name);
+        const stats: BasicColStats = {
+            min: -0.5,
+            max: bucketCount - .5,
+            missingCount: 0,
+            momentCount: 0,
+            moments: [],
+            presentCount: this.rowCount
+        };
+        const axisData = new AxisData(this.column, stats, distinctStrings, bucketCount);
+        const rr = this.remoteObject.createStringHistogramRequest(
+            this.column.name, value, samplingRate, Seed.instance.get());
+        rr.invoke(new StringHistogramRenderer("Histogram of " + this.column.name,
+            this.page, this.remoteObject.remoteObjectId, this.rowCount, this.schema, axisData,
+            rr, samplingRate, false));
+    }
+}
+
+class StringHistogramRenderer extends Receiver<HistogramBase>  {
+    private histogram: HistogramView;
+
+    constructor(protected title: string,
+                sourcePage: FullPage,
+                remoteTableId: string,
+                protected rowCount: number,
+                protected schema: SchemaClass,
+                protected axisData: AxisData,
+                operation: ICancellable,
+                protected samplingRate: number,
+                reusePage: boolean) {
+        super(reusePage ? sourcePage : sourcePage.dataset.newPage(title, sourcePage),
+            operation, "histogram");
+        this.histogram = new HistogramView(remoteTableId, rowCount, schema, this.page);
+        this.page.setDataView(this.histogram);
+    }
+
+    public onNext(value: PartialResult<HistogramBase>): void {
+        super.onNext(value);
+        const timeInMs = this.elapsedMilliseconds();
+        const size = PlottingSurface.getDefaultChartSize(this.page);
+        const width = Math.floor(size.width);
+        const cdfBucketCount = value.data.buckets.length;
+        const bucketCount = Math.min(
+            Resolution.maxBucketCount,
+            Math.floor(width / Resolution.minBarWidth),
+            cdfBucketCount);
+        let coarsening: HistogramBase = null;
+        if (bucketCount === cdfBucketCount)
+            coarsening = value.data;
+        else {
+            const buckets = [];
+            const groupSize = Math.ceil(cdfBucketCount / bucketCount);
+            const fullBuckets = Math.floor(cdfBucketCount / groupSize);
+            for (let i = 0; i < fullBuckets; i++) {
+                let sum = 0;
+                for (let j = 0; j < groupSize; j++) {
+                    sum += value.data.buckets[i * groupSize + j];
+                }
+                buckets.push(sum);
+            }
+            if (fullBuckets < bucketCount) {
+                let sum = 0;
+                for (let j = fullBuckets * groupSize; j < cdfBucketCount; j++)
+                    sum += value.data.buckets[j];
+                buckets.push(sum);
+            }
+            coarsening = {
+                buckets: buckets,
+                missingData: value.data.missingData,
+                outOfRange: value.data.outOfRange
+            };
+        }
+
+        this.histogram.updateView(this.title, value.data, coarsening,
+            this.axisData, this.samplingRate, timeInMs);
     }
 }

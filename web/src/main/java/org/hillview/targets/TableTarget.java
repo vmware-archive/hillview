@@ -133,6 +133,7 @@ public final class TableTarget extends RpcTarget {
         this.runCompleteSketch(this.table, sk, (e, c)->e, request, context);
     }
 
+    @Deprecated
     @HillviewRpc
     public void histogram(RpcRequest request, RpcRequestContext context) {
         HistogramArgs info = request.parseArgs(HistogramArgs.class);
@@ -140,6 +141,48 @@ public final class TableTarget extends RpcTarget {
         HistogramSketch cdf = info.getSketch(true);
         ConcurrentSketch<ITable, Histogram, Histogram> csk =
                 new ConcurrentSketch<ITable, Histogram, Histogram>(cdf, histo);
+        this.runSketch(this.table, csk, request, context);
+    }
+
+    class SampleStringsArgs {
+        String colName = "";
+        long seed;
+        int cdfBuckets;
+    }
+
+    @HillviewRpc
+    public void sampleDistinctStrings(RpcRequest request, RpcRequestContext context) {
+        SampleStringsArgs args = request.parseArgs(SampleStringsArgs.class);
+        SampleDistinctElementsSketch sk = new SampleDistinctElementsSketch(
+                // We sample cdfBuckets squared
+                args.colName, args.seed, args.cdfBuckets * args.cdfBuckets);
+        this.runCompleteSketch(this.table, sk, (e, c) -> e.getBoundaries(args.cdfBuckets),
+                request, context);
+    }
+
+    class StringHistogramArgs {
+        String columnName = "";
+        String[] boundaries = {};
+        double samplingRate;
+        long seed;
+    }
+
+    @HillviewRpc
+    public void stringHistogram(RpcRequest request, RpcRequestContext context) {
+        StringHistogramArgs args = request.parseArgs(StringHistogramArgs.class);
+        StringHistogramBuckets buckets = new StringHistogramBuckets(args.boundaries);
+        NewHistogramSketch sk = new NewHistogramSketch(
+                buckets, args.columnName, args.samplingRate, args.seed);
+        this.runSketch(this.table, sk, request, context);
+    }
+
+    @HillviewRpc
+    public void newHistogram(RpcRequest request, RpcRequestContext context) {
+        HistogramArgs info = request.parseArgs(HistogramArgs.class);
+        NewHistogramSketch histo = info.getNewSketch(false);
+        NewHistogramSketch cdf = info.getNewSketch(true);
+        ConcurrentSketch<ITable, NewHistogram, NewHistogram> csk =
+                new ConcurrentSketch<ITable, NewHistogram, NewHistogram>(cdf, histo);
         this.runSketch(this.table, csk, request, context);
     }
 
@@ -291,6 +334,7 @@ public final class TableTarget extends RpcTarget {
             pcaSketch = new PCACorrelationSketch(colNames);
         return pcaSketch;
     }
+
     @HillviewRpc
     public void correlationMatrix(RpcRequest request, RpcRequestContext context) {
         PCACorrelationSketch pcaSketch = this.getPCASketch(request);

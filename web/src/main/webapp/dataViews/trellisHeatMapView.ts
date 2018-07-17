@@ -19,7 +19,7 @@ import {mouse as d3mouse, select as d3select} from "d3-selection";
 import {DistinctStrings} from "../distinctStrings";
 import {
     BasicColStats, ColumnAndRange,
-    CombineOperators, Histogram3DArgs, IColumnDescription, isNumeric, RecordOrder, RemoteObjectId,
+    CombineOperators, Histogram3DArgs, IColumnDescription, kindIsNumeric, RecordOrder, RemoteObjectId,
 } from "../javaBridge";
 import {Receiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
@@ -554,18 +554,21 @@ export class TrellisHeatMapView extends BigTableView implements IScrollTarget {
             min: this.xStats.min,
             max: this.xStats.max,
             bucketBoundaries: null,  // TODO
+            onStrings: false
         };
         const col1: ColumnAndRange = {
             columnName: this.args.cds[1].name,
             min: this.yStats.min,
             max: this.yStats.max,
             bucketBoundaries: null,  // TODO
+            onStrings: false
         };
         const col2: ColumnAndRange = {
             columnName: this.args.cds[2].name,
             min: this.offset,
             max: this.offset + zBins.length - 1,
             bucketBoundaries: zBins,  // TODO
+            onStrings: true
         };
         const args: Histogram3DArgs = {
             first: col0,
@@ -638,7 +641,7 @@ class HeatMap3DRenderer extends Receiver<HeatMapArrayData> {
  * Dialog to query user about parameters ot a Trellis plot of heatmaps.
  */
 export class TrellisPlotDialog extends Dialog {
-    private valid: boolean;
+    private readonly valid: boolean;
 
     /**
      * Create a dialog to display a Trellis plot of heatmaps.
@@ -698,7 +701,7 @@ export class TrellisPlotDialog extends Dialog {
 
     private execute(): void {
         const cds = this.getColumns();
-        if (!isNumeric(cds[0].kind) || !isNumeric(cds[1].kind)) {
+        if (!kindIsNumeric(cds[0].kind) || !kindIsNumeric(cds[1].kind)) {
             this.page.reportError("First and second colum must be numeric");
             return;
         }

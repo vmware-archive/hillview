@@ -149,6 +149,7 @@ export class DatasetView implements IHtmlElement {
      * @returns An RPC request which when invoked will return an IDistinctStrings for
      *          each column; the non-categorical columns will have nulls in the result.
      */
+    // TODO: Deprecate this
     public createGetCategoryRequest(page: FullPage, columns: IColumnDescription[]):
         RpcRequest<DistinctStrings[]> {
         const toBring = columns.filter((c) => c.kind === "Category")
@@ -378,6 +379,7 @@ export class DatasetView implements IHtmlElement {
  * Receives categories for a set of columns from an RPC, caches the result,
  * and then invokes an observer passing all the columns that the observer asked for.
  */
+// TODO: deprecate this
 class CategoryValuesObserver extends OnCompleteReceiver<IDistinctStrings[]> {
     constructor(page: FullPage, operation: ICancellable,
                 protected requestedColumns: IColumnDescription[],
@@ -411,6 +413,7 @@ class CategoryValuesObserver extends OnCompleteReceiver<IDistinctStrings[]> {
  * Looks like an RpcRequest, but it is more complicated: it intercepts the results
  * and saves them, and then it invokes the observer.
  */
+// TODO: deprecate this
 class CategoryValuesRequest extends RpcRequest<IDistinctStrings[]> {
     constructor(object: RemoteObjectId, protected page: FullPage,
                 protected requestedColumns: IColumnDescription[],

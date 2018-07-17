@@ -20,7 +20,7 @@ import {format as d3format} from "d3-format";
 import {scaleLinear as d3scaleLinear} from "d3-scale";
 import {AxisData} from "../dataViews/axisData";
 import {HistogramViewBase} from "../dataViews/histogramViewBase";
-import {Histogram} from "../javaBridge";
+import {HistogramBase} from "../javaBridge";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 
@@ -31,7 +31,7 @@ export class HistogramPlot extends Plot {
     /**
      * Histogram that is being drawn.
      */
-    public histogram: Histogram;
+    public histogram: HistogramBase;
     /**
      * Sampling rate that was used to compute the histogram.
      */
@@ -48,7 +48,7 @@ export class HistogramPlot extends Plot {
 
     // While the data has histogram type, nothing prevents the values in the histogram
     // from being non-integers, so this class can be used to draw more general bar-charts.
-    public setHistogram(bars: Histogram, samplingRate: number, axisData: AxisData): void {
+    public setHistogram(bars: HistogramBase, samplingRate: number, axisData: AxisData): void {
         this.histogram = bars;
         this.samplingRate = samplingRate;
         this.axisData = axisData;

@@ -110,7 +110,7 @@ export class Rectangle {
  * the displayed objects.
  */
 export class Resolution {
-    public static readonly maxBucketCount = 40;  // maximum number of buckets in a histogram
+    public static readonly maxBucketCount = 50;  // maximum number of buckets in a histogram
     public static readonly minBarWidth = 5;      // minimum number of pixels for a histogram bar
     public static readonly minDotSize = 4;       // dots are drawn as rectangles of this size in pixels
     public static readonly tableRowsOnScreen = 20; // table rows displayed

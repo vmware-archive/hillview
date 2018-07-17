@@ -17,23 +17,17 @@
 
 package org.hillview.sketches;
 
-import org.hillview.table.api.ColumnAndConverter;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.ISampledRowIterator;
 
-import java.io.Serializable;
-
 /**
  * One dimensional histogram.
  */
-public class NewHistogram implements Serializable {
-    private final long[] buckets;
-    private long missingData;
-    private long outOfRange;
+public class NewHistogram extends HistogramBase {
     private final IHistogramBuckets bucketDescription;
 
-    public NewHistogram(final IHistogramBuckets bucketDescription) {
+    NewHistogram(final IHistogramBuckets bucketDescription) {
         this.bucketDescription = bucketDescription;
         this.buckets = new long[bucketDescription.getNumOfBuckets()];
     }
@@ -88,14 +82,6 @@ public class NewHistogram implements Serializable {
         unionH.missingData = this.missingData + otherHistogram.missingData;
         unionH.outOfRange = this.outOfRange + otherHistogram.outOfRange;
         return unionH;
-    }
-
-    public NewHistogram prefixSum() {
-        NewHistogram cdf = new NewHistogram(this.bucketDescription);
-        cdf.buckets[0] = this.buckets[0];
-        for (int i = 1; i < this.bucketDescription.getNumOfBuckets(); i++)
-            cdf.buckets[i] = cdf.buckets[i - 1] + this.buckets[i];
-        return cdf;
     }
 
     public int getNumOfBuckets() { return this.bucketDescription.getNumOfBuckets(); }

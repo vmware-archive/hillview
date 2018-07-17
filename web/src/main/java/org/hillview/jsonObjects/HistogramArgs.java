@@ -19,6 +19,8 @@ package org.hillview.jsonObjects;
 
 import org.hillview.sketches.HistogramSketch;
 import org.hillview.sketches.IBucketsDescription;
+import org.hillview.sketches.IHistogramBuckets;
+import org.hillview.sketches.NewHistogramSketch;
 import org.hillview.table.api.ColumnAndConverterDescription;
 import org.hillview.utils.Converters;
 
@@ -38,14 +40,27 @@ public class HistogramArgs {
         return Converters.checkNull(this.column).getDescription();
     }
 
+    @Deprecated
+    public IBucketsDescription getBuckets(boolean cdf) {
+        int count = cdf ? this.cdfBucketCount : this.bucketCount;
+        return Converters.checkNull(this.column).getBuckets(count);
+    }
+
+    @Deprecated
     public HistogramSketch getSketch(boolean cdf) {
         IBucketsDescription buckets = this.getBuckets(cdf);
         double rate = cdf ? this.cdfSamplingRate : this.samplingRate;
         return new HistogramSketch(buckets, this.getDescription(), rate, this.seed);
     }
 
-    public IBucketsDescription getBuckets(boolean cdf) {
+    public IHistogramBuckets getNewBuckets(boolean cdf) {
         int count = cdf ? this.cdfBucketCount : this.bucketCount;
-        return Converters.checkNull(this.column).getBuckets(count);
+        return Converters.checkNull(this.column).getNewBuckets(count);
+    }
+
+    public NewHistogramSketch getNewSketch(boolean cdf) {
+        IHistogramBuckets buckets = this.getNewBuckets(cdf);
+        double rate = cdf ? this.cdfSamplingRate : this.samplingRate;
+        return new NewHistogramSketch(buckets, this.column.columnName, rate, this.seed);
     }
 }

@@ -24,29 +24,26 @@ import java.util.Arrays;
 /**
  * Bucket boundaries for string histograms.
  */
-public class StringBucketsDescription implements IHistogramBuckets {
+public class StringHistogramBuckets implements IHistogramBuckets {
     private final String minValue;
     private final String maxValue;
     private final int numOfBuckets;
+    // These are the left endpoints of the buckets.
     private final String[] boundaries;
 
-    /**
-     * The assumption is that the all buckets are only left inclusive except the right one which
-     * is right inclusive. Boundaries has to be strongly sorted.
-     */
-    public StringBucketsDescription(final String[] boundaries) {
+    public StringHistogramBuckets(final String[] boundaries) {
         if (boundaries.length == 0)
             throw new IllegalArgumentException("Boundaries of buckets can't be empty");
         if (!isSorted(boundaries))
             throw new IllegalArgumentException("Boundaries of buckets have to be sorted");
         this.boundaries = boundaries;
-        this.numOfBuckets = boundaries.length - 1;
+        this.numOfBuckets = boundaries.length;
         this.minValue = this.boundaries[0];
-        this.maxValue = this.boundaries[this.numOfBuckets];
+        this.maxValue = this.boundaries[this.boundaries.length - 1];
     }
 
     /**
-     * Checks that an array is strongly sorted
+     * Checks that an array is strongly sorted.
      */
     private static boolean isSorted(final String[] a) {
         for (int i = 0; i < (a.length - 1); i++)
@@ -59,7 +56,7 @@ public class StringBucketsDescription implements IHistogramBuckets {
         if ((item.compareTo(this.minValue)) < 0 || (item.compareTo(this.maxValue)) > 0)
             return -1;
         if (item.equals(this.maxValue))
-            return this.numOfBuckets;
+            return this.numOfBuckets - 1;
         int index = Arrays.binarySearch(boundaries, item);
         // This method returns index of the search key, if it is contained in the array,
         // else it returns (-(insertion point) - 1). The insertion point is the point
@@ -68,6 +65,7 @@ public class StringBucketsDescription implements IHistogramBuckets {
         // are less than the specified key.
         if (index < 0) {
             index = -index - 1;
+
             if (index == 0)
                 // before first element
                 index = -1;

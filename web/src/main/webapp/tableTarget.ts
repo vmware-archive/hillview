@@ -25,8 +25,8 @@ import {Histogram2DArgs, NextKArgs} from "./javaBridge";
 import {ComparisonFilterDescription, EigenVal, EqualityFilterDescription, FindResult} from "./javaBridge";
 import {
     BasicColStats, CategoricalValues, CombineOperators, CreateColumnInfo, FilterDescription,
-    HeatMap, Histogram, Histogram3DArgs, HistogramArgs,
-    HLogLog, IColumnDescription, NextKList, RecordOrder, RemoteObjectId, Schema, TableSummary, TopList,
+    HeatMap, Histogram3DArgs, HistogramArgs, HistogramBase,
+    HLogLog, IColumnDescription, NextKList, RecordOrder, RemoteObjectId, Schema, TableSummary, TopList
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
 import {SchemaClass} from "./schemaClass";
@@ -77,6 +77,15 @@ export class TableTargetAPI extends RemoteObject {
             position: position,
             seed: Seed.instance.get(),
         });
+    }
+
+    public createSampleDistinctRequest(colName: string, cdfBuckets: number):
+        RpcRequest<PartialResult<string[]>> {
+        return this.createStreamingRpcRequest<string[]>(
+            "sampleDistinctStrings", {
+                colName: colName,
+                seed: Seed.instance.get(),
+                cdfBuckets: cdfBuckets });
     }
 
     public createNextKRequest(order: RecordOrder, firstRow: any[] | null, rowCount: number):
@@ -205,8 +214,8 @@ RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<RemoteObjectId>("filter2DRange", {first: xRange, second: yRange});
     }
 
-    public createHistogram2DRequest(info: Histogram2DArgs): RpcRequest<PartialResult<Pair<HeatMap, Histogram>>> {
-        return this.createStreamingRpcRequest<Pair<HeatMap, Histogram>>("histogram2D", info);
+    public createHistogram2DRequest(info: Histogram2DArgs): RpcRequest<PartialResult<Pair<HeatMap, HistogramBase>>> {
+        return this.createStreamingRpcRequest<Pair<HeatMap, HistogramBase>>("histogram2D", info);
     }
 
     public createHeatMapRequest(info: Histogram2DArgs): RpcRequest<PartialResult<HeatMap>> {
@@ -219,8 +228,24 @@ RpcRequest<PartialResult<RemoteObjectId>> {
     }
 
     public createHistogramRequest(info: HistogramArgs):
-            RpcRequest<PartialResult<Pair<Histogram, Histogram>>> {
-        return this.createStreamingRpcRequest<Pair<Histogram, Histogram>>("histogram", info);
+            RpcRequest<PartialResult<Pair<HistogramBase, HistogramBase>>> {
+        return this.createStreamingRpcRequest<Pair<HistogramBase, HistogramBase>>("histogram", info);
+    }
+
+    public createStringHistogramRequest(columnName: string, boundaries: string[],
+                                        samplingRate: number, seed: number):
+        RpcRequest<PartialResult<HistogramBase>> {
+        return this.createStreamingRpcRequest<HistogramBase>("stringHistogram", {
+            columnName: columnName,
+            boundaries: boundaries,
+            samplingRate: samplingRate,
+            seed: seed
+        });
+    }
+
+    public createNewHistogramRequest(info: HistogramArgs):
+        RpcRequest<PartialResult<Pair<HistogramBase, HistogramBase>>> {
+        return this.createStreamingRpcRequest<Pair<HistogramBase, HistogramBase>>("newHistogram", info);
     }
 
     public createSetOperationRequest(setOp: CombineOperators): RpcRequest<PartialResult<RemoteObjectId>> {
@@ -250,7 +275,8 @@ RpcRequest<PartialResult<RemoteObjectId>> {
                                 colNames: string[], controlPoints: PointSet, newColNames: string[]):
             RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<RemoteObjectId>("lampMap",
-            {controlPointsId: controlPointsId, colNames: colNames, newLowDimControlPoints: controlPoints, newColNames: newColNames});
+            {controlPointsId: controlPointsId, colNames: colNames,
+                newLowDimControlPoints: controlPoints, newColNames: newColNames});
     }
 }
 

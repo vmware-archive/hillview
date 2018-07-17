@@ -24,6 +24,7 @@ import java.io.Serializable;
  * All buckets are left-inclusive and right-exclusive,
  * except the right most bucket which is right-inclusive.
  */
+@Deprecated
 public interface IBucketsDescription extends Serializable {
     /**
      * Number of buckets; must be greater than 0.

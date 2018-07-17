@@ -30,11 +30,11 @@ public class SampleDistinctElementsSketch implements ISketch<ITable, MinKSet<Str
      * that have the minimum hash values.
      */
     @Override
-    public MinKSet create(ITable data) {
+    public MinKSet<String> create(ITable data) {
         IColumn col = data.getLoadedColumn(new ColumnAndConverterDescription(this.colName)).column;
-        if (col.getDescription().kind != ContentsKind.String)
+        if (!col.getDescription().kind.isString())
             throw new IllegalArgumentException(
-                    "SampleDistinctElementsSketch only supports String columns");
+                    "SampleDistinctElementsSketch only supports String-like columns");
         LongHashFunction hash = LongHashFunction.xx(this.seed);
         @Nullable String minString = null;
         @Nullable String maxString = null;
@@ -47,6 +47,7 @@ public class SampleDistinctElementsSketch implements ISketch<ITable, MinKSet<Str
                 numPresent += 1;
                 mkRows.push(col.hashCode64(currRow, hash), currRow);
                 String thisString = col.getString(currRow);
+                assert thisString != null;
                 if (minString == null) {
                     minString = thisString;
                     maxString = thisString;
@@ -67,14 +68,14 @@ public class SampleDistinctElementsSketch implements ISketch<ITable, MinKSet<Str
         Long2ObjectRBTreeMap<String> data = new Long2ObjectRBTreeMap<String>();
         for (long hashKey: mkRows.treeMap.keySet())
             data.put(hashKey, col.getString(mkRows.treeMap.get(hashKey)));
-        return new MinKSet<String>(this.maxSize, data, Comparator.<String>naturalOrder(),
+        return new MinKSet<String>(this.maxSize, data, Comparator.naturalOrder(),
                 minString, maxString, numPresent);
     }
 
     @Nullable
     @Override
     public MinKSet<String> zero() {
-        return new MinKSet(this.maxSize, Comparator.<String>naturalOrder());
+        return new MinKSet<String>(this.maxSize, Comparator.naturalOrder());
     }
 
     /**
@@ -83,6 +84,8 @@ public class SampleDistinctElementsSketch implements ISketch<ITable, MinKSet<Str
      */
     @Nullable
     public MinKSet<String> add(@Nullable MinKSet<String> left, @Nullable MinKSet<String> right) {
+        assert left != null;
+        assert right != null;
         String minString, maxString;
         long numPresent;
         if (left.numPresent == 0) {
@@ -94,6 +97,10 @@ public class SampleDistinctElementsSketch implements ISketch<ITable, MinKSet<Str
             maxString = left.max;
             numPresent = left.numPresent;
         } else {
+            assert left.min != null;
+            assert left.max != null;
+            assert right.min != null;
+            assert right.max != null;
             minString = (left.min.compareTo(right.min) < 0) ? left.min : right.min;
             maxString = (left.max.compareTo(right.max) > 0) ? left.max : right.max;
             numPresent = left.numPresent + right.numPresent;
@@ -105,7 +112,7 @@ public class SampleDistinctElementsSketch implements ISketch<ITable, MinKSet<Str
             long maxKey = data.lastLongKey();
             data.remove(maxKey);
         }
-        return new MinKSet(this.maxSize, data, Comparator.<String>naturalOrder(),
+        return new MinKSet<String>(this.maxSize, data, Comparator.naturalOrder(),
                 minString, maxString, numPresent);
     }
 }

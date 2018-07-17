@@ -17,7 +17,9 @@
 
 import {mouse as d3mouse} from "d3-selection";
 import {DistinctStrings} from "../distinctStrings";
-import {BasicColStats, ColumnAndRange, ContentsKind, IColumnDescription, RemoteObjectId} from "../javaBridge";
+import {
+    BasicColStats, ColumnAndRange, ContentsKind, IColumnDescription, kindIsString, RemoteObjectId
+} from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
 import {BigTableView} from "../tableTarget";
 import {CDFPlot} from "../ui/CDFPlot";
@@ -197,6 +199,7 @@ export abstract class HistogramViewBase extends BigTableView {
             min: stats.min,
             max: stats.max,
             bucketBoundaries: boundaries,
+            onStrings: kindIsString(cd.kind)
         };
     }
 
@@ -230,7 +233,7 @@ export abstract class HistogramViewBase extends BigTableView {
         let result: string;
         if (kind === "Integer")
             result = formatNumber(Math.round(inv as number));
-        if (kind === "Category")
+        if (kindIsString(kind))
             result = allStrings.get(inv as number);
         else if (kind === "Integer" || kind === "Double")
             result = formatNumber(inv as number);
@@ -244,7 +247,7 @@ export abstract class HistogramViewBase extends BigTableView {
     public static invertToNumber(v: number, scale: AnyScale, kind: ContentsKind): number {
         const inv = scale.invert(v);
         let result: number = 0;
-        if (kind === "Integer" || kind === "Category") {
+        if (kind === "Integer" || kindIsString(kind)) {
             result = Math.round(inv as number);
         } else if (kind === "Double") {
             result = inv as number;

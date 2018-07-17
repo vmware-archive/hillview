@@ -21,7 +21,7 @@ import {HeatmapSerialization, IViewSerialization} from "../datasetView";
 import {DistinctStrings} from "../distinctStrings";
 import {
     BasicColStats, CombineOperators, FilterDescription, HeatMap,
-    Histogram2DArgs, IColumnDescription, isNumeric, RecordOrder, RemoteObjectId,
+    Histogram2DArgs, IColumnDescription, kindIsNumeric, RecordOrder, RemoteObjectId,
 } from "../javaBridge";
 import { Receiver } from "../rpc";
 import {SchemaClass} from "../schemaClass";
@@ -187,7 +187,7 @@ export class HeatmapView extends BigTableView {
         }
 
         // TODO: this should go away
-        if (!isNumeric(xData.description.kind) || !isNumeric(yData.description.kind)) {
+        if (!kindIsNumeric(xData.description.kind) || !kindIsNumeric(yData.description.kind)) {
             this.viewMenu.enable("group by", false);
         }
 

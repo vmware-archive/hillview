@@ -17,24 +17,12 @@
 
 package org.hillview.sketches;
 
-import org.hillview.table.api.IColumn;
+import org.hillview.dataset.api.IJson;
 
 import java.io.Serializable;
 
-/**
- * A description of the buckets used to compute a histogram.
- */
-public interface IHistogramBuckets extends Serializable {
-    /**
-     * Number of buckets; must be greater than 0.
-     */
-    int getNumOfBuckets();
-
-    /**
-     * @param column Column holding the data.
-     * @param rowIndex  Index of the row in the column.
-     * @return the index of the bucket in which the item should be placed.
-     * If the value is out of the range of buckets this returns -1.
-     */
-    int indexOf(IColumn column, int rowIndex);
+public abstract class HistogramBase implements Serializable, IJson {
+    protected long[] buckets = new long[0];
+    protected long missingData;
+    protected long outOfRange;
 }

@@ -22,6 +22,7 @@ import org.hillview.table.api.IColumn;
 
 /**
  * Buckets for computing a histogram of data that can be converted to a double.
+ * The last bucket is right-inclusive.
  */
 public class DoubleHistogramBuckets implements IHistogramBuckets {
     private final double minValue;

@@ -18,8 +18,8 @@
 import {drag as d3drag} from "d3-drag";
 import {mouse as d3mouse, select as d3select} from "d3-selection";
 import {
-    BasicColStats, CategoricalValues, ColumnAndRange, CombineOperators, HeatMap, Histogram2DArgs,
-    RemoteObjectId, TableSummary,
+    BasicColStats, CategoricalValues, ColumnAndRange, CombineOperators, HeatMap,
+    Histogram2DArgs, RemoteObjectId, TableSummary,
 } from "../javaBridge";
 import {OnCompleteReceiver, Receiver, RpcRequest} from "../rpc";
 import {SchemaClass} from "../schemaClass";
@@ -236,12 +236,14 @@ class LampView extends BigTableView {
             max: this.maxX,
             columnName: this.lampColNames[0],
             bucketBoundaries: null,
+            onStrings: false
         };
         const yColAndRange: ColumnAndRange = {
             min: this.minY,
             max: this.maxY,
             columnName: this.lampColNames[1],
             bucketBoundaries: null,
+            onStrings: false
         };
         const arg: Histogram2DArgs = {
             first: xColAndRange,

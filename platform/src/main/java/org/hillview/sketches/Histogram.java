@@ -18,15 +18,12 @@
 package org.hillview.sketches;
 
 import org.hillview.table.api.*;
-import java.io.Serializable;
 
 /**
  * One dimensional histogram.
  */
-public class Histogram implements Serializable {
-    private final long[] buckets;
-    private long missingData;
-    private long outOfRange;
+@Deprecated
+public class Histogram extends HistogramBase {
     private final IBucketsDescription bucketDescription;
 
     public Histogram(final IBucketsDescription bucketDescription) {

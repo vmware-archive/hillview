@@ -17,7 +17,7 @@
 
 package org.hillview.test;
 
-import org.hillview.sketches.StringBucketsDescription;
+import org.hillview.sketches.StringHistogramBuckets;
 import org.hillview.sketches.BucketsDescriptionEqSize;
 import org.junit.Test;
 
@@ -43,8 +43,8 @@ public class BucketsDescriptionTest extends BaseTest {
     @Test
     public void testGeneric1D() {
         String[] boundaries = { "Apple", "Bad", "China", "Rome", "Zetta" };
-        StringBucketsDescription b = new StringBucketsDescription(boundaries);
-        assertEquals(b.getNumOfBuckets(), 4);
+        StringHistogramBuckets b = new StringHistogramBuckets(boundaries);
+        assertEquals(b.getNumOfBuckets(), 5);
         assertEquals(b.indexOf("Aardwark"), -1);
         assertEquals(b.indexOf("Apple"), 0);
         assertEquals(b.indexOf("Away"), 1);

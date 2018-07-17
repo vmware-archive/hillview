@@ -18,8 +18,8 @@
 import {DatasetView, IViewSerialization, TableSerialization} from "../datasetView";
 import {
     asContentsKind, ColumnSortOrientation, CombineOperators, ComparisonFilterDescription,
-    ContentsKind, FindResult, Histogram, IColumnDescription, NextKList,
-    RecordOrder, RemoteObjectId, RowSnapshot, Schema, TableSummary,
+    ContentsKind, FindResult, IColumnDescription, kindIsNumeric, kindIsString,
+    NextKList, RecordOrder, RemoteObjectId, RowSnapshot, Schema, TableSummary
 } from "../javaBridge";
 import {OnCompleteReceiver, Receiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
@@ -896,11 +896,11 @@ export class TableView extends TSViewBase implements IScrollTarget {
     public static convert(val: any, kind: ContentsKind): string {
         if (val == null)
             return missingHtml;
-        if (kind === "Integer" || kind === "Double")
+        if (kindIsNumeric(kind))
             return String(val);
         else if (kind === "Date")
             return formatDate(Converters.dateFromDouble(val as number));
-        else if (kind === "Category" || kind === "String" || kind === "Json")
+        else if (kindIsString(kind))
             return val as string;
         else
             return val.toString();  // TODO
@@ -936,7 +936,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
             cell = trow.insertCell(i + 2);
             cell.classList.add(this.columnClass(cd.name));
             let align = "right";
-            if (cd.kind === "Category" || cd.kind === "String")
+            if (kindIsString(cd.kind))
                 align = "left";
             cell.style.textAlign = align;
 

@@ -16,7 +16,7 @@
  */
 
 import {line as d3line} from "d3-shape";
-import {Histogram} from "../javaBridge";
+import {HistogramBase} from "../javaBridge";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 
@@ -24,25 +24,36 @@ import {PlottingSurface} from "./plottingSurface";
  * A CDFPlot draws a CDF curve on a PlottingSurface.
  */
 export class CDFPlot extends Plot {
-    protected cdf: Histogram;
+    protected cdf: HistogramBase;
     protected cdfData: number[];
     protected max: number;
+    // True if we need to adjust for the range of the data
+    // for discrete data.  When data is discrete the range contains
+    // two extra half-intervals.
+    protected adjust: boolean;
 
     public constructor(protected plottingSurface: PlottingSurface) {
         super(plottingSurface);
     }
 
-    public setData(cdf: Histogram): void {
+    public setData(cdf: HistogramBase, adjust: boolean): void {
         this.cdf = cdf;
+        this.adjust = adjust;
         this.cdfData = [];
         let point = 0;
+        if (adjust) {
+            this.cdfData.push(point);
+        }
         for (const bucket of cdf.buckets) {
-            // yes, each point is inserted twice.
+            // each point is inserted twice.
             this.cdfData.push(point);
             point += bucket;
             this.cdfData.push(point);
         }
         this.max = point;
+        if (adjust) {
+            this.cdfData.push(point);
+        }
         if (this.max === 0)
             // To prevent division by zero below.  It won't matter anyway
             this.max = 1;
@@ -55,10 +66,25 @@ export class CDFPlot extends Plot {
         // as the screen width.
         const chartWidth = this.getChartWidth();
         const chartHeight = this.getChartHeight();
+        const bucketWidth = this.adjust ?
+            2 * chartWidth / (this.cdfData.length - 2) :
+            2 * chartWidth / this.cdfData.length;
         const cdfLine = d3line<number>()
             .x((d, i) => {
-                const index = Math.floor(i / 2); // two points for each data point, for a zig-zag
-                return index * 2 * chartWidth / this.cdfData.length;
+                if (this.adjust) {
+                    const index = Math.floor((i + 1) / 2);
+                    let x = index * bucketWidth;
+                    // If adjusting the first and last buckets are half-width
+                    if (index > 0)
+                        x -= bucketWidth / 2;
+                    if (i === this.cdfData.length - 1)
+                        x -= bucketWidth / 2;
+                    return x;
+                } else {
+                    // two points for each data point, for a zig-zag
+                    const index = Math.floor(i / 2);
+                    return index * bucketWidth;
+                }
             })
             .y((d) => chartHeight - d * chartHeight / this.max);
 
