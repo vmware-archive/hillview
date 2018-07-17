@@ -38,7 +38,6 @@ public class SampleDistinctElementsSketch implements ISketch<ITable, MinKSet<Str
         LongHashFunction hash = LongHashFunction.xx(this.seed);
         @Nullable String minString = null;
         @Nullable String maxString = null;
-        long numMissing = 0;
         final IRowIterator myIter = data.getMembershipSet().getIterator();
         MinKRows mkRows = new MinKRows(this.maxSize);
         int currRow = myIter.getNextRow();
@@ -84,6 +83,10 @@ public class SampleDistinctElementsSketch implements ISketch<ITable, MinKSet<Str
     public MinKSet<String> add(@Nullable MinKSet<String> left, @Nullable MinKSet<String> right) {
         Long2ObjectRBTreeMap<String> data = new Long2ObjectRBTreeMap<>();
         String minString, maxString;
+        if (left == null)
+            return right;
+        if (right == null)
+            return left;
         if (left.min == null) {
             minString = right.min;
             maxString = right.max;
