@@ -9,9 +9,10 @@ import javax.annotation.Nullable;
 import java.util.Comparator;
 
 /**
- * This sketch produces a uniformly random sample of k distinct values from a column (assuming truly
- * random hashing). The values are sampled from the set of distinct values in that column. Missing
- * values are ignored.
+ * This sketch produces a uniformly random sample of maxSize distinct values from a column (assuming
+ * truly random hashing). The values are sampled from the set of distinct values in that column.
+ * Missing values are ignored. IF there are fewer than msxSize distinct values, then all of them are
+ * returned.
  */
 public class SampleDistinctElementsSketch implements ISketch<ITable, MinKSet<String>> {
     private final String colName;
@@ -37,6 +38,7 @@ public class SampleDistinctElementsSketch implements ISketch<ITable, MinKSet<Str
         LongHashFunction hash = LongHashFunction.xx(this.seed);
         @Nullable String minString = null;
         @Nullable String maxString = null;
+        long numMissing = 0;
         final IRowIterator myIter = data.getMembershipSet().getIterator();
         MinKRows mkRows = new MinKRows(this.maxSize);
         int currRow = myIter.getNextRow();
@@ -44,10 +46,15 @@ public class SampleDistinctElementsSketch implements ISketch<ITable, MinKSet<Str
             if (!col.isMissing(currRow)) {
                 mkRows.push(col.hashCode64(currRow, hash), currRow);
                 String thisString = col.getString(currRow);
-                if (minString.compareTo(thisString) > 0)
+                if (minString == null) {
                     minString = thisString;
-                if (maxString.compareTo(thisString) < 0)
                     maxString = thisString;
+                } else {
+                    if (minString.compareTo(thisString) > 0)
+                        minString = thisString;
+                    if (maxString.compareTo(thisString) < 0)
+                        maxString = thisString;
+                }
             }
             currRow = myIter.getNextRow();
         }
@@ -59,7 +66,7 @@ public class SampleDistinctElementsSketch implements ISketch<ITable, MinKSet<Str
         Long2ObjectRBTreeMap<String> data = new Long2ObjectRBTreeMap<String>();
         for (long hashKey: mkRows.treeMap.keySet())
             data.put(hashKey, col.getString(mkRows.treeMap.get(hashKey)));
-        return new MinKSet<String>(this.maxSize, data, Comparator.comparing(String::toString),
+        return new MinKSet<String>(this.maxSize, data, Comparator.<String>naturalOrder(),
                 minString, maxString);
     }
 
