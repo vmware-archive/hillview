@@ -23,7 +23,7 @@ import javax.annotation.Nullable;
 
 public interface IDoubleColumn extends IColumn {
     @Override
-    default double asDouble(final int rowIndex, final IStringConverter unused) {
+    default double asDouble(final int rowIndex) {
         assert !this.isMissing(rowIndex);
         return this.getDouble(rowIndex);
     }

@@ -25,7 +25,6 @@ import org.jblas.DoubleMatrix;
 import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * This class computes the correlations between different columns in the table.
@@ -63,9 +62,7 @@ public class PCACorrelationSketch implements ISketch<ITable, CorrMatrix> {
         if (this.samplingRate >= 1)
             table = data;
         else {
-            List<ColumnAndConverterDescription> ccds = ColumnAndConverterDescription.create(
-                    this.colNames);
-            data.getLoadedColumns(ccds);
+            data.getLoadedColumns(this.colNames);
             IMembershipSet mm = data.getMembershipSet().sample(this.samplingRate, this.seed);
             table = data.compress(mm);
         }

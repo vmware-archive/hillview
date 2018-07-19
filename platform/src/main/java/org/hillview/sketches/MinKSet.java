@@ -55,6 +55,12 @@ public class MinKSet<T> implements Serializable {
      * of buckets returned might be smaller.
      */
     public JsonList<T> getBoundaries(int maxBuckets) {
+        if (this.min == null) {
+            // No non-null values
+            JsonList <T> boundaries = new JsonList<T>(1);
+            boundaries.add(null);
+            return boundaries;
+        }
         List<T> samples = this.getSamples();
         samples.remove(this.min);
         samples.remove(this.max);
@@ -69,7 +75,8 @@ public class MinKSet<T> implements Serializable {
                 boundaries.add(samples.get(j));
             }
         }
-        boundaries.add(this.max);
+        if (!this.min.equals(this.max))
+            boundaries.add(this.max);
         return boundaries;
     }
 }

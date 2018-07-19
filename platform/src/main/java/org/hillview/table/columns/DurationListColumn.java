@@ -30,7 +30,7 @@ import java.time.Duration;
  */
 @SuppressWarnings("EmptyMethod")
 class DurationListColumn extends DoubleListColumn implements IDurationColumn {
-    public DurationListColumn(final ColumnDescription desc) {
+    DurationListColumn(final ColumnDescription desc) {
         super(desc);
         this.checkKind(ContentsKind.Duration);
     }
@@ -68,7 +68,7 @@ class DurationListColumn extends DoubleListColumn implements IDurationColumn {
     }
 
     @Override
-    public double asDouble(int rowIndex, @Nullable IStringConverter unused) {
+    public double asDouble(int rowIndex) {
         return this.getDouble(rowIndex);
     }
 

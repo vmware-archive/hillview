@@ -72,13 +72,13 @@ public class BasicColStats implements IJson {
     public long getPresentCount() { return this.presentCount; }
     public long getRowCount() { return this.presentCount + this.missingCount; }
 
-    void createStats(final ColumnAndConverter column,
+    void createStats(final IColumn column,
                      final IMembershipSet membershipSet) {
         final IRowIterator myIter = membershipSet.getIterator();
         int currRow = myIter.getNextRow();
 
         boolean extractString = false;
-        switch (column.column.getKind()) {
+        switch (column.getKind()) {
             case Category:
             case String:
             case Json:
@@ -88,7 +88,7 @@ public class BasicColStats implements IJson {
                 break;
         }
         while (currRow >= 0) {
-            if (column.column.isMissing(currRow)) {
+            if (column.isMissing(currRow)) {
                 this.missingCount++;
                 currRow = myIter.getNextRow();
                 continue;

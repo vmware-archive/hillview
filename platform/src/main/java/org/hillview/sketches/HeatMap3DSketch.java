@@ -17,8 +17,7 @@
 
 package org.hillview.sketches;
 import org.hillview.dataset.api.ISketch;
-import org.hillview.table.api.ColumnAndConverter;
-import org.hillview.table.api.ColumnAndConverterDescription;
+import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 
 import javax.annotation.Nullable;
@@ -26,21 +25,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class HeatMap3DSketch implements ISketch<ITable, HeatMap3D> {
-    private final IBucketsDescription bucketDescD1;
-    private final IBucketsDescription bucketDescD2;
-    private final IBucketsDescription bucketDescD3;
-    private final ColumnAndConverterDescription col1;
-    private final ColumnAndConverterDescription col2;
-    private final ColumnAndConverterDescription col3;
+    private final IHistogramBuckets bucketDescD1;
+    private final IHistogramBuckets bucketDescD2;
+    private final IHistogramBuckets bucketDescD3;
+    private final String col1;
+    private final String col2;
+    private final String col3;
     private final double rate;
     private final long seed;
 
-    public HeatMap3DSketch(IBucketsDescription bucketDesc1,
-                           IBucketsDescription bucketDesc2,
-                           IBucketsDescription bucketDesc3,
-                           ColumnAndConverterDescription col1,
-                           ColumnAndConverterDescription col2,
-                           ColumnAndConverterDescription col3,
+    public HeatMap3DSketch(IHistogramBuckets bucketDesc1,
+                           IHistogramBuckets bucketDesc2,
+                           IHistogramBuckets bucketDesc3,
+                           String col1,
+                           String col2,
+                           String col3,
                            double rate, long seed) {
         this.bucketDescD1 = bucketDesc1;
         this.bucketDescD2 = bucketDesc2;
@@ -54,11 +53,11 @@ public class HeatMap3DSketch implements ISketch<ITable, HeatMap3D> {
 
     @Override
     public HeatMap3D create(final ITable data) {
-        List<ColumnAndConverterDescription> ccds = new ArrayList<ColumnAndConverterDescription>(3);
-        ccds.add(this.col1);
-        ccds.add(this.col2);
-        ccds.add(this.col3);
-        List<ColumnAndConverter> cols = data.getLoadedColumns(ccds);
+        List<String> colNames = new ArrayList<String>(3);
+        colNames.add(this.col1);
+        colNames.add(this.col2);
+        colNames.add(this.col3);
+        List<IColumn> cols = data.getLoadedColumns(colNames);
         HeatMap3D result = this.getZero();
         result.createHeatMap(cols.get(0), cols.get(1), cols.get(2),
                 data.getMembershipSet(), this.rate, this.seed, true);

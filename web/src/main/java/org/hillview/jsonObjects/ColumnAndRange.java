@@ -18,10 +18,6 @@
 package org.hillview.jsonObjects;
 
 import org.hillview.sketches.*;
-import org.hillview.table.RadixConverter;
-import org.hillview.table.SortedStringsConverterDescription;
-import org.hillview.table.api.ColumnAndConverterDescription;
-import org.hillview.table.api.IStringConverterDescription;
 
 import javax.annotation.Nullable;
 import java.io.Serializable;
@@ -35,30 +31,13 @@ public class ColumnAndRange implements Serializable {
     @Nullable
     public String[] bucketBoundaries;  // only used for Categorical columns
 
-    public ColumnAndConverterDescription getDescription() {
-        IStringConverterDescription converter;
-        if (this.bucketBoundaries != null) {
-            converter = new SortedStringsConverterDescription(
-                    this.bucketBoundaries, (int)Math.ceil(this.min), (int) Math.floor(this.max));
-        } else {
-            converter = new RadixConverter();
-        }
-        return new ColumnAndConverterDescription(this.columnName, converter);
-    }
-
-    public IBucketsDescription getBuckets(int count) {
-        if (this.min >= this.max)
-            count = 1;
-        return new BucketsDescriptionEqSize(this.min, this.max, count);
-    }
-
-    public IHistogramBuckets getNewBuckets(int count) {
-        if (this.min >= this.max)
-            count = 1;
+    public IHistogramBuckets getBuckets(int count) {
         if (this.onStrings) {
             assert this.bucketBoundaries != null;
             return new StringHistogramBuckets(this.bucketBoundaries);
         }
+        if (this.min >= this.max)
+            count = 1;
         return new DoubleHistogramBuckets(this.min, this.max, count);
     }
 }

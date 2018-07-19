@@ -192,7 +192,8 @@ export abstract class TSViewBase extends BigTableView {
             const size = PlottingSurface.getDefaultChartSize(this.page);
             const rr = this.createSampleDistinctRequest(cds[0].name, size.width);
             rr.invoke(new StringBucketsObserver(this, this.page, rr, this.rowCount, this.schema,
-                { exact: false, heatmap: false, relative: false, reusePage: false }, cds[0]));
+                { exact: false, heatmap: false, relative: false, reusePage: false }, cds[0],
+                size.width));
         } else {
             const rr = this.dataset.createGetCategoryRequest(this.page, cds);
             rr.invoke(new ChartObserver(this, this.page, rr, null,
@@ -521,6 +522,7 @@ export interface ChartOptions {
     reusePage: boolean; // draw the chart in the supplied page
 }
 
+// TODO: Deprecate this class
 export class ChartObserver extends OnCompleteReceiver<DistinctStrings[]> {
     constructor(
         protected remoteObject: TableTargetAPI,

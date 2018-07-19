@@ -67,19 +67,18 @@ public class RandomSamplingSketch implements ISketch<ITable, SmallTable> {
 
     @Override
     public SmallTable create(ITable data) {
-        List<ColumnAndConverterDescription> ccds;
+        List<IColumn> cols;
         if (this.columnNames.length != 0)
-            ccds = ColumnAndConverterDescription.create(this.columnNames);
+            cols = data.getLoadedColumns(this.columnNames);
         else
-            ccds = ColumnAndConverterDescription.create(data.getSchema().getColumnNames());
-        List<ColumnAndConverter> cols = data.getLoadedColumns(ccds);
+            cols = data.getLoadedColumns(data.getSchema().getColumnNames());
 
         IMembershipSet sample;
         if (this.allowMissing) {
             sample = data.getMembershipSet().sample(this.rate, this.seed);
         } else {
             sample = data.getMembershipSet().filter((row) -> {
-                for (ColumnAndConverter column : cols) {
+                for (IColumn column : cols) {
                     if (column.isMissing(row))
                         return false;
                 }

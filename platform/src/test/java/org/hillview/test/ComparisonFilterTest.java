@@ -19,7 +19,7 @@ package org.hillview.test;
 
 import org.hillview.maps.FilterMap;
 import org.hillview.table.Table;
-import org.hillview.table.api.ColumnAndConverter;
+import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ITable;
 import org.hillview.table.filters.ComparisonFilterDescription;
@@ -36,7 +36,7 @@ public class ComparisonFilterTest extends BaseTest {
         FilterMap filterMap = new FilterMap(filter);
         ITable result = filterMap.apply(table);
 
-        ColumnAndConverter col = result.getLoadedColumn("Name");
+        IColumn col = result.getLoadedColumn("Name");
         IRowIterator it = result.getMembershipSet().getIterator();
         int row = it.getNextRow();
         while (row != -1) {
@@ -115,7 +115,7 @@ public class ComparisonFilterTest extends BaseTest {
         FilterMap filterMap = new FilterMap(filter);
         ITable result = filterMap.apply(table);
 
-        ColumnAndConverter col = result.getLoadedColumn("Age");
+        IColumn col = result.getLoadedColumn("Age");
         IRowIterator it = result.getMembershipSet().getIterator();
         int row = it.getNextRow();
         while (row != -1) {

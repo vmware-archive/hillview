@@ -31,6 +31,7 @@ export class CDFPlot extends Plot {
     // for discrete data.  When data is discrete the range contains
     // two extra half-intervals.
     protected adjust: boolean;
+    protected bucketWidth: number;
 
     public constructor(protected plottingSurface: PlottingSurface) {
         super(plottingSurface);
@@ -66,24 +67,24 @@ export class CDFPlot extends Plot {
         // as the screen width.
         const chartWidth = this.getChartWidth();
         const chartHeight = this.getChartHeight();
-        const bucketWidth = this.adjust ?
+        this.bucketWidth = this.adjust ?
             2 * chartWidth / (this.cdfData.length - 2) :
             2 * chartWidth / this.cdfData.length;
         const cdfLine = d3line<number>()
             .x((d, i) => {
                 if (this.adjust) {
                     const index = Math.floor((i + 1) / 2);
-                    let x = index * bucketWidth;
+                    let x = index * this.bucketWidth;
                     // If adjusting the first and last buckets are half-width
                     if (index > 0)
-                        x -= bucketWidth / 2;
+                        x -= this.bucketWidth / 2;
                     if (i === this.cdfData.length - 1)
-                        x -= bucketWidth / 2;
+                        x -= this.bucketWidth / 2;
                     return x;
                 } else {
                     // two points for each data point, for a zig-zag
                     const index = Math.floor(i / 2);
-                    return index * bucketWidth;
+                    return index * this.bucketWidth;
                 }
             })
             .y((d) => chartHeight - d * chartHeight / this.max);
@@ -103,7 +104,9 @@ export class CDFPlot extends Plot {
      */
     public getY(x: number): number {
         // determine mouse position on cdf curve
-        const cdfX = x * this.cdf.buckets.length / this.getChartWidth();
+        if (this.adjust)
+            x += this.bucketWidth / 2;
+        const cdfX = x / this.bucketWidth;
         if (cdfX < 0) {
             return 0;
         } else if (cdfX >= this.cdf.buckets.length) {

@@ -17,42 +17,29 @@
 
 package org.hillview.table.filters;
 
-import org.hillview.table.NoStringConverter;
-import org.hillview.table.SortedStringsConverterDescription;
 import org.hillview.table.api.*;
 
-import javax.annotation.Nullable;
-
 @SuppressWarnings("CanBeFinal")
-public class RangeFilterDescription implements ITableFilterDescription {
+public class DoubleRangeFilterDescription implements ITableFilterDescription {
     private String columnName = "";
     private double min;
     private double max;
     private boolean complement;
-    @Nullable
-    private String[] bucketBoundaries;  // only used for Categorical columns
 
     @Override
     public ITableFilter getFilter(ITable table) {
-        IStringConverterDescription conv = NoStringConverter.getDescriptionInstance();
-        if (this.bucketBoundaries != null) {
-            conv = new SortedStringsConverterDescription(
-                    this.bucketBoundaries, (int) Math.ceil(this.min), (int) Math.floor(this.max));
-        }
-        ColumnAndConverterDescription ccd = new ColumnAndConverterDescription(
-                this.columnName, conv);
-        return new RangeFilter(table.getLoadedColumn(ccd));
+        return new RangeFilter(table.getLoadedColumn(this.columnName));
     }
 
     public class RangeFilter implements ITableFilter {
-        final ColumnAndConverter column;
+        final IColumn column;
 
-        RangeFilter(ColumnAndConverter column) {
+        RangeFilter(IColumn column) {
             this.column = column;
         }
 
         public boolean test(int rowIndex) {
-            RangeFilterDescription desc = RangeFilterDescription.this;
+            DoubleRangeFilterDescription desc = DoubleRangeFilterDescription.this;
             boolean result;
             if (this.column.isMissing(rowIndex))
                 result = false;
@@ -66,8 +53,8 @@ public class RangeFilterDescription implements ITableFilterDescription {
         }
 
         public String toString() {
-            return "Rangefilter[" + RangeFilterDescription.this.min + "," +
-                    RangeFilterDescription.this.max + "]";
+            return "Rangefilter[" + DoubleRangeFilterDescription.this.min + "," +
+                    DoubleRangeFilterDescription.this.max + "]";
         }
     }
 }

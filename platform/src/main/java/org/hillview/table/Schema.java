@@ -19,7 +19,6 @@ package org.hillview.table;
 
 import com.google.gson.*;
 import org.hillview.dataset.api.IJson;
-import org.hillview.table.api.ColumnAndConverterDescription;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IAppendableColumn;
 import org.hillview.table.columns.BaseListColumn;
@@ -281,17 +280,5 @@ public final class Schema
             cols[index++] = col;
         }
         return cols;
-    }
-
-    /**
-     * Create a ColumnAndConverter description for each column in the schema.
-     * The string converters will all be null.
-     */
-    public List<ColumnAndConverterDescription> getColumnAndConverterDescriptions() {
-        List<ColumnAndConverterDescription> result =
-                new ArrayList<ColumnAndConverterDescription>(this.getColumnCount());
-        for (ColumnDescription desc: this.columns.values())
-            result.add(new ColumnAndConverterDescription(desc.name));
-        return result;
     }
 }

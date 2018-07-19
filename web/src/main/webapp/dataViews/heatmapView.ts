@@ -567,17 +567,19 @@ export class HeatmapView extends BigTableView {
         const xRange: FilterDescription = {
             min: xMin,
             max: xMax,
+            minString: null, // TODO
+            maxString: null,
             kind: this.currentData.xData.description.kind,
             columnName: this.currentData.xData.description.name,
-            bucketBoundaries: xBoundaries,
             complement: d3event.sourceEvent.ctrlKey,
         };
         const yRange: FilterDescription = {
             min: yMin,
             max: yMax,
+            minString: null, // TODO
+            maxString: null,
             kind: this.currentData.yData.description.kind,
             columnName: this.currentData.yData.description.name,
-            bucketBoundaries: yBoundaries,
             complement: d3event.sourceEvent.ctrlKey,
         };
         const rr = this.createFilter2DRequest(xRange, yRange);

@@ -27,22 +27,23 @@ public class HeatMap implements Serializable, IJson {
     private final long[][] buckets;
     private long missingData; // number of items missing on both columns
     private long outOfRange;
-    private final IBucketsDescription bucketDescX;
-    private final IBucketsDescription bucketDescY;
+    private final IHistogramBuckets bucketDescX;
+    private final IHistogramBuckets bucketDescY;
     private Histogram histogramMissingX; // dim1 is missing, dim2 exists
     private Histogram histogramMissingY; // dim2 is missing, dim1 exists
     private long totalSize;
 
-    public HeatMap(final IBucketsDescription xBuckets,
-                   final IBucketsDescription yBuckets) {
+    public HeatMap(final IHistogramBuckets xBuckets,
+                   final IHistogramBuckets yBuckets) {
         this.bucketDescX = xBuckets;
         this.bucketDescY = yBuckets;
-        this.buckets = new long[xBuckets.getNumOfBuckets()][yBuckets.getNumOfBuckets()]; // Automatically initialized to 0
+        this.buckets = new long[xBuckets.getNumOfBuckets()][yBuckets.getNumOfBuckets()];
+        // Automatically initialized to 0
         this.histogramMissingX = new Histogram(this.bucketDescY);
         this.histogramMissingY = new Histogram(this.bucketDescX);
     }
 
-    public void createHeatMap(final ColumnAndConverter columnD1, final ColumnAndConverter columnD2,
+    public void createHeatMap(final IColumn columnD1, final IColumn columnD2,
                               final IMembershipSet membershipSet, double samplingRate,
                               final long seed, final boolean enforceRate) {
         final ISampledRowIterator myIter = membershipSet.getIteratorOverSample(
@@ -54,21 +55,17 @@ public class HeatMap implements Serializable, IJson {
             if (isMissingD1 || isMissingD2) {
                 if (!isMissingD1) {
                     // only column 2 is missing
-                    double val1 = columnD1.asDouble(currRow);
-                    this.histogramMissingY.addValue(val1);
+                    this.histogramMissingY.add(columnD1, currRow);
                 } else if (!isMissingD2) {
                     // only column 1 is missing
-                    double val2 = columnD2.asDouble(currRow);
-                    this.histogramMissingX.addValue(val2);
+                    this.histogramMissingX.add(columnD2, currRow);
                 } else {
                     // both are missing
                     this.missingData++;
                 }
             } else {
-                double val1 = columnD1.asDouble(currRow);
-                double val2 = columnD2.asDouble(currRow);
-                int index1 = this.bucketDescX.indexOf(val1);
-                int index2 = this.bucketDescY.indexOf(val2);
+                int index1 = this.bucketDescX.indexOf(columnD1, currRow);
+                int index2 = this.bucketDescY.indexOf(columnD2, currRow);
                 if ((index1 >= 0) && (index2 >= 0)) {
                     this.buckets[index1][index2]++;
                     this.totalSize++;

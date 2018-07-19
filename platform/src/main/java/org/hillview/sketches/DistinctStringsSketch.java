@@ -30,6 +30,7 @@ import java.util.List;
  * distinct strings in each such column; this makes sense when columns
  * are categorical.
  */
+@Deprecated
 public class DistinctStringsSketch implements ISketch<ITable, JsonList<DistinctStrings>> {
     private final int maxSize;
     private final String[] colNames;
@@ -42,7 +43,7 @@ public class DistinctStringsSketch implements ISketch<ITable, JsonList<DistinctS
     @Override
     public JsonList<DistinctStrings> zero() {
         JsonList<DistinctStrings> result = new JsonList<DistinctStrings>(this.colNames.length);
-        for (String colName : this.colNames)
+        for (String ignored : this.colNames)
             result.add(new DistinctStrings(this.maxSize));
         return result;
     }
@@ -61,13 +62,11 @@ public class DistinctStringsSketch implements ISketch<ITable, JsonList<DistinctS
 
     @Override
     public JsonList<DistinctStrings> create(final ITable data) {
-        List<ColumnAndConverterDescription> ccd =
-                ColumnAndConverterDescription.create(this.colNames);
-        List<ColumnAndConverter> cols = data.getLoadedColumns(ccd);
+        List<IColumn> cols = data.getLoadedColumns(this.colNames);
         JsonList<DistinctStrings> result = this.getZero();
         for (int i = 0; i < this.colNames.length; i++) {
             final DistinctStrings ri = result.get(i);
-            IColumn col = cols.get(i).column;
+            IColumn col = cols.get(i);
             ri.setColumnSize(col.sizeInRows());
             IRowIterator it = data.getMembershipSet().getIterator();
             int row = it.getNextRow();

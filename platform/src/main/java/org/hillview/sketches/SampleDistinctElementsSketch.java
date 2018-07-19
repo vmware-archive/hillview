@@ -31,7 +31,7 @@ public class SampleDistinctElementsSketch implements ISketch<ITable, MinKSet<Str
      */
     @Override
     public MinKSet<String> create(ITable data) {
-        IColumn col = data.getLoadedColumn(new ColumnAndConverterDescription(this.colName)).column;
+        IColumn col = data.getLoadedColumn(this.colName);
         if (!col.getDescription().kind.isString())
             throw new IllegalArgumentException(
                     "SampleDistinctElementsSketch only supports String-like columns");

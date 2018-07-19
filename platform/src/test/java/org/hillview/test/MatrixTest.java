@@ -59,13 +59,12 @@ public class MatrixTest extends BaseTest {
         List<String> colNames = new ArrayList<String>(2);
         colNames.add("Column0");
         colNames.add("Column1");
-        List<ColumnAndConverterDescription> desc = ColumnAndConverterDescription.create(colNames);
 
         DoubleMatrix mat = BlasConversions.toDoubleMatrix(table, colNames);
         IRowIterator it = table.getRowIterator();
         int row = it.getNextRow();
         int i = 0;
-        List<ColumnAndConverter> cols = table.getLoadedColumns(desc);
+        List<IColumn> cols = table.getLoadedColumns(colNames);
 
         while (row >= 0) {
             for (int j = 0; j < colNames.size(); j++) {

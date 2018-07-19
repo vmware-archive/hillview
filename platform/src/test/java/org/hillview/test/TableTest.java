@@ -48,9 +48,9 @@ public class TableTest extends BaseTest {
                 HashMap<String, String>();
         renameMap.put("Column0", "First");
         ITable tbl = table.renameColumns(renameMap);
-        IColumn col = tbl.getLoadedColumn("First").column;
+        IColumn col = tbl.getLoadedColumn("First");
         Assert.assertNotNull(col);
-        col = tbl.getLoadedColumn("Column1").column;
+        col = tbl.getLoadedColumn("Column1");
         Assert.assertNotNull(col);
     }
 
@@ -61,9 +61,9 @@ public class TableTest extends BaseTest {
                 HashMap<String, String>();
         renameMap.put("Name", "Firstname");
         t = t.renameColumns(renameMap);
-        IColumn col = t.getLoadedColumn("Firstname").column;
+        IColumn col = t.getLoadedColumn("Firstname");
         Assert.assertNotNull(col);
-        col = t.getLoadedColumn("Age").column;
+        col = t.getLoadedColumn("Age");
         Assert.assertNotNull(col);
     }
 

@@ -17,29 +17,26 @@
 
 package org.hillview.sketches;
 import org.hillview.dataset.api.ISketch;
-import org.hillview.table.api.ColumnAndConverter;
-import org.hillview.table.api.ColumnAndConverterDescription;
+import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.List;
 
 public class HeatMapSketch implements ISketch<ITable, HeatMap> {
-    private final IBucketsDescription bucketDescD1;
-    private final IBucketsDescription bucketDescD2;
-    private final ColumnAndConverterDescription col1;
-    private final ColumnAndConverterDescription col2;
+    private final IHistogramBuckets bucketDescD1;
+    private final IHistogramBuckets bucketDescD2;
+    private final String col0;
+    private final String col1;
     private final double rate;
     private final long seed;
 
-    public HeatMapSketch(IBucketsDescription bucketDesc1, IBucketsDescription bucketDesc2,
-                         ColumnAndConverterDescription col1, ColumnAndConverterDescription col2,
+    public HeatMapSketch(IHistogramBuckets bucketDesc1, IHistogramBuckets bucketDesc2,
+                         String col0, String col1,
                          double rate, long seed) {
         this.bucketDescD1 = bucketDesc1;
         this.bucketDescD2 = bucketDesc2;
+        this.col0 = col0;
         this.col1 = col1;
-        this.col2 = col2;
         this.rate = rate;
         this.seed = seed;
     }
@@ -47,12 +44,9 @@ public class HeatMapSketch implements ISketch<ITable, HeatMap> {
     @Override
     public HeatMap create(final ITable data) {
         HeatMap result = this.getZero();
-        List<ColumnAndConverterDescription> ccds = new ArrayList<ColumnAndConverterDescription>(2);
-        ccds.add(this.col1);
-        ccds.add(this.col2);
-        List<ColumnAndConverter> cols = data.getLoadedColumns(ccds);
-        result.createHeatMap(cols.get(0), cols.get(1),
-                data.getMembershipSet(), this.rate, this.seed, false);
+        IColumn c0  = data.getLoadedColumn(this.col0);
+        IColumn c1  = data.getLoadedColumn(this.col1);
+        result.createHeatMap(c0, c1, data.getMembershipSet(), this.rate, this.seed, false);
         return result;
     }
 

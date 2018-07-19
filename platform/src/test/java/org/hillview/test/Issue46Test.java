@@ -17,7 +17,6 @@
 
 package org.hillview.test;
 
-import org.hillview.table.NoStringConverter;
 import org.hillview.table.api.*;
 import org.hillview.utils.TestTables;
 import org.hillview.table.SmallTable;
@@ -38,16 +37,14 @@ public class Issue46Test extends BaseTest {
         IMembershipSet memSet = bigTable.getMembershipSet();
         IRowIterator iter = memSet.getIterator();
         // All seem to work fine
-        System.out.println(" printing the double " + column.asDouble(iter.getNextRow(),
-                                                                     NoStringConverter.getConverterInstance()));
-        System.out.println(" printing the double " + column.asDouble(iter.getNextRow(),
-                                                                     NoStringConverter.getConverterInstance()));
+        System.out.println(" printing the double " + column.asDouble(iter.getNextRow()));
+        System.out.println(" printing the double " + column.asDouble(iter.getNextRow()));
         // Splitting the table
         List<ITable> tabList = TestTables.splitTable(bigTable, 10000);
         // Grabbing the column from  the sub-tables
         ITable subTable = tabList.iterator().next();
 
-        ColumnAndConverter col = subTable.getLoadedColumn(colName);
+        IColumn col = subTable.getLoadedColumn(colName);
         IMembershipSet memSet1 = subTable.getMembershipSet();
         IRowIterator iter1 = memSet1.getIterator();
         Assert.assertNotNull(col.asDouble(iter1.getNextRow()));

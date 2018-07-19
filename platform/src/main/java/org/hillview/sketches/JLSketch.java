@@ -93,9 +93,7 @@ public class JLSketch implements ISketch<ITable, JLProjection>{
                         "integer or double: " + col);
         }
 
-        List<ColumnAndConverterDescription> ccds = ColumnAndConverterDescription.create(this.colNames);
-        List<ColumnAndConverter> cols = data.getLoadedColumns(ccds);
-
+        List<IColumn> cols = data.getLoadedColumns(this.colNames);
         JLProjection jlProj = new JLProjection(this.colNames, this.lowDim);
         Randomness rn = new Randomness(this.seed);
         int i, bit;
@@ -105,7 +103,7 @@ public class JLSketch implements ISketch<ITable, JLProjection>{
         while (i != -1) {
             for (int j = 0; j < this.lowDim; j++) {
                 bit = ((rn.nextInt(2) == 0) ? 1 : -1);
-                for (ColumnAndConverter col: cols) {
+                for (IColumn col: cols) {
                     val = (col.isMissing(i) ? 0 : (col.asDouble(i) * bit));
                     jlProj.update(col.getName(), j, val);
                 }

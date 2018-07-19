@@ -17,15 +17,9 @@
 
 package org.hillview.test;
 
-import org.hillview.dataset.api.IDataSet;
 import org.hillview.maps.FilterMap;
-import org.hillview.sketches.BasicColStatSketch;
-import org.hillview.sketches.BasicColStats;
 import org.hillview.table.*;
-import org.hillview.table.api.ColumnAndConverter;
-import org.hillview.table.api.ColumnAndConverterDescription;
-import org.hillview.table.api.IRowIterator;
-import org.hillview.table.api.ITable;
+import org.hillview.table.api.*;
 import org.hillview.table.filters.EqualityFilterDescription;
 import org.hillview.utils.TestTables;
 import org.junit.Assert;
@@ -45,7 +39,7 @@ public class EqualityFilterTest extends BaseTest {
         // Assert number of rows are as expected
         Assert.assertEquals(1, result.getNumOfRows());
 
-        ColumnAndConverter col = result.getLoadedColumn("Name");
+        IColumn col = result.getLoadedColumn("Name");
         // Make sure the rows are correct
         IRowIterator it = result.getMembershipSet().getIterator();
         int row = it.getNextRow();
@@ -109,7 +103,7 @@ public class EqualityFilterTest extends BaseTest {
 
         // Assert that the number of occurrences is correct.
         Assert.assertEquals(count, result.getNumOfRows());
-        ColumnAndConverter col = result.getLoadedColumn("Name");
+        IColumn col = result.getLoadedColumn("Name");
 
         // Assert that the correct rows are filtered. (They should all have the same name.)
         IRowIterator it = result.getMembershipSet().getIterator();
@@ -118,34 +112,5 @@ public class EqualityFilterTest extends BaseTest {
             Assert.assertEquals(name, col.getString(row));
             row = it.getNextRow();
         }
-    }
-
-    @Test
-    public void testStringDataset() {
-        // Make a quite large ITable
-        int bigSize = 10000;
-        int count = 42;
-        String[] possibleNames = {"John", "Robert", "Ed", "Sam", "Ned", "Jaime", "Rickard"};
-        String name = "Varys";
-        ITable bigTable = TestTables.testLargeStringTable(bigSize, possibleNames, count, "Varys");
-
-        // Convert it to an IDataset
-        IDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize / 10);
-
-        // Make the filter map
-        EqualityFilterDescription equalityFilter = new EqualityFilterDescription("Name", name);
-        FilterMap filterMap = new FilterMap(equalityFilter);
-
-        // Apply the map to the IDataset.
-        IDataSet<ITable> result = all.blockingMap(filterMap);
-
-        // Count the number of rows in the resulting IDataset with a BasicColStatsSketch
-        SortedStringsConverterDescription converter = new SortedStringsConverterDescription(possibleNames, 0, 50);
-        BasicColStatSketch b = new BasicColStatSketch(
-                new ColumnAndConverterDescription("Name", converter), 0);
-        BasicColStats bcs = result.blockingSketch(b);
-
-        // The sketch should have counted 'count' 'name's in the IDataset.
-        Assert.assertEquals(count, bcs.getRowCount());
     }
 }

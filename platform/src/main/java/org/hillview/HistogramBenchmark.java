@@ -7,12 +7,9 @@ import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.remoting.HillviewServer;
-import org.hillview.sketches.BucketsDescriptionEqSize;
-import org.hillview.sketches.Histogram;
-import org.hillview.sketches.HistogramSketch;
+import org.hillview.sketches.*;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Table;
-import org.hillview.table.api.ColumnAndConverterDescription;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
@@ -110,10 +107,10 @@ class HistogramBenchmark {
         final int colSize = 100 * mega / datasetScalingParameter;
         final DoubleArrayColumn col = generateDoubleArray(colSize, 100);
 
-        BucketsDescriptionEqSize buckDes = new BucketsDescriptionEqSize(0, 100, bucketNum);
+        IHistogramBuckets buckDes = new DoubleHistogramBuckets(0, 100, bucketNum);
         ITable table = createTable(colSize, col);
         ISketch<ITable, Histogram> sk = new HistogramSketch(
-                        buckDes, new ColumnAndConverterDescription(col.getName()), rateParameter, 0);
+                        buckDes, col.getName(), rateParameter, 0);
 
         if (args[0].equals("noseparatethread")) {
             final IDataSet<ITable> ds = new LocalDataSet<ITable>(table, false);

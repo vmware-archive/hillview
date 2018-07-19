@@ -163,6 +163,7 @@ export interface ColumnSortOrientation {
     isAscending: boolean;
 }
 
+// TODO: Deprecate
 export class CategoricalValues {
     constructor(public columnName: string,
                 public allNames?: string[]) {}
@@ -172,6 +173,7 @@ export class CategoricalValues {
  * All strings that can appear in a categorical column.
  * Serialization of the DistinctStrings Java class.
  */
+// TODO: Deprecate
 export interface IDistinctStrings {
     uniqueStrings: string[];
     // This may be true if there are too many distinct strings in a column.
@@ -182,22 +184,6 @@ export interface HistogramBase {
     buckets: number[];
     missingData: number;
     outOfRange: number;
-}
-
-export interface NumericColumnStatistics {
-    momentCount: number;
-    min: number;
-    max: number;
-    moments: number[];
-    presentCount: number;
-    missingCount: number;
-}
-
-export interface StringColumnStatistics {
-    min: string;
-    max: string;
-    presentCount: number;
-    missingCount: number;
 }
 
 export interface BasicColStats {
@@ -248,13 +234,16 @@ export interface Histogram3DArgs {
     seed: number;
 }
 
+// This is a union of DoubleRangeFilterDescription
+// and StringRangeFilterDescription.
 export interface FilterDescription {
     min: number;
     max: number;
+    minString: string;
+    maxString: string;
     columnName: string;
     kind: ContentsKind;
     complement: boolean;
-    bucketBoundaries: string[];
 }
 
 export interface HeavyHittersFilterInfo {

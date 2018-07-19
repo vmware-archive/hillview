@@ -52,14 +52,13 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
     public int sizeInRows() { return this.data.length; }
 
     @Override
-    public double asDouble(final int rowIndex, @Nullable final IStringConverter converter) {
+    public double asDouble(final int rowIndex) {
         switch (ObjectArrayColumn.this.description.kind) {
             case Category:
             case Json:
             case String:
-                assert converter != null;
                 String str = this.getString(rowIndex);
-                return converter.asDouble(str);
+                return IStringColumn.stringToDouble(str);
             case Date:
                 Instant date = this.getDate(rowIndex);
                 assert date != null;

@@ -17,7 +17,6 @@
 
 package org.hillview.sketches;
 
-import org.hillview.table.NoStringConverter;
 import org.hillview.table.api.IColumn;
 
 /**
@@ -42,13 +41,17 @@ public class DoubleHistogramBuckets implements IHistogramBuckets {
             this.numOfBuckets = numOfBuckets;
     }
 
-    @Override
-    public int indexOf(IColumn column, int rowIndex) {
-        double item = column.asDouble(rowIndex, NoStringConverter.getConverterInstance());
-        if ((item < this.minValue) || (item > this.maxValue))
+    public int indexOf(double value) {
+        if ((value < this.minValue) || (value > this.maxValue))
             return -1;
         // As overflow can occur when 'item' is very close to 'this.maxValue', clamp the resulting index.
-        return Math.min((int) ((this.numOfBuckets * (item - this.minValue)) / this.range), this.numOfBuckets - 1);
+        return Math.min((int) ((this.numOfBuckets * (value - this.minValue)) / this.range), this.numOfBuckets - 1);
+    }
+
+    @Override
+    public int indexOf(IColumn column, int rowIndex) {
+        double item = column.asDouble(rowIndex);
+        return this.indexOf(item);
     }
 
     @Override

@@ -627,18 +627,34 @@ export class Histogram2DView extends HistogramViewBase {
             return;
         }
 
-        if (selectedAxis.distinctStrings != null)
-            boundaries = selectedAxis.distinctStrings.categoriesInRange(min, max, max - min);
-        const filter: FilterDescription = {
-            min,
-            max,
-            kind: selectedAxis.description.kind,
-            columnName: selectedAxis.description.name,
-            bucketBoundaries: boundaries,
-            complement: d3event.sourceEvent.ctrlKey,
-        };
+        let filter: FilterDescription;
+        let rr: RpcRequest<RemoteObjectId>;
+        if (kindIsString(kind)) {
+            filter = {
+                min: 0,
+                max: 0,
+                minString: HistogramViewBase.invert(
+                    xl, this.plot.xScale, kind, selectedAxis.distinctStrings),
+                maxString: HistogramViewBase.invert(
+                    xr, this.plot.xScale, kind, selectedAxis.distinctStrings),
+                kind: selectedAxis.description.kind,
+                columnName: selectedAxis.description.name,
+                complement: d3event.sourceEvent.ctrlKey,
+            };
+            rr = this.createStringFilterRequest(filter);
+        } else {
+            filter = {
+                min: min,
+                max: max,
+                minString: null,
+                maxString: null,
+                kind: selectedAxis.description.kind,
+                columnName: selectedAxis.description.name,
+                complement: d3event.sourceEvent.ctrlKey,
+            };
+            rr = this.createDoubleFilterRequest(filter);
+        }
 
-        const rr = this.createFilterRequest(filter);
         const renderer = new Filter2DReceiver(
             this.currentData.xData.description,
             this.currentData.yData.description,

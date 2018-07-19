@@ -18,7 +18,7 @@
 package org.hillview.test;
 
 import org.hillview.storage.JdbcConnectionInformation;
-import org.hillview.table.api.ColumnAndConverter;
+import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.storage.JdbcDatabase;
 import org.junit.Assert;
@@ -91,12 +91,12 @@ public class JdbcTest extends BaseTest {
         ITable table = this.getTable(conn);
         if (table != null) {
             Assert.assertEquals("Table[4x2844047]", table.toString());
-            ColumnAndConverter col = table.getLoadedColumn("salary");
-            int firstSalary = col.column.getInt(0);
+            IColumn col = table.getLoadedColumn("salary");
+            int firstSalary = col.getInt(0);
             Assert.assertEquals(60117, firstSalary);
 
-            ColumnAndConverter emp = table.getLoadedColumn("emp_no");
-            int empNo = emp.column.getInt(0);
+            IColumn emp = table.getLoadedColumn("emp_no");
+            int empNo = emp.getInt(0);
             Assert.assertEquals(10001, empNo);
         }
     }

@@ -205,8 +205,12 @@ RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<string>("createColumn", c);
     }
 
-    public createFilterRequest(f: FilterDescription): RpcRequest<PartialResult<RemoteObjectId>> {
+    public createDoubleFilterRequest(f: FilterDescription): RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<RemoteObjectId>("filterRange", f);
+    }
+
+    public createStringFilterRequest(f: FilterDescription): RpcRequest<PartialResult<RemoteObjectId>> {
+        return this.createStreamingRpcRequest<RemoteObjectId>("filterStringRange", f);
     }
 
     public createFilter2DRequest(xRange: FilterDescription, yRange: FilterDescription):

@@ -85,14 +85,13 @@ public class OrcFileWriter implements ITableWriter {
             IRowIterator rowIter = table.getMembershipSet().getIterator();
             int nextRow = rowIter.getNextRow();
             int batchSize = batch.getMaxSize();
-            List<ColumnAndConverterDescription> allColumns = table.getSchema().getColumnAndConverterDescriptions();
-            List<ColumnAndConverter> cols = table.getLoadedColumns(allColumns);
+            List<IColumn> cols = table.getLoadedColumns(table.getSchema().getColumnNames());
 
             while (nextRow >= 0) {
                 int outRowNo = batch.size;
                 for (int i = 0; i < batch.cols.length; i++) {
                     ColumnVector cv = batch.cols[i];
-                    IColumn col = cols.get(i).column;
+                    IColumn col = cols.get(i);
                     if (col.isMissing(nextRow)) {
                         cv.noNulls = false;
                         cv.isNull[outRowNo] = true;

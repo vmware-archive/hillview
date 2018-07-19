@@ -110,7 +110,7 @@ public class JavascriptTest {
         IDataSet<ITable> mapped = lds.blockingMap(map);
         ITable outTable = ((LocalDataSet<ITable>)mapped).data;
 
-        ColumnAndConverter dateColumn = outTable.getLoadedColumn("Date");
+        IColumn dateColumn = outTable.getLoadedColumn("Date");
         Instant instant = dateColumn.getDate(0);
         String expectedDate = "1990-01-01";
         DateParsing simple = new DateParsing(expectedDate);

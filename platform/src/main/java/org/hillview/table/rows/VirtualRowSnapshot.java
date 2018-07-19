@@ -68,14 +68,12 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
         this.table = table;
         this.schema = schema;
         this.columns = new HashMap<String, IColumn>();
-        List<ColumnAndConverterDescription> ccds = ColumnAndConverterDescription.create(
-                schema.getColumnNames());
-        List<ColumnAndConverter> cols = table.getLoadedColumns(ccds);
-        for (ColumnAndConverter col: cols) {
+        List<IColumn> cols = table.getLoadedColumns(schema.getColumnNames());
+        for (IColumn col: cols) {
             String nameToUse = col.getName();
             if (columnRenameMap != null && columnRenameMap.containsKey(nameToUse))
                 nameToUse = columnRenameMap.get(nameToUse);
-            this.columns.put(nameToUse, col.column);
+            this.columns.put(nameToUse, col);
         }
     }
 

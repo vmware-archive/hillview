@@ -17,8 +17,8 @@
 
 package org.hillview.test;
 
+import org.hillview.sketches.DoubleHistogramBuckets;
 import org.hillview.sketches.StringHistogramBuckets;
-import org.hillview.sketches.BucketsDescriptionEqSize;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -27,7 +27,7 @@ import static org.junit.Assert.assertEquals;
 public class BucketsDescriptionTest extends BaseTest {
     @Test
     public void testEqSize() {
-        BucketsDescriptionEqSize bdEqSize = new BucketsDescriptionEqSize(0.5, 100.5, 100);
+        DoubleHistogramBuckets bdEqSize = new DoubleHistogramBuckets(0.5, 100.5, 100);
         assertEquals(bdEqSize.getNumOfBuckets(), 100);
         assertEquals(bdEqSize.indexOf(0.5), 0);
         assertEquals(bdEqSize.indexOf(0.6), 0);
@@ -35,9 +35,6 @@ public class BucketsDescriptionTest extends BaseTest {
         assertEquals(bdEqSize.indexOf(100.4), 99);
         assertEquals(bdEqSize.indexOf(70.5), 70);
         assertEquals(bdEqSize.indexOf(30.6), 30);
-        assertEquals(bdEqSize.getLeftBoundary(23), 23.5, .1);
-        assertEquals(bdEqSize.getRightBoundary(23), 24.5, .1);
-        assertEquals(bdEqSize.getRightBoundary(99), 100.5, .1);
     }
 
     @Test

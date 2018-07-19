@@ -68,12 +68,10 @@ public class EqualityFilterDescription implements ITableFilterDescription {
         Pattern regEx;
         @Nullable
         ContentsKind compareKind;
-        private final ColumnAndConverter column;
+        private final IColumn column;
 
         EqualityFilter(ITable table) {
-            ColumnAndConverterDescription ccd = new ColumnAndConverterDescription
-                    (EqualityFilterDescription.this.column);
-            this.column = table.getLoadedColumn(ccd);
+            this.column = table.getLoadedColumn(EqualityFilterDescription.this.column);
             if (EqualityFilterDescription.this.compareValue == null) {
                 this.missing = true;
                 return;
@@ -82,7 +80,7 @@ public class EqualityFilterDescription implements ITableFilterDescription {
                 this.regEx = Pattern.compile(EqualityFilterDescription.this.compareValue);
                 return;
             }
-            this.compareKind = this.column.column.getKind();
+            this.compareKind = this.column.getKind();
             switch (compareKind) {
                 case Category:
                 case String:

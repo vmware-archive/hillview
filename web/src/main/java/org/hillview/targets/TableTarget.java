@@ -127,21 +127,11 @@ public final class TableTarget extends RpcTarget {
     }
 
     @HillviewRpc
+    @Deprecated
     public void uniqueStrings(RpcRequest request, RpcRequestContext context) {
         String[] columnNames = request.parseArgs(String[].class);
         DistinctStringsSketch sk = new DistinctStringsSketch(0, columnNames);
         this.runCompleteSketch(this.table, sk, (e, c)->e, request, context);
-    }
-
-    @Deprecated
-    @HillviewRpc
-    public void histogram(RpcRequest request, RpcRequestContext context) {
-        HistogramArgs info = request.parseArgs(HistogramArgs.class);
-        HistogramSketch histo = info.getSketch(false);
-        HistogramSketch cdf = info.getSketch(true);
-        ConcurrentSketch<ITable, Histogram, Histogram> csk =
-                new ConcurrentSketch<ITable, Histogram, Histogram>(cdf, histo);
-        this.runSketch(this.table, csk, request, context);
     }
 
     class SampleStringsArgs {
@@ -171,7 +161,7 @@ public final class TableTarget extends RpcTarget {
     public void stringHistogram(RpcRequest request, RpcRequestContext context) {
         StringHistogramArgs args = request.parseArgs(StringHistogramArgs.class);
         StringHistogramBuckets buckets = new StringHistogramBuckets(args.boundaries);
-        NewHistogramSketch sk = new NewHistogramSketch(
+        HistogramSketch sk = new HistogramSketch(
                 buckets, args.columnName, args.samplingRate, args.seed);
         this.runSketch(this.table, sk, request, context);
     }
@@ -179,10 +169,10 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     public void newHistogram(RpcRequest request, RpcRequestContext context) {
         HistogramArgs info = request.parseArgs(HistogramArgs.class);
-        NewHistogramSketch histo = info.getNewSketch(false);
-        NewHistogramSketch cdf = info.getNewSketch(true);
-        ConcurrentSketch<ITable, NewHistogram, NewHistogram> csk =
-                new ConcurrentSketch<ITable, NewHistogram, NewHistogram>(cdf, histo);
+        HistogramSketch histo = info.getSketch(false);
+        HistogramSketch cdf = info.getSketch(true);
+        ConcurrentSketch<ITable, Histogram, Histogram> csk =
+                new ConcurrentSketch<ITable, Histogram, Histogram>(cdf, histo);
         this.runSketch(this.table, csk, request, context);
     }
 
@@ -194,8 +184,8 @@ public final class TableTarget extends RpcTarget {
         HeatMapSketch sk = new HeatMapSketch(
                 info.first.getBuckets(info.xBucketCount),
                 info.second.getBuckets(info.yBucketCount),
-                info.first.getDescription(),
-                info.second.getDescription(),
+                info.first.columnName,
+                info.second.columnName,
                 info.samplingRate, info.seed);
         this.runSketch(this.table, sk, request, context);
     }
@@ -208,11 +198,12 @@ public final class TableTarget extends RpcTarget {
         HeatMapSketch sk = new HeatMapSketch(
                 info.first.getBuckets(info.xBucketCount),
                 info.second.getBuckets(info.yBucketCount),
-                info.first.getDescription(),
-                info.second.getDescription(),
+                info.first.columnName,
+                info.second.columnName,
                 info.samplingRate, info.seed);
-        IBucketsDescription buckets = info.first.getBuckets(info.cdfBucketCount);
-        HistogramSketch cdf = new HistogramSketch(buckets, info.first.getDescription(), info.cdfSamplingRate, info.seed);
+        IHistogramBuckets buckets = info.first.getBuckets(info.cdfBucketCount);
+        HistogramSketch cdf = new HistogramSketch(
+                buckets, info.first.columnName, info.cdfSamplingRate, info.seed);
         ConcurrentSketch<ITable, HeatMap, Histogram> csk =
                 new ConcurrentSketch<ITable, HeatMap, Histogram>(sk, cdf);
         this.runSketch(this.table, csk, request, context);
@@ -228,9 +219,9 @@ public final class TableTarget extends RpcTarget {
                 info.first.getBuckets(info.xBucketCount),
                 info.second.getBuckets(info.yBucketCount),
                 info.third.getBuckets(info.zBucketCount),
-                info.first.getDescription(),
-                info.second.getDescription(),
-                info.third.getDescription(),
+                info.first.columnName,
+                info.second.columnName,
+                info.third.columnName,
                 info.samplingRate, info.seed);
         this.runSketch(this.table, sk, request, context);
     }
@@ -241,18 +232,8 @@ public final class TableTarget extends RpcTarget {
         @Nullable
         String[] allNames;
 
-        ColumnAndConverterDescription getColumn() {
-            IStringConverterDescription converter;
-            if (this.allNames != null)
-                converter = new SortedStringsConverterDescription(this.allNames);
-            else
-                // only used if the column has Strings
-                converter = new RadixConverter();
-            return new ColumnAndConverterDescription(this.columnName, converter);
-        }
-
         BasicColStatSketch getBasicStatsSketch() {
-            return new BasicColStatSketch(this.getColumn(), 0);
+            return new BasicColStatSketch(this.columnName, 0);
         }
     }
 
@@ -303,8 +284,15 @@ public final class TableTarget extends RpcTarget {
     }
 
     @HillviewRpc
-    public void filterRange(RpcRequest request, RpcRequestContext context) {
-        RangeFilterDescription filter = request.parseArgs(RangeFilterDescription.class);
+    public void filterDoubleRange(RpcRequest request, RpcRequestContext context) {
+        DoubleRangeFilterDescription filter = request.parseArgs(DoubleRangeFilterDescription.class);
+        FilterMap fm = new FilterMap(filter);
+        this.runMap(this.table, fm, TableTarget::new, request, context);
+    }
+
+    @HillviewRpc
+    public void filterStringRange(RpcRequest request, RpcRequestContext context) {
+        StringRangeFilterDescription filter = request.parseArgs(StringRangeFilterDescription.class);
         FilterMap fm = new FilterMap(filter);
         this.runMap(this.table, fm, TableTarget::new, request, context);
     }

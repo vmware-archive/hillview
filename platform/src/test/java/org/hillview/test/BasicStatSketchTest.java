@@ -19,7 +19,6 @@ package org.hillview.test;
 
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.sketches.*;
-import org.hillview.table.api.ColumnAndConverterDescription;
 import org.hillview.utils.TestTables;
 import org.hillview.table.SmallTable;
 import org.hillview.table.Table;
@@ -34,7 +33,7 @@ public class BasicStatSketchTest extends BaseTest {
         final int tableSize = 1000;
         final Table myTable = TestTables.getRepIntTable(tableSize, numCols);
         final BasicColStatSketch mySketch = new BasicColStatSketch(
-                new ColumnAndConverterDescription(myTable.getSchema().getColumnNames().get(0)),
+                myTable.getSchema().getColumnNames().get(0),
                 0);
         BasicColStats result = mySketch.create(myTable);
         Assert.assertEquals(result.getPresentCount(), 1000);
@@ -49,10 +48,9 @@ public class BasicStatSketchTest extends BaseTest {
 
         IDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize / 10);
         final BasicColStats result = all.blockingSketch(
-                new BasicColStatSketch(new ColumnAndConverterDescription(colName), 1));
+                new BasicColStatSketch(colName, 1));
         final BasicColStatSketch mySketch = new BasicColStatSketch(
-                new ColumnAndConverterDescription(
-                        bigTable.getSchema().getColumnNames().get(0)), 1);
+                bigTable.getSchema().getColumnNames().get(0), 1);
         BasicColStats result1 = mySketch.create(bigTable);
         Assert.assertEquals(result.getMoment(1), result1.getMoment(1), 0.001);
     }
