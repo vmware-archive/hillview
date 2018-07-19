@@ -9,10 +9,11 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 /**
- *  A data structure that computes the minHash of a column of a table. It stores the k column values
+ *  A data structure that computes the minHash of a column of a table.
+ *  It stores the k column values
  *  that hash to the minimum value.
  */
-public class MinKSet<T> implements Serializable {
+public class MinKSet<T> implements Serializable, BucketsInfo {
     private final Comparator<T> comp;
     final int maxSize;
     final Long2ObjectRBTreeMap<T> data;

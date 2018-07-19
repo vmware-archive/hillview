@@ -522,6 +522,16 @@ export interface ChartOptions {
     reusePage: boolean; // draw the chart in the supplied page
 }
 
+export class ChartBuilder {
+    constructor(
+        protected remoteObject: TableTargetAPI,
+        protected page: FullPage,
+        protected rowCount: number,
+        protected schema: SchemaClass,
+        protected columns: IColumnDescription[],
+        protected options: ChartOptions) {}
+}
+
 // TODO: Deprecate this class
 export class ChartObserver extends OnCompleteReceiver<DistinctStrings[]> {
     constructor(
