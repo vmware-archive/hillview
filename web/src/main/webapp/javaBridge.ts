@@ -186,30 +186,30 @@ export interface HistogramBase {
     outOfRange: number;
 }
 
-export interface BasicColStats {
-    momentCount: number;
+export interface DataRange {
+    presentCount: number;
     min: number;
     max: number;
-    moments: number[];
+}
+
+export interface StringBucketBoundaries {
+    boundaries: string[];
     presentCount: number;
+}
+
+export interface BasicColStats extends DataRange {
+    momentCount: number;
+    moments: number[];
     missingCount: number;
 }
 
+// TODO: deprecate
 export interface ColumnAndRange {
     min: number;
     max: number;
     onStrings: boolean;
     columnName: string;
     bucketBoundaries: string[];
-}
-
-export interface HistogramArgs {
-    column: ColumnAndRange;
-    cdfBucketCount: number;
-    bucketCount: number;
-    samplingRate: number;
-    cdfSamplingRate: number;
-    seed: number;
 }
 
 export interface Histogram2DArgs {
@@ -244,6 +244,15 @@ export interface FilterDescription {
     columnName: string;
     kind: ContentsKind;
     complement: boolean;
+}
+
+export interface DoubleHistogramArgs {
+    columnName: string;
+    min: number;
+    max: number;
+    seed: number;
+    cdfSamplingRate: number;
+    cdfBucketCount: number;
 }
 
 export interface HeavyHittersFilterInfo {

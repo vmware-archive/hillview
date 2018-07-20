@@ -15,7 +15,8 @@
     "no-console": false,
     "object-literal-shorthand": false,
     "trailing-comma": false,
-    "no-trailing-whitespace" : false
+    "no-trailing-whitespace" : false,
+    "ordered-imports" : false
   },
   "rulesDirectory": []
 }

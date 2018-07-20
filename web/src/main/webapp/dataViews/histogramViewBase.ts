@@ -18,10 +18,14 @@
 import {mouse as d3mouse} from "d3-selection";
 import {DistinctStrings} from "../distinctStrings";
 import {
-    BasicColStats, ColumnAndRange, ContentsKind, IColumnDescription, kindIsString, RemoteObjectId
+    ColumnAndRange,
+    ContentsKind,
+    DataRange,
+    IColumnDescription,
+    kindIsString,
+    RemoteObjectId
 } from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
-import {BigTableView} from "../tableTarget";
 import {CDFPlot} from "../ui/CDFPlot";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
@@ -30,6 +34,7 @@ import {TextOverlay} from "../ui/textOverlay";
 import {Point, Resolution, SpecialChars, ViewKind} from "../ui/ui";
 import {Converters, formatDate, formatNumber, significantDigits} from "../util";
 import {AnyScale} from "./axisData";
+import {BigTableView} from "../tableTarget";
 
 /**
  * This is a base class that contains code common to various histogram renderings.
@@ -182,14 +187,14 @@ export abstract class HistogramViewBase extends BigTableView {
 
     // Adjust the statistics for integral and categorical data pretending
     // that we are centering the values.
-    public static adjustStats(kind: ContentsKind, stats: BasicColStats): void {
+    public static adjustStats(kind: ContentsKind, stats: DataRange): void {
          if (kind === "Integer" || kind === "Category") {
              stats.min -= .5;
              stats.max += .5;
          }
     }
 
-    public static getRange(stats: BasicColStats, cd: IColumnDescription,
+    public static getRange(stats: DataRange, cd: IColumnDescription,
                            allStrings: DistinctStrings,
                            bucketCount: number): ColumnAndRange {
         const boundaries = (allStrings != null && allStrings.uniqueStrings != null) ?
@@ -203,7 +208,7 @@ export abstract class HistogramViewBase extends BigTableView {
         };
     }
 
-    public static bucketCount(stats: BasicColStats, page: FullPage, columnKind: ContentsKind,
+    public static bucketCount(stats: DataRange, page: FullPage, columnKind: ContentsKind,
                               heatMap: boolean, bottom: boolean): number {
         const size = PlottingSurface.getDefaultChartSize(page);
         const length = Math.floor(bottom ? size.width : size.height);
@@ -234,7 +239,7 @@ export abstract class HistogramViewBase extends BigTableView {
         if (kind === "Integer")
             result = formatNumber(Math.round(inv as number));
         if (kindIsString(kind))
-            result = allStrings.get(inv as number);
+            result = allStrings.get(inv as number, true);
         else if (kind === "Integer" || kind === "Double")
             result = formatNumber(inv as number);
         else if (kind === "Date")

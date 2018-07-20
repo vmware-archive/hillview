@@ -24,10 +24,6 @@ import {IHtmlElement, ViewKind} from "./ui";
  */
 export interface IDataView extends IHtmlElement {
     /**
-     * Set the page where the dataview is displayed.
-     */
-    setPage(page: FullPage): void;
-    /**
      * Get the page where the dataview is displayed.
      */
     getPage(): FullPage;

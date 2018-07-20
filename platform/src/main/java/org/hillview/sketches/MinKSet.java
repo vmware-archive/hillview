@@ -4,7 +4,6 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectRBTreeMap;
 import org.hillview.utils.JsonList;
 
 import javax.annotation.Nullable;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -13,13 +12,12 @@ import java.util.List;
  *  It stores the k column values
  *  that hash to the minimum value.
  */
-public class MinKSet<T> implements Serializable, BucketsInfo {
+public class MinKSet<T> extends BucketsInfo {
     private final Comparator<T> comp;
     final int maxSize;
     final Long2ObjectRBTreeMap<T> data;
     @Nullable public T min;
     @Nullable public T max;
-    public long numPresent;
 
     MinKSet(int maxSize, Comparator<T> comp) {
         this.maxSize = maxSize;
@@ -27,7 +25,7 @@ public class MinKSet<T> implements Serializable, BucketsInfo {
         this.data = new Long2ObjectRBTreeMap<T>();
         this.min = null;
         this.max = null;
-        this.numPresent = 0;
+        this.presentCount = 0;
     }
 
     MinKSet(int maxSize, Long2ObjectRBTreeMap<T> data, Comparator<T> comp,
@@ -37,7 +35,7 @@ public class MinKSet<T> implements Serializable, BucketsInfo {
         this.data = data;
         this.min = min;
         this.max = max;
-        this.numPresent = numPresent;
+        this.presentCount = numPresent;
     }
 
     public List<T> getSamples() {

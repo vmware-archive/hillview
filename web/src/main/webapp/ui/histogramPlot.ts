@@ -91,7 +91,7 @@ export class HistogramPlot extends Plot {
             .attr("y", (d) => this.yScale(d))
             .attr("text-anchor", "middle")
             .attr("dy", (d) => d <= (9 * max / 10) ? "-.25em" : ".75em")
-            .text((d) => HistogramViewBase.boxHeight(d, this.samplingRate, this.axisData.stats.presentCount))
+            .text((d) => HistogramViewBase.boxHeight(d, this.samplingRate, this.axisData.range.presentCount))
             .exit();
 
         this.yAxis = d3axisLeft(this.yScale)

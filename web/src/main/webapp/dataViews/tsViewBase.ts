@@ -27,7 +27,6 @@ import {BigTableView, TableTargetAPI} from "../tableTarget";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
 import {SubMenu, TopMenuItem} from "../ui/menu";
-import {PlottingSurface} from "../ui/plottingSurface";
 import {SpecialChars, ViewKind} from "../ui/ui";
 import {
     cloneToSet, Comparison, Converters, ICancellable, mapToArray, significantDigits,
@@ -35,9 +34,14 @@ import {
 import {Range2DCollector} from "./heatmapView";
 import {HeavyHittersReceiver, HeavyHittersView} from "./heavyHittersView";
 import {Histogram2DDialog} from "./histogram2DView";
-import {HistogramDialog, RangeCollector, StringBucketsObserver} from "./histogramView";
+import {
+    DataRangeCollector,
+    HistogramDialog,
+    StringBucketsObserver,
+} from "./histogramView";
 import {TableOperationCompleted, TableView} from "./tableView";
 import {TrellisPlotDialog, TrellisRangeReceiver} from "./trellisHeatMapView";
+import {PlottingSurface} from "../ui/plottingSurface";
 
 /**
  * A base class for TableView and SchemaView.
@@ -181,6 +185,20 @@ export abstract class TSViewBase extends BigTableView {
         rr.invoke(rec);
     }
 
+    public histogram1D(colName: string, options: HistogramOptions): void {
+        const cd = this.schema.find(colName);
+        if (kindIsString(cd.kind)) {
+            const size = PlottingSurface.getDefaultChartSize(this.page);
+            const rr = this.createSampleDistinctRequest(cd.name, size.width);
+            rr.invoke(new StringBucketsObserver(this, this.page, rr, this.schema,
+                0, options, cd, size.width));
+        } else {
+            const rr = this.createDataRangeRequest(cd.name);
+            rr.invoke(new DataRangeCollector(this, this.schema, 0,
+                this.page, rr, null, cd, options));
+        }
+    }
+
     protected histogramOrHeatmap(columns: string[], heatmap: boolean): void {
         const cds: IColumnDescription[] = [];
         columns.forEach((v) => {
@@ -188,13 +206,11 @@ export abstract class TSViewBase extends BigTableView {
             cds.push(colDesc);
         });
 
-        if (cds.length === 1 && kindIsString(cds[0].kind)) {
-            const size = PlottingSurface.getDefaultChartSize(this.page);
-            const rr = this.createSampleDistinctRequest(cds[0].name, size.width);
-            rr.invoke(new StringBucketsObserver(this, this.page, rr, this.rowCount, this.schema,
-                { exact: false, heatmap: false, relative: false, reusePage: false }, cds[0],
-                size.width));
+        if (cds.length === 1) {
+            this.histogram1D(cds[0].name,
+                { exact: false, reusePage: false });
         } else {
+            // TODO: remove this path
             const rr = this.dataset.createGetCategoryRequest(this.page, cds);
             rr.invoke(new ChartObserver(this, this.page, rr, null,
                 this.rowCount, this.schema,
@@ -515,21 +531,14 @@ class CountReceiver extends OnCompleteReceiver<HLogLog> {
 
 // Using an interface for emulating named arguments
 // otherwise it's hard to remember the order of all these booleans.
-export interface ChartOptions {
-    exact: boolean;    // draw an exact chart (not approximate)
-    heatmap: boolean;  // draw heatmaps, not histograms
-    relative: boolean;  // draw a relative 2D histogram
-    reusePage: boolean; // draw the chart in the supplied page
+export interface HistogramOptions {
+    exact: boolean;  // exact histogram
+    reusePage: boolean;   // reuse the original page
 }
 
-export class ChartBuilder {
-    constructor(
-        protected remoteObject: TableTargetAPI,
-        protected page: FullPage,
-        protected rowCount: number,
-        protected schema: SchemaClass,
-        protected columns: IColumnDescription[],
-        protected options: ChartOptions) {}
+export interface ChartOptions extends HistogramOptions {
+    heatmap: boolean;  // draw heatmaps, not histograms
+    relative: boolean;  // draw a relative 2D histogram
 }
 
 // TODO: Deprecate this class
@@ -549,20 +558,6 @@ export class ChartObserver extends OnCompleteReceiver<DistinctStrings[]> {
         if (value == null)
             return;
         switch (value.length) {
-            case 1: {
-                const col = this.columns[0];
-                const cv = value[0].getCategoricalValues();
-                const rr = this.remoteObject.createRangeRequest(cv);
-                rr.chain(this.operation);
-                if (this.title == null)
-                    this.title = "Histogram " + this.schema.displayName(col.name);
-                rr.invoke(new RangeCollector(
-                    this.title, col,
-                    this.rowCount, this.schema, value[0],
-                    this.page, this.remoteObject, this.options.exact, rr,
-                    this.options.reusePage));
-                break;
-            }
             case 2: {
                 const cv0 = value[0].getCategoricalValues();
                 const cv1 = value[1].getCategoricalValues();

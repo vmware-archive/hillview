@@ -78,8 +78,14 @@ export class DistinctStrings implements IDistinctStrings {
         return boundaries;
     }
 
-    public get(index: number): string {
+    public get(index: number, clamp: boolean): string {
         index = Math.round(index);
+        if (clamp) {
+            if (index < 0)
+                index = 0;
+            if (index >= this.uniqueStrings.length)
+                index = this.uniqueStrings.length - 1;
+        }
         if (index >= 0 && index < this.uniqueStrings.length)
             return this.uniqueStrings[index];
         return null;

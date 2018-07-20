@@ -17,8 +17,16 @@
 
 package org.hillview.sketches;
 
+import java.io.Serializable;
+
 /**
  * This interface is a base class for all sketch results that are
  * used to compute the buckets of a histogram.
  */
-public interface BucketsInfo {}
+public abstract class BucketsInfo implements Serializable {
+    public long presentCount;
+
+    BucketsInfo() {
+        this.presentCount = 0;
+    }
+}

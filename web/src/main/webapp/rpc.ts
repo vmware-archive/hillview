@@ -189,7 +189,8 @@ export class RpcRequest<T> implements ICancellable {
             if (this.rpcTime == null)
                 this.rpcTime = new Date();
             // Create a web socked and send the request
-            let rpcRequestUrl = "ws://" + window.location.hostname + ":" + window.location.port + "/" + RpcRequestPath;
+            const rpcRequestUrl = "ws://" + window.location.hostname + ":" +
+                window.location.port + "/" + RpcRequestPath;
             this.socket = new WebSocket(rpcRequestUrl);
             this.socket.binaryType = "arraybuffer";
             this.socket.onerror = (ev: ErrorEvent) => {
@@ -207,6 +208,7 @@ export class RpcRequest<T> implements ICancellable {
                     console.log("Message received after rpc completed: " + reply);
                 }
                 if (reply.isError) {
+                    this.completed = true;
                     onReply.onError(RpcRequest.simplifyExceptions(reply.result));
                 } else if (reply.isCompleted) {
                     this.completed = true;

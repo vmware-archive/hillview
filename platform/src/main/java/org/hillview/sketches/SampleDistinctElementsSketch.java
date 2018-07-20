@@ -88,14 +88,14 @@ public class SampleDistinctElementsSketch implements ISketch<ITable, MinKSet<Str
         assert right != null;
         String minString, maxString;
         long numPresent;
-        if (left.numPresent == 0) {
+        if (left.presentCount == 0) {
             minString = right.min;
             maxString = right.max;
-            numPresent = right.numPresent;
-        } else if (right.numPresent == 0) {
+            numPresent = right.presentCount;
+        } else if (right.presentCount == 0) {
             minString = left.min;
             maxString = left.max;
-            numPresent = left.numPresent;
+            numPresent = left.presentCount;
         } else {
             assert left.min != null;
             assert left.max != null;
@@ -103,7 +103,7 @@ public class SampleDistinctElementsSketch implements ISketch<ITable, MinKSet<Str
             assert right.max != null;
             minString = (left.min.compareTo(right.min) < 0) ? left.min : right.min;
             maxString = (left.max.compareTo(right.max) > 0) ? left.max : right.max;
-            numPresent = left.numPresent + right.numPresent;
+            numPresent = left.presentCount + right.presentCount;
         }
         Long2ObjectRBTreeMap<String> data = new Long2ObjectRBTreeMap<>();
         data.putAll(left.data);

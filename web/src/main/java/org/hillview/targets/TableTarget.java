@@ -25,17 +25,13 @@ import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IJson;
 import org.hillview.jsonObjects.Histogram2DArgs;
 import org.hillview.jsonObjects.Histogram3DArgs;
-import org.hillview.jsonObjects.HistogramArgs;
 import org.hillview.maps.*;
 import org.hillview.sketches.*;
 import org.hillview.table.*;
 import org.hillview.table.api.*;
 import org.hillview.table.filters.*;
 import org.hillview.table.rows.RowSnapshot;
-import org.hillview.utils.Converters;
-import org.hillview.utils.LinAlg;
-import org.hillview.utils.Point2D;
-import org.hillview.utils.Utilities;
+import org.hillview.utils.*;
 import org.jblas.DoubleMatrix;
 import rx.Observer;
 
@@ -134,10 +130,27 @@ public final class TableTarget extends RpcTarget {
         this.runCompleteSketch(this.table, sk, (e, c)->e, request, context);
     }
 
+    @HillviewRpc
+    public void getDataRange(RpcRequest request, RpcRequestContext context) {
+        String colName = request.parseArgs(String.class);
+        DataRangeSketch sk = new DataRangeSketch(colName);
+        this.runCompleteSketch(this.table, sk, (e, c) -> e, request, context);
+    }
+
     class SampleStringsArgs {
         String colName = "";
         long seed;
         int cdfBuckets;
+    }
+
+    class StringBucketBoundaries implements IJson {
+        JsonList<String> boundaries;
+        long             presentCount;
+
+        StringBucketBoundaries(MinKSet<String> samples, int bucketCount) {
+            this.boundaries = samples.getBoundaries(bucketCount);
+            this.presentCount = samples.presentCount;
+        }
     }
 
     @HillviewRpc
@@ -146,7 +159,8 @@ public final class TableTarget extends RpcTarget {
         SampleDistinctElementsSketch sk = new SampleDistinctElementsSketch(
                 // We sample cdfBuckets squared
                 args.colName, args.seed, args.cdfBuckets * args.cdfBuckets);
-        this.runCompleteSketch(this.table, sk, (e, c) -> e.getBoundaries(args.cdfBuckets),
+        this.runCompleteSketch(this.table, sk, (e, c) ->
+                        new StringBucketBoundaries(e, args.cdfBuckets),
                 request, context);
     }
 
@@ -166,14 +180,24 @@ public final class TableTarget extends RpcTarget {
         this.runSketch(this.table, sk, request, context);
     }
 
+    class DoubleHistogramArgs {
+        String columnName;
+        double min;
+        double max;
+        double cdfSamplingRate;
+        long seed;
+        int cdfBucketCount;
+    }
+
     @HillviewRpc
-    public void newHistogram(RpcRequest request, RpcRequestContext context) {
-        HistogramArgs info = request.parseArgs(HistogramArgs.class);
-        HistogramSketch histo = info.getSketch(false);
-        HistogramSketch cdf = info.getSketch(true);
-        ConcurrentSketch<ITable, Histogram, Histogram> csk =
-                new ConcurrentSketch<ITable, Histogram, Histogram>(cdf, histo);
-        this.runSketch(this.table, csk, request, context);
+    @Deprecated
+    public void doubleHistogram(RpcRequest request, RpcRequestContext context) {
+        DoubleHistogramArgs info = request.parseArgs(DoubleHistogramArgs.class);
+        DoubleHistogramBuckets cdfBuckets = new DoubleHistogramBuckets(
+                info.min, info.max, info.cdfBucketCount);
+        HistogramSketch sk = new HistogramSketch(
+                cdfBuckets, info.columnName, info.cdfSamplingRate, info.seed);
+        this.runSketch(this.table, sk, request, context);
     }
 
     @HillviewRpc
@@ -238,6 +262,7 @@ public final class TableTarget extends RpcTarget {
     }
 
     @HillviewRpc
+    @Deprecated
     public void range(RpcRequest request, RpcRequestContext context) {
         CategoricalValues info = request.parseArgs(CategoricalValues.class);
         BasicColStatSketch sk = info.getBasicStatsSketch();
@@ -245,6 +270,7 @@ public final class TableTarget extends RpcTarget {
     }
 
     @HillviewRpc
+    @Deprecated
     public void range2D(RpcRequest request, RpcRequestContext context) {
         CategoricalValues[] cols = request.parseArgs(CategoricalValues[].class);
         if (cols.length != 2)
@@ -257,6 +283,7 @@ public final class TableTarget extends RpcTarget {
     }
 
     @HillviewRpc
+    @Deprecated
     public void range3D(RpcRequest request, RpcRequestContext context) {
         CategoricalValues[] cols = request.parseArgs(CategoricalValues[].class);
         if (cols.length != 3)

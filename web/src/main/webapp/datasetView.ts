@@ -67,6 +67,7 @@ export interface TableSerialization extends IViewSerialization {
 }
 
 export interface HistogramSerialization extends IViewSerialization {
+    bucketCount: number;
     exact: boolean;
     columnDescription: IColumnDescription;
 }

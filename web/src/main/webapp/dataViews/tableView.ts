@@ -24,7 +24,7 @@ import {
 import {OnCompleteReceiver, Receiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
 import {BaseRenderer, TableTargetAPI, ZipReceiver} from "../tableTarget";
-import {DataRange} from "../ui/dataRange";
+import {DataRangeUI} from "../ui/dataRangeUI";
 import {IDataView} from "../ui/dataview";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
@@ -915,7 +915,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
         const trow = this.tBody.insertRow();
         const position = this.startPosition + this.dataRowsDisplayed;
         let cell = trow.insertCell(0);
-        const dataRange = new DataRange(position, row.count, this.rowCount);
+        const dataRange = new DataRangeUI(position, row.count, this.rowCount);
         cell.appendChild(dataRange.getDOMRepresentation());
         cell.oncontextmenu = (e) => {
             this.contextMenu.clear();

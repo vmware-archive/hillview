@@ -20,7 +20,7 @@ import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {HeatmapSerialization, IViewSerialization} from "../datasetView";
 import {DistinctStrings} from "../distinctStrings";
 import {
-    BasicColStats, CombineOperators, FilterDescription, HeatMap,
+    BasicColStats, CombineOperators, DataRange, FilterDescription, HeatMap,
     Histogram2DArgs, IColumnDescription, kindIsNumeric, RecordOrder, RemoteObjectId,
 } from "../javaBridge";
 import { Receiver } from "../rpc";
@@ -302,7 +302,7 @@ export class HeatmapView extends BigTableView {
             this.schema,
             [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
             this.page, this, this.currentData.samplingRate >= 1, null, false, false, false);
-        rcol.setValue({ first: this.currentData.xData.stats, second: this.currentData.yData.stats });
+        rcol.setValue({ first: this.currentData.xData.range, second: this.currentData.yData.range });
         rcol.onCompleted();
     }
 
@@ -434,8 +434,8 @@ export class HeatmapView extends BigTableView {
             [this.currentData.yData.distinctStrings, this.currentData.xData.distinctStrings],
             this.page, this, this.currentData.samplingRate >= 1, null, true, false, false);
         collector.setValue( {
-            first: this.currentData.yData.stats,
-            second: this.currentData.xData.stats });
+            first: this.currentData.yData.range,
+            second: this.currentData.xData.range });
         collector.onCompleted();
     }
 
@@ -556,14 +556,6 @@ export class HeatmapView extends BigTableView {
         [xMin, xMax] = reorder(xMin, xMax);
         [yMin, yMax] = reorder(yMin, yMax);
 
-        let xBoundaries: string[] = null;
-        let yBoundaries: string[] = null;
-        if (this.currentData.xData.distinctStrings != null) {
-            xBoundaries = this.currentData.xData.distinctStrings.categoriesInRange(xMin, xMax, xMax - xMin);
-        }
-        if (this.currentData.yData.distinctStrings != null) {
-            yBoundaries = this.currentData.yData.distinctStrings.categoriesInRange(yMin, yMax, yMax - yMin);
-        }
         const xRange: FilterDescription = {
             min: xMin,
             max: xMax,
@@ -596,7 +588,7 @@ export class HeatmapView extends BigTableView {
  * Waits for all column stats to be received and then initiates a heatmap or 2D histogram.
  */
 export class Range2DCollector extends Receiver<Pair<BasicColStats, BasicColStats>> {
-    protected stats: Pair<BasicColStats, BasicColStats>;
+    protected stats: Pair<DataRange, DataRange>;
     constructor(protected cds: IColumnDescription[],
                 protected rowCount: number,
                 protected schema: SchemaClass,
@@ -612,7 +604,7 @@ export class Range2DCollector extends Receiver<Pair<BasicColStats, BasicColStats
         super(page, operation, "range2d");
     }
 
-    public setValue(bcs: Pair<BasicColStats, BasicColStats>): void {
+    public setValue(bcs: Pair<DataRange, DataRange>): void {
         this.stats = bcs;
     }
 
@@ -705,7 +697,7 @@ export class HeatMapRenderer extends Receiver<HeatMap> {
                 protected rowCount: number,
                 protected schema: SchemaClass,
                 protected cds: IColumnDescription[],
-                protected stats: BasicColStats[],
+                protected stats: DataRange[],
                 protected samplingRate: number,
                 protected ds: DistinctStrings[],
                 operation: ICancellable,

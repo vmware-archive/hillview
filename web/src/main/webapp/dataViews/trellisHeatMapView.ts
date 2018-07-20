@@ -226,10 +226,10 @@ class CompactHeatMapView {
         if (this.axesG == null)
             this.drawAxes();
 
-        const xVal = this.xAxisData.stats.min +
-            (mouse[0] / this.chartSize.width) * (this.xAxisData.stats.max - this.xAxisData.stats.min);
-        const yVal = this.yAxisData.stats.min +
-            (1 - (mouse[1] / this.chartSize.height)) * (this.yAxisData.stats.max - this.yAxisData.stats.min);
+        const xVal = this.xAxisData.range.min +
+            (mouse[0] / this.chartSize.width) * (this.xAxisData.range.max - this.xAxisData.range.min);
+        const yVal = this.yAxisData.range.min +
+            (1 - (mouse[1] / this.chartSize.height)) * (this.yAxisData.range.max - this.yAxisData.range.min);
         const val = this.getValAt({x: mouse[0], y: mouse[1]});
 
         // Set the visual markers

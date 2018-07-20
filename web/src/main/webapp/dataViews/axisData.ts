@@ -27,9 +27,8 @@ import {
 } from "d3-scale";
 import {DistinctStrings} from "../distinctStrings";
 import {
-    BasicColStats,
     CategoricalValues,
-    ColumnAndRange,
+    ColumnAndRange, DataRange,
     IColumnDescription,
     kindIsString
 } from "../javaBridge";
@@ -50,15 +49,15 @@ export interface ScaleAndAxis {
  */
 export class AxisData {
     public constructor(public description: IColumnDescription,
-                       public stats: BasicColStats,
+                       public range: DataRange | null,
                        public distinctStrings: DistinctStrings,
                        public bucketCount: number) {}
 
     public scaleAndAxis(length: number, bottom: boolean, legend: boolean): ScaleAndAxis {
         const axisCreator = bottom ? d3axisBottom : d3axisLeft;
 
-        let actualMin = this.stats.min;
-        let actualMax = this.stats.max;
+        let actualMin = this.range.min;
+        let actualMax = this.range.max;
         let adjust = .5;
         if (legend && (this.description.kind === "Integer" ||
             kindIsString(this.description.kind))) {
@@ -88,7 +87,7 @@ export class AxisData {
                 const ticks: number[] = [];
                 const labels: string[] = [];
                 // note: this is without adjustment.
-                const tickCount = Math.ceil(this.stats.max - this.stats.min);
+                const tickCount = Math.ceil(this.range.max - this.range.min);
                 // TODO: if the tick count is too large it must be reduced
                 const minLabelWidth = 40;  // pixels
                 const maxLabelCount = length / minLabelWidth;
@@ -101,8 +100,11 @@ export class AxisData {
                 for (let i = 0; i < tickCount; i++) {
                     ticks.push((i + adjust) * tickWidth);
                     let label = "";
-                    if (i % labelPeriod === 0)
-                        label = this.distinctStrings.get(this.stats.min + .5 + i);
+                    if (i % labelPeriod === 0) {
+                        label = this.distinctStrings.get(this.range.min + .5 + i, false);
+                        if (label === null)
+                            label = "";
+                    }
                     labels.push(label);
                 }
                 if (!bottom)
@@ -155,7 +157,7 @@ export class AxisData {
         if (this.distinctStrings == null)
             return null;
         return this.distinctStrings.categoriesInRange(
-                this.stats.min, this.stats.max, bucketCount);
+                this.range.min, this.range.max, bucketCount);
     }
 
     /**
@@ -166,8 +168,8 @@ export class AxisData {
     public getColumnAndRange(bucketCount: number): ColumnAndRange {
         return {
             columnName: this.description.name,
-            min: this.stats.min,
-            max: this.stats.max,
+            min: this.range.min,
+            max: this.range.max,
             bucketBoundaries: this.getCategoriesInRange(bucketCount),
             onStrings: kindIsString(this.description.kind)
         };
@@ -181,8 +183,8 @@ export class AxisData {
     public boundaries(bucket: number): [number, number] {
         if (bucket < 0 || bucket >= this.bucketCount)
             return null;
-        const interval = (this.stats.max - this.stats.min) / this.bucketCount;
-        const start = this.stats.min + interval * bucket;
+        const interval = (this.range.max - this.range.min) / this.bucketCount;
+        const start = this.range.min + interval * bucket;
         const end = start + interval;
         return [start, end];
     }
@@ -196,7 +198,7 @@ export class AxisData {
             return "empty";
         let [start, end] = this.boundaries(bucket);
         let closeBracket = ")";
-        if (end >= this.stats.max)
+        if (end >= this.range.max)
             closeBracket = "]";
         switch (this.description.kind) {
             case "Integer":
@@ -210,15 +212,18 @@ export class AxisData {
                     return "[" + significantDigits(start) + ", " + significantDigits(end) + closeBracket;
             case "Double":
                  return "[" + significantDigits(start) + ", " + significantDigits(end) + closeBracket;
-            case "Category": {
+            case "Category":
+            case "String":
+            case "Json": {
                 start = Math.ceil(start);
                 end = Math.floor(end);
                 if (end < start)
                     return "empty";
                 else if (end === start)
-                    return this.distinctStrings.get(start);
+                    return this.distinctStrings.get(start, true);
                 else
-                    return "[" + this.distinctStrings.get(start) + ", " + this.distinctStrings.get(end) + closeBracket;
+                    return "[" + this.distinctStrings.get(start, true) + ", " +
+                        this.distinctStrings.get(end, true) + closeBracket;
             }
             case "Date": {
                 const minDate: Date = Converters.dateFromDouble(start);

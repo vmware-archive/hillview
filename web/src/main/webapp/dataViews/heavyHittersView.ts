@@ -21,7 +21,7 @@ import {CombineOperators, IColumnDescription, NextKList, RecordOrder, RemoteObje
 import {OnCompleteReceiver, RemoteObject} from "../rpc";
 import {SchemaClass} from "../schemaClass";
 import {BigTableView, TableTargetAPI} from "../tableTarget";
-import {DataRange} from "../ui/dataRange";
+import {DataRangeUI} from "../ui/dataRangeUI";
 import {IDataView} from "../ui/dataview";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
@@ -218,7 +218,7 @@ export class HeavyHittersView extends BigTableView {
     public showSelected(includeSet: boolean): void {
         if (this.table.getSelectedRows().size === 0)
             return;
-        let title: string = includeSet ? "Selected frequent elements": "All other elements";
+        const title: string = includeSet ? "Selected frequent elements" : "All other elements";
         const newPage = this.dataset.newPage(title, this.page);
         const rr = this.remoteTableObject.createFilterListHeavy(
             this.heavyHittersId, this.columnsShown, includeSet, this.getSelectedRows());
@@ -269,7 +269,7 @@ export class HeavyHittersView extends BigTableView {
                 }
                 row.push(textToDiv(this.valueToString(nextKList.rows[i].count)));
                 row.push(textToDiv(this.valueToString((nextKList.rows[i].count / nextKList.rowsScanned) * 100)));
-                row.push(new DataRange(position, nextKList.rows[i].count,
+                row.push(new DataRangeUI(position, nextKList.rows[i].count,
                     nextKList.rowsScanned).getDOMRepresentation());
                 const tRow: HTMLTableRowElement = this.table.addElementRow(row);
                 tRow.oncontextmenu = (e) => this.clickThenShowContextMenu(tRow, e);
@@ -284,7 +284,6 @@ export class HeavyHittersView extends BigTableView {
         if (nextKList.rows.length >= HeavyHittersView.maxDisplay)
             HeavyHittersView.showLongDialog(nextKList.rows.length);
     }
-
 
     private static showLongDialog(total: number): void {
         const longListDialog = new Dialog("Too Many Frequent Elements", "");
@@ -349,7 +348,7 @@ export class HeavyHittersView extends BigTableView {
         }
         row.push(textToDiv(this.valueToString(restCount)));
         row.push(textToDiv(this.valueToString((restCount / total) * 100)));
-        row.push(new DataRange(position, restCount, total).getDOMRepresentation());
+        row.push(new DataRangeUI(position, restCount, total).getDOMRepresentation());
         const tRow: HTMLTableRowElement = table.addElementRow(row, false);
         tRow.onclick = (e) => e.preventDefault();
         tRow.oncontextmenu = (e) => e.preventDefault();
@@ -425,7 +424,7 @@ export class HeavyHittersReceiver3 extends OnCompleteReceiver<TopList> {
     }
 
     public run(exactList: TopList): void {
-        let title : string = (this.includeSet) ? "Frequent Elements": "Infrequent Elements";
+        const title = (this.includeSet) ? "Frequent Elements" : "Infrequent Elements";
         const newPage = this.hhv.dataset.newPage(title, this.hhv.page);
         const rr = this.hhv.remoteTableObject.createFilterHeavyRequest(
             exactList.heavyHittersId, this.hhv.columnsShown, this.includeSet);

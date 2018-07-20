@@ -66,7 +66,7 @@ public class MinKTest {
         assert pair.first != null;
         MinKSet<String> mks = bks.create(pair.first);
         if (printOn)
-            System.out.printf("Table size: %d, non-null %d\n", num, mks.numPresent);
+            System.out.printf("Table size: %d, non-null %d\n", num, mks.presentCount);
         int maxBuckets = 100;
         List<String> boundaries = mks.getBoundaries(maxBuckets);
         int numBuckets= boundaries.size() - 1;

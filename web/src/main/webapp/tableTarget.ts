@@ -21,19 +21,38 @@
 
 import {DatasetView, IViewSerialization} from "./datasetView";
 import {HeatMapArrayData} from "./dataViews/trellisHeatMapView";
-import {Histogram2DArgs, NextKArgs} from "./javaBridge";
-import {ComparisonFilterDescription, EigenVal, EqualityFilterDescription, FindResult} from "./javaBridge";
 import {
-    BasicColStats, CategoricalValues, CombineOperators, CreateColumnInfo, FilterDescription,
-    HeatMap, Histogram3DArgs, HistogramArgs, HistogramBase,
-    HLogLog, IColumnDescription, NextKList, RecordOrder, RemoteObjectId, Schema, TableSummary, TopList
+    BasicColStats,
+    CategoricalValues,
+    CombineOperators,
+    CreateColumnInfo,
+    DataRange, DoubleHistogramArgs,
+    FilterDescription,
+    HeatMap,
+    Histogram3DArgs,
+    HistogramBase,
+    HLogLog,
+    IColumnDescription,
+    NextKList,
+    RecordOrder,
+    RemoteObjectId,
+    Schema, StringBucketBoundaries,
+    TableSummary,
+    TopList
+} from "./javaBridge";
+import {Histogram2DArgs, NextKArgs} from "./javaBridge";
+import {
+    ComparisonFilterDescription,
+    EigenVal,
+    EqualityFilterDescription,
+    FindResult,
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
-import {SchemaClass} from "./schemaClass";
-import {IDataView} from "./ui/dataview";
 import {FullPage} from "./ui/fullPage";
 import {PointSet, ViewKind} from "./ui/ui";
 import {ICancellable, Pair, PartialResult, Seed} from "./util";
+import {IDataView} from "./ui/dataview";
+import {SchemaClass} from "./schemaClass";
 
 /**
  * This class has methods that correspond directly to TableTarget.java methods.
@@ -79,9 +98,14 @@ export class TableTargetAPI extends RemoteObject {
         });
     }
 
+    public createDataRangeRequest(colName: string):
+        RpcRequest<PartialResult<DataRange>> {
+        return this.createStreamingRpcRequest<DataRange>("getDataRange", colName);
+    }
+
     public createSampleDistinctRequest(colName: string, cdfBuckets: number):
-        RpcRequest<PartialResult<string[]>> {
-        return this.createStreamingRpcRequest<string[]>(
+        RpcRequest<PartialResult<StringBucketBoundaries>> {
+        return this.createStreamingRpcRequest<StringBucketBoundaries>(
             "sampleDistinctStrings", {
                 colName: colName,
                 seed: Seed.instance.get(),
@@ -201,24 +225,29 @@ RpcRequest<PartialResult<RemoteObjectId>> {
         });
     }
 
-    public createCreateColumnRequest(c: CreateColumnInfo): RpcRequest<PartialResult<string>> {
+    public createCreateColumnRequest(c: CreateColumnInfo):
+        RpcRequest<PartialResult<string>> {
         return this.createStreamingRpcRequest<string>("createColumn", c);
     }
 
-    public createDoubleFilterRequest(f: FilterDescription): RpcRequest<PartialResult<RemoteObjectId>> {
-        return this.createStreamingRpcRequest<RemoteObjectId>("filterRange", f);
+    public createDoubleFilterRequest(f: FilterDescription):
+        RpcRequest<PartialResult<RemoteObjectId>> {
+        return this.createStreamingRpcRequest<RemoteObjectId>("filterDoubleRange", f);
     }
 
-    public createStringFilterRequest(f: FilterDescription): RpcRequest<PartialResult<RemoteObjectId>> {
+    public createStringFilterRequest(f: FilterDescription):
+        RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<RemoteObjectId>("filterStringRange", f);
     }
 
     public createFilter2DRequest(xRange: FilterDescription, yRange: FilterDescription):
             RpcRequest<PartialResult<RemoteObjectId>> {
-        return this.createStreamingRpcRequest<RemoteObjectId>("filter2DRange", {first: xRange, second: yRange});
+        return this.createStreamingRpcRequest<RemoteObjectId>("filter2DRange",
+            {first: xRange, second: yRange});
     }
 
-    public createHistogram2DRequest(info: Histogram2DArgs): RpcRequest<PartialResult<Pair<HeatMap, HistogramBase>>> {
+    public createHistogram2DRequest(info: Histogram2DArgs):
+        RpcRequest<PartialResult<Pair<HeatMap, HistogramBase>>> {
         return this.createStreamingRpcRequest<Pair<HeatMap, HistogramBase>>("histogram2D", info);
     }
 
@@ -229,11 +258,6 @@ RpcRequest<PartialResult<RemoteObjectId>> {
     public createHeatMap3DRequest(info: Histogram3DArgs):
             RpcRequest<PartialResult<HeatMapArrayData>> {
         return this.createStreamingRpcRequest<HeatMapArrayData>("heatMap3D", info);
-    }
-
-    public createHistogramRequest(info: HistogramArgs):
-            RpcRequest<PartialResult<Pair<HistogramBase, HistogramBase>>> {
-        return this.createStreamingRpcRequest<Pair<HistogramBase, HistogramBase>>("histogram", info);
     }
 
     public createStringHistogramRequest(columnName: string, boundaries: string[],
@@ -247,9 +271,10 @@ RpcRequest<PartialResult<RemoteObjectId>> {
         });
     }
 
-    public createNewHistogramRequest(info: HistogramArgs):
-        RpcRequest<PartialResult<Pair<HistogramBase, HistogramBase>>> {
-        return this.createStreamingRpcRequest<Pair<HistogramBase, HistogramBase>>("newHistogram", info);
+    public createDoubleHistogramRequest(info: DoubleHistogramArgs):
+        RpcRequest<PartialResult<HistogramBase>> {
+        return this.createStreamingRpcRequest<HistogramBase>(
+            "doubleHistogram", info);
     }
 
     public createSetOperationRequest(setOp: CombineOperators): RpcRequest<PartialResult<RemoteObjectId>> {
@@ -309,7 +334,7 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView {
         remoteObjectId: RemoteObjectId,
         public rowCount: number,
         public schema: SchemaClass,
-        protected page: FullPage,
+        public page: FullPage,
         public readonly viewKind: ViewKind) {
         super(remoteObjectId);
         this.setPage(page);

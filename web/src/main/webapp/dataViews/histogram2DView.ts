@@ -21,7 +21,7 @@ import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {DatasetView, Histogram2DSerialization, IViewSerialization} from "../datasetView";
 import {DistinctStrings} from "../distinctStrings";
 import {
-    BasicColStats, CategoricalValues, ColumnAndRange, CombineOperators,
+    CategoricalValues, ColumnAndRange, CombineOperators, DataRange,
     FilterDescription, HeatMap, Histogram2DArgs, HistogramBase,
     IColumnDescription, kindIsString, RecordOrder, RemoteObjectId,
 } from "../javaBridge";
@@ -273,7 +273,7 @@ export class Histogram2DView extends HistogramViewBase {
             this.rowCount, this.schema,
             [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
             this.page, this, this.currentData.samplingRate >= 1, null, true, false, false);
-        rcol.setValue({ first: this.currentData.xData.stats, second: this.currentData.yData.stats });
+        rcol.setValue({ first: this.currentData.xData.range, second: this.currentData.yData.range });
         rcol.onCompleted();
     }
 
@@ -339,7 +339,7 @@ export class Histogram2DView extends HistogramViewBase {
             this.rowCount, this.schema,
             [this.currentData.yData.distinctStrings, this.currentData.xData.distinctStrings],
             this.page, this, true, null, false, this.relative, false);
-        rc.setValue({ first: this.currentData.yData.stats, second: this.currentData.xData.stats });
+        rc.setValue({ first: this.currentData.yData.range, second: this.currentData.xData.range });
         rc.onCompleted();
     }
 
@@ -351,14 +351,14 @@ export class Histogram2DView extends HistogramViewBase {
             this.rowCount, this.schema,
             [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
             this.page, this, true, null, false, this.relative, true);
-        rc.setValue({ first: this.currentData.xData.stats,
-            second: this.currentData.yData.stats });
+        rc.setValue({ first: this.currentData.xData.range,
+            second: this.currentData.yData.range });
         rc.onCompleted();
     }
 
     public changeBuckets(bucketCount: number): void {
         const samplingRate = HistogramViewBase.samplingRate(bucketCount,
-            this.currentData.xData.stats.presentCount, this.page);
+            this.currentData.xData.range.presentCount, this.page);
 
         let xBoundaries;
         let yBoundaries;
@@ -373,15 +373,15 @@ export class Histogram2DView extends HistogramViewBase {
 
         const arg0: ColumnAndRange = {
             columnName: this.currentData.xData.description.name,
-            min: this.currentData.xData.stats.min,
-            max: this.currentData.xData.stats.max,
+            min: this.currentData.xData.range.min,
+            max: this.currentData.xData.range.max,
             bucketBoundaries: xBoundaries,
             onStrings: kindIsString(this.currentData.xData.description.kind)
         };
         const arg1: ColumnAndRange = {
             columnName: this.currentData.yData.description.name,
-            min: this.currentData.yData.stats.min,
-            max: this.currentData.yData.stats.max,
+            min: this.currentData.yData.range.min,
+            max: this.currentData.yData.range.max,
             bucketBoundaries: yBoundaries,
             onStrings: kindIsString(this.currentData.yData.description.kind)
         };
@@ -397,13 +397,13 @@ export class Histogram2DView extends HistogramViewBase {
             seed: Seed.instance.get(),
             cdfBucketCount: cdfCount,
             cdfSamplingRate: HistogramViewBase.samplingRate(bucketCount,
-                this.currentData.xData.stats.presentCount, this.page),
+                this.currentData.xData.range.presentCount, this.page),
         };
         const rr = this.createHistogram2DRequest(args);
         const renderer = new Histogram2DRenderer(this.page,
             this, this.rowCount, this.schema,
             [this.currentData.xData.description, this.currentData.yData.description],
-            [this.currentData.xData.stats, this.currentData.yData.stats],
+            [this.currentData.xData.range, this.currentData.yData.range],
             samplingRate,
             [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
             rr, this.relative, true);
@@ -596,7 +596,6 @@ export class Histogram2DView extends HistogramViewBase {
     protected selectionCompleted(xl: number, xr: number, inLegend: boolean): void {
         let min: number;
         let max: number;
-        let boundaries: string[] = null;
         let selectedAxis: AxisData = null;
         let scale: AnyScale = null;
 
@@ -768,7 +767,7 @@ export class Histogram2DRenderer extends Receiver<Pair<HeatMap, HistogramBase>> 
                 protected rowCount: number,
                 protected schema: SchemaClass,
                 protected cds: IColumnDescription[],
-                protected stats: BasicColStats[],
+                protected stats: DataRange[],
                 protected samplingRate: number,
                 protected distinctStrings: DistinctStrings[],
                 operation: RpcRequest<PartialResult<Pair<HeatMap, HistogramBase>>>,
