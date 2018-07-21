@@ -23,11 +23,11 @@ import javax.annotation.Nullable;
 public class Histogram3DArgs {
     // fields are never really null, but we have no default initializer
     @Nullable
-    public ColumnAndRange first;
+    public ColumnHistogramBoundaries first;
     @Nullable
-    public ColumnAndRange second;
+    public ColumnHistogramBoundaries second;
     @Nullable
-    public ColumnAndRange third;
+    public ColumnHistogramBoundaries third;
 
     public int xBucketCount;
     public int yBucketCount;

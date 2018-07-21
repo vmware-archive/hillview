@@ -18,7 +18,7 @@
 import {drag as d3drag} from "d3-drag";
 import {mouse as d3mouse, select as d3select} from "d3-selection";
 import {
-    BasicColStats, CategoricalValues, ColumnAndRange, CombineOperators, HeatMap,
+    BasicColStats, CategoricalValues, ColumnHistogramBoundaries, CombineOperators, HeatMap,
     Histogram2DArgs, RemoteObjectId, TableSummary,
 } from "../javaBridge";
 import {OnCompleteReceiver, Receiver, RpcRequest} from "../rpc";
@@ -231,14 +231,14 @@ class LampView extends BigTableView {
     public applyLAMP() {
         const xBuckets = Math.ceil(this.heatMapChart.attr("width") / Resolution.minDotSize);
         const yBuckets = Math.ceil(this.heatMapChart.attr("height") / Resolution.minDotSize);
-        const xColAndRange: ColumnAndRange = {
+        const xColAndRange: ColumnHistogramBoundaries = {
             min: this.minX,
             max: this.maxX,
             columnName: this.lampColNames[0],
             bucketBoundaries: null,
             onStrings: false
         };
-        const yColAndRange: ColumnAndRange = {
+        const yColAndRange: ColumnHistogramBoundaries = {
             min: this.minY,
             max: this.maxY,
             columnName: this.lampColNames[1],

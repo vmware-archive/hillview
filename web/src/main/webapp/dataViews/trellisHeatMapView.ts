@@ -18,7 +18,7 @@
 import {mouse as d3mouse, select as d3select} from "d3-selection";
 import {DistinctStrings} from "../distinctStrings";
 import {
-    BasicColStats, ColumnAndRange,
+    BasicColStats, ColumnHistogramBoundaries,
     CombineOperators, Histogram3DArgs, IColumnDescription, kindIsNumeric, RecordOrder, RemoteObjectId,
 } from "../javaBridge";
 import {Receiver} from "../rpc";
@@ -549,21 +549,21 @@ export class TrellisHeatMapView extends BigTableView implements IScrollTarget {
         const numXBuckets = CompactHeatMapView.size.width / Resolution.minDotSize;
         const numYBuckets = CompactHeatMapView.size.height / Resolution.minDotSize;
 
-        const col0: ColumnAndRange = {
+        const col0: ColumnHistogramBoundaries = {
             columnName: this.args.cds[0].name,
             min: this.xStats.min,
             max: this.xStats.max,
             bucketBoundaries: null,  // TODO
             onStrings: false
         };
-        const col1: ColumnAndRange = {
+        const col1: ColumnHistogramBoundaries = {
             columnName: this.args.cds[1].name,
             min: this.yStats.min,
             max: this.yStats.max,
             bucketBoundaries: null,  // TODO
             onStrings: false
         };
-        const col2: ColumnAndRange = {
+        const col2: ColumnHistogramBoundaries = {
             columnName: this.args.cds[2].name,
             min: this.offset,
             max: this.offset + zBins.length - 1,
@@ -582,7 +582,7 @@ export class TrellisHeatMapView extends BigTableView implements IScrollTarget {
         };
 
         const rr = this.createHeatMap3DRequest(args);
-        rr.invoke(new HeatMap3DRenderer(this.getPage(), this, rr, zBins));
+        rr.invoke(new HeatMap3DRenderer(this.getPage(), rr, this, zBins));
     }
 }
 
@@ -593,7 +593,7 @@ export class TrellisRangeReceiver extends Receiver<Pair<BasicColStats, BasicColS
     protected view: TrellisHeatMapView;
 
     constructor(protected remoteObject: TableTargetAPI,
-                page: FullPage, operation: ICancellable,
+                page: FullPage, operation: ICancellable<Pair<BasicColStats, BasicColStats>>,
                 protected schema: SchemaClass, protected rowCount: number,
                 protected cds: IColumnDescription[]) {
         super(page, operation, "Get stats");
@@ -627,7 +627,8 @@ export class TrellisRangeReceiver extends Receiver<Pair<BasicColStats, BasicColS
  * Receives data for the Trellis plot and updates the display.
  */
 class HeatMap3DRenderer extends Receiver<HeatMapArrayData> {
-    constructor(page: FullPage, protected view: TrellisHeatMapView, operation: ICancellable, private zBins: string[]) {
+    constructor(page: FullPage, operation: ICancellable<HeatMapArrayData>,
+                protected view: TrellisHeatMapView, private zBins: string[]) {
         super(page, operation, "3D heatmap render");
     }
 

@@ -122,49 +122,39 @@ public final class TableTarget extends RpcTarget {
         this.runCompleteSketch(this.table, sk, (e, c) -> e, request, context);
     }
 
-    @HillviewRpc
-    @Deprecated
-    public void uniqueStrings(RpcRequest request, RpcRequestContext context) {
-        String[] columnNames = request.parseArgs(String[].class);
-        DistinctStringsSketch sk = new DistinctStringsSketch(0, columnNames);
-        this.runCompleteSketch(this.table, sk, (e, c)->e, request, context);
-    }
-
-    @HillviewRpc
-    public void getDataRange(RpcRequest request, RpcRequestContext context) {
-        String colName = request.parseArgs(String.class);
-        DataRangeSketch sk = new DataRangeSketch(colName);
-        this.runCompleteSketch(this.table, sk, (e, c) -> e, request, context);
-    }
-
-    class SampleStringsArgs {
-        String colName = "";
-        long seed;
-        int cdfBuckets;
-    }
-
-    class StringBucketBoundaries implements IJson {
+    class StringBucketBoundaries extends BucketsInfo {
         JsonList<String> boundaries;
-        long             presentCount;
-
         StringBucketBoundaries(MinKSet<String> samples, int bucketCount) {
             this.boundaries = samples.getBoundaries(bucketCount);
             this.presentCount = samples.presentCount;
         }
     }
 
-    @HillviewRpc
-    public void sampleDistinctStrings(RpcRequest request, RpcRequestContext context) {
-        SampleStringsArgs args = request.parseArgs(SampleStringsArgs.class);
-        SampleDistinctElementsSketch sk = new SampleDistinctElementsSketch(
-                // We sample cdfBuckets squared
-                args.colName, args.seed, args.cdfBuckets * args.cdfBuckets);
-        this.runCompleteSketch(this.table, sk, (e, c) ->
-                        new StringBucketBoundaries(e, args.cdfBuckets),
-                request, context);
+    static class RangeArgs {
+        ColumnDescription cd;  // if this is Category, String, Json we are sampling strings
+        long seed;  // only used if sampling strings
+        int cdfBuckets;  // only used if sampling strings
     }
 
-    class StringHistogramArgs {
+    @HillviewRpc
+    // This function returns a subclass of BucketsInfo: either
+    // StringBucketBoundaries or DataRange
+    public void getRangeOrSamples(RpcRequest request, RpcRequestContext context) {
+        RangeArgs args = request.parseArgs(RangeArgs.class);
+        if (args.cd.kind.isString()) {
+            SampleDistinctElementsSketch sk = new SampleDistinctElementsSketch(
+                    // We sample cdfBuckets squared
+                    args.cd.name, args.seed, args.cdfBuckets * args.cdfBuckets);
+            this.runCompleteSketch(this.table, sk, (e, c) ->
+                            new StringBucketBoundaries(e, args.cdfBuckets),
+                    request, context);
+        } else {
+            DataRangeSketch sk = new DataRangeSketch(args.cd.name);
+            this.runCompleteSketch(this.table, sk, (e, c) -> e, request, context);
+        }
+    }
+
+    static class StringHistogramArgs {
         String columnName = "";
         String[] boundaries = {};
         double samplingRate;
@@ -180,8 +170,8 @@ public final class TableTarget extends RpcTarget {
         this.runSketch(this.table, sk, request, context);
     }
 
-    class DoubleHistogramArgs {
-        String columnName;
+    static class DoubleHistogramArgs {
+        String columnName = "";
         double min;
         double max;
         double cdfSamplingRate;
@@ -190,7 +180,6 @@ public final class TableTarget extends RpcTarget {
     }
 
     @HillviewRpc
-    @Deprecated
     public void doubleHistogram(RpcRequest request, RpcRequestContext context) {
         DoubleHistogramArgs info = request.parseArgs(DoubleHistogramArgs.class);
         DoubleHistogramBuckets cdfBuckets = new DoubleHistogramBuckets(
@@ -252,10 +241,6 @@ public final class TableTarget extends RpcTarget {
 
     static class CategoricalValues {
         String columnName = "";
-        // The following are only used for categorical columns
-        @Nullable
-        String[] allNames;
-
         BasicColStatSketch getBasicStatsSketch() {
             return new BasicColStatSketch(this.columnName, 0);
         }

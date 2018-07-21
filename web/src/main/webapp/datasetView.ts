@@ -382,7 +382,7 @@ export class DatasetView implements IHtmlElement {
  */
 // TODO: deprecate this
 class CategoryValuesObserver extends OnCompleteReceiver<IDistinctStrings[]> {
-    constructor(page: FullPage, operation: ICancellable,
+    constructor(page: FullPage, operation: ICancellable<IDistinctStrings[]>,
                 protected requestedColumns: IColumnDescription[],
                 protected toBringColumns: string[],
                 protected observer: OnCompleteReceiver<DistinctStrings[]>) {

@@ -27,8 +27,7 @@ import {
 } from "d3-scale";
 import {DistinctStrings} from "../distinctStrings";
 import {
-    CategoricalValues,
-    ColumnAndRange, DataRange,
+    DataRange,
     IColumnDescription,
     kindIsString
 } from "../javaBridge";
@@ -51,7 +50,7 @@ export class AxisData {
     public constructor(public description: IColumnDescription,
                        public range: DataRange | null,
                        public distinctStrings: DistinctStrings,
-                       public bucketCount: number) {}
+                       public cdfBucketCount: number) {}
 
     public scaleAndAxis(length: number, bottom: boolean, legend: boolean): ScaleAndAxis {
         const axisCreator = bottom ? d3axisBottom : d3axisLeft;
@@ -142,48 +141,15 @@ export class AxisData {
         return { scale: scale, axis: axis };
     }
 
-    public getCategoricalValues(): CategoricalValues {
-        return new CategoricalValues(this.description.name,
-            this.distinctStrings != null ? this.distinctStrings.uniqueStrings : null);
-    }
-
-    /**
-     * The categorical values in the min-max range.
-     * @param {number} bucketCount  Number of categories to return.
-     * @returns {string[]}  An array of categories, or null if this is not a
-     * categorical column.
-     */
-    public getCategoriesInRange(bucketCount: number): string[] {
-        if (this.distinctStrings == null)
-            return null;
-        return this.distinctStrings.categoriesInRange(
-                this.range.min, this.range.max, bucketCount);
-    }
-
-    /**
-     * Creates a ColumnAndRange data structure from the AxisData, which
-     * may be used to initiate a histogram computation.
-     * @param {number} bucketCount  Number of buckets expected in histogram.
-     */
-    public getColumnAndRange(bucketCount: number): ColumnAndRange {
-        return {
-            columnName: this.description.name,
-            min: this.range.min,
-            max: this.range.max,
-            bucketBoundaries: this.getCategoriesInRange(bucketCount),
-            onStrings: kindIsString(this.description.kind)
-        };
-    }
-
     /**
      * Get the boundaries of the specified bucket.
      * @param {number} bucket  Bucket number.
      * @returns {[number]}     The left and right margins of this bucket.
      */
     public boundaries(bucket: number): [number, number] {
-        if (bucket < 0 || bucket >= this.bucketCount)
+        if (bucket < 0 || bucket >= this.cdfBucketCount)
             return null;
-        const interval = (this.range.max - this.range.min) / this.bucketCount;
+        const interval = (this.range.max - this.range.min) / this.cdfBucketCount;
         const start = this.range.min + interval * bucket;
         const end = start + interval;
         return [start, end];
@@ -194,7 +160,7 @@ export class AxisData {
      * @returns {string}  A description of the boundaries of the specified bucket.
      */
     public bucketDescription(bucket: number): string {
-        if (bucket < 0 || bucket >= this.bucketCount)
+        if (bucket < 0 || bucket >= this.cdfBucketCount)
             return "empty";
         let [start, end] = this.boundaries(bucket);
         let closeBracket = ")";

@@ -384,7 +384,7 @@ export class HeatmapView extends BigTableView {
         }
 
         const rr = this.createZipRequest(r.first);
-        const renderer = (page: FullPage, operation: ICancellable) => {
+        const renderer = (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
             return new Make2DHistogram(
                 page, operation,
                 [this.currentData.xData.description, this.currentData.yData.description],
@@ -596,7 +596,7 @@ export class Range2DCollector extends Receiver<Pair<BasicColStats, BasicColStats
                 page: FullPage,
                 protected remoteObject: TableTargetAPI,
                 protected exact: boolean,
-                operation: ICancellable,
+                operation: ICancellable<Pair<BasicColStats, BasicColStats>>,
                 protected drawHeatMap: boolean,  // true - heatMap, false - histogram
                 protected relative: boolean,
                 protected reusePage: boolean,
@@ -700,7 +700,7 @@ export class HeatMapRenderer extends Receiver<HeatMap> {
                 protected stats: DataRange[],
                 protected samplingRate: number,
                 protected ds: DistinctStrings[],
-                operation: ICancellable,
+                operation: ICancellable<HeatMap>,
                 protected reusePage: boolean) {
         super(
             reusePage ? page : page.dataset.newPage(

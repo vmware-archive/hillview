@@ -187,14 +187,16 @@ export interface HistogramBase {
 }
 
 export interface DataRange {
-    presentCount: number;
     min: number;
     max: number;
+    presentCount: number;
 }
 
-export interface StringBucketBoundaries {
+// This is actually a union of several java classes:
+// StringBucketBoundaries and DataRange, both sub-classes
+// of BucketsInfo in Java.
+export interface RangeAndStrings extends DataRange {
     boundaries: string[];
-    presentCount: number;
 }
 
 export interface BasicColStats extends DataRange {
@@ -203,8 +205,7 @@ export interface BasicColStats extends DataRange {
     missingCount: number;
 }
 
-// TODO: deprecate
-export interface ColumnAndRange {
+export interface ColumnHistogramBoundaries {
     min: number;
     max: number;
     onStrings: boolean;
@@ -212,9 +213,15 @@ export interface ColumnAndRange {
     bucketBoundaries: string[];
 }
 
+export interface RangeArgs {
+    cd: IColumnDescription;
+    seed: number;
+    cdfBuckets: number;
+}
+
 export interface Histogram2DArgs {
-    first: ColumnAndRange;
-    second: ColumnAndRange;
+    first: ColumnHistogramBoundaries;
+    second: ColumnHistogramBoundaries;
     xBucketCount: number;
     yBucketCount: number;
     samplingRate: number;
@@ -224,9 +231,9 @@ export interface Histogram2DArgs {
 }
 
 export interface Histogram3DArgs {
-    first: ColumnAndRange;
-    second: ColumnAndRange;
-    third: ColumnAndRange;
+    first: ColumnHistogramBoundaries;
+    second: ColumnHistogramBoundaries;
+    third: ColumnHistogramBoundaries;
     xBucketCount: number;
     yBucketCount: number;
     zBucketCount: number;

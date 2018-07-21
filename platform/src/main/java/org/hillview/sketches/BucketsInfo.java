@@ -17,16 +17,18 @@
 
 package org.hillview.sketches;
 
+import org.hillview.dataset.api.IJson;
+
 import java.io.Serializable;
 
 /**
  * This interface is a base class for all sketch results that are
  * used to compute the buckets of a histogram.
  */
-public abstract class BucketsInfo implements Serializable {
+public abstract class BucketsInfo implements Serializable, IJson {
     public long presentCount;
 
-    BucketsInfo() {
+    public BucketsInfo() {
         this.presentCount = 0;
     }
 }

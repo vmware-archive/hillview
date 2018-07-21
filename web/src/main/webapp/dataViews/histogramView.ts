@@ -24,9 +24,9 @@ import {
     FilterDescription,
     HistogramBase,
     IColumnDescription,
-    kindIsString,
+    kindIsString, RangeAndStrings,
     RecordOrder,
-    RemoteObjectId, StringBucketBoundaries,
+    RemoteObjectId,
 } from "../javaBridge";
 import {OnCompleteReceiver, Receiver, RpcRequest} from "../rpc";
 import {SchemaClass} from "../schemaClass";
@@ -277,7 +277,7 @@ export class HistogramView extends HistogramViewBase {
 
         const title = "[" + r.second + "] " + CombineOperators[how];
         const rr = this.createZipRequest(r.first);
-        const finalRenderer = (page: FullPage, operation: ICancellable) => {
+        const finalRenderer = (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
             return new MakeHistogram(
                 title, page, operation, this.currentData.axisData.description,
                 this.rowCount, this.schema, this.currentData.samplingRate,
@@ -372,15 +372,13 @@ export class HistogramView extends HistogramViewBase {
         const cd = this.schema.find(colName);
         if (kindIsString(cd.kind)) {
             const size = PlottingSurface.getDefaultChartSize(this.page);
-            const rr = this.createSampleDistinctRequest(cd.name, size.width);
+            const rr = this.createGetRangeOrSamples(cd, Seed.instance.get(), size.width);
             rr.invoke(new StringBucketsObserver(
-                this, this.page, rr, this.schema,
-                bucketCount, options, cd, size.width));
+                this, this.page, rr, this.schema, bucketCount, cd, this.currentData.title,
+                size.width, options));
         } else {
-            const rr = this.createDataRangeRequest(cd.name);
-            rr.invoke(new DataRangeCollector(
-                this, this.schema, bucketCount, this.page,
-                rr, null, cd, options));
+            const rr = this.createGetRangeOrSamples(cd, 0, 0);
+            rr.invoke(new DataRangeCollector(this, this.page, rr, this.schema, bucketCount, cd, null, options));
         }
     }
 
@@ -522,7 +520,7 @@ class FilterReceiver extends BaseRenderer {
         protected exact: boolean,
         protected sourceTitle: string,
         page: FullPage,
-        operation: ICancellable,
+        operation: ICancellable<RemoteObjectId>,
         dataset: DatasetView) {
         super(page, operation, "Filter", dataset);
     }
@@ -533,19 +531,23 @@ class FilterReceiver extends BaseRenderer {
 
     public run(): void {
         super.run();
-        const colName = this.columnDescription.name;
+        const title = this.filterDescription();
         if (kindIsString(this.columnDescription.kind)) {
             const size = PlottingSurface.getDefaultChartSize(this.page);
-            const rr = this.remoteObject.createSampleDistinctRequest(colName, size.width);
-            rr.invoke(new StringBucketsObserver(this.remoteObject, this.page, rr,
-                this.schema, 0, { exact: false, reusePage: false },
-                this.columnDescription, size.width));
+            const rr = this.remoteObject.createGetRangeOrSamples(
+                this.columnDescription, Seed.instance.get(), size.width);
+            rr.invoke(new StringBucketsObserver(
+                this.remoteObject, this.page, rr, this.schema, 0,
+                this.columnDescription, title, size.width, { exact: false, reusePage: false }));
         } else {
-            const rr = this.remoteObject.createDataRangeRequest(colName);
-            rr.invoke(new DataRangeCollector(this.remoteObject,
-                this.schema, 0, this.page, rr,
-                this.filterDescription(), this.columnDescription,
-                { exact: this.exact, reusePage: false }));
+            const rr = this.remoteObject.createGetRangeOrSamples(
+                this.columnDescription, 0, 0);
+            rr.invoke(new DataRangeCollector(
+                this.remoteObject, this.page, rr, this.schema, 0,
+                this.columnDescription, title, {
+                exact: this.exact,
+                reusePage: false
+            }));
         }
     }
 }
@@ -558,12 +560,12 @@ export class DataRangeCollector extends Receiver<DataRange> {
 
     constructor(
         protected originator: TableTargetAPI,
+        page: FullPage,
+        operation: ICancellable<DataRange>,
         protected schema: SchemaClass,
         protected bucketCount: number,
-        page: FullPage,
-        operation: ICancellable,
-        protected title: string | null,  // title of the resulting display
-        protected cd: IColumnDescription,
+        protected cd: IColumnDescription,  // title of the resulting display
+        protected title: string | null,
         protected options: HistogramOptions) {
         super(page, operation, "histogram");
     }
@@ -585,11 +587,11 @@ export class DataRangeCollector extends Receiver<DataRange> {
         return Math.min(sampleRate, 1);
     }
 
-    public histogram(bucketCount: number): void {
+    public histogram(cdfBucketCount: number): void {
         const size = PlottingSurface.getDefaultChartSize(this.page);
         let cdfCount = Math.floor(size.width);
         if (cdfCount === 0)
-            cdfCount = bucketCount;
+            cdfCount = cdfBucketCount;
 
         let samplingRate = 1.0;
         if (!this.options.exact)
@@ -606,7 +608,7 @@ export class DataRangeCollector extends Receiver<DataRange> {
 
         const rr = this.originator.createDoubleHistogramRequest(args);
         rr.chain(this.operation);
-        const axisData = new AxisData(this.cd, this.range, null, bucketCount);
+        const axisData = new AxisData(this.cd, this.range, null, cdfBucketCount);
         const renderer = new HistogramRenderer(this.title, this.page,
             this.originator.remoteObjectId, this.range.presentCount, this.schema, this.bucketCount,
             axisData, rr, samplingRate, false, this.options.reusePage);
@@ -627,29 +629,6 @@ export class DataRangeCollector extends Receiver<DataRange> {
     }
 }
 
-/**
- * This class is invoked by the ZipReceiver after a set operation to create a new histogram
- */
-class MakeHistogram extends BaseRenderer {
-    public constructor(private title: string,
-                       page: FullPage,
-                       operation: ICancellable,
-                       private colDesc: IColumnDescription,
-                       private rowCount: number,
-                       private schema: SchemaClass,
-                       protected samplingRate: number,
-                       dataset: DatasetView) {
-        super(page, operation, "Reload", dataset);
-    }
-
-    public run(): void {
-        super.run();
-        const hv = new HistogramView(
-            this.remoteObject.remoteObjectId, this.rowCount, this.schema, this.page);
-        hv.histogram1D(this.colDesc.name, 0, { reusePage: true, exact: this.samplingRate >= 1.0 });
-    }
-}
-
 export class HistogramDialog extends Dialog {
     constructor(allColumns: string[]) {
         super("1D histogram", "Display a 1D histogram of the data in a column");
@@ -664,19 +643,20 @@ export class HistogramDialog extends Dialog {
 /**
  * Receives buckets for a string histogram and initiates the string histogram.
  */
-export class StringBucketsObserver extends OnCompleteReceiver<StringBucketBoundaries> {
+export class StringBucketsObserver extends OnCompleteReceiver<RangeAndStrings> {
     constructor(
         protected remoteObject: TableTargetAPI,
-        page: FullPage, operation: ICancellable,
+        page: FullPage, operation: ICancellable<RangeAndStrings>,
         protected schema: SchemaClass,
         protected bucketCount: number,
-        protected options: HistogramOptions,
-        protected column: IColumnDescription,
-        protected requestedCount: number) {
+        protected cd: IColumnDescription,
+        protected title: string | null,
+        protected requestedCount: number,
+        protected options: HistogramOptions) {
         super(page, operation, "Compute string histogram");
     }
 
-    public run(value: StringBucketBoundaries): void {
+    public run(value: RangeAndStrings): void {
         if (value.presentCount === 0) {
             this.page.reportError("All values are missing");
             return;
@@ -689,16 +669,16 @@ export class StringBucketsObserver extends OnCompleteReceiver<StringBucketBounda
         const distinctStrings = new DistinctStrings( {
             truncated: false,
             uniqueStrings: value.boundaries
-        }, this.column.name);
+        }, this.cd.name);
         const stats: DataRange = {
             min: -0.5,
             max: cdfBucketCount - .5,
             presentCount: value.presentCount
         };
-        const axisData = new AxisData(this.column, stats, distinctStrings, cdfBucketCount);
+        const axisData = new AxisData(this.cd, stats, distinctStrings, cdfBucketCount);
         const rr = this.remoteObject.createStringHistogramRequest(
-            this.column.name, value.boundaries, samplingRate, Seed.instance.get());
-        rr.invoke(new HistogramRenderer("Histogram of " + this.column.name,
+            this.cd.name, value.boundaries, samplingRate, Seed.instance.get());
+        rr.invoke(new HistogramRenderer("Histogram of " + this.cd.name,
             this.page, this.remoteObject.remoteObjectId,
             value.presentCount, this.schema, this.bucketCount,
             axisData, rr, samplingRate,
@@ -716,7 +696,7 @@ class HistogramRenderer extends Receiver<HistogramBase>  {
                 protected schema: SchemaClass,
                 protected bucketCount: number,
                 protected axisData: AxisData,
-                operation: ICancellable,
+                operation: ICancellable<HistogramBase>,
                 protected samplingRate: number,
                 protected complete: boolean,
                 reusePage: boolean) {
@@ -731,5 +711,28 @@ class HistogramRenderer extends Receiver<HistogramBase>  {
         const timeInMs = this.elapsedMilliseconds();
         this.histogram.updateView(this.title, value.data,
             this.axisData, this.samplingRate, this.bucketCount, timeInMs, this.complete);
+    }
+}
+
+/**
+ * This class is invoked by the ZipReceiver after a set operation to create a new histogram
+ */
+class MakeHistogram extends BaseRenderer {
+    public constructor(private title: string,
+                       page: FullPage,
+                       operation: ICancellable<RemoteObjectId>,
+                       private colDesc: IColumnDescription,
+                       private rowCount: number,
+                       private schema: SchemaClass,
+                       protected samplingRate: number,
+                       dataset: DatasetView) {
+        super(page, operation, "Reload", dataset);
+    }
+
+    public run(): void {
+        super.run();
+        const hv = new HistogramView(
+            this.remoteObject.remoteObjectId, this.rowCount, this.schema, this.page);
+        hv.histogram1D(this.colDesc.name, 0, { reusePage: true, exact: this.samplingRate >= 1.0 });
     }
 }

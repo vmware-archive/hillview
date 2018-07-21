@@ -23,9 +23,9 @@ import javax.annotation.Nullable;
 public class Histogram2DArgs {
     // fields are never really null, but we have no default initializer
     @Nullable
-    public ColumnAndRange first;
+    public ColumnHistogramBoundaries first;
     @Nullable
-    public ColumnAndRange second;
+    public ColumnHistogramBoundaries second;
 
     public int xBucketCount;
     public int yBucketCount;

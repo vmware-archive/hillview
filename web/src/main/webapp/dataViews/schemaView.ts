@@ -168,13 +168,13 @@ export class SchemaView extends TSViewBase {
             help: "Show the selected columns in a tabular view." }, true);
         this.contextMenu.addItem({
             text: "Histogram",
-            action: () => this.histogram(false),
+            action: () => this.histogramSelected(),
             help: "Plot the data in the selected columns as a histogram.  Applies to one or two columns only. " +
             "The data cannot be of type String.",
         }, selectedCount >= 1 && selectedCount <= 2);
         this.contextMenu.addItem({
             text: "Heatmap",
-            action: () => this.heatMap(),
+            action: () => this.heatmapOrTrellisSelected(),
             help: "Plot the data in the selected columns as a heatmap or as a Trellis plot of heatmaps. " +
             "Applies to two or three columns only.",
         }, selectedCount >= 2 && selectedCount <= 3);

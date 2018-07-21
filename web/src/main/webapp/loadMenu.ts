@@ -507,7 +507,7 @@ class DBDialog extends Dialog {
  * @param T  each individual result has this type.
  */
 class CommandReceiver extends OnCompleteReceiver<Status[]> {
-    public constructor(name: string, page: FullPage, operation: ICancellable) {
+    public constructor(name: string, page: FullPage, operation: ICancellable<Status[]>) {
         super(page, operation, name);
     }
 
@@ -535,7 +535,7 @@ class CommandReceiver extends OnCompleteReceiver<Status[]> {
  * Receives and displays the result of the ping command.
  */
 class PingReceiver extends OnCompleteReceiver<string[]> {
-    public constructor(page: FullPage, operation: ICancellable) {
+    public constructor(page: FullPage, operation: ICancellable<string[]>) {
         super(page, operation, "ping");
     }
 

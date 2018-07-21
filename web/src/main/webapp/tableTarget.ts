@@ -26,17 +26,17 @@ import {
     CategoricalValues,
     CombineOperators,
     CreateColumnInfo,
-    DataRange, DoubleHistogramArgs,
+    DoubleHistogramArgs,
     FilterDescription,
     HeatMap,
     Histogram3DArgs,
     HistogramBase,
     HLogLog,
     IColumnDescription,
-    NextKList,
+    NextKList, RangeAndStrings, RangeArgs,
     RecordOrder,
     RemoteObjectId,
-    Schema, StringBucketBoundaries,
+    Schema,
     TableSummary,
     TopList
 } from "./javaBridge";
@@ -98,18 +98,14 @@ export class TableTargetAPI extends RemoteObject {
         });
     }
 
-    public createDataRangeRequest(colName: string):
-        RpcRequest<PartialResult<DataRange>> {
-        return this.createStreamingRpcRequest<DataRange>("getDataRange", colName);
-    }
-
-    public createSampleDistinctRequest(colName: string, cdfBuckets: number):
-        RpcRequest<PartialResult<StringBucketBoundaries>> {
-        return this.createStreamingRpcRequest<StringBucketBoundaries>(
-            "sampleDistinctStrings", {
-                colName: colName,
-                seed: Seed.instance.get(),
-                cdfBuckets: cdfBuckets });
+    public createGetRangeOrSamples(cd: IColumnDescription, seed: number, cdfBuckets: number):
+        RpcRequest<PartialResult<RangeAndStrings>> {
+        const args: RangeArgs = {
+            cd: cd,
+            seed: seed,
+            cdfBuckets: cdfBuckets };
+        return this.createStreamingRpcRequest<RangeAndStrings>(
+            "getRangeOrSamples", args);
     }
 
     public createNextKRequest(order: RecordOrder, firstRow: any[] | null, rowCount: number):
@@ -395,7 +391,7 @@ export abstract class BaseRenderer extends OnCompleteReceiver<RemoteObjectId> {
     protected remoteObject: TableTargetAPI;
 
     protected constructor(public page: FullPage,
-                          public operation: ICancellable,
+                          public operation: ICancellable<RemoteObjectId>,
                           public description: string,
                           protected dataset: DatasetView) { // may be null for the first table
         super(page, operation, description);
@@ -415,12 +411,13 @@ export abstract class BaseRenderer extends OnCompleteReceiver<RemoteObjectId> {
  */
 export class ZipReceiver extends BaseRenderer {
     public constructor(page: FullPage,
-                       operation: ICancellable,
+                       operation: ICancellable<RemoteObjectId>,
                        protected setOp: CombineOperators,
                        protected dataset: DatasetView,
                        // receiver constructs the renderer that is used to display
                        // the result after combining
-                       protected receiver: (page: FullPage, operation: ICancellable) => BaseRenderer) {
+                       protected receiver:
+                           (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer) {
         super(page, operation, "zip", dataset);
     }
 

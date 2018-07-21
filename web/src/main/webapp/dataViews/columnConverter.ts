@@ -97,7 +97,7 @@ export class ColumnConverter  {
         }
     }
 
-    public countReceived(count: number, operation: ICancellable): void {
+    public countReceived(count: number, operation: ICancellable<HLogLog>): void {
         if (count > ColumnConverter.maxCategoricalCount) {
             this.table.reportError(`Too many values for categorical column. There are ${count}, " +
             "and up to ${ColumnConverter.maxCategoricalCount} are supported.`);
@@ -106,7 +106,7 @@ export class ColumnConverter  {
         this.convert(operation);
     }
 
-    public convert(operation: ICancellable): void {
+    public convert(operation: ICancellable<HLogLog>): void {
         const args: ConvertColumnInfo = {
             colName: this.columnName,
             newColName: this.newColumnName,
@@ -123,13 +123,12 @@ export class ColumnConverter  {
         const schema = this.table.schema.append(cd);
         const o = this.order.clone();
         o.addColumn({columnDescription: cd, isAscending: true});
-        rr.invoke(new TableOperationCompleted(
-            newPage, this.table.rowCount, schema, rr, o, this.table.tableRowsDesired));
+        rr.invoke(new TableOperationCompleted(newPage, rr, this.table.rowCount, schema, o, this.table.tableRowsDesired));
     }
 }
 
 class HLogLogReceiver extends OnCompleteReceiver<HLogLog> {
-    constructor(page: FullPage, operation: ICancellable, protected cc: ColumnConverter) {
+    constructor(page: FullPage, operation: ICancellable<HLogLog>, protected cc: ColumnConverter) {
         super(page, operation, "HyperLogLog");
     }
 

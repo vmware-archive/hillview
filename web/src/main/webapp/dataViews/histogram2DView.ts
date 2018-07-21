@@ -21,7 +21,7 @@ import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {DatasetView, Histogram2DSerialization, IViewSerialization} from "../datasetView";
 import {DistinctStrings} from "../distinctStrings";
 import {
-    CategoricalValues, ColumnAndRange, CombineOperators, DataRange,
+    CategoricalValues, ColumnHistogramBoundaries, CombineOperators, DataRange,
     FilterDescription, HeatMap, Histogram2DArgs, HistogramBase,
     IColumnDescription, kindIsString, RecordOrder, RemoteObjectId,
 } from "../javaBridge";
@@ -291,13 +291,13 @@ export class Histogram2DView extends HistogramViewBase {
     public asCSV(): string[] {
         const lines: string[] = [];
         let line = "";
-        for (let y = 0; y < this.currentData.yData.bucketCount; y++) {
+        for (let y = 0; y < this.currentData.yData.cdfBucketCount; y++) {
             const by = this.currentData.yData.bucketDescription(y);
             line += "," + JSON.stringify(this.currentData.yData.description.name + " " + by);
         }
         line += ",missing";
         lines.push(line);
-        for (let x = 0; x < this.currentData.xData.bucketCount; x++) {
+        for (let x = 0; x < this.currentData.xData.cdfBucketCount; x++) {
             const data = this.currentData.heatMap.buckets[x];
             const bx = this.currentData.xData.bucketDescription(x);
             let l = JSON.stringify(this.currentData.xData.description.name + " " + bx);
@@ -320,7 +320,7 @@ export class Histogram2DView extends HistogramViewBase {
             return;
 
         const rr = this.createZipRequest(r.first);
-        const renderer = (page: FullPage, operation: ICancellable) => {
+        const renderer = (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
             return new Make2DHistogram(
                 page, operation,
                 [this.currentData.xData.description, this.currentData.yData.description],
@@ -371,14 +371,14 @@ export class Histogram2DView extends HistogramViewBase {
         else
             yBoundaries = this.currentData.yData.distinctStrings.uniqueStrings;
 
-        const arg0: ColumnAndRange = {
+        const arg0: ColumnHistogramBoundaries = {
             columnName: this.currentData.xData.description.name,
             min: this.currentData.xData.range.min,
             max: this.currentData.xData.range.max,
             bucketBoundaries: xBoundaries,
             onStrings: kindIsString(this.currentData.xData.description.kind)
         };
-        const arg1: ColumnAndRange = {
+        const arg1: ColumnHistogramBoundaries = {
             columnName: this.currentData.yData.description.name,
             min: this.currentData.yData.range.min,
             max: this.currentData.yData.range.max,
@@ -705,7 +705,7 @@ export class Filter2DReceiver extends BaseRenderer {
                 protected schema: SchemaClass,
                 page: FullPage,
                 protected exact: boolean,
-                operation: ICancellable,
+                operation: ICancellable<RemoteObjectId>,
                 protected heatMap: boolean,
                 dataset: DatasetView,
                 protected relative: boolean) {
@@ -731,7 +731,7 @@ export class Filter2DReceiver extends BaseRenderer {
  */
 export class Make2DHistogram extends BaseRenderer {
     public constructor(page: FullPage,
-                       operation: ICancellable,
+                       operation: ICancellable<RemoteObjectId>,
                        private colDesc: IColumnDescription[],
                        protected ds: DistinctStrings[],
                        private rowCount: number,

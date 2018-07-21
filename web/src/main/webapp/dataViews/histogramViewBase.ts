@@ -18,7 +18,7 @@
 import {mouse as d3mouse} from "d3-selection";
 import {DistinctStrings} from "../distinctStrings";
 import {
-    ColumnAndRange,
+    ColumnHistogramBoundaries,
     ContentsKind,
     DataRange,
     IColumnDescription,
@@ -196,7 +196,7 @@ export abstract class HistogramViewBase extends BigTableView {
 
     public static getRange(stats: DataRange, cd: IColumnDescription,
                            allStrings: DistinctStrings,
-                           bucketCount: number): ColumnAndRange {
+                           bucketCount: number): ColumnHistogramBoundaries {
         const boundaries = (allStrings != null && allStrings.uniqueStrings != null) ?
             allStrings.categoriesInRange(stats.min, stats.max, bucketCount) : null;
         return {

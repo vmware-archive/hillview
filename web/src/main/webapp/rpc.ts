@@ -75,7 +75,7 @@ export class RemoteObject {
  *
  * T is the type of the result returned.
  */
-export class RpcRequest<T> implements ICancellable {
+export class RpcRequest<T> implements ICancellable<T> {
     public readonly protoVersion: number = 6;
     public readonly requestId: number;
     public cancelled: boolean;
@@ -125,7 +125,7 @@ export class RpcRequest<T> implements ICancellable {
      * the specified operation.  This is mostly useful for accounting the time
      * required for executing a chain of operations.
      */
-    public chain(after: ICancellable) {
+    public chain<S>(after: ICancellable<S>) {
         if (after != null)
             this.setStartTime(after.startTime());
     }
@@ -299,7 +299,7 @@ export abstract class Receiver<T> implements Rx.Observer<PartialResult<T>> {
      *                                   next to the progress bar.
      */
     protected constructor(public page: FullPage,
-                          public operation: ICancellable,
+                          public operation: ICancellable<T>,
                           public description: string) {
         this.progressBar = page.progressManager.newProgressBar(operation, description);
         this.reporter = page.getErrorReporter();
@@ -369,7 +369,7 @@ export abstract class OnCompleteReceiver<T> extends Receiver<T> {
     protected value: T = null;
 
     protected constructor(public page: FullPage,
-                          public operation: ICancellable,
+                          public operation: ICancellable<T>,
                           public description: string) {
         super(page, operation, description);
     }

@@ -429,7 +429,8 @@ export interface RpcReply {
     isCompleted: boolean;  // If true this message is the last one.
 }
 
-export interface ICancellable {
+// untyped cancellable
+export interface IRawCancellable {
     /**
      * return 'true' if cancellation succeeds.
      * Cancellation may fail if the computation is terminated.
@@ -438,3 +439,7 @@ export interface ICancellable {
     /** time when operation was initiated */
     startTime(): Date;
 }
+
+// Typed version of the cancellable API, makes it easy to do
+// stong typing.
+export interface ICancellable<T> extends IRawCancellable {}

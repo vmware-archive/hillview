@@ -43,7 +43,7 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
                        protected rowCount: number,
                        protected schema: SchemaClass,
                        protected colNames: string[],
-                       operation: ICancellable,
+                       operation: ICancellable<EigenVal>,
                        protected reusePage: boolean) {
         super(page, operation, "Singular Value Spectrum");
         if (this.reusePage)

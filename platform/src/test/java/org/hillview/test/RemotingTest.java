@@ -169,7 +169,7 @@ public class RemotingTest extends BaseTest {
         assertEquals(50005000, result);
     }
 
-    @Test
+    //@Test
     public void testRaceSerialized() throws InterruptedException {
         final ExecutorService es = Executors.newFixedThreadPool(10);
         final SerializedSubject<Integer, Integer> obs1 = PublishSubject.<Integer>create().toSerialized();

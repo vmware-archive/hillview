@@ -29,7 +29,7 @@ import {FullPage} from "../ui/fullPage";
 import {SubMenu, TopMenuItem} from "../ui/menu";
 import {SpecialChars, ViewKind} from "../ui/ui";
 import {
-    cloneToSet, Comparison, Converters, ICancellable, mapToArray, significantDigits,
+    cloneToSet, Comparison, Converters, ICancellable, mapToArray, Seed, significantDigits,
 } from "../util";
 import {Range2DCollector} from "./heatmapView";
 import {HeavyHittersReceiver, HeavyHittersView} from "./heavyHittersView";
@@ -92,7 +92,7 @@ export abstract class TSViewBase extends BigTableView {
         this.refresh();
     }
 
-    protected heatMap(): void {
+    protected heatmapOrTrellisSelected(): void {
         if (this.getSelectedColCount() === 3) {
             this.trellisPlot();
             return;
@@ -102,7 +102,7 @@ export abstract class TSViewBase extends BigTableView {
             return;
         }
 
-        this.histogram(true);
+        this.heatmapSelected();
     }
 
     public reportError(s: string) {
@@ -117,7 +117,7 @@ export abstract class TSViewBase extends BigTableView {
         dialog.setCacheTitle("saveAsDialog");
 
         class SaveReceiver extends OnCompleteReceiver<boolean> {
-            constructor(page: FullPage, operation: ICancellable) {
+            constructor(page: FullPage, operation: ICancellable<boolean>) {
                 super(page, operation, "Save as ORC files");
             }
 
@@ -180,8 +180,7 @@ export abstract class TSViewBase extends BigTableView {
         const o = order.clone();
         o.addColumn({columnDescription: cd, isAscending: true});
 
-        const rec = new TableOperationCompleted(
-            newPage, this.rowCount, schema, rr, o, tableRowsDesired);
+        const rec = new TableOperationCompleted(newPage, rr, this.rowCount, schema, o, tableRowsDesired);
         rr.invoke(rec);
     }
 
@@ -189,17 +188,16 @@ export abstract class TSViewBase extends BigTableView {
         const cd = this.schema.find(colName);
         if (kindIsString(cd.kind)) {
             const size = PlottingSurface.getDefaultChartSize(this.page);
-            const rr = this.createSampleDistinctRequest(cd.name, size.width);
-            rr.invoke(new StringBucketsObserver(this, this.page, rr, this.schema,
-                0, options, cd, size.width));
+            const rr = this.createGetRangeOrSamples(cd, Seed.instance.get(), size.width);
+            rr.invoke(new StringBucketsObserver(
+                this, this.page, rr, this.schema, 0, cd, null, size.width, options));
         } else {
-            const rr = this.createDataRangeRequest(cd.name);
-            rr.invoke(new DataRangeCollector(this, this.schema, 0,
-                this.page, rr, null, cd, options));
+            const rr = this.createGetRangeOrSamples(cd, 0, 0);
+            rr.invoke(new DataRangeCollector(this, this.page, rr, this.schema, 0, cd, null, options));
         }
     }
 
-    protected histogramOrHeatmap(columns: string[], heatmap: boolean): void {
+    protected histogram(columns: string[]): void {
         const cds: IColumnDescription[] = [];
         columns.forEach((v) => {
             const colDesc = this.schema.find(v);
@@ -214,17 +212,37 @@ export abstract class TSViewBase extends BigTableView {
             const rr = this.dataset.createGetCategoryRequest(this.page, cds);
             rr.invoke(new ChartObserver(this, this.page, rr, null,
                 this.rowCount, this.schema,
-                {exact: false, heatmap: heatmap, relative: false, reusePage: false}, cds));
+                {exact: false, heatmap: false, relative: false, reusePage: false}, cds));
         }
     }
 
-    protected histogram(heatMap: boolean): void {
+    protected heatmap(columns: string[]) {
+        const cds: IColumnDescription[] = [];
+        columns.forEach((v) => {
+            const colDesc = this.schema.find(v);
+            cds.push(colDesc);
+        });
+        // TODO: remove this path
+        const rr = this.dataset.createGetCategoryRequest(this.page, cds);
+        rr.invoke(new ChartObserver(this, this.page, rr, null,
+            this.rowCount, this.schema,
+            {exact: false, heatmap: true, relative: false, reusePage: false}, cds));
+    }
+
+    protected heatmapSelected(): void {
+        if (this.getSelectedColCount() !== 2) {
+            this.reportError("Must select 2 columns for heatmap");
+            return;
+        }
+        this.heatmap(this.getSelectedColNames());
+    }
+
+    protected histogramSelected(): void {
         if (this.getSelectedColCount() < 1 || this.getSelectedColCount() > 2) {
             this.reportError("Must select 1 or 2 columns for histogram");
             return;
         }
-
-        this.histogramOrHeatmap(this.getSelectedColNames(), heatMap);
+        this.histogram(this.getSelectedColNames());
     }
 
     protected trellisPlot(): void {
@@ -251,7 +269,10 @@ export abstract class TSViewBase extends BigTableView {
                     this.reportError("The two columns must be distinct");
                     return;
                 }
-                this.histogramOrHeatmap([col0, col1], heatmap);
+                if (heatmap)
+                    this.histogram([col0, col1]);
+                else
+                    this.heatmap([col0, col1]);
             },
         );
         dia.show();
@@ -278,7 +299,7 @@ export abstract class TSViewBase extends BigTableView {
         dia.setAction(
             () => {
                 const col = this.schema.fromDisplayName(dia.getColumn());
-                this.histogramOrHeatmap([col], false);
+                this.histogram([col]);
             },
         );
         dia.show();
@@ -334,8 +355,7 @@ export abstract class TSViewBase extends BigTableView {
                 TableView.convert(filter.compareValue, desc.kind);
 
             const newPage = this.dataset.newPage(title, this.page);
-            rr.invoke(new TableOperationCompleted(
-                newPage, this.rowCount, this.schema, rr, o, tableRowsDesired));
+            rr.invoke(new TableOperationCompleted(newPage, rr, this.rowCount, this.schema, o, tableRowsDesired));
         });
         ef.show();
     }
@@ -370,8 +390,7 @@ export abstract class TSViewBase extends BigTableView {
             this.schema.displayName(filter.column);
 
         const newPage = this.dataset.newPage(title, this.page);
-        rr.invoke(new TableOperationCompleted(
-            newPage, this.rowCount, this.schema, rr, o, tableRowsDesired));
+        rr.invoke(new TableOperationCompleted(newPage, rr, this.rowCount, this.schema, o, tableRowsDesired));
     }
 
     protected runHeavyHitters(percent: number) {
@@ -516,7 +535,7 @@ class ComparisonFilterDialog extends Dialog {
 }
 
 class CountReceiver extends OnCompleteReceiver<HLogLog> {
-    constructor(page: FullPage, operation: ICancellable,
+    constructor(page: FullPage, operation: ICancellable<HLogLog>,
                 protected colName: string) {
         super(page, operation, "HyperLogLog");
     }
@@ -545,7 +564,7 @@ export interface ChartOptions extends HistogramOptions {
 export class ChartObserver extends OnCompleteReceiver<DistinctStrings[]> {
     constructor(
         protected remoteObject: TableTargetAPI,
-        page: FullPage, operation: ICancellable,
+        page: FullPage, operation: ICancellable<DistinctStrings[]>,
         protected title: string | null,
         protected rowCount: number,
         protected schema: SchemaClass,

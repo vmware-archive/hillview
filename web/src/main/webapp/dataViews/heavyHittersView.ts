@@ -37,7 +37,7 @@ import {TableOperationCompleted, TableView} from "./tableView";
 export class HeavyHittersReceiver extends OnCompleteReceiver<TopList> {
     public constructor(page: FullPage,
                        protected readonly remoteTableObject: TableTargetAPI,
-                       operation: ICancellable,
+                       operation: ICancellable<TopList>,
                        protected readonly rowCount: number,
                        protected readonly schema: SchemaClass,
                        protected readonly order: RecordOrder,
@@ -210,7 +210,7 @@ export class HeavyHittersView extends BigTableView {
             const rr = this.remoteTableObject.createFilterHeavyRequest(
                 this.heavyHittersId, this.columnsShown, includeSet);
             rr.invoke(new TableOperationCompleted(
-                newPage, this.rowCount, this.schema, rr, this.originalTableOrder,
+                newPage, rr, this.rowCount, this.schema, this.originalTableOrder,
                 Resolution.tableRowsOnScreen));
         }
     }
@@ -223,7 +223,7 @@ export class HeavyHittersView extends BigTableView {
         const rr = this.remoteTableObject.createFilterListHeavy(
             this.heavyHittersId, this.columnsShown, includeSet, this.getSelectedRows());
         rr.invoke(new TableOperationCompleted(
-            newPage, this.rowCount, this.schema, rr, this.originalTableOrder,
+            newPage, rr, this.rowCount, this.schema, this.originalTableOrder,
             Resolution.tableRowsOnScreen));
     }
 
@@ -395,7 +395,7 @@ export class HeavyHittersView extends BigTableView {
  */
 export class HeavyHittersReceiver2 extends OnCompleteReceiver<TopList> {
     public constructor(public hhv: HeavyHittersView,
-                       public operation: ICancellable) {
+                       public operation: ICancellable<TopList>) {
         super(hhv.page, operation, "Frequent elements -- exact counts");
     }
 
@@ -417,7 +417,7 @@ export class HeavyHittersReceiver2 extends OnCompleteReceiver<TopList> {
  */
 export class HeavyHittersReceiver3 extends OnCompleteReceiver<TopList> {
     public constructor(public hhv: HeavyHittersView,
-                       public operation: ICancellable,
+                       public operation: ICancellable<TopList>,
                        public includeSet: boolean
                        ) {
         super(hhv.page, operation, "Computing exact frequencies");
@@ -429,7 +429,7 @@ export class HeavyHittersReceiver3 extends OnCompleteReceiver<TopList> {
         const rr = this.hhv.remoteTableObject.createFilterHeavyRequest(
             exactList.heavyHittersId, this.hhv.columnsShown, this.includeSet);
         rr.invoke(new TableOperationCompleted(
-            newPage, this.hhv.rowCount, this.hhv.schema, rr, this.hhv.originalTableOrder,
+            newPage, rr, this.hhv.rowCount, this.hhv.schema, this.hhv.originalTableOrder,
             Resolution.tableRowsOnScreen));
     }
 }

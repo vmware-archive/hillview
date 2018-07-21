@@ -210,7 +210,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
         }
         const o = this.order.clone();
         const rr = this.createFindRequest(o, this.currentData.rows[0].values, toFind, regex, substring, caseSensitive);
-        rr.invoke(new FindReceiver(this.getPage(), this, rr, o));
+        rr.invoke(new FindReceiver(this.getPage(), rr, this, o));
     }
 
     /**
@@ -223,9 +223,8 @@ export class TableView extends TSViewBase implements IScrollTarget {
 
         const rr = this.createZipRequest(r.first);
         const o = this.order.clone();
-        const finalRenderer = (page: FullPage, operation: ICancellable) => {
-            return new TableOperationCompleted(
-                page, this.rowCount, this.schema, operation, o, this.tableRowsDesired);
+        const finalRenderer = (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
+            return new TableOperationCompleted(page, operation, this.rowCount, this.schema, o, this.tableRowsDesired);
         };
         rr.invoke(new ZipReceiver(this.getPage(), rr, how, this.dataset, finalRenderer));
     }
@@ -543,13 +542,13 @@ export class TableView extends TSViewBase implements IScrollTarget {
                 }, true);
                 this.contextMenu.addItem({
                     text: "Histogram",
-                    action: () => this.histogram(false),
+                    action: () => this.histogramSelected(),
                     help: "Plot the data in the selected columns as a histogram. " +
                     "Applies to one or two columns only. The data cannot be of type String.",
                 }, selectedCount >= 1 && selectedCount <= 2);
                 this.contextMenu.addItem({
                     text: "Heatmap",
-                    action: () => this.heatMap(),
+                    action: () => this.heatmapOrTrellisSelected(),
                     help: "Plot the data in the selected columns as a heatmap or as a Trellis plot of heatmaps. " +
                     "Applies to two or three columns only.",
                 }, selectedCount >= 2 && selectedCount <= 3);
@@ -1012,7 +1011,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
 export class NextKReceiver extends Receiver<NextKList> {
     constructor(page: FullPage,
                 protected table: TableView,
-                operation: ICancellable,
+                operation: ICancellable<NextKList>,
                 protected reverse: boolean,
                 protected order: RecordOrder,
                 protected foundCount: number | null) {
@@ -1038,7 +1037,7 @@ export class SchemaReceiver extends OnCompleteReceiver<TableSummary> {
      * @param dataset         Dataset that this is a part of.
      * @param forceTableView  If true the resulting view is always a table.
      */
-    constructor(page: FullPage, operation: ICancellable,
+    constructor(page: FullPage, operation: ICancellable<TableSummary>,
                 protected remoteObject: TableTargetAPI,
                 protected dataset: DatasetView,
                 protected forceTableView) {
@@ -1081,7 +1080,7 @@ export class SchemaReceiver extends OnCompleteReceiver<TableSummary> {
 class QuantileReceiver extends OnCompleteReceiver<any[]> {
     public constructor(page: FullPage,
                        protected tv: TableView,
-                       operation: ICancellable,
+                       operation: ICancellable<any[]>,
                        protected order: RecordOrder) {
         super(page, operation, "Compute quantiles");
     }
@@ -1100,7 +1099,7 @@ class QuantileReceiver extends OnCompleteReceiver<any[]> {
 export class CorrelationMatrixReceiver extends BaseRenderer {
     public constructor(page: FullPage,
                        protected tv: TableView,
-                       operation: ICancellable,
+                       operation: ICancellable<RemoteObjectId>,
                        protected order: RecordOrder,
                        private numComponents: number,
                        private projectionName: string) {
@@ -1121,8 +1120,10 @@ export class CorrelationMatrixReceiver extends BaseRenderer {
 // Receives the ID of a table that contains additional eigen vector projection columns.
 // Invokes a sketch to get the schema of this new table.
 class PCATableReceiver extends BaseRenderer {
-    constructor(page: FullPage, operation: ICancellable, protected title: string, progressInfo: string,
-                protected tv: TSViewBase, protected order: RecordOrder, protected numComponents: number,
+    constructor(page: FullPage, operation: ICancellable<RemoteObjectId>,
+                protected title: string, progressInfo: string,
+                protected tv: TSViewBase, protected order: RecordOrder,
+                protected numComponents: number,
                 protected tableRowsDesired: number) {
         super(page, operation, progressInfo, tv.dataset);
     }
@@ -1139,7 +1140,7 @@ class PCATableReceiver extends BaseRenderer {
 // Receives the schema after a PCA computation; computes the additional columns
 // and adds these to the previous view
 class PCASchemaReceiver extends OnCompleteReceiver<TableSummary> {
-    constructor(page: FullPage, operation: ICancellable,
+    constructor(page: FullPage, operation: ICancellable<TableSummary>,
                 protected remoteObject: TableTargetAPI,
                 protected tv: TSViewBase,
                 protected title: string,
@@ -1181,9 +1182,9 @@ class PCASchemaReceiver extends OnCompleteReceiver<TableSummary> {
  */
 export class TableOperationCompleted extends BaseRenderer {
     public constructor(page: FullPage,
+                       operation: ICancellable<RemoteObjectId>,
                        protected rowCount: number,
                        protected schema: SchemaClass,
-                       operation: ICancellable,
                        protected order: RecordOrder,
                        protected tableRowsDesired: number) {
         super(page, operation, "Table operation", page.dataset);
@@ -1206,8 +1207,8 @@ export class TableOperationCompleted extends BaseRenderer {
  */
 export class FindReceiver extends OnCompleteReceiver<FindResult> {
     public constructor(page: FullPage,
+                       operation: ICancellable<FindResult>,
                        protected tv: TableView,
-                       operation: ICancellable,
                        protected order: RecordOrder) {
         super(page, operation, "Compute quantiles");
     }

@@ -68,13 +68,13 @@ export class HistogramLegendPlot extends Plot {
         this.legendRect = new Rectangle({ x: this.x, y: this.y }, { width: this.width, height: this.height });
         const canvas = this.plottingSurface.getCanvas();
 
-        this.colorWidth = this.width / this.axisData.bucketCount;
-        for (let i = 0; i < this.axisData.bucketCount; i++) {
+        this.colorWidth = this.width / this.axisData.cdfBucketCount;
+        for (let i = 0; i < this.axisData.cdfBucketCount; i++) {
             let color: string;
-            if (this.axisData.bucketCount === 1)
+            if (this.axisData.cdfBucketCount === 1)
                 color = Histogram2DView.colorMap(0);
             else
-                color = Histogram2DView.colorMap(i / (this.axisData.bucketCount - 1));
+                color = Histogram2DView.colorMap(i / (this.axisData.cdfBucketCount - 1));
             canvas.append("rect")
                 .attr("width", this.colorWidth)
                 .attr("height", this.height)
