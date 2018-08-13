@@ -28,7 +28,11 @@ def start_backend(config, rh):
         "nohup java -Dlog4j.configurationFile=./log4j.properties -server -Xms" + heapsize + \
         " -Xmx" + heapsize + " -Xloggc:" + gclog + \
         " -jar " + config.service_folder + "/hillview/hillview-server-jar-with-dependencies.jar 0.0.0.0:" + \
-        str(config.backend_port) + ">/dev/null 2>/dev/null &")
+        str(config.backend_port) + " >nohup.out 2>&1 &")
+    # Check to see whether the remote service is still running.  Sometimes it fails right away
+    rh.run_remote_shell_command("if pgrep -f hillview-server; then echo Started; else " +
+                                " echo \"Could not start hillview on " + str(rh.host) +"\"; " +
+                                " cat " + config.service_folder + "/hillview/nohup.out; false; fi")
 
 def start_backends(config):
     """Starts all Hillview backend workers"""
