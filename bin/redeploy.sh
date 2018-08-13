@@ -52,3 +52,5 @@ if [ -z $NOREDEPLOY ]; then
 fi
 echo "Starting services"
 $mydir/start.py $CONFIG
+echo "Checking services"
+$mydir/status.py $CONFIG

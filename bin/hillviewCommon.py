@@ -5,7 +5,6 @@ from optparse import OptionParser
 from importlib.machinery import SourceFileLoader
 import subprocess
 import tempfile
-#from pathos.pools import ProcessPool
 
 def usage(parser):
     assert isinstance(parser, OptionParser)
