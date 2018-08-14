@@ -109,7 +109,7 @@ export abstract class TSViewBase extends BigTableView {
             "Describe the set of ORC files where data will be saved.");
         dialog.addTextField("folderName", "Folder", FieldKind.String, "/",
             "All ORC files will be written to this folder on each of the remote machines.");
-        dialog.setCacheTitle("saveAs");
+        dialog.setCacheTitle("saveAsDialog");
 
         class SaveReceiver extends OnCompleteReceiver<boolean> {
             constructor(page: FullPage, operation: ICancellable) {
@@ -419,6 +419,7 @@ class EqualityFilterDialog extends Dialog {
             + "checkbox to interpret the search query as a regular expression");
         this.addBooleanField("complement", "Exclude matches", false, "Select checkbox to "
             + "filter out all matches");
+        this.setCacheTitle("EqualityFilterDialog");
     }
 
     public getFilter(): EqualityFilterDescription {
@@ -463,6 +464,7 @@ class ComparisonFilterDialog extends Dialog {
         const op = this.addSelectField("operation", "Compare", ["==", "!=", "<", ">", "<=", ">="], "<",
             "Operation that is used to compare; the value is used at the right in the comparison.");
         op.onchange = () => this.selectionChanged();
+        this.setCacheTitle("ComparisonFilterDialog");
     }
 
     protected getColName(): string {

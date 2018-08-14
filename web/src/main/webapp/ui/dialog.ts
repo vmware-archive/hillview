@@ -476,7 +476,13 @@ export class Dialog extends DialogBase {
      * @returns {string}      The value associated to the given field.
      */
     public getFieldValue(field: string): string {
-        return this.fields.get(field).html.value;
+        const f = this.fields.get(field);
+        if (f.type === FieldKind.Boolean) {
+            const hi = f.html as HTMLInputElement;
+            return "" + hi.checked;
+        } else {
+            return f.html.value;
+        }
     }
 
     /**
@@ -495,9 +501,11 @@ export class Dialog extends DialogBase {
      */
     public setFieldValue(field: string, value: string): void {
         const f = this.fields.get(field);
-        f.html.value = value;
-        if (f.type === FieldKind.Boolean && value === "on") {
-            (f.html as HTMLInputElement).checked = true;
+        if (f.type === FieldKind.Boolean) {
+            const hi = f.html as HTMLInputElement;
+            hi.checked = (value === "true");
+        } else {
+            f.html.value = value;
         }
     }
 
