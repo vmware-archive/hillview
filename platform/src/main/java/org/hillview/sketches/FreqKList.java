@@ -114,21 +114,25 @@ public abstract class FreqKList implements Serializable {
     }
 
     /**
-     * Method used to filter the table and keep only those rows that match one of the heavy hitters.
+     * Method used to filter the table and keep/discard only those rows that match one of the heavy
+     * hitters.
      * @param schema tells us which columns were used to compare with the heavy hitters.
+     * @param includeSet specifies whether the matching rows are kept or discarded.
      * @return A table filter for only those rows that match one of the heavy hitters in Schema.
      */
-    public RowSnapshotSet.SetTableFilterDescription getFilter(final Schema schema) {
+    public RowSnapshotSet.SetTableFilterDescription getFilter(final Schema schema,
+                                                              boolean includeSet) {
         RowSnapshotSet rss = new RowSnapshotSet(schema, this.hMap.keySet());
-        return new RowSnapshotSet.SetTableFilterDescription(rss);
+        return new RowSnapshotSet.SetTableFilterDescription(rss, includeSet);
     }
 
-    public RowSnapshotSet.SetTableFilterDescription getFilter(Schema schema, int[] rowIndices) {
+    public RowSnapshotSet.SetTableFilterDescription getFilter(Schema schema, boolean includeSet,
+                                                              int[] rowIndices) {
         List<RowSnapshot> rsList = new ArrayList<RowSnapshot>();
         for (int rowIndex : rowIndices)
             rsList.add(this.pList.get(rowIndex).first);
         RowSnapshotSet rss = new RowSnapshotSet(schema, rsList);
-        return new RowSnapshotSet.SetTableFilterDescription(rss);
+        return new RowSnapshotSet.SetTableFilterDescription(rss, includeSet);
     }
 
 

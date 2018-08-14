@@ -65,29 +65,33 @@ public class RowSnapshotSet implements Serializable {
     static class SpecializedTableFilter implements ITableFilter {
         private final RowSnapshotSet set;
         private final VirtualRowSnapshot vrs;
+        private boolean includeSet;
 
-        SpecializedTableFilter(RowSnapshotSet set, ITable table) {
+        SpecializedTableFilter(RowSnapshotSet set, boolean includeSet, ITable table) {
             this.set = set;
+            this.includeSet = includeSet;
             this.vrs = new VirtualRowSnapshot(table, this.set.schema);
         }
 
         @Override
         public boolean test(int rowIndex) {
             this.vrs.setRow(rowIndex);
-            return this.set.contains(this.vrs);
+            return includeSet ? this.set.contains(this.vrs): (!this.set.contains(this.vrs));
         }
     }
 
     public static class SetTableFilterDescription implements ITableFilterDescription {
         private final RowSnapshotSet set;
+        private final boolean includeSet;
 
-        public SetTableFilterDescription(RowSnapshotSet set) {
+        public SetTableFilterDescription(RowSnapshotSet set, boolean includeSet) {
             this.set = set;
+            this.includeSet = includeSet;
         }
 
         @Override
         public ITableFilter getFilter(ITable table) {
-            return new SpecializedTableFilter(this.set, table);
+            return new SpecializedTableFilter(this.set, this.includeSet, table);
         }
     }
 
@@ -112,7 +116,8 @@ public class RowSnapshotSet implements Serializable {
         }
     }
 
-    public ITableFilterDescription rowInTable() {
+    /* public ITableFilterDescription rowInTable() {
         return new SetTableFilterDescription(this);
     }
+    */
 }
