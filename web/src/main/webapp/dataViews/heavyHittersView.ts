@@ -49,16 +49,46 @@ export class HeavyHittersReceiver extends OnCompleteReceiver<TopList> {
     }
 
     public run(data: TopList): void {
-        const names = this.columnsShown.map((c) => this.schema.displayName(c.name)).join(", ");
-        let newPage = this.page;
-        if (!this.reusePage)
-            newPage = this.page.dataset.newPage("Frequent Elements in " + names, this.page);
-        const hhv = new HeavyHittersView(
-            data.heavyHittersId, newPage, this.remoteTableObject, this.rowCount, this.schema,
-            this.order, this.isApprox, this.percent, this.columnsShown);
-        newPage.setDataView(hhv);
-        hhv.updateView(data.top, this.elapsedMilliseconds());
+        if (data.top.rows.length === 0) this.showEmptyDialog();
+        else {
+            const names = this.columnsShown.map((c) => this.schema.displayName(c.name)).join(", ");
+            let newPage = this.page;
+            if (!this.reusePage)
+                newPage = this.page.dataset.newPage("Frequent Elements in " + names, this.page);
+            const hhv = new HeavyHittersView(
+                data.heavyHittersId, newPage, this.remoteTableObject, this.rowCount, this.schema,
+                this.order, this.isApprox, this.percent, this.columnsShown);
+            newPage.setDataView(hhv);
+            hhv.updateView(data.top, this.elapsedMilliseconds());
+        }
     }
+
+    private showEmptyDialog(): void {
+        const percentDialog = new Dialog("No Frequent Elements", "");
+        percentDialog.addText("No elements found with frequency above " + this.percent.toString() + "%.");
+        if (this.percent > HeavyHittersView.min) {
+            percentDialog.addText("Lower the threshold? Can take any value above " + HeavyHittersView.minString);
+            percentDialog.addTextField("newPercent", "Threshold (%)", FieldKind.Double,
+                HeavyHittersView.min.toString(),
+                "All values that appear in the dataset with a frequency above this value (as a percent) " +
+                "will be considered frequent elements.  Must be at least " + HeavyHittersView.minString);
+            percentDialog.setAction(() => {
+                const newPercent = percentDialog.getFieldValueAsNumber("newPercent");
+                if (newPercent != null) {
+                    const rr = this.remoteTableObject.createHeavyHittersRequest(
+                        this.columnsShown, newPercent,
+                        this.rowCount, HeavyHittersView.switchToMG);
+                    rr.invoke(new HeavyHittersReceiver(
+                        this.page, this.remoteTableObject, rr, this.rowCount, this.schema,
+                        this.order, true, newPercent, this.columnsShown, false));
+                }
+            });
+        } else
+            percentDialog.setAction(() => {});
+        percentDialog.setCacheTitle("noHeavyHittersDialog");
+        percentDialog.show();
+    }
+
 }
 
 /**
@@ -94,15 +124,14 @@ export class HeavyHittersView extends BigTableView {
         const tableMenu = new SubMenu([]);
         tableMenu.addItem({
                 text: "All Frequent Elements as a Table",
-                action: () => this.showTable(isApprox),
-                help: "Show the data corresponding to all frequent elements as a table."},
+                action: () => this.showTable(isApprox, true),
+                help: "Show all frequent elements as a table."},
             true);
         tableMenu.addItem({
-                text: "Selected Frequent Elements as Table",
-                action: () => this.showSelected(),
-                help: "Filter by the selected frequent elements and show the result as a table."},
-            true );
-
+                text: "All but the Frequent  Elements as a Table",
+                action: () => this.showTable(isApprox, false),
+                help: "Show all except the frequent elements as a table."},
+            true);
         const modifyMenu = new SubMenu([]);
         modifyMenu.addItem({
                 text: "Get exact counts",
@@ -156,7 +185,6 @@ export class HeavyHittersView extends BigTableView {
         if (schema == null || percent == null || remoteTableId == null || isApprox == null ||
             order == null || columnsShown == null)
             return null;
-
         const remoteTable = new TableTargetAPI(remoteTableId);
         const hv = new HeavyHittersView(ser.remoteObjectId, page, remoteTable, ser.rowCount, schema,
             order, isApprox, percent, columnsShown);
@@ -172,27 +200,28 @@ export class HeavyHittersView extends BigTableView {
      * Method the creates the filtered table. If isApprox is true, then there are two steps: we first compute the exact
      * heavy hitters and then use that list to filter the table. If isApprox is false, we compute the table right away.
      */
-    public showTable(isApprox: boolean): void {
+    public showTable(isApprox: boolean, includeSet: boolean): void {
         if (isApprox) {
             const rr = this.remoteTableObject.createCheckHeavyRequest(
                 new RemoteObject(this.heavyHittersId), this.columnsShown);
-            rr.invoke(new HeavyHittersReceiver3(this, rr));
+            rr.invoke(new HeavyHittersReceiver3(this, rr, includeSet));
         } else {
             const newPage = this.dataset.newPage("All frequent elements", this.page);
             const rr = this.remoteTableObject.createFilterHeavyRequest(
-                this.heavyHittersId, this.columnsShown);
+                this.heavyHittersId, this.columnsShown, includeSet);
             rr.invoke(new TableOperationCompleted(
                 newPage, this.rowCount, this.schema, rr, this.originalTableOrder,
                 Resolution.tableRowsOnScreen));
         }
     }
 
-    public showSelected(): void {
+    public showSelected(includeSet: boolean): void {
         if (this.table.getSelectedRows().size === 0)
             return;
-        const newPage = this.dataset.newPage("Selected frequent elements", this.page);
+        let title: string = includeSet ? "Selected frequent elements": "All other elements";
+        const newPage = this.dataset.newPage(title, this.page);
         const rr = this.remoteTableObject.createFilterListHeavy(
-            this.heavyHittersId, this.columnsShown, this.getSelectedRows());
+            this.heavyHittersId, this.columnsShown, includeSet, this.getSelectedRows());
         rr.invoke(new TableOperationCompleted(
             newPage, this.rowCount, this.schema, rr, this.originalTableOrder,
             Resolution.tableRowsOnScreen));
@@ -221,43 +250,41 @@ export class HeavyHittersView extends BigTableView {
     }
 
     public updateView(nextKList: NextKList, elapsedMs: number): void {
-        if (nextKList.rows.length === 0) this.showEmptyDialog();
-        else {
-            this.setRest(nextKList);
-            if (nextKList.rows != null) {
-                let k = 0;
-                let position = 0;
-                for (let i = 0; i < nextKList.rows.length; i++) {
+        this.setRest(nextKList);
+        if (nextKList.rows != null) {
+            let k = 0;
+            let position = 0;
+            for (let i = 0; i < nextKList.rows.length; i++) {
+                k++;
+                if (i === this.restPos) {
+                    this.showRest(k, position, this.restCount, nextKList.rowsScanned, this.table);
+                    position += this.restCount;
                     k++;
-                    if (i === this.restPos) {
-                        this.showRest(k, position, this.restCount, nextKList.rowsScanned, this.table);
-                        position += this.restCount;
-                        k++;
-                    }
-                    const row: Element[] = [];
-                    row.push(textToDiv(k.toString()));
-                    for (let j = 0; j < this.columnsShown.length; j++) {
-                        const value = nextKList.rows[i].values[j];
-                        row.push(textToDiv(TableView.convert(value, this.columnsShown[j].kind)));
-                    }
-                    row.push(textToDiv(this.valueToString(nextKList.rows[i].count)));
-                    row.push(textToDiv(this.valueToString((nextKList.rows[i].count / nextKList.rowsScanned) * 100)));
-                    row.push(new DataRange(position, nextKList.rows[i].count,
-                        nextKList.rowsScanned).getDOMRepresentation());
-                    const tRow: HTMLTableRowElement = this.table.addElementRow(row);
-                    tRow.oncontextmenu = (e) => this.clickThenShowContextMenu(tRow, e);
-                    position += nextKList.rows[i].count;
                 }
-                if (this.restPos === nextKList.rows.length)
-                    this.showRest(nextKList.rows.length, position, this.restCount, nextKList.rowsScanned, this.table);
+                const row: Element[] = [];
+                row.push(textToDiv(k.toString()));
+                for (let j = 0; j < this.columnsShown.length; j++) {
+                    const value = nextKList.rows[i].values[j];
+                    row.push(textToDiv(TableView.convert(value, this.columnsShown[j].kind)));
+                }
+                row.push(textToDiv(this.valueToString(nextKList.rows[i].count)));
+                row.push(textToDiv(this.valueToString((nextKList.rows[i].count / nextKList.rowsScanned) * 100)));
+                row.push(new DataRange(position, nextKList.rows[i].count,
+                    nextKList.rowsScanned).getDOMRepresentation());
+                const tRow: HTMLTableRowElement = this.table.addElementRow(row);
+                tRow.oncontextmenu = (e) => this.clickThenShowContextMenu(tRow, e);
+                position += nextKList.rows[i].count;
             }
-            this.table.addFooter();
-            this.page.scrollIntoView();
-            this.page.reportTime(elapsedMs);
-            if (nextKList.rows.length >=  HeavyHittersView.maxDisplay)
-                HeavyHittersView.showLongDialog(nextKList.rows.length);
+            if (this.restPos === nextKList.rows.length)
+                this.showRest(nextKList.rows.length, position, this.restCount, nextKList.rowsScanned, this.table);
         }
+        this.table.addFooter();
+        this.page.scrollIntoView();
+        this.page.reportTime(elapsedMs);
+        if (nextKList.rows.length >= HeavyHittersView.maxDisplay)
+            HeavyHittersView.showLongDialog(nextKList.rows.length);
     }
+
 
     private static showLongDialog(total: number): void {
         const longListDialog = new Dialog("Too Many Frequent Elements", "");
@@ -269,41 +296,21 @@ export class HeavyHittersView extends BigTableView {
         longListDialog.show();
     }
 
-    private showEmptyDialog(): void {
-        const percentDialog = new Dialog("No Frequent Elements", "");
-        percentDialog.addText("No elements found with frequency above " + this.percent.toString() + "%.");
-        if (this.percent > HeavyHittersView.min) {
-            percentDialog.addText("Lower the threshold? Can take any value above " + HeavyHittersView.minString);
-            percentDialog.addTextField("newPercent", "Threshold (%)", FieldKind.Double,
-                HeavyHittersView.min.toString(),
-                "All values that appear in the dataset with a frequency above this value (as a percent) " +
-                "will be considered frequent elements.  Must be at least " + HeavyHittersView.minString);
-            percentDialog.setAction(() => {
-                const newPercent = percentDialog.getFieldValueAsNumber("newPercent");
-                if (newPercent != null)
-                    this.runWithThreshold(newPercent);
-            });
-        } else
-            percentDialog.setAction(() => {});
-        percentDialog.setCacheTitle("noHeavyHittersDialog");
-        percentDialog.show();
-    }
-
     private clickThenShowContextMenu(tRow: HTMLTableRowElement, e: MouseEvent): void {
         this.table.clickRow(tRow, e);
         if (e.button === 1) return; // If it was in fact a CTRL+ leftClick on a Mac, don't show the context menu.
         const selectedCount = this.table.selectedRows.size();
         this.contextMenu.clear();
         this.contextMenu.addItem({
-                text: "Filter selected frequent elements (as table)",
-                action: () => this.showSelected(),
+                text: "Show selected elements as table",
+                action: () => this.showSelected(true),
                 help: "Show a tabular view containing the selected frequent elements." },
             selectedCount > 0);
         this.contextMenu.addItem({
-                text: "Filter all frequent elements (as table)",
-                action: () => this.showTable(this.isApprox),
-                help: "Show a tabular view containing all frequent elements." },
-            true);
+                text: "Show all but the selected elements as table",
+                action: () => this.showSelected(false),
+                help: "Show a tabular view excluding the selected frequent elements." },
+            selectedCount > 0);
         this.contextMenu.show(e);
     }
 
@@ -411,14 +418,17 @@ export class HeavyHittersReceiver2 extends OnCompleteReceiver<TopList> {
  */
 export class HeavyHittersReceiver3 extends OnCompleteReceiver<TopList> {
     public constructor(public hhv: HeavyHittersView,
-                       public operation: ICancellable) {
+                       public operation: ICancellable,
+                       public includeSet: boolean
+                       ) {
         super(hhv.page, operation, "Computing exact frequencies");
     }
 
     public run(exactList: TopList): void {
-        const newPage = this.hhv.dataset.newPage("Frequent elements", this.hhv.page);
+        let title : string = (this.includeSet) ? "Frequent Elements": "Infrequent Elements";
+        const newPage = this.hhv.dataset.newPage(title, this.hhv.page);
         const rr = this.hhv.remoteTableObject.createFilterHeavyRequest(
-            exactList.heavyHittersId, this.hhv.columnsShown);
+            exactList.heavyHittersId, this.hhv.columnsShown, this.includeSet);
         rr.invoke(new TableOperationCompleted(
             newPage, this.hhv.rowCount, this.hhv.schema, rr, this.hhv.originalTableOrder,
             Resolution.tableRowsOnScreen));

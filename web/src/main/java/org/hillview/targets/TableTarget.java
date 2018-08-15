@@ -515,6 +515,7 @@ public final class TableTarget extends RpcTarget {
         String hittersId = "";
         @SuppressWarnings("NullableProblems")
         Schema schema;
+        boolean includeSet;
     }
 
     /**
@@ -541,7 +542,7 @@ public final class TableTarget extends RpcTarget {
     }
 
     /**
-     * Creates a table containing only the heavy hitters.
+     * Creates a table containing/excluding the selected heavy hitters.
      */
     @HillviewRpc
     public void filterListHeavy(RpcRequest request, RpcRequestContext context) {
@@ -550,7 +551,8 @@ public final class TableTarget extends RpcTarget {
             @Override
             public void onSuccess(RpcTarget rpcTarget) {
                 HeavyHittersTarget hht = (HeavyHittersTarget)rpcTarget;
-                ITableFilterDescription filter = hht.heavyHitters.getFilter(hhl.schema, hhl.rowIndices);
+                ITableFilterDescription filter = hht.heavyHitters.getFilter(hhl.schema,
+                        hhl.includeSet, hhl.rowIndices);
                 FilterMap fm = new FilterMap(filter);
                 TableTarget.this.runMap(TableTarget.this.table, fm, TableTarget::new, request, context);
             }
@@ -558,6 +560,9 @@ public final class TableTarget extends RpcTarget {
         RpcObjectManager.instance.retrieveTarget(new RpcTarget.Id(hhl.hittersId), true, observer);
     }
 
+    /**
+     * Creates a table containing/excluding all the heavy hitters.
+     */
     @HillviewRpc
     public void filterHeavy(RpcRequest request, RpcRequestContext context) {
         HeavyHittersFilterInfo hhi = request.parseArgs(HeavyHittersFilterInfo.class);
@@ -565,7 +570,7 @@ public final class TableTarget extends RpcTarget {
             @Override
             public void onSuccess(RpcTarget rpcTarget) {
                 HeavyHittersTarget hht = (HeavyHittersTarget)rpcTarget;
-                ITableFilterDescription filter = hht.heavyHitters.getFilter(hhi.schema);
+                ITableFilterDescription filter = hht.heavyHitters.getFilter(hhi.schema, hhi.includeSet);
                 FilterMap fm = new FilterMap(filter);
                 TableTarget.this.runMap(TableTarget.this.table, fm, TableTarget::new, request, context);
             }

@@ -134,19 +134,21 @@ export class TableTargetAPI extends RemoteObject {
         });
     }
 
-    public createFilterHeavyRequest(rid: RemoteObjectId, schema: Schema):
+    public createFilterHeavyRequest(rid: RemoteObjectId, schema: Schema, includeSet: boolean):
         RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<RemoteObjectId>("filterHeavy", {
             hittersId: rid,
-            schema: schema
+            schema: schema,
+            includeSet: includeSet
         });
     }
 
-    public createFilterListHeavy(rid: RemoteObjectId, schema: Schema, rowIndices: number[]):
+    public createFilterListHeavy(rid: RemoteObjectId, schema: Schema, includeSet: boolean, rowIndices: number[]):
         RpcRequest<PartialResult<RemoteObjectId>> {
             return this.createStreamingRpcRequest<RemoteObjectId>("filterListHeavy", {
                 hittersId: rid,
                 schema: schema,
+                includeSet: includeSet,
                 rowIndices: rowIndices
             });
     }
