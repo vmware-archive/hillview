@@ -20,13 +20,10 @@ package org.hillview.targets;
 import com.google.gson.JsonObject;
 import org.hillview.*;
 import org.hillview.dataset.ConcurrentSketch;
-import org.hillview.dataset.TripleSketch;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.api.Pair;
-import org.hillview.jsonObjects.Histogram2DArgs;
-import org.hillview.jsonObjects.Histogram3DArgs;
 import org.hillview.maps.*;
 import org.hillview.sketches.*;
 import org.hillview.table.*;
@@ -141,23 +138,24 @@ public final class TableTarget extends RpcTarget {
         // This class has a bunck of unchecked casts, but the Java
         // type system is not good enough to express these operations
         // in a type-safe manner.
-        @SuppressWarnings("unckecked")
         ISketch<ITable, BucketsInfo> getSketch() {
             if (this.cd.kind.isString()) {
                 ISketch<ITable, MinKSet<String>> s = new SampleDistinctElementsSketch(
                         // We sample cdfBuckets squared
                         this.cd.name, this.seed, this.cdfBuckets * this.cdfBuckets);
+                //noinspection unchecked
                 return (ISketch<ITable, BucketsInfo>)(Object)s;
             } else {
                 ISketch<ITable, DataRange> s = new DataRangeSketch(this.cd.name);
+                //noinspection unchecked
                 return (ISketch<ITable, BucketsInfo>)(Object)s;
             }
         }
 
-        @SuppressWarnings("unckecked")
         BiFunction<BucketsInfo, HillviewComputation, BucketsInfo> getPostProcessing() {
             if (this.cd.kind.isString()) {
                 int b = this.cdfBuckets;
+                //noinspection unchecked
                 return (e, c) -> new StringBucketBoundaries((MinKSet<String>)e, b);
             } else {
                 return (e, c) -> e;
@@ -242,23 +240,21 @@ public final class TableTarget extends RpcTarget {
 
     @HillviewRpc
     public void histogram2D(RpcRequest request, RpcRequestContext context) {
-        Histogram2DArgs info = request.parseArgs(Histogram2DArgs.class);
-        assert info.first != null;
-        assert info.second != null;
+        HistogramArgs[] info = request.parseArgs(HistogramArgs[].class);
+        assert info.length == 3;
         HeatMapSketch sk = new HeatMapSketch(
-                info.first.getBuckets(info.xBucketCount),
-                info.second.getBuckets(info.yBucketCount),
-                info.first.columnName,
-                info.second.columnName,
-                info.samplingRate, info.seed);
-        IHistogramBuckets buckets = info.first.getBuckets(info.cdfBucketCount);
-        HistogramSketch cdf = new HistogramSketch(
-                buckets, info.first.columnName, info.cdfSamplingRate, info.seed);
+                info[0].getBuckets(),
+                info[1].getBuckets(),
+                info[0].cd.name,
+                info[1].cd.name,
+                info[0].samplingRate, info[0].seed);
+        HistogramSketch cdf = info[2].getSketch();
         ConcurrentSketch<ITable, HeatMap, Histogram> csk =
                 new ConcurrentSketch<ITable, HeatMap, Histogram>(sk, cdf);
         this.runSketch(this.table, csk, request, context);
     }
 
+    /*
     @HillviewRpc
     public void heatMap3D(RpcRequest request, RpcRequestContext context) {
         Histogram3DArgs info = request.parseArgs(Histogram3DArgs.class);
@@ -275,40 +271,7 @@ public final class TableTarget extends RpcTarget {
                 info.samplingRate, info.seed);
         this.runSketch(this.table, sk, request, context);
     }
-
-    static class CategoricalValues {
-        String columnName = "";
-        BasicColStatSketch getBasicStatsSketch() {
-            return new BasicColStatSketch(this.columnName, 0);
-        }
-    }
-
-    @HillviewRpc
-    @Deprecated
-    public void range2D(RpcRequest request, RpcRequestContext context) {
-        CategoricalValues[] cols = request.parseArgs(CategoricalValues[].class);
-        if (cols.length != 2)
-            throw new RuntimeException("Expected 2 RangeInfo objects, got " + cols.length);
-        BasicColStatSketch sk1 = cols[0].getBasicStatsSketch();
-        BasicColStatSketch sk2 = cols[1].getBasicStatsSketch();
-        ConcurrentSketch<ITable, BasicColStats, BasicColStats> csk =
-                new ConcurrentSketch<ITable, BasicColStats, BasicColStats>(sk1, sk2);
-        this.runSketch(this.table, csk, request, context);
-    }
-
-    @HillviewRpc
-    @Deprecated
-    public void range3D(RpcRequest request, RpcRequestContext context) {
-        CategoricalValues[] cols = request.parseArgs(CategoricalValues[].class);
-        if (cols.length != 3)
-            throw new RuntimeException("Expected 3 RangeInfo objects, got " + cols.length);
-        BasicColStatSketch sk1 = cols[0].getBasicStatsSketch();
-        BasicColStatSketch sk2 = cols[1].getBasicStatsSketch();
-        BasicColStatSketch sk3 = cols[2].getBasicStatsSketch();
-        TripleSketch<ITable, BasicColStats, BasicColStats, BasicColStats> tsk =
-                new TripleSketch<ITable, BasicColStats, BasicColStats, BasicColStats>(sk1, sk2, sk3);
-        this.runSketch(this.table, tsk, request, context);
-    }
+    */
 
     @HillviewRpc
     public void filterEquality(RpcRequest request, RpcRequestContext context) {

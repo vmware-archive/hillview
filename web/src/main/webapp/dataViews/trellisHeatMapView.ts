@@ -35,7 +35,6 @@ import {Point, Resolution, Size} from "../ui/ui";
 import {ICancellable, Pair, PartialResult, Seed, significantDigits, truncate} from "../util";
 import {AxisData} from "./axisData";
 import {NextKReceiver, TableView} from "./tableView";
-import {ChartObserver} from "./tsViewBase";
 
 export class HeatMapArrayData {
     public buckets: number[][][];
@@ -603,6 +602,8 @@ export class TrellisRangeReceiver extends Receiver<Pair<BasicColStats, BasicColS
             this.schema.displayName(this.cds[0].name) + ", " +
             this.schema.displayName(this.cds[1].name) + " by " +
             this.schema.displayName(this.cds[2].name) + ")", this.page);
+        /*
+        TODO
         const args: TrellisPlotArgs = {
             cds: this.cds,
             uniqueStrings: page.dataset.getDistinctStrings(this.cds[2].name),
@@ -610,6 +611,7 @@ export class TrellisRangeReceiver extends Receiver<Pair<BasicColStats, BasicColS
         this.view = new TrellisHeatMapView(
             this.remoteObject.remoteObjectId, this.rowCount, this.schema, newPage, args);
         newPage.setDataView(this.view);
+        */
     }
 
     public onNext(value: PartialResult<Pair<BasicColStats, BasicColStats>>) {
@@ -713,10 +715,13 @@ export class TrellisPlotDialog extends Dialog {
             return;
         }
 
+        /*
+        TODO
         const rr = this.page.dataset.createGetCategoryRequest(this.page, cds);
         rr.invoke(new ChartObserver(this.remoteObject, this.page, rr,
             null, this.rowCount, this.schema,
             { exact: false, heatmap: true, relative: false, reusePage: false}, cds));
+         */
     }
 
     private getColumns(): IColumnDescription[] {

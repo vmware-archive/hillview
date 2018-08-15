@@ -163,23 +163,6 @@ export interface ColumnSortOrientation {
     isAscending: boolean;
 }
 
-// TODO: Deprecate
-export class CategoricalValues {
-    constructor(public columnName: string,
-                public allNames?: string[]) {}
-}
-
-/**
- * All strings that can appear in a categorical column.
- * Serialization of the DistinctStrings Java class.
- */
-// TODO: Deprecate
-export interface IDistinctStrings {
-    uniqueStrings: string[];
-    // This may be true if there are too many distinct strings in a column.
-    truncated: boolean;
-}
-
 export interface HistogramBase {
     buckets: number[];
     missingData: number;

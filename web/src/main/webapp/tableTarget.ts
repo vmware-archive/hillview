@@ -22,8 +22,7 @@
 import {DatasetView, IViewSerialization} from "./datasetView";
 import {HeatMapArrayData} from "./dataViews/trellisHeatMapView";
 import {
-    BasicColStats, CategoricalValues, CombineOperators,
-    CreateColumnInfo, DataRange, FilterDescription,
+    CombineOperators, CreateColumnInfo, DataRange, FilterDescription,
     HeatMap, Histogram3DArgs, HistogramArgs,
     HistogramBase, HLogLog, IColumnDescription, kindIsString,
     NextKList, RangeArgs, RecordOrder, RemoteObjectId, Schema,
@@ -53,10 +52,6 @@ export class TableTargetAPI extends RemoteObject {
      */
     constructor(public readonly remoteObjectId: RemoteObjectId) {
         super(remoteObjectId);
-    }
-
-    public createRangeRequest(r: CategoricalValues): RpcRequest<PartialResult<BasicColStats>> {
-        return this.createStreamingRpcRequest<BasicColStats>("range", r);
     }
 
     public createZipRequest(r: RemoteObject): RpcRequest<PartialResult<RemoteObjectId>> {
@@ -133,18 +128,6 @@ export class TableTargetAPI extends RemoteObject {
     public createHLogLogRequest(colName: string): RpcRequest<PartialResult<HLogLog>> {
         return this.createStreamingRpcRequest<HLogLog>("hLogLog",
             { columnName: colName, seed: Seed.instance.get() });
-    }
-
-    public createRange2DRequest(r1: CategoricalValues, r2: CategoricalValues):
-    RpcRequest<PartialResult<Pair<BasicColStats, BasicColStats>>> {
-        return this.createStreamingRpcRequest<Pair<BasicColStats, BasicColStats>>("range2D", [r1, r2]);
-    }
-
-    public createRange2DColsRequest(c1: string, c2: string):
-            RpcRequest<PartialResult<Pair<BasicColStats, BasicColStats>>> {
-        const r1: CategoricalValues = new CategoricalValues(c1, null);
-        const r2: CategoricalValues = new CategoricalValues(c2, null);
-        return this.createRange2DRequest(r1, r2);
     }
 
     public createHeavyHittersRequest(columns: IColumnDescription[],

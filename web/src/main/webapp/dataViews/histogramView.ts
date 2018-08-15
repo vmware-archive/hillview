@@ -53,7 +53,7 @@ import {
 import {AxisData} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
-import {ChartObserver, ChartOptions, HistogramOptions} from "./tsViewBase";
+import {ChartOptions, HistogramOptions} from "./tsViewBase";
 import {HeatMapRenderer} from "./heatmapView";
 
 /**
@@ -344,12 +344,11 @@ export class HistogramView extends HistogramViewBase {
     private showSecondColumn(colName: string) {
         const oc = this.schema.find(colName);
         const cds: IColumnDescription[] = [this.currentData.axisData.description, oc];
-        // TODO: Refactor this
-        const rr = this.dataset.createGetCategoryRequest(this.page, cds);
-        rr.invoke(new ChartObserver(this, this.page, rr, null,
-            this.rowCount, this.schema,
-            { exact: this.currentData.samplingRate >= 1,
-                heatmap: false, relative: false, reusePage: false }, cds));
+        const buckets = HistogramViewBase.histogram2DSize(this.page);
+        const rr = this.getDataRanges2D(cds, buckets);
+        rr.invoke(new DataRangesCollector(
+            this, this.page, rr, this.schema, this.rowCount, cds, null,
+            { reusePage: false, relative: false, heatmap: false, exact: true } ));
     }
 
     public changeBuckets(bucketCount: number): void {
@@ -671,25 +670,30 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
             this.page.reportError("No non-missing data");
             return;
         }
-        const args: HistogramArgs[] = [];
-        const xBucketCount = HistogramViewBase.bucketCount(this.value[0], this.page,
-            this.cds[0].kind, this.options.heatmap, true);
-        const yBucketCount = HistogramViewBase.bucketCount(this.value[1], this.page,
-            this.cds[1].kind, this.options.heatmap, false);
 
-        let arg = HistogramViewBase.computeHistogramArgs(
-            this.cds[0], value[0], xBucketCount, this.options.exact, this.page);
-        args.push(arg);
-        arg = HistogramViewBase.computeHistogramArgs(
-            this.cds[1], value[1], yBucketCount, this.options.exact, this.page);
-        args.push(arg);
+        if (this.options.heatmap) {
+            const args: HistogramArgs[] = [];
+            const xBucketCount = HistogramViewBase.bucketCount(this.value[0], this.page,
+                this.cds[0].kind, this.options.heatmap, true);
+            const yBucketCount = HistogramViewBase.bucketCount(this.value[1], this.page,
+                this.cds[1].kind, this.options.heatmap, false);
 
-        const rr = this.originator.createHeatMapRequest(args);
-        const renderer = new HeatMapRenderer(this.page,
-            this.originator, this.rowCount, this.schema,
-            this.cds, value,
-            1.0, rr, this.options.reusePage);
-        rr.chain(this.operation);
-        rr.invoke(renderer);
+            let arg = HistogramViewBase.computeHistogramArgs(
+                this.cds[0], value[0], xBucketCount, this.options.exact, this.page);
+            args.push(arg);
+            arg = HistogramViewBase.computeHistogramArgs(
+                this.cds[1], value[1], yBucketCount, this.options.exact, this.page);
+            args.push(arg);
+
+            const rr = this.originator.createHeatMapRequest(args);
+            const renderer = new HeatMapRenderer(this.page,
+                this.originator, this.rowCount, this.schema,
+                this.cds, value,
+                1.0, rr, this.options.reusePage);
+            rr.chain(this.operation);
+            rr.invoke(renderer);
+        } else {
+            // TODO
+        }
     }
 }

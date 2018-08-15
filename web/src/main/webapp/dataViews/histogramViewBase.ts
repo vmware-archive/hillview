@@ -160,10 +160,7 @@ export abstract class HistogramViewBase extends BigTableView {
 
         if (kindIsString(cd.kind)) {
             const cdfBucketCount = range.boundaries.length;
-            const distinctStrings = new DistinctStrings( {
-                truncated: false,
-                uniqueStrings: range.boundaries
-            }, cd.name);
+            const distinctStrings = new DistinctStrings(range.boundaries, cd.name);
             const useRange: DataRange = {
                 min: -0.5,
                 max: cdfBucketCount - .5,
@@ -272,13 +269,34 @@ export abstract class HistogramViewBase extends BigTableView {
         };
     }
 
+    /**
+     * The number of "buckets" needed for displaying a heatmap.
+     */
     public static heatmapSize(page: FullPage): [number, number] {
         const size = PlottingSurface.getDefaultChartSize(page);
         return [Math.floor(size.width / Resolution.minDotSize),
             Math.floor(size.height / Resolution.minDotSize)];
     }
 
-    public static bucketCount(stats: DataRange, page: FullPage,
+    /**
+     * The number of buckets to use when requesting the range of
+     * data for displaying a 2D histogram.
+     */
+    public static histogram2DSize(page: FullPage): [number, number] {
+        // On the horizontal axis we get the maximum resolution, which we will use for
+        // deriving the CDF curve.  On the vertical axis we use a max smaller number.
+        return [page.getWidthInPixels(), Resolution.maxBucketCount];
+    }
+
+    /**
+     * Computes the number of buckets for a histogram axis.
+     * @param range        Data range for that axis.
+     * @param page         Page displaying the data.
+     * @param columnKind   Kind of data displayed.
+     * @param heatmap      True if we want to display a heatmap.
+     * @param bottom       True if we are considering the X axis; false for the Y axis.
+     */
+    public static bucketCount(range: DataRange, page: FullPage,
                               columnKind: ContentsKind,
                               heatmap: boolean, bottom: boolean): number {
         const size = PlottingSurface.getDefaultChartSize(page);
@@ -297,11 +315,20 @@ export abstract class HistogramViewBase extends BigTableView {
         if (columnKind === "Integer")
             bucketCount = Math.min(
                 bucketCount,
-                (stats.max - stats.min) / Math.ceil( (stats.max - stats.min) / maxBucketCount));
+                (range.max - range.min) / Math.ceil( (range.max - range.min) / maxBucketCount));
 
         return Math.floor(bucketCount);
     }
 
+    /**
+     * Given a mouse coordinate on a specified d3 scale, returns the corresponding
+     * Real-world value.  Returns the result as a string.
+     * @param v          Mouse coordinate.
+     * @param scale      Axis scale.
+     * @param kind       Kind of data on scale.
+     * @param allStrings When the axis has string data this is the list of all strings.
+     * TODO: this probably should belong to the AxisData class.
+     */
     public static invert(v: number, scale: AnyScale, kind: ContentsKind,
                          allStrings: DistinctStrings): string {
         const inv = scale.invert(v);
@@ -320,6 +347,7 @@ export abstract class HistogramViewBase extends BigTableView {
     }
 
     public static invertToNumber(v: number, scale: AnyScale, kind: ContentsKind): number {
+        // TODO: move this to the AxisData class.
         const inv = scale.invert(v);
         let result: number = 0;
         if (kind === "Integer" || kindIsString(kind)) {

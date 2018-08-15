@@ -15,32 +15,14 @@
  * limitations under the License.
  */
 
-import {CategoricalValues, IDistinctStrings} from "./javaBridge";
-
-/**
- * All strings that can appear in a categorical column.
- */
-export class DistinctStrings implements IDistinctStrings {
-    public uniqueStrings: string[] | null;
-    // This may be true if there are too many distinct strings in a column.
-    // TODO: remove this field
-    public truncated: boolean;
-
-    public constructor(ds: IDistinctStrings | null, protected colName: string) {
-        if (ds == null) {
-            this.uniqueStrings = null;
-        } else {
-            this.truncated = ds.truncated;
-            this.uniqueStrings = ds.uniqueStrings;
-            this.uniqueStrings.sort();
-        }
+export class DistinctStrings {
+    public constructor(public readonly uniqueStrings: string[],
+                       protected colName: string) {
+        this.uniqueStrings = uniqueStrings;
+        this.uniqueStrings.sort();
     }
 
     public size(): number { return this.uniqueStrings.length; }
-
-    public getCategoricalValues(): CategoricalValues {
-        return new CategoricalValues(this.colName, this.uniqueStrings);
-    }
 
     /**
      * Returns all strings numbered between min and max.

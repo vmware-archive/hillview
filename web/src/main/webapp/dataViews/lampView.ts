@@ -18,7 +18,7 @@
 import {drag as d3drag} from "d3-drag";
 import {mouse as d3mouse, select as d3select} from "d3-selection";
 import {
-    BasicColStats, CategoricalValues, ColumnHistogramBoundaries, CombineOperators, HeatMap,
+    BasicColStats, ColumnHistogramBoundaries, CombineOperators, HeatMap,
     Histogram2DArgs, RemoteObjectId, TableSummary,
 } from "../javaBridge";
 import {OnCompleteReceiver, Receiver, RpcRequest} from "../rpc";
@@ -278,10 +278,13 @@ class LampView extends BigTableView {
     }
 
     private fetchNewRanges() {
+        /*
+        TODO
         const l1: CategoricalValues = new CategoricalValues("LAMP1");
         const l2: CategoricalValues = new CategoricalValues("LAMP2");
         const rr = this.lampTableObject.createRange2DRequest(l1, l2);
         rr.invoke(new LAMPRangeCollector(this.page, rr, this));
+        */
     }
 
     private updateControlPointsView() {
@@ -439,7 +442,7 @@ export class LAMPDialog extends Dialog {
 
 class ControlPointsProjector extends BaseRenderer {
     constructor(page: FullPage,
-                operation: ICancellable,
+                operation: ICancellable<RemoteObjectId>,
                 private tableObject: TableTargetAPI,
                 private selectedColumns: string[],
                 private rowCount: number,
@@ -461,7 +464,7 @@ class ControlPointsRenderer extends Receiver<PointSet> {
     private controlPointsView: LampView;
     private points: PointSet;
 
-    constructor(page: FullPage, operation: ICancellable,
+    constructor(page: FullPage, operation: ICancellable<PointSet>,
                 tableObject: TableTargetAPI, rowCount: number, schema: SchemaClass,
                 controlPointsId: RemoteObjectId, private selectedColumns: string[]) {
         super(page, operation, "Projecting control points");
@@ -478,23 +481,26 @@ class ControlPointsRenderer extends Receiver<PointSet> {
 }
 
 class LAMPMapReceiver extends BaseRenderer {
-    constructor(page: FullPage, operation: ICancellable, private cpView: LampView,
+    constructor(page: FullPage, operation: ICancellable<RemoteObjectId>, private cpView: LampView,
                 private arg: Histogram2DArgs) {
         super(page, operation, "Computing LAMP", cpView.dataset);
     }
 
     public run() {
+        /*
+        TODO
         super.run();
         const lampTime = this.elapsedMilliseconds() / 1000;
         this.cpView.updateRemoteTable(this.remoteObject);
         const rr = this.remoteObject.createHeatMapRequest(this.arg);
         rr.invoke(new LAMPHeatMapReceiver(this.page, rr, this.cpView, lampTime));
+        */
     }
 }
 
 class LAMPHeatMapReceiver extends Receiver<HeatMap> {
     private heatMap: HeatMap;
-    constructor(page: FullPage, operation: ICancellable,
+    constructor(page: FullPage, operation: ICancellable<HeatMap>,
                 private controlPointsView: LampView, private lampTime: number) {
         super(page, operation, "Computing heatmap");
     }
@@ -508,7 +514,8 @@ class LAMPHeatMapReceiver extends Receiver<HeatMap> {
 }
 
 class LAMPRangeCollector extends Receiver<Pair<BasicColStats, BasicColStats>> {
-    constructor(page: FullPage, operation: ICancellable, private cpView: LampView) {
+    constructor(page: FullPage, operation: ICancellable<Pair<BasicColStats, BasicColStats>>,
+                private cpView: LampView) {
         super(page, operation, "Getting LAMP ranges.");
     }
 
@@ -519,7 +526,7 @@ class LAMPRangeCollector extends Receiver<Pair<BasicColStats, BasicColStats>> {
 }
 
 class SchemaCollector extends OnCompleteReceiver<TableSummary> {
-    constructor(page: FullPage, operation: ICancellable,
+    constructor(page: FullPage, operation: ICancellable<TableSummary>,
                 private schema: SchemaClass,
                 private tableObject: TableTargetAPI,
                 private lampColumnNames: string[]) {

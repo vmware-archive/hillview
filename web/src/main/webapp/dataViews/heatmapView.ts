@@ -18,10 +18,9 @@
 import {drag as d3drag} from "d3-drag";
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {HeatmapSerialization, IViewSerialization} from "../datasetView";
-import {DistinctStrings} from "../distinctStrings";
 import {
-    BasicColStats, CombineOperators, DataRange, FilterDescription, HeatMap,
-    Histogram2DArgs, IColumnDescription, kindIsNumeric, RecordOrder, RemoteObjectId,
+    CombineOperators, DataRange, FilterDescription, HeatMap,
+    IColumnDescription, kindIsNumeric, RecordOrder, RemoteObjectId,
 } from "../javaBridge";
 import { Receiver } from "../rpc";
 import {SchemaClass} from "../schemaClass";
@@ -37,14 +36,13 @@ import {PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
 import {Point, Resolution} from "../ui/ui";
 import {
-    formatNumber, ICancellable, Pair, PartialResult, reorder,
-    saveAs, Seed, significantDigits,
+    formatNumber, ICancellable, PartialResult, reorder,
+    saveAs, significantDigits,
 } from "../util";
 import {AxisData} from "./axisData";
-import {Filter2DReceiver, Histogram2DRenderer, Make2DHistogram} from "./histogram2DView";
+import {Filter2DReceiver, Make2DHistogram} from "./histogram2DView";
 import {HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
-import {ChartObserver} from "./tsViewBase";
 import {DataRangesCollector} from "./histogramView";
 
 /**
@@ -288,23 +286,22 @@ export class HeatmapView extends BigTableView {
         const cds = [cd0, cd1];
 
         const hv = new HeatmapView(ser.remoteObjectId, ser.rowCount, schema, page);
-        const rr = page.dataset.createGetCategoryRequest(page, cds);
-        rr.invoke(new ChartObserver(hv, page, rr, null,
-            ser.rowCount, schema,
-            { exact, heatmap: true, relative: false, reusePage: true }, cds));
+        const buckets = HistogramViewBase.heatmapSize(page);
+        const rr = hv.getDataRanges2D(cds, buckets);
+        rr.invoke(new DataRangesCollector(
+            hv, hv.page, rr, schema, ser.rowCount, cds, null,
+            { reusePage: true, relative: false, heatmap: true, exact: exact } ));
         return hv;
     }
 
     // Draw this as a 2-D histogram
     public histogram(): void {
-        const rcol = new Range2DCollector(
-            [this.currentData.xData.description, this.currentData.yData.description],
-            this.rowCount,
-            this.schema,
-            [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
-            this.page, this, this.currentData.samplingRate >= 1, null, false, false, false);
-        rcol.setValue({ first: this.currentData.xData.range, second: this.currentData.yData.range });
-        rcol.onCompleted();
+        const buckets = HistogramViewBase.histogram2DSize(this.page);
+        const cds = [this.currentData.xData.description, this.currentData.yData.description];
+        const rr = this.getDataRanges2D(cds, buckets);
+        rr.invoke(new DataRangesCollector(
+            this, this.page, rr, this.schema, this.rowCount, cds, null,
+            { reusePage: false, relative: false, heatmap: false, exact: true } ));
     }
 
     public trellis(): void {
@@ -371,10 +368,7 @@ export class HeatmapView extends BigTableView {
         const groupBy = this.schema.findByDisplayName(colName);
         const cds: IColumnDescription[] = [this.currentData.xData.description,
                                          this.currentData.yData.description, groupBy];
-        const rr = this.page.dataset.createGetCategoryRequest(this.page, cds);
-        rr.invoke(new ChartObserver(this, this.page, rr,
-            null, this.rowCount, this.schema,
-            { exact: false, heatmap: true, relative: false, reusePage: false}, cds));
+        // TODO
     }
 
     // combine two views according to some operation
@@ -583,111 +577,6 @@ export class HeatmapView extends BigTableView {
             { exact: this.currentData.samplingRate >= 1, heatmap: true,
                 relative: false, reusePage: false} );
         rr.invoke(renderer);
-    }
-}
-
-/**
- * Waits for all column stats to be received and then initiates a heatmap or 2D histogram.
- * TODO: Deprecate
- */
-export class Range2DCollector extends Receiver<Pair<BasicColStats, BasicColStats>> {
-    protected stats: Pair<DataRange, DataRange>;
-    constructor(protected cds: IColumnDescription[],
-                protected rowCount: number,
-                protected schema: SchemaClass,
-                protected ds: DistinctStrings[],
-                page: FullPage,
-                protected remoteObject: TableTargetAPI,
-                protected exact: boolean,
-                operation: ICancellable<Pair<BasicColStats, BasicColStats>>,
-                protected drawHeatMap: boolean,  // true - heatMap, false - histogram
-                protected relative: boolean,
-                protected reusePage: boolean,
-    ) {
-        super(page, operation, "range2d");
-    }
-
-    public setValue(bcs: Pair<DataRange, DataRange>): void {
-        this.stats = bcs;
-    }
-
-    public setRemoteObject(ro: BigTableView) {
-        this.remoteObject = ro;
-    }
-
-    public onNext(value: PartialResult<Pair<BasicColStats, BasicColStats>>): void {
-        super.onNext(value);
-        this.setValue(value.data);
-
-        HistogramViewBase.adjustStats(this.cds[0].kind, this.stats.first);
-        HistogramViewBase.adjustStats(this.cds[1].kind, this.stats.second);
-    }
-
-    public draw(): void {
-        const xBucketCount = HistogramViewBase.bucketCount(this.stats.first, this.page,
-            this.cds[0].kind, true, true);
-        const yBucketCount = HistogramViewBase.bucketCount(this.stats.second, this.page,
-            this.cds[1].kind, true, false);
-        const arg0 = HistogramViewBase.getRange(this.stats.first,
-            this.cds[0], this.ds[0], xBucketCount);
-        const arg1 = HistogramViewBase.getRange(this.stats.second,
-            this.cds[1], this.ds[1], yBucketCount);
-        let samplingRate: number;
-        if (this.drawHeatMap) {
-            // We cannot sample when we need to distinguish reliably 1 from 0.
-            samplingRate = 1.0;
-        } else {
-            samplingRate = HistogramViewBase.samplingRate(xBucketCount, this.stats.first.presentCount, this.page);
-        }
-        if (this.exact) {
-            samplingRate = 1.0;
-        }
-
-        const size = PlottingSurface.getDefaultChartSize(this.page);
-        const cdfCount = Math.floor(size.width);
-
-        const arg: Histogram2DArgs = {
-            first: arg0,
-            second: arg1,
-            samplingRate,
-            seed: samplingRate >= 1.0 ? 0 : Seed.instance.get(),
-            xBucketCount,
-            yBucketCount,
-            cdfBucketCount: cdfCount,
-            cdfSamplingRate: HistogramViewBase.samplingRate(cdfCount, this.stats.first.presentCount, this.page),
-        };
-        if (this.drawHeatMap) {
-            /*
-            const rr = this.remoteObject.createHeatMapRequest(arg);
-            const renderer = new HeatMapRenderer(this.page,
-                this.remoteObject, this.rowCount, this.schema,
-                this.cds, [this.stats.first, this.stats.second],
-                samplingRate, [this.ds[0], this.ds[1]], rr, this.reusePage);
-            if (this.operation != null) {
-                rr.setStartTime(this.operation.startTime());
-            }
-            rr.invoke(renderer);
-            */
-        } else {
-            const rr = this.remoteObject.createHistogram2DRequest(arg);
-            const renderer = new Histogram2DRenderer(this.page,
-                this.remoteObject, this.rowCount, this.schema,
-                this.cds, [this.stats.first, this.stats.second], samplingRate,
-                this.ds, rr, this.relative, this.reusePage);
-            if (this.operation != null) {
-                rr.setStartTime(this.operation.startTime());
-            }
-            rr.invoke(renderer);
-        }
-    }
-
-    public onCompleted(): void {
-        super.onCompleted();
-        if (this.stats == null) {
-            // probably some error occurred
-            return;
-        }
-        this.draw();
     }
 }
 

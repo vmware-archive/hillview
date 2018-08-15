@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-import {DistinctStrings} from "../distinctStrings";
 import {
     allContentsKind, asContentsKind, ColumnSortOrientation, ComparisonFilterDescription,
     CreateColumnInfo, EqualityFilterDescription, HLogLog, IColumnDescription,
@@ -23,7 +22,7 @@ import {
 } from "../javaBridge";
 import {OnCompleteReceiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
-import {BigTableView, TableTargetAPI} from "../tableTarget";
+import {BigTableView} from "../tableTarget";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
 import {SubMenu, TopMenuItem} from "../ui/menu";
@@ -31,7 +30,6 @@ import {SpecialChars, ViewKind} from "../ui/ui";
 import {
     cloneToSet, Comparison, Converters, ICancellable, mapToArray, significantDigits,
 } from "../util";
-import {Range2DCollector} from "./heatmapView";
 import {HeavyHittersReceiver, HeavyHittersView} from "./heavyHittersView";
 import {Histogram2DDialog} from "./histogram2DView";
 import {
@@ -39,7 +37,7 @@ import {
     HistogramDialog,
 } from "./histogramView";
 import {TableOperationCompleted, TableView} from "./tableView";
-import {TrellisPlotDialog, TrellisRangeReceiver} from "./trellisHeatMapView";
+import {TrellisPlotDialog} from "./trellisHeatMapView";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {HistogramViewBase} from "./histogramViewBase";
 
@@ -192,13 +190,12 @@ export abstract class TSViewBase extends BigTableView {
     }
 
     public histogram2D(cds: IColumnDescription[], options: HistogramOptions): void {
-        /*
-        TODO
-        const size = PlottingSurface.getDefaultChartSize(this.page);
-        const rr = this.getDataRanges2D(cds, size.width);
+        const buckets = HistogramViewBase.histogram2DSize(this.page);
+        const rr = this.getDataRanges2D(cds, buckets);
         rr.invoke(new DataRangesCollector(
-            this, this.page, rr, this.schema, 0, cds, null, size.width, options));
-            */
+            this, this.page, rr, this.schema, this.rowCount, cds, null,
+            { reusePage: options.reusePage, relative: false,
+                heatmap: false, exact: options.exact } ));
     }
 
     protected histogram(columns: string[]): void {
@@ -560,47 +557,4 @@ export interface HistogramOptions {
 export interface ChartOptions extends HistogramOptions {
     heatmap: boolean;  // draw heatmaps, not histograms
     relative: boolean;  // draw a relative 2D histogram
-}
-
-// TODO: Deprecate this class
-export class ChartObserver extends OnCompleteReceiver<DistinctStrings[]> {
-    constructor(
-        protected remoteObject: TableTargetAPI,
-        page: FullPage, operation: ICancellable<DistinctStrings[]>,
-        protected title: string | null,
-        protected rowCount: number,
-        protected schema: SchemaClass,
-        protected options: ChartOptions,
-        protected columns: IColumnDescription[]) {
-        super(page, operation, "Get category values");
-    }
-
-    public run(value: DistinctStrings[]): void {
-        if (value == null)
-            return;
-        switch (value.length) {
-            case 2: {
-                const cv0 = value[0].getCategoricalValues();
-                const cv1 = value[1].getCategoricalValues();
-                const rr = this.remoteObject.createRange2DRequest(cv0, cv1);
-                rr.chain(this.operation);
-                rr.invoke(new Range2DCollector(
-                    this.columns, this.rowCount, this.schema, value,
-                    this.page, this.remoteObject, this.options.exact, rr,
-                    this.options.heatmap, this.options.relative, this.options.reusePage));
-                break;
-            }
-            case 3: {
-                // TODO: generalize this
-                const rr = this.remoteObject.createRange2DColsRequest(
-                    this.columns[0].name, this.columns[1].name);
-                rr.chain(this.operation);
-                rr.invoke(new TrellisRangeReceiver(
-                    this.remoteObject, this.page, rr, this.schema, this.rowCount, this.columns));
-                break;
-            }
-            default:
-                this.page.reportError("Unexpected number of values received: " + value.length);
-        }
-    }
 }

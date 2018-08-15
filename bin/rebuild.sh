@@ -3,10 +3,11 @@
 
 
 usage() {
-    echo "rebuild.sh [-s]"
+    echo "rebuild.sh [-s][-h][-a]"
     echo "Rebuild and the program"
     echo "-s: skip tests"
     echo "-h: help"
+    echo "-a: build all jars, including various tools"
     exit 1
 }
 
@@ -18,9 +19,12 @@ source $mydir/lib.sh
 set -ex
 
 SKIP="0"
-while getopts sh FLAG; do
+TOOLS="0"
+while getopts sha FLAG; do
    case $FLAG in
       s) SKIP="1"
+         ;;
+      a) TOOLS="1"
          ;;
       *) usage
          ;;
@@ -31,9 +35,11 @@ done
 export MAVEN_OPTS="-Xmx2048M"
 EXTRAARGS=""
 if [ $SKIP -eq "1" ]; then
-    EXTRAARGS="-Dskiptests"
+    EXTRAARGS="-Dskiptests "$EXTRAARGS
 fi
-
+if [ $TOOLS -eq "1" ]; then
+    EXTRAARGS="-P tools "$EXTRAARGS
+fi
 pushd $mydir/../platform
 mvn $EXTRAARGS clean install
 popd

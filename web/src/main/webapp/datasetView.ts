@@ -22,16 +22,13 @@ import {HistogramView} from "./dataViews/histogramView";
 import {SchemaView} from "./dataViews/schemaView";
 import {SpectrumView} from "./dataViews/spectrumView";
 import {SchemaReceiver, TableView} from "./dataViews/tableView";
-import {DistinctStrings} from "./distinctStrings";
 import {DataLoaded, getDescription} from "./initialObject";
 import {
     CombineOperators,
     IColumnDescription,
-    IDistinctStrings,
     RecordOrder,
     RemoteObjectId,
 } from "./javaBridge";
-import {OnCompleteReceiver, RpcRequest} from "./rpc";
 import {SchemaClassSerialization} from "./schemaClass";
 import {BigTableView, TableTargetAPI} from "./tableTarget";
 import {HillviewToplevel} from "./toplevel";
@@ -40,7 +37,7 @@ import {NotifyDialog} from "./ui/dialog";
 import {FullPage} from "./ui/fullPage";
 import {MenuItem, SubMenu, TopMenuItem} from "./ui/menu";
 import {IHtmlElement, ViewKind} from "./ui/ui";
-import {assert, EnumIterators, ICancellable, Pair, PartialResult, saveAs} from "./util";
+import {assert, EnumIterators, Pair, saveAs} from "./util";
 
 export interface IViewSerialization {
     viewKind: ViewKind;
@@ -99,7 +96,6 @@ export interface IDatasetSerialization {
  */
 export class DatasetView implements IHtmlElement {
     public readonly remoteObject: TableTargetAPI;
-    private categoryCache: Map<string, DistinctStrings>;
     private selected: BigTableView; // participates in a combine operation
     private selectedPageId: number;  // id of page containing the selected object (if any)
     private readonly topLevel: HTMLElement;
@@ -116,7 +112,6 @@ export class DatasetView implements IHtmlElement {
                 public name: string,
                 public readonly loaded: DataLoaded) {
         this.remoteObject = new TableTargetAPI(remoteObjectId);
-        this.categoryCache = new Map<string, DistinctStrings>();
         this.selected = null;
         this.pageCounter = 1;
         this.allPages = [];
@@ -143,38 +138,11 @@ export class DatasetView implements IHtmlElement {
     }
 
     /**
-     * Creates an RPC request which returns the categorical values for the specified
-     * columns
-     * @param page  Used for reporting errors.
-     * @param columns  A list of columns; some of these may not be categorical.
-     * @returns An RPC request which when invoked will return an IDistinctStrings for
-     *          each column; the non-categorical columns will have nulls in the result.
-     */
-    // TODO: Deprecate this
-    public createGetCategoryRequest(page: FullPage, columns: IColumnDescription[]):
-        RpcRequest<DistinctStrings[]> {
-        const toBring = columns.filter((c) => c.kind === "Category")
-            .map((c) => c.name)
-            .filter((c) => !this.categoryCache.has(c));
-        return new CategoryValuesRequest(this.remoteObjectId, page, columns, toBring);
-    }
-
-    /**
      * Check if the selected object can be combined with the specified one,
      * and if so return it.  Otherwise write an error message and return null.
      */
     public getSelected(): Pair<BigTableView, number> {
         return { first: this.selected, second: this.selectedPageId };
-    }
-
-    public setDistinctStrings(columnName: string, values: DistinctStrings): void {
-        this.categoryCache.set(columnName, values);
-    }
-
-    public getDistinctStrings(columnName: string): DistinctStrings {
-        if (this.categoryCache.has(columnName))
-            return this.categoryCache.get(columnName);
-        return new DistinctStrings(null, columnName);
     }
 
     public combineMenu(ro: BigTableView, pageId: number): TopMenuItem {
@@ -373,63 +341,5 @@ export class DatasetView implements IHtmlElement {
             "Look for file " + fileName + " in the browser Downloads folder",
             "File has been saved");
         notify.show();
-    }
-}
-
-/**
- * Receives categories for a set of columns from an RPC, caches the result,
- * and then invokes an observer passing all the columns that the observer asked for.
- */
-// TODO: deprecate this
-class CategoryValuesObserver extends OnCompleteReceiver<IDistinctStrings[]> {
-    constructor(page: FullPage, operation: ICancellable<IDistinctStrings[]>,
-                protected requestedColumns: IColumnDescription[],
-                protected toBringColumns: string[],
-                protected observer: OnCompleteReceiver<DistinctStrings[]>) {
-        super(page, operation, "Enumerate categories");
-    }
-
-    public run(value: IDistinctStrings[]): void {
-        // Receive the columns that we asked for and cache the results
-        assert(this.toBringColumns.length === value.length);
-        for (let i = 0; i < this.toBringColumns.length; i++) {
-            const ds = new DistinctStrings(value[i], this.toBringColumns[i]);
-            if (ds.truncated)
-                this.page.reportError(
-                    "Column " + this.requestedColumns[i] + " has too many distinct values for a category");
-            this.page.dataset.setDistinctStrings(this.toBringColumns[i], ds);
-        }
-
-        // Build the result expected by the observer: all the requested columns
-        const result: DistinctStrings[] = [];
-        for (const c of this.requestedColumns)
-            result.push(this.page.dataset.getDistinctStrings(c.name));
-
-        this.observer.onNext(new PartialResult<DistinctStrings[]>(1, result));
-        this.observer.onCompleted();
-    }
-}
-
-/**
- * Looks like an RpcRequest, but it is more complicated: it intercepts the results
- * and saves them, and then it invokes the observer.
- */
-// TODO: deprecate this
-class CategoryValuesRequest extends RpcRequest<IDistinctStrings[]> {
-    constructor(object: RemoteObjectId, protected page: FullPage,
-                protected requestedColumns: IColumnDescription[],
-                protected toBringColumns: string[]) {
-        super(object, "uniqueStrings", toBringColumns);
-    }
-
-    public invoke(onReply: OnCompleteReceiver<DistinctStrings[]>) {
-        const cvo = new CategoryValuesObserver(
-            this.page, this, this.requestedColumns, this.toBringColumns, onReply);
-        if (this.toBringColumns.length === 0) {
-            cvo.onNext(new PartialResult<DistinctStrings[]>(1, []));
-            cvo.onCompleted();
-        } else {
-            super.invoke(cvo);
-        }
     }
 }

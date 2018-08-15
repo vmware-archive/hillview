@@ -9,26 +9,62 @@
     <name>platform</name>
     <url>http://maven.apache.org</url>
 
-    <!-- Generates findbugs report -->
-    <reporting>
-        <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>findbugs-maven-plugin</artifactId>
-                <version>3.0.4</version>
-                <configuration>
-                    <!--
-                        Enables analysis which takes more memory but finds more bugs.
-                        If you run out of memory, changes the value of the effort element
-                        to 'low'.
-                    -->
-                    <effort>Max</effort>
-                    <!-- Reports all bugs (other values are medium and max) -->
-                    <threshold>Low</threshold>
-                </configuration>
-            </plugin>
-        </plugins>
-    </reporting>
+    <profiles>
+        <!--
+             Profiles enable conditional compilation
+             For example, to build the various tools, in this profile run
+             maven -P tools package
+        -->
+        <profile>
+            <id>tools</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>2.4</version>
+                        <executions>
+                            <execution>
+                                <id>build-data-cleaner</id>
+                                <configuration>
+                                    <archive>
+                                        <manifest>
+                                            <mainClass>org.hillview.DemoDataCleaner</mainClass>
+                                        </manifest>
+                                    </archive>
+                                    <descriptorRefs>
+                                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                                    </descriptorRefs>
+                                    <finalName>data-cleaner</finalName>
+                                </configuration>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>build-histogram-benchmark</id>
+                                <configuration>
+                                    <archive>
+                                        <manifest>
+                                            <mainClass>org.hillview.HistogramBenchmark</mainClass>
+                                        </manifest>
+                                    </archive>
+                                    <descriptorRefs>
+                                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                                    </descriptorRefs>
+                                    <finalName>histogram-benchmark</finalName>
+                                </configuration>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
     <dependencies>
         <!-- for URI manipulation -->
         <dependency>
@@ -316,44 +352,6 @@
                             <goal>single</goal>
                         </goals>
                     </execution>
-                    <execution>
-                        <id>build-data-cleaner</id>
-                        <configuration>
-                            <archive>
-                                <manifest>
-                                    <mainClass>org.hillview.DemoDataCleaner</mainClass>
-                                </manifest>
-                            </archive>
-                            <descriptorRefs>
-                                <descriptorRef>jar-with-dependencies</descriptorRef>
-                            </descriptorRefs>
-                            <finalName>data-cleaner</finalName>
-                        </configuration>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                    </execution>
-                    <!-- This was used to run benchmarks for the paper.
-                    <execution>
-                        <id>build-histogram-benchmark</id>
-                        <configuration>
-                            <archive>
-                                <manifest>
-                                    <mainClass>org.hillview.HistogramBenchmark</mainClass>
-                                </manifest>
-                            </archive>
-                            <descriptorRefs>
-                                <descriptorRef>jar-with-dependencies</descriptorRef>
-                            </descriptorRefs>
-                            <finalName>histogram-benchmark</finalName>
-                        </configuration>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                    </execution>
-                    -->
                 </executions>
             </plugin>
         </plugins>

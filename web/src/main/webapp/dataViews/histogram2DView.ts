@@ -21,7 +21,7 @@ import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {DatasetView, Histogram2DSerialization, IViewSerialization} from "../datasetView";
 import {DistinctStrings} from "../distinctStrings";
 import {
-    CategoricalValues, ColumnHistogramBoundaries, CombineOperators, DataRange,
+    ColumnHistogramBoundaries, CombineOperators, DataRange,
     HeatMap, Histogram2DArgs, HistogramBase,
     IColumnDescription, kindIsString, RecordOrder, RemoteObjectId,
 } from "../javaBridge";
@@ -43,10 +43,9 @@ import {
     reorder, saveAs, Seed, significantDigits,
 } from "../util";
 import {AnyScale, AxisData} from "./axisData";
-import {Range2DCollector} from "./heatmapView";
 import { BucketDialog, HistogramViewBase } from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
-import {ChartObserver, ChartOptions} from "./tsViewBase";
+import {ChartOptions} from "./tsViewBase";
 import {DataRangesCollector} from "./histogramView";
 
 /**
@@ -251,10 +250,11 @@ export class Histogram2DView extends HistogramViewBase {
         const cds = [cd0, cd1];
 
         const hv = new Histogram2DView(ser.remoteObjectId, ser.rowCount, schema, page);
-        const rr = page.dataset.createGetCategoryRequest(page, cds);
-        rr.invoke(new ChartObserver(hv, page, rr, null,
-            ser.rowCount, schema,
-            { exact, heatmap: false, relative, reusePage: true }, cds));
+        const buckets = HistogramViewBase.histogram2DSize(page);
+        const rr = hv.getDataRanges2D(cds, buckets);
+        rr.invoke(new DataRangesCollector(
+            hv, hv.page, rr, hv.schema, hv.rowCount, cds, null,
+            { reusePage: true, relative: relative, heatmap: false, exact: exact } ));
         return hv;
     }
 
@@ -269,13 +269,12 @@ export class Histogram2DView extends HistogramViewBase {
     }
 
     public heatmap(): void {
-        const rcol = new Range2DCollector(
-            [this.currentData.xData.description, this.currentData.yData.description],
-            this.rowCount, this.schema,
-            [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
-            this.page, this, this.currentData.samplingRate >= 1, null, true, false, false);
-        rcol.setValue({ first: this.currentData.xData.range, second: this.currentData.yData.range });
-        rcol.onCompleted();
+        const cds = [this.currentData.xData.description, this.currentData.yData.description];
+        const buckets = HistogramViewBase.heatmapSize(this.page);
+        const rr = this.getDataRanges2D(cds, buckets);
+        rr.invoke(new DataRangesCollector(
+            this, this.page, rr, this.schema, this.rowCount, cds, null,
+            { reusePage: false, relative: false, heatmap: true, exact: true } ));
     }
 
     public export(): void {
@@ -335,26 +334,24 @@ export class Histogram2DView extends HistogramViewBase {
     public swapAxes(): void {
         if (this.currentData == null)
             return;
-        const rc = new Range2DCollector(
-            [this.currentData.yData.description, this.currentData.xData.description],
-            this.rowCount, this.schema,
-            [this.currentData.yData.distinctStrings, this.currentData.xData.distinctStrings],
-            this.page, this, true, null, false, this.relative, false);
-        rc.setValue({ first: this.currentData.yData.range, second: this.currentData.xData.range });
-        rc.onCompleted();
+        const cds = [this.currentData.yData.description, this.currentData.xData.description];
+        const buckets = HistogramViewBase.histogram2DSize(this.page);
+        const rr = this.getDataRanges2D(cds, buckets);
+        rr.invoke(new DataRangesCollector(
+            this, this.page, rr, this.schema, this.rowCount, cds, null,
+            { reusePage: true, relative: this.relative,
+                heatmap: false, exact: this.samplingRate >= 1.0 } ));
     }
 
     public exactHistogram(): void {
         if (this.currentData == null)
             return;
-        const rc = new Range2DCollector(
-            [this.currentData.xData.description, this.currentData.yData.description],
-            this.rowCount, this.schema,
-            [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
-            this.page, this, true, null, false, this.relative, true);
-        rc.setValue({ first: this.currentData.xData.range,
-            second: this.currentData.yData.range });
-        rc.onCompleted();
+        const cds = [this.currentData.yData.description, this.currentData.xData.description];
+        const buckets = HistogramViewBase.histogram2DSize(this.page);
+        const rr = this.getDataRanges2D(cds, buckets);
+        rr.invoke(new DataRangesCollector(
+            this, this.page, rr, this.schema, this.rowCount, cds, null,
+            { reusePage: true, relative: this.relative, heatmap: false, exact: true } ));
     }
 
     public changeBuckets(bucketCount: number): void {
@@ -692,7 +689,11 @@ export class Filter2DReceiver extends BaseRenderer {
     public run(): void {
         super.run();
         const cds: IColumnDescription[] = [this.xColumn, this.yColumn];
-        const buckets = HistogramViewBase.heatmapSize(this.page)
+        let buckets;
+        if (this.options.heatmap)
+            buckets = HistogramViewBase.heatmapSize(this.page);
+        else
+            buckets = HistogramViewBase.histogram2DSize(this.page);
         const rr = this.remoteObject.getDataRanges2D(cds, buckets);
         rr.invoke(new DataRangesCollector(
             this.remoteObject, this.page, rr, this.schema,
@@ -719,7 +720,8 @@ export class Make2DHistogram extends BaseRenderer {
     }
 
     public run(): void {
-        super.run();
+        /*
+        TODO
         const rx = new CategoricalValues(this.colDesc[0].name, this.ds[0] != null ? this.ds[0].uniqueStrings : null);
         const ry = new CategoricalValues(this.colDesc[1].name, this.ds[1] != null ? this.ds[1].uniqueStrings : null);
         const rr = this.remoteObject.createRange2DRequest(rx, ry);
@@ -727,6 +729,7 @@ export class Make2DHistogram extends BaseRenderer {
         rr.invoke(new Range2DCollector(
             this.colDesc, this.rowCount, this.schema, this.ds, this.page, this.remoteObject,
             this.exact, rr, this.heatMap, this.relative, false));
+            */
     }
 }
 
