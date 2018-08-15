@@ -20,7 +20,7 @@ import {DistinctStrings} from "../distinctStrings";
 import {
     ColumnHistogramBoundaries,
     ContentsKind,
-    DataRange,
+    DataRange, HistogramArgs,
     IColumnDescription,
     kindIsString,
     RemoteObjectId
@@ -32,8 +32,8 @@ import {FullPage} from "../ui/fullPage";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
 import {Point, Resolution, SpecialChars, ViewKind} from "../ui/ui";
-import {Converters, formatDate, formatNumber, significantDigits} from "../util";
-import {AnyScale} from "./axisData";
+import {Converters, formatDate, formatNumber, Seed, significantDigits} from "../util";
+import {AnyScale, AxisData} from "./axisData";
 import {BigTableView} from "../tableTarget";
 
 /**
@@ -153,6 +153,70 @@ export abstract class HistogramViewBase extends BigTableView {
             .attr("height", 0);
     }
 
+    public static computeAxis(
+        cd: IColumnDescription,
+        range: DataRange,
+        bucketCount: number): AxisData {
+
+        if (kindIsString(cd.kind)) {
+            const cdfBucketCount = range.boundaries.length;
+            const distinctStrings = new DistinctStrings( {
+                truncated: false,
+                uniqueStrings: range.boundaries
+            }, cd.name);
+            const useRange: DataRange = {
+                min: -0.5,
+                max: cdfBucketCount - .5,
+                presentCount: range.presentCount
+            };
+            return new AxisData(cd, useRange, distinctStrings, cdfBucketCount);
+        } else {
+            return new AxisData(cd, range, null, bucketCount);
+        }
+    }
+
+    public static computeHistogramArgs(
+        cd: IColumnDescription,
+        range: DataRange,
+        bucketCount: number,  // ignored for string histograms;
+                              // if 0 the size is chosen based on the screen size
+        exact: boolean,
+        page: FullPage): HistogramArgs {
+        if (kindIsString(cd.kind)) {
+            const cdfBucketCount = range.boundaries.length;
+            let samplingRate = HistogramViewBase.samplingRate(
+                cdfBucketCount, range.presentCount, page);
+            if (exact)
+                samplingRate = 1.0;
+            const args: HistogramArgs = {
+                cd: cd,
+                seed: Seed.instance.getSampled(samplingRate),
+                samplingRate: samplingRate,
+                boundaries: range.boundaries
+            };
+            return args;
+        } else {
+            const size = PlottingSurface.getDefaultChartSize(page);
+            let cdfCount = Math.floor(size.width);
+            if (bucketCount !== 0)
+                cdfCount = bucketCount;
+
+            let samplingRate = 1.0;
+            if (!exact)
+                samplingRate = HistogramViewBase.samplingRate(cdfCount, range.presentCount, page);
+
+            const args: HistogramArgs = {
+                cd: cd,
+                min: range.min,
+                max: range.max,
+                samplingRate: samplingRate,
+                seed: Seed.instance.getSampled(samplingRate),
+                cdfBucketCount: cdfCount
+            };
+            return args;
+        }
+    }
+
     // noinspection JSUnusedLocalSymbols
     public static samplingRate(bucketCount: number, rowCount: number, page: FullPage): number {
         const constant = 4;  // This models the confidence we want from the sampling
@@ -208,13 +272,20 @@ export abstract class HistogramViewBase extends BigTableView {
         };
     }
 
-    public static bucketCount(stats: DataRange, page: FullPage, columnKind: ContentsKind,
-                              heatMap: boolean, bottom: boolean): number {
+    public static heatmapSize(page: FullPage): [number, number] {
+        const size = PlottingSurface.getDefaultChartSize(page);
+        return [Math.floor(size.width / Resolution.minDotSize),
+            Math.floor(size.height / Resolution.minDotSize)];
+    }
+
+    public static bucketCount(stats: DataRange, page: FullPage,
+                              columnKind: ContentsKind,
+                              heatmap: boolean, bottom: boolean): number {
         const size = PlottingSurface.getDefaultChartSize(page);
         const length = Math.floor(bottom ? size.width : size.height);
         let maxBucketCount = Resolution.maxBucketCount;
         let minBarWidth = Resolution.minBarWidth;
-        if (heatMap) {
+        if (heatmap) {
             maxBucketCount = length;
             minBarWidth = Resolution.minDotSize;
         }
@@ -223,8 +294,7 @@ export abstract class HistogramViewBase extends BigTableView {
         if (length / minBarWidth < bucketCount)
             bucketCount = Math.floor(length / minBarWidth);
 
-        if (columnKind === "Integer" ||
-            columnKind === "Category")
+        if (columnKind === "Integer")
             bucketCount = Math.min(
                 bucketCount,
                 (stats.max - stats.min) / Math.ceil( (stats.max - stats.min) / maxBucketCount));

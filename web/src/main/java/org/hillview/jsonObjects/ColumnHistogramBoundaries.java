@@ -23,6 +23,7 @@ import javax.annotation.Nullable;
 import java.io.Serializable;
 
 @SuppressWarnings("WeakerAccess,CanBeFinal")
+@Deprecated
 public class ColumnHistogramBoundaries implements Serializable {
     public String columnName = "";
     public boolean onStrings;  // If true the histogram is done on string values

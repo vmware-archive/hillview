@@ -186,17 +186,14 @@ export interface HistogramBase {
     outOfRange: number;
 }
 
+// This is actually a union of several java classes:
+// StringBucketBoundaries and DataRange, both sub-classes
+// of BucketsInfo in Java.
 export interface DataRange {
     min: number;
     max: number;
     presentCount: number;
-}
-
-// This is actually a union of several java classes:
-// StringBucketBoundaries and DataRange, both sub-classes
-// of BucketsInfo in Java.
-export interface RangeAndStrings extends DataRange {
-    boundaries: string[];
+    boundaries?: string[];
 }
 
 export interface BasicColStats extends DataRange {
@@ -248,18 +245,20 @@ export interface FilterDescription {
     max: number;
     minString: string;
     maxString: string;
-    columnName: string;
-    kind: ContentsKind;
+    cd: IColumnDescription;
     complement: boolean;
 }
 
-export interface DoubleHistogramArgs {
-    columnName: string;
-    min: number;
-    max: number;
+export interface HistogramArgs {
+    cd: IColumnDescription;
     seed: number;
-    cdfSamplingRate: number;
-    cdfBucketCount: number;
+    samplingRate: number;
+    // only used when doing string histograms
+    boundaries?: string[];
+    // only used when doing double histograms
+    min?: number;
+    max?: number;
+    cdfBucketCount?: number;
 }
 
 export interface HeavyHittersFilterInfo {

@@ -45,6 +45,7 @@ import {Filter2DReceiver, Histogram2DRenderer, Make2DHistogram} from "./histogra
 import {HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
 import {ChartObserver} from "./tsViewBase";
+import {DataRangesCollector} from "./histogramView";
 
 /**
  * A HeatMapView renders information as a heatmap.
@@ -427,16 +428,13 @@ export class HeatmapView extends BigTableView {
     }
 
     public swapAxes(): void {
-        const collector = new Range2DCollector(
-            [this.currentData.yData.description, this.currentData.xData.description],
-            this.rowCount,
-            this.schema,
-            [this.currentData.yData.distinctStrings, this.currentData.xData.distinctStrings],
-            this.page, this, this.currentData.samplingRate >= 1, null, true, false, false);
-        collector.setValue( {
-            first: this.currentData.yData.range,
-            second: this.currentData.xData.range });
-        collector.onCompleted();
+        const cds: IColumnDescription[] = [
+            this.currentData.yData.description, this.currentData.xData.description];
+        const buckets = HistogramViewBase.heatmapSize(this.page);
+        const rr = this.getDataRanges2D(cds, buckets);
+        rr.invoke(new DataRangesCollector(
+            this, this.page, rr, this.schema, this.rowCount, cds, null,
+            { heatmap: true, exact: true, relative: true, reusePage: true }));
     }
 
     public refresh(): void {
@@ -540,52 +538,57 @@ export class HeatmapView extends BigTableView {
      * Selection has been completed.  The mouse coordinates are within the canvas.
      */
     public selectionCompleted(xl: number, xr: number, yl: number, yr: number): void {
-        xl -= this.surface.leftMargin;
-        xr -= this.surface.leftMargin;
-        yl -= this.surface.topMargin;
-        yr -= this.surface.topMargin;
-
         if (this.plot.xScale == null || this.plot.yScale == null) {
             return;
         }
 
-        let xMin = HistogramViewBase.invertToNumber(xl, this.plot.xScale, this.currentData.xData.description.kind);
-        let xMax = HistogramViewBase.invertToNumber(xr, this.plot.xScale, this.currentData.xData.description.kind);
-        let yMin = HistogramViewBase.invertToNumber(yl, this.plot.yScale, this.currentData.yData.description.kind);
-        let yMax = HistogramViewBase.invertToNumber(yr, this.plot.yScale, this.currentData.yData.description.kind);
-        [xMin, xMax] = reorder(xMin, xMax);
-        [yMin, yMax] = reorder(yMin, yMax);
+        xl -= this.surface.leftMargin;
+        xr -= this.surface.leftMargin;
+        yl -= this.surface.topMargin;
+        yr -= this.surface.topMargin;
+        [xl, xr] = reorder(xl, xr);
+        [yr, yl] = reorder(yl, yr);   // y coordinates are in reverse
+
+        const xKind = this.currentData.xData.description.kind;
+        const yKind = this.currentData.yData.description.kind;
+        const xMin = HistogramViewBase.invertToNumber(xl, this.plot.xScale, xKind);
+        const xMax = HistogramViewBase.invertToNumber(xr, this.plot.xScale, xKind);
+        const yMin = HistogramViewBase.invertToNumber(yl, this.plot.yScale, yKind);
+        const yMax = HistogramViewBase.invertToNumber(yr, this.plot.yScale, yKind);
 
         const xRange: FilterDescription = {
             min: xMin,
             max: xMax,
-            minString: null, // TODO
-            maxString: null,
-            kind: this.currentData.xData.description.kind,
-            columnName: this.currentData.xData.description.name,
+            minString: HistogramViewBase.invert(
+                xl, this.plot.xScale, xKind, this.currentData.xData.distinctStrings),
+            maxString: HistogramViewBase.invert(
+                xr, this.plot.xScale, xKind, this.currentData.xData.distinctStrings),
+            cd: this.currentData.xData.description,
             complement: d3event.sourceEvent.ctrlKey,
         };
         const yRange: FilterDescription = {
             min: yMin,
             max: yMax,
-            minString: null, // TODO
-            maxString: null,
-            kind: this.currentData.yData.description.kind,
-            columnName: this.currentData.yData.description.name,
+            minString: HistogramViewBase.invert(
+                yl, this.plot.yScale, yKind, this.currentData.yData.distinctStrings),
+            maxString: HistogramViewBase.invert(
+                yr, this.plot.yScale, yKind, this.currentData.yData.distinctStrings),
+            cd: this.currentData.yData.description,
             complement: d3event.sourceEvent.ctrlKey,
         };
         const rr = this.createFilter2DRequest(xRange, yRange);
         const renderer = new Filter2DReceiver(
             this.currentData.xData.description, this.currentData.yData.description,
-            this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings,
-            this.rowCount, this.schema, this.page, this.currentData.samplingRate >= 1, rr, true,
-            this.dataset, false);
+            this.rowCount, this.schema, this.page, rr, this.dataset,
+            { exact: this.currentData.samplingRate >= 1, heatmap: true,
+                relative: false, reusePage: false} );
         rr.invoke(renderer);
     }
 }
 
 /**
  * Waits for all column stats to be received and then initiates a heatmap or 2D histogram.
+ * TODO: Deprecate
  */
 export class Range2DCollector extends Receiver<Pair<BasicColStats, BasicColStats>> {
     protected stats: Pair<DataRange, DataRange>;
@@ -622,9 +625,9 @@ export class Range2DCollector extends Receiver<Pair<BasicColStats, BasicColStats
 
     public draw(): void {
         const xBucketCount = HistogramViewBase.bucketCount(this.stats.first, this.page,
-            this.cds[0].kind, this.drawHeatMap, true);
+            this.cds[0].kind, true, true);
         const yBucketCount = HistogramViewBase.bucketCount(this.stats.second, this.page,
-            this.cds[1].kind, this.drawHeatMap, false);
+            this.cds[1].kind, true, false);
         const arg0 = HistogramViewBase.getRange(this.stats.first,
             this.cds[0], this.ds[0], xBucketCount);
         const arg1 = HistogramViewBase.getRange(this.stats.second,
@@ -654,6 +657,7 @@ export class Range2DCollector extends Receiver<Pair<BasicColStats, BasicColStats
             cdfSamplingRate: HistogramViewBase.samplingRate(cdfCount, this.stats.first.presentCount, this.page),
         };
         if (this.drawHeatMap) {
+            /*
             const rr = this.remoteObject.createHeatMapRequest(arg);
             const renderer = new HeatMapRenderer(this.page,
                 this.remoteObject, this.rowCount, this.schema,
@@ -663,6 +667,7 @@ export class Range2DCollector extends Receiver<Pair<BasicColStats, BasicColStats
                 rr.setStartTime(this.operation.startTime());
             }
             rr.invoke(renderer);
+            */
         } else {
             const rr = this.remoteObject.createHistogram2DRequest(arg);
             const renderer = new Histogram2DRenderer(this.page,
@@ -699,7 +704,6 @@ export class HeatMapRenderer extends Receiver<HeatMap> {
                 protected cds: IColumnDescription[],
                 protected stats: DataRange[],
                 protected samplingRate: number,
-                protected ds: DistinctStrings[],
                 operation: ICancellable<HeatMap>,
                 protected reusePage: boolean) {
         super(
@@ -729,8 +733,8 @@ export class HeatMapRenderer extends Receiver<HeatMap> {
             yPoints = points[0] != null ? points[0].length : 1;
         }
 
-        const xAxisData = new AxisData(this.cds[0], this.stats[0], this.ds[0], xPoints);
-        const yAxisData = new AxisData(this.cds[1], this.stats[1], this.ds[1], yPoints);
+        const xAxisData = HistogramViewBase.computeAxis(this.cds[0], this.stats[0], xPoints);
+        const yAxisData = HistogramViewBase.computeAxis(this.cds[1], this.stats[1], yPoints);
         this.heatMap.updateView(value.data, xAxisData, yAxisData,
             this.samplingRate, false, this.elapsedMilliseconds());
     }

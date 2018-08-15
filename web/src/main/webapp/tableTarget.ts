@@ -22,23 +22,12 @@
 import {DatasetView, IViewSerialization} from "./datasetView";
 import {HeatMapArrayData} from "./dataViews/trellisHeatMapView";
 import {
-    BasicColStats,
-    CategoricalValues,
-    CombineOperators,
-    CreateColumnInfo,
-    DoubleHistogramArgs,
-    FilterDescription,
-    HeatMap,
-    Histogram3DArgs,
-    HistogramBase,
-    HLogLog,
-    IColumnDescription,
-    NextKList, RangeAndStrings, RangeArgs,
-    RecordOrder,
-    RemoteObjectId,
-    Schema,
-    TableSummary,
-    TopList
+    BasicColStats, CategoricalValues, CombineOperators,
+    CreateColumnInfo, DataRange, FilterDescription,
+    HeatMap, Histogram3DArgs, HistogramArgs,
+    HistogramBase, HLogLog, IColumnDescription, kindIsString,
+    NextKList, RangeArgs, RecordOrder, RemoteObjectId, Schema,
+    TableSummary, TopList
 } from "./javaBridge";
 import {Histogram2DArgs, NextKArgs} from "./javaBridge";
 import {
@@ -98,14 +87,32 @@ export class TableTargetAPI extends RemoteObject {
         });
     }
 
-    public createGetRangeOrSamples(cd: IColumnDescription, seed: number, cdfBuckets: number):
-        RpcRequest<PartialResult<RangeAndStrings>> {
+    public getDataRange(cd: IColumnDescription, cdfBuckets: number):
+        RpcRequest<PartialResult<DataRange>> {
+        const seed = kindIsString(cd.kind) ? Seed.instance.get() : 0;
         const args: RangeArgs = {
             cd: cd,
             seed: seed,
             cdfBuckets: cdfBuckets };
-        return this.createStreamingRpcRequest<RangeAndStrings>(
-            "getRangeOrSamples", args);
+        return this.createStreamingRpcRequest<DataRange>(
+            "getDataRange", args);
+    }
+
+    public getDataRanges2D(cds: IColumnDescription[], buckets: number[]):
+        RpcRequest<PartialResult<DataRange[]>> {
+        console.assert(cds.length === buckets.length);
+        const args: RangeArgs[] = [];
+        for (let i = 0; i < cds.length; i++) {
+            const cd = cds[i];
+            const seed = kindIsString(cd.kind) ? Seed.instance.get() : 0;
+            const arg: RangeArgs = {
+                cd: cd,
+                seed: seed,
+                cdfBuckets: buckets[i]
+            };
+            args.push(arg);
+        }
+        return this.createStreamingRpcRequest<DataRange>("getDataRanges2D", args);
     }
 
     public createNextKRequest(order: RecordOrder, firstRow: any[] | null, rowCount: number):
@@ -226,14 +233,9 @@ RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<string>("createColumn", c);
     }
 
-    public createDoubleFilterRequest(f: FilterDescription):
+    public createFilterRequest(f: FilterDescription):
         RpcRequest<PartialResult<RemoteObjectId>> {
-        return this.createStreamingRpcRequest<RemoteObjectId>("filterDoubleRange", f);
-    }
-
-    public createStringFilterRequest(f: FilterDescription):
-        RpcRequest<PartialResult<RemoteObjectId>> {
-        return this.createStreamingRpcRequest<RemoteObjectId>("filterStringRange", f);
+        return this.createStreamingRpcRequest<RemoteObjectId>("filterRange", f);
     }
 
     public createFilter2DRequest(xRange: FilterDescription, yRange: FilterDescription):
@@ -247,8 +249,8 @@ RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<Pair<HeatMap, HistogramBase>>("histogram2D", info);
     }
 
-    public createHeatMapRequest(info: Histogram2DArgs): RpcRequest<PartialResult<HeatMap>> {
-        return this.createStreamingRpcRequest<HeatMap>("heatMap", info);
+    public createHeatMapRequest(info: HistogramArgs[]): RpcRequest<PartialResult<HeatMap>> {
+        return this.createStreamingRpcRequest<HeatMap>("heatmap", info);
     }
 
     public createHeatMap3DRequest(info: Histogram3DArgs):
@@ -256,21 +258,10 @@ RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<HeatMapArrayData>("heatMap3D", info);
     }
 
-    public createStringHistogramRequest(columnName: string, boundaries: string[],
-                                        samplingRate: number, seed: number):
-        RpcRequest<PartialResult<HistogramBase>> {
-        return this.createStreamingRpcRequest<HistogramBase>("stringHistogram", {
-            columnName: columnName,
-            boundaries: boundaries,
-            samplingRate: samplingRate,
-            seed: seed
-        });
-    }
-
-    public createDoubleHistogramRequest(info: DoubleHistogramArgs):
+    public createHistogramRequest(info: HistogramArgs):
         RpcRequest<PartialResult<HistogramBase>> {
         return this.createStreamingRpcRequest<HistogramBase>(
-            "doubleHistogram", info);
+            "histogram", info);
     }
 
     public createSetOperationRequest(setOp: CombineOperators): RpcRequest<PartialResult<RemoteObjectId>> {

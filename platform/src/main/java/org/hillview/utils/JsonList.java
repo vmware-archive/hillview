@@ -26,6 +26,7 @@ import java.util.function.Function;
 
 /**
  * Wrapper around a list which makes it serializable as JSON.
+ * All elements of the list must also be serializable as JSON.
  */
 public class JsonList<T> implements IJson, List<T> {
     private final List<T> data;
@@ -166,7 +167,8 @@ public class JsonList<T> implements IJson, List<T> {
         return result;
     }
 
-    public <S, U> JsonList<U> zip(JsonList<S> other, BiFunction<T, S, U> func) {
+    public <S, U>
+    JsonList<U> zip(JsonList<S> other, BiFunction<T, S, U> func) {
         int len = Math.min(this.size(), other.size());
         JsonList<U> result = new JsonList<U>(len);
         for (int i=0; i < len; i++)

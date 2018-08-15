@@ -22,7 +22,7 @@ import {DatasetView, Histogram2DSerialization, IViewSerialization} from "../data
 import {DistinctStrings} from "../distinctStrings";
 import {
     CategoricalValues, ColumnHistogramBoundaries, CombineOperators, DataRange,
-    FilterDescription, HeatMap, Histogram2DArgs, HistogramBase,
+    HeatMap, Histogram2DArgs, HistogramBase,
     IColumnDescription, kindIsString, RecordOrder, RemoteObjectId,
 } from "../javaBridge";
 import {Receiver, RpcRequest} from "../rpc";
@@ -46,7 +46,8 @@ import {AnyScale, AxisData} from "./axisData";
 import {Range2DCollector} from "./heatmapView";
 import { BucketDialog, HistogramViewBase } from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
-import {ChartObserver} from "./tsViewBase";
+import {ChartObserver, ChartOptions} from "./tsViewBase";
+import {DataRangesCollector} from "./histogramView";
 
 /**
  * This class is responsible for rendering a 2D histogram.
@@ -626,44 +627,24 @@ export class Histogram2DView extends HistogramViewBase {
             return;
         }
 
-        let filter: FilterDescription;
-        let rr: RpcRequest<RemoteObjectId>;
-        if (kindIsString(kind)) {
-            filter = {
-                min: 0,
-                max: 0,
-                minString: HistogramViewBase.invert(
-                    xl, this.plot.xScale, kind, selectedAxis.distinctStrings),
-                maxString: HistogramViewBase.invert(
-                    xr, this.plot.xScale, kind, selectedAxis.distinctStrings),
-                kind: selectedAxis.description.kind,
-                columnName: selectedAxis.description.name,
-                complement: d3event.sourceEvent.ctrlKey,
-            };
-            rr = this.createStringFilterRequest(filter);
-        } else {
-            filter = {
-                min: min,
-                max: max,
-                minString: null,
-                maxString: null,
-                kind: selectedAxis.description.kind,
-                columnName: selectedAxis.description.name,
-                complement: d3event.sourceEvent.ctrlKey,
-            };
-            rr = this.createDoubleFilterRequest(filter);
-        }
-
+        const filter = {
+            min: min,
+            max: max,
+            minString: HistogramViewBase.invert(
+                xl, this.plot.xScale, kind, selectedAxis.distinctStrings),
+            maxString: HistogramViewBase.invert(
+                xr, this.plot.xScale, kind, selectedAxis.distinctStrings),
+            cd: selectedAxis.description,
+            complement: d3event.sourceEvent.ctrlKey,
+        };
+        const rr = this.createFilterRequest(filter);
         const renderer = new Filter2DReceiver(
-            this.currentData.xData.description,
-            this.currentData.yData.description,
-            this.currentData.xData.distinctStrings,
-            this.currentData.yData.distinctStrings,
-            this.rowCount,
-            this.schema,
-            this.page, this.currentData.samplingRate >= 1.0, rr, false,
-            this.dataset,
-            this.relative);
+            this.currentData.xData.description, this.currentData.yData.description,
+            this.rowCount, this.schema, this.page, rr, this.dataset,
+            { exact: this.currentData.samplingRate >= 1.0,
+                heatmap: false,
+                reusePage: false,
+                relative: this.relative });
         rr.invoke(renderer);
     }
 
@@ -699,29 +680,23 @@ export class Histogram2DView extends HistogramViewBase {
 export class Filter2DReceiver extends BaseRenderer {
     constructor(protected xColumn: IColumnDescription,
                 protected yColumn: IColumnDescription,
-                protected xDs: DistinctStrings,
-                protected yDs: DistinctStrings,
                 protected rowCount: number,
                 protected schema: SchemaClass,
                 page: FullPage,
-                protected exact: boolean,
                 operation: ICancellable<RemoteObjectId>,
-                protected heatMap: boolean,
                 dataset: DatasetView,
-                protected relative: boolean) {
+                protected options: ChartOptions) {
         super(page, operation, "Filter", dataset);
     }
 
     public run(): void {
         super.run();
         const cds: IColumnDescription[] = [this.xColumn, this.yColumn];
-        const ds: DistinctStrings[] = [this.xDs, this.yDs];
-        const rx = new CategoricalValues(this.xColumn.name, this.xDs != null ? this.xDs.uniqueStrings : null);
-        const ry = new CategoricalValues(this.yColumn.name, this.yDs != null ? this.yDs.uniqueStrings : null);
-        const rr = this.remoteObject.createRange2DRequest(rx, ry);
-        rr.invoke(new Range2DCollector(
-            cds, this.rowCount, this.schema, ds, this.page, this.remoteObject, this.exact,
-            rr, this.heatMap, this.relative, false));
+        const buckets = HistogramViewBase.heatmapSize(this.page)
+        const rr = this.remoteObject.getDataRanges2D(cds, buckets);
+        rr.invoke(new DataRangesCollector(
+            this.remoteObject, this.page, rr, this.schema,
+            this.rowCount, cds, null, this.options));
     }
 }
 

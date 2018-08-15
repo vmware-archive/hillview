@@ -94,7 +94,7 @@ export function loadFile(file: File,
                          onsuccess: (s: string) => void,
                          reporter: ErrorReporter): void {
     const reader = new FileReader();
-    reader.onloadend = () => onsuccess(reader.result);
+    reader.onloadend = () => onsuccess(reader.result as string);
     reader.onabort = () => reporter.reportError("Read of file " + file.name + " aborted");
     reader.onerror = (e) => reporter.reportError(e.toString());
     if (file)
@@ -113,6 +113,12 @@ export class Seed {
 
     public get(): number {
         return Math.round(Math.random() * 1024 * 1024);
+    }
+
+    public getSampled(samplingRate: number): number {
+        if (samplingRate >= 1.0)
+            return 0;
+        return this.get();
     }
 }
 

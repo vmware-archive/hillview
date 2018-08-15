@@ -20,15 +20,16 @@ import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {DatasetView, HistogramSerialization, IViewSerialization} from "../datasetView";
 import {DistinctStrings} from "../distinctStrings";
 import {
-    CombineOperators, DataRange, DoubleHistogramArgs,
-    FilterDescription,
+    CombineOperators,
+    DataRange,
+    FilterDescription, HistogramArgs,
     HistogramBase,
     IColumnDescription,
-    kindIsString, RangeAndStrings,
+    kindIsString,
     RecordOrder,
     RemoteObjectId,
 } from "../javaBridge";
-import {OnCompleteReceiver, Receiver, RpcRequest} from "../rpc";
+import {OnCompleteReceiver, Receiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
 import {BaseRenderer, TableTargetAPI, ZipReceiver} from "../tableTarget";
 import {CDFPlot} from "../ui/CDFPlot";
@@ -41,13 +42,19 @@ import {PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
 import {Resolution} from "../ui/ui";
 import {
-    formatNumber, ICancellable, PartialResult, percent, reorder, saveAs, Seed,
+    formatNumber,
+    ICancellable,
+    PartialResult,
+    percent,
+    reorder,
+    saveAs,
     significantDigits,
 } from "../util";
 import {AxisData} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
-import {ChartObserver, HistogramOptions} from "./tsViewBase";
+import {ChartObserver, ChartOptions, HistogramOptions} from "./tsViewBase";
+import {HeatMapRenderer} from "./heatmapView";
 
 /**
  * A HistogramView is responsible for showing a one-dimensional histogram on the screen.
@@ -370,16 +377,11 @@ export class HistogramView extends HistogramViewBase {
 
     public histogram1D(colName: string, bucketCount: number, options: HistogramOptions): void {
         const cd = this.schema.find(colName);
-        if (kindIsString(cd.kind)) {
-            const size = PlottingSurface.getDefaultChartSize(this.page);
-            const rr = this.createGetRangeOrSamples(cd, Seed.instance.get(), size.width);
-            rr.invoke(new StringBucketsObserver(
-                this, this.page, rr, this.schema, bucketCount, cd, this.currentData.title,
-                size.width, options));
-        } else {
-            const rr = this.createGetRangeOrSamples(cd, 0, 0);
-            rr.invoke(new DataRangeCollector(this, this.page, rr, this.schema, bucketCount, cd, null, options));
-        }
+        const size = PlottingSurface.getDefaultChartSize(this.page);
+        const rr = this.getDataRange(cd, size.width);
+        rr.invoke(new DataRangeCollector(
+            this, this.page, rr, this.schema, bucketCount, cd, null,
+            size.width, options));
     }
 
     public exactHistogram(): void {
@@ -471,33 +473,17 @@ export class HistogramView extends HistogramViewBase {
             return;
         }
 
-        let filter: FilterDescription;
-        let rr: RpcRequest<RemoteObjectId>;
-        if (kindIsString(kind)) {
-            filter = {
-                min: 0,
-                max: 0,
-                minString: HistogramViewBase.invert(
-                    xl, this.plot.xScale, kind, this.currentData.axisData.distinctStrings),
-                maxString: HistogramViewBase.invert(
-                    xr, this.plot.xScale, kind, this.currentData.axisData.distinctStrings),
-                kind: this.currentData.axisData.description.kind,
-                columnName: this.currentData.axisData.description.name,
-                complement: d3event.sourceEvent.ctrlKey,
-            };
-            rr = this.createStringFilterRequest(filter);
-        } else {
-            filter = {
-                min: min,
-                max: max,
-                minString: null,
-                maxString: null,
-                kind: this.currentData.axisData.description.kind,
-                columnName: this.currentData.axisData.description.name,
-                complement: d3event.sourceEvent.ctrlKey,
-            };
-            rr = this.createDoubleFilterRequest(filter);
-        }
+        const filter: FilterDescription = {
+            min: min,
+            max: max,
+            minString: HistogramViewBase.invert(
+                xl, this.plot.xScale, kind, this.currentData.axisData.distinctStrings),
+            maxString: HistogramViewBase.invert(
+                xr, this.plot.xScale, kind, this.currentData.axisData.distinctStrings),
+            cd: this.currentData.axisData.description,
+            complement: d3event.sourceEvent.ctrlKey,
+        };
+        const rr = this.createFilterRequest(filter);
         const renderer = new FilterReceiver(
             filter, this.currentData.axisData.description, this.rowCount, this.schema,
             this.currentData.axisData.distinctStrings, this.currentData.samplingRate >= 1.0,
@@ -526,106 +512,21 @@ class FilterReceiver extends BaseRenderer {
     }
 
     private filterDescription(): string {
-        return "Filtered " + this.filter.columnName;
+        return "Filtered " + this.filter.cd.name;
     }
 
     public run(): void {
         super.run();
         const title = this.filterDescription();
-        if (kindIsString(this.columnDescription.kind)) {
-            const size = PlottingSurface.getDefaultChartSize(this.page);
-            const rr = this.remoteObject.createGetRangeOrSamples(
-                this.columnDescription, Seed.instance.get(), size.width);
-            rr.invoke(new StringBucketsObserver(
-                this.remoteObject, this.page, rr, this.schema, 0,
-                this.columnDescription, title, size.width, { exact: false, reusePage: false }));
-        } else {
-            const rr = this.remoteObject.createGetRangeOrSamples(
-                this.columnDescription, 0, 0);
-            rr.invoke(new DataRangeCollector(
-                this.remoteObject, this.page, rr, this.schema, 0,
-                this.columnDescription, title, {
-                exact: this.exact,
-                reusePage: false
-            }));
-        }
-    }
-}
-
-/**
- * Waits for column stats to be received and then initiates a histogram rendering.
- */
-export class DataRangeCollector extends Receiver<DataRange> {
-    protected range: DataRange;
-
-    constructor(
-        protected originator: TableTargetAPI,
-        page: FullPage,
-        operation: ICancellable<DataRange>,
-        protected schema: SchemaClass,
-        protected bucketCount: number,
-        protected cd: IColumnDescription,  // title of the resulting display
-        protected title: string | null,
-        protected options: HistogramOptions) {
-        super(page, operation, "histogram");
-    }
-
-    public setValue(bcs: DataRange): void {
-        this.range = bcs;
-    }
-
-    public onNext(value: PartialResult<DataRange>): void {
-        super.onNext(value);
-        this.setValue(value.data);
-    }
-
-    public samplingRate() {
-        const constant = 4;  // This models the confidence we want from the sampling
-        const height = PlottingSurface.getDefaultChartSize(this.page).height;
-        const sampleCount = constant * height * height;
-        const sampleRate = sampleCount / this.range.presentCount;
-        return Math.min(sampleRate, 1);
-    }
-
-    public histogram(cdfBucketCount: number): void {
         const size = PlottingSurface.getDefaultChartSize(this.page);
-        let cdfCount = Math.floor(size.width);
-        if (cdfCount === 0)
-            cdfCount = cdfBucketCount;
-
-        let samplingRate = 1.0;
-        if (!this.options.exact)
-            samplingRate = this.samplingRate();
-
-        const args: DoubleHistogramArgs = {
-            columnName: this.cd.name,
-            min: this.range.min,
-            max: this.range.max,
-            cdfSamplingRate: samplingRate,
-            seed: Seed.instance.get(),
-            cdfBucketCount: cdfCount
-        };
-
-        const rr = this.originator.createDoubleHistogramRequest(args);
-        rr.chain(this.operation);
-        const axisData = new AxisData(this.cd, this.range, null, cdfBucketCount);
-        const renderer = new HistogramRenderer(this.title, this.page,
-            this.originator.remoteObjectId, this.range.presentCount, this.schema, this.bucketCount,
-            axisData, rr, samplingRate, false, this.options.reusePage);
-        rr.invoke(renderer);
-    }
-
-    public onCompleted(): void {
-        super.onCompleted();
-        if (this.range == null)
-            // probably some error occurred
-            return;
-        if (this.range.presentCount === 0) {
-            this.page.reportError("No data in range");
-            return;
-        }
-
-        this.histogram(this.bucketCount);
+        const rr = this.remoteObject.getDataRange(
+            this.columnDescription, size.width);
+        rr.invoke(new DataRangeCollector(
+            this.remoteObject, this.page, rr, this.schema, 0,
+            this.columnDescription, title, size.width, {
+            exact: this.exact,
+            reusePage: false
+        }));
     }
 }
 
@@ -637,52 +538,6 @@ export class HistogramDialog extends Dialog {
 
     public getColumn(): string {
         return this.getFieldValue("columnName");
-    }
-}
-
-/**
- * Receives buckets for a string histogram and initiates the string histogram.
- */
-export class StringBucketsObserver extends OnCompleteReceiver<RangeAndStrings> {
-    constructor(
-        protected remoteObject: TableTargetAPI,
-        page: FullPage, operation: ICancellable<RangeAndStrings>,
-        protected schema: SchemaClass,
-        protected bucketCount: number,
-        protected cd: IColumnDescription,
-        protected title: string | null,
-        protected requestedCount: number,
-        protected options: HistogramOptions) {
-        super(page, operation, "Compute string histogram");
-    }
-
-    public run(value: RangeAndStrings): void {
-        if (value.presentCount === 0) {
-            this.page.reportError("All values are missing");
-            return;
-        }
-        const cdfBucketCount = value.boundaries.length;
-        let samplingRate = HistogramViewBase.samplingRate(
-            cdfBucketCount, this.value.presentCount, this.page);
-        if (this.options.exact)
-            samplingRate = 1.0;
-        const distinctStrings = new DistinctStrings( {
-            truncated: false,
-            uniqueStrings: value.boundaries
-        }, this.cd.name);
-        const stats: DataRange = {
-            min: -0.5,
-            max: cdfBucketCount - .5,
-            presentCount: value.presentCount
-        };
-        const axisData = new AxisData(this.cd, stats, distinctStrings, cdfBucketCount);
-        const rr = this.remoteObject.createStringHistogramRequest(
-            this.cd.name, value.boundaries, samplingRate, Seed.instance.get());
-        rr.invoke(new HistogramRenderer("Histogram of " + this.cd.name,
-            this.page, this.remoteObject.remoteObjectId,
-            value.presentCount, this.schema, this.bucketCount,
-            axisData, rr, samplingRate,
-            this.requestedCount > cdfBucketCount, this.options.reusePage));
     }
 }
 
@@ -715,6 +570,62 @@ class HistogramRenderer extends Receiver<HistogramBase>  {
 }
 
 /**
+ * Waits for column stats to be received and then initiates a histogram rendering.
+ */
+export class DataRangeCollector extends OnCompleteReceiver<DataRange> {
+    constructor(
+        protected originator: TableTargetAPI,
+        page: FullPage,
+        operation: ICancellable<DataRange>,
+        protected schema: SchemaClass,
+        protected bucketCount: number,
+        protected cd: IColumnDescription,  // title of the resulting display
+        protected title: string | null,
+        protected width: number,
+        protected options: HistogramOptions) {
+        super(page, operation, "histogram");
+    }
+
+    public numericHistogram(range: DataRange): void {
+        const args = HistogramViewBase.computeHistogramArgs(
+            this.cd, range, 0, this.options.exact, this.page);
+        const rr = this.originator.createHistogramRequest(args);
+        rr.chain(this.operation);
+        const axisData = HistogramViewBase.computeAxis(this.cd, range, this.bucketCount);
+        const renderer = new HistogramRenderer(this.title, this.page,
+            this.originator.remoteObjectId, range.presentCount, this.schema, this.bucketCount,
+            axisData, rr, args.samplingRate, false, this.options.reusePage);
+        rr.invoke(renderer);
+    }
+
+    private stringHistogram(range: DataRange): void {
+        const cdfBucketCount = range.boundaries.length;
+        const args = HistogramViewBase.computeHistogramArgs(
+            this.cd, range, cdfBucketCount, this.options.exact, this.page);
+        const rr = this.originator.createHistogramRequest(args);
+        const axisData = HistogramViewBase.computeAxis(this.cd, range, this.bucketCount);
+        const renderer = new HistogramRenderer("Histogram of " + this.cd.name,
+            this.page, this.originator.remoteObjectId,
+            range.presentCount, this.schema, this.bucketCount,
+            axisData, rr, args.samplingRate,
+            this.width > cdfBucketCount, this.options.reusePage);
+        rr.invoke(renderer);
+    }
+
+    public run(value: DataRange): void {
+        if (value.presentCount === 0) {
+            this.page.reportError("All values are missing");
+            return;
+        }
+
+        if (value.boundaries == null)
+            this.numericHistogram(value);
+        else
+            this.stringHistogram(value);
+    }
+}
+
+/**
  * This class is invoked by the ZipReceiver after a set operation to create a new histogram
  */
 class MakeHistogram extends BaseRenderer {
@@ -734,5 +645,51 @@ class MakeHistogram extends BaseRenderer {
         const hv = new HistogramView(
             this.remoteObject.remoteObjectId, this.rowCount, this.schema, this.page);
         hv.histogram1D(this.colDesc.name, 0, { reusePage: true, exact: this.samplingRate >= 1.0 });
+    }
+}
+
+/**
+ * Waits for 2 column stats to be received and then
+ * initiates a 2D histogram or heatmap rendering.
+ */
+export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
+    constructor(
+        protected originator: TableTargetAPI,
+        page: FullPage,
+        operation: ICancellable<DataRange[]>,
+        protected schema: SchemaClass,
+        protected rowCount: number,
+        protected cds: IColumnDescription[],
+        protected title: string | null,
+        protected options: ChartOptions) {
+        super(page, operation, "histogram");
+    }
+
+    public run(value: DataRange[]): void {
+        console.assert(value.length === 2);
+        if (value[0].presentCount === 0 || value[1].presentCount === 0) {
+            this.page.reportError("No non-missing data");
+            return;
+        }
+        const args: HistogramArgs[] = [];
+        const xBucketCount = HistogramViewBase.bucketCount(this.value[0], this.page,
+            this.cds[0].kind, this.options.heatmap, true);
+        const yBucketCount = HistogramViewBase.bucketCount(this.value[1], this.page,
+            this.cds[1].kind, this.options.heatmap, false);
+
+        let arg = HistogramViewBase.computeHistogramArgs(
+            this.cds[0], value[0], xBucketCount, this.options.exact, this.page);
+        args.push(arg);
+        arg = HistogramViewBase.computeHistogramArgs(
+            this.cds[1], value[1], yBucketCount, this.options.exact, this.page);
+        args.push(arg);
+
+        const rr = this.originator.createHeatMapRequest(args);
+        const renderer = new HeatMapRenderer(this.page,
+            this.originator, this.rowCount, this.schema,
+            this.cds, value,
+            1.0, rr, this.options.reusePage);
+        rr.chain(this.operation);
+        rr.invoke(renderer);
     }
 }

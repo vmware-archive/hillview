@@ -23,6 +23,7 @@ import {CategoricalValues, IDistinctStrings} from "./javaBridge";
 export class DistinctStrings implements IDistinctStrings {
     public uniqueStrings: string[] | null;
     // This may be true if there are too many distinct strings in a column.
+    // TODO: remove this field
     public truncated: boolean;
 
     public constructor(ds: IDistinctStrings | null, protected colName: string) {

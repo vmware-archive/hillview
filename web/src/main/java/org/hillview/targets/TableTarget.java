@@ -23,6 +23,8 @@ import org.hillview.dataset.ConcurrentSketch;
 import org.hillview.dataset.TripleSketch;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IJson;
+import org.hillview.dataset.api.ISketch;
+import org.hillview.dataset.api.Pair;
 import org.hillview.jsonObjects.Histogram2DArgs;
 import org.hillview.jsonObjects.Histogram3DArgs;
 import org.hillview.maps.*;
@@ -122,7 +124,7 @@ public final class TableTarget extends RpcTarget {
         this.runCompleteSketch(this.table, sk, (e, c) -> e, request, context);
     }
 
-    class StringBucketBoundaries extends BucketsInfo {
+    static class StringBucketBoundaries extends BucketsInfo {
         JsonList<String> boundaries;
         StringBucketBoundaries(MinKSet<String> samples, int bucketCount) {
             this.boundaries = samples.getBoundaries(bucketCount);
@@ -131,75 +133,110 @@ public final class TableTarget extends RpcTarget {
     }
 
     static class RangeArgs {
-        ColumnDescription cd;  // if this is Category, String, Json we are sampling strings
-        long seed;  // only used if sampling strings
+        // if this is Category, String, or Json we are sampling strings
+        ColumnDescription cd = new ColumnDescription();
+        long seed;       // only used if sampling strings
         int cdfBuckets;  // only used if sampling strings
-    }
 
-    @HillviewRpc
-    // This function returns a subclass of BucketsInfo: either
-    // StringBucketBoundaries or DataRange
-    public void getRangeOrSamples(RpcRequest request, RpcRequestContext context) {
-        RangeArgs args = request.parseArgs(RangeArgs.class);
-        if (args.cd.kind.isString()) {
-            SampleDistinctElementsSketch sk = new SampleDistinctElementsSketch(
-                    // We sample cdfBuckets squared
-                    args.cd.name, args.seed, args.cdfBuckets * args.cdfBuckets);
-            this.runCompleteSketch(this.table, sk, (e, c) ->
-                            new StringBucketBoundaries(e, args.cdfBuckets),
-                    request, context);
-        } else {
-            DataRangeSketch sk = new DataRangeSketch(args.cd.name);
-            this.runCompleteSketch(this.table, sk, (e, c) -> e, request, context);
+        // This class has a bunck of unchecked casts, but the Java
+        // type system is not good enough to express these operations
+        // in a type-safe manner.
+        @SuppressWarnings("unckecked")
+        ISketch<ITable, BucketsInfo> getSketch() {
+            if (this.cd.kind.isString()) {
+                ISketch<ITable, MinKSet<String>> s = new SampleDistinctElementsSketch(
+                        // We sample cdfBuckets squared
+                        this.cd.name, this.seed, this.cdfBuckets * this.cdfBuckets);
+                return (ISketch<ITable, BucketsInfo>)(Object)s;
+            } else {
+                ISketch<ITable, DataRange> s = new DataRangeSketch(this.cd.name);
+                return (ISketch<ITable, BucketsInfo>)(Object)s;
+            }
+        }
+
+        @SuppressWarnings("unckecked")
+        BiFunction<BucketsInfo, HillviewComputation, BucketsInfo> getPostProcessing() {
+            if (this.cd.kind.isString()) {
+                int b = this.cdfBuckets;
+                return (e, c) -> new StringBucketBoundaries((MinKSet<String>)e, b);
+            } else {
+                return (e, c) -> e;
+            }
         }
     }
 
-    static class StringHistogramArgs {
-        String columnName = "";
-        String[] boundaries = {};
+    // This function returns a subclass of BucketsInfo: either
+    // StringBucketBoundaries or DataRange
+    @HillviewRpc
+    public void getDataRange(RpcRequest request, RpcRequestContext context) {
+        RangeArgs args = request.parseArgs(RangeArgs.class);
+        ISketch<ITable, BucketsInfo> sk = args.getSketch();
+        BiFunction<BucketsInfo, HillviewComputation, BucketsInfo> post = args.getPostProcessing();
+        this.runCompleteSketch(this.table, sk, post, request, context);
+    }
+
+    @HillviewRpc
+    public void getDataRanges2D(RpcRequest request, RpcRequestContext context) {
+        RangeArgs[] args = request.parseArgs(RangeArgs[].class);
+        ISketch<ITable, BucketsInfo> sk0 = args[0].getSketch();
+        ISketch<ITable, BucketsInfo> sk1 = args[1].getSketch();
+        BiFunction<BucketsInfo, HillviewComputation, BucketsInfo> post0 = args[0].getPostProcessing();
+        BiFunction<BucketsInfo, HillviewComputation, BucketsInfo> post1 = args[1].getPostProcessing();
+        ConcurrentSketch<ITable, BucketsInfo, BucketsInfo> csk =
+                new ConcurrentSketch<ITable, BucketsInfo, BucketsInfo>(sk0, sk1);
+        BiFunction<Pair<BucketsInfo, BucketsInfo>, HillviewComputation, JsonList<BucketsInfo>> post =
+                (e, c) -> {
+            JsonList<BucketsInfo> result = new JsonList<BucketsInfo>(2);
+            result.add(post0.apply(e.first, c));
+            result.add(post1.apply(e.second, c));
+            return result;
+        };
+        this.runCompleteSketch(this.table, csk, post, request, context);
+    }
+
+    static class HistogramArgs {
+        ColumnDescription cd = new ColumnDescription();
         double samplingRate;
         long seed;
-    }
-
-    @HillviewRpc
-    public void stringHistogram(RpcRequest request, RpcRequestContext context) {
-        StringHistogramArgs args = request.parseArgs(StringHistogramArgs.class);
-        StringHistogramBuckets buckets = new StringHistogramBuckets(args.boundaries);
-        HistogramSketch sk = new HistogramSketch(
-                buckets, args.columnName, args.samplingRate, args.seed);
-        this.runSketch(this.table, sk, request, context);
-    }
-
-    static class DoubleHistogramArgs {
-        String columnName = "";
+        // Only used when doing string histograms
+        @Nullable
+        String[] boundaries;
+        // Only used when doing double histograms
         double min;
         double max;
-        double cdfSamplingRate;
-        long seed;
         int cdfBucketCount;
+
+        IHistogramBuckets getBuckets() {
+            if (cd.kind.isString()) {
+                assert this.boundaries != null;
+                return new StringHistogramBuckets(this.boundaries);
+            } else {
+                return new DoubleHistogramBuckets(this.min, this.max, this.cdfBucketCount);
+            }
+        }
+
+        HistogramSketch getSketch() {
+            IHistogramBuckets buckets = this.getBuckets();
+            return new HistogramSketch(buckets, this.cd.name, this.samplingRate, this.seed);
+        }
     }
 
     @HillviewRpc
-    public void doubleHistogram(RpcRequest request, RpcRequestContext context) {
-        DoubleHistogramArgs info = request.parseArgs(DoubleHistogramArgs.class);
-        DoubleHistogramBuckets cdfBuckets = new DoubleHistogramBuckets(
-                info.min, info.max, info.cdfBucketCount);
-        HistogramSketch sk = new HistogramSketch(
-                cdfBuckets, info.columnName, info.cdfSamplingRate, info.seed);
+    public void histogram(RpcRequest request, RpcRequestContext context) {
+        HistogramArgs info = request.parseArgs(HistogramArgs.class);
+        HistogramSketch sk = info.getSketch();
         this.runSketch(this.table, sk, request, context);
     }
 
     @HillviewRpc
-    public void heatMap(RpcRequest request, RpcRequestContext context) {
-        Histogram2DArgs info = request.parseArgs(Histogram2DArgs.class);
-        assert info.first != null;
-        assert info.second != null;
+    public void heatmap(RpcRequest request, RpcRequestContext context) {
+        HistogramArgs[] info = request.parseArgs(HistogramArgs[].class);
+        assert info.length == 2;
         HeatMapSketch sk = new HeatMapSketch(
-                info.first.getBuckets(info.xBucketCount),
-                info.second.getBuckets(info.yBucketCount),
-                info.first.columnName,
-                info.second.columnName,
-                info.samplingRate, info.seed);
+                info[0].getBuckets(),
+                info[1].getBuckets(),
+                info[0].cd.name,
+                info[1].cd.name, 1.0, 0);
         this.runSketch(this.table, sk, request, context);
     }
 
@@ -248,14 +285,6 @@ public final class TableTarget extends RpcTarget {
 
     @HillviewRpc
     @Deprecated
-    public void range(RpcRequest request, RpcRequestContext context) {
-        CategoricalValues info = request.parseArgs(CategoricalValues.class);
-        BasicColStatSketch sk = info.getBasicStatsSketch();
-        this.runSketch(this.table, sk, request, context);
-    }
-
-    @HillviewRpc
-    @Deprecated
     public void range2D(RpcRequest request, RpcRequestContext context) {
         CategoricalValues[] cols = request.parseArgs(CategoricalValues[].class);
         if (cols.length != 2)
@@ -296,15 +325,8 @@ public final class TableTarget extends RpcTarget {
     }
 
     @HillviewRpc
-    public void filterDoubleRange(RpcRequest request, RpcRequestContext context) {
-        DoubleRangeFilterDescription filter = request.parseArgs(DoubleRangeFilterDescription.class);
-        FilterMap fm = new FilterMap(filter);
-        this.runMap(this.table, fm, TableTarget::new, request, context);
-    }
-
-    @HillviewRpc
-    public void filterStringRange(RpcRequest request, RpcRequestContext context) {
-        StringRangeFilterDescription filter = request.parseArgs(StringRangeFilterDescription.class);
+    public void filterRange(RpcRequest request, RpcRequestContext context) {
+        RangeFilterDescription filter = request.parseArgs(RangeFilterDescription.class);
         FilterMap fm = new FilterMap(filter);
         this.runMap(this.table, fm, TableTarget::new, request, context);
     }

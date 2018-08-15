@@ -18,7 +18,7 @@
 import {DistinctStrings} from "../distinctStrings";
 import {
     allContentsKind, asContentsKind, ColumnSortOrientation, ComparisonFilterDescription,
-    CreateColumnInfo, EqualityFilterDescription, HLogLog, IColumnDescription, kindIsString,
+    CreateColumnInfo, EqualityFilterDescription, HLogLog, IColumnDescription,
     RecordOrder, RemoteObjectId,
 } from "../javaBridge";
 import {OnCompleteReceiver} from "../rpc";
@@ -29,19 +29,19 @@ import {FullPage} from "../ui/fullPage";
 import {SubMenu, TopMenuItem} from "../ui/menu";
 import {SpecialChars, ViewKind} from "../ui/ui";
 import {
-    cloneToSet, Comparison, Converters, ICancellable, mapToArray, Seed, significantDigits,
+    cloneToSet, Comparison, Converters, ICancellable, mapToArray, significantDigits,
 } from "../util";
 import {Range2DCollector} from "./heatmapView";
 import {HeavyHittersReceiver, HeavyHittersView} from "./heavyHittersView";
 import {Histogram2DDialog} from "./histogram2DView";
 import {
-    DataRangeCollector,
+    DataRangeCollector, DataRangesCollector,
     HistogramDialog,
-    StringBucketsObserver,
 } from "./histogramView";
 import {TableOperationCompleted, TableView} from "./tableView";
 import {TrellisPlotDialog, TrellisRangeReceiver} from "./trellisHeatMapView";
 import {PlottingSurface} from "../ui/plottingSurface";
+import {HistogramViewBase} from "./histogramViewBase";
 
 /**
  * A base class for TableView and SchemaView.
@@ -184,17 +184,21 @@ export abstract class TSViewBase extends BigTableView {
         rr.invoke(rec);
     }
 
-    public histogram1D(colName: string, options: HistogramOptions): void {
-        const cd = this.schema.find(colName);
-        if (kindIsString(cd.kind)) {
-            const size = PlottingSurface.getDefaultChartSize(this.page);
-            const rr = this.createGetRangeOrSamples(cd, Seed.instance.get(), size.width);
-            rr.invoke(new StringBucketsObserver(
-                this, this.page, rr, this.schema, 0, cd, null, size.width, options));
-        } else {
-            const rr = this.createGetRangeOrSamples(cd, 0, 0);
-            rr.invoke(new DataRangeCollector(this, this.page, rr, this.schema, 0, cd, null, options));
-        }
+    public histogram1D(cd: IColumnDescription, options: HistogramOptions): void {
+        const size = PlottingSurface.getDefaultChartSize(this.page);
+        const rr = this.getDataRange(cd, size.width);
+        rr.invoke(new DataRangeCollector(
+            this, this.page, rr, this.schema, 0, cd, null, size.width, options));
+    }
+
+    public histogram2D(cds: IColumnDescription[], options: HistogramOptions): void {
+        /*
+        TODO
+        const size = PlottingSurface.getDefaultChartSize(this.page);
+        const rr = this.getDataRanges2D(cds, size.width);
+        rr.invoke(new DataRangesCollector(
+            this, this.page, rr, this.schema, 0, cds, null, size.width, options));
+            */
     }
 
     protected histogram(columns: string[]): void {
@@ -205,14 +209,11 @@ export abstract class TSViewBase extends BigTableView {
         });
 
         if (cds.length === 1) {
-            this.histogram1D(cds[0].name,
+            this.histogram1D(cds[0],
                 { exact: false, reusePage: false });
         } else {
-            // TODO: remove this path
-            const rr = this.dataset.createGetCategoryRequest(this.page, cds);
-            rr.invoke(new ChartObserver(this, this.page, rr, null,
-                this.rowCount, this.schema,
-                {exact: false, heatmap: false, relative: false, reusePage: false}, cds));
+            this.histogram2D(cds,
+                { exact: false, reusePage: false });
         }
     }
 
@@ -222,11 +223,12 @@ export abstract class TSViewBase extends BigTableView {
             const colDesc = this.schema.find(v);
             cds.push(colDesc);
         });
-        // TODO: remove this path
-        const rr = this.dataset.createGetCategoryRequest(this.page, cds);
-        rr.invoke(new ChartObserver(this, this.page, rr, null,
-            this.rowCount, this.schema,
-            {exact: false, heatmap: true, relative: false, reusePage: false}, cds));
+
+        const buckets = HistogramViewBase.heatmapSize(this.page);
+        const rr = this.getDataRanges2D(cds, buckets);
+        rr.invoke(new DataRangesCollector(
+            this, this.page, rr, this.schema, this.rowCount, cds, null,
+            { reusePage: false, relative: false, heatmap: true, exact: true } ));
     }
 
     protected heatmapSelected(): void {

@@ -24,10 +24,10 @@ import java.io.Serializable;
 
 @SuppressWarnings("CanBeFinal")
 public class RangeFilterPair implements ITableFilterDescription, Serializable {
-    private final DoubleRangeFilterDescription first;
-    private final DoubleRangeFilterDescription second;
+    private final RangeFilterDescription first;
+    private final RangeFilterDescription second;
 
-    public RangeFilterPair(DoubleRangeFilterDescription first, DoubleRangeFilterDescription second) {
+    public RangeFilterPair(RangeFilterDescription first, RangeFilterDescription second) {
         this.first = first;
         this.second = second;
     }
