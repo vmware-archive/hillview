@@ -19,10 +19,15 @@ import {drag as d3drag} from "d3-drag";
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {HeatmapSerialization, IViewSerialization} from "../datasetView";
 import {
-    CombineOperators, DataRange, FilterDescription, HeatMap,
-    IColumnDescription, kindIsNumeric, RecordOrder, RemoteObjectId,
+    CombineOperators,
+    DataRange,
+    FilterDescription,
+    HeatMap,
+    IColumnDescription,
+    RecordOrder,
+    RemoteObjectId,
 } from "../javaBridge";
-import { Receiver } from "../rpc";
+import {Receiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
 import {BigTableView, TableTargetAPI, ZipReceiver} from "../tableTarget";
 import {IDataView} from "../ui/dataview";
@@ -34,16 +39,20 @@ import {HeatmapLegendPlot} from "../ui/legendPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {Point, Resolution} from "../ui/ui";
+import {D3SvgElement, Point, Resolution} from "../ui/ui";
 import {
-    formatNumber, ICancellable, PartialResult, reorder,
-    saveAs, significantDigits,
+    formatNumber,
+    ICancellable,
+    PartialResult,
+    reorder,
+    saveAs,
+    significantDigits,
 } from "../util";
 import {AxisData} from "./axisData";
-import {Filter2DReceiver, Make2DHistogram} from "./histogram2DView";
+import {Filter2DReceiver, MakeHistogramOrHeatmap} from "./histogram2DView";
 import {HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
-import {DataRangesCollector} from "./histogramView";
+import {DataRangesCollector} from "./histogram2DView";
 
 /**
  * A HeatMapView renders information as a heatmap.
@@ -54,7 +63,7 @@ export class HeatmapView extends BigTableView {
      * Coordinates of mouse within canvas.
      */
     private selectionOrigin: Point;
-    private selectionRectangle: any;
+    private selectionRectangle: D3SvgElement;
     protected colorLegend: HeatmapLegendPlot;
     protected summary: HTMLElement;
     private moved: boolean;
@@ -185,11 +194,6 @@ export class HeatmapView extends BigTableView {
             return;
         }
 
-        // TODO: this should go away
-        if (!kindIsNumeric(xData.description.kind) || !kindIsNumeric(yData.description.kind)) {
-            this.viewMenu.enable("group by", false);
-        }
-
         const xPoints = heatmap.buckets.length;
         const yPoints = heatmap.buckets[0].length;
         if (yPoints === 0) {
@@ -288,9 +292,12 @@ export class HeatmapView extends BigTableView {
         const hv = new HeatmapView(ser.remoteObjectId, ser.rowCount, schema, page);
         const buckets = HistogramViewBase.heatmapSize(page);
         const rr = hv.getDataRanges2D(cds, buckets);
-        rr.invoke(new DataRangesCollector(
-            hv, hv.page, rr, schema, ser.rowCount, cds, null,
-            { reusePage: true, relative: false, heatmap: true, exact: exact } ));
+        rr.invoke(new DataRangesCollector(hv, hv.page, rr, schema, 0, cds, null, {
+            reusePage: true,
+            relative: false,
+            heatmap: true,
+            exact: exact
+        }));
         return hv;
     }
 
@@ -299,9 +306,12 @@ export class HeatmapView extends BigTableView {
         const buckets = HistogramViewBase.histogram2DSize(this.page);
         const cds = [this.currentData.xData.description, this.currentData.yData.description];
         const rr = this.getDataRanges2D(cds, buckets);
-        rr.invoke(new DataRangesCollector(
-            this, this.page, rr, this.schema, this.rowCount, cds, null,
-            { reusePage: false, relative: false, heatmap: false, exact: true } ));
+        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema, 0, cds, null, {
+            reusePage: false,
+            relative: false,
+            heatmap: false,
+            exact: true
+        }));
     }
 
     public trellis(): void {
@@ -367,7 +377,7 @@ export class HeatmapView extends BigTableView {
     private showTrellis(colName: string) {
         const groupBy = this.schema.findByDisplayName(colName);
         const cds: IColumnDescription[] = [this.currentData.xData.description,
-                                         this.currentData.yData.description, groupBy];
+                                           this.currentData.yData.description, groupBy];
         // TODO
     }
 
@@ -380,12 +390,13 @@ export class HeatmapView extends BigTableView {
 
         const rr = this.createZipRequest(r.first);
         const renderer = (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
-            return new Make2DHistogram(
+            return new MakeHistogramOrHeatmap(
                 page, operation,
                 [this.currentData.xData.description, this.currentData.yData.description],
-                [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
-                this.rowCount, this.schema, this.currentData.samplingRate >= 1,
-                true, this.dataset, false);
+                this.rowCount, this.schema,
+                { exact: this.currentData.samplingRate >= 1, heatmap: true,
+                    reusePage: false, relative: false, },
+                this.dataset);
         };
         rr.invoke(new ZipReceiver(this.getPage(), rr, how, this.dataset, renderer));
     }
@@ -426,9 +437,12 @@ export class HeatmapView extends BigTableView {
             this.currentData.yData.description, this.currentData.xData.description];
         const buckets = HistogramViewBase.heatmapSize(this.page);
         const rr = this.getDataRanges2D(cds, buckets);
-        rr.invoke(new DataRangesCollector(
-            this, this.page, rr, this.schema, this.rowCount, cds, null,
-            { heatmap: true, exact: true, relative: true, reusePage: true }));
+        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema, 0, cds, null, {
+            heatmap: true,
+            exact: true,
+            relative: true,
+            reusePage: true
+        }));
     }
 
     public refresh(): void {
@@ -457,7 +471,7 @@ export class HeatmapView extends BigTableView {
     }
 
     public onMouseMove(): void {
-        if (this.plot.xScale == null) {
+        if (this.currentData.xData.axis == null) {
             // not yet setup
             return;
         }
@@ -465,11 +479,8 @@ export class HeatmapView extends BigTableView {
         const position = d3mouse(this.surface.getChart().node());
         const mouseX = position[0];
         const mouseY = position[1];
-
-        const xs = HistogramViewBase.invert(mouseX, this.plot.xScale,
-            this.currentData.xData.description.kind, this.currentData.xData.distinctStrings);
-        const ys = HistogramViewBase.invert(mouseY, this.plot.yScale,
-            this.currentData.yData.description.kind, this.currentData.yData.distinctStrings);
+        const xs = this.currentData.xData.invert(mouseX);
+        const ys = this.currentData.yData.invert(mouseY);
 
         const value = this.plot.getCount(mouseX, mouseY);
         this.pointDescription.update([xs, ys, value.toString()], mouseX, mouseY);
@@ -532,7 +543,8 @@ export class HeatmapView extends BigTableView {
      * Selection has been completed.  The mouse coordinates are within the canvas.
      */
     public selectionCompleted(xl: number, xr: number, yl: number, yr: number): void {
-        if (this.plot.xScale == null || this.plot.yScale == null) {
+        if (this.currentData.xData.axis == null ||
+            this.currentData.yData.axis == null) {
             return;
         }
 
@@ -543,39 +555,31 @@ export class HeatmapView extends BigTableView {
         [xl, xr] = reorder(xl, xr);
         [yr, yl] = reorder(yl, yr);   // y coordinates are in reverse
 
-        const xKind = this.currentData.xData.description.kind;
-        const yKind = this.currentData.yData.description.kind;
-        const xMin = HistogramViewBase.invertToNumber(xl, this.plot.xScale, xKind);
-        const xMax = HistogramViewBase.invertToNumber(xr, this.plot.xScale, xKind);
-        const yMin = HistogramViewBase.invertToNumber(yl, this.plot.yScale, yKind);
-        const yMax = HistogramViewBase.invertToNumber(yr, this.plot.yScale, yKind);
-
         const xRange: FilterDescription = {
-            min: xMin,
-            max: xMax,
-            minString: HistogramViewBase.invert(
-                xl, this.plot.xScale, xKind, this.currentData.xData.distinctStrings),
-            maxString: HistogramViewBase.invert(
-                xr, this.plot.xScale, xKind, this.currentData.xData.distinctStrings),
+            min: this.currentData.xData.invertToNumber(xl),
+            max: this.currentData.xData.invertToNumber(xr),
+            minString: this.currentData.xData.invert(xl),
+            maxString: this.currentData.xData.invert(xr),
             cd: this.currentData.xData.description,
             complement: d3event.sourceEvent.ctrlKey,
         };
         const yRange: FilterDescription = {
-            min: yMin,
-            max: yMax,
-            minString: HistogramViewBase.invert(
-                yl, this.plot.yScale, yKind, this.currentData.yData.distinctStrings),
-            maxString: HistogramViewBase.invert(
-                yr, this.plot.yScale, yKind, this.currentData.yData.distinctStrings),
+            min: this.currentData.yData.invertToNumber(yl),
+            max: this.currentData.yData.invertToNumber(yr),
+            minString: this.currentData.yData.invert(yl),
+            maxString: this.currentData.yData.invert(yr),
             cd: this.currentData.yData.description,
             complement: d3event.sourceEvent.ctrlKey,
         };
         const rr = this.createFilter2DRequest(xRange, yRange);
         const renderer = new Filter2DReceiver(
+            "Filtered on " + this.currentData.xData.description.name + " and " +
+            this.currentData.yData.description.name,
             this.currentData.xData.description, this.currentData.yData.description,
-            this.rowCount, this.schema, this.page, rr, this.dataset,
-            { exact: this.currentData.samplingRate >= 1, heatmap: true,
-                relative: false, reusePage: false} );
+            this.schema, 0, this.page, rr, this.dataset, {
+            exact: this.currentData.samplingRate >= 1, heatmap: true,
+            relative: false, reusePage: false
+        });
         rr.invoke(renderer);
     }
 }
@@ -591,7 +595,7 @@ export class HeatMapRenderer extends Receiver<HeatMap> {
                 protected rowCount: number,
                 protected schema: SchemaClass,
                 protected cds: IColumnDescription[],
-                protected stats: DataRange[],
+                protected ranges: DataRange[],
                 protected samplingRate: number,
                 operation: ICancellable<HeatMap>,
                 protected reusePage: boolean) {
@@ -622,8 +626,8 @@ export class HeatMapRenderer extends Receiver<HeatMap> {
             yPoints = points[0] != null ? points[0].length : 1;
         }
 
-        const xAxisData = HistogramViewBase.computeAxis(this.cds[0], this.stats[0], xPoints);
-        const yAxisData = HistogramViewBase.computeAxis(this.cds[1], this.stats[1], yPoints);
+        const xAxisData = new AxisData(this.cds[0], this.ranges[0], xPoints);
+        const yAxisData = new AxisData(this.cds[1], this.ranges[1], yPoints);
         this.heatMap.updateView(value.data, xAxisData, yAxisData,
             this.samplingRate, false, this.elapsedMilliseconds());
     }

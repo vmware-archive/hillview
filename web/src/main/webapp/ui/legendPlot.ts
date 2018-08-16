@@ -26,7 +26,7 @@ import {assert} from "../util";
 import {ContextMenu} from "./menu";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
-import {Rectangle, Resolution} from "./ui";
+import {D3Axis, D3Scale, D3SvgElement, Rectangle, Resolution} from "./ui";
 
 /**
  * Displays a legend for a 2D histogram.
@@ -35,7 +35,7 @@ export class HistogramLegendPlot extends Plot {
     protected axisData: AxisData;
     protected legendRect: Rectangle;
     protected missingLegend: boolean;  // if true display legend for missing
-    protected hilightRect: any;
+    protected hilightRect: D3SvgElement;
     protected missingX: number;
     protected missingY: number;
     protected readonly missingGap = 30;
@@ -84,14 +84,11 @@ export class HistogramLegendPlot extends Plot {
             x += this.colorWidth;
         }
 
-        const scaleAxis = this.axisData.scaleAndAxis(this.legendRect.width(), true, true);
-        // create a scale and axis for the legend
-        this.xScale = scaleAxis.scale;
-        this.xAxis = scaleAxis.axis;
+        this.axisData.setResolution(this.legendRect.width(), true, true);
         canvas.append("g")
             .attr("transform", `translate(${this.legendRect.lowerLeft().x},
                                           ${this.legendRect.lowerLeft().y})`)
-            .call(this.xAxis);
+            .call(this.axisData.axis);
 
         if (this.missingLegend) {
             if (this.legendRect != null) {
@@ -214,15 +211,16 @@ export class HeatmapLegendPlot extends Plot {
        a unique ID for the gradient element. */
     private static nextUniqueId: number = 0;
     private readonly uniqueId: number;
-    private gradient: any; // Element that contains the definitions for the colors in the color map
+    private gradient: D3SvgElement; // Element that contains the definitions for the colors in the color map
 
     // Function that is called to update other elements when the color map changes.
     private onColorMapChange: (ColorMap) => void;
     private contextMenu: ContextMenu;
     private barHeight: number;
     private colorMap: HeatmapColormap;
-    private legendRectangle: any;
-    private axisElement: any;
+    private legendRectangle: D3SvgElement;
+    private axisElement: D3SvgElement;
+    protected xAxis: D3Axis;
 
     constructor(surface: PlottingSurface) {
         super(surface);
@@ -303,18 +301,24 @@ export class HeatmapLegendPlot extends Plot {
         assert(max === this.colorMap.max);
         const logScale = useLogScale != null ? useLogScale : max > HeatmapColormap.logThreshold;
         this.colorMap.setLogScale(logScale);
+
+        let scale: D3Scale;
         if (logScale) {
-            this.xScale = d3scaleLog().base(base);
+            scale = d3scaleLog().base(base);
         } else
-            this.xScale = d3scaleLinear();
-        this.xScale
+            scale = d3scaleLinear();
+        scale
             .domain([min, max])
             .range([0, Resolution.legendBarWidth]);
         const ticks = Math.min(max, 10);
-        this.xAxis = d3axisBottom(this.xScale).ticks(ticks);
+        this.xAxis = d3axisBottom(scale).ticks(ticks);
     }
 
-    public getColor(v: number): any {
+    protected getXAxis(): D3Axis {
+        return this.xAxis;
+    }
+
+    public getColor(v: number): string {
         return this.colorMap.apply(v);
     }
 
@@ -372,6 +376,6 @@ export class HeatmapLegendPlot extends Plot {
         this.legendRectangle.on("contextmenu", () => this.showContextMenu(d3event));
         this.axisElement = canvas.append("g")
             .attr("transform", `translate(${x}, ${this.barHeight})`)
-            .call(this.xAxis);
+            .call(this.getXAxis());
     }
 }

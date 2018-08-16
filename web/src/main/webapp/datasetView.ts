@@ -77,6 +77,7 @@ export interface HeatmapSerialization extends IViewSerialization {
 
 export interface Histogram2DSerialization extends HeatmapSerialization {
     relative: boolean;
+    xBucketCount: number;
 }
 
 export interface SpectrumSerialization extends IViewSerialization {
@@ -99,6 +100,7 @@ export class DatasetView implements IHtmlElement {
     private selected: BigTableView; // participates in a combine operation
     private selectedPageId: number;  // id of page containing the selected object (if any)
     private readonly topLevel: HTMLElement;
+    private readonly pageContainer: HTMLElement;
     private pageCounter: number;
     public readonly allPages: FullPage[];
 
@@ -117,6 +119,9 @@ export class DatasetView implements IHtmlElement {
         this.allPages = [];
         this.topLevel = document.createElement("div");
         this.topLevel.className = "dataset";
+        this.pageContainer = document.createElement("div");
+        this.topLevel.appendChild(this.pageContainer);
+        this.topLevel.appendChild(document.createElement("hr"));
         HillviewToplevel.instance.addDataset(this);
     }
 
@@ -183,22 +188,23 @@ export class DatasetView implements IHtmlElement {
         assert(toInsert !== null);
         const pageRepresentation = toInsert.getHTMLRepresentation();
         if (after == null) {
-            this.topLevel.appendChild(pageRepresentation);
+            this.pageContainer.appendChild(pageRepresentation);
             this.allPages.push(toInsert);
         } else {
             const index = this.findIndex(after);
             this.allPages.splice(index + 1, 0, toInsert);
-            if (index >= this.topLevel.children.length - 1)
-                this.topLevel.appendChild(pageRepresentation);
+            if (index >= this.pageContainer.children.length - 1)
+                this.pageContainer.appendChild(pageRepresentation);
             else
-                this.topLevel.insertBefore(pageRepresentation, this.topLevel.children[index + 1]);
+                this.pageContainer.insertBefore(pageRepresentation,
+                    this.pageContainer.children[index + 1]);
         }
     }
 
     public remove(page: FullPage): void {
         const index = this.findIndex(page);
         this.allPages.splice(index, 1);
-        this.topLevel.removeChild(this.topLevel.children[index]);
+        this.pageContainer.removeChild(this.pageContainer.children[index]);
     }
 
     public newPage(title: string, sourcePage: FullPage | null): FullPage {

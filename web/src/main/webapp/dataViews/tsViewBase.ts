@@ -31,10 +31,9 @@ import {
     cloneToSet, Comparison, Converters, ICancellable, mapToArray, significantDigits,
 } from "../util";
 import {HeavyHittersReceiver, HeavyHittersView} from "./heavyHittersView";
-import {Histogram2DDialog} from "./histogram2DView";
+import {DataRangesCollector, Histogram2DDialog} from "./histogram2DView";
 import {
-    DataRangeCollector, DataRangesCollector,
-    HistogramDialog,
+    DataRangeCollector, HistogramDialog,
 } from "./histogramView";
 import {TableOperationCompleted, TableView} from "./tableView";
 import {TrellisPlotDialog} from "./trellisHeatMapView";
@@ -192,10 +191,10 @@ export abstract class TSViewBase extends BigTableView {
     public histogram2D(cds: IColumnDescription[], options: HistogramOptions): void {
         const buckets = HistogramViewBase.histogram2DSize(this.page);
         const rr = this.getDataRanges2D(cds, buckets);
-        rr.invoke(new DataRangesCollector(
-            this, this.page, rr, this.schema, this.rowCount, cds, null,
-            { reusePage: options.reusePage, relative: false,
-                heatmap: false, exact: options.exact } ));
+        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema, 0, cds, null, {
+            reusePage: options.reusePage, relative: false,
+            heatmap: false, exact: options.exact
+        }));
     }
 
     protected histogram(columns: string[]): void {
@@ -223,9 +222,12 @@ export abstract class TSViewBase extends BigTableView {
 
         const buckets = HistogramViewBase.heatmapSize(this.page);
         const rr = this.getDataRanges2D(cds, buckets);
-        rr.invoke(new DataRangesCollector(
-            this, this.page, rr, this.schema, this.rowCount, cds, null,
-            { reusePage: false, relative: false, heatmap: true, exact: true } ));
+        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema, 0, cds, null, {
+            reusePage: false,
+            relative: false,
+            heatmap: true,
+            exact: true
+        }));
     }
 
     protected heatmapSelected(): void {

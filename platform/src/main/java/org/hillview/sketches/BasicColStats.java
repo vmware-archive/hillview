@@ -26,16 +26,9 @@ import javax.annotation.Nullable;
  * A class that scans a column and collects basic statistics: maximum, minimum,
  * number of non-empty rows and the moments of asDouble values.
  */
-public class BasicColStats implements IJson {
+public class BasicColStats extends DataRange implements IJson {
     private final int momentCount;
     private final boolean computeStringMax;
-    // Number of values that have been used to compute the stats.
-    private long presentCount;
-    // Number of missing elements
-    private long missingCount;
-    // The following values are meaningful only if presentCount > 0.
-    private double min;
-    private double max;
     @Nullable
     private String minString;
     @Nullable

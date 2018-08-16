@@ -16,9 +16,7 @@
  */
 
 import {mouse as d3mouse} from "d3-selection";
-import {DistinctStrings} from "../distinctStrings";
 import {
-    ColumnHistogramBoundaries,
     ContentsKind,
     DataRange, HistogramArgs,
     IColumnDescription,
@@ -31,17 +29,17 @@ import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {Point, Resolution, SpecialChars, ViewKind} from "../ui/ui";
-import {Converters, formatDate, formatNumber, Seed, significantDigits} from "../util";
-import {AnyScale, AxisData} from "./axisData";
+import {D3SvgElement, Point, Resolution, SpecialChars, ViewKind} from "../ui/ui";
+import {Seed, significantDigits} from "../util";
 import {BigTableView} from "../tableTarget";
+import {DistinctStrings} from "../distinctStrings";
 
 /**
  * This is a base class that contains code common to various histogram renderings.
  */
 export abstract class HistogramViewBase extends BigTableView {
     protected dragging: boolean;
-    protected svg: any;
+    protected svg: D3SvgElement;
     /**
      * Coordinates are within the canvas, not within the chart.
      */
@@ -49,10 +47,10 @@ export abstract class HistogramViewBase extends BigTableView {
     /**
      * The coordinates of the selectionRectangle are relative to the canvas.
      */
-    protected selectionRectangle: any;
+    protected selectionRectangle: D3SvgElement;
     protected chartDiv: HTMLElement;
     protected summary: HTMLElement;
-    protected cdfDot: any;
+    protected cdfDot: D3SvgElement;
     protected moved: boolean;  // to detect trivial empty drags
     protected pointDescription: TextOverlay;
 
@@ -153,30 +151,10 @@ export abstract class HistogramViewBase extends BigTableView {
             .attr("height", 0);
     }
 
-    public static computeAxis(
-        cd: IColumnDescription,
-        range: DataRange,
-        bucketCount: number): AxisData {
-
-        if (kindIsString(cd.kind)) {
-            const cdfBucketCount = range.boundaries.length;
-            const distinctStrings = new DistinctStrings(range.boundaries, cd.name);
-            const useRange: DataRange = {
-                min: -0.5,
-                max: cdfBucketCount - .5,
-                presentCount: range.presentCount
-            };
-            return new AxisData(cd, useRange, distinctStrings, cdfBucketCount);
-        } else {
-            return new AxisData(cd, range, null, bucketCount);
-        }
-    }
-
     public static computeHistogramArgs(
         cd: IColumnDescription,
         range: DataRange,
-        bucketCount: number,  // ignored for string histograms;
-                              // if 0 the size is chosen based on the screen size
+        bucketCount: number,  // if 0 the size is chosen based on the screen size
         exact: boolean,
         page: FullPage): HistogramArgs {
         if (kindIsString(cd.kind)) {
@@ -185,11 +163,16 @@ export abstract class HistogramViewBase extends BigTableView {
                 cdfBucketCount, range.presentCount, page);
             if (exact)
                 samplingRate = 1.0;
+            let bounds = range.boundaries;
+            if (bucketCount !== 0) {
+                const ds = new DistinctStrings(range.boundaries, cd.name);
+                bounds = ds.periodicSamples(bucketCount);
+            }
             const args: HistogramArgs = {
                 cd: cd,
                 seed: Seed.instance.getSampled(samplingRate),
                 samplingRate: samplingRate,
-                boundaries: range.boundaries
+                boundaries: bounds
             };
             return args;
         } else {
@@ -198,14 +181,21 @@ export abstract class HistogramViewBase extends BigTableView {
             if (bucketCount !== 0)
                 cdfCount = bucketCount;
 
+            let adjust = 0;
+            if (cd.kind === "Integer") {
+                if (cdfCount > range.max - range.min)
+                    cdfCount = range.max - range.min + 1;
+                adjust = .5;
+            }
+
             let samplingRate = 1.0;
             if (!exact)
                 samplingRate = HistogramViewBase.samplingRate(cdfCount, range.presentCount, page);
 
             const args: HistogramArgs = {
                 cd: cd,
-                min: range.min,
-                max: range.max,
+                min: range.min - adjust,
+                max: range.max + adjust,
                 samplingRate: samplingRate,
                 seed: Seed.instance.getSampled(samplingRate),
                 cdfBucketCount: cdfCount
@@ -244,29 +234,6 @@ export abstract class HistogramViewBase extends BigTableView {
         if (minString === maxString && dev !== 0)
             return minString;
         return SpecialChars.approx + significantDigits(barSize);
-    }
-
-    // Adjust the statistics for integral and categorical data pretending
-    // that we are centering the values.
-    public static adjustStats(kind: ContentsKind, stats: DataRange): void {
-         if (kind === "Integer" || kind === "Category") {
-             stats.min -= .5;
-             stats.max += .5;
-         }
-    }
-
-    public static getRange(stats: DataRange, cd: IColumnDescription,
-                           allStrings: DistinctStrings,
-                           bucketCount: number): ColumnHistogramBoundaries {
-        const boundaries = (allStrings != null && allStrings.uniqueStrings != null) ?
-            allStrings.categoriesInRange(stats.min, stats.max, bucketCount) : null;
-        return {
-            columnName: cd.name,
-            min: stats.min,
-            max: stats.max,
-            bucketBoundaries: boundaries,
-            onStrings: kindIsString(cd.kind)
-        };
     }
 
     /**
@@ -315,49 +282,10 @@ export abstract class HistogramViewBase extends BigTableView {
         if (columnKind === "Integer")
             bucketCount = Math.min(
                 bucketCount,
-                (range.max - range.min) / Math.ceil( (range.max - range.min) / maxBucketCount));
+                (range.max - range.min + 1) /
+                Math.ceil( (range.max - range.min + 1) / maxBucketCount));
 
         return Math.floor(bucketCount);
-    }
-
-    /**
-     * Given a mouse coordinate on a specified d3 scale, returns the corresponding
-     * Real-world value.  Returns the result as a string.
-     * @param v          Mouse coordinate.
-     * @param scale      Axis scale.
-     * @param kind       Kind of data on scale.
-     * @param allStrings When the axis has string data this is the list of all strings.
-     * TODO: this probably should belong to the AxisData class.
-     */
-    public static invert(v: number, scale: AnyScale, kind: ContentsKind,
-                         allStrings: DistinctStrings): string {
-        const inv = scale.invert(v);
-        let result: string;
-        if (kind === "Integer")
-            result = formatNumber(Math.round(inv as number));
-        if (kindIsString(kind))
-            result = allStrings.get(inv as number, true);
-        else if (kind === "Integer" || kind === "Double")
-            result = formatNumber(inv as number);
-        else if (kind === "Date")
-            result = formatDate(inv as Date);
-        else
-            result = inv.toString();
-        return result;
-    }
-
-    public static invertToNumber(v: number, scale: AnyScale, kind: ContentsKind): number {
-        // TODO: move this to the AxisData class.
-        const inv = scale.invert(v);
-        let result: number = 0;
-        if (kind === "Integer" || kindIsString(kind)) {
-            result = Math.round(inv as number);
-        } else if (kind === "Double") {
-            result = inv as number;
-        } else if (kind === "Date") {
-            result = Converters.doubleFromDate(inv as Date);
-        }
-        return result;
     }
 }
 

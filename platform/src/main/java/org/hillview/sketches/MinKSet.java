@@ -26,16 +26,18 @@ public class MinKSet<T> extends BucketsInfo {
         this.min = null;
         this.max = null;
         this.presentCount = 0;
+        this.missingCount = 0;
     }
 
     MinKSet(int maxSize, Long2ObjectRBTreeMap<T> data, Comparator<T> comp,
-                   @Nullable T min, @Nullable T max, long numPresent) {
+            @Nullable T min, @Nullable T max, long numPresent, long numMissing) {
         this.comp = comp;
         this.maxSize = maxSize;
         this.data = data;
         this.min = min;
         this.max = max;
         this.presentCount = numPresent;
+        this.missingCount = numMissing;
     }
 
     public List<T> getSamples() {

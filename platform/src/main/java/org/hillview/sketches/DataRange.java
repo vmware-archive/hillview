@@ -43,6 +43,7 @@ public class DataRange extends BucketsInfo implements IJson {
     DataRange add(DataRange right) {
         DataRange result = new DataRange();
         result.presentCount = this.presentCount + right.presentCount;
+        result.missingCount = this.missingCount + right.missingCount;
         if (right.presentCount == 0) {
             result.min = this.min;
             result.max = this.max;

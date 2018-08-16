@@ -17,7 +17,12 @@
 
 import {IViewSerialization, SpectrumSerialization} from "../datasetView";
 import {
-    BasicColStats, CombineOperators, EigenVal, HistogramBase, IColumnDescription, RecordOrder, RemoteObjectId,
+    CombineOperators,
+    DataRange,
+    EigenVal,
+    HistogramBase,
+    IColumnDescription, RecordOrder,
+    RemoteObjectId
 } from "../javaBridge";
 import {OnCompleteReceiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
@@ -69,9 +74,9 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
         const ev: number [] = eVals.eigenValues;
         const histogram: HistogramBase = { buckets: ev, missingData: 0, outOfRange: 0 };
         const icd: IColumnDescription = { kind: "Integer", name: "Singular Values" };
-        const stats: BasicColStats = { momentCount: 0, min: -.5, max: ev.length - .5,
-            moments: null, presentCount: 0, missingCount: 0};
-        const axisData = new AxisData(icd, stats, null, ev.length);
+        const range: DataRange = { min: -.5, max: ev.length - .5,
+            presentCount: 0, missingCount: 0 };
+        const axisData = new AxisData(icd, range, ev.length);
         this.specView.updateView("Spectrum", histogram, axisData, this.elapsedMilliseconds());
         this.newPage.reportError("Showing top " + eVals.eigenValues.length + "/" + this.colNames.length +
             " singular values, Total Variance: " + significantDigits(eVals.totalVar) +

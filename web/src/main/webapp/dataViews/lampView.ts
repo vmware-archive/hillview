@@ -18,8 +18,7 @@
 import {drag as d3drag} from "d3-drag";
 import {mouse as d3mouse, select as d3select} from "d3-selection";
 import {
-    BasicColStats, ColumnHistogramBoundaries, CombineOperators, HeatMap,
-    Histogram2DArgs, RemoteObjectId, TableSummary,
+    CombineOperators, DataRange, HeatMap, RemoteObjectId, TableSummary,
 } from "../javaBridge";
 import {OnCompleteReceiver, Receiver, RpcRequest} from "../rpc";
 import {SchemaClass} from "../schemaClass";
@@ -29,7 +28,7 @@ import {FullPage} from "../ui/fullPage";
 import {HeatmapLegendPlot} from "../ui/legendPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {PlottingSurface} from "../ui/plottingSurface";
-import {Point, PointSet, Resolution} from "../ui/ui";
+import {D3SvgElement, Point, PointSet, Resolution} from "../ui/ui";
 import {clamp, ICancellable, Pair, PartialResult, Seed} from "../util";
 import {TableView} from "./tableView";
 import {TrellisPlotDialog} from "./trellisHeatMapView";
@@ -46,12 +45,12 @@ class LampView extends BigTableView {
     private maxX: number;
     private maxY: number;
     private maxVal: number; // Maximum value in the heatmap
-    private heatMapCanvas: any;
-    private heatMapChart: any;
-    private controlPointsCanvas: any;
-    private controlPointsChart: any;
+    private heatMapCanvas: D3SvgElement;
+    private heatMapChart: D3SvgElement;
+    private controlPointsCanvas: D3SvgElement;
+    private controlPointsChart: D3SvgElement;
     public controlPoints: PointSet;
-    private heatMapDots: any[];
+    private heatMapDots: D3SvgElement[];
     private xDots: number;
     private yDots: number;
     private lampTableObject: TableTargetAPI;
@@ -229,6 +228,8 @@ class LampView extends BigTableView {
     }
 
     public applyLAMP() {
+        /*
+        TODO
         const xBuckets = Math.ceil(this.heatMapChart.attr("width") / Resolution.minDotSize);
         const yBuckets = Math.ceil(this.heatMapChart.attr("height") / Resolution.minDotSize);
         const xColAndRange: ColumnHistogramBoundaries = {
@@ -258,9 +259,10 @@ class LampView extends BigTableView {
         const rr = this.tableObject.createLAMPMapRequest(
             this.controlPointsId, this.selectedColumns, this.controlPoints, this.lampColNames);
         rr.invoke(new LAMPMapReceiver(this.page, rr, this, arg));
+         */
     }
 
-    public updateRanges(l1: BasicColStats, l2: BasicColStats) {
+    public updateRanges(l1: DataRange, l2: DataRange) {
         const [cpMinX, cpMaxX] = [Math.min(...this.controlPoints.points.map((p) => p.x)),
             Math.max(...this.controlPoints.points.map((p) => p.x))];
         const [cpMinY, cpMaxY] = [Math.min(...this.controlPoints.points.map((p) => p.y)),
@@ -480,6 +482,8 @@ class ControlPointsRenderer extends Receiver<PointSet> {
     }
 }
 
+/*
+        TODO
 class LAMPMapReceiver extends BaseRenderer {
     constructor(page: FullPage, operation: ICancellable<RemoteObjectId>, private cpView: LampView,
                 private arg: Histogram2DArgs) {
@@ -487,14 +491,11 @@ class LAMPMapReceiver extends BaseRenderer {
     }
 
     public run() {
-        /*
-        TODO
         super.run();
         const lampTime = this.elapsedMilliseconds() / 1000;
         this.cpView.updateRemoteTable(this.remoteObject);
         const rr = this.remoteObject.createHeatMapRequest(this.arg);
         rr.invoke(new LAMPHeatMapReceiver(this.page, rr, this.cpView, lampTime));
-        */
     }
 }
 
@@ -524,6 +525,7 @@ class LAMPRangeCollector extends Receiver<Pair<BasicColStats, BasicColStats>> {
         this.cpView.updateRanges(result.data.first, result.data.second);
     }
 }
+*/
 
 class SchemaCollector extends OnCompleteReceiver<TableSummary> {
     constructor(page: FullPage, operation: ICancellable<TableSummary>,

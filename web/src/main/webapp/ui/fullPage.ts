@@ -77,7 +77,8 @@ export class FullPage implements IHtmlElement {
      *                     Null if this is the first page in a dataset.
      * @param dataset     Parent dataset; only null for the toplevel menu.
      */
-    public constructor(public readonly pageId: number, public readonly title: string,
+    public constructor(public readonly pageId: number,
+                       public readonly title: string,
                        public readonly sourcePageId: number | null,
                        public readonly dataset: DatasetView) {
         this.console = new ConsoleDisplay();

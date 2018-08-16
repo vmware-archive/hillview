@@ -23,6 +23,8 @@
 /**
  * The list of rendering kinds supported by Hillview.
  */
+import {ScaleLinear as D3ScaleLinear, ScaleTime as D3ScaleTime} from "d3-scale";
+
 export type ViewKind = "Table" | "Histogram" | "2DHistogram" | "Heatmap" |
     "Trellis" | "HeavyHitters" | "LAMP" | "Schema" | "Load" | "SVD Spectrum";
 
@@ -119,3 +121,8 @@ export class Resolution {
     public static readonly legendBarWidth = 500;
     public static readonly legendSpaceHeight = 60;
 }
+
+export type D3Axis = any;  // d3 axis; perhaps some day we will be aboe to use a better type
+export type D3Scale = any; // d3 scale.
+export type D3SvgElement = any;  // An SVG G elemenet created by d3
+export type AnyScale = D3ScaleLinear<number, number> | D3ScaleTime<number, number>;

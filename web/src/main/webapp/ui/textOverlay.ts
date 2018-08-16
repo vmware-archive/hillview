@@ -16,7 +16,7 @@
  */
 
 import {truncate} from "../util";
-import {Resolution, Size} from "./ui";
+import {D3SvgElement, Resolution, Size} from "./ui";
 
 /**
  * This class is used to display a small semi-transparent rectangle that
@@ -27,9 +27,9 @@ export class TextOverlay {
     /**
      * An SVG rectangle.
      */
-    private rect: any;
+    private rect: D3SvgElement;
     private readonly height: number;
-    private readonly lines: any[];
+    private readonly lines: D3SvgElement[];
 
     /**
      * Create a textOverlay.
@@ -47,13 +47,14 @@ export class TextOverlay {
             .attr("width", 100)
             .attr("fill", "rgba(255, 255, 255, 0.9)");
         this.lines = [];
-        for (const index in keys) {
-            keys[index] = truncate(keys[index], maxLength);
+        for (let key of keys) {
+            key = truncate(key, maxLength);
             this.lines.push(
                 this.parent.append("text")
                     .attr("dominant-baseline", "text-before-edge")
                     .attr("text-anchor", "start"));
         }
+        this.show(false);
     }
 
     public show(visible: boolean): void {

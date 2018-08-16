@@ -21,45 +21,64 @@ import {
 } from "d3-axis";
 import {
     scaleLinear as d3scaleLinear,
-    ScaleLinear as D3ScaleLinear,
     scaleTime as d3scaleTime,
-    ScaleTime as D3ScaleTime,
 } from "d3-scale";
 import {DistinctStrings} from "../distinctStrings";
 import {
+    ContentsKind,
     DataRange,
     IColumnDescription,
     kindIsString
 } from "../javaBridge";
-import {Converters, significantDigits} from "../util";
-
-export type AnyScale = D3ScaleLinear<number, number> | D3ScaleTime<number, number>;
-
-/**
- * A D3 axis and an associated scale.
- */
-export interface ScaleAndAxis {
-    scale: AnyScale;
-    axis: any;  // a d3 axis, but typing does not work well
-}
+import {Converters, formatDate, formatNumber, significantDigits} from "../util";
+import {AnyScale, D3Axis} from "../ui/ui";
 
 /**
  * Contains all information required to build an axis and a d3 scale associated to it.
  */
 export class AxisData {
+    public readonly distinctStrings: DistinctStrings;
+    public scale: AnyScale;
+    public axis: D3Axis;
+
     public constructor(public description: IColumnDescription,
                        public range: DataRange | null,
-                       public distinctStrings: DistinctStrings,
-                       public cdfBucketCount: number) {}
+                       public cdfBucketCount: number) {
+        let useRange = range;
+        if (kindIsString(description.kind)) {
+            useRange = {
+                min: -.5,
+                max: range.boundaries.length - .5,
+                presentCount: range.presentCount,
+                missingCount: range.missingCount
+            };
+        } else if (description.kind === "Integer") {
+            useRange = {
+                min: range.min - .5,
+                max: range.max + .5,
+                presentCount: range.presentCount,
+                missingCount: range.missingCount
+            };
+        }
+        this.range = useRange;
+        const strings = range !== null ? range.boundaries : null;
+        this.distinctStrings = new DistinctStrings(strings, description.name);
+        // These can be set when we know the screen size.
+        this.scale = null;
+        this.axis = null;
+    }
 
-    public scaleAndAxis(length: number, bottom: boolean, legend: boolean): ScaleAndAxis {
+    private static needsAdjustment(kind: ContentsKind): boolean {
+        return kindIsString(kind) || kind === "Integer";
+    }
+
+    public setResolution(length: number, bottom: boolean, legend: boolean): void {
         const axisCreator = bottom ? d3axisBottom : d3axisLeft;
 
         let actualMin = this.range.min;
         let actualMax = this.range.max;
         let adjust = .5;
-        if (legend && (this.description.kind === "Integer" ||
-            kindIsString(this.description.kind))) {
+        if (legend && AxisData.needsAdjustment(this.description.kind)) {
             // These were adjusted, bring them back.
             actualMin += .5;
             actualMax -= .5;
@@ -69,15 +88,13 @@ export class AxisData {
         // on vertical axis the direction is swapped
         const domain = bottom ? [actualMin, actualMax] : [actualMax, actualMin];
 
-        let axis: any;
-        let scale: AnyScale;
         switch (this.description.kind) {
             case "Integer":
             case "Double": {
-                scale = d3scaleLinear()
+                this.scale = d3scaleLinear()
                     .domain(domain)
                     .range([0, length]);
-                axis = axisCreator(scale);
+                this.axis = axisCreator(this.scale);
                 break;
             }
             case "Json":
@@ -113,10 +130,10 @@ export class AxisData {
                 const manual = d3scaleLinear()
                     .domain([0, length])
                     .range([0, length]);
-                scale = d3scaleLinear()
+                this.scale = d3scaleLinear()
                     .domain(domain)
                     .range([0, length]);
-                axis = axisCreator(manual)
+                this.axis = axisCreator(manual)
                     .tickValues(ticks)
                     .tickFormat((d, i) => labels[i]);
                 break;
@@ -124,21 +141,50 @@ export class AxisData {
             case "Date": {
                 const minDate: Date = Converters.dateFromDouble(domain[0]);
                 const maxDate: Date = Converters.dateFromDouble(domain[1]);
-                scale = d3scaleTime()
+                this.scale = d3scaleTime()
                     .domain([minDate, maxDate])
                     .range([0, length]);
-                axis = axisCreator(scale);
+                this.axis = axisCreator(this.scale);
                 break;
             }
             default: {
                 console.log("Unexpected data kind for axis" + this.description.kind);
-                axis = null;
-                scale = null;
                 break;
             }
         }
+    }
 
-        return { scale: scale, axis: axis };
+    /**
+     * Given a mouse coordinate on a specified d3 scale, returns the corresponding
+     * Real-world value.  Returns the result as a string.
+     */
+    public invert(v: number): string {
+        const inv = this.scale.invert(v);
+        let result: string;
+        if (this.description.kind === "Integer")
+            result = formatNumber(Math.round(inv as number));
+        else if (kindIsString(this.description.kind))
+            result = this.distinctStrings.get(inv as number, true);
+        else if (this.description.kind === "Double")
+            result = formatNumber(inv as number);
+        else if (this.description.kind === "Date")
+            result = formatDate(inv as Date);
+        else
+            result = inv.toString();
+        return result;
+    }
+
+    public invertToNumber(v: number): number {
+        const inv = this.scale.invert(v);
+        let result: number = 0;
+        if (this.description.kind === "Integer" || kindIsString(this.description.kind)) {
+            result = Math.round(inv as number);
+        } else if (this.description.kind === "Double") {
+            result = inv as number;
+        } else if (this.description.kind === "Date") {
+            result = Converters.doubleFromDate(inv as Date);
+        }
+        return result;
     }
 
     /**

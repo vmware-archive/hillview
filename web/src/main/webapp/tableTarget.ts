@@ -20,20 +20,13 @@
  */
 
 import {DatasetView, IViewSerialization} from "./datasetView";
-import {HeatMapArrayData} from "./dataViews/trellisHeatMapView";
 import {
     CombineOperators, CreateColumnInfo, DataRange, FilterDescription,
-    HeatMap, Histogram3DArgs, HistogramArgs,
+    HeatMap, HistogramArgs,
     HistogramBase, HLogLog, IColumnDescription, kindIsString,
     NextKList, RangeArgs, RecordOrder, RemoteObjectId, Schema,
-    TableSummary, TopList
-} from "./javaBridge";
-import {Histogram2DArgs, NextKArgs} from "./javaBridge";
-import {
-    ComparisonFilterDescription,
-    EigenVal,
-    EqualityFilterDescription,
-    FindResult,
+    TableSummary, TopList, NextKArgs, ComparisonFilterDescription,
+    EigenVal, EqualityFilterDescription, FindResult,
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
 import {FullPage} from "./ui/fullPage";
@@ -227,18 +220,13 @@ RpcRequest<PartialResult<RemoteObjectId>> {
             {first: xRange, second: yRange});
     }
 
-    public createHistogram2DRequest(info: Histogram2DArgs):
+    public createHistogram2DRequest(info: HistogramArgs[]):
         RpcRequest<PartialResult<Pair<HeatMap, HistogramBase>>> {
         return this.createStreamingRpcRequest<Pair<HeatMap, HistogramBase>>("histogram2D", info);
     }
 
     public createHeatMapRequest(info: HistogramArgs[]): RpcRequest<PartialResult<HeatMap>> {
         return this.createStreamingRpcRequest<HeatMap>("heatmap", info);
-    }
-
-    public createHeatMap3DRequest(info: Histogram3DArgs):
-            RpcRequest<PartialResult<HeatMapArrayData>> {
-        return this.createStreamingRpcRequest<HeatMapArrayData>("heatMap3D", info);
     }
 
     public createHistogramRequest(info: HistogramArgs):

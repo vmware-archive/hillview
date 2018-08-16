@@ -18,7 +18,7 @@
 import {select as d3select} from "d3-selection";
 import {FullPage} from "./fullPage";
 import {TextOverlay} from "./textOverlay";
-import {IHtmlElement, Size} from "./ui";
+import {D3SvgElement, IHtmlElement, Size} from "./ui";
 
 /**
  * A plotting surface contains an SVG element on top of which various charts are drawn.
@@ -45,16 +45,16 @@ export class PlottingSurface implements IHtmlElement {
     /**
      * SVG element on top of which the chart is drawn.
      */
-    public svgCanvas: any;
+    public svgCanvas: D3SvgElement;
     /**
      * Current size in pixels of the canvas.
      */
     public size: Size;
     /**
-     * An AVG g element which is used to draw the chart; it is offset from the
+     * An SVG g element which is used to draw the chart; it is offset from the
      * svgCanvas by leftMargin, topMargin.
      */
-    public chartArea: any;
+    public chartArea: D3SvgElement;
     /**
      * Describes the mouse pointer.  May be null.
      */
@@ -108,11 +108,11 @@ export class PlottingSurface implements IHtmlElement {
             .attr("transform", `translate(${this.leftMargin}, ${this.topMargin})`);
     }
 
-    public getChart(): any {
+    public getChart(): D3SvgElement {
         return this.chartArea;
     }
 
-    public getCanvas(): any {
+    public getCanvas(): D3SvgElement {
         return this.svgCanvas;
     }
 

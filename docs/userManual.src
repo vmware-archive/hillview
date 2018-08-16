@@ -70,7 +70,6 @@ to billions).
 The data in each column is typed; Hillview supports the following data
 types:
   * String (Unicode strings)
-  * Category (categorical columns are string columns but with few distinct values)
   * JSON (strings that represent JSON values)
   * Double (64-bit floating point)
   * Integer (32-bit)
@@ -283,7 +282,7 @@ The following menu allows the user to specify the data to load.
 * password: Credentials of the user connecting to the database.
 
 Numeric values are converted either to integers (if they fit into
-32-bits) or to doubles.  Boolean values are read as categories
+32-bits) or to doubles.  Boolean values are read as strings
 containing two values, "true" and "false".
 
 #### Reading Parquet files
@@ -302,7 +301,7 @@ Hillview service is deployed*.
   load.  Multiple files may be loaded on each machine.
 
 Parquet Int96 data types are read as Datetime values.  Boolean values
-are read as categories containing two values, "true" and "false"; byte
+are read as strings containing two values, "true" and "false"; byte
 arrays are read as strings.  Hillview will reject Parquet files that
 contain nested types (e.g., arrays).
 
@@ -669,7 +668,7 @@ the current state of the display.
   The comparison will apply a filter, keeping only the rows that
   satisfy the condition.  In this image we show a comparison which
   keeps all rows where the ArrDelay column has the value 10.  For
-  string and categorical values the comparison is done alphabetically.
+  string values the comparison is done alphabetically.
 
 * Convert...: convert the type of data in a column.  Only one column
   must be selected.
@@ -678,10 +677,7 @@ the current state of the display.
 
   The conversion allows the user to change the type of data in a
   column.  For example, a numeric column can be converted to a string
-  column.  One particularly useful conversion allows a string column
-  to be converted to a categorical column.  This can only succeed if
-  the number of distinct values in the column is below 10,000.  After
-  conversion a new column is appended to the table, containing the
+  column.  After conversion a new column is appended to the table, containing the
   converted data.
 
 * Create column...: allows the user to write a JavaScript program that
@@ -819,10 +815,8 @@ of further frequent elements. These can be viewed using the All frequent element
 ### Uni-dimensional histogram views
 
 A uni-dimensional (1D) histogram is a succinct representation of the
-data in a column.  Histograms can be used to display numeric data
-(integers or doubles), date/time values, time interval values, or
-categorical values; see [below](#categorical-histograms) for a
-description of categorical histograms.  A histogram is computed in two
+data in a column.  See [below](#string-histograms) for a
+description of string histograms.  A histogram is computed in two
 phases:
 
 - first the range of the data in the column is computed (minimum and
@@ -913,18 +907,18 @@ can be complemented by pressing the CONTROL at the time the selection
 is released (this will eliminate all the data that has been
 selected).
 
-#### Categorical histograms
+#### String histograms
 
-When drawing a histogram of categorical data it is possible to have
-more categories on the X axis than there are buckets.  In this case
-each bucket will contain multiple categorical values, and one needs to
+When drawing a histogram of string data it is possible to have
+more values on the X axis than there are buckets.  In this case
+each bucket will contain multiple string values, and one needs to
 zoom-in by selecting to reveal the finer-grained structure of the data
 in a bucket.  This case can be distinguished visually since there will
 be multiple ticks on the X axis for each bucket.  The CDF function
 will also probably indicate that the data has a higher resolution than
 shown by the buckets alone.
 
-![Categorical histogram](categorical-histogram.png)
+![String histogram](categorical-histogram.png)
 
 The figure above shows a histogram where there are 294 distinct values
 but only 40 buckets.  One can see multiple ticks in each bucket.  Only
@@ -1040,7 +1034,7 @@ displayed as a heatmap, where the color intensity indicates the number
 of points. The mapping between the color intensity and the count could
 be in log scale if the range is large or linear if the range is
 smaller. Next to the mouse an overlay box displays the x value, the y
-value and the count. A heatmap where neither axis is categorical
+value and the count. A heatmap where neither axis is string
 will also display a line that gives the best [linear
 regression](https://en.wikipedia.org/wiki/Linear_regression).  between
 the values in the two columns.
@@ -1086,9 +1080,9 @@ Users can select a rectangular area from a heatmap with the mouse.
 ![An array of heatmap views](hillview-heatmap-array.png)
 
 A Trellis plot is an array of heatmaps, grouped by a third column, which
-currently is restricted to be a categorical column.
-Each heatmap is comprised of the rows that have a specific value in the third (categorical)
-column.
+currently is restricted to be a string column.
+Each heatmap is comprised of the rows that have a specific value in the third
+(string) column.
 
 *TODO* discuss missing values
 
@@ -1144,13 +1138,13 @@ The meaning of the parameters is as follows:
 
 * Control-point selection: control points can be chosen either
   - by sampling a random set of rows from the table
-  - by choosing as control points a representative for each value in a categorical column
+  - by choosing as control points a representative for each value in a string column
 
 * Number of control points: if the control points are selected by
   randomly sampling from the table this number indicates the number of
   control points produced.
 
-* Category for centroids: the user must select a categorical column
+* Category for centroids: the user must select a string column
   from the drop-down menu.  For each value in this column the average
   of all points in the selected columns will be used as a control
   point.
@@ -1180,4 +1174,4 @@ The "View" menu offers the following options:
 * 3D heat map: selecting this option opens a new menu which allows the
   user to make a [Trellis plot](#trellis-plot-views) of the
   two-dimensional data produced by the projection, by grouping all
-  points that belong to a categorical value.
+  points that belong to a string value.

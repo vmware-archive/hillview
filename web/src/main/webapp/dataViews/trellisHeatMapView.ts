@@ -18,8 +18,8 @@
 import {mouse as d3mouse, select as d3select} from "d3-selection";
 import {DistinctStrings} from "../distinctStrings";
 import {
-    BasicColStats, ColumnHistogramBoundaries,
-    CombineOperators, Histogram3DArgs, IColumnDescription, kindIsNumeric, RecordOrder, RemoteObjectId,
+    CombineOperators, DataRange, IColumnDescription, kindIsNumeric,
+    RecordOrder, RemoteObjectId,
 } from "../javaBridge";
 import {Receiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
@@ -31,8 +31,8 @@ import {SubMenu, TopMenu} from "../ui/menu";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {IScrollTarget, ScrollBar} from "../ui/scroll";
 import {TextOverlay} from "../ui/textOverlay";
-import {Point, Resolution, Size} from "../ui/ui";
-import {ICancellable, Pair, PartialResult, Seed, significantDigits, truncate} from "../util";
+import {D3SvgElement, Point, Resolution, Size} from "../ui/ui";
+import {ICancellable, Pair, PartialResult, significantDigits, truncate} from "../util";
 import {AxisData} from "./axisData";
 import {NextKReceiver, TableView} from "./tableView";
 
@@ -68,21 +68,19 @@ class CompactHeatMapView {
     private xAxisData;
     private yAxisData;
     // Elements
-    private readonly g: any; // g element with the drawing
-    private chart: any; // chart on which the heatmap is drawn
+    private readonly g: D3SvgElement; // g element with the drawing
+    private chart: D3SvgElement; // chart on which the heatmap is drawn
 
-    private axesG: any; // g element that will contain the axes
-    private readonly xAxis;
-    private readonly yAxis;
-    private marker: any; // Marker that will indicate the x, y pair.
+    private axesG: D3SvgElement; // g element that will contain the axes
+    private marker: D3SvgElement; // Marker that will indicate the x, y pair.
     // Lines that assist the marker.
-    private xLine: any;
-    private yLine: any;
+    private xLine: D3SvgElement;
+    private yLine: D3SvgElement;
 
     private pointDescription: TextOverlay;
 
     constructor(
-        private parent: any, // Element where this heatmap is appended to.
+        private parent: D3SvgElement, // Element where this heatmap is appended to.
         private pos: Point, // Position in parent
         private readonly chartSize: Size,
         private readonly labelSize: Size,
@@ -90,8 +88,8 @@ class CompactHeatMapView {
         public xDim: number,
         public yDim: number,
         private cds: IColumnDescription[],
-        private xStats: BasicColStats,
-        private yStats: BasicColStats,
+        private xRange: DataRange,
+        private yRange: DataRange,
     ) {
         this.size = {
             width: Math.max(this.labelSize.width, this.chartSize.width),
@@ -124,12 +122,12 @@ class CompactHeatMapView {
         this.dotSize = {width: this.chartSize.width / this.xDim, height: this.chartSize.height / this.yDim};
         this.data = new Map<number, number>();
 
-        this.xAxisData = new AxisData(cds[0], xStats, null, this.xDim);
-        this.yAxisData = new AxisData(cds[1], yStats, null, this.yDim);
-        this.xAxis = this.xAxisData.scaleAndAxis(this.chartSize.width, true, false).axis;
-        this.yAxis = this.yAxisData.scaleAndAxis(this.chartSize.height, false, false).axis;
-        this.xAxis.ticks(CompactHeatMapView.axesTicks);
-        this.yAxis.ticks(CompactHeatMapView.axesTicks);
+        this.xAxisData = new AxisData(cds[0], xRange, this.xDim);
+        this.yAxisData = new AxisData(cds[1], yRange, this.yDim);
+        this.xAxisData.setResolution(this.chartSize.width, true, false);
+        this.yAxisData.setResolution(this.chartSize.height, false, false);
+        // this.xAxis.ticks(CompactHeatMapView.axesTicks);
+        // this.yAxis.ticks(CompactHeatMapView.axesTicks);
     }
 
     public put(x: number, y: number, val: number) {
@@ -183,10 +181,10 @@ class CompactHeatMapView {
         this.axesG.append("g")
             .attr("class", "x-axis")
             .attr("transform", `translate(0, ${this.chartSize.height})`)
-            .call(this.xAxis);
+            .call(this.xAxisData.axis);
         this.axesG.append("g")
             .attr("class", "y-axis")
-            .call(this.yAxis);
+            .call(this.yAxisData.axis);
 
         // Draw a visual indicator with a circle and two lines.
         this.marker = this.axesG.append("circle")
@@ -266,10 +264,10 @@ export class TrellisHeatMapView extends BigTableView implements IScrollTarget {
     private scrollBar: ScrollBar;
     private readonly arrayAndScrollBar: HTMLDivElement;
     private readonly colorLegend: HeatmapLegendPlot;
-    private readonly heatMapsSvg: any; // svg containing all heatmaps.
+    private readonly heatMapsSvg: D3SvgElement; // svg containing all heatmaps.
     private readonly legendSurface: PlottingSurface;
-    private xStats: BasicColStats | null;
-    private yStats: BasicColStats | null;
+    private xStats: DataRange | null;
+    private yStats: DataRange | null;
 
     // Holds the state of which heatmap is hovered over.
     private mouseOverHeatMap: CompactHeatMapView;
@@ -535,12 +533,13 @@ export class TrellisHeatMapView extends BigTableView implements IScrollTarget {
         }
     }
 
-    public setStats(stats: Pair<BasicColStats, BasicColStats>): void {
+    public setStats(stats: Pair<DataRange, DataRange>): void {
         this.xStats = stats.first;
         this.yStats = stats.second;
     }
 
     public initiateHeatMaps(): void {
+        /* TODO
         // Number of actual bins is bounded by the number of distinct values.
         const numZBins = Math.min(this.maxNumHeatMaps(), this.args.uniqueStrings.size() - this.offset);
         const zBins = this.args.uniqueStrings.categoriesInRange(
@@ -582,17 +581,18 @@ export class TrellisHeatMapView extends BigTableView implements IScrollTarget {
 
         const rr = this.createHeatMap3DRequest(args);
         rr.invoke(new HeatMap3DRenderer(this.getPage(), rr, this, zBins));
+        */
     }
 }
 
 /**
  * Receives the data range and initiates a trellis view rendering.
  */
-export class TrellisRangeReceiver extends Receiver<Pair<BasicColStats, BasicColStats>> {
+export class TrellisRangeReceiver extends Receiver<Pair<DataRange, DataRange>> {
     protected view: TrellisHeatMapView;
 
     constructor(protected remoteObject: TableTargetAPI,
-                page: FullPage, operation: ICancellable<Pair<BasicColStats, BasicColStats>>,
+                page: FullPage, operation: ICancellable<Pair<DataRange, DataRange>>,
                 protected schema: SchemaClass, protected rowCount: number,
                 protected cds: IColumnDescription[]) {
         super(page, operation, "Get stats");
@@ -614,7 +614,7 @@ export class TrellisRangeReceiver extends Receiver<Pair<BasicColStats, BasicColS
         */
     }
 
-    public onNext(value: PartialResult<Pair<BasicColStats, BasicColStats>>) {
+    public onNext(value: PartialResult<Pair<DataRange, DataRange>>) {
         super.onNext(value);
         this.view.setStats(value.data);
     }

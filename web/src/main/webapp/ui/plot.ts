@@ -16,6 +16,9 @@
  */
 
 import {PlottingSurface} from "./plottingSurface";
+import {AxisData} from "../dataViews/axisData";
+import {D3Axis, D3SvgElement} from "./ui";
+
 
 /**
  * Abstract base class for all plots.
@@ -25,24 +28,10 @@ import {PlottingSurface} from "./plottingSurface";
  * Multiple plots can share the same plotting surface.
  */
 export abstract class Plot {
-    /**
-     * d3 Scale used for Y axis.
-     */
-    public yScale: any;
-    /**
-     * D3 vertical axis.
-     */
-    public yAxis: any;
-    /**
-     * d3 Scale used for X axis.
-     */
-    public xScale: any;
-    /**
-     * D3 vertical axis.
-     */
-    public xAxis: any;
-    protected xAxisRepresentation: any;
-    protected yAxisRepresentation: any;
+    protected xAxisData: AxisData;
+    protected yAxisData: AxisData;
+    protected xAxisRepresentation: D3SvgElement;
+    protected yAxisRepresentation: D3SvgElement;
 
     /**
      * Create a plot that will do all its drawing on the specified plotting surface.
@@ -67,18 +56,30 @@ export abstract class Plot {
         this.plottingSurface.clear();
     }
 
+    protected getXAxis(): D3Axis {
+        // default implementation
+        return this.xAxisData.axis;
+    }
+
+    protected getYAxis(): D3Axis {
+        // default implementation
+        return this.yAxisData.axis;
+    }
+
     protected drawAxes(): void {
-        if (this.yAxis != null)
+        let yAxis = this.getYAxis();
+        let xAxis = this.getXAxis();
+        if (yAxis != null)
             this.yAxisRepresentation = this.plottingSurface.getChart()
                 .append("g")
                 .attr("class", "y-axis")
-                .call(this.yAxis);
-        if (this.xAxis != null) {
+                .call(yAxis);
+        if (xAxis != null) {
             this.xAxisRepresentation = this.plottingSurface.getChart()
                 .append("g")
                 .attr("class", "x-axis")
                 .attr("transform", `translate(0, ${this.getChartHeight()})`)
-                .call(this.xAxis);
+                .call(xAxis);
         }
     }
 
@@ -86,7 +87,7 @@ export abstract class Plot {
      * Measure the maximum label width on a axis, in pixels.
      */
     protected labelWidth(): number {
-        if (this.yAxis == null)
+        if (this.yAxisRepresentation == null)
             return 0;
         let max = 0;
         const domNodes = this.yAxisRepresentation.selectAll(".tick").nodes();

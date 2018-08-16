@@ -18,42 +18,30 @@
 export class DistinctStrings {
     public constructor(public readonly uniqueStrings: string[],
                        protected colName: string) {
+        // we expect these strings to be always in sorted order
         this.uniqueStrings = uniqueStrings;
-        this.uniqueStrings.sort();
     }
 
     public size(): number { return this.uniqueStrings.length; }
 
     /**
-     * Returns all strings numbered between min and max.
-     * @param min    Minimum string number
-     * @param max    Maximum string number
-     * @param bucketCount  Number of buckets.
+     * Returns count strings periodically spaced
+     * @param count  Number of buckets.
      * @returns      null if there are no strings (e.g., this is not
      *               a categorical column)
      */
-    public categoriesInRange(min: number, max: number, bucketCount: number): string[] | null {
+    public periodicSamples(count: number): string[] | null {
         if (this.uniqueStrings == null)
             return null;
 
         let boundaries: string[] = null;
-        if (min <= 0)
-            min = 0;
-        if (max >= this.uniqueStrings.length - 1)
-            max = this.uniqueStrings.length - 1;
-        max = Math.floor(max);
-        min = Math.ceil(min);
-        const range = max - min;
-        if (range <= 0)
-            bucketCount = 1;
-
         if (this.uniqueStrings != null) {
-            if (bucketCount >= range) {
-                boundaries = this.uniqueStrings.slice(min, max + 1);  // slice end is exclusive
+            if (count >= this.uniqueStrings.length) {
+                return this.uniqueStrings;
             } else {
                 boundaries = [];
-                for (let i = 0; i <= bucketCount; i++) {
-                    const index = min + Math.round(i * range / bucketCount);
+                for (let i = 0; i <= count; i++) {
+                    const index = Math.round(i * (this.uniqueStrings.length - 1) / count);
                     boundaries.push(this.uniqueStrings[index]);
                 }
             }

@@ -45,6 +45,8 @@ public class DataRangeSketch implements ISketch<ITable, DataRange> {
             if (!column.isMissing(currRow)) {
                 double val = column.asDouble(currRow);
                 result.add(val);
+            } else {
+                result.addMissing();
             }
             currRow = myIter.getNextRow();
         }

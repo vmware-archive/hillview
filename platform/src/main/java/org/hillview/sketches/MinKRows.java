@@ -1,10 +1,6 @@
 package org.hillview.sketches;
 
 import it.unimi.dsi.fastutil.longs.Long2IntRBTreeMap;
-import it.unimi.dsi.fastutil.longs.Long2ObjectRBTreeMap;
-
-import java.util.Comparator;
-import java.util.function.Function;
 
 /**
  * A data structure that stores a set of row indices. These row indices represent a
@@ -24,17 +20,17 @@ public class MinKRows {
     /**
      * The actual number, which can be smaller if there are fewer distinct keys.
      */
-    public int curSize;
+    private int curSize;
     /**
      * The largest hash value currently in the min k.
      */
-    public long cutoff;
+    private long cutoff;
     /**
      * A hashmap consisting of <hashValue, rowIndex> pairs.
      */
-    public Long2IntRBTreeMap treeMap;
+    Long2IntRBTreeMap treeMap;
 
-    public MinKRows(final int maxSize) {
+    MinKRows(final int maxSize) {
         this.maxSize = maxSize;
         this.treeMap = new Long2IntRBTreeMap();
         this.curSize = 0;
@@ -47,8 +43,8 @@ public class MinKRows {
             this.cutoff = hashKey;
             this.curSize += 1;
         }
-        if (!treeMap.containsKey(hashKey)) { //Does not have it already
-            if (hashKey < this.cutoff) {  //It is below cutoff
+        if (!treeMap.containsKey(hashKey)) { // Does not have it already
+            if (hashKey < this.cutoff) {  // It is below cutoff
                 this.treeMap.put(hashKey, row);
                 if (this.curSize == this.maxSize) {
                     this.treeMap.remove(this.cutoff);
@@ -63,17 +59,5 @@ public class MinKRows {
                 }
             }
         }
-    }
-
-    /**
-     * Currently this method is not used. We specialize to String Columns and just read the strings
-     * from the columns
-     */
-    public <T> MinKSet<T> getMinKSet(Function<Integer, T> func, Comparator<T> comp, T min, T max,
-                                     long numPresent) {
-        Long2ObjectRBTreeMap<T> data = new Long2ObjectRBTreeMap<T>();
-        for (long hashKey: this.treeMap.keySet())
-            data.put(hashKey, func.apply(treeMap.get(hashKey)));
-        return new MinKSet<T>(this.maxSize, data, comp, min, max, numPresent);
     }
 }

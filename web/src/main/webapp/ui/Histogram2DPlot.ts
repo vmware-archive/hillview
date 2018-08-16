@@ -24,6 +24,7 @@ import {HistogramViewBase} from "../dataViews/histogramViewBase";
 import {HeatMap, HistogramBase} from "../javaBridge";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
+import {D3Axis, D3Scale} from "./ui";
 
 /**
  * Represents an SVG rectangle drawn on the screen.
@@ -61,6 +62,8 @@ export class Histogram2DPlot extends Plot {
     protected missingDisplayed: number;
     protected visiblePoints: number;
     protected barWidth: number;
+    public yScale: D3Scale;
+    public yAxis: D3Axis;
 
     public constructor(protected plottingSurface: PlottingSurface) {
         super(plottingSurface);
@@ -128,9 +131,7 @@ export class Histogram2DPlot extends Plot {
             .tickFormat(d3format(".2s"));
 
         const bucketCount = xPoints;
-        const scAxis = this.xAxisData.scaleAndAxis(this.getChartWidth(), true, false);
-        this.xScale = scAxis.scale;
-        this.xAxis = scAxis.axis;
+        this.xAxisData.setResolution(this.getChartWidth(), true, false);
 
         this.plottingSurface.getCanvas().append("text")
             .text(this.xAxisData.description.name)
@@ -179,6 +180,10 @@ export class Histogram2DPlot extends Plot {
         }
 
         this.drawAxes();
+    }
+
+    protected getYAxis(): D3Axis {
+        return this.yAxis;
     }
 
     /**

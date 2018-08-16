@@ -176,49 +176,19 @@ export interface DataRange {
     min: number;
     max: number;
     presentCount: number;
+    missingCount: number;
     boundaries?: string[];
 }
 
 export interface BasicColStats extends DataRange {
     momentCount: number;
     moments: number[];
-    missingCount: number;
-}
-
-export interface ColumnHistogramBoundaries {
-    min: number;
-    max: number;
-    onStrings: boolean;
-    columnName: string;
-    bucketBoundaries: string[];
 }
 
 export interface RangeArgs {
     cd: IColumnDescription;
     seed: number;
     cdfBuckets: number;
-}
-
-export interface Histogram2DArgs {
-    first: ColumnHistogramBoundaries;
-    second: ColumnHistogramBoundaries;
-    xBucketCount: number;
-    yBucketCount: number;
-    samplingRate: number;
-    seed: number;
-    cdfBucketCount: number;
-    cdfSamplingRate: number;
-}
-
-export interface Histogram3DArgs {
-    first: ColumnHistogramBoundaries;
-    second: ColumnHistogramBoundaries;
-    third: ColumnHistogramBoundaries;
-    xBucketCount: number;
-    yBucketCount: number;
-    zBucketCount: number;
-    samplingRate: number;
-    seed: number;
 }
 
 // This is a union of DoubleRangeFilterDescription

@@ -30,8 +30,6 @@ interface Dot {
 
 export class HeatmapPlot extends Plot {
     protected heatmap: HeatMap;
-    protected xAxisData: AxisData;
-    protected yAxisData: AxisData;
     protected samplingRate: number;
     protected pointWidth: number; // in pixels
     protected pointHeight: number; // in pixels
@@ -62,12 +60,8 @@ export class HeatmapPlot extends Plot {
             .attr("text-anchor", "middle")
             .attr("dominant-baseline", "hanging");
 
-        const xsc = this.xAxisData.scaleAndAxis(this.getChartWidth(), true, false);
-        const ysc = this.yAxisData.scaleAndAxis(this.getChartHeight(), false, false);
-        this.xAxis = xsc.axis;
-        this.yAxis = ysc.axis;
-        this.xScale = xsc.scale;
-        this.yScale = ysc.scale;
+        this.xAxisData.setResolution(this.getChartWidth(), true, false);
+        this.yAxisData.setResolution(this.getChartHeight(), false, false);
 
         const htmlCanvas: HTMLCanvasElement = document.createElement("canvas");
         htmlCanvas.height = this.getChartHeight();
@@ -95,8 +89,8 @@ export class HeatmapPlot extends Plot {
             if (regr.length === 2) {
                 const b = regr[0];
                 const a = regr[1];
-                const y1 = this.getChartHeight() - b * this.pointHeight;
-                const y2 = this.getChartHeight() - (a * this.heatmap.buckets.length + b) * this.pointHeight;
+                const y1 = this.getChartHeight() - (b + .5) * this.pointHeight;
+                const y2 = this.getChartHeight() - (a * this.heatmap.buckets.length + b + .5) * this.pointHeight;
                 this.plottingSurface.getChart()
                     .append("line")
                     .attr("x1", 0)
