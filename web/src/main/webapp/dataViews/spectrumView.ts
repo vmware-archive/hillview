@@ -17,25 +17,28 @@
 
 import {IViewSerialization, SpectrumSerialization} from "../datasetView";
 import {
-    BasicColStats, CombineOperators, EigenVal, Histogram, IColumnDescription, RemoteObjectId,
+    BasicColStats, CombineOperators, EigenVal, Histogram, IColumnDescription, RecordOrder, RemoteObjectId,
 } from "../javaBridge";
 import {OnCompleteReceiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
-import {BigTableView} from "../tableTarget";
+import {BigTableView, TableTargetAPI} from "../tableTarget";
 import {IDataView} from "../ui/dataview";
 import {FullPage} from "../ui/fullPage";
 import {HistogramPlot} from "../ui/histogramPlot";
-import {TopMenu} from "../ui/menu";
+import {SubMenu, TopMenu} from "../ui/menu";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {ICancellable, significantDigits} from "../util";
 import {AxisData} from "./axisData";
-
+import {CorrelationMatrixReceiver, TableView} from "./tableView"
+import {Dialog, FieldKind} from "../ui/dialog";
 /**
  * Receives the result of a PCA computation and plots the singular values
  */
 export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
     public specView: SpectrumView;
+    public newPage: FullPage;
     public constructor(page: FullPage,
+                       protected originator: TableTargetAPI,
                        protected remoteObjectId: RemoteObjectId,
                        protected rowCount: number,
                        protected schema: SchemaClass,
@@ -43,18 +46,25 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
                        operation: ICancellable,
                        protected reusePage: boolean) {
         super(page, operation, "Singular Value Spectrum");
+        if (this.reusePage)
+            this.newPage = this.page;
+        else
+            this.newPage = this.page.dataset.newPage("Singular Value Spectrum", this.page);
     }
 
     public run(eVals: EigenVal): void {
-        let newPage: FullPage;
-        if (this.reusePage)
-            newPage = this.page;
-        else
-            newPage = this.page.dataset.newPage("Singular Value Spectrum", this.page);
-        this.specView = new SpectrumView(
-            this.remoteObjectId, this.rowCount, this.colNames,
-            this.schema, newPage);
-        newPage.setDataView(this.specView);
+        const menu = new SubMenu([]);
+        menu.addItem({
+                text: "PCA...",
+                action: () => this.computePCA(),
+                help: "Perform Principal Component Analysis on a set of numeric columns. " +
+                "This produces a smaller set of columns that preserve interesting properties of the data.",
+            },
+            true);
+        const topMenu = new TopMenu([{ text: "View", help: "Change the way the data is displayed.", subMenu: menu}]);
+        this.newPage.setMenu(topMenu);
+        this.specView = new SpectrumView(this.remoteObjectId, this.rowCount, this.colNames, this.schema, this.newPage);
+        this.newPage.setDataView(this.specView);
 
         const ev: number [] = eVals.eigenValues;
         const histogram: Histogram = { buckets: ev, missingData: 0, outOfRange: 0 };
@@ -63,9 +73,39 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
             moments: null, presentCount: 0, missingCount: 0};
         const axisData = new AxisData(icd, stats, null, ev.length);
         this.specView.updateView("Spectrum", histogram, axisData, this.elapsedMilliseconds());
-        newPage.reportError("Showing top " + eVals.eigenValues.length + "/" + this.colNames.length +
+        this.newPage.reportError("Showing top " + eVals.eigenValues.length + "/" + this.colNames.length +
             " singular values, Total Variance: " + significantDigits(eVals.totalVar) +
             ", Explained Variance: " + significantDigits(eVals.explainedVar));
+    }
+
+    private computePCA() {
+        const pcaDialog = new Dialog("Principal Component Analysis",
+            "Projects a set of numeric columns to a smaller set of numeric columns while preserving the 'shape' " +
+            " of the data as much as possible.");
+        pcaDialog.addTextField("numComponents", "Number of components", FieldKind.Integer, "2",
+            "Number of dimensions to project to.  Must be an integer bigger than 1 and " +
+            "smaller than" + this.colNames.length);
+        pcaDialog.addTextField("projectionName", "Name for Projected columns", FieldKind.String,
+            "PCA",
+            "The projected columns will appear with this name followed by a number starting from 0");
+        pcaDialog.setCacheTitle("PCADialog");
+        pcaDialog.setAction(() => {
+            const numComponents: number = pcaDialog.getFieldValueAsInt("numComponents");
+            const projectionName: string = pcaDialog.getFieldValue("projectionName");
+            if (numComponents < 1 || numComponents > this.colNames.length) {
+                this.page.reportError("Number of components for PCA must be between 1 (incl.) " +
+                    "and the number of selected columns, " + this.colNames.length + " (incl.). (" +
+                    numComponents + " does not satisfy this.)");
+                return;
+            }
+            const rr = this.originator.createCorrelationMatrixRequest(this.colNames, this.rowCount, true);
+            const newestPage = this.newPage.dataset.newPage("Table", this.newPage);
+            const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newestPage);
+            newestPage.setDataView(table);
+            const order  = new RecordOrder([]);
+            rr.invoke(new CorrelationMatrixReceiver(newestPage, table, rr, order, numComponents, projectionName));
+        });
+        pcaDialog.show();
     }
 }
 
@@ -146,8 +186,8 @@ export class SpectrumView extends BigTableView {
             return null;
         const sv = new SpectrumView(ser.remoteObjectId, ser.rowCount, colNames, schema, page);
         const rr = sv.createSpectrumRequest(colNames, ser.rowCount, true);
-        rr.invoke(new SpectrumReceiver(page, ser.remoteObjectId,
-            ser.rowCount, schema, colNames, rr, true));
+        rr.invoke(new SpectrumReceiver(page, sv, ser.remoteObjectId,
+            ser.rowCount, schema,  colNames, rr, true));
         return sv;
     }
 
