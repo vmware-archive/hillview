@@ -761,13 +761,12 @@ export class TableView extends TSViewBase implements IScrollTarget {
                 message += "\n  * Column '" + colName + "' is not numeric.";
             }
         });
-
         return [valid, message];
     }
 
-    private pca(toSample: boolean): void {
+    public pca(toSample: boolean): void {
         const colNames = this.getSelectedColNames();
-        const [valid, message] = this.checkNumericColumns(colNames);
+        const [valid, message] = this.checkNumericColumns(colNames, 2);
         if (valid) {
             const pcaDialog = new Dialog("Principal Component Analysis",
                 "Projects a set of numeric columns to a smaller set of numeric columns while preserving the 'shape' " +
@@ -800,11 +799,11 @@ export class TableView extends TSViewBase implements IScrollTarget {
 
     private spectrum(toSample: boolean): void {
         const colNames = this.getSelectedColNames();
-        const [valid, message] = this.checkNumericColumns(colNames);
+        const [valid, message] = this.checkNumericColumns(colNames, 2);
         if (valid) {
             const rr = this.createSpectrumRequest(colNames, this.getTotalRowCount(), toSample);
             rr.invoke(new SpectrumReceiver(
-                this.getPage(), this.remoteObjectId, this.rowCount,
+                this.getPage(), this, this.remoteObjectId, this.rowCount,
                 this.schema, colNames, rr, false));
         } else {
             this.reportError("Not valid for PCA:" + message);
@@ -1098,7 +1097,7 @@ class QuantileReceiver extends OnCompleteReceiver<any[]> {
  * Receives the result of a PCA computation and initiates the request
  * to project the specified columns using the projection matrix.
  */
-class CorrelationMatrixReceiver extends BaseRenderer {
+export class CorrelationMatrixReceiver extends BaseRenderer {
     public constructor(page: FullPage,
                        protected tv: TableView,
                        operation: ICancellable,
