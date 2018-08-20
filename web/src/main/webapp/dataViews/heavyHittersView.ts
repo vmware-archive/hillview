@@ -128,7 +128,7 @@ export class HeavyHittersView extends BigTableView {
                 help: "Show all frequent elements as a table."},
             true);
         tableMenu.addItem({
-                text: "All but the Frequent  Elements as a Table",
+                text: "All but the Frequent Elements as a Table",
                 action: () => this.showTable(isApprox, false),
                 help: "Show all except the frequent elements as a table."},
             true);
