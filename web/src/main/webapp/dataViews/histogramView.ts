@@ -40,7 +40,7 @@ import {HistogramPlot} from "../ui/histogramPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {Resolution} from "../ui/ui";
+import {ChartKind, HistogramOptions, Resolution} from "../ui/ui";
 import {
     formatNumber,
     ICancellable,
@@ -53,7 +53,6 @@ import {
 import {AxisData} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
-import {HistogramOptions} from "./tsViewBase";
 import {DataRangesCollector} from "./histogram2DView";
 
 /**
@@ -202,7 +201,7 @@ export class HistogramView extends HistogramViewBase {
 
         if (bucketCount === 0) {
             // Compute the number of buckets to display
-            const size = PlottingSurface.getDefaultChartSize(this.page);
+            const size = PlottingSurface.getDefaultChartSize(this.page.getWidthInPixels());
             const width = Math.floor(size.width);
             bucketCount = Math.min(
                 Resolution.maxBucketCount,
@@ -296,8 +295,6 @@ export class HistogramView extends HistogramViewBase {
         const columns: string[] = [];
         for (let i = 0; i < this.schema.length; i++) {
             const col = this.schema.get(i);
-            if (col.kind === "String" || col.kind === "Json")
-                continue;
             if (col.name === this.currentData.axisData.description.name)
                 continue;
             columns.push(col.name);
@@ -343,13 +340,13 @@ export class HistogramView extends HistogramViewBase {
     private showSecondColumn(colName: string) {
         const oc = this.schema.find(colName);
         const cds: IColumnDescription[] = [this.currentData.axisData.description, oc];
-        const buckets = HistogramViewBase.histogram2DSize(this.page);
+        const buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
         const rr = this.getDataRanges2D(cds, buckets);
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
             this.currentData.histogram.buckets.length, cds, null, {
             reusePage: false,
             relative: false,
-            heatmap: false,
+            chartKind: ChartKind.Histogram,
             exact: true
         }));
     }
@@ -382,7 +379,7 @@ export class HistogramView extends HistogramViewBase {
     public histogram1D(title: string, colName: string,
                        bucketCount: number, options: HistogramOptions): void {
         const cd = this.schema.find(colName);
-        const size = PlottingSurface.getDefaultChartSize(this.page);
+        const size = PlottingSurface.getDefaultChartSize(this.page.getWidthInPixels());
         const rr = this.getDataRange(cd, size.width);
         rr.invoke(new DataRangeCollector(
             this, this.page, rr, this.schema, bucketCount, cd, title,
@@ -510,7 +507,7 @@ class FilterReceiver extends BaseRenderer {
     public run(): void {
         super.run();
         const title = this.filterDescription();
-        const size = PlottingSurface.getDefaultChartSize(this.page);
+        const size = PlottingSurface.getDefaultChartSize(this.page.getWidthInPixels());
         const rr = this.remoteObject.getDataRange(
             this.columnDescription, size.width);
         rr.invoke(new DataRangeCollector(
@@ -591,9 +588,10 @@ export class DataRangeCollector extends OnCompleteReceiver<DataRange> {
         if (range.boundaries != null)
             complete = this.bucketsRequested > range.boundaries.length;
 
+        const chartSize = PlottingSurface.getDefaultChartSize(this.page.getWidthInPixels());
         const args = HistogramViewBase.computeHistogramArgs(
             this.cd, range, 0, // ignore the bucket count; we'll integrate the CDF
-            this.options.exact, this.page);
+            this.options.exact, chartSize);
         const rr = this.originator.createHistogramRequest(args);
         rr.chain(this.operation);
         const axisData = new AxisData(this.cd, range, this.bucketCount);
@@ -621,7 +619,7 @@ class MakeHistogram extends BaseRenderer {
 
     public run(): void {
         super.run();
-        const size = PlottingSurface.getDefaultChartSize(this.page);
+        const size = PlottingSurface.getDefaultChartSize(this.page.getWidthInPixels());
         const rr = this.remoteObject.getDataRange(this.cd, size.width);
         rr.invoke(new DataRangeCollector(
             this.remoteObject, this.page, rr, this.schema, 0, this.cd, null,

@@ -39,7 +39,7 @@ import {HeatmapLegendPlot} from "../ui/legendPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {D3SvgElement, Point, Resolution} from "../ui/ui";
+import {ChartKind, D3SvgElement, Point, Resolution} from "../ui/ui";
 import {
     formatNumber,
     ICancellable,
@@ -49,10 +49,9 @@ import {
     significantDigits,
 } from "../util";
 import {AxisData} from "./axisData";
-import {Filter2DReceiver, MakeHistogramOrHeatmap} from "./histogram2DView";
+import {DataRangesCollector, Filter2DReceiver, MakeHistogramOrHeatmap} from "./histogram2DView";
 import {HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
-import {DataRangesCollector} from "./histogram2DView";
 
 /**
  * A HeatMapView renders information as a heatmap.
@@ -290,12 +289,12 @@ export class HeatmapView extends BigTableView {
         const cds = [cd0, cd1];
 
         const hv = new HeatmapView(ser.remoteObjectId, ser.rowCount, schema, page);
-        const buckets = HistogramViewBase.heatmapSize(page);
+        const buckets = HistogramViewBase.maxHeatmapBuckets(page);
         const rr = hv.getDataRanges2D(cds, buckets);
         rr.invoke(new DataRangesCollector(hv, hv.page, rr, schema, 0, cds, null, {
             reusePage: true,
             relative: false,
-            heatmap: true,
+            chartKind: ChartKind.Heatmap,
             exact: exact
         }));
         return hv;
@@ -303,13 +302,13 @@ export class HeatmapView extends BigTableView {
 
     // Draw this as a 2-D histogram
     public histogram(): void {
-        const buckets = HistogramViewBase.histogram2DSize(this.page);
+        const buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
         const cds = [this.currentData.xData.description, this.currentData.yData.description];
         const rr = this.getDataRanges2D(cds, buckets);
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema, 0, cds, null, {
             reusePage: false,
             relative: false,
-            heatmap: false,
+            chartKind: ChartKind.Histogram,
             exact: true
         }));
     }
@@ -318,7 +317,7 @@ export class HeatmapView extends BigTableView {
         const columns: string[] = [];
         for (let i = 0; i < this.schema.length; i++) {
             const col = this.schema.get(i);
-            if (col.kind === "Category" && col.name !== this.currentData.xData.description.name
+            if (col.name !== this.currentData.xData.description.name
                 && col.name !== this.currentData.yData.description.name) {
                 columns.push(this.schema.displayName(col.name));
             }
@@ -394,7 +393,7 @@ export class HeatmapView extends BigTableView {
                 page, operation,
                 [this.currentData.xData.description, this.currentData.yData.description],
                 this.rowCount, this.schema,
-                { exact: this.currentData.samplingRate >= 1, heatmap: true,
+                { exact: this.currentData.samplingRate >= 1, chartKind: ChartKind.Heatmap,
                     reusePage: false, relative: false, },
                 this.dataset);
         };
@@ -435,10 +434,10 @@ export class HeatmapView extends BigTableView {
     public swapAxes(): void {
         const cds: IColumnDescription[] = [
             this.currentData.yData.description, this.currentData.xData.description];
-        const buckets = HistogramViewBase.heatmapSize(this.page);
+        const buckets = HistogramViewBase.maxHeatmapBuckets(this.page);
         const rr = this.getDataRanges2D(cds, buckets);
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema, 0, cds, null, {
-            heatmap: true,
+            chartKind: ChartKind.Heatmap,
             exact: true,
             relative: true,
             reusePage: true
@@ -577,7 +576,7 @@ export class HeatmapView extends BigTableView {
             this.currentData.yData.description.name,
             this.currentData.xData.description, this.currentData.yData.description,
             this.schema, 0, this.page, rr, this.dataset, {
-            exact: this.currentData.samplingRate >= 1, heatmap: true,
+            exact: this.currentData.samplingRate >= 1, chartKind: ChartKind.Heatmap,
             relative: false, reusePage: false
         });
         rr.invoke(renderer);

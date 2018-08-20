@@ -84,11 +84,6 @@ export class TableView extends TSViewBase implements IScrollTarget {
             this.saveAsMenu(),
             {
                 text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
-                    /*
-                    { text: "Full dataset",
-                        action: () => this.fullDataset(),
-                        help: "Show the initial dataset, prior to any filtering operations."
-                    },*/
                     { text: "Refresh",
                         action: () => this.refresh(),
                         help: "Redraw this view.",
@@ -342,16 +337,6 @@ export class TableView extends TSViewBase implements IScrollTarget {
         this.setOrder(o);
     }
 
-    /*
-     Navigate back to the first table known
-    public fullDataset(): void {
-        let table = new TableView(this.originalTableId, this.originalTableId, this.page);
-        this.page.setDataView(table);
-        let rr = table.createGetSchemaRequest();
-        rr.invoke(new NextKReceiver(this.page, table, rr, false, new RecordOrder([])));
-    }
-    */
-
     public getSortOrder(column: string): [boolean, number] {
         for (let i = 0; i < this.order.length(); i++) {
             const o = this.order.get(i);
@@ -490,7 +475,11 @@ export class TableView extends TSViewBase implements IScrollTarget {
         for (let i = 0; i < this.schema.length; i++) {
             const cd = this.schema.get(i);
             cds.push(cd);
-            const title = "Column type is " + cd.kind +
+
+            let kindString = cd.kind;
+            if (kindString === "Category")
+                kindString = "String";
+            const title = "Column type is " + kindString +
                 ".\nA mouse click with the right button will open a menu.";
             const name = this.schema.displayName(cd.name);
             const thd = this.addHeaderCell(thr, cd, name, title);
@@ -544,13 +533,19 @@ export class TableView extends TSViewBase implements IScrollTarget {
                     text: "Histogram",
                     action: () => this.histogramSelected(),
                     help: "Plot the data in the selected columns as a histogram. " +
-                    "Applies to one or two columns only. The data cannot be of type String.",
+                    "Applies to one or two columns only.",
                 }, selectedCount >= 1 && selectedCount <= 2);
                 this.contextMenu.addItem({
                     text: "Heatmap",
-                    action: () => this.heatmapOrTrellisSelected(),
-                    help: "Plot the data in the selected columns as a heatmap or as a Trellis plot of heatmaps. " +
-                    "Applies to two or three columns only.",
+                    action: () => this.heatmapSelected(),
+                    help: "Plot the data in the selected columns as a heatmap. " +
+                    "Applies to two columns only.",
+                }, selectedCount === 2);
+                this.contextMenu.addItem({
+                    text: "Trellis",
+                    action: () => this.trellisSelected(),
+                    help: "Plot the data in the selected columns as a Trellis plot. " +
+                        "Applies to two or three columns only.",
                 }, selectedCount >= 2 && selectedCount <= 3);
                 this.contextMenu.addItem({
                     text: "Rename...",
@@ -675,7 +670,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
             () => {
                 const kindStr = cd.getFieldValue("newKind");
                 const kind: ContentsKind = asContentsKind(kindStr);
-                const converter: ColumnConverter = new ColumnConverter(
+                const converter = new ColumnConverter(
                     cd.getFieldValue("columnName"), kind, cd.getFieldValue("newColumnName"), this,
                     this.order, this.page);
                 converter.run();

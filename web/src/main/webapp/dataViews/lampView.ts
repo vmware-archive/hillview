@@ -372,8 +372,7 @@ export class LAMPDialog extends Dialog {
             "The number of control points to select.");
         const catColumns = [""];
         for (let i = 0; i < schema.length; i++)
-            if (schema.get(i).kind === "Category")
-                catColumns.push(schema.get(i).name);
+            catColumns.push(schema.get(i).name);
         this.addSelectField("category", "Category for centroids", catColumns, "",
             "A column name with categorical data that will be used to defined the control points." +
             "There will be one control point for each categorical value.");

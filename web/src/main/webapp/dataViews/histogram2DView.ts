@@ -36,14 +36,13 @@ import {SchemaClass} from "../schemaClass";
 import {BaseRenderer, TableTargetAPI, ZipReceiver} from "../tableTarget";
 import {CDFPlot} from "../ui/CDFPlot";
 import {IDataView} from "../ui/dataview";
-import {Dialog} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
 import {Histogram2DPlot} from "../ui/Histogram2DPlot";
 import {HistogramLegendPlot} from "../ui/legendPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {D3SvgElement, Rectangle, Resolution} from "../ui/ui";
+import {ChartKind, ChartOptions, D3SvgElement, Rectangle, Resolution, Size} from "../ui/ui";
 import {
     formatNumber,
     ICancellable,
@@ -57,7 +56,6 @@ import {
 import {AxisData} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
-import {ChartOptions} from "./tsViewBase";
 import {HeatMapRenderer} from "./heatmapView";
 
 /**
@@ -265,12 +263,12 @@ export class Histogram2DView extends HistogramViewBase {
         const cds = [cd0, cd1];
 
         const hv = new Histogram2DView(ser.remoteObjectId, ser.rowCount, schema, page);
-        const buckets = HistogramViewBase.histogram2DSize(page);
+        const buckets = HistogramViewBase.maxHistogram2DBuckets(page);
         const rr = hv.getDataRanges2D(cds, buckets);
         rr.invoke(new DataRangesCollector(hv, hv.page, rr, hv.schema, xPoints, cds, null, {
             reusePage: true,
             relative: relative,
-            heatmap: false,
+            chartKind: ChartKind.Histogram,
             exact: exact
         }));
         return hv;
@@ -288,12 +286,12 @@ export class Histogram2DView extends HistogramViewBase {
 
     public heatmap(): void {
         const cds = [this.currentData.xAxisData.description, this.currentData.yData.description];
-        const buckets = HistogramViewBase.heatmapSize(this.page);
+        const buckets = HistogramViewBase.maxHeatmapBuckets(this.page);
         const rr = this.getDataRanges2D(cds, buckets);
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema, 0, cds, null, {
             reusePage: false,
             relative: false,
-            heatmap: true,
+            chartKind: ChartKind.Heatmap,
             exact: true
         }));
     }
@@ -346,7 +344,7 @@ export class Histogram2DView extends HistogramViewBase {
                 page, operation,
                 [this.currentData.xAxisData.description, this.currentData.yData.description],
                 this.rowCount, this.schema,
-                { exact: this.currentData.samplingRate >= 1, heatmap: false,
+                { exact: this.currentData.samplingRate >= 1, chartKind: ChartKind.Histogram,
                     relative: this.relative, reusePage: false },
                 this.dataset
                 );
@@ -358,11 +356,11 @@ export class Histogram2DView extends HistogramViewBase {
         if (this.currentData == null)
             return;
         const cds = [this.currentData.yData.description, this.currentData.xAxisData.description];
-        const buckets = HistogramViewBase.histogram2DSize(this.page);
+        const buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
         const rr = this.getDataRanges2D(cds, buckets);
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema, 0, cds, null, {
             reusePage: true, relative: this.relative,
-            heatmap: false, exact: this.samplingRate >= 1.0
+            chartKind: ChartKind.Histogram, exact: this.samplingRate >= 1.0
         }));
     }
 
@@ -370,26 +368,26 @@ export class Histogram2DView extends HistogramViewBase {
         if (this.currentData == null)
             return;
         const cds = [this.currentData.yData.description, this.currentData.xAxisData.description];
-        const buckets = HistogramViewBase.histogram2DSize(this.page);
+        const buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
         const rr = this.getDataRanges2D(cds, buckets);
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
             this.currentData.xPoints, cds, this.page.title, {
             reusePage: true,
             relative: this.relative,
-            heatmap: false,
+            chartKind: ChartKind.Histogram,
             exact: true
         }));
     }
 
     public changeBuckets(bucketCount: number): void {
         const cds = [this.currentData.yData.description, this.currentData.xAxisData.description];
-        const buckets = HistogramViewBase.histogram2DSize(this.page);
+        const buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
         const rr = this.getDataRanges2D(cds, buckets);
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
             bucketCount, cds, null, {
             reusePage: true,
             relative: this.relative,
-            heatmap: false,
+            chartKind: ChartKind.Histogram,
             exact: true
         }));
     }
@@ -619,7 +617,7 @@ export class Histogram2DView extends HistogramViewBase {
             this.schema, inLegend ? this.currentData.xPoints : 0, this.page, rr,
             this.dataset, {
             exact: this.currentData.samplingRate >= 1.0,
-            heatmap: false,
+            chartKind: ChartKind.Histogram,
             reusePage: false,
             relative: this.relative
         });
@@ -667,6 +665,11 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
         super(page, operation, "histogram");
     }
 
+    private trellisLayout(windows: number): [number, number, Size] {
+        // TODO
+        return [5, 3, { width: 100, height: 100 }];
+    }
+
     public run(ranges: DataRange[]): void {
         console.assert(ranges.length === 2);
         if (ranges[0].presentCount === 0 || ranges[1].presentCount === 0) {
@@ -674,59 +677,95 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
             return;
         }
         const rowCount = ranges[0].presentCount + ranges[0].missingCount;
+        const chartSize = PlottingSurface.getDefaultChartSize(this.page.getWidthInPixels());
 
-        if (this.options.heatmap) {
-            const args: HistogramArgs[] = [];
-            const xBucketCount = HistogramViewBase.bucketCount(this.value[0], this.page,
-                this.cds[0].kind, true, true);
-            const yBucketCount = HistogramViewBase.bucketCount(this.value[1], this.page,
-                this.cds[1].kind, true, false);
+        switch (this.options.chartKind) {
+            case ChartKind.TrellisHistogram: {
+                if (ranges.length === 2) {
+                    const maxWindows =
+                        Math.floor(chartSize.width / Resolution.minTrellisWindowSize) *
+                        Math.floor(chartSize.height / Resolution.minTrellisWindowSize);
+                    let windows: number;
+                    if (kindIsString(this.cds[1].kind))
+                        windows = Math.min(maxWindows, ranges[1].boundaries.length);
+                    else if (this.cds[1].kind === "Integer")
+                        windows = Math.min(maxWindows, ranges[1].max - ranges[1].min + 1);
+                    else
+                        windows = maxWindows;
+                    const [xCount, yCount, wSize] = this.trellisLayout(windows);
+                    if (xCount * yCount < windows)
+                        windows = xCount * yCount;
 
-            let arg = HistogramViewBase.computeHistogramArgs(
-                this.cds[0], ranges[0], xBucketCount, this.options.exact, this.page);
-            args.push(arg);
-            arg = HistogramViewBase.computeHistogramArgs(
-                this.cds[1], ranges[1], yBucketCount, this.options.exact, this.page);
-            args.push(arg);
+                    const xArg = HistogramViewBase.computeHistogramArgs(
+                        this.cds[0], ranges[0], 0, false, wSize);
+                    // TODO
+                } else if (ranges.length === 3) {
+                    // TODO
+                } else {
+                    console.assert(false);
+                    return;
+                }
+                break;
+            }
+            case ChartKind.Heatmap: {
+                const args: HistogramArgs[] = [];
+                const maxXBucketCount = Math.floor(chartSize.width / Resolution.minDotSize);
+                const maxYBucketCount = Math.floor(chartSize.height / Resolution.minDotSize);
+                console.assert(this.options.exact);
+                let arg = HistogramViewBase.computeHistogramArgs(
+                    this.cds[0], ranges[0], maxXBucketCount, this.options.exact, chartSize);
+                args.push(arg);
+                arg = HistogramViewBase.computeHistogramArgs(
+                    this.cds[1], ranges[1], maxYBucketCount, this.options.exact, chartSize);
+                args.push(arg);
 
-            const rr = this.originator.createHeatMapRequest(args);
-            const renderer = new HeatMapRenderer(this.page,
-                this.originator, rowCount, this.schema,
-                this.cds, ranges, 1.0, rr, this.options.reusePage);
-            rr.chain(this.operation);
-            rr.invoke(renderer);
-        } else {
-            const args: HistogramArgs[] = [];
-            const xBucketCount = this.xBucketCount !== 0 ? this.xBucketCount :
-                HistogramViewBase.bucketCount(this.value[0], this.page,
-                    this.cds[0].kind, false, true);
-            const yBucketCount = HistogramViewBase.bucketCount(this.value[1], this.page,
-                this.cds[1].kind, false, false);
+                const rr = this.originator.createHeatMapRequest(args);
+                const renderer = new HeatMapRenderer(this.page,
+                    this.originator, rowCount, this.schema,
+                    this.cds, ranges, 1.0, rr, this.options.reusePage);
+                rr.chain(this.operation);
+                rr.invoke(renderer);
+                break;
+            }
+            case ChartKind.Histogram: {
+                const args: HistogramArgs[] = [];
+                let maxXBucketCount = this.xBucketCount;
+                if (maxXBucketCount === 0) {
+                    maxXBucketCount = Math.min(
+                        Math.floor(chartSize.width / Resolution.minBarWidth),
+                        Resolution.maxBucketCount);
+                }
+                const maxYBucketCount = Resolution.maxBucketCount;
 
-            // The first two represent the resolution for the 2D histogram
-            const xarg = HistogramViewBase.computeHistogramArgs(
-                this.cds[0], ranges[0], xBucketCount, this.options.exact, this.page);
-            args.push(xarg);
-            const yarg = HistogramViewBase.computeHistogramArgs(
-                this.cds[1], ranges[1], yBucketCount, this.options.exact, this.page);
-            args.push(yarg);
-            // This last one represents the resolution for the CDF
-            const cdfArg = HistogramViewBase.computeHistogramArgs(
-                this.cds[0], ranges[0], 0, this.options.exact, this.page);
-            args.push(cdfArg);
+                // The first two represent the resolution for the 2D histogram
+                const xarg = HistogramViewBase.computeHistogramArgs(
+                    this.cds[0], ranges[0], maxXBucketCount,
+                    // Relative views cannot sample
+                    this.options.exact || this.options.relative, chartSize);
+                args.push(xarg);
+                const yarg = HistogramViewBase.computeHistogramArgs(
+                    this.cds[1], ranges[1], maxYBucketCount,
+                    this.options.exact || this.options.relative, chartSize);
+                args.push(yarg);
+                // This last one represents the resolution for the CDF
+                const cdfArg = HistogramViewBase.computeHistogramArgs(
+                    this.cds[0], ranges[0], 0,
+                    this.options.exact || this.options.relative, chartSize);
+                args.push(cdfArg);
 
-            let samplingRate = HistogramViewBase.samplingRate(
-                xBucketCount, rowCount, this.page);
-            if (this.options.exact || this.options.relative)
-                samplingRate = 1.0;
-
-            const rr = this.originator.createHistogram2DRequest(args);
-            const renderer = new Histogram2DRenderer(this.page,
-                this.originator, rowCount, this.schema,
-                this.cds, ranges, samplingRate, rr,
-                this.options.relative, this.options.reusePage);
-            rr.chain(this.operation);
-            rr.invoke(renderer);
+                const rr = this.originator.createHistogram2DRequest(args);
+                const renderer = new Histogram2DRenderer(this.page,
+                    this.originator, rowCount, this.schema,
+                    this.cds, ranges, cdfArg.samplingRate, rr,
+                    this.options.relative, this.options.reusePage);
+                rr.chain(this.operation);
+                rr.invoke(renderer);
+                break;
+            }
+            default:
+                // TODO
+                console.assert(false);
+                break;
         }
     }
 }
@@ -752,11 +791,18 @@ export class Filter2DReceiver extends BaseRenderer {
     public run(): void {
         super.run();
         const cds: IColumnDescription[] = [this.xColumn, this.yColumn];
-        let buckets;
-        if (this.options.heatmap)
-            buckets = HistogramViewBase.heatmapSize(this.page);
-        else
-            buckets = HistogramViewBase.histogram2DSize(this.page);
+        let buckets: number[];
+        switch (this.options.chartKind) {
+            case ChartKind.Heatmap:
+                buckets = HistogramViewBase.maxHeatmapBuckets(this.page);
+                break;
+            case ChartKind.Histogram:
+                buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
+                break;
+            default:
+                console.assert(false);
+                return;
+        }
         const rr = this.remoteObject.getDataRanges2D(cds, buckets);
         rr.invoke(new DataRangesCollector(this.remoteObject, this.page, rr, this.schema,
             this.bucketCount, cds, this.title, this.options));
@@ -781,10 +827,17 @@ export class MakeHistogramOrHeatmap extends BaseRenderer {
     public run(): void {
         super.run();
         let buckets;
-        if (this.options.heatmap)
-            buckets = HistogramViewBase.heatmapSize(this.page);
-        else
-            buckets = HistogramViewBase.histogram2DSize(this.page);
+        switch (this.options.chartKind) {
+            case ChartKind.Heatmap:
+                buckets = HistogramViewBase.maxHeatmapBuckets(this.page);
+                break;
+            case ChartKind.Histogram:
+                buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
+                break;
+            default:
+                console.assert(false);
+                return;
+        }
         const rr = this.remoteObject.getDataRanges2D(this.cds, buckets);
         rr.invoke(new DataRangesCollector(this.remoteObject, this.page, rr, this.schema, 0,
             this.cds, null, this.options));
@@ -841,27 +894,5 @@ export class Histogram2DRenderer extends Receiver<Pair<HeatMap, HistogramBase>> 
         const yAxisData = new AxisData(this.cds[1], this.ranges[1], yPoints);
         this.histogram.updateView(heatMap, xAxisData, yAxisData, cdf,
             this.samplingRate, this.relative, this.elapsedMilliseconds());
-    }
-}
-
-export class Histogram2DDialog extends Dialog {
-    public static label(heatmap: boolean): string {
-        return heatmap ? "heatmap" : "2D histogram";
-    }
-
-    constructor(allColumns: string[], heatmap: boolean) {
-        super(Histogram2DDialog.label(heatmap),
-            "Display a " + Histogram2DDialog.label(heatmap) + " of the data in two columns");
-        this.addSelectField("columnName0", "First Column", allColumns, allColumns[0],
-            "First column (X axis)");
-        this.addSelectField("columnName1", "Second Column", allColumns, allColumns[1],
-            "Second column " + (heatmap ? "(Y axis)" : "(color)"));
-    }
-
-    public getColumn(first: boolean): string {
-        if (first)
-            return this.getFieldValue("columnName0");
-        else
-            return this.getFieldValue("columnName1");
     }
 }

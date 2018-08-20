@@ -174,9 +174,15 @@ export class SchemaView extends TSViewBase {
         }, selectedCount >= 1 && selectedCount <= 2);
         this.contextMenu.addItem({
             text: "Heatmap",
-            action: () => this.heatmapOrTrellisSelected(),
+            action: () => this.heatmapSelected(),
             help: "Plot the data in the selected columns as a heatmap or as a Trellis plot of heatmaps. " +
-            "Applies to two or three columns only.",
+            "Applies to two columns only.",
+        }, selectedCount >= 2);
+        this.contextMenu.addItem({
+            text: "Trellis",
+            action: () => this.trellisSelected(),
+            help: "Plot the data in the selected columns as a Trellis plot. " +
+                "Applies to two or three columns only.",
         }, selectedCount >= 2 && selectedCount <= 3);
         this.contextMenu.addItem({
             text: "Estimate distinct elements",

@@ -23,6 +23,7 @@ import {Comparison} from "./util";
 
 export type RemoteObjectId = string;
 
+// TODO: remove Category kind
 export type ContentsKind = "Category" | "Json" | "String" | "Integer" |
     "Double" | "Date" | "Interval";
 

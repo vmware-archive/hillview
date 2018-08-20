@@ -17,7 +17,6 @@
 
 import {mouse as d3mouse} from "d3-selection";
 import {
-    ContentsKind,
     DataRange, HistogramArgs,
     IColumnDescription,
     kindIsString,
@@ -29,7 +28,7 @@ import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {D3SvgElement, Point, Resolution, SpecialChars, ViewKind} from "../ui/ui";
+import {D3SvgElement, Point, Resolution, Size, SpecialChars, ViewKind} from "../ui/ui";
 import {Seed, significantDigits} from "../util";
 import {BigTableView} from "../tableTarget";
 import {DistinctStrings} from "../distinctStrings";
@@ -156,11 +155,11 @@ export abstract class HistogramViewBase extends BigTableView {
         range: DataRange,
         bucketCount: number,  // if 0 the size is chosen based on the screen size
         exact: boolean,
-        page: FullPage): HistogramArgs {
+        chartSize: Size): HistogramArgs {
         if (kindIsString(cd.kind)) {
             const cdfBucketCount = range.boundaries.length;
             let samplingRate = HistogramViewBase.samplingRate(
-                cdfBucketCount, range.presentCount, page);
+                cdfBucketCount, range.presentCount, chartSize);
             if (exact)
                 samplingRate = 1.0;
             let bounds = range.boundaries;
@@ -176,8 +175,7 @@ export abstract class HistogramViewBase extends BigTableView {
             };
             return args;
         } else {
-            const size = PlottingSurface.getDefaultChartSize(page);
-            let cdfCount = Math.floor(size.width);
+            let cdfCount = Math.floor(chartSize.width);
             if (bucketCount !== 0)
                 cdfCount = bucketCount;
 
@@ -190,8 +188,8 @@ export abstract class HistogramViewBase extends BigTableView {
 
             let samplingRate = 1.0;
             if (!exact)
-                samplingRate = HistogramViewBase.samplingRate(cdfCount, range.presentCount, page);
-
+                samplingRate = HistogramViewBase.samplingRate(
+                    cdfCount, range.presentCount, chartSize);
             const args: HistogramArgs = {
                 cd: cd,
                 min: range.min - adjust,
@@ -205,9 +203,9 @@ export abstract class HistogramViewBase extends BigTableView {
     }
 
     // noinspection JSUnusedLocalSymbols
-    public static samplingRate(bucketCount: number, rowCount: number, page: FullPage): number {
+    public static samplingRate(bucketCount: number, rowCount: number, chartSize: Size): number {
         const constant = 4;  // This models the confidence we want from the sampling
-        const height = PlottingSurface.getDefaultChartSize(page).height;
+        const height = chartSize.height;
         const sampleCount = constant * height * height;
         const sampleRate = sampleCount / rowCount;
         return Math.min(sampleRate, 1);
@@ -239,53 +237,30 @@ export abstract class HistogramViewBase extends BigTableView {
     /**
      * The number of "buckets" needed for displaying a heatmap.
      */
-    public static heatmapSize(page: FullPage): [number, number] {
-        const size = PlottingSurface.getDefaultChartSize(page);
+    public static maxHeatmapBuckets(page: FullPage): [number, number] {
+        const size = PlottingSurface.getDefaultChartSize(page.getWidthInPixels());
         return [Math.floor(size.width / Resolution.minDotSize),
             Math.floor(size.height / Resolution.minDotSize)];
     }
 
     /**
-     * The number of buckets to use when requesting the range of
+     * The max number of buckets to use when requesting the range of
      * data for displaying a 2D histogram.
      */
-    public static histogram2DSize(page: FullPage): [number, number] {
+    public static maxHistogram2DBuckets(page: FullPage): [number, number] {
         // On the horizontal axis we get the maximum resolution, which we will use for
-        // deriving the CDF curve.  On the vertical axis we use a max smaller number.
+        // deriving the CDF curve.  On the vertical axis we use a smaller number.
         return [page.getWidthInPixels(), Resolution.maxBucketCount];
     }
 
     /**
-     * Computes the number of buckets for a histogram axis.
-     * @param range        Data range for that axis.
-     * @param page         Page displaying the data.
-     * @param columnKind   Kind of data displayed.
-     * @param heatmap      True if we want to display a heatmap.
-     * @param bottom       True if we are considering the X axis; false for the Y axis.
+     * The max number of buckets to use when requesting the range of
+     * data for displaying a 2D Trellism plot.
      */
-    public static bucketCount(range: DataRange, page: FullPage,
-                              columnKind: ContentsKind,
-                              heatmap: boolean, bottom: boolean): number {
-        const size = PlottingSurface.getDefaultChartSize(page);
-        const length = Math.floor(bottom ? size.width : size.height);
-        let maxBucketCount = Resolution.maxBucketCount;
-        let minBarWidth = Resolution.minBarWidth;
-        if (heatmap) {
-            maxBucketCount = length;
-            minBarWidth = Resolution.minDotSize;
-        }
-
-        let bucketCount = maxBucketCount;
-        if (length / minBarWidth < bucketCount)
-            bucketCount = Math.floor(length / minBarWidth);
-
-        if (columnKind === "Integer")
-            bucketCount = Math.min(
-                bucketCount,
-                (range.max - range.min + 1) /
-                Math.ceil( (range.max - range.min + 1) / maxBucketCount));
-
-        return Math.floor(bucketCount);
+    public static maxTrellis2DBuckets(page: FullPage): [number, number] {
+        // On the horizontal axis we get the maximum resolution, which we will use for
+        // deriving the CDF curve.  On the vertical axis we use a smaller number.
+        return [page.getWidthInPixels(), page.getWidthInPixels()];
     }
 }
 

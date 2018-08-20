@@ -26,17 +26,16 @@ import {BigTableView} from "../tableTarget";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
 import {SubMenu, TopMenuItem} from "../ui/menu";
-import {SpecialChars, ViewKind} from "../ui/ui";
+import {ChartKind, SpecialChars, ViewKind} from "../ui/ui";
 import {
     cloneToSet, Comparison, Converters, ICancellable, mapToArray, significantDigits,
 } from "../util";
 import {HeavyHittersReceiver, HeavyHittersView} from "./heavyHittersView";
-import {DataRangesCollector, Histogram2DDialog} from "./histogram2DView";
+import {DataRangesCollector} from "./histogram2DView";
 import {
     DataRangeCollector, HistogramDialog,
 } from "./histogramView";
 import {TableOperationCompleted, TableView} from "./tableView";
-import {TrellisPlotDialog} from "./trellisHeatMapView";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {HistogramViewBase} from "./histogramViewBase";
 
@@ -87,19 +86,6 @@ export abstract class TSViewBase extends BigTableView {
             return;
         }
         this.refresh();
-    }
-
-    protected heatmapOrTrellisSelected(): void {
-        if (this.getSelectedColCount() === 3) {
-            this.trellisPlot();
-            return;
-        }
-        if (this.getSelectedColCount() !== 2) {
-            this.reportError("Must select exactly 2 columns for heatmap");
-            return;
-        }
-
-        this.heatmapSelected();
     }
 
     public reportError(s: string) {
@@ -181,51 +167,62 @@ export abstract class TSViewBase extends BigTableView {
         rr.invoke(rec);
     }
 
-    public histogram1D(cd: IColumnDescription, options: HistogramOptions): void {
-        const size = PlottingSurface.getDefaultChartSize(this.page);
+    protected histogram1D(cd: IColumnDescription): void {
+        const size = PlottingSurface.getDefaultChartSize(this.page.getWidthInPixels());
         const rr = this.getDataRange(cd, size.width);
         rr.invoke(new DataRangeCollector(
-            this, this.page, rr, this.schema, 0, cd, null, size.width, options));
+            this, this.page, rr, this.schema, 0, cd, null, size.width,
+            { exact: false, reusePage: false }));
     }
 
-    public histogram2D(cds: IColumnDescription[], options: HistogramOptions): void {
-        const buckets = HistogramViewBase.histogram2DSize(this.page);
+    protected histogram2D(cds: IColumnDescription[]): void {
+        const buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
         const rr = this.getDataRanges2D(cds, buckets);
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema, 0, cds, null, {
-            reusePage: options.reusePage, relative: false,
-            heatmap: false, exact: options.exact
+            reusePage: false, relative: false,
+            chartKind: ChartKind.Histogram, exact: false
         }));
     }
 
-    protected histogram(columns: string[]): void {
-        const cds: IColumnDescription[] = [];
-        columns.forEach((v) => {
-            const colDesc = this.schema.find(v);
-            cds.push(colDesc);
-        });
+    protected trellis2D(cds: IColumnDescription[]): void {
+        const buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
+        const rr = this.getDataRanges2D(cds, buckets);
+        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema, 0, cds, null, {
+            reusePage: false, relative: false,
+            chartKind: ChartKind.TrellisHistogram, exact: false
+        }));
+    }
 
+    protected trellis3D(cds: IColumnDescription[]): void {
+        // TODO
+    }
+
+    protected histogram(columns: string[]): void {
+        const cds = this.schema.getDescriptions(columns);
         if (cds.length === 1) {
-            this.histogram1D(cds[0],
-                { exact: false, reusePage: false });
+            this.histogram1D(cds[0]);
         } else {
-            this.histogram2D(cds,
-                { exact: false, reusePage: false });
+            this.histogram2D(cds);
+        }
+    }
+
+    protected trellis(columns: string[]): void {
+        const cds = this.schema.getDescriptions(columns);
+        if (cds.length === 2) {
+            this.trellis2D(cds);
+        } else {
+            this.trellis3D(cds);
         }
     }
 
     protected heatmap(columns: string[]) {
-        const cds: IColumnDescription[] = [];
-        columns.forEach((v) => {
-            const colDesc = this.schema.find(v);
-            cds.push(colDesc);
-        });
-
-        const buckets = HistogramViewBase.heatmapSize(this.page);
+        const cds = this.schema.getDescriptions(columns);
+        const buckets = HistogramViewBase.maxHeatmapBuckets(this.page);
         const rr = this.getDataRanges2D(cds, buckets);
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema, 0, cds, null, {
             reusePage: false,
             relative: false,
-            heatmap: true,
+            chartKind: ChartKind.Heatmap,
             exact: true
         }));
     }
@@ -246,26 +243,34 @@ export abstract class TSViewBase extends BigTableView {
         this.histogram(this.getSelectedColNames());
     }
 
-    protected trellisPlot(): void {
-        const colNames: string[] = this.getSelectedColNames().map((c) => this.schema.displayName(c));
-        const dialog = new TrellisPlotDialog(
-            colNames, this.getPage(), this.rowCount, this.schema, this, false);
-        if (dialog.validate())
-            dialog.show();
+    protected trellisSelected(): void {
+        if (this.getSelectedColCount() < 2 || this.getSelectedColCount() > 3) {
+            this.reportError("Must select 1 or 2 columns for Trellis polots");
+            return;
+        }
+        this.trellis(this.getSelectedColNames());
     }
 
     public twoDHistogramMenu(heatmap: boolean): void {
-        const eligible = this.schema.filter((d) => d.kind !== "String");
-        if (eligible.length < 2) {
+        if (this.schema.length < 2) {
             this.reportError("Could not find two columns that can be charted.");
             return;
         }
-        const dia = new Histogram2DDialog(
-            eligible.columnNames.map((c) => this.schema.displayName(c)), heatmap);
+
+        const allColumns = this.schema.columnNames.map((c) => this.schema.displayName(c));
+        const label = heatmap ? "heatmap" : "2D histogram";
+        const dia = new Dialog(label,
+                        "Display a " + label + " of the data in two columns");
+        dia.addSelectField("columnName0", "First column", allColumns, allColumns[0],
+                    "First column (X axis)");
+        dia.addSelectField("columnName1", "Second column", allColumns, allColumns[1],
+                    "Second column " + (heatmap ? "(Y axis)" : "(color)"));
         dia.setAction(
             () => {
-                const col0 = this.schema.fromDisplayName(dia.getColumn(false));
-                const col1 = this.schema.fromDisplayName(dia.getColumn(true));
+                const c0 = dia.getFieldValue("columnName0");
+                const col0 = this.schema.fromDisplayName(c0);
+                const c1 = dia.getFieldValue("columnName1");
+                const col1 = this.schema.fromDisplayName(c1);
                 if (col0 === col1) {
                     this.reportError("The two columns must be distinct");
                     return;
@@ -274,6 +279,55 @@ export abstract class TSViewBase extends BigTableView {
                     this.histogram([col0, col1]);
                 else
                     this.heatmap([col0, col1]);
+            },
+        );
+        dia.show();
+    }
+
+    public trellisMenu(twoD: boolean): void {
+        const count = twoD ? 2 : 3;
+        if (this.schema.length < count) {
+            this.reportError("Could not find enough columns that can be charted.");
+            return;
+        }
+
+        const heatmap = false;  // TODO
+        const allColumns = this.schema.columnNames.map((c) => this.schema.displayName(c));
+        const label = heatmap ? "heatmap" : "2D histogram";
+        const dia = new Dialog(label,
+            "Display a Trellis plot of " + label + "s");
+        dia.addSelectField("columnName0", "First column", allColumns, allColumns[0],
+            "First column (X axis)");
+        dia.addSelectField("columnName1", "Second column", allColumns, allColumns[1],
+            count === 2 ? "Column to group by" :
+                "Second column " + (heatmap ? "(Y axis)" : "(color)"));
+        if (count === 3)
+            dia.addSelectField("columnName2", "Third column", allColumns, allColumns[2],
+                "Column to group by");
+
+        dia.setAction(
+            () => {
+                const c0 = dia.getFieldValue("columnName0");
+                const col0 = this.schema.fromDisplayName(c0);
+                const c1 = dia.getFieldValue("columnName1");
+                const col1 = this.schema.fromDisplayName(c1);
+                if (col0 === col1) {
+                    this.reportError("The columns must be distinct");
+                    return;
+                }
+                let col2 = null;
+                const colNames = [col0, col1];
+
+                if (count === 3) {
+                    const c2 = dia.getFieldValue("columnName2");
+                    col2 = this.schema.fromDisplayName(c2);
+                    if (col0 === col2 || col1 === col2) {
+                        this.reportError("The columns must be distinct");
+                        return;
+                    }
+                    colNames.push(col2);
+                }
+                this.trellis(colNames);
             },
         );
         dia.show();
@@ -291,12 +345,8 @@ export abstract class TSViewBase extends BigTableView {
     }
 
     public oneDHistogramMenu(): void {
-        const eligible = this.schema.filter((d) => d.kind !== "String");
-        if (eligible.length === 0) {
-            this.reportError("No columns that can be histogrammed found.");
-            return;
-        }
-        const dia = new HistogramDialog(eligible.columnNames.map((c) => this.schema.displayName(c)));
+        const dia = new HistogramDialog(
+            this.schema.columnNames.map((c) => this.schema.displayName(c)));
         dia.setAction(
             () => {
                 const col = this.schema.fromDisplayName(dia.getColumn());
@@ -327,6 +377,10 @@ export abstract class TSViewBase extends BigTableView {
                     help: "Draw a histogram of the data in two columns."},
                 { text: "Heatmap...", action: () => this.twoDHistogramMenu(true),
                     help: "Draw a heatmap of the data in two columns."},
+                { text: "Trellis 2D...", action: () => this.trellisMenu(true),
+                    help: "Draw a Trellism plot of the data in two columns."},
+                { text: "Trellis 3D...", action: () => this.trellisMenu(false),
+                    help: "Draw a Trellism plot of the data in three columns."},
             ]),
         };
     }
@@ -547,16 +601,4 @@ class CountReceiver extends OnCompleteReceiver<HLogLog> {
             this.colName + "\' " + SpecialChars.approx + String(data.distinctItemCount) + "\n" +
             "Operation took " + significantDigits(timeInMs / 1000) + " seconds");
     }
-}
-
-// Using an interface for emulating named arguments
-// otherwise it's hard to remember the order of all these booleans.
-export interface HistogramOptions {
-    exact: boolean;  // exact histogram
-    reusePage: boolean;   // reuse the original page
-}
-
-export interface ChartOptions extends HistogramOptions {
-    heatmap: boolean;  // draw heatmaps, not histograms
-    relative: boolean;  // draw a relative 2D histogram
 }

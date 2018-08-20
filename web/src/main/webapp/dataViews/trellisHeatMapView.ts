@@ -334,7 +334,8 @@ export class TrellisHeatMapView extends BigTableView implements IScrollTarget {
 
     // Returns the maximum size that the canvas is allowed to use
     private maxDrawingSize(): Size {
-        const canvasSize = PlottingSurface.getDefaultCanvasSize(this.getPage());
+        const canvasSize = PlottingSurface.getDefaultCanvasSize(
+            this.getPage().getWidthInPixels());
         return {
             width: canvasSize.width - ScrollBar.barWidth,
             height: canvasSize.height,

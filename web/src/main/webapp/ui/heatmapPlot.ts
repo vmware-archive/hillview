@@ -16,7 +16,7 @@
  */
 
 import {AxisData} from "../dataViews/axisData";
-import {HeatMap} from "../javaBridge";
+import {HeatMap, kindIsString} from "../javaBridge";
 import {regression} from "../util";
 import {HeatmapLegendPlot} from "./legendPlot";
 import {Plot} from "./plot";
@@ -82,9 +82,9 @@ export class HeatmapPlot extends Plot {
             .attr("height", this.getChartHeight());
         this.drawAxes();
 
-        if (this.yAxisData.description.kind !== "Category" &&
-            this.xAxisData.description.kind !== "Category") {
-            // it makes no sense to do regressions for categorical values
+        if (!kindIsString(this.yAxisData.description.kind) &&
+            !kindIsString(this.xAxisData.description.kind)) {
+            // it makes no sense to do regressions for string values
             const regr = regression(this.heatmap.buckets);
             if (regr.length === 2) {
                 const b = regr[0];

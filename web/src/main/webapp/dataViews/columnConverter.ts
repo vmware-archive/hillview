@@ -19,10 +19,8 @@ import {
     allContentsKind, ContentsKind, ConvertColumnInfo, HLogLog, IColumnDescription,
     RecordOrder,
 } from "../javaBridge";
-import {OnCompleteReceiver} from "../rpc";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
-import {ICancellable} from "../util";
 import {TableOperationCompleted, TableView} from "./tableView";
 
 /**
@@ -37,7 +35,8 @@ export class ConverterDialog extends Dialog {
         super("Convert column", "Creates a new column by converting the data in an existing column to a new type.");
         const cn = this.addSelectField("columnName", "Column: ", allColumns, columnName,
             "Column whose type is converted");
-        const nk = this.addSelectField("newKind", "Convert to: ", allContentsKind, null,
+        const nk = this.addSelectField("newKind", "Convert to: ",
+            allContentsKind.filter((c) => c !== "Category"), null,
             "Type of data for the converted column.");
         const nn = this.addTextField("newColumnName", "New column name: ", FieldKind.String, null,
             "A name for the new column.  The name must be different from all other column names.");
@@ -71,7 +70,6 @@ export class ConverterDialog extends Dialog {
  * This class handles type conversions on columns (e.g. String to Integer).
  */
 export class ColumnConverter  {
-    public static maxCategoricalCount = 1e4;
     private readonly columnIndex: number;  // index of original column in schema
 
     constructor(private columnName: string,
@@ -88,25 +86,7 @@ export class ColumnConverter  {
             this.table.reportError(`Column name ${this.newColumnName} already exists in table.`);
             return;
         }
-        if (this.newKind === "Category") {
-            const rr = this.table.createHLogLogRequest(this.columnName);
-            const rec: HLogLogReceiver = new HLogLogReceiver(this.table.getPage(), rr, this);
-            rr.invoke(rec);
-        } else {
-            this.convert(null);
-        }
-    }
 
-    public countReceived(count: number, operation: ICancellable<HLogLog>): void {
-        if (count > ColumnConverter.maxCategoricalCount) {
-            this.table.reportError(`Too many values for categorical column. There are ${count}, " +
-            "and up to ${ColumnConverter.maxCategoricalCount} are supported.`);
-            return;
-        }
-        this.convert(operation);
-    }
-
-    public convert(operation: ICancellable<HLogLog>): void {
         const args: ConvertColumnInfo = {
             colName: this.columnName,
             newColName: this.newColumnName,
@@ -115,7 +95,6 @@ export class ColumnConverter  {
         };
         const newPage = this.table.dataset.newPage("Converted " + this.newColumnName, this.page);
         const rr = this.table.createStreamingRpcRequest<string>("convertColumnMap", args);
-        rr.chain(operation);
         const cd: IColumnDescription = {
             kind: this.newKind,
             name: this.newColumnName,
@@ -123,16 +102,7 @@ export class ColumnConverter  {
         const schema = this.table.schema.append(cd);
         const o = this.order.clone();
         o.addColumn({columnDescription: cd, isAscending: true});
-        rr.invoke(new TableOperationCompleted(newPage, rr, this.table.rowCount, schema, o, this.table.tableRowsDesired));
-    }
-}
-
-class HLogLogReceiver extends OnCompleteReceiver<HLogLog> {
-    constructor(page: FullPage, operation: ICancellable<HLogLog>, protected cc: ColumnConverter) {
-        super(page, operation, "HyperLogLog");
-    }
-
-    public run(data: HLogLog): void {
-        this.cc.countReceived(data.distinctItemCount, this.operation);
+        rr.invoke(new TableOperationCompleted(newPage, rr, this.table.rowCount, schema,
+            o, this.table.tableRowsDesired));
     }
 }

@@ -183,4 +183,13 @@ export class SchemaClass implements Serializable<SchemaClass> {
         result.copyDisplayNames(this);
         return result;
     }
+
+    public getDescriptions(columns: string[]): IColumnDescription[] {
+        const cds: IColumnDescription[] = [];
+        columns.forEach((v) => {
+            const colDesc = this.find(v);
+            cds.push(colDesc);
+        });
+        return cds;
+    }
 }

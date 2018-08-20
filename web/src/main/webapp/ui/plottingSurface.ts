@@ -73,18 +73,18 @@ export class PlottingSurface implements IHtmlElement {
         // Default margins.
         this.setMargins(PlottingSurface.topMargin, PlottingSurface.rightMargin,
             PlottingSurface.bottomMargin, PlottingSurface.leftMargin);
-        this.size = PlottingSurface.getDefaultCanvasSize(this.page);
+        this.size = PlottingSurface.getDefaultCanvasSize(this.page.getWidthInPixels());
     }
 
-    public static getDefaultCanvasSize(page: FullPage): Size {
-        let width = page.getWidthInPixels() - 3;
+    public static getDefaultCanvasSize(pageWidth: number): Size {
+        let width = pageWidth - 3;
         if (width < PlottingSurface.minCanvasWidth)
             width = PlottingSurface.minCanvasWidth;
         return { width, height: PlottingSurface.canvasHeight };
     }
 
-    public static getDefaultChartSize(page: FullPage): Size {
-        const canvasSize = PlottingSurface.getDefaultCanvasSize(page);
+    public static getDefaultChartSize(pageWidth: number): Size {
+        const canvasSize = PlottingSurface.getDefaultCanvasSize(pageWidth);
         const width = canvasSize.width - PlottingSurface.leftMargin - PlottingSurface.rightMargin;
         const height = canvasSize.height - PlottingSurface.topMargin - PlottingSurface.bottomMargin;
         return { width, height };
@@ -93,7 +93,7 @@ export class PlottingSurface implements IHtmlElement {
     public clear() {
         if (this.svgCanvas != null)
             this.svgCanvas.remove();
-        const size = PlottingSurface.getDefaultCanvasSize(this.page);
+        const size = PlottingSurface.getDefaultCanvasSize(this.page.getWidthInPixels());
         this.size.width = Math.max(PlottingSurface.minCanvasWidth, size.width);
 
         this.svgCanvas = d3select(this.topLevel)

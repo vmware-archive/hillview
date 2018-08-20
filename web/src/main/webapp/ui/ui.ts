@@ -28,6 +28,25 @@ import {ScaleLinear as D3ScaleLinear, ScaleTime as D3ScaleTime} from "d3-scale";
 export type ViewKind = "Table" | "Histogram" | "2DHistogram" | "Heatmap" |
     "Trellis" | "HeavyHitters" | "LAMP" | "Schema" | "Load" | "SVD Spectrum";
 
+// Using an interface for emulating named arguments
+// otherwise it's hard to remember the order of all these booleans.
+export interface HistogramOptions {
+    exact: boolean;  // exact histogram
+    reusePage: boolean;   // reuse the original page
+}
+
+export enum ChartKind {
+    Histogram,
+    Heatmap,
+    TrellisHistogram,
+    TrellisHeatmap
+}
+
+export interface ChartOptions extends HistogramOptions {
+    chartKind: ChartKind;
+    relative: boolean;  // draw a relative 2D histogram
+}
+
 /**
  * Interface implemented by TypeScript objects that have an HTML rendering.
  * This returns the root of the HTML rendering.
@@ -120,6 +139,7 @@ export class Resolution {
     public static readonly mouseDotRadius = 3;        // Size of dots that show mouse position
     public static readonly legendBarWidth = 500;
     public static readonly legendSpaceHeight = 60;
+    public static readonly minTrellisWindowSize = 200;
 }
 
 export type D3Axis = any;  // d3 axis; perhaps some day we will be aboe to use a better type
