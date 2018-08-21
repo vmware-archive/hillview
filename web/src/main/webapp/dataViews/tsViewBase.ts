@@ -177,7 +177,7 @@ export abstract class TSViewBase extends BigTableView {
 
     protected histogram2D(cds: IColumnDescription[]): void {
         const buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
-        const rr = this.getDataRanges2D(cds, buckets);
+        const rr = this.getDataRanges(cds, buckets);
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema, 0, cds, null, {
             reusePage: false, relative: false,
             chartKind: ChartKind.Histogram, exact: false
@@ -186,7 +186,7 @@ export abstract class TSViewBase extends BigTableView {
 
     protected trellis2D(cds: IColumnDescription[]): void {
         const buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
-        const rr = this.getDataRanges2D(cds, buckets);
+        const rr = this.getDataRanges(cds, buckets);
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema, 0, cds, null, {
             reusePage: false, relative: false,
             chartKind: ChartKind.TrellisHistogram, exact: false
@@ -194,7 +194,12 @@ export abstract class TSViewBase extends BigTableView {
     }
 
     protected trellis3D(cds: IColumnDescription[]): void {
-        // TODO
+        const buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
+        const rr = this.getDataRanges(cds, buckets);
+        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema, 0, cds, null, {
+            reusePage: false, relative: false,
+            chartKind: ChartKind.TrellisHistogram, exact: false
+        }));
     }
 
     protected histogram(columns: string[]): void {
@@ -218,7 +223,7 @@ export abstract class TSViewBase extends BigTableView {
     protected heatmap(columns: string[]) {
         const cds = this.schema.getDescriptions(columns);
         const buckets = HistogramViewBase.maxHeatmapBuckets(this.page);
-        const rr = this.getDataRanges2D(cds, buckets);
+        const rr = this.getDataRanges(cds, buckets);
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema, 0, cds, null, {
             reusePage: false,
             relative: false,

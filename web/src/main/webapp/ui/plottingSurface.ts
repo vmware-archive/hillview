@@ -74,6 +74,7 @@ export class PlottingSurface implements IHtmlElement {
         this.setMargins(PlottingSurface.topMargin, PlottingSurface.rightMargin,
             PlottingSurface.bottomMargin, PlottingSurface.leftMargin);
         this.size = PlottingSurface.getDefaultCanvasSize(this.page.getWidthInPixels());
+        this.size.width = Math.max(PlottingSurface.minCanvasWidth, this.size.width);
     }
 
     public static getDefaultCanvasSize(pageWidth: number): Size {
@@ -93,8 +94,6 @@ export class PlottingSurface implements IHtmlElement {
     public clear() {
         if (this.svgCanvas != null)
             this.svgCanvas.remove();
-        const size = PlottingSurface.getDefaultCanvasSize(this.page.getWidthInPixels());
-        this.size.width = Math.max(PlottingSurface.minCanvasWidth, size.width);
 
         this.svgCanvas = d3select(this.topLevel)
             .append("svg")
@@ -144,6 +143,13 @@ export class PlottingSurface implements IHtmlElement {
      */
     public setHeight(height: number): void {
         this.size.height = height;
+    }
+
+    /**
+     * Set the canvas size. This does not trigger a redraw.
+     */
+    public setSize(size: Size): void {
+        this.size = size;
     }
 
     /**

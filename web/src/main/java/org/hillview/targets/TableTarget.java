@@ -20,10 +20,8 @@ package org.hillview.targets;
 import com.google.gson.JsonObject;
 import org.hillview.*;
 import org.hillview.dataset.ConcurrentSketch;
-import org.hillview.dataset.api.IDataSet;
-import org.hillview.dataset.api.IJson;
-import org.hillview.dataset.api.ISketch;
-import org.hillview.dataset.api.Pair;
+import org.hillview.dataset.TripleSketch;
+import org.hillview.dataset.api.*;
 import org.hillview.maps.*;
 import org.hillview.sketches.*;
 import org.hillview.table.*;
@@ -176,6 +174,7 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     public void getDataRanges2D(RpcRequest request, RpcRequestContext context) {
         RangeArgs[] args = request.parseArgs(RangeArgs[].class);
+        assert args.length == 2;
         ISketch<ITable, BucketsInfo> sk0 = args[0].getSketch();
         ISketch<ITable, BucketsInfo> sk1 = args[1].getSketch();
         BiFunction<BucketsInfo, HillviewComputation, BucketsInfo> post0 = args[0].getPostProcessing();
@@ -189,6 +188,30 @@ public final class TableTarget extends RpcTarget {
             result.add(post1.apply(e.second, c));
             return result;
         };
+        this.runCompleteSketch(this.table, csk, post, request, context);
+    }
+
+    @HillviewRpc
+    public void getDataRanges3D(RpcRequest request, RpcRequestContext context) {
+        RangeArgs[] args = request.parseArgs(RangeArgs[].class);
+        assert args.length == 3;
+        ISketch<ITable, BucketsInfo> sk0 = args[0].getSketch();
+        ISketch<ITable, BucketsInfo> sk1 = args[1].getSketch();
+        ISketch<ITable, BucketsInfo> sk2 = args[2].getSketch();
+        BiFunction<BucketsInfo, HillviewComputation, BucketsInfo> post0 = args[0].getPostProcessing();
+        BiFunction<BucketsInfo, HillviewComputation, BucketsInfo> post1 = args[1].getPostProcessing();
+        BiFunction<BucketsInfo, HillviewComputation, BucketsInfo> post2 = args[2].getPostProcessing();
+        TripleSketch<ITable, BucketsInfo, BucketsInfo, BucketsInfo> csk =
+                new TripleSketch<ITable, BucketsInfo, BucketsInfo, BucketsInfo>(sk0, sk1, sk2);
+        BiFunction<Triple<BucketsInfo, BucketsInfo, BucketsInfo>, HillviewComputation,
+                JsonList<BucketsInfo>> post =
+                (e, c) -> {
+                    JsonList<BucketsInfo> result = new JsonList<BucketsInfo>(3);
+                    result.add(post0.apply(e.first, c));
+                    result.add(post1.apply(e.second, c));
+                    result.add(post2.apply(e.third, c));
+                    return result;
+                };
         this.runCompleteSketch(this.table, csk, post, request, context);
     }
 
@@ -254,24 +277,20 @@ public final class TableTarget extends RpcTarget {
         this.runSketch(this.table, csk, request, context);
     }
 
-    /*
     @HillviewRpc
     public void heatMap3D(RpcRequest request, RpcRequestContext context) {
-        Histogram3DArgs info = request.parseArgs(Histogram3DArgs.class);
-        assert info.first != null;
-        assert info.second != null;
-        assert info.third != null;
+        HistogramArgs[] info = request.parseArgs(HistogramArgs[].class);
+        assert info.length == 3;
         HeatMap3DSketch sk = new HeatMap3DSketch(
-                info.first.getBuckets(info.xBucketCount),
-                info.second.getBuckets(info.yBucketCount),
-                info.third.getBuckets(info.zBucketCount),
-                info.first.columnName,
-                info.second.columnName,
-                info.third.columnName,
-                info.samplingRate, info.seed);
+                info[0].getBuckets(),
+                info[1].getBuckets(),
+                info[2].getBuckets(),
+                info[0].cd.name,
+                info[1].cd.name,
+                info[2].cd.name,
+                info[0].samplingRate, info[0].seed);
         this.runSketch(this.table, sk, request, context);
     }
-    */
 
     @HillviewRpc
     public void filterEquality(RpcRequest request, RpcRequestContext context) {

@@ -109,6 +109,12 @@ export class HistogramView extends HistogramViewBase {
                     action: () => this.chooseSecondColumn(),
                     help: "Draw a 2-dimensional histogram using this data and another column.",
                 },
+                { text: "group by...",
+                    action: () => {
+                        this.trellis();
+                    },
+                    help: "Group data by a third column.",
+                },
             ]) },
             this.dataset.combineMenu(this, page.pageId),
         ]);
@@ -139,7 +145,7 @@ export class HistogramView extends HistogramViewBase {
         return hv;
     }
 
-    protected static coarsen(cdf: HistogramBase, bucketCount: number): HistogramBase {
+    public static coarsen(cdf: HistogramBase, bucketCount: number): HistogramBase {
         const cdfBucketCount = cdf.buckets.length;
         if (bucketCount === cdfBucketCount)
             return cdf;
@@ -274,6 +280,36 @@ export class HistogramView extends HistogramViewBase {
         this.summary.innerHTML = summary;
     }
 
+    public trellis(): void {
+        const columns: string[] = [];
+        for (let i = 0; i < this.schema.length; i++) {
+            const col = this.schema.get(i);
+            if (col.name !== this.currentData.axisData.description.name)
+                columns.push(this.schema.displayName(col.name));
+        }
+        if (columns.length === 0) {
+            this.page.reportError("No acceptable columns found");
+            return;
+        }
+
+        const dialog = new Dialog("Choose column", "Select a column to group on.");
+        dialog.addSelectField("column", "column", columns, null,
+            "The column that will be used to group on.");
+        dialog.setAction(() => this.showTrellis(dialog.getFieldValue("column")));
+        dialog.show();
+    }
+
+    private showTrellis(colName: string) {
+        const groupBy = this.schema.findByDisplayName(colName);
+        const cds: IColumnDescription[] = [this.currentData.axisData.description, groupBy];
+        const buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
+        const rr = this.getDataRanges(cds, buckets);
+        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema, 0, cds, null, {
+            reusePage: false, relative: false,
+            chartKind: ChartKind.TrellisHistogram, exact: false
+        }));
+    }
+
     // combine two views according to some operation
     public combine(how: CombineOperators): void {
         const r = this.dataset.getSelected();
@@ -341,7 +377,7 @@ export class HistogramView extends HistogramViewBase {
         const oc = this.schema.find(colName);
         const cds: IColumnDescription[] = [this.currentData.axisData.description, oc];
         const buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
-        const rr = this.getDataRanges2D(cds, buckets);
+        const rr = this.getDataRanges(cds, buckets);
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
             this.currentData.histogram.buckets.length, cds, null, {
             reusePage: false,

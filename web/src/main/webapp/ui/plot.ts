@@ -19,7 +19,6 @@ import {PlottingSurface} from "./plottingSurface";
 import {AxisData} from "../dataViews/axisData";
 import {D3Axis, D3SvgElement} from "./ui";
 
-
 /**
  * Abstract base class for all plots.
  * A plot just contains an image, but no event handling.
@@ -67,8 +66,8 @@ export abstract class Plot {
     }
 
     protected drawAxes(): void {
-        let yAxis = this.getYAxis();
-        let xAxis = this.getXAxis();
+        const yAxis = this.getYAxis();
+        const xAxis = this.getXAxis();
         if (yAxis != null)
             this.yAxisRepresentation = this.plottingSurface.getChart()
                 .append("g")

@@ -124,7 +124,7 @@ export class HeatmapView extends BigTableView {
                 help: "Show this data as a two-dimensional histogram.",
             },
             {
-                text: "group by",
+                text: "group by...",
                 action: () => {
                     this.trellis();
                 },
@@ -290,7 +290,7 @@ export class HeatmapView extends BigTableView {
 
         const hv = new HeatmapView(ser.remoteObjectId, ser.rowCount, schema, page);
         const buckets = HistogramViewBase.maxHeatmapBuckets(page);
-        const rr = hv.getDataRanges2D(cds, buckets);
+        const rr = hv.getDataRanges(cds, buckets);
         rr.invoke(new DataRangesCollector(hv, hv.page, rr, schema, 0, cds, null, {
             reusePage: true,
             relative: false,
@@ -304,7 +304,7 @@ export class HeatmapView extends BigTableView {
     public histogram(): void {
         const buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
         const cds = [this.currentData.xData.description, this.currentData.yData.description];
-        const rr = this.getDataRanges2D(cds, buckets);
+        const rr = this.getDataRanges(cds, buckets);
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema, 0, cds, null, {
             reusePage: false,
             relative: false,
@@ -329,7 +329,7 @@ export class HeatmapView extends BigTableView {
 
         const dialog = new Dialog("Choose column", "Select a column to group on.");
         dialog.addSelectField("column", "column", columns, null,
-            "The categorical column that will be used to group on.");
+            "The column that will be used to group on.");
         dialog.setAction(() => this.showTrellis(dialog.getFieldValue("column")));
         dialog.show();
     }
@@ -435,7 +435,7 @@ export class HeatmapView extends BigTableView {
         const cds: IColumnDescription[] = [
             this.currentData.yData.description, this.currentData.xData.description];
         const buckets = HistogramViewBase.maxHeatmapBuckets(this.page);
-        const rr = this.getDataRanges2D(cds, buckets);
+        const rr = this.getDataRanges(cds, buckets);
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema, 0, cds, null, {
             chartKind: ChartKind.Heatmap,
             exact: true,

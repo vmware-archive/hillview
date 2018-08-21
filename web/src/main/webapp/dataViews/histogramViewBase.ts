@@ -255,12 +255,24 @@ export abstract class HistogramViewBase extends BigTableView {
 
     /**
      * The max number of buckets to use when requesting the range of
-     * data for displaying a 2D Trellism plot.
+     * data for displaying a 2D Trellis plot.
      */
     public static maxTrellis2DBuckets(page: FullPage): [number, number] {
-        // On the horizontal axis we get the maximum resolution, which we will use for
-        // deriving the CDF curve.  On the vertical axis we use a smaller number.
-        return [page.getWidthInPixels(), page.getWidthInPixels()];
+        const width = page.getWidthInPixels();
+        const maxWindows = Math.floor(width / Resolution.minTrellisWindowSize) *
+            Math.floor(PlottingSurface.getDefaultCanvasSize(width).height / Resolution.minTrellisWindowSize);
+        return [page.getWidthInPixels(), maxWindows];
+    }
+
+    /**
+     * The max number of buckets to use when requesting the range of
+     * data for displaying a 3D Trellism plot.
+     */
+    public static maxTrellis3DBuckets(page: FullPage): [number, number, number] {
+        const width = page.getWidthInPixels();
+        const maxWindows = Math.floor(width / Resolution.minTrellisWindowSize) *
+            Math.floor(PlottingSurface.getDefaultCanvasSize(width).height / Resolution.minTrellisWindowSize);
+        return [page.getWidthInPixels(), Resolution.maxBucketCount, maxWindows];
     }
 }
 

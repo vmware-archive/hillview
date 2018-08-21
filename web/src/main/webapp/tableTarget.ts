@@ -86,7 +86,7 @@ export class TableTargetAPI extends RemoteObject {
             "getDataRange", args);
     }
 
-    public getDataRanges2D(cds: IColumnDescription[], buckets: number[]):
+    public getDataRanges(cds: IColumnDescription[], buckets: number[]):
         RpcRequest<PartialResult<DataRange[]>> {
         console.assert(cds.length === buckets.length);
         const args: RangeArgs[] = [];
@@ -100,7 +100,8 @@ export class TableTargetAPI extends RemoteObject {
             };
             args.push(arg);
         }
-        return this.createStreamingRpcRequest<DataRange>("getDataRanges2D", args);
+        const method = cds.length === 3 ? "getDataRanges3D" : "getDataRanges2D";
+        return this.createStreamingRpcRequest<DataRange>(method, args);
     }
 
     public createNextKRequest(order: RecordOrder, firstRow: any[] | null, rowCount: number):

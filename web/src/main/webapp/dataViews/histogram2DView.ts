@@ -57,6 +57,12 @@ import {AxisData} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
 import {HeatMapRenderer} from "./heatmapView";
+import {
+    TrellisHistogramRenderer,
+    TrellisLayoutComputation,
+    TrellisShape
+} from "./trellisHistogramView";
+import {Dialog} from "../ui/dialog";
 
 /**
  * This class is responsible for rendering a 2D histogram.
@@ -128,6 +134,11 @@ export class Histogram2DView extends HistogramViewBase {
                 text: "heatmap",
                 action: () => { this.heatmap(); },
                 help: "Plot this data as a heatmap view.",
+            }, { text: "group by...",
+                action: () => {
+                    this.trellis();
+                },
+                help: "Group data by a third column.",
             }, {
                 text: "relative/absolute",
                 action: () => this.toggleNormalize(),
@@ -188,7 +199,7 @@ export class Histogram2DView extends HistogramViewBase {
             .on("drag", () => this.dragMove())
             .on("end", () => this.dragCanvasEnd());
 
-        this.plot.setData(heatmap, cdf, xData, yData, samplingRate, this.relative);
+        this.plot.setData(heatmap, xData, samplingRate, this.relative);
         this.plot.draw();
         const discrete = kindIsString(this.currentData.xAxisData.description.kind) ||
             this.currentData.xAxisData.description.kind === "Integer";
@@ -264,7 +275,7 @@ export class Histogram2DView extends HistogramViewBase {
 
         const hv = new Histogram2DView(ser.remoteObjectId, ser.rowCount, schema, page);
         const buckets = HistogramViewBase.maxHistogram2DBuckets(page);
-        const rr = hv.getDataRanges2D(cds, buckets);
+        const rr = hv.getDataRanges(cds, buckets);
         rr.invoke(new DataRangesCollector(hv, hv.page, rr, hv.schema, xPoints, cds, null, {
             reusePage: true,
             relative: relative,
@@ -272,6 +283,40 @@ export class Histogram2DView extends HistogramViewBase {
             exact: exact
         }));
         return hv;
+    }
+
+    public trellis(): void {
+        const columns: string[] = [];
+        for (let i = 0; i < this.schema.length; i++) {
+            const col = this.schema.get(i);
+            if (col.name !== this.currentData.xAxisData.description.name &&
+                col.name !== this.currentData.yData.description.name)
+                columns.push(this.schema.displayName(col.name));
+        }
+        if (columns.length === 0) {
+            this.page.reportError("No acceptable columns found");
+            return;
+        }
+
+        const dialog = new Dialog("Choose column", "Select a column to group on.");
+        dialog.addSelectField("column", "column", columns, null,
+            "The column that will be used to group on.");
+        dialog.setAction(() => this.showTrellis(dialog.getFieldValue("column")));
+        dialog.show();
+    }
+
+    private showTrellis(colName: string) {
+        const groupBy = this.schema.findByDisplayName(colName);
+        const cds: IColumnDescription[] = [
+            this.currentData.xAxisData.description,
+            this.currentData.yData.description,
+            groupBy];
+        const buckets = HistogramViewBase.maxTrellis3DBuckets(this.page);
+        const rr = this.getDataRanges(cds, buckets);
+        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema, 0, cds, null, {
+            reusePage: false, relative: false,
+            chartKind: ChartKind.TrellisHistogram, exact: false
+        }));
     }
 
     public toggleNormalize(): void {
@@ -287,7 +332,7 @@ export class Histogram2DView extends HistogramViewBase {
     public heatmap(): void {
         const cds = [this.currentData.xAxisData.description, this.currentData.yData.description];
         const buckets = HistogramViewBase.maxHeatmapBuckets(this.page);
-        const rr = this.getDataRanges2D(cds, buckets);
+        const rr = this.getDataRanges(cds, buckets);
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema, 0, cds, null, {
             reusePage: false,
             relative: false,
@@ -357,7 +402,7 @@ export class Histogram2DView extends HistogramViewBase {
             return;
         const cds = [this.currentData.yData.description, this.currentData.xAxisData.description];
         const buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
-        const rr = this.getDataRanges2D(cds, buckets);
+        const rr = this.getDataRanges(cds, buckets);
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema, 0, cds, null, {
             reusePage: true, relative: this.relative,
             chartKind: ChartKind.Histogram, exact: this.samplingRate >= 1.0
@@ -369,7 +414,7 @@ export class Histogram2DView extends HistogramViewBase {
             return;
         const cds = [this.currentData.yData.description, this.currentData.xAxisData.description];
         const buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
-        const rr = this.getDataRanges2D(cds, buckets);
+        const rr = this.getDataRanges(cds, buckets);
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
             this.currentData.xPoints, cds, this.page.title, {
             reusePage: true,
@@ -382,7 +427,7 @@ export class Histogram2DView extends HistogramViewBase {
     public changeBuckets(bucketCount: number): void {
         const cds = [this.currentData.yData.description, this.currentData.xAxisData.description];
         const buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
-        const rr = this.getDataRanges2D(cds, buckets);
+        const rr = this.getDataRanges(cds, buckets);
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
             bucketCount, cds, null, {
             reusePage: true,
@@ -665,9 +710,13 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
         super(page, operation, "histogram");
     }
 
-    private trellisLayout(windows: number): [number, number, Size] {
-        // TODO
-        return [5, 3, { width: 100, height: 100 }];
+    private trellisLayout(windows: number): TrellisShape {
+        const chartSize = PlottingSurface.getDefaultChartSize(this.page.getWidthInPixels());
+        const tlc = new TrellisLayoutComputation(
+            chartSize.width, Resolution.minTrellisWindowSize,
+            chartSize.height, Resolution.minTrellisWindowSize,
+            1.2);
+        return tlc.getShape(windows);
     }
 
     public run(ranges: DataRange[]): void {
@@ -692,13 +741,23 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                         windows = Math.min(maxWindows, ranges[1].max - ranges[1].min + 1);
                     else
                         windows = maxWindows;
-                    const [xCount, yCount, wSize] = this.trellisLayout(windows);
-                    if (xCount * yCount < windows)
-                        windows = xCount * yCount;
-
+                    const trellisShape = this.trellisLayout(windows);
+                    if (trellisShape.xNum * trellisShape.yNum < windows)
+                        windows = trellisShape.xNum * trellisShape.yNum;
+                    const wSize: Size = trellisShape.size;
                     const xArg = HistogramViewBase.computeHistogramArgs(
                         this.cds[0], ranges[0], 0, false, wSize);
-                    // TODO
+                    const wArg = HistogramViewBase.computeHistogramArgs(
+                        this.cds[1], ranges[1], windows, false, wSize);
+                    // we swapped the arguments
+                    const args = [wArg, xArg];
+                    const rr = this.originator.createHeatMapRequest(args);
+                    const renderer = new TrellisHistogramRenderer(this.page,
+                        this.originator, rowCount, this.schema,
+                        this.cds, ranges, 1.0, trellisShape, rr, this.options.reusePage);
+                    rr.chain(this.operation);
+                    rr.invoke(renderer);
+                    break;
                 } else if (ranges.length === 3) {
                     // TODO
                 } else {
@@ -803,7 +862,7 @@ export class Filter2DReceiver extends BaseRenderer {
                 console.assert(false);
                 return;
         }
-        const rr = this.remoteObject.getDataRanges2D(cds, buckets);
+        const rr = this.remoteObject.getDataRanges(cds, buckets);
         rr.invoke(new DataRangesCollector(this.remoteObject, this.page, rr, this.schema,
             this.bucketCount, cds, this.title, this.options));
     }
@@ -838,7 +897,7 @@ export class MakeHistogramOrHeatmap extends BaseRenderer {
                 console.assert(false);
                 return;
         }
-        const rr = this.remoteObject.getDataRanges2D(this.cds, buckets);
+        const rr = this.remoteObject.getDataRanges(this.cds, buckets);
         rr.invoke(new DataRangesCollector(this.remoteObject, this.page, rr, this.schema, 0,
             this.cds, null, this.options));
     }

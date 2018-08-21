@@ -21,7 +21,7 @@ import {scaleLinear as d3scaleLinear} from "d3-scale";
 import {AxisData} from "../dataViews/axisData";
 import {Histogram2DView} from "../dataViews/histogram2DView";
 import {HistogramViewBase} from "../dataViews/histogramViewBase";
-import {HeatMap, HistogramBase} from "../javaBridge";
+import {HeatMap} from "../javaBridge";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {D3Axis, D3Scale} from "./ui";
@@ -49,14 +49,8 @@ interface Rect {
 }
 
 export class Histogram2DPlot extends Plot {
-    /**
-     * A 2D histogram contains a heatmap for the data, a 1D Histogram for the misisng data,
-     * a cdf, and a missing count.
-     */
     protected heatmap: HeatMap;
-    protected cdf: HistogramBase;
     protected xAxisData: AxisData;
-    protected yAxisData: AxisData;
     protected samplingRate: number;
     protected normalized: boolean;
     protected missingDisplayed: number;
@@ -69,13 +63,11 @@ export class Histogram2DPlot extends Plot {
         super(plottingSurface);
     }
 
-    public setData(heatmap: HeatMap, cdf: HistogramBase,
-                   xAxisData: AxisData, yAxisData: AxisData, samplingRate: number,
+    public setData(heatmap: HeatMap,
+                   xAxisData: AxisData, samplingRate: number,
                    normalized: boolean): void {
         this.heatmap = heatmap;
-        this.cdf = cdf;
         this.xAxisData = xAxisData;
-        this.yAxisData = yAxisData;
         this.samplingRate = samplingRate;
         this.normalized = normalized;
     }
