@@ -18,7 +18,7 @@
 package org.hillview.test;
 
 import org.hillview.sketches.DoubleHistogramBuckets;
-import org.hillview.sketches.HeatMap;
+import org.hillview.sketches.Heatmap;
 import org.hillview.sketches.Histogram;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Table;
@@ -64,28 +64,28 @@ public class HistogramTest extends BaseTest {
     }
 
     @Test
-    public void testHeatMap() {
+    public void testHeatmap() {
         final int bucketNum = 110;
         final int colSize = 10000;
         DoubleHistogramBuckets buckDes1 = new DoubleHistogramBuckets(0, 100, bucketNum);
         DoubleHistogramBuckets buckDes2 = new DoubleHistogramBuckets(0, 100, bucketNum);
-        HeatMap hm = new HeatMap(buckDes1, buckDes2);
+        Heatmap hm = new Heatmap(buckDes1, buckDes2);
         DoubleArrayColumn col1 = DoubleArrayTest.generateDoubleArray(colSize, 5);
         DoubleArrayColumn col2 = DoubleArrayTest.generateDoubleArray(colSize, 3);
         FullMembershipSet fMap = new FullMembershipSet(colSize);
-        hm.createHeatMap(col1, col2, fMap, 1.0, 0, false);
-        basicTestHeatMap(hm, colSize);
-        HeatMap hm1 = new HeatMap(buckDes1, buckDes2);
+        hm.createHeatmap(col1, col2, fMap, 1.0, 0, false);
+        basicTestHeatmap(hm, colSize);
+        Heatmap hm1 = new Heatmap(buckDes1, buckDes2);
         DoubleArrayColumn col3 = DoubleArrayTest.generateDoubleArray(2 * colSize, 100);
         DoubleArrayColumn col4 = DoubleArrayTest.generateDoubleArray(2 * colSize, 100);
         FullMembershipSet fMap1 = new FullMembershipSet(2 * colSize);
-        hm1.createHeatMap(col3, col4, fMap1, 0.1, 0, false);
-        basicTestHeatMap(hm1, 2 * colSize);
-        HeatMap hm2 = hm.union(hm1);
-        basicTestHeatMap(hm2, 3 * colSize);
+        hm1.createHeatmap(col3, col4, fMap1, 0.1, 0, false);
+        basicTestHeatmap(hm1, 2 * colSize);
+        Heatmap hm2 = hm.union(hm1);
+        basicTestHeatmap(hm2, 3 * colSize);
     }
 
-    static void basicTestHeatMap(HeatMap hist, long expectedSize) {
+    static void basicTestHeatmap(Heatmap hist, long expectedSize) {
         long size = 0;
         long size1 = 0;
         long size2 = 0;
@@ -129,8 +129,8 @@ public class HistogramTest extends BaseTest {
         Table t = new Table(cols, null, null);
         DoubleHistogramBuckets buckDes1 = new DoubleHistogramBuckets(0, 2, 3);
         DoubleHistogramBuckets buckDes2 = new DoubleHistogramBuckets(0, 1, 2);
-        HeatMap hm = new HeatMap(buckDes1, buckDes2);
-        hm.createHeatMap(col0, col1, new
+        Heatmap hm = new Heatmap(buckDes1, buckDes2);
+        hm.createHeatmap(col0, col1, new
                 FullMembershipSet(col0.sizeInRows()), 1.0, 0, false);
         Histogram h1 = hm.getMissingHistogramD1();
         Histogram h2 = hm.getMissingHistogramD2();

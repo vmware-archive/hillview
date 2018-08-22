@@ -17,10 +17,12 @@
 
 import {axisBottom as d3axisBottom} from "d3-axis";
 import {scaleLinear as d3scaleLinear, scaleLog as d3scaleLog} from "d3-scale";
-import {interpolateCool as d3interpolateCool,
-    interpolateWarm as d3interpolateWarm} from "d3-scale-chromatic";
+import {
+    interpolateCool as d3interpolateCool,
+    interpolateWarm as d3interpolateWarm
+} from "d3-scale-chromatic";
 import {event as d3event} from "d3-selection";
-import {AxisData} from "../dataViews/axisData";
+import {AxisData, AxisKind} from "../dataViews/axisData";
 import {Histogram2DView} from "../dataViews/histogram2DView";
 import {assert} from "../util";
 import {ContextMenu} from "./menu";
@@ -68,13 +70,13 @@ export class HistogramLegendPlot extends Plot {
         this.legendRect = new Rectangle({ x: this.x, y: this.y }, { width: this.width, height: this.height });
         const canvas = this.plottingSurface.getCanvas();
 
-        this.colorWidth = this.width / this.axisData.cdfBucketCount;
-        for (let i = 0; i < this.axisData.cdfBucketCount; i++) {
+        this.colorWidth = this.width / this.axisData.bucketCount;
+        for (let i = 0; i < this.axisData.bucketCount; i++) {
             let color: string;
-            if (this.axisData.cdfBucketCount === 1)
+            if (this.axisData.bucketCount === 1)
                 color = Histogram2DView.colorMap(0);
             else
-                color = Histogram2DView.colorMap(i / (this.axisData.cdfBucketCount - 1));
+                color = Histogram2DView.colorMap(i / (this.axisData.bucketCount - 1));
             canvas.append("rect")
                 .attr("width", this.colorWidth)
                 .attr("height", this.height)
@@ -84,7 +86,7 @@ export class HistogramLegendPlot extends Plot {
             x += this.colorWidth;
         }
 
-        this.axisData.setResolution(this.legendRect.width(), true, true);
+        this.axisData.setResolution(this.legendRect.width(), AxisKind.Legend);
         canvas.append("g")
             .attr("transform", `translate(${this.legendRect.lowerLeft().x},
                                           ${this.legendRect.lowerLeft().y})`)

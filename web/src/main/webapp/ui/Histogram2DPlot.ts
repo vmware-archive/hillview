@@ -18,10 +18,10 @@
 import {axisLeft as d3axisLeft} from "d3-axis";
 import {format as d3format} from "d3-format";
 import {scaleLinear as d3scaleLinear} from "d3-scale";
-import {AxisData} from "../dataViews/axisData";
+import {AxisData, AxisKind} from "../dataViews/axisData";
 import {Histogram2DView} from "../dataViews/histogram2DView";
 import {HistogramViewBase} from "../dataViews/histogramViewBase";
-import {HeatMap} from "../javaBridge";
+import {Heatmap} from "../javaBridge";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {D3Axis, D3Scale} from "./ui";
@@ -49,7 +49,7 @@ interface Rect {
 }
 
 export class Histogram2DPlot extends Plot {
-    protected heatmap: HeatMap;
+    protected heatmap: Heatmap;
     protected xAxisData: AxisData;
     protected samplingRate: number;
     protected normalized: boolean;
@@ -63,7 +63,7 @@ export class Histogram2DPlot extends Plot {
         super(plottingSurface);
     }
 
-    public setData(heatmap: HeatMap,
+    public setData(heatmap: Heatmap,
                    xAxisData: AxisData, samplingRate: number,
                    normalized: boolean): void {
         this.heatmap = heatmap;
@@ -123,7 +123,7 @@ export class Histogram2DPlot extends Plot {
             .tickFormat(d3format(".2s"));
 
         const bucketCount = xPoints;
-        this.xAxisData.setResolution(this.getChartWidth(), true, false);
+        this.xAxisData.setResolution(this.getChartWidth(), AxisKind.Bottom);
 
         this.plottingSurface.getCanvas().append("text")
             .text(this.xAxisData.description.name)

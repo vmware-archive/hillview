@@ -24,7 +24,7 @@ import java.io.Serializable;
 /**
  * A 3-dimensional histogram.
  */
-public class HeatMap3D implements Serializable, IJson {
+public class Heatmap3D implements Serializable, IJson {
     private final long[][][] buckets;
     private long eitherMissing; // number of items missing in either of the columns
     private long outOfRange;
@@ -33,7 +33,7 @@ public class HeatMap3D implements Serializable, IJson {
     private final IHistogramBuckets bucketDescDim3;
     private long totalPresent; // number of items that have no missing values in either column
 
-    HeatMap3D(final IHistogramBuckets buckets1,
+    Heatmap3D(final IHistogramBuckets buckets1,
               final IHistogramBuckets buckets2,
               final IHistogramBuckets buckets3) {
         this.bucketDescDim1 = buckets1;
@@ -42,7 +42,7 @@ public class HeatMap3D implements Serializable, IJson {
         this.buckets = new long[buckets1.getNumOfBuckets()][buckets2.getNumOfBuckets()][buckets3.getNumOfBuckets()];
     }
 
-    void createHeatMap(
+    void createHeatmap(
             final IColumn columnD1, final IColumn columnD2, final IColumn columnD3,
             final IMembershipSet membershipSet,
             final double samplingRate,
@@ -83,8 +83,8 @@ public class HeatMap3D implements Serializable, IJson {
      * @param  otherHeatmap3D with the same bucketDescriptions
      * @return a new HeatMap3D which is the union of this and otherHeatmap3D
      */
-    public HeatMap3D union(HeatMap3D otherHeatmap3D) {
-        HeatMap3D unionH = new HeatMap3D(this.bucketDescDim1, this.bucketDescDim2, this.bucketDescDim3);
+    public Heatmap3D union(Heatmap3D otherHeatmap3D) {
+        Heatmap3D unionH = new Heatmap3D(this.bucketDescDim1, this.bucketDescDim2, this.bucketDescDim3);
         for (int i = 0; i < unionH.bucketDescDim1.getNumOfBuckets(); i++)
             for (int j = 0; j < unionH.bucketDescDim2.getNumOfBuckets(); j++)
                 for (int k = 0; k < unionH.bucketDescDim3.getNumOfBuckets(); k++)

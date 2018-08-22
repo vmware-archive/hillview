@@ -21,56 +21,42 @@ import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.List;
 
-public class HeatMap3DSketch implements ISketch<ITable, HeatMap3D> {
+public class HeatmapSketch implements ISketch<ITable, Heatmap> {
     private final IHistogramBuckets bucketDescD1;
     private final IHistogramBuckets bucketDescD2;
-    private final IHistogramBuckets bucketDescD3;
+    private final String col0;
     private final String col1;
-    private final String col2;
-    private final String col3;
     private final double rate;
     private final long seed;
 
-    public HeatMap3DSketch(IHistogramBuckets bucketDesc1,
-                           IHistogramBuckets bucketDesc2,
-                           IHistogramBuckets bucketDesc3,
-                           String col1,
-                           String col2,
-                           String col3,
-                           double rate, long seed) {
+    public HeatmapSketch(IHistogramBuckets bucketDesc1, IHistogramBuckets bucketDesc2,
+                         String col0, String col1,
+                         double rate, long seed) {
         this.bucketDescD1 = bucketDesc1;
         this.bucketDescD2 = bucketDesc2;
-        this.bucketDescD3 = bucketDesc3;
+        this.col0 = col0;
         this.col1 = col1;
-        this.col2 = col2;
-        this.col3 = col3;
         this.rate = rate;
         this.seed = seed;
     }
 
     @Override
-    public HeatMap3D create(final ITable data) {
-        List<String> colNames = new ArrayList<String>(3);
-        colNames.add(this.col1);
-        colNames.add(this.col2);
-        colNames.add(this.col3);
-        List<IColumn> cols = data.getLoadedColumns(colNames);
-        HeatMap3D result = this.getZero();
-        result.createHeatMap(cols.get(0), cols.get(1), cols.get(2),
-                data.getMembershipSet(), this.rate, this.seed, true);
+    public Heatmap create(final ITable data) {
+        Heatmap result = this.getZero();
+        IColumn c0  = data.getLoadedColumn(this.col0);
+        IColumn c1  = data.getLoadedColumn(this.col1);
+        result.createHeatmap(c0, c1, data.getMembershipSet(), this.rate, this.seed, false);
         return result;
     }
 
     @Override
-    public HeatMap3D zero() {
-        return new HeatMap3D(this.bucketDescD1, this.bucketDescD2, this.bucketDescD3);
+    public Heatmap zero() {
+        return new Heatmap(this.bucketDescD1, this.bucketDescD2);
     }
 
     @Override
-    public HeatMap3D add(@Nullable final HeatMap3D left, @Nullable final HeatMap3D right) {
+    public Heatmap add(@Nullable final Heatmap left, @Nullable final Heatmap right) {
         assert left != null;
         assert right != null;
         return left.union(right);

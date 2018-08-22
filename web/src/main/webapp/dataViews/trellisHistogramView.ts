@@ -19,8 +19,8 @@ import {Receiver} from "../rpc";
 import {
     CombineOperators,
     DataRange,
-    HeatMap, HistogramBase,
-    IColumnDescription,
+    Heatmap, HistogramBase,
+    IColumnDescription, kindIsString,
     RemoteObjectId
 } from "../javaBridge";
 import {FullPage} from "../ui/fullPage";
@@ -30,31 +30,35 @@ import {ICancellable, PartialResult} from "../util";
 import {AxisData} from "./axisData";
 import {HistogramSerialization, IViewSerialization} from "../datasetView";
 import {IDataView} from "../ui/dataview";
-import {Resolution, Size} from "../ui/ui";
+import {Resolution} from "../ui/ui";
 import {HistogramPlot} from "../ui/histogramPlot";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {HistogramView} from "./histogramView";
 import {SubMenu, TopMenu} from "../ui/menu";
+import {CDFPlot} from "../ui/CDFPlot";
+import {TrellisShape} from "./dataRangesCollectors";
 
 class TrellisHistogramView extends BigTableView {
     protected hps: HistogramPlot[];
+    protected cdfs: CDFPlot[];
     protected buckets: number;
     protected menu: TopMenu;
+    protected xAxisData: AxisData;
+    protected legendAxisData: AxisData;
 
     public constructor(
         remoteObjectId: RemoteObjectId,
         rowCount: number,
         schema: SchemaClass,
         protected shape: TrellisShape,
+        protected samplingRate: number,
         page: FullPage) {
         super(remoteObjectId, rowCount, schema, page, "Trellis");
         this.topLevel = document.createElement("div");
         this.topLevel.className = "chart";
         this.topLevel.tabIndex = 1;
         this.hps = [];
-
-        const table: HTMLTableElement = document.createElement("table");
-        const tBody = table.createTBody();
+        this.cdfs = [];
 
         this.menu = new TopMenu( [{
             text: "Export",
@@ -92,6 +96,8 @@ class TrellisHistogramView extends BigTableView {
 
         this.page.setMenu(this.menu);
 
+        const table: HTMLTableElement = document.createElement("table");
+        const tBody = table.createTBody();
         this.topLevel.appendChild(table);
         for (let y = 0; y < this.shape.yNum; y++) {
             const row = tBody.insertRow();
@@ -102,9 +108,16 @@ class TrellisHistogramView extends BigTableView {
                 surface.setMargins(0, 0, 0, 0);
                 const hp = new HistogramPlot(surface);
                 this.hps.push(hp);
+                const cdfp = new CDFPlot(surface);
+                this.cdfs.push(cdfp);
             }
         }
         this.buckets = Math.round(shape.size.width / Resolution.minBarWidth);
+    }
+
+    public setAxes(xAxisData: AxisData, legendAxisData: AxisData): void {
+        this.xAxisData = xAxisData;
+        this.legendAxisData = legendAxisData;
     }
 
     protected showTable(): void {
@@ -141,18 +154,24 @@ class TrellisHistogramView extends BigTableView {
         return null;
     }
 
-    public updateView(data: HeatMap, xAxisData: AxisData, legendAxisData: AxisData,
-                      samplingRate: number,
+    public updateView(data: Heatmap,
                       elapsedMs: number): void {
         const coarsened: HistogramBase[] = [];
         let max = 0;
+        const discrete = kindIsString(this.xAxisData.description.kind) ||
+            this.xAxisData.description.kind === "Integer";
 
-        for (const bucketData of data.buckets) {
+        for (let i = 0; i < data.buckets.length; i++) {
+            const bucketData = data.buckets[i];
             const histo: HistogramBase = {
                 buckets: bucketData,
                 outOfRange: 0,
                 missingData: data.missingData
             };
+
+            const cdfp = this.cdfs[i];
+            cdfp.setData(histo, discrete);
+
             const coarse = HistogramView.coarsen(histo, this.buckets);
             max = Math.max(max, Math.max(...coarse.buckets));
             coarsened.push(coarse);
@@ -161,8 +180,9 @@ class TrellisHistogramView extends BigTableView {
         for (let i = 0; i < coarsened.length; i++) {
             const plot = this.hps[i];
             const coarse = coarsened[i];
-            plot.setHistogram(coarse, samplingRate, xAxisData, max);
+            plot.setHistogram(coarse, this.samplingRate, this.xAxisData, max);
             plot.draw();
+            this.cdfs[i].draw();
         }
 
         this.page.reportTime(elapsedMs);
@@ -177,7 +197,7 @@ class TrellisHistogramView extends BigTableView {
 /**
  * Renders a Trellis plot of 1D histograms
  */
-export class TrellisHistogramRenderer extends Receiver<HeatMap> {
+export class TrellisHistogramRenderer extends Receiver<Heatmap> {
     protected trellisView: TrellisHistogramView;
 
     constructor(page: FullPage,
@@ -186,122 +206,38 @@ export class TrellisHistogramRenderer extends Receiver<HeatMap> {
                 protected schema: SchemaClass,
                 protected cds: IColumnDescription[],
                 protected ranges: DataRange[],
+                protected bucketCounts: number[],
                 protected samplingRate: number,
                 protected shape: TrellisShape,
-                operation: ICancellable<HeatMap>,
+                operation: ICancellable<Heatmap>,
                 protected reusePage: boolean) {
         super(
             reusePage ? page : page.dataset.newPage(
                 "Histograms " + schema.displayName(cds[0].name) + " grouped by " +
                 schema.displayName(cds[1].name), page),
             operation, "histogram");
+
+        console.assert(cds.length === 2 && ranges.length === 2 && bucketCounts.length === 2);
+        const xAxisData = new AxisData(cds[0], ranges[0]);
+        xAxisData.setBucketCount(bucketCounts[0]);
+        const yAxisData = new AxisData(cds[1], ranges[1]);
+        yAxisData.setBucketCount(bucketCounts[1]);
         this.trellisView = new TrellisHistogramView(
-            remoteTable.remoteObjectId, rowCount, schema, this.shape, this.page);
+            remoteTable.remoteObjectId, rowCount, schema,
+            this.shape, this.samplingRate, this.page);
+        this.trellisView.setAxes(xAxisData, yAxisData);
         this.page.setDataView(this.trellisView);
         if (cds.length !== 2) {
             throw new Error("Expected 2 columns, got " + cds.length);
         }
     }
 
-    public onNext(value: PartialResult<HeatMap>): void {
+    public onNext(value: PartialResult<Heatmap>): void {
         super.onNext(value);
         if (value == null) {
             return;
         }
 
-        const points = value.data.buckets;
-        let xPoints = 1;
-        let yPoints = 1;
-        if (points != null) {
-            xPoints = points.length;
-            yPoints = points[0] != null ? points[0].length : 1;
-        }
-
-        const xAxisData = new AxisData(this.cds[0], this.ranges[0], xPoints);
-        const yAxisData = new AxisData(this.cds[1], this.ranges[1], yPoints);
-        this.trellisView.updateView(value.data, xAxisData, yAxisData,
-            this.samplingRate, this.elapsedMilliseconds());
-    }
-}
-
-/**
- * Describes the shape of trellis display.
- */
-export interface TrellisShape {
-    /// The number of plots in a row.
-    xNum: number;
-    /// The number of plots in a column.
-    yNum: number;
-    /// The size of a plot in pixels
-    size: Size;
-    /// The fraction of available display used by the trellis display. This is the
-    /// parameter that our algorithm optimizes, subject to constraints on the aspect ratio and minimum
-    /// width and height of each histogram. This should be a fraction between 0 and 1. A value larger
-    /// than 1 indicates that there is no feasible solution.
-    coverage: number;
-}
-
-export class TrellisLayoutComputation {
-    protected maxWidth: number;
-    protected maxHeight: number;
-
-    /**
-     * Optimizes the shape of a trellis display.
-     * @param xMax: The width of the display in pixels.
-     * @param xMin: Minimum width of a single histogram in pixels.
-     * @param yMax: The height of the display in pixels.
-     * @param yMin: Minimum height of a single histogram in pixels.
-     * @param maxRatio: The maximum aspect ratio we want in our histograms.
-     *                   x_min and y_min should satisfy the aspect ratio condition:
-     *                   Max(x_min/y_min, y_min/x_min) <= max_ratio.
-     */
-    public constructor(public xMax: number,
-                       public xMin: number,
-                       public yMax: number,
-                       public yMin: number,
-                       public maxRatio: number) {
-        this.maxWidth = xMax / xMin;
-        this.maxHeight = yMax / yMin;
-        console.assert(Math.max(xMin / yMin, yMin / xMin) <= maxRatio,
-            "The minimum sizes do not satisfy aspect ratio");
-    }
-
-    public getShape(nBuckets: number): TrellisShape {
-        const total = this.xMax * this.yMax;
-        let used = nBuckets * this.xMin * this.yMin;
-        let coverage = used / total;
-        const opt: TrellisShape = {
-            xNum: this.maxWidth,
-            yNum: this.maxHeight,
-            size: {width: this.xMin, height: this.yMin},
-            coverage: coverage
-        };
-        if (this.maxWidth * this.maxHeight < nBuckets) {
-            return opt;
-        }
-        const sizes: number[][] = [];
-        for (let i = 1; i <= this.maxWidth; i++)
-            for (let j = 1; j <= this.maxHeight; j++)
-                if (i * j >= nBuckets)
-                    sizes.push([i, j]);
-        let xLen: number;
-        let yLen: number;
-        for (const size of sizes) {
-            xLen = Math.floor(this.xMax / size[0]);
-            yLen = Math.floor(this.yMax / size[1]);
-            if (xLen >= yLen)
-                xLen = Math.min(xLen, this.maxRatio * yLen);
-            else
-                yLen = Math.min(yLen, this.maxRatio * xLen);
-            used = nBuckets * xLen * yLen;
-            coverage = used / total;
-            if ((xLen >= this.xMin) && (yLen >= this.yMin) && (coverage > opt.coverage)) {
-                opt.xNum = size[0];
-                opt.yNum = size[1];
-                opt.size = {width: xLen, height: yLen};
-                opt.coverage = coverage;
-            }
-        }
-        return opt;
+        this.trellisView.updateView(value.data, this.elapsedMilliseconds());
     }
 }

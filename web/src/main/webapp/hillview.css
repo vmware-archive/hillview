@@ -304,7 +304,7 @@ table.dropdown {
     display: none;
 }
 
-.heatMapArray {
+.heatmapArray {
     display: flex;
     flex-direction: row-reverse;
     justify-content: center;
@@ -317,7 +317,7 @@ table.dropdown {
     text-align: center;
 }
 
-.lampView > div > svg.heatMap {
+.lampView > div > svg.heatmap {
     position: absolute;
 }
 
@@ -331,7 +331,7 @@ table.dropdown {
     stroke-width: 2px;
 }
 
-.heatMapArray > svg {
+.heatmapArray > svg {
     display: inline;
     overflow: visible;
 }

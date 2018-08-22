@@ -31,13 +31,11 @@ import {
     cloneToSet, Comparison, Converters, ICancellable, mapToArray, significantDigits,
 } from "../util";
 import {HeavyHittersReceiver, HeavyHittersView} from "./heavyHittersView";
-import {DataRangesCollector} from "./histogram2DView";
-import {
-    DataRangeCollector, HistogramDialog,
-} from "./histogramView";
+import {DataRangeCollector, DataRangesCollector} from "./dataRangesCollectors";
 import {TableOperationCompleted, TableView} from "./tableView";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {HistogramViewBase} from "./histogramViewBase";
+import {HistogramDialog} from "./histogramView";
 
 /**
  * A base class for TableView and SchemaView.
@@ -193,12 +191,14 @@ export abstract class TSViewBase extends BigTableView {
         }));
     }
 
-    protected trellis3D(cds: IColumnDescription[]): void {
-        const buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
+    protected trellis3D(cds: IColumnDescription[], heatmap: boolean): void {
+        const buckets = HistogramViewBase.maxTrellis3DBuckets(this.page);
         const rr = this.getDataRanges(cds, buckets);
+        const chartKind: ChartKind =
+            heatmap ? ChartKind.TrellisHeatmap : ChartKind.Histogram;
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema, 0, cds, null, {
             reusePage: false, relative: false,
-            chartKind: ChartKind.TrellisHistogram, exact: false
+            chartKind: chartKind, exact: false
         }));
     }
 
@@ -211,12 +211,13 @@ export abstract class TSViewBase extends BigTableView {
         }
     }
 
-    protected trellis(columns: string[]): void {
+    protected trellis(columns: string[], heatmap: boolean): void {
         const cds = this.schema.getDescriptions(columns);
         if (cds.length === 2) {
+            console.assert(!heatmap);
             this.trellis2D(cds);
         } else {
-            this.trellis3D(cds);
+            this.trellis3D(cds, heatmap);
         }
     }
 
@@ -248,12 +249,12 @@ export abstract class TSViewBase extends BigTableView {
         this.histogram(this.getSelectedColNames());
     }
 
-    protected trellisSelected(): void {
+    protected trellisSelected(heatmap: boolean): void {
         if (this.getSelectedColCount() < 2 || this.getSelectedColCount() > 3) {
             this.reportError("Must select 1 or 2 columns for Trellis polots");
             return;
         }
-        this.trellis(this.getSelectedColNames());
+        this.trellis(this.getSelectedColNames(), heatmap);
     }
 
     public twoDHistogramMenu(heatmap: boolean): void {
@@ -289,14 +290,13 @@ export abstract class TSViewBase extends BigTableView {
         dia.show();
     }
 
-    public trellisMenu(twoD: boolean): void {
+    public trellisMenu(twoD: boolean, heatmap: boolean): void {
         const count = twoD ? 2 : 3;
         if (this.schema.length < count) {
             this.reportError("Could not find enough columns that can be charted.");
             return;
         }
 
-        const heatmap = false;  // TODO
         const allColumns = this.schema.columnNames.map((c) => this.schema.displayName(c));
         const label = heatmap ? "heatmap" : "2D histogram";
         const dia = new Dialog(label,
@@ -332,7 +332,7 @@ export abstract class TSViewBase extends BigTableView {
                     }
                     colNames.push(col2);
                 }
-                this.trellis(colNames);
+                this.trellis(colNames, heatmap);
             },
         );
         dia.show();
@@ -382,10 +382,12 @@ export abstract class TSViewBase extends BigTableView {
                     help: "Draw a histogram of the data in two columns."},
                 { text: "Heatmap...", action: () => this.twoDHistogramMenu(true),
                     help: "Draw a heatmap of the data in two columns."},
-                { text: "Trellis 2D...", action: () => this.trellisMenu(true),
-                    help: "Draw a Trellism plot of the data in two columns."},
-                { text: "Trellis 3D...", action: () => this.trellisMenu(false),
-                    help: "Draw a Trellism plot of the data in three columns."},
+                { text: "Trellis histograms...", action: () => this.trellisMenu(true, false),
+                    help: "Draw a Trellis plot of histograms."},
+                { text: "Trellis 2D histograms...", action: () => this.trellisMenu(false, false),
+                    help: "Draw a Trellis plot of 2D histograms."},
+                { text: "Trellis 2D heatmaps...", action: () => this.trellisMenu(false, true),
+                    help: "Draw a Trellis plot of 3D histograms."},
             ]),
         };
     }

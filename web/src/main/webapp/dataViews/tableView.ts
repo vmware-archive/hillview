@@ -542,11 +542,17 @@ export class TableView extends TSViewBase implements IScrollTarget {
                     "Applies to two columns only.",
                 }, selectedCount === 2);
                 this.contextMenu.addItem({
-                    text: "Trellis",
-                    action: () => this.trellisSelected(),
-                    help: "Plot the data in the selected columns as a Trellis plot. " +
+                    text: "Trellis histograms",
+                    action: () => this.trellisSelected(false),
+                    help: "Plot the data in the selected columns as a Trellis plot of histograms. " +
                         "Applies to two or three columns only.",
                 }, selectedCount >= 2 && selectedCount <= 3);
+                this.contextMenu.addItem({
+                    text: "Trellis heatmaps",
+                    action: () => this.trellisSelected(true),
+                    help: "Plot the data in the selected columns as a Trellis plot of heatmaps. " +
+                        "Applies to three columns only.",
+                }, selectedCount === 3);
                 this.contextMenu.addItem({
                     text: "Rename...",
                     action: () => this.renameColumn(),

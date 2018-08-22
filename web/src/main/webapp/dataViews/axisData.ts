@@ -33,6 +33,12 @@ import {
 import {Converters, formatDate, formatNumber, significantDigits} from "../util";
 import {AnyScale, D3Axis} from "../ui/ui";
 
+export enum AxisKind {
+    Bottom,
+    Left,
+    Legend
+}
+
 /**
  * Contains all information required to build an axis and a d3 scale associated to it.
  */
@@ -40,10 +46,11 @@ export class AxisData {
     public readonly distinctStrings: DistinctStrings;
     public scale: AnyScale;
     public axis: D3Axis;
+    public bucketCount: number;
 
     public constructor(public description: IColumnDescription,
-                       public range: DataRange | null,
-                       public cdfBucketCount: number) {
+                       public range: DataRange | null) {
+        this.bucketCount = 0;
         let useRange = range;
         if (kindIsString(description.kind)) {
             useRange = {
@@ -72,13 +79,22 @@ export class AxisData {
         return kindIsString(kind) || kind === "Integer";
     }
 
-    public setResolution(length: number, bottom: boolean, legend: boolean): void {
-        const axisCreator = bottom ? d3axisBottom : d3axisLeft;
+    public setBucketCount(bucketCount: number): void {
+        this.bucketCount = bucketCount;
+    }
 
+    /**
+     * Map the axis to the screen.
+     * @param pixels       Number of pixels spanned by the axis.
+     * @param axisKind     What kind of axis this is.
+     */
+    public setResolution(pixels: number, axisKind: AxisKind): void {
+        const bottom = axisKind !== AxisKind.Left;
+        const axisCreator = bottom ? d3axisBottom : d3axisLeft;
         let actualMin = this.range.min;
         let actualMax = this.range.max;
         let adjust = .5;
-        if (legend && AxisData.needsAdjustment(this.description.kind)) {
+        if (axisKind === AxisKind.Legend && AxisData.needsAdjustment(this.description.kind)) {
             // These were adjusted, bring them back.
             actualMin += .5;
             actualMax -= .5;
@@ -93,7 +109,7 @@ export class AxisData {
             case "Double": {
                 this.scale = d3scaleLinear()
                     .domain(domain)
-                    .range([0, length]);
+                    .range([0, pixels]);
                 this.axis = axisCreator(this.scale);
                 break;
             }
@@ -106,12 +122,12 @@ export class AxisData {
                 const tickCount = Math.ceil(this.range.max - this.range.min);
                 // TODO: if the tick count is too large it must be reduced
                 const minLabelWidth = 40;  // pixels
-                const maxLabelCount = length / minLabelWidth;
+                const maxLabelCount = pixels / minLabelWidth;
                 const labelPeriod = Math.ceil(tickCount / maxLabelCount);
                 // On a legend the leftmost and rightmost ticks are at the ends
                 // On a plot axis the ticks are offset .5 from the ends.
-                const totalIntervals = legend ? (tickCount - 1) : tickCount;
-                const tickWidth = length / totalIntervals;
+                const totalIntervals = axisKind === AxisKind.Legend ? (tickCount - 1) : tickCount;
+                const tickWidth = pixels / totalIntervals;
 
                 for (let i = 0; i < tickCount; i++) {
                     ticks.push((i + adjust) * tickWidth);
@@ -128,11 +144,11 @@ export class AxisData {
 
                 // We manually control the ticks.
                 const manual = d3scaleLinear()
-                    .domain([0, length])
-                    .range([0, length]);
+                    .domain([0, pixels])
+                    .range([0, pixels]);
                 this.scale = d3scaleLinear()
                     .domain(domain)
-                    .range([0, length]);
+                    .range([0, pixels]);
                 this.axis = axisCreator(manual)
                     .tickValues(ticks)
                     .tickFormat((d, i) => labels[i]);
@@ -143,7 +159,7 @@ export class AxisData {
                 const maxDate: Date = Converters.dateFromDouble(domain[1]);
                 this.scale = d3scaleTime()
                     .domain([minDate, maxDate])
-                    .range([0, length]);
+                    .range([0, pixels]);
                 this.axis = axisCreator(this.scale);
                 break;
             }
@@ -193,9 +209,9 @@ export class AxisData {
      * @returns {[number]}     The left and right margins of this bucket.
      */
     public boundaries(bucket: number): [number, number] {
-        if (bucket < 0 || bucket >= this.cdfBucketCount)
+        if (bucket < 0 || bucket >= this.bucketCount)
             return null;
-        const interval = (this.range.max - this.range.min) / this.cdfBucketCount;
+        const interval = (this.range.max - this.range.min) / this.bucketCount;
         const start = this.range.min + interval * bucket;
         const end = start + interval;
         return [start, end];
@@ -206,7 +222,7 @@ export class AxisData {
      * @returns {string}  A description of the boundaries of the specified bucket.
      */
     public bucketDescription(bucket: number): string {
-        if (bucket < 0 || bucket >= this.cdfBucketCount)
+        if (bucket < 0 || bucket >= this.bucketCount)
             return "empty";
         let [start, end] = this.boundaries(bucket);
         let closeBracket = ")";

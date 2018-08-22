@@ -76,7 +76,7 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
         const icd: IColumnDescription = { kind: "Integer", name: "Singular Values" };
         const range: DataRange = { min: -.5, max: ev.length - .5,
             presentCount: 0, missingCount: 0 };
-        const axisData = new AxisData(icd, range, ev.length);
+        const axisData = new AxisData(icd, range);
         this.specView.updateView("Spectrum", histogram, axisData, this.elapsedMilliseconds());
         this.newPage.reportError("Showing top " + eVals.eigenValues.length + "/" + this.colNames.length +
             " singular values, Total Variance: " + significantDigits(eVals.totalVar) +

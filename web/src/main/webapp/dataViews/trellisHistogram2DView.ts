@@ -19,7 +19,7 @@ import {Receiver} from "../rpc";
 import {
     CombineOperators,
     DataRange,
-    HeatMap,
+    Heatmap,
     IColumnDescription,
     RemoteObjectId
 } from "../javaBridge";
@@ -33,19 +33,22 @@ import {IDataView} from "../ui/dataview";
 import {Resolution} from "../ui/ui";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {SubMenu, TopMenu} from "../ui/menu";
-import {TrellisShape} from "./trellisHistogramView";
 import {Histogram2DPlot} from "../ui/Histogram2DPlot";
+import {TrellisShape} from "./dataRangesCollectors";
 
 class TrellisHistogram2DView extends BigTableView {
     protected hps: Histogram2DPlot[];
     protected buckets: number;
     protected menu: TopMenu;
+    protected xAxisData: AxisData;
+    protected legendAxisData: AxisData;
 
     public constructor(
         remoteObjectId: RemoteObjectId,
         rowCount: number,
         schema: SchemaClass,
         protected shape: TrellisShape,
+        protected samplingRate: number,
         page: FullPage) {
         super(remoteObjectId, rowCount, schema, page, "Trellis");
         this.topLevel = document.createElement("div");
@@ -107,6 +110,12 @@ class TrellisHistogram2DView extends BigTableView {
         this.buckets = Math.round(shape.size.width / Resolution.minBarWidth);
     }
 
+    public setAxes(xAxisData: AxisData,
+                   legendAxisData: AxisData) {
+        this.xAxisData = xAxisData;
+        this.legendAxisData = legendAxisData;
+    }
+
     protected showTable(): void {
         // TODO
     }
@@ -141,13 +150,11 @@ class TrellisHistogram2DView extends BigTableView {
         return null;
     }
 
-    public updateView(data: HeatMap[], xAxisData: AxisData, legendAxisData: AxisData,
-                      samplingRate: number,
-                      elapsedMs: number): void {
+    public updateView(data: Heatmap[], elapsedMs: number): void {
         for (let i = 0; i < data.length; i++) {
             const histo = data[i];
             const plot = this.hps[i];
-            plot.setData(histo, xAxisData, samplingRate, false);
+            plot.setData(histo, this.xAxisData, this.samplingRate, false);
             plot.draw();
         }
 
@@ -163,7 +170,7 @@ class TrellisHistogram2DView extends BigTableView {
 /**
  * Renders a Trellis plot of 2D histograms
  */
-export class TrellisHistogram2DRenderer extends Receiver<HeatMap[]> {
+export class TrellisHistogram2DRenderer extends Receiver<Heatmap[]> {
     protected trellisView: TrellisHistogram2DView;
 
     constructor(page: FullPage,
@@ -172,32 +179,38 @@ export class TrellisHistogram2DRenderer extends Receiver<HeatMap[]> {
                 protected schema: SchemaClass,
                 protected cds: IColumnDescription[],
                 protected ranges: DataRange[],
+                protected bucketCounts: number[],
                 protected samplingRate: number,
                 protected shape: TrellisShape,
-                operation: ICancellable<HeatMap[]>,
+                operation: ICancellable<Heatmap[]>,
                 protected reusePage: boolean) {
         super(
             reusePage ? page : page.dataset.newPage(
                 "Histograms " + schema.displayName(cds[0].name) + " grouped by " +
                 schema.displayName(cds[1].name), page),
             operation, "histogram");
+
+        console.assert(cds.length === 2 && ranges.length === 2 && bucketCounts.length === 2);
+        const xAxisData = new AxisData(cds[0], ranges[0]);
+        xAxisData.setBucketCount(bucketCounts[0]);
+        const yAxisData = new AxisData(cds[1], ranges[1]);
+        yAxisData.setBucketCount(bucketCounts[1]);
         this.trellisView = new TrellisHistogram2DView(
-            remoteTable.remoteObjectId, rowCount, schema, this.shape, this.page);
+            remoteTable.remoteObjectId, rowCount, schema,
+            this.shape, this.samplingRate, this.page);
+        this.trellisView.setAxes(xAxisData, yAxisData);
         this.page.setDataView(this.trellisView);
         if (cds.length !== 2) {
             throw new Error("Expected 2 columns, got " + cds.length);
         }
     }
 
-    public onNext(value: PartialResult<HeatMap[]>): void {
+    public onNext(value: PartialResult<Heatmap[]>): void {
         super.onNext(value);
         if (value == null) {
             return;
         }
 
-        const xAxisData = new AxisData(this.cds[0], this.ranges[0], this.shape.size.width);
-        const yAxisData = new AxisData(this.cds[1], this.ranges[1], value.data.length);
-        this.trellisView.updateView(value.data, xAxisData, yAxisData,
-            this.samplingRate, this.elapsedMilliseconds());
+        this.trellisView.updateView(value.data, this.elapsedMilliseconds());
     }
 }

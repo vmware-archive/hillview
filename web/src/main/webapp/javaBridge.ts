@@ -113,12 +113,19 @@ export interface CreateColumnInfo {
     renameMap: string[];
 }
 
-export interface HeatMap {
+export interface Heatmap {
     buckets: number[][];
     missingData: number;
     histogramMissingX: HistogramBase;
     histogramMissingY: HistogramBase;
     totalSize: number;
+}
+
+export interface Heatmap3D {
+    buckets: number[][][];
+    eitherMissing: number;
+    outOfRange: number;
+    totalPresent: number;
 }
 
 /**
@@ -189,7 +196,7 @@ export interface BasicColStats extends DataRange {
 export interface RangeArgs {
     cd: IColumnDescription;
     seed: number;
-    cdfBuckets: number;
+    stringsToSample: number;
 }
 
 // This is a union of DoubleRangeFilterDescription

@@ -23,7 +23,7 @@ import java.io.Serializable;
 /**
  * A 2-dimensional histogram.
  */
-public class HeatMap implements Serializable, IJson {
+public class Heatmap implements Serializable, IJson {
     private final long[][] buckets;
     private long missingData; // number of items missing on both columns
     private long outOfRange;
@@ -33,7 +33,7 @@ public class HeatMap implements Serializable, IJson {
     private Histogram histogramMissingY; // dim2 is missing, dim1 exists
     private long totalSize;
 
-    public HeatMap(final IHistogramBuckets xBuckets,
+    public Heatmap(final IHistogramBuckets xBuckets,
                    final IHistogramBuckets yBuckets) {
         this.bucketDescX = xBuckets;
         this.bucketDescY = yBuckets;
@@ -43,7 +43,7 @@ public class HeatMap implements Serializable, IJson {
         this.histogramMissingY = new Histogram(this.bucketDescX);
     }
 
-    public void createHeatMap(final IColumn columnD1, final IColumn columnD2,
+    public void createHeatmap(final IColumn columnD1, final IColumn columnD2,
                               final IMembershipSet membershipSet, double samplingRate,
                               final long seed, final boolean enforceRate) {
         final ISampledRowIterator myIter = membershipSet.getIteratorOverSample(
@@ -109,8 +109,8 @@ public class HeatMap implements Serializable, IJson {
      * @param  otherHeatmap with the same bucketDescriptions
      * @return a new HeatMap which is the union of this and otherHeatmap
      */
-    public HeatMap union(HeatMap otherHeatmap) {
-        HeatMap unionH = new HeatMap(this.bucketDescX, this.bucketDescY);
+    public Heatmap union(Heatmap otherHeatmap) {
+        Heatmap unionH = new Heatmap(this.bucketDescX, this.bucketDescY);
         for (int i = 0; i < unionH.bucketDescX.getNumOfBuckets(); i++)
             for (int j = 0; j < unionH.bucketDescY.getNumOfBuckets(); j++)
                 unionH.buckets[i][j] = this.buckets[i][j] + otherHeatmap.buckets[i][j];

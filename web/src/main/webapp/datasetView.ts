@@ -65,12 +65,12 @@ export interface TableSerialization extends IViewSerialization {
 
 export interface HistogramSerialization extends IViewSerialization {
     bucketCount: number;
-    exact: boolean;
+    samplingRate: number;
     columnDescription: IColumnDescription;
 }
 
 export interface HeatmapSerialization extends IViewSerialization {
-    exact: boolean;
+    samplingRate: number;
     columnDescription0: IColumnDescription;
     columnDescription1: IColumnDescription;
 }

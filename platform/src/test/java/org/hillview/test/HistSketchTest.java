@@ -82,7 +82,7 @@ public class HistSketchTest extends BaseTest {
     }
 
    @Test
-    public void HeatMapSketchTest() {
+    public void HeatmapSketchTest() {
         final int numCols = 2;
         final int maxSize = 50;
         final int bigSize = 100000;
@@ -93,8 +93,8 @@ public class HistSketchTest extends BaseTest {
         final String colName1 = bigTable.getSchema().getColumnNames().get(0);
         final String colName2 = bigTable.getSchema().getColumnNames().get(1);
         final ParallelDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize/10);
-        final HeatMap hm = all.blockingSketch(
-                new HeatMapSketch(buckets1, buckets2, colName1, colName2, rate, 0));
-        HistogramTest.basicTestHeatMap(hm, bigSize);
+        final Heatmap hm = all.blockingSketch(
+                new HeatmapSketch(buckets1, buckets2, colName1, colName2, rate, 0));
+        HistogramTest.basicTestHeatmap(hm, bigSize);
     }
 }

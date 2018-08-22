@@ -131,16 +131,16 @@ public final class TableTarget extends RpcTarget {
         // if this is Category, String, or Json we are sampling strings
         ColumnDescription cd = new ColumnDescription();
         long seed;       // only used if sampling strings
-        int cdfBuckets;  // only used if sampling strings
+        int stringsToSample;  // only used if sampling strings
 
-        // This class has a bunck of unchecked casts, but the Java
+        // This class has a bunch of unchecked casts, but the Java
         // type system is not good enough to express these operations
         // in a type-safe manner.
         ISketch<ITable, BucketsInfo> getSketch() {
             if (this.cd.kind.isString()) {
                 ISketch<ITable, MinKSet<String>> s = new SampleDistinctElementsSketch(
-                        // We sample cdfBuckets squared
-                        this.cd.name, this.seed, this.cdfBuckets * this.cdfBuckets);
+                        // We sample stringsToSample squared
+                        this.cd.name, this.seed, this.stringsToSample * this.stringsToSample);
                 //noinspection unchecked
                 return (ISketch<ITable, BucketsInfo>)(Object)s;
             } else {
@@ -152,7 +152,7 @@ public final class TableTarget extends RpcTarget {
 
         BiFunction<BucketsInfo, HillviewComputation, BucketsInfo> getPostProcessing() {
             if (this.cd.kind.isString()) {
-                int b = this.cdfBuckets;
+                int b = this.stringsToSample;
                 //noinspection unchecked
                 return (e, c) -> new StringBucketBoundaries((MinKSet<String>)e, b);
             } else {
@@ -253,7 +253,7 @@ public final class TableTarget extends RpcTarget {
     public void heatmap(RpcRequest request, RpcRequestContext context) {
         HistogramArgs[] info = request.parseArgs(HistogramArgs[].class);
         assert info.length == 2;
-        HeatMapSketch sk = new HeatMapSketch(
+        HeatmapSketch sk = new HeatmapSketch(
                 info[0].getBuckets(),
                 info[1].getBuckets(),
                 info[0].cd.name,
@@ -265,23 +265,23 @@ public final class TableTarget extends RpcTarget {
     public void histogram2D(RpcRequest request, RpcRequestContext context) {
         HistogramArgs[] info = request.parseArgs(HistogramArgs[].class);
         assert info.length == 3;
-        HeatMapSketch sk = new HeatMapSketch(
+        HeatmapSketch sk = new HeatmapSketch(
                 info[0].getBuckets(),
                 info[1].getBuckets(),
                 info[0].cd.name,
                 info[1].cd.name,
                 info[0].samplingRate, info[0].seed);
         HistogramSketch cdf = info[2].getSketch();
-        ConcurrentSketch<ITable, HeatMap, Histogram> csk =
-                new ConcurrentSketch<ITable, HeatMap, Histogram>(sk, cdf);
+        ConcurrentSketch<ITable, Heatmap, Histogram> csk =
+                new ConcurrentSketch<ITable, Heatmap, Histogram>(sk, cdf);
         this.runSketch(this.table, csk, request, context);
     }
 
     @HillviewRpc
-    public void heatMap3D(RpcRequest request, RpcRequestContext context) {
+    public void heatmap3D(RpcRequest request, RpcRequestContext context) {
         HistogramArgs[] info = request.parseArgs(HistogramArgs[].class);
         assert info.length == 3;
-        HeatMap3DSketch sk = new HeatMap3DSketch(
+        Heatmap3DSketch sk = new Heatmap3DSketch(
                 info[0].getBuckets(),
                 info[1].getBuckets(),
                 info[2].getBuckets(),

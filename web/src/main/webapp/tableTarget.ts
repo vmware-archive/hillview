@@ -22,11 +22,11 @@
 import {DatasetView, IViewSerialization} from "./datasetView";
 import {
     CombineOperators, CreateColumnInfo, DataRange, FilterDescription,
-    HeatMap, HistogramArgs,
+    Heatmap, HistogramArgs,
     HistogramBase, HLogLog, IColumnDescription, kindIsString,
     NextKList, RangeArgs, RecordOrder, RemoteObjectId, Schema,
     TableSummary, TopList, NextKArgs, ComparisonFilterDescription,
-    EigenVal, EqualityFilterDescription, FindResult,
+    EigenVal, EqualityFilterDescription, FindResult, Heatmap3D,
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
 import {FullPage} from "./ui/fullPage";
@@ -81,7 +81,7 @@ export class TableTargetAPI extends RemoteObject {
         const args: RangeArgs = {
             cd: cd,
             seed: seed,
-            cdfBuckets: cdfBuckets };
+            stringsToSample: cdfBuckets };
         return this.createStreamingRpcRequest<DataRange>(
             "getDataRange", args);
     }
@@ -96,7 +96,7 @@ export class TableTargetAPI extends RemoteObject {
             const arg: RangeArgs = {
                 cd: cd,
                 seed: seed,
-                cdfBuckets: buckets[i]
+                stringsToSample: buckets[i]
             };
             args.push(arg);
         }
@@ -222,12 +222,16 @@ RpcRequest<PartialResult<RemoteObjectId>> {
     }
 
     public createHistogram2DRequest(info: HistogramArgs[]):
-        RpcRequest<PartialResult<Pair<HeatMap, HistogramBase>>> {
-        return this.createStreamingRpcRequest<Pair<HeatMap, HistogramBase>>("histogram2D", info);
+        RpcRequest<PartialResult<Pair<Heatmap, HistogramBase>>> {
+        return this.createStreamingRpcRequest<Pair<Heatmap, HistogramBase>>("histogram2D", info);
     }
 
-    public createHeatMapRequest(info: HistogramArgs[]): RpcRequest<PartialResult<HeatMap>> {
-        return this.createStreamingRpcRequest<HeatMap>("heatmap", info);
+    public createHeatmapRequest(info: HistogramArgs[]): RpcRequest<PartialResult<Heatmap>> {
+        return this.createStreamingRpcRequest<Heatmap>("heatmap", info);
+    }
+
+    public createHeatmap3DRequest(info: HistogramArgs[]): RpcRequest<PartialResult<Heatmap3D>> {
+        return this.createStreamingRpcRequest<Heatmap3D>("heatmap3D", info);
     }
 
     public createHistogramRequest(info: HistogramArgs):
