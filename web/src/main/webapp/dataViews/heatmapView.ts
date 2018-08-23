@@ -36,7 +36,7 @@ import {HeatmapPlot} from "../ui/heatmapPlot";
 import {HistogramPlot} from "../ui/histogramPlot";
 import {HeatmapLegendPlot} from "../ui/legendPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
-import {PlottingSurface} from "../ui/plottingSurface";
+import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
 import {ChartKind, D3SvgElement, Point, Resolution} from "../ui/ui";
 import {
@@ -147,19 +147,19 @@ export class HeatmapView extends BigTableView {
         this.page.setMenu(this.menu);
         this.topLevel.tabIndex = 1;
 
-        const legendSurface = new PlottingSurface(this.topLevel, page);
+        const legendSurface = new HtmlPlottingSurface(this.topLevel, page);
         // legendSurface.setMargins(0, 0, 0, 0);
         legendSurface.setHeight(Resolution.legendSpaceHeight * 2 / 3);
         this.colorLegend = new HeatmapLegendPlot(legendSurface);
         this.colorLegend.setColorMapChangeEventListener(
             () => this.updateView(this.heatmap, true, 0));
 
-        this.surface = new PlottingSurface(this.topLevel, page);
+        this.surface = new HtmlPlottingSurface(this.topLevel, page);
         this.surface.setMargins(20, this.surface.rightMargin, this.surface.bottomMargin, this.surface.leftMargin);
         this.plot = new HeatmapPlot(this.surface, this.colorLegend, true);
 
         if (this.showMissingData) {
-            this.xHistoSurface = new PlottingSurface(this.topLevel, page);
+            this.xHistoSurface = new HtmlPlottingSurface(this.topLevel, page);
             this.xHistoSurface.setMargins(0, null, 16, null);
             this.xHistoSurface.setHeight(100);
             this.xHistoPlot = new HistogramPlot(this.xHistoSurface);
@@ -233,7 +233,7 @@ export class HeatmapView extends BigTableView {
             .attr("height", 0);
 
         this.pointDescription = new TextOverlay(this.surface.getChart(),
-            this.surface.getDefaultChartSize(),
+            this.surface.getActualChartSize(),
             [this.xData.description.name, this.yData.description.name, "count"], 40);
         this.pointDescription.show(false);
         let summary = formatNumber(this.plot.getVisiblePoints()) + " data points";

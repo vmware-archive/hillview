@@ -31,7 +31,7 @@ import {AxisData} from "./axisData";
 import {HistogramSerialization, IViewSerialization} from "../datasetView";
 import {IDataView} from "../ui/dataview";
 import {Resolution} from "../ui/ui";
-import {PlottingSurface} from "../ui/plottingSurface";
+import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {Histogram2DPlot} from "../ui/Histogram2DPlot";
 import {TrellisShape} from "./dataRangesCollectors";
@@ -100,7 +100,7 @@ class TrellisHistogram2DView extends BigTableView {
             const row = tBody.insertRow();
             for (let x = 0; x < this.shape.xNum; x++) {
                 const cell = row.insertCell();
-                const surface = new PlottingSurface(cell, this.page);
+                const surface = new HtmlPlottingSurface(cell, this.page);
                 surface.setSize(this.shape.size);
                 surface.setMargins(0, 0, 0, 0);
                 const hp = new Histogram2DPlot(surface);

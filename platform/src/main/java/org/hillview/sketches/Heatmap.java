@@ -26,7 +26,6 @@ import java.io.Serializable;
 public class Heatmap implements Serializable, IJson {
     private final long[][] buckets;
     private long missingData; // number of items missing on both columns
-    private long outOfRange;
     private final IHistogramBuckets bucketDescX;
     private final IHistogramBuckets bucketDescY;
     private Histogram histogramMissingX; // dim1 is missing, dim2 exists
@@ -70,7 +69,6 @@ public class Heatmap implements Serializable, IJson {
                     this.buckets[index1][index2]++;
                     this.totalSize++;
                 }
-                else this.outOfRange++;
             }
             currRow = myIter.getNextRow();
         }
@@ -78,7 +76,6 @@ public class Heatmap implements Serializable, IJson {
         if (samplingRate < 1) {
             this.histogramMissingX.rescale(myIter.rate());
             this.histogramMissingY.rescale(myIter.rate());
-            this.outOfRange = (long) ((double) this.outOfRange / samplingRate);
             this.missingData = (long) ((double) this.missingData / samplingRate);
             for (int i = 0; i < this.buckets.length; i++)
                 for (int j = 0; j < this.buckets[i].length; j++)
@@ -98,8 +95,6 @@ public class Heatmap implements Serializable, IJson {
 
     public long getMissingData() { return this.missingData; }
 
-    public long getOutOfRange() { return this.outOfRange; }
-
     /**
      * @return the index's count
      */
@@ -115,7 +110,6 @@ public class Heatmap implements Serializable, IJson {
             for (int j = 0; j < unionH.bucketDescY.getNumOfBuckets(); j++)
                 unionH.buckets[i][j] = this.buckets[i][j] + otherHeatmap.buckets[i][j];
         unionH.missingData = this.missingData + otherHeatmap.missingData;
-        unionH.outOfRange = this.outOfRange + otherHeatmap.outOfRange;
         unionH.totalSize = this.totalSize + otherHeatmap.totalSize;
         unionH.histogramMissingX = this.histogramMissingX.union(otherHeatmap.histogramMissingX);
         unionH.histogramMissingY = this.histogramMissingY.union(otherHeatmap.histogramMissingY);

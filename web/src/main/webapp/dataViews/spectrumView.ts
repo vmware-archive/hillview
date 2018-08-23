@@ -32,7 +32,7 @@ import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
 import {HistogramPlot} from "../ui/histogramPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
-import {PlottingSurface} from "../ui/plottingSurface";
+import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {ICancellable, significantDigits} from "../util";
 import {AxisData} from "./axisData";
 import {CorrelationMatrixReceiver, TableView} from "./tableView";
@@ -72,7 +72,7 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
         this.newPage.setDataView(this.specView);
 
         const ev: number [] = eVals.eigenValues;
-        const histogram: HistogramBase = { buckets: ev, missingData: 0, outOfRange: 0 };
+        const histogram: HistogramBase = { buckets: ev, missingData: 0 };
         const icd: IColumnDescription = { kind: "Integer", name: "Singular Values" };
         const range: DataRange = { min: -.5, max: ev.length - .5,
             presentCount: 0, missingCount: 0 };
@@ -140,7 +140,7 @@ export class SpectrumView extends BigTableView {
         this.topLevel.appendChild(this.chartDiv);
         this.chartDiv.style.display = "flex";
         this.chartDiv.style.flexDirection = "column";
-        this.surface = new PlottingSurface(this.chartDiv, page);
+        this.surface = new HtmlPlottingSurface(this.chartDiv, page);
         this.plot = new HistogramPlot(this.surface);
         this.summary = document.createElement("div");
         this.topLevel.appendChild(this.summary);

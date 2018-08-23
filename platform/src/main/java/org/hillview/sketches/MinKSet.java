@@ -47,15 +47,26 @@ public class MinKSet<T> extends BucketsInfo {
     }
 
     /**
-     * This method will return (at most) a prescribed number of bucket boundaries.
+     * Returns true if we have fewer or equal strings to the number of buckets.
+     * @param buckets Number of buckets we want.
+     */
+    public boolean allStringsKnown(int buckets) {
+        if (this.min == null)
+            // no non-null values
+            return true;
+        return this.data.size() <= buckets;
+    }
+
+    /**
+     * This method will return (at most) a prescribed number of left bucket boundaries.
      * @param maxBuckets The maximum number of buckets.
      * @return An ordered list of boundaries for b <= maxBuckets buckets. If the number of distinct
      * strings is small, the number of buckets b could be strictly smaller than maxBuckets.
-     * If the number of buckets is b, the number of boundaries is b+1. The first bucket starts at
-     * min, the last bucket ends at max. The buckets boundaries are all distinct, hence the number
+     * If the number of buckets is b, the number of boundaries is also b. The first bucket starts at
+     * min.  The buckets boundaries are all distinct, hence the number
      * of buckets returned might be smaller.
      */
-    public JsonList<T> getBoundaries(int maxBuckets) {
+    public JsonList<T> getLeftBoundaries(int maxBuckets) {
         if (this.min == null) {
             // No non-null values
             JsonList <T> boundaries = new JsonList<T>(1);
@@ -64,20 +75,17 @@ public class MinKSet<T> extends BucketsInfo {
         }
         List<T> samples = this.getSamples();
         samples.remove(this.min);
-        samples.remove(this.max);
         int numSamples = samples.size();
-        JsonList <T> boundaries = new JsonList<T>(maxBuckets + 1);
+        JsonList <T> boundaries = new JsonList<T>(maxBuckets);
         boundaries.add(this.min);
-        if (numSamples <= maxBuckets - 1)
+        if (numSamples <= maxBuckets - 1) {
             boundaries.addAll(samples);
-        else {
+        } else {
             for (int i = 1; i < maxBuckets; i++) {
-                int j = (int) Math.ceil(numSamples * i / ((float) maxBuckets)) -1;
+                int j = (int) Math.ceil(numSamples * i / ((float) maxBuckets)) - 1;
                 boundaries.add(samples.get(j));
             }
         }
-        if (!this.min.equals(this.max))
-            boundaries.add(this.max);
         return boundaries;
     }
 }

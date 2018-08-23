@@ -124,7 +124,6 @@ export interface Heatmap {
 export interface Heatmap3D {
     buckets: number[][][];
     eitherMissing: number;
-    outOfRange: number;
     totalPresent: number;
 }
 
@@ -174,18 +173,20 @@ export interface ColumnSortOrientation {
 export interface HistogramBase {
     buckets: number[];
     missingData: number;
-    outOfRange: number;
 }
 
 // This is actually a union of several java classes:
-// StringBucketBoundaries and DataRange, both sub-classes
+// StringBucketLeftBoundaries and DataRange, both sub-classes
 // of BucketsInfo in Java.
 export interface DataRange {
-    min: number;
-    max: number;
     presentCount: number;
     missingCount: number;
-    boundaries?: string[];
+    // Only used for numeric data
+    min?: number;
+    max?: number;
+    // Only used for string data
+    leftBoundaries?: string[];
+    allStringsKnown?: boolean;
 }
 
 export interface BasicColStats extends DataRange {
@@ -214,12 +215,12 @@ export interface HistogramArgs {
     cd: IColumnDescription;
     seed: number;
     samplingRate: number;
+    bucketCount: number;  // sometimes superseded by leftBoundaries
     // only used when doing string histograms
-    boundaries?: string[];
+    leftBoundaries?: string[];
     // only used when doing double histograms
     min?: number;
     max?: number;
-    cdfBucketCount?: number;
 }
 
 export interface HeavyHittersFilterInfo {

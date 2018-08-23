@@ -19,20 +19,22 @@ import {Receiver} from "../rpc";
 import {
     CombineOperators,
     DataRange,
-    Heatmap, HistogramBase,
-    IColumnDescription, kindIsString,
+    Heatmap,
+    HistogramBase,
+    IColumnDescription,
+    kindIsString,
     RemoteObjectId
 } from "../javaBridge";
 import {FullPage} from "../ui/fullPage";
 import {BigTableView, TableTargetAPI} from "../tableTarget";
 import {SchemaClass} from "../schemaClass";
 import {ICancellable, PartialResult} from "../util";
-import {AxisData} from "./axisData";
+import {AxisData, AxisKind} from "./axisData";
 import {HistogramSerialization, IViewSerialization} from "../datasetView";
 import {IDataView} from "../ui/dataview";
 import {Resolution} from "../ui/ui";
 import {HistogramPlot} from "../ui/histogramPlot";
-import {PlottingSurface} from "../ui/plottingSurface";
+import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {HistogramView} from "./histogramView";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {CDFPlot} from "../ui/CDFPlot";
@@ -45,6 +47,7 @@ class TrellisHistogramView extends BigTableView {
     protected menu: TopMenu;
     protected xAxisData: AxisData;
     protected legendAxisData: AxisData;
+    protected surface: PlottingSurface;
 
     public constructor(
         remoteObjectId: RemoteObjectId,
@@ -95,15 +98,14 @@ class TrellisHistogramView extends BigTableView {
         ]);
 
         this.page.setMenu(this.menu);
+        this.surface = new HtmlPlottingSurface(this.topLevel, this.page);
+        this.surface.create();
 
-        const table: HTMLTableElement = document.createElement("table");
-        const tBody = table.createTBody();
-        this.topLevel.appendChild(table);
         for (let y = 0; y < this.shape.yNum; y++) {
-            const row = tBody.insertRow();
             for (let x = 0; x < this.shape.xNum; x++) {
-                const cell = row.insertCell();
-                const surface = new PlottingSurface(cell, this.page);
+                const surface = this.surface.createChildSurface(
+                    PlottingSurface.leftMargin + x * this.shape.size.width,
+                    y * this.shape.size.height + PlottingSurface.topMargin);
                 surface.setSize(this.shape.size);
                 surface.setMargins(0, 0, 0, 0);
                 const hp = new HistogramPlot(surface);
@@ -165,7 +167,6 @@ class TrellisHistogramView extends BigTableView {
             const bucketData = data.buckets[i];
             const histo: HistogramBase = {
                 buckets: bucketData,
-                outOfRange: 0,
                 missingData: data.missingData
             };
 
@@ -182,9 +183,35 @@ class TrellisHistogramView extends BigTableView {
             const coarse = coarsened[i];
             plot.setHistogram(coarse, this.samplingRate, this.xAxisData, max);
             plot.draw();
+            plot.border(1);
             this.cdfs[i].draw();
         }
 
+        // We draw the axes after drawing the data
+        const borderWidth = 0;
+        this.xAxisData.setResolution(this.shape.size.width, AxisKind.Bottom);
+        for (let i = 0; i < this.shape.xNum; i++) {
+            this.surface
+                .getCanvas()
+                .append("g")
+                .attr("class", "x-axis")
+                .attr("transform", `translate(
+                    ${PlottingSurface.leftMargin + i * (this.shape.size.width + borderWidth)}, 
+                    ${PlottingSurface.topMargin + (this.shape.size.height + borderWidth) * this.shape.yNum})`)
+                .call(this.xAxisData.axis);
+        }
+
+        // This axis is only created when the surface is drawn
+        const yAxis = this.hps[0].yAxis;
+        for (let i = 0; i < this.shape.yNum; i++) {
+            this.surface.getCanvas()
+                .append("g")
+                .attr("class", "y-axis")
+                // 1 extra pixel for the border
+                .attr("transform", `translate(${PlottingSurface.leftMargin},
+                                              ${PlottingSurface.topMargin + i * (this.shape.size.height + 1)})`)
+                .call(yAxis);
+        }
         this.page.reportTime(elapsedMs);
     }
 

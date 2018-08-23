@@ -28,10 +28,10 @@ import javax.annotation.Nullable;
  * A sketch that computes the range of data in a column where values can be
  * converted to doubles.
  */
-public class DataRangeSketch implements ISketch<ITable, DataRange> {
+public class DoubleDataRangeSketch implements ISketch<ITable, DataRange> {
     private final String col;
 
-    public DataRangeSketch(String col) {
+    public DoubleDataRangeSketch(String col) {
         this.col = col;
     }
 

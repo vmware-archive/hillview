@@ -244,7 +244,7 @@ export class HeatmapLegendPlot extends Plot {
      */
     private enableContextMenu() {
         this.contextMenu = new ContextMenu(
-            this.plottingSurface.getHTMLRepresentation(), [
+            this.plottingSurface.topLevelElement, [
             {
                 text: "Cool",
                 help: "Use a color palette with cool colors.",

@@ -22,10 +22,8 @@ public class MinKTest {
     private double getMaxErr(int suppSize, int numBuckets, List<Integer> ranks) {
         double maxErr = 0;
         Assert.assertEquals((int) ranks.get(0), 0);
-        Assert.assertEquals((int) ranks.get(numBuckets), suppSize -1);
         if (printOn) {
             System.out.printf("Min rank: %d\n", ranks.get(0));
-            System.out.printf("Max rank: %d\n", ranks.get(numBuckets));
         }
         for (int i = 1; i < numBuckets; i++) {
             double err = Math.abs((ranks.get(i)/(suppSize - 1.0)) - i/((float) numBuckets));
@@ -55,7 +53,6 @@ public class MinKTest {
         return bound;
     }
 
-
     private void testStringTable(int suppSize) {
         int length = 6;
         List<String> randomString = TestTables.randStringList(suppSize, length);
@@ -68,11 +65,11 @@ public class MinKTest {
         if (printOn)
             System.out.printf("Table size: %d, non-null %d\n", num, mks.presentCount);
         int maxBuckets = 100;
-        List<String> boundaries = mks.getBoundaries(maxBuckets);
-        int numBuckets= boundaries.size() - 1;
+        List<String> boundaries = mks.getLeftBoundaries(maxBuckets);
+        int numBuckets = boundaries.size();
         List<Integer> ranks = TestTables.getRanks(boundaries, randomString);
         this.printBoundaries(boundaries, ranks);
-        double maxErr = this.getMaxErr(suppSize, numBuckets, ranks);
+        double maxErr = this.getMaxErr(suppSize, numBuckets - 1, ranks);
         double bound = this.getErrBound(numSamples);
         Assert.assertTrue(maxErr < bound);
     }
@@ -111,10 +108,10 @@ public class MinKTest {
         MinKSet<String> mks3 = bks.add(mks1, mks2);
         assert mks3 != null;
         int maxBuckets = 50;
-        List<String> boundaries = mks3.getBoundaries(maxBuckets);
-        int numBuckets= boundaries.size() - 1;
+        List<String> boundaries = mks3.getLeftBoundaries(maxBuckets);
+        int numBuckets = boundaries.size();
         List<Integer> ranks = TestTables.getRanks(boundaries, randomString);
-        double maxErr = this.getMaxErr(suppSize, numBuckets, ranks);
+        double maxErr = this.getMaxErr(suppSize, numBuckets - 1, ranks);
         double bound = this.getErrBound(numSamples);
         Assert.assertTrue(maxErr < bound);
     }
@@ -141,11 +138,11 @@ public class MinKTest {
         SampleDistinctElementsSketch bks = new SampleDistinctElementsSketch("Name", 1754, numSamples);
         MinKSet<String> mks = big.blockingSketch(bks);
         int maxBuckets = 100;
-        List<String> boundaries = mks.getBoundaries(maxBuckets);
-        int numBuckets= boundaries.size() - 1;
+        List<String> boundaries = mks.getLeftBoundaries(maxBuckets);
+        int numBuckets = boundaries.size();
         List<Integer> ranks = TestTables.getRanks(boundaries, randomString);
         this.printBoundaries(boundaries, ranks);
-        double maxErr = this.getMaxErr(suppSize, numBuckets, ranks);
+        double maxErr = this.getMaxErr(suppSize, numBuckets - 1, ranks);
         double bound = this.getErrBound(numSamples);
         Assert.assertTrue(maxErr < bound);
     }

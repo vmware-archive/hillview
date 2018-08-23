@@ -23,7 +23,7 @@ import {BigTableView, TableTargetAPI} from "../tableTarget";
 import {FullPage} from "../ui/fullPage";
 import {HeatmapLegendPlot} from "../ui/legendPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
-import {PlottingSurface} from "../ui/plottingSurface";
+import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {Resolution} from "../ui/ui";
 import {AxisData} from "./axisData";
 import {TrellisShape} from "./dataRangesCollectors";
@@ -69,7 +69,7 @@ export class TrellisHeatmapView extends BigTableView {
             ]) },
         ]);
         this.page.setMenu(menu);
-        this.legendSurface = new PlottingSurface(this.topLevel, page);
+        this.legendSurface = new HtmlPlottingSurface(this.topLevel, page);
         this.legendSurface.setHeight(Resolution.legendSpaceHeight);
         this.colorLegend = new HeatmapLegendPlot(this.legendSurface);
 
@@ -80,7 +80,7 @@ export class TrellisHeatmapView extends BigTableView {
             const row = tBody.insertRow();
             for (let x = 0; x < this.shape.xNum; x++) {
                 const cell = row.insertCell();
-                const surface = new PlottingSurface(cell, this.page);
+                const surface = new HtmlPlottingSurface(cell, this.page);
                 surface.setSize(this.shape.size);
                 surface.setMargins(0, 0, 0, 0);
                 const hp = new HeatmapPlot(surface, this.colorLegend, false);

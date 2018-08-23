@@ -29,9 +29,8 @@ import {FullPage} from "../ui/fullPage";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
 import {D3SvgElement, Point, Resolution, Size, SpecialChars, ViewKind} from "../ui/ui";
-import {Seed, significantDigits} from "../util";
+import {periodicSamples, Seed, significantDigits} from "../util";
 import {BigTableView} from "../tableTarget";
-import {DistinctStrings} from "../distinctStrings";
 
 /**
  * This is a base class that contains code common to various histogram renderings.
@@ -157,21 +156,20 @@ export abstract class HistogramViewBase extends BigTableView {
         exact: boolean,
         chartSize: Size): HistogramArgs {
         if (kindIsString(cd.kind)) {
-            const cdfBucketCount = range.boundaries.length;
+            const cdfBucketCount = range.leftBoundaries.length;
             let samplingRate = HistogramViewBase.samplingRate(
                 cdfBucketCount, range.presentCount, chartSize);
             if (exact)
                 samplingRate = 1.0;
-            let bounds = range.boundaries;
-            if (bucketCount !== 0) {
-                const ds = new DistinctStrings(range.boundaries, cd.name);
-                bounds = ds.periodicSamples(bucketCount);
-            }
+            let bounds = range.leftBoundaries;
+            if (bucketCount !== 0)
+                bounds = periodicSamples(range.leftBoundaries, bucketCount);
             const args: HistogramArgs = {
                 cd: cd,
                 seed: Seed.instance.getSampled(samplingRate),
                 samplingRate: samplingRate,
-                boundaries: bounds
+                leftBoundaries: bounds,
+                bucketCount: bounds.length
             };
             return args;
         } else {
@@ -196,7 +194,7 @@ export abstract class HistogramViewBase extends BigTableView {
                 max: range.max + adjust,
                 samplingRate: samplingRate,
                 seed: Seed.instance.getSampled(samplingRate),
-                cdfBucketCount: cdfCount
+                bucketCount: cdfCount
             };
             return args;
         }

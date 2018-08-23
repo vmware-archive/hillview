@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {PlottingSurface} from "./plottingSurface";
+import {HtmlPlottingSurface, PlottingSurface} from "./plottingSurface";
 import {AxisData} from "../dataViews/axisData";
 import {D3Axis, D3SvgElement} from "./ui";
 
@@ -52,7 +52,7 @@ export abstract class Plot {
     }
 
     public clear(): void {
-        this.plottingSurface.clear();
+        this.plottingSurface.create();
     }
 
     protected getXAxis(): D3Axis {

@@ -233,6 +233,26 @@ export function significantDigits(n: number): string {
 }
 
 /**
+ * Given some strings returns a subset of them.
+ * @param data   A set of strings.
+ * @param count  Number of strings to return.
+ * @returns      At most count strings equi-spaced.
+ */
+export function periodicSamples(data: string[], count: number): string[] {
+    if (data == null)
+        return null;
+
+    if (count >= data.length)
+        return data;
+    const boundaries: string[] = [];
+    for (let i = 0; i < count; i++) {
+        const index = Math.round(i * (data.length - 1) / count);
+        boundaries.push(data[index]);
+    }
+    return boundaries;
+}
+
+/**
  * Order two numbers such that the smaller one comes first
  */
 export function reorder(m: number, n: number): [number, number] {

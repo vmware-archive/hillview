@@ -22,24 +22,26 @@ import org.hillview.table.api.IColumn;
 import java.util.Arrays;
 
 /**
- * Bucket boundaries for string histograms.
+ * Left endpoints for string buckets.
  */
 public class StringHistogramBuckets implements IHistogramBuckets {
     private final String minValue;
-    private final String maxValue;
+    private final String lastBoundary;
     private final int numOfBuckets;
-    // These are the left endpoints of the buckets.
-    private final String[] boundaries;
+    /**
+     * These are the *left endpoints* of the buckets.
+     */
+    private final String[] leftBoundaries;
 
-    public StringHistogramBuckets(final String[] boundaries) {
-        if (boundaries.length == 0)
+    public StringHistogramBuckets(final String[] leftBoundaries) {
+        if (leftBoundaries.length == 0)
             throw new IllegalArgumentException("Boundaries of buckets can't be empty");
-        if (!isSorted(boundaries))
+        if (!isSorted(leftBoundaries))
             throw new IllegalArgumentException("Boundaries of buckets have to be sorted");
-        this.boundaries = boundaries;
-        this.numOfBuckets = boundaries.length;
-        this.minValue = this.boundaries[0];
-        this.maxValue = this.boundaries[this.boundaries.length - 1];
+        this.leftBoundaries = leftBoundaries;
+        this.numOfBuckets = leftBoundaries.length;
+        this.minValue = this.leftBoundaries[0];
+        this.lastBoundary = this.leftBoundaries[this.leftBoundaries.length - 1];
     }
 
     /**
@@ -53,11 +55,12 @@ public class StringHistogramBuckets implements IHistogramBuckets {
     }
 
     public int indexOf(String item) {
-        if ((item.compareTo(this.minValue)) < 0 || (item.compareTo(this.maxValue)) > 0)
+        if ((item.compareTo(this.minValue)) < 0)
             return -1;
-        if (item.equals(this.maxValue))
+        if (item.compareTo(this.lastBoundary) >= 0)
+            // Anything bigger than the lastBoundary is in the last bucket
             return this.numOfBuckets - 1;
-        int index = Arrays.binarySearch(boundaries, item);
+        int index = Arrays.binarySearch(leftBoundaries, item);
         // This method returns index of the search key, if it is contained in the array,
         // else it returns (-(insertion point) - 1). The insertion point is the point
         // at which the key would be inserted into the array: the index of the first
@@ -65,10 +68,10 @@ public class StringHistogramBuckets implements IHistogramBuckets {
         // are less than the specified key.
         if (index < 0) {
             index = -index - 1;
-
             if (index == 0)
                 // before first element
-                index = -1;
+                return -1;
+            return index - 1;
         }
         return index;
     }

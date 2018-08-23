@@ -41,14 +41,19 @@ public class BucketsDescriptionTest extends BaseTest {
     public void testGeneric1D() {
         String[] boundaries = { "Apple", "Bad", "China", "Rome", "Zetta" };
         StringHistogramBuckets b = new StringHistogramBuckets(boundaries);
-        assertEquals(b.getNumOfBuckets(), 5);
-        assertEquals(b.indexOf("Aardwark"), -1);
-        assertEquals(b.indexOf("Apple"), 0);
-        assertEquals(b.indexOf("Away"), 1);
-        assertEquals(b.indexOf(""), -1);
-        assertEquals(b.indexOf("Bad"), 1);
-        assertEquals(b.indexOf("Zz"), -1);
-        assertEquals(b.indexOf("Z"), 4);
-        assertEquals(b.indexOf("Zetta"), 4);
+        assertEquals(5, b.getNumOfBuckets());
+        assertEquals(-1, b.indexOf("Aardwark"));
+        assertEquals(0, b.indexOf("Apple"));
+        assertEquals(0, b.indexOf("Away"));
+        assertEquals(-1, b.indexOf(""));
+        assertEquals(1, b.indexOf("Bad"));
+        assertEquals(1, b.indexOf("Bubble"));
+        assertEquals(2, b.indexOf("China"));
+        assertEquals(2, b.indexOf("Cocoon"));
+        assertEquals(3, b.indexOf("Rome"));
+        assertEquals(3, b.indexOf("Sudden"));
+        assertEquals(3, b.indexOf("Z"));
+        assertEquals(4, b.indexOf("Zetta"));
+        assertEquals(4, b.indexOf("Zz"));
     }
 }

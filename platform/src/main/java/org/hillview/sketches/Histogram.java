@@ -35,7 +35,6 @@ public class Histogram extends HistogramBase {
     public void rescale(double sampleRate) {
         if (sampleRate >= 1)
             return;
-        this.outOfRange = (long) ((double) this.outOfRange / sampleRate);
         this.missingData = (long) ((double) this.missingData / sampleRate);
         for (int i = 0; i < this.buckets.length; i++)
             this.buckets[i] = (long) ((double) this.buckets[i] / sampleRate);
@@ -48,7 +47,6 @@ public class Histogram extends HistogramBase {
             int index = this.bucketDescription.indexOf(column, currRow);
             if (index >= 0)
                 this.buckets[index]++;
-            else this.outOfRange++;
         }
     }
 
@@ -68,8 +66,6 @@ public class Histogram extends HistogramBase {
 
     public long getMissingData() { return this.missingData; }
 
-    public long getOutOfRange() { return this.outOfRange; }
-
     /**
      * @return the index's bucket count
      */
@@ -84,7 +80,6 @@ public class Histogram extends HistogramBase {
         for (int i = 0; i < unionH.bucketDescription.getNumOfBuckets(); i++)
             unionH.buckets[i] = this.buckets[i] + otherHistogram.buckets[i];
         unionH.missingData = this.missingData + otherHistogram.missingData;
-        unionH.outOfRange = this.outOfRange + otherHistogram.outOfRange;
         return unionH;
     }
 

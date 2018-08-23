@@ -27,7 +27,6 @@ import java.io.Serializable;
 public class Heatmap3D implements Serializable, IJson {
     private final long[][][] buckets;
     private long eitherMissing; // number of items missing in either of the columns
-    private long outOfRange;
     private final IHistogramBuckets bucketDescDim1;
     private final IHistogramBuckets bucketDescDim2;
     private final IHistogramBuckets bucketDescDim3;
@@ -63,7 +62,6 @@ public class Heatmap3D implements Serializable, IJson {
                     this.buckets[index1][index2][index3]++;
                     this.totalPresent++;
                 }
-                else this.outOfRange++;
             }
             currRow = myIter.getNextRow();
         }
@@ -72,8 +70,6 @@ public class Heatmap3D implements Serializable, IJson {
     public long getSize() { return this.totalPresent; }
 
     public long getMissingData() { return this.eitherMissing; }
-
-    public long getOutOfRange() { return this.outOfRange; }
 
     public long getCount(final int index1, final int index2, final int index3) {
         return this.buckets[index1][index2][index3];
@@ -90,7 +86,6 @@ public class Heatmap3D implements Serializable, IJson {
                 for (int k = 0; k < unionH.bucketDescDim3.getNumOfBuckets(); k++)
                     unionH.buckets[i][j][k] = this.buckets[i][j][k] + otherHeatmap3D.buckets[i][j][k];
         unionH.eitherMissing = this.eitherMissing + otherHeatmap3D.eitherMissing;
-        unionH.outOfRange = this.outOfRange + otherHeatmap3D.outOfRange;
         unionH.totalPresent = this.totalPresent + otherHeatmap3D.totalPresent;
         return unionH;
     }

@@ -38,7 +38,7 @@ import {FullPage} from "../ui/fullPage";
 import {Histogram2DPlot} from "../ui/Histogram2DPlot";
 import {HistogramLegendPlot} from "../ui/legendPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
-import {PlottingSurface} from "../ui/plottingSurface";
+import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
 import {ChartKind, ChartOptions, D3SvgElement, Rectangle, Resolution} from "../ui/ui";
 import {
@@ -82,10 +82,10 @@ export class Histogram2DView extends HistogramViewBase {
                 schema: SchemaClass, protected samplingRate: number, page: FullPage) {
         super(remoteObjectId, rowCount, schema, page, "2DHistogram");
 
-        this.legendSurface = new PlottingSurface(this.chartDiv, page);
+        this.legendSurface = new HtmlPlottingSurface(this.chartDiv, page);
         this.legendSurface.setHeight(Resolution.legendSpaceHeight);
         this.legendPlot = new HistogramLegendPlot(this.legendSurface);
-        this.surface = new PlottingSurface(this.chartDiv, page);
+        this.surface = new HtmlPlottingSurface(this.chartDiv, page);
         this.plot = new Histogram2DPlot(this.surface);
         this.cdfPlot = new CDFPlot(this.surface);
 
@@ -212,7 +212,7 @@ export class Histogram2DView extends HistogramViewBase {
             .attr("height", 0);
 
         this.pointDescription = new TextOverlay(this.surface.getChart(),
-            this.surface.getDefaultChartSize(),
+            this.surface.getActualChartSize(),
             [   this.xAxisData.description.name,
                 this.yData.description.name,
                 "y", "count", "%", "cdf"], 40);

@@ -44,7 +44,6 @@ public class HistogramTest extends BaseTest {
         int size = 0;
         for (int i = 0; i < bucketNum; i++)
             size += hist.getCount(i);
-        Assert.assertEquals(size + hist.getMissingData() + hist.getOutOfRange(), colSize);
         Histogram hist1 = new Histogram(buckDes);
         DoubleArrayColumn col1 = DoubleArrayTest.generateDoubleArray(2 * colSize, 100);
         FullMembershipSet fMap1 = new FullMembershipSet(2 * colSize);
@@ -53,14 +52,11 @@ public class HistogramTest extends BaseTest {
         size = 0;
         for (int i = 0; i < bucketNum; i++)
             size += hist2.getCount(i);
-        Assert.assertEquals(size + hist2.getMissingData() + hist2.getOutOfRange(), 3 * colSize);
         Histogram hist3 = new Histogram(buckDes);
         hist3.create(col, fMap, 0.1, 0, false);
         size = 0;
         for (int i = 0; i < bucketNum; i++)
             size += hist3.getCount(i);
-        Assert.assertTrue(size + hist3.getMissingData() + hist3.getOutOfRange() > 0.9 * colSize);
-        Assert.assertTrue(size + hist3.getMissingData() + hist3.getOutOfRange() < 1.1 * colSize);
     }
 
     @Test
@@ -74,59 +70,37 @@ public class HistogramTest extends BaseTest {
         DoubleArrayColumn col2 = DoubleArrayTest.generateDoubleArray(colSize, 3);
         FullMembershipSet fMap = new FullMembershipSet(colSize);
         hm.createHeatmap(col1, col2, fMap, 1.0, 0, false);
-        basicTestHeatmap(hm, colSize);
         Heatmap hm1 = new Heatmap(buckDes1, buckDes2);
         DoubleArrayColumn col3 = DoubleArrayTest.generateDoubleArray(2 * colSize, 100);
         DoubleArrayColumn col4 = DoubleArrayTest.generateDoubleArray(2 * colSize, 100);
         FullMembershipSet fMap1 = new FullMembershipSet(2 * colSize);
         hm1.createHeatmap(col3, col4, fMap1, 0.1, 0, false);
-        basicTestHeatmap(hm1, 2 * colSize);
-        Heatmap hm2 = hm.union(hm1);
-        basicTestHeatmap(hm2, 3 * colSize);
+        hm.union(hm1);
     }
 
-    static void basicTestHeatmap(Heatmap hist, long expectedSize) {
-        long size = 0;
-        long size1 = 0;
-        long size2 = 0;
-        for (int i = 0; i < hist.getNumOfBucketsD1(); i++)
-            for (int j = 0; j< hist.getNumOfBucketsD2(); j++)
-                size += hist.getCount(i,j);
-        size += hist.getMissingData();
-        size += hist.getOutOfRange();
-        for (int i = 0; i < hist.getNumOfBucketsD2(); i++)
-            size1 += hist.getMissingHistogramD1().getCount(i);
-        size1 += hist.getMissingHistogramD1().getOutOfRange();
-        for (int i = 0; i < hist.getNumOfBucketsD1(); i++)
-            size2 += hist.getMissingHistogramD2().getCount(i);
-        size2 += hist.getMissingHistogramD2().getOutOfRange();
-        Assert.assertTrue(size + size1 + size2 > 0.9 * expectedSize);
-        Assert.assertTrue(size + size1 + size2 < 1.1 * expectedSize);
-    }
-
-    static void testMissing() {
+    @Test
+    public void testMissing() {
         ColumnDescription c0 = new ColumnDescription("col0", ContentsKind.Double);
         ColumnDescription c1 = new ColumnDescription("col1", ContentsKind.Double);
         IAppendableColumn col0 = BaseListColumn.create(c0);
         IAppendableColumn col1 = BaseListColumn.create(c1);
         for (int i=0; i < 3; i++) {
-            col0.append(0);
-            col0.append(1);
-            col0.append(2);
+            col0.append(0.0);
+            col0.append(1.0);
+            col0.append(2.0);
             col0.appendMissing();
         }
 
         for (int i = 0; i < 4; i++)
-            col1.append(0);
+            col1.append(0.0);
         for (int i = 0; i < 4; i++)
-            col1.append(1);
+            col1.append(1.0);
         for (int i = 0; i < 4; i++)
             col1.appendMissing();
 
         IColumn[] cols = new IColumn[2];
         cols[0] = col0;
         cols[1] = col1;
-        Table t = new Table(cols, null, null);
         DoubleHistogramBuckets buckDes1 = new DoubleHistogramBuckets(0, 2, 3);
         DoubleHistogramBuckets buckDes2 = new DoubleHistogramBuckets(0, 1, 2);
         Heatmap hm = new Heatmap(buckDes1, buckDes2);
@@ -140,13 +114,13 @@ public class HistogramTest extends BaseTest {
         Assert.assertEquals(1, hm.getCount(1, 1));
         Assert.assertEquals(1, hm.getCount(2, 1));
         Assert.assertEquals(1, hm.getCount(2, 1));
-        Assert.assertEquals(3, h1.getNumOfBuckets());
-        Assert.assertEquals(1, h1.getCount(0));
-        Assert.assertEquals(1, h1.getCount(1));
-        Assert.assertEquals(1, h1.getCount(2));
-        Assert.assertEquals(2, h2.getNumOfBuckets());
+        Assert.assertEquals(3, h2.getNumOfBuckets());
         Assert.assertEquals(1, h2.getCount(0));
         Assert.assertEquals(1, h2.getCount(1));
+        Assert.assertEquals(1, h2.getCount(2));
+        Assert.assertEquals(2, h1.getNumOfBuckets());
+        Assert.assertEquals(1, h1.getCount(0));
+        Assert.assertEquals(1, h1.getCount(1));
         Assert.assertEquals(1, hm.getMissingData());
     }
 }

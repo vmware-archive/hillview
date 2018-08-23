@@ -119,11 +119,15 @@ public final class TableTarget extends RpcTarget {
         this.runCompleteSketch(this.table, sk, (e, c) -> e, request, context);
     }
 
-    static class StringBucketBoundaries extends BucketsInfo {
-        JsonList<String> boundaries;
-        StringBucketBoundaries(MinKSet<String> samples, int bucketCount) {
-            this.boundaries = samples.getBoundaries(bucketCount);
+    static class StringBucketLeftBoundaries extends BucketsInfo {
+        JsonList<String> leftBoundaries;
+        boolean          allStringsKnown;
+
+        StringBucketLeftBoundaries(MinKSet<String> samples, int bucketCount) {
+            this.leftBoundaries = samples.getLeftBoundaries(bucketCount);
+            this.allStringsKnown = samples.allStringsKnown(bucketCount);
             this.presentCount = samples.presentCount;
+            this.missingCount = samples.missingCount;
         }
     }
 
@@ -144,7 +148,7 @@ public final class TableTarget extends RpcTarget {
                 //noinspection unchecked
                 return (ISketch<ITable, BucketsInfo>)(Object)s;
             } else {
-                ISketch<ITable, DataRange> s = new DataRangeSketch(this.cd.name);
+                ISketch<ITable, DataRange> s = new DoubleDataRangeSketch(this.cd.name);
                 //noinspection unchecked
                 return (ISketch<ITable, BucketsInfo>)(Object)s;
             }
@@ -154,7 +158,7 @@ public final class TableTarget extends RpcTarget {
             if (this.cd.kind.isString()) {
                 int b = this.stringsToSample;
                 //noinspection unchecked
-                return (e, c) -> new StringBucketBoundaries((MinKSet<String>)e, b);
+                return (e, c) -> new StringBucketLeftBoundaries((MinKSet<String>)e, b);
             } else {
                 return (e, c) -> e;
             }
@@ -221,18 +225,18 @@ public final class TableTarget extends RpcTarget {
         long seed;
         // Only used when doing string histograms
         @Nullable
-        String[] boundaries;
+        String[] leftBoundaries;
         // Only used when doing double histograms
         double min;
         double max;
-        int cdfBucketCount;
+        int bucketCount;
 
         IHistogramBuckets getBuckets() {
             if (cd.kind.isString()) {
-                assert this.boundaries != null;
-                return new StringHistogramBuckets(this.boundaries);
+                assert this.leftBoundaries != null;
+                return new StringHistogramBuckets(this.leftBoundaries);
             } else {
-                return new DoubleHistogramBuckets(this.min, this.max, this.cdfBucketCount);
+                return new DoubleHistogramBuckets(this.min, this.max, this.bucketCount);
             }
         }
 

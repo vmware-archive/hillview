@@ -18,7 +18,6 @@
 import {drag as d3drag} from "d3-drag";
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {DatasetView, HistogramSerialization, IViewSerialization} from "../datasetView";
-import {DistinctStrings} from "../distinctStrings";
 import {
     CombineOperators,
     FilterDescription,
@@ -37,7 +36,7 @@ import {Dialog} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
 import {HistogramPlot} from "../ui/histogramPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
-import {PlottingSurface} from "../ui/plottingSurface";
+import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
 import {ChartKind, HistogramOptions, Resolution} from "../ui/ui";
 import {
@@ -61,7 +60,6 @@ export class HistogramView extends HistogramViewBase {
     protected cdf: HistogramBase;
     protected histogram: HistogramBase;
     protected axisData: AxisData;
-    protected allStringsKnown: boolean; // True for string histograms if the strings are not subsampled
     protected menu: TopMenu;
     protected plot: HistogramPlot;
 
@@ -72,7 +70,7 @@ export class HistogramView extends HistogramViewBase {
         protected samplingRate: number,
         page: FullPage) {
         super(remoteObjectId, rowCount, schema, page, "Histogram");
-        this.surface = new PlottingSurface(this.chartDiv, page);
+        this.surface = new HtmlPlottingSurface(this.chartDiv, page);
         this.plot = new HistogramPlot(this.surface);
         this.cdfPlot = new CDFPlot(this.surface);
 
@@ -190,13 +188,11 @@ export class HistogramView extends HistogramViewBase {
         return {
             buckets: buckets,
             missingData: cdf.missingData,
-            outOfRange: cdf.outOfRange
         };
     }
 
-    public setAxes(axisData: AxisData, allStringsKnown: boolean) {
+    public setAxes(axisData: AxisData) {
         this.axisData = axisData;
-        this.allStringsKnown = allStringsKnown;
     }
 
     public updateView(cdf: HistogramBase, bucketCount: number, // If 0 the bucket count will be computed
@@ -260,17 +256,17 @@ export class HistogramView extends HistogramViewBase {
         if (cdf != null)
             pointDesc.push("cdf");
         this.pointDescription = new TextOverlay(this.surface.getChart(),
-            this.surface.getDefaultChartSize(), pointDesc, 40);
+            this.surface.getActualChartSize(), pointDesc, 40);
         this.pointDescription.show(false);
 
         let summary = "";
         if (h.missingData !== 0)
             summary = formatNumber(h.missingData) + " missing, ";
         summary += formatNumber(this.rowCount) + " points";
-        if (this.allStringsKnown &&
-            this.axisData.distinctStrings != null &&
-            this.axisData.distinctStrings.uniqueStrings != null)
-            summary += ", " + (this.axisData.range.max - this.axisData.range.min) + " distinct values";
+        if (this.axisData != null &&
+            this.axisData.range.leftBoundaries != null &&
+            this.axisData.range.allStringsKnown)
+            summary += ", " + this.axisData.boundaries.length + " distinct values";
         summary += ", " + String(bucketCount) + " buckets";
         if (this.samplingRate < 1.0)
             summary += ", sampling rate " + significantDigits(this.samplingRate);
@@ -506,8 +502,7 @@ export class HistogramView extends HistogramViewBase {
             complement: d3event.sourceEvent.ctrlKey,
         };
         const rr = this.createFilterRequest(filter);
-        const renderer = new FilterReceiver(filter, this.axisData.description,
-            this.schema, this.axisData.distinctStrings,
+        const renderer = new FilterReceiver(filter, this.axisData.description, this.schema,
             this.samplingRate >= 1.0, this.page.title, this.page, rr, this.dataset);
         rr.invoke(renderer);
     }
@@ -522,7 +517,6 @@ class FilterReceiver extends BaseRenderer {
         protected filter: FilterDescription,
         protected columnDescription: IColumnDescription,
         protected schema: SchemaClass,
-        protected allStrings: DistinctStrings,
         protected exact: boolean,
         protected sourceTitle: string,
         page: FullPage,
@@ -573,13 +567,12 @@ export class HistogramRenderer extends Receiver<HistogramBase>  {
                 protected axisData: AxisData,
                 operation: ICancellable<HistogramBase>,
                 protected samplingRate: number,
-                protected complete: boolean,
                 reusePage: boolean) {
         super(reusePage ? sourcePage : sourcePage.dataset.newPage(title, sourcePage),
             operation, "histogram");
         this.view = new HistogramView(
             remoteTableId, rowCount, schema, this.samplingRate, this.page);
-        this.view.setAxes(axisData, complete);
+        this.view.setAxes(axisData);
         this.page.setDataView(this.view);
     }
 

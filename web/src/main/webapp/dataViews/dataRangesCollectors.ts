@@ -163,15 +163,13 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                 Math.floor(chartSize.width / Resolution.minTrellisWindowSize) *
                 Math.floor(chartSize.height / Resolution.minTrellisWindowSize);
             if (kindIsString(this.cds[groupByIndex].kind))
-                windows = Math.min(maxWindows, ranges[groupByIndex].boundaries.length);
+                windows = Math.min(maxWindows, ranges[groupByIndex].leftBoundaries.length);
             else if (this.cds[groupByIndex].kind === "Integer")
                 windows = Math.min(maxWindows,
                     ranges[groupByIndex].max - ranges[groupByIndex].min + 1);
             else
                 windows = maxWindows;
             trellisShape = this.trellisLayout(windows);
-            if (trellisShape.xNum * trellisShape.yNum < windows)
-                windows = trellisShape.xNum * trellisShape.yNum;
         }
 
         switch (this.options.chartKind) {
@@ -186,7 +184,7 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                     const rr = this.originator.createHeatmapRequest(args);
                     const renderer = new TrellisHistogramRenderer(this.page,
                         this.originator, rowCount, this.schema,
-                        this.cds, ranges, [wArg.cdfBucketCount, xArg.cdfBucketCount],
+                        this.cds, ranges, [wArg.bucketCount, xArg.bucketCount],
                         1.0, trellisShape, rr, this.options.reusePage);
                     rr.chain(this.operation);
                     rr.invoke(renderer);
@@ -216,9 +214,9 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
 
                 const rr = this.originator.createHeatmap3DRequest(args);
                 const xAxis = new AxisData(this.cds[0], ranges[0]);
-                xAxis.setBucketCount(xArg.cdfBucketCount);
+                xAxis.setBucketCount(xArg.bucketCount);
                 const yAxis = new AxisData(this.cds[1], ranges[1]);
-                yAxis.setBucketCount(yArg.cdfBucketCount);
+                yAxis.setBucketCount(yArg.bucketCount);
                 const groupByAxis = new AxisData(this.cds[2], ranges[2]);
                 const renderer = new TrellisHeatmapRenderer(this.page,
                     this.originator, rowCount, this.schema,
@@ -240,9 +238,9 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
 
                 const rr = this.originator.createHeatmapRequest(args);
                 const xAxis = new AxisData(this.cds[0], ranges[0]);
-                xAxis.setBucketCount(xArg.cdfBucketCount);
+                xAxis.setBucketCount(xArg.bucketCount);
                 const yAxis = new AxisData(this.cds[1], ranges[1]);
-                yAxis.setBucketCount(yArg.cdfBucketCount);
+                yAxis.setBucketCount(yArg.bucketCount);
                 const renderer = new HeatmapRenderer(this.page,
                     this.originator, rowCount, this.schema,
                     [xAxis, yAxis], 1.0, rr, this.options.reusePage);
@@ -277,11 +275,11 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                 args.push(cdfArg);
                 const rr = this.originator.createHistogram2DRequest(args);
                 const xAxis = new AxisData(this.cds[0], ranges[0]);
-                const yAxis = new AxisData(this.cds[1], ranges[1]);
-                yAxis.setBucketCount(yarg.cdfBucketCount);
+                const yData = new AxisData(this.cds[1], ranges[1]);
+                yData.setBucketCount(yarg.bucketCount);
                 const renderer = new Histogram2DRenderer(this.page,
                     this.originator, rowCount, this.schema,
-                    [xAxis, yAxis], cdfArg.samplingRate, rr,
+                    [xAxis, yData], cdfArg.samplingRate, rr,
                     this.options);
                 rr.chain(this.operation);
                 rr.invoke(renderer);
@@ -321,10 +319,6 @@ export class DataRangeCollector extends OnCompleteReceiver<DataRange> {
         const rowCount = range.presentCount + range.missingCount;
         if (this.title == null)
             this.title = "Histogram of " + this.cd.name;
-        let complete: boolean = true;
-        if (range.boundaries != null)
-            complete = this.bucketsRequested > range.boundaries.length;
-
         const chartSize = PlottingSurface.getDefaultChartSize(this.page.getWidthInPixels());
         const args = HistogramViewBase.computeHistogramArgs(
             this.cd, range, 0, // ignore the bucket count; we'll integrate the CDF
@@ -334,7 +328,7 @@ export class DataRangeCollector extends OnCompleteReceiver<DataRange> {
         const axisData = new AxisData(this.cd, range);
         const renderer = new HistogramRenderer(this.title, this.page,
             this.originator.remoteObjectId, rowCount, this.schema, this.bucketCount,
-            axisData, rr, args.samplingRate, complete, this.options.reusePage);
+            axisData, rr, args.samplingRate, this.options.reusePage);
         rr.invoke(renderer);
     }
 }

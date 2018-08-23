@@ -11,7 +11,7 @@ import java.util.Comparator;
 /**
  * This sketch produces a uniformly random sample of maxSize distinct values from a column (assuming
  * truly random hashing). The values are sampled from the set of distinct values in that column.
- * Missing values are ignored. IF there are fewer than msxSize distinct values, then all of them are
+ * Missing values are ignored. If there are fewer than maxSize distinct values, then all of them are
  * returned.
  */
 public class SampleDistinctElementsSketch implements ISketch<ITable, MinKSet<String>> {

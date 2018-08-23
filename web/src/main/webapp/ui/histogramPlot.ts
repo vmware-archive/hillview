@@ -42,7 +42,7 @@ export class HistogramPlot extends Plot {
     public samplingRate: number;
     public barWidth: number;
     public yScale: D3Scale;
-    protected yAxis: D3Axis;
+    public yAxis: D3Axis;
     protected max: number | null;
 
     public constructor(protected plottingSurface: PlottingSurface) {
@@ -68,8 +68,20 @@ export class HistogramPlot extends Plot {
         this.max = max;
     }
 
+    public border(width: number): void {
+        this.plottingSurface.getChart()
+            .append("rect")
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("width", this.getChartWidth())
+            .attr("height", this.getChartHeight())
+            .attr("stroke", "black")
+            .style("fill", "none")
+            .attr("stroke-width", width);
+    }
+
     public draw(): void {
-        this.plottingSurface.clear();
+        this.plottingSurface.create();
         if (this.histogram == null)
             return;
 
