@@ -33,13 +33,12 @@ export class TextOverlay {
 
     /**
      * Create a textOverlay.
-     * TODO: change parent to be a PlottingSurface
      * @param parent     Parent is really d3 svg element.
      * @param parentSize The size of the parent element,
      * @param keys       Keys whose values will be updated.
      * @param maxLength  Maximum rendered key length.
      */
-    constructor(private readonly parent: any, private readonly parentSize: Size,
+    constructor(private readonly parent: D3SvgElement, private readonly parentSize: Size,
                 private readonly keys: string[], maxLength: number) {
         this.height = keys.length * Resolution.lineHeight;
         this.rect = this.parent.append("rect")

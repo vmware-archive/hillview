@@ -26,7 +26,7 @@ import {BigTableView} from "../tableTarget";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
 import {SubMenu, TopMenuItem} from "../ui/menu";
-import {ChartKind, SpecialChars, ViewKind} from "../ui/ui";
+import {SpecialChars, ViewKind} from "../ui/ui";
 import {
     cloneToSet, Comparison, Converters, ICancellable, mapToArray, significantDigits,
 } from "../util";
@@ -178,7 +178,7 @@ export abstract class TSViewBase extends BigTableView {
         const rr = this.getDataRanges(cds, buckets);
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema, 0, cds, null, {
             reusePage: false, relative: false,
-            chartKind: ChartKind.Histogram, exact: false
+            chartKind: "2DHistogram", exact: false
         }));
     }
 
@@ -187,15 +187,14 @@ export abstract class TSViewBase extends BigTableView {
         const rr = this.getDataRanges(cds, buckets);
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema, 0, cds, null, {
             reusePage: false, relative: false,
-            chartKind: ChartKind.TrellisHistogram, exact: false
+            chartKind: "TrellisHistogram", exact: false
         }));
     }
 
     protected trellis3D(cds: IColumnDescription[], heatmap: boolean): void {
         const buckets = HistogramViewBase.maxTrellis3DBuckets(this.page);
         const rr = this.getDataRanges(cds, buckets);
-        const chartKind: ChartKind =
-            heatmap ? ChartKind.TrellisHeatmap : ChartKind.Histogram;
+        const chartKind = heatmap ? "TrellisHeatmap" : "TrellisHistogram";
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema, 0, cds, null, {
             reusePage: false, relative: false,
             chartKind: chartKind, exact: false
@@ -228,7 +227,7 @@ export abstract class TSViewBase extends BigTableView {
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema, 0, cds, null, {
             reusePage: false,
             relative: false,
-            chartKind: ChartKind.Heatmap,
+            chartKind: "Heatmap",
             exact: true
         }));
     }

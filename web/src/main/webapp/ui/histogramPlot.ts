@@ -41,8 +41,8 @@ export class HistogramPlot extends Plot {
      */
     public samplingRate: number;
     public barWidth: number;
-    public yScale: D3Scale;
-    public yAxis: D3Axis;
+    protected yScale: D3Scale;
+    protected yAxis: D3Axis;
     protected max: number | null;
 
     public constructor(protected plottingSurface: PlottingSurface) {
@@ -66,18 +66,6 @@ export class HistogramPlot extends Plot {
         const bucketCount = this.histogram.buckets.length;
         this.barWidth = chartWidth / bucketCount;
         this.max = max;
-    }
-
-    public border(width: number): void {
-        this.plottingSurface.getChart()
-            .append("rect")
-            .attr("x", 0)
-            .attr("y", 0)
-            .attr("width", this.getChartWidth())
-            .attr("height", this.getChartHeight())
-            .attr("stroke", "black")
-            .style("fill", "none")
-            .attr("stroke-width", width);
     }
 
     public draw(): void {
@@ -126,8 +114,12 @@ export class HistogramPlot extends Plot {
             this.drawAxes();
     }
 
-    protected getYAxis(): D3Axis {
+    public getYAxis(): D3Axis {
         return this.yAxis;
+    }
+
+    public getYScale(): D3Scale {
+        return this.yScale;
     }
 
     public get(x: number): number {

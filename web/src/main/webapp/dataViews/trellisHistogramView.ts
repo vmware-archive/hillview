@@ -26,11 +26,14 @@ import {
     RemoteObjectId
 } from "../javaBridge";
 import {FullPage} from "../ui/fullPage";
-import {BigTableView, TableTargetAPI} from "../tableTarget";
+import {TableTargetAPI} from "../tableTarget";
 import {SchemaClass} from "../schemaClass";
 import {ICancellable, PartialResult} from "../util";
 import {AxisData, AxisKind} from "./axisData";
-import {HistogramSerialization, IViewSerialization} from "../datasetView";
+import {
+    IViewSerialization,
+    TrellisHistogramSerialization
+} from "../datasetView";
 import {IDataView} from "../ui/dataview";
 import {Resolution} from "../ui/ui";
 import {HistogramPlot} from "../ui/histogramPlot";
@@ -39,15 +42,14 @@ import {HistogramView} from "./histogramView";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {CDFPlot} from "../ui/CDFPlot";
 import {TrellisShape} from "./dataRangesCollectors";
+import {ChartView} from "./chartView";
 
-class TrellisHistogramView extends BigTableView {
+export class TrellisHistogramView extends ChartView {
     protected hps: HistogramPlot[];
     protected cdfs: CDFPlot[];
     protected buckets: number;
-    protected menu: TopMenu;
     protected xAxisData: AxisData;
     protected legendAxisData: AxisData;
-    protected surface: PlottingSurface;
 
     public constructor(
         remoteObjectId: RemoteObjectId,
@@ -56,7 +58,7 @@ class TrellisHistogramView extends BigTableView {
         protected shape: TrellisShape,
         protected samplingRate: number,
         page: FullPage) {
-        super(remoteObjectId, rowCount, schema, page, "Trellis");
+        super(remoteObjectId, rowCount, schema, page, "TrellisHistogram");
         this.topLevel = document.createElement("div");
         this.topLevel.className = "chart";
         this.topLevel.tabIndex = 1;
@@ -147,11 +149,14 @@ class TrellisHistogramView extends BigTableView {
     }
 
     public serialize(): IViewSerialization {
-        // TODO
-        return null;
+        const ser: TrellisHistogramSerialization = {
+            ...super.serialize()
+            // TODO
+        };
+        return ser;
     }
 
-    public static reconstruct(ser: HistogramSerialization, page: FullPage): IDataView {
+    public static reconstruct(ser: TrellisHistogramSerialization, page: FullPage): IDataView {
         // TODO
         return null;
     }
@@ -202,17 +207,23 @@ class TrellisHistogramView extends BigTableView {
         }
 
         // This axis is only created when the surface is drawn
-        const yAxis = this.hps[0].yAxis;
+        const yAxis = this.hps[0].getYAxis();
         for (let i = 0; i < this.shape.yNum; i++) {
             this.surface.getCanvas()
                 .append("g")
                 .attr("class", "y-axis")
-                // 1 extra pixel for the border
                 .attr("transform", `translate(${PlottingSurface.leftMargin},
-                                              ${PlottingSurface.topMargin + i * (this.shape.size.height + 1)})`)
+                                              ${PlottingSurface.topMargin + i * 
+                                                (this.shape.size.height + borderWidth)})`)
                 .call(yAxis);
         }
+
+        this.setupMouse();
         this.page.reportTime(elapsedMs);
+    }
+
+    protected onMouseMove(): void {
+        // TODO
     }
 
     // combine two views according to some operation

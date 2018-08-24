@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-import {drag as d3drag} from "d3-drag";
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {DatasetView, HistogramSerialization, IViewSerialization} from "../datasetView";
 import {
@@ -38,7 +37,7 @@ import {HistogramPlot} from "../ui/histogramPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {ChartKind, HistogramOptions, Resolution} from "../ui/ui";
+import {HistogramOptions, Resolution} from "../ui/ui";
 import {
     formatNumber,
     ICancellable,
@@ -60,7 +59,6 @@ export class HistogramView extends HistogramViewBase {
     protected cdf: HistogramBase;
     protected histogram: HistogramBase;
     protected axisData: AxisData;
-    protected menu: TopMenu;
     protected plot: HistogramPlot;
 
     constructor(
@@ -191,7 +189,7 @@ export class HistogramView extends HistogramViewBase {
         };
     }
 
-    public setAxes(axisData: AxisData) {
+    public setAxes(axisData: AxisData): void {
         this.axisData = axisData;
     }
 
@@ -222,11 +220,6 @@ export class HistogramView extends HistogramViewBase {
 
         const counts = h.buckets;
         bucketCount = counts.length;
-        const drag = d3drag()
-            .on("start", () => this.dragStart())
-            .on("drag", () => this.dragMove())
-            .on("end", () => this.dragEnd());
-
         this.plot.setHistogram(h, this.samplingRate, this.axisData);
         this.plot.draw();
 
@@ -234,30 +227,19 @@ export class HistogramView extends HistogramViewBase {
             this.axisData.description.kind === "Integer";
         this.cdfPlot.setData(cdf, discrete);
         this.cdfPlot.draw();
+        this.setupMouse();
+
         const canvas = this.surface.getCanvas();
-
-        canvas.call(drag)
-            .on("mousemove", () => this.mouseMove())
-            .on("mouseenter", () => this.mouseEnter())
-            .on("mouseleave", () => this.mouseLeave());
-
         this.cdfDot = canvas
             .append("circle")
             .attr("r", Resolution.mouseDotRadius)
             .attr("fill", "blue");
-
-        this.selectionRectangle = canvas
-            .append("rect")
-            .attr("class", "dashed")
-            .attr("width", 0)
-            .attr("height", 0);
 
         const pointDesc = ["x", "y", "size"];
         if (cdf != null)
             pointDesc.push("cdf");
         this.pointDescription = new TextOverlay(this.surface.getChart(),
             this.surface.getActualChartSize(), pointDesc, 40);
-        this.pointDescription.show(false);
 
         let summary = "";
         if (h.missingData !== 0)
@@ -292,14 +274,14 @@ export class HistogramView extends HistogramViewBase {
         dialog.show();
     }
 
-    private showTrellis(colName: string) {
+    private showTrellis(colName: string): void {
         const groupBy = this.schema.findByDisplayName(colName);
         const cds: IColumnDescription[] = [this.axisData.description, groupBy];
         const buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
         const rr = this.getDataRanges(cds, buckets);
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema, 0, cds, null, {
             reusePage: false, relative: false,
-            chartKind: ChartKind.TrellisHistogram, exact: false
+            chartKind: "TrellisHistogram", exact: false
         }));
     }
 
@@ -366,7 +348,7 @@ export class HistogramView extends HistogramViewBase {
         return lines;
     }
 
-    private showSecondColumn(colName: string) {
+    private showSecondColumn(colName: string): void {
         const oc = this.schema.find(colName);
         const cds: IColumnDescription[] = [this.axisData.description, oc];
         const buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
@@ -375,7 +357,7 @@ export class HistogramView extends HistogramViewBase {
             this.histogram.buckets.length, cds, null, {
             reusePage: false,
             relative: false,
-            chartKind: ChartKind.Histogram,
+            chartKind: "Histogram",
             exact: true
         }));
     }
@@ -423,7 +405,7 @@ export class HistogramView extends HistogramViewBase {
             { exact: true, reusePage: true } );
     }
 
-    public mouseMove(): void {
+    protected onMouseMove(): void {
         const position = d3mouse(this.surface.getChart().node());
         const mouseX = position[0];
         const mouseY = position[1];
@@ -431,7 +413,7 @@ export class HistogramView extends HistogramViewBase {
         let xs = "";
         if (this.axisData.scale != null)
             xs = this.axisData.invert(position[0]);
-        const y = Math.round(this.plot.yScale.invert(position[1]));
+        const y = Math.round(this.plot.getYScale().invert(position[1]));
         const ys = significantDigits(y);
         const size = this.plot.get(mouseX);
         const pointDesc = [xs, ys, significantDigits(size)];
@@ -447,17 +429,9 @@ export class HistogramView extends HistogramViewBase {
         this.pointDescription.update(pointDesc, mouseX, mouseY);
     }
 
-    // override
-    public dragMove() {
-        this.mouseMove();
-        super.dragMove();
-    }
-
-    public dragEnd() {
-        const dragging = this.dragging && this.moved;
-        super.dragEnd();
-        if (!dragging)
-            return;
+    public dragEnd(): boolean {
+        if (!super.dragEnd())
+            return false;
         const position = d3mouse(this.surface.getCanvas().node());
         const x = position[0];
         this.selectionCompleted(this.selectionOrigin.x, x);

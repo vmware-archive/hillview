@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-import {drag as d3drag} from "d3-drag";
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {HeatmapSerialization, IViewSerialization} from "../datasetView";
 import {
@@ -28,7 +27,7 @@ import {
 } from "../javaBridge";
 import {Receiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
-import {BigTableView, TableTargetAPI, ZipReceiver} from "../tableTarget";
+import {TableTargetAPI, ZipReceiver} from "../tableTarget";
 import {IDataView} from "../ui/dataview";
 import {Dialog} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
@@ -38,7 +37,7 @@ import {HeatmapLegendPlot} from "../ui/legendPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {ChartKind, D3SvgElement, Point, Resolution} from "../ui/ui";
+import {Resolution} from "../ui/ui";
 import {
     formatNumber,
     ICancellable,
@@ -52,22 +51,14 @@ import {Filter2DReceiver, MakeHistogramOrHeatmap} from "./histogram2DView";
 import {HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
 import {DataRangesCollector} from "./dataRangesCollectors";
+import {ChartView} from "./chartView";
 
 /**
  * A HeatMapView renders information as a heatmap.
  */
-export class HeatmapView extends BigTableView {
-    protected dragging: boolean;
-    /**
-     * Coordinates of mouse within canvas.
-     */
-    private selectionOrigin: Point;
-    private selectionRectangle: D3SvgElement;
+export class HeatmapView extends ChartView {
     protected colorLegend: HeatmapLegendPlot;
     protected summary: HTMLElement;
-    private moved: boolean;
-    protected pointDescription: TextOverlay;
-    protected surface: PlottingSurface;
     protected plot: HeatmapPlot;
     protected showMissingData: boolean = false;  // TODO: enable this
     protected xHistoSurface: PlottingSurface;
@@ -75,7 +66,6 @@ export class HeatmapView extends BigTableView {
     protected heatmap: Heatmap;
     protected xPoints: number;
     protected yPoints: number;
-    private readonly menu: TopMenu;
     protected readonly viewMenu: SubMenu;
     protected xData: AxisData;
     protected yData: AxisData;
@@ -89,8 +79,6 @@ export class HeatmapView extends BigTableView {
         this.topLevel = document.createElement("div");
         this.topLevel.className = "chart";
         this.topLevel.onkeydown = (e) => this.keyDown(e);
-        this.dragging = false;
-        this.moved = false;
         this.viewMenu = new SubMenu([
             {
                 text: "refresh",
@@ -154,7 +142,7 @@ export class HeatmapView extends BigTableView {
         this.colorLegend.setColorMapChangeEventListener(
             () => this.updateView(this.heatmap, true, 0));
 
-        this.surface = new HtmlPlottingSurface(this.topLevel, page);
+        this.surface = new HtmlPlottingSurface(this.topLevel, this.page);
         this.surface.setMargins(20, this.surface.rightMargin, this.surface.bottomMargin, this.surface.leftMargin);
         this.plot = new HeatmapPlot(this.surface, this.colorLegend, true);
 
@@ -215,27 +203,10 @@ export class HeatmapView extends BigTableView {
             this.xHistoPlot.draw();
         }
 
-        const drag = d3drag()
-            .on("start", () => this.dragStart())
-            .on("drag", () => this.dragMove())
-            .on("end", () => this.dragEnd());
-
-        const canvas = this.surface.getCanvas();
-        canvas.call(drag)
-            .on("mousemove", () => this.onMouseMove())
-            .on("mouseenter", () => this.onMouseEnter())
-            .on("mouseleave", () => this.onMouseLeave());
-        this.selectionRectangle = canvas
-            .append("rect")
-            .attr("class", "dashed")
-            .attr("stroke", "red")
-            .attr("width", 0)
-            .attr("height", 0);
-
+        this.setupMouse();
         this.pointDescription = new TextOverlay(this.surface.getChart(),
             this.surface.getActualChartSize(),
             [this.xData.description.name, this.yData.description.name, "count"], 40);
-        this.pointDescription.show(false);
         let summary = formatNumber(this.plot.getVisiblePoints()) + " data points";
         if (heatmap.missingData !== 0) {
             summary += ", " + formatNumber(heatmap.missingData) + " missing";
@@ -280,7 +251,7 @@ export class HeatmapView extends BigTableView {
         rr.invoke(new DataRangesCollector(hv, hv.page, rr, schema, 0, cds, null, {
             reusePage: true,
             relative: false,
-            chartKind: ChartKind.Heatmap,
+            chartKind: "Heatmap",
             exact: samplingRate >= 1
         }));
         return hv;
@@ -294,7 +265,7 @@ export class HeatmapView extends BigTableView {
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema, 0, cds, null, {
             reusePage: false,
             relative: false,
-            chartKind: ChartKind.Histogram,
+            chartKind: "Histogram",
             exact: true
         }));
     }
@@ -359,7 +330,7 @@ export class HeatmapView extends BigTableView {
         return lines;
     }
 
-    private showTrellis(colName: string) {
+    private showTrellis(colName: string): void {
         const groupBy = this.schema.findByDisplayName(colName);
         const cds: IColumnDescription[] = [this.xData.description,
                                            this.yData.description, groupBy];
@@ -367,7 +338,7 @@ export class HeatmapView extends BigTableView {
         const rr = this.getDataRanges(cds, buckets);
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema, 0, cds, null, {
             reusePage: false, relative: false,
-            chartKind: ChartKind.TrellisHeatmap, exact: true
+            chartKind: "TrellisHeatmap", exact: true
         }));
     }
 
@@ -384,7 +355,7 @@ export class HeatmapView extends BigTableView {
                 page, operation,
                 [this.xData.description, this.yData.description],
                 this.rowCount, this.schema,
-                { exact: this.samplingRate >= 1, chartKind: ChartKind.Heatmap,
+                { exact: this.samplingRate >= 1, chartKind: "Heatmap",
                     reusePage: false, relative: false, },
                 this.dataset);
         };
@@ -408,27 +379,13 @@ export class HeatmapView extends BigTableView {
         rr.invoke(new NextKReceiver(page, table, rr, false, order, null));
     }
 
-    protected keyDown(ev: KeyboardEvent): void {
-        if (ev.code === "Escape") {
-            this.cancelDrag();
-        }
-    }
-
-    protected cancelDrag() {
-        this.dragging = false;
-        this.moved = false;
-        this.selectionRectangle
-            .attr("width", 0)
-            .attr("height", 0);
-    }
-
     public swapAxes(): void {
         const cds: IColumnDescription[] = [
             this.yData.description, this.xData.description];
         const buckets = HistogramViewBase.maxHeatmapBuckets(this.page);
         const rr = this.getDataRanges(cds, buckets);
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema, 0, cds, null, {
-            chartKind: ChartKind.Heatmap,
+            chartKind: "Heatmap",
             exact: true,
             relative: true,
             reusePage: true
@@ -441,19 +398,7 @@ export class HeatmapView extends BigTableView {
         this.updateView(this.heatmap, true, 0);
     }
 
-    protected onMouseEnter(): void {
-        if (this.pointDescription != null) {
-            this.pointDescription.show(true);
-        }
-    }
-
-    protected onMouseLeave(): void {
-        if (this.pointDescription != null) {
-            this.pointDescription.show(false);
-        }
-    }
-
-    public onMouseMove(): void {
+    protected onMouseMove(): void {
         if (this.xData.axis == null) {
             // not yet setup
             return;
@@ -469,63 +414,28 @@ export class HeatmapView extends BigTableView {
         this.pointDescription.update([xs, ys, value.toString()], mouseX, mouseY);
     }
 
-    public dragStart(): void {
-        this.dragging = true;
-        this.moved = false;
-        const position = d3mouse(this.surface.getCanvas().node());
-        this.selectionOrigin = {
-            x: position[0],
-            y: position[1] };
+    protected dragStart(): void {
+        this.dragStartRectangle();
     }
 
-    public dragMove(): void {
-        this.onMouseMove();
-        if (!this.dragging) {
-            return;
-        }
-        this.moved = true;
-        let ox = this.selectionOrigin.x;
-        let oy = this.selectionOrigin.y;
-        const position = d3mouse(this.surface.getCanvas().node());
-        const x = position[0];
-        const y = position[1];
-        let width = x - ox;
-        let height = y - oy;
-
-        if (width < 0) {
-            ox = x;
-            width = -width;
-        }
-        if (height < 0) {
-            oy = y;
-            height = -height;
-        }
-
-        this.selectionRectangle
-            .attr("x", ox)
-            .attr("y", oy)
-            .attr("width", width)
-            .attr("height", height);
+    protected dragMove(): boolean {
+        return this.dragMoveRectangle();
     }
 
-    public dragEnd(): void {
-        if (!this.dragging || !this.moved) {
-            return;
-        }
-        this.dragging = false;
-        this.selectionRectangle
-            .attr("width", 0)
-            .attr("height", 0);
+    protected dragEnd(): boolean {
+        if (!super.dragEnd())
+            return false;
         const position = d3mouse(this.surface.getCanvas().node());
         const x = position[0];
         const y = position[1];
         this.selectionCompleted(this.selectionOrigin.x, x, this.selectionOrigin.y, y);
+        return true;
     }
 
     /**
      * Selection has been completed.  The mouse coordinates are within the canvas.
      */
-    public selectionCompleted(xl: number, xr: number, yl: number, yr: number): void {
+    private selectionCompleted(xl: number, xr: number, yl: number, yr: number): void {
         if (this.xData.axis == null ||
             this.yData.axis == null) {
             return;
@@ -560,7 +470,7 @@ export class HeatmapView extends BigTableView {
             this.yData.description.name,
             this.xData.description, this.yData.description,
             this.schema, 0, this.page, rr, this.dataset, {
-            exact: this.samplingRate >= 1, chartKind: ChartKind.Heatmap,
+            exact: this.samplingRate >= 1, chartKind: "Heatmap",
             relative: false, reusePage: false
         });
         rr.invoke(renderer);

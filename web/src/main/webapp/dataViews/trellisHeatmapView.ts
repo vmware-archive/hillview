@@ -19,27 +19,36 @@ import {
     CombineOperators, Heatmap, Heatmap3D, RemoteObjectId,
 } from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
-import {BigTableView, TableTargetAPI} from "../tableTarget";
+import {TableTargetAPI} from "../tableTarget";
 import {FullPage} from "../ui/fullPage";
 import {HeatmapLegendPlot} from "../ui/legendPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {Resolution} from "../ui/ui";
-import {AxisData} from "./axisData";
+import {AxisData, AxisKind} from "./axisData";
 import {TrellisShape} from "./dataRangesCollectors";
 import {Receiver} from "../rpc";
 import {ICancellable, PartialResult} from "../util";
 import {HeatmapPlot} from "../ui/heatmapPlot";
-import {drag as d3drag} from "d3-drag";
+import {
+    IViewSerialization,
+    TrellisHeatmapSerialization,
+    TrellisHistogramSerialization
+} from "../datasetView";
+import {IDataView} from "../ui/dataview";
+import {mouse as d3mouse} from "d3-selection";
+import {ChartView} from "./chartView";
+import {TextOverlay} from "../ui/textOverlay";
 
 /**
  * A Trellis plot containing multiple heatmaps.
  */
-export class TrellisHeatmapView extends BigTableView {
+export class TrellisHeatmapView extends ChartView {
     private readonly colorLegend: HeatmapLegendPlot;
     private readonly legendSurface: PlottingSurface;
     protected xAxisData: AxisData;
     protected yAxisData: AxisData;
+    protected groupbyAxisData: AxisData;
     protected hps: HeatmapPlot[];
 
     constructor(remoteObjectId: RemoteObjectId,
@@ -48,12 +57,12 @@ export class TrellisHeatmapView extends BigTableView {
                 protected shape: TrellisShape,
                 protected samplingRate: number,
                 page: FullPage) {
-        super(remoteObjectId, rowCount, schema, page, "Trellis");
+        super(remoteObjectId, rowCount, schema, page, "TrellisHeatmap");
         this.hps = [];
         this.topLevel = document.createElement("div");
         this.topLevel.classList.add("chart");
 
-        const menu = new TopMenu( [
+        this.menu = new TopMenu( [
             { text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
                 { text: "refresh",
                     action: () => { this.refresh(); },
@@ -68,49 +77,46 @@ export class TrellisHeatmapView extends BigTableView {
                 },
             ]) },
         ]);
-        this.page.setMenu(menu);
+        this.page.setMenu(this.menu);
         this.legendSurface = new HtmlPlottingSurface(this.topLevel, page);
         this.legendSurface.setHeight(Resolution.legendSpaceHeight);
         this.colorLegend = new HeatmapLegendPlot(this.legendSurface);
+        this.surface = new HtmlPlottingSurface(this.topLevel, this.page);
+        this.surface.create();
 
-        const table: HTMLTableElement = document.createElement("table");
-        const tBody = table.createTBody();
-        this.topLevel.appendChild(table);
         for (let y = 0; y < this.shape.yNum; y++) {
-            const row = tBody.insertRow();
             for (let x = 0; x < this.shape.xNum; x++) {
-                const cell = row.insertCell();
-                const surface = new HtmlPlottingSurface(cell, this.page);
+                const surface = this.surface.createChildSurface(
+                    PlottingSurface.leftMargin + x * this.shape.size.width,
+                    y * this.shape.size.height + PlottingSurface.topMargin);
                 surface.setSize(this.shape.size);
                 surface.setMargins(0, 0, 0, 0);
                 const hp = new HeatmapPlot(surface, this.colorLegend, false);
+                hp.clear();
                 this.hps.push(hp);
             }
         }
+    }
 
-        /*
-        const drag = d3drag()
-            .on("start", () => this.dragStart())
-            .on("drag", () => this.dragMove())
-            .on("end", () => this.dragEnd());
-        const canvas = this.surface.getCanvas();
-        canvas.call(drag)
-            .on("mousemove", () => this.onMouseMove())
-            .on("mouseenter", () => this.onMouseEnter())
-            .on("mouseleave", () => this.onMouseLeave());
-        this.selectionRectangle = canvas
-            .append("rect")
-            .attr("class", "dashed")
-            .attr("stroke", "red")
-            .attr("width", 0)
-            .attr("height", 0);
-         */
+    public static reconstruct(vs: TrellisHeatmapSerialization, page: FullPage): IDataView {
+        // TODO
+        return null;
+    }
+
+    public serialize(): IViewSerialization {
+        const ser: TrellisHistogramSerialization = {
+            ...super.serialize()
+            // TODO
+        };
+        return ser;
     }
 
     public setAxes(xAxisData: AxisData,
-                   yAxisData: AxisData) {
+                   yAxisData: AxisData,
+                   groupByAxisData: AxisData): void {
         this.xAxisData = xAxisData;
         this.yAxisData = yAxisData;
+        this.groupbyAxisData = groupByAxisData;
     }
 
     public combine(how: CombineOperators): void {
@@ -121,11 +127,11 @@ export class TrellisHeatmapView extends BigTableView {
         // TODO
     }
 
-    public swapAxes() {
+    public swapAxes(): void {
         // TODO
     }
 
-    public showTable() {
+    public showTable(): void {
         // TODO
     }
 
@@ -150,21 +156,98 @@ export class TrellisHeatmapView extends BigTableView {
             const plot = this.hps[i];
             // The order of these operations is important
             plot.setData(heatmap, this.xAxisData, this.yAxisData);
-            plot.clear();
             max = Math.max(max, plot.getMaxCount());
         }
 
         this.colorLegend.setData(1, max);
         this.colorLegend.draw();
-        for (const plot of this.hps)
+        for (const plot of this.hps) {
             plot.draw();
+            plot.border(1);
+        }
+
+        this.xAxisData.setResolution(this.shape.size.width, AxisKind.Bottom);
+        for (let i = 0; i < this.shape.xNum; i++) {
+            this.surface
+                .getCanvas()
+                .append("g")
+                .attr("class", "x-axis")
+                .attr("transform", `translate(
+                    ${PlottingSurface.leftMargin + i * this.shape.size.width}, 
+                    ${PlottingSurface.topMargin + this.shape.size.height * this.shape.yNum})`)
+                .call(this.xAxisData.axis);
+        }
+
+        // This axis is only created when the surface is drawn
+        this.yAxisData.setResolution(this.shape.size.height, AxisKind.Left);
+        for (let i = 0; i < this.shape.yNum; i++) {
+            this.surface.getCanvas()
+                .append("g")
+                .attr("class", "y-axis")
+                .attr("transform", `translate(${PlottingSurface.leftMargin},
+                                              ${PlottingSurface.topMargin + 
+                                                i * this.shape.size.height})`)
+                .call(this.yAxisData.axis);
+        }
+
+        this.setupMouse();
+        this.pointDescription = new TextOverlay(this.surface.getChart(),
+            this.surface.getActualChartSize(),
+            [this.xAxisData.description.name,
+                this.yAxisData.description.name,
+                this.groupbyAxisData.description.name,
+                "count"], 40);
     }
 
-    private mouseMove() {
-        // TODO
+    public onMouseMove(): void {
+        const position = d3mouse(this.surface.getChart().node());
+        let mouseX = position[0];
+        let mouseY = position[1];
+        const origMouseX = mouseX;
+        const origMouseY = mouseY;
+
+        // Find out which plot we are in.
+        const xIndex = Math.floor(mouseX / this.shape.size.width);
+        const yIndex = Math.floor(mouseY / this.shape.size.height);
+        const plotIndex = yIndex * this.shape.xNum + xIndex;
+        if (plotIndex < 0 || plotIndex >= this.hps.length) {
+            this.pointDescription.show(false);
+            return;
+        }
+
+        this.pointDescription.show(true);
+        const plot = this.hps[plotIndex];
+        mouseX -= xIndex * this.shape.size.width;
+        mouseY -= yIndex * this.shape.size.height;
+        const xs = this.xAxisData.invert(mouseX);
+        const ys = this.yAxisData.invert(mouseY);
+        const value = plot.getCount(mouseX, mouseY);
+        const group = this.groupbyAxisData.bucketDescription(plotIndex);
+        this.pointDescription.update([xs, ys, group, value.toString()], origMouseX, origMouseY);
     }
 
-    private mouseLeave() {
+    public dragStart(): void {
+        this.dragStartRectangle();
+    }
+
+    public dragMove(): boolean {
+        return this.dragMoveRectangle();
+    }
+
+    public dragEnd(): boolean {
+        if (!super.dragEnd())
+            return false;
+        const position = d3mouse(this.surface.getCanvas().node());
+        const x = position[0];
+        const y = position[1];
+        this.selectionCompleted(this.selectionOrigin.x, x, this.selectionOrigin.y, y);
+        return true;
+    }
+
+    /**
+     * Selection has been completed.  The mouse coordinates are within the canvas.
+     */
+    private selectionCompleted(xl: number, xr: number, yl: number, yr: number): void {
         // TODO
     }
 }
@@ -195,7 +278,7 @@ export class TrellisHeatmapRenderer extends Receiver<Heatmap3D> {
         this.trellisView = new TrellisHeatmapView(
             remoteTable.remoteObjectId, rowCount, schema,
             this.shape, this.samplingRate, this.page);
-        this.trellisView.setAxes(axes[0], axes[1]);
+        this.trellisView.setAxes(axes[0], axes[1], axes[2]);
         this.page.setDataView(this.trellisView);
     }
 

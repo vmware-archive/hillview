@@ -21,7 +21,7 @@ import {TableTargetAPI} from "../tableTarget";
 import {FullPage} from "../ui/fullPage";
 import {ICancellable} from "../util";
 import {SchemaClass} from "../schemaClass";
-import {ChartKind, ChartOptions, HistogramOptions, Resolution, Size} from "../ui/ui";
+import {ChartOptions, HistogramOptions, Resolution, Size} from "../ui/ui";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {HistogramViewBase} from "./histogramViewBase";
 import {TrellisHistogramRenderer} from "./trellisHistogramView";
@@ -156,8 +156,8 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
         // variables when drawing Trellis plots
         let trellisShape: TrellisShape = null;
         let windows: number = null;  // number of Trellis windows
-        if (this.options.chartKind === ChartKind.TrellisHeatmap ||
-            this.options.chartKind === ChartKind.TrellisHistogram) {
+        if (this.options.chartKind === "TrellisHeatmap" ||
+            this.options.chartKind === "TrellisHistogram") {
             const groupByIndex = ranges.length === 3 ? 2 : 1;
             const maxWindows =
                 Math.floor(chartSize.width / Resolution.minTrellisWindowSize) *
@@ -173,31 +173,28 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
         }
 
         switch (this.options.chartKind) {
-            case ChartKind.TrellisHistogram: {
-                if (ranges.length === 2) {
-                    const xArg = HistogramViewBase.computeHistogramArgs(
-                        this.cds[0], ranges[0], 0, false, trellisShape.size);
-                    const wArg = HistogramViewBase.computeHistogramArgs(
-                        this.cds[1], ranges[1], trellisShape.bucketCount, false, trellisShape.size);
-                    // Window argument comes first
-                    const args = [wArg, xArg];
-                    const rr = this.originator.createHeatmapRequest(args);
-                    const renderer = new TrellisHistogramRenderer(this.page,
-                        this.originator, rowCount, this.schema,
-                        this.cds, ranges, [wArg.bucketCount, xArg.bucketCount],
-                        1.0, trellisShape, rr, this.options.reusePage);
-                    rr.chain(this.operation);
-                    rr.invoke(renderer);
-                    break;
-                } else if (ranges.length === 3) {
-                    // TODO
-                } else {
-                    console.assert(false);
-                    return;
-                }
+            case "TrellisHistogram": {
+                console.assert(ranges.length === 2);
+                const xArg = HistogramViewBase.computeHistogramArgs(
+                    this.cds[0], ranges[0], 0, false, trellisShape.size);
+                const wArg = HistogramViewBase.computeHistogramArgs(
+                    this.cds[1], ranges[1], trellisShape.bucketCount, false, trellisShape.size);
+                // Window argument comes first
+                const args = [wArg, xArg];
+                const rr = this.originator.createHeatmapRequest(args);
+                const renderer = new TrellisHistogramRenderer(this.page,
+                    this.originator, rowCount, this.schema,
+                    this.cds, ranges, [wArg.bucketCount, xArg.bucketCount],
+                    1.0, trellisShape, rr, this.options.reusePage);
+                rr.chain(this.operation);
+                rr.invoke(renderer);
                 break;
             }
-            case ChartKind.TrellisHeatmap: {
+            case "Trellis2DHistogram": {
+                // TODO
+                break;
+            }
+            case "TrellisHeatmap": {
                 const args: HistogramArgs[] = [];
                 const maxXBucketCount = Math.floor(trellisShape.size.width / Resolution.minDotSize);
                 const maxYBucketCount = Math.floor(trellisShape.size.height / Resolution.minDotSize);
@@ -218,6 +215,7 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                 const yAxis = new AxisData(this.cds[1], ranges[1]);
                 yAxis.setBucketCount(yArg.bucketCount);
                 const groupByAxis = new AxisData(this.cds[2], ranges[2]);
+                groupByAxis.setBucketCount(wArg.bucketCount);
                 const renderer = new TrellisHeatmapRenderer(this.page,
                     this.originator, rowCount, this.schema,
                     [xAxis, yAxis, groupByAxis], 1.0, trellisShape, rr, this.options.reusePage);
@@ -225,7 +223,7 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                 rr.invoke(renderer);
                 break;
             }
-            case ChartKind.Heatmap: {
+            case "Heatmap": {
                 const args: HistogramArgs[] = [];
                 const maxXBucketCount = Math.floor(chartSize.width / Resolution.minDotSize);
                 const maxYBucketCount = Math.floor(chartSize.height / Resolution.minDotSize);
@@ -248,7 +246,7 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                 rr.invoke(renderer);
                 break;
             }
-            case ChartKind.Histogram: {
+            case "Histogram": {
                 const args: HistogramArgs[] = [];
                 let maxXBucketCount = this.xBucketCount;
                 if (maxXBucketCount === 0) {

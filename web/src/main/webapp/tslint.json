@@ -17,7 +17,12 @@
     "trailing-comma": false,
     "no-trailing-whitespace" : false,
     "ordered-imports": false,
-    "no-empty-interface": false
+    "no-empty-interface": false,
+    "typedef": [
+      true,
+      "call-signature",
+      "property-declaration"
+    ]
   },
   "rulesDirectory": []
 }

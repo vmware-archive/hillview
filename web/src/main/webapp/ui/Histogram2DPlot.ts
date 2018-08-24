@@ -56,8 +56,8 @@ export class Histogram2DPlot extends Plot {
     protected missingDisplayed: number;
     protected visiblePoints: number;
     protected barWidth: number;
-    public yScale: D3Scale;
-    public yAxis: D3Axis;
+    protected yScale: D3Scale;
+    protected yAxis: D3Axis;
 
     public constructor(protected plottingSurface: PlottingSurface) {
         super(plottingSurface);
@@ -174,8 +174,12 @@ export class Histogram2DPlot extends Plot {
         this.drawAxes();
     }
 
-    protected getYAxis(): D3Axis {
+    public getYAxis(): D3Axis {
         return this.yAxis;
+    }
+
+    public getYScale(): D3Scale {
+        return this.yScale;
     }
 
     /**

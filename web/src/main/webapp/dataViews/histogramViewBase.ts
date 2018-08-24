@@ -27,33 +27,18 @@ import {CDFPlot} from "../ui/CDFPlot";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
 import {PlottingSurface} from "../ui/plottingSurface";
-import {TextOverlay} from "../ui/textOverlay";
-import {D3SvgElement, Point, Resolution, Size, SpecialChars, ViewKind} from "../ui/ui";
+import {D3SvgElement, Resolution, Size, SpecialChars, ViewKind} from "../ui/ui";
 import {periodicSamples, Seed, significantDigits} from "../util";
-import {BigTableView} from "../tableTarget";
+import {ChartView} from "./chartView";
 
 /**
  * This is a base class that contains code common to various histogram renderings.
  */
-export abstract class HistogramViewBase extends BigTableView {
-    protected dragging: boolean;
-    protected svg: D3SvgElement;
-    /**
-     * Coordinates are within the canvas, not within the chart.
-     */
-    protected selectionOrigin: Point;
-    /**
-     * The coordinates of the selectionRectangle are relative to the canvas.
-     */
-    protected selectionRectangle: D3SvgElement;
-    protected chartDiv: HTMLElement;
+export abstract class HistogramViewBase extends ChartView {
     protected summary: HTMLElement;
     protected cdfDot: D3SvgElement;
-    protected moved: boolean;  // to detect trivial empty drags
-    protected pointDescription: TextOverlay;
-
     protected cdfPlot: CDFPlot;
-    protected surface: PlottingSurface;
+    protected chartDiv: HTMLDivElement;
 
     protected constructor(
         remoteObjectId: RemoteObjectId,
@@ -63,10 +48,6 @@ export abstract class HistogramViewBase extends BigTableView {
         super(remoteObjectId, rowCount, schema, page, viewKind);
         this.topLevel = document.createElement("div");
         this.topLevel.className = "chart";
-        this.topLevel.onkeydown = (e) => this.keyDown(e);
-        this.dragging = false;
-        this.moved = false;
-
         this.topLevel.tabIndex = 1;
 
         this.chartDiv = document.createElement("div");
@@ -83,32 +64,14 @@ export abstract class HistogramViewBase extends BigTableView {
             this.cancelDrag();
     }
 
-    protected cancelDrag() {
-        this.dragging = false;
-        this.selectionRectangle
-            .attr("width", 0)
-            .attr("height", 0);
-    }
-
     protected abstract showTable(): void;
     public abstract refresh(): void;
-
-    public mouseEnter(): void {
-        if (this.pointDescription != null)
-            this.pointDescription.show(true);
-    }
-
-    public mouseLeave(): void {
-        if (this.pointDescription != null)
-            this.pointDescription.show(false);
-    }
 
     /**
      * Dragging started in the canvas.
      */
     public dragStart(): void {
-        this.dragging = true;
-        this.moved = false;
+        super.dragStart();
         const position = d3mouse(this.surface.getCanvas().node());
         this.selectionOrigin = {
             x: position[0],
@@ -118,10 +81,9 @@ export abstract class HistogramViewBase extends BigTableView {
     /**
      * The mouse moved in the canvas.
      */
-    public dragMove(): void {
-        if (!this.dragging)
-            return;
-        this.moved = true;
+    protected dragMove(): boolean {
+        if (!super.dragMove())
+            return false;
         let ox = this.selectionOrigin.x;
         const position = d3mouse(this.surface.getCanvas().node());
         const x = position[0];
@@ -138,15 +100,7 @@ export abstract class HistogramViewBase extends BigTableView {
             .attr("y", this.surface.topMargin)
             .attr("width", width)
             .attr("height", height);
-    }
-
-    public dragEnd(): void {
-        if (!this.dragging || !this.moved)
-            return;
-        this.dragging = false;
-        this.selectionRectangle
-            .attr("width", 0)
-            .attr("height", 0);
+        return true;
     }
 
     public static computeHistogramArgs(

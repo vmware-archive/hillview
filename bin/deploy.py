@@ -17,7 +17,7 @@ def prepare_webserver(config):
     rh.run_remote_shell_command("chown " + config.user + " " + config.service_folder)
     rh.create_remote_folder(config.service_folder + "/hillview")
 
-    major=config.tomcat_version[0:config.tomcat_version.find('.')-1]
+    major=config.tomcat_version[0:config.tomcat_version.find('.')]
 
     installTomcat="cd " + config.service_folder + ";" + \
       "if [ ! -d " + config.tomcat + " ]; then " + \

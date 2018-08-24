@@ -38,6 +38,9 @@ import {FullPage} from "./ui/fullPage";
 import {MenuItem, SubMenu, TopMenuItem} from "./ui/menu";
 import {IHtmlElement, ViewKind} from "./ui/ui";
 import {assert, EnumIterators, Pair, saveAs} from "./util";
+import {TrellisHeatmapView} from "./dataViews/trellisHeatmapView";
+import {TrellisHistogram2DView} from "./dataViews/trellisHistogram2DView";
+import {TrellisHistogramView} from "./dataViews/trellisHistogramView";
 
 export interface IViewSerialization {
     viewKind: ViewKind;
@@ -82,6 +85,18 @@ export interface Histogram2DSerialization extends HeatmapSerialization {
 
 export interface SpectrumSerialization extends IViewSerialization {
     colNames: string[];
+}
+
+export interface TrellisHistogramSerialization extends IViewSerialization {
+    // TODO
+}
+
+export interface TrellisHistogram2DSerialization extends IViewSerialization {
+    // TODO
+}
+
+export interface TrellisHeatmapSerialization extends IViewSerialization {
+    // TODO
 }
 
 export interface IDatasetSerialization {
@@ -274,8 +289,14 @@ export class DatasetView implements IHtmlElement {
             case "Schema":
                 view = SchemaView.reconstruct(vs, page);
                 break;
-            case "Trellis":
-                // TODO
+            case "TrellisHistogram":
+                view = TrellisHistogramView.reconstruct(vs as TrellisHistogramSerialization, page);
+                break;
+            case "Trellis2DHistogram":
+                view = TrellisHistogram2DView.reconstruct(vs as TrellisHistogram2DSerialization, page);
+                break;
+            case "TrellisHeatmap":
+                view = TrellisHeatmapView.reconstruct(vs as TrellisHeatmapSerialization, page);
                 break;
             case "HeavyHitters":
                 view = HeavyHittersView.reconstruct(vs as HeavyHittersSerialization, page);
@@ -283,8 +304,6 @@ export class DatasetView implements IHtmlElement {
             case "SVD Spectrum":
                 view = SpectrumView.reconstruct(vs as SpectrumSerialization, page);
                 break;
-            case "LAMP":
-                // No longer maintained.
             case "Load":
                 // These do not need to be reconstructed ever.
             default:

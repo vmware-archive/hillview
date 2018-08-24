@@ -40,7 +40,7 @@ import {HistogramLegendPlot} from "../ui/legendPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {ChartKind, ChartOptions, D3SvgElement, Rectangle, Resolution} from "../ui/ui";
+import {ChartOptions, D3SvgElement, Rectangle, Resolution} from "../ui/ui";
 import {
     formatNumber,
     ICancellable,
@@ -72,7 +72,6 @@ export class Histogram2DView extends HistogramViewBase {
     protected yPoints: number;
     protected relative: boolean;  // true when bars are normalized to 100%
     protected legendRect: Rectangle;  // legend position on the screen; relative to canvas
-    protected menu: TopMenu;
     protected legendSelectionRectangle: D3SvgElement;
     protected plot: Histogram2DPlot;
     protected legendPlot: HistogramLegendPlot;
@@ -174,11 +173,6 @@ export class Histogram2DView extends HistogramViewBase {
         this.legendSurface.getCanvas()
             .call(legendDrag);
 
-        const drag = d3drag()
-            .on("start", () => this.dragStart())
-            .on("drag", () => this.dragMove())
-            .on("end", () => this.dragCanvasEnd());
-
         this.plot.setData(heatmap, this.xAxisData, this.samplingRate, this.relative);
         this.plot.draw();
         const discrete = kindIsString(this.xAxisData.description.kind) ||
@@ -188,23 +182,13 @@ export class Histogram2DView extends HistogramViewBase {
         this.legendPlot.setData(this.yData, this.plot.getMissingDisplayed() > 0);
         this.legendPlot.draw();
 
-        canvas.call(drag)
-            .on("mousemove", () => this.mouseMove())
-            .on("mouseleave", () => this.mouseLeave())
-            .on("mouseenter", () => this.mouseEnter());
-
+        this.setupMouse();
         this.cdfDot = canvas
             .append("circle")
             .attr("r", Resolution.mouseDotRadius)
             .attr("fill", "blue");
 
         this.legendRect = this.legendPlot.legendRectangle();
-
-        this.selectionRectangle = canvas
-            .append("rect")
-            .attr("class", "dashed")
-            .attr("width", 0)
-            .attr("height", 0);
         this.legendSelectionRectangle = this.legendSurface.getCanvas()
             .append("rect")
             .attr("class", "dashed")
@@ -259,7 +243,7 @@ export class Histogram2DView extends HistogramViewBase {
         rr.invoke(new DataRangesCollector(hv, hv.page, rr, hv.schema, xPoints, cds, null, {
             reusePage: true,
             relative: relative,
-            chartKind: ChartKind.Histogram,
+            chartKind: "Histogram",
             exact: samplingRate >= 1
         }));
         return hv;
@@ -291,7 +275,7 @@ export class Histogram2DView extends HistogramViewBase {
         dialog.show();
     }
 
-    private showTrellis(colName: string) {
+    private showTrellis(colName: string): void {
         const groupBy = this.schema.findByDisplayName(colName);
         const cds: IColumnDescription[] = [
             this.xAxisData.description,
@@ -301,7 +285,7 @@ export class Histogram2DView extends HistogramViewBase {
         const rr = this.getDataRanges(cds, buckets);
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema, 0, cds, null, {
             reusePage: false, relative: false,
-            chartKind: ChartKind.TrellisHistogram, exact: false
+            chartKind: "Trellis2DHistogram", exact: false
         }));
     }
 
@@ -322,7 +306,7 @@ export class Histogram2DView extends HistogramViewBase {
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema, 0, cds, null, {
             reusePage: false,
             relative: false,
-            chartKind: ChartKind.Heatmap,
+            chartKind: "Heatmap",
             exact: true
         }));
     }
@@ -375,7 +359,7 @@ export class Histogram2DView extends HistogramViewBase {
                 page, operation,
                 [this.xAxisData.description, this.yData.description],
                 this.rowCount, this.schema,
-                { exact: this.samplingRate >= 1, chartKind: ChartKind.Histogram,
+                { exact: this.samplingRate >= 1, chartKind: "Histogram",
                     relative: this.relative, reusePage: false },
                 this.dataset
                 );
@@ -391,7 +375,7 @@ export class Histogram2DView extends HistogramViewBase {
         const rr = this.getDataRanges(cds, buckets);
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema, 0, cds, null, {
             reusePage: true, relative: this.relative,
-            chartKind: ChartKind.Histogram, exact: this.samplingRate >= 1.0
+            chartKind: "Histogram", exact: this.samplingRate >= 1.0
         }));
     }
 
@@ -405,7 +389,7 @@ export class Histogram2DView extends HistogramViewBase {
             this.xPoints, cds, this.page.title, {
             reusePage: true,
             relative: this.relative,
-            chartKind: ChartKind.Histogram,
+            chartKind: "Histogram",
             exact: true
         }));
     }
@@ -418,7 +402,7 @@ export class Histogram2DView extends HistogramViewBase {
             bucketCount, cds, null, {
             reusePage: true,
             relative: this.relative,
-            chartKind: ChartKind.Histogram,
+            chartKind: "Histogram",
             exact: true
         }));
     }
@@ -439,20 +423,20 @@ export class Histogram2DView extends HistogramViewBase {
         this.page.scrollIntoView();
     }
 
-    public mouseEnter(): void {
-        super.mouseEnter();
+    public onMouseEnter(): void {
+        super.onMouseEnter();
         this.cdfDot.attr("visibility", "visible");
     }
 
-    public mouseLeave(): void {
+    public onMouseLeave(): void {
         this.cdfDot.attr("visibility", "hidden");
-        super.mouseLeave();
+        super.onMouseLeave();
     }
 
     /**
      * Handles mouse movements in the canvas area only.
      */
-    public mouseMove(): void {
+    public onMouseMove(): void {
         const position = d3mouse(this.surface.getChart().node());
         // note: this position is within the chart
         const mouseX = position[0];
@@ -461,7 +445,7 @@ export class Histogram2DView extends HistogramViewBase {
         const xs = this.xAxisData.invert(position[0]);
         // Use the plot scale, not the yData to invert.  That's the
         // one which is used to draw the axis.
-        const y = Math.round(this.plot.yScale.invert(mouseY));
+        const y = Math.round(this.plot.getYScale().invert(mouseY));
         let ys = significantDigits(y);
         let scale = 1.0;
         if (this.relative)
@@ -523,18 +507,17 @@ export class Histogram2DView extends HistogramViewBase {
         this.legendPlot.hilight(colorIndex);
     }
 
-    protected dragCanvasEnd() {
-        const dragging = this.dragging && this.moved;
-        super.dragEnd();
-        if (!dragging)
-            return;
+    protected dragEnd(): boolean {
+        if (!super.dragEnd())
+            return false;
         const position = d3mouse(this.surface.getCanvas().node());
         const x = position[0];
         this.selectionCompleted(this.selectionOrigin.x, x, false);
+        return true;
     }
 
     // dragging in the legend
-   protected dragLegendStart() {
+   protected dragLegendStart(): void {
        this.dragging = true;
        this.moved = false;
        const position = d3mouse(this.legendSurface.getCanvas().node());
@@ -590,13 +573,6 @@ export class Histogram2DView extends HistogramViewBase {
         this.selectionCompleted(this.selectionOrigin.x, x, true);
     }
 
-    protected cancelDrag() {
-        super.cancelDrag();
-        this.legendSelectionRectangle
-            .attr("width", 0)
-            .attr("heigh", 0);
-    }
-
     /**
      * * xl and xr are coordinates of the mouse position within the canvas or legendSvg respectively.
      */
@@ -641,7 +617,7 @@ export class Histogram2DView extends HistogramViewBase {
             this.schema, inLegend ? this.xPoints : 0, this.page, rr,
             this.dataset, {
             exact: this.samplingRate >= 1.0,
-            chartKind: ChartKind.Histogram,
+            chartKind: "Histogram",
             reusePage: false,
             relative: this.relative
         });
@@ -695,10 +671,10 @@ export class Filter2DReceiver extends BaseRenderer {
         const cds: IColumnDescription[] = [this.xColumn, this.yColumn];
         let buckets: number[];
         switch (this.options.chartKind) {
-            case ChartKind.Heatmap:
+            case "Heatmap":
                 buckets = HistogramViewBase.maxHeatmapBuckets(this.page);
                 break;
-            case ChartKind.Histogram:
+            case "Histogram":
                 buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
                 break;
             default:
@@ -730,10 +706,10 @@ export class MakeHistogramOrHeatmap extends BaseRenderer {
         super.run();
         let buckets;
         switch (this.options.chartKind) {
-            case ChartKind.Heatmap:
+            case "Heatmap":
                 buckets = HistogramViewBase.maxHeatmapBuckets(this.page);
                 break;
-            case ChartKind.Histogram:
+            case "Histogram":
                 buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
                 break;
             default:

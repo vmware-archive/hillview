@@ -26,7 +26,8 @@
 import {ScaleLinear as D3ScaleLinear, ScaleTime as D3ScaleTime} from "d3-scale";
 
 export type ViewKind = "Table" | "Histogram" | "2DHistogram" | "Heatmap" |
-    "Trellis" | "HeavyHitters" | "LAMP" | "Schema" | "Load" | "SVD Spectrum";
+    "TrellisHistogram" | "Trellis2DHistogram" | "TrellisHeatmap" |
+    "HeavyHitters" | "Schema" | "Load" | "SVD Spectrum";
 
 // Using an interface for emulating named arguments
 // otherwise it's hard to remember the order of all these booleans.
@@ -35,15 +36,8 @@ export interface HistogramOptions {
     reusePage: boolean;   // reuse the original page
 }
 
-export enum ChartKind {
-    Histogram,
-    Heatmap,
-    TrellisHistogram,
-    TrellisHeatmap
-}
-
 export interface ChartOptions extends HistogramOptions {
-    chartKind: ChartKind;
+    chartKind: ViewKind;
     relative: boolean;  // draw a relative 2D histogram
 }
 

@@ -24,22 +24,25 @@ import {
     RemoteObjectId
 } from "../javaBridge";
 import {FullPage} from "../ui/fullPage";
-import {BigTableView, TableTargetAPI} from "../tableTarget";
+import {TableTargetAPI} from "../tableTarget";
 import {SchemaClass} from "../schemaClass";
 import {ICancellable, PartialResult} from "../util";
-import {AxisData} from "./axisData";
-import {HistogramSerialization, IViewSerialization} from "../datasetView";
+import {AxisData, AxisKind} from "./axisData";
+import {
+    IViewSerialization,
+    TrellisHistogram2DSerialization, TrellisHistogramSerialization
+} from "../datasetView";
 import {IDataView} from "../ui/dataview";
 import {Resolution} from "../ui/ui";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {Histogram2DPlot} from "../ui/Histogram2DPlot";
 import {TrellisShape} from "./dataRangesCollectors";
+import {ChartView} from "./chartView";
 
-class TrellisHistogram2DView extends BigTableView {
+export class TrellisHistogram2DView extends ChartView {
     protected hps: Histogram2DPlot[];
     protected buckets: number;
-    protected menu: TopMenu;
     protected xAxisData: AxisData;
     protected legendAxisData: AxisData;
 
@@ -50,14 +53,11 @@ class TrellisHistogram2DView extends BigTableView {
         protected shape: TrellisShape,
         protected samplingRate: number,
         page: FullPage) {
-        super(remoteObjectId, rowCount, schema, page, "Trellis");
+        super(remoteObjectId, rowCount, schema, page, "Trellis2DHistogram");
         this.topLevel = document.createElement("div");
         this.topLevel.className = "chart";
         this.topLevel.tabIndex = 1;
         this.hps = [];
-
-        const table: HTMLTableElement = document.createElement("table");
-        const tBody = table.createTBody();
 
         this.menu = new TopMenu( [{
             text: "Export",
@@ -94,13 +94,14 @@ class TrellisHistogram2DView extends BigTableView {
         ]);
 
         this.page.setMenu(this.menu);
+        this.surface = new HtmlPlottingSurface(this.topLevel, this.page);
+        this.surface.create();
 
-        this.topLevel.appendChild(table);
         for (let y = 0; y < this.shape.yNum; y++) {
-            const row = tBody.insertRow();
             for (let x = 0; x < this.shape.xNum; x++) {
-                const cell = row.insertCell();
-                const surface = new HtmlPlottingSurface(cell, this.page);
+                const surface = this.surface.createChildSurface(
+                    PlottingSurface.leftMargin + x * this.shape.size.width,
+                    y * this.shape.size.height + PlottingSurface.topMargin);
                 surface.setSize(this.shape.size);
                 surface.setMargins(0, 0, 0, 0);
                 const hp = new Histogram2DPlot(surface);
@@ -111,9 +112,13 @@ class TrellisHistogram2DView extends BigTableView {
     }
 
     public setAxes(xAxisData: AxisData,
-                   legendAxisData: AxisData) {
+                   legendAxisData: AxisData): void {
         this.xAxisData = xAxisData;
         this.legendAxisData = legendAxisData;
+    }
+
+    protected onMouseMove(): void {
+        // TODO
     }
 
     protected showTable(): void {
@@ -141,11 +146,14 @@ class TrellisHistogram2DView extends BigTableView {
     }
 
     public serialize(): IViewSerialization {
-        // TODO
-        return null;
+        const ser: TrellisHistogramSerialization = {
+            ...super.serialize()
+            // TODO
+        };
+        return ser;
     }
 
-    public static reconstruct(ser: HistogramSerialization, page: FullPage): IDataView {
+    public static reconstruct(ser: TrellisHistogram2DSerialization, page: FullPage): IDataView {
         // TODO
         return null;
     }
@@ -158,6 +166,32 @@ class TrellisHistogram2DView extends BigTableView {
             plot.draw();
         }
 
+        // We draw the axes after drawing the data
+        const borderWidth = 0;
+        this.xAxisData.setResolution(this.shape.size.width, AxisKind.Bottom);
+        for (let i = 0; i < this.shape.xNum; i++) {
+            this.surface
+                .getCanvas()
+                .append("g")
+                .attr("class", "x-axis")
+                .attr("transform", `translate(
+                    ${PlottingSurface.leftMargin + i * (this.shape.size.width + borderWidth)}, 
+                    ${PlottingSurface.topMargin + (this.shape.size.height + borderWidth) * this.shape.yNum})`)
+                .call(this.xAxisData.axis);
+        }
+
+        const yAxis = this.hps[0].getYAxis();
+        for (let i = 0; i < this.shape.yNum; i++) {
+            this.surface.getCanvas()
+                .append("g")
+                .attr("class", "y-axis")
+                .attr("transform", `translate(${PlottingSurface.leftMargin},
+                                              ${PlottingSurface.topMargin + i * 
+                                               (this.shape.size.height + borderWidth)})`)
+                .call(yAxis);
+        }
+
+        this.setupMouse();
         this.page.reportTime(elapsedMs);
     }
 

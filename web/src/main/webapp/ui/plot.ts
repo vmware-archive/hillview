@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {HtmlPlottingSurface, PlottingSurface} from "./plottingSurface";
+import {PlottingSurface} from "./plottingSurface";
 import {AxisData} from "../dataViews/axisData";
 import {D3Axis, D3SvgElement} from "./ui";
 
@@ -55,14 +55,29 @@ export abstract class Plot {
         this.plottingSurface.create();
     }
 
-    protected getXAxis(): D3Axis {
+    public getXAxis(): D3Axis {
         // default implementation
         return this.xAxisData.axis;
     }
 
-    protected getYAxis(): D3Axis {
+    public getYAxis(): D3Axis {
         // default implementation
         return this.yAxisData.axis;
+    }
+
+    /**
+     * Draw a border around the plotting area with the specified width in pixels.
+     */
+    public border(width: number): void {
+        this.plottingSurface.getChart()
+            .append("rect")
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("width", this.getChartWidth())
+            .attr("height", this.getChartHeight())
+            .attr("stroke", "black")
+            .style("fill", "none")
+            .attr("stroke-width", width);
     }
 
     protected drawAxes(): void {

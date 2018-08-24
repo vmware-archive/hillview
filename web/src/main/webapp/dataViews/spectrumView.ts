@@ -26,16 +26,18 @@ import {
 } from "../javaBridge";
 import {OnCompleteReceiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
-import {BigTableView, TableTargetAPI} from "../tableTarget";
+import {TableTargetAPI} from "../tableTarget";
 import {IDataView} from "../ui/dataview";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
 import {HistogramPlot} from "../ui/histogramPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
-import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
+import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {ICancellable, significantDigits} from "../util";
 import {AxisData} from "./axisData";
 import {CorrelationMatrixReceiver, TableView} from "./tableView";
+import {ChartView} from "./chartView";
+
 /**
  * Receives the result of a PCA computation and plots the singular values
  */
@@ -117,15 +119,11 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
 /**
  * A SpectrumView plots a one-dimensional bar-chart showing the top singular values.
  */
-export class SpectrumView extends BigTableView {
-    protected currentData: {
-        histogram: HistogramBase,
-        axisData: AxisData,
-        title: string,
-    };
-    protected menu: TopMenu;
+export class SpectrumView extends ChartView {
+    protected histogram: HistogramBase;
+    protected axisData: AxisData;
+    protected title: string;
     protected plot: HistogramPlot;
-    protected surface: PlottingSurface;
     protected chartDiv: HTMLElement;
     protected summary: HTMLElement;
 
@@ -155,25 +153,19 @@ export class SpectrumView extends BigTableView {
             return;
         }
 
-        this.currentData = {
-            axisData: axisData,
-            title: title,
-            histogram: h };
-
+        this.axisData = axisData;
+        this.title = title;
+        this.histogram = h;
         this.plot.setHistogram(h, 1, axisData);
         this.plot.draw();
 
         this.summary.innerHTML = "Columns: " + this.colNames.join(", ");
     }
 
+    protected onMouseMove(): void {}
+
     public refresh(): void {
-        if (this.currentData == null)
-            return;
-        this.updateView(
-            this.currentData.title,
-            this.currentData.histogram,
-            this.currentData.axisData,
-            0);
+        this.updateView(this.title, this.histogram, this.axisData, 0);
     }
 
     public serialize(): IViewSerialization {

@@ -177,7 +177,7 @@ class HeatmapColormap {
         this.setMap(d3interpolateWarm);
     }
 
-    public setLogScale(logScale: boolean) {
+    public setLogScale(logScale: boolean): void {
         this.logScale = logScale;
     }
 
@@ -230,7 +230,7 @@ export class HeatmapLegendPlot extends Plot {
         this.uniqueId = HeatmapLegendPlot.nextUniqueId++;
     }
 
-    public setColorMapChangeEventListener(listener: (ColorMap) => void) {
+    public setColorMapChangeEventListener(listener: (ColorMap) => void): void {
         this.onColorMapChange = listener;
     }
 
@@ -242,7 +242,7 @@ export class HeatmapLegendPlot extends Plot {
     /**
      * The context menu is added only when a colormap change event listener is set.
      */
-    private enableContextMenu() {
+    private enableContextMenu(): void {
         this.contextMenu = new ContextMenu(
             this.plottingSurface.topLevelElement, [
             {
@@ -278,7 +278,7 @@ export class HeatmapLegendPlot extends Plot {
         ]);
     }
 
-    private showContextMenu(event: MouseEvent) {
+    private showContextMenu(event: MouseEvent): void {
         /* Only show context menu if it is enabled. */
         if (this.contextMenu != null) {
             event.preventDefault();
@@ -287,7 +287,7 @@ export class HeatmapLegendPlot extends Plot {
     }
 
     // Redraw the legend, and notify the listeners.
-    private mapUpdated() {
+    private mapUpdated(): void {
         this.setData(this.colorMap.min, this.colorMap.max, this.colorMap.logScale);
         this.draw();
         // Notify the onColorChange listener (redraw the elements with new colors)
@@ -316,7 +316,7 @@ export class HeatmapLegendPlot extends Plot {
         this.xAxis = d3axisBottom(scale).ticks(ticks);
     }
 
-    protected getXAxis(): D3Axis {
+    public getXAxis(): D3Axis {
         return this.xAxis;
     }
 
