@@ -21,18 +21,21 @@ public class ComputeTrellisShape {
     public final int y_max;
     public final int y_min;
     public double max_ratio;
+    public double header_ht;
     public final int max_width;
     public final int max_height;
 
 
-    public ComputeTrellisShape(int x_max, int x_min, int y_max, int y_min, double max_ratio) {
+    public ComputeTrellisShape(int x_max, int x_min, int y_max, int y_min, double max_ratio,
+                               int header_ht) {
         this.x_max = x_max;
         this.x_min = x_min;
         this.y_max = y_max;
         this.y_min = y_min;
         this.max_ratio = max_ratio;
-        this.max_width = (int) Math.floor(x_max/x_min);
-        this.max_height = (int) Math.floor(y_max/y_min);
+        this.header_ht =header_ht;
+        this.max_width = x_max/x_min;
+        this.max_height = y_max/(y_min + header_ht);
         if (Math.max(((double) x_min)/y_min, ((double) y_min)/x_min) > max_ratio)
             System.out.printf("The minimum sizes do not satisfy aspect ratio\n");
     }
@@ -66,7 +69,7 @@ public class ComputeTrellisShape {
 
     public TrellisShape getShape(int n) {
         double total = this.x_max * this.y_max;
-        double used = (double) n*this.x_min*this.y_min;
+        double used = (double) n*this.x_min*(this.y_min + this.header_ht);
         double coverage = used/total;
         TrellisShape opt = new TrellisShape(this.max_width, this.x_min, this.max_height, this.y_min,
                 coverage);
@@ -81,12 +84,12 @@ public class ComputeTrellisShape {
         double x_len, y_len;
         for (Pair<Integer, Integer> size: sizes) {
             x_len = Math.floor(((double) this.x_max)/size.first);
-            y_len = Math.floor(((double) this.y_max)/size.second);
+            y_len = Math.floor(((double) this.y_max)/size.second) - this.header_ht;
             if (x_len >= y_len)
                 x_len = Math.min(x_len, this.max_ratio*y_len);
             else
                 y_len = Math.min(y_len, this.max_ratio*x_len);
-            used = n * x_len * y_len;
+            used = n * x_len * (y_len + this.header_ht);
             coverage = used/total;
             if ((x_len >= this.x_min) && (y_len >= this.y_min) && (coverage > opt.coverage)) {
                 opt.x_len = x_len;
