@@ -27,8 +27,10 @@ public class EqualityFilterDescription implements ITableFilterDescription {
     private final String column;
     @Nullable
     private final String compareValue;
-    private final boolean complement;
+    private final boolean asSubString;
     private final boolean asRegEx;
+    private final boolean caseSensitive;
+    private final boolean complement;
 
     /**
      * Make a filter that accepts rows that (do not) have a specified value in the specified
@@ -38,15 +40,18 @@ public class EqualityFilterDescription implements ITableFilterDescription {
      * @param complement If true, invert the filter such that it checks for inequality.
      */
     public EqualityFilterDescription(
-            String column, @Nullable String compareValue, boolean complement, boolean asRegEx) {
+            String column, @Nullable String compareValue,  boolean asSubString, boolean asRegEx,
+            boolean caseSensitive, boolean complement) {
         this.column = column;
         this.compareValue = compareValue;
-        this.complement = complement;
+        this.asSubString = asSubString;
         this.asRegEx = asRegEx;
+        this.caseSensitive = caseSensitive;
+        this.complement = complement;
     }
 
     public EqualityFilterDescription(String column, @Nullable String compareValue) {
-        this(column, compareValue, false, false);
+        this(column, compareValue, false, false, false, false);
     }
 
     @Override
@@ -107,11 +112,20 @@ public class EqualityFilterDescription implements ITableFilterDescription {
         public boolean test(int rowIndex) {
             boolean result;
 
-            if (EqualityFilterDescription.this.asRegEx) {
-                assert this.regEx != null;
-                if (this.missing || column.isMissing(rowIndex)) {
-                    result = (this.missing == column.isMissing(rowIndex));
+            if (EqualityFilterDescription.this.asSubString) {
+                if (this.missing || this.column.isMissing(rowIndex)) {
+                    result = (this.missing == this.column.isMissing(rowIndex));
                 } else {
+                    assert EqualityFilterDescription.this.compareValue != null;
+                    String curString = column.asString(rowIndex);
+                    result = curString.contains(EqualityFilterDescription.this.compareValue);
+                }
+                return result^EqualityFilterDescription.this.complement;
+            } else if (EqualityFilterDescription.this.asRegEx) {
+                if (this.missing || this.column.isMissing(rowIndex)) {
+                    result = (this.missing == this.column.isMissing(rowIndex));
+                } else {
+                    assert this.regEx != null;
                     String value = this.column.asString(rowIndex);
                     assert value != null;
                     result = this.regEx.matcher(value).matches();

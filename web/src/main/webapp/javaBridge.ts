@@ -340,13 +340,21 @@ export interface EqualityFilterDescription {
      */
     compareValue: string;
     /**
-     * True if we are looking for anything that is not equal.
+     * True if we want to allow substring matching.
      */
-    complement: boolean;
+    asSubString: boolean;
     /**
      * True if we are looking to do regular expression matching.
      */
     asRegEx: boolean;
+    /**
+     * True if we want the search string to be case sensitive.
+     */
+    caseSensitive: boolean;
+    /**
+     * True if we are looking for anything that is not equal.
+     */
+    complement: boolean;
 }
 
 export interface ComparisonFilterDescription {
