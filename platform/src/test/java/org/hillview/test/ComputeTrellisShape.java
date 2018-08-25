@@ -5,15 +5,15 @@ import org.hillview.dataset.api.Pair;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ComputeTrellisShape {
-    public final int x_max;
-    public final int x_min;
-    public final int y_max;
-    public final int y_min;
-    public double max_ratio;
-    public int header_ht;
-    public final int max_width;
-    public final int max_height;
+class ComputeTrellisShape {
+    private final int x_max;
+    private final int x_min;
+    private final int y_max;
+    private final int y_min;
+    private double max_ratio;
+    private int header_ht;
+    private final int max_width;
+    private final int max_height;
 
     /**
      A class that optimizes the shape of a trellis display.
@@ -25,7 +25,7 @@ public class ComputeTrellisShape {
      x_min and y_min should satisfy the aspect ratio condition:
      Max(x_min/y_min, y_min/x_min) <= max_ratio.
      */
-    public ComputeTrellisShape(int x_max, int x_min, int y_max, int y_min, double max_ratio,
+    ComputeTrellisShape(int x_max, int x_min, int y_max, int y_min, double max_ratio,
                                int header_ht) {
         this.x_max = x_max;
         this.x_min = x_min;
