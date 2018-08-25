@@ -224,6 +224,7 @@ export class Histogram2DPlot extends Plot {
         return this.getChartHeight() - y * scale;
     }
 
+    // noinspection JSMethodCanBeStatic
     public color(d: number, max: number): string {
         if (d > max)
         // This is for the "missing" data

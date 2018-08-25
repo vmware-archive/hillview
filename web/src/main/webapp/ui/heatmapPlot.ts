@@ -131,7 +131,7 @@ export class HeatmapPlot extends Plot {
         return this.distinct;
     }
 
-    public setData(heatmap: Heatmap, xData: AxisData, yData: AxisData) {
+    public setData(heatmap: Heatmap, xData: AxisData, yData: AxisData): void {
         this.heatmap = heatmap;
         this.xAxisData = xData;
         this.yAxisData = yData;

@@ -130,17 +130,14 @@ export class HistogramView extends HistogramViewBase {
     }
 
     public static reconstruct(ser: HistogramSerialization, page: FullPage): IDataView {
-        const samplingRate: number = ser.samplingRate;
-        const cd: IColumnDescription = ser.columnDescription;
-        const bucketCount: number = ser.bucketCount;
         const schema: SchemaClass = new SchemaClass([]).deserialize(ser.schema);
-        if (cd == null || samplingRate == null || schema == null || bucketCount == null)
+        if (ser.columnDescription == null || ser.samplingRate == null ||
+            schema == null || ser.bucketCount == null)
             return null;
 
         const hv = new HistogramView(
-            ser.remoteObjectId, ser.rowCount, schema, samplingRate, page);
-        hv.histogram1D(ser.title, cd.name, bucketCount,
-            { reusePage: true, exact: samplingRate >= 1 });
+            ser.remoteObjectId, ser.rowCount, schema, ser.samplingRate, page);
+        hv.setAxes(new AxisData(ser.columnDescription, null));
         return hv;
     }
 
@@ -229,13 +226,12 @@ export class HistogramView extends HistogramViewBase {
         this.cdfPlot.draw();
         this.setupMouse();
 
-        const canvas = this.surface.getCanvas();
-        this.cdfDot = canvas
+        this.cdfDot =  this.surface.getChart()
             .append("circle")
             .attr("r", Resolution.mouseDotRadius)
             .attr("fill", "blue");
 
-        const pointDesc = ["x", "y", "size"];
+        const pointDesc = ["x", "y", "count"];
         if (cdf != null)
             pointDesc.push("cdf");
         this.pointDescription = new TextOverlay(this.surface.getChart(),
@@ -278,8 +274,9 @@ export class HistogramView extends HistogramViewBase {
         const groupBy = this.schema.findByDisplayName(colName);
         const cds: IColumnDescription[] = [this.axisData.description, groupBy];
         const buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
-        const rr = this.getDataRanges(cds, buckets);
-        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema, 0, cds, null, {
+        const rr = this.createDataRangesRequest(cds, buckets);
+        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+            [0, 0], cds, null, {
             reusePage: false, relative: false,
             chartKind: "TrellisHistogram", exact: false
         }));
@@ -352,12 +349,12 @@ export class HistogramView extends HistogramViewBase {
         const oc = this.schema.find(colName);
         const cds: IColumnDescription[] = [this.axisData.description, oc];
         const buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
-        const rr = this.getDataRanges(cds, buckets);
+        const rr = this.createDataRangesRequest(cds, buckets);
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
-            this.histogram.buckets.length, cds, null, {
+            [this.histogram.buckets.length, 0], cds, null, {
             reusePage: false,
             relative: false,
-            chartKind: "Histogram",
+            chartKind: "2DHistogram",
             exact: true
         }));
     }
@@ -367,29 +364,29 @@ export class HistogramView extends HistogramViewBase {
     }
 
     public chooseBuckets(): void {
-        if (this == null)
-            return;
-
         const bucketDialog = new BucketDialog();
         bucketDialog.setAction(() => this.changeBuckets(bucketDialog.getBucketCount()));
         bucketDialog.show();
     }
 
-    public refresh(): void {
-        if (this == null)
+    public resize(): void {
+        if (this.cdf == null)
             return;
+        this.updateView(this.cdf, this.histogram.buckets.length, 0);
+    }
+
+    public refresh(): void {
         this.histogram1D(
             this.page.title,
-            this.axisData.description.name,
+            this.axisData.description,
             this.histogram.buckets.length,
             { exact: this.samplingRate >= 1, reusePage: true } );
     }
 
-    public histogram1D(title: string, colName: string,
+    public histogram1D(title: string, cd: IColumnDescription,
                        bucketCount: number, options: HistogramOptions): void {
-        const cd = this.schema.find(colName);
         const size = PlottingSurface.getDefaultChartSize(this.page.getWidthInPixels());
-        const rr = this.getDataRange(cd, size.width);
+        const rr = this.createDataRangeRequest(cd, size.width);
         rr.invoke(new DataRangeCollector(
             this, this.page, rr, this.schema, bucketCount, cd, title,
             size.width, options));
@@ -400,7 +397,7 @@ export class HistogramView extends HistogramViewBase {
             return;
         this.histogram1D(
             this.page.title,
-            this.axisData.description.name,
+            this.axisData.description,
             this.histogram.buckets.length,
             { exact: true, reusePage: true } );
     }
@@ -419,11 +416,10 @@ export class HistogramView extends HistogramViewBase {
         const pointDesc = [xs, ys, significantDigits(size)];
 
         if (this.cdfPlot != null) {
-            const pos = this.cdfPlot.getY(mouseX);
-            this.cdfDot.attr("cx", mouseX + this.surface.leftMargin);
-            this.cdfDot.attr("cy", (1 - pos) *
-                this.surface.getActualChartHeight() + this.surface.topMargin);
-            const perc = percent(pos);
+            const cdfPos = this.cdfPlot.getY(mouseX);
+            this.cdfDot.attr("cx", mouseX);
+            this.cdfDot.attr("cy", (1 - cdfPos) * this.surface.getChartHeight());
+            const perc = percent(cdfPos);
             pointDesc.push(perc);
         }
         this.pointDescription.update(pointDesc, mouseX, mouseY);
@@ -507,7 +503,7 @@ class FilterReceiver extends BaseRenderer {
         super.run();
         const title = this.filterDescription();
         const size = PlottingSurface.getDefaultChartSize(this.page.getWidthInPixels());
-        const rr = this.remoteObject.getDataRange(
+        const rr = this.remoteObject.createDataRangeRequest(
             this.columnDescription, size.width);
         rr.invoke(new DataRangeCollector(
             this.remoteObject, this.page, rr, this.schema, 0,
@@ -575,7 +571,7 @@ class MakeHistogram extends BaseRenderer {
     public run(): void {
         super.run();
         const size = PlottingSurface.getDefaultChartSize(this.page.getWidthInPixels());
-        const rr = this.remoteObject.getDataRange(this.cd, size.width);
+        const rr = this.remoteObject.createDataRangeRequest(this.cd, size.width);
         rr.invoke(new DataRangeCollector(
             this.remoteObject, this.page, rr, this.schema, 0, this.cd, null,
             size.width, { reusePage: false, exact: this.exact}));

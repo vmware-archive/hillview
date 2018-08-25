@@ -17,9 +17,6 @@
 
 import {mouse as d3mouse} from "d3-selection";
 import {
-    DataRange, HistogramArgs,
-    IColumnDescription,
-    kindIsString,
     RemoteObjectId
 } from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
@@ -27,8 +24,8 @@ import {CDFPlot} from "../ui/CDFPlot";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
 import {PlottingSurface} from "../ui/plottingSurface";
-import {D3SvgElement, Resolution, Size, SpecialChars, ViewKind} from "../ui/ui";
-import {periodicSamples, Seed, significantDigits} from "../util";
+import {D3SvgElement, Resolution, SpecialChars, ViewKind} from "../ui/ui";
+import {significantDigits} from "../util";
 import {ChartView} from "./chartView";
 
 /**
@@ -48,7 +45,6 @@ export abstract class HistogramViewBase extends ChartView {
         super(remoteObjectId, rowCount, schema, page, viewKind);
         this.topLevel = document.createElement("div");
         this.topLevel.className = "chart";
-        this.topLevel.tabIndex = 1;
 
         this.chartDiv = document.createElement("div");
         this.topLevel.appendChild(this.chartDiv);
@@ -65,7 +61,7 @@ export abstract class HistogramViewBase extends ChartView {
     }
 
     protected abstract showTable(): void;
-    public abstract refresh(): void;
+    public abstract resize(): void;
 
     /**
      * Dragging started in the canvas.
@@ -88,7 +84,7 @@ export abstract class HistogramViewBase extends ChartView {
         const position = d3mouse(this.surface.getCanvas().node());
         const x = position[0];
         let width = x - ox;
-        const height = this.surface.getActualChartHeight();
+        const height = this.surface.getChartHeight();
 
         if (width < 0) {
             ox = x;
@@ -101,66 +97,6 @@ export abstract class HistogramViewBase extends ChartView {
             .attr("width", width)
             .attr("height", height);
         return true;
-    }
-
-    public static computeHistogramArgs(
-        cd: IColumnDescription,
-        range: DataRange,
-        bucketCount: number,  // if 0 the size is chosen based on the screen size
-        exact: boolean,
-        chartSize: Size): HistogramArgs {
-        if (kindIsString(cd.kind)) {
-            const cdfBucketCount = range.leftBoundaries.length;
-            let samplingRate = HistogramViewBase.samplingRate(
-                cdfBucketCount, range.presentCount, chartSize);
-            if (exact)
-                samplingRate = 1.0;
-            let bounds = range.leftBoundaries;
-            if (bucketCount !== 0)
-                bounds = periodicSamples(range.leftBoundaries, bucketCount);
-            const args: HistogramArgs = {
-                cd: cd,
-                seed: Seed.instance.getSampled(samplingRate),
-                samplingRate: samplingRate,
-                leftBoundaries: bounds,
-                bucketCount: bounds.length
-            };
-            return args;
-        } else {
-            let cdfCount = Math.floor(chartSize.width);
-            if (bucketCount !== 0)
-                cdfCount = bucketCount;
-
-            let adjust = 0;
-            if (cd.kind === "Integer") {
-                if (cdfCount > range.max - range.min)
-                    cdfCount = range.max - range.min + 1;
-                adjust = .5;
-            }
-
-            let samplingRate = 1.0;
-            if (!exact)
-                samplingRate = HistogramViewBase.samplingRate(
-                    cdfCount, range.presentCount, chartSize);
-            const args: HistogramArgs = {
-                cd: cd,
-                min: range.min - adjust,
-                max: range.max + adjust,
-                samplingRate: samplingRate,
-                seed: Seed.instance.getSampled(samplingRate),
-                bucketCount: cdfCount
-            };
-            return args;
-        }
-    }
-
-    // noinspection JSUnusedLocalSymbols
-    public static samplingRate(bucketCount: number, rowCount: number, chartSize: Size): number {
-        const constant = 4;  // This models the confidence we want from the sampling
-        const height = chartSize.height;
-        const sampleCount = constant * height * height;
-        const sampleRate = sampleCount / rowCount;
-        return Math.min(sampleRate, 1);
     }
 
     /**

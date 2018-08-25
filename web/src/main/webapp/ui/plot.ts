@@ -38,17 +38,17 @@ export abstract class Plot {
     protected constructor(protected plottingSurface: PlottingSurface) {}
 
     /**
-     * When the plot is of a chart this returns the chart width in pixels - excluding borders.
+     * Returns the chart width in pixels - excluding borders.
      */
     public getChartWidth(): number {
-        return this.plottingSurface.getActualChartWidth();
+        return this.plottingSurface.getChartWidth();
     }
 
     /**
-     * When the plot is of a chart this returns the chart height in pixels - excluding borders.
+     * Returns the chart height in pixels - excluding borders.
      */
     public getChartHeight(): number {
-        return this.plottingSurface.getActualChartHeight();
+        return this.plottingSurface.getChartHeight();
     }
 
     public clear(): void {

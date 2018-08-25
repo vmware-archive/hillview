@@ -16,7 +16,14 @@
  */
 
 import {HeavyHittersSerialization, IViewSerialization} from "../datasetView";
-import {CombineOperators, IColumnDescription, NextKList, RecordOrder, RemoteObjectId, TopList}
+import {
+    CombineOperators,
+    IColumnDescription,
+    NextKList,
+    RecordOrder,
+    RemoteObjectId,
+    TopList
+}
     from "../javaBridge";
 import {OnCompleteReceiver, RemoteObject} from "../rpc";
 import {SchemaClass} from "../schemaClass";
@@ -186,16 +193,19 @@ export class HeavyHittersView extends BigTableView {
             order == null || columnsShown == null)
             return null;
         const remoteTable = new TableTargetAPI(remoteTableId);
-        const hv = new HeavyHittersView(ser.remoteObjectId, page, remoteTable, ser.rowCount, schema,
+        return new HeavyHittersView(ser.remoteObjectId, page, remoteTable, ser.rowCount, schema,
             order, isApprox, percent, columnsShown);
-        const rr = remoteTable.createHeavyHittersRequest(
-            columnsShown, percent, ser.rowCount, HeavyHittersView.switchToMG);
-        rr.invoke(new HeavyHittersReceiver(
-            page, hv, rr, ser.rowCount, schema, order, isApprox, percent, columnsShown, true));
-        return hv;
     }
 
-    public refresh(): void {}
+    public refresh(): void {
+        const rr = this.createHeavyHittersRequest(
+            this.columnsShown, this.percent, this.rowCount, HeavyHittersView.switchToMG);
+        rr.invoke(new HeavyHittersReceiver(
+            this.getPage(), this, rr, this.rowCount, this.schema,
+            this.originalTableOrder, this.isApprox, this.percent, this.columnsShown, true));
+    }
+
+    public resize(): void {}
     /**
      * Method the creates the filtered table. If isApprox is true, then there are two steps: we first compute the exact
      * heavy hitters and then use that list to filter the table. If isApprox is false, we compute the table right away.
@@ -361,7 +371,7 @@ export class HeavyHittersView extends BigTableView {
         return str;
     }
 
-    private runWithThreshold(newPercent: number) {
+    private runWithThreshold(newPercent: number): void {
         const rr = this.remoteTableObject.createHeavyHittersRequest(
             this.columnsShown, newPercent,
             this.rowCount, HeavyHittersView.switchToMG);

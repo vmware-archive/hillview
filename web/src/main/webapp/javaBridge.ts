@@ -186,6 +186,7 @@ export interface DataRange {
     max?: number;
     // Only used for string data
     leftBoundaries?: string[];
+    maxBoundary?: string;
     allStringsKnown?: boolean;
 }
 
@@ -278,21 +279,21 @@ export class RecordOrder {
         this.sortOrientationList.splice(index, 1);
     }
 
-    public sortFirst(cso: ColumnSortOrientation) {
+    public sortFirst(cso: ColumnSortOrientation): void {
         const index = this.find(cso.columnDescription.name);
         if (index !== -1)
             this.sortOrientationList.splice(index, 1);
         this.sortOrientationList.splice(0, 0, cso);
     }
 
-    public addColumn(cso: ColumnSortOrientation) {
+    public addColumn(cso: ColumnSortOrientation): void {
         const index = this.find(cso.columnDescription.name);
         if (index !== -1)
             this.sortOrientationList.splice(index, 1);
         this.sortOrientationList.push(cso);
     }
 
-    public addColumnIfNotVisible(cso: ColumnSortOrientation) {
+    public addColumnIfNotVisible(cso: ColumnSortOrientation): void {
         const index = this.find(cso.columnDescription.name);
         if (index === -1)
             this.sortOrientationList.push(cso);

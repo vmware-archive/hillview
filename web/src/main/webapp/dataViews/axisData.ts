@@ -51,27 +51,30 @@ export class AxisData {
                        public range: DataRange | null) {
         this.bucketCount = 0;
         let useRange = range;
-        if (kindIsString(description.kind)) {
-            useRange = {
-                min: -.5,
-                max: range.leftBoundaries.length - .5,
-                presentCount: range.presentCount,
-                missingCount: range.missingCount,
-                allStringsKnown: range.allStringsKnown,
-                leftBoundaries: range.leftBoundaries
-            };
-        } else if (description.kind === "Integer") {
-            useRange = {
-                min: range.min - .5,
-                max: range.max + .5,
-                presentCount: range.presentCount,
-                missingCount: range.missingCount
-            };
+        if (useRange != null) {
+            if (kindIsString(description.kind)) {
+                useRange = {
+                    min: -.5,
+                    max: range.leftBoundaries.length - .5,
+                    presentCount: range.presentCount,
+                    missingCount: range.missingCount,
+                    allStringsKnown: range.allStringsKnown,
+                    leftBoundaries: range.leftBoundaries,
+                    maxBoundary: range.maxBoundary
+                };
+            } else if (description.kind === "Integer") {
+                useRange = {
+                    min: range.min - .5,
+                    max: range.max + .5,
+                    presentCount: range.presentCount,
+                    missingCount: range.missingCount
+                };
+            }
         }
         this.range = useRange;
         const strings = range !== null ? range.leftBoundaries : null;
         this.distinctStrings = strings;
-        // These can be set when we know the screen size.
+        // These are set when we know the screen size.
         this.scale = null;
         this.axis = null;
     }
@@ -241,10 +244,12 @@ export class AxisData {
 
         if (kindIsString(this.description.kind)) {
             const left = this.getString(bucket, false);
+            if (this.range.allStringsKnown)
+                return left;
             if (bucket === this.bucketCount - 1)
-                return "> " + left;
+                return "[" + left + "," + this.range.maxBoundary + "]";
             else
-                return "[" + left + "," + this.getString(bucket+1, false) + ")";
+                return "[" + left + "," + this.getString(bucket + 1, false) + ")";
         }
 
         let [start, end] = this.boundaries(bucket);

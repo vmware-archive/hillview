@@ -106,19 +106,19 @@ export abstract class PlottingSurface {
     /**
      * The width of the drawn chart, excluding the margins, in pixels.
      */
-    public getActualChartWidth(): number {
+    public getChartWidth(): number {
         return this.size.width - this.leftMargin - this.rightMargin;
     }
 
     /**
      * The height of the drawn chart, excluding the margins, in pixels.
      */
-    public getActualChartHeight(): number {
+    public getChartHeight(): number {
         return this.size.height - this.topMargin - this.bottomMargin;
     }
 
     public getActualChartSize(): Size {
-        return { width: this.getActualChartWidth(), height: this.getActualChartHeight() };
+        return { width: this.getChartWidth(), height: this.getChartHeight() };
     }
 
     /**

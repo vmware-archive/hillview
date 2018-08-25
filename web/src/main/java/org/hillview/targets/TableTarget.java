@@ -121,10 +121,13 @@ public final class TableTarget extends RpcTarget {
 
     static class StringBucketLeftBoundaries extends BucketsInfo {
         JsonList<String> leftBoundaries;
+        @Nullable
+        String           maxBoundary;
         boolean          allStringsKnown;
 
         StringBucketLeftBoundaries(MinKSet<String> samples, int bucketCount) {
             this.leftBoundaries = samples.getLeftBoundaries(bucketCount);
+            this.maxBoundary = samples.max;
             this.allStringsKnown = samples.allStringsKnown(bucketCount);
             this.presentCount = samples.presentCount;
             this.missingCount = samples.missingCount;

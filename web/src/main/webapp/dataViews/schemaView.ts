@@ -54,9 +54,11 @@ export class SchemaView extends TSViewBase {
         const schema = new SchemaClass([]).deserialize(ser.schema);
         if (schema == null)
             return null;
-        const schemaView = new SchemaView(ser.remoteObjectId, page, ser.rowCount, schema, 0);
-        schemaView.show();
-        return schemaView;
+        return new SchemaView(ser.remoteObjectId, page, ser.rowCount, schema, 0);
+    }
+
+    public refresh(): void {
+        this.show();
     }
 
     public show(): void {
@@ -238,7 +240,7 @@ export class SchemaView extends TSViewBase {
         this.contextMenu.show(e);
     }
 
-    public refresh(): void {
+    public resize(): void {
         this.show();
     }
 
@@ -248,7 +250,7 @@ export class SchemaView extends TSViewBase {
         this.show();
     }
 
-    private nameAction(regExp: RegExp, action: string) {
+    private nameAction(regExp: RegExp, action: string): void {
         for (let i = 0; i < this.schema.length; i++) {
             if (this.schema.displayName(this.schema.get(i).name).match(regExp)) {
                 if (action === "Add")
@@ -277,7 +279,7 @@ export class SchemaView extends TSViewBase {
      * @param {string} action: Either Add or Remove.
      * This method updates the set of selected columns by adding/removing all columns of selectedType.
      */
-    private typeAction(selectedType: string, action: string) {
+    private typeAction(selectedType: string, action: string): void {
         for (let i = 0; i < this.schema.length; i++) {
             if (this.schema.get(i).kind === selectedType) {
                 if (action === "Add")

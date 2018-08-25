@@ -19,17 +19,17 @@ import {OnCompleteReceiver} from "../rpc";
 import {DataRange, HistogramArgs, IColumnDescription, kindIsString} from "../javaBridge";
 import {TableTargetAPI} from "../tableTarget";
 import {FullPage} from "../ui/fullPage";
-import {ICancellable} from "../util";
+import {ICancellable, periodicSamples, Seed} from "../util";
 import {SchemaClass} from "../schemaClass";
 import {ChartOptions, HistogramOptions, Resolution, Size} from "../ui/ui";
 import {PlottingSurface} from "../ui/plottingSurface";
-import {HistogramViewBase} from "./histogramViewBase";
 import {TrellisHistogramRenderer} from "./trellisHistogramView";
 import {HeatmapRenderer} from "./heatmapView";
 import {Histogram2DRenderer} from "./histogram2DView";
 import {HistogramRenderer} from "./histogramView";
 import {AxisData} from "./axisData";
 import {TrellisHeatmapRenderer} from "./trellisHeatmapView";
+import {TrellisHistogram2DRenderer} from "./trellisHistogram2DView";
 
 /**
  * Describes the shape of trellis display.
@@ -127,11 +127,78 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
         page: FullPage,
         operation: ICancellable<DataRange[]>,
         protected schema: SchemaClass,
-        protected xBucketCount: number,
+        protected bucketCounts: number[],
         protected cds: IColumnDescription[],  // if 0 we get to choose
         protected title: string | null,
         protected options: ChartOptions) {
         super(page, operation, "histogram");
+    }
+
+    public static samplingRate(bucketCount: number, rowCount: number, chartSize: Size): number {
+        const constant = 4;  // This models the confidence we want from the sampling
+        const height = chartSize.height;
+        const sampleCount = constant * height * height;
+        const sampleRate = sampleCount / rowCount;
+        return Math.min(sampleRate, 1);
+    }
+
+    /**
+     * Compute the parameters to use for a histogram
+     * @param cd           Column to compute histogram for.
+     * @param range        Range of the data in the column.
+     * @param bucketCount  Desired number of buckets; if 0 it will be computed.
+     * @param exact        If true we don't sample.
+     * @param chartSize    Size available to draw the histogram.
+     */
+    public static computeHistogramArgs(
+        cd: IColumnDescription,
+        range: DataRange,
+        bucketCount: number,
+        exact: boolean,
+        chartSize: Size): HistogramArgs {
+        if (kindIsString(cd.kind)) {
+            const cdfBucketCount = range.leftBoundaries.length;
+            let samplingRate = DataRangesCollector.samplingRate(
+                cdfBucketCount, range.presentCount, chartSize);
+            if (exact)
+                samplingRate = 1.0;
+            let bounds = range.leftBoundaries;
+            if (bucketCount !== 0)
+                bounds = periodicSamples(range.leftBoundaries, bucketCount);
+            const args: HistogramArgs = {
+                cd: cd,
+                seed: Seed.instance.getSampled(samplingRate),
+                samplingRate: samplingRate,
+                leftBoundaries: bounds,
+                bucketCount: bounds.length
+            };
+            return args;
+        } else {
+            let cdfCount = Math.floor(chartSize.width);
+            if (bucketCount !== 0)
+                cdfCount = bucketCount;
+
+            let adjust = 0;
+            if (cd.kind === "Integer") {
+                if (cdfCount > range.max - range.min)
+                    cdfCount = range.max - range.min + 1;
+                adjust = .5;
+            }
+
+            let samplingRate = 1.0;
+            if (!exact)
+                samplingRate = DataRangesCollector.samplingRate(
+                    cdfCount, range.presentCount, chartSize);
+            const args: HistogramArgs = {
+                cd: cd,
+                min: range.min - adjust,
+                max: range.max + adjust,
+                samplingRate: samplingRate,
+                seed: Seed.instance.getSampled(samplingRate),
+                bucketCount: cdfCount
+            };
+            return args;
+        }
     }
 
     private trellisLayout(windows: number): TrellisShape {
@@ -175,34 +242,66 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
         switch (this.options.chartKind) {
             case "TrellisHistogram": {
                 console.assert(ranges.length === 2);
-                const xArg = HistogramViewBase.computeHistogramArgs(
+                const xArg = DataRangesCollector.computeHistogramArgs(
                     this.cds[0], ranges[0], 0, false, trellisShape.size);
-                const wArg = HistogramViewBase.computeHistogramArgs(
+                const wArg = DataRangesCollector.computeHistogramArgs(
                     this.cds[1], ranges[1], trellisShape.bucketCount, false, trellisShape.size);
                 // Window argument comes first
                 const args = [wArg, xArg];
+                // Trellis histograms are computed by heatmap requests
                 const rr = this.originator.createHeatmapRequest(args);
+                const xAxisData = new AxisData(this.cds[0], ranges[0]);
+                xAxisData.setBucketCount(this.bucketCounts[0]);
+                const groupByAxis = new AxisData(this.cds[1], ranges[1]);
+                groupByAxis.setBucketCount(wArg.bucketCount);
                 const renderer = new TrellisHistogramRenderer(this.page,
                     this.originator, rowCount, this.schema,
-                    this.cds, ranges, [wArg.bucketCount, xArg.bucketCount],
-                    1.0, trellisShape, rr, this.options.reusePage);
+                    [xAxisData, groupByAxis],
+                    xArg.samplingRate, trellisShape, rr, this.options.reusePage);
                 rr.chain(this.operation);
                 rr.invoke(renderer);
                 break;
             }
             case "Trellis2DHistogram": {
-                // TODO
+                const args: HistogramArgs[] = [];
+                const maxXBucketCount = Math.floor(trellisShape.size.width / Resolution.minDotSize);
+                const maxYBucketCount = Resolution.maxBucketCount;
+                const xArg = DataRangesCollector.computeHistogramArgs(
+                    this.cds[0], ranges[0], maxXBucketCount, this.options.exact, trellisShape.size);
+                const yArg = DataRangesCollector.computeHistogramArgs(
+                    this.cds[1], ranges[1], maxYBucketCount, this.options.exact, trellisShape.size);
+                const wArg = DataRangesCollector.computeHistogramArgs(
+                    this.cds[2], ranges[2], trellisShape.bucketCount, this.options.exact, chartSize);
+                // Window argument comes first
+                args.push(wArg);
+                args.push(xArg);
+                args.push(yArg);
+                /*
+                TODO
+                const rr = this.originator.createTrellis2DHistogramRequest(args);
+                const xAxis = new AxisData(this.cds[0], ranges[0]);
+                xAxis.setBucketCount(xArg.bucketCount);
+                const yAxis = new AxisData(this.cds[1], ranges[1]);
+                yAxis.setBucketCount(yArg.bucketCount);
+                const groupByAxis = new AxisData(this.cds[2], ranges[2]);
+                groupByAxis.setBucketCount(wArg.bucketCount);
+                const renderer = new TrellisHistogram2DRenderer(this.page,
+                    this.originator, rowCount, this.schema,
+                    [xAxis, yAxis, groupByAxis], 1.0, trellisShape, rr, this.options.reusePage);
+                rr.chain(this.operation);
+                rr.invoke(renderer);
+                 */
                 break;
             }
             case "TrellisHeatmap": {
                 const args: HistogramArgs[] = [];
                 const maxXBucketCount = Math.floor(trellisShape.size.width / Resolution.minDotSize);
                 const maxYBucketCount = Math.floor(trellisShape.size.height / Resolution.minDotSize);
-                const xArg = HistogramViewBase.computeHistogramArgs(
+                const xArg = DataRangesCollector.computeHistogramArgs(
                     this.cds[0], ranges[0], maxXBucketCount, this.options.exact, trellisShape.size);
-                const yArg = HistogramViewBase.computeHistogramArgs(
+                const yArg = DataRangesCollector.computeHistogramArgs(
                     this.cds[1], ranges[1], maxYBucketCount, this.options.exact, trellisShape.size);
-                const wArg = HistogramViewBase.computeHistogramArgs(
+                const wArg = DataRangesCollector.computeHistogramArgs(
                     this.cds[2], ranges[2], trellisShape.bucketCount, this.options.exact, chartSize);
                 // Window argument comes first
                 args.push(wArg);
@@ -227,10 +326,10 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                 const args: HistogramArgs[] = [];
                 const maxXBucketCount = Math.floor(chartSize.width / Resolution.minDotSize);
                 const maxYBucketCount = Math.floor(chartSize.height / Resolution.minDotSize);
-                const xArg = HistogramViewBase.computeHistogramArgs(
+                const xArg = DataRangesCollector.computeHistogramArgs(
                     this.cds[0], ranges[0], maxXBucketCount, this.options.exact, chartSize);
                 args.push(xArg);
-                const yArg = HistogramViewBase.computeHistogramArgs(
+                const yArg = DataRangesCollector.computeHistogramArgs(
                     this.cds[1], ranges[1], maxYBucketCount, this.options.exact, chartSize);
                 args.push(yArg);
 
@@ -246,9 +345,9 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                 rr.invoke(renderer);
                 break;
             }
-            case "Histogram": {
+            case "2DHistogram": {
                 const args: HistogramArgs[] = [];
-                let maxXBucketCount = this.xBucketCount;
+                let maxXBucketCount = this.bucketCounts[0];
                 if (maxXBucketCount === 0) {
                     maxXBucketCount = Math.min(
                         Math.floor(chartSize.width / Resolution.minBarWidth),
@@ -257,17 +356,17 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                 const maxYBucketCount = Resolution.maxBucketCount;
 
                 // The first two represent the resolution for the 2D histogram
-                const xarg = HistogramViewBase.computeHistogramArgs(
+                const xarg = DataRangesCollector.computeHistogramArgs(
                     this.cds[0], ranges[0], maxXBucketCount,
                     // Relative views cannot sample
                     this.options.exact || this.options.relative, chartSize);
                 args.push(xarg);
-                const yarg = HistogramViewBase.computeHistogramArgs(
+                const yarg = DataRangesCollector.computeHistogramArgs(
                     this.cds[1], ranges[1], maxYBucketCount,
                     this.options.exact || this.options.relative, chartSize);
                 args.push(yarg);
                 // This last one represents the resolution for the CDF
-                const cdfArg = HistogramViewBase.computeHistogramArgs(
+                const cdfArg = DataRangesCollector.computeHistogramArgs(
                     this.cds[0], ranges[0], 0,
                     this.options.exact || this.options.relative, chartSize);
                 args.push(cdfArg);
@@ -284,7 +383,6 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                 break;
             }
             default:
-                // TODO
                 console.assert(false);
                 break;
         }
@@ -318,7 +416,7 @@ export class DataRangeCollector extends OnCompleteReceiver<DataRange> {
         if (this.title == null)
             this.title = "Histogram of " + this.cd.name;
         const chartSize = PlottingSurface.getDefaultChartSize(this.page.getWidthInPixels());
-        const args = HistogramViewBase.computeHistogramArgs(
+        const args = DataRangesCollector.computeHistogramArgs(
             this.cd, range, 0, // ignore the bucket count; we'll integrate the CDF
             this.options.exact, chartSize);
         const rr = this.originator.createHistogramRequest(args);

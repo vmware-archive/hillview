@@ -17,9 +17,21 @@
 
 import {DatasetView, IViewSerialization, TableSerialization} from "../datasetView";
 import {
-    asContentsKind, ColumnSortOrientation, CombineOperators, ComparisonFilterDescription,
-    ContentsKind, FindResult, IColumnDescription, kindIsNumeric, kindIsString,
-    NextKList, RecordOrder, RemoteObjectId, RowSnapshot, Schema, TableSummary
+    asContentsKind,
+    ColumnSortOrientation,
+    CombineOperators,
+    ComparisonFilterDescription,
+    ContentsKind,
+    FindResult,
+    IColumnDescription,
+    kindIsNumeric,
+    kindIsString,
+    NextKList,
+    RecordOrder,
+    RemoteObjectId,
+    RowSnapshot,
+    Schema,
+    TableSummary
 } from "../javaBridge";
 import {OnCompleteReceiver, Receiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
@@ -33,13 +45,20 @@ import {IScrollTarget, ScrollBar} from "../ui/scroll";
 import {SelectionStateMachine} from "../ui/selectionStateMachine";
 import {missingHtml, Resolution} from "../ui/ui";
 import {
-    cloneToSet, Comparison, Converters, formatDate, formatNumber,
-    ICancellable, PartialResult, percent, significantDigits,
+    cloneToSet,
+    Comparison,
+    Converters,
+    formatDate,
+    formatNumber,
+    ICancellable,
+    PartialResult,
+    percent,
+    significantDigits,
 } from "../util";
-import {ColumnConverter, ConverterDialog} from "./columnConverter";
 import {SchemaView} from "./schemaView";
 import {SpectrumReceiver} from "./spectrumView";
-import {TSViewBase} from "./tsViewBase";
+import {ColumnConverter, ConverterDialog, TSViewBase} from "./tsViewBase";
+
 // import {LAMPDialog} from "./lampView";
 
 /**
@@ -57,7 +76,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
     protected htmlTable: HTMLTableElement;
     protected tHead: HTMLTableSectionElement;
     protected tBody: HTMLTableSectionElement;
-    protected currentData: NextKList;
+    protected nextKList: NextKList;
     protected contextMenu: ContextMenu;
     protected cellsPerColumn: Map<string, HTMLElement[]>;
     protected selectedColumns = new SelectionStateMachine();
@@ -154,7 +173,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
             ...super.serialize(),
             order: this.order,
             tableRowsDesired: this.tableRowsDesired,
-            firstRow: this.currentData.rows.length > 0 ? this.currentData.rows[0].values : null,
+            firstRow: this.nextKList.rows.length > 0 ? this.nextKList.rows[0].values : null,
         };
         return result;
     }
@@ -167,8 +186,15 @@ export class TableView extends TSViewBase implements IScrollTarget {
         if (order == null || schema == null || rowsDesired == null)
             return null;
         const tableView = new TableView(ser.remoteObjectId, ser.rowCount, schema, page);
-        const rr = tableView.createNextKRequest(order, firstRow, rowsDesired);
-        rr.invoke(new NextKReceiver(page, tableView, rr, true, order, null));
+        // We need to set the first row for the refresh.
+        tableView.nextKList = {
+            rowsScanned: 0,
+            rows: firstRow != null ?
+                [ { count: 0, values: firstRow } ] : null,
+            startPosition: 0  // not used
+        };
+        tableView.order = order;
+        tableView.tableRowsDesired = rowsDesired;
         return tableView;
     }
 
@@ -199,12 +225,12 @@ export class TableView extends TSViewBase implements IScrollTarget {
             this.reportError("Search string cannot be empty");
             return;
         }
-        if (this.currentData.rows.length === 0) {
+        if (this.nextKList.rows.length === 0) {
             this.reportError("No data to search in");
             return;
         }
         const o = this.order.clone();
-        const rr = this.createFindRequest(o, this.currentData.rows[0].values, toFind, regex, substring, caseSensitive);
+        const rr = this.createFindRequest(o, this.nextKList.rows[0].values, toFind, regex, substring, caseSensitive);
         rr.invoke(new FindReceiver(this.getPage(), rr, this, o));
     }
 
@@ -232,7 +258,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
      * Invoked when scrolling has completed.
      */
     public scrolledTo(position: number): void {
-        if (this.currentData == null)
+        if (this.nextKList == null)
             return;
 
         if (position <= 0) {
@@ -270,19 +296,19 @@ export class TableView extends TSViewBase implements IScrollTarget {
      * Scroll one page up
      */
     public pageUp(): void {
-        if (this.currentData == null || this.currentData.rows.length === 0)
+        if (this.nextKList == null || this.nextKList.rows.length === 0)
             return;
         if (this.startPosition <= 0) {
             this.reportError("Already at the top");
             return;
         }
         const order = this.order.invert();
-        const rr = this.createNextKRequest(order, this.currentData.rows[0].values, this.tableRowsDesired);
+        const rr = this.createNextKRequest(order, this.nextKList.rows[0].values, this.tableRowsDesired);
         rr.invoke(new NextKReceiver(this.getPage(), this, rr, true, order, null));
     }
 
     protected begin(): void {
-        if (this.currentData == null || this.currentData.rows.length === 0)
+        if (this.nextKList == null || this.nextKList.rows.length === 0)
             return;
         if (this.startPosition <= 0) {
             this.reportError("Already at the top");
@@ -294,7 +320,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
     }
 
     protected end(): void {
-        if (this.currentData == null || this.currentData.rows.length === 0)
+        if (this.nextKList == null || this.nextKList.rows.length === 0)
             return;
         if (this.startPosition + this.dataRowsDisplayed >= this.rowCount - 1) {
             this.reportError("Already at the bottom");
@@ -306,7 +332,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
     }
 
     public pageDown(): void {
-        if (this.currentData == null || this.currentData.rows.length === 0)
+        if (this.nextKList == null || this.nextKList.rows.length === 0)
             return;
         if (this.startPosition + this.dataRowsDisplayed >= this.rowCount - 1) {
             this.reportError("Already at the bottom");
@@ -314,7 +340,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
         }
         const o = this.order.clone();
         const rr = this.createNextKRequest(
-            o, this.currentData.rows[this.currentData.rows.length - 1].values, this.tableRowsDesired);
+            o, this.nextKList.rows[this.nextKList.rows.length - 1].values, this.tableRowsDesired);
         rr.invoke(new NextKReceiver(this.getPage(), this, rr, false, o, null));
     }
 
@@ -409,34 +435,38 @@ export class TableView extends TSViewBase implements IScrollTarget {
         this.setOrder(o);
     }
 
+    public resize(): void {
+        this.updateView(this.nextKList, false, this.order, 0, 0);
+    }
+
     public refresh(): void {
-        if (this.currentData == null) {
+        if (this.nextKList == null) {
             this.reportError("Nothing to refresh");
             return;
         }
 
         let firstRow = null;
-        if (this.currentData.rows != null &&
-            this.currentData.rows.length > 0)
-            firstRow = this.currentData.rows[0].values;
+        if (this.nextKList.rows != null &&
+            this.nextKList.rows.length > 0)
+            firstRow = this.nextKList.rows[0].values;
         const rr = this.createNextKRequest(this.order, firstRow, this.tableRowsDesired);
         rr.invoke(new NextKReceiver(this.page, this, rr, false, this.order, null));
     }
 
-    public updateView(data: NextKList, revert: boolean,
+    public updateView(nextKList: NextKList, revert: boolean,
                       order: RecordOrder, foundCount: number | null,
                       elapsedMs: number): void {
         this.selectedColumns.clear();
-        this.rowCount = data.rowsScanned;
-        this.currentData = data;
+        this.rowCount = nextKList.rowsScanned;
+        this.nextKList = nextKList;
         this.dataRowsDisplayed = 0;
-        this.startPosition = data.startPosition;
+        this.startPosition = nextKList.startPosition;
         this.order = order.clone();
         if (revert) {
             let rowsDisplayed = 0;
-            if (data.rows != null) {
-                data.rows.reverse();
-                rowsDisplayed = data.rows.map((r) => r.count).reduce( (a, b) => a + b, 0 );
+            if (nextKList.rows != null) {
+                nextKList.rows.reverse();
+                rowsDisplayed = nextKList.rows.map((r) => r.count).reduce( (a, b) => a + b, 0 );
             }
             this.startPosition = this.rowCount - this.startPosition - rowsDisplayed;
             this.order = this.order.invert();
@@ -623,9 +653,9 @@ export class TableView extends TSViewBase implements IScrollTarget {
         cds.forEach((cd) => this.cellsPerColumn.set(cd.name, []));
         let tableRowCount = 0;
         // Add row data
-        if (data.rows != null) {
-            tableRowCount = data.rows.length;
-            for (const row of data.rows)
+        if (nextKList.rows != null) {
+            tableRowCount = nextKList.rows.length;
+            for (const row of nextKList.rows)
                 this.addRow(row, cds);
         }
 
@@ -787,7 +817,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
                         numComponents + " does not satisfy this.)");
                     return;
                 }
-                const rr = this.createCorrelationMatrixRequest(colNames, this.getTotalRowCount(), toSample);
+                const rr = this.createCorrelationMatrixRequest(colNames, this.rowCount, toSample);
                 rr.invoke(new CorrelationMatrixReceiver(this.getPage(), this, rr, this.order,
                     numComponents, projectionName));
             });
@@ -801,7 +831,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
         const colNames = this.getSelectedColNames();
         const [valid, message] = this.checkNumericColumns(colNames, 2);
         if (valid) {
-            const rr = this.createSpectrumRequest(colNames, this.getTotalRowCount(), toSample);
+            const rr = this.createSpectrumRequest(colNames, this.rowCount, toSample);
             rr.invoke(new SpectrumReceiver(
                 this.getPage(), this, this.remoteObjectId, this.rowCount,
                 this.schema, colNames, rr, false));

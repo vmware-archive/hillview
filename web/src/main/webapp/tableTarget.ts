@@ -75,7 +75,7 @@ export class TableTargetAPI extends RemoteObject {
         });
     }
 
-    public getDataRange(cd: IColumnDescription, cdfBuckets: number):
+    public createDataRangeRequest(cd: IColumnDescription, cdfBuckets: number):
         RpcRequest<PartialResult<DataRange>> {
         const seed = kindIsString(cd.kind) ? Seed.instance.get() : 0;
         const args: RangeArgs = {
@@ -86,7 +86,7 @@ export class TableTargetAPI extends RemoteObject {
             "getDataRange", args);
     }
 
-    public getDataRanges(cds: IColumnDescription[], buckets: number[]):
+    public createDataRangesRequest(cds: IColumnDescription[], buckets: number[]):
         RpcRequest<PartialResult<DataRange[]>> {
         console.assert(cds.length === buckets.length);
         const args: RangeArgs[] = [];
@@ -278,7 +278,7 @@ RpcRequest<PartialResult<RemoteObjectId>> {
  * in Java by IDataSet<ITable>.
  * This is a base class for most views that are rendering
  * information from a big table.
- * A BigTableView view is always part of a datasetview.
+ * A BigTableView view is always part of a DatasetView.
  */
 export abstract class BigTableView extends TableTargetAPI implements IDataView {
     protected topLevel: HTMLElement;
@@ -319,7 +319,7 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView {
         };
     }
 
-    public setPage(page: FullPage) {
+    public setPage(page: FullPage): void {
         if (page == null)
             throw new Error(("null FullPage"));
         this.page = page;
@@ -342,13 +342,14 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView {
         this.dataset.select(this, this.page.pageId);
     }
 
+    public abstract resize(): void;
     public abstract refresh(): void;
 
     public getHTMLRepresentation(): HTMLElement {
         return this.topLevel;
     }
 
-    public abstract combine(op: CombineOperators);
+    public abstract combine(op: CombineOperators): void;
 }
 
 /**

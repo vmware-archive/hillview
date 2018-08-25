@@ -76,6 +76,7 @@ export abstract class ChartView extends BigTableView {
 
     protected setupMouse(): void {
         this.topLevel.onkeydown = (e) => this.keyDown(e);
+        this.topLevel.tabIndex = 1;  // seems to be necessary to get keyboard events
         const drag = d3drag()
             .on("start", () => this.dragStart())
             .on("drag", () => this.dragMove())
@@ -193,3 +194,4 @@ export abstract class ChartView extends BigTableView {
         return true;
     }
 }
+

@@ -76,27 +76,35 @@ export interface HeatmapSerialization extends IViewSerialization {
     samplingRate: number;
     columnDescription0: IColumnDescription;
     columnDescription1: IColumnDescription;
+    xBucketCount: number;
+    yBucketCount: number;
 }
 
 export interface Histogram2DSerialization extends HeatmapSerialization {
     relative: boolean;
-    xBucketCount: number;
 }
 
 export interface SpectrumSerialization extends IViewSerialization {
     colNames: string[];
 }
 
-export interface TrellisHistogramSerialization extends IViewSerialization {
-    // TODO
+export interface TrellisShapeSerialization {
+    groupByColumn: IColumnDescription;
+    xWindows: number;
+    yWindows: number;
+    groupByBucketCount: number;
 }
 
-export interface TrellisHistogram2DSerialization extends IViewSerialization {
-    // TODO
+export interface TrellisHistogramSerialization extends
+    HistogramSerialization, TrellisShapeSerialization {
 }
 
-export interface TrellisHeatmapSerialization extends IViewSerialization {
-    // TODO
+export interface TrellisHistogram2DSerialization extends
+    Histogram2DSerialization, TrellisShapeSerialization {
+}
+
+export interface TrellisHeatmapSerialization extends
+    HeatmapSerialization, TrellisShapeSerialization {
 }
 
 export interface IDatasetSerialization {
@@ -310,6 +318,7 @@ export class DatasetView implements IHtmlElement {
                 break;
         }
         if (view != null) {
+            view.refresh();
             page.setDataView(view);
             return true;
         }

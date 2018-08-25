@@ -225,6 +225,10 @@ export class LoadMenu extends RemoteObject implements IDataView {
         this.top.appendChild(this.console.getHTMLRepresentation());
     }
 
+    public refresh(): void {
+        // Not needed
+    }
+
     public toggleAdvanced(): void {
         this.advanced = !this.advanced;
         this.showAdvanced(this.advanced);
@@ -322,7 +326,7 @@ export class LoadMenu extends RemoteObject implements IDataView {
         rr.invoke(new CommandReceiver(command, this.page, rr));
     }
 
-    public refresh(): void {}
+    public resize(): void {}
 
     public setPage(page: FullPage): void {
         this.page = page;
@@ -457,7 +461,6 @@ class OrcFileDialog extends Dialog {
 class DBDialog extends Dialog {
     constructor() {
         super("Load DB tables", "Loads one table on each machine that is part of the service.");
-        // TODO: this should be a pattern string, based on local worker name.
         const sel = this.addSelectField("databaseKind", "Database kind", ["mysql", "impala"], "mysql",
             "The kind of database.");
         sel.onchange = () => this.dbChanged();

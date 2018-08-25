@@ -214,7 +214,7 @@ export class FullPage implements IHtmlElement {
     }
 
     public onResize(): void {
-        this.dataView.refresh();
+        this.dataView.resize();
     }
 
     public getHTMLRepresentation(): HTMLElement {

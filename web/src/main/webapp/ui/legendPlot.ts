@@ -337,7 +337,7 @@ export class HeatmapLegendPlot extends Plot {
         const min = this.colorMap.min;
         const max = this.colorMap.max;
         const canvas = this.plottingSurface.getCanvas();
-        const x = (this.plottingSurface.getActualChartWidth() - Resolution.legendBarWidth) / 2;
+        const x = (this.plottingSurface.getChartWidth() - Resolution.legendBarWidth) / 2;
 
         if (!this.colorMap.logScale && this.colorMap.max - this.colorMap.min < 25) {
             // use discrete colors
